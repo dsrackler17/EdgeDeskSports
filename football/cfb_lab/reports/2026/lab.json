@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-16T17:41:16.000Z",
+ "generated_at": "2026-10-16T18:07:27.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1192,
-    "latest_snapshot_at": "2026-10-16T17:41:16.000Z",
+    "snapshots": 1194,
+    "latest_snapshot_at": "2026-10-16T18:07:27.000Z",
     "upcoming_games": 111,
     "avg_confidence_upcoming": 81
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1503,
-    "latest_snapshot_at": "2026-10-16T17:41:16.000Z",
+    "snapshots": 1505,
+    "latest_snapshot_at": "2026-10-16T18:07:27.000Z",
     "upcoming_games": 108,
     "avg_confidence_upcoming": 76.7
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1503,
-    "latest_snapshot_at": "2026-10-16T17:41:16.000Z",
+    "snapshots": 1505,
+    "latest_snapshot_at": "2026-10-16T18:07:27.000Z",
     "upcoming_games": 108,
     "avg_confidence_upcoming": 76.6
    }
@@ -844,8 +844,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-16T17:41:16.000Z",
-    "quotes_total": 17422,
+    "last_quote_at": "2026-10-16T18:07:27.000Z",
+    "quotes_total": 17429,
     "last_result_at": "2026-10-16T07:30:10.000Z"
    }
   },
@@ -879,9 +879,9 @@
    }
   ],
   "ledger": {
-   "predictions": 4708,
-   "live_predictions": 4198,
-   "quotes": 17422,
+   "predictions": 4714,
+   "live_predictions": 4204,
+   "quotes": 17429,
    "lines": 2807,
    "results": 406,
    "evaluations": 3891,
@@ -981,10 +981,10 @@
    "home": "Purdue",
    "away": "Washington",
    "market": {
-    "current": -3.5,
+    "current": -3,
     "open": -2.5,
     "books": 1,
-    "as_of": "2026-10-16T12:43:22.000Z",
+    "as_of": "2026-10-16T18:07:27.000Z",
     "sources": [
      "espn"
     ],
@@ -993,10 +993,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-16T12:43:22.000Z",
+     "prediction_ts": "2026-10-16T18:07:27.000Z",
      "margin": 7.02,
      "fair": "Purdue -7.0",
      "p_home": 0.6843,
@@ -1006,28 +1006,28 @@
      "decision": "LEAN",
      "status": "LEAN",
      "side": "HOME",
-     "gap": 3.52,
-     "line": -3.5,
+     "gap": 4.02,
+     "line": -3,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-16T12:43:22.000Z",
+     "prediction_ts": "2026-10-16T18:07:27.000Z",
      "margin": 0.8,
      "fair": "Purdue -1.0",
      "p_home": 0.5199,
      "sigma": 16.14,
      "conf": 74,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "AWAY",
-     "gap": -2.7,
-     "line": 3.5,
+     "gap": -2.2,
+     "line": 3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "QB_UNCERTAIN",
@@ -1036,21 +1036,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-16T12:43:22.000Z",
+     "prediction_ts": "2026-10-16T18:07:27.000Z",
      "margin": 0.46,
      "fair": "Purdue -0.5",
      "p_home": 0.5116,
      "sigma": 15.988,
      "conf": 79,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "AWAY",
-     "gap": -3.04,
-     "line": 3.5,
+     "gap": -2.54,
+     "line": 3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "QB_UNCERTAIN",
@@ -1069,7 +1069,7 @@
     "current": 1.5,
     "open": 1.5,
     "books": 1,
-    "as_of": "2026-10-16T07:30:10.000Z",
+    "as_of": "2026-10-16T14:42:57.000Z",
     "sources": [
      "espn"
     ],
@@ -1078,10 +1078,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-16T12:43:22.000Z",
+     "prediction_ts": "2026-10-16T18:07:27.000Z",
      "margin": 1.95,
      "fair": "Coastal Carolina -2.0",
      "p_home": 0.5529,
@@ -1098,10 +1098,10 @@
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-16T12:43:22.000Z",
+     "prediction_ts": "2026-10-16T18:07:27.000Z",
      "margin": -1,
      "fair": "App State -1.0",
      "p_home": 0.4752,
@@ -1121,10 +1121,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-16T12:43:22.000Z",
+     "prediction_ts": "2026-10-16T18:07:27.000Z",
      "margin": -0.96,
      "fair": "App State -1.0",
      "p_home": 0.4758,
@@ -13296,7 +13296,7 @@
   "data_fault": 0,
   "market_fault": 24,
   "verification_not_run": 0,
-  "average_raw_gap": 3.831,
+  "average_raw_gap": 3.834,
   "average_raw_gap_7plus": 10.191,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
