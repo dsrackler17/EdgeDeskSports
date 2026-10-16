@@ -323,7 +323,10 @@ function siteHandler(req, res) {
       await page.click('#iaAskHost .ia-chip >> text="Analyze every NFL game this weekend."');
       await runEnded(page, 2);
       const r2 = await lastRun(page), want2 = resultOf('b_slate');
-      chk(T + '5 · "Analyze every NFL game this weekend." streams the slate investigation', r2 && r2.state === 'done' && want2 && want2.quant.intent === 'RESEARCH_SLATE' && /7 games investigated/.test(r2.answer), r2 && [r2.state, r2.answer.slice(0, 200)]);
+      /* the count is the engine's own: the slate is the real committed football/nfl/slate.json, which the nightly
+         build rewrites, so a literal goes stale (7 became 8 when the 2026-10-16 rebuild changed the weekend) */
+      const nSlate = want2 && /(\d+) games investigated/.exec(want2.answer || '');
+      chk(T + '5 · "Analyze every NFL game this weekend." streams the slate investigation', r2 && r2.state === 'done' && want2 && want2.quant.intent === 'RESEARCH_SLATE' && !!nSlate && r2.answer.indexOf(nSlate[0]) >= 0, r2 && [r2.state, r2.answer.slice(0, 200), nSlate && nSlate[0]]);
       const card = await page.evaluate(() => {
         const cs = [...document.querySelectorAll('#edaiLog .ia-card')]; const c = cs[cs.length - 1]; if (!c) return null;
         const kv = {}; c.querySelectorAll('.ia-kv-r').forEach((r) => { const k = r.querySelector('dt').textContent; if (!(k in kv)) kv[k] = r.querySelector('dd').innerText.replace(/\s+/g, ' ').trim(); });
