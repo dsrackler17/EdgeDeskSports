@@ -1015,9 +1015,18 @@
      uncertainty, and the team they are about. A claim is allowed only when
      that team's classification may assert it. */
   A.UNCERTAINTY = /\b(not (?:been )?confirmed|unconfirmed|unsettled|uncertain(?:ty)?|question mark|no starter has been announced|has not (?:been )?(?:named|announced)|quarterback (?:battle|competition|controversy)|competition at quarterback|could start|may not (?:play|start)|game-time decision|questionable|doubtful|ruled out|will not play|won’t play|won't play)\b/i;
+  /* a full stop that does not end a sentence: a month or an abbreviation
+     ("report (published Oct. 15) lists quarterback …", "Ohio St.", "No. 5").
+     Splitting there cut the team and its sourced report off the claim. */
+  A.ABBREVIATION = /(?:^|[\s(“"'])(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|St|No|vs|Jr|Sr|Mt|Ft)\.$/;
+  A.sentencesOf = function (text) {
+    return String(text || '').replace(/([^\s]*)([.!?])\s+/g, function (m, w, p, at, all) {
+      return p === '.' && A.ABBREVIATION.test(all.slice(Math.max(0, at - 1), at) + w + p) ? m : w + p + '\u0001';
+    }).split('\u0001');
+  };
   A.guardProse = function (text, byTeam) {
     var issues = [];
-    var sentences = String(text || '').replace(/([.!?])\s+/g, '$1\u0001').split('\u0001');
+    var sentences = A.sentencesOf(text);
     sentences.forEach(function (s) {
       if (!A.UNCERTAINTY.test(s) || !/quarterback|\bQB\b|starter|play\b|\bout\b|injur|status/i.test(s)) return;
       var teams = Object.keys(byTeam || {}).filter(function (t) { return t && s.indexOf(t) >= 0; });
@@ -5069,6 +5078,7 @@
   var NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
   function numWord(n) { return n >= 0 && n < NUMBER_WORDS.length ? NUMBER_WORDS[n] : String(n); }
   function cap(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function plainRisk(t) { t = String(t || ''); var m = /^V\d+(?:\.\d+)* flags:\s*(.+)$/.exec(t); return m ? cap(m[1]) : t; }
   /* "Alabama is" but "the Dallas Cowboys are" */
   function verb(league, singular, plural) { return league === 'nfl' ? plural : singular; }
   /* djb2 → base36; used for deterministic keys and hashes, not security */
@@ -5505,8 +5515,10 @@
       model: model, market: market, gap: gap,
       favorite_flip: !!(mfav && mfav.favorite && model.favorite && mfav.favorite !== model.favorite),
       drivers: drivers, matchup: matchup, qb: qb,
-      /* quarterback notes reach the copy only through qbState (`material`) */
-      risks: ((g.risks && g.risks.items) || []).filter(function (r) { return r && !/^qb_/.test(r.key || ''); }).map(function (r) { return r.text; }).filter(Boolean).slice(0, 3),
+      /* quarterback notes reach the copy only through qbState (`material`).
+         The terminal labels a driver with its model version ("V2.1 flags:
+         uncertain team ratings."); a reader gets the driver, not the version. */
+      risks: ((g.risks && g.risks.items) || []).filter(function (r) { return r && !/^qb_/.test(r.key || ''); }).map(function (r) { return plainRisk(r.text); }).filter(Boolean).slice(0, 3),
       unpriced: ((g.why && g.why.unpriced) || []).slice(0, 4),
       research_status: g.research_status ? { key: g.research_status.key, label: g.research_status.label } : null,
       decision: g.decision_status ? { key: g.decision_status.key, label: g.decision_status.label, reason: g.decision_status.reason || null } : null,
@@ -8808,15 +8820,20 @@
       /* the NFL's official injury report, player by player, as the evidence
          packet prints it ("three Seattle Seahawks players as out or
          doubtful"): a sourced report like the conference's, so the copy it
-         writes is not charged as unsupported uncertainty */
+         writes is not charged as unsupported uncertainty. A conference
+         report's claim names one quarterback ("lists quarterback Danny
+         O'Neil as questionable"), so it counts the same way. */
       featured.forEach(function (p) {
         var F0 = fe(); if (!F0 || !p.evidence) return;
         (p.evidence.claims || []).forEach(function (c) {
-          if (c.topic !== 'injury' || c.verification !== 'OFFICIAL_REPORT' || !c.team || !c.values || !Array.isArray(c.values.players)) return;
+          if (c.topic !== 'injury' || c.verification !== 'OFFICIAL_REPORT' || !c.team || !c.values) return;
+          var rows = Array.isArray(c.values.players) ? c.values.players
+            : (c.subject && c.values.status ? [{ name: c.subject, status: c.values.status, injury: c.values.injury || null }] : null);
+          if (!rows) return;
           var so = F0.sourceOf(p.evidence, c) || {};
-          c.values.players.forEach(function (r) {
+          rows.forEach(function (r) {
             if (!r || typeof r !== 'object' || !r.name) return;
-            var k = AVAIL.classify(AVAIL.fromInjuryReport(c.team, { name: r.name, status: r.status, injury: r.injury, report_date: c.observed_at || so.observed_at || null }, so.label || 'the official injury report'), { kickoff: p.kickoff, now: now });
+            var k = AVAIL.classify(AVAIL.fromInjuryReport(c.team, { name: r.name, status: r.status, injury: r.injury, report_date: c.observed_at || so.observed_at || so.published_at || null }, so.label || 'the official injury report'), { kickoff: p.kickoff, now: now });
             (byTeam[c.team] = byTeam[c.team] || []).push(k); (byTeam[r.name] = byTeam[r.name] || []).push(k);
           });
         });

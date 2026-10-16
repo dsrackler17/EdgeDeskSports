@@ -98,6 +98,14 @@ chk('R the fair line is the stored number under the canonical rounding policy', 
   && pk.model.home_line === CALC.round(raw.edgedesk.fair_home_line, 1) && pk.model.margin === Math.abs(CALC.round(raw.edgedesk.fair_home_line, 1)), { fair_text: raw.edgedesk.fair_text, packet: pk && pk.model });
 chk('R the win chance is the artifact’s, as a whole percent', pk && pk.model.fav_win_pct === Math.round(100 * (pk.model.favorite === pk.home ? raw.edgedesk.home_win_prob : 1 - raw.edgedesk.home_win_prob)));
 chk('R the confidence is the artifact’s', pk && (!raw.edgedesk.football_confidence || pk.model.confidence.score === Math.round(raw.edgedesk.football_confidence.score)));
+/* the terminal labels an uncertainty driver with its model version; the copy
+   prints the driver ("Uncertain team ratings."), never "V2.1 flags:" */
+chk('R a model-version label never reaches the research a writer quotes', (() => {
+  const a2 = JSON.parse(JSON.stringify(art)), g2 = a2.cfbGames.games[gid];
+  g2.risks = { items: [{ key: 'v2_unc_0', severity: 'context', text: 'V2.1 flags: uncertain team ratings.' }].concat((g2.risks && g2.risks.items) || []), high: 0 };
+  const p2 = CE.research.fromArtifacts(a2, { now: NOW }).cfb.games.find((p) => p.game_id === String(gid));
+  return p2.risks[0] === 'Uncertain team ratings.' && p2.risks.every((r) => !/\bV\d+(\.\d+)*\b/.test(r));
+})());
 chk('R kickoff printed in Eastern time, AP style', /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\., (Sept\.|Oct\.|Nov\.|Dec\.|Aug\.|Jan\.) \d{1,2}, \d{1,2}(:\d{2})? (a|p)\.m\. ET$/.test(pk.kickoff_text), pk.kickoff_text);
 const al = snap.cfb.games.find((p) => p.home === 'Alabama' && p.away === 'Georgia');
 if (al) {

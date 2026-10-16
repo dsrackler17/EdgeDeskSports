@@ -58,13 +58,20 @@
   - The Monday Weekend Model Review gains a cross-sport accountability section and the week's largest model-against-market disagreements. All 12 gates pass, and a thin week is declined with its reason.
 - **Social.** `performance/social/<week>.json` holds a summary under 280 characters, card data, comparisons and a market recap. It is written once per complete week of 20 or more verified games. Drafts only: no X integration exists.
 - **Supabase (optional).** `supabase/model_performance.sql` adds append-only `perf_*` tables for every role, a chain check, server-stamped receipt times, RLS that publishes forecasts only after their game starts, a single service-role write path and an ingest log. It ships with a rollback and a manual deploy workflow.
-- **Monitoring.** `performance/data/health.json` reports missing finals, conflicts, unmatched games, stale capture, metric shifts and duplicate publication. ERROR and ALERT turn the hourly run red after the data is published.
+- **Monitoring.** `performance/data/health.json` reports missing finals, conflicts, unmatched games, stale capture, metric shifts and duplicate publication. The hourly run lists them as annotations and in its summary. They never turn it red; only a broken job (a failed rule test or a chain that does not verify) does.
 - **Tests:**
-  - `performance:test`: 90 checks covering the kernel, the ledger and a full offline lifecycle.
+  - `performance:test`: 93 checks covering the kernel, the ledger and a full offline lifecycle.
   - `performance:sql`: 55 checks on a real PostgreSQL, as anon, a reader, the service role and the owner.
   - `performance:e2e`: 42 checks at 390 and 1280 px.
 
   The site, nav, free-access, SEO, growth, app navigation, article, content engine and features suites stay green.
+- **Three checks that were red on `main` too, fixed at the cause:**
+  - **The availability gate split sentences at "Oct."** "Wisconsin's Big Ten availability report (published Oct. 15) lists quarterback Danny O'Neil as questionable" was read as two sentences, so the claim lost its team. `lib/edgedesk_availability.js` `sentencesOf` now keeps abbreviations (Oct., Sept., St., No., vs.) inside the sentence.
+  - **A conference report's quarterback listing did not count as a sourced report.** The gate credited the NFL report's player list only. `lib/content_engine.js` now credits the one-player claims that conference reports produce, as it does the NFL list. Without that report on file, the same sentence still fails.
+  - **"V2.1 flags: uncertain team ratings." reached publisher copy.** A reader now gets the driver ("Uncertain team ratings.") without the model version.
+  - **`football/game_research/landing.json` went stale against `current.json`** whenever only a snapshot's `generated_at` moved, because `writeIfChanged` ignores clock fields. `tools/football/build_game_research.js` now builds the landing file from `current.json` as written, and rewrites it whenever an embedded snapshot differs.
+
+  Each fix has a test that fails without it.
 
 ## 2026-10-16 — The landing page: a model you can follow and argue with, shown on real games, and what shipped finally says Live
 

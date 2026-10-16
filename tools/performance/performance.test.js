@@ -310,6 +310,25 @@ function ev(o) { return { id: 'nfl:espn:' + o.espn, sport: 'nfl', league: 'NFL',
   chk('P the verified headline never includes a recorded forecast', committed.every((f) => f.rows.every((x) => x.tier === 'RECORDED' || x.forecast.captured_at)) && sum.headline.verified.eligibility.games === committed.reduce((s, f) => s + f.rows.filter((x) => x.tier === 'VERIFIED').length, 0));
   chk('P the committed ledger verifies', L.verifyAll(ROOT).ok);
 
+  /* H the hourly job's alert step lists, and never fails the run (a red
+     hourly run emails the owner every hour until a source catches up) */
+  {
+    const { spawnSync } = require('child_process');
+    const HR = path.join(__dirname, 'health_report.js');
+    const hroot = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-health-'));
+    fs.mkdirSync(path.join(hroot, 'performance', 'data'), { recursive: true });
+    fs.writeFileSync(path.join(hroot, 'performance', 'data', 'health.json'), JSON.stringify({ status: 'ALERT', items: [
+      { level: 'ALERT', check: 'missing_finals', detail: 'nfl x: no verified final 31 h after the start' }, { level: 'WARN', check: 'postponed', detail: 'a\nb' }] }));
+    const a = spawnSync(process.execPath, [HR, '--root', hroot], { encoding: 'utf8' });
+    chk('H an ALERT is listed as an error annotation, and the step still exits 0', a.status === 0 && /::error title=missing_finals::nfl x/.test(a.stdout) && /::warning title=postponed::a b/.test(a.stdout), { status: a.status, out: a.stdout });
+    fs.rmSync(path.join(hroot, 'performance', 'data', 'health.json'));
+    const m = spawnSync(process.execPath, [HR, '--root', hroot], { encoding: 'utf8' });
+    chk('H a missing health.json is a warning, and the step still exits 0', m.status === 0 && /::warning title=health::/.test(m.stdout), { status: m.status, out: m.stdout });
+    fs.rmSync(hroot, { recursive: true, force: true });
+    const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'performance.yml'), 'utf8');
+    chk('H the hourly workflow lists health through health_report.js and has no step that exits on an alert', /node tools\/performance\/health_report\.js/.test(wf) && !/process\.exit\(1\)/.test(wf) && !/status === 'ALERT'/.test(wf));
+  }
+
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'model performance — ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('FAIL | the lifecycle threw  ' + (e && e.stack || e)); process.exit(1); });

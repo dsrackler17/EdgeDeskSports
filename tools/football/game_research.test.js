@@ -390,5 +390,25 @@ chk('the page never stores a typed price', !/setItem\([^)]*price|localStorage[\s
 chk('the Research level offers the fair alternate lines from the snapshot’s own sheet', /data-gv-act="alts"/.test(VIEW) && /FL\.probabilities\(sh, \{ market: 'spread'/.test(VIEW) && /Not sportsbook prices/.test(VIEW));
 chk('the graphic is the first section of the page', VIEW.indexOf('h += graphicBlock(s);') < VIEW.indexOf('h += overview(s, av);') && VIEW.indexOf('h += overview(s, av);') < VIEW.indexOf('h += deep(s, mk);') && VIEW.indexOf('h += deep(s, mk);') < VIEW.indexOf('h += marketSection(s, mk, av);'));
 
+section('11. landing.json embeds current.json’s snapshots as written');
+{
+  /* writeIfChanged leaves current.json alone when only a clock moved, and
+     landing.json was compared the same way: a run that rewrote current.json
+     for one game left landing.json carrying the others' older generated_at */
+  const os = require('os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'landing-'));
+  const snap = (at) => ({ game_key: 'nfl|X', snapshot_id: 'abc', generated_at: at, model: { available: true } });
+  const put = (f, o) => fs.writeFileSync(path.join(dir, f), JSON.stringify(o));
+  const land = (at) => ({ schema: B.LANDING_SCHEMA, generated_at: at, games: [{ game_key: 'nfl|X', snapshot: snap(at), sheet: null }] });
+  put('current.json', { games: [snap('2026-10-16T15:08:00Z')] });
+  put('landing.json', land('2026-10-16T14:43:00Z'));
+  const w1 = B.writeLanding(land('2026-10-16T15:30:00Z'), dir);
+  const got = JSON.parse(fs.readFileSync(path.join(dir, 'landing.json'), 'utf8'));
+  chk('a snapshot that differs only by its generated_at is rewritten, from current.json as written (not this run’s copy)', w1 === 'written' && got.games[0].snapshot.generated_at === '2026-10-16T15:08:00Z', { w1, at: got.games[0].snapshot.generated_at });
+  const w2 = B.writeLanding(land('2026-10-16T16:30:00Z'), dir);
+  chk('… and once they match, a clock-only change leaves the file alone', w2 === 'unchanged', w2);
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
 console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | game research (snapshot, graphic, history, price check, wiring) | ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

@@ -339,6 +339,12 @@ section('10 a missing QB announcement does not create false uncertainty');
   const bad = AVAIL.guardProse('Florida has not confirmed DJ Lagway as the starter. The model makes Florida a slight favorite.', byTeam);
   chk('prose claiming an unconfirmed starter is caught (once per name it mentions)', bad.length >= 1 && bad.every((b) => /has not confirmed/.test(b.sentence) && /no sourced report/.test(b.reason)), bad);
   chk('prose that states the expected starter plainly passes', AVAIL.guardProse('DJ Lagway started the last game for Florida.', byTeam).length === 0);
+  /* an abbreviation is not a sentence end: "(published Oct. 15) lists
+     quarterback DJ Lagway as questionable" is one claim, about Florida */
+  chk('abbreviations do not split a sentence (Oct., Sept., St., No., vs.)', ['Florida’s SEC availability report (published Oct. 15) lists quarterback DJ Lagway as questionable.',
+    'Ohio St. is No. 5 vs. Florida on Sept. 30.'].every((t) => AVAIL.sentencesOf(t).length === 1) && AVAIL.sentencesOf('Florida won. Ole Miss lost.').length === 2);
+  const offRep = AVAIL.classify(AVAIL.fromInjuryReport(FL, { name: 'DJ Lagway', status: 'Questionable', report_date: '2026-10-08T12:00:00Z' }, 'SEC availability report'), { now: NOW, kickoff: '2026-10-10T19:30:00Z' });
+  chk('a claim split at "Oct." is still credited to the team’s sourced report', AVAIL.guardProse('Florida’s SEC availability report (published Oct. 8) lists quarterback DJ Lagway as questionable.', { [FL]: [prev, offRep], 'DJ Lagway': [prev, offRep] }).length === 0);
   const report = (at) => ({ team: FL, player: 'DJ Lagway', reports: [{ claim: 'questionable', source: { name: 'Florida injury report', kind: 'official', url: 'https://floridagators.com/injury' }, published_at: at }] });
   const sourced = AVAIL.classify(report('2026-10-08T12:00:00Z'), { now: NOW, kickoff: '2026-10-10T19:30:00Z' });
   chk('uncertainty may be written only from a sourced, timestamped report', sourced.may_assert_uncertainty === true && sourced.verification === 'SOURCED' && !!sourced.published_at, sourced);
