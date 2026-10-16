@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-16 — Learn EdgeDesk: a first-visit introduction, task walkthroughs, Help, and terms explained where they appear
+
+**A first-time visitor can now learn EdgeDesk inside the product.** See `docs/guide/README.md`.
+
+- **The introduction.**
+  - On a first visit it explains the purpose in plain words: research, EdgeDesk's own numbers beside the market's prices, and how far to trust the data.
+  - It offers *Show me around* and *Explore on my own*.
+  - *Show me around* asks **What would you like to do?** and lists only the tasks this build supports.
+  - It replaces the old conceptual welcome, which now runs only if the guide fails to load.
+  - It waits for the paywall, Setup and other dialogs, and is asked once. The answer is kept on the device (`edgedesk_guide_v1`) and on the account (`user_metadata.edgedesk_guide`).
+  - Readers who dismissed the old welcome are not interrupted; the Help button carries a dot until they open it.
+- **Five walkthroughs on the real screens.** Research a game; Understand the research numbers; Explore player props; Read today's Card; Track your bets.
+  - Each has 4–5 steps, with Step n of m, Back, Next, Skip and arrow keys.
+  - The highlighted control stays usable throughout.
+  - Steps wait for loading screens, say what is missing and offer the next useful action (a football engine down, props without prices, a failed schedule, a signed-out Portfolio). They say so when a game has already started, and when the reader navigates away.
+  - None starts behind the paywall.
+- **Help.** The **?** button in the header (desktop and phone), the account menu and More → Account all open the same panel:
+  - this page's walkthrough and terms;
+  - the other tasks;
+  - a searchable glossary;
+  - the introduction again.
+- **Terms where they appear.** Fair spread and fair line, implied probability, break-even and no-vig, edge, EV, market state, playable-to, decision confidence, data confidence and reliability, calibration, CLV, research readiness, the five decisions, units, and estimates vs results. Each says what it is, how to use it, and what it cannot tell you.
+  - Every decision-layer tooltip now opens the full explainer on click or Enter.
+  - Labels in the football research, props, game details, Portfolio and Model performance carry `data-ed-term`.
+- **No stacking.** The six-step onboarding and the Card's own explainer wait while the guide is busy. Finishing the Card walkthrough stands in for the Card's explainer, which stays under *How to read this card*.
+- **Tests.**
+  - `npm run guide:test`: copy rules, every selector exists, asked-once rules, wiring. CI: `guide-tests.yml`.
+  - `npm run guide:e2e`: desktop and a 390 px phone, covering skip, reopen, navigation, missing data, a locked account, keyboard and reduced motion.
+
 ## 2026-10-15 — edgedesk_ai build label: r26-multisport-model-first
 
 The multi-sport Quant Desk (#589) shipped without a new `BUILD` label, so the deployment doctor compared the old label (`edgedesk_ai-2026-10-12-r25-stale-price-labels`) on both sides and could not show that the new code was live. `BUILD` is now `edgedesk_ai-2026-10-15-r26-multisport-model-first`. After the next deploy, `?probe=1` and the doctor name this build, so "deployed and current" means this code.

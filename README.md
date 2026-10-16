@@ -620,6 +620,39 @@ See [`docs/portfolio-architecture.md`](docs/portfolio-architecture.md) and
 - `npm run portfolio:sql` — `supabase/portfolio.sql` against a real PostgreSQL, as real readers
 - `npm run portfolio:e2e` — the page in Chromium against the real migration, desktop and a 390 px phone
 
+## Learn EdgeDesk — the introduction, walkthroughs and Help
+
+A first visit gets a short introduction ("Research, not picks"). It offers
+**Show me around**, which asks *what would you like to do?*, and **Explore
+on my own**. It is asked once, and the answer is kept on the device and the
+account.
+
+The **?** in the header opens Help on every screen and on phones. Help offers:
+
+- the walkthrough for the page you are on;
+- the other tasks;
+- a searchable glossary;
+- the introduction again.
+
+There are five walkthroughs, each a few steps on the real screen with Back,
+Next and Skip:
+
+- research a game;
+- understand the research numbers;
+- explore player props;
+- read today's Card;
+- track your bets.
+
+They handle loading, missing data, a locked account and a reader who
+navigates away.
+
+Fair spread, implied probability, EV, CLV, confidence, data confidence,
+research readiness and the BET/LEAN/WATCH/PASS decisions each open an
+explainer where they appear. Every explainer says what the number is, how to
+use it, and what it cannot tell you. See
+[`docs/guide/README.md`](docs/guide/README.md).
+Tests: `npm run guide:test`, `npm run guide:e2e`.
+
 ## The personal research terminal
 A reader's own research now lives on their account: a **watchlist** (the star on
 every game card and on the Top 5), **research-condition alerts** under the bell

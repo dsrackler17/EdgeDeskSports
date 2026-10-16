@@ -2923,6 +2923,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261014bs2">
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
+<link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -2945,6 +2946,9 @@ body.focus .dk-focusnote{display:block}
     <span class="pill" id="dbPill">DB …</span><span class="pill hpsum" id="sysHealthPill"><span class="hpk">System</span><i class="hpdot" aria-hidden="true"></i><span class="hpv">Checking</span><span class="hpc">…</span></span>
   </button>
   <div class="hppop" id="sysHealthPop" role="dialog" aria-label="System health" onclick="event.stopPropagation()"></div>
+  <!-- HELP — Learn EdgeDesk (lib/edgedesk_guide.js): this page's walkthrough,
+       the other tasks, every term explained, the introduction again. -->
+  <button type="button" class="edg-hbtn" id="edHelpBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="edgHelp" aria-label="Help: learn EdgeDesk" title="Help · Learn EdgeDesk" onclick="window.EDGuide&&window.EDGuide.openHelp()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2v.1"/></svg><span class="edg-hbtn-l">Help</span></button>
   <div class="edav-wrap">
     <button class="edav" id="edAv" title="Account" onclick="__toggleAvMenu(event)">?</button>
     <div class="avmenu" id="avMenu" onclick="event.stopPropagation()">
@@ -2954,6 +2958,7 @@ body.focus .dk-focusnote{display:block}
       <button onclick="__avGo('subscription')">Billing</button>
       <button data-ed-report onclick="try{document.getElementById('avMenu').classList.remove('open')}catch(_){}">Report a problem</button>
       <button onclick="__avGo('feedback')">Release notes</button>
+      <button onclick="try{var m=document.getElementById('avMenu');if(m)m.classList.remove('open');window.EDGuide&&window.EDGuide.openHelp('home',{returnTo:document.getElementById('edHelpBtn')})}catch(_){}">Learn EdgeDesk</button>
       <button onclick="__avGo('about')">Help &amp; support</button>
       <button onclick="try{var m=document.getElementById('avMenu');if(m)m.classList.remove('open');window.hiwOpen&&window.hiwOpen()}catch(_){}">How EdgeDesk works</button>
       <hr><button class="danger" onclick="edSignOut()">Log out</button>
@@ -3013,8 +3018,8 @@ body.focus .dk-focusnote{display:block}
       <div class="t">Every flagged price is frozen, tracked to close, and graded automatically.</div>
       <div class="ph-chain"><span>Frozen entry</span><span>Closing snapshot</span><span>CLV</span><span>Auto grading</span><span>Public record</span></div>
       <div class="ph-two">
-        <div class="ph-c"><b>Outcome</b><div class="q">Did the bet win?</div><p>Wins and losses are shown as a flat one-unit simulation. They are real results, but a short run of them proves very little.</p></div>
-        <div class="ph-c evid"><b>Price quality</b><div class="q">Did the entry beat the closing market?</div><p>The closing line is the market&rsquo;s final vote. Beating it consistently is the only evidence that a signal class is real. This is the layer EdgeDesk grades itself on.</p></div>
+        <div class="ph-c"><b data-ed-term="estimate-outcome">Outcome</b><div class="q">Did the bet win?</div><p>Wins and losses are shown as a flat one-unit simulation. They are real results, but a short run of them proves very little.</p></div>
+        <div class="ph-c evid"><b data-ed-term="clv">Price quality</b><div class="q">Did the entry beat the closing market?</div><p>The closing line is the market&rsquo;s final vote. Beating it consistently is the only evidence that a signal class is real. This is the layer EdgeDesk grades itself on.</p></div>
       </div>
       <div class="dk-note">Poor segments, thin samples and faults stay visible below. Nothing is filtered out to make the record look better: the default view covers the sports EdgeDesk offers today, and retired sports stay in the archive view (Filters) exactly as stored.</div>
     </div>
@@ -4037,7 +4042,7 @@ window.mcRefresh=function(){
 <!-- THE FREE PRICE FEED: today/slate.json's DraftKings prices (ESPN's public scoreboard) for every
      sport — the Card's multi-sport rows, and the football boards' price when the paid capture is not current -->
 <script src="/lib/edgedesk_card_feed.js?v=20261015sc1"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20261015sc1"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20261016g1"></script>
 <!-- PLAYER PROPS: the kernel (distributions, price shopping, EV, decision — the SAME
      file the Node build prices with) and the terminal that renders it -->
 <script src="/lib/edgedesk_props.js?v=20260929fr1"></script>
@@ -4045,7 +4050,7 @@ window.mcRefresh=function(){
      Research, the Props page, the Card and the AI desk read the same thing
      (lib/edgedesk_opportunity.js, docs/opportunity/DESIGN.md) -->
 <script src="/lib/edgedesk_opportunity.js?v=20260930pnl"></script>
-<script src="/lib/edgedesk_props_ui.js?v=20260930a"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20261016g1"></script>
 <script src="/lib/edgedesk_saved_research.js?v=20261011lm1"></script>
 <!-- PORTFOLIO: engine → importer → connector contract → page, in that order -->
 <script src="/lib/edgedesk_portfolio.js?v=20261005pf3"></script>
@@ -4059,7 +4064,7 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_nhl_market.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_nhl_compare.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_games.js?v=20261015sc1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261015sc1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261016g1"></script>
 <script>
 /* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
    football boards price on it whenever the paid capture is not current, and
@@ -11680,8 +11685,9 @@ function renderLedger(){renderQuickAdd();try{if(window.renderLedgerDesk)window.r
   if(!list.children.length)list.innerHTML='<div class="empty">Nothing open on this device.</div>';
   if(done!==list&&!done.children.length)done.innerHTML='<div class="empty">Nothing settled yet. Tracked prices settle themselves after the game; bets logged by hand settle with Win / Loss.</div>';
   var avg=beats.length?beats.reduce(function(a,b){return a+b;},0)/beats.length*100:null;var posPct=beats.length?beats.filter(function(x){return x>0;}).length/beats.length*100:null;var roi=settled&&stake?pnl/stake*100:null;
-  function kpi(nv,l){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+l+'</div></div>';}
-  $('clvKpis').innerHTML=kpi(rows.length,'bets')+kpi(avg!=null?(avg>=0?'+':'')+avg.toFixed(1)+'%':'\u2014','avg CLV')+kpi(posPct!=null?posPct.toFixed(0)+'%':'\u2014','+CLV rate')+kpi(roi!=null?(roi>=0?'+':'')+roi.toFixed(1)+'%':'\u2014','ROI settled');
+  /* "avg CLV" and "+CLV rate" open the guide's explainer on tap (data-ed-term) */
+  function kpi(nv,l,t){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l"'+(t?' data-ed-term="'+t+'"':'')+'>'+l+'</div></div>';}
+  $('clvKpis').innerHTML=kpi(rows.length,'bets')+kpi(avg!=null?(avg>=0?'+':'')+avg.toFixed(1)+'%':'\u2014','avg CLV','clv')+kpi(posPct!=null?posPct.toFixed(0)+'%':'\u2014','+CLV rate','clv')+kpi(roi!=null?(roi>=0?'+':'')+roi.toFixed(1)+'%':'\u2014','ROI settled');
 }
 
 /* ===== faultline ===== */
@@ -20699,7 +20705,7 @@ function moreItem(ic,title,note,call,id){
      Community & tools   Collective, EdgeDesk Games
      Transparency        Model performance, Methodology, Data sources
      System              Model & data health, Faults, News & moat alerts
-     Account             Settings & account, Set up EdgeDesk
+     Account             Settings & account, Set up EdgeDesk, Learn EdgeDesk
      Legal               Terms & disclaimer, the helpline
    A row is listed only if what it opens exists in this build. */
 function loadMore(){
@@ -20715,7 +20721,8 @@ function loadMore(){
     model:'<path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/>',
     news:'<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>',
     start:'<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
-    legal:'<path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/>'
+    legal:'<path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/>',
+    help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2v.1"/>'
   };
   var sec=[];
   function group(title,rows){rows=rows.filter(Boolean);if(rows.length)sec.push('<div class="morehd">'+title+'</div>'+rows.join(''));}
@@ -20738,7 +20745,9 @@ function loadMore(){
     $('v-news')?moreItem(IC.news,'News & moat alerts','College news that touches a structural rule or a tracked team. Relevant items also show on game research.','show(\'news\')','news'):'']);
   group('Account',[
     $('v-settings')?moreItem(IC.settings,'Settings & account','Profile, billing, display, odds format, filters and landing page.','__avGo(\'edge\')','settings'):'',
-    $('v-setup')?moreItem(IC.start,'Set up EdgeDesk','The five destinations, bringing in your betting history, and your first read.','show(\'setup\')','setup'):'']);
+    $('v-setup')?moreItem(IC.start,'Set up EdgeDesk','The five destinations, bringing in your betting history, and your first read.','show(\'setup\')','setup'):'',
+    /* the walkthroughs and the plain-language terms (lib/edgedesk_guide.js); the ? in the header is the same panel */
+    window.EDGuide?moreItem(IC.help,'Learn EdgeDesk','Short walkthroughs on the real screens, and what every number means.','EDGuide.openHelp()','learn'):'']);
   group('Legal',[
     $('v-terms')?moreItem(IC.legal,'Terms & disclaimer','Research and information only. Not betting advice. 21+.','show(\'terms\')','terms'):'']);
   host.innerHTML=sec.join('')+'<p class="more-rg">Gambling problem? Call <a href="tel:18004262537">1-800-GAMBLER</a>. Bet only what you can afford to lose.</p>';
@@ -24239,8 +24248,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   };
 
   /* ------------------------------------------------------------------ */
-  /* FIRST-RUN WELCOME — once per device, no backend. */
+  /* FIRST-RUN WELCOME — once per device, no backend.
+     The guide (lib/edgedesk_guide.js) now owns the first-visit introduction
+     in this same overlay: "Show me around" or "Explore on my own", remembered
+     on the device and the account. This one only runs if that file did not
+     load, so a first visit is never left without a welcome. */
   window.welOpen=function(force){
+    if(window.EDGuide&&window.EDGuide.openIntro){try{if(force)window.EDGuide.openIntro({});else window.EDGuide.autoIntro();}catch(_){}return;}
     var host=$id('welHost'); if(!host)return;
     if(!force){try{if(localStorage.getItem(WEL_KEY))return;}catch(_){return;}}
     host.innerHTML='<div class="wel-card">'
@@ -24531,7 +24545,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     window.__deskWrappedC=true;
   }
   setTimeout(function(){try{render(false);}catch(_){}},80);
-  setTimeout(function(){try{window.welOpen(false);}catch(_){}},900);
+  /* after the whole document has run, so the guide (loaded last) can take the
+     first visit; the old welcome is the fallback if it never arrived */
+  (function(){var go=function(){setTimeout(function(){try{if(!window.EDGuide)window.welOpen(false);}catch(_){}},900);};
+    if(document.readyState==='complete')go();else window.addEventListener('load',go);})();
 })();
 </script>
 
@@ -50499,7 +50516,7 @@ function fbGameCardNfl(u){
   var mdl=p.model;
   var cov=p.cover,ov=p.over;
   var lines='';
-  lines+='<div class="gd-line"><span class="l">Model fair</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-mdl.fair_spread)+' · total '+mdl.fair_total.toFixed(1)+' · home '+fbWinText(mdl.home_win_prob)+'</span></div>';
+  lines+='<div class="gd-line"><span class="l" data-ed-term="fair-line">Model fair</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-mdl.fair_spread)+' · total '+mdl.fair_total.toFixed(1)+' · home '+fbWinText(mdl.home_win_prob)+'</span></div>';
   if(mkt.spread_line!=null){
     lines+='<div class="gd-line"><span class="l">Market spread ('+fbEsc(mkt.spread_book||src)+')</span><span class="v">'+fbEsc(g.home_team)+' '+fbPts(-mkt.spread_line)
       +' · gap '+fbPts(p.market.spread_gap)+' '+fbEdgeTag(p.edge.spread)+'</span></div>';
@@ -51196,7 +51213,7 @@ function fbGameCardCfb(u){
       +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div></div>';
   var mdl=p.model,cov=p.cover,ov=p.over;
   var lines='';
-  lines+='<div class="gd-line"><span class="l">Model fair</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-mdl.fair_spread)
+  lines+='<div class="gd-line"><span class="l" data-ed-term="fair-line">Model fair</span><span class="v mdl">'+fbEsc(g.home_team)+' '+fbPts(-mdl.fair_spread)
     +(mdl.fair_total!=null?' · total '+mdl.fair_total.toFixed(1):'')+' · home '+fbWinText(mdl.home_win_prob)+'</span></div>';
   if(mkt.spread_line!=null){
     lines+='<div class="gd-line"><span class="l">Book ('+fbEsc(src||'')+')</span><span class="v">'+fbEsc(g.home_team)+' '+fbPts(-mkt.spread_line)
@@ -54595,7 +54612,7 @@ function fbGxSummary(u,p,gid){
   var h=fbEsc(g.home_team),a=fbEsc(g.away_team);
   var gap=mk&&mk.spread_gap!=null?Math.abs(mk.spread_gap):null;
   function cell(l,v,cls,sub){
-    return '<div class="gx-c"><div class="l">'+fbEsc(l)+'</div><div class="v '+(cls||'')+'">'+v+'</div>'
+    return '<div class="gx-c"><div class="l"'+fbTermAttr(l)+'>'+fbEsc(l)+'</div><div class="v '+(cls||'')+'">'+v+'</div>'
       +(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
   }
   var out='<div class="gx-grid">';
@@ -55768,7 +55785,7 @@ function fbGxResearchRead(u,p){
   if(!o||!o.model)return '';
   var h=u.g.home_team,mv=o.model_vs_market,mk=o.market,md=o.model;
   function cell(l,v,sub,title){
-    return '<div class="gx-c"'+(title?' title="'+fbEsc(title)+'"':'')+'><div class="l">'+fbEsc(l)+'</div><div class="v">'+v+'</div>'
+    return '<div class="gx-c"'+(title?' title="'+fbEsc(title)+'"':'')+'><div class="l"'+fbTermAttr(l)+'>'+fbEsc(l)+'</div><div class="v">'+v+'</div>'
       +(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
   }
   var nv=mk.moneyline.no_vig_home;
@@ -56247,8 +56264,19 @@ function fbQevSortAge(v){
 }
 
 /* ── THE PRICE EVALUATION CARD ──────────────────────────────────────────── */
+/* the labels the guide (lib/edgedesk_guide.js) explains in full on tap or
+   Enter: a data-ed-term marker on the label, nothing else changes. These
+   cells' "Confidence" is information confidence (the research view's
+   tier), so it reads with reliability; the decision's 0-100 confidence is
+   the decision layer's own tooltip (decision_confidence). */
+function fbTermAttr(l){
+  var s=String(l||''),t=/^(EdgeDesk fair|Model fair)/.test(s)?'fair-line':/^Research stat/.test(s)?'research-readiness'
+    :/^(Reliability|Data confidence|Confidence)$/.test(s)?'data-confidence'
+    :/^Break-even|no-vig/i.test(s)?'implied-probability':/\bEV\b|expected value/i.test(s)?'ev':/^Decision$/.test(s)?'decision-classes':null;
+  return t?' data-ed-term="'+t+'"':'';
+}
 function fbQevCell(l,v,sub,tip,cls){
-  return '<div class="gx-c"'+(tip?' title="'+fbEsc(tip)+'"':'')+'><div class="l">'+fbEsc(l)+'</div><div class="v '+(cls||'')+'">'+v+'</div>'+(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
+  return '<div class="gx-c"'+(tip?' title="'+fbEsc(tip)+'"':'')+'><div class="l"'+fbTermAttr(l)+'>'+fbEsc(l)+'</div><div class="v '+(cls||'')+'">'+v+'</div>'+(sub?'<div class="s">'+sub+'</div>':'')+'</div>';
 }
 function fbQevCardHTML(v){
   if(!v)return '<div class="gx-none">Price evaluation needs the quote-EV module (lib/edgedesk_quote_ev.js), which did not load.</div>';
@@ -64027,11 +64055,15 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20261005dr1"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20261016g1"></script>
 <!-- first run ("Here's what EdgeDesk found today") and the funnel's in-app steps,
      over the landing page's own view model (lib/edgedesk_home.js) -->
 <script src="/lib/edgedesk_home.js?v=20260930c"></script>
 <script src="/lib/edgedesk_first_run.js?v=20261004a"></script>
+<!-- the introduction, walkthroughs, Help panel and term explainers: the words,
+     then the engine that shows them -->
+<script src="/lib/edgedesk_guide_content.js?v=20261016g1"></script>
+<script src="/lib/edgedesk_guide.js?v=20261016g1"></script>
 <script>
 try{
   window.EDReport.configure({url:SB_URL,key:SB_KEY,

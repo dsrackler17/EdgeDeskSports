@@ -202,6 +202,9 @@ function makeDb(createdAt) {
            portfolio → first read), held by tools/app/navigation.e2e.js; this
            suite starts where setup hands over: Research, with the panel */
         localStorage.setItem('edgedesk_setup_v1', String(Date.now()));
+        /* …and after the first-visit introduction was answered, which
+           tools/guide/guide_ui.e2e.js holds */
+        localStorage.setItem('edgedesk_guide_v1', JSON.stringify({ v: 1, intro: 'dismissed' }));
       } catch (e) { /* private mode */ }
     }, { uid: UID, created });
     await ctx.route('**/*', async (route) => {
