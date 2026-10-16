@@ -93,6 +93,34 @@ jobs:
           # Presence only. No value is ever printed.
           if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set. Add it in Settings > Secrets and variables > Actions, or paste the three files into the SQL editor, in order."; exit 1; fi
 
+      # What the program already holds, before anything is applied: who it
+      # credits today and with what, so a change in behaviour is never a
+      # surprise to a creator already on it. Read-only; counts and codes only.
+      - name: Inventory of the program as production holds it now (read-only)
+        if: env.STAGE != 'test_only'
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # ON_ERROR_STOP=0: a table that does not exist yet is an answer, not a failure
+          psql "$PGURL" -X -q -v ON_ERROR_STOP=0 <<'SQL'
+          \pset footer off
+          select code, slug, status, commission_rate, attribution_mode, user_id is not null as has_login, created_at::date
+            from public.affiliate_accounts order by created_at;
+          select c.code, a.code as creator, c.active, c.commission_rate, c.commission_type, c.commission_duration_months,
+                 c.stripe_promotion_code_id is not null as live_promo, c.stripe_snapshot is not null as stripe_seen, c.created_at::date
+            from public.affiliate_campaigns c join public.affiliate_accounts a on a.id = c.affiliate_id order by c.created_at;
+          select a.code, at.source, count(*) as accounts from public.affiliate_attributions at
+            join public.affiliate_accounts a on a.id = at.affiliate_id group by 1, 2 order by 1, 2;
+          select kind, status, count(*) as rows, sum(amount_cents) as cents from public.affiliate_commissions group by 1, 2 order by 1, 2;
+          select kind, count(*) as rows from public.affiliate_conversions group by 1 order by 1;
+          select count(*) as clicks, count(distinct affiliate_id) as creators_clicked from public.affiliate_clicks;
+          select code, partner_name, retired_at is not null as retired from public.referral_codes order by code;
+          select type, count(*) as deliveries from public.stripe_events
+           where type in ('checkout.session.completed','customer.subscription.created','invoice.paid','invoice.payment_succeeded',
+                          'charge.refunded','charge.dispute.created','promotion_code.created','promotion_code.updated')
+           group by 1 order by 1;
+          SQL
+
       - name: Dry run against production (one transaction, rolled back)
         if: env.STAGE == 'dry_run'
         env:
