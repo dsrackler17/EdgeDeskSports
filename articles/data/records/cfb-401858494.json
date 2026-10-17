@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T15:41:25.441Z",
-  "generated_at": "2026-10-17T15:41:25.441Z",
+  "updated_at": "2026-10-17T15:50:45.845Z",
+  "generated_at": "2026-10-17T15:50:45.845Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1873,10 +1873,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-17T23:30:00.000Z",
-    "minutes_before_kickoff": 469,
+    "minutes_before_kickoff": 459,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-17T15:41:25.441Z"
+    "at": "2026-10-17T15:50:45.845Z"
   },
   "featured": {
     "editorial_priority": 50.4,
@@ -2188,17 +2188,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-17T15:41:25.441Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Dan",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-17T15:50:45.845Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-17T15:41:25.441Z",
+    "at": "2026-10-17T15:50:45.845Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2206,7 +2213,13 @@
         "detail": "QB_INPUT_CONFLICT"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Dan"
+      }
+    ],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
@@ -2312,7 +2325,7 @@
         "label": "Kickoff times of each team’s previous game",
         "url": null,
         "path": "record/football/cfb_2026.json",
-        "observed_at": "2026-10-17T14:50:30.428Z",
+        "observed_at": "2026-10-17T15:44:58.888Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2342,6 +2355,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:41:25.441Z"
+    "at": "2026-10-17T15:50:45.845Z"
   }
 }
