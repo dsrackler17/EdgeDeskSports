@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T14:00:47.661Z",
-  "generated_at": "2026-10-17T14:00:47.661Z",
+  "updated_at": "2026-10-17T14:10:45.111Z",
+  "generated_at": "2026-10-17T14:10:45.111Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1850,10 +1850,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-17T23:30:00.000Z",
-    "minutes_before_kickoff": 569,
+    "minutes_before_kickoff": 559,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-17T14:00:47.661Z"
+    "at": "2026-10-17T14:10:45.111Z"
   },
   "featured": {
     "editorial_priority": 50.4,
@@ -2165,17 +2165,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-17T14:00:47.661Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Dan",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-17T14:10:45.111Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-17T14:00:47.661Z",
+    "at": "2026-10-17T14:10:45.111Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2183,12 +2190,18 @@
         "detail": "QB_INPUT_CONFLICT"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Dan"
+      }
+    ],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "12h66f44jr9ya",
+    "packet_hash": "19lh3m3rinezt",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": true,
     "question": "Can Wisconsin take away UCLA’s big plays?",
@@ -2305,7 +2318,7 @@
         "label": "EdgeDesk input audit (model starter vs official availability report)",
         "url": null,
         "path": null,
-        "observed_at": "2026-10-17T13:07:49.720Z",
+        "observed_at": "2026-10-17T14:07:56.395Z",
         "verification": "CONFLICTING"
       }
     ],
@@ -2314,6 +2327,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T14:00:47.661Z"
+    "at": "2026-10-17T14:10:45.111Z"
   }
 }
