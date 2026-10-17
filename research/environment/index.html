@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-1PXVBV53FZ');</script>
+<title>Performance Intelligence Research | EdgeDesk</title>
+<meta name="description" content="EdgeDesk environment studies: travel and body clock, wind, rest, defensive fatigue, weather, officiating and altitude, tested against market lines.">
+<link rel="canonical" href="https://edgedesksports.com/research/environment/">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/research/environment/">
+<meta property="og:title" content="Performance Intelligence Research | EdgeDesk">
+<meta property="og:description" content="EdgeDesk environment studies: travel and body clock, wind, rest, defensive fatigue, weather, officiating and altitude, tested against market lines.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#100e0a;--panel:#191510;--raised:#221c15;--line:#332a1b;--line2:#3a3124;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+--obs:#2fa79a;--est:#d9a441;--exp:#d274b0;--val:#7cc142;--neg:#e2664b;--on-accent:#042320;--deep:#0d0b08;
+--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;--disp:'Space Grotesk','Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--ink);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;color-scheme:dark}
+a{color:inherit;text-decoration:none}.lnk{color:var(--obs);border-bottom:1px solid rgba(47,167,154,.45)}
+:focus-visible{outline:2px solid var(--obs);outline-offset:2px;border-radius:4px}
+h1,h2,h3{font-family:var(--disp);font-weight:600;letter-spacing:-.02em;text-wrap:balance}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+
+.top{border-bottom:1px solid var(--line);background:rgba(16,14,10,.92);position:sticky;top:env(safe-area-inset-top,0px);z-index:30;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.top-in{display:flex;align-items:center;gap:10px;height:60px}
+.top-act{margin-left:auto;display:flex;gap:8px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:700;font-size:18px}
+.logo .mk{width:10px;height:20px;background:linear-gradient(180deg,var(--obs),var(--exp));border-radius:2px;transform:skewX(-11deg)}
+.btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;border-radius:10px;padding:10px 16px;border:1px solid var(--obs);background:var(--obs);color:var(--on-accent);white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line2);font-weight:600}
+.ey{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.ey::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--obs)}
+.st{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;border:1px solid var(--line2);border-radius:6px;padding:3px 8px;white-space:nowrap;color:var(--dim);text-transform:uppercase}
+.st.experimental{color:var(--exp);border-color:rgba(210,116,176,.45)}.st.observed{color:var(--obs);border-color:rgba(47,167,154,.45)}
+.st.null{color:var(--est);border-color:rgba(217,164,65,.45)}.st.validated{color:var(--val);border-color:rgba(124,193,66,.45)}
+.intro{padding:56px 0 28px;border-bottom:1px solid var(--line)}
+.intro h1{font-size:clamp(30px,4.6vw,46px);line-height:1.08;margin:14px 0 14px;max-width:24ch}
+.lede{font-size:18px;color:var(--text);max-width:64ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:18px;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.q{margin-top:22px;max-width:64ch;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.q .l{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:4px}
+main section{padding:36px 0;border-bottom:1px solid var(--line)}
+main h2{font-size:24px;margin-bottom:12px}
+.col{max-width:68ch}.col p+p{margin-top:10px}
+.find{list-style:none;padding:0;display:grid;gap:10px;max-width:72ch}
+.find li{padding:12px 14px 12px 16px;border-left:2px solid var(--obs);background:var(--panel);border-radius:0 8px 8px 0}
+.tbl{overflow-x:auto;margin-top:16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:500;background:var(--raised)}
+tbody tr:last-child td,tbody tr:last-child th{border-bottom:0}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:13px}
+.cap{margin-top:10px;font-size:13.5px;color:var(--dim);max-width:72ch}
+figure{margin-top:16px;max-width:760px}figure svg{width:100%;height:auto;display:block}
+.verdict{margin-top:4px;max-width:72ch;padding:16px 18px;border:1px solid rgba(217,164,65,.35);border-radius:10px;background:var(--panel)}
+.verdict .l{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--est);display:block;margin-bottom:6px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:8px 18px;max-width:80ch;font-size:15px}
+dt{color:var(--dim);font-family:var(--mono);font-size:12px;padding-top:2px}dd{margin:0;min-width:0}
+.gaps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:16px}
+.gap{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel);min-width:0}
+.gap b{display:block;font-family:var(--disp);font-size:15px;margin-bottom:4px;color:var(--est)}
+.gap p{font-size:14px;color:var(--dim)}
+.src{list-style:none;padding:0;display:grid;gap:6px;font-size:14px}
+.dl{margin-top:14px;font-size:14px;color:var(--dim)}
+.related{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
+.related a{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel)}
+.related a:hover{border-color:var(--line2)}
+.related .m{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);display:block}
+.related .t{font-family:var(--disp);font-weight:600;margin-top:4px;display:block}
+.forest .grid{stroke:var(--line);stroke-width:1}.forest .zero{stroke:var(--dim);stroke-dasharray:3 3}
+.forest .tick,.forest .axl{fill:var(--dim);font-family:var(--mono);font-size:11px}
+.forest .lab{fill:var(--text);font-size:13px;font-family:Inter,system-ui,sans-serif}
+.forest .ci{stroke:var(--obs);stroke-width:2.5;stroke-linecap:round}.forest .pt{fill:var(--obs)}
+.forest .ci.b{stroke:var(--est)}.forest .pt.b{fill:var(--est)}
+footer{border-top:1px solid var(--line);background:var(--deep);padding:36px 0;font-size:13px;color:var(--faint)}
+footer .row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px;font-family:var(--mono);font-size:11px;line-height:1.6}
+footer a{color:var(--dim)}
+@media(max-width:560px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}dl{grid-template-columns:1fr}.intro{padding-top:36px}.top-act .ghost{display:none}}
+</style>
+<link rel="stylesheet" href="/lib/edgedesk_nav.css?v=20261008a">
+</head>
+<body>
+<header class="top"><div class="wrap top-in ed-pnav-host">
+  <a class="logo" href="/"><span class="mk" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="ed-pnav" aria-label="Main"><a href="/articles/" data-ed-nav="research" aria-current="true">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a></nav>
+  <div class="top-act"><a class="btn" href="/#pricing" data-cta="study_nav_trial">Start free trial</a></div>
+</div></header>
+<main id="main"><section class="intro"><div class="wrap"><span class="ey">Performance Intelligence</span>
+<h1>Environment research</h1><p class="lede">Seven studies of the conditions around a game, each tested against what the betting market already knew, plus one combined model that checks them together so overlapping effects are not counted twice. A factor reaches the EdgeDesk model only after it improves out-of-sample results against the closing number.</p></div></section>
+<section><div class="wrap"><div class="related" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><a href="/research/environment/travel-circadian/"><span class="m">Travel &amp; Circadian · <span class="st null" style="padding:1px 6px;font-size:9.5px">Priced by the market since 2012</span></span><span class="t">The early-kickoff body clock: the line caught up</span><span style="display:block;margin-top:6px;font-size:14px;color:var(--dim)">Does a West Coast team traveling east for a 1:00 p.m. ET kickoff perform differently from a team traveling the same distance west?</span></a><a href="/research/environment/wind-offensive-identity/"><span class="m">Wind &amp; Offensive Identity · <span class="st experimental" style="padding:1px 6px;font-size:9.5px">Candidate signal, unvalidated</span></span><span class="t">Wind hits pass-heavy offenses harder, and totals lag behind</span><span style="display:block;margin-top:6px;font-size:14px;color:var(--dim)">Does a 20 mph wind hurt a pass-heavy offense more than a run-heavy one, and does the betting market already account for it?</span></a><a href="/research/environment/rest-recovery/"><span class="m">Rest &amp; Recovery · <span class="st null" style="padding:1px 6px;font-size:9.5px">Priced by the market</span></span><span class="t">The bye edge is real, and the market caught up</span><span style="display:block;margin-top:6px;font-size:14px;color:var(--dim)">Is the advantage of extra rest real, or has the betting market already priced it in?</span></a><a href="/research/environment/defensive-fatigue/"><span class="m">Defensive Fatigue · <span class="st null" style="padding:1px 6px;font-size:9.5px">No effect after controls</span></span><span class="t">Do tired defenses break late?</span><span style="display:block;margin-top:6px;font-size:14px;color:var(--dim)">Does a defense that faces a heavy first-half workload become measurably more vulnerable in the second half and fourth quarter?</span></a><a href="/research/environment/weather-adaptation/"><span class="m">Weather Adaptation · <span class="st experimental" style="padding:1px 6px;font-size:9.5px">Two candidates, unvalidated</span></span><span class="t">Weather shock: do road teams struggle in conditions they never play in?</span><span style="display:block;margin-top:6px;font-size:14px;color:var(--dim)">Does an unusually cold, hot, humid or wet road game hurt a team more when it is far from the conditions it normally plays in?</span></a><a href="/research/environment/officiating-tendencies/"><span class="m">Officiating Tendencies · <span class="st null" style="padding:1px 6px;font-size:9.5px">Real for flags, not for scores</span></span><span class="t">Referee crews change the flag count, not the score</span><span style="display:block;margin-top:6px;font-size:14px;color:var(--dim)">Do NFL officiating crews introduce measurable variation beyond the teams themselves, and does it reach totals or spreads?</span></a><a href="/research/environment/altitude/"><span class="m">Altitude Intelligence · <span class="st null" style="padding:1px 6px;font-size:9.5px">Priced by the market</span></span><span class="t">Thin air, thin edge: altitude and FBS road teams</span><span style="display:block;margin-top:6px;font-size:14px;color:var(--dim)">Do visitors who climb 3,000+ feet to play fade late, cover less, or defend worse than other road teams?</span></a></div></div></section></main><footer><div class="wrap"><div class="row">
+<span>&copy; Rackler Tech Ventures LLC &middot; <a href="/terms.html">Terms</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/disclaimer.html">Disclaimer</a> &middot; <a href="/methodology/">Methodology</a></span>
+<span><b>Research, not picks.</b> 21+ only. If gambling stops being fun, call 1-800-GAMBLER or visit <a href="https://www.ncpgambling.org/" target="_blank" rel="noopener noreferrer">ncpgambling.org</a>.</span>
+</div></div></footer>
+<script src="/lib/edgedesk_track.js?v=20260930a"></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body></html>

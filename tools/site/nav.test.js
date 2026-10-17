@@ -93,6 +93,14 @@ fs.readdirSync(path.join(ROOT, 'articles')).forEach((d) => {
   const f = path.join('articles', d, 'index.html');
   if (/-20\d\d/.test(d) && fs.existsSync(path.join(ROOT, f))) PAGES.push([f, 'research', false]);
 });
+/* and every environment research study (hand-rendered by research/common/render_study.py) */
+if (fs.existsSync(path.join(ROOT, 'research', 'environment'))) {
+  PAGES.push(['research/environment/index.html', 'research', false]);
+  fs.readdirSync(path.join(ROOT, 'research', 'environment')).forEach((d) => {
+    const f = path.join('research', 'environment', d, 'index.html');
+    if (d !== 'data' && fs.existsSync(path.join(ROOT, f))) PAGES.push([f, 'research', false]);
+  });
+}
 chk('the built articles are covered', PAGES.length > 40, PAGES.length);
 
 PAGES.forEach(([rel, section, exact]) => {
