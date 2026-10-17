@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-17T00:45:40.000Z",
+ "generated_at": "2026-10-17T01:07:37.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1228,
-    "latest_snapshot_at": "2026-10-17T00:07:37.000Z",
+    "snapshots": 1229,
+    "latest_snapshot_at": "2026-10-17T01:07:37.000Z",
     "upcoming_games": 108,
     "avg_confidence_upcoming": 80.9
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1538,
-    "latest_snapshot_at": "2026-10-17T00:07:37.000Z",
+    "snapshots": 1539,
+    "latest_snapshot_at": "2026-10-17T01:07:37.000Z",
     "upcoming_games": 105,
     "avg_confidence_upcoming": 76.7
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1538,
-    "latest_snapshot_at": "2026-10-17T00:07:37.000Z",
+    "snapshots": 1539,
+    "latest_snapshot_at": "2026-10-17T01:07:37.000Z",
     "upcoming_games": 105,
     "avg_confidence_upcoming": 76.7
    }
@@ -844,8 +844,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-17T00:45:40.000Z",
-    "quotes_total": 17714,
+    "last_quote_at": "2026-10-17T01:07:37.000Z",
+    "quotes_total": 17717,
     "last_result_at": "2026-10-16T07:30:10.000Z"
    }
   },
@@ -879,9 +879,9 @@
    }
   ],
   "ledger": {
-   "predictions": 4814,
-   "live_predictions": 4304,
-   "quotes": 17714,
+   "predictions": 4817,
+   "live_predictions": 4307,
+   "quotes": 17717,
    "lines": 2807,
    "results": 406,
    "evaluations": 3891,
@@ -4567,10 +4567,10 @@
    "home": "UTEP",
    "away": "San José State",
    "market": {
-    "current": 6.5,
+    "current": 7,
     "open": 10,
     "books": 1,
-    "as_of": "2026-10-16T01:38:12.000Z",
+    "as_of": "2026-10-16T21:07:46.000Z",
     "sources": [
      "espn"
     ],
@@ -4579,30 +4579,30 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-16T01:38:12.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-17T01:07:37.000Z",
      "margin": -5.56,
      "fair": "San José State -5.5",
      "p_home": 0.3519,
      "sigma": 14.624,
-     "conf": 89,
+     "conf": 87,
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
      "side": "HOME",
-     "gap": 0.94,
-     "line": 6.5,
+     "gap": 1.44,
+     "line": 7,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-16T01:38:12.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-17T01:07:37.000Z",
      "margin": -6.61,
      "fair": "San José State -6.5",
      "p_home": 0.3377,
@@ -4612,8 +4612,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -0.11,
-     "line": -6.5,
+     "gap": 0.39,
+     "line": -7,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -4623,10 +4623,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-16T01:38:12.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-17T01:07:37.000Z",
      "margin": -6.69,
      "fair": "San José State -6.5",
      "p_home": 0.3349,
@@ -4636,8 +4636,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -0.19,
-     "line": -6.5,
+     "gap": 0.31,
+     "line": -7,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -14295,7 +14295,7 @@
   "data_fault": 0,
   "market_fault": 23,
   "verification_not_run": 0,
-  "average_raw_gap": 3.82,
+  "average_raw_gap": 3.823,
   "average_raw_gap_7plus": 10.295,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
