@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T19:30:00.000Z",
   "game_when_label": "2026-10-17 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T19:00:46.202Z",
-  "generated_at": "2026-10-17T19:00:46.202Z",
+  "updated_at": "2026-10-17T19:10:44.748Z",
+  "generated_at": "2026-10-17T19:10:44.748Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/alabama-vs-tennessee-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "manual_review",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1883,13 +1883,13 @@
   "snapshot_id": "snap_58a359e5aa1af718",
   "publication_snapshot_id": "snap_58a359e5aa1af718",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-17T19:30:00.000Z",
-    "minutes_before_kickoff": 29,
+    "minutes_before_kickoff": 19,
     "published_at": null,
-    "refreshed": true,
-    "at": "2026-10-17T19:00:46.202Z"
+    "refreshed": false,
+    "at": "2026-10-17T19:10:44.748Z"
   },
   "featured": {
     "editorial_priority": 44.7,
@@ -2197,24 +2197,18 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-17T19:00:46.202Z"
+    "at": "2026-10-17T19:10:44.748Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-17T19:00:46.202Z",
-    "blocking": [
-      {
-        "id": "evidence_inputs_suspect",
-        "why": "EdgeDesk’s own inputs for this game are suspect, so a person reviews the page before it goes out",
-        "detail": "CROSS_MODEL_OUTLIER"
-      }
-    ],
+    "at": "2026-10-17T19:10:44.748Z",
+    "blocking": [],
     "warnings": [],
-    "hold_reason": "evidence_inputs_suspect"
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1nfjumg9ytsmi",
+    "packet_hash": "ft28a5s971sf",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": true,
     "question": "Can Tennessee take away Alabama’s big plays?",
@@ -2316,99 +2310,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T19:00:46.202Z"
-  },
-  "freshness": {
-    "at": "2026-10-17T19:00:46.202Z",
-    "fields": {
-      "market.line": {
-        "value": "Tennessee +5.5",
-        "provider": "captured consensus (stale) · 1 book · best at FanDuel",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 56.5,
-        "provider": "captured consensus (stale) · 1 book · best at FanDuel",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at FanDuel",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-17T19:10:44.748Z"
   }
 }
