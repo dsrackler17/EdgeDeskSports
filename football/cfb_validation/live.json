@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-17T16:07:59.775Z",
+ "generated_at": "2026-10-17T17:07:57.947Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -181,15 +181,27 @@
     "lib/cfb_terminal.js",
     "lib/cfb_research_view.js"
    ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "RESEARCH",
+   "version": "edgedesk_cfb_r1.research+r8",
+   "effective_at": "2026-10-17T17:07:57.947Z",
+   "reason": "the research path changed (auto-detected by football/cfb_validation/build.js): lib/cfb_terminal.js",
+   "changed_files": [
+    "lib/cfb_terminal.js"
+   ]
   }
  ],
- "pending_patches": [],
+ "pending_patches": [
+  "edgedesk_cfb_r1.research+r8: the research path changed (auto-detected by football/cfb_validation/build.js): lib/cfb_terminal.js"
+ ],
  "north_star": {
   "current_model_version": "edgedesk_cfb_p4_v1.0.0",
   "release": "edgedesk_cfb_r1",
   "frozen_at": "2026-09-28T00:00:00.000Z",
   "live_games": 127,
-  "live_snapshots_tracked": 1351,
+  "live_snapshots_tracked": 1358,
   "model_mae": 12.526,
   "market_moved_toward_edgedesk_pct": 53.6,
   "average_clv": -0.008,
@@ -1385,13 +1397,13 @@
  ],
  "what_changed_this_week": {
   "available": true,
-  "since": "2026-10-11T16:07:40.169Z",
+  "since": "2026-10-11T17:07:43.396Z",
   "changes": [
    {
     "what": "research-gate code",
     "kind": "SOFTWARE",
     "from": "ff06bc85056495a2",
-    "to": "51d3ac1f05843e02"
+    "to": "441f5b975bc604c4"
    },
    {
     "what": "current FBS power rating rebuilt",
@@ -1403,22 +1415,28 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-10-11T15:59:20.307Z",
-    "to": "2026-10-17T14:49:17.077Z"
+    "to": "2026-10-17T16:32:07.224Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
     "from": 83,
-    "to": 86
+    "to": 88
+   },
+   {
+    "what": "market coverage (% of slate games with 2+ fresh books)",
+    "kind": "MARKET",
+    "from": 17,
+    "to": 0
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 45,
-    "to": 60
+    "from": 91,
+    "to": 59
    }
   ],
-  "summary": "SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "lab_alerts": [
   {
