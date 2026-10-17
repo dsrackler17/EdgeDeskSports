@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-10-17 — CFB Altitude & Travel: every game's climb, measured and explained; the adjustment tested and kept in shadow (0.0 pts)
+
+**From the next slate build, every FBS game carries an Altitude & Travel research section, and nothing it says moves a number.** Notre Dame at BYU reads: LaVell Edwards Stadium 4,633 ft, Notre Dame normally 731 ft, +3,902 ft, about 1,325 miles and two zones west. Statistical support: Not established. Validated model adjustment: Research only. Impact on EdgeDesk's number: 0.0 pts pending validation (`docs/cfb-altitude/README.md`).
+
+- **The answer to "does accounting for altitude improve EdgeDesk's number?" is no, on this evidence.**
+  - Conditional on V1's own pregame margin, visitors climbing 3,000+ ft did +1.03 pts worse than other visitors (SE 0.62, 13,511 games, 2006–2025). The interval includes zero.
+  - Chosen on 2014–2021 and scored on 2022–2025, the adjustment made the 139 games it touched slightly worse (MAE 12.905 → 12.924, p = 0.55). The permutation placebo p is 0.66.
+  - V1 already over-credits home field by 1.26 pts on average and is about right at mountain venues, so an additive altitude term would double count.
+  - The record: `docs/cfb-altitude/BACKTEST.md` and `football/validation/altitude_cfb.json`, against gates declared before the first fit (`football/altitude/research/gates.js`).
+- **The research package was re-verified, not copied.**
+  - −1.19 (SE 0.77) for 3,000+ ft and +0.64 (SE 0.65) for 6× confirmed.
+  - Its `<1,000 ft` bucket mixed descents with level trips, and 59% of its 6× games gained under 1,000 ft. Its time zones ignored daylight saving, and its openers were dropped.
+- **A venue elevation registry** (`football/altitude/venues.json`): 326 venues by stable venue id, each with sources and HIGH/MEDIUM/LOW confidence.
+  - The provider attaches a team's *current* stadium geography to legacy venue ids (Hughes Stadium carried Canvas Stadium's elevation, Sam Boyd carried Allegiant's). The schedule now decides which id is current, and legacy ids never inherit a successor's elevation.
+  - A missing elevation is shown as unavailable, never imputed.
+- **One definition** (`football/altitude/engine.js`) serves the research harness, the slate build, the page and the desk. It covers:
+  - the venue the schedule names, and each team's normal venue that season;
+  - signed and positive gain, buckets that keep a descent apart from no gain, and the ratio (descriptive only);
+  - miles, DST-correct time zones (Indiana before 2006 included), rest, and two acclimatization proxies.
+- **Shadow behind three locks.** V1's new `altitude exposure` term is 0 unless:
+  - `football/altitude/params.js` is VALIDATED, with points_applied, AND
+  - the guarded flag `cfb_altitude_adjustment_enabled` is on. It is read fail-closed, and the engine re-checks the locks.
+  - The same offline slate build with and without this change gave identical numbers on all 108 games.
+- **Surfaces:**
+  - the research page section (tested in Chromium at 390 and 1280 px);
+  - Ask EdgeDesk's travel and altitude facts. These are sourced, and the shadow number never reaches the desk;
+  - the explanation boundary, which names altitude only when the facts carry it;
+  - `lib/edgedesk_canon.js`, where the module is SHADOW with pricing impact NO.
+- **Database** (`supabase/cfb_altitude.sql`, applied after `cfb_production.sql`): an append-only pregame shadow ledger whose check constraints are the locks, the registry, validation runs, a monitor view, and the switch, declared OFF. Removal: `supabase/altitude_shadow_rollback.sql` (`docs/cfb-altitude/ROLLBACK.md`).
+- **Monitoring** (`football/altitude/monitor.js` → `monitoring.json`, in `football-enrichment.yml`): CRITICAL if any point moves without validation, coverage, and the 2026 prospective shadow record.
+- **Tests:**
+  - `football/altitude/altitude.test.js` (131 checks), `desk.test.js` (19), `sql.test.js` (52, real Postgres), `ui.e2e.js` (40, Chromium);
+  - all registered in `cfb:test` and `.github/workflows/cfb-altitude-tests.yml`.
+
 ## 2026-10-17 — Football lines: half-point fair spreads and totals, whole-number projected scores, gaps from the unrounded projection
 
 **EdgeDesk's NFL and college football numbers now print the way a sportsbook prints them.** For example, Texas Tech −20.7 prints as −20.5, a 52.4 total as 52.5, a 49.9 total as 50.0, and a zero spread as PK. Indiana −2.5 and Bowling Green −12.0 stay as they are. The model's own numbers are untouched: every gap, EV, cover probability, grade, calibration figure and record still reads the raw values (`docs/system-integrity/FOOTBALL_LINES.md`).

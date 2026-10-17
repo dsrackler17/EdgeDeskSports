@@ -1,0 +1,69 @@
+# EdgeDesk CFB Altitude & Travel — run its suites on the pull request.
+#
+# The module computes a SHADOW adjustment on every CFB game and publishes the
+# Altitude & Travel research section. A change that lets it move a published
+# number without its gates, breaks the venue registry, the desk's grounding,
+# the Postgres contract or the page has to fail on the PR that makes it.
+#
+# Offline: every suite reads committed files; the SQL suite builds a throwaway
+# Postgres cluster; the browser suite stubs every third-party host.
+name: CFB altitude tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/altitude/**'
+      - 'football/cfb_p4/engine.js'
+      - 'football/cfb_p4/params.js'
+      - 'football/fbs/build_coverage.js'
+      - 'lib/edgedesk_game_snapshot.js'
+      - 'lib/edgedesk_game_view.js'
+      - 'lib/edgedesk_game_view.css'
+      - 'supabase/cfb_altitude.sql'
+      - 'supabase/altitude_shadow_rollback.sql'
+      - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
+      - 'supabase/functions/edgedesk_ai/_lib.ts'
+      - 'football/validation/altitude_cfb.json'
+      - '.github/workflows/cfb-altitude-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/altitude/**'
+      - 'supabase/cfb_altitude.sql'
+      - '.github/workflows/cfb-altitude-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-altitude-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The module, the registry, the record and the locks (Notre Dame at BYU fixture)
+        run: node football/altitude/altitude.test.js
+      - name: Ask EdgeDesk and the explanation boundary
+        run: node football/altitude/desk.test.js
+      - name: The venue registry is well-formed
+        run: node football/altitude/build_venues.js --check
+      - name: V1 still prices exactly as before (the altitude term is a shadow)
+        run: node football/cfb_p4/tests.js
+      - name: The Postgres contract (shadow ledger, three locks, guarded switch, rollback)
+        env:
+          CFB_ALTITUDE_SQL_REQUIRED: '1'
+        run: node football/altitude/sql.test.js
+      - name: Playwright with Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The research page section in a real browser (390 px and 1280 px)
+        run: node football/altitude/ui.e2e.js

@@ -1,0 +1,63 @@
+{
+ "schema": "edgedesk_cfb_altitude_monitoring_v1",
+ "generated_at": "2026-10-17T17:51:34.816Z",
+ "policy": "warnings inform a person; nothing here retrains, re-tunes, enables or disables anything",
+ "ok": true,
+ "params": {
+  "model_version": "cfb_altitude_v1.0.0",
+  "status": "REJECTED",
+  "points_applied": false,
+  "shadow_candidate": "cat_3000",
+  "flag": "cfb_altitude_adjustment_enabled"
+ },
+ "slate": {
+  "generated_at": "2026-10-17T16:32:07.224Z",
+  "games": 108,
+  "with_section": 0,
+  "usable": 0,
+  "exposure": {},
+  "applied_games": 0,
+  "unavailable": []
+ },
+ "registry": {
+  "generated_at": "2026-10-17T17:15:04.059Z",
+  "venues": 326,
+  "by_confidence": {
+   "HIGH": 298,
+   "MEDIUM": 20,
+   "LOW": 8
+  }
+ },
+ "prospective": {
+  "available": true,
+  "season": 2026,
+  "fit_window": "2006-2025, 13511 non-neutral FBS home games",
+  "what": "the frozen shadow candidate applied to V1’s own published pregame margin (record/football/cfb_2026.json), graded on finals; 2026 was never seen by the fit",
+  "graded_games": 288,
+  "usable": 280,
+  "affected": {
+   "n": 12,
+   "mae_v1": 13.541,
+   "mae_shadow": 13.643,
+   "improvement": -0.102,
+   "v1_bias": -1.366
+  },
+  "high_exposure": {
+   "n": 12,
+   "v1_residual": -1.366,
+   "close_residual": 0.833,
+   "visitor_covers": "5 of 12"
+  },
+  "reading": "fewer than 30 affected games: too few to read anything into, by design"
+ },
+ "alerts": [
+  {
+   "kind": "SECTION_NOT_PUBLISHED",
+   "level": "WARN",
+   "message": "football/fbs/slate.json carries no altitude_travel section (the slate was built before the module, or the module failed to load)",
+   "evidence": {
+    "slate_generated_at": "2026-10-17T16:32:07.224Z"
+   }
+  }
+ ]
+}
