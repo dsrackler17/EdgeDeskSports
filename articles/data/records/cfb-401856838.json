@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T04:00:00.000Z",
   "game_when_label": "2026-10-24 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-16T20:59:01.365Z",
-  "generated_at": "2026-10-16T20:59:01.365Z",
+  "updated_at": "2026-10-17T10:33:23.542Z",
+  "generated_at": "2026-10-17T10:33:23.542Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -243,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T02:15:00.000Z",
-        "retrieved_at": "2026-10-16T20:34:28.963Z"
+        "retrieved_at": "2026-10-16T23:49:12.322Z"
       },
       "home": {
         "team": "Arizona",
@@ -333,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T16:00:00.000Z",
-        "retrieved_at": "2026-10-16T20:34:28.963Z"
+        "retrieved_at": "2026-10-16T23:49:12.322Z"
       },
-      "generated_at": "2026-10-16T20:35:14.549Z",
+      "generated_at": "2026-10-16T23:49:59.210Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -411,14 +411,14 @@
               "h": {
                 "v": "54.2",
                 "n": 54.2,
-                "rank": "#43 of 138",
-                "rank_n": 43,
+                "rank": "#44 of 138",
+                "rank_n": 44,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 11.2,
-                "rank_gap": 60
+                "rank_gap": 59
               }
             },
             {
@@ -1007,16 +1007,6 @@
           "text": "Arizona 61.1 (#19 of 138) vs Iowa State 57.1 (#80 of 138) — 61 places on the national board."
         },
         {
-          "k": "Talent",
-          "rank_gap": 60,
-          "gap": 11.2,
-          "lead": "Arizona",
-          "trail": "Iowa State",
-          "lead_cell": "54.2 · #43 of 138",
-          "trail_cell": "43.0 · #103 of 138",
-          "text": "Arizona 54.2 (#43 of 138) vs Iowa State 43.0 (#103 of 138) — 60 places on the national board."
-        },
-        {
           "k": "Run defense",
           "rank_gap": 60,
           "gap": 18.3,
@@ -1025,6 +1015,16 @@
           "lead_cell": "63.6 · #26 of 138",
           "trail_cell": "45.3 · #86 of 138",
           "text": "Arizona 63.6 (#26 of 138) vs Iowa State 45.3 (#86 of 138) — 60 places on the national board."
+        },
+        {
+          "k": "Talent",
+          "rank_gap": 59,
+          "gap": 11.2,
+          "lead": "Arizona",
+          "trail": "Iowa State",
+          "lead_cell": "54.2 · #44 of 138",
+          "trail_cell": "43.0 · #103 of 138",
+          "text": "Arizona 54.2 (#44 of 138) vs Iowa State 43.0 (#103 of 138) — 59 places on the national board."
         }
       ],
       "measured": [],
@@ -1590,11 +1590,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Arizona or Iowa State’s starting QB can play",
-        "score": 89,
+        "text": "88 · STRONG",
+        "sub": "main deduction: Iowa State’s availability report is not due yet",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1632,29 +1632,27 @@
           {
             "key": "environment",
             "label": "Environment",
-            "score": 10,
+            "score": 8.5,
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Arizona or Iowa State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "Iowa State’s availability report is not due yet; the impact of Iowa State’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
+            "action": "Re-read availability inside the filing window (Iowa State)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Arizona)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
             "action": "Capture a market quote",
-            "potential_gain": 2,
-            "text": "up to +2 once re-read availability inside the filing window (Arizona) and Re-read availability inside the filing window (Iowa State) is done"
-          },
-          {
-            "action": "Confirm Iowa State’s starting QB (Jaylen Raynor)",
             "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Arizona) and Re-read availability inside the filing window (Iowa State) is done"
-          },
-          {
-            "action": "Confirm Arizona’s starting QB (Noah Fifita)",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Arizona) and Re-read availability inside the filing window (Iowa State) is done"
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1764,7 +1762,7 @@
         {
           "k": "Talent",
           "a": "43.0  #103",
-          "h": "54.2  #43",
+          "h": "54.2  #44",
           "note": null
         },
         {
@@ -1902,6 +1900,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-16T20:59:01.365Z"
+    "at": "2026-10-17T10:33:23.542Z"
   }
 }
