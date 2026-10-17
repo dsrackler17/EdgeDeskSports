@@ -9,8 +9,8 @@
   "aliases": [],
   "title": "San Francisco 49ers vs. Atlanta Falcons: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "San Francisco 49ers vs. Atlanta Falcons 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for San Francisco 49ers at Atlanta Falcons: Atlanta Falcons -0.8, fair total 48.6. Atlanta Falcons wins 53% of simulations. Model status STALE MARKET. Research, not picks.",
-  "excerpt": "San Francisco 49ers carries the stronger EdgeDesk offensive profile (#2 in EPA per play), while Atlanta Falcons owns the more favourable defensive matchup (#17 in EPA allowed per play). EdgeDesk’s independent projection makes it Atlanta Falcons -0.8 with a…",
+  "seo_description": "EdgeDesk fair spread for San Francisco 49ers at Atlanta Falcons: Atlanta Falcons −1.0, fair total 48.5. Atlanta Falcons wins 53% of simulations. Model status STALE MARKET. Research, not picks.",
+  "excerpt": "San Francisco 49ers carries the stronger EdgeDesk offensive profile (#2 in EPA per play), while Atlanta Falcons owns the more favourable defensive matchup (#17 in EPA allowed per play). EdgeDesk’s independent projection makes it Atlanta Falcons −1.0 with a…",
   "home_team": "Atlanta Falcons",
   "away_team": "San Francisco 49ers",
   "venue": "Mercedes-Benz Stadium",
@@ -21,15 +21,15 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-16T20:59:01.365Z",
-  "generated_at": "2026-10-17T10:33:23.542Z",
+  "updated_at": "2026-10-17T15:27:16.692Z",
+  "generated_at": "2026-10-17T15:27:16.692Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 5.3-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
-  "fair_spread_text": "Atlanta Falcons -0.8",
-  "fair_total": "48.6",
+  "fair_spread_text": "Atlanta Falcons −1.0",
+  "fair_total": "48.5",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/san-francisco-49ers-vs-atlanta-falcons-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
@@ -62,18 +62,22 @@
     },
     "lede": [
       "San Francisco 49ers carries the stronger EdgeDesk offensive profile (#2 in EPA per play), while Atlanta Falcons owns the more favourable defensive matchup (#17 in EPA allowed per play).",
-      "EdgeDesk’s independent projection makes it Atlanta Falcons -0.8 with a fair total of 48.6 — approximately a one-score game, before any sportsbook number is consulted.",
+      "EdgeDesk’s independent projection makes it Atlanta Falcons −1.0 with a fair total of 48.5 — approximately a one-score game, before any sportsbook number is consulted.",
       "The widest measured matchup on the board is San Francisco 49ers pass offence vs Atlanta Falcons pass defence, which sits +0.225 from the league mean once the two ratings are combined the way the model combines them.",
       "The largest uncertainty is availability: NFL injury report — not loaded in this session."
     ],
     "projection": {
       "priced": true,
       "fair_spread": 0.787988220932921,
-      "fair_spread_text": "Atlanta Falcons -0.8",
+      "fair_spread_text": "Atlanta Falcons −1.0",
+      "fair_spread_raw_text": "Atlanta Falcons -0.8",
       "favourite": "Atlanta Falcons",
       "underdog": "San Francisco 49ers",
-      "margin": "0.8",
-      "total": "48.6",
+      "margin": "1.0",
+      "margin_raw": "0.8",
+      "total": "48.5",
+      "total_raw": "48.6",
+      "display_policy": "football_half_point_v1",
       "score": {
         "away": {
           "team": "San Francisco 49ers",
@@ -82,6 +86,12 @@
         "home": {
           "team": "Atlanta Falcons",
           "points": "25"
+        },
+        "expected": {
+          "text": "Atlanta Falcons 24.68, San Francisco 49ers 23.89",
+          "home": 24.68,
+          "away": 23.89,
+          "note": "Projected scores are rounded to whole points on their own; the fair spread and total are rounded from the unrounded projection, so they can differ by a point."
         },
         "note": "Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
       },
@@ -1170,11 +1180,20 @@
     },
     "market": {
       "available": true,
-      "model": "Atlanta Falcons -0.8",
+      "model": "Atlanta Falcons −1.0",
+      "model_raw": "Atlanta Falcons -0.8",
       "market": "Atlanta Falcons +4.5",
       "difference": "5.3 points",
-      "total_model": "48.6",
+      "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "key_number": {
+        "text": "Model favors Atlanta Falcons outright; market gives Atlanta Falcons more than a field goal.",
+        "detail": "Atlanta Falcons: model fair −1.0, market +4.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
+      "total_model": "48.5",
+      "total_model_raw": "48.6",
       "total_market": "49.5",
+      "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "total_difference": "0.9 points",
       "book": "nflverse reference",
       "capture_age": null,
@@ -1198,6 +1217,12 @@
       "home": {
         "team": "Atlanta Falcons",
         "points": "25"
+      },
+      "expected": {
+        "text": "Atlanta Falcons 24.68, San Francisco 49ers 23.89",
+        "home": 24.68,
+        "away": 23.89,
+        "note": "Projected scores are rounded to whole points on their own; the fair spread and total are rounded from the unrounded projection, so they can differ by a point."
       },
       "note": "Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
     },
@@ -1312,7 +1337,7 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Atlanta Falcons -0.8 with a fair total of 48.6, before any book is consulted.",
+      "EdgeDesk’s line is Atlanta Falcons −1.0 with a fair total of 48.5, before any book is consulted.",
       "Atlanta Falcons wins 53% of the time in EdgeDesk’s distribution, San Francisco 49ers 47%."
     ],
     "missing": [],
@@ -1323,6 +1348,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T10:33:23.542Z"
+    "at": "2026-10-17T15:27:16.692Z"
   }
 }

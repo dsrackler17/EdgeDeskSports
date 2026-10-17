@@ -23,8 +23,8 @@
   "game_time": "2026-10-25T20:05:00.000Z",
   "game_when_label": "2026-10-25 20:05 UTC",
   "published_at": null,
-  "updated_at": "2026-10-16T20:59:01.365Z",
-  "generated_at": "2026-10-17T10:33:23.542Z",
+  "updated_at": "2026-10-17T15:27:16.692Z",
+  "generated_at": "2026-10-17T15:27:16.692Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.0-point gap is context only and the game is excluded from research ranking.",
@@ -72,10 +72,14 @@
       "priced": true,
       "fair_spread": -2.47703972756974,
       "fair_spread_text": "Arizona Cardinals +2.5",
+      "fair_spread_raw_text": "Arizona Cardinals +2.5",
       "favourite": "Denver Broncos",
       "underdog": "Arizona Cardinals",
       "margin": "2.5",
+      "margin_raw": "2.5",
       "total": "45.0",
+      "total_raw": "45.0",
+      "display_policy": "football_half_point_v1",
       "score": {
         "away": {
           "team": "Denver Broncos",
@@ -84,6 +88,12 @@
         "home": {
           "team": "Arizona Cardinals",
           "points": "21"
+        },
+        "expected": {
+          "text": "Denver Broncos 23.76, Arizona Cardinals 21.28",
+          "home": 21.28,
+          "away": 23.76,
+          "note": "Projected scores are rounded to whole points on their own; the fair spread and total are rounded from the unrounded projection, so they can differ by a point."
         },
         "note": "Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
       },
@@ -1143,10 +1153,19 @@
     "market": {
       "available": true,
       "model": "Arizona Cardinals +2.5",
+      "model_raw": "Arizona Cardinals +2.5",
       "market": "Arizona Cardinals +5.5",
       "difference": "3.0 points",
+      "rounding_note": null,
+      "key_number": {
+        "text": "Market is above 3; model is below 3.",
+        "detail": "Denver Broncos: market −5.5, model fair −2.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
       "total_model": "45.0",
+      "total_model_raw": "45.0",
       "total_market": "45.5",
+      "total_rounding_note": null,
       "total_difference": "0.5 points",
       "book": "nflverse reference",
       "capture_age": null,
@@ -1170,6 +1189,12 @@
       "home": {
         "team": "Arizona Cardinals",
         "points": "21"
+      },
+      "expected": {
+        "text": "Denver Broncos 23.76, Arizona Cardinals 21.28",
+        "home": 21.28,
+        "away": 23.76,
+        "note": "Projected scores are rounded to whole points on their own; the fair spread and total are rounded from the unrounded projection, so they can differ by a point."
       },
       "note": "Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
     },
@@ -1295,6 +1320,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T10:33:23.542Z"
+    "at": "2026-10-17T15:27:16.692Z"
   }
 }
