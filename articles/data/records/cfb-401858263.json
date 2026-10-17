@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:00:00.000Z",
   "game_when_label": "2026-10-17 23:00 UTC",
   "published_at": "2026-10-17T11:00:50.533Z",
-  "updated_at": "2026-10-17T16:20:42.837Z",
-  "generated_at": "2026-10-17T16:20:42.837Z",
+  "updated_at": "2026-10-17T16:40:45.714Z",
+  "generated_at": "2026-10-17T16:40:45.714Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -258,7 +258,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-09T23:00:00.000Z",
-        "retrieved_at": "2026-10-17T14:48:08.902Z"
+        "retrieved_at": "2026-10-17T16:31:15.662Z"
       },
       "home": {
         "team": "Miami",
@@ -336,9 +336,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T23:30:00.000Z",
-        "retrieved_at": "2026-10-17T14:48:08.902Z"
+        "retrieved_at": "2026-10-17T16:31:15.662Z"
       },
-      "generated_at": "2026-10-17T14:48:47.377Z",
+      "generated_at": "2026-10-17T16:31:14.155Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1424,7 +1424,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 184h old",
+          "text": "odds is 185h old",
           "widening": null
         },
         {
@@ -1511,7 +1511,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-10-10T00:04:01.399+00:00",
-      "capture_age": "184 hours old",
+      "capture_age": "185 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1864,15 +1864,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_7f5a9c21e58ee003",
+  "snapshot_id": "snap_a3491d7a674ef901",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-17T23:00:00.000Z",
-    "minutes_before_kickoff": 399,
+    "minutes_before_kickoff": 379,
     "published_at": "2026-10-17T11:00:50.533Z",
     "refreshed": false,
-    "at": "2026-10-17T16:20:42.837Z"
+    "at": "2026-10-17T16:40:45.714Z"
   },
   "featured": {
     "editorial_priority": 63.7,
@@ -2164,24 +2164,37 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-17T16:20:42.837Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Ashton Daniels has completed 91 of 154 passes (59.1%) for 1,318 yards, 8.6 yards per attem",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-17T16:40:45.714Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-17T16:20:42.837Z",
+    "at": "2026-10-17T16:40:45.714Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Ashton Daniels has completed 91 of 154 passes (59.1%) for 1,318 yards, 8.6 yards per attem"
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "gg97on1vmt2v9",
+    "packet_hash": "1qlrxecbiykvq",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Florida State’s pass rush get to Darian Mensah?",
@@ -2223,7 +2236,6 @@
       ]
     },
     "unknown": [
-      "Weather: 76 degrees, overcast.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Florida State.",
       "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
     ],
@@ -2249,14 +2261,14 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T15:38:28.783Z",
+        "observed_at": "2026-10-17T16:31:36.521Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
+        "observed_at": "2026-10-17T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2272,6 +2284,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T16:20:42.837Z"
+    "at": "2026-10-17T16:40:45.714Z"
   }
 }
