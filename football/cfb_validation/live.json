@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-17T17:32:13.906Z",
+ "generated_at": "2026-10-17T18:08:46.750Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -191,6 +191,28 @@
    "changed_files": [
     "lib/cfb_terminal.js"
    ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "PRICING",
+   "version": "edgedesk_cfb_r1+p7",
+   "effective_at": "2026-10-17T18:04:06.104Z",
+   "reason": "the pricing path changed for the CFB Altitude & Travel module (docs/cfb-altitude): football/cfb_p4/engine.js gains an altitude exposure term that is M.missing (0 points, shadow number in its reason) unless football/altitude/params.js is VALIDATED with points_applied AND the request adjustment is APPLIED (flag cfb_altitude_adjustment_enabled, read fail-closed); football/fbs/build_coverage.js computes the altitude context and publishes altitude_travel. The same offline slate build with and without the change gave identical margin, line, total, win probability and status on all 108 games of the 2026-10-17 slate. No projection, fair line, win probability or threshold value changes",
+   "changed_files": [
+    "football/cfb_p4/engine.js",
+    "football/fbs/build_coverage.js"
+   ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "RESEARCH",
+   "version": "edgedesk_cfb_r1.research+r9",
+   "effective_at": "2026-10-17T18:04:06.104Z",
+   "reason": "the research path changed for the CFB Altitude & Travel module: lib/edgedesk_canon.js registers altitude_travel (SHADOW, pricing impact NO) and lists altitude exposure among the unpriced terms; lib/cfb_terminal.js carries the slate altitude_travel section to the explanation boundary. No projection, fair line, win probability or threshold value changes",
+   "changed_files": [
+    "lib/edgedesk_canon.js",
+    "lib/cfb_terminal.js"
+   ]
   }
  ],
  "pending_patches": [],
@@ -199,7 +221,7 @@
   "release": "edgedesk_cfb_r1",
   "frozen_at": "2026-09-28T00:00:00.000Z",
   "live_games": 127,
-  "live_snapshots_tracked": 1375,
+  "live_snapshots_tracked": 1377,
   "model_mae": 12.526,
   "market_moved_toward_edgedesk_pct": 53.6,
   "average_clv": -0.008,
@@ -1395,13 +1417,25 @@
  ],
  "what_changed_this_week": {
   "available": true,
-  "since": "2026-10-11T17:07:43.396Z",
+  "since": "2026-10-11T18:07:44.747Z",
   "changes": [
+   {
+    "what": "pricing code",
+    "kind": "SOFTWARE",
+    "from": "f6fc9d15df4dc2b3",
+    "to": "28d9eb899305150f"
+   },
    {
     "what": "research-gate code",
     "kind": "SOFTWARE",
     "from": "ff06bc85056495a2",
-    "to": "441f5b975bc604c4"
+    "to": "5307d02c6836eef8"
+   },
+   {
+    "what": "research modules / maturity",
+    "kind": "SOFTWARE",
+    "from": "cfb_v1:PRODUCTION,cfb_v2:SHADOW,etsr:SHADOW,player_quality:RESEARCH_ONLY,personnel:RESEARCH_ONLY,qb_absence:PRODUCTION,v1_matchup:PRODUCTION,matchup_intel:RESEARCH_ONLY,integrity_gate:PRODUCTION,margin_calibrator:SHADOW,decision_engine:SHADOW,market_timing:UNVALIDATED,clv_prediction:SHADOW,reliability:UNVALIDATED,nfl_model:EXPERIMENTAL,ufc_research:RESEARCH_ONLY",
+    "to": "cfb_v1:PRODUCTION,cfb_v2:SHADOW,etsr:SHADOW,player_quality:RESEARCH_ONLY,personnel:RESEARCH_ONLY,qb_absence:PRODUCTION,v1_matchup:PRODUCTION,matchup_intel:RESEARCH_ONLY,integrity_gate:PRODUCTION,altitude_travel:SHADOW,margin_calibrator:SHADOW,decision_engine:SHADOW,market_timing:UNVALIDATED,clv_prediction:SHADOW,reliability:UNVALIDATED,nfl_model:EXPERIMENTAL,ufc_research:RESEARCH_ONLY"
    },
    {
     "what": "current FBS power rating rebuilt",
@@ -1424,17 +1458,17 @@
    {
     "what": "market coverage (% of slate games with 2+ fresh books)",
     "kind": "MARKET",
-    "from": 17,
+    "from": 22,
     "to": 0
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 91,
-    "to": 58
+    "from": 69,
+    "to": 43
    }
   ],
-  "summary": "SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · SOFTWARE: research modules / maturity · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "lab_alerts": [
   {
