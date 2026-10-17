@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-17T13:48:23.942Z",
+ "generated_at": "2026-10-17T14:49:17.077Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-17T13:48:23.942Z",
-  "reliability_generated_at": "2026-10-17T13:48:23.942Z",
-  "enrichment_generated_at": "2026-10-17T13:48:16.964Z",
+  "at": "2026-10-17T14:49:17.077Z",
+  "reliability_generated_at": "2026-10-17T14:49:17.077Z",
+  "enrichment_generated_at": "2026-10-17T14:49:10.111Z",
   "counts": {
    "games": 108,
    "mean": 86.7,
@@ -20,11 +20,11 @@
    "missing_qb_status": 164,
    "qb_conflicts_open": 2,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 21,
+   "games_lacking_injury_information": 22,
    "unrated_meaningful_absences": 381,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 108,
-   "stale_evidence_records": 49,
+   "stale_evidence_records": 65,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -1476,13 +1476,13 @@
    },
    "401862802": {
     "game": "Florida Atlantic @ Army",
-    "score": 89,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
+     "availability": 6,
+     "qb_status": 4,
      "qb_conflict": 1,
-     "qb_status": 2,
-     "starters": 1.2,
+     "starters": 1.6,
      "stability": 0.5,
      "qb_identity": 0.8,
      "rating_sample": 0.6
@@ -1492,8 +1492,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401862803": {
@@ -2429,7 +2429,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-17T13:12:57.784Z",
+  "at": "2026-10-17T13:48:23.942Z",
   "counts": {
    "games": 108,
    "mean": 86.7,
@@ -2455,34 +2455,12 @@
   "baseline_of": null
  },
  "what_improved": [],
- "what_degraded": [],
+ "what_degraded": [
+  "+1 games lacking injury information (21 → 22)",
+  "+16 stale evidence records (49 → 65)"
+ ],
  "why": [],
  "history": [
-  {
-   "at": "2026-10-10T18:31:48.682Z",
-   "counts": {
-    "games": 108,
-    "mean": 86,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 21,
-     "ADEQUATE": 16,
-     "STRONG": 64,
-     "LOW": 3,
-     "CAUTION": 4
-    },
-    "missing_qb_status": 160,
-    "qb_conflicts_open": 6,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 25,
-    "unrated_meaningful_absences": 455,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 108,
-    "stale_evidence_records": 37,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-10T19:22:22.642Z",
    "counts": {
@@ -3899,6 +3877,31 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 108,
     "stale_evidence_records": 49,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-17T14:49:17.077Z",
+   "counts": {
+    "games": 108,
+    "mean": 86.7,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 20,
+     "LOW": 3,
+     "ADEQUATE": 15,
+     "STRONG": 68,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 164,
+    "qb_conflicts_open": 2,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 22,
+    "unrated_meaningful_absences": 381,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 108,
+    "stale_evidence_records": 65,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
