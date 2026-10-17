@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-17T01:07:37.000Z",
+ "generated_at": "2026-10-17T02:07:40.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1229,
-    "latest_snapshot_at": "2026-10-17T01:07:37.000Z",
+    "snapshots": 1230,
+    "latest_snapshot_at": "2026-10-17T02:07:40.000Z",
     "upcoming_games": 108,
     "avg_confidence_upcoming": 80.9
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1539,
-    "latest_snapshot_at": "2026-10-17T01:07:37.000Z",
+    "snapshots": 1540,
+    "latest_snapshot_at": "2026-10-17T02:07:40.000Z",
     "upcoming_games": 105,
     "avg_confidence_upcoming": 76.7
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1539,
-    "latest_snapshot_at": "2026-10-17T01:07:37.000Z",
+    "snapshots": 1540,
+    "latest_snapshot_at": "2026-10-17T02:07:40.000Z",
     "upcoming_games": 105,
     "avg_confidence_upcoming": 76.7
    }
@@ -844,8 +844,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-17T01:07:37.000Z",
-    "quotes_total": 17717,
+    "last_quote_at": "2026-10-17T02:07:40.000Z",
+    "quotes_total": 17834,
     "last_result_at": "2026-10-16T07:30:10.000Z"
    }
   },
@@ -879,9 +879,9 @@
    }
   ],
   "ledger": {
-   "predictions": 4817,
-   "live_predictions": 4307,
-   "quotes": 17717,
+   "predictions": 4820,
+   "live_predictions": 4310,
+   "quotes": 17834,
    "lines": 2807,
    "results": 406,
    "evaluations": 3891,
@@ -4657,7 +4657,7 @@
     "current": 15.5,
     "open": 13.5,
     "books": 1,
-    "as_of": "2026-10-16T01:38:12.000Z",
+    "as_of": "2026-10-17T02:07:40.000Z",
     "sources": [
      "espn"
     ],
@@ -4666,10 +4666,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-16T07:30:10.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-17T02:07:40.000Z",
      "margin": -16.64,
      "fair": "Ohio -16.5",
      "p_home": 0.1277,
@@ -4686,10 +4686,10 @@
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-16T07:30:10.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-17T02:07:40.000Z",
      "margin": -15.16,
      "fair": "Ohio -15.0",
      "p_home": 0.1685,
@@ -4710,10 +4710,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-16T07:30:10.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-17T02:07:40.000Z",
      "margin": -14.69,
      "fair": "Ohio -14.5",
      "p_home": 0.1741,
@@ -9778,6 +9778,91 @@
      "side": null,
      "gap": null,
      "line": null,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "MARKET_DEGRADED"
+     ]
+    }
+   }
+  },
+  {
+   "game_id": "401864527",
+   "week": 8,
+   "kickoff": "2026-10-25T02:00:00.000Z",
+   "home": "New Mexico",
+   "away": "North Dakota State",
+   "market": {
+    "current": -4.5,
+    "open": -4,
+    "books": 1,
+    "as_of": "2026-10-16T14:42:57.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-15T06:23:51.000Z",
+     "margin": 11.15,
+     "fair": "New Mexico -11.0",
+     "p_home": 0.777,
+     "sigma": 14.631,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 7.15,
+     "line": -4,
+     "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-16T15:07:50.000Z",
+     "margin": 6.85,
+     "fair": "New Mexico -7.0",
+     "p_home": 0.6701,
+     "sigma": 15.678,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 2.35,
+     "line": -4.5,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "MARKET_DEGRADED"
+     ]
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-16T15:07:50.000Z",
+     "margin": 6.9,
+     "fair": "New Mexico -7.0",
+     "p_home": 0.671,
+     "sigma": 15.708,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 2.4,
+     "line": -4.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
