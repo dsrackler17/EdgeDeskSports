@@ -110,6 +110,7 @@ in the hierarchy (compatibility.json marks it INCOMPATIBLE).
 | `cfb_player_model_enabled` | off | COMPONENT, guarded | personnel units are research, not a V2.1 input |
 | `cfb_matchup_correction_enabled` | off | COMPONENT, guarded | the matchup residual is research, not a V2.1 input |
 | `cfb_bet_actionable_enabled` | off | BETTING, guarded | cannot go on while the manifest's decision policy has betting off |
+| `cfb_altitude_adjustment_enabled` | off | COMPONENT, guarded | declared by `supabase/cfb_altitude.sql`; read fail-closed by the slate build (`football/altitude/flag.js`); moves V1's number only while `football/altitude/params.js` is VALIDATED (docs/cfb-altitude) |
 
 Only the two kill switches are read by code today (the gate); the component
 flags record the state a person must change deliberately, with the audit

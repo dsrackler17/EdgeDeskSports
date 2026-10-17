@@ -71,6 +71,15 @@ football/
                 (12.10) and the close (12.01); BET disabled. See
                 cfb_v2/README.md and docs/cfb-v2/REDTEAM.md.
 
+  altitude/     ALTITUDE & TRAVEL — every game located by the schedule's own
+                venue id, each team's normal elevation, the climb, the trip, DST-
+                correct time zones and rest, from a venue elevation registry with
+                provenance and confidence. A residual on V1's own pregame number
+                was tested walk-forward against declared gates and did NOT earn a
+                point: it runs as a SHADOW (0.0 pts applied) behind three locks,
+                and the research page, the desk and the explanations say so.
+                See docs/cfb-altitude/README.md.
+
   personnel/    NON-QB PERSONNEL AVAILABILITY — how much worse a team is with
                 the expected replacement playing instead of each non-QB
                 absence: player quality, replacement quality, usage, position

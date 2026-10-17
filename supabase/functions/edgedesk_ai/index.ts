@@ -3172,6 +3172,8 @@ export interface SlateGame {
   model_home_win_prob?: number | null;
   model_home_margin?: number | null;
   model_version?: string | null;
+  /** The FBS artifact's Altitude & Travel section (football/altitude), verbatim. */
+  altitude_travel?: any;
   /** r13: the NFL artifact's own context, verbatim. */
   outcome_range?: { p10: number; p50: number; p90: number; sigma?: number; basis?: string; unit?: string } | null;
   contributions?: { spread?: { key: string; value: number | null; points: number | null }[]; total?: any[] } | null;
@@ -3257,8 +3259,52 @@ export function normalizeFbsArtifactGame(g: any, meta: any): SlateGame {
        engine family otherwise. */
     model_version: g.model_version ?? (typeof g.shadow_model_version === "string" && /cfb_p4/.test(g.shadow_model_version)
       ? "edgedesk_cfb_p4 (via " + String(meta?.version ?? "slate") + ")" : (meta?.version ?? null)),
+    /* Altitude & Travel, carried verbatim: the desk reads its measured facts
+       and its verdict through altitudeSituation(), never its shadow number */
+    altitude_travel: g.altitude_travel && g.altitude_travel.schema === "edgedesk_cfb_altitude_section_v1" ? g.altitude_travel : null,
     quote: null, has_quote: false, has_signal: false, signals: [],
   };
+}
+
+/** THE DESK'S ALTITUDE & TRAVEL FACTS, from the slate row's own section
+    (football/altitude/engine.js publish()). Travel and altitude become packet
+    facts with their source, so the critic can hold an answer to them. The
+    SHADOW number is deliberately not carried: it is an unvalidated research
+    estimate, and a desk that can see it can be asked to sell it. What the
+    desk can say is what moved the number — the engine's own contribution,
+    0.0 unless the altitude term passed its gates and the flag is on. */
+export function altitudeSituation(row: any): { travel?: any; altitude?: any } {
+  const a = row?.altitude_travel;
+  if (!a || a.schema !== "edgedesk_cfb_altitude_section_v1") return {};
+  const src = "football/altitude (schedule venue ids + football/altitude/venues.json)";
+  const f = a.focus === "home" ? a.home : a.away;
+  const applied = a.engine_contribution && a.engine_contribution.available === true && num(a.engine_contribution.points) != null
+    ? (num(a.engine_contribution.points) as number) : 0;
+  const ft = (x: any) => Math.round(Number(x)).toLocaleString("en-US");
+  const out: { travel?: any; altitude?: any } = {};
+  if (f && num(f.distance_mi) != null) {
+    const tz = num(f.tz_change_h);
+    out.travel = { missing: false, source: src, observed_at: null, freshness: "static",
+      value: { team: f.team, miles: num(f.distance_mi), tz_change_h: tz, neutral_site: !!a.neutral_site,
+        text: f.team + " travels about " + ft(f.distance_mi) + " miles"
+          + (tz ? ", " + Math.abs(tz) + " time zone" + (Math.abs(tz) === 1 ? "" : "s") + (tz < 0 ? " west" : " east") : "")
+          + (a.neutral_site ? " (neutral site)" : "") + "; travel moves 0 points (rejected by V1's validation)" } };
+  }
+  if (a.venue && num(a.venue.elev_ft) != null) {
+    const gain = num(f?.gain_ft);
+    out.altitude = { missing: false, source: src, observed_at: null, freshness: "static",
+      value: { venue: a.venue.name, game_elevation_ft: num(a.venue.elev_ft), elevation_confidence: a.venue.confidence ?? null,
+        team: f?.team ?? null, normal_elevation_ft: num(f?.usual_elev_ft), elevation_gain_ft: gain,
+        exposure: a.exposure?.class ?? null, exposure_label: a.exposure?.label ?? null,
+        support_state: a.statistical_support?.state ?? "NOT_ESTABLISHED", support_text: a.statistical_support?.text ?? null,
+        points_applied: applied, not_claimed: a.not_claimed ?? null,
+        text: (a.exposure?.label ?? "Altitude") + ": " + a.venue.name + " " + ft(a.venue.elev_ft) + " ft"
+          + (gain != null ? "; " + f.team + " " + (gain >= 0 ? "+" : "-") + ft(Math.abs(gain)) + " ft vs its normal " + ft(f.usual_elev_ft) + " ft" : "")
+          + "; " + (applied ? applied.toFixed(1) + " pts applied (validated)" : "research only, 0.0 pts applied") } };
+  } else if (a.missing && a.missing.length) {
+    out.altitude = { value: null, missing: true, reason: "elevation unavailable: " + a.missing.join("; "), source: src, observed_at: null, freshness: null };
+  }
+  return out;
 }
 
 /** An NFL slate artifact row -> the shared shape. The artifact is the browser's
@@ -30860,6 +30906,9 @@ const EDOpportunity: any = (globalThis as any).EDOpportunity;
     [/public (money|betting|percentage|%)|% of (the )?(bets|money|tickets)/i, 'public_betting'],
     [/\bhandle\b/i, 'handle'], [/havoc rate|explosive play rate|red zone (efficiency|rate)/i, 'advanced_unit'],
     [/injur(y|ies|ed)\b/i, 'injuries'], [/weather|wind|rain|snow/i, 'weather'],
+    /* altitude may be named only when the facts carry the game's Altitude &
+       Travel section (football/altitude); its numbers are the section's own */
+    [/\baltitude\b|\belevation\b|\bthin air\b/i, 'altitude'],
     /* audit F-23: no tier of the policy ranks bet quality (it ranks closing-line movement) */
     [/\b(edge|bet|play|pick) quality\b|quality of the (edge|bet)|high[- ]quality (edge|bet|play)/i, 'edge_quality']
   ];
@@ -30963,6 +31012,8 @@ const EDOpportunity: any = (globalThis as any).EDOpportunity;
     if (f.market && f.market.actionable_status && f.market.actionable_status !== 'ACTIONABLE') f.degraded.push('market ' + f.market.actionable_status);
     if (!f.market) f.degraded.push('no market line');
     (src.allowed_metrics || []).forEach(function (m) { f.allowed_metrics[m] = true; });
+    f.altitude = altitudeFacts(src.altitude_travel);
+    if (f.altitude) f.allowed_metrics.altitude = true;
     f.read = readFacts(src.read);
     f.ev = evFacts(src.ev);
     f.numbers = allowedNumbers(f);
@@ -31004,6 +31055,20 @@ const EDOpportunity: any = (globalThis as any).EDOpportunity;
       blockers: (E.blockers || []).map(function (b) { return b.code; }), reason: E.decision_reason || null,
       validation: E.calibration && E.calibration.oof ? { n: E.calibration.oof.n, log_loss: E.calibration.oof.log_loss, identity_log_loss: E.calibration.oof.identity_log_loss } : 'UNKNOWN' };
   }
+  /* the Altitude & Travel section (football/altitude/engine.js publish()),
+     reduced to what an explanation may cite: the measured elevations, the
+     climb, the trip, and the points the ENGINE applied (0 unless validated).
+     The shadow estimate is not a fact an explanation may state. */
+  function altitudeFacts(a) {
+    if (!a || a.schema !== 'edgedesk_cfb_altitude_section_v1' || !a.venue) return null;
+    var fs = a.focus === 'home' ? a.home : a.away;
+    var ec = a.engine_contribution;
+    return { venue: a.venue.name, game_elevation_ft: num(a.venue.elev_ft), team: fs ? fs.team : null,
+      normal_elevation_ft: fs ? num(fs.usual_elev_ft) : null, gain_ft: fs ? num(fs.gain_ft) : null,
+      distance_mi: fs ? num(fs.distance_mi) : null, tz_change_h: fs ? num(fs.tz_change_h) : null,
+      exposure: a.exposure ? a.exposure.class : null, support: a.statistical_support ? a.statistical_support.state : null,
+      points_applied: ec && ec.available === true && isNum(num(ec.points)) ? num(ec.points) : 0 };
+  }
   function allowedNumbers(f) {
     var xs = [];
     var add = function (x) { if (isNum(x)) { xs.push(x); xs.push(-x); xs.push(Math.abs(x)); } };
@@ -31025,6 +31090,10 @@ const EDOpportunity: any = (globalThis as any).EDOpportunity;
       [E.cover_calibrated, E.cover_raw, E.push, E.break_even, E.probability_edge, E.raw_ev, E.calibrated_ev, E.robust_ev, E.prob_ev_positive].forEach(function (p) { if (isNum(p)) { add(r(100 * p, 1)); add(r(100 * p, 0)); } });
     }
     var m = /(-?\d+(\.\d+)?)/.exec(f.model.fair_line_display || ''); if (m) add(Number(m[1]));
+    if (f.altitude) {
+      var Al = f.altitude;
+      [Al.game_elevation_ft, Al.normal_elevation_ft, Al.gain_ft, Al.distance_mi, Al.tz_change_h, Al.points_applied, 3000].forEach(add);
+    }
     return xs;
   }
 
@@ -51614,7 +51683,8 @@ export function turnResearchPacket(research: ResearchOut | null, now = Date.now(
       source: "cfb.ratings (SP+, an EXTERNAL model — attribute it, never convert it)",
       not_ingested: Object.keys(sec.matchup.home ?? {}).filter((k) => sec.matchup.home[k]?.missing && /efficiency|explosive|success|pressure|turnover|red_zone|pace/.test(k)),
     } : (isNfl && (football.ratings.home || football.starters.home) ? { home: { team: home }, away: { team: away }, source: "football/nfl/slate.json" } : null),
-    situation: { home_rest_days: sec.matchup?.home?.rest_days?.value ?? football.rest?.home ?? null, away_rest_days: sec.matchup?.away?.rest_days?.value ?? football.rest?.away ?? null },
+    situation: { home_rest_days: sec.matchup?.home?.rest_days?.value ?? football.rest?.home ?? null, away_rest_days: sec.matchup?.away?.rest_days?.value ?? football.rest?.away ?? null,
+      ...(isNfl ? {} : altitudeSituation(row)) },
     football,
     thesis: { support: strings(ta.support), contradictions: strings(ta.counterarguments?.length ? ta.counterarguments : ta.contradictions), falsifiers: strings(ta.falsifiers) },
     completeness: pkt?.completeness ?? null,

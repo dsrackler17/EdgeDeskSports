@@ -32,7 +32,7 @@ const path = require('path');
 const { statements } = require('../../tools/sql/split_sql.js');
 
 const REPO = path.resolve(__dirname, '..', '..');
-const ORDER = ['cfb_lab', 'cfb_lab_cron', 'cfb_weekly', 'cfb_personnel', 'cfb_decision', 'cfb_v2_model', 'cfb_market_integrity', 'cfb_matchup', 'cfb_market', 'cfb_production'];
+const ORDER = ['cfb_lab', 'cfb_lab_cron', 'cfb_weekly', 'cfb_personnel', 'cfb_decision', 'cfb_v2_model', 'cfb_market_integrity', 'cfb_matchup', 'cfb_market', 'cfb_production', 'cfb_altitude'];
 
 function files() {
   const all = fs.readdirSync(path.join(REPO, 'supabase')).filter((f) => /^cfb_[a-z0-9_]+\.sql$/.test(f)).map((f) => f.replace(/\.sql$/, ''));

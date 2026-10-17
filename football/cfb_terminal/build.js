@@ -526,6 +526,9 @@ function buildGame(ctx, row) {
     stability: stab ? { dimensions: stab.dimensions || [], favorite_flip_rate: stab.favorite_flip_rate } : null,
     qb: qb, availability: { home: avail('home'), away: avail('away') },
     weather: wx ? { available: wx.state === 'USABLE' || wx.state === 'RESEARCH_ONLY', state: wx.state } : null,
+    /* the slate's Altitude & Travel section (football/altitude), verbatim: the
+       explanation boundary may name altitude only when it is carried */
+    altitude_travel: row.altitude_travel || null,
     reliability: { score: num(rel.score) != null ? rel.score : num(row.reliability_score), grade: rel.grade_label || row.reliability_grade || null,
       main_deduction: rel.main_deduction || null, gates: rel.gates || [], next_actions: row.reliability_next_actions || rel.next_actions || [] },
     data_coverage: row.data_coverage || null,

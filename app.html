@@ -2924,7 +2924,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261017fl1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261017alt1">
 <link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261016rg1">
 </head>
 <body>
@@ -4016,9 +4016,9 @@ window.mcRefresh=function(){
 <!-- football display lines (docs/system-integrity/FOOTBALL_LINES.md): half-point fair
      spreads and totals, whole-number projected scores, raw-number gaps, key-number notes -->
 <script src="/lib/edgedesk_football_lines.js?v=20261017fl1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261017fl1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261017fl1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261017fl1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261017alt1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261017alt1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261017alt1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -4034,7 +4034,7 @@ window.mcRefresh=function(){
      STATE), the research status kept apart from the decision status, the
      counter hierarchy, maturity and pricing impact. tools/validation/canon.test.js
      and tools/validation/ui.test.js hold it. -->
-<script src="/lib/edgedesk_canon.js?v=20261008i"></script>
+<script src="/lib/edgedesk_canon.js?v=20261017alt1"></script>
 <!-- THE BETTOR DECISION LAYER (docs/bettor-decision/DESIGN.md): one BET / LEAN / WATCH /
      PASS / NO DECISION answer per game, from the quote-level EV the board already prices.
      edgedesk_vocab.js is the one vocabulary every surface reads (decision words, market
@@ -39642,6 +39642,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       cells+='<div class="dk-cell"><div class="k">Forecast</div><div class="v">'+(bits.length?bits.join(' · '):esc(v.text||'—'))+'</div><div class="s">'+esc(v.text&&bits.length?v.text+' · ':'')+esc(w.source||'')+' · '+esc(obsAt(w.observed_at))+' '+freshBadge(w.freshness)+(s.weather_note?' · '+esc(s.weather_note):'')+'</div></div>';
     } else cells+='<div class="dk-cell"><div class="k">Forecast</div><div class="v">—</div><div class="s">'+esc((w&&w.reason)||'not on file')+' '+freshBadge('UNKNOWN')+'</div></div>';
     var t=s.travel; cells+='<div class="dk-cell"><div class="k">Travel</div><div class="v">'+(t&&!t.missing&&t.value?esc(typeof t.value==='object'?(t.value.text||JSON.stringify(t.value)):t.value):'—')+'</div><div class="s">'+esc(t&&t.missing?t.reason:'')+'</div></div>';
+    /* altitude (football/altitude): the measured climb and the record's verdict; the shadow number never reaches the desk */
+    var al=s.altitude; if(al&&typeof al==='object'&&(al.value||al.missing)) cells+='<div class="dk-cell"><div class="k">Altitude</div><div class="v">'+(al.missing?'—':esc(al.value.exposure_label||'—'))+'</div><div class="s">'
+      +(al.missing?esc(al.reason||''):esc((al.value.elevation_gain_ft!=null?(al.value.team||'')+' '+(al.value.elevation_gain_ft>=0?'+':'')+Math.round(al.value.elevation_gain_ft)+' ft · ':'')+(al.value.points_applied?Number(al.value.points_applied).toFixed(1)+' pts applied':'research only · 0.0 pts applied')+' · '+String(al.value.support_state||'').replace(/_/g,' ').toLowerCase()))+'</div></div>';
     return '<div class="dk-sec"><div class="h">Situation</div><div class="dk-grid">'+cells+'</div></div>';
   }
   function matchupProfileHTML(S){

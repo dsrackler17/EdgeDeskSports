@@ -3120,6 +3120,8 @@ export interface SlateGame {
   model_home_win_prob?: number | null;
   model_home_margin?: number | null;
   model_version?: string | null;
+  /** The FBS artifact's Altitude & Travel section (football/altitude), verbatim. */
+  altitude_travel?: any;
   /** r13: the NFL artifact's own context, verbatim. */
   outcome_range?: { p10: number; p50: number; p90: number; sigma?: number; basis?: string; unit?: string } | null;
   contributions?: { spread?: { key: string; value: number | null; points: number | null }[]; total?: any[] } | null;
@@ -3205,8 +3207,52 @@ export function normalizeFbsArtifactGame(g: any, meta: any): SlateGame {
        engine family otherwise. */
     model_version: g.model_version ?? (typeof g.shadow_model_version === "string" && /cfb_p4/.test(g.shadow_model_version)
       ? "edgedesk_cfb_p4 (via " + String(meta?.version ?? "slate") + ")" : (meta?.version ?? null)),
+    /* Altitude & Travel, carried verbatim: the desk reads its measured facts
+       and its verdict through altitudeSituation(), never its shadow number */
+    altitude_travel: g.altitude_travel && g.altitude_travel.schema === "edgedesk_cfb_altitude_section_v1" ? g.altitude_travel : null,
     quote: null, has_quote: false, has_signal: false, signals: [],
   };
+}
+
+/** THE DESK'S ALTITUDE & TRAVEL FACTS, from the slate row's own section
+    (football/altitude/engine.js publish()). Travel and altitude become packet
+    facts with their source, so the critic can hold an answer to them. The
+    SHADOW number is deliberately not carried: it is an unvalidated research
+    estimate, and a desk that can see it can be asked to sell it. What the
+    desk can say is what moved the number — the engine's own contribution,
+    0.0 unless the altitude term passed its gates and the flag is on. */
+export function altitudeSituation(row: any): { travel?: any; altitude?: any } {
+  const a = row?.altitude_travel;
+  if (!a || a.schema !== "edgedesk_cfb_altitude_section_v1") return {};
+  const src = "football/altitude (schedule venue ids + football/altitude/venues.json)";
+  const f = a.focus === "home" ? a.home : a.away;
+  const applied = a.engine_contribution && a.engine_contribution.available === true && num(a.engine_contribution.points) != null
+    ? (num(a.engine_contribution.points) as number) : 0;
+  const ft = (x: any) => Math.round(Number(x)).toLocaleString("en-US");
+  const out: { travel?: any; altitude?: any } = {};
+  if (f && num(f.distance_mi) != null) {
+    const tz = num(f.tz_change_h);
+    out.travel = { missing: false, source: src, observed_at: null, freshness: "static",
+      value: { team: f.team, miles: num(f.distance_mi), tz_change_h: tz, neutral_site: !!a.neutral_site,
+        text: f.team + " travels about " + ft(f.distance_mi) + " miles"
+          + (tz ? ", " + Math.abs(tz) + " time zone" + (Math.abs(tz) === 1 ? "" : "s") + (tz < 0 ? " west" : " east") : "")
+          + (a.neutral_site ? " (neutral site)" : "") + "; travel moves 0 points (rejected by V1's validation)" } };
+  }
+  if (a.venue && num(a.venue.elev_ft) != null) {
+    const gain = num(f?.gain_ft);
+    out.altitude = { missing: false, source: src, observed_at: null, freshness: "static",
+      value: { venue: a.venue.name, game_elevation_ft: num(a.venue.elev_ft), elevation_confidence: a.venue.confidence ?? null,
+        team: f?.team ?? null, normal_elevation_ft: num(f?.usual_elev_ft), elevation_gain_ft: gain,
+        exposure: a.exposure?.class ?? null, exposure_label: a.exposure?.label ?? null,
+        support_state: a.statistical_support?.state ?? "NOT_ESTABLISHED", support_text: a.statistical_support?.text ?? null,
+        points_applied: applied, not_claimed: a.not_claimed ?? null,
+        text: (a.exposure?.label ?? "Altitude") + ": " + a.venue.name + " " + ft(a.venue.elev_ft) + " ft"
+          + (gain != null ? "; " + f.team + " " + (gain >= 0 ? "+" : "-") + ft(Math.abs(gain)) + " ft vs its normal " + ft(f.usual_elev_ft) + " ft" : "")
+          + "; " + (applied ? applied.toFixed(1) + " pts applied (validated)" : "research only, 0.0 pts applied") } };
+  } else if (a.missing && a.missing.length) {
+    out.altitude = { value: null, missing: true, reason: "elevation unavailable: " + a.missing.join("; "), source: src, observed_at: null, freshness: null };
+  }
+  return out;
 }
 
 /** An NFL slate artifact row -> the shared shape. The artifact is the browser's

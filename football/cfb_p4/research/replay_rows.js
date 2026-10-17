@@ -131,6 +131,7 @@ function replayRows(opts) {
     readCsv(f).forEach(function (r) {
       var hp = num(r.home_points), ap = num(r.away_points);
       games.push({ game_id: String(r.game_id), season: num(r.season), week: num(r.week), kick: Date.parse(r.start_date) || 0,
+        venue_id: num(r.venue_id),
         home: r.home_team, away: r.away_team, home_fbs: r.home_division === 'fbs', away_fbs: r.away_division === 'fbs',
         home_conference: r.home_conference, away_conference: r.away_conference,
         neutral_site: String(r.neutral_site).toLowerCase() === 'true', home_points: hp, away_points: ap, completed: hp != null && ap != null });
@@ -160,7 +161,9 @@ function replayRows(opts) {
       if (out.status === 'PREDICTED') {
         var unc = (out.layers && out.layers.uncertainty) || {}, mk = market[g.game_id] || {};
         rows.push({ game_id: g.game_id, season: g.season, week: g.week, kick: g.kick, home: g.home, away: g.away,
+          neutral: g.neutral_site, venue_id: g.venue_id,
           fair: out.model.fair_spread, sigma: num(unc.sigma), sigma_base: num(unc.sigma_base),
+          total: num(out.model.fair_total), p_home: num(out.model.home_win_prob),
           open: mk.open != null ? mk.open : null, close: mk.close != null ? mk.close : null,
           margin: g.home_points - g.away_points,
           terms: X ? X.termsFromProjection(out, { home: RI.side(g.season, g.home), away: RI.side(g.season, g.away) }) : undefined,
