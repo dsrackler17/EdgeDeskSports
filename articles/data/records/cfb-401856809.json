@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T15:30:50.463Z",
-  "generated_at": "2026-10-17T15:30:50.463Z",
+  "updated_at": "2026-10-17T15:39:21.470Z",
+  "generated_at": "2026-10-17T15:39:21.470Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1462,7 +1462,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 183h old",
+          "text": "odds is 184h old",
           "widening": null
         },
         {
@@ -1581,7 +1581,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-10-10T00:04:01.399+00:00",
-      "capture_age": "183 hours old",
+      "capture_age": "184 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1959,15 +1959,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_f4ff64f8643b587a",
+  "snapshot_id": "snap_40f7461f77de2233",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-17T23:30:00.000Z",
-    "minutes_before_kickoff": 479,
+    "minutes_before_kickoff": 471,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-17T15:30:50.463Z"
+    "at": "2026-10-17T15:39:21.470Z"
   },
   "featured": {
     "editorial_priority": 53.6,
@@ -2236,17 +2236,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-17T15:30:50.463Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "CJ Carr has completed 102 of 145 passes (70.3%) for 1,378 yards, 9.5 yards per attempt, 16",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-17T15:39:21.470Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-17T15:30:50.463Z",
+    "at": "2026-10-17T15:39:21.470Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2254,7 +2261,13 @@
         "detail": "CROSS_MODEL_OUTLIER, DATA_FAULT"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "CJ Carr has completed 102 of 145 passes (70.3%) for 1,378 yards, 9.5 yards per attempt, 16"
+      }
+    ],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
@@ -2331,7 +2344,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
+        "observed_at": "2026-10-17T15:38:28.783Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2354,6 +2367,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:30:50.463Z"
+    "at": "2026-10-17T15:39:21.470Z"
   }
 }
