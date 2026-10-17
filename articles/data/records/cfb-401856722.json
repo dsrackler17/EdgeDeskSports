@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": "2026-10-17T11:30:50.543Z",
-  "updated_at": "2026-10-17T17:03:36.406Z",
-  "generated_at": "2026-10-17T17:03:36.406Z",
+  "updated_at": "2026-10-17T17:20:42.346Z",
+  "generated_at": "2026-10-17T17:20:42.346Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1869,10 +1869,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-17T23:30:00.000Z",
-    "minutes_before_kickoff": 386,
+    "minutes_before_kickoff": 369,
     "published_at": "2026-10-17T11:30:50.543Z",
     "refreshed": false,
-    "at": "2026-10-17T17:03:36.406Z"
+    "at": "2026-10-17T17:20:42.346Z"
   },
   "featured": {
     "editorial_priority": 40.7,
@@ -2158,24 +2158,37 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-17T17:03:36.406Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful. | Oklahoma’s availability report lists offensive lineman Michael Fasusi as doubtful.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-17T17:20:42.346Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-17T17:03:36.406Z",
+    "at": "2026-10-17T17:20:42.346Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful. | Oklahoma’s availability report lists offensive lineman Michael Fasusi as doubtful."
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "hafd4c12ac45q",
+    "packet_hash": "39n84n9azumd",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Oklahoma keep Kentucky behind schedule?",
@@ -2283,6 +2296,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T17:03:36.406Z"
+    "at": "2026-10-17T17:20:42.346Z"
   }
 }
