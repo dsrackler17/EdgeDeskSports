@@ -1,297 +1,141 @@
 {
   "schema": "edgedesk_editorial_runs_v1",
-  "generated_at": "2026-10-17T16:50:43.121Z",
+  "generated_at": "2026-10-17T18:00:39.280Z",
   "kept": 400,
   "max": 400,
   "note": "The editorial pipeline’s own log, newest last, bounded to the last 400 entries. Every step every run takes appears here whether it succeeded or not, so \"why did this game not get an article?\" has an answer.",
   "runs": [
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "NFL:2026_04_ATL_NO",
+      "ok": false,
+      "reason": "FACTUAL INTEGRITY: no_unsupported_statistics",
+      "score": 92
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
-      "key": "CFB:401858477",
+      "key": "NFL:2026_04_DET_CAR",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
-      "key": "CFB:401858477",
+      "key": "NFL:2026_04_DET_CAR",
       "ok": true,
-      "reason": "Indiana Hoosiers 47 — Rutgers Scarlet Knights 15 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+      "reason": "Detroit Lions 26 — Carolina Panthers 32 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
-      "key": "CFB:401858477",
+      "key": "NFL:2026_04_DET_CAR",
       "ok": true,
-      "reason": "1 of 2 gradeable claims held up, 0 did not · LOSS / UNTESTED",
+      "reason": "0 of 9 gradeable claims held up, 5 did not · NOT GRADED / UNSOUND",
+      "bet": "NOT GRADED",
+      "process": "UNSOUND"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "NFL:2026_04_DET_CAR",
+      "ok": false,
+      "reason": "FACTUAL INTEGRITY: no_unsupported_statistics",
+      "score": 100
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_readiness",
+      "key": "NFL:2026_04_NE_BUF",
+      "ok": true,
+      "reason": "8 core statistics on both sides"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "NFL:2026_04_NE_BUF",
+      "ok": true,
+      "reason": "New England Patriots 29 — Buffalo Bills 26 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "NFL:2026_04_NE_BUF",
+      "ok": true,
+      "reason": "0 of 11 gradeable claims held up, 4 did not · LOSS / MIXED",
       "bet": "LOSS",
-      "process": "UNTESTED"
+      "process": "MIXED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
-      "key": "CFB:401858477",
-      "ok": true,
-      "reason": "quality 100",
+      "key": "NFL:2026_04_NE_BUF",
+      "ok": false,
+      "reason": "FACTUAL INTEGRITY: no_unsupported_statistics",
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "research_lessons",
+      "step": "postgame",
       "key": "CFB:401858477",
       "ok": true,
-      "reason": "0 new, 2 replaced, 12 review candidate(s) open",
-      "lessons": 2
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401858477",
-      "ok": true,
-      "reason": "indiana-vs-rutgers-2026-postgame-analysis (published)",
-      "slug": "indiana-vs-rutgers-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/indiana-vs-rutgers-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401858477",
-      "ok": true,
-      "reason": "indiana-vs-rutgers-2026 → indiana-vs-rutgers-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "CFB:401858249",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401858249",
-      "ok": true,
-      "reason": "Miami Hurricanes 41 — Clemson Tigers 13 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401858249",
-      "ok": true,
-      "reason": "2 of 3 gradeable claims held up, 0 did not · LOSS / SOUND",
-      "bet": "LOSS",
-      "process": "SOUND"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401858249",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401858249",
-      "ok": true,
-      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
-      "lessons": 3
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401858249",
-      "ok": true,
-      "reason": "miami-vs-clemson-2026-postgame-analysis (published)",
-      "slug": "miami-vs-clemson-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/miami-vs-clemson-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401858249",
-      "ok": true,
-      "reason": "miami-vs-clemson-2026 → miami-vs-clemson-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "CFB:401858478",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401858478",
-      "ok": true,
-      "reason": "Washington Huskies 21 — USC Trojans 25 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401858478",
-      "ok": true,
-      "reason": "1 of 2 gradeable claims held up, 0 did not · WIN / UNTESTED",
-      "bet": "WIN",
-      "process": "UNTESTED"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401858478",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401858478",
-      "ok": true,
-      "reason": "0 new, 2 replaced, 12 review candidate(s) open",
-      "lessons": 2
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401858478",
-      "ok": true,
-      "reason": "washington-vs-usc-2026-postgame-analysis (published)",
-      "slug": "washington-vs-usc-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/washington-vs-usc-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401858478",
-      "ok": true,
-      "reason": "washington-vs-usc-2026 → washington-vs-usc-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "CFB:401856821",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401856821",
-      "ok": true,
-      "reason": "Texas Tech Red Raiders 29 — Colorado Buffaloes 7 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401856821",
-      "ok": true,
-      "reason": "2 of 2 gradeable claims held up, 0 did not · WIN / UNTESTED",
-      "bet": "WIN",
-      "process": "UNTESTED"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401856821",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401856821",
-      "ok": true,
-      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
-      "lessons": 3
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401856821",
-      "ok": true,
-      "reason": "texas-tech-vs-colorado-2026-postgame-analysis (published)",
-      "slug": "texas-tech-vs-colorado-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/texas-tech-vs-colorado-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401856821",
-      "ok": true,
-      "reason": "texas-tech-vs-colorado-2026 → texas-tech-vs-colorado-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401862792",
@@ -299,8 +143,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401862792",
@@ -308,8 +152,8 @@
       "reason": "Temple Owls 17 — South Florida Bulls 13 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401862792",
@@ -319,8 +163,8 @@
       "process": "SOUND"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401862792",
@@ -329,79 +173,18 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "CFB:401856711",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401856711",
-      "ok": true,
-      "reason": "Arkansas Razorbacks 7 — Texas A&M Aggies 34 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401856711",
-      "ok": true,
-      "reason": "1 of 2 gradeable claims held up, 0 did not · LOSS / UNTESTED",
-      "bet": "LOSS",
-      "process": "UNTESTED"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401856711",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401856711",
-      "ok": true,
-      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
-      "lessons": 3
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401856711",
-      "ok": true,
-      "reason": "arkansas-vs-texas-a-and-m-2026-postgame-analysis (published)",
-      "slug": "arkansas-vs-texas-a-and-m-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/arkansas-vs-texas-a-and-m-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401856711",
-      "ok": true,
-      "reason": "arkansas-vs-texas-a-and-m-2026 → arkansas-vs-texas-a-and-m-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858476",
@@ -410,8 +193,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858245",
@@ -419,8 +202,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858245",
@@ -428,8 +211,8 @@
       "reason": "Pittsburgh Panthers 35 — Virginia Tech Hokies 33 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858245",
@@ -439,8 +222,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858245",
@@ -449,18 +232,79 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "CFB:401862786",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "CFB:401862786",
+      "ok": true,
+      "reason": "North Texas Mean Green 45 — Tulsa Golden Hurricane 44 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "CFB:401862786",
+      "ok": true,
+      "reason": "2 of 3 gradeable claims held up, 0 did not · WIN / SOUND",
+      "bet": "WIN",
+      "process": "SOUND"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "CFB:401862786",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "CFB:401862786",
+      "ok": true,
+      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
+      "lessons": 3
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "CFB:401862786",
+      "ok": true,
+      "reason": "north-texas-vs-tulsa-2026-postgame-analysis (published)",
+      "slug": "north-texas-vs-tulsa-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/north-texas-vs-tulsa-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "CFB:401862786",
+      "ok": true,
+      "reason": "north-texas-vs-tulsa-2026 → north-texas-vs-tulsa-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_04_PIT_CLE",
@@ -468,8 +312,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_04_PIT_CLE",
@@ -477,8 +321,8 @@
       "reason": "Pittsburgh Steelers 24 — Cleveland Browns 27 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_04_PIT_CLE",
@@ -488,8 +332,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_04_PIT_CLE",
@@ -498,18 +342,79 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "NFL:2026_03_PHI_CHI",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "NFL:2026_03_PHI_CHI",
+      "ok": true,
+      "reason": "Philadelphia Eagles 7 — Chicago Bears 27 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "NFL:2026_03_PHI_CHI",
+      "ok": true,
+      "reason": "2 of 11 gradeable claims held up, 5 did not · WIN / UNSOUND",
+      "bet": "WIN",
+      "process": "UNSOUND"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "NFL:2026_03_PHI_CHI",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "NFL:2026_03_PHI_CHI",
+      "ok": true,
+      "reason": "0 new, 6 replaced, 12 review candidate(s) open",
+      "lessons": 6
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "NFL:2026_03_PHI_CHI",
+      "ok": true,
+      "reason": "philadelphia-eagles-vs-chicago-bears-2026-postgame-analysis (published)",
+      "slug": "philadelphia-eagles-vs-chicago-bears-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/philadelphia-eagles-vs-chicago-bears-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "NFL:2026_03_PHI_CHI",
+      "ok": true,
+      "reason": "philadelphia-eagles-vs-chicago-bears-2026 → philadelphia-eagles-vs-chicago-bears-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_03_LA_DEN",
@@ -518,8 +423,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_03_NE_JAX",
@@ -527,8 +432,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_03_NE_JAX",
@@ -536,8 +441,8 @@
       "reason": "New England Patriots 6 — Jacksonville Jaguars 35 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_03_NE_JAX",
@@ -547,8 +452,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_03_NE_JAX",
@@ -557,8 +462,8 @@
       "score": 92
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_03_HOU_IND",
@@ -566,8 +471,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_03_HOU_IND",
@@ -575,8 +480,8 @@
       "reason": "Houston Texans 17 — Indianapolis Colts 19 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_03_HOU_IND",
@@ -586,8 +491,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_03_HOU_IND",
@@ -596,8 +501,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401866429",
@@ -605,8 +510,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401866429",
@@ -614,8 +519,8 @@
       "reason": "Massachusetts Minutemen 35 — Sacramento State Hornets 6 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401866429",
@@ -625,8 +530,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401866429",
@@ -635,18 +540,79 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "CFB:401858241",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "CFB:401858241",
+      "ok": true,
+      "reason": "Missouri State Bears 24 — SMU Mustangs 34 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "CFB:401858241",
+      "ok": true,
+      "reason": "0 of 2 gradeable claims held up, 0 did not · WIN / UNTESTED",
+      "bet": "WIN",
+      "process": "UNTESTED"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "CFB:401858241",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "CFB:401858241",
+      "ok": true,
+      "reason": "0 new, 2 replaced, 12 review candidate(s) open",
+      "lessons": 2
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "CFB:401858241",
+      "ok": true,
+      "reason": "missouri-state-vs-smu-2026-postgame-analysis (published)",
+      "slug": "missouri-state-vs-smu-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/missouri-state-vs-smu-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "CFB:401858241",
+      "ok": true,
+      "reason": "missouri-state-vs-smu-2026 → missouri-state-vs-smu-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401856703",
@@ -655,8 +621,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856702",
@@ -664,8 +630,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856702",
@@ -673,8 +639,8 @@
       "reason": "Texas A&M Aggies 6 — LSU Tigers 35 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856702",
@@ -684,8 +650,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856702",
@@ -694,8 +660,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858469",
@@ -704,8 +670,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856881",
@@ -713,8 +679,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856881",
@@ -722,8 +688,8 @@
       "reason": "Oklahoma State Cowboys 41 — West Virginia Mountaineers 24 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856881",
@@ -733,8 +699,8 @@
       "process": "SOUND"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856881",
@@ -743,18 +709,79 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "CFB:401858234",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "CFB:401858234",
+      "ok": true,
+      "reason": "Clemson Tigers 24 — California Golden Bears 10 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "CFB:401858234",
+      "ok": true,
+      "reason": "1 of 3 gradeable claims held up, 0 did not · WIN / MIXED",
+      "bet": "WIN",
+      "process": "MIXED"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "CFB:401858234",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "CFB:401858234",
+      "ok": true,
+      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
+      "lessons": 3
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "CFB:401858234",
+      "ok": true,
+      "reason": "clemson-vs-california-2026-postgame-analysis (published)",
+      "slug": "clemson-vs-california-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/clemson-vs-california-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "CFB:401858234",
+      "ok": true,
+      "reason": "clemson-vs-california-2026 → clemson-vs-california-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858461",
@@ -762,8 +789,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858461",
@@ -771,8 +798,8 @@
       "reason": "Northwestern Wildcats 23 — Indiana Hoosiers 29 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858461",
@@ -782,8 +809,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858461",
@@ -792,8 +819,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401869941",
@@ -801,8 +828,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401869941",
@@ -810,8 +837,8 @@
       "reason": "Liberty Flames 34 — Coastal Carolina Chanticleers 17 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401869941",
@@ -821,8 +848,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401869941",
@@ -831,8 +858,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_03_ATL_GB",
@@ -841,8 +868,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_02_NYG_LA",
@@ -850,8 +877,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_02_NYG_LA",
@@ -859,8 +886,8 @@
       "reason": "New York Giants 6 — Los Angeles Rams 28 (espn_summary+espn_scoreboard+nflverse)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_02_NYG_LA",
@@ -870,8 +897,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_02_NYG_LA",
@@ -880,18 +907,79 @@
       "score": 92
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "NFL:2026_02_IND_KC",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "NFL:2026_02_IND_KC",
+      "ok": true,
+      "reason": "Indianapolis Colts 30 — Kansas City Chiefs 33 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "NFL:2026_02_IND_KC",
+      "ok": true,
+      "reason": "2 of 10 gradeable claims held up, 4 did not · WIN / UNSOUND",
+      "bet": "WIN",
+      "process": "UNSOUND"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "NFL:2026_02_IND_KC",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "NFL:2026_02_IND_KC",
+      "ok": true,
+      "reason": "0 new, 8 replaced, 12 review candidate(s) open",
+      "lessons": 8
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "NFL:2026_02_IND_KC",
+      "ok": true,
+      "reason": "indianapolis-colts-vs-kansas-city-chiefs-2026-postgame-analysis (published)",
+      "slug": "indianapolis-colts-vs-kansas-city-chiefs-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/indianapolis-colts-vs-kansas-city-chiefs-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "NFL:2026_02_IND_KC",
+      "ok": true,
+      "reason": "indianapolis-colts-vs-kansas-city-chiefs-2026 → indianapolis-colts-vs-kansas-city-chiefs-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858453",
@@ -899,8 +987,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858453",
@@ -908,8 +996,8 @@
       "reason": "Michigan State Spartans 10 — Notre Dame Fighting Irish 27 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858453",
@@ -919,8 +1007,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858453",
@@ -929,8 +1017,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856688",
@@ -938,8 +1026,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856688",
@@ -947,8 +1035,8 @@
       "reason": "LSU Tigers 24 — Ole Miss Rebels 32 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856688",
@@ -958,8 +1046,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856688",
@@ -968,8 +1056,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856687",
@@ -977,8 +1065,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856687",
@@ -986,8 +1074,8 @@
       "reason": "Florida Gators 44 — Auburn Tigers 39 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856687",
@@ -997,8 +1085,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856687",
@@ -1007,8 +1095,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856811",
@@ -1016,8 +1104,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856811",
@@ -1025,8 +1113,8 @@
       "reason": "Houston Cougars 26 — Texas Tech Red Raiders 28 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856811",
@@ -1036,8 +1124,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856811",
@@ -1046,79 +1134,18 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "CFB:401858226",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401858226",
-      "ok": true,
-      "reason": "Miami Hurricanes 33 — Wake Forest Demon Deacons 20 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401858226",
-      "ok": true,
-      "reason": "1 of 2 gradeable claims held up, 0 did not · WIN / UNTESTED",
-      "bet": "WIN",
-      "process": "UNTESTED"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401858226",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401858226",
-      "ok": true,
-      "reason": "0 new, 2 replaced, 12 review candidate(s) open",
-      "lessons": 2
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401858226",
-      "ok": true,
-      "reason": "miami-vs-wake-forest-2026-postgame-analysis (published)",
-      "slug": "miami-vs-wake-forest-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/miami-vs-wake-forest-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401858226",
-      "ok": true,
-      "reason": "miami-vs-wake-forest-2026 → miami-vs-wake-forest-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858225",
@@ -1126,8 +1153,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858225",
@@ -1135,8 +1162,8 @@
       "reason": "Syracuse Orange 13 — Pittsburgh Panthers 27 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858225",
@@ -1146,8 +1173,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858225",
@@ -1156,8 +1183,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_02_DET_BUF",
@@ -1165,8 +1192,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_02_DET_BUF",
@@ -1174,8 +1201,8 @@
       "reason": "Detroit Lions 31 — Buffalo Bills 41 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_02_DET_BUF",
@@ -1185,8 +1212,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_02_DET_BUF",
@@ -1195,8 +1222,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_01_DEN_KC",
@@ -1204,8 +1231,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_01_DEN_KC",
@@ -1213,8 +1240,8 @@
       "reason": "Denver Broncos 10 — Kansas City Chiefs 31 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_01_DEN_KC",
@@ -1224,8 +1251,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_01_DEN_KC",
@@ -1234,8 +1261,8 @@
       "score": 92
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_01_DAL_NYG",
@@ -1243,8 +1270,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_01_DAL_NYG",
@@ -1252,8 +1279,8 @@
       "reason": "Dallas Cowboys 20 — New York Giants 28 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_01_DAL_NYG",
@@ -1263,8 +1290,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_01_DAL_NYG",
@@ -1273,89 +1300,89 @@
       "score": 92
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_readiness",
-      "key": "NFL:2026_01_GB_MIN",
-      "ok": true,
-      "reason": "8 core statistics on both sides"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "NFL:2026_01_GB_MIN",
-      "ok": true,
-      "reason": "Green Bay Packers 22 — Minnesota Vikings 39 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "NFL:2026_01_GB_MIN",
-      "ok": true,
-      "reason": "3 of 10 gradeable claims held up, 4 did not · LOSS / UNSOUND",
-      "bet": "LOSS",
-      "process": "UNSOUND"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "NFL:2026_01_GB_MIN",
-      "ok": true,
-      "reason": "quality 92",
-      "score": 92
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "NFL:2026_01_GB_MIN",
-      "ok": true,
-      "reason": "0 new, 6 replaced, 12 review candidate(s) open",
-      "lessons": 6
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "NFL:2026_01_GB_MIN",
-      "ok": true,
-      "reason": "green-bay-packers-vs-minnesota-vikings-2026-postgame-analysis (published)",
-      "slug": "green-bay-packers-vs-minnesota-vikings-2026-postgame-analysis",
-      "score": 92,
-      "url": "https://edgedesksports.com/articles/green-bay-packers-vs-minnesota-vikings-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "NFL:2026_01_GB_MIN",
-      "ok": true,
-      "reason": "green-bay-packers-vs-minnesota-vikings-2026 → green-bay-packers-vs-minnesota-vikings-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
-      "key": "NFL:2026_01_BUF_HOU",
+      "key": "NFL:2026_01_GB_MIN",
       "ok": true,
       "reason": "already published in an earlier run",
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_readiness",
+      "key": "NFL:2026_01_BUF_HOU",
+      "ok": true,
+      "reason": "8 core statistics on both sides"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "NFL:2026_01_BUF_HOU",
+      "ok": true,
+      "reason": "Buffalo Bills 36 — Houston Texans 31 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "NFL:2026_01_BUF_HOU",
+      "ok": true,
+      "reason": "4 of 12 gradeable claims held up, 4 did not · LOSS / MIXED",
+      "bet": "LOSS",
+      "process": "MIXED"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "NFL:2026_01_BUF_HOU",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "NFL:2026_01_BUF_HOU",
+      "ok": true,
+      "reason": "0 new, 5 replaced, 12 review candidate(s) open",
+      "lessons": 5
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "NFL:2026_01_BUF_HOU",
+      "ok": true,
+      "reason": "buffalo-bills-vs-houston-texans-2026-postgame-analysis (published)",
+      "slug": "buffalo-bills-vs-houston-texans-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/buffalo-bills-vs-houston-texans-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "NFL:2026_01_BUF_HOU",
+      "ok": true,
+      "reason": "buffalo-bills-vs-houston-texans-2026 → buffalo-bills-vs-houston-texans-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_07_DAL_PHI",
@@ -1364,8 +1391,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_07_KC_SEA",
@@ -1374,8 +1401,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_07_NE_CHI",
@@ -1384,8 +1411,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_06_DAL_GB",
@@ -1394,8 +1421,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_06_NYJ_NE",
@@ -1404,8 +1431,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_06_HOU_JAX",
@@ -1414,8 +1441,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_06_WAS_SF",
@@ -1424,8 +1451,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401871070",
@@ -1434,8 +1461,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401864527",
@@ -1444,8 +1471,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_07_GB_DET",
@@ -1454,8 +1481,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmhy8i",
-      "at": "2026-10-17T16:40:45.714Z",
+      "run": "run_mvcozvlg",
+      "at": "2026-10-17T17:50:41.332Z",
       "phase": "all",
       "step": "memory",
       "key": null,
@@ -1463,18 +1490,18 @@
       "reason": "137 lessons over 56 graded games"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "dispatch",
       "key": null,
       "ok": true,
-      "reason": "5 pregame article(s) in window; 40 postgame audit(s) ready",
+      "reason": "5 pregame article(s) in window; 39 postgame audit(s) ready",
       "due": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "lease",
       "key": null,
@@ -1483,8 +1510,8 @@
       "lease": false
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "sources",
       "key": null,
@@ -1496,8 +1523,8 @@
       ]
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "select",
       "key": null,
@@ -1507,61 +1534,86 @@
       "featured": 16
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "pregame",
+      "step": "pregame_snapshot",
       "key": "CFB:401858263",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "unchanged: snap_755665295d5aefb7",
+      "snapshot_id": "snap_755665295d5aefb7"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "pregame_validation",
+      "key": "CFB:401858263",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "pregame_published",
+      "key": "CFB:401858263",
+      "ok": true,
+      "reason": "florida-state-vs-miami-2026 (published, normal, 299m before kickoff)",
+      "slug": "florida-state-vs-miami-2026",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/florida-state-vs-miami-2026",
+      "action": "published",
+      "window": "normal",
+      "minutes_before_kickoff": 299
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "NFL:2026_07_DAL_PHI",
       "ok": true,
-      "reason": "not due yet: 223.4h out, this window publishes at 7h",
+      "reason": "not due yet: 222.2h out, this window publishes at 7h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "NFL:2026_07_KC_SEA",
       "ok": true,
-      "reason": "not due yet: 199.5h out, this window publishes at 7h",
+      "reason": "not due yet: 198.3h out, this window publishes at 7h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "NFL:2026_07_NE_CHI",
       "ok": true,
-      "reason": "not due yet: 127.4h out, this window publishes at 9h",
+      "reason": "not due yet: 126.2h out, this window publishes at 9h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_snapshot",
       "key": "CFB:401858492",
       "ok": true,
-      "reason": "unchanged: snap_33b998feb7f1d746",
-      "snapshot_id": "snap_33b998feb7f1d746"
+      "reason": "unchanged: snap_57a04027bebf1b18",
+      "snapshot_id": "snap_57a04027bebf1b18"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_validation",
       "key": "CFB:401858492",
@@ -1570,8 +1622,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_published",
       "key": "CFB:401858492",
@@ -1584,18 +1636,18 @@
       ]
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_snapshot",
       "key": "CFB:401856809",
       "ok": true,
-      "reason": "unchanged: snap_dce635aca775cc25",
-      "snapshot_id": "snap_dce635aca775cc25"
+      "reason": "unchanged: snap_da80e47fd8819cf6",
+      "snapshot_id": "snap_da80e47fd8819cf6"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_validation",
       "key": "CFB:401856809",
@@ -1604,8 +1656,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_published",
       "key": "CFB:401856809",
@@ -1618,18 +1670,18 @@
       ]
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_snapshot",
       "key": "CFB:401858494",
       "ok": true,
-      "reason": "unchanged: snap_c0ce2c5a723f3951",
-      "snapshot_id": "snap_c0ce2c5a723f3951"
+      "reason": "unchanged: snap_e71018b7c49a0221",
+      "snapshot_id": "snap_e71018b7c49a0221"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_validation",
       "key": "CFB:401858494",
@@ -1638,8 +1690,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_published",
       "key": "CFB:401858494",
@@ -1652,18 +1704,18 @@
       ]
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_snapshot",
       "key": "CFB:401856723",
       "ok": true,
-      "reason": "unchanged: snap_5c40d75bac710e8c",
-      "snapshot_id": "snap_5c40d75bac710e8c"
+      "reason": "unchanged: snap_afb90cd2af066409",
+      "snapshot_id": "snap_afb90cd2af066409"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_validation",
       "key": "CFB:401856723",
@@ -1672,8 +1724,48 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "pregame_freshness",
+      "key": "CFB:401856723",
+      "ok": true,
+      "reason": "nothing moved · 5 field(s) unavailable",
+      "material": false,
+      "changes": 0,
+      "blind": [
+        "fixture.status",
+        "fixture.kickoff",
+        "fixture.venue",
+        "availability.out",
+        "availability.qb"
+      ]
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "pregame_refresh",
+      "key": "CFB:401856723",
+      "ok": true,
+      "reason": "time-sensitive data re-verified, unchanged",
+      "state": "unchanged",
+      "changes": [],
+      "publication_snapshot": "snap_afb90cd2af066409"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "pregame_validation",
+      "key": "CFB:401856723",
+      "ok": false,
+      "reason": "after the late-window refresh: FACTUAL INTEGRITY: no_unsupported_statistics",
+      "score": 100
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame_published",
       "key": "CFB:401856723",
@@ -1687,120 +1779,95 @@
       ]
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "NFL:2026_06_DAL_GB",
       "ok": true,
-      "reason": "not due yet: 31.5h out, this window publishes at 7h",
+      "reason": "not due yet: 30.3h out, this window publishes at 7h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "NFL:2026_06_NYJ_NE",
       "ok": true,
-      "reason": "not due yet: 24.2h out, this window publishes at 16h",
+      "reason": "not due yet: 23.0h out, this window publishes at 16h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "NFL:2026_06_HOU_JAX",
       "ok": true,
-      "reason": "not due yet: 20.7h out, this window publishes at 16h",
+      "reason": "not due yet: 19.5h out, this window publishes at 16h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "pregame_snapshot",
+      "step": "pregame",
       "key": "CFB:401856722",
       "ok": true,
-      "reason": "captured snap_abf17c4cd34db154",
-      "snapshot_id": "snap_abf17c4cd34db154"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "pregame_validation",
-      "key": "CFB:401856722",
-      "ok": true,
-      "reason": "quality 88",
-      "score": 88
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "pregame_published",
-      "key": "CFB:401856722",
-      "ok": true,
-      "reason": "kentucky-vs-oklahoma-2026 (published, normal, 399m before kickoff)",
-      "slug": "kentucky-vs-oklahoma-2026",
-      "score": 88,
-      "url": "https://edgedesksports.com/articles/kentucky-vs-oklahoma-2026",
-      "action": "published",
-      "window": "normal",
-      "minutes_before_kickoff": 399
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "NFL:2026_06_WAS_SF",
       "ok": true,
-      "reason": "not due yet: 55.4h out, this window publishes at 7h",
+      "reason": "not due yet: 54.2h out, this window publishes at 7h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "CFB:401871070",
       "ok": true,
-      "reason": "not due yet: 103.2h out, this window publishes at 14h",
+      "reason": "not due yet: 102.0h out, this window publishes at 14h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "CFB:401864527",
       "ok": true,
-      "reason": "not due yet: 177.2h out, this window publishes at 12h",
+      "reason": "not due yet: 176.0h out, this window publishes at 12h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "pregame",
       "key": "NFL:2026_07_GB_DET",
       "ok": true,
-      "reason": "not due yet: 195.6h out, this window publishes at 16h",
+      "reason": "not due yet: 194.4h out, this window publishes at 16h",
       "skipped": true,
       "window": "not_due"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401856722",
@@ -1809,8 +1876,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858263",
@@ -1819,8 +1886,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858494",
@@ -1829,8 +1896,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401856809",
@@ -1839,8 +1906,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401856723",
@@ -1849,8 +1916,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858492",
@@ -1859,8 +1926,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401860923",
@@ -1868,8 +1935,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401860923",
@@ -1877,8 +1944,8 @@
       "reason": "Colorado State Rams 27 — Texas State Bobcats 66 (espn_summary+espn_scoreboard+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401860923",
@@ -1888,8 +1955,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401860923",
@@ -1898,160 +1965,99 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_readiness",
-      "key": "NFL:2026_06_SEA_DEN",
-      "ok": true,
-      "reason": "8 core statistics on both sides"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "NFL:2026_06_SEA_DEN",
-      "ok": true,
-      "reason": "Seattle Seahawks 14 — Denver Broncos 17 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "NFL:2026_06_SEA_DEN",
-      "ok": true,
-      "reason": "5 of 11 gradeable claims held up, 6 did not · WIN / MIXED",
-      "bet": "WIN",
-      "process": "MIXED"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "NFL:2026_06_SEA_DEN",
-      "ok": true,
-      "reason": "quality 92",
-      "score": 92
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "NFL:2026_06_SEA_DEN",
-      "ok": true,
-      "reason": "0 new, 7 replaced, 12 review candidate(s) open",
-      "lessons": 7
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "NFL:2026_06_SEA_DEN",
-      "ok": true,
-      "reason": "seattle-seahawks-vs-denver-broncos-2026-postgame-analysis (published)",
-      "slug": "seattle-seahawks-vs-denver-broncos-2026-postgame-analysis",
-      "score": 92,
-      "url": "https://edgedesksports.com/articles/seattle-seahawks-vs-denver-broncos-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "NFL:2026_06_SEA_DEN",
-      "ok": true,
-      "reason": "seattle-seahawks-vs-denver-broncos-2026 → seattle-seahawks-vs-denver-broncos-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
-      "key": "NFL:2026_05_BUF_LA",
+      "key": "NFL:2026_06_SEA_DEN",
       "ok": true,
       "reason": "already published in an earlier run",
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
-      "key": "NFL:2026_05_BAL_ATL",
+      "key": "NFL:2026_05_BUF_LA",
       "ok": true,
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
-      "key": "NFL:2026_05_BAL_ATL",
+      "key": "NFL:2026_05_BUF_LA",
       "ok": true,
-      "reason": "Baltimore Ravens 30 — Atlanta Falcons 23 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
+      "reason": "Buffalo Bills 37 — Los Angeles Rams 34 (espn_summary+espn_scoreboard+nflverse)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
-      "key": "NFL:2026_05_BAL_ATL",
+      "key": "NFL:2026_05_BUF_LA",
       "ok": true,
-      "reason": "6 of 12 gradeable claims held up, 5 did not · WIN / UNSOUND",
+      "reason": "5 of 11 gradeable claims held up, 3 did not · WIN / MIXED",
       "bet": "WIN",
-      "process": "UNSOUND"
+      "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
-      "key": "NFL:2026_05_BAL_ATL",
+      "key": "NFL:2026_05_BUF_LA",
       "ok": true,
-      "reason": "quality 92",
-      "score": 92
+      "reason": "quality 100",
+      "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "research_lessons",
-      "key": "NFL:2026_05_BAL_ATL",
+      "key": "NFL:2026_05_BUF_LA",
       "ok": true,
-      "reason": "0 new, 5 replaced, 12 review candidate(s) open",
-      "lessons": 5
+      "reason": "0 new, 6 replaced, 12 review candidate(s) open",
+      "lessons": 6
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_published",
-      "key": "NFL:2026_05_BAL_ATL",
+      "key": "NFL:2026_05_BUF_LA",
       "ok": true,
-      "reason": "baltimore-ravens-vs-atlanta-falcons-2026-postgame-analysis (published)",
-      "slug": "baltimore-ravens-vs-atlanta-falcons-2026-postgame-analysis",
-      "score": 92,
-      "url": "https://edgedesksports.com/articles/baltimore-ravens-vs-atlanta-falcons-2026-postgame-analysis",
+      "reason": "buffalo-bills-vs-los-angeles-rams-2026-postgame-analysis (published)",
+      "slug": "buffalo-bills-vs-los-angeles-rams-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/buffalo-bills-vs-los-angeles-rams-2026-postgame-analysis",
       "action": "published"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "link_pregame",
-      "key": "NFL:2026_05_BAL_ATL",
+      "key": "NFL:2026_05_BUF_LA",
       "ok": true,
-      "reason": "baltimore-ravens-vs-atlanta-falcons-2026 → baltimore-ravens-vs-atlanta-falcons-2026-postgame-analysis"
+      "reason": "buffalo-bills-vs-los-angeles-rams-2026 → buffalo-bills-vs-los-angeles-rams-2026-postgame-analysis"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame",
+      "key": "NFL:2026_05_BAL_ATL",
+      "ok": true,
+      "reason": "already published in an earlier run",
+      "skipped": true
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_05_SF_SEA",
@@ -2059,8 +2065,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_05_SF_SEA",
@@ -2068,8 +2074,8 @@
       "reason": "San Francisco 49ers 32 — Seattle Seahawks 29 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_05_SF_SEA",
@@ -2079,8 +2085,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_05_SF_SEA",
@@ -2089,8 +2095,8 @@
       "score": 92
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401860901",
@@ -2098,8 +2104,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401860901",
@@ -2107,8 +2113,8 @@
       "reason": "Boise State Broncos 38 — Fresno State Bulldogs 31 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401860901",
@@ -2118,8 +2124,8 @@
       "process": "SOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401860901",
@@ -2128,18 +2134,79 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "CFB:401856808",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "CFB:401856808",
+      "ok": true,
+      "reason": "Hawai'i Rainbow Warriors 12 — Arizona State Sun Devils 30 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "CFB:401856808",
+      "ok": true,
+      "reason": "2 of 3 gradeable claims held up, 0 did not · WIN / SOUND",
+      "bet": "WIN",
+      "process": "SOUND"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "CFB:401856808",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "CFB:401856808",
+      "ok": true,
+      "reason": "0 new, 2 replaced, 12 review candidate(s) open",
+      "lessons": 2
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "CFB:401856808",
+      "ok": true,
+      "reason": "hawaii-vs-arizona-state-2026-postgame-analysis (published)",
+      "slug": "hawaii-vs-arizona-state-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/hawaii-vs-arizona-state-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "CFB:401856808",
+      "ok": true,
+      "reason": "hawaii-vs-arizona-state-2026 → hawaii-vs-arizona-state-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_05_CHI_GB",
@@ -2147,8 +2214,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_05_CHI_GB",
@@ -2156,8 +2223,8 @@
       "reason": "Chicago Bears 7 — Green Bay Packers 31 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_05_CHI_GB",
@@ -2167,8 +2234,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_05_CHI_GB",
@@ -2177,8 +2244,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856827",
@@ -2186,8 +2253,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856827",
@@ -2195,8 +2262,8 @@
       "reason": "Kansas Jayhawks 24 — Utah Utes 41 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856827",
@@ -2206,8 +2273,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856827",
@@ -2216,8 +2283,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856712",
@@ -2225,8 +2292,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856712",
@@ -2234,8 +2301,8 @@
       "reason": "Georgia Bulldogs 20 — Alabama Crimson Tide 17 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856712",
@@ -2245,8 +2312,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856712",
@@ -2255,8 +2322,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858485",
@@ -2264,8 +2331,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858485",
@@ -2273,8 +2340,8 @@
       "reason": "USC Trojans 31 — Penn State Nittany Lions 23 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858485",
@@ -2284,8 +2351,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858485",
@@ -2294,79 +2361,18 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "CFB:401856715",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401856715",
-      "ok": true,
-      "reason": "LSU Tigers 34 — Kentucky Wildcats 35 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401856715",
-      "ok": true,
-      "reason": "0 of 2 gradeable claims held up, 2 did not · WIN / UNTESTED",
-      "bet": "WIN",
-      "process": "UNTESTED"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401856715",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401856715",
-      "ok": true,
-      "reason": "0 new, 4 replaced, 12 review candidate(s) open",
-      "lessons": 4
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401856715",
-      "ok": true,
-      "reason": "lsu-vs-kentucky-2026-postgame-analysis (published)",
-      "slug": "lsu-vs-kentucky-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/lsu-vs-kentucky-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401856715",
-      "ok": true,
-      "reason": "lsu-vs-kentucky-2026 → lsu-vs-kentucky-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856717",
@@ -2374,8 +2380,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856717",
@@ -2383,8 +2389,8 @@
       "reason": "Texas Longhorns 24 — Oklahoma Sooners 27 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856717",
@@ -2394,8 +2400,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856717",
@@ -2404,99 +2410,160 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame",
-      "key": "CFB:401858254",
-      "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
-      "key": "NFL:2026_05_TB_DAL",
+      "key": "CFB:401858254",
       "ok": true,
-      "reason": "8 core statistics on both sides"
+      "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
-      "key": "NFL:2026_05_TB_DAL",
+      "key": "CFB:401858254",
       "ok": true,
-      "reason": "Tampa Bay Buccaneers 24 — Dallas Cowboys 16 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
+      "reason": "Florida State Seminoles 20 — Louisville Cardinals 44 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
-      "key": "NFL:2026_05_TB_DAL",
+      "key": "CFB:401858254",
       "ok": true,
-      "reason": "3 of 12 gradeable claims held up, 5 did not · WIN / MIXED",
-      "bet": "WIN",
-      "process": "MIXED"
+      "reason": "1 of 2 gradeable claims held up, 0 did not · LOSS / UNTESTED",
+      "bet": "LOSS",
+      "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
-      "key": "NFL:2026_05_TB_DAL",
+      "key": "CFB:401858254",
       "ok": true,
       "reason": "quality 100",
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "research_lessons",
-      "key": "NFL:2026_05_TB_DAL",
+      "key": "CFB:401858254",
       "ok": true,
-      "reason": "0 new, 5 replaced, 12 review candidate(s) open",
-      "lessons": 5
+      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
+      "lessons": 3
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_published",
-      "key": "NFL:2026_05_TB_DAL",
+      "key": "CFB:401858254",
       "ok": true,
-      "reason": "tampa-bay-buccaneers-vs-dallas-cowboys-2026-postgame-analysis (published)",
-      "slug": "tampa-bay-buccaneers-vs-dallas-cowboys-2026-postgame-analysis",
+      "reason": "florida-state-vs-louisville-2026-postgame-analysis (published)",
+      "slug": "florida-state-vs-louisville-2026-postgame-analysis",
       "score": 100,
-      "url": "https://edgedesksports.com/articles/tampa-bay-buccaneers-vs-dallas-cowboys-2026-postgame-analysis",
+      "url": "https://edgedesksports.com/articles/florida-state-vs-louisville-2026-postgame-analysis",
       "action": "published"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "link_pregame",
-      "key": "NFL:2026_05_TB_DAL",
+      "key": "CFB:401858254",
       "ok": true,
-      "reason": "tampa-bay-buccaneers-vs-dallas-cowboys-2026 → tampa-bay-buccaneers-vs-dallas-cowboys-2026-postgame-analysis"
+      "reason": "florida-state-vs-louisville-2026 → florida-state-vs-louisville-2026-postgame-analysis"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
-      "key": "CFB:401871090",
+      "key": "NFL:2026_05_TB_DAL",
       "ok": true,
       "reason": "already published in an earlier run",
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_readiness",
+      "key": "CFB:401871090",
+      "ok": true,
+      "reason": "7 core statistics on both sides"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "CFB:401871090",
+      "ok": true,
+      "reason": "Southern Miss Golden Eagles 34 — Troy Trojans 55 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "CFB:401871090",
+      "ok": true,
+      "reason": "0 of 2 gradeable claims held up, 0 did not · NOT GRADED / UNTESTED",
+      "bet": "NOT GRADED",
+      "process": "UNTESTED"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "CFB:401871090",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "CFB:401871090",
+      "ok": true,
+      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
+      "lessons": 3
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "CFB:401871090",
+      "ok": true,
+      "reason": "southern-miss-vs-troy-2026-postgame-analysis (published)",
+      "slug": "southern-miss-vs-troy-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/southern-miss-vs-troy-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "CFB:401871090",
+      "ok": true,
+      "reason": "southern-miss-vs-troy-2026 → southern-miss-vs-troy-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_04_ATL_NO",
@@ -2504,8 +2571,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_04_ATL_NO",
@@ -2513,8 +2580,8 @@
       "reason": "Atlanta Falcons 45 — New Orleans Saints 24 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_04_ATL_NO",
@@ -2524,8 +2591,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_04_ATL_NO",
@@ -2534,8 +2601,8 @@
       "score": 92
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_04_DET_CAR",
@@ -2543,8 +2610,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_04_DET_CAR",
@@ -2552,8 +2619,8 @@
       "reason": "Detroit Lions 26 — Carolina Panthers 32 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_04_DET_CAR",
@@ -2563,8 +2630,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_04_DET_CAR",
@@ -2573,8 +2640,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_04_NE_BUF",
@@ -2582,8 +2649,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_04_NE_BUF",
@@ -2591,8 +2658,8 @@
       "reason": "New England Patriots 29 — Buffalo Bills 26 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_04_NE_BUF",
@@ -2602,8 +2669,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_04_NE_BUF",
@@ -2612,8 +2679,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858477",
@@ -2622,8 +2689,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858249",
@@ -2632,8 +2699,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858478",
@@ -2642,8 +2709,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401856821",
@@ -2652,8 +2719,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401862792",
@@ -2661,8 +2728,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401862792",
@@ -2670,8 +2737,8 @@
       "reason": "Temple Owls 17 — South Florida Bulls 13 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401862792",
@@ -2681,8 +2748,8 @@
       "process": "SOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401862792",
@@ -2691,8 +2758,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401856711",
@@ -2701,18 +2768,79 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "CFB:401858476",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "CFB:401858476",
+      "ok": true,
+      "reason": "Penn State Nittany Lions 13 — Northwestern Wildcats 34 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "CFB:401858476",
+      "ok": true,
+      "reason": "1 of 2 gradeable claims held up, 0 did not · WIN / UNTESTED",
+      "bet": "WIN",
+      "process": "UNTESTED"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "CFB:401858476",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "CFB:401858476",
+      "ok": true,
+      "reason": "0 new, 2 replaced, 12 review candidate(s) open",
+      "lessons": 2
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "CFB:401858476",
+      "ok": true,
+      "reason": "penn-state-vs-northwestern-2026-postgame-analysis (published)",
+      "slug": "penn-state-vs-northwestern-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/penn-state-vs-northwestern-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "CFB:401858476",
+      "ok": true,
+      "reason": "penn-state-vs-northwestern-2026 → penn-state-vs-northwestern-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858245",
@@ -2720,8 +2848,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858245",
@@ -2729,8 +2857,8 @@
       "reason": "Pittsburgh Panthers 35 — Virginia Tech Hokies 33 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858245",
@@ -2740,8 +2868,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858245",
@@ -2750,79 +2878,18 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "CFB:401862786",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401862786",
-      "ok": true,
-      "reason": "North Texas Mean Green 45 — Tulsa Golden Hurricane 44 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401862786",
-      "ok": true,
-      "reason": "2 of 3 gradeable claims held up, 0 did not · WIN / SOUND",
-      "bet": "WIN",
-      "process": "SOUND"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401862786",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401862786",
-      "ok": true,
-      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
-      "lessons": 3
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401862786",
-      "ok": true,
-      "reason": "north-texas-vs-tulsa-2026-postgame-analysis (published)",
-      "slug": "north-texas-vs-tulsa-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/north-texas-vs-tulsa-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401862786",
-      "ok": true,
-      "reason": "north-texas-vs-tulsa-2026 → north-texas-vs-tulsa-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_04_PIT_CLE",
@@ -2830,8 +2897,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_04_PIT_CLE",
@@ -2839,8 +2906,8 @@
       "reason": "Pittsburgh Steelers 24 — Cleveland Browns 27 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_04_PIT_CLE",
@@ -2850,8 +2917,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_04_PIT_CLE",
@@ -2860,89 +2927,89 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_readiness",
-      "key": "NFL:2026_03_PHI_CHI",
-      "ok": true,
-      "reason": "8 core statistics on both sides"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "NFL:2026_03_PHI_CHI",
-      "ok": true,
-      "reason": "Philadelphia Eagles 7 — Chicago Bears 27 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "NFL:2026_03_PHI_CHI",
-      "ok": true,
-      "reason": "2 of 11 gradeable claims held up, 5 did not · WIN / UNSOUND",
-      "bet": "WIN",
-      "process": "UNSOUND"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "NFL:2026_03_PHI_CHI",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "NFL:2026_03_PHI_CHI",
-      "ok": true,
-      "reason": "0 new, 6 replaced, 12 review candidate(s) open",
-      "lessons": 6
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "NFL:2026_03_PHI_CHI",
-      "ok": true,
-      "reason": "philadelphia-eagles-vs-chicago-bears-2026-postgame-analysis (published)",
-      "slug": "philadelphia-eagles-vs-chicago-bears-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/philadelphia-eagles-vs-chicago-bears-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "NFL:2026_03_PHI_CHI",
-      "ok": true,
-      "reason": "philadelphia-eagles-vs-chicago-bears-2026 → philadelphia-eagles-vs-chicago-bears-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
-      "key": "NFL:2026_03_LA_DEN",
+      "key": "NFL:2026_03_PHI_CHI",
       "ok": true,
       "reason": "already published in an earlier run",
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_readiness",
+      "key": "NFL:2026_03_LA_DEN",
+      "ok": true,
+      "reason": "8 core statistics on both sides"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "NFL:2026_03_LA_DEN",
+      "ok": true,
+      "reason": "Los Angeles Rams 26 — Denver Broncos 30 (espn_summary+espn_scoreboard+nflverse)"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "NFL:2026_03_LA_DEN",
+      "ok": true,
+      "reason": "7 of 11 gradeable claims held up, 4 did not · WIN / UNTESTED",
+      "bet": "WIN",
+      "process": "UNTESTED"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "NFL:2026_03_LA_DEN",
+      "ok": true,
+      "reason": "quality 92",
+      "score": 92
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "NFL:2026_03_LA_DEN",
+      "ok": true,
+      "reason": "0 new, 4 replaced, 12 review candidate(s) open",
+      "lessons": 4
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "NFL:2026_03_LA_DEN",
+      "ok": true,
+      "reason": "los-angeles-rams-vs-denver-broncos-2026-postgame-analysis (published)",
+      "slug": "los-angeles-rams-vs-denver-broncos-2026-postgame-analysis",
+      "score": 92,
+      "url": "https://edgedesksports.com/articles/los-angeles-rams-vs-denver-broncos-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "NFL:2026_03_LA_DEN",
+      "ok": true,
+      "reason": "los-angeles-rams-vs-denver-broncos-2026 → los-angeles-rams-vs-denver-broncos-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_03_NE_JAX",
@@ -2950,8 +3017,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_03_NE_JAX",
@@ -2959,8 +3026,8 @@
       "reason": "New England Patriots 6 — Jacksonville Jaguars 35 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_03_NE_JAX",
@@ -2970,8 +3037,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_03_NE_JAX",
@@ -2980,8 +3047,8 @@
       "score": 92
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_03_HOU_IND",
@@ -2989,8 +3056,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_03_HOU_IND",
@@ -2998,8 +3065,8 @@
       "reason": "Houston Texans 17 — Indianapolis Colts 19 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_03_HOU_IND",
@@ -3009,8 +3076,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_03_HOU_IND",
@@ -3019,8 +3086,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401866429",
@@ -3028,8 +3095,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401866429",
@@ -3037,8 +3104,8 @@
       "reason": "Massachusetts Minutemen 35 — Sacramento State Hornets 6 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401866429",
@@ -3048,8 +3115,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401866429",
@@ -3058,89 +3125,89 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_readiness",
-      "key": "CFB:401858241",
-      "ok": true,
-      "reason": "7 core statistics on both sides"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401858241",
-      "ok": true,
-      "reason": "Missouri State Bears 24 — SMU Mustangs 34 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401858241",
-      "ok": true,
-      "reason": "0 of 2 gradeable claims held up, 0 did not · WIN / UNTESTED",
-      "bet": "WIN",
-      "process": "UNTESTED"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401858241",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401858241",
-      "ok": true,
-      "reason": "0 new, 2 replaced, 12 review candidate(s) open",
-      "lessons": 2
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401858241",
-      "ok": true,
-      "reason": "missouri-state-vs-smu-2026-postgame-analysis (published)",
-      "slug": "missouri-state-vs-smu-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/missouri-state-vs-smu-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401858241",
-      "ok": true,
-      "reason": "missouri-state-vs-smu-2026 → missouri-state-vs-smu-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
-      "key": "CFB:401856703",
+      "key": "CFB:401858241",
       "ok": true,
       "reason": "already published in an earlier run",
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_readiness",
+      "key": "CFB:401856703",
+      "ok": true,
+      "reason": "7 core statistics on both sides"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "CFB:401856703",
+      "ok": true,
+      "reason": "Missouri Tigers 24 — Mississippi State Bulldogs 31 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "CFB:401856703",
+      "ok": true,
+      "reason": "2 of 3 gradeable claims held up, 0 did not · LOSS / MIXED",
+      "bet": "LOSS",
+      "process": "MIXED"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "CFB:401856703",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "CFB:401856703",
+      "ok": true,
+      "reason": "0 new, 2 replaced, 12 review candidate(s) open",
+      "lessons": 2
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "CFB:401856703",
+      "ok": true,
+      "reason": "missouri-vs-mississippi-state-2026-postgame-analysis (published)",
+      "slug": "missouri-vs-mississippi-state-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/missouri-vs-mississippi-state-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "CFB:401856703",
+      "ok": true,
+      "reason": "missouri-vs-mississippi-state-2026 → missouri-vs-mississippi-state-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856702",
@@ -3148,8 +3215,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856702",
@@ -3157,8 +3224,8 @@
       "reason": "Texas A&M Aggies 6 — LSU Tigers 35 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856702",
@@ -3168,8 +3235,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856702",
@@ -3178,18 +3245,79 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "CFB:401858469",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "CFB:401858469",
+      "ok": true,
+      "reason": "Oregon Ducks 41 — USC Trojans 27 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "CFB:401858469",
+      "ok": true,
+      "reason": "0 of 3 gradeable claims held up, 3 did not · LOSS / UNSOUND",
+      "bet": "LOSS",
+      "process": "UNSOUND"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "CFB:401858469",
+      "ok": true,
+      "reason": "quality 100",
+      "score": 100
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "CFB:401858469",
+      "ok": true,
+      "reason": "0 new, 4 replaced, 12 review candidate(s) open",
+      "lessons": 4
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "CFB:401858469",
+      "ok": true,
+      "reason": "oregon-vs-usc-2026-postgame-analysis (published)",
+      "slug": "oregon-vs-usc-2026-postgame-analysis",
+      "score": 100,
+      "url": "https://edgedesksports.com/articles/oregon-vs-usc-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "CFB:401858469",
+      "ok": true,
+      "reason": "oregon-vs-usc-2026 → oregon-vs-usc-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856881",
@@ -3197,8 +3325,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856881",
@@ -3206,8 +3334,8 @@
       "reason": "Oklahoma State Cowboys 41 — West Virginia Mountaineers 24 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856881",
@@ -3217,8 +3345,8 @@
       "process": "SOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856881",
@@ -3227,79 +3355,18 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "CFB:401858234",
       "ok": true,
-      "reason": "7 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "CFB:401858234",
-      "ok": true,
-      "reason": "Clemson Tigers 24 — California Golden Bears 10 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "CFB:401858234",
-      "ok": true,
-      "reason": "1 of 3 gradeable claims held up, 0 did not · WIN / MIXED",
-      "bet": "WIN",
-      "process": "MIXED"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "CFB:401858234",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "CFB:401858234",
-      "ok": true,
-      "reason": "0 new, 3 replaced, 12 review candidate(s) open",
-      "lessons": 3
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "CFB:401858234",
-      "ok": true,
-      "reason": "clemson-vs-california-2026-postgame-analysis (published)",
-      "slug": "clemson-vs-california-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/clemson-vs-california-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "CFB:401858234",
-      "ok": true,
-      "reason": "clemson-vs-california-2026 → clemson-vs-california-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858461",
@@ -3307,8 +3374,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858461",
@@ -3316,8 +3383,8 @@
       "reason": "Northwestern Wildcats 23 — Indiana Hoosiers 29 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858461",
@@ -3327,8 +3394,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858461",
@@ -3337,8 +3404,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401869941",
@@ -3346,8 +3413,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401869941",
@@ -3355,8 +3422,8 @@
       "reason": "Liberty Flames 34 — Coastal Carolina Chanticleers 17 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401869941",
@@ -3366,8 +3433,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401869941",
@@ -3376,18 +3443,79 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame",
+      "step": "postgame_readiness",
       "key": "NFL:2026_03_ATL_GB",
       "ok": true,
-      "reason": "already published in an earlier run",
-      "skipped": true
+      "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_result",
+      "key": "NFL:2026_03_ATL_GB",
+      "ok": true,
+      "reason": "Atlanta Falcons 35 — Green Bay Packers 14 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_audit",
+      "key": "NFL:2026_03_ATL_GB",
+      "ok": true,
+      "reason": "1 of 10 gradeable claims held up, 5 did not · WIN / MIXED",
+      "bet": "WIN",
+      "process": "MIXED"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_validation",
+      "key": "NFL:2026_03_ATL_GB",
+      "ok": true,
+      "reason": "quality 92",
+      "score": 92
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "research_lessons",
+      "key": "NFL:2026_03_ATL_GB",
+      "ok": true,
+      "reason": "0 new, 7 replaced, 12 review candidate(s) open",
+      "lessons": 7
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "postgame_published",
+      "key": "NFL:2026_03_ATL_GB",
+      "ok": true,
+      "reason": "atlanta-falcons-vs-green-bay-packers-2026-postgame-analysis (published)",
+      "slug": "atlanta-falcons-vs-green-bay-packers-2026-postgame-analysis",
+      "score": 92,
+      "url": "https://edgedesksports.com/articles/atlanta-falcons-vs-green-bay-packers-2026-postgame-analysis",
+      "action": "published"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
+      "phase": "all",
+      "step": "link_pregame",
+      "key": "NFL:2026_03_ATL_GB",
+      "ok": true,
+      "reason": "atlanta-falcons-vs-green-bay-packers-2026 → atlanta-falcons-vs-green-bay-packers-2026-postgame-analysis"
+    },
+    {
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_02_NYG_LA",
@@ -3395,8 +3523,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_02_NYG_LA",
@@ -3404,8 +3532,8 @@
       "reason": "New York Giants 6 — Los Angeles Rams 28 (espn_summary+espn_scoreboard+nflverse)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_02_NYG_LA",
@@ -3415,8 +3543,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_02_NYG_LA",
@@ -3425,79 +3553,18 @@
       "score": 92
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "NFL:2026_02_IND_KC",
       "ok": true,
-      "reason": "8 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "NFL:2026_02_IND_KC",
-      "ok": true,
-      "reason": "Indianapolis Colts 30 — Kansas City Chiefs 33 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "NFL:2026_02_IND_KC",
-      "ok": true,
-      "reason": "2 of 10 gradeable claims held up, 4 did not · WIN / UNSOUND",
-      "bet": "WIN",
-      "process": "UNSOUND"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "NFL:2026_02_IND_KC",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "NFL:2026_02_IND_KC",
-      "ok": true,
-      "reason": "0 new, 8 replaced, 12 review candidate(s) open",
-      "lessons": 8
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "NFL:2026_02_IND_KC",
-      "ok": true,
-      "reason": "indianapolis-colts-vs-kansas-city-chiefs-2026-postgame-analysis (published)",
-      "slug": "indianapolis-colts-vs-kansas-city-chiefs-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/indianapolis-colts-vs-kansas-city-chiefs-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "NFL:2026_02_IND_KC",
-      "ok": true,
-      "reason": "indianapolis-colts-vs-kansas-city-chiefs-2026 → indianapolis-colts-vs-kansas-city-chiefs-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858453",
@@ -3505,8 +3572,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858453",
@@ -3514,8 +3581,8 @@
       "reason": "Michigan State Spartans 10 — Notre Dame Fighting Irish 27 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858453",
@@ -3525,8 +3592,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858453",
@@ -3535,8 +3602,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856688",
@@ -3544,8 +3611,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856688",
@@ -3553,8 +3620,8 @@
       "reason": "LSU Tigers 24 — Ole Miss Rebels 32 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856688",
@@ -3564,8 +3631,8 @@
       "process": "UNSOUND"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856688",
@@ -3574,8 +3641,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856687",
@@ -3583,8 +3650,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856687",
@@ -3592,8 +3659,8 @@
       "reason": "Florida Gators 44 — Auburn Tigers 39 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856687",
@@ -3603,8 +3670,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856687",
@@ -3613,8 +3680,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401856811",
@@ -3622,8 +3689,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401856811",
@@ -3631,8 +3698,8 @@
       "reason": "Houston Cougars 26 — Texas Tech Red Raiders 28 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401856811",
@@ -3642,8 +3709,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401856811",
@@ -3652,8 +3719,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401858226",
@@ -3662,8 +3729,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "CFB:401858225",
@@ -3671,8 +3738,8 @@
       "reason": "7 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "CFB:401858225",
@@ -3680,8 +3747,8 @@
       "reason": "Syracuse Orange 13 — Pittsburgh Panthers 27 (espn_summary+espn_scoreboard+cfbfastR+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "CFB:401858225",
@@ -3691,8 +3758,8 @@
       "process": "UNTESTED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "CFB:401858225",
@@ -3701,8 +3768,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_02_DET_BUF",
@@ -3710,8 +3777,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_02_DET_BUF",
@@ -3719,8 +3786,8 @@
       "reason": "Detroit Lions 31 — Buffalo Bills 41 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_02_DET_BUF",
@@ -3730,8 +3797,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_02_DET_BUF",
@@ -3740,8 +3807,8 @@
       "score": 100
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_01_DEN_KC",
@@ -3749,8 +3816,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_01_DEN_KC",
@@ -3758,8 +3825,8 @@
       "reason": "Denver Broncos 10 — Kansas City Chiefs 31 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_01_DEN_KC",
@@ -3769,8 +3836,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_01_DEN_KC",
@@ -3779,8 +3846,8 @@
       "score": 92
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_readiness",
       "key": "NFL:2026_01_DAL_NYG",
@@ -3788,8 +3855,8 @@
       "reason": "8 core statistics on both sides"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_result",
       "key": "NFL:2026_01_DAL_NYG",
@@ -3797,8 +3864,8 @@
       "reason": "Dallas Cowboys 20 — New York Giants 28 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_audit",
       "key": "NFL:2026_01_DAL_NYG",
@@ -3808,8 +3875,8 @@
       "process": "MIXED"
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame_validation",
       "key": "NFL:2026_01_DAL_NYG",
@@ -3818,8 +3885,8 @@
       "score": 92
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_01_GB_MIN",
@@ -3828,79 +3895,18 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
-      "step": "postgame_readiness",
+      "step": "postgame",
       "key": "NFL:2026_01_BUF_HOU",
       "ok": true,
-      "reason": "8 core statistics on both sides"
+      "reason": "already published in an earlier run",
+      "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_result",
-      "key": "NFL:2026_01_BUF_HOU",
-      "ok": true,
-      "reason": "Buffalo Bills 36 — Houston Texans 31 (espn_summary+espn_scoreboard+nflverse+collective settlement record)"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_audit",
-      "key": "NFL:2026_01_BUF_HOU",
-      "ok": true,
-      "reason": "4 of 12 gradeable claims held up, 4 did not · LOSS / MIXED",
-      "bet": "LOSS",
-      "process": "MIXED"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_validation",
-      "key": "NFL:2026_01_BUF_HOU",
-      "ok": true,
-      "reason": "quality 100",
-      "score": 100
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "research_lessons",
-      "key": "NFL:2026_01_BUF_HOU",
-      "ok": true,
-      "reason": "0 new, 5 replaced, 12 review candidate(s) open",
-      "lessons": 5
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "postgame_published",
-      "key": "NFL:2026_01_BUF_HOU",
-      "ok": true,
-      "reason": "buffalo-bills-vs-houston-texans-2026-postgame-analysis (published)",
-      "slug": "buffalo-bills-vs-houston-texans-2026-postgame-analysis",
-      "score": 100,
-      "url": "https://edgedesksports.com/articles/buffalo-bills-vs-houston-texans-2026-postgame-analysis",
-      "action": "published"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
-      "phase": "all",
-      "step": "link_pregame",
-      "key": "NFL:2026_01_BUF_HOU",
-      "ok": true,
-      "reason": "buffalo-bills-vs-houston-texans-2026 → buffalo-bills-vs-houston-texans-2026-postgame-analysis"
-    },
-    {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_07_DAL_PHI",
@@ -3909,8 +3915,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_07_KC_SEA",
@@ -3919,8 +3925,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_07_NE_CHI",
@@ -3929,8 +3935,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_06_DAL_GB",
@@ -3939,8 +3945,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_06_NYJ_NE",
@@ -3949,8 +3955,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_06_HOU_JAX",
@@ -3959,8 +3965,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_06_WAS_SF",
@@ -3969,8 +3975,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401871070",
@@ -3979,8 +3985,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "CFB:401864527",
@@ -3989,8 +3995,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "postgame",
       "key": "NFL:2026_07_GB_DET",
@@ -3999,8 +4005,8 @@
       "skipped": true
     },
     {
-      "run": "run_mvcmur75",
-      "at": "2026-10-17T16:50:43.121Z",
+      "run": "run_mvcpcoz4",
+      "at": "2026-10-17T18:00:39.280Z",
       "phase": "all",
       "step": "memory",
       "key": null,
