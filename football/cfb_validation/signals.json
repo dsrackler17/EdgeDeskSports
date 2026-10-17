@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-10-17T19:42:25.400Z",
+ "generated_at": "2026-10-17T20:08:03.837Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -21,17 +21,17 @@
  "investigate": {
   "summary": {
    "n": 28,
-   "settled": 20,
+   "settled": 22,
    "label": "small sample",
    "average_gap": 9.79,
-   "market_moved_toward_pct": 40,
-   "positive_clv_pct": 30,
-   "average_clv": -0.25,
-   "edgedesk_closer_than_opener_pct": 30,
-   "edgedesk_closer_than_close_pct": 30,
-   "edgedesk_mae": 11.44,
+   "market_moved_toward_pct": 37.5,
+   "positive_clv_pct": 27.3,
+   "average_clv": -0.27,
+   "edgedesk_closer_than_opener_pct": 31.8,
+   "edgedesk_closer_than_close_pct": 31.8,
+   "edgedesk_mae": 11.04,
    "ats_hypothetical": {
-    "wins": 12,
+    "wins": 14,
     "losses": 7,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
@@ -526,8 +526,16 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": true,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 5.5,
+    "final_margin": -7,
+    "market_move_toward": 0,
+    "moved_toward": null,
+    "edgedesk_error": 5.45,
+    "snapshot_market_error": 12.5,
+    "edgedesk_closer_than_snapshot_market": true,
+    "close_error": 12.5,
+    "edgedesk_closer_than_close": true,
+    "ats_hypothetical": "WIN"
    },
    {
     "game_id": "401862803",
@@ -636,8 +644,16 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": false,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 46.5,
+    "final_margin": 41,
+    "market_move_toward": -1,
+    "moved_toward": false,
+    "edgedesk_error": 8.75,
+    "snapshot_market_error": 4.5,
+    "edgedesk_closer_than_snapshot_market": false,
+    "close_error": 5.5,
+    "edgedesk_closer_than_close": false,
+    "ats_hypothetical": "WIN"
    },
    {
     "game_id": "401858262",
@@ -705,22 +721,22 @@
   },
   "investigate": {
    "n": 28,
-   "settled": 20,
+   "settled": 22,
    "label": "small sample",
    "average_gap": 9.79,
-   "market_moved_toward_pct": 40,
-   "positive_clv_pct": 30,
-   "average_clv": -0.25,
-   "edgedesk_closer_than_opener_pct": 30,
-   "edgedesk_closer_than_close_pct": 30,
-   "edgedesk_mae": 11.44,
+   "market_moved_toward_pct": 37.5,
+   "positive_clv_pct": 27.3,
+   "average_clv": -0.27,
+   "edgedesk_closer_than_opener_pct": 31.8,
+   "edgedesk_closer_than_close_pct": 31.8,
+   "edgedesk_mae": 11.04,
    "ats_hypothetical": {
-    "wins": 12,
+    "wins": 14,
     "losses": 7,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
   },
-  "reading": "Building: 0 settled verified and 20 settled investigate snapshots; 30 of each are needed before comparing.",
+  "reading": "Building: 0 settled verified and 22 settled investigate snapshots; 30 of each are needed before comparing.",
   "historical_reference": {
    "source": "football/validation/disagreement/forensics_cfb.json gate_backtest.holdout_football_only (2022–2025, gate parameters fitted on 2015–2021)",
    "verified": {
@@ -742,18 +758,18 @@
  "favorite_flips": {
   "summary": {
    "n": 15,
-   "settled": 11,
+   "settled": 13,
    "label": "small sample",
    "average_gap": 6.39,
-   "market_moved_toward_pct": 75,
-   "positive_clv_pct": 27.3,
-   "average_clv": 0.64,
-   "edgedesk_closer_than_opener_pct": 45.5,
-   "edgedesk_closer_than_close_pct": 45.5,
-   "edgedesk_mae": 11.1,
+   "market_moved_toward_pct": 66.7,
+   "positive_clv_pct": 30.8,
+   "average_clv": 0.54,
+   "edgedesk_closer_than_opener_pct": 46.2,
+   "edgedesk_closer_than_close_pct": 46.2,
+   "edgedesk_mae": 10.31,
    "ats_hypothetical": {
-    "wins": 8,
-    "losses": 3,
+    "wins": 9,
+    "losses": 4,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
   },
@@ -1047,8 +1063,16 @@
     "verdict": "WORTH_RESEARCHING",
     "root_cause": null,
     "favorite_flip": true,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": -2.5,
+    "final_margin": -4,
+    "market_move_toward": 1,
+    "moved_toward": true,
+    "edgedesk_error": 6.5,
+    "snapshot_market_error": 0.5,
+    "edgedesk_closer_than_snapshot_market": false,
+    "close_error": 1.5,
+    "edgedesk_closer_than_close": false,
+    "ats_hypothetical": "LOSS"
    },
    {
     "game_id": "401858489",
@@ -1064,8 +1088,16 @@
     "verdict": "WORTH_RESEARCHING",
     "root_cause": null,
     "favorite_flip": true,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 5.5,
+    "final_margin": -7,
+    "market_move_toward": -1,
+    "moved_toward": false,
+    "edgedesk_error": 5.45,
+    "snapshot_market_error": 11.5,
+    "edgedesk_closer_than_snapshot_market": true,
+    "close_error": 12.5,
+    "edgedesk_closer_than_close": true,
+    "ats_hypothetical": "WIN"
    },
    {
     "game_id": "401864524",
