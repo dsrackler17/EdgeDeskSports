@@ -157,9 +157,18 @@ section('one card, two leagues');
   /* security audit S11: the pair's known_teams is the most any card knows */
   const kcBuf = resolve('Chiefs vs Bills');
   chk('two NFL clubs not playing each other: NOT_ON_CARD, with both names known (not handed to another sport)', kcBuf.state === 'NOT_ON_CARD' && kcBuf.known_teams === 2, [kcBuf.state, kcBuf.known_teams]);
+  /* The rule needs the programme on the card. A week the Huskies are off
+     (the committed slate then names no "Washington" game at all) would test
+     nothing, so their game is declared for this check only, exactly as the
+     NFL card above is declared; a week they play, the real row is used. */
+  const waOnCard = CFB_GAMES.some((g) => g.home_team === 'Washington' || g.away_team === 'Washington');
+  const waLeagues = waOnCard ? LEAGUES : [
+    { sport: E.CFB_SPORT, games: CFB_GAMES.concat([{ game_id: 'declared-wash', home_team: 'Washington', away_team: 'Oregon',
+      home_id: '264', away_id: '2483', kickoff: NFL_GAMES[1].kickoff, week: NFL_GAMES[1].week }]), source: 'football/fbs/slate.json + a declared Washington game' },
+    LEAGUES[1]];
+  const wa = E.resolveFootballMatchup({ question: 'Washington matchup', leagues: waLeagues, carried: null });
   chk('a bare "Washington" is the college programme, not the NFL club',
-    ['RESOLVED', 'AMBIGUOUS', 'NOT_ON_CARD'].indexOf(resolve('Washington matchup').state) >= 0
-    && resolve('Washington matchup').sport !== E.NFL_SPORT, resolve('Washington matchup'));
+    ['RESOLVED', 'AMBIGUOUS', 'NOT_ON_CARD'].indexOf(wa.state) >= 0 && wa.sport !== E.NFL_SPORT, wa);
   chk('and "Washington Commanders" is the club',
     resolve('Washington Commanders this week').sport === E.NFL_SPORT, resolve('Washington Commanders this week'));
 

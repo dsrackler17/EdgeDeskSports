@@ -113,7 +113,14 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   chk('no read and no fallback: the day is failed, never empty', r6.snap.buckets['mlb:baseball/mlb|2026-10-13'].ok === false && r6.snap.sports.mlb.state === 'partial');
 
   /* the offline bootstrap builds from the repo's real committed schedules */
-  const off = await BUILD.build({ offline: true, now: Date.parse('2026-10-13T12:00:00Z'), prev: null });
+  /* the committed schedules roll forward every week, so the build is pinned
+     to the first Eastern day on which they carry both a CFB and an NHL game */
+  const ART = require('./artifacts.js');
+  const committed = ART.load(new Date().toISOString()).bySport;
+  const daysOf = (sp) => (committed[sp] || []).map((e) => G.etDay(G.toMs(e.start_utc)));
+  const both = daysOf('cfb').filter((d) => daysOf('nhl').indexOf(d) >= 0).sort()[0];
+  chk('the repo commits a football and a hockey schedule that share a day', !!both, Object.keys(committed));
+  const off = await BUILD.build({ offline: true, now: Date.parse((both || '2026-10-13') + 'T16:00:00Z'), prev: null });
   chk('offline: the committed football and hockey schedules become slate events', ['cfb', 'nhl'].every((sp) => off.snap.events.some((e) => e.sport === sp)) && off.requests === 0);
   chk('offline: a sport with no committed schedule is failed, not empty', off.snap.sports.mma.state === 'failed' && off.snap.sports.mlb.state === 'failed');
   chk('offline: no soccer schedule is read any more', !off.snap.events.some((e) => e.sport === 'soccer') && !(off.snap.sources.fallback || []).some((x) => /soccer/.test(x.file)));
