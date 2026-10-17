@@ -2,21 +2,21 @@
  "schema": "edgedesk_perf_summary_v1",
  "version": "edgedesk_performance_v1",
  "grader": "perf_grader_v1",
- "generated_at": "2026-10-16T22:53:29.142Z",
+ "generated_at": "2026-10-17T01:20:49.521Z",
  "what": "Every eligible EdgeDesk pregame forecast, locked before the game and graded against the verified final, misses included. Research, not picks.",
  "ledger": {
   "epoch": "2026-10-16T19:35:25.897Z",
-  "last_capture_at": "2026-10-16T19:35:25.897Z",
-  "forecasts": 1534,
-  "verified_forecasts": 186,
+  "last_capture_at": "2026-10-17T01:20:49.521Z",
+  "forecasts": 1539,
+  "verified_forecasts": 191,
   "recorded_forecasts": 1348,
   "quotes": 149,
   "results": 448,
   "grades": 448,
   "chains": {
    "ok": true,
-   "files": 15,
-   "rows": 2579
+   "files": 20,
+   "rows": 2768
   }
  },
  "tiers": {
@@ -37,11 +37,11 @@
    "schema": "edgedesk_performance_v1:metrics",
    "min_n": 20,
    "eligibility": {
-    "games": 0,
+    "games": 4,
     "graded": 0,
     "void": 0,
     "flagged_pregame": 0,
-    "awaiting_result": 0,
+    "awaiting_result": 4,
     "conflict": 0,
     "by_why": {}
    },
@@ -658,11 +658,11 @@
     "schema": "edgedesk_performance_v1:metrics",
     "min_n": 20,
     "eligibility": {
-     "games": 0,
+     "games": 3,
      "graded": 0,
      "void": 0,
      "flagged_pregame": 0,
-     "awaiting_result": 0,
+     "awaiting_result": 3,
      "conflict": 0,
      "by_why": {}
     },
@@ -1862,11 +1862,11 @@
     "schema": "edgedesk_performance_v1:metrics",
     "min_n": 20,
     "eligibility": {
-     "games": 0,
+     "games": 1,
      "graded": 0,
      "void": 0,
      "flagged_pregame": 0,
-     "awaiting_result": 0,
+     "awaiting_result": 1,
      "conflict": 0,
      "by_why": {}
     },
@@ -2368,6 +2368,34 @@
    }
   },
   {
+   "sport": "cfb",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "tier": "VERIFIED",
+   "graded": 0,
+   "winner": {
+    "called": 0,
+    "correct": 0,
+    "pct": null,
+    "brier": null,
+    "log_loss": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "margin": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "total": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   }
+  },
+  {
    "sport": "nfl",
    "model_version": "edgedesk_football_v1.0.0",
    "tier": "RECORDED",
@@ -2425,6 +2453,34 @@
   },
   {
    "sport": "nhl",
+   "model_version": "edgedesk_nhl_v1:xg_core",
+   "tier": "VERIFIED",
+   "graded": 0,
+   "winner": {
+    "called": 0,
+    "correct": 0,
+    "pct": null,
+    "brier": null,
+    "log_loss": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "margin": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "total": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   }
+  },
+  {
+   "sport": "nhl",
    "model_version": "edgedesk_nhl_v1:xg_no_goalie",
    "tier": "RECORDED",
    "graded": 16,
@@ -2459,7 +2515,7 @@
    "league": "NHL",
    "status": "RECORDED_ONLY",
    "why": null,
-   "games": 29,
+   "games": 30,
    "verified_graded": 0,
    "recorded_graded": 29,
    "models": [
@@ -2530,7 +2586,7 @@
    "league": "FBS",
    "status": "RECORDED_ONLY",
    "why": null,
-   "games": 355,
+   "games": 358,
    "verified_graded": 0,
    "recorded_graded": 355,
    "models": [
@@ -2811,7 +2867,7 @@
    "sport": "cfb",
    "season": 2026,
    "path": "/performance/data/games/cfb-2026.json",
-   "rows": 355
+   "rows": 358
   },
   {
    "sport": "nfl",
@@ -2823,7 +2879,7 @@
    "sport": "nhl",
    "season": 2027,
    "path": "/performance/data/games/nhl-2027.json",
-   "rows": 29
+   "rows": 30
   }
  ]
 }
