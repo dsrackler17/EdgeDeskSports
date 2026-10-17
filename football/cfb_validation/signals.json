@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-10-17T19:07:54.150Z",
+ "generated_at": "2026-10-17T19:42:25.400Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -21,18 +21,18 @@
  "investigate": {
   "summary": {
    "n": 28,
-   "settled": 18,
+   "settled": 20,
    "label": "small sample",
    "average_gap": 9.79,
-   "market_moved_toward_pct": 30.8,
-   "positive_clv_pct": 22.2,
-   "average_clv": -0.39,
-   "edgedesk_closer_than_opener_pct": 33.3,
-   "edgedesk_closer_than_close_pct": 33.3,
-   "edgedesk_mae": 11.11,
+   "market_moved_toward_pct": 40,
+   "positive_clv_pct": 30,
+   "average_clv": -0.25,
+   "edgedesk_closer_than_opener_pct": 30,
+   "edgedesk_closer_than_close_pct": 30,
+   "edgedesk_mae": 11.44,
    "ats_hypothetical": {
-    "wins": 11,
-    "losses": 6,
+    "wins": 12,
+    "losses": 7,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
   },
@@ -501,8 +501,16 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": false,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 11.5,
+    "final_margin": -3,
+    "market_move_toward": 1,
+    "moved_toward": true,
+    "edgedesk_error": 21,
+    "snapshot_market_error": 13.5,
+    "edgedesk_closer_than_snapshot_market": false,
+    "close_error": 14.5,
+    "edgedesk_closer_than_close": false,
+    "ats_hypothetical": "LOSS"
    },
    {
     "game_id": "401858489",
@@ -603,8 +611,16 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": false,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 42.5,
+    "final_margin": 37,
+    "market_move_toward": 1,
+    "moved_toward": true,
+    "edgedesk_error": 7.74,
+    "snapshot_market_error": 6.5,
+    "edgedesk_closer_than_snapshot_market": false,
+    "close_error": 5.5,
+    "edgedesk_closer_than_close": false,
+    "ats_hypothetical": "WIN"
    },
    {
     "game_id": "401856725",
@@ -689,22 +705,22 @@
   },
   "investigate": {
    "n": 28,
-   "settled": 18,
+   "settled": 20,
    "label": "small sample",
    "average_gap": 9.79,
-   "market_moved_toward_pct": 30.8,
-   "positive_clv_pct": 22.2,
-   "average_clv": -0.39,
-   "edgedesk_closer_than_opener_pct": 33.3,
-   "edgedesk_closer_than_close_pct": 33.3,
-   "edgedesk_mae": 11.11,
+   "market_moved_toward_pct": 40,
+   "positive_clv_pct": 30,
+   "average_clv": -0.25,
+   "edgedesk_closer_than_opener_pct": 30,
+   "edgedesk_closer_than_close_pct": 30,
+   "edgedesk_mae": 11.44,
    "ats_hypothetical": {
-    "wins": 11,
-    "losses": 6,
+    "wins": 12,
+    "losses": 7,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
   },
-  "reading": "Building: 0 settled verified and 18 settled investigate snapshots; 30 of each are needed before comparing.",
+  "reading": "Building: 0 settled verified and 20 settled investigate snapshots; 30 of each are needed before comparing.",
   "historical_reference": {
    "source": "football/validation/disagreement/forensics_cfb.json gate_backtest.holdout_football_only (2022–2025, gate parameters fitted on 2015–2021)",
    "verified": {
