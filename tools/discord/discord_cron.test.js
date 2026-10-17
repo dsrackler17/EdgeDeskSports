@@ -388,8 +388,12 @@ function reset(over) {
   chk('CFB: game and Central time', memphis && memphis.name === 'Memphis @ Tulane · 6:30 PM CT', memphis);
   chk('CFB: the current consensus line, the opener and the move since the open', memphis && /Consensus: Memphis -7 · Total 54\.5/.test(memphis.value)
     && /Open: Memphis -6\.5/.test(memphis.value) && /0\.5 pts toward Memphis since the open/.test(memphis.value), memphis && memphis.value);
-  chk('CFB: EdgeDesk\'s own numbers — the side and its %, the fair price, the fair line, the projected score, the total',
-    /EdgeDesk: Memphis 63% \(fair -169\) · line Memphis -4\.8 · proj Memphis 28\.1, Tulane 23\.4 · total 51\.5/.test(memphis.value), memphis && memphis.value);
+  chk('CFB: EdgeDesk\'s own numbers — the side and its %, the fair price, the half-point fair line, the whole-number projected score, the half-point total',
+    /EdgeDesk: Memphis 63% \(fair -169\) · line Memphis -5\.0 · projected score Memphis 28, Tulane 23 · total 51\.5/.test(memphis.value), memphis && memphis.value);
+  chk('CFB: the key-number note, from the displayed fair line and the book line as received', /\nKey number: Market sits on 7; model is below 7\./.test(memphis.value), memphis && memphis.value);
+  chk('CFB: the post says once that fair lines are rounded and gaps are not, why the score can differ by a point, and what a key number is',
+    cfbE.description.split('Fair lines rounded to nearest half-point; differences use unrounded projections.').length === 2
+    && /Projected scores are rounded to whole points on their own/.test(cfbE.description) && /does not change any probability/.test(cfbE.description), cfbE.description);
   chk('CFB: the gap to the book in points, the total gap, and the model\'s own validation state',
     /Gap: EdgeDesk's line is 2\.2 pts further toward Tulane · total 3\.0 lower than the book · model: spread outcome-validated, break-even against the close/.test(memphis.value), memphis && memphis.value);
   chk('CFB: the description says what the EdgeDesk numbers are, and that a gap is not a recommendation', /our own model's numbers, frozen before any price was read/.test(cfbE.description) && /not a recommendation/.test(cfbE.description));
@@ -403,6 +407,9 @@ function reset(over) {
   const nbaF = fieldsOf(nbaI)[0];
   chk('NBA: the one-book line is named as one book; no open and no move are drawn', /Book \(DraftKings\): Celtics -2\.5 · Total 221\.5/.test(nbaF.value) && !/Open|since the open/.test(nbaF.value)
     && /keeps no consensus or opening line for the NBA/.test(embedsOf(nbaI)[0].description), nbaF);
+  chk('NBA is not football: its line, score and total keep their decimals, and the post carries no football note',
+    /EdgeDesk: Celtics 54% \(fair -118\) · line Celtics -1\.5 · proj Celtics 112\.8, Knicks 111\.2 · total 224\.0/.test(nbaF.value) && !/Key number/.test(nbaF.value)
+    && !/half-point|whole points|Key margins/.test(embedsOf(nbaI)[0].description), nbaF.value);
   chk('NBA: EdgeDesk\'s line against the one book, with the model state', /EdgeDesk: Celtics 54% \(fair -118\) · line Celtics -1\.5/.test(nbaF.value)
     && /Gap: EdgeDesk's line is 1\.0 pts further toward Knicks · total 2\.5 higher than the book · model: spread outcome-validated, not yet tested against the close/.test(nbaF.value), nbaF.value);
   chk('no slate carries pick, lock, EV or win-probability language', DISCORD.every((d) => M.copyViolations(allText(d.body)).length === 0 && !/\bpick|\bbet on|\bplay\b/i.test(allText(d.body))));
@@ -440,8 +447,39 @@ function reset(over) {
   const nflFE = embedsOf(DISCORD.findIndex((d) => d.url.startsWith(HOOK(2))))[0];
   chk('NFL with the consensus feed stale and an ESPN quote: posted from one book, and the post says why', res_('nfl').result === 'sent' && /h old/.test(res_('nfl').fallback)
     && /The consensus feed is unavailable \(.*h old.*\), so this shows one book via ESPN, with no open or move/.test(nflFE.description), nflFE.description);
-  chk('…with EdgeDesk\'s numbers, the gap, and the outdoor forecast', /Book \(DraftKings\): Bengals -4\.5 · Total 44\.5/.test(nflFE.fields[0].value) && /EdgeDesk: Bengals 66% \(fair -194\) · line Bengals -4\.6/.test(nflFE.fields[0].value)
-    && /Gap: book within 0\.5 pts of EdgeDesk/.test(nflFE.fields[0].value) && /Weather: 51°F/.test(nflFE.fields[0].value) && !/Open:/.test(nflFE.fields[0].value), nflFE.fields[0].value);
+  chk('…with EdgeDesk\'s numbers, the gap, and the outdoor forecast', /Book \(DraftKings\): Bengals -4\.5 · Total 44\.5/.test(nflFE.fields[0].value) && /EdgeDesk: Bengals 66% \(fair -194\) · line Bengals -4\.5 · projected score Bengals 24, Steelers 19 · total 43\.0/.test(nflFE.fields[0].value)
+    && /Gap: book within 0\.5 pts of EdgeDesk · total 1\.4 lower than the book/.test(nflFE.fields[0].value) && /Weather: 51°F/.test(nflFE.fields[0].value) && !/Open:/.test(nflFE.fields[0].value), nflFE.fields[0].value);
+
+  /* football's display policy, straight through modelLines: half points, PK,
+     a favourite flip, quarter-point ties, gaps from the raw numbers, no market */
+  {
+    const G = (home, away) => ({ id: 'x', home, away, homeFull: home, awayFull: away, kickoff: NOW + 6 * H });
+    const P = (homeLine, o = {}) => ({ outcome: { p_home: o.p ?? 0.5 }, fair: { moneyline: {}, spread: { home_line: homeLine }, total: { expected: o.tot ?? null } },
+      projected_score: { home: o.sh ?? null, away: o.sa ?? null }, validation: { markets: { spread: { state: 'OUTCOME_VALIDATED', market_test: 'TESTED_EVEN' } } } });
+    const L = (home, total) => ({ home, total: total ?? null, openHome: null, openTotal: null, asOf: NOW, books: 5, openQuality: null, book: null });
+    const ml = (p, row, g, sport, notes) => M.modelLines(p, row, g, sport, notes).join('\n');
+    const RN = 'Fair lines rounded to nearest half-point; differences use unrounded projections.';
+    const n1 = new Set(), pk = ml(P(-0.18, { p: 0.51 }), L(-3.5), G('Giants', 'Saints'), 'nfl', n1);
+    chk('football: a fair line that rounds to zero prints PK; the gap is the raw 3.3, not the 3.5 the printed lines suggest, and the post is told why',
+      /line PK/.test(pk) && /EdgeDesk's line is 3\.3 pts further toward Saints/.test(pk) && n1.has(RN), pk);
+    chk('football: a key note about a PK line says PK, never "pick’em" (the copy check refuses the word)',
+      /Key number: Market is above 3; model is at PK\./.test(pk) && M.copyViolations(pk).length === 0 && !/\bpick/i.test(pk), pk);
+    const flip = ml(P(-2.5, { p: 0.58 }), L(3.5), G('Indiana', 'Ohio State'), 'cfb');
+    chk('football: a favourite flip is spoken for the team the model favours, with the gap from the raw numbers',
+      /line Indiana -2\.5/.test(flip) && /EdgeDesk's line is 6\.0 pts further toward Indiana/.test(flip)
+      && /Key number: Model favors Indiana outright; market gives Indiana more than a field goal\./.test(flip), flip);
+    const tieH = ml(P(-2.25), L(null), G('Home', 'Away'), 'nfl'), tieA = ml(P(2.25), L(null), G('Home', 'Away'), 'nfl');
+    chk('football: a quarter-point tie rounds away from zero for either side alike (-2.25 and +2.25 both print 2.5)',
+      /line Home -2\.5/.test(tieH) && /line Away -2\.5/.test(tieA), [tieH, tieA]);
+    chk('football: no book line, no gap and no key-number note', !/Gap: book|further toward|Key number/.test(tieH), tieH);
+    const n2 = new Set(), raw = ml(P(-6.74, { tot: 49.9 }), L(-6, 50.5), G('Home', 'Away'), 'cfb', n2);
+    chk('football: -6.74 prints -6.5 and 49.9 prints 50.0, never pulled to 7; each gap is the raw one (0.7 and 0.6, not 0.5 and 0.5)',
+      /line Home -6\.5/.test(raw) && /total 50\.0/.test(raw) && /EdgeDesk's line is 0\.7 pts further toward Home/.test(raw)
+      && /total 0\.6 lower than the book/.test(raw) && !/Key number/.test(raw) && n2.has(RN), raw);
+    const sc = ml(P(-0.18, { sh: 22.31, sa: 22.13, tot: 44.44 }), L(null), G('Giants', 'Saints'), 'nfl');
+    chk('football: the projected score is whole points and labelled, a tie in the shared order (away first), never the decimals',
+      /projected score Saints 22, Giants 22/.test(sc) && !/proj |22\.\d/.test(sc), sc);
+  }
 
   slateFixture();
   BOARD.last_odds_at = BOARD.games[0].last_odds_at = iso(NOW - 40 * MIN);

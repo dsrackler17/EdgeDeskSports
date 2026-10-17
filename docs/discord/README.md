@@ -79,6 +79,33 @@ gap is described, never called a pick. A game with no projection says so. A
 slate the model has nothing for, such as the NBA preseason, says so once.
 Projections older than 8 h are left out, with the reason.
 
+**Football lines.** The NFL and CFB slates print EdgeDesk's numbers the way the
+site does, from the same code (`lib/edgedesk_football_lines.js`, copied into
+the function by `tools/presentation/inline.js`;
+[docs/system-integrity/FOOTBALL_LINES.md](../system-integrity/FOOTBALL_LINES.md)):
+
+| | Before | Now |
+|---|---|---|
+| fair line | `line Memphis -4.8` | `line Memphis -5.0` (nearest half point; `PK` at zero) |
+| projected score | `proj Memphis 28.1, Tulane 23.4` | `projected score Memphis 28, Tulane 23` |
+| total | `total 43.1` | `total 43.0` |
+| gap | from the raw numbers | unchanged: still from the raw numbers, in tenths as the site computes it |
+| key number | — | `Key number: Market sits on 7; model is below 7.` |
+
+- **Gaps.** Every gap is still the unrounded projection against the book. For
+  example, Bengals 43.1 against 44.5 prints "total 1.4 lower", even though the
+  total shows 43.0. When the printed lines do not reproduce a gap, the post's
+  description says once: "Fair lines rounded to nearest half-point; differences
+  use unrounded projections."
+- **Notes.** The score note and what a key number is are each said once per
+  post, and only when a game in it needs them.
+- **The copy check.** It refuses "pick" in any form, so a key note about a
+  zero line says "at PK", never "pick’em".
+- **Book lines.** Printed as received.
+- **Other sports.** NBA, CBB and NHL keep their decimals.
+- **Results recap.** It grades the pregame numbers against the final, so it
+  keeps the unrounded values, like every other grade.
+
 **A skip, logged, never a partial post.** The slate is skipped in any of these
 cases:
 
