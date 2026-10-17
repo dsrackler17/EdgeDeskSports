@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-17T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1916,119 +1916,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "6uefvm1xn7yyo",
-    "status": "UNEXPLAINED",
-    "input_suspect": true,
-    "question": "Can LSU get Mississippi State off the field on third down?",
-    "assessment": "EdgeDesk’s number is 4.0 points closer to Mississippi State than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 4.0 points. The measured football evidence leans toward LSU, not toward EdgeDesk’s number. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s model is built on Kamario Taylor starting for Mississippi State, but the availability report lists him as doubtful. Treat the gap as an open research question, not as an edge.",
-    "gap": {
-      "points": 4,
-      "toward": "Mississippi State",
-      "other": "LSU"
-    },
-    "supporting": [
-      "When LSU has the ball (big plays on the ground): LSU’s offense turns 5.0% of its runs into explosive gains, and Mississippi State’s defense gives up explosive gains on 3.2% of opponent runs (FBS average 6.6%).",
-      "When Mississippi State has the ball (big plays through the air): Mississippi State’s offense turns 14.3% of its pass plays into explosive gains, and LSU’s defense gives up explosive gains on 8.8% of opponent pass plays (FBS average 10.4%).",
-      "In his last two games (Texas A&M and mcneese), Clark averaged 6.0 yards per attempt, against 10.9 in his two games before that.",
-      "Kamario Taylor has completed 102 of 154 passes (66.2%) for 1,450 yards, 9.4 yards per attempt, 17 touchdowns and 4 interceptions in five games for Mississippi State, and has been sacked on 13 of 167 dropbacks."
-    ],
-    "contradicting": [
-      "When Mississippi State has the ball (pass protection against the pass rush): Mississippi State’s offense has allowed a sack on 7.1% of its dropbacks, and LSU’s defense sacks the quarterback on 11.3% of opponent dropbacks (FBS average 5.6%).",
-      "When Mississippi State has the ball (the line of scrimmage on running plays): Mississippi State’s offense is stopped at or behind the line on 19.2% of its runs, and LSU’s defense stops 26.7% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When LSU has the ball (third down): LSU’s offense converts 48.6% of its third downs, and Mississippi State’s defense allows opponents to convert 40.2% of their third downs (FBS average 39.5%).",
-      "When LSU has the ball (big plays through the air): LSU’s offense turns 12.4% of its pass plays into explosive gains, and Mississippi State’s defense gives up explosive gains on 13.0% of opponent pass plays (FBS average 10.4%)."
-    ],
-    "quarterbacks": [
-      "Sam Leavitt has completed 117 of 173 passes (67.6%) for 1,535 yards, 8.9 yards per attempt, 10 touchdowns and 8 interceptions in six games for LSU, and has been sacked on 10 of 183 dropbacks.",
-      "Landen Clark has completed 14 of 31 passes (45.2%) for 235 yards, 7.6 yards per attempt, 1 touchdown and no interceptions in four games for LSU, and has been sacked on 0 of 31 dropbacks.",
-      "Kamario Taylor has completed 102 of 154 passes (66.2%) for 1,450 yards, 9.4 yards per attempt, 17 touchdowns and 4 interceptions in five games for Mississippi State, and has been sacked on 13 of 167 dropbacks.",
-      "Sam Leavitt does not appear on LSU’s update 2 availability report.",
-      "Mississippi State’s update 2 SEC availability report (published Oct. 16) lists quarterback Kamario Taylor as doubtful.",
-      "EdgeDesk’s model is built on Kamario Taylor starting for Mississippi State, but the availability report lists him as doubtful."
-    ],
-    "availability": [
-      "Mississippi State’s availability report lists running back Fluff Bothwell as doubtful."
-    ],
-    "script": {
-      "model": [
-        "Mississippi State’s offense has to keep winning on third down: it converts 49.4% of its third downs, and LSU’s defense allows opponents to convert 31.4% of their third downs.",
-        "Mississippi State’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 11.3% of opponent dropbacks.",
-        "Mississippi State’s offense has to hold its own at the line of scrimmage against a defense that stops 26.7% of opponent runs at or behind the line.",
-        "Mississippi State’s defense has to come out ahead on long runs: it gives up explosive gains on 3.2% of opponent runs, against an offense that turns 5.0% of its runs into explosive gains."
-      ],
-      "market": [
-        "LSU’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 11.3% of opponent dropbacks, against an offense that has allowed a sack on 7.1% of its dropbacks.",
-        "LSU’s defense has to come out ahead at the line of scrimmage: it stops 26.7% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 19.2% of its runs.",
-        "LSU’s defense has to come out ahead on third down: it allows opponents to convert 31.4% of their third downs, against an offense that converts 49.4% of its third downs."
-      ]
-    },
-    "unknown": [
-      "Mississippi State’s update 2 SEC availability report (published Oct. 16) lists quarterback Kamario Taylor as doubtful.",
-      "Mississippi State’s availability report lists running back Fluff Bothwell as doubtful.",
-      "The model expects Kamario Taylor, but Kamario Taylor is listed as doubtful.",
-      "Weather: 62 degrees, clear, gusts near 25 mph.",
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for LSU and Mississippi State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "QB_INPUT_CONFLICT",
-        "severity": "high",
-        "text": "EdgeDesk’s model is built on Kamario Taylor starting for Mississippi State, but the availability report lists him as doubtful."
-      },
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (LSU) and sack rate allowed (Mississippi State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 5.7 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "LSU: new head coach; returning roster share at the 21st percentile; returning production at the 37th percentile; transfers out at the 91st percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Southeastern Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T00:10:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      },
-      {
-        "label": "EdgeDesk input audit (model starter vs official availability report)",
-        "url": null,
-        "path": null,
-        "observed_at": "2026-10-17T15:07:51.062Z",
-        "verification": "CONFLICTING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:27:16.692Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }

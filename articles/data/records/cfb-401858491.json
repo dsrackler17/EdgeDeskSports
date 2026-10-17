@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-17T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1881,111 +1881,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "8lzoqwy0e696",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Michigan State contain Northwestern’s explosive runs?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Northwestern, and its own breakdown accounts for about 0.0 of the 4.6 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 4.6,
-      "toward": "Northwestern",
-      "other": "Michigan State"
-    },
-    "supporting": [
-      "When Michigan State has the ball (pass protection against the pass rush): Michigan State’s offense has allowed a sack on 10.2% of its dropbacks, and Northwestern’s defense sacks the quarterback on 5.3% of opponent dropbacks (FBS average 5.6%).",
-      "When Michigan State has the ball (big plays through the air): Michigan State’s offense turns 6.3% of its pass plays into explosive gains, and Northwestern’s defense gives up explosive gains on 6.9% of opponent pass plays (FBS average 10.4%).",
-      "When Northwestern has the ball (the passing game against the pass defense): Northwestern’s offense averages 10.4 yards per pass attempt, and Michigan State’s defense allows 7.4 yards per pass attempt (FBS average 7.5).",
-      "When Northwestern has the ball (big plays through the air): Northwestern’s offense turns 16.8% of its pass plays into explosive gains, and Michigan State’s defense gives up explosive gains on 12.3% of opponent pass plays (FBS average 10.4%)."
-    ],
-    "contradicting": [
-      "When Northwestern has the ball (pass protection against the pass rush): Northwestern’s offense has allowed a sack on 7.3% of its dropbacks, and Michigan State’s defense sacks the quarterback on 4.3% of opponent dropbacks (FBS average 5.6%).",
-      "EdgeDesk’s position-group ratings put Michigan State’s run defense No. 50 nationally and Northwestern’s No. 114.",
-      "EdgeDesk’s position-group ratings put Michigan State’s defense No. 33 nationally and Northwestern’s No. 95."
-    ],
-    "quarterbacks": [
-      "Alessio Milivojevic has completed 99 of 152 passes (65.1%) for 1,054 yards, 6.9 yards per attempt, 5 touchdowns and 3 interceptions in six games for Michigan State, and has been sacked on 17 of 169 dropbacks.",
-      "Aidan Chiles has completed 80 of 114 passes (70.2%) for 1,172 yards, 10.3 yards per attempt, 9 touchdowns and no interceptions in five games for Northwestern, and has been sacked on 9 of 123 dropbacks.",
-      "Michigan State’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Cam Fancher as out.",
-      "Alessio Milivojevic does not appear on Michigan State’s update 2 availability report.",
-      "Aidan Chiles does not appear on Northwestern’s update 2 availability report."
-    ],
-    "availability": [
-      "Michigan State’s availability report lists receiver Charles Taplin as questionable.",
-      "Michigan State’s availability report lists 13 players as out, including offensive linemen Ben Murawski and Tristan Comer.",
-      "Northwestern’s availability report lists 13 players as out, including offensive linemen David Anchondo, Ezomo Oratokhai and Jacob Miller."
-    ],
-    "script": {
-      "model": [
-        "Northwestern’s offense has to keep winning on long runs: it turns 10.7% of its runs into explosive gains, and Michigan State’s defense gives up explosive gains on 4.2% of opponent runs.",
-        "Northwestern’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 4.3% of opponent dropbacks.",
-        "Northwestern’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.3% of opponent dropbacks, against an offense that has allowed a sack on 10.2% of its dropbacks.",
-        "Northwestern’s offense has to keep winning on big pass plays: it turns 16.8% of its pass plays into explosive gains, and Michigan State’s defense gives up explosive gains on 12.3% of opponent pass plays."
-      ],
-      "market": [
-        "Michigan State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 4.3% of opponent dropbacks, against an offense that has allowed a sack on 7.3% of its dropbacks.",
-        "Michigan State’s defense has to come out ahead on long runs: it gives up explosive gains on 4.2% of opponent runs, against an offense that turns 10.7% of its runs into explosive gains.",
-        "Milivojevic keeps producing at his season rate (65.1% completions, 6.9 yards per attempt, 5 TD, 3 INT)."
-      ]
-    },
-    "unknown": [
-      "Michigan State’s availability report lists receiver Charles Taplin as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed for Michigan State and Northwestern.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Michigan State) and sack rate allowed (Northwestern); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.9 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Michigan State: new head coach; returning roster share at the 33rd percentile; returning production at the 43rd percentile; transfers out at the 98th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-17T14:48:26.832Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:27:16.692Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }

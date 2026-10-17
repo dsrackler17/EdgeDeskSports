@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-17T16:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1862,112 +1862,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "c2kx7ors7vwm",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Maryland’s pass rush get to Rutgers’ quarterback?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Rutgers, and its own breakdown accounts for about 0.0 of the 7.6 points, but not the full gap. Input warning: EdgeDesk’s published number sits 7.0 points from the middle of its own other models. It is a research question, not a bet.",
-    "gap": {
-      "points": 7.6,
-      "toward": "Rutgers",
-      "other": "Maryland"
-    },
-    "supporting": [
-      "When Maryland has the ball (big plays through the air): Maryland’s offense turns 6.5% of its pass plays into explosive gains, and Rutgers’ defense gives up explosive gains on 11.1% of opponent pass plays (FBS average 10.4%).",
-      "When Rutgers has the ball (the passing game against the pass defense): Rutgers’ offense averages 9.1 yards per pass attempt, and Maryland’s defense allows 7.9 yards per pass attempt (FBS average 7.5).",
-      "In his last two games (Nebraska and Ohio State), Washington averaged 4.6 yards per attempt, against 6.8 in his four games before that.",
-      "In his last two games (howard and Indiana), Lonergan averaged 10.4 yards per attempt, against 7.6 in his two games before that."
-    ],
-    "contradicting": [
-      "When Maryland has the ball (pass protection against the pass rush): Maryland’s offense has allowed a sack on 2.5% of its dropbacks, and Rutgers’ defense sacks the quarterback on 5.2% of opponent dropbacks (FBS average 5.6%).",
-      "When Maryland has the ball (the run game against the run defense): Maryland’s offense averages 4.1 yards per carry, and Rutgers’ defense allows 7.4 yards per carry (FBS average 5.1).",
-      "When Rutgers has the ball (pass protection against the pass rush): Rutgers’ offense has allowed a sack on 8.1% of its dropbacks, and Maryland’s defense sacks the quarterback on 9.4% of opponent dropbacks (FBS average 5.6%).",
-      "EdgeDesk’s position-group ratings put Maryland’s run defense No. 65 nationally and Rutgers’ No. 138."
-    ],
-    "quarterbacks": [
-      "Malik Washington has completed 135 of 220 passes (61.4%) for 1,352 yards, 6.1 yards per attempt, 8 touchdowns and 5 interceptions in six games for Maryland, and has been sacked on 6 of 226 dropbacks.",
-      "Dylan Lonergan has completed 51 of 92 passes (55.4%) for 775 yards, 8.4 yards per attempt, 7 touchdowns and 4 interceptions in four games for Rutgers, and has been sacked on 5 of 97 dropbacks.",
-      "AJ Surace has completed 33 of 53 passes (62.3%) for 475 yards, 9.0 yards per attempt, 6 touchdowns and 4 interceptions in four games for Rutgers, and has been sacked on 8 of 61 dropbacks.",
-      "Malik Washington does not appear on Maryland’s update 2 availability report.",
-      "Dylan Lonergan does not appear on Rutgers’ update 2 availability report."
-    ],
-    "availability": [
-      "Maryland’s availability report lists receiver Na'eem Abdul-Rahim Gladding as questionable.",
-      "Maryland’s availability report lists ten players as out, including offensive linemen Trevor Szymanski and Day'Jon Moore.",
-      "Rutgers’ availability report lists running back Antwan Raymond as questionable.",
-      "Rutgers’ availability report lists receiver Jourdin Houston as questionable.",
-      "Rutgers’ availability report lists running back Clay Thevenin as questionable."
-    ],
-    "script": {
-      "model": [
-        "Rutgers’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 8.1% of its dropbacks, and Maryland’s defense sacks the quarterback on 9.4% of opponent dropbacks.",
-        "Rutgers’ defense has to slow Maryland in the pass-rush matchup — Maryland’s offense has allowed a sack on 2.5% of its dropbacks.",
-        "Rutgers’ defense has to come out ahead on big pass plays: it gives up explosive gains on 11.1% of opponent pass plays, against an offense that turns 6.5% of its pass plays into explosive gains.",
-        "Rutgers’ offense has to keep winning through the air: it averages 9.1 yards per pass attempt, and Maryland’s defense allows 7.9 yards per pass attempt."
-      ],
-      "market": [
-        "Maryland’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.4% of opponent dropbacks, against an offense that has allowed a sack on 8.1% of its dropbacks.",
-        "Maryland’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.5% of its dropbacks, and Rutgers’ defense sacks the quarterback on 5.2% of opponent dropbacks.",
-        "Washington keeps producing at his season rate (61.4% completions, 6.1 yards per attempt, 8 TD, 5 INT)."
-      ]
-    },
-    "unknown": [
-      "Maryland’s availability report lists receiver Na'eem Abdul-Rahim Gladding as questionable.",
-      "Rutgers’ availability report lists running back Antwan Raymond as questionable.",
-      "Rutgers’ availability report lists receiver Jourdin Houston as questionable.",
-      "Rutgers’ availability report lists running back Clay Thevenin as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Maryland and Rutgers.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Maryland), sack rate (Maryland), sack rate allowed (Rutgers) and sack rate (Rutgers); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 7.0 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-17T14:48:26.832Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:27:16.692Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }

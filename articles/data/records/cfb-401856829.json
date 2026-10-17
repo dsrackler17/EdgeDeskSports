@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-17T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1865,89 +1865,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1g7j3h9l8lbun",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Cincinnati take away West Virginia’s big plays?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.2 points.",
-    "gap": {
-      "points": 1.2,
-      "toward": "Cincinnati",
-      "other": "West Virginia"
-    },
-    "supporting": [
-      "When West Virginia has the ball (pass protection against the pass rush): West Virginia’s offense has allowed a sack on 7.2% of its dropbacks, and Cincinnati’s defense sacks the quarterback on 6.7% of opponent dropbacks (FBS average 5.6%).",
-      "When Cincinnati has the ball (big plays through the air): Cincinnati’s offense turns 8.9% of its pass plays into explosive gains, and West Virginia’s defense gives up explosive gains on 20.8% of opponent pass plays (FBS average 10.4%).",
-      "When Cincinnati has the ball (big plays on the ground): Cincinnati’s offense turns 9.1% of its runs into explosive gains, and West Virginia’s defense gives up explosive gains on 8.8% of opponent runs (FBS average 6.6%).",
-      "When Cincinnati has the ball (the passing game against the pass defense): Cincinnati’s offense averages 7.5 yards per pass attempt, and West Virginia’s defense allows 10.6 yards per pass attempt (FBS average 7.5)."
-    ],
-    "contradicting": [
-      "When West Virginia has the ball (third down): West Virginia’s offense converts 53.5% of its third downs, and Cincinnati’s defense allows opponents to convert 47.6% of their third downs (FBS average 39.5%).",
-      "When West Virginia has the ball (big plays through the air): West Virginia’s offense turns 20.0% of its pass plays into explosive gains, and Cincinnati’s defense gives up explosive gains on 10.0% of opponent pass plays (FBS average 10.4%).",
-      "When West Virginia has the ball (the passing game against the pass defense): West Virginia’s offense averages 9.6 yards per pass attempt, and Cincinnati’s defense allows 7.2 yards per pass attempt (FBS average 7.5).",
-      "Michael Hawkins Jr. has completed 58 of 111 passes (52.3%) for 1,055 yards, 9.5 yards per attempt, 7 touchdowns and 1 interception in six games for West Virginia, and has been sacked on 9 of 120 dropbacks."
-    ],
-    "quarterbacks": [
-      "Michael Hawkins Jr. has completed 58 of 111 passes (52.3%) for 1,055 yards, 9.5 yards per attempt, 7 touchdowns and 1 interception in six games for West Virginia, and has been sacked on 9 of 120 dropbacks.",
-      "JC French IV has completed 81 of 119 passes (68.1%) for 857 yards, 7.2 yards per attempt, 5 touchdowns and no interceptions in five games for Cincinnati, and has been sacked on 8 of 127 dropbacks.",
-      "Michael Hawkins Jr. does not appear on West Virginia’s update 2 availability report.",
-      "JC French IV does not appear on Cincinnati’s update 2 availability report."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Cincinnati’s defense has to come out ahead on big pass plays: it gives up explosive gains on 10.0% of opponent pass plays, against an offense that turns 20.0% of its pass plays into explosive gains.",
-        "Cincinnati’s defense has to slow West Virginia on third down — West Virginia’s offense converts 53.5% of its third downs.",
-        "Cincinnati’s offense has to keep winning on big pass plays: it turns 8.9% of its pass plays into explosive gains, and West Virginia’s defense gives up explosive gains on 20.8% of opponent pass plays.",
-        "Cincinnati’s offense has to keep winning on long runs: it turns 9.1% of its runs into explosive gains, and West Virginia’s defense gives up explosive gains on 8.8% of opponent runs."
-      ],
-      "market": [
-        "West Virginia’s offense has to keep winning on big pass plays: it turns 20.0% of its pass plays into explosive gains, and Cincinnati’s defense gives up explosive gains on 10.0% of opponent pass plays.",
-        "West Virginia’s offense has to keep winning on third down: it converts 53.5% of its third downs, and Cincinnati’s defense allows opponents to convert 47.6% of their third downs.",
-        "Hawkins keeps producing at his season rate (52.3% completions, 9.5 yards per attempt, 7 TD, 1 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for West Virginia.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (West Virginia) and sack rate (West Virginia); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big 12 Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T02:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:27:16.692Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-17T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1820,99 +1820,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1l4wvayub3ti0",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Virginia’s pass rush get to Kevin Jennings?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.8 points.",
-    "gap": {
-      "points": 0.8,
-      "toward": "Virginia",
-      "other": "SMU"
-    },
-    "supporting": [
-      "When SMU has the ball (big plays on the ground): SMU’s offense turns 6.6% of its runs into explosive gains, and Virginia’s defense gives up explosive gains on 4.7% of opponent runs (FBS average 6.6%).",
-      "In his last two games (Missouri State and Boston College), Jennings averaged 9.0 yards per attempt, against 11.2 in his three games before that.",
-      "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, 3 touchdowns and no interceptions in two games for Virginia, and has been sacked on 2 of 20 dropbacks.",
-      "EdgeDesk’s position-group ratings put Virginia’s offensive line No. 8 nationally and SMU’s No. 77."
-    ],
-    "contradicting": [
-      "When SMU has the ball (big plays through the air): SMU’s offense turns 14.6% of its pass plays into explosive gains, and Virginia’s defense gives up explosive gains on 10.7% of opponent pass plays (FBS average 10.4%).",
-      "When Virginia has the ball (pass protection against the pass rush): Virginia’s offense has allowed a sack on 11.3% of its dropbacks, and SMU’s defense sacks the quarterback on 10.5% of opponent dropbacks (FBS average 5.6%).",
-      "When Virginia has the ball (big plays through the air): Virginia’s offense turns 8.2% of its pass plays into explosive gains, and SMU’s defense gives up explosive gains on 6.7% of opponent pass plays (FBS average 10.4%).",
-      "When SMU has the ball (the passing game against the pass defense): SMU’s offense averages 9.7 yards per pass attempt, and Virginia’s defense allows 7.0 yards per pass attempt (FBS average 7.5)."
-    ],
-    "quarterbacks": [
-      "Kevin Jennings has completed 117 of 157 passes (74.5%) for 1,613 yards, 10.3 yards per attempt, 14 touchdowns and 5 interceptions in five games for SMU, and has been sacked on 6 of 163 dropbacks.",
-      "Beau Pribula has completed 91 of 140 passes (65.0%) for 1,124 yards, 8.0 yards per attempt, 13 touchdowns and 1 interception in six games for Virginia, and has been sacked on 18 of 158 dropbacks.",
-      "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, 3 touchdowns and no interceptions in two games for Virginia, and has been sacked on 2 of 20 dropbacks.",
-      "Kevin Jennings does not appear on SMU’s update 2 availability report.",
-      "Beau Pribula does not appear on Virginia’s update 2 availability report."
-    ],
-    "availability": [
-      "Virginia’s availability report lists 24 players as out, including offensive linemen Noah Hartsoe, Grant Ellinger and Dylan Biehl."
-    ],
-    "script": {
-      "model": [
-        "Virginia’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.9% of opponent dropbacks, against an offense that has allowed a sack on 3.4% of its dropbacks.",
-        "Virginia’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 10.5% of opponent dropbacks.",
-        "Virginia’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 6.7% of opponent pass plays.",
-        "Virginia’s defense has to come out ahead on long runs: it gives up explosive gains on 4.7% of opponent runs, against an offense that turns 6.6% of its runs into explosive gains."
-      ],
-      "market": [
-        "SMU’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.5% of opponent dropbacks, against an offense that has allowed a sack on 11.3% of its dropbacks.",
-        "SMU’s defense has to come out ahead on big pass plays: it gives up explosive gains on 6.7% of opponent pass plays, against an offense that turns 8.2% of its pass plays into explosive gains.",
-        "SMU’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.4% of its dropbacks, and Virginia’s defense sacks the quarterback on 6.9% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for SMU and Virginia.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (SMU), sack rate (SMU), sack rate allowed (Virginia) and sack rate (Virginia); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-17T14:48:26.832Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "Atlantic Coast Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T01:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:27:16.692Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }

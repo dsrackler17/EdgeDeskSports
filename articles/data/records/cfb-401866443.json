@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-17T17:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1893,91 +1893,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "buei2onitqea",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Western Michigan’s pass rush get to Angel Flores?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.3 points.",
-    "gap": {
-      "points": 1.3,
-      "toward": "Central Michigan",
-      "other": "Western Michigan"
-    },
-    "supporting": [
-      "When Western Michigan has the ball (big plays on the ground): Western Michigan’s offense turns 5.1% of its runs into explosive gains, and Central Michigan’s defense gives up explosive gains on 5.7% of opponent runs (FBS average 6.6%).",
-      "When Central Michigan has the ball (the line of scrimmage on running plays): Central Michigan’s offense is stopped at or behind the line on 11.7% of its runs, and Western Michigan’s defense stops 15.7% of opponent runs at or behind the line (FBS average 17.4%).",
-      "In his last two games (Akron and Ohio), Flores averaged 5.6 yards per attempt, against 3.7 in his four games before that.",
-      "In his last two games (Akron and Ohio), Glasser averaged 20.7 yards per attempt, against 3.9 in his three games before that."
-    ],
-    "contradicting": [
-      "When Central Michigan has the ball (pass protection against the pass rush): Central Michigan’s offense has allowed a sack on 12.6% of its dropbacks, and Western Michigan’s defense sacks the quarterback on 7.1% of opponent dropbacks (FBS average 5.6%).",
-      "When Central Michigan has the ball (big plays through the air): Central Michigan’s offense turns 4.0% of its pass plays into explosive gains, and Western Michigan’s defense gives up explosive gains on 10.7% of opponent pass plays (FBS average 10.4%).",
-      "When Central Michigan has the ball (the passing game against the pass defense): Central Michigan’s offense averages 5.1 yards per pass attempt, and Western Michigan’s defense allows 7.4 yards per pass attempt (FBS average 7.5).",
-      "When Central Michigan has the ball (third down): Central Michigan’s offense converts 31.6% of its third downs, and Western Michigan’s defense allows opponents to convert 35.4% of their third downs (FBS average 39.5%)."
-    ],
-    "quarterbacks": [
-      "Angel Flores has completed 40 of 67 passes (59.7%) for 313 yards, 4.7 yards per attempt, 1 touchdown and 2 interceptions in six games for Central Michigan, and has been sacked on 8 of 75 dropbacks.",
-      "Jadyn Glasser has completed 22 of 36 passes (61.1%) for 257 yards, 7.1 yards per attempt, 1 touchdown and 2 interceptions in five games for Central Michigan, and has been sacked on 5 of 41 dropbacks.",
-      "Broc Lowry has completed 96 of 139 passes (69.1%) for 993 yards, 7.1 yards per attempt, 7 touchdowns and 1 interception in six games for Western Michigan, and has been sacked on 8 of 147 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Central Michigan’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 12.6% of its dropbacks, and Western Michigan’s defense sacks the quarterback on 7.1% of opponent dropbacks.",
-        "Central Michigan’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 10.7% of opponent pass plays.",
-        "Central Michigan’s defense has to come out ahead on long runs: it gives up explosive gains on 5.7% of opponent runs, against an offense that turns 5.1% of its runs into explosive gains.",
-        "Central Michigan’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 11.7% of its runs, and Western Michigan’s defense stops 15.7% of opponent runs at or behind the line."
-      ],
-      "market": [
-        "Western Michigan’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.1% of opponent dropbacks, against an offense that has allowed a sack on 12.6% of its dropbacks.",
-        "Western Michigan’s defense has to come out ahead on big pass plays: it gives up explosive gains on 10.7% of opponent pass plays, against an offense that turns 4.0% of its pass plays into explosive gains.",
-        "Lowry keeps producing at his season rate (69.1% completions, 7.1 yards per attempt, 7 TD, 1 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for Central Michigan and Western Michigan.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (Central Michigan), sack rate allowed (Western Michigan) and sack rate (Western Michigan); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.7 points from the middle of its own other models."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives Central Michigan 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:27:16.692Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-17T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1860,119 +1860,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1b38k7y1l6x4vw",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Boston College’s pass rush get to Mason Heintschel?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Boston College, and its own breakdown accounts for about 2.3 of the 3.7 points, but not the full gap. Input warning: EdgeDesk’s model is built on Mason Heintschel starting for Pittsburgh, but the availability report lists him as out. It is a research question, not a bet.",
-    "gap": {
-      "points": 3.7,
-      "toward": "Boston College",
-      "other": "Pittsburgh"
-    },
-    "supporting": [
-      "When Pittsburgh has the ball (big plays through the air): Pittsburgh’s offense turns 9.6% of its pass plays into explosive gains, and Boston College’s defense gives up explosive gains on 5.1% of opponent pass plays (FBS average 10.4%).",
-      "In his last two games (Virginia Tech and North Carolina), Geriner averaged 5.3 yards per attempt, against 10.1 in his two games before that.",
-      "When Pittsburgh has the ball (pass protection against the pass rush): Pittsburgh’s offense has allowed a sack on 3.0% of its dropbacks, and Boston College’s defense sacks the quarterback on 9.0% of opponent dropbacks (FBS average 5.6%).",
-      "When Pittsburgh has the ball (the passing game against the pass defense): Pittsburgh’s offense averages 7.2 yards per pass attempt, and Boston College’s defense allows 6.2 yards per pass attempt (FBS average 7.5)."
-    ],
-    "contradicting": [
-      "When Boston College has the ball (pass protection against the pass rush): Boston College’s offense has allowed a sack on 9.1% of its dropbacks, and Pittsburgh’s defense sacks the quarterback on 7.0% of opponent dropbacks (FBS average 5.6%).",
-      "When Boston College has the ball (the run game against the run defense): Boston College’s offense averages 5.5 yards per carry, and Pittsburgh’s defense allows 2.9 yards per carry (FBS average 5.1).",
-      "When Boston College has the ball (the line of scrimmage on running plays): Boston College’s offense is stopped at or behind the line on 22.3% of its runs, and Pittsburgh’s defense stops 29.3% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Boston College has the ball (third down): Boston College’s offense converts 30.2% of its third downs, and Pittsburgh’s defense allows opponents to convert 32.0% of their third downs (FBS average 39.5%)."
-    ],
-    "quarterbacks": [
-      "Mason McKenzie has completed 81 of 139 passes (58.3%) for 967 yards, 7.0 yards per attempt, 5 touchdowns and 5 interceptions in five games for Boston College, and has been sacked on 14 of 153 dropbacks.",
-      "Mason Heintschel has completed 98 of 148 passes (66.2%) for 1,313 yards, 8.9 yards per attempt, 14 touchdowns and 1 interception in five games for Pittsburgh, and has been sacked on 5 of 153 dropbacks.",
-      "Holden Geriner has completed 46 of 70 passes (65.7%) for 438 yards, 6.3 yards per attempt, 2 touchdowns and 2 interceptions in four games for Pittsburgh, and has been sacked on 2 of 72 dropbacks.",
-      "Mason McKenzie does not appear on Boston College’s update 2 availability report.",
-      "Pittsburgh’s update 2 ACC availability report (published Oct. 16) lists quarterback Mason Heintschel as out.",
-      "EdgeDesk’s model is built on Mason Heintschel starting for Pittsburgh, but the availability report lists him as out."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Boston College’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.0% of opponent dropbacks, against an offense that has allowed a sack on 3.0% of its dropbacks.",
-        "Boston College’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 7.0% of opponent dropbacks.",
-        "Boston College’s offense has to hold its own at the line of scrimmage against a defense that stops 29.3% of opponent runs at or behind the line.",
-        "Boston College’s defense has to come out ahead on big pass plays: it gives up explosive gains on 5.1% of opponent pass plays, against an offense that turns 9.6% of its pass plays into explosive gains."
-      ],
-      "market": [
-        "Pittsburgh’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.0% of opponent dropbacks, against an offense that has allowed a sack on 9.1% of its dropbacks.",
-        "Pittsburgh’s defense has to come out ahead at the line of scrimmage: it stops 29.3% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 22.3% of its runs.",
-        "Pittsburgh’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.0% of its dropbacks, and Boston College’s defense sacks the quarterback on 9.0% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "The model expects Mason Heintschel, but Mason Heintschel is listed as out.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Boston College and Pittsburgh.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "QB_INPUT_CONFLICT",
-        "severity": "high",
-        "text": "EdgeDesk’s model is built on Mason Heintschel starting for Pittsburgh, but the availability report lists him as out."
-      },
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Boston College), sack rate (Boston College), sack rate allowed (Pittsburgh) and sack rate (Pittsburgh); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "QB_REPLACEMENT_GENERIC",
-        "severity": "medium",
-        "text": "The availability report lists Mason Heintschel out, and EdgeDesk’s main model subtracts a generic quarterback absence (3.9 points) from Pittsburgh — it does not price the replacement’s own play (Holden Geriner: 65.7% completions, 6.3 yards per attempt, 2 TD, 2 INT)."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 8.8 points from the middle of its own other models."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives Boston College 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Atlantic Coast Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      },
-      {
-        "label": "EdgeDesk input audit (model starter vs official availability report)",
-        "url": null,
-        "path": null,
-        "observed_at": "2026-10-17T15:07:51.062Z",
-        "verification": "CONFLICTING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:27:16.692Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }

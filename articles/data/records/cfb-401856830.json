@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-17T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1885,106 +1885,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1aylsv3m47nh",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Kansas State’s pass rush get to Isaiah Marshall?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.5 points.",
-    "gap": {
-      "points": 0.5,
-      "toward": "Kansas",
-      "other": "Kansas State"
-    },
-    "supporting": [
-      "When Kansas has the ball (big plays through the air): Kansas’ offense turns 17.1% of its pass plays into explosive gains, and Kansas State’s defense gives up explosive gains on 12.0% of opponent pass plays (FBS average 10.4%).",
-      "When Kansas State has the ball (big plays through the air): Kansas State’s offense turns 8.1% of its pass plays into explosive gains, and Kansas’ defense gives up explosive gains on 9.6% of opponent pass plays (FBS average 10.4%).",
-      "When Kansas has the ball (the line of scrimmage on running plays): Kansas’ offense is stopped at or behind the line on 12.6% of its runs, and Kansas State’s defense stops 18.4% of opponent runs at or behind the line (FBS average 17.4%).",
-      "In his last two games (Cincinnati and Houston), Johnson averaged 5.9 yards per attempt, against 7.6 in his three games before that."
-    ],
-    "contradicting": [
-      "When Kansas State has the ball (pass protection against the pass rush): Kansas State’s offense has allowed a sack on 1.2% of its dropbacks, and Kansas’ defense sacks the quarterback on 6.8% of opponent dropbacks (FBS average 5.6%).",
-      "When Kansas State has the ball (third down): Kansas State’s offense converts 55.8% of its third downs, and Kansas’ defense allows opponents to convert 39.1% of their third downs (FBS average 39.5%).",
-      "When Kansas has the ball (pass protection against the pass rush): Kansas’ offense has allowed a sack on 3.2% of its dropbacks, and Kansas State’s defense sacks the quarterback on 10.5% of opponent dropbacks (FBS average 5.6%).",
-      "When Kansas State has the ball (big plays on the ground): Kansas State’s offense turns 9.8% of its runs into explosive gains, and Kansas’ defense gives up explosive gains on 5.2% of opponent runs (FBS average 6.6%)."
-    ],
-    "quarterbacks": [
-      "Avery Johnson has completed 105 of 164 passes (64.0%) for 1,109 yards, 6.8 yards per attempt, 9 touchdowns and 3 interceptions in five games for Kansas State, and has been sacked on 2 of 166 dropbacks.",
-      "Isaiah Marshall has completed 76 of 141 passes (53.9%) for 1,187 yards, 8.4 yards per attempt, 9 touchdowns and 4 interceptions in five games for Kansas, and has been sacked on 5 of 146 dropbacks.",
-      "Kansas State’s update 2 Big 12 availability report (published Oct. 16) lists quarterback Blake Barnett as out.",
-      "Kansas State’s update 2 Big 12 availability report (published Oct. 16) lists quarterback Dillon Duff as questionable.",
-      "Avery Johnson does not appear on Kansas State’s update 2 availability report.",
-      "Kansas’ update 2 Big 12 availability report (published Oct. 16) lists quarterback Cole Ballard as probable.",
-      "Isaiah Marshall does not appear on Kansas’ update 2 availability report."
-    ],
-    "availability": [
-      "Kansas State’s availability report lists tight end Garrett Oakley as questionable."
-    ],
-    "script": {
-      "model": [
-        "Kansas’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.2% of its dropbacks, and Kansas State’s defense sacks the quarterback on 10.5% of opponent dropbacks.",
-        "Kansas’ defense has to slow Kansas State in the pass-rush matchup — Kansas State’s offense has allowed a sack on 1.2% of its dropbacks.",
-        "Kansas’ offense has to keep winning on big pass plays: it turns 17.1% of its pass plays into explosive gains, and Kansas State’s defense gives up explosive gains on 12.0% of opponent pass plays.",
-        "Kansas’ defense has to come out ahead on big pass plays: it gives up explosive gains on 9.6% of opponent pass plays, against an offense that turns 8.1% of its pass plays into explosive gains."
-      ],
-      "market": [
-        "Kansas State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 1.2% of its dropbacks, and Kansas’ defense sacks the quarterback on 6.8% of opponent dropbacks.",
-        "Kansas State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.5% of opponent dropbacks, against an offense that has allowed a sack on 3.2% of its dropbacks.",
-        "Johnson keeps producing at his season rate (64.0% completions, 6.8 yards per attempt, 9 TD, 3 INT)."
-      ]
-    },
-    "unknown": [
-      "Kansas State’s update 2 Big 12 availability report (published Oct. 16) lists quarterback Dillon Duff as questionable.",
-      "Kansas State’s availability report lists tight end Garrett Oakley as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Kansas State and Kansas.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Kansas State), sack rate (Kansas State), sack rate allowed (Kansas) and sack rate (Kansas); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.3 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Kansas State: new head coach; returning roster share at the 46th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T14:48:53.458Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big 12 Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T02:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T15:27:16.692Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }
