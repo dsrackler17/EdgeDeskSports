@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T16:00:00.000Z",
   "game_when_label": "2026-10-17 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T04:14:33.875Z",
-  "generated_at": "2026-10-17T04:14:33.875Z",
+  "updated_at": "2026-10-16T20:59:01.365Z",
+  "generated_at": "2026-10-16T20:59:01.365Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -249,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-02T23:00:00.000Z",
-        "retrieved_at": "2026-10-16T23:49:12.322Z"
+        "retrieved_at": "2026-10-16T20:34:28.963Z"
       },
       "home": {
         "team": "Boston College",
@@ -339,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T16:00:00.000Z",
-        "retrieved_at": "2026-10-16T23:49:12.322Z"
+        "retrieved_at": "2026-10-16T20:34:28.963Z"
       },
-      "generated_at": "2026-10-16T23:49:59.210Z",
+      "generated_at": "2026-10-16T20:35:14.549Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1847,7 +1847,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "p9mjf31ljkhm5",
+    "packet_hash": "qcm6261532ito",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can Boston College’s pass rush get to Mason Heintschel?",
@@ -1873,11 +1873,13 @@
       "Mason McKenzie has completed 81 of 139 passes (58.3%) for 967 yards, 7.0 yards per attempt, 5 touchdowns and 5 interceptions in five games for Boston College, and has been sacked on 14 of 153 dropbacks.",
       "Mason Heintschel has completed 98 of 148 passes (66.2%) for 1,313 yards, 8.9 yards per attempt, 14 touchdowns and 1 interception in five games for Pittsburgh, and has been sacked on 5 of 153 dropbacks.",
       "Holden Geriner has completed 46 of 70 passes (65.7%) for 438 yards, 6.3 yards per attempt, 2 touchdowns and 2 interceptions in four games for Pittsburgh, and has been sacked on 2 of 72 dropbacks.",
-      "Mason McKenzie does not appear on Boston College’s update 2 availability report.",
-      "Pittsburgh’s update 2 ACC availability report (published Oct. 16) lists quarterback Mason Heintschel as out.",
+      "Mason McKenzie does not appear on Boston College’s update 1 availability report.",
+      "Pittsburgh’s update 1 ACC availability report (published Oct. 15) lists quarterback Mason Heintschel as out.",
       "EdgeDesk’s model is built on Mason Heintschel starting for Pittsburgh, but the availability report lists him as out."
     ],
-    "availability": [],
+    "availability": [
+      "Pittsburgh’s availability report lists running back Ja'Kyrian Turner as questionable."
+    ],
     "script": {
       "model": [
         "Boston College’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.0% of opponent dropbacks, against an offense that has allowed a sack on 3.0% of its dropbacks.",
@@ -1892,6 +1894,7 @@
       ]
     },
     "unknown": [
+      "Pittsburgh’s availability report lists running back Ja'Kyrian Turner as questionable.",
       "The model expects Mason Heintschel, but Mason Heintschel is listed as out.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Boston College and Pittsburgh.",
       "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
@@ -1928,7 +1931,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-16T23:50:06.915Z",
+        "observed_at": "2026-10-16T20:35:21.481Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1939,17 +1942,17 @@
         "verification": "VERIFIED_DATA"
       },
       {
-        "label": "Atlantic Coast Conference availability report (Update 2)",
+        "label": "Atlantic Coast Conference availability report (Update 1)",
         "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
         "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T00:00:00.000Z",
+        "observed_at": "2026-10-16T00:00:00.000Z",
         "verification": "OFFICIAL_REPORT"
       },
       {
         "label": "EdgeDesk input audit (model starter vs official availability report)",
         "url": null,
         "path": null,
-        "observed_at": "2026-10-17T04:07:50.601Z",
+        "observed_at": "2026-10-16T20:08:01.657Z",
         "verification": "CONFLICTING"
       }
     ],
@@ -1958,6 +1961,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T04:14:33.875Z"
+    "at": "2026-10-16T20:59:01.365Z"
   }
 }

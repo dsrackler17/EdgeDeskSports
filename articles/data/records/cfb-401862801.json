@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-16T23:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-16. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1903,10 +1903,102 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-16. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1rtp5gj18675c1",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Memphis’ pass rush get to Kadin Semonza?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Tulane, and its own breakdown accounts for about 1.5 of the 2.2 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 2.2,
+      "toward": "Tulane",
+      "other": "Memphis"
+    },
+    "supporting": [
+      "When Tulane has the ball (big plays on the ground): Tulane’s offense turns 10.3% of its runs into explosive gains, and Memphis’ defense gives up explosive gains on 10.4% of opponent runs (FBS average 6.6%).",
+      "When Tulane has the ball (the run game against the run defense): Tulane’s offense averages 6.3 yards per carry, and Memphis’ defense allows 6.1 yards per carry (FBS average 5.1).",
+      "EdgeDesk’s position-group ratings put Tulane’s run defense No. 77 nationally and Memphis’ No. 128.",
+      "EdgeDesk’s position-group ratings put Tulane’s defense No. 73 nationally and Memphis’ No. 114."
+    ],
+    "contradicting": [
+      "When Tulane has the ball (pass protection against the pass rush): Tulane’s offense has allowed a sack on 8.9% of its dropbacks, and Memphis’ defense sacks the quarterback on 8.6% of opponent dropbacks (FBS average 5.6%).",
+      "When Memphis has the ball (pass protection against the pass rush): Memphis’ offense has allowed a sack on 5.0% of its dropbacks, and Tulane’s defense sacks the quarterback on 3.5% of opponent dropbacks (FBS average 5.6%).",
+      "When Memphis has the ball (the passing game against the pass defense): Memphis’ offense averages 11.2 yards per pass attempt, and Tulane’s defense allows 7.6 yards per pass attempt (FBS average 7.5).",
+      "When Memphis has the ball (third down): Memphis’ offense converts 48.4% of its third downs, and Tulane’s defense allows opponents to convert 47.4% of their third downs (FBS average 39.5%)."
+    ],
+    "quarterbacks": [
+      "Kadin Semonza has completed 64 of 119 passes (53.8%) for 808 yards, 6.8 yards per attempt, 4 touchdowns and 2 interceptions in five games for Tulane, and has been sacked on 13 of 132 dropbacks.",
+      "Marcus Stokes has completed 101 of 144 passes (70.1%) for 1,543 yards, 10.7 yards per attempt, 17 touchdowns and 3 interceptions in six games for Memphis, and has been sacked on 8 of 152 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Tulane’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 8.9% of its dropbacks, and Memphis’ defense sacks the quarterback on 8.6% of opponent dropbacks.",
+        "Tulane’s defense has to slow Memphis on big pass plays — Memphis’ offense turns 16.0% of its pass plays into explosive gains.",
+        "Tulane’s offense has to keep winning on long runs: it turns 10.3% of its runs into explosive gains, and Memphis’ defense gives up explosive gains on 10.4% of opponent runs.",
+        "Tulane’s offense has to keep winning on the ground: it averages 6.3 yards per carry, and Memphis’ defense allows 6.1 yards per carry."
+      ],
+      "market": [
+        "Memphis’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.6% of opponent dropbacks, against an offense that has allowed a sack on 8.9% of its dropbacks.",
+        "Memphis’ offense has to keep winning on big pass plays: it turns 16.0% of its pass plays into explosive gains, and Tulane’s defense gives up explosive gains on 13.7% of opponent pass plays.",
+        "Stokes keeps producing at his season rate (70.1% completions, 10.7 yards per attempt, 17 TD, 3 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Tulane and Memphis.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Tulane), sack rate (Tulane), sack rate allowed (Memphis) and sack rate (Memphis); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "HFA_CONSTANT",
+        "severity": "medium",
+        "text": "EdgeDesk’s model gives Tulane 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Tulane: new head coach; returning production at the 25th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Memphis: new head coach; returning roster share at the 5th percentile; returning production at the 3rd percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-16T20:35:21.481Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-16T20:34:50.767Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-16T00:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T04:14:33.875Z"
+    "at": "2026-10-16T20:59:01.365Z"
   }
 }

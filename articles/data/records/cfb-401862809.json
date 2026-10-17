@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T04:00:00.000Z",
   "game_when_label": "2026-10-24 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T04:14:33.875Z",
-  "generated_at": "2026-10-17T04:14:33.875Z",
+  "updated_at": "2026-10-16T20:59:01.365Z",
+  "generated_at": "2026-10-16T20:59:01.365Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -243,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T17:00:00.000Z",
-        "retrieved_at": "2026-10-16T23:49:12.322Z"
+        "retrieved_at": "2026-10-16T20:34:28.963Z"
       },
       "home": {
         "team": "Florida Atlantic",
@@ -329,9 +329,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T22:00:00.000Z",
-        "retrieved_at": "2026-10-16T23:49:12.322Z"
+        "retrieved_at": "2026-10-16T20:34:28.963Z"
       },
-      "generated_at": "2026-10-16T23:49:59.210Z",
+      "generated_at": "2026-10-16T20:35:14.549Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1586,11 +1586,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 89,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Rice’s availability report is not due yet",
-        "score": 88,
+        "text": "89 · STRONG",
+        "sub": "main deduction: no source has established whether Florida Atlantic or Rice’s starting QB can play",
+        "score": 89,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1628,27 +1628,29 @@
           {
             "key": "environment",
             "label": "Environment",
-            "score": 8.5,
+            "score": 10,
             "max": 10
           }
         ],
-        "main_deduction": "Rice’s availability report is not due yet; the impact of Rice’s absences cannot be assessed: no graded availability read",
-        "capped_by": [],
+        "main_deduction": "no source has established whether Florida Atlantic or Rice’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+        "capped_by": [
+          "QB_STATUS_UNCONFIRMED"
+        ],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Rice)",
-            "potential_gain": 1,
-            "text": "up to +1"
-          },
-          {
-            "action": "Re-read availability inside the filing window (Florida Atlantic)",
-            "potential_gain": 1,
-            "text": "up to +1"
-          },
-          {
             "action": "Capture a market quote",
+            "potential_gain": 2,
+            "text": "up to +2 once re-read availability inside the filing window (Florida Atlantic) and Re-read availability inside the filing window (Rice) is done"
+          },
+          {
+            "action": "Confirm Rice’s starting QB (Jacurri Brown)",
             "potential_gain": 1,
-            "text": "up to +1"
+            "text": "up to +1 once re-read availability inside the filing window (Florida Atlantic) and Re-read availability inside the filing window (Rice) is done"
+          },
+          {
+            "action": "Re-read Florida Atlantic’s starter evidence",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (Florida Atlantic) and Re-read availability inside the filing window (Rice) is done"
           }
         ],
         "stability": {
@@ -1896,6 +1898,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T04:14:33.875Z"
+    "at": "2026-10-16T20:59:01.365Z"
   }
 }
