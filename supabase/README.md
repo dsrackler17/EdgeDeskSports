@@ -691,6 +691,34 @@ without a person and the evidence. Model Lab views: `cfb_decision_lab_view`,
 editor path `parts/cfb_decision.part*-of-*.sql`; tested by
 `football/cfb_decision/sql.test.js`.
 
+### `cfb_altitude.sql` — CFB Altitude & Travel (shadow)
+Apply it **after** `cfb_production.sql` (it declares its switch in
+`cfb_feature_flags`; applied without it, everything else is created and the
+report says the switch was skipped). The Postgres half of `football/altitude`
+(`docs/cfb-altitude/README.md`):
+
+* `cfb_venue_elevation` — the venue elevation registry as each build published
+  it: elevation by stable venue id, sources, confidence; a legacy id is never
+  HIGH. View `cfb_venue_elevation_current`.
+* `cfb_altitude_shadow` — one pregame row per game x build: the measured
+  context, the SHADOW adjustment, the points applied and the V1 margin beside
+  it. Check constraints are the module's locks: points only when the row is
+  APPLIED **and** the flag was on **and** the parameters were VALIDATED; cap 3;
+  published = V1 + applied; a neutral site is never adjusted; written before
+  kickoff. Views `cfb_altitude_shadow_latest` and `cfb_altitude_monitor`.
+* `cfb_altitude_validation_runs` — every research verdict; points only from a
+  VALIDATED run, SUPPORTED only when VALIDATED.
+* The switch `cfb_altitude_adjustment_enabled`: declared OFF, COMPONENT,
+  guarded; changed only through `cfb_set_feature_flag` (a person, with
+  evidence); a re-apply never resets it.
+
+Append-only with RLS (authenticated reads, anon nothing, service role inserts).
+Written by `node football/altitude/sync_supabase.js`. Removal is
+`altitude_shadow_rollback.sql` (named without the `cfb_` prefix because the CFB
+migration review refuses destructive statements; read
+`docs/cfb-altitude/ROLLBACK.md` first — the switch is the rollback).
+Tested by `football/altitude/sql.test.js`.
+
 ### `cfb_production.sql` — CFB production operations
 Apply it **last**, after the other CFB contracts (it needs nothing, but its
 published views and health checks read their tables; applied first it says what

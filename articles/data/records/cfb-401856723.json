@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T19:30:00.000Z",
   "game_when_label": "2026-10-17 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T16:50:43.121Z",
-  "generated_at": "2026-10-17T16:50:43.121Z",
+  "updated_at": "2026-10-17T18:00:39.280Z",
+  "generated_at": "2026-10-17T18:00:39.280Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1448,7 +1448,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 171h old",
+          "text": "odds is 172h old",
           "widening": null
         },
         {
@@ -1533,7 +1533,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-10T14:00:01.583+00:00",
-      "capture_age": "171 hours old",
+      "capture_age": "172 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1880,15 +1880,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_5c40d75bac710e8c",
+  "snapshot_id": "snap_afb90cd2af066409",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-17T19:30:00.000Z",
-    "minutes_before_kickoff": 159,
+    "minutes_before_kickoff": 89,
     "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-17T16:50:43.121Z"
+    "refreshed": true,
+    "at": "2026-10-17T18:00:39.280Z"
   },
   "featured": {
     "editorial_priority": 44.7,
@@ -2202,11 +2202,11 @@
       }
     ],
     "craft_failed": [],
-    "at": "2026-10-17T16:50:43.121Z"
+    "at": "2026-10-17T18:00:39.280Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-17T16:50:43.121Z",
+    "at": "2026-10-17T18:00:39.280Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2224,7 +2224,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "hrrmcl1ws7rrb",
+    "packet_hash": "l0nkpazytca4",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": true,
     "question": "Can Tennessee take away Alabama’s big plays?",
@@ -2326,6 +2326,100 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T16:50:43.121Z"
+    "at": "2026-10-17T18:00:39.280Z"
+  },
+  "publication_snapshot_id": "snap_afb90cd2af066409",
+  "freshness": {
+    "at": "2026-10-17T18:00:39.280Z",
+    "fields": {
+      "market.line": {
+        "value": "Tennessee +5.5",
+        "provider": "captured consensus (stale) · 1 book · best at FanDuel",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.total": {
+        "value": 56.5,
+        "provider": "captured consensus (stale) · 1 book · best at FanDuel",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.book": {
+        "value": "captured consensus (stale) · 1 book · best at FanDuel",
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }

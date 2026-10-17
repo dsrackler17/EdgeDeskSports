@@ -102,6 +102,21 @@ const AUDIT = require(path.join(ROOT, 'football', 'enrichment', 'audit.js'));
    start_time_tbd decides whether a timestamp is a time or a placeholder */
 const KICK = require(path.join(ROOT, 'lib', 'edgedesk_schedule.js'));
 const P = global.EDCfbP4Params;
+/* ALTITUDE & TRAVEL (football/altitude): the same context function the
+   research harness fitted on, located by the schedule's own venue id. Its
+   adjustment is handed to the engine, which applies it only behind three
+   locks (validated parameters, points_applied, the server flag) and otherwise
+   records it as a SHADOW that moves nothing. A missing module or registry
+   means no section, never a guessed one. */
+const ALT = (function () {
+  try {
+    const eng = require(path.join(ROOT, 'football', 'altitude', 'engine.js'));
+    const reg = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'altitude', 'venues.json'), 'utf8'));
+    let params = null;
+    try { params = require(path.join(ROOT, 'football', 'altitude', 'params.js')); } catch (_) { /* no fit yet: shadow 0 */ }
+    return { eng, reg, params, flag: require(path.join(ROOT, 'football', 'altitude', 'flag.js')) };
+  } catch (_) { return null; }
+})();
 
 const SCHED = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_${y}.csv`;
 const LOOKAHEAD_DEFAULT = 10;
@@ -252,12 +267,15 @@ function buildState(rowsBySeason, season, efficiency) {
    board, and returns two requests: the BASELINE (what the published number
    is priced from) and the ENRICHED one (baseline + the new starter context),
    whose output is published under `shadow_` names and priced nowhere. */
-function project(st, item, season, ctx, si) {
+function project(st, item, season, ctx, si, altitude) {
   const g = item.g, m = item.meta;
   let asm;
   try {
     asm = IN.buildRequest(ctx, { game: g, meta: m, state: st, schedule_index: si, now: Date.now() });
   } catch (e) { return { status: 'THREW', reason: 'input assembly: ' + String(e && e.message) }; }
+  /* the altitude verdict for this game, on both requests (the engine decides
+     whether it may move the number; today it may not) */
+  if (altitude) { asm.baseline.altitude = altitude; asm.enriched.altitude = altitude; }
   let base, shadow = null;
   try { base = E.projectGame(asm.baseline); } catch (e) { return { status: 'THREW', reason: String(e && e.message), assembly: asm }; }
   try { shadow = E.projectGame(asm.enriched); } catch (e) { shadow = { status: 'THREW', reason: String(e && e.message) }; }
@@ -266,6 +284,19 @@ function project(st, item, season, ctx, si) {
   return base;
 }
 
+
+/* The altitude section as published: the module's own section, with the
+   engine's contribution beside it so a reader can see the two agree (the
+   engine's altitude contribution is the only number that can move the line). */
+function altitudeRow(alt, p) {
+  if (!alt || !alt.section) return null;
+  const c = p && p.status === 'PREDICTED' && Array.isArray(p.contributions)
+    ? p.contributions.find(x => x.key === 'altitude') : null;
+  return Object.assign({}, alt.section, {
+    engine_contribution: c ? { points: c.points, available: c.available, reason: c.reason || null } : null,
+    flag: { name: ALT && ALT.flag ? ALT.flag.FLAG : 'cfb_altitude_adjustment_enabled' }
+  });
+}
 
 /* The difference the starter context made, in the engine's own terms. */
 function shadowEffect(base, sh, asm) {
@@ -467,11 +498,34 @@ async function main() {
   }
   ctx.problems.forEach(x => log('[fbs] input: ' + x));
 
+  /* ALTITUDE: one team index over this season and the last (a team's normal
+     venue falls back to last season's when it has no home game scheduled
+     yet), the trained venue table as the listed-venue fallback, and the
+     server flag read once, fail-closed */
+  const altOf = {};
+  let altFlag = { enabled: false, source: 'altitude module unavailable' };
+  if (ALT) {
+    altFlag = a.offline ? { enabled: false, source: '--offline: off' } : await ALT.flag.read();
+    const altEnv = { registry: ALT.reg, normKey: FBS.normKey,
+      index: ALT.eng.teamIndex((rowsBySeason[a.season - 1] || []).concat(target), FBS.normKey),
+      listed: (P.universe && P.universe.venues) || {} };
+    for (const it of slate) {
+      try {
+        const c = ALT.eng.context({ game_id: it.g.game_id, season: it.g.season, kickoff: it.g.start_date,
+          neutral_site: it.g.neutral_site, venue_id: it.g.venue_id, home_team: it.g.home_team, away_team: it.g.away_team }, altEnv);
+        const adj = ALT.eng.adjustment(c, ALT.params, { flag_enabled: altFlag.enabled === true });
+        const section = ALT.eng.publish(c, adj, ALT.params);
+        altOf[it.meta.id] = { adjustment: adj, section };
+      } catch (e) { log('[fbs] altitude ' + it.meta.id + ': ' + ((e && e.message) || e)); }
+    }
+    log('[fbs] altitude: ' + Object.keys(altOf).length + ' games, flag ' + (altFlag.enabled ? 'ON' : 'off') + ' (' + altFlag.source + ')');
+  }
+
   const projected = {};
   const statuses = {};
   const recs = {};
   for (const it of slate) {
-    const p = project(st, it, a.season, ctx, si);
+    const p = project(st, it, a.season, ctx, si, altOf[it.meta.id] || null);
     projected[it.meta.id] = p;
     statuses[p.status] = (statuses[p.status] || 0) + 1;
     const rec = (p.edge && p.edge.spread && p.edge.spread.recommendation) || 'NO_PROJECTION';
@@ -922,6 +976,9 @@ async function main() {
          when the truth is more specific and more useful than that. */
       shadow_effect: shadowEffect(p, sh, asm),
       v2_shadow: v2Shadow(m.id),
+      /* ALTITUDE & TRAVEL: the research section, with what the engine actually
+         did with it (contribution 0 unless every lock is open) */
+      altitude_travel: altitudeRow(altOf[m.id], p),
       spread_recommendation: (p && p.edge && p.edge.spread) ? p.edge.spread.recommendation : null,
       /* no market is joined in this offline job — the board and the exports
          carry the live quote. Stated, never faked as a number. */
