@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T11:30:50.543Z",
-  "generated_at": "2026-10-17T11:30:50.543Z",
+  "updated_at": "2026-10-17T11:34:11.595Z",
+  "generated_at": "2026-10-17T11:34:11.595Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1845,137 +1845,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-16. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1xcw3451ojaqlj",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": true,
-    "question": "Can Wisconsin take away UCLA’s big plays?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.1 points.",
-    "gap": {
-      "points": 0.1,
-      "toward": "Wisconsin",
-      "other": "UCLA"
-    },
-    "supporting": [
-      "When Wisconsin has the ball (pass protection against the pass rush): Wisconsin’s offense has allowed a sack on 2.1% of its dropbacks, and UCLA’s defense sacks the quarterback on 4.8% of opponent dropbacks (FBS average 5.6%).",
-      "When UCLA has the ball (the passing game against the pass defense): UCLA’s offense averages 8.3 yards per pass attempt, and Wisconsin’s defense allows 4.7 yards per pass attempt (FBS average 7.5).",
-      "EdgeDesk’s position-group ratings put Wisconsin’s quarterback room No. 22 nationally and UCLA’s No. 134.",
-      "Wisconsin comes in on 14 days of rest after an open week; UCLA has had 7 days."
-    ],
-    "contradicting": [
-      "When UCLA has the ball (the line of scrimmage on running plays): UCLA’s offense is stopped at or behind the line on 12.6% of its runs, and Wisconsin’s defense stops 11.1% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Wisconsin has the ball (big plays on the ground): Wisconsin’s offense turns 5.2% of its runs into explosive gains, and UCLA’s defense gives up explosive gains on 3.4% of opponent runs (FBS average 6.6%).",
-      "When Wisconsin has the ball (the run game against the run defense): Wisconsin’s offense averages 4.9 yards per carry, and UCLA’s defense allows 3.4 yards per carry (FBS average 5.1).",
-      "When Wisconsin has the ball (early downs): Wisconsin’s offense succeeds on 36.8% of its first- and second-down plays, and UCLA’s defense allows success on 33.7% of first- and second-down plays (FBS average 42.8%)."
-    ],
-    "quarterbacks": [
-      "Nico Iamaleava has completed 71 of 116 passes (61.2%) for 978 yards, 8.4 yards per attempt, 4 touchdowns and 4 interceptions in five games for UCLA, and has been sacked on 7 of 123 dropbacks.",
-      "Colton Joseph has completed 80 of 142 passes (56.3%) for 1,132 yards, 8.0 yards per attempt, 9 touchdowns and 4 interceptions in five games for Wisconsin, and has been sacked on 3 of 145 dropbacks.",
-      "UCLA’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Nico Iamaleava as out.",
-      "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Danny O'Neil as questionable.",
-      "Colton Joseph does not appear on Wisconsin’s update 2 availability report.",
-      "EdgeDesk’s model is built on Nico Iamaleava starting for UCLA, but the availability report lists him as out."
-    ],
-    "availability": [
-      "UCLA’s availability report lists offensive lineman Jordan Davis as doubtful.",
-      "Wisconsin’s availability report lists running back Nate Palmer as doubtful."
-    ],
-    "script": {
-      "model": [
-        "Wisconsin’s defense has to come out ahead on big pass plays: it gives up explosive gains on 4.0% of opponent pass plays, against an offense that turns 16.4% of its pass plays into explosive gains.",
-        "Wisconsin’s defense has to slow UCLA at the line of scrimmage — UCLA’s offense is stopped at or behind the line on 12.6% of its runs.",
-        "Wisconsin’s offense has to hold its own on long runs against a defense that gives up explosive gains on 3.4% of opponent runs.",
-        "Wisconsin’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.1% of its dropbacks, and UCLA’s defense sacks the quarterback on 4.8% of opponent dropbacks."
-      ],
-      "market": [
-        "UCLA’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 12.6% of its runs, and Wisconsin’s defense stops 11.1% of opponent runs at or behind the line.",
-        "UCLA’s defense has to come out ahead on long runs: it gives up explosive gains on 3.4% of opponent runs, against an offense that turns 5.2% of its runs into explosive gains.",
-        "UCLA’s offense has to keep winning on big pass plays: it turns 16.4% of its pass plays into explosive gains, and Wisconsin’s defense gives up explosive gains on 4.0% of opponent pass plays."
-      ]
-    },
-    "unknown": [
-      "UCLA’s availability report lists offensive lineman Jordan Davis as doubtful.",
-      "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Danny O'Neil as questionable.",
-      "Wisconsin’s availability report lists running back Nate Palmer as doubtful.",
-      "The model expects Nico Iamaleava, but Nico Iamaleava is listed as out.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for UCLA and Wisconsin.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "QB_INPUT_CONFLICT",
-        "severity": "high",
-        "text": "EdgeDesk’s model is built on Nico Iamaleava starting for UCLA, but the availability report lists him as out."
-      },
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (UCLA), sack rate (UCLA) and sack rate allowed (Wisconsin); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "QB_REPLACEMENT_GENERIC",
-        "severity": "medium",
-        "text": "The availability report lists Nico Iamaleava out, and EdgeDesk’s main model subtracts a generic quarterback absence (3.9 points) from UCLA — it does not price the replacement’s own play."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "UCLA: new head coach; returning roster share at the 16th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T10:48:54.455Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-16T23:49:33.908Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "Kickoff times of each team’s previous game",
-        "url": null,
-        "path": "record/football/cfb_2026.json",
-        "observed_at": "2026-10-17T11:11:20.068Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-16T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-17T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      },
-      {
-        "label": "EdgeDesk input audit (model starter vs official availability report)",
-        "url": null,
-        "path": null,
-        "observed_at": "2026-10-17T11:09:59.292Z",
-        "verification": "CONFLICTING"
-      }
-    ],
-    "needs_confirmation": []
-  },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-17T11:30:50.543Z"
-  },
   "snapshot_id": "snap_974234a1b159aa58",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-17T23:30:00.000Z",
+    "minutes_before_kickoff": 716,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-17T11:34:11.595Z"
+  },
   "featured": {
     "editorial_priority": 50.4,
     "status": "featured",
@@ -2286,33 +2165,17 @@
     }
   ],
   "quality": {
-    "score": 88,
+    "score": 100,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [
-      {
-        "id": "duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Dan",
-        "cost": 12
-      }
-    ],
-    "at": "2026-10-17T11:30:50.543Z"
-  },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-17T23:30:00.000Z",
-    "minutes_before_kickoff": 719,
-    "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-17T11:30:50.543Z"
+    "craft_failed": [],
+    "at": "2026-10-17T11:34:11.595Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-17T11:30:50.543Z",
+    "at": "2026-10-17T11:34:11.595Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2320,13 +2183,137 @@
         "detail": "QB_INPUT_CONFLICT"
       }
     ],
-    "warnings": [
+    "warnings": [],
+    "hold_reason": "evidence_inputs_suspect"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1xcw3451ojaqlj",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": true,
+    "question": "Can Wisconsin take away UCLA’s big plays?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.1 points.",
+    "gap": {
+      "points": 0.1,
+      "toward": "Wisconsin",
+      "other": "UCLA"
+    },
+    "supporting": [
+      "When Wisconsin has the ball (pass protection against the pass rush): Wisconsin’s offense has allowed a sack on 2.1% of its dropbacks, and UCLA’s defense sacks the quarterback on 4.8% of opponent dropbacks (FBS average 5.6%).",
+      "When UCLA has the ball (the passing game against the pass defense): UCLA’s offense averages 8.3 yards per pass attempt, and Wisconsin’s defense allows 4.7 yards per pass attempt (FBS average 7.5).",
+      "EdgeDesk’s position-group ratings put Wisconsin’s quarterback room No. 22 nationally and UCLA’s No. 134.",
+      "Wisconsin comes in on 14 days of rest after an open week; UCLA has had 7 days."
+    ],
+    "contradicting": [
+      "When UCLA has the ball (the line of scrimmage on running plays): UCLA’s offense is stopped at or behind the line on 12.6% of its runs, and Wisconsin’s defense stops 11.1% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Wisconsin has the ball (big plays on the ground): Wisconsin’s offense turns 5.2% of its runs into explosive gains, and UCLA’s defense gives up explosive gains on 3.4% of opponent runs (FBS average 6.6%).",
+      "When Wisconsin has the ball (the run game against the run defense): Wisconsin’s offense averages 4.9 yards per carry, and UCLA’s defense allows 3.4 yards per carry (FBS average 5.1).",
+      "When Wisconsin has the ball (early downs): Wisconsin’s offense succeeds on 36.8% of its first- and second-down plays, and UCLA’s defense allows success on 33.7% of first- and second-down plays (FBS average 42.8%)."
+    ],
+    "quarterbacks": [
+      "Nico Iamaleava has completed 71 of 116 passes (61.2%) for 978 yards, 8.4 yards per attempt, 4 touchdowns and 4 interceptions in five games for UCLA, and has been sacked on 7 of 123 dropbacks.",
+      "Colton Joseph has completed 80 of 142 passes (56.3%) for 1,132 yards, 8.0 yards per attempt, 9 touchdowns and 4 interceptions in five games for Wisconsin, and has been sacked on 3 of 145 dropbacks.",
+      "UCLA’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Nico Iamaleava as out.",
+      "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Danny O'Neil as questionable.",
+      "Colton Joseph does not appear on Wisconsin’s update 2 availability report.",
+      "EdgeDesk’s model is built on Nico Iamaleava starting for UCLA, but the availability report lists him as out."
+    ],
+    "availability": [
+      "UCLA’s availability report lists offensive lineman Jordan Davis as doubtful.",
+      "Wisconsin’s availability report lists running back Nate Palmer as doubtful."
+    ],
+    "script": {
+      "model": [
+        "Wisconsin’s defense has to come out ahead on big pass plays: it gives up explosive gains on 4.0% of opponent pass plays, against an offense that turns 16.4% of its pass plays into explosive gains.",
+        "Wisconsin’s defense has to slow UCLA at the line of scrimmage — UCLA’s offense is stopped at or behind the line on 12.6% of its runs.",
+        "Wisconsin’s offense has to hold its own on long runs against a defense that gives up explosive gains on 3.4% of opponent runs.",
+        "Wisconsin’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.1% of its dropbacks, and UCLA’s defense sacks the quarterback on 4.8% of opponent dropbacks."
+      ],
+      "market": [
+        "UCLA’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 12.6% of its runs, and Wisconsin’s defense stops 11.1% of opponent runs at or behind the line.",
+        "UCLA’s defense has to come out ahead on long runs: it gives up explosive gains on 3.4% of opponent runs, against an offense that turns 5.2% of its runs into explosive gains.",
+        "UCLA’s offense has to keep winning on big pass plays: it turns 16.4% of its pass plays into explosive gains, and Wisconsin’s defense gives up explosive gains on 4.0% of opponent pass plays."
+      ]
+    },
+    "unknown": [
+      "UCLA’s availability report lists offensive lineman Jordan Davis as doubtful.",
+      "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Danny O'Neil as questionable.",
+      "Wisconsin’s availability report lists running back Nate Palmer as doubtful.",
+      "The model expects Nico Iamaleava, but Nico Iamaleava is listed as out.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for UCLA and Wisconsin.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate."
+    ],
+    "flags": [
       {
-        "id": "craft_duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Dan"
+        "key": "QB_INPUT_CONFLICT",
+        "severity": "high",
+        "text": "EdgeDesk’s model is built on Nico Iamaleava starting for UCLA, but the availability report lists him as out."
+      },
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (UCLA), sack rate (UCLA) and sack rate allowed (Wisconsin); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "QB_REPLACEMENT_GENERIC",
+        "severity": "medium",
+        "text": "The availability report lists Nico Iamaleava out, and EdgeDesk’s main model subtracts a generic quarterback absence (3.9 points) from UCLA — it does not price the replacement’s own play."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "UCLA: new head coach; returning roster share at the 16th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
       }
     ],
-    "hold_reason": "evidence_inputs_suspect"
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-17T10:48:54.455Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-16T23:49:33.908Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "Kickoff times of each team’s previous game",
+        "url": null,
+        "path": "record/football/cfb_2026.json",
+        "observed_at": "2026-10-17T11:11:20.068Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-16T00:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Big Ten Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-17T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      },
+      {
+        "label": "EdgeDesk input audit (model starter vs official availability report)",
+        "url": null,
+        "path": null,
+        "observed_at": "2026-10-17T11:09:59.292Z",
+        "verification": "CONFLICTING"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-17T11:34:11.595Z"
   }
 }
