@@ -289,5 +289,22 @@ function ask(q, Es, st) { return D.answer({ question: q, evidence: Es, state: st
   ok('asked directly, Similar Situations says it is building history', t2.intent === 'SIMILAR' && /building history/.test(t2.text), t2);
 }
 
+/* ------------------------------------------------------------ football lines
+   football_half_point_v1: the function inlines lib/edgedesk_football_lines.js,
+   so the packet carries the board's half-point fair line, fair total and
+   whole-number projected score BESIDE the raw projection; the deep dive prints
+   both and every gap still reads the raw number */
+{
+  global.EDFootballLines = require(path.join(ROOT, 'lib', 'edgedesk_football_lines.js'));
+  const raw = D.evidence(F.nflGame(NOW, { market_home_line: -4.5 }));
+  const pd = raw.projection.display;
+  ok('the packet carries the half-point fair line beside the raw projection', pd && pd.fair_line === 'Los Angeles Rams −7.0' && raw.projection.home_line === -6.9 && pd.policy === 'football_half_point_v1', raw.projection);
+  ok('…the fair total at the half point and the projected score in whole points', pd && pd.fair_total === 49.5 && /^Los Angeles Rams \d+, New York Giants \d+$/.test(pd.projected_score), pd);
+  ok('…and the gap is still the raw projection against the market (−6.9 vs −4.5)', raw.gap.points === 2.4, raw.gap);
+  const dd = ask('Give me the deep dive', [raw], ask('Rams -4.5', [raw]).state);
+  ok('the deep dive prints the fair line as the board does, and the unrounded projection after it', /- Fair line: Los Angeles Rams −7\.0, fair total 49\.5; projected score /.test(dd.text) && /- Projection: Los Angeles Rams -6\.9/.test(dd.text), dd.text.split('\n').slice(0, 8));
+  delete global.EDFootballLines;
+}
+
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

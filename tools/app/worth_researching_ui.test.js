@@ -65,7 +65,7 @@ function fnSrc(name) {
 }
 const PAGE_HELPERS = [lineSrc('function edEsc('), lineSrc('function _escHtml('), lineSrc('function fbEsc('), lineSrc('function edAttrJs('),
   lineSrc('function fbPts('), lineSrc('function fbHomeLine('), lineSrc('function ago('), lineSrc('function whenLabel('),
-  lineSrc('var FB_GUARD='), fnSrc('fbCalcGap'), fnSrc('fbRecDisagrees'), fnSrc('fbP4StatusFor'), fnSrc('fbNflResearchState')].join('\n');
+  lineSrc('var FB_GUARD='), fnSrc('fbFairDisp'), fnSrc('fbModelLine'), fnSrc('fbBookLine'), fnSrc('fbCalcGap'), fnSrc('fbRecDisagrees'), fnSrc('fbP4StatusFor'), fnSrc('fbNflResearchState')].join('\n');
 
 const NOW = Date.now();
 const iso = (ms) => new Date(ms).toISOString();
@@ -155,6 +155,8 @@ function makeCtx(opts) {
   if (opts.priority !== false) vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'research_priority.js'), 'utf8'), c);
   /* the canonical calculation layer the page loads before the classifier (docs/system-integrity) */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_calc.js'), 'utf8'), c);
+  /* the football display lines (lib/edgedesk_football_lines.js), as the page loads them */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_football_lines.js'), 'utf8'), c);
   /* the one research classifier the board word is read off (audit 2026-09-30 #6), as the page loads it */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'football', 'params.js'), 'utf8'), c);
@@ -279,8 +281,8 @@ ROWS.forEach((r, i) => {
 });
 const flip = ROWS.find((r) => r.indexOf('Ole Miss @ Florida') >= 0);
 chk('the flip game is listed', !!flip);
-has(flip, '<i>Market</i><b>Florida -2.0</b>', 'its market line reads as the home line');
-has(flip, '<i>Model</i><b>Florida +4.1</b>', 'its EdgeDesk line likewise');
+has(flip, '<i>Market</i><b>Florida −2.0</b>', 'its market line reads as the home line, as received');
+has(flip, '<i>Model</i><b>Florida +4.0</b>', 'its EdgeDesk line likewise, at the half point (raw +4.1)');
 has(flip, '<i>Gap</i><b>6.1 pts</b>', 'and the gap');
 /* confidence is READ from the research view, never derived: a game with no
    published confidence says so, and the reading-order score never stands in */

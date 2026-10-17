@@ -109,9 +109,11 @@ L.games.forEach((g) => {
   const v = HM.view(g, L.models), s = g.snapshot, M = s.model, row = (k) => (v.rows.find((r) => r[0] === k) || [])[1] || '';
   const tag = ' · ' + g.game_key;
   chk('Beginner is the research page\'s own words' + tag, JSON.stringify(v.beginner) === JSON.stringify(GS.beginner(s)));
-  chk('the projected score is the snapshot\'s' + tag, row('Projected score').indexOf(String((M.headline_scores || M.scores).home)) >= 0 && row('Projected score').indexOf(String((M.headline_scores || M.scores).away)) >= 0);
-  chk('the fair spread is the snapshot\'s, on its favourite' + tag, !M.fair.favorite || row('Fair spread') === s[M.fair.favorite].name + ' −' + Math.abs(M.fair.display).toFixed(1), row('Fair spread'));
-  chk('the fair total is the snapshot\'s' + tag, row('Fair total') === M.total.toFixed(1));
+  /* the display block (lib/edgedesk_football_lines.js) when the snapshot has one */
+  const D = M.display, sc = D ? D.score : (M.headline_scores || M.scores);
+  chk('the projected score is the snapshot\'s' + tag, row('Projected score') === s.away.name + ' ' + sc.away + ', ' + s.home.name + ' ' + sc.home, row('Projected score'));
+  chk('the fair spread is the snapshot\'s, on its favourite' + tag, D ? row('Fair spread') === D.spread.text : (!M.fair.favorite || row('Fair spread') === s[M.fair.favorite].name + ' −' + Math.abs(M.fair.display).toFixed(1)), row('Fair spread'));
+  chk('the fair total is the snapshot\'s' + tag, row('Fair total') === (D ? D.total.text : M.total.toFixed(1)));
   chk('the chance to win is the snapshot\'s display' + tag, row('Chance to win').indexOf(M.win_display.home) >= 0 && row('Chance to win').indexOf(M.win_display.away) >= 0);
   chk('the model moneyline is labelled an estimate, not a price' + tag, /\(an estimate, not a price\)$/.test(row('Model moneyline')));
   chk('what to watch for is the snapshot\'s insights' + tag, JSON.stringify(v.watch) === JSON.stringify((s.insights || []).slice(0, 4).map((i) => ({ title: i.title, text: i.text }))));

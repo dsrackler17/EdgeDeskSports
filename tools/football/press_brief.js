@@ -79,6 +79,13 @@ function esc(s) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 function pts(v, dp) { return isNum(v) ? ((v > 0 ? '+' : '') + v.toFixed(dp == null ? 1 : dp)) : '—'; }
+/* THE FOOTBALL LINES (lib/edgedesk_football_lines.js, the board's own): the
+   model's line and total at the nearest half point, the score in whole points,
+   a book line exactly as received, and the gap from the raw margin */
+const FLN = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_football_lines.js'));
+function modelLine(margin) { return isNum(margin) ? FLN.lineText(FLN.halfPoint(margin) === 0 ? 0 : -FLN.halfPoint(margin)) : '—'; }
+function modelTotal(t) { return isNum(t) ? FLN.total(t).text : '—'; }
+function bookLine(v) { return isNum(v) ? FLN.exactLineText(v) : '—'; }
 function num1(v) { return isNum(v) ? v.toFixed(1) : '—'; }
 function pct(v) { return isNum(v) ? Math.round(v) + '%' : '—'; }
 
@@ -98,8 +105,10 @@ const RANK_MIN_CONFIDENCE = (() => {
 
 function projectedScore(margin, total) {
   if (!isNum(margin) || !isNum(total)) return null;
-  const home = Math.round((total + margin) / 2);
-  const away = Math.round((total - margin) / 2);
+  /* whole points, each side rounded on its own: the board's fbGxScore calls the same function */
+  const ps = FLN.projectedScore({ home_margin: margin, total: total });
+  const home = ps.home;
+  const away = ps.away;
   /* a split that puts a side below zero is not a score; the model's margin
      has outrun its total and the honest answer is to publish neither */
   if (home < 0 || away < 0) return null;
@@ -585,10 +594,10 @@ function buildHtml(slate, R) {
       <td class="kick mono">${esc(k.date)}<i>${esc(k.time)}</i></td>
       <td style="font-size:7.9pt"><b>${teamLine(g)}</b></td>
       <td style="font-size:7.6pt">${sc}</td>
-      <td class="num mono" style="font-size:7.4pt">${isNum(g.home_line) ? esc(g.home) + ' ' + pts(g.home_line) : '<span class="miss">—</span>'}</td>
-      <td class="num mono nowrap">${num1(g.total)}</td>
+      <td class="num mono" style="font-size:7.4pt">${isNum(g.margin) ? esc(g.home) + ' ' + modelLine(g.margin) : '<span class="miss">—</span>'}</td>
+      <td class="num mono nowrap">${modelTotal(g.total)}</td>
       <td class="num mono nowrap">${isNum(g.win_prob) ? Math.round(g.win_prob) + '%' : '—'}</td>
-      ${mkt ? `<td class="num mono nowrap">${isNum(g.ref_line) ? pts(g.ref_line) : '<span class="miss">—</span>'}</td>
+      ${mkt ? `<td class="num mono nowrap">${isNum(g.ref_line) ? bookLine(g.ref_line) : '<span class="miss">—</span>'}</td>
       <td class="num mono nowrap">${isNum(g.spread_gap) ? Math.abs(g.spread_gap).toFixed(1) : '<span class="miss">—</span>'}</td>` : ''}
       <td class="num nowrap">${meter(g.confidence)}</td>
       <td class="nowrap">${chip(g.status)}</td></tr>`);
@@ -627,8 +636,8 @@ function buildHtml(slate, R) {
       }
       H.push(`</div>
         <dl class="kv">
-          <dt>Model line</dt><dd class="mono">${isNum(g.home_line) ? esc(g.home) + ' ' + pts(g.home_line) : '—'}${isNum(g.total) ? ` · total ${num1(g.total)}` : ''}</dd>
-          <dt>Market</dt><dd class="mono">${isNum(g.ref_line) ? pts(g.ref_line) + (isNum(g.spread_gap) ? ` · ${Math.abs(g.spread_gap).toFixed(1)} pts apart` : '') : '<span class="miss">none joined</span>'}</dd>
+          <dt>Model line</dt><dd class="mono">${isNum(g.margin) ? esc(g.home) + ' ' + modelLine(g.margin) : '—'}${isNum(g.total) ? ` · total ${modelTotal(g.total)}` : ''}</dd>
+          <dt>Market</dt><dd class="mono">${isNum(g.ref_line) ? bookLine(g.ref_line) + (isNum(g.spread_gap) ? ` · ${Math.abs(g.spread_gap).toFixed(1)} pts apart` : '') : '<span class="miss">none joined</span>'}${isNum(g.ref_line) && isNum(g.margin) && FLN.compareSpread(g.margin, g.ref_line).rounding_note ? `<div class="miss">${esc(FLN.ROUNDING_NOTE)}</div>` : ''}</dd>
           <dt>Win probability</dt><dd class="mono">${isNum(g.win_prob) ? `${esc(g.home)} ${Math.round(g.win_prob)}% · ${esc(g.away)} ${100 - Math.round(g.win_prob)}%` : '—'}</dd>
           <dt>Outcome range</dt><dd class="mono">${isNum(g.p10) && isNum(g.p90) ? `${pts(g.p10)} to ${pts(g.p90)} · σ ${num1(g.sigma)}` : '—'}</dd>
           <dt>Confidence</dt><dd>${meter(g.confidence)}${isNum(g.preseason_share) ? ` <span class="miss">· ${g.preseason_share}% still preseason belief</span>` : ''}</dd>

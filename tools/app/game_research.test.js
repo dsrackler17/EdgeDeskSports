@@ -67,7 +67,7 @@ function fnSrc(name) {
   return APP.slice(at, end + 3);
 }
 const HELPERS = fnSrc('fbWinPair') + '\n' + fnSrc('fbWinText') + '\n'
-  + fnSrc('fbFairDisp') + '\n' + fnSrc('fbRawMarginText') + '\n' + fnSrc('fbFavHome') + '\n' + fnSrc('fbCalcGap') + '\n'
+  + fnSrc('fbFairDisp') + '\n' + fnSrc('fbModelLine') + '\n' + fnSrc('fbBookLine') + '\n' + fnSrc('fbModelTotal') + '\n' + fnSrc('fbRawMarginText') + '\n' + fnSrc('fbFavHome') + '\n' + fnSrc('fbCalcGap') + '\n'
   /* the research-view adapter the card reads; with lib/cfb_research_view.js
      not loaded here it returns null and the card renders its fallback */
   + fnSrc('fbP4ViewFor') + '\n' + fnSrc('fbRvNearBadge') + '\n';
@@ -151,6 +151,8 @@ function ctx() {
   };
   c.window = c; c.EDCfbP4Params = PARAMS; c.window.EDCfbP4Params = PARAMS;
   vm.createContext(c);
+  /* the football display lines app.html loads with a <script> tag */
+  vm.runInContext(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'lib', 'edgedesk_football_lines.js'), 'utf8'), c, { filename: 'lib/edgedesk_football_lines.js' });
   vm.runInContext(HELPERS, c, { filename: 'app.html:shared-helpers' });
   vm.runInContext(SRC, c, { filename: 'app.html:game-research' });
   return c;

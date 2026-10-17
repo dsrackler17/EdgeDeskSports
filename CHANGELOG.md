@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-10-17 — Football lines: half-point fair spreads and totals, whole-number projected scores, gaps from the unrounded projection
+
+**EdgeDesk's NFL and college football numbers now print the way a sportsbook prints them.** For example, Texas Tech −20.7 prints as −20.5, a 52.4 total as 52.5, a 49.9 total as 50.0, and a zero spread as PK. Indiana −2.5 and Bowling Green −12.0 stay as they are. The model's own numbers are untouched: every gap, EV, cover probability, grade, calibration figure and record still reads the raw values (`docs/system-integrity/FOOTBALL_LINES.md`).
+
+- **The utility** (`lib/edgedesk_football_lines.js`, `EDFootballLines`, policy `football_half_point_v1`) is the one source for:
+  - half points, halves away from zero, symmetric in sign, with the raw number read at the published hundredths;
+  - PK, and whole-number projected scores labelled "Projected score";
+  - sportsbook lines printed as received (`−6.75` stays `−6.75`);
+  - the gap, computed in EDCalc's tenths from the unrounded projection, so a printed gap is always the one the research and decision layers classify;
+  - the rounding note: "Fair lines rounded to nearest half-point; differences use unrounded projections."
+- **Key numbers.** A short note says when the model's line and the market's sit on opposite sides of 3 or 7, or one lands on it: "Market is below 7; model is above 7.", "Model favors Indiana outright; market gives Indiana more than a field goal."
+  - Further margins are configurable per league; none ship by default.
+  - The note adjusts no probability and claims no key-number frequency.
+- **Applied to:**
+  - the game research page, its snapshot (`model.display`, checked by `display_from_raw`), the share graphic and the landing page;
+  - the football board, cards, overview and cockpit (`app.html`), the CFB research view, the CFB research terminal and its page, the decision cards and the home board;
+  - the briefs that feed articles, editorial, the newsletter and the presentation layer;
+  - the content engine and its Edge Function, the newsletter, the press brief, and the AI desk (its Edge Function now inlines the utility).
+- **Raw and display stay apart.**
+  - New raw fields sit beside the display: `fair_spread_raw_text` (now on NFL briefs too), `margin_raw`, `total_raw`, `model_raw`, `total_model_raw`, `fair_text_precise`, `precise_line_text`.
+  - Editorial grading, the implied over/under side and the performance build read the raw total.
+  - A record built before this policy grades exactly as it did.
+- **Integrity rules, versioned.**
+  - `CALC.GAP_RECONCILES` accepts the half-point fair line and the market line as received. It still requires the raw gap, and requires the rounding note when the printed lines do not reproduce that gap. The −1.0 near-pick'em floor is still blocked.
+  - `PROJ.SCORES` accepts whole-number scores tagged with the policy.
+  - The content engine's gate and the newsletter validator admit the packet's own half-point line and whole numbers, and nothing else.
+- **Nothing is rewritten.**
+  - No ledger, record, published article or committed artifact was regenerated.
+  - Frozen snapshots and history specs carry no display block and redraw with the numbers they were published with.
+  - The scheduled builds pick the display up on their next run.
+- **Verified**, building HEAD and this change at the same clock:
+  - all 135 game-research snapshots keep every raw model field;
+  - the probability sheets are byte-identical;
+  - the CFB terminal's decisions, record, EV and Read outputs are identical;
+  - all 56 editorial audits re-grade identically;
+  - the content engine's 66 packets keep every number.
+- **Tests:**
+  - `tools/football/football_lines.test.js` (77) covers rounding in both signs, quarter-point ties, PK, totals, missing data, favourite flips, key-number boundaries, configuration, and parity with EDCalc's gaps;
+  - existing suites were updated where they pinned the old one-decimal text.
+- **Not yet on the policy:**
+  - the machine CSV/XLSX exports, which stay raw (Collective uploader contract);
+  - Discord;
+  - the other AI modules' raw `fmtLine`;
+  - the card feed, performance pages, linemaker desk and the CFB v2 shadow display.
+
 ## 2026-10-16 — The A–F Research Grade, locked before kickoff, and Grade Performance: how the grades held up
 
 **Every game EdgeDesk researches now carries an A–F Research Grade:** how complete, current, cross-checked and reliable the pregame research is. It is not a win probability, not a prediction and not a betting recommendation. Research, not picks. See `docs/research-grade/` (AUDIT_AND_PLAN, METHODOLOGY, RUNBOOK).

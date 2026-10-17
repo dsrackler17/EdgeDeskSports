@@ -232,7 +232,9 @@ function articleSummaries(root, state, rows) {
     const res = PL.latest(resBy.get(key));
     if (!res || res.state !== 'FINAL') return;
     const pj = rec.research.projection;
-    const hm = P.num(pj.fair_spread), tot = P.num(pj.total);
+    /* graded from the raw projection: pj.total is the half-point display on a
+       record built under football_half_point_v1, total_raw the model's own */
+    const hm = P.num(pj.fair_spread), tot = P.num(pj.total_raw != null ? pj.total_raw : pj.total);
     const wp = pj.win_prob || {};
     const margin = res.home_score - res.away_score, total = res.home_score + res.away_score;
     const row = rowBy.get(key);

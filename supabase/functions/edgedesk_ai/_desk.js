@@ -105,6 +105,20 @@
   function iso(v) { var t = toMs(v); return t == null ? null : new Date(t).toISOString(); }
   function normName(s) { return str(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
   function fmtLine(v) { var n = num(v); if (n == null) return '—'; if (n === 0) return 'pick’em'; return (n > 0 ? '+' : '') + r1(n); }
+  /* THE FOOTBALL LINES (lib/edgedesk_football_lines.js, inlined into the
+     function as EDFOOTBALLLINES): EdgeDesk's projection as the board prints it,
+     the fair line and total at the nearest half point and the projected score
+     in whole points. The packet carries it beside the raw numbers, so an answer
+     may quote either; every gap, cover and EV keeps reading the raw ones. */
+  function FLN() { return (root && root.EDFootballLines) || null; }
+  function projectionDisplay(home, away, homeLine, total) {
+    var F = FLN(), hl = num(homeLine), t = num(total);
+    if (!F || hl == null) return null;
+    var sp = F.spread(hl === 0 ? 0 : -hl, { home: home, away: away }), tt = t != null ? F.total(t) : null;
+    var sc = t != null ? F.projectedScore({ home: home, away: away, home_margin: hl === 0 ? 0 : -hl, total: t }) : null;
+    return { policy: F.POLICY.id, fair_line: sp.text, fair_home_line: sp.home_line, fair_total: tt ? tt.display : null,
+      projected_score: sc && sc.available ? sc.text : null, rounding_note: F.ROUNDING_NOTE };
+  }
   function fmtAm(v) { var n = num(v); if (n == null) return '—'; return (n > 0 ? '+' : '') + Math.round(n); }
   function pct(p) { var n = num(p); return n == null ? '—' : Math.round(n * 100) + '%'; }
   function pts(v) { var n = num(v); if (n == null) return '—'; var a = Math.abs(r1(n)); return a + (a === 1 ? ' point' : ' points'); }
@@ -376,7 +390,8 @@
       sport: sport, sport_label: SPORTS[sport] ? SPORTS[sport].label : sport, sport_short: sportShort(sport),
       identity: { game_id: g.game_id != null ? String(g.game_id) : null, home: g.home || null, away: g.away || null, kickoff: g.kickoff || null,
         venue: g.venue || null, neutral_site: g.neutral_site === true, status: g.status || 'scheduled', season: g.season == null ? null : g.season, week: g.week == null ? null : g.week },
-      projection: { home_line: projHome, total: projTotal, home_win_prob: projWp, version: pj.version || null, generated_at: pj.generated_at || null, has_cover_curve: Array.isArray(pj.cover_curve) && pj.cover_curve.length > 0 },
+      projection: { home_line: projHome, total: projTotal, home_win_prob: projWp, version: pj.version || null, generated_at: pj.generated_at || null, has_cover_curve: Array.isArray(pj.cover_curve) && pj.cover_curve.length > 0,
+        display: projHome != null ? projectionDisplay(g.home || null, g.away || null, projHome, projTotal) : null },
       fair: {
         spread: FS && FS.ok ? { fair_home_line: num(FS.fair_home_line), status: FS.status, tier: FS.tier, tier_basis: FS.tier_basis || null, required_edge_points: num(FS.required_edge_points), sigma: num(FS.sigma), sigma_basis: FS.sigma_basis || null, basis: FS.basis || null } : null,
         total: FT && FT.ok ? { fair_total: num(FT.fair_total), status: FT.status, tier: FT.tier, tier_basis: FT.tier_basis || null, sigma: num(FT.sigma) } : null,
@@ -969,7 +984,9 @@
     var v = ev.value_points;
     if (sel.market === 'total') return 'EdgeDesk projects ' + r1(E.projection.total) + ' points, so ' + ev.label + ' is ' + (v >= 0 ? pts(v) + ' of value' : pts(v) + ' the wrong side of our number') + '.';
     var favSide = E.projection.home_line < 0 ? 'home' : E.projection.home_line > 0 ? 'away' : null;
-    var gameLine = favSide ? teamOf(E, favSide) + ' ' + fmtLine(-Math.abs(E.projection.home_line)) : 'a pick’em';
+    /* the fair line as the board prints it; value_points stays the raw gap */
+    var PDg = E.projection.display;
+    var gameLine = PDg ? (PDg.fair_line === 'PK' ? 'a pick’em' : PDg.fair_line) : (favSide ? teamOf(E, favSide) + ' ' + fmtLine(-Math.abs(E.projection.home_line)) : 'a pick’em');
     var s = 'EdgeDesk makes it ' + gameLine + ', so ' + ev.label + ' is ' + (v > 0 ? pts(v) + ' better than our number' : v < 0 ? pts(v) + ' worse than our number' : 'exactly our number') + '.';
     if (ev.fair.basis && /blend/.test(ev.fair.basis) && ev.fair.line != null) s += ' The validated blend prices ' + sel.team + ' at ' + fmtLine(ev.fair.line) + '.';
     return s;
@@ -1102,6 +1119,8 @@
     L.push(answerSelection(E, ev));
     L.push('');
     L.push('THE NUMBERS');
+    var PD = E.projection.display;
+    if (PD) L.push('- Fair line: ' + PD.fair_line + (PD.fair_total != null ? ', fair total ' + PD.fair_total.toFixed(1) : '') + (PD.projected_score ? '; projected score ' + PD.projected_score : '') + ' (nearest half point; the unrounded projection follows, and every gap uses it).');
     L.push('- Projection: ' + E.identity.home + ' ' + fmtLine(E.projection.home_line) + (E.projection.total != null ? ', total ' + r1(E.projection.total) : '') + (E.projection.home_win_prob != null ? ', ' + E.identity.home + ' win ' + pct(E.projection.home_win_prob) : '') + ' (' + (E.projection.version || 'unversioned') + ').');
     if (E.market.spread.home_line != null) L.push('- Market: ' + E.identity.home + ' ' + fmtLine(E.market.spread.home_line) + (E.market.spread.book ? ' at ' + E.market.spread.book : '') + ', ' + E.market.spread.state.toLowerCase() + (E.market.spread.age_hours != null ? ' (' + E.market.spread.age_hours + 'h old)' : '') + '.');
     if (E.market.open) L.push('- Opened ' + E.identity.home + ' ' + fmtLine(E.market.open.home_line) + '.');

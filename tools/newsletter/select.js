@@ -216,7 +216,12 @@ function evidenceFor(candidate) {
     fair_spread_text: txt(p.fair_spread_text),
     favourite: txt(p.favourite),
     underdog: txt(p.underdog),
+    /* total_model is the display (the nearest half point under
+       football_half_point_v1); total_model_raw the model's own number, the one
+       every gap and threshold reads. A payload from before the display policy
+       carries the raw total in total itself */
     total_model: txt(p.total),
+    total_model_raw: txt(p.total_raw != null ? p.total_raw : p.total),
     win_prob: p.win_prob || null,
     outcome_sigma: num(p.outcome_range && p.outcome_range.sigma),
     sample_games: num(p.sample_games),
@@ -238,6 +243,9 @@ function evidenceFor(candidate) {
     market_reference: txt(m.reference),
     market_classification: txt(m.classification),
     market_difference_text: txt(m.difference),
+    market_rounding_note: txt(m.rounding_note),
+    market_total_rounding_note: txt(m.total_rounding_note),
+    market_key_number: m.key_number && m.key_number.text ? txt(m.key_number.text) : null,
     market_difference_n: num(m.difference_n),
     market_absent_reason: txt(m.headline) || txt(m.note),
 

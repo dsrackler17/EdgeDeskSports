@@ -291,8 +291,13 @@ async function open(opts) {
   /* THE INTEGRITY LAYER (docs/system-integrity), <script src> tags on the page
      ahead of the board: the calc layer every fair line and gap is printed
      through, kickoff truth, availability classes and the integrity engine */
-  ['edgedesk_calc.js', 'edgedesk_schedule.js', 'edgedesk_availability.js', 'edgedesk_integrity.js'].forEach((f) => {
+  /* …and the football display lines (lib/edgedesk_football_lines.js): the
+     half-point fair line, whole-number score and rounding note every brief
+     prints. Without it the page falls back to its older 0.1 display, so a
+     host that skipped it would publish different text from the page */
+  ['edgedesk_calc.js', 'edgedesk_football_lines.js', 'edgedesk_schedule.js', 'edgedesk_availability.js', 'edgedesk_integrity.js'].forEach((f) => {
     if (f === 'edgedesk_calc.js' && win.EDCalc) return;
+    if (f === 'edgedesk_football_lines.js' && win.EDFootballLines) return;
     try { vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8'), win, { filename: 'lib/' + f }); }
     catch (e) { log('  integrity layer ' + f + ': ' + (e && e.message)); }
   });

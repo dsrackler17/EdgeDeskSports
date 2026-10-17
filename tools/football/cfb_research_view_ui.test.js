@@ -120,7 +120,10 @@ section('STEP 1 · near pick’em: the side, the one-point floor and the badge')
   ok(Math.abs(s.p.model.fair_spread + 0.31) < 1e-9, 'the raw margin was steered to -0.31', s.p.model.fair_spread);
   /* 2026-10-08 (docs/system-integrity/AUDIT.md §1a): the view prints the
      model's own number, tagged, never the engine's one-point display floor */
-  eq(v.fair.fair_line_text, AWAY + ' -0.3 (near pick’em)', 'the view names the away side at its own number, tagged near pick’em');
+  /* 2026-10-17 (docs/system-integrity/FOOTBALL_LINES.md): at the nearest half
+     point, so -0.31 prints −0.5, with the 0.1 line beside it */
+  eq(v.fair.fair_line_text, AWAY + ' −0.5 (near pick’em)', 'the view names the away side at its own half-point line, tagged near pick’em');
+  eq(v.fair.precise_line_text, AWAY + ' -0.3', 'with the unrounded 0.1 line beside it');
   eq(v.fair.floor_line_text, AWAY + ' -1.0', 'the engine’s floor is kept as its own field');
   eq(v.raw_projected_margin, s.p.model.fair_spread, 'and keeps the engine’s raw margin, untouched');
   eq(v.is_near_pickem, true, 'and flags the near pick’em');
@@ -145,7 +148,7 @@ section('STEP 2 · the market gap on the card and the board row');
   const s = stageAt(-1.0, { market_spread: -2.5 });
   const v = T.fbP4ViewFor(s.u, s.p);
   eq(v.market_gap.available, true, 'the joined line reaches the view');
-  eq(v.market_gap.market_line_text, HOME + ' -2.5', 'the market line is named for its favourite');
+  eq(v.market_gap.market_line_text, HOME + ' −2.5', 'the market line is named for its favourite, as received');
   eq(Math.round(v.market_gap.points * 10) / 10, 3.5, 'the gap is 3.5 points');
   eq(v.market_gap.toward_team, AWAY, 'toward Wake Forest');
   ok(Math.abs(v.market_gap.signed - s.p.market.spread_gap) < 1e-9, 'and it is the engine’s own spread_gap');
@@ -153,8 +156,8 @@ section('STEP 2 · the market gap on the card and the board row');
   has(card, '>Market gap<', 'the card labels it MARKET GAP');
   has(card, '3.5 pts', 'with its size');
   has(card, 'toward ' + AWAY, 'and its direction');
-  has(card, AWAY + ' -1.0', 'the EdgeDesk cell names the favourite it lays');
-  has(card, HOME + ' -2.5', 'and so does the market cell');
+  has(card, AWAY + ' −1.0', 'the EdgeDesk cell names the favourite it lays');
+  has(card, HOME + ' −2.5', 'and so does the market cell');
   const cell = T.fbRvGapCell(v, 3.5);
   has(cell, '3.5', 'the board row shows the size');
   has(cell, '→ ' + AWAY, 'and the team EdgeDesk differs toward');
@@ -242,8 +245,8 @@ section('STEP 4 · the card and the row keep the gap, confidence and reliability
   const rc = T.fbRvRowCells(v);
   has(rc.conf, 'class="rv-t', 'the row prints confidence in its own cell');
   has(rc.rel, '82%', 'and reliability in another');
-  has(rc.fair, HOME + ' -12.0', 'the row’s fair line is named for its favourite');
-  has(rc.market, HOME + ' -2.5', 'and so is its market line');
+  has(rc.fair, HOME + ' −12.0', 'the row’s fair line is named for its favourite');
+  has(rc.market, HOME + ' −2.5', 'and so is its market line');
   has(T.fbRvGapCell(v, v.market_gap.points), 'rv-dim', 'an UNVERIFIED 9.5-pt gap is dimmed even on good data: size alone is never a finding');
   const ok = stageAt(6, { market_spread: -2.5 });
   withCoverage(ok.u, WELL);
@@ -549,7 +552,7 @@ section('STEP 9 · top 5 worth researching, on the college board');
   const ix = {}; units.forEach(u => { ix[String(u.g.game_id)] = u; });
   const npc = T.fbWrCandidate(npRow, ix);
   const row = T.fbWrRowHTML({ rank: 1, candidate: npc, why: { text: 'x' }, detail: { uncertainty: { elevated: false, reasons: [] } } });
-  has(row, '<i>Model</i><b>Oregon -0.3', 'the overview list prints the near pick’em at its own number (never the floor)');
+  has(row, '<i>Model</i><b>Oregon −0.5', 'the overview list prints the near pick’em at its own half-point line (never the floor)');
   lacks(row, '<i>Model</i><b>Oregon -1.0', 'never as the -1.0 display floor');
   lacks(row, '<i>Model</i><b>Oregon +0.3', 'and never on the wrong side');
   has(row, '<i>Confidence</i><b title="EdgeDesk information confidence: how good the inputs for this game are">' + npc.view.confidence.pct_text,

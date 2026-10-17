@@ -85,7 +85,7 @@ function view(raw, line, o) {
   eq(b.view, V.version, 'and names the view it was cut from');
   eq(b.label.key, 'WORTH_RESEARCHING', 'it carries the one research label');
   ok(b.label.means && b.label.rule, 'with its rule and its words');
-  eq(b.fair.line_text, 'Wake Forest -4.1', 'the fair line, named for its side');
+  eq(b.fair.line_text, 'Wake Forest −4.0', 'the fair line, named for its side, at the half point (raw -4.1)');
   eq(b.market_gap.points, 5.6, 'the gap, measured from the raw margin');
   eq(b.market_gap.measured_from, 'raw', 'and says so');
   eq(b.confidence.tier, 'HIGH', 'confidence as a tier');

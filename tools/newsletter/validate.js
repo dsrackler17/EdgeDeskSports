@@ -81,7 +81,7 @@ function supportedFor(edition, extras) {
       generated_at: edition.composed_at, updated_at: edition.composed_at,
     });
     /* the figures the edition itself computed, under the stated convention */
-    [g.model && g.model.home_line, g.market && g.market.home_line,
+    [g.model && g.model.home_line, g.model && g.model.display_home_line, g.market && g.market.home_line,
       g.difference && g.difference.points, g.difference && g.difference.edge_home,
       g.total && g.total.gap, g.score, g.confidence, g.rank]
       .forEach(v => { if (v != null) addVia({ research: { v: v } }); });

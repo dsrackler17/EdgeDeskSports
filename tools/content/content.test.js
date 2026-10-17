@@ -110,7 +110,11 @@ chk('R kickoff printed in Eastern time, AP style', /^(Mon|Tue|Wed|Thu|Fri|Sat|Su
 const al = snap.cfb.games.find((p) => p.home === 'Alabama' && p.away === 'Georgia');
 if (al) {
   const alRaw = art.cfbGames.games[al.game_id].edgedesk;
-  chk('R Georgia at Alabama: Alabama by the stored margin, canonically rounded, 64%', al.display.fair === 'Alabama by ' + Math.abs(CALC.round(alRaw.fair_home_line, 1)).toFixed(1) && al.display.win === 'Alabama 64%', al.display);
+  /* football_half_point_v1: the stored margin at the nearest half point, the raw one kept on the model */
+  const FLN = require(path.join(ROOT, 'lib', 'edgedesk_football_lines.js'));
+  chk('R Georgia at Alabama: Alabama by the stored margin at the half point, 64%', al.display.fair === 'Alabama by ' + Math.abs(FLN.halfPoint(-alRaw.fair_home_line)).toFixed(1) && al.display.win === 'Alabama 64%'
+    && al.model.margin === Math.abs(CALC.round(alRaw.fair_home_line, 1)), al.display);
+  chk('R … its projected score is whole points, the decimal split kept beside it', /^Alabama \d+, Georgia \d+$/.test(al.display.score) && /\d+\.\d/.test(al.display.score_expected || ''), al.display);
   chk('R … and the two win chances add to 100', +al.display.win.match(/(\d+)%/)[1] + +al.display.dog_win.match(/(\d+)%/)[1] === 100, al.display);
   chk('R … its market is older than three hours, so it is stale, with its capture time', al.market.status === 'stale' && /captured/.test(al.display.market) && al.flags.indexOf('STALE_MARKET') >= 0);
 }
@@ -293,8 +297,9 @@ chk('H an NFL game’s injury counts are written once, in the injury section', (
   const txt = nflA.sections.map((s) => s.body).join('\n'); const m = txt.match(/list(?:s)? \w+ players? as out\./g) || [];
   return m.length > 0 && new Set(m).size === m.length || !/as out/.test(txt); })());
 
+/* the projected score is whole points (football_half_point_v1): push the home side's three points off EdgeDesk's */
 const inc = mutate((a) => { const g = a.sections.find((s) => s.key === 'games'); const p = cfbPrev.research.games[0];
-  g.body = g.body.replace(new RegExp('(' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+\\.\\d)'), (m0, t, n) => t + (+n + 3).toFixed(1)); });
+  g.body = g.body.replace(new RegExp('((?:Projected score: |projected score is |works out to )(?:.+?, )?' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+)(?![\\d.])'), (m0, t, n) => t + (+n + 3)); });
 chk('H a projected score that does not reconcile with the margin fails', failsOn(inc, 'numbers_reconcile'), inc.checks.find((c) => c.id === 'numbers_reconcile'));
 chk('H a misquoted win chance fails', failsOn(mutate((a) => { const p = cfbPrev.research.games[0]; intro(a, p.model.favorite + ' has a ' + (p.model.fav_win_pct + 7) + '% chance to win.'); }), 'numbers_reconcile'));
 const stale = snap.cfb.games.filter((p) => p.market.status === 'stale');
@@ -341,7 +346,7 @@ chk('H gate: a pick is BLOCKED under responsible gambling', (() => { const gx = 
 chk('H gate: a game that has kicked off is BLOCKED under schedule', CE.gate(Object.assign({}, a0, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ now: Date.parse('2026-10-11T12:00:00Z'), acks })).items.find((i) => i.key === 'schedule').status === 'BLOCKED');
 chk('H gate: the inconsistent score is BLOCKED under projections, pointing at the games section', (() => {
   const a = JSON.parse(JSON.stringify(a0)); const g = a.sections.find((s) => s.key === 'games'); const p = cfbPrev.research.games[0];
-  g.body = g.body.replace(new RegExp('(' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+\\.\\d)'), (m0, t, n) => t + (+n + 3).toFixed(1));
+  g.body = g.body.replace(new RegExp('((?:Projected score: |projected score is |works out to )(?:.+?, )?' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+)(?![\\d.])'), (m0, t, n) => t + (+n + 3));
   const gx = CE.gate(Object.assign(a, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ acks })); const it = gx.items.find((i) => i.key === 'projections');
   return it.status === 'BLOCKED' && CE.sectionsToFix(gx).indexOf('games') >= 0; })());
 chk('H gate: research moved by a point since writing is BLOCKED under snapshot', (() => {
@@ -353,7 +358,7 @@ chk('H gate: an NFL draft from today’s research passes', CE.gate(Object.assign
 /* repair: only the flagged sections; everything else byte for byte */
 const broken = JSON.parse(JSON.stringify(a0));
 (() => { const g = broken.sections.find((s) => s.key === 'games'); const p = cfbPrev.research.games[0];
-  g.body = g.body.replace(new RegExp('(' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+\\.\\d)'), (m0, t, n) => t + (+n + 3).toFixed(1)); })();
+  g.body = g.body.replace(new RegExp('((?:Projected score: |projected score is |works out to )(?:.+?, )?' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+)(?![\\d.])'), (m0, t, n) => t + (+n + 3)); })();
 broken.sections.find((s) => s.key === 'intro').body += ' (Edited by hand.)';
 const gb = CE.gate(Object.assign({}, broken, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ acks }));
 const fixKeys = CE.sectionsToFix(gb);
