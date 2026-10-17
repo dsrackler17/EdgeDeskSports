@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-17T14:24:32.679Z",
-  "generated_at": "2026-10-17T14:24:32.679Z",
+  "updated_at": "2026-10-17T14:30:39.462Z",
+  "generated_at": "2026-10-17T14:30:39.462Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1427,7 +1427,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 168h old",
+          "text": "odds is 169h old",
           "widening": null
         },
         {
@@ -1498,7 +1498,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-10T14:00:01.583+00:00",
-      "capture_age": "168 hours old",
+      "capture_age": "169 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1845,15 +1845,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_04e326861e2de4f5",
+  "snapshot_id": "snap_93b6a60940fdb9e9",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-17T23:30:00.000Z",
-    "minutes_before_kickoff": 545,
+    "minutes_before_kickoff": 539,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-17T14:24:32.679Z"
+    "at": "2026-10-17T14:30:39.462Z"
   },
   "featured": {
     "editorial_priority": 50.4,
@@ -2165,17 +2165,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-17T14:24:32.679Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Dan",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-17T14:30:39.462Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-17T14:24:32.679Z",
+    "at": "2026-10-17T14:30:39.462Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2183,12 +2190,18 @@
         "detail": "QB_INPUT_CONFLICT"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Wisconsin’s update 2 Big Ten availability report (published Oct. 16) lists quarterback Dan"
+      }
+    ],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "19lh3m3rinezt",
+    "packet_hash": "1g4dkej86xx9l",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": true,
     "question": "Can Wisconsin take away UCLA’s big plays?",
@@ -2284,7 +2297,7 @@
         "label": "Kickoff times of each team’s previous game",
         "url": null,
         "path": "record/football/cfb_2026.json",
-        "observed_at": "2026-10-17T13:14:09.764Z",
+        "observed_at": "2026-10-17T14:26:01.897Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2305,7 +2318,7 @@
         "label": "EdgeDesk input audit (model starter vs official availability report)",
         "url": null,
         "path": null,
-        "observed_at": "2026-10-17T14:07:56.395Z",
+        "observed_at": "2026-10-17T14:24:30.754Z",
         "verification": "CONFLICTING"
       }
     ],
@@ -2314,6 +2327,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T14:24:32.679Z"
+    "at": "2026-10-17T14:30:39.462Z"
   }
 }
