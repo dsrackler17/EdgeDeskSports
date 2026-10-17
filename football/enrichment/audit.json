@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-17T00:36:50.424Z",
+ "generated_at": "2026-10-17T04:39:42.942Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-17T00:36:50.424Z",
-  "reliability_generated_at": "2026-10-17T00:36:50.424Z",
-  "enrichment_generated_at": "2026-10-17T00:36:44.254Z",
+  "at": "2026-10-17T04:39:42.942Z",
+  "reliability_generated_at": "2026-10-17T04:39:42.942Z",
+  "enrichment_generated_at": "2026-10-17T04:39:29.001Z",
   "counts": {
    "games": 111,
    "mean": 86.7,
@@ -21,10 +21,10 @@
    "qb_conflicts_open": 2,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 22,
-   "unrated_meaningful_absences": 407,
+   "unrated_meaningful_absences": 401,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 111,
-   "stale_evidence_records": 26,
+   "stale_evidence_records": 6,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -138,8 +138,8 @@
     "grade": "VERY_STRONG",
     "fam": {
      "qb_identity": 4.1,
+     "attribution": 2.1,
      "stability": 1.3,
-     "attribution": 2,
      "starters": 0.6,
      "rating_sample": 0.3,
      "transfer_turnover": 0.6
@@ -178,7 +178,7 @@
     "score": 95,
     "grade": "VERY_STRONG",
     "fam": {
-     "attribution": 2.2,
+     "attribution": 2.1,
      "stability": 1.3,
      "qb_identity": 0.8,
      "rating_sample": 0.3,
@@ -265,7 +265,7 @@
     "fam": {
      "stability": 3.1,
      "qb_identity": 2.1,
-     "attribution": 2,
+     "attribution": 1.8,
      "qb_conflict": 0.9,
      "transfer_turnover": 0.6,
      "player_identity": 0.1
@@ -433,7 +433,7 @@
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 2,
-     "attribution": 1.9,
+     "attribution": 1.8,
      "starters": 0.6,
      "qb_identity": 0.8,
      "rating_sample": 0.6,
@@ -458,9 +458,9 @@
      "stability": 0.9,
      "starters": 0.6,
      "qb_identity": 0.8,
+     "player_identity": 0.3,
      "rating_sample": 0.3,
-     "transfer_turnover": 0.6,
-     "player_identity": 0.2
+     "transfer_turnover": 0.6
     },
     "qb": {
      "home": "EXPECTED",
@@ -473,11 +473,11 @@
    },
    "401856830": {
     "game": "Kansas @ Kansas State",
-    "score": 95,
+    "score": 96,
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 1.4,
-     "attribution": 1.5,
+     "attribution": 1.1,
      "qb_identity": 0.8,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3
@@ -515,7 +515,7 @@
     "score": 94,
     "grade": "VERY_STRONG",
     "fam": {
-     "attribution": 2.2,
+     "attribution": 1.9,
      "stability": 0.6,
      "starters": 1.2,
      "qb_identity": 0.9,
@@ -917,8 +917,8 @@
      "attribution": 1.9,
      "qb_identity": 1.3,
      "qb_conflict": 0.8,
-     "stability": 0.5,
      "transfer_turnover": 0.3,
+     "stability": 0.2,
      "player_identity": 0.1
     },
     "qb": {
@@ -1372,7 +1372,7 @@
     "grade": "STRONG",
     "fam": {
      "qb_status": 4,
-     "attribution": 2.2,
+     "attribution": 2.7,
      "stability": 0.8,
      "qb_conflict": 0.8,
      "qb_identity": 1.1,
@@ -2466,7 +2466,7 @@
    },
    "401871094": {
     "game": "UL Monroe @ Troy",
-    "score": 86,
+    "score": 87,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
@@ -2489,7 +2489,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-16T23:50:35.831Z",
+  "at": "2026-10-17T00:36:50.424Z",
   "counts": {
    "games": 111,
    "mean": 86.7,
@@ -2505,47 +2505,22 @@
    "qb_conflicts_open": 2,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 22,
-   "unrated_meaningful_absences": 413,
+   "unrated_meaningful_absences": 407,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 111,
-   "stale_evidence_records": 62,
+   "stale_evidence_records": 26,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "-6 unrated meaningful absences (413 → 407)",
-  "-36 stale evidence records (62 → 26)"
+  "-6 unrated meaningful absences (407 → 401)",
+  "-20 stale evidence records (26 → 6)"
  ],
  "what_degraded": [],
  "why": [],
  "history": [
-  {
-   "at": "2026-10-10T00:06:07.580Z",
-   "counts": {
-    "games": 113,
-    "mean": 86.3,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 20,
-     "ADEQUATE": 17,
-     "STRONG": 70,
-     "LOW": 3,
-     "CAUTION": 3
-    },
-    "missing_qb_status": 175,
-    "qb_conflicts_open": 6,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 21,
-    "unrated_meaningful_absences": 398,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 113,
-    "stale_evidence_records": 56,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-10T06:03:21.791Z",
    "counts": {
@@ -3962,6 +3937,31 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 111,
     "stale_evidence_records": 26,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-17T04:39:42.942Z",
+   "counts": {
+    "games": 111,
+    "mean": 86.7,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 21,
+     "LOW": 3,
+     "ADEQUATE": 16,
+     "STRONG": 69,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 166,
+    "qb_conflicts_open": 2,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 22,
+    "unrated_meaningful_absences": 401,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 111,
+    "stale_evidence_records": 6,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
