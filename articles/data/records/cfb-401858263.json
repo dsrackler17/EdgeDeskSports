@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:00:00.000Z",
   "game_when_label": "2026-10-17 23:00 UTC",
   "published_at": "2026-10-17T11:00:50.533Z",
-  "updated_at": "2026-10-17T14:24:32.679Z",
-  "generated_at": "2026-10-17T14:24:32.679Z",
+  "updated_at": "2026-10-17T14:40:43.724Z",
+  "generated_at": "2026-10-17T14:40:43.724Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1415,7 +1415,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 182h old",
+          "text": "odds is 183h old",
           "widening": null
         },
         {
@@ -1498,7 +1498,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-10-10T00:04:01.399+00:00",
-      "capture_age": "182 hours old",
+      "capture_age": "183 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1845,15 +1845,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_611842841f0f5240",
+  "snapshot_id": "snap_df2e7e450d35414e",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-17T23:00:00.000Z",
-    "minutes_before_kickoff": 515,
+    "minutes_before_kickoff": 499,
     "published_at": "2026-10-17T11:00:50.533Z",
     "refreshed": false,
-    "at": "2026-10-17T14:24:32.679Z"
+    "at": "2026-10-17T14:40:43.724Z"
   },
   "featured": {
     "editorial_priority": 63.7,
@@ -2145,30 +2145,43 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-17T14:24:32.679Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Ashton Daniels has completed 91 of 154 passes (59.1%) for 1,318 yards, 8.6 yards per attem",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-17T14:40:43.724Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-17T14:24:32.679Z",
+    "at": "2026-10-17T14:40:43.724Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Ashton Daniels has completed 91 of 154 passes (59.1%) for 1,318 yards, 8.6 yards per attem"
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1dy6ekp3ew54b",
+    "packet_hash": "7wcjfl1x1ny4j",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Florida State’s pass rush get to Darian Mensah?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Miami, and its own breakdown accounts for about 0.7 of the 5.8 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Miami, and its own breakdown accounts for about 0.7 of the 6.8 points, but not the full gap. It is a research question, not a bet.",
     "gap": {
-      "points": 5.8,
+      "points": 6.8,
       "toward": "Miami",
       "other": "Florida State"
     },
@@ -2253,6 +2266,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-17T14:24:32.679Z"
+    "at": "2026-10-17T14:40:43.724Z"
   }
 }
