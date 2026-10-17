@@ -343,7 +343,11 @@
         near_pickem: typeof p.near_pickem === 'boolean' ? p.near_pickem : null,
         favourite: txt(p.favourite), underdog: txt(p.underdog),
         margin: txt(p.margin),
-        total: txt(p.total), total_n: num(p.total),
+        /* total is the display (football_half_point_v1: the nearest half
+           point); total_n is the RAW total grading reads. A payload from
+           before the display policy carries the raw total in total itself */
+        total: txt(p.total), total_n: num(p.total_raw != null ? p.total_raw : p.total),
+        total_raw: txt(p.total_raw), margin_raw: txt(p.margin_raw), display_policy: txt(p.display_policy),
         score: p.score || null,
         win_prob: p.win_prob || null,
         moneyline: p.moneyline || null,

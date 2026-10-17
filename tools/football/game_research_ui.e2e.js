@@ -30,6 +30,10 @@ function chk(name, ok, detail) {
   if (ok) { pass++; console.log('  ok   ' + name); return; }
   fail++; console.log('  FAIL ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 600) : ''));
 }
+/* what the page prints of a snapshot's projection: model.display
+   (football_half_point_v1) when the snapshot has one, else its own numbers */
+const fairOf = (g) => (g.model.display ? g.model.display.spread.text : g.model.fair.text);
+const totalOf = (g) => (g.model.display ? g.model.display.total.text : g.model.total.toFixed(1));
 function finish(code) {
   console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | game research (browser) | ' + pass + ' passed, ' + fail + ' failed');
   process.exit(code != null ? code : (fail ? 1 : 0));
@@ -148,9 +152,10 @@ function siteHandler(req, res) {
   let r = await readPage(page);
   chk('the research page is the view on screen', r.view);
   chk('the graphic is the first section', r.secs[0] === 'Matchup graphic' && r.secs.indexOf('Game overview') === 1 && r.secs.indexOf('Market comparison') > r.secs.indexOf('Deep research'), r.secs);
-  chk('the graphic is 1080×1080 with a descriptive alt', r.img && r.img.w === 1080 && r.img.h === 1080 && r.img.alt.indexOf(FRESH.model.fair.text) >= 0 && /Research, not picks/.test(r.img.alt), r.img);
+  chk('the graphic is 1080×1080 with a descriptive alt', r.img && r.img.w === 1080 && r.img.h === 1080 && r.img.alt.indexOf(fairOf(FRESH)) >= 0 && /Research, not picks/.test(r.img.alt), r.img);
   chk('four separate answers: research, model, market live, decision', /RESEARCH\s*available/i.test(r.status) && /MODEL\s*active/i.test(r.status) && /MARKET\s*live/i.test(r.status) && /BETTING DECISION\s*PASS/i.test(r.status), r.status);
-  chk('the overview carries the snapshot’s numbers', r.overview.indexOf(FRESH.model.fair.text) >= 0 && r.overview.indexOf(FRESH.model.total.toFixed(1)) >= 0 && /Win probability/i.test(r.overview) && /Snapshot /.test(r.overview), r.overview.slice(0, 400));
+  chk('the overview carries the snapshot’s numbers', r.overview.indexOf(fairOf(FRESH)) >= 0 && r.overview.indexOf(totalOf(FRESH)) >= 0 && /Win probability/i.test(r.overview) && /Snapshot /.test(r.overview), r.overview.slice(0, 400));
+  if (FRESH.model.display) chk('…as football lines: a whole-number projected score, labelled', /PROJECTED SCORE/i.test(r.overview) && r.overview.indexOf(String(FRESH.model.display.score.home)) >= 0 && /whole points/.test(r.overview), r.overview.slice(0, 400));
   chk('what to watch for lists the snapshot’s insights', r.watch === FRESH.insights.length && r.watch >= 2, r.watch);
   chk('a fresh quote: EdgeDesk beside the market, with book and capture time', /EDGEDESK/i.test(r.market) && /MARKET/.test(r.market) && /draftkings/i.test(r.market) && /captured/.test(r.market), r.market);
   chk('no horizontal scroll at 390 px', r.sw <= r.vw, { sw: r.sw, vw: r.vw });
@@ -216,7 +221,7 @@ function siteHandler(req, res) {
   r = await readPage(S2.page);
   chk('stale odds: the market reads as last known, never live', /MARKET\s*last known \(not current\)/i.test(r.status), r.status);
   chk('stale odds: the decision is not evaluated, and says so without an error', /BETTING DECISION\s*not evaluated/i.test(r.status) && !/STALE_QUOTE/.test(r.status), r.status);
-  chk('stale odds: the calm note, the last known number labelled, research intact', /Live sportsbook prices are currently unavailable\. EdgeDesk’s independent matchup projections remain available\./.test(r.market) && /not a current price/.test(r.market) && r.overview.indexOf(STALE.model.fair.text) >= 0, r.market);
+  chk('stale odds: the calm note, the last known number labelled, research intact', /Live sportsbook prices are currently unavailable\. EdgeDesk’s independent matchup projections remain available\./.test(r.market) && /not a current price/.test(r.market) && r.overview.indexOf(fairOf(STALE)) >= 0, r.market);
   chk('stale odds: the blocker code is in Lab, not on the page', !/STALE_QUOTE/.test(r.text.replace(/Lab[\s\S]*$/, '')) , null);
   await S2.page.click('[data-gv-act=level][data-gv-v=lab]');
   chk('…and Lab names it', /STALE_QUOTE/.test(await S2.page.evaluate(() => document.querySelector('.gv-lvbody').innerText)));
@@ -240,7 +245,7 @@ function siteHandler(req, res) {
   await marketSettled(N.page);
   r = await readPage(N.page);
   chk('NFL: research available, market unavailable, decision not evaluated', /MARKET\s*unavailable/i.test(r.status) && /BETTING DECISION\s*not evaluated/i.test(r.status), r.status);
-  chk('NFL: the overview is complete without a quote', r.overview.indexOf(NFLG.model.fair.text) >= 0 && /Model moneyline/i.test(r.overview) && /Data check/i.test(r.overview), r.overview.slice(0, 300));
+  chk('NFL: the overview is complete without a quote', r.overview.indexOf(fairOf(NFLG)) >= 0 && /Model moneyline/i.test(r.overview) && /Data check/i.test(r.overview), r.overview.slice(0, 300));
   await N.page.click('[data-gv-act=pmkt][data-gv-v=moneyline]');
   await N.page.selectOption('#gvPrice select[name=side]', 'away');
   await N.page.fill('#gvPrice input[name=american]', '+150');

@@ -66,11 +66,12 @@ result per row:
 |---|---|---|
 | Rounding | `EDCalc.round(x, dp)` | half away from zero, with a 1e-9 guard (9.45 → 9.5, −9.45 → −9.5) |
 | A spread line | `EDCalc.spread(margin, names)` | the favourite and the line at 0.1; `Pick’em` at 0. The engine's ±1 near-pick'em display floor is **never** a printed or compared number |
-| Model–market gap | `EDCalc.spreadComparison` | computed in integer tenths **from the two displayed lines**, so the printed gap is always their difference. `gap_exact` keeps full precision beside it |
+| Model–market gap | `EDCalc.spreadComparison` | computed in integer tenths from the model's number at 0.1 and the market's, so the printed gap is always their difference at that precision. `gap_exact` keeps full precision beside it. A football surface that prints the half-point line (`football_half_point_v1`) prints this same gap and a rounding note; `CALC.GAP_RECONCILES` enforces both |
 | Total gap | `EDCalc.totalComparison` | same rule |
 | Projected score | `EDCalc.projectedScores` | derived from margin and total. Shown to two decimals when the parities differ, so it reconciles exactly |
 | Probabilities, EV | `EDCalc.impliedFromAmerican`, `noVigTwoWay`, `expectedValue`, `evPair` | `evPair` refuses to pair raw and calibrated EV unless selection, line, price, book and capture time are identical |
 | Formatting | `EDCalc.fmt.{spread, total, gap, prob, ev, pp, american, rank, score100, age}` | HTML, Markdown, Word and publisher exports all use these |
+| Football display lines | `EDFootballLines` (`lib/edgedesk_football_lines.js`, policy `football_half_point_v1`) | a football fair spread and total print at the nearest half point (PK at zero) and the projected score in whole points; the gap stays `EDCalc.spreadComparison`'s, from the unrounded projection, with a rounding note when the printed lines do not reproduce it. Raw and display fields are kept apart. See `FOOTBALL_LINES.md` |
 
 ## 3. Time
 

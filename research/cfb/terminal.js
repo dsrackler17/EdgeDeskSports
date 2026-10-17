@@ -436,7 +436,7 @@
       + '<div class="n">' + (s ? esc((s.book || '') + (s.alternate ? ' · alternate' : '') + (num(s.age_minutes) ? ' · ' + s.age_minutes + ' min old' : '') + (s.freshness && s.freshness !== 'FRESH' ? ' · ' + s.freshness.toLowerCase() : '')) : esc(R.timing_reason)) + '</div></div></div>';
     var cell = function (l, v2, n, cls) { return '<div class="rc' + (cls ? ' ' + cls : '') + '"><div class="l">' + l + '</div><div class="v">' + v2 + '</div>' + (n ? '<div class="n">' + n + '</div>' : '') + '</div>'; };
     h += '<div class="rd-grid' + (inv ? ' inv' : '') + '">'
-      + cell('EdgeDesk fair', R.fair_spread ? esc(R.fair_spread.text) : '—', R.projected_score ? esc(g.away + ' ' + R.projected_score.away + ' – ' + g.home + ' ' + R.projected_score.home) : (R.fair_total != null ? 'total ' + f1(R.fair_total) : null), 'ed')
+      + cell('EdgeDesk fair', R.fair_spread ? esc(readFair(R, g)) : '—', R.projected_score ? esc(readScore(R, g)) : (R.fair_total != null ? 'total ' + (T.FootballLines ? T.FootballLines.total(R.fair_total).text : f1(R.fair_total)) : null), 'ed')
       + cell('Market', R.market_consensus_spread ? esc(R.market_consensus_spread.text) : '—', R.market_consensus_spread ? esc(R.market_consensus_spread.n_books + ' book' + (R.market_consensus_spread.n_books === 1 ? '' : 's') + (R.market_consensus_spread.stale ? ' · stale' : '')) : null, 'mk')
       + cell('Model cushion', s && num(s.cushion) ? sgn(s.cushion) + ' pts' : (R.model_market_gap ? R.model_market_gap.points.toFixed(1) + ' pts' : '—'), R.model_market_gap ? 'gap toward ' + esc(R.model_market_gap.toward_team || '—') : null)
       + cell('Cover', s && num(s.cover_used) ? pct(s.cover_used, 1) + (raw ? ' ' + tag('RAW', 'warn') : '') : '—', s && s.probability ? 'push ' + pct(s.probability.push, 1) + ' · loss ' + pct(s.probability.loss, 1) : null)
@@ -675,7 +675,7 @@
       + '<div class="rd-top"><div class="rd-state">' + evChip(E.decision_status) + '<span class="rd-dec">Timing: <b>' + esc(E.timing.replace(/_/g, ' ')) + '</b> · Research: <b>' + esc(E.research.label || E.research_status) + '</b>' + (E.policy_decision !== E.decision_status ? ' · Shadow policy: <b>' + esc(E.policy_decision.replace(/_/g, ' ')) + '</b>' : '') + '</span></div>'
       + '<div class="rd-best"><div class="l">Exact price</div><div class="v">' + (s ? esc(s.label) : '<span class="mut">no executable price</span>') + '</div><div class="n">' + (s ? esc((s.book || '') + (s.is_main_line ? '' : ' · alternate') + (s.quote_age_seconds != null ? ' · ' + Math.round(s.quote_age_seconds / 60) + ' min old (TTL ' + s.ttl_minutes + ')' : '') + ' · ' + s.market_checkpoint) : esc(E.decision_reason)) + '</div></div></div>';
     h += '<div class="rd-grid">'
-      + cell('Fair line', E.fair_spread ? esc(E.fair_spread.text) : '—', 'EdgeDesk’s own number — no market in it', 'ed')
+      + cell('Fair line', E.fair_spread ? esc(readFair(E, o.game)) : '—', 'EdgeDesk’s own number — no market in it', 'ed')
       + cell('Calibrated cover', s && cal ? pct(s.p_cover_calibrated, 1) : '<span class="mut">PENDING</span>', s ? 'raw ' + pct(s.p_cover_raw, 1) + ' · push ' + pct(s.p_push_raw, 1) : null, null, E.calibration_anchor && E.calibration_anchor.text ? E.calibration_anchor.text : null)
       + cell('Break-even', s && num(s.break_even_probability) ? pct(s.break_even_probability, 1) : '—', s && s.p_push_raw > 0 ? pct(s.break_even_unconditional, 1) + ' of all outcomes' : (s && s.odds ? 'at ' + esc(T.format.priceText(s.odds.american_display)) + ' (exact price)' : null))
       + cell('Probability edge', s ? (cal ? pp(s.probability_edge) : '<span class="rawv">' + pp(s.raw_probability_edge) + '</span> ' + tag('RAW', 'warn')) : '—', 'cover − break-even')
@@ -866,6 +866,20 @@
   function sec(id, title, teaser, body, open) {
     return '<details class="sec" id="s-' + id + '"' + (open ? ' open' : '') + ' data-sec="' + id + '"><summary><span class="caret">▶</span><span class="t">' + esc(title) + '</span><span class="x">' + esc(teaser || '') + '</span></summary><div class="b">' + body + '</div></details>';
   }
+  /* THE READ'S NUMBERS AS FOOTBALL LINES (lib/edgedesk_football_lines.js).
+     The Read object itself is left exactly as published (the page re-prices
+     it with the same function and must reproduce it byte for byte), so the
+     half-point fair line and the whole-number score are formatted here, from
+     its raw home margin and expected points. */
+  function readFair(R, g) {
+    var F = T.FootballLines;
+    return F && R.fair_spread && num(R.fair_spread.home_margin) != null ? F.spread(R.fair_spread.home_margin, { home: g.home, away: g.away }).text : R.fair_spread.text;
+  }
+  function readScore(R, g) {
+    var F = T.FootballLines, P = R.projected_score;
+    var ps = F ? F.projectedScore({ home: g.home, away: g.away, home_points: P.home, away_points: P.away }) : null;
+    return ps && ps.available ? 'Projected score ' + g.away + ' ' + ps.away + ' – ' + g.home + ' ' + ps.home : g.away + ' ' + P.away + ' – ' + g.home + ' ' + P.home;
+  }
   function kv(items) { return '<div class="kv">' + items.filter(Boolean).map(function (x) { return '<div class="c"><div class="l">' + esc(x[0]) + '</div><div class="v">' + x[1] + '</div>' + (x[2] ? '<div class="n">' + x[2] + '</div>' : '') + '</div>'; }).join('') + '</div>'; }
   function renderGame(id) {
     $('view').innerHTML = '<div class="empty">Loading the research page…</div>';
@@ -992,7 +1006,8 @@
     if (!C.available || C.class !== 'MAJOR') return '';
     var ok = C.verified;
     var rows = [
-      ['Model', esc(A.fair_text)], ['Market', esc(B.consensus_text || '—')], ['Gap', C.points.toFixed(1) + ' pts toward ' + esc(C.toward_team || '—') + (C.favorite_flip ? ' · FAVORITE FLIP' : '')],
+      ['Model', esc(A.fair_text)], ['Market', esc(B.consensus_text || '—')], ['Gap', C.points.toFixed(1) + ' pts toward ' + esc(C.toward_team || '—') + (C.favorite_flip ? ' · FAVORITE FLIP' : '') + (C.rounding_note ? '<div class="mut" style="font-size:11px">' + esc(C.rounding_note) + '</div>' : '')],
+      C.key_number ? ['Key number', esc(C.key_number.text), null] : null,
       ['Books behind the consensus', B.books_fresh + ' fresh of ' + B.books_total], ['Market age', B.age_minutes == null ? '—' : B.age_minutes + ' min'],
       ['Component models', I && I.cross_model ? I.cross_model.supporting + ' of ' + I.cross_model.n + ' independent submodels support EdgeDesk’s side (' + I.cross_model.opposing + ' the market’s); ensemble ' + (I.cross_model.ensemble_gap == null ? '—' : T.util.signed(I.cross_model.ensemble_gap, 1) + ' pts vs market') : '—'],
       ['Team-state difference', I && I.decomposition ? 'neutral strength ' + T.util.signed(I.decomposition.neutral_strength, 1) + ' (long-run state ' + T.util.signed(I.decomposition.long_term_state, 1) + ', current form ' + T.util.signed(I.decomposition.current_form, 1) + ')' : '—'],
@@ -1004,7 +1019,7 @@
     var checks = I && I.checks ? I.checks : [];
     return '<details class="sec packet' + (ok ? ' ok' : '') + '" id="s-packet" data-sec="packet" open><summary><span class="caret">▶</span><span class="t">' + (ok ? '★ Verified major disagreement — audit report' : 'Major disagreement — why it is not verified') + '</span><span class="x">'
       + (checks.length ? checks.filter(function (c) { return c.status === 'PASS'; }).length + ' of ' + checks.length + ' integrity checks passed' : 'gate did not run') + '</span></summary><div class="b">'
-      + kv(rows.map(function (r) { return [r[0], r[1]]; }))
+      + kv(rows.filter(Boolean).map(function (r) { return [r[0], r[1]]; }))
       + (checks.length ? '<table class="t">' + checks.map(function (c) { return '<tr><td><span class="sev ' + (c.status === 'FAIL' ? 'high' : (c.status === 'PASS' ? 'okc' : '')) + '">' + esc(c.status.toLowerCase().replace(/_/g, ' ')) + '</span></td><td class="mono mut">' + esc(c.group + '.' + c.id) + '</td><td>' + esc(c.detail) + '</td></tr>'; }).join('') + '</table>' : '<div class="empty">The integrity gate did not run for this game: fail closed, never verified by default.</div>')
       + '<div class="note">VERIFIED means the disagreement survived every check. It is a research status, not a decision: the decision engine’s answer is shown separately and is never implied by it.</div></div></details>';
   }
@@ -1021,16 +1036,20 @@
   function secA(o) {
     var A = o.edgedesk, g = o.game;
     if (!A.available) return sec('a', 'A · EdgeDesk view', A.reason, '<div class="empty">' + esc(A.reason) + '</div>', true);
+    /* the football lines (football_half_point_v1): the half-point fair line
+       and total and the whole-number score, the unrounded numbers beside them */
+    var PD = A.projected_score && A.projected_score.display;
     var b = kv([
-      ['EdgeDesk fair', esc(A.fair_text), 'home line ' + bk(A.fair_home_line)],
-      A.projected_score ? ['Projected score', esc(A.projected_score.away + '–' + A.projected_score.home), esc(g.away + ' – ' + g.home)] : null,
+      ['EdgeDesk fair', esc(A.fair_text), A.fair_display_home_line != null ? 'home line ' + bk(A.fair_display_home_line) + (A.fair_text_precise ? ' · unrounded ' + esc(A.fair_text_precise) : '') : 'home line ' + bk(A.fair_home_line)],
+      A.projected_score ? (PD ? ['Projected score', esc(PD.away + '–' + PD.home), esc(g.away + ' – ' + g.home) + ' · expected ' + esc(A.projected_score.away + '–' + A.projected_score.home) + (PD.note ? '<div class="mut" style="font-size:11px">' + esc(PD.note) + '</div>' : '')]
+        : ['Projected score', esc(A.projected_score.away + '–' + A.projected_score.home), esc(g.away + ' – ' + g.home)]) : null,
       ['Win probability', esc(g.home) + ' ' + pct(A.home_win_prob, 0), esc(g.away) + ' ' + pct(A.away_win_prob, 0)],
-      num(A.fair_total) ? ['Fair total', f1(A.fair_total), null] : null,
+      num(A.fair_total) ? ['Fair total', A.fair_total_text ? esc(A.fair_total_text) : f1(A.fair_total), A.fair_total_text ? 'unrounded ' + f1(A.fair_total) : null] : null,
       ['80% range', esc(A.interval_80 ? A.interval_80.text : '—'), 'σ ' + f1(A.sigma)],
       ['Football confidence', (A.football_confidence.score == null ? '—' : A.football_confidence.score) + ' · ' + esc(A.football_confidence.label), 'information quality, not a probability']
     ]) + '<div class="sub"><h3>Outcome distribution (margin, ' + esc(g.home) + ' perspective)</h3>' + distStrip(o) + '</div>'
       + '<div class="note">' + esc(A.model_version) + ' (' + esc(A.label || '') + ', governance ' + esc(A.role || '') + ') · published ' + esc(when(A.prediction_ts)) + ' · distribution: ' + esc(A.distribution_basis || '—') + '</div>';
-    return sec('a', 'A · EdgeDesk view', A.fair_text + ' · ' + (A.projected_score ? A.projected_score.text : ''), b, true);
+    return sec('a', 'A · EdgeDesk view', A.fair_text + ' · ' + (PD ? PD.text : (A.projected_score ? A.projected_score.text : '')), b, true);
   }
   function secB(o) {
     var B = o.market, g = o.game, LS = o.line_shopping;

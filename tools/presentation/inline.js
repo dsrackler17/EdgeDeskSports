@@ -172,6 +172,17 @@ const LIBS = [
     start: '/*__EDFAIRLINE_START__*/', end: '/*__EDFAIRLINE_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The football display lines (docs/system-integrity/FOOTBALL_LINES.md): the
+     fair spread and total at the nearest half point, PK, whole-number
+     projected scores, the gap from the unrounded projection and the
+     key-number note. The desk prints a projection with them, so the answer
+     quotes the same line the board, the page and the articles print. */
+  {
+    name: 'EDFOOTBALLLINES',
+    src: path.join(ROOT, 'lib', 'edgedesk_football_lines.js'),
+    start: '/*__EDFOOTBALLLINES_START__*/', end: '/*__EDFOOTBALLLINES_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   {
     name: 'EDLINESDESK',
     src: path.join(ROOT, 'football', 'linemaker', 'desk.js'),

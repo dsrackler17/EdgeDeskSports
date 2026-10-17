@@ -18,6 +18,7 @@ const { execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..', '..');
 global.window = global.window || global;
 const C = require(path.join(ROOT, 'lib', 'edgedesk_calc.js'));
+const FLN = require(path.join(ROOT, 'lib', 'edgedesk_football_lines.js'));
 const GS = require(path.join(ROOT, 'lib', 'edgedesk_game_snapshot.js'));
 const GG = require(path.join(ROOT, 'lib', 'edgedesk_game_graphic.js'));
 require(path.join(ROOT, 'lib', 'research_core.js'));
@@ -159,6 +160,9 @@ const base = clone(NFL.games.find((g) => g.model_status === 'PREDICTED'));
   const g = Object.assign(clone(base), { model_home_margin: 0.4, model_home_line: -0.4, model_home_win_prob: 0.512, model_fair_home_ml: null, model_fair_away_ml: null });
   const s = GS.fromNfl(g, { teams: NFL.teams });
   chk('a near pick’em never shows a tied whole-number score', s.model.headline_scores.whole === false || s.model.headline_scores.home !== s.model.headline_scores.away, s.model.headline_scores);
+  const D = s.model.display;
+  chk('…the display block shows it at the half point with its projected score, and says why a tie can appear', D && D.spread.text === s.home.name + ' −0.5' && D.score.label === 'Projected score'
+    && Number.isInteger(D.score.home) && (D.score.home !== D.score.away || /leads by 0\.40/.test(D.score.note)), D);
   chk('…and the model moneyline is derived from the win probability', s.model.fair_ml.home === GS.fairAmerican(0.512) && s.model.fair_ml.away === GS.fairAmerican(0.488));
 }
 {
@@ -211,8 +215,25 @@ chk('every market blocker code is one the decision engine emits', Object.keys(GS
 chk('model and game blockers stay full-strength', ['DATA_FAULT', 'DISTRIBUTION_MISSING', 'IMPOSSIBLE_PROBABILITY', 'MODEL_VERSION_UNKNOWN', 'INVALID_GAME', 'EV_SIDE_CONTRADICTION'].every((k) => codes.indexOf(k) >= 0 && !GS.isMarketBlocker(k)));
 chk('a market-only NO DECISION is recognised; a mixed one is not', GS.marketOnlyDecision({ decision: 'NO_DECISION', blocker_codes: ['STALE_QUOTE'] }) && !GS.marketOnlyDecision({ decision: 'NO_DECISION', blocker_codes: ['STALE_QUOTE', 'DATA_FAULT'] }) && !GS.marketOnlyDecision({ decision: 'PASS', blocker_codes: [] }));
 const cm = GS.compareMarket(s0, live);
-const fairD = Math.round(s0.model.fair.home_line * 10), mktD = Math.round(-3.5 * 10);
-chk('the displayed spread gap is the difference of the displayed lines', cm.spread.gap === Math.abs(fairD - mktD) / 10, cm.spread);
+/* football_half_point_v1: the gap is the unrounded projection against the line as received */
+chk('the spread gap is the raw projection against the market line, never the half-point display', cm.spread.gap === C.spreadComparison({ model_home_margin: s0.model.home_margin, market_home_margin: 3.5 }).gap && cm.spread.market_home_line === -3.5, cm.spread);
+chk('…and the printed fair line is the display block’s', cm.spread.fair_text === s0.model.display.spread.text && cm.total.fair_text === s0.model.display.total.text);
+chk('…with the rounding note exactly when the printed lines do not reproduce the gap', (cm.spread.rounding_note !== null) === (Math.abs(Math.abs(s0.model.display.spread.home_line + 3.5) - cm.spread.gap) > 1e-9));
+{
+  /* every projected game against a range of market lines: the gap never follows the rounded line */
+  let off = 0;
+  proj.forEach((s) => [-14, -7, -6.5, -3, -2.5, 0, 3.5, 7.5].forEach((k) => {
+    const x = GS.compareMarket(s, GS.market({ home_line: k, total: 47.5, book: 'draftkings', captured_at: new Date(t0 - 60000).toISOString() }, { now: t0 }));
+    const cs = C.spreadComparison({ model_home_margin: s.model.home_margin, market_home_margin: -k }), ct = C.totalComparison({ model_total: s.model.total_exact, market_total: 47.5 });
+    if (x.spread.gap !== cs.gap || x.total.gap !== ct.gap || Math.abs(x.spread.gap - Math.abs(-s.model.home_margin - k)) > 0.1) off++;
+  }));
+  chk('every snapshot’s gap is computed from its raw margin and total (' + proj.length * 8 + ' cases)', off === 0, off);
+}
+{
+  const ind = clone(s0); ind.model.home_margin = 2.5; ind.model.total_exact = 49.92;
+  const k = GS.compareMarket(ind, GS.market({ home_line: 3.5, total: 52.5, book: 'draftkings', captured_at: new Date(t0 - 60000).toISOString() }, { now: t0 }));
+  chk('a favourite flip across 3 carries the key-number note for the model’s team', k.spread.key && k.spread.key.text === 'Model favors ' + ind.home.name + ' outright; market gives ' + ind.home.name + ' more than a field goal.', k.spread.key);
+}
 chk('the market win probability is no-vig and labelled so, beside the model’s', cm.moneyline && /no-vig/.test(cm.moneyline.label) && Math.abs(cm.moneyline.market_no_vig_home + cm.moneyline.market_no_vig_away - 1) < 1e-6);
 chk('no comparison against a market that is not current', GS.compareMarket(s0, cached) === null && GS.compareMarket(s0, stale) === null);
 
@@ -257,11 +278,17 @@ proj.forEach((s) => {
   const spec = GS.graphicSpec(s), ct = GG.content(spec, null, { now: Date.parse(NOW) });
   if (!ct.ok) { chk('content is made · ' + s.game_key, false, ct); return; }
   const c = ct.content, M = s.model;
-  if (c.total !== M.total.toFixed(1)) chk('graphic total is the snapshot’s · ' + s.game_key, false, [c.total, M.total]);
-  if (c.scores.home !== M.headline_scores.home || c.scores.away !== M.headline_scores.away) chk('graphic scores are the snapshot’s · ' + s.game_key, false, [c.scores, M.headline_scores]);
+  const D = M.display;
+  if (c.total !== D.total.text) chk('graphic total is the snapshot’s display · ' + s.game_key, false, [c.total, D.total]);
+  if (c.scores.home !== String(D.score.home) || c.scores.away !== String(D.score.away) || !c.scores.whole) chk('graphic scores are the snapshot’s whole-number projected score · ' + s.game_key, false, [c.scores, D.score]);
   if (c.win.home !== M.win_display.home || c.win.away !== M.win_display.away) chk('graphic win probabilities are the snapshot’s · ' + s.game_key, false, [c.win, M.win_display]);
-  if (M.fair.favorite && c.spread_value !== '−' + Math.abs(M.fair.display).toFixed(1)) chk('graphic spread is the snapshot’s · ' + s.game_key, false, [c.spread_value, M.fair]);
+  if (c.spread_value !== D.spread.line_text || c.spread_text !== D.spread.text) chk('graphic spread is the snapshot’s display · ' + s.game_key, false, [c.spread_value, D.spread]);
   if (Math.abs(+c.points.home + +c.points.away - M.total) > 0.051) chk('projected points add to the total · ' + s.game_key, false, c.points);
+  if (c.total_sub.text !== D.total.raw_text + ' PTS') chk('the unrounded total sits under the fair total · ' + s.game_key, false, c.total_sub);
+  /* a spec recorded before the display block redraws exactly as published */
+  const old = clone(spec); delete old.model.display; delete old.model.total_exact;
+  const co = GG.content(old, null, { now: Date.parse(NOW) }).content;
+  if (co.total !== M.total.toFixed(1) || co.spread_text !== M.fair.text || co.scores.home !== M.headline_scores.home) chk('a pre-display spec redraws with its own numbers · ' + s.game_key, false, [co.total, co.spread_text, co.scores]);
   if (c.market) chk('no market panel without a live quote · ' + s.game_key, false, c.market);
   if (!c.detail || c.detail.cells.length < 2 || c.detail.cells.some((x) => !x.v || (Array.isArray(x.v) ? x.v.some((v) => !v || v === '—') : x.v === '—'))) chk('model detail replaces the market, no empty cell · ' + s.game_key, false, c.detail);
   if (/%/.test(c.confidence) && /RELIABILITY/.test(c.confidence)) chk('reliability is never a percent on the graphic · ' + s.game_key, false, c.confidence);
@@ -281,6 +308,12 @@ chk('laid out every projected game in both formats', laid === proj.length * 2, l
   const s = proj.find((x) => x.insights.length >= 3), spec = GS.graphicSpec(s);
   const cl = GG.content(spec, live, { now: t0 }).content;
   chk('a LIVE quote adds the market panel with its book and capture time', cl.market && /DraftKings/.test(cl.market.meta) && /captured/.test(cl.market.meta) && cl.market.home_spread === '−3.5');
+  const sg = C.spreadComparison({ model_home_margin: s.model.home_margin, market_home_margin: 3.5 }).signed;
+  chk('…its spread gap is the unrounded projection against −3.5', cl.market.vs[0] === (sg === 0 ? 'Spread: EdgeDesk and the market agree' : 'Spread: EdgeDesk ' + Math.abs(sg).toFixed(1) + ' pts toward ' + (sg > 0 ? cl.home.abbr : cl.away.abbr)), cl.market.vs);
+  const shown = Math.abs(s.model.display.spread.home_line + 3.5), tshown = Math.abs(s.model.display.total.value - 47.5);
+  chk('…with the half-point note exactly when a printed line does not reproduce its gap', (cl.market.note === GG.ROUNDING_NOTE) === (Math.abs(shown - Math.abs(sg)) > 1e-9 || Math.abs(tshown - C.totalComparison({ model_total: s.model.total_exact, market_total: 47.5 }).gap) > 1e-9), [cl.market.vs, cl.market.note]);
+  const q = clone(spec); const cq = GG.content(q, GS.market({ home_line: -6.75, total: 47.25, book: 'draftkings', captured_at: new Date(t0 - 60000).toISOString() }, { now: t0 }), { now: t0 }).content;
+  chk('a quarter-point sportsbook line prints as received', cq.market.home_spread === '−6.75' && cq.market.away_spread === '+6.75' && cq.market.total === '47.25', cq.market);
   chk('the market panel labels its probability no-vig', cl.market.no_vig && /%$/.test(cl.market.no_vig.home));
   chk('a CACHED or STALE quote never reaches the graphic', !GG.content(spec, cached, { now: t0 }).content.market && !GG.content(spec, stale, { now: t0 }).content.market);
   const noMl = GS.market({ home_line: -3.5, total: 47.5, book: 'fanduel', captured_at: new Date(t0 - 5 * 60000).toISOString() }, { now: t0 });
@@ -294,7 +327,7 @@ chk('laid out every projected game in both formats', laid === proj.length * 2, l
   chk('cache: a new snapshot, a new format or a new quote draws again', k1 !== GG.cacheKey(spec2, null, 'square') && k1 !== k3 && k1 !== k4);
   chk('cache: a stale quote does not change the model-only graphic', GG.cacheKey(spec, stale, 'square') === k1);
   const alt = GG.altText(GG.content(spec, null).content);
-  chk('alt text reads the numbers and the tagline', alt.indexOf(s.model.total.toFixed(1)) >= 0 && /Research, not picks\./.test(alt) && alt.indexOf(s.model.fair.text) >= 0);
+  chk('alt text reads the numbers and the tagline', alt.indexOf(s.model.display.total.text) >= 0 && /Research, not picks\./.test(alt) && alt.indexOf(s.model.display.spread.text) >= 0);
   chk('the file is named for the matchup and format', /^edgedesk-.+-at-.+-portrait\.png$/.test(GG.fileName(GG.content(spec, null).content, 'portrait')));
   chk('no team logo or helmet asset is drawn', !GG.layout(GG.content(spec, null).content, 'square').ops.some((o) => o.type === 'image'));
 }

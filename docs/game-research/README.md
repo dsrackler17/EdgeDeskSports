@@ -120,6 +120,17 @@ strip):
 | total_plausible | 20–110 |
 | range_contains_projection | the 80% range is ordered and contains the projection |
 | ranks_in_range | every rank sits inside its league |
+| display_from_raw | `model.display` (football_half_point_v1, `lib/edgedesk_football_lines.js`) is exactly what the shared utility derives from the snapshot's own raw margin and total: the fair line within a quarter point of the raw margin and on its side (or PK), the total within a quarter point, the whole-number projected score never naming the other winner |
+
+**What the page and the graphic print** is `model.display`: the fair spread
+and total at the nearest half point, PK at zero, and the projected score in
+whole points. The raw fields beside it (`home_margin`, `total_exact`,
+`scores`, `win_prob`) are unchanged and are what every comparison, price
+check and probability reads. `compareMarket()` measures the gap from the raw
+margin, and adds the rounding note and the key-number note. A snapshot written
+before the display block existed, such as a started game's frozen snapshot or
+a history spec, has no `display` and redraws with its own numbers
+(`docs/system-integrity/FOOTBALL_LINES.md`).
 
 ### Insights ("What to watch for")
 

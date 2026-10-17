@@ -65,7 +65,11 @@ section('STEP 1 · the fair line is the model’s own number; a near pick’em i
   const a = V.build({ game: GAME, projection: proj(-0.10) }).fair;
   eq('raw -0.10 (away by 0.10) displays at the one-point floor', a.display_fair_spread, -1);
   eq('on the away side', a.favorite_team, AWAY);
-  eq('shown at its real value, tagged: "Ole Miss -0.1 (near pick’em)"', a.fair_line_text, AWAY + ' -0.1 (near pick’em)');
+  /* football_half_point_v1 (lib/edgedesk_football_lines.js): shown at the
+     nearest half point, so -0.10 is PK; the 0.1 line and the lean stay beside it */
+  eq('shown as a football line: raw -0.10 is PK, never the floor', a.fair_line_text, 'PK');
+  eq('the unrounded line is kept beside it', a.precise_line_text, AWAY + ' -0.1');
+  chk('and the lean is said in words', /leans Ole Miss by 0\.10/.test(a.display_note), a.display_note);
   eq('the engine’s floor is kept as its own field, never shown as the fair line', a.floor_line_text, AWAY + ' -1.0');
   eq('and it is flagged a near pick’em', a.is_near_pickem, true);
   near('while the raw margin is kept exactly', a.raw_projected_margin, -0.10);
@@ -73,7 +77,7 @@ section('STEP 1 · the fair line is the model’s own number; a near pick’em i
 
   const b = V.build({ game: GAME, projection: proj(0.10) }).fair;
   eq('raw +0.10 (home by 0.10) displays at +1 (home margin)', b.display_fair_spread, 1);
-  eq('named for the home side, at its real value', b.fair_line_text, HOME + ' -0.1 (near pick’em)');
+  eq('raw +0.10 is PK too, with its 0.1 line on the home side', b.fair_line_text === 'PK' && b.precise_line_text === HOME + ' -0.1', true);
   eq('near pick’em', b.is_near_pickem, true);
 
   const z = V.build({ game: GAME, projection: proj(0, { tiebreak: { win_probability: 0, weighted_components: -0.4 } }) }).fair;
@@ -88,26 +92,28 @@ section('STEP 1 · the fair line is the model’s own number; a near pick’em i
 
   const c = V.build({ game: GAME, projection: proj(-6.54) }).fair;
   eq('a clear favourite is the raw number itself', c.display_fair_spread, -6.54);
-  eq('shown as the favourite laying it', c.fair_line_text, AWAY + ' -6.5');
+  eq('shown as the favourite laying it, at the half point', c.fair_line_text, AWAY + ' −6.5');
   eq('and is not a near pick’em', c.is_near_pickem, false);
 
-  /* the displayed fair line is the raw number at one decimal (half away from
-     zero), on the raw number's side — never moved toward a floor — and the
-     engine's own floor field is untouched */
+  /* the displayed fair line is the raw number at the nearest half point
+     (halves away from zero, so both signs alike), PK at zero, on the raw
+     number's side — never moved toward the floor or a key number — with the
+     raw number at one decimal beside it; the engine's floor field is untouched */
   const banned = [];
   for (let i = -300; i <= 300; i++) {
     const raw = i / 100, f = V.build({ game: GAME, projection: proj(raw) }).fair;
-    const want = Math.floor(Math.abs(raw) * 10 + 0.5 + 1e-9) / 10;
-    const m = /(-\d+\.\d)/.exec(f.fair_line_text);
-    if (want === 0 ? !/^Pick’em/.test(f.fair_line_text) : !(m && Math.abs(+m[1]) === want)) banned.push(raw);
+    const want = Math.floor(Math.abs(raw) * 2 + 0.5 + 1e-9) / 2, want1 = Math.floor(Math.abs(raw) * 10 + 0.5 + 1e-9) / 10;
+    const m = /−(\d+\.\d)/.exec(f.fair_line_text), m1 = /-(\d+\.\d)/.exec(f.precise_line_text);
+    if (want === 0 ? f.fair_line_text !== 'PK' : !(m && +m[1] === want)) banned.push(raw);
+    if (want1 === 0 ? !/^Pick’em/.test(f.precise_line_text) : !(m1 && +m1[1] === want1)) banned.push('precise ' + raw);
     if (want !== 0 && (raw > 0 ? f.fair_line_text.indexOf(HOME) !== 0 : f.fair_line_text.indexOf(AWAY) !== 0)) banned.push('side ' + raw);
     if (Math.abs(f.display_fair_spread) < 1) banned.push('floor field ' + raw);
     if (raw !== 0 && ((raw > 0) !== (f.display_side === 'home'))) banned.push('flip ' + raw);
   }
-  chk('every displayed fair line from -3.00 to +3.00 is the raw number at one decimal, on its own side (engine floor field untouched)', !banned.length, banned.slice(0, 5));
+  chk('every displayed fair line from -3.00 to +3.00 is the raw number at the half point, PK at zero, on its own side, the 0.1 line beside it (engine floor field untouched)', !banned.length, banned.slice(0, 5));
 
-  eq('a model that publishes no display line shows its raw number (NFL-style)',
-    V.build({ game: GAME, projection: { status: 'PREDICTED', model: { fair_spread: 3.2 } } }).fair.fair_line_text, HOME + ' -3.2');
+  const nfl = V.build({ game: GAME, projection: { status: 'PREDICTED', model: { fair_spread: 3.2 } } }).fair;
+  eq('a model that publishes no display line shows its raw number as a football line (NFL-style)', nfl.fair_line_text + ' | ' + nfl.precise_line_text, HOME + ' −3.0 | ' + HOME + ' -3.2');
   eq('a projection that is not PREDICTED has no fair line', V.build({ game: GAME, projection: { status: 'INSUFFICIENT_DATA' } }).fair, null);
   eq('and no projection at all is not projected', V.build({ game: GAME }).projected, false);
 }
@@ -122,7 +128,7 @@ section('STEP 2 · the market gap: magnitude, and which team EdgeDesk differs to
   eq('market Florida -2.5 vs EdgeDesk Ole Miss -1.0 is 3.5 points', Math.round(g.points * 10) / 10, 3.5);
   eq('toward Ole Miss', g.toward_team, AWAY);
   eq('and says so', g.text, '3.5 pts toward ' + AWAY);
-  eq('the market line is named for its own favourite', g.market_line_text, HOME + ' -2.5');
+  eq('the market line is named for its own favourite, as received', g.market_line_text, HOME + ' −2.5');
   eq('the two numbers name different favourites', g.favorite_differs, true);
 
   /* orientation, all four corners: a sign error would reverse every one */
@@ -147,10 +153,12 @@ section('STEP 2 · the market gap: magnitude, and which team EdgeDesk differs to
   eq('a near pick’em is measured from its own number: Ole Miss -0.3 vs Florida -2.5 is 2.8, not 3.5', g.points, 2.8);
   eq('which is exactly the difference of the displayed lines', g.reconcile.formula, '|-0.3 − 2.5| = 2.8');
   near('the full-precision difference is kept beside it', g.points_exact, 2.81);
-  chk('and the note names the number the gap was measured from', /Ole Miss -0\.3/.test(g.note) && /measured from it/.test(g.note), g.note);
+  chk('and the note names the displayed line and the raw margin the gap was measured from', /Ole Miss −0\.5/.test(g.note) && /raw Ole Miss -0\.31/.test(g.note) && /measured from the raw margin/.test(g.note), g.note);
+  eq('the half-point line (−0.5) does not reproduce the 2.8, so the reader is told why', g.rounding_note, 'Fair lines rounded to nearest half-point; differences use unrounded projections.');
   /* the October 8 board: Ole Miss -0.2 (raw -0.18) vs Ole Miss -9.5 */
   const om = V.build({ game: GAME, projection: proj(-0.18, { line: -9.5 }), market: { spread_line: -9.5, book: 'consensus' } });
-  eq('Oct 8: the board shows Ole Miss -0.2, not the -1.0 floor', om.fair.comparison_line_text, AWAY + ' -0.2');
+  eq('Oct 8: the board shows PK (raw -0.18), never the -1.0 floor', om.fair.comparison_line_text + ' | ' + om.fair.precise_line_text, 'PK | ' + AWAY + ' -0.2');
+  eq('Oct 8: the gap stays 9.3 from the raw margin, with the rounding note', om.market_gap.points + ' | ' + !!om.market_gap.rounding_note, '9.3 | true');
   eq('Oct 8: and the gap 9.3 reconciles with the lines on screen', om.market_gap.reconcile.formula, '|-0.2 − -9.5| = 9.3');
   /* every displayed gap from -3 to +3 against a -9.5…+9.5 market reconciles */
   const off = [];
@@ -165,7 +173,7 @@ section('STEP 2 · the market gap: magnitude, and which team EdgeDesk differs to
   eq('with no direction', g.toward, null);
 
   g = gapOf(-3, 0);
-  eq('a market pick’em is the market’s own number and is named as one', g.market_line_text, 'Pick’em');
+  eq('a market pick’em is the market’s own number and is named as one', g.market_line_text, 'PK');
   eq('the gap toward the away favourite', g.toward_team, AWAY);
 
   const none = V.build({ game: GAME, projection: proj(-3), market: { spread_line: null } }).market_gap;
@@ -339,7 +347,7 @@ section('STEP 5 · why EdgeDesk leans: the largest measured reasons on its side'
   /* the market gap closes the list as context, only when it agrees */
   w = why(-1.0, [C('rating', -2.5), C('matchup', -0.8)], { line: 2.5 });
   eq('the market gap is added as context when it points the lean’s way', w.reasons[w.reasons.length - 1].kind, 'market');
-  chk('and names the market line', /Florida -2\.5/.test(w.reasons[w.reasons.length - 1].text), w.reasons);
+  chk('and names the market line', /Florida [−-]2\.5/.test(w.reasons[w.reasons.length - 1].text), w.reasons);
   w = why(-5.2, [C('rating', -5.2)], { line: -7 });
   eq('a gap toward the OTHER side is not offered as a reason', w.reasons.some(r => r.kind === 'market'), false);
   w = why(9, [C('rating', 4), C('hfa', 3), C('matchup', 2)], { line: 3 });

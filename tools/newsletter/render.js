@@ -167,6 +167,14 @@ function gameBlock(g, index) {
     parts.push('<div style="font-family:' + SANS + ';font-size:13px;line-height:1.5;color:' + T.dim
       + ';padding-top:10px;">' + esc(g.difference.text) + '</div>');
   }
+  /* the key-number note, and why half-point lines may not reproduce the
+     difference (both from lib/edgedesk_football_lines.js), small and plain */
+  const fine = [g.difference && g.difference.available && g.difference.key_number ? 'Key number: ' + g.difference.key_number : null,
+    (g.difference && g.difference.available && g.difference.rounding_note) || (g.total && g.total.rounding_note) || null].filter(Boolean);
+  if (fine.length) {
+    parts.push('<div style="font-family:' + SANS + ';font-size:11px;line-height:1.5;color:' + T.dim
+      + ';padding-top:6px;">' + fine.map(esc).join('<br>') + '</div>');
+  }
 
   /* the evidence */
   if ((g.why || []).length) {
@@ -402,6 +410,8 @@ function renderText(edition, opts) {
     if (g.total) L.push(lbl('Total') + g.model.total + ' model · ' + g.market.total + ' market');
     L.push('');
     if (g.difference && g.difference.available && g.difference.points !== 0) { L.push(wrap(g.difference.text)); L.push(''); }
+    if (g.difference && g.difference.available && g.difference.key_number) { L.push(wrap('Key number: ' + g.difference.key_number)); L.push(''); }
+    if ((g.difference && g.difference.available && g.difference.rounding_note) || (g.total && g.total.rounding_note)) { L.push(wrap((g.difference && g.difference.rounding_note) || g.total.rounding_note)); L.push(''); }
     (g.why || []).forEach(w => { L.push(wrap(w.text)); L.push(''); });
     if (g.watch) {
       L.push('WATCH BEFORE KICKOFF' + (g.watch.label ? ' — ' + g.watch.label : '') + ':');

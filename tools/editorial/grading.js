@@ -160,7 +160,8 @@
     if (!m || !m.available || !m.total_market || !model.total) {
       return { available: false, why: 'EdgeDesk published no fair total, or no sportsbook total was captured.' };
     }
-    var mk = num(m.total_market), md = num(model.total);
+    /* the RAW model total (total_n), never the half-point display */
+    var mk = num(m.total_market), md = num(model.total_n != null ? model.total_n : model.total);
     if (mk == null || md == null || mk === md) {
       return { available: false, why: mk === md ? 'EdgeDesk and the market landed on the same total.' : 'The captured total could not be read as a number.' };
     }

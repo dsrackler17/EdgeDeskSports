@@ -38,6 +38,7 @@
 
 const SCHEDULE = require('./schedule.js');
 const SELECT = require('./select.js');
+const FLN = require('../../lib/edgedesk_football_lines.js');
 
 const SCHEMA = 'edgedesk_newsletter_edition_v1';
 const SITE = 'https://edgedesksports.com';
@@ -58,6 +59,15 @@ function poss(name) {
 function num(v) { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
 function round1(n) { return Math.round(n * 10) / 10; }
 function signed(n) { return (n > 0 ? '+' : '') + round1(n).toFixed(1); }
+
+/* EdgeDesk's OWN line as a football line (lib/edgedesk_football_lines.js): the
+   raw home margin at the nearest half point, "Kansas +5.5", PK at zero. The
+   difference beside it is always measured from the raw margin. */
+function modelLineText(team, homeMargin) {
+  if (team == null || homeMargin == null) return null;
+  const d = FLN.halfPoint(homeMargin);
+  return d === 0 ? team + ' PK' : team + ' ' + FLN.lineText(-d);
+}
 
 /* A book line as a book prints it: a team and a signed number, with a pick'em
    said in words rather than as "+0.0". */
@@ -118,7 +128,11 @@ function differenceFor(game) {
     points: sp.gap_points,
     edge_home: sp.edge_home,
     lean_team: sp.lean_team,
-    model_line_text: lineText(game.home, sp.model_home_line),
+    model_line_text: modelLineText(game.home, sp.model_home_margin),
+    /* the half-point model line beside the market line need not reproduce the
+       raw difference: the reader is told why, and where the two sit around 3 and 7 */
+    rounding_note: game.evidence.market_rounding_note || null,
+    key_number: game.evidence.market_key_number || null,
     market_line_text: lineText(game.home, sp.market_home_line),
     /* THE SENTENCE EXISTS TO STATE THE CONVENTION, not to repeat the two
        numbers printed directly above it. A reader who cannot tell which side a
@@ -209,7 +223,8 @@ function watchFor(game) {
 /* ----------------------------------------------------------- the totals */
 function totalFor(game, sport) {
   const ev = game.evidence;
-  const model = num(ev.total_model);
+  /* the raw model total: the half-point display neither creates nor hides a gap */
+  const model = num(ev.total_model_raw != null ? ev.total_model_raw : ev.total_model);
   const market = num(ev.market_total);
   if (model == null) return null;
   if (market == null) return null;
@@ -220,6 +235,7 @@ function totalFor(game, sport) {
     model: ev.total_model, market: ev.market_total, gap: round1(gap),
     text: 'Total: EdgeDesk ' + ev.total_model + ', the market ' + ev.market_total
       + ' — ' + round1(gap).toFixed(1) + ' points apart.',
+    rounding_note: ev.market_total_rounding_note || null,
   };
 }
 
@@ -385,8 +401,12 @@ function compose(opts) {
       kickoff_zone_name: cfgSchedule.zone,
       model: {
         fair_spread_text: g.evidence.fair_spread_text,
-        home_line_text: lineText(g.home, g.spread.model_home_line),
+        home_line_text: modelLineText(g.home, g.spread.model_home_margin),
         home_line: g.spread.model_home_line,
+        /* the printed half-point line, a figure the edition derives from the raw
+           margin by lib/edgedesk_football_lines.js (validate.js admits it) */
+        display_home_line: g.spread.model_home_margin == null ? null : (FLN.halfPoint(g.spread.model_home_margin) === 0 ? 0 : -FLN.halfPoint(g.spread.model_home_margin)),
+        display_policy: FLN.POLICY.id,
         total: g.evidence.total_model,
         engine: g.evidence.engine,
         status: g.evidence.model_status,

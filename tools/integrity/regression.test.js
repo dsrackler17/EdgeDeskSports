@@ -102,13 +102,30 @@ section('1  Ole Miss -1.0 vs -9.5 reconciles to 8.5');
   chk('a surface printing the -1.0 floor beside a 9.3 gap is BLOCKED (CALC.GAP_RECONCILES)', r1.status === 'BLOCKED' && ruleStatus(r1, 'CALC.GAP_RECONCILES') === 'BLOCKED', r1.blocking_reasons);
   const good = rec({ displayed: { fair_text: OM + ' -0.2', market_text: OM + ' -9.5', gap: 9.3 } });
   chk('the canonical rendering (Ole Miss -0.2, 9.3) passes the same rule', ruleStatus(ev(good, 'PUBLIC_BRIEF'), 'CALC.GAP_RECONCILES') === 'PASS');
+  /* football_half_point_v1 (lib/edgedesk_football_lines.js): the -0.2 prints as
+     PK, the gap stays 9.3 from the raw margin, and the reader is told why */
+  const FLN = lib('edgedesk_football_lines.js');
+  const halfOk = rec({ displayed: { fair_text: 'PK', market_text: OM + ' −9.5', gap: 9.3, rounding_note: FLN.ROUNDING_NOTE } });
+  chk('a half-point PK beside the raw 9.3 gap, with the rounding note, passes', ruleStatus(ev(halfOk, 'PUBLIC_BRIEF'), 'CALC.GAP_RECONCILES') === 'PASS', ev(halfOk, 'PUBLIC_BRIEF').blocking_reasons);
+  const halfNoNote = rec({ displayed: { fair_text: 'PK', market_text: OM + ' −9.5', gap: 9.3 } });
+  chk('… the same rendering without the note is BLOCKED (its printed lines say 9.5)', ruleStatus(ev(halfNoNote, 'PUBLIC_BRIEF'), 'CALC.GAP_RECONCILES') === 'BLOCKED');
+  const halfFromDisplay = rec({ displayed: { fair_text: 'PK', market_text: OM + ' −9.5', gap: 9.5, rounding_note: FLN.ROUNDING_NOTE } });
+  chk('… and a gap taken from the rounded display (9.5) is BLOCKED', ruleStatus(ev(halfFromDisplay, 'PUBLIC_BRIEF'), 'CALC.GAP_RECONCILES') === 'BLOCKED');
+  const tt = rec({ game: { home: 'Texas Tech', away: 'Arizona State' }, model: { home_margin: 20.72, total: 52.4, home_win_prob: 0.92, away_win_prob: 0.08 }, market: { home_margin: 17.5 },
+    displayed: { fair_text: 'Texas Tech −20.5', market_text: 'Texas Tech −17.5', gap: 3.2, rounding_note: FLN.ROUNDING_NOTE } });
+  chk('Texas Tech −20.5 vs −17.5 with the raw 3.2 gap passes', ruleStatus(ev(tt, 'PUBLIC_BRIEF'), 'CALC.GAP_RECONCILES') === 'PASS', ev(tt, 'PUBLIC_BRIEF').blocking_reasons);
+  const ttScore = rec({ game: { home: 'Texas Tech', away: 'Arizona State' }, model: { home_margin: 20.72, total: 52.4, home_win_prob: 0.92, away_win_prob: 0.08, projected_score: { home: 37, away: 16, policy: 'football_half_point_v1' } }, market: { home_margin: 17.5 } });
+  chk('a whole-number projected score (37–16 from 20.72 / 52.4) is not a score fault', ruleStatus(ev(ttScore, 'PUBLIC_BRIEF'), 'PROJ.SCORES') === 'PASS', ev(ttScore, 'PUBLIC_BRIEF').blocking_reasons);
+  const ttBad = rec({ game: { home: 'Texas Tech', away: 'Arizona State' }, model: { home_margin: 20.72, total: 52.4, home_win_prob: 0.92, away_win_prob: 0.08, projected_score: { home: 38, away: 15, policy: 'football_half_point_v1' } }, market: { home_margin: 17.5 } });
+  chk('… but whole numbers that miss the projection by more than rounding still are', ruleStatus(ev(ttBad, 'PUBLIC_BRIEF'), 'PROJ.SCORES') === 'BLOCKED');
   /* the research view the board renders from: the floor is never the printed or compared number */
   const fl = ENGINE.fairLine.normalize(-0.18, {});
   const view = V.build({ game: { game_id: 'G1', home: FL, away: OM }, market: { spread_line: -9.5, book: 'consensus' }, projection: {
     status: 'PREDICTED', game: { home: FL, away: OM },
     model: { fair_spread: -0.18, fair_total: 58.1, home_win_prob: 0.495, display_fair_spread: fl.display_fair_spread, display_side: fl.display_side, is_near_pickem: fl.is_near_pickem, display_basis: fl.basis },
     scores: { confidence: 62 }, market: { spread_line: -9.5, spread_gap: -0.18 + 9.5 }, contributions: [], explanation: { primary_drivers: [], counterarguments: [], data_quality: [] }, layers: {}, data_quality: { status: 'OK', warnings: [] } } });
-  chk('the research view compares Ole Miss -0.2, never the -1.0 floor', view.fair.comparison_line_text === OM + ' -0.2' && view.market_gap.points === 9.3 && view.market_gap.reconcile.formula === '|-0.2 − -9.5| = 9.3', { fair: view.fair.comparison_line_text, gap: view.market_gap.points });
+  chk('the research view shows PK (raw -0.18, never the -1.0 floor) and measures 9.3 from the raw margin, with the rounding note', view.fair.comparison_line_text === 'PK' && view.fair.precise_line_text === OM + ' -0.2' && view.market_gap.points === 9.3
+    && view.market_gap.reconcile.formula === '|-0.2 − -9.5| = 9.3' && !!view.market_gap.rounding_note, { fair: view.fair.comparison_line_text, gap: view.market_gap.points });
   chk('the model projection itself is untouched (raw -0.18 kept beside the display)', view.market_gap.points_exact != null && Math.abs(view.market_gap.points_exact - 9.32) < 1e-9, view.market_gap.points_exact);
 }
 
