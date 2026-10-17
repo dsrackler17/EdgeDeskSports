@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-17 — Discord: the football slate prints half-point lines
+
+**The daily NFL and college football Discord slates now print EdgeDesk's numbers the way the site does**, from the same code (`lib/edgedesk_football_lines.js`, now copied into `supabase/functions/discord_cron/index.ts` by `tools/presentation/inline.js`).
+
+| | Before | Now |
+|---|---|---|
+| Memphis @ Tulane (CFB) | `line Memphis -4.8 · proj Memphis 28.1, Tulane 23.4 · total 51.5` | `line Memphis -5.0 · projected score Memphis 28, Tulane 23 · total 51.5`, then `Key number: Market sits on 7; model is below 7.` |
+| Steelers @ Bengals (NFL) | `line Bengals -4.6 · proj Steelers 19.3, Bengals 23.9 · total 43.1` | `line Bengals -4.5 · projected score Bengals 24, Steelers 19 · total 43.0` |
+
+- **Gaps.** Every gap still reads the unrounded projection, in the site's tenths. The Bengals total prints "1.4 lower than the book" (43.1 against 44.5), not 1.5.
+- **Notes.** The rounding note, the score note and the key-number explanation each appear once in a post's description, and only when a game in it needs them.
+- **Copy check.** It refuses "pick" in any form, so a key note about a zero line says "at PK".
+- **Other sports.** NBA, CBB and NHL are unchanged.
+- **Results and samples.** The results recap grades against the final and stays unrounded; the samples post no fair line.
+- **CI.** Discord posts tests now also run on a change to the utility, and check that the function's copy has not drifted from it.
+- **Deploying.** The posts change only once the function is redeployed (the Deploy Discord posts workflow).
+
 ## 2026-10-17 — CFB Altitude & Travel: every game's climb, measured and explained; the adjustment tested and kept in shadow (0.0 pts)
 
 **From the next slate build, every FBS game carries an Altitude & Travel research section, and nothing it says moves a number.** Notre Dame at BYU reads: LaVell Edwards Stadium 4,633 ft, Notre Dame normally 731 ft, +3,902 ft, about 1,325 miles and two zones west. Statistical support: Not established. Validated model adjustment: Research only. Impact on EdgeDesk's number: 0.0 pts pending validation (`docs/cfb-altitude/README.md`).
