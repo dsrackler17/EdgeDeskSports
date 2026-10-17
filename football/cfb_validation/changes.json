@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-17T04:07:59.979Z",
+ "generated_at": "2026-10-17T05:08:06.008Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-11T04:07:40.878Z",
+  "since": "2026-10-11T05:07:37.830Z",
   "changes": [
    {
     "what": "current FBS power rating rebuilt",
@@ -17,7 +17,7 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-10-11T01:03:26.356Z",
-    "to": "2026-10-17T00:36:50.424Z"
+    "to": "2026-10-17T04:39:42.942Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -28,7 +28,7 @@
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 22,
+    "from": 26,
     "to": 65
    }
   ],
@@ -741,47 +741,6 @@
    "price_state": "NO INITIAL EDGE"
   },
   {
-   "from_at": "2026-10-07T06:15:25.756Z",
-   "to_at": "2026-10-16T04:43:59.720Z",
-   "old_fair": -11.39,
-   "new_fair": -14.83,
-   "change": -3.44,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "home: Jaron-Keawe Sagapolutele (PREVIOUS_GAME) → Jackson Brousseau (PREVIOUS_GAME)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.26
-    },
-    {
-     "cause": "QB_ABSENCE_OR_AVAILABILITY",
-     "term": "injury",
-     "points": -1.95
-    }
-   ],
-   "unexplained": -0.01,
-   "game_id": "401858269",
-   "game": "Wake Forest @ California",
-   "market_then": null,
-   "market_now": 10,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
    "from_at": "2026-10-07T20:33:48.534Z",
    "to_at": "2026-10-14T14:42:19.629Z",
    "old_fair": 0.92,
@@ -1071,6 +1030,47 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "INVESTIGATE",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-07T06:15:25.756Z",
+   "to_at": "2026-10-17T04:39:42.942Z",
+   "old_fair": -11.39,
+   "new_fair": -13.47,
+   "change": -2.08,
+   "material": true,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "QB_STATUS",
+     "detail": "home: Jaron-Keawe Sagapolutele (PREVIOUS_GAME) → Jackson Brousseau (PREVIOUS_GAME)"
+    },
+    {
+     "cause": "MATCHUP_UPDATE",
+     "term": "matchup",
+     "points": 0.26
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": -0.59
+    }
+   ],
+   "unexplained": -0.01,
+   "game_id": "401858269",
+   "game": "Wake Forest @ California",
+   "market_then": null,
+   "market_now": 10,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
