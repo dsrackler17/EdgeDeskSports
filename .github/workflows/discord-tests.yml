@@ -3,7 +3,9 @@
 #   function   supabase/functions/discord_cron/index.ts imported as deployed,
 #              against a mocked Discord, PostgREST and site: 429s, limits,
 #              idempotency, dry run, the copy check, the schedule in Central
-#              time, the slate, the scorecard and the free samples
+#              time, the slate (football at half-point lines), the scorecard
+#              and the free samples; and its inlined copy of
+#              lib/edgedesk_football_lines.js against the canonical file
 #   sql        supabase/discord.sql, discord_samples.sql and discord_cron.sql
 #              on a throwaway PostgreSQL: the claims, the insert-only log, the
 #              append-only, frozen sample ledger and the cron wiring
@@ -17,6 +19,8 @@ on:
       - 'supabase/functions/discord_cron/**'
       - 'supabase/discord*.sql'
       - 'tools/discord/**'
+      - 'lib/edgedesk_football_lines.js'
+      - 'tools/presentation/inline.js'
       - '.github/workflows/discord-tests.yml'
       - '.github/workflows/deploy-discord.yml'
   push:
@@ -25,6 +29,7 @@ on:
       - 'supabase/functions/discord_cron/**'
       - 'supabase/discord*.sql'
       - 'tools/discord/**'
+      - 'lib/edgedesk_football_lines.js'
   workflow_dispatch:
 
 permissions:
@@ -44,6 +49,8 @@ jobs:
           node-version: '22'
       - name: discord_cron, as deployed
         run: node tools/discord/discord_cron.test.js
+      - name: Its copy of the football display lines matches lib/edgedesk_football_lines.js
+        run: node tools/presentation/presentation_sync.test.js
       - name: The Discord SQL on a real PostgreSQL
         env:
           DISCORD_SQL_REQUIRED: '1'

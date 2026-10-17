@@ -176,12 +176,13 @@ const LIBS = [
      fair spread and total at the nearest half point, PK, whole-number
      projected scores, the gap from the unrounded projection and the
      key-number note. The desk prints a projection with them, so the answer
-     quotes the same line the board, the page and the articles print. */
+     quotes the same line the board, the page and the articles print; the
+     Discord slate prints the same line in each sport channel. */
   {
     name: 'EDFOOTBALLLINES',
     src: path.join(ROOT, 'lib', 'edgedesk_football_lines.js'),
     start: '/*__EDFOOTBALLLINES_START__*/', end: '/*__EDFOOTBALLLINES_END__*/',
-    hosts: [path.join(FN, 'index.ts')],
+    hosts: [path.join(FN, 'index.ts'), path.join(ROOT, 'supabase', 'functions', 'discord_cron', 'index.ts')],
   },
   {
     name: 'EDLINESDESK',

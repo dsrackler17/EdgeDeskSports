@@ -93,6 +93,7 @@ distributions say so), and nothing here pretends otherwise.
 | Newsletter | `tools/newsletter/compose.js`, `render.js`, `validate.js` | model line, rounding and key-number notes; the half-point line is a declared derived figure |
 | Press brief (PDF) | `tools/football/press_brief.js` | model line, total, score; book line as received |
 | AI desk | `supabase/functions/edgedesk_ai/_desk.js` (+ the inlined utility) | the packet carries `projection.display`; the deep dive prints the fair line, then the unrounded projection |
+| Discord slate | `supabase/functions/discord_cron/index.ts` `modelLines` (+ the inlined utility) | NFL and CFB: the fair line, total, projected score and a `Key number:` line; the gaps from the raw projection; the rounding, score and key-number notes once per post. A key note about a zero line says "at PK", because the copy check refuses "pick" |
 | Integrity engine | `lib/edgedesk_integrity.js` | `CALC.GAP_RECONCILES` accepts the half-point fair line only with the raw gap, and requires the rounding note when the printed lines do not reproduce it; `PROJ.SCORES` accepts whole-number scores tagged with the policy |
 
 ## 5. What grades and records read
@@ -105,6 +106,8 @@ distributions say so), and nothing here pretends otherwise.
   `total_raw` when present.
 - **Old records.** A record built before this policy carries its raw total in
   `total`, and still grades from it.
+- **Discord results.** The Discord results recap grades the pregame margin
+  and total against the final, so it prints them unrounded.
 - **Ledgers.** No history ledger, record or published article is rewritten.
 - **Frozen snapshots.** A started game's frozen snapshot, and any history
   spec, has no `display` block and redraws with the numbers it was published
@@ -117,7 +120,6 @@ These surfaces still print the model's number at 0.1 or as raw values:
 - **Machine exports.** The CSV and XLSX board exports carry only raw numerics
   (column-for-column contract with the Collective uploader). They are left
   raw on purpose.
-- **Discord.** `supabase/functions/discord_cron/index.ts` `fmtModelLine`.
 - **Other AI modules.** `_board.js`, `_pricing.js`, `_analyst.js`,
   `_stake.js`, `_quant.js` and `_intelligence.js` raw `fmtLine`; `_desk.js` is
   done.
