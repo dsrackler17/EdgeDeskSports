@@ -1,7 +1,7 @@
 {
  "data": {
   "availability_coverage": 0.0,
-  "games_processed": 455,
+  "games_processed": 458,
   "market_status": "HEALTHY",
   "pbp_coverage": 1.0,
   "pbp_error_rate": 0.0,
@@ -20,45 +20,45 @@
    },
    {
     "coverage": null,
-    "freshness_hours": 91.39,
+    "freshness_hours": 111.16,
     "source": "roster",
     "status": "HEALTHY"
    },
    {
     "coverage": 0.0,
-    "freshness_hours": 0.26,
+    "freshness_hours": 1.58,
     "source": "injury",
     "status": "DEGRADED"
    },
    {
     "coverage": 0.9062,
-    "freshness_hours": 0.76,
+    "freshness_hours": 10.97,
     "source": "qb_status",
     "status": "HEALTHY"
    },
    {
     "coverage": null,
-    "freshness_hours": 0.32,
+    "freshness_hours": 0.67,
     "source": "market",
     "status": "HEALTHY"
    },
    {
     "coverage": null,
-    "freshness_hours": 0.75,
+    "freshness_hours": 1.31,
     "source": "weather",
     "status": "NOT_USED_BY_MODEL"
    }
   ],
   "validation": {
    "FINAL_PARTIAL_DATA": 14,
-   "FINAL_VALIDATED": 441,
-   "SCHEDULED": 433
+   "FINAL_VALIDATED": 444,
+   "SCHEDULED": 430
   }
  },
- "data_version": "7068e2f47b1324f3c63db501",
+ "data_version": "aba2404ff44792e674f64617",
  "feature_version": "cfb_v2_fv2",
  "freeze_instant": "2026-10-20T12:00:00.000Z",
- "generated_at": "2026-10-16T15:04:34.925Z",
+ "generated_at": "2026-10-17T10:50:38.165Z",
  "misses": {
   "by_driver": {
    "PERSONNEL": {
@@ -72,6 +72,10 @@
    "TEAM_PERFORMANCE": {
     "mean_abs_error": 17.17,
     "n": 7
+   },
+   "TURNOVER_LUCK": {
+    "mean_abs_error": 19.56,
+    "n": 8
    }
   },
   "games": [
@@ -162,6 +166,40 @@
     "scoreboard_gap": 16.29
    },
    {
+    "actual_margin": 14.0,
+    "components": {
+     "QB_CHANGE": 11.63,
+     "SCOREBOARD_OTHER": -31.6,
+     "SPECIAL_TEAMS": 14.5,
+     "TURNOVER_LUCK": 24.32
+    },
+    "drivers": [
+     "TURNOVER_LUCK",
+     "SPECIAL_TEAMS",
+     "QB_CHANGE"
+    ],
+    "error": 18.85,
+    "evidence": {
+     "expected_plays": 131.1,
+     "plays": 141.0,
+     "qb_events": [
+      "AMBIGUOUS_STARTER",
+      "INJURED_STARTER",
+      "MULTI_QB_ROTATION",
+      "NEW_STARTER"
+     ],
+     "return_td_pts": 7.0
+    },
+    "expected_performance_margin": 6.78,
+    "game_id": "401862801",
+    "miss_id": "cfbx_d9e9d9f297e6c2723b530a6f",
+    "performance_gap": 11.63,
+    "primary_driver": "TURNOVER_LUCK",
+    "projected_margin": -4.8473,
+    "rule_version": "cfb_miss_classification_v1",
+    "scoreboard_gap": 7.22
+   },
+   {
     "actual_margin": -13.0,
     "components": {
      "SCOREBOARD_OTHER": 9.99,
@@ -246,6 +284,40 @@
     "projected_margin": 15.64,
     "rule_version": "cfb_miss_classification_v1",
     "scoreboard_gap": 16.29
+   },
+   {
+    "actual_margin": 14.0,
+    "components": {
+     "QB_CHANGE": 11.63,
+     "SCOREBOARD_OTHER": -31.6,
+     "SPECIAL_TEAMS": 14.5,
+     "TURNOVER_LUCK": 24.32
+    },
+    "drivers": [
+     "TURNOVER_LUCK",
+     "SPECIAL_TEAMS",
+     "QB_CHANGE"
+    ],
+    "error": 18.85,
+    "evidence": {
+     "expected_plays": 131.1,
+     "plays": 141.0,
+     "qb_events": [
+      "AMBIGUOUS_STARTER",
+      "INJURED_STARTER",
+      "MULTI_QB_ROTATION",
+      "NEW_STARTER"
+     ],
+     "return_td_pts": 7.0
+    },
+    "expected_performance_margin": 6.78,
+    "game_id": "401862801",
+    "miss_id": "cfbx_d9e9d9f297e6c2723b530a6f",
+    "performance_gap": 11.63,
+    "primary_driver": "TURNOVER_LUCK",
+    "projected_margin": -4.8473,
+    "rule_version": "cfb_miss_classification_v1",
+    "scoreboard_gap": 7.22
    },
    {
     "actual_margin": -13.0,
@@ -334,6 +406,40 @@
     "scoreboard_gap": 16.29
    },
    {
+    "actual_margin": 14.0,
+    "components": {
+     "QB_CHANGE": 11.63,
+     "SCOREBOARD_OTHER": -31.6,
+     "SPECIAL_TEAMS": 14.5,
+     "TURNOVER_LUCK": 24.32
+    },
+    "drivers": [
+     "TURNOVER_LUCK",
+     "SPECIAL_TEAMS",
+     "QB_CHANGE"
+    ],
+    "error": 18.84,
+    "evidence": {
+     "expected_plays": 131.1,
+     "plays": 141.0,
+     "qb_events": [
+      "AMBIGUOUS_STARTER",
+      "INJURED_STARTER",
+      "MULTI_QB_ROTATION",
+      "NEW_STARTER"
+     ],
+     "return_td_pts": 7.0
+    },
+    "expected_performance_margin": 6.78,
+    "game_id": "401862801",
+    "miss_id": "cfbx_51e5eea42dc9cce2a04e1a2c",
+    "performance_gap": 11.63,
+    "primary_driver": "TURNOVER_LUCK",
+    "projected_margin": -4.8443,
+    "rule_version": "cfb_miss_classification_v1",
+    "scoreboard_gap": 7.22
+   },
+   {
     "actual_margin": -13.0,
     "components": {
      "SCOREBOARD_OTHER": 9.99,
@@ -418,6 +524,40 @@
     "projected_margin": 15.5952,
     "rule_version": "cfb_miss_classification_v1",
     "scoreboard_gap": 16.29
+   },
+   {
+    "actual_margin": 14.0,
+    "components": {
+     "QB_CHANGE": 11.64,
+     "SCOREBOARD_OTHER": -31.6,
+     "SPECIAL_TEAMS": 14.5,
+     "TURNOVER_LUCK": 24.32
+    },
+    "drivers": [
+     "TURNOVER_LUCK",
+     "SPECIAL_TEAMS",
+     "QB_CHANGE"
+    ],
+    "error": 18.86,
+    "evidence": {
+     "expected_plays": 131.1,
+     "plays": 141.0,
+     "qb_events": [
+      "AMBIGUOUS_STARTER",
+      "INJURED_STARTER",
+      "MULTI_QB_ROTATION",
+      "NEW_STARTER"
+     ],
+     "return_td_pts": 7.0
+    },
+    "expected_performance_margin": 6.78,
+    "game_id": "401862801",
+    "miss_id": "cfbx_b0df7612a5a59eeb78ed3cb3",
+    "performance_gap": 11.64,
+    "primary_driver": "TURNOVER_LUCK",
+    "projected_margin": -4.861,
+    "rule_version": "cfb_miss_classification_v1",
+    "scoreboard_gap": 7.22
    },
    {
     "actual_margin": -13.0,
@@ -506,6 +646,40 @@
     "scoreboard_gap": 16.29
    },
    {
+    "actual_margin": 14.0,
+    "components": {
+     "QB_CHANGE": 12.51,
+     "SCOREBOARD_OTHER": -31.6,
+     "SPECIAL_TEAMS": 14.5,
+     "TURNOVER_LUCK": 24.32
+    },
+    "drivers": [
+     "TURNOVER_LUCK",
+     "SPECIAL_TEAMS",
+     "QB_CHANGE"
+    ],
+    "error": 19.73,
+    "evidence": {
+     "expected_plays": 131.1,
+     "plays": 141.0,
+     "qb_events": [
+      "AMBIGUOUS_STARTER",
+      "INJURED_STARTER",
+      "MULTI_QB_ROTATION",
+      "NEW_STARTER"
+     ],
+     "return_td_pts": 7.0
+    },
+    "expected_performance_margin": 6.78,
+    "game_id": "401862801",
+    "miss_id": "cfbx_266287513dd630dec9f1467e",
+    "performance_gap": 12.51,
+    "primary_driver": "TURNOVER_LUCK",
+    "projected_margin": -5.7253,
+    "rule_version": "cfb_miss_classification_v1",
+    "scoreboard_gap": 7.22
+   },
+   {
     "actual_margin": -13.0,
     "components": {
      "SCOREBOARD_OTHER": 9.99,
@@ -592,63 +766,38 @@
     "scoreboard_gap": 16.29
    },
    {
-    "actual_margin": 13.0,
+    "actual_margin": 14.0,
     "components": {
-     "PERSONNEL": 22.15,
-     "SCOREBOARD_OTHER": -13.56,
-     "SPECIAL_TEAMS": 2.45,
-     "TURNOVER_LUCK": 10.3
+     "QB_CHANGE": 13.22,
+     "SCOREBOARD_OTHER": -31.6,
+     "SPECIAL_TEAMS": 14.5,
+     "TURNOVER_LUCK": 24.32
     },
     "drivers": [
-     "PERSONNEL",
-     "TURNOVER_LUCK"
-    ],
-    "error": 21.34,
-    "evidence": {
-     "expected_plays": 133.7,
-     "plays": 146.0,
-     "reported_out": {
-      "away": 6,
-      "home": 6
-     },
-     "return_td_pts": 7.0
-    },
-    "expected_performance_margin": 13.81,
-    "game_id": "401862800",
-    "miss_id": "cfbx_ba1f132518352f46b81f4a78",
-    "performance_gap": 22.15,
-    "primary_driver": "PERSONNEL",
-    "projected_margin": -8.3379,
-    "rule_version": "cfb_miss_classification_v1",
-    "scoreboard_gap": -0.81
-   },
-   {
-    "actual_margin": -13.0,
-    "components": {
-     "SCOREBOARD_OTHER": 9.99,
-     "SPECIAL_TEAMS": -7.35,
-     "TEAM_PERFORMANCE": -9.6,
-     "TURNOVER_LUCK": -8.31
-    },
-    "drivers": [
-     "TEAM_PERFORMANCE",
      "TURNOVER_LUCK",
-     "SPECIAL_TEAMS"
+     "SPECIAL_TEAMS",
+     "QB_CHANGE"
     ],
-    "error": -15.28,
+    "error": 20.44,
     "evidence": {
-     "expected_plays": 132.7,
-     "plays": 131.0,
-     "return_td_pts": 0.0
+     "expected_plays": 131.1,
+     "plays": 141.0,
+     "qb_events": [
+      "AMBIGUOUS_STARTER",
+      "INJURED_STARTER",
+      "MULTI_QB_ROTATION",
+      "NEW_STARTER"
+     ],
+     "return_td_pts": 7.0
     },
-    "expected_performance_margin": -7.32,
-    "game_id": "401871068",
-    "miss_id": "cfbx_2ef549512a07965183db601e",
-    "performance_gap": -9.6,
-    "primary_driver": "TEAM_PERFORMANCE",
-    "projected_margin": 2.2797,
+    "expected_performance_margin": 6.78,
+    "game_id": "401862801",
+    "miss_id": "cfbx_248ccbcc61c8b95b54aefa9d",
+    "performance_gap": 13.22,
+    "primary_driver": "TURNOVER_LUCK",
+    "projected_margin": -6.4373,
     "rule_version": "cfb_miss_classification_v1",
-    "scoreboard_gap": -5.68
+    "scoreboard_gap": 7.22
    },
    {
     "actual_margin": 13.0,
@@ -680,33 +829,6 @@
     "projected_margin": -8.3379,
     "rule_version": "cfb_miss_classification_v1",
     "scoreboard_gap": -0.81
-   },
-   {
-    "actual_margin": 39.0,
-    "components": {
-     "SCOREBOARD_OTHER": 19.49,
-     "SPECIAL_TEAMS": -3.16,
-     "TEAM_PERFORMANCE": 7.36,
-     "TURNOVER_LUCK": -0.04
-    },
-    "drivers": [
-     "SCOREBOARD_OTHER",
-     "TEAM_PERFORMANCE"
-    ],
-    "error": 23.64,
-    "evidence": {
-     "expected_plays": 136.2,
-     "plays": 143.0,
-     "return_td_pts": 0.0
-    },
-    "expected_performance_margin": 22.71,
-    "game_id": "401860923",
-    "miss_id": "cfbx_51497401e942fc5149090dac",
-    "performance_gap": 7.36,
-    "primary_driver": "SCOREBOARD_OTHER",
-    "projected_margin": 15.3567,
-    "rule_version": "cfb_miss_classification_v1",
-    "scoreboard_gap": 16.29
    }
   ],
   "rule": "cfb_miss_classification_v1 (|error| >= 14 pts; data-based drivers)"
@@ -721,39 +843,39 @@
    "converged": true,
    "league": {
     "h_by_metric": {
-     "drive_epa": 0.16002862956597375,
-     "drives_pg": -0.03956066468667922,
-     "epa": 0.0335358852767089,
-     "epa_pass": 0.040892613658970504,
-     "epa_rush": 0.023526399824667893,
-     "expl": 0.0012366047897015625,
-     "expl_pass": 3.851444764079564e-06,
-     "expl_rush": 0.00040059458263391073,
-     "fg_value": 5.964550033778598e-08,
-     "havoc": -0.005110569202184218,
-     "line_yds": 0.08787022698340666,
-     "opp_rate": 0.01059070121856876,
-     "pass_rate": -0.0069215344227088185,
-     "plays_pg": 0.9286703069303333,
-     "ppd": 0.23893936904980426,
-     "pts_per_opp": 0.1979291255304083,
-     "sack_rate": -0.0049974690051724216,
-     "so_rate": 0.03063588451233891,
-     "sr": 0.016594638461121396,
-     "sr_3rd": 0.020992588544165487,
-     "sr_early": 0.015944858884155325,
-     "sr_pass": 0.017621810560382763,
-     "sr_pd": 0.015274717258830213,
-     "sr_rush": 0.013622785798396363,
-     "st_net": 2.267760921313101e-07,
-     "start_fp": -0.4100297781258701,
-     "stuff": -0.007087196009049718,
-     "to_rate": -1.3070653950597797e-05
+     "drive_epa": 0.1578602918272601,
+     "drives_pg": -0.038832319741335206,
+     "epa": 0.03311849257598621,
+     "epa_pass": 0.04072112260847351,
+     "epa_rush": 0.02260946206427412,
+     "expl": 0.001241966035225936,
+     "expl_pass": 3.875502821715242e-06,
+     "expl_rush": 0.0004146741554296716,
+     "fg_value": 7.555028888813261e-08,
+     "havoc": -0.005260266194194055,
+     "line_yds": 0.08491984874490618,
+     "opp_rate": 0.010026385705535053,
+     "pass_rate": -0.006552162168255976,
+     "plays_pg": 0.8898784804380113,
+     "ppd": 0.2371409019030197,
+     "pts_per_opp": 0.2003038924797862,
+     "sack_rate": -0.005209913911598574,
+     "so_rate": 0.029768784758987494,
+     "sr": 0.016039252809691356,
+     "sr_3rd": 0.02074517901726998,
+     "sr_early": 0.015226177473781938,
+     "sr_pass": 0.01735006547192547,
+     "sr_pd": 0.014889655179457126,
+     "sr_rush": 0.012718426030955108,
+     "st_net": 2.4018604657899264e-07,
+     "start_fp": -0.4183756750673917,
+     "stuff": -0.00681283633878272,
+     "to_rate": -1.5108847190889173e-05
     },
-    "hfa_epa_h": 0.0335358852767089,
-    "hfa_st_h": 2.267760921313101e-07,
+    "hfa_epa_h": 0.03311849257598621,
+    "hfa_st_h": 2.4018604657899264e-07,
     "hfa_team_evidence": {
-     "resid_var": 0.02960158090124441,
+     "resid_var": 0.029820761641913923,
      "tau2_eta": 0.0
     },
     "note": "V2 has one league home effect per metric; no team-specific HFA"
@@ -766,22 +888,22 @@
      "cg_converged": true,
      "cg_iters": 18,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.1075553897930986e-11,
-     "cg_rel_residual_evidence": 3.035945369830657e-11,
+     "cg_rel_residual": 1.6554194504270906e-11,
+     "cg_rel_residual_evidence": 5.1942492243029316e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1045.8632310731484,
-     "cond_scaled": 11.032907072686834,
+     "cond": 1053.4647027673686,
+     "cond_scaled": 11.114860008611391,
      "converged": true,
-     "delta_max_abs": 1.7898044157860227e-11,
+     "delta_max_abs": 2.506660851109288e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "epa",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.5198391982530985e-15,
+     "rel_residual": 1.102268703405449e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -790,22 +912,22 @@
      "cg_converged": true,
      "cg_iters": 20,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 9.550023369966456e-12,
-     "cg_rel_residual_evidence": 4.869922644619388e-11,
+     "cg_rel_residual": 1.4319022905607638e-11,
+     "cg_rel_residual_evidence": 7.35042248735019e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1462.507134684188,
-     "cond_scaled": 14.843736705862579,
+     "cond": 1476.8424240343406,
+     "cond_scaled": 15.000047414113071,
      "converged": true,
-     "delta_max_abs": 3.131091219632509e-11,
+     "delta_max_abs": 4.0755482322296643e-11,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "epa",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 8.64879545270088e-16,
+     "rel_residual": 4.12670750088532e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -814,22 +936,22 @@
      "cg_converged": true,
      "cg_iters": 12,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 6.44358204228813e-12,
-     "cg_rel_residual_evidence": 2.952372790574676e-11,
+     "cg_rel_residual": 6.496892770202761e-12,
+     "cg_rel_residual_evidence": 2.940928131422646e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1418.640447245772,
-     "cond_scaled": 3.496320063197468,
+     "cond": 1429.4442418675264,
+     "cond_scaled": 3.5027010847346323,
      "converged": true,
-     "delta_max_abs": 1.9411592125373467e-11,
+     "delta_max_abs": 1.8117611577661563e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "epa_pass",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 7.50538719886033e-16,
+     "rel_residual": 3.145955017109881e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -838,22 +960,22 @@
      "cg_converged": true,
      "cg_iters": 13,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 3.1154940768535906e-12,
-     "cg_rel_residual_evidence": 1.6289936004452223e-11,
+     "cg_rel_residual": 4.186426517312376e-12,
+     "cg_rel_residual_evidence": 2.0934552543213596e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 2016.5445781559688,
-     "cond_scaled": 4.013190488184145,
+     "cond": 2037.005987780222,
+     "cond_scaled": 4.029118170172542,
      "converged": true,
-     "delta_max_abs": 2.7252193557369964e-11,
+     "delta_max_abs": 2.9505294041332064e-11,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "epa_pass",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 4.781625540192092e-16,
+     "rel_residual": 6.420688078397999e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -862,22 +984,22 @@
      "cg_converged": true,
      "cg_iters": 17,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.4042959860795504e-11,
-     "cg_rel_residual_evidence": 3.6290482151502386e-11,
+     "cg_rel_residual": 1.0581386467845097e-11,
+     "cg_rel_residual_evidence": 5.186804797191523e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 909.1302865076589,
-     "cond_scaled": 8.595814282561562,
+     "cond": 915.269821440465,
+     "cond_scaled": 8.654946977433381,
      "converged": true,
-     "delta_max_abs": 1.2273349003777412e-11,
+     "delta_max_abs": 1.8391212164292625e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "epa_rush",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.355278152470723e-15,
+     "rel_residual": 1.061534607073971e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -886,22 +1008,22 @@
      "cg_converged": true,
      "cg_iters": 19,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.4705897495009904e-11,
-     "cg_rel_residual_evidence": 4.7288733976764786e-11,
+     "cg_rel_residual": 1.4678810556380275e-11,
+     "cg_rel_residual_evidence": 5.981081865447393e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1269.5330043781223,
-     "cond_scaled": 11.339984485850572,
+     "cond": 1281.1168195918492,
+     "cond_scaled": 11.45376505386055,
      "converged": true,
-     "delta_max_abs": 1.8763809950250732e-11,
+     "delta_max_abs": 3.3868158277883254e-11,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "epa_rush",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 7.55436904753895e-16,
+     "rel_residual": 3.8505290668883492e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -910,22 +1032,22 @@
      "cg_converged": true,
      "cg_iters": 16,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 7.119286116527299e-12,
-     "cg_rel_residual_evidence": 3.3058389086522944e-11,
+     "cg_rel_residual": 6.305397011211384e-12,
+     "cg_rel_residual_evidence": 4.247091093113948e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 756.053571060349,
-     "cond_scaled": 10.515974791996845,
+     "cond": 761.5607053065941,
+     "cond_scaled": 10.595581267232268,
      "converged": true,
-     "delta_max_abs": 7.277489721957409e-11,
+     "delta_max_abs": 8.87615848876866e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "sr",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.23642519855651e-15,
+     "rel_residual": 1.2174759705193043e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -934,46 +1056,46 @@
      "cg_converged": true,
      "cg_iters": 18,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.7428645702099137e-11,
-     "cg_rel_residual_evidence": 6.536093227876839e-11,
+     "cg_rel_residual": 1.816427031982881e-11,
+     "cg_rel_residual_evidence": 8.530125755388297e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1056.781326306586,
-     "cond_scaled": 14.134257840968397,
+     "cond": 1067.1742865898002,
+     "cond_scaled": 14.284553810060864,
      "converged": true,
-     "delta_max_abs": 1.186099621297565e-10,
+     "delta_max_abs": 1.58733215807616e-10,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "sr",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 6.446288339310046e-16,
+     "rel_residual": 2.1942023937315915e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
     },
     {
      "cg_converged": true,
-     "cg_iters": 16,
+     "cg_iters": 17,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.5856748084409116e-11,
-     "cg_rel_residual_evidence": 8.851017366005967e-11,
+     "cg_rel_residual": 8.23722739280886e-12,
+     "cg_rel_residual_evidence": 4.0669642602056953e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1053.7262983465073,
-     "cond_scaled": 11.500064614605325,
+     "cond": 1061.9787557236561,
+     "cond_scaled": 11.583970269075085,
      "converged": true,
-     "delta_max_abs": 1.848290964723276e-10,
+     "delta_max_abs": 8.773817089524627e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "sr_pass",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 6.394527558932666e-16,
+     "rel_residual": 6.340314668947361e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -982,22 +1104,22 @@
      "cg_converged": true,
      "cg_iters": 19,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 6.0258675524945795e-12,
-     "cg_rel_residual_evidence": 3.789098722869165e-11,
+     "cg_rel_residual": 6.8971324395718284e-12,
+     "cg_rel_residual_evidence": 4.7430356496684e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1474.3655562499407,
-     "cond_scaled": 15.497017003015849,
+     "cond": 1489.9633323996256,
+     "cond_scaled": 15.656673544025686,
      "converged": true,
-     "delta_max_abs": 8.435403590911772e-11,
+     "delta_max_abs": 1.0072179201792153e-10,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "sr_pass",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.437055061277116e-15,
+     "rel_residual": 4.2890615911243796e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1006,22 +1128,22 @@
      "cg_converged": true,
      "cg_iters": 15,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 9.326203270674096e-12,
-     "cg_rel_residual_evidence": 4.772608925070805e-11,
+     "cg_rel_residual": 8.255549745458624e-12,
+     "cg_rel_residual_evidence": 5.527386045767207e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 773.5415183284116,
-     "cond_scaled": 8.522218699747127,
+     "cond": 778.774409349331,
+     "cond_scaled": 8.582484084196834,
      "converged": true,
-     "delta_max_abs": 8.394673844946965e-11,
+     "delta_max_abs": 7.979897298504568e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "sr_rush",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.495411826915529e-15,
+     "rel_residual": 3.5296583954710224e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1030,22 +1152,22 @@
      "cg_converged": true,
      "cg_iters": 17,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.354939009285769e-11,
-     "cg_rel_residual_evidence": 4.5221536657059224e-11,
+     "cg_rel_residual": 2.560455050300955e-11,
+     "cg_rel_residual_evidence": 9.478750555063703e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1079.7298287355532,
-     "cond_scaled": 11.26868994023757,
+     "cond": 1089.606754657668,
+     "cond_scaled": 11.383882515680874,
      "converged": true,
-     "delta_max_abs": 7.037165641876619e-11,
+     "delta_max_abs": 1.4994207264695802e-10,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "sr_rush",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 2.640249787140571e-16,
+     "rel_residual": 5.714377470040158e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1054,22 +1176,22 @@
      "cg_converged": true,
      "cg_iters": 18,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 7.083683260336385e-12,
-     "cg_rel_residual_evidence": 3.3807208653089617e-11,
+     "cg_rel_residual": 1.2527266123569207e-11,
+     "cg_rel_residual_evidence": 4.682976479860966e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1059.0123710101843,
-     "cond_scaled": 13.11109722776195,
+     "cond": 1066.469883279903,
+     "cond_scaled": 13.21498237952879,
      "converged": true,
-     "delta_max_abs": 5.79203074391188e-11,
+     "delta_max_abs": 1.0290991843409092e-10,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "sr_early",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 5.0805419607878574e-15,
+     "rel_residual": 7.469356018006057e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1078,22 +1200,22 @@
      "cg_converged": true,
      "cg_iters": 20,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 8.59215850955567e-12,
-     "cg_rel_residual_evidence": 3.64303640043636e-11,
+     "cg_rel_residual": 1.4789039942098785e-11,
+     "cg_rel_residual_evidence": 6.82602203927413e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1479.7296856502512,
-     "cond_scaled": 17.77043524610326,
+     "cond": 1493.8045397244634,
+     "cond_scaled": 17.96609163083075,
      "converged": true,
-     "delta_max_abs": 7.868281026723878e-11,
+     "delta_max_abs": 1.453735638812237e-10,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "sr_early",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 2.174023863738365e-15,
+     "rel_residual": 1.1725829961263063e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1102,22 +1224,22 @@
      "cg_converged": true,
      "cg_iters": 12,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 9.48284352500543e-12,
-     "cg_rel_residual_evidence": 4.475673744697036e-11,
+     "cg_rel_residual": 1.0455094277123972e-11,
+     "cg_rel_residual_evidence": 5.1648487703236066e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 776.2617045692152,
-     "cond_scaled": 4.596144456280561,
+     "cond": 781.8803163594179,
+     "cond_scaled": 4.618181464468747,
      "converged": true,
-     "delta_max_abs": 8.629168907203777e-11,
+     "delta_max_abs": 1.2608906627131766e-10,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "sr_pd",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.1226275607510545e-15,
+     "rel_residual": 1.1247107890274703e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1126,22 +1248,22 @@
      "cg_converged": true,
      "cg_iters": 13,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 7.445668952364001e-12,
-     "cg_rel_residual_evidence": 3.844640829833201e-11,
+     "cg_rel_residual": 9.871673623978705e-12,
+     "cg_rel_residual_evidence": 4.5355373992918117e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1087.976484849875,
-     "cond_scaled": 5.688249516195519,
+     "cond": 1098.5720515287583,
+     "cond_scaled": 5.732537262724586,
      "converged": true,
-     "delta_max_abs": 1.209996131068536e-10,
+     "delta_max_abs": 9.373184173266935e-11,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "sr_pd",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 9.165520394269968e-16,
+     "rel_residual": 3.884241185892503e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1150,22 +1272,22 @@
      "cg_converged": true,
      "cg_iters": 12,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 6.4032236654112496e-12,
-     "cg_rel_residual_evidence": 4.352923979355718e-11,
+     "cg_rel_residual": 7.076128912937768e-12,
+     "cg_rel_residual_evidence": 4.5964894111776196e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 627.1882143756371,
-     "cond_scaled": 4.409915954999562,
+     "cond": 631.7217444091057,
+     "cond_scaled": 4.4322236113152265,
      "converged": true,
-     "delta_max_abs": 2.6826867116636066e-11,
+     "delta_max_abs": 2.783015484730811e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "expl",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 9.445121871690845e-16,
+     "rel_residual": 9.369649438108376e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1174,22 +1296,22 @@
      "cg_converged": true,
      "cg_iters": 13,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 9.498589364347887e-12,
-     "cg_rel_residual_evidence": 5.664140930312313e-11,
+     "cg_rel_residual": 9.671677919152297e-12,
+     "cg_rel_residual_evidence": 6.139465146712419e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 878.2523368461774,
-     "cond_scaled": 5.46751387059629,
+     "cond": 886.7933786301688,
+     "cond_scaled": 5.511324520649647,
      "converged": true,
-     "delta_max_abs": 1.6084748116762526e-11,
+     "delta_max_abs": 2.4581937180245816e-11,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "expl",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 4.967896946188755e-16,
+     "rel_residual": 6.573538716134356e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1198,22 +1320,22 @@
      "cg_converged": true,
      "cg_iters": 4,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 4.908947555676585e-13,
-     "cg_rel_residual_evidence": 3.699950271845028e-11,
+     "cg_rel_residual": 5.250307884709191e-13,
+     "cg_rel_residual_evidence": 3.9864165909126855e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 508997.78494410287,
-     "cond_scaled": 1.350921445464055,
+     "cond": 508997.78602291434,
+     "cond_scaled": 1.349316827336452,
      "converged": true,
-     "delta_max_abs": 4.235111796712298e-14,
+     "delta_max_abs": 5.0113671791137977e-14,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "expl_pass",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 4.082675680089126e-16,
+     "rel_residual": 4.1837043743937013e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1222,22 +1344,22 @@
      "cg_converged": true,
      "cg_iters": 4,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 8.684285409950065e-13,
-     "cg_rel_residual_evidence": 5.282962941747673e-11,
+     "cg_rel_residual": 9.447564192847715e-13,
+     "cg_rel_residual_evidence": 5.7275245438338364e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 508998.41202487337,
-     "cond_scaled": 1.3708935540448217,
+     "cond": 508998.42824393214,
+     "cond_scaled": 1.3685919149419543,
      "converged": true,
-     "delta_max_abs": 2.7830683721127847e-14,
+     "delta_max_abs": 3.383576615233457e-14,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "expl_pass",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 6.040811543057069e-16,
+     "rel_residual": 5.843515850119372e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1246,46 +1368,46 @@
      "cg_converged": true,
      "cg_iters": 15,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 4.939228927841653e-12,
-     "cg_rel_residual_evidence": 3.1749721122122814e-11,
+     "cg_rel_residual": 5.212118251768207e-12,
+     "cg_rel_residual_evidence": 3.684740957886085e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1203.832449066128,
-     "cond_scaled": 6.977456550900257,
+     "cond": 1212.0262241201228,
+     "cond_scaled": 7.019458738284964,
      "converged": true,
-     "delta_max_abs": 1.4778858258707173e-11,
+     "delta_max_abs": 1.9040924219282385e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "expl_rush",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.7864746544857e-15,
+     "rel_residual": 3.3710287639303217e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
     },
     {
      "cg_converged": true,
-     "cg_iters": 16,
+     "cg_iters": 17,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 2.0926151932301174e-11,
-     "cg_rel_residual_evidence": 9.378244464451521e-11,
+     "cg_rel_residual": 3.0690662190881363e-12,
+     "cg_rel_residual_evidence": 2.0917938062948e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1680.4709859773634,
-     "cond_scaled": 9.00397228525442,
+     "cond": 1695.9294964580663,
+     "cond_scaled": 9.086501357437871,
      "converged": true,
-     "delta_max_abs": 3.302303569485687e-11,
+     "delta_max_abs": 6.55838686310084e-12,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "expl_rush",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 7.565961187342045e-16,
+     "rel_residual": 1.3252827996688098e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1294,406 +1416,22 @@
      "cg_converged": true,
      "cg_iters": 12,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 7.69480100056972e-12,
-     "cg_rel_residual_evidence": 3.86983747934798e-11,
+     "cg_rel_residual": 1.2588093776599809e-11,
+     "cg_rel_residual_evidence": 6.807723842882774e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 537.7067345477408,
-     "cond_scaled": 4.82947449117445,
+     "cond": 541.3440215649989,
+     "cond_scaled": 4.856022930601543,
      "converged": true,
-     "delta_max_abs": 3.357605304898925e-10,
+     "delta_max_abs": 8.346149327209673e-10,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "line_yds",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 6.1949621221716615e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 13,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.4351641775040586e-11,
-     "cg_rel_residual_evidence": 8.593284686547588e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 750.5345919258438,
-     "cond_scaled": 6.065671306242979,
-     "converged": true,
-     "delta_max_abs": 1.1558747847750794e-09,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "line_yds",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 8.504534468476716e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 15,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.2981117230238174e-11,
-     "cg_rel_residual_evidence": 7.31434528945071e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1125.1444197262686,
-     "cond_scaled": 8.03102169878674,
-     "converged": true,
-     "delta_max_abs": 6.039386699074889e-11,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "stuff",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 6.78615659265151e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 17,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.0062644981649622e-11,
-     "cg_rel_residual_evidence": 5.6062495056061537e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1571.7835357944668,
-     "cond_scaled": 10.557031500354032,
-     "converged": true,
-     "delta_max_abs": 5.453086940332419e-11,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "stuff",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 3.258467166758226e-17,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 15,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 4.5262595612814926e-12,
-     "cg_rel_residual_evidence": 2.933095549759179e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 755.8640442780587,
-     "cond_scaled": 7.834994882253794,
-     "converged": true,
-     "delta_max_abs": 3.989804320259083e-11,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "opp_rate",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.63616301841203e-15,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 17,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 3.5040393857262858e-12,
-     "cg_rel_residual_evidence": 2.442237527805014e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1055.0035257319105,
-     "cond_scaled": 10.289802581516213,
-     "converged": true,
-     "delta_max_abs": 3.70583147502046e-11,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "opp_rate",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 3.441342531665188e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 15,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.101809473026327e-11,
-     "cg_rel_residual_evidence": 5.337765815598256e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1112.221854317582,
-     "cond_scaled": 8.048699894398395,
-     "converged": true,
-     "delta_max_abs": 1.5043601780950766e-11,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "havoc",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.1424942471907318e-15,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 17,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 6.4503918782112575e-12,
-     "cg_rel_residual_evidence": 4.056813907902391e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1555.2052345117695,
-     "cond_scaled": 10.612859808286418,
-     "converged": true,
-     "delta_max_abs": 1.4039631436590927e-11,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "havoc",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 6.292514192163931e-17,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 12,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.9988892240999106e-13,
-     "cg_rel_residual_evidence": 4.6251637073326185e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 670375.3421101806,
-     "cond_scaled": 5.317462448558971,
-     "converged": true,
-     "delta_max_abs": 1.7065689139617035e-11,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "sack_rate",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 3.275037880329729e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 13,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 6.327592965528203e-13,
-     "cg_rel_residual_evidence": 1.962935398761579e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 670381.2939188734,
-     "cond_scaled": 6.600638451469088,
-     "converged": true,
-     "delta_max_abs": 7.72820002437058e-12,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "sack_rate",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 7.327948701745348e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 5,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 7.748573600733827e-16,
-     "cg_rel_residual_evidence": 1.677339330947705e-12,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 80710.62724386973,
-     "cond_scaled": 1.4404062289126502,
-     "converged": true,
-     "delta_max_abs": 1.1897427487639334e-13,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "to_rate",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 3.862611484811804e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 5,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 2.764240851109433e-15,
-     "cg_rel_residual_evidence": 3.273251820626709e-12,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 80711.76699521966,
-     "cond_scaled": 1.4614890265373894,
-     "converged": true,
-     "delta_max_abs": 2.7965737364743504e-13,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "to_rate",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 6.153263411390788e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 15,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.6271035796922894e-11,
-     "cg_rel_residual_evidence": 7.314634324395029e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1868.7125865400965,
-     "cond_scaled": 8.715205772468634,
-     "converged": true,
-     "delta_max_abs": 9.100686315655082e-10,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "ppd",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.174549912086746e-15,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 17,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.508324198101746e-11,
-     "cg_rel_residual_evidence": 9.747824454390234e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 2613.552144743277,
-     "cond_scaled": 11.437707252149306,
-     "converged": true,
-     "delta_max_abs": 9.914495890939179e-10,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "ppd",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 9.606602410495284e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 16,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 2.5277003353266975e-11,
-     "cg_rel_residual_evidence": 5.857598830207328e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1234.6202653371197,
-     "cond_scaled": 11.689846655421158,
-     "converged": true,
-     "delta_max_abs": 1.191832188496278e-10,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "so_rate",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 2.8303328398464733e-15,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 19,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 6.87841249834241e-12,
-     "cg_rel_residual_evidence": 5.0148697712232e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1726.7390250940425,
-     "cond_scaled": 15.739369255584334,
-     "converged": true,
-     "delta_max_abs": 1.212381584014821e-10,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "so_rate",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.3185893802957145e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 12,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.4981328255993174e-11,
-     "cg_rel_residual_evidence": 9.236182972898278e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 697.2514879694329,
-     "cond_scaled": 5.332843879877523,
-     "converged": true,
-     "delta_max_abs": 1.136885363628437e-09,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "pts_per_opp",
-     "n_obs": 881,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 8.167388754289601e-16,
+     "rel_residual": 1.9451329361704004e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1702,46 +1440,406 @@
      "cg_converged": true,
      "cg_iters": 14,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 7.466806254276878e-12,
-     "cg_rel_residual_evidence": 4.156953296871935e-11,
+     "cg_rel_residual": 3.3889554207855066e-12,
+     "cg_rel_residual_evidence": 2.1195003244861545e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 966.2048803323448,
-     "cond_scaled": 6.6807985705704365,
+     "cond": 757.3997241653757,
+     "cond_scaled": 6.1178244254991165,
      "converged": true,
-     "delta_max_abs": 6.137733654654198e-10,
+     "delta_max_abs": 1.8636797660676052e-10,
      "delta_threshold": 1e-06,
      "horizon": "recent",
-     "metric": "pts_per_opp",
-     "n_obs": 881,
+     "metric": "line_yds",
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 3.5912529296313673e-16,
+     "rel_residual": 7.633524992253371e-17,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
     },
     {
      "cg_converged": true,
-     "cg_iters": 10,
+     "cg_iters": 16,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.6644293275480764e-11,
-     "cg_rel_residual_evidence": 9.005173810606833e-11,
+     "cg_rel_residual": 4.234736762159869e-12,
+     "cg_rel_residual_evidence": 2.495809627171195e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 821.5718236751137,
-     "cond_scaled": 3.894609741473234,
+     "cond": 1132.7317815020613,
+     "cond_scaled": 8.086495209549307,
      "converged": true,
-     "delta_max_abs": 2.7615831399430135e-08,
+     "delta_max_abs": 1.653967240944354e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
-     "metric": "start_fp",
-     "n_obs": 910,
+     "metric": "stuff",
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.1385032228026142e-15,
+     "rel_residual": 8.629520890815608e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 17,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 1.4143945451025653e-11,
+     "cg_rel_residual_evidence": 9.352496879501079e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 1586.0955027867797,
+     "cond_scaled": 10.66361119161853,
+     "converged": true,
+     "delta_max_abs": 7.184685485439601e-11,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "stuff",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 8.078459642113621e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 15,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 9.140960006606711e-12,
+     "cg_rel_residual_evidence": 5.271857075640329e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 760.9783607200748,
+     "cond_scaled": 7.8885806024271865,
+     "converged": true,
+     "delta_max_abs": 7.147044067679076e-11,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "opp_rate",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 1.4177773859802025e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 17,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 6.231059139671619e-12,
+     "cg_rel_residual_evidence": 3.903334763337012e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 1064.6570944726388,
+     "cond_scaled": 10.392715163030758,
+     "converged": true,
+     "delta_max_abs": 6.356658255324277e-11,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "opp_rate",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 4.535771360815756e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 15,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 1.627352709332335e-11,
+     "cg_rel_residual_evidence": 6.25356901765704e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 1120.30747710789,
+     "cond_scaled": 8.104195861795693,
+     "converged": true,
+     "delta_max_abs": 1.749805335349297e-11,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "havoc",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 1.2937567573015446e-15,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 17,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 1.2532111947218163e-11,
+     "cg_rel_residual_evidence": 6.042215071554226e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 1570.454626657004,
+     "cond_scaled": 10.71892798627941,
+     "converged": true,
+     "delta_max_abs": 1.740374511172149e-11,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "havoc",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 3.893042235803368e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 12,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 2.1072454919927792e-13,
+     "cg_rel_residual_evidence": 5.372060842467641e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 670375.3421242322,
+     "cond_scaled": 5.341806642120613,
+     "converged": true,
+     "delta_max_abs": 2.230296849980995e-11,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "sack_rate",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 4.2604183221620264e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 13,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 4.666910839464617e-13,
+     "cg_rel_residual_evidence": 4.293700607819738e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 670381.2940264778,
+     "cond_scaled": 6.647838273628172,
+     "converged": true,
+     "delta_max_abs": 1.427483478644298e-11,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "sack_rate",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 5.668721815801062e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 5,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 1.5516664693411064e-15,
+     "cg_rel_residual_evidence": 3.405281266168427e-12,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 80710.68343047755,
+     "cond_scaled": 1.438266948686555,
+     "converged": true,
+     "delta_max_abs": 4.2140162886949994e-13,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "to_rate",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 4.659299467170431e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 5,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 3.8639394597686085e-15,
+     "cg_rel_residual_evidence": 5.983234541793542e-12,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 80711.89976675936,
+     "cond_scaled": 1.4584550506889602,
+     "converged": true,
+     "delta_max_abs": 8.380700647347972e-13,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "to_rate",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 6.521157119758061e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 16,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 7.775746713998061e-12,
+     "cg_rel_residual_evidence": 2.9709985528153035e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 1884.9271168915498,
+     "cond_scaled": 8.779742070778155,
+     "converged": true,
+     "delta_max_abs": 3.1159941293879e-10,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "ppd",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 4.0818228582340536e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 18,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 4.3355112192482286e-12,
+     "cg_rel_residual_evidence": 2.924805832598263e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 2644.178491051877,
+     "cond_scaled": 11.562061295022096,
+     "converged": true,
+     "delta_max_abs": 4.197748051937289e-10,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "ppd",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 1.7373241387600606e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 17,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 8.822299985587247e-12,
+     "cg_rel_residual_evidence": 5.598566461374784e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 1245.333038655069,
+     "cond_scaled": 11.785796135601082,
+     "converged": true,
+     "delta_max_abs": 1.167125909806721e-10,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "so_rate",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 1.487273533986597e-15,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 19,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 8.442248613345625e-12,
+     "cg_rel_residual_evidence": 5.685838284395393e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 1746.9734906171198,
+     "cond_scaled": 15.921993163162494,
+     "converged": true,
+     "delta_max_abs": 1.5678597309332076e-10,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "so_rate",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 6.251833513674274e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 13,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 3.795672328224125e-12,
+     "cg_rel_residual_evidence": 2.3306520665442355e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 701.5309900403153,
+     "cond_scaled": 5.360389977679174,
+     "converged": true,
+     "delta_max_abs": 3.401452453033471e-10,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "pts_per_opp",
+     "n_obs": 887,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 1.212723531901436e-15,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 14,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 1.1685873829391099e-11,
+     "cg_rel_residual_evidence": 5.975229364524305e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 974.2845657926498,
+     "cond_scaled": 6.737459394473275,
+     "converged": true,
+     "delta_max_abs": 9.91411484374885e-10,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "pts_per_opp",
+     "n_obs": 887,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 4.646100092899116e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1750,22 +1848,46 @@
      "cg_converged": true,
      "cg_iters": 11,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.3830683452566082e-11,
-     "cg_rel_residual_evidence": 7.481598741208955e-11,
+     "cg_rel_residual": 1.8030408860379515e-12,
+     "cg_rel_residual_evidence": 9.353081523761704e-12,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1145.1090161445507,
-     "cond_scaled": 4.682738806216117,
+     "cond": 827.8103890475097,
+     "cond_scaled": 3.908693695899811,
      "converged": true,
-     "delta_max_abs": 2.398432807915185e-08,
+     "delta_max_abs": 1.8129506784703153e-09,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "start_fp",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 7.606808553917844e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 11,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 1.6864652504615814e-11,
+     "cg_rel_residual_evidence": 8.886180463701636e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 1156.8918620814648,
+     "cond_scaled": 4.711916681760383,
+     "converged": true,
+     "delta_max_abs": 2.4289993572068624e-08,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "start_fp",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 4.0237810941254134e-16,
+     "rel_residual": 2.6724429178067476e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1774,46 +1896,46 @@
      "cg_converged": true,
      "cg_iters": 20,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.5491117716675427e-11,
-     "cg_rel_residual_evidence": 3.263262831725571e-11,
+     "cg_rel_residual": 2.1264262062717882e-11,
+     "cg_rel_residual_evidence": 8.2251796000745e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 2048.2458526770442,
-     "cond_scaled": 15.620152532372451,
+     "cond": 2066.0186509869377,
+     "cond_scaled": 15.752046937420218,
      "converged": true,
-     "delta_max_abs": 8.881095858725985e-11,
+     "delta_max_abs": 2.4544233312440156e-10,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "drive_epa",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.8604115979741776e-16,
+     "rel_residual": 1.0063930999678103e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
     },
     {
      "cg_converged": true,
-     "cg_iters": 22,
+     "cg_iters": 23,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.6937492833405652e-11,
-     "cg_rel_residual_evidence": 9.810619919798324e-11,
+     "cg_rel_residual": 1.1727550020555891e-11,
+     "cg_rel_residual_evidence": 4.646822916968644e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 2864.686398085456,
-     "cond_scaled": 21.267891252899144,
+     "cond": 2898.256146733612,
+     "cond_scaled": 21.51837078461725,
      "converged": true,
-     "delta_max_abs": 3.8206696140186125e-10,
+     "delta_max_abs": 2.153348610534067e-10,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "drive_epa",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.793698636070272e-16,
+     "rel_residual": 1.0643070045989901e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1822,46 +1944,46 @@
      "cg_converged": true,
      "cg_iters": 13,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 8.844508194567233e-12,
-     "cg_rel_residual_evidence": 5.027553033099734e-11,
+     "cg_rel_residual": 8.55843569833242e-12,
+     "cg_rel_residual_evidence": 5.277499330548222e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 638.3117574237831,
-     "cond_scaled": 5.448872786922929,
+     "cond": 642.3394106575626,
+     "cond_scaled": 5.47653888373712,
      "converged": true,
-     "delta_max_abs": 8.77070169963412e-11,
+     "delta_max_abs": 8.386231986623471e-11,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "sr_3rd",
-     "n_obs": 909,
+     "n_obs": 915,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 9.801029864108365e-16,
+     "rel_residual": 1.3652275663107468e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
     },
     {
      "cg_converged": true,
-     "cg_iters": 14,
+     "cg_iters": 15,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.4604937473687476e-11,
-     "cg_rel_residual_evidence": 8.305790109859765e-11,
+     "cg_rel_residual": 3.233313940805338e-12,
+     "cg_rel_residual_evidence": 2.1140248979091264e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 895.9163368608429,
-     "cond_scaled": 6.931560927201096,
+     "cond": 903.4831781783163,
+     "cond_scaled": 6.98554103121861,
      "converged": true,
-     "delta_max_abs": 1.5080429960345754e-10,
+     "delta_max_abs": 5.082986809235024e-11,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "sr_3rd",
-     "n_obs": 909,
+     "n_obs": 915,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 5.464736282064019e-16,
+     "rel_residual": 1.2173572393483875e-15,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1870,22 +1992,22 @@
      "cg_converged": true,
      "cg_iters": 16,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 7.586818099020319e-12,
-     "cg_rel_residual_evidence": 5.511060581469738e-11,
+     "cg_rel_residual": 9.933529107534843e-12,
+     "cg_rel_residual_evidence": 7.020283115233508e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 969.6031818061683,
-     "cond_scaled": 19.310791047091186,
+     "cond": 976.2580018467092,
+     "cond_scaled": 19.44901536058181,
      "converged": true,
-     "delta_max_abs": 1.118888089818304e-10,
+     "delta_max_abs": 1.295392959566044e-10,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "pass_rate",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.2304821940037547e-15,
+     "rel_residual": 3.401596170694589e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1894,22 +2016,22 @@
      "cg_converged": true,
      "cg_iters": 18,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 5.793164928244819e-12,
-     "cg_rel_residual_evidence": 3.567886476604139e-11,
+     "cg_rel_residual": 1.344681942801515e-11,
+     "cg_rel_residual_evidence": 5.558833026501095e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 1348.6751074294393,
-     "cond_scaled": 26.642007227937643,
+     "cond": 1361.2508268322354,
+     "cond_scaled": 26.907503713397386,
      "converged": true,
-     "delta_max_abs": 7.687122206140318e-11,
+     "delta_max_abs": 1.1771947305838637e-10,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "pass_rate",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 5.176304456235849e-16,
+     "rel_residual": 6.401329492049176e-17,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1918,22 +2040,70 @@
      "cg_converged": true,
      "cg_iters": 13,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 5.813826479690325e-12,
-     "cg_rel_residual_evidence": 3.72225370894766e-11,
+     "cg_rel_residual": 7.337672802971746e-12,
+     "cg_rel_residual_evidence": 4.652979809896054e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 614.5486723712421,
-     "cond_scaled": 6.18403215410998,
+     "cond": 618.6168445967278,
+     "cond_scaled": 6.213016752965123,
      "converged": true,
-     "delta_max_abs": 6.298147781080843e-09,
+     "delta_max_abs": 9.334870654242877e-09,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "plays_pg",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.0954944824740423e-15,
+     "rel_residual": 3.31085888799915e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 15,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 2.9921655974546227e-12,
+     "cg_rel_residual_evidence": 1.89135987502002e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 860.842306404238,
+     "cond_scaled": 7.9631681974123945,
+     "converged": true,
+     "delta_max_abs": 3.464746156645049e-09,
+     "delta_threshold": 1e-06,
+     "horizon": "recent",
+     "metric": "plays_pg",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 6.599413116101789e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 13,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 3.1034236080262867e-12,
+     "cg_rel_residual_evidence": 1.8496663070119665e-11,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 565.6831122480762,
+     "cond_scaled": 5.8756597973192495,
+     "converged": true,
+     "delta_max_abs": 5.935536803811786e-10,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "drives_pg",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 4.397320360566629e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -1942,70 +2112,22 @@
      "cg_converged": true,
      "cg_iters": 14,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.4506431542587654e-11,
-     "cg_rel_residual_evidence": 8.945272295188506e-11,
+     "cg_rel_residual": 9.87287492733173e-12,
+     "cg_rel_residual_evidence": 5.1028114813955e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 853.1583826399184,
-     "cond_scaled": 7.906164619451127,
+     "cond": 787.1796609032513,
+     "cond_scaled": 7.486973673559798,
      "converged": true,
-     "delta_max_abs": 1.9502389925207808e-08,
-     "delta_threshold": 1e-06,
-     "horizon": "recent",
-     "metric": "plays_pg",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 2.2146880959258506e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 12,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.3998054491002364e-11,
-     "cg_rel_residual_evidence": 8.474680589726403e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 561.963067283156,
-     "cond_scaled": 5.849132853088761,
-     "converged": true,
-     "delta_max_abs": 3.6073301568073646e-09,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "drives_pg",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 2.531020749174169e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 14,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 7.779408983039344e-12,
-     "cg_rel_residual_evidence": 3.935062964089209e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 780.1532840194325,
-     "cond_scaled": 7.434683943356798,
-     "converged": true,
-     "delta_max_abs": 1.7976178323664271e-09,
+     "delta_max_abs": 1.8529027201452664e-09,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "drives_pg",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 1.5494673009625294e-16,
+     "rel_residual": 6.0473274030945245e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -2014,22 +2136,22 @@
      "cg_converged": true,
      "cg_iters": 3,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 1.6837206820935685e-16,
-     "cg_rel_residual_evidence": 4.3261051832169974e-12,
+     "cg_rel_residual": 1.6557746903230692e-16,
+     "cg_rel_residual_evidence": 1.6894054767398496e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "floor 1e-04 ||S b||",
-     "cond": 4698040846.654339,
-     "cond_scaled": 1.5090457276282516,
+     "cond": 4698043867.091495,
+     "cond_scaled": 1.5069525234451027,
      "converged": true,
-     "delta_max_abs": 5.635103494938676e-11,
+     "delta_max_abs": 2.232308782268433e-10,
      "delta_threshold": 1e-06,
      "horizon": "season",
      "metric": "st_net",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 3.943805990294068e-16,
+     "rel_residual": 3.567490348868921e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -2038,46 +2160,22 @@
      "cg_converged": true,
      "cg_iters": 3,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 2.0567086409672827e-16,
-     "cg_rel_residual_evidence": 7.826833118729573e-11,
+     "cg_rel_residual": 1.8101940477595548e-16,
+     "cg_rel_residual_evidence": 6.13155331470241e-11,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "floor 1e-04 ||S b||",
-     "cond": 4698038620.482431,
-     "cond_scaled": 1.536502894944022,
+     "cond": 4698038411.133483,
+     "cond_scaled": 1.5334761332471554,
      "converged": true,
-     "delta_max_abs": 9.93298887586036e-10,
+     "delta_max_abs": 7.770584176114426e-10,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "st_net",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 5.091956772349527e-16,
-     "residual_threshold": 1e-09,
-     "season": 2026,
-     "solved": true
-    },
-    {
-     "cg_converged": true,
-     "cg_iters": 3,
-     "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 2.1014721287641302e-16,
-     "cg_rel_residual_evidence": 2.976128059017418e-11,
-     "cg_start": "prev_week",
-     "cg_tol": 1e-10,
-     "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 884711454.9481328,
-     "cond_scaled": 1.5118690192623099,
-     "converged": true,
-     "delta_max_abs": 1.704575369743111e-11,
-     "delta_threshold": 1e-06,
-     "horizon": "season",
-     "metric": "fg_value",
-     "n_obs": 910,
-     "n_params": 478,
-     "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 5.103598800282111e-16,
+     "rel_residual": 6.368601889541817e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -2086,22 +2184,46 @@
      "cg_converged": true,
      "cg_iters": 4,
      "cg_method": "jacobi_pcg",
-     "cg_rel_residual": 2.089110958981898e-16,
-     "cg_rel_residual_evidence": 8.132746712670516e-13,
+     "cg_rel_residual": 1.867628712810436e-16,
+     "cg_rel_residual_evidence": 6.493132177355112e-13,
      "cg_start": "prev_week",
      "cg_tol": 1e-10,
      "cg_tol_reference": "evidence ||S(b - A m)||",
-     "cond": 884711183.0595903,
-     "cond_scaled": 1.538782641875869,
+     "cond": 884711125.4848039,
+     "cond_scaled": 1.5097618471904735,
      "converged": true,
-     "delta_max_abs": 7.771561172376096e-16,
+     "delta_max_abs": 6.661338147750939e-16,
+     "delta_threshold": 1e-06,
+     "horizon": "season",
+     "metric": "fg_value",
+     "n_obs": 916,
+     "n_params": 478,
+     "prediction_ts": "2026-10-20T12:00:00.000Z",
+     "rel_residual": 7.038778039850086e-16,
+     "residual_threshold": 1e-09,
+     "season": 2026,
+     "solved": true
+    },
+    {
+     "cg_converged": true,
+     "cg_iters": 4,
+     "cg_method": "jacobi_pcg",
+     "cg_rel_residual": 2.2212464563069395e-16,
+     "cg_rel_residual_evidence": 6.184642159235771e-13,
+     "cg_start": "prev_week",
+     "cg_tol": 1e-10,
+     "cg_tol_reference": "evidence ||S(b - A m)||",
+     "cond": 884711176.4251136,
+     "cond_scaled": 1.5357403024226073,
+     "converged": true,
+     "delta_max_abs": 8.881784197001252e-16,
      "delta_threshold": 1e-06,
      "horizon": "recent",
      "metric": "fg_value",
-     "n_obs": 910,
+     "n_obs": 916,
      "n_params": 478,
      "prediction_ts": "2026-10-20T12:00:00.000Z",
-     "rel_residual": 5.8001150690876e-16,
+     "rel_residual": 6.09113330549923e-16,
      "residual_threshold": 1e-09,
      "season": 2026,
      "solved": true
@@ -2109,12 +2231,12 @@
    ],
    "season": 2026,
    "summary": {
-    "max_cg_iters": 22,
-    "max_cond": 4698040846.654339,
-    "max_cond_scaled": 26.642007227937643,
-    "max_delta": 2.7615831399430135e-08,
-    "max_rel_residual": 5.0805419607878574e-15,
-    "median_cg_iters": 14.5,
+    "max_cg_iters": 23,
+    "max_cond": 4698043867.091495,
+    "max_cond_scaled": 26.907503713397386,
+    "max_delta": 2.4289993572068624e-08,
+    "max_rel_residual": 3.3710287639303217e-15,
+    "median_cg_iters": 15.0,
     "thresholds": {
      "cg_tol": 1e-10,
      "delta": 1e-06,
@@ -2151,7 +2273,7 @@
    "VERIFY_COMPLETED_GAMES": "OK",
    "WRITE_STATE": "OK"
   },
-  "warnings": 29
+  "warnings": 31
  },
  "model_version": "edgedesk_cfb_v2.1.0",
  "performance_vs_expectation": [
@@ -2270,1227 +2392,45 @@
  "previous_week": {
   "by_model": {
    "edgedesk_cfb_p4_v1.0.0": {
-    "ats": "3-3-1",
-    "ats_pct": 0.5,
-    "brier": 0.2266,
+    "ats": "4-5-1",
+    "ats_pct": 0.4444,
+    "brier": 0.2755,
     "clv_mean": 0.0,
-    "mae": 9.44,
-    "n": 7,
-    "rmse": 11.877,
-    "roi": -0.0318
+    "mae": 10.882,
+    "n": 10,
+    "rmse": 13.137,
+    "roi": -0.1353
    },
    "edgedesk_cfb_v2.0.0": {
-    "ats": "4-2-1",
-    "ats_pct": 0.6667,
-    "brier": 0.2292,
-    "clv_mean": -0.143,
-    "mae": 10.584,
-    "n": 7,
-    "rmse": 13.616,
-    "roi": 0.241
+    "ats": "7-2-1",
+    "ats_pct": 0.7778,
+    "brier": 0.2507,
+    "clv_mean": 0.0,
+    "mae": 10.85,
+    "n": 10,
+    "rmse": 13.615,
+    "roi": 0.4378
    },
    "edgedesk_cfb_v2.1.0": {
-    "ats": "4-2-1",
+    "ats": "6-3-1",
     "ats_pct": 0.6667,
-    "brier": 0.2287,
-    "clv_mean": -0.143,
-    "mae": 10.507,
-    "n": 7,
-    "rmse": 13.594,
-    "roi": 0.241
+    "brier": 0.2528,
+    "clv_mean": -0.1,
+    "mae": 10.879,
+    "n": 10,
+    "rmse": 13.709,
+    "roi": 0.2509
    }
   },
-  "graded": 21,
+  "graded": 30,
   "week": 7
  },
  "projection_changes": [
   {
-   "change_id": "cfbc_41bb06189051ed6964407e77",
-   "from_margin": 10.1355,
-   "from_projection_id": "cfbj_d6856cc09f76ac65c5b547b6",
+   "change_id": "cfbc_a3445b7351edb37cd78ab06a",
+   "from_margin": 10.147,
+   "from_projection_id": "cfbj_b01de48a6f81a84ac2ac5962",
    "game_id": "401871055",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "adj_eff",
-      "points": 0.005,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_stuff",
-     "eff_pts_raw",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": 0.011,
-    "explained": 0.012,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 35,
-    "top_features": [],
-    "unexplained": -0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 10.147,
-   "to_projection_id": "cfbj_b01de48a6f81a84ac2ac5962"
-  },
-  {
-   "change_id": "cfbc_e4ae088111bd4823a4c388f0",
-   "from_margin": 5.0837,
-   "from_projection_id": "cfbj_451c41f9b24591df9b2aee7e",
-   "game_id": "401871069",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "matchup",
-      "points": 0.401,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "form",
-      "points": -0.262,
-      "reason": "recent form"
-     },
-     {
-      "family": "base",
-      "points": -0.176,
-      "reason": "priors and dynamic strength"
-     },
-     {
-      "family": "trench_havoc",
-      "points": 0.074,
-      "reason": "line-of-scrimmage ratings"
-     },
-     {
-      "family": "adj_eff",
-      "points": 0.017,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
-     },
-     {
-      "family": "qb",
-      "points": 0.015,
-      "reason": "quarterback state"
-     }
-    ],
-    "changed_inputs": [
-     "a_qb_changed",
-     "a_qb_exp_db_log",
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_fg_value",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_st_net",
-     "edge_stuff",
-     "eff_pts_raw",
-     "elo_diff",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "min_games",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a"
-    ],
-    "delta_margin": 0.069,
-    "explained": 0.069,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 41,
-    "top_features": [
-     {
-      "feature": "D:edge_sr_early",
-      "points": 0.319
-     },
-     {
-      "feature": "D:edge_rec_epa",
-      "points": -0.287
-     },
-     {
-      "feature": "C:elo_diff",
-      "points": -0.194
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": 0.112
-     },
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": -0.105
-     },
-     {
-      "feature": "C:l4_edge_epa",
-      "points": 0.098
-     },
-     {
-      "feature": "C:edge_sr_pd",
-      "points": -0.084
-     },
-     {
-      "feature": "C:edge_sr_early",
-      "points": 0.077
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 5.153,
-   "to_projection_id": "cfbj_5951add3bbabcc19a84f46d5"
-  },
-  {
-   "change_id": "cfbc_99869708fa88814509d471b9",
-   "from_margin": -3.2542,
-   "from_projection_id": "cfbj_18dbc6eb67f5800abc09586b",
-   "game_id": "401871092",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "matchup",
-      "points": -0.018,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "form",
-      "points": 0.011,
-      "reason": "recent form"
-     },
-     {
-      "family": "adj_eff",
-      "points": -0.005,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_stuff",
-     "eff_pts_raw",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": -0.016,
-    "explained": -0.016,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 35,
-    "top_features": [
-     {
-      "feature": "C:edge_rec_epa_rush",
-      "points": 0.013
-     },
-     {
-      "feature": "C:edge_sr_early",
-      "points": -0.012
-     },
-     {
-      "feature": "C:edge_epa_rush",
-      "points": -0.01
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -3.2698,
-   "to_projection_id": "cfbj_eb24958ac7f4c8be9f3cf6c2"
-  },
-  {
-   "change_id": "cfbc_cfcf038e43d3d0f1c92738f0",
-   "from_margin": 4.6173,
-   "from_projection_id": "cfbj_1ef9218bd6753414a4541e78",
-   "game_id": "401871070",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "form",
-      "points": -2.155,
-      "reason": "recent form"
-     },
-     {
-      "family": "adj_eff",
-      "points": -0.155,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
-     },
-     {
-      "family": "matchup",
-      "points": -0.102,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "base",
-      "points": 0.058,
-      "reason": "priors and dynamic strength"
-     },
-     {
-      "family": "trench_havoc",
-      "points": -0.026,
-      "reason": "line-of-scrimmage ratings"
-     },
-     {
-      "family": "qb",
-      "points": 0.015,
-      "reason": "quarterback state"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_fg_value",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_st_net",
-     "edge_stuff",
-     "eff_pts_raw",
-     "elo_diff",
-     "exp_plays_total",
-     "h_qb_exp_db_log",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "min_games",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": -2.363,
-    "explained": -2.363,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 40,
-    "top_features": [
-     {
-      "feature": "D:edge_rec_epa",
-      "points": -0.891
-     },
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": -0.859
-     },
-     {
-      "feature": "D:edge_rec_ppd",
-      "points": -0.573
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": 0.476
-     },
-     {
-      "feature": "C:edge_epa",
-      "points": -0.32
-     },
-     {
-      "feature": "C:edge_sr_pass",
-      "points": 0.196
-     },
-     {
-      "feature": "D:elo_diff",
-      "points": 0.186
-     },
-     {
-      "feature": "C:elo_diff",
-      "points": -0.164
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 2.2541,
-   "to_projection_id": "cfbj_69447851e4f3bbc7286885ed"
-  },
-  {
-   "change_id": "cfbc_1bc48e68b7c74b9ab54e2bfe",
-   "from_margin": -12.8703,
-   "from_projection_id": "cfbj_9ee1e20936b785f06fab2f7d",
-   "game_id": "401869845",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "form",
-      "points": -0.412,
-      "reason": "recent form"
-     },
-     {
-      "family": "matchup",
-      "points": -0.052,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "base",
-      "points": -0.022,
-      "reason": "priors and dynamic strength"
-     },
-     {
-      "family": "trench_havoc",
-      "points": -0.02,
-      "reason": "line-of-scrimmage ratings"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_stuff",
-     "eff_pts_raw",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": -0.508,
-    "explained": -0.508,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 35,
-    "top_features": [
-     {
-      "feature": "D:edge_rec_ppd",
-      "points": -0.27
-     },
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": -0.093
-     },
-     {
-      "feature": "C:edge_sr_early",
-      "points": -0.067
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": 0.055
-     },
-     {
-      "feature": "C:edge_rec_epa_rush",
-      "points": -0.054
-     },
-     {
-      "feature": "D:l4_edge_epa",
-      "points": -0.05
-     },
-     {
-      "feature": "C:edge_epa_rush",
-      "points": 0.04
-     },
-     {
-      "feature": "C:edge_epa",
-      "points": -0.033
-     }
-    ],
-    "unexplained": -0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -13.3779,
-   "to_projection_id": "cfbj_27c0c33b2e563e8a585b2b0c"
-  },
-  {
-   "change_id": "cfbc_eb06b0c6fbf4835381bd14bd",
-   "from_margin": -13.0671,
-   "from_projection_id": "cfbj_0d0fdad718d8939e775b6a56",
-   "game_id": "401871056",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "base",
-      "points": -0.369,
-      "reason": "priors and dynamic strength"
-     },
-     {
-      "family": "matchup",
-      "points": 0.185,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "trench_havoc",
-      "points": 0.078,
-      "reason": "line-of-scrimmage ratings"
-     },
-     {
-      "family": "adj_eff",
-      "points": -0.04,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
-     },
-     {
-      "family": "form",
-      "points": 0.035,
-      "reason": "recent form"
-     },
-     {
-      "family": "qb",
-      "points": 0.013,
-      "reason": "quarterback state"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_fg_value",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_st_net",
-     "edge_stuff",
-     "eff_pts_raw",
-     "elo_diff",
-     "exp_plays_total",
-     "h_qb_exp_db_log",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "min_games",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": -0.1,
-    "explained": -0.1,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 40,
-    "top_features": [
-     {
-      "feature": "C:elo_diff",
-      "points": -0.194
-     },
-     {
-      "feature": "D:elo_diff",
-      "points": -0.176
-     },
-     {
-      "feature": "C:edge_sr_early",
-      "points": 0.108
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": 0.106
-     },
-     {
-      "feature": "C:edge_epa_rush",
-      "points": 0.105
-     },
-     {
-      "feature": "C:edge_rec_epa_rush",
-      "points": -0.105
-     },
-     {
-      "feature": "C:edge_sr_pass",
-      "points": -0.087
-     },
-     {
-      "feature": "C:edge_epa",
-      "points": -0.072
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -13.1669,
-   "to_projection_id": "cfbj_730fad2b97d7c3f9509c8f98"
-  },
-  {
-   "change_id": "cfbc_8d12a2eed23136a904e7d1c4",
-   "from_margin": 7.5124,
-   "from_projection_id": "cfbj_058e79f0690e746687dea9e7",
-   "game_id": "401862807",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "base",
-      "points": 0.823,
-      "reason": "priors and dynamic strength"
-     },
-     {
-      "family": "matchup",
-      "points": 0.598,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "form",
-      "points": 0.556,
-      "reason": "recent form"
-     },
-     {
-      "family": "adj_eff",
-      "points": 0.465,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
-     },
-     {
-      "family": "trench_havoc",
-      "points": -0.05,
-      "reason": "line-of-scrimmage ratings"
-     },
-     {
-      "family": "qb",
-      "points": -0.026,
-      "reason": "quarterback state"
-     },
-     {
-      "family": "special_teams",
-      "points": -0.009,
-      "reason": "special teams"
-     }
-    ],
-    "changed_inputs": [
-     "a_qb_changed",
-     "a_qb_exp_db_log",
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_fg_value",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_st_net",
-     "edge_stuff",
-     "eff_pts_raw",
-     "elo_diff",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "min_games",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "qb_unsettled_any",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h"
-    ],
-    "delta_margin": 2.358,
-    "explained": 2.358,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 42,
-    "top_features": [
-     {
-      "feature": "C:elo_diff",
-      "points": 0.609
-     },
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": 0.551
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": -0.449
-     },
-     {
-      "feature": "C:edge_sr_early",
-      "points": 0.327
-     },
-     {
-      "feature": "C:edge_epa",
-      "points": 0.282
-     },
-     {
-      "feature": "D:edge_sr_early",
-      "points": 0.269
-     },
-     {
-      "feature": "D:elo_diff",
-      "points": 0.213
-     },
-     {
-      "feature": "D:edge_sr",
-      "points": 0.141
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 9.8707,
-   "to_projection_id": "cfbj_6c714416f0bb5003361e09ce"
-  },
-  {
-   "change_id": "cfbc_53ae7bc732b3aa295b82e84a",
-   "from_margin": -3.8349,
-   "from_projection_id": "cfbj_eeee0e5a09b6f2c8eded42b4",
-   "game_id": "401858271",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "matchup",
-      "points": -0.023,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "form",
-      "points": -0.009,
-      "reason": "recent form"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_stuff",
-     "eff_pts_raw",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": -0.034,
-    "explained": -0.034,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 35,
-    "top_features": [
-     {
-      "feature": "D:edge_sr_early",
-      "points": -0.013
-     },
-     {
-      "feature": "C:edge_sr_early",
-      "points": -0.01
-     },
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": -0.01
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -3.8691,
-   "to_projection_id": "cfbj_1ec615f1242cf2143930c747"
-  },
-  {
-   "change_id": "cfbc_df5e0f5243d79b2cde7df4c5",
-   "from_margin": 10.2767,
-   "from_projection_id": "cfbj_f09b88ded67bf1301be3f442",
-   "game_id": "401861965",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_stuff",
-     "eff_pts_raw",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": 0.005,
-    "explained": 0.004,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 35,
-    "top_features": [],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 10.2812,
-   "to_projection_id": "cfbj_8fab319dee85dfaeda271a51"
-  },
-  {
-   "change_id": "cfbc_fca4694d6c37b7e2dd4bdf78",
-   "from_margin": -4.6292,
-   "from_projection_id": "cfbj_c0b798dd335c4d1e08a29439",
-   "game_id": "401862808",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "form",
-      "points": -0.05,
-      "reason": "recent form"
-     },
-     {
-      "family": "adj_eff",
-      "points": -0.011,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_stuff",
-     "eff_pts_raw",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": -0.057,
-    "explained": -0.057,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 35,
-    "top_features": [
-     {
-      "feature": "D:edge_rec_ppd",
-      "points": -0.04
-     },
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": -0.036
-     },
-     {
-      "feature": "C:edge_sr_pass",
-      "points": 0.014
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": 0.014
-     },
-     {
-      "feature": "C:edge_epa",
-      "points": -0.011
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -4.6866,
-   "to_projection_id": "cfbj_7b40e621984c8a0454620d53"
-  },
-  {
-   "change_id": "cfbc_f0cc0d3bd796b023acf2ace9",
-   "from_margin": -9.633,
-   "from_projection_id": "cfbj_f1aefe10cf621282181a0130",
-   "game_id": "401864525",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "form",
-      "points": -0.07,
-      "reason": "recent form"
-     },
-     {
-      "family": "base",
-      "points": 0.012,
-      "reason": "priors and dynamic strength"
-     },
-     {
-      "family": "matchup",
-      "points": -0.012,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "trench_havoc",
-      "points": -0.01,
-      "reason": "line-of-scrimmage ratings"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_stuff",
-     "eff_pts_raw",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": -0.077,
-    "explained": -0.077,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 35,
-    "top_features": [
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": -0.065
-     },
-     {
-      "feature": "C:edge_sr_early",
-      "points": -0.02
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": 0.019
-     },
-     {
-      "feature": "C:edge_epa_rush",
-      "points": 0.017
-     },
-     {
-      "feature": "C:edge_sr",
-      "points": -0.016
-     },
-     {
-      "feature": "C:edge_rec_epa_rush",
-      "points": -0.016
-     },
-     {
-      "feature": "C:edge_epa",
-      "points": -0.012
-     },
-     {
-      "feature": "D:edge_rec_sr",
-      "points": -0.012
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -9.7099,
-   "to_projection_id": "cfbj_1e1df38eefbfe36e9132179f"
-  },
-  {
-   "change_id": "cfbc_468a41a623d50c08f9644cd9",
-   "from_margin": -5.9415,
-   "from_projection_id": "cfbj_c0cfe68de7fc30c069b36bf1",
-   "game_id": "401858272",
-   "new_games_since": true,
-   "projection_change_reason": {
-    "by_family": [
-     {
-      "family": "form",
-      "points": 0.021,
-      "reason": "recent form"
-     },
-     {
-      "family": "matchup",
-      "points": 0.019,
-      "reason": "matchup interactions"
-     },
-     {
-      "family": "base",
-      "points": 0.008,
-      "reason": "priors and dynamic strength"
-     },
-     {
-      "family": "adj_eff",
-      "points": 0.006,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
-     }
-    ],
-    "changed_inputs": [
-     "drive_total_raw",
-     "edge_epa",
-     "edge_epa_pass",
-     "edge_epa_rush",
-     "edge_expl",
-     "edge_expl_pass",
-     "edge_expl_rush",
-     "edge_line_yds",
-     "edge_opp_rate",
-     "edge_rec_epa",
-     "edge_rec_epa_pass",
-     "edge_rec_epa_rush",
-     "edge_rec_ppd",
-     "edge_rec_sr",
-     "edge_sr",
-     "edge_sr_3rd",
-     "edge_sr_early",
-     "edge_sr_pass",
-     "edge_sr_pd",
-     "edge_sr_rush",
-     "edge_stuff",
-     "eff_pts_raw",
-     "exp_plays_total",
-     "l2_edge_epa",
-     "l4_edge_epa",
-     "match_mix_edge",
-     "qb_delta_edge",
-     "qb_exp_edge",
-     "rating_sd_sum",
-     "to_dependence",
-     "vol_sum",
-     "x_pass_a",
-     "x_pass_h",
-     "x_rush_a",
-     "x_rush_h"
-    ],
-    "delta_margin": 0.055,
-    "explained": 0.055,
-    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
-    "n_changed_inputs": 35,
-    "top_features": [
-     {
-      "feature": "D:edge_sr_early",
-      "points": 0.017
-     },
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": 0.014
-     }
-    ],
-    "unexplained": 0.0
-   },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -5.8864,
-   "to_projection_id": "cfbj_0cb13bb14be31d12bbb55be3"
-  },
-  {
-   "change_id": "cfbc_2efd2afc01f71df2bff75df5",
-   "from_margin": -1.9599,
-   "from_projection_id": "cfbj_21b3833ea9999e7db145a094",
-   "game_id": "401856834",
    "new_games_since": true,
    "projection_change_reason": {
     "by_family": [],
@@ -3538,41 +2478,151 @@
     "top_features": [],
     "unexplained": 0.0
    },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -1.9557,
-   "to_projection_id": "cfbj_265dd9c65680a23d45ccc78d"
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 10.1512,
+   "to_projection_id": "cfbj_4b605d0941093a6c448e2215"
   },
   {
-   "change_id": "cfbc_603c491004ae063f9104a8e2",
-   "from_margin": -10.999,
-   "from_projection_id": "cfbj_0b563fe53b352f8e2122553f",
-   "game_id": "401856835",
+   "change_id": "cfbc_4e873c86a87e5cdea1250634",
+   "from_margin": 5.153,
+   "from_projection_id": "cfbj_5951add3bbabcc19a84f46d5",
+   "game_id": "401871069",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "matchup",
+      "points": -0.203,
+      "reason": "matchup interactions"
+     },
+     {
+      "family": "form",
+      "points": -0.092,
+      "reason": "recent form"
+     },
+     {
+      "family": "base",
+      "points": 0.036,
+      "reason": "priors and dynamic strength"
+     },
+     {
+      "family": "qb",
+      "points": -0.014,
+      "reason": "quarterback state"
+     },
+     {
+      "family": "trench_havoc",
+      "points": -0.009,
+      "reason": "line-of-scrimmage ratings"
+     },
+     {
+      "family": "adj_eff",
+      "points": -0.006,
+      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": -0.289,
+    "explained": -0.289,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [
+     {
+      "feature": "D:edge_sr_early",
+      "points": -0.19
+     },
+     {
+      "feature": "D:edge_rec_sr",
+      "points": -0.05
+     },
+     {
+      "feature": "D:elo_diff",
+      "points": 0.042
+     },
+     {
+      "feature": "C:edge_rec_ppd",
+      "points": -0.024
+     },
+     {
+      "feature": "D:edge_rec_ppd",
+      "points": -0.018
+     },
+     {
+      "feature": "C:edge_rec_epa",
+      "points": 0.017
+     },
+     {
+      "feature": "D:qb_delta_edge",
+      "points": -0.015
+     },
+     {
+      "feature": "C:edge_sr_early",
+      "points": -0.014
+     }
+    ],
+    "unexplained": -0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 4.864,
+   "to_projection_id": "cfbj_dc39f6d2950d6d4a85235fd5"
+  },
+  {
+   "change_id": "cfbc_cf4548a1459f2e49805b275e",
+   "from_margin": -3.2698,
+   "from_projection_id": "cfbj_eb24958ac7f4c8be9f3cf6c2",
+   "game_id": "401871092",
    "new_games_since": true,
    "projection_change_reason": {
     "by_family": [
      {
       "family": "adj_eff",
-      "points": 0.254,
+      "points": -0.036,
       "reason": "team efficiency ratings (new games / opponent re-adjustment)"
      },
      {
-      "family": "form",
-      "points": 0.082,
-      "reason": "recent form"
-     },
-     {
-      "family": "base",
-      "points": 0.021,
-      "reason": "priors and dynamic strength"
-     },
-     {
       "family": "matchup",
-      "points": 0.021,
+      "points": 0.014,
       "reason": "matchup interactions"
      },
      {
       "family": "trench_havoc",
-      "points": 0.007,
+      "points": 0.006,
       "reason": "line-of-scrimmage ratings"
      }
     ],
@@ -3613,61 +2663,780 @@
      "x_rush_a",
      "x_rush_h"
     ],
-    "delta_margin": 0.385,
-    "explained": 0.385,
+    "delta_margin": -0.014,
+    "explained": -0.013,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [
+     {
+      "feature": "C:edge_rec_epa",
+      "points": 0.062
+     },
+     {
+      "feature": "C:edge_rec_ppd",
+      "points": -0.054
+     },
+     {
+      "feature": "C:edge_epa",
+      "points": -0.033
+     },
+     {
+      "feature": "C:eff_pts_raw",
+      "points": -0.015
+     },
+     {
+      "feature": "C:edge_sr_pass",
+      "points": 0.013
+     },
+     {
+      "feature": "C:edge_rec_epa_rush",
+      "points": -0.01
+     }
+    ],
+    "unexplained": -0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -3.2833,
+   "to_projection_id": "cfbj_6956f7f01f6886fd450e8a2e"
+  },
+  {
+   "change_id": "cfbc_7bfba2bcc63f695a58cbc3ed",
+   "from_margin": 2.2541,
+   "from_projection_id": "cfbj_69447851e4f3bbc7286885ed",
+   "game_id": "401871070",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "form",
+      "points": -0.005,
+      "reason": "recent form"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": -0.006,
+    "explained": -0.006,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [],
+    "unexplained": -0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 2.2481,
+   "to_projection_id": "cfbj_286d6e4de3537baf062e7ca8"
+  },
+  {
+   "change_id": "cfbc_b0e5f55c4d932e03462ee5c7",
+   "from_margin": -13.3779,
+   "from_projection_id": "cfbj_27c0c33b2e563e8a585b2b0c",
+   "game_id": "401869845",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "form",
+      "points": 1.024,
+      "reason": "recent form"
+     },
+     {
+      "family": "adj_eff",
+      "points": 0.477,
+      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
+     },
+     {
+      "family": "base",
+      "points": 0.249,
+      "reason": "priors and dynamic strength"
+     },
+     {
+      "family": "trench_havoc",
+      "points": 0.156,
+      "reason": "line-of-scrimmage ratings"
+     },
+     {
+      "family": "matchup",
+      "points": 0.101,
+      "reason": "matchup interactions"
+     },
+     {
+      "family": "qb",
+      "points": 0.03,
+      "reason": "quarterback state"
+     },
+     {
+      "family": "special_teams",
+      "points": 0.009,
+      "reason": "special teams"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_fg_value",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_st_net",
+     "edge_stuff",
+     "eff_pts_raw",
+     "elo_diff",
+     "exp_plays_total",
+     "h_qb_exp_db_log",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "min_games",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": 2.046,
+    "explained": 2.046,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 40,
+    "top_features": [
+     {
+      "feature": "D:edge_rec_ppd",
+      "points": 0.53
+     },
+     {
+      "feature": "C:edge_rec_ppd",
+      "points": 0.371
+     },
+     {
+      "feature": "D:edge_sr_rush",
+      "points": 0.277
+     },
+     {
+      "feature": "C:edge_rec_epa",
+      "points": -0.265
+     },
+     {
+      "feature": "C:elo_diff",
+      "points": 0.229
+     },
+     {
+      "feature": "C:edge_epa",
+      "points": 0.185
+     },
+     {
+      "feature": "C:edge_sr_early",
+      "points": 0.162
+     },
+     {
+      "feature": "C:edge_rec_epa_rush",
+      "points": 0.16
+     }
+    ],
+    "unexplained": 0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -11.3318,
+   "to_projection_id": "cfbj_a23f4e108f4ba571075a951f"
+  },
+  {
+   "change_id": "cfbc_8dc3156c01b2729427c68c0a",
+   "from_margin": -13.1669,
+   "from_projection_id": "cfbj_730fad2b97d7c3f9509c8f98",
+   "game_id": "401871056",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "form",
+      "points": 0.365,
+      "reason": "recent form"
+     },
+     {
+      "family": "trench_havoc",
+      "points": 0.014,
+      "reason": "line-of-scrimmage ratings"
+     },
+     {
+      "family": "base",
+      "points": -0.012,
+      "reason": "priors and dynamic strength"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": 0.366,
+    "explained": 0.366,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [
+     {
+      "feature": "D:edge_rec_ppd",
+      "points": 0.327
+     },
+     {
+      "feature": "C:edge_rec_ppd",
+      "points": 0.029
+     },
+     {
+      "feature": "C:edge_sr_early",
+      "points": 0.021
+     },
+     {
+      "feature": "C:edge_rec_epa_rush",
+      "points": 0.017
+     },
+     {
+      "feature": "C:edge_epa_rush",
+      "points": -0.014
+     },
+     {
+      "feature": "D:elo_diff",
+      "points": -0.012
+     },
+     {
+      "feature": "C:edge_rec_epa",
+      "points": -0.011
+     },
+     {
+      "feature": "D:edge_sr_early",
+      "points": -0.011
+     }
+    ],
+    "unexplained": 0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -12.8011,
+   "to_projection_id": "cfbj_048c31a1338e963976a2fd0b"
+  },
+  {
+   "change_id": "cfbc_8e88b782a74df52332951db9",
+   "from_margin": 9.8707,
+   "from_projection_id": "cfbj_6c714416f0bb5003361e09ce",
+   "game_id": "401862807",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "matchup",
+      "points": 0.623,
+      "reason": "matchup interactions"
+     },
+     {
+      "family": "adj_eff",
+      "points": -0.399,
+      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
+     },
+     {
+      "family": "base",
+      "points": -0.294,
+      "reason": "priors and dynamic strength"
+     },
+     {
+      "family": "trench_havoc",
+      "points": 0.278,
+      "reason": "line-of-scrimmage ratings"
+     },
+     {
+      "family": "form",
+      "points": -0.172,
+      "reason": "recent form"
+     },
+     {
+      "family": "qb",
+      "points": 0.006,
+      "reason": "quarterback state"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_fg_value",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_st_net",
+     "edge_stuff",
+     "eff_pts_raw",
+     "elo_diff",
+     "exp_plays_total",
+     "h_qb_exp_db_log",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": 0.046,
+    "explained": 0.046,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 39,
+    "top_features": [
+     {
+      "feature": "C:edge_rec_ppd",
+      "points": -0.492
+     },
+     {
+      "feature": "C:edge_rec_epa",
+      "points": 0.46
+     },
+     {
+      "feature": "D:edge_sr_early",
+      "points": 0.34
+     },
+     {
+      "feature": "C:edge_epa",
+      "points": -0.282
+     },
+     {
+      "feature": "C:edge_sr_early",
+      "points": 0.246
+     },
+     {
+      "feature": "C:elo_diff",
+      "points": -0.233
+     },
+     {
+      "feature": "C:edge_line_yds",
+      "points": 0.14
+     },
+     {
+      "feature": "C:edge_sr_rush",
+      "points": -0.121
+     }
+    ],
+    "unexplained": -0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 9.9165,
+   "to_projection_id": "cfbj_ca435718522c5c23cdddf5a0"
+  },
+  {
+   "change_id": "cfbc_3f18ff2d73b4e52175f3b05e",
+   "from_margin": -3.8691,
+   "from_projection_id": "cfbj_1ec615f1242cf2143930c747",
+   "game_id": "401858271",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "adj_eff",
+      "points": -0.239,
+      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
+     },
+     {
+      "family": "matchup",
+      "points": 0.055,
+      "reason": "matchup interactions"
+     },
+     {
+      "family": "form",
+      "points": -0.039,
+      "reason": "recent form"
+     },
+     {
+      "family": "base",
+      "points": -0.029,
+      "reason": "priors and dynamic strength"
+     },
+     {
+      "family": "trench_havoc",
+      "points": 0.021,
+      "reason": "line-of-scrimmage ratings"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": -0.231,
+    "explained": -0.231,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [
+     {
+      "feature": "D:edge_epa",
+      "points": -0.214
+     },
+     {
+      "feature": "D:edge_rec_epa",
+      "points": -0.045
+     },
+     {
+      "feature": "C:edge_sr_early",
+      "points": 0.044
+     },
+     {
+      "feature": "C:edge_rec_epa",
+      "points": 0.036
+     },
+     {
+      "feature": "C:edge_rec_ppd",
+      "points": -0.036
+     },
+     {
+      "feature": "D:elo_diff",
+      "points": -0.029
+     },
+     {
+      "feature": "C:edge_epa",
+      "points": -0.022
+     },
+     {
+      "feature": "C:edge_sr",
+      "points": 0.016
+     }
+    ],
+    "unexplained": -0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -4.0998,
+   "to_projection_id": "cfbj_a19ffb41164f3c5e549b5554"
+  },
+  {
+   "change_id": "cfbc_9d95317795e9b8e8ddd6c0b2",
+   "from_margin": 10.2812,
+   "from_projection_id": "cfbj_8fab319dee85dfaeda271a51",
+   "game_id": "401861965",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "form",
+      "points": -0.021,
+      "reason": "recent form"
+     },
+     {
+      "family": "base",
+      "points": 0.015,
+      "reason": "priors and dynamic strength"
+     },
+     {
+      "family": "matchup",
+      "points": -0.008,
+      "reason": "matchup interactions"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": -0.018,
+    "explained": -0.018,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [
+     {
+      "feature": "D:elo_diff",
+      "points": 0.015
+     },
+     {
+      "feature": "D:edge_rec_sr",
+      "points": -0.015
+     }
+    ],
+    "unexplained": -0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 10.2631,
+   "to_projection_id": "cfbj_d4793acbbaca1d4bbe06a115"
+  },
+  {
+   "change_id": "cfbc_0be9ad528049f04fa5e3564c",
+   "from_margin": -4.6866,
+   "from_projection_id": "cfbj_7b40e621984c8a0454620d53",
+   "game_id": "401862808",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "adj_eff",
+      "points": 0.21,
+      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
+     },
+     {
+      "family": "matchup",
+      "points": 0.053,
+      "reason": "matchup interactions"
+     },
+     {
+      "family": "trench_havoc",
+      "points": 0.02,
+      "reason": "line-of-scrimmage ratings"
+     },
+     {
+      "family": "form",
+      "points": -0.014,
+      "reason": "recent form"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": 0.263,
+    "explained": 0.263,
     "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
     "n_changed_inputs": 35,
     "top_features": [
      {
       "feature": "D:edge_sr_rush",
-      "points": 0.257
-     },
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": 0.066
-     },
-     {
-      "feature": "D:edge_rec_sr",
-      "points": 0.029
+      "points": 0.244
      },
      {
       "feature": "C:edge_rec_epa",
-      "points": -0.021
+      "points": 0.059
      },
      {
-      "feature": "C:edge_rec_epa_rush",
-      "points": 0.02
+      "feature": "C:edge_rec_ppd",
+      "points": -0.049
      },
      {
       "feature": "C:edge_sr_early",
-      "points": 0.018
+      "points": 0.032
      },
      {
-      "feature": "C:edge_epa_rush",
-      "points": -0.017
+      "feature": "C:edge_epa",
+      "points": -0.024
      },
      {
-      "feature": "C:edge_sr",
-      "points": 0.014
+      "feature": "D:edge_rec_ppd",
+      "points": -0.021
+     },
+     {
+      "feature": "D:edge_sr_early",
+      "points": 0.02
+     },
+     {
+      "feature": "C:edge_sr_rush",
+      "points": -0.011
      }
     ],
-    "unexplained": 0.0
+    "unexplained": -0.0
    },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -10.6137,
-   "to_projection_id": "cfbj_934755bbe1c452b638dff050"
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -4.4236,
+   "to_projection_id": "cfbj_e77fc99f3dcfcafe4db3e409"
   },
   {
-   "change_id": "cfbc_e37362c4e70333a0a6317ee3",
-   "from_margin": 5.5543,
-   "from_projection_id": "cfbj_3e9204be142b7278bd0f3d30",
-   "game_id": "401856836",
+   "change_id": "cfbc_0f0af30689b2911f1a7f092e",
+   "from_margin": -9.7099,
+   "from_projection_id": "cfbj_1e1df38eefbfe36e9132179f",
+   "game_id": "401864525",
    "new_games_since": true,
    "projection_change_reason": {
     "by_family": [
      {
       "family": "form",
-      "points": 0.007,
+      "points": -0.006,
       "reason": "recent form"
      }
     ],
@@ -3708,44 +3477,44 @@
      "x_rush_a",
      "x_rush_h"
     ],
-    "delta_margin": 0.011,
-    "explained": 0.011,
+    "delta_margin": -0.016,
+    "explained": -0.016,
     "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
     "n_changed_inputs": 35,
     "top_features": [],
-    "unexplained": 0.0
+    "unexplained": -0.0
    },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 5.5652,
-   "to_projection_id": "cfbj_2c937fa43394b1a498522ac3"
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -9.7258,
+   "to_projection_id": "cfbj_73fe4a1bb7e08e0c18bb14b0"
   },
   {
-   "change_id": "cfbc_dac38a2f50d70b2aa0eea7d6",
-   "from_margin": 6.4356,
-   "from_projection_id": "cfbj_0d681412e74ec9b6788fd06d",
-   "game_id": "401856837",
+   "change_id": "cfbc_22eae8f9e7276211a5c5f102",
+   "from_margin": -5.8864,
+   "from_projection_id": "cfbj_0cb13bb14be31d12bbb55be3",
+   "game_id": "401858272",
    "new_games_since": true,
    "projection_change_reason": {
     "by_family": [
      {
       "family": "form",
-      "points": -0.028,
+      "points": -0.051,
       "reason": "recent form"
      },
      {
       "family": "matchup",
-      "points": -0.018,
+      "points": -0.035,
       "reason": "matchup interactions"
      },
      {
-      "family": "adj_eff",
-      "points": 0.015,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
+      "family": "trench_havoc",
+      "points": -0.01,
+      "reason": "line-of-scrimmage ratings"
      },
      {
-      "family": "trench_havoc",
-      "points": -0.011,
-      "reason": "line-of-scrimmage ratings"
+      "family": "adj_eff",
+      "points": -0.008,
+      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
      }
     ],
     "changed_inputs": [
@@ -3785,35 +3554,39 @@
      "x_rush_a",
      "x_rush_h"
     ],
-    "delta_margin": -0.042,
-    "explained": -0.042,
+    "delta_margin": -0.104,
+    "explained": -0.104,
     "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
     "n_changed_inputs": 35,
     "top_features": [
      {
+      "feature": "C:edge_rec_ppd",
+      "points": -0.035
+     },
+     {
       "feature": "C:edge_sr_early",
-      "points": -0.025
+      "points": -0.018
+     },
+     {
+      "feature": "D:edge_sr_early",
+      "points": -0.018
      },
      {
       "feature": "C:edge_rec_epa_rush",
-      "points": -0.016
-     },
-     {
-      "feature": "C:edge_epa_rush",
-      "points": 0.014
+      "points": -0.011
      }
     ],
-    "unexplained": 0.0
+    "unexplained": -0.0
    },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 6.3933,
-   "to_projection_id": "cfbj_b9802368b0f30022ff06e3f7"
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -5.9902,
+   "to_projection_id": "cfbj_bdee8a7126e18f0873d94374"
   },
   {
-   "change_id": "cfbc_5fc8fc9103f617472e1b3ba1",
-   "from_margin": 14.7707,
-   "from_projection_id": "cfbj_1963fd364f222f94b4c6c6cf",
-   "game_id": "401856838",
+   "change_id": "cfbc_be096805d77de272de0d3716",
+   "from_margin": -1.9557,
+   "from_projection_id": "cfbj_265dd9c65680a23d45ccc78d",
+   "game_id": "401856834",
    "new_games_since": true,
    "projection_change_reason": {
     "by_family": [],
@@ -3854,29 +3627,141 @@
      "x_rush_a",
      "x_rush_h"
     ],
-    "delta_margin": 0.008,
-    "explained": 0.008,
+    "delta_margin": -0.005,
+    "explained": -0.005,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [],
+    "unexplained": 0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -1.9606,
+   "to_projection_id": "cfbj_4c9e83a10919f6309b8f8e3f"
+  },
+  {
+   "change_id": "cfbc_d5cf6ea5201136022cbe4af0",
+   "from_margin": -10.6137,
+   "from_projection_id": "cfbj_934755bbe1c452b638dff050",
+   "game_id": "401856835",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": -0.011,
+    "explained": -0.011,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [],
+    "unexplained": 0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -10.6244,
+   "to_projection_id": "cfbj_9cbaee6c92f381625fddb66a"
+  },
+  {
+   "change_id": "cfbc_96c50f56e0bad1d87e0a5281",
+   "from_margin": 5.5652,
+   "from_projection_id": "cfbj_2c937fa43394b1a498522ac3",
+   "game_id": "401856836",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": 0.002,
+    "explained": 0.002,
     "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
     "n_changed_inputs": 35,
     "top_features": [],
     "unexplained": -0.0
    },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 14.7787,
-   "to_projection_id": "cfbj_ab9007c449d1b39f6f904101"
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 5.5669,
+   "to_projection_id": "cfbj_2733a810774983336e90ba02"
   },
   {
-   "change_id": "cfbc_8db0285b1b6f1b31dd241e00",
-   "from_margin": 2.089,
-   "from_projection_id": "cfbj_899369835079c0867c8c227b",
-   "game_id": "401856839",
+   "change_id": "cfbc_47df04a732d69ccdf6651249",
+   "from_margin": 6.3933,
+   "from_projection_id": "cfbj_b9802368b0f30022ff06e3f7",
+   "game_id": "401856837",
    "new_games_since": true,
    "projection_change_reason": {
     "by_family": [
      {
-      "family": "adj_eff",
-      "points": 0.011,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
+      "family": "matchup",
+      "points": 0.014,
+      "reason": "matchup interactions"
      },
      {
       "family": "form",
@@ -3921,47 +3806,38 @@
      "x_rush_a",
      "x_rush_h"
     ],
-    "delta_margin": 0.021,
-    "explained": 0.021,
+    "delta_margin": 0.026,
+    "explained": 0.026,
     "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
     "n_changed_inputs": 35,
     "top_features": [
      {
-      "feature": "C:edge_rec_ppd",
-      "points": 0.024
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": -0.014
+      "feature": "C:edge_sr_early",
+      "points": 0.016
      }
     ],
     "unexplained": -0.0
    },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 2.1096,
-   "to_projection_id": "cfbj_6b97973872ee5e47844c8b74"
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 6.4193,
+   "to_projection_id": "cfbj_f2bef84ecadeed83cce1bc85"
   },
   {
-   "change_id": "cfbc_9026ccacdaeb42bb5705d911",
-   "from_margin": -13.4992,
-   "from_projection_id": "cfbj_51e974e4381f3ce94664b538",
-   "game_id": "401856840",
+   "change_id": "cfbc_5563e4bccb4096d36599d9ad",
+   "from_margin": 14.7787,
+   "from_projection_id": "cfbj_ab9007c449d1b39f6f904101",
+   "game_id": "401856838",
    "new_games_since": true,
    "projection_change_reason": {
     "by_family": [
      {
-      "family": "form",
-      "points": 0.149,
-      "reason": "recent form"
-     },
-     {
-      "family": "adj_eff",
-      "points": 0.037,
-      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
+      "family": "trench_havoc",
+      "points": -0.006,
+      "reason": "line-of-scrimmage ratings"
      },
      {
       "family": "matchup",
-      "points": -0.007,
+      "points": -0.006,
       "reason": "matchup interactions"
      }
     ],
@@ -4002,67 +3878,43 @@
      "x_rush_a",
      "x_rush_h"
     ],
-    "delta_margin": 0.184,
-    "explained": 0.184,
+    "delta_margin": -0.018,
+    "explained": -0.018,
     "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
     "n_changed_inputs": 35,
-    "top_features": [
-     {
-      "feature": "C:edge_rec_ppd",
-      "points": 0.084
-     },
-     {
-      "feature": "D:edge_rec_ppd",
-      "points": 0.079
-     },
-     {
-      "feature": "C:edge_rec_epa",
-      "points": -0.029
-     },
-     {
-      "feature": "D:edge_sr_rush",
-      "points": 0.015
-     },
-     {
-      "feature": "C:edge_epa",
-      "points": 0.014
-     },
-     {
-      "feature": "C:edge_sr_pass",
-      "points": -0.013
-     },
-     {
-      "feature": "C:l4_edge_epa",
-      "points": 0.01
-     }
-    ],
-    "unexplained": -0.0
+    "top_features": [],
+    "unexplained": 0.0
    },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": -13.3156,
-   "to_projection_id": "cfbj_0da10a291284a002d179b104"
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 14.761,
+   "to_projection_id": "cfbj_e78b2dd3e3255c9b6fdbd8ef"
   },
   {
-   "change_id": "cfbc_50acd474368550fa0427458f",
-   "from_margin": 1.6416,
-   "from_projection_id": "cfbj_b7bd4a54abd1574e4a426351",
-   "game_id": "401858276",
+   "change_id": "cfbc_786699db44b585edaa1b7a6d",
+   "from_margin": 2.1096,
+   "from_projection_id": "cfbj_6b97973872ee5e47844c8b74",
+   "game_id": "401856839",
    "new_games_since": true,
    "projection_change_reason": {
     "by_family": [
      {
-      "family": "form",
-      "points": 0.084,
-      "reason": "recent form"
+      "family": "adj_eff",
+      "points": -0.04,
+      "reason": "team efficiency ratings (new games / opponent re-adjustment)"
      },
      {
       "family": "matchup",
-      "points": 0.037,
+      "points": 0.029,
       "reason": "matchup interactions"
      },
      {
+      "family": "form",
+      "points": -0.023,
+      "reason": "recent form"
+     },
+     {
       "family": "trench_havoc",
-      "points": 0.018,
+      "points": 0.019,
       "reason": "line-of-scrimmage ratings"
      }
     ],
@@ -4103,49 +3955,176 @@
      "x_rush_a",
      "x_rush_h"
     ],
-    "delta_margin": 0.141,
-    "explained": 0.141,
+    "delta_margin": -0.015,
+    "explained": -0.015,
     "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
     "n_changed_inputs": 35,
     "top_features": [
      {
-      "feature": "C:edge_sr_early",
-      "points": 0.054
+      "feature": "C:edge_rec_epa",
+      "points": 0.049
      },
      {
       "feature": "C:edge_rec_ppd",
-      "points": 0.044
+      "points": -0.044
      },
      {
-      "feature": "D:edge_rec_ppd",
-      "points": 0.026
+      "feature": "C:edge_sr_early",
+      "points": 0.031
      },
      {
-      "feature": "C:edge_sr",
-      "points": 0.021
+      "feature": "D:edge_epa",
+      "points": -0.031
      },
      {
-      "feature": "C:edge_epa_rush",
-      "points": -0.017
+      "feature": "D:edge_rec_epa",
+      "points": -0.031
      },
      {
-      "feature": "C:edge_rec_epa_rush",
+      "feature": "C:edge_epa",
+      "points": -0.025
+     },
+     {
+      "feature": "D:edge_sr",
       "points": 0.017
      },
      {
-      "feature": "D:edge_sr_early",
-      "points": -0.013
-     },
-     {
       "feature": "C:edge_sr_pass",
-      "points": -0.011
+      "points": 0.014
      }
     ],
+    "unexplained": -0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 2.0941,
+   "to_projection_id": "cfbj_d28941be67d065048ca6123f"
+  },
+  {
+   "change_id": "cfbc_93f94049d92c10702c141e5d",
+   "from_margin": -13.3156,
+   "from_projection_id": "cfbj_0da10a291284a002d179b104",
+   "game_id": "401856840",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [
+     {
+      "family": "matchup",
+      "points": 0.006,
+      "reason": "matchup interactions"
+     }
+    ],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": 0.013,
+    "explained": 0.013,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [
+     {
+      "feature": "C:edge_rec_epa",
+      "points": -0.011
+     },
+     {
+      "feature": "C:edge_rec_ppd",
+      "points": 0.01
+     }
+    ],
+    "unexplained": -0.0
+   },
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": -13.303,
+   "to_projection_id": "cfbj_3f279b612d72cfa66e51ff21"
+  },
+  {
+   "change_id": "cfbc_ae8b7c1430b4dfa535551931",
+   "from_margin": 1.7829,
+   "from_projection_id": "cfbj_fc2d75510b695b43290dedcf",
+   "game_id": "401858276",
+   "new_games_since": true,
+   "projection_change_reason": {
+    "by_family": [],
+    "changed_inputs": [
+     "drive_total_raw",
+     "edge_epa",
+     "edge_epa_pass",
+     "edge_epa_rush",
+     "edge_expl",
+     "edge_expl_pass",
+     "edge_expl_rush",
+     "edge_line_yds",
+     "edge_opp_rate",
+     "edge_rec_epa",
+     "edge_rec_epa_pass",
+     "edge_rec_epa_rush",
+     "edge_rec_ppd",
+     "edge_rec_sr",
+     "edge_sr",
+     "edge_sr_3rd",
+     "edge_sr_early",
+     "edge_sr_pass",
+     "edge_sr_pd",
+     "edge_sr_rush",
+     "edge_stuff",
+     "eff_pts_raw",
+     "exp_plays_total",
+     "l2_edge_epa",
+     "l4_edge_epa",
+     "match_mix_edge",
+     "qb_delta_edge",
+     "qb_exp_edge",
+     "rating_sd_sum",
+     "to_dependence",
+     "vol_sum",
+     "x_pass_a",
+     "x_pass_h",
+     "x_rush_a",
+     "x_rush_h"
+    ],
+    "delta_margin": -0.001,
+    "explained": -0.001,
+    "method": "ridge exact contribution + GBM TreeSHAP difference, weighted by the approved stack",
+    "n_changed_inputs": 35,
+    "top_features": [],
     "unexplained": 0.0
    },
-   "run_id": "cfbw_ef863613c6f933d1a9e8c269",
-   "to_margin": 1.7829,
-   "to_projection_id": "cfbj_fc2d75510b695b43290dedcf"
+   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
+   "to_margin": 1.7815,
+   "to_projection_id": "cfbj_f474bfe8480073bab22d8c51"
   }
  ],
  "projection_review_flags": [],
@@ -4220,6 +4199,78 @@
    "reliability": null,
    "team": "Western Kentucky",
    "team_id": "98"
+  },
+  {
+   "detail": {
+    "reasons": [
+     "rotation with 2 different starters in the last 3 games"
+    ],
+    "review": true
+   },
+   "event_id": "cfbq_b637e5030c042d8be35d8d45",
+   "event_type": "AMBIGUOUS_STARTER",
+   "game_id": 401858493,
+   "inferred": false,
+   "player_id": "5079318",
+   "player_name": "Elijah Brown",
+   "reliability": null,
+   "team": "Washington",
+   "team_id": "264"
+  },
+  {
+   "detail": {
+    "games": 3,
+    "games_shared": 1,
+    "qbs": [
+     5079318,
+     5079653
+    ],
+    "same_game_sharing": false,
+    "shares": {
+     "5079318": 0.5306,
+     "5079653": 0.4592
+    }
+   },
+   "event_id": "cfbq_43b06e06c5d92b301cff37dc",
+   "event_type": "MULTI_QB_ROTATION",
+   "game_id": 401858493,
+   "inferred": false,
+   "player_id": null,
+   "player_name": null,
+   "reliability": null,
+   "team": "Washington",
+   "team_id": "264"
+  },
+  {
+   "detail": {
+    "career_starts_elsewhere": 4
+   },
+   "event_id": "cfbq_f3d46e2acdf5728724379e80",
+   "event_type": "NEW_STARTER",
+   "game_id": 401858493,
+   "inferred": false,
+   "player_id": "5079318",
+   "player_name": "Elijah Brown",
+   "reliability": null,
+   "team": "Washington",
+   "team_id": "264"
+  },
+  {
+   "detail": {
+    "other_team_starts": 4,
+    "previous_team_id": 24,
+    "previous_team_id_name": "Stanford",
+    "previous_team_starts": 4
+   },
+   "event_id": "cfbq_2dc79457a5a03b523fc69230",
+   "event_type": "TRANSFER_STARTER",
+   "game_id": 401858493,
+   "inferred": false,
+   "player_id": "5079318",
+   "player_name": "Elijah Brown",
+   "reliability": null,
+   "team": "Washington",
+   "team_id": "264"
   },
   {
    "detail": {
@@ -4316,6 +4367,40 @@
   {
    "detail": {
     "reasons": [
+     "starter probability 0.36 < 0.60"
+    ],
+    "review": true
+   },
+   "event_id": "cfbq_a1af3a4812623cdf522ff117",
+   "event_type": "AMBIGUOUS_STARTER",
+   "game_id": 401869844,
+   "inferred": false,
+   "player_id": "4870999",
+   "player_name": "Malachi Singleton",
+   "reliability": null,
+   "team": "App State",
+   "team_id": "2026"
+  },
+  {
+   "detail": {
+    "note": "replaced mid-game (an in-game injury looks the same in play-by-play)",
+    "reliever": 5146664,
+    "reliever_name": "Henry Hasselbeck",
+    "reliever_share": 0.4643
+   },
+   "event_id": "cfbq_e66d20965309fb99dd26cc59",
+   "event_type": "BENCHING",
+   "game_id": 401869844,
+   "inferred": false,
+   "player_id": "4870999",
+   "player_name": "Malachi Singleton",
+   "reliability": null,
+   "team": "App State",
+   "team_id": "2026"
+  },
+  {
+   "detail": {
+    "reasons": [
      "rotation with 2 different starters in the last 3 games"
     ],
     "review": true
@@ -4400,211 +4485,282 @@
    "reliability": null,
    "team": "Missouri State",
    "team_id": "2623"
+  },
+  {
+   "detail": {
+    "reasons": [
+     "rotation with 2 different starters in the last 3 games"
+    ],
+    "review": true
+   },
+   "event_id": "cfbq_f47fa1088dcf4217b998fb51",
+   "event_type": "AMBIGUOUS_STARTER",
+   "game_id": 401862801,
+   "inferred": false,
+   "player_id": "5291713",
+   "player_name": "Trace Johnson",
+   "reliability": null,
+   "team": "Tulane",
+   "team_id": "2655"
+  },
+  {
+   "detail": {
+    "note": "absent from the latest game with no benching in his last start; no injury report is read",
+    "replaced_by": 5291713,
+    "replaced_by_name": "Trace Johnson"
+   },
+   "event_id": "cfbq_25c91c82ea512151f9ca9b52",
+   "event_type": "INJURED_STARTER",
+   "game_id": 401862801,
+   "inferred": true,
+   "player_id": "5091890",
+   "player_name": "Kadin Semonza",
+   "reliability": null,
+   "team": "Tulane",
+   "team_id": "2655"
+  },
+  {
+   "detail": {
+    "games": 3,
+    "games_shared": 1,
+    "qbs": [
+     5091890,
+     5291713
+    ],
+    "same_game_sharing": false,
+    "shares": {
+     "5091890": 0.65,
+     "5291713": 0.3375
+    }
+   },
+   "event_id": "cfbq_107bb9d7104bf3d6732e2071",
+   "event_type": "MULTI_QB_ROTATION",
+   "game_id": 401862801,
+   "inferred": false,
+   "player_id": null,
+   "player_name": null,
+   "reliability": null,
+   "team": "Tulane",
+   "team_id": "2655"
+  },
+  {
+   "detail": {
+    "career_starts_elsewhere": 0
+   },
+   "event_id": "cfbq_2463517fbd48625547dc4afe",
+   "event_type": "NEW_STARTER",
+   "game_id": 401862801,
+   "inferred": false,
+   "player_id": "5291713",
+   "player_name": "Trace Johnson",
+   "reliability": null,
+   "team": "Tulane",
+   "team_id": "2655"
   }
  ],
  "rating_changes": {
   "largest_falls": [
    {
-    "d_mean": -2.4191011805029934,
-    "d_sd": -0.3757531067320574,
+    "d_mean": -2.472338003629411,
+    "d_sd": -0.32789467213381673,
+    "name": "Purdue",
+    "overall_mean": -0.8581212481674423,
+    "overall_sd": 7.1117117468448585,
+    "team_id": "2509"
+   },
+   {
+    "d_mean": -2.4172066166039254,
+    "d_sd": -0.3745333625948222,
     "name": "Sam Houston",
-    "overall_mean": -10.344849095926126,
-    "overall_sd": 7.362388300762107,
+    "overall_mean": -10.342954532027058,
+    "overall_sd": 7.363608044899342,
     "team_id": "2534"
    },
    {
-    "d_mean": -2.194080966140203,
-    "d_sd": -0.4056056450795609,
+    "d_mean": -2.1291723496932917,
+    "d_sd": -0.4090596888238256,
     "name": "East Carolina",
-    "overall_mean": -5.079403530057424,
-    "overall_sd": 7.61508413576348,
+    "overall_mean": -5.014494913610513,
+    "overall_sd": 7.611630092019215,
     "team_id": "151"
    },
    {
-    "d_mean": -1.2309150380094493,
-    "d_sd": -0.3307673724916169,
+    "d_mean": -2.0594195944292077,
+    "d_sd": -0.32477702044525714,
+    "name": "Memphis",
+    "overall_mean": 1.0772811599029746,
+    "overall_sd": 7.0639394222986045,
+    "team_id": "235"
+   },
+   {
+    "d_mean": -1.2371877521908878,
+    "d_sd": -0.3296198677939861,
     "name": "Jacksonville State",
-    "overall_mean": -7.22757139572545,
-    "overall_sd": 7.08589948337555,
+    "overall_mean": -7.233844109906888,
+    "overall_sd": 7.087046988073181,
     "team_id": "55"
    },
    {
-    "d_mean": -0.8894797696933754,
-    "d_sd": -0.3857759548213222,
+    "d_mean": -1.2011861124152574,
+    "d_sd": -0.01837209933141537,
+    "name": "Indiana State",
+    "overall_mean": -26.091457474393835,
+    "overall_sd": 18.620805660074318,
+    "team_id": "282"
+   },
+   {
+    "d_mean": -1.0680549382010014,
+    "d_sd": -0.0445169002141359,
+    "name": "UT Martin",
+    "overall_mean": -26.078877466839902,
+    "overall_sd": 15.666829070219041,
+    "team_id": "2630"
+   },
+   {
+    "d_mean": -0.9172287235124532,
+    "d_sd": -0.38441431094142864,
     "name": "Kennesaw State",
-    "overall_mean": -9.793350159570423,
-    "overall_sd": 7.49545947002921,
+    "overall_mean": -9.8210991133895,
+    "overall_sd": 7.496821113909103,
     "team_id": "338"
-   },
-   {
-    "d_mean": -0.7205136183766285,
-    "d_sd": -0.28669829605684694,
-    "name": "Colorado State",
-    "overall_mean": -5.976213895733991,
-    "overall_sd": 7.671594130391462,
-    "team_id": "36"
-   },
-   {
-    "d_mean": -0.7141921438313688,
-    "d_sd": -0.05501808432801525,
-    "name": "North Carolina Central",
-    "overall_mean": -44.53753714414165,
-    "overall_sd": 20.43382874223269,
-    "team_id": "2428"
-   },
-   {
-    "d_mean": -0.6865927477159062,
-    "d_sd": -0.0040575685764316916,
-    "name": "Nicholls",
-    "overall_mean": -39.65776214661955,
-    "overall_sd": 17.12306572531587,
-    "team_id": "2447"
-   },
-   {
-    "d_mean": -0.5093546196128287,
-    "d_sd": -0.002565086694097829,
-    "name": "Eastern Kentucky",
-    "overall_mean": -34.57715631110793,
-    "overall_sd": 19.01796156236184,
-    "team_id": "2198"
    }
   ],
   "largest_rises": [
    {
-    "d_mean": 2.0507814908386566,
-    "d_sd": -0.28225826776515994,
+    "d_mean": 2.055324292567252,
+    "d_sd": -0.28102967939201573,
     "name": "Texas State",
-    "overall_mean": 1.0738651220654911,
-    "overall_sd": 7.719929790911383,
+    "overall_mean": 1.0784079237940865,
+    "overall_sd": 7.721158379284527,
     "team_id": "326"
    },
    {
-    "d_mean": 1.8671369296708438,
-    "d_sd": -0.35228119134812896,
+    "d_mean": 2.031118597749953,
+    "d_sd": -0.3159922855791093,
+    "name": "Washington",
+    "overall_mean": 5.941457801910238,
+    "overall_sd": 7.016724002717206,
+    "team_id": "264"
+   },
+   {
+    "d_mean": 1.860745016249977,
+    "d_sd": -0.35108361059953985,
     "name": "Florida International",
-    "overall_mean": -6.255084222267325,
-    "overall_sd": 7.21123988498787,
+    "overall_mean": -6.261476135688191,
+    "overall_sd": 7.212437465736459,
     "team_id": "2229"
    },
    {
-    "d_mean": 1.829373380998926,
-    "d_sd": -0.3146915986138712,
+    "d_mean": 1.6817310818943678,
+    "d_sd": -0.31799839658760387,
     "name": "UAB",
-    "overall_mean": -6.767529811497908,
-    "overall_sd": 7.046161480395602,
+    "overall_mean": -6.915172110602466,
+    "overall_sd": 7.042854682421869,
     "team_id": "5"
    },
    {
-    "d_mean": 1.0859525662795804,
-    "d_sd": -0.3697081895805443,
+    "d_mean": 1.2551756274303338,
+    "d_sd": -0.38916756149793663,
+    "name": "App State",
+    "overall_mean": -4.758391951687131,
+    "overall_sd": 7.418309423652625,
+    "team_id": "2026"
+   },
+   {
+    "d_mean": 1.07730407218315,
+    "d_sd": -0.31857438746326583,
+    "name": "Tulane",
+    "overall_mean": -5.79257810467141,
+    "overall_sd": 7.150047472849157,
+    "team_id": "2655"
+   },
+   {
+    "d_mean": 1.0746976367183159,
+    "d_sd": -0.03498870477709204,
+    "name": "Eastern Washington",
+    "overall_mean": -24.47667833969069,
+    "overall_sd": 18.579253566045395,
+    "team_id": "331"
+   },
+   {
+    "d_mean": 1.066387730676011,
+    "d_sd": -0.36863196581360924,
     "name": "Western Kentucky",
-    "overall_mean": -10.339454226785492,
-    "overall_sd": 7.435011606150969,
+    "overall_mean": -10.359019062389061,
+    "overall_sd": 7.436087829917904,
     "team_id": "98"
-   },
-   {
-    "d_mean": 1.0239489818263294,
-    "d_sd": -0.076859690715402,
-    "name": "Samford",
-    "overall_mean": -23.580669801602017,
-    "overall_sd": 17.516419941067074,
-    "team_id": "2535"
-   },
-   {
-    "d_mean": 0.9006533440702569,
-    "d_sd": -0.4211251140301169,
-    "name": "Delaware",
-    "overall_mean": -10.766975913639236,
-    "overall_sd": 7.674944930692835,
-    "team_id": "48"
-   },
-   {
-    "d_mean": 0.8310099196430514,
-    "d_sd": -0.03547969805094553,
-    "name": "Incarnate Word",
-    "overall_mean": -33.00477928699257,
-    "overall_sd": 20.426657441580303,
-    "team_id": "2916"
-   },
-   {
-    "d_mean": 0.6623321152783106,
-    "d_sd": -0.018960218658897077,
-    "name": "Long Island University",
-    "overall_mean": -25.51218906381117,
-    "overall_sd": 15.368668326929516,
-    "team_id": "2341"
    }
   ],
   "largest_uncertainty_changes": [
    {
-    "d_mean": 0.9006533440702569,
-    "d_sd": -0.4211251140301169,
+    "d_mean": 0.8049608675944295,
+    "d_sd": -0.4233663442340605,
     "name": "Delaware",
-    "overall_mean": -10.766975913639236,
-    "overall_sd": 7.674944930692835,
+    "overall_mean": -10.862668390115063,
+    "overall_sd": 7.672703700488891,
     "team_id": "48"
    },
    {
-    "d_mean": -2.194080966140203,
-    "d_sd": -0.4056056450795609,
+    "d_mean": -2.1291723496932917,
+    "d_sd": -0.4090596888238256,
     "name": "East Carolina",
-    "overall_mean": -5.079403530057424,
-    "overall_sd": 7.61508413576348,
+    "overall_mean": -5.014494913610513,
+    "overall_sd": 7.611630092019215,
     "team_id": "151"
    },
    {
-    "d_mean": 0.37578058514256085,
-    "d_sd": -0.4004981787131001,
+    "d_mean": 0.3628752895962837,
+    "d_sd": -0.3992376532008768,
     "name": "Missouri State",
-    "overall_mean": -14.529626346711009,
-    "overall_sd": 7.459405238582304,
+    "overall_mean": -14.542531642257286,
+    "overall_sd": 7.460665764094528,
     "team_id": "2623"
    },
    {
-    "d_mean": -0.8894797696933754,
-    "d_sd": -0.3857759548213222,
+    "d_mean": 1.2551756274303338,
+    "d_sd": -0.38916756149793663,
+    "name": "App State",
+    "overall_mean": -4.758391951687131,
+    "overall_sd": 7.418309423652625,
+    "team_id": "2026"
+   },
+   {
+    "d_mean": -0.9172287235124532,
+    "d_sd": -0.38441431094142864,
     "name": "Kennesaw State",
-    "overall_mean": -9.793350159570423,
-    "overall_sd": 7.49545947002921,
+    "overall_mean": -9.8210991133895,
+    "overall_sd": 7.496821113909103,
     "team_id": "338"
    },
    {
-    "d_mean": -0.37882753967146776,
-    "d_sd": -0.3772294664653151,
+    "d_mean": -0.38957616737084244,
+    "d_sd": -0.37600451424729897,
     "name": "Middle Tennessee",
-    "overall_mean": -10.65463181128905,
-    "overall_sd": 7.324608591460149,
+    "overall_mean": -10.665380438988425,
+    "overall_sd": 7.325833543678165,
     "team_id": "2393"
    },
    {
-    "d_mean": -2.4191011805029934,
-    "d_sd": -0.3757531067320574,
+    "d_mean": -2.4172066166039254,
+    "d_sd": -0.3745333625948222,
     "name": "Sam Houston",
-    "overall_mean": -10.344849095926126,
-    "overall_sd": 7.362388300762107,
+    "overall_mean": -10.342954532027058,
+    "overall_sd": 7.363608044899342,
     "team_id": "2534"
    },
    {
-    "d_mean": 1.0859525662795804,
-    "d_sd": -0.3697081895805443,
+    "d_mean": 1.066387730676011,
+    "d_sd": -0.36863196581360924,
     "name": "Western Kentucky",
-    "overall_mean": -10.339454226785492,
-    "overall_sd": 7.435011606150969,
+    "overall_mean": -10.359019062389061,
+    "overall_sd": 7.436087829917904,
     "team_id": "98"
-   },
-   {
-    "d_mean": 1.8671369296708438,
-    "d_sd": -0.35228119134812896,
-    "name": "Florida International",
-    "overall_mean": -6.255084222267325,
-    "overall_sd": 7.21123988498787,
-    "team_id": "2229"
    }
   ],
   "review_flags": []
  },
  "research_flags": [],
- "run_id": "cfbw_ef863613c6f933d1a9e8c269",
+ "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
  "season": 2026,
  "source_week": 7,
  "status": "PUBLISHED",
@@ -4658,6 +4814,15 @@
    },
    {
     "drivers": [
+     "turnover-dependent teams",
+     "uncertain team ratings"
+    ],
+    "game_id": "401869967",
+    "matchup": "Louisiana @ Southern Miss",
+    "sigma": 16.46
+   },
+   {
+    "drivers": [
      "uncertain team ratings",
      "turnover-dependent teams"
     ],
@@ -4672,15 +4837,6 @@
     ],
     "game_id": "401861965",
     "matchup": "Massachusetts @ UConn",
-    "sigma": 16.43
-   },
-   {
-    "drivers": [
-     "turnover-dependent teams",
-     "uncertain team ratings"
-    ],
-    "game_id": "401869967",
-    "matchup": "Louisiana @ Southern Miss",
     "sigma": 16.43
    },
    {
