@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-16T23:08:06.251Z",
- "board_generated_at": "2026-10-16T23:07:56.307Z",
+ "generated_at": "2026-10-17T00:07:58.841Z",
+ "board_generated_at": "2026-10-17T00:07:49.711Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -62,6 +62,26 @@
    "named": false,
    "edgedesk": "Houston -10.9",
    "market": "Houston -4.5",
+   "books": 1,
+   "gap": 6.4,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401862803",
+   "game": "Charlotte @ Temple",
+   "kickoff": "2026-10-17T17:00:00.000Z",
+   "named": false,
+   "edgedesk": "Temple -26.9",
+   "market": "Temple -20.5",
    "books": 1,
    "gap": 6.4,
    "gap_class": "MODERATE",
@@ -227,9 +247,9 @@
    "kickoff": "2026-10-18T02:15:00.000Z",
    "named": false,
    "edgedesk": "Utah -23.0",
-   "market": "Utah -14.5",
+   "market": "Utah -15.5",
    "books": 1,
-   "gap": 8.5,
+   "gap": 7.5,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -271,17 +291,17 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (-4.5 pts) lifts the gap over 7: without it the gap is 4 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (-4.5 pts) lifts the gap over 7: without it the gap is 3 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required)"
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.4 pts on the market’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 9"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8"
     }
    ],
    "consistent": true,

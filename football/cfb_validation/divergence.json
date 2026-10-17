@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_rating_divergence_v1",
- "generated_at": "2026-10-16T23:08:06.251Z",
+ "generated_at": "2026-10-17T00:07:58.841Z",
  "names": {
   "current": {
    "key": "CURRENT_FBS_POWER_RATING",
@@ -1385,15 +1385,15 @@
    "key": "memphis",
    "team": "Memphis",
    "conference": "American",
-   "current": 0.64,
+   "current": 0.65,
    "state": 0.44,
    "carried": 2.39,
    "this_season": -2.48,
    "prior_weight": 0.6,
    "games_played": 6,
-   "difference": -0.2,
-   "rating_state_divergence": -4.48,
-   "abs_divergence": 4.48,
+   "difference": -0.21,
+   "rating_state_divergence": -4.47,
+   "abs_divergence": 4.47,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
@@ -1879,7 +1879,7 @@
    "why": [
     "The pricing state is 80% the long-run trained state (−2.6) and 20% this season’s own track (−14.2): the learned prior-weight curve keeps 80% on the long-run state at 5 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 63% (−6.3 from 5 games), with +1.3 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −2.3 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "The current rating includes a roster/talent term of −2.4 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.4."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
@@ -2579,14 +2579,14 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -2.93,
-   "rating_state_divergence": -1.74,
-   "abs_divergence": 1.74,
+   "rating_state_divergence": -1.75,
+   "abs_divergence": 1.75,
    "band": "NORMAL",
    "flagged": false,
    "why": [
     "The pricing state is 60% the long-run trained state (−0.0) and 40% this season’s own track (−8.2): the learned prior-weight curve keeps 60% on the long-run state at 6 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 67% (−1.2 from 6 games), with +1.2 of measured carryover from last season.",
-    "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.7."
+    "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −1.8."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -3475,7 +3475,7 @@
   }
  ],
  "state_source": "football/cfb_p4 engine replay (football/fbs/build_coverage.js buildState): trained seeds through 2025, 448 completed games absorbed",
- "current_source": "football/rating/current.json (2026-10-16T20:34:50.767Z, week 7)",
+ "current_source": "football/rating/current.json (2026-10-16T23:49:33.908Z, week 7)",
  "season": 2026,
  "unseeded": [
   {
