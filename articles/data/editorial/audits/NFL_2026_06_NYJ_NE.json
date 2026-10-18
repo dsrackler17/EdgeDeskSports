@@ -1,0 +1,1066 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "NFL:2026_06_NYJ_NE",
+  "game_id": "2026_06_NYJ_NE",
+  "sport": "NFL",
+  "snapshot_id": "snap_333d5cebb265ec96",
+  "audited_at": "2026-10-18T20:20:44.320Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at New England Patriots −15.0 with a fair total of 41.5, which makes New England Patriots the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 14.8,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 14.822872828204913,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "New York Jets winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether New England Patriots is ahead on the scoreboard in a way that looks like New England Patriots −15.0 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it New England Patriots −15.0 where the market has New England Patriots −7.0 at BetOnline.ag — a 7.8 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 7.8,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 7.8,
+        "unit": "points",
+        "market_margin": -7,
+        "market_text": "New England Patriots −7.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between New England Patriots −7.0 and New England Patriots −15.0.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Net passing EPA — New England Patriots by 7.3 points — worth +7.3 of the EdgeDesk number, in New England Patriots’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "passing",
+      "weight": 7.3,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "New York Jets winning this part of the game instead.",
+      "watch": "Whether New England Patriots is actually ahead on yards per pass attempt and net passing yards.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Net EPA per play — New England Patriots by 3.7 points — worth +3.7 of the EdgeDesk number, in New England Patriots’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "efficiency",
+      "weight": 3.7,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "New York Jets winning this part of the game instead.",
+      "watch": "Whether New England Patriots is actually ahead on yards per play.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Model baseline — the team-strength model’s constant — worth +2.5 of the EdgeDesk number, in New England Patriots’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "model_baseline",
+      "weight": 2.5,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": null,
+      "falsifier": "New York Jets winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.3",
+      "kind": "driver",
+      "claim": "Net rushing EPA — New England Patriots by 1.0 points — worth +1.0 of the EdgeDesk number, in New England Patriots’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[3]",
+      "category": "rushing",
+      "weight": 1,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "New York Jets winning this part of the game instead.",
+      "watch": "Whether New England Patriots is actually ahead on yards per carry and rushing yards.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.4",
+      "kind": "driver",
+      "claim": "Division game — New York Jets by 0.7 points — worth -0.7 of the EdgeDesk number, in New York Jets’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[4]",
+      "category": "model",
+      "weight": 0.7,
+      "favours_side": "away",
+      "favours_team": "New York Jets",
+      "expected_signal": null,
+      "falsifier": "New England Patriots winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.5",
+      "kind": "driver",
+      "claim": "Model baseline — the context model’s constant, home field included — worth +0.6 of the EdgeDesk number, in New England Patriots’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[5]",
+      "category": "home_field",
+      "weight": 0.6,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": null,
+      "falsifier": "New York Jets winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "New York Jets’ pass offence rates −0.133 (#28 of 32) and New England Patriots’ pass defence rates −0.110 (#7 of 32). Added the way the model adds them, this pairing sits −0.242 from the league mean, which favours New England Patriots.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 2.4,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — New England Patriots losing the phase it is rated to win.",
+      "watch": "How New York Jets pass offence handles New England Patriots pass defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "New England Patriots’ pass offence rates +0.120 (#6 of 32) and New York Jets’ pass defence rates +0.220 (#32 of 32). Added the way the model adds them, this pairing sits +0.340 from the league mean, which favours New England Patriots.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "passing",
+      "weight": 3.4,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — New England Patriots losing the phase it is rated to win.",
+      "watch": "How New England Patriots pass offence handles New York Jets pass defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "New York Jets’ run offence rates −0.060 (#26 of 32) and New England Patriots’ run defence rates −0.028 (#12 of 32). Added the way the model adds them, this pairing sits −0.087 from the league mean, which favours New England Patriots.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "rushing",
+      "weight": 0.9,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — New England Patriots losing the phase it is rated to win.",
+      "watch": "How New York Jets run offence handles New England Patriots run defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "New England Patriots’ run offence rates +0.039 (#8 of 32) and New York Jets’ run defence rates +0.009 (#18 of 32). Added the way the model adds them, this pairing sits +0.048 from the league mean, which favours New England Patriots.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0.5,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — New England Patriots losing the phase it is rated to win.",
+      "watch": "How New England Patriots run offence handles New York Jets run defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "New England Patriots holds the largest measured edge in this matchup: New England Patriots +0.157 (#3 of 32) vs New York Jets −0.207 (#32 of 32) — 29 places on the league board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "efficiency",
+      "weight": 7.3,
+      "favours_side": "home",
+      "favours_team": "New England Patriots",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "New York Jets winning that category on the day.",
+      "watch": "Whether New England Patriots’s edge in Net EPA per play shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Net EPA per play"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: NFL injury report — not loaded in this session.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 3,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on availability not on file.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at New England Patriots −15.0 with a fair total of 41.5, which makes New England Patriots the better team here by that margin on this field.",
+      "weight": 14.8,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 14.822872828204913,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 7,
+          "away": -7,
+          "diff": 7
+        }
+      ],
+      "observed_result": "New England Patriots won by 7 where EdgeDesk projected a 14.8-point edge.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk made better won, but by a margin the projection did not describe"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it New England Patriots −15.0 where the market has New England Patriots −7.0 at BetOnline.ag — a 7.8 points disagreement.",
+      "weight": 7.8,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 7.8,
+        "unit": "points",
+        "market_margin": -7,
+        "market_text": "New England Patriots −7.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 7,
+          "away": -7,
+          "diff": 7
+        }
+      ],
+      "observed_result": "New England Patriots won by 7.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: New England Patriots beat a margin of -7"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "passing",
+      "claim": "Net passing EPA — New England Patriots by 7.3 points — worth +7.3 of the EdgeDesk number, in New England Patriots’s favour.",
+      "weight": 7.3,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 7.34375,
+          "away": 6.878787878787879,
+          "diff": 0.46,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.063,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 235,
+          "away": 227,
+          "diff": 8,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.034,
+          "at_size": false
+        }
+      ],
+      "observed_result": "New England Patriots 7.34 yards per pass attempt against New York Jets 6.88; New England Patriots 235 net passing yards against New York Jets 227.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "efficiency",
+      "claim": "Net EPA per play — New England Patriots by 3.7 points — worth +3.7 of the EdgeDesk number, in New England Patriots’s favour.",
+      "weight": 3.7,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_play",
+          "available": true,
+          "label": "yards per play",
+          "unit": "yards",
+          "better": "high",
+          "home": 5.6323529412,
+          "away": 5.4,
+          "diff": 0.23,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.041,
+          "at_size": false
+        }
+      ],
+      "observed_result": "New England Patriots 5.63 yards per play against New York Jets 5.4.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "model_baseline",
+      "claim": "Model baseline — the team-strength model’s constant — worth +2.5 of the EdgeDesk number, in New England Patriots’s favour.",
+      "weight": 2.5,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "thesis_id": "driver.3",
+      "kind": "driver",
+      "category": "rushing",
+      "claim": "Net rushing EPA — New England Patriots by 1.0 points — worth +1.0 of the EdgeDesk number, in New England Patriots’s favour.",
+      "weight": 1,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.111,
+          "away": 3.593,
+          "diff": 0.52,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.126,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 148,
+          "away": 97,
+          "diff": 51,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.345,
+          "at_size": true
+        }
+      ],
+      "observed_result": "New England Patriots 4.11 yards per carry against New York Jets 3.59; New England Patriots 148 rushing yards against New York Jets 97.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.4",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Division game — New York Jets by 0.7 points — worth -0.7 of the EdgeDesk number, in New York Jets’s favour.",
+      "weight": 0.7,
+      "favours_team": "New York Jets",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.5",
+      "kind": "driver",
+      "category": "home_field",
+      "claim": "Model baseline — the context model’s constant, home field included — worth +0.6 of the EdgeDesk number, in New England Patriots’s favour.",
+      "weight": 0.6,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "New York Jets’ pass offence rates −0.133 (#28 of 32) and New England Patriots’ pass defence rates −0.110 (#7 of 32). Added the way the model adds them, this pairing sits −0.242 from the league mean, which favours New England Patriots.",
+      "weight": 2.4,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 7.34375,
+          "away": 6.878787878787879,
+          "diff": 0.46,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.063,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 235,
+          "away": 227,
+          "diff": 8,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.034,
+          "at_size": false
+        }
+      ],
+      "observed_result": "New England Patriots 7.34 yards per pass attempt against New York Jets 6.88; New England Patriots 235 net passing yards against New York Jets 227.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "New England Patriots’ pass offence rates +0.120 (#6 of 32) and New York Jets’ pass defence rates +0.220 (#32 of 32). Added the way the model adds them, this pairing sits +0.340 from the league mean, which favours New England Patriots.",
+      "weight": 3.4,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 7.34375,
+          "away": 6.878787878787879,
+          "diff": 0.46,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.063,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 235,
+          "away": 227,
+          "diff": 8,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.034,
+          "at_size": false
+        }
+      ],
+      "observed_result": "New England Patriots 7.34 yards per pass attempt against New York Jets 6.88; New England Patriots 235 net passing yards against New York Jets 227.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "New York Jets’ run offence rates −0.060 (#26 of 32) and New England Patriots’ run defence rates −0.028 (#12 of 32). Added the way the model adds them, this pairing sits −0.087 from the league mean, which favours New England Patriots.",
+      "weight": 0.9,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.111,
+          "away": 3.593,
+          "diff": 0.52,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.126,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 148,
+          "away": 97,
+          "diff": 51,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.345,
+          "at_size": true
+        }
+      ],
+      "observed_result": "New England Patriots 4.11 yards per carry against New York Jets 3.59; New England Patriots 148 rushing yards against New York Jets 97.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "New England Patriots’ run offence rates +0.039 (#8 of 32) and New York Jets’ run defence rates +0.009 (#18 of 32). Added the way the model adds them, this pairing sits +0.048 from the league mean, which favours New England Patriots.",
+      "weight": 0.5,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.111,
+          "away": 3.593,
+          "diff": 0.52,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.126,
+          "at_size": false
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 148,
+          "away": 97,
+          "diff": 51,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.345,
+          "at_size": true
+        }
+      ],
+      "observed_result": "New England Patriots 4.11 yards per carry against New York Jets 3.59; New England Patriots 148 rushing yards against New York Jets 97.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "efficiency",
+      "claim": "New England Patriots holds the largest measured edge in this matchup: New England Patriots +0.157 (#3 of 32) vs New York Jets −0.207 (#32 of 32) — 29 places on the league board.",
+      "weight": 7.3,
+      "favours_team": "New England Patriots",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_play",
+          "available": true,
+          "label": "yards per play",
+          "unit": "yards",
+          "better": "high",
+          "home": 5.6323529412,
+          "away": 5.4,
+          "diff": 0.23,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.041,
+          "at_size": false
+        }
+      ],
+      "observed_result": "New England Patriots 5.63 yards per play against New York Jets 5.4.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: NFL injury report — not loaded in this session.",
+      "weight": 3,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 1,
+      "PARTIALLY CONFIRMED": 9,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 4
+    },
+    "graded": 10,
+    "total": 14,
+    "not_observable": 4,
+    "headline": "1 of 10 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "2026_06_NYJ_NE",
+    "sport": "NFL",
+    "snapshot_id": "snap_333d5cebb265ec96",
+    "graded_at": "2026-10-18T20:20:44.320Z",
+    "final": {
+      "home_team": "New England Patriots",
+      "away_team": "New York Jets",
+      "home_score": 26,
+      "away_score": 19,
+      "margin": 7,
+      "total_points": 45,
+      "winner": "New England Patriots"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "home",
+      "team": "New England Patriots",
+      "point": 7,
+      "line_text": "New England Patriots +7",
+      "book": "BetOnline.ag",
+      "market_home_margin": 7,
+      "model_home_margin": -14.8,
+      "gap": 21.8,
+      "why": "EdgeDesk’s own number sat 21.8 points toward New England Patriots of the quote EdgeDesk captured at BetOnline.ag. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "under",
+      "line": 43.5,
+      "model_total": 41.7,
+      "gap": 1.8,
+      "why": "EdgeDesk’s fair total of 41.7 sat 1.8 points below the captured total of 43.5."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "win",
+        "cover_margin": 14,
+        "side": "home",
+        "point": 7,
+        "team": "New England Patriots",
+        "line_text": "New England Patriots +7"
+      },
+      "total": {
+        "outcome": "loss",
+        "points": 45,
+        "line": 43.5,
+        "side": "under",
+        "by": 1.5,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "win",
+        "side": "home",
+        "team": "New England Patriots"
+      }
+    },
+    "bet_headline": "WIN",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": 14.8,
+      "actual_home_margin": 7,
+      "margin_error": 7.8,
+      "right_side": true,
+      "projected_total": 41.7,
+      "actual_total": 45,
+      "total_error": 3.3,
+      "projected_score": {
+        "away": 13,
+        "home": 28
+      },
+      "inside_published_range": true,
+      "range_text": "-2.2 → +32.8 (New England Patriots)"
+    },
+    "process": {
+      "grade": "MIXED",
+      "reasons": [
+        "0 claims held up, 8 held up in direction only and 0 did not. Parts of the read were right and parts were not.",
+        "EdgeDesk projected a home margin of 14.8 and the game finished 7 the home way — 7.8 points of margin error, inside the range the model published."
+      ],
+      "confirmed": 0,
+      "partial": 8,
+      "wrong": 0,
+      "graded": 8,
+      "high_variance": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "MIXED",
+    "variance_markers": [],
+    "verdict": {
+      "key": "right_partly_for_the_right_reason",
+      "line": "The number landed, and some of the reasoning behind it held up. Take the result; do not take it as confirmation of the parts that did not."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_06_NYJ_NE:unobservable",
+      "game_id": "2026_06_NYJ_NE",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 6,
+      "article_id": "postgame-nfl-2026_06_NYJ_NE",
+      "snapshot_id": "snap_333d5cebb265ec96",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "1 of the claims in this article rested on model.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model.",
+      "bet_result": "WIN",
+      "process_grade": "MIXED",
+      "created_at": "2026-10-18T20:20:44.320Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_06_NYJ_NE:disagreement_landed",
+      "game_id": "2026_06_NYJ_NE",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 6,
+      "article_id": "postgame-nfl-2026_06_NYJ_NE",
+      "snapshot_id": "snap_333d5cebb265ec96",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it New England Patriots −15.0 where the market has New England Patriots −7.0 at BetOnline.ag — a 7.8 points disagreement.",
+      "actual_result": "New England Patriots won by 7. the result landed on EdgeDesk’s side of the market number: New England Patriots beat a margin of -7",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "WIN",
+      "process_grade": "MIXED",
+      "created_at": "2026-10-18T20:20:44.320Z"
+    }
+  ]
+}
