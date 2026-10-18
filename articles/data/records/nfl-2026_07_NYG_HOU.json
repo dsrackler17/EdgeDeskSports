@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-18T15:47:07.958Z",
-  "generated_at": "2026-10-18T15:47:07.958Z",
+  "updated_at": "2026-10-17T15:27:16.692Z",
+  "generated_at": "2026-10-17T20:29:56.324Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.0-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Houston Texans −8.5",
@@ -131,7 +131,7 @@
       "sample_games": 80,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.0-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1147,10 +1147,14 @@
       "available": true,
       "model": "Houston Texans −8.5",
       "model_raw": "Houston Texans -8.5",
-      "market": "Houston Texans −7.5",
-      "difference": "1.0 points",
+      "market": "Houston Texans −7.0",
+      "difference": "1.5 points",
       "rounding_note": null,
-      "key_number": null,
+      "key_number": {
+        "text": "Market sits on 7; model is above 7.",
+        "detail": "Houston Texans: market −7.0, model fair −8.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
       "total_model": "41.5",
       "total_model_raw": "41.5",
       "total_market": "41.5",
@@ -1160,14 +1164,14 @@
       "capture_age": null,
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.0-point gap is context only and the game is excluded from research ranking.",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Houston Texans 25, New York Giants 17.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.0-point gap is context only and the game is excluded from research ranking.",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1309,6 +1313,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-18T15:47:07.958Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }
