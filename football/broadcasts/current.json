@@ -1,8 +1,8 @@
 {
  "schema": "edgedesk_broadcast_listings_v1",
  "version": "edgedesk_broadcast/1",
- "generated_at": "2026-10-18T02:08:01.923Z",
- "week": 7,
+ "generated_at": "2026-10-18T03:07:59.930Z",
+ "week": 8,
  "source": {
   "name": "ESPN scoreboard",
   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
@@ -12,16 +12,48 @@
  "rule": "A listing is what ESPN’s scoreboard carried at retrieved_at; it is verified by lib/edgedesk_broadcast.js and printed only when CONFIRMED and fresh. A failed fetch keeps the previous listing with its real retrieval time.",
  "fetches": [
   {
-   "day": "20261017",
-   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261017",
+   "day": "20261020",
+   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261020",
    "ok": false,
    "status": 403,
    "error": "HTTP 403",
    "retrieved_at": null
+  },
+  {
+   "day": "20261021",
+   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261021",
+   "ok": false,
+   "status": 403,
+   "error": "HTTP 403",
+   "retrieved_at": null
+  },
+  {
+   "day": "20261022",
+   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261022",
+   "ok": false,
+   "status": 403,
+   "error": "HTTP 403",
+   "retrieved_at": null
+  },
+  {
+   "day": "20261023",
+   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261023",
+   "ok": false,
+   "status": null,
+   "error": "host circuit open: HTTP 403 x3",
+   "retrieved_at": null
+  },
+  {
+   "day": "20261024",
+   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261024",
+   "ok": false,
+   "status": null,
+   "error": "host circuit open: HTTP 403 x3",
+   "retrieved_at": null
   }
  ],
  "coverage": {
-  "games": 5,
+  "games": 56,
   "refreshed": 0,
   "kept_from_previous": 0
  },
