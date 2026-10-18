@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-18T16:07:40.204Z",
- "board_generated_at": "2026-10-18T16:07:33.880Z",
+ "generated_at": "2026-10-18T16:10:07.824Z",
+ "board_generated_at": "2026-10-18T16:10:03.247Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,6 +15,204 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
+  {
+   "game_id": "401856841",
+   "game": "West Virginia @ TCU",
+   "kickoff": "2026-10-24T16:00:00.000Z",
+   "named": false,
+   "edgedesk": "TCU −14.5",
+   "market": "TCU −7.0",
+   "books": 1,
+   "gap": 7.3,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T16:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Amon G. Carter Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1.2 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: TCU: Jaden Craig (previous game) · PASS: West Virginia: Michael Hawkins Jr. (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: TCU: availability sources checked, nothing filed · PASS: West Virginia: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.2 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 5.5 — the extreme is not supported by how margins of this size have actually finished"
+    }
+   ],
+   "consistent": true,
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+  },
+  {
+   "game_id": "401860906",
+   "game": "Utah State @ Texas State",
+   "kickoff": "2026-10-24T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Texas State −16.5",
+   "market": "Texas State −9.5",
+   "books": 1,
+   "gap": 7.2,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T23:30:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Bobcat Stadium (TX)), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 2.3 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Texas State: Brad Jackson (previous game) · PASS: Utah State: Grady Brosterhous (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Texas State: availability sources checked, nothing filed · PASS: Utah State: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "WARN: the matchup term alone (2.6 pts) lifts the gap over 7: without it the gap is 4.5 — historically informative, flagged for scrutiny"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.4 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 5.2 — the extreme is not supported by how margins of this size have actually finished"
+    }
+   ],
+   "consistent": true,
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+  },
+  {
+   "game_id": "401866449",
+   "game": "Eastern Michigan @ Ohio",
+   "kickoff": "2026-10-24T20:00:00.000Z",
+   "named": false,
+   "edgedesk": "Ohio −18.5",
+   "market": "Ohio −9.5",
+   "books": 1,
+   "gap": 9,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T20:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Peden Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 0.9 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Ohio: Nick Poulos (previous game) · PASS: Eastern Michigan: Noah Kim (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Ohio: availability sources checked, nothing filed · PASS: Eastern Michigan: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "WARN: the matchup term alone (2.8 pts) lifts the gap over 7: without it the gap is 6.2 — historically informative, flagged for scrutiny"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.9 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7 — the extreme is not supported by how margins of this size have actually finished"
+    }
+   ],
+   "consistent": true,
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+  },
   {
    "game_id": "401869845",
    "game": "James Madison @ App State",
@@ -146,204 +344,6 @@
    ],
    "consistent": true,
    "verdict": "INVESTIGATE is correct: submodel support fail."
-  },
-  {
-   "game_id": "401856841",
-   "game": "West Virginia @ TCU",
-   "kickoff": "2026-10-24T16:00:00.000Z",
-   "named": false,
-   "edgedesk": "TCU −14.5",
-   "market": "TCU −7.0",
-   "books": 1,
-   "gap": 7.3,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
-   "decision_status": "NO_DECISION",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T16:00:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Amon G. Carter Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1.2 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: TCU: Jaden Craig (previous game) · PASS: West Virginia: Michael Hawkins Jr. (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: TCU: availability sources checked, nothing filed · PASS: West Virginia: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.2 pts on EdgeDesk’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 5.5 — the extreme is not supported by how margins of this size have actually finished"
-    }
-   ],
-   "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
-  },
-  {
-   "game_id": "401860906",
-   "game": "Utah State @ Texas State",
-   "kickoff": "2026-10-24T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Texas State −16.5",
-   "market": "Texas State −9.5",
-   "books": 1,
-   "gap": 7.2,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
-   "decision_status": "NO_DECISION",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T23:30:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Bobcat Stadium (TX)), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 2.3 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Texas State: Brad Jackson (previous game) · PASS: Utah State: Grady Brosterhous (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Texas State: availability sources checked, nothing filed · PASS: Utah State: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "WARN: the matchup term alone (2.6 pts) lifts the gap over 7: without it the gap is 4.5 — historically informative, flagged for scrutiny"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.4 pts on EdgeDesk’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 5.2 — the extreme is not supported by how margins of this size have actually finished"
-    }
-   ],
-   "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
-  },
-  {
-   "game_id": "401866449",
-   "game": "Eastern Michigan @ Ohio",
-   "kickoff": "2026-10-24T20:00:00.000Z",
-   "named": false,
-   "edgedesk": "Ohio −18.5",
-   "market": "Ohio −9.5",
-   "books": 1,
-   "gap": 9,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
-   "decision_status": "NO_DECISION",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T20:00:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Peden Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 0.9 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Ohio: Nick Poulos (previous game) · PASS: Eastern Michigan: Noah Kim (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Ohio: availability sources checked, nothing filed · PASS: Eastern Michigan: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "WARN: the matchup term alone (2.8 pts) lifts the gap over 7: without it the gap is 6.2 — historically informative, flagged for scrutiny"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.9 pts on EdgeDesk’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7 — the extreme is not supported by how margins of this size have actually finished"
-    }
-   ],
-   "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
   }
  ],
  "inconsistent": [],
