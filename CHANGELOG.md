@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-18 — Discord: the model's daily results also post in #clv-results
+
+**Each morning's results post (how EdgeDesk's pregame numbers did yesterday, every game) now also goes to #clv-results**, one post per sport, next to the weekly CLV scorecard. It uses the existing `DISCORD_WEBHOOK_CLV_RESULTS` webhook, so no new secret is needed.
+
+- **The same post.** The embeds are the ones the sport's channel gets, from the `/performance/` record, misses printed like hits.
+- **The same timing.** It goes out at the 10:00 CT slate tick, or at 10:30 when a final from yesterday is still unverified.
+- **Claimed on its own.** Its key is `results:DISCORD_WEBHOOK_CLV_RESULTS:<sport>:<date>`, so a failure in one channel never holds or repeats the other.
+- **Deploying.** The posts change only once the function is redeployed (the Deploy Discord posts workflow). No SQL change.
+
 ## 2026-10-17 — Discord: the football slate prints half-point lines
 
 **The daily NFL and college football Discord slates now print EdgeDesk's numbers the way the site does**, from the same code (`lib/edgedesk_football_lines.js`, now copied into `supabase/functions/discord_cron/index.ts` by `tools/presentation/inline.js`).

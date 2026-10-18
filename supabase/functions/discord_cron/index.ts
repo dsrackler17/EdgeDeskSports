@@ -22,8 +22,9 @@
 //   action 'slate'  daily 10:00 CT, to each sport's channel. First
 //       yesterday's results: how EdgeDesk's pregame numbers did, every game,
 //       from the /performance/ record (misses printed like hits; a day with an
-//       unverified final waits for the 10:30 tick). Then today's slate: game,
-//       time, the book's line, the opening line and the move since the open,
+//       unverified final waits for the 10:30 tick). The same results post also
+//       goes to #clv-results, one per sport, claimed on its own. Then today's
+//       slate: game, time, the book's line, the opening line and the move since the open,
 //       and the forecast for outdoor football games where EdgeDesk has one.
 //       Where EdgeDesk owns no consensus or opener (NBA, CBB, NHL: one book's
 //       quote via ESPN), the post names the book and shows no move; when the
@@ -99,7 +100,7 @@
 // ============================================================
 
 /* WHICH CODE IS ANSWERING. Returned by the GET probe. Bump on every change. */
-export const BUILD = "discord_cron-2026-10-16-r2";
+export const BUILD = "discord_cron-2026-10-18-r1";
 
 // ------------------------------------------------------------------ config
 
@@ -1297,7 +1298,9 @@ async function slateForSport(rt: Runtime, sport: SportId, slate: { data: Row | n
    hash-chained ledger): the same grades the public page shows, misses
    printed exactly like hits. Posted at the 10:00 tick; when a game from
    yesterday still has no verified final it waits for the 10:30 tick, then
-   posts with that game marked pending. */
+   posts with that game marked pending. Each sport's post goes to its own
+   channel and to #clv-results; the two are claimed apart, so one failing
+   never holds or repeats the other. */
 export type PerfBook = { ok: boolean; reason: string | null; rows: Row[] };
 async function loadPerformance(rt: Runtime): Promise<PerfBook> {
   const sum = await siteJson(rt, 'performance/data/summary.json');
@@ -1371,22 +1374,23 @@ export function renderResults(sport: SportId, date: string, rows: Row[], c: Cfg)
   };
 }
 
-async function resultsForSport(rt: Runtime, sport: SportId, perf: PerfBook, o: { dryRun: boolean; ignoreSchedule: boolean }): Promise<Outcome> {
+async function resultsForSport(rt: Runtime, sport: SportId, perf: PerfBook, o: { dryRun: boolean; ignoreSchedule: boolean }, channel: string = SPORTS[sport].channel): Promise<Outcome> {
   const c = rt.c, now = rt.now(), lp = localParts(now), S = SPORTS[sport];
   const day = addDays(lp.date, -1);
-  const key = `results:${S.channel}:${day}`;
-  const out: Outcome = { action: 'results', sport, key };
+  /* #clv-results carries every sport, so its key also names the sport */
+  const key = channel === S.channel ? `results:${channel}:${day}` : `results:${channel}:${sport}:${day}`;
+  const out: Outcome = { action: 'results', sport, channel, key };
   if (!o.dryRun) {
     const cs = await claimState(c, key);
     if (cs.state && cs.state !== 'failed') return { ...out, result: 'already_posted', state: cs.state };
   }
-  if (!perf.ok) { await logSkip(c, S.channel, 'results', key, day, 'results not posted: ' + perf.reason); return { ...out, result: 'skipped', reason: perf.reason }; }
+  if (!perf.ok) { await logSkip(c, channel, 'results', key, day, 'results not posted: ' + perf.reason); return { ...out, result: 'skipped', reason: perf.reason }; }
   const rows = perf.rows.filter((r) => r.sport === S.perf && ms(r.start_utc) != null && localDate(ms(r.start_utc)!) === day)
     .sort((a, b) => ms(a.start_utc)! - ms(b.start_utc)! || str(a.home).localeCompare(str(b.home)));
   if (!rows.length) return { ...out, result: 'none', reason: `no ${S.label} games on record for ${day}` };
   const pending = rows.filter((r) => !r.grade && str((r.result as Row | undefined)?.state) !== 'VOID').length;
   if (pending && !o.ignoreSchedule && lp.minute < 30) return { ...out, result: 'waiting', reason: `${pending} final${pending === 1 ? '' : 's'} not yet verified; posting at the :30 tick` };
-  const r = await postToDiscord(S.channel, renderResults(sport, day, rows, c), { type: 'results', postKey: key, postDate: day, dryRun: o.dryRun, detail: { games: rows.length, pending } }, rt);
+  const r = await postToDiscord(channel, renderResults(sport, day, rows, c), { type: 'results', postKey: key, postDate: day, dryRun: o.dryRun, detail: { games: rows.length, pending } }, rt);
   return { ...out, result: r.status, error: r.error, games: rows.length, pending, messages: r.messages, printed: r.printed };
 }
 
@@ -1399,9 +1403,12 @@ export async function runSlate(rt: Runtime, o: { dryRun?: boolean; ignoreSchedul
   const dryRun = o.dryRun ?? rt.c.dryRun;
   const results: Outcome[] = [];
   for (const sport of o.sports ?? SPORT_ORDER) {
-    /* yesterday's results first, so the channel reads results, then today */
-    try { results.push(await resultsForSport(rt, sport, perf, { dryRun, ignoreSchedule: !!o.ignoreSchedule })); }
-    catch (e) { results.push({ action: 'results', sport, result: 'error', error: clip(scrub(errMsg(e)), 300) }); }
+    /* yesterday's results first, so the channel reads results, then today;
+       the same results also go to #clv-results */
+    for (const channel of [SPORTS[sport].channel, CHANNEL.clv]) {
+      try { results.push(await resultsForSport(rt, sport, perf, { dryRun, ignoreSchedule: !!o.ignoreSchedule }, channel)); }
+      catch (e) { results.push({ action: 'results', sport, channel, result: 'error', error: clip(scrub(errMsg(e)), 300) }); }
+    }
     try { results.push(await slateForSport(rt, sport, slate, { dryRun }, proj)); }
     catch (e) { results.push({ action: 'slate', sport, result: 'error', error: clip(scrub(errMsg(e)), 300) }); }
   }

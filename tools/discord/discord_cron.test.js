@@ -18,6 +18,8 @@
      slate           observed lines, the open and the move only where EdgeDesk
                      owns them; outdoor weather only; a stale sync or no games
                      is a logged skip, never a partial post
+     results         yesterday's grades from /performance/, to the sport's
+                     channel and to #clv-results, each claimed on its own
      scorecard       the public record's numbers per sport, small samples
                      labelled not hidden, a bad week printed like a good one,
                      Brier from the verified tier, the samples' own record
@@ -525,9 +527,12 @@ function reset(over) {
           total: { projected_total: 52.4, actual_total: 44, abs_error: 8.4 }, market: { spread: { line: -4.5, market_abs_error: 5.5 }, total: { line: 45.5, market_abs_error: 1.5 }, clv: { spread_pts: 1, total_pts: 0 } } } }),
     ] };
   }
+  const resClv = (sp) => o.results.find((x) => x.sport === sp && x.action === 'results' && x.channel === 'DISCORD_WEBHOOK_CLV_RESULTS');
+  const resultPosts = (hook, sport) => DISCORD.filter((d) => d.url.startsWith(hook) && new RegExp(sport + ' results').test(d.body.embeds[0].title));
   resultsFixture();
   o = await M.runSlate(rt(), { sports: ['nhl', 'nfl'] });
   chk('10:00: a final still unverified from yesterday holds the results for the :30 tick', res_('nhl', 'results').result === 'waiting' && /1 final not yet verified/.test(res_('nhl', 'results').reason), o.results);
+  chk('…in #clv-results too', resClv('nhl').result === 'waiting' && resultPosts(HOOK(1), 'NHL').length === 0, resClv('nhl'));
   chk('…while a sport with every final in posts at once, before its slate', res_('nfl', 'results').result === 'sent'
     && DISCORD.findIndex((d) => d.url.startsWith(HOOK(2)) && /NFL results/.test(d.body.embeds[0].title)) >= 0);
   const nflR = DISCORD.find((d) => /NFL results/.test(d.body.embeds[0].title)).body.embeds[0];
@@ -538,6 +543,10 @@ function reset(over) {
     && /Margin: EdgeDesk Philadelphia Eagles by 5\.2 · actual Philadelphia Eagles by 10 · off by 4\.8 \(the book's line off by 5\.5\)/.test(nflR.fields[0].value)
     && /Total: EdgeDesk 52\.4 · actual 44 · off by 8\.4 \(the book's off by 1\.5\)/.test(nflR.fields[0].value)
     && /Close: the line moved 1\.0 pts toward EdgeDesk's number/.test(nflR.fields[0].value), nflR);
+  chk('the same NFL results post goes to #clv-results, claimed under its own key', resClv('nfl').result === 'sent'
+    && resClv('nfl').key === 'results:DISCORD_WEBHOOK_CLV_RESULTS:nfl:2026-10-15' && res_('nfl', 'results').key === 'results:DISCORD_WEBHOOK_NFL:2026-10-15'
+    && resultPosts(HOOK(1), 'NFL').length === 1 && JSON.stringify(resultPosts(HOOK(1), 'NFL')[0].body.embeds) === JSON.stringify(resultPosts(HOOK(2), 'NFL')[0].body.embeds)
+    && DB.discord_post_claims.some((x) => x.post_key === 'results:DISCORD_WEBHOOK_CLV_RESULTS:nfl:2026-10-15' && x.state === 'sent' && x.type === 'results'), resClv('nfl'));
   NOW += 30 * MIN;
   o = await M.runSlate(rt(), { sports: ['nhl', 'nfl'] });
   const nhlR = DISCORD.find((d) => /NHL results/.test(d.body.embeds[0].title)).body.embeds[0];
@@ -548,13 +557,25 @@ function reset(over) {
     && nhlR.fields[2].value === 'Result not yet verified' && !nhlR.fields.some((f) => /Utah/.test(f.name)), nhlR);
   chk('…linked to the public record, with the slate footer, and no pick language', nhlR.url === 'https://edgedesksports.com/performance/' && nhlR.footer.text === 'Research, not betting advice. 18+.'
     && M.copyViolations(JSON.stringify(nhlR)).length === 0);
-  chk('results go out once: NFL is not re-posted at 10:30', res_('nfl', 'results').result === 'already_posted'
-    && DISCORD.filter((d) => /NFL results/.test(d.body.embeds[0].title)).length === 1);
+  chk('…and the NHL results reach #clv-results at 10:30 as well', resClv('nhl').result === 'sent' && resultPosts(HOOK(1), 'NHL').length === 1 && resultPosts(HOOK(6), 'NHL').length === 1);
+  chk('results go out once: NFL is not re-posted at 10:30, in either channel', res_('nfl', 'results').result === 'already_posted' && resClv('nfl').result === 'already_posted'
+    && resultPosts(HOOK(2), 'NFL').length === 1 && resultPosts(HOOK(1), 'NFL').length === 1);
+  resultsFixture();
+  RESPOND = [{ status: 200, body: { id: 'a', channel_id: 'c' } }, { status: 403, body: { message: 'Unknown Webhook' } }];
+  o = await M.runSlate(rt(), { sports: ['nfl'] });
+  chk('#clv-results refusing the post fails only that copy: the NFL channel still has its results', res_('nfl', 'results').result === 'sent'
+    && resClv('nfl').result === 'failed' && resultPosts(HOOK(2), 'NFL').length === 1, o.results);
+  NOW += 30 * MIN;
+  o = await M.runSlate(rt(), { sports: ['nfl'] });
+  chk('…and the :30 tick retries #clv-results alone', resClv('nfl').result === 'sent' && res_('nfl', 'results').result === 'already_posted'
+    && resultPosts(HOOK(2), 'NFL').length === 1, o.results);
   resultsFixture();
   delete SITE['performance/data/summary.json'];
   o = await M.runSlate(rt(), { sports: ['nfl'] });
   chk('an unreadable /performance/ record: the results are skipped and logged, the slate still posts', res_('nfl', 'results').result === 'skipped'
     && DB.discord_posts.some((p) => p.type === 'results' && p.status === 'skipped' && /summary could not be read/.test(p.error)));
+  chk('…and the #clv-results skip is logged too', resClv('nfl').result === 'skipped'
+    && DB.discord_posts.some((p) => p.channel === 'DISCORD_WEBHOOK_CLV_RESULTS' && p.type === 'results' && p.status === 'skipped'));
 
   /* ═══ the CLV scorecard ═══════════════════════════════════════════════════ */
   function scoreFixture() {
