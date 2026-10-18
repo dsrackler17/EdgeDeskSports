@@ -11,7 +11,7 @@
   ],
   "title": "Los Angeles Rams vs. Las Vegas Raiders: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Los Angeles Rams vs. Las Vegas Raiders 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Los Angeles Rams at Las Vegas Raiders: Las Vegas Raiders +5.0, fair total 49.5. Los Angeles Rams wins 68% of simulations. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Los Angeles Rams at Las Vegas Raiders: Las Vegas Raiders +5.0, fair total 49.5. Los Angeles Rams wins 68% of simulations. Model status STALE MARKET. Research, not picks.",
   "excerpt": "Los Angeles Rams carries the stronger EdgeDesk offensive profile (#3 in EPA per play), while Las Vegas Raiders owns the more favourable defensive matchup (#13 in EPA allowed per play). EdgeDesk’s independent projection makes it Las Vegas Raiders +5.0 with…",
   "home_team": "Las Vegas Raiders",
   "away_team": "Los Angeles Rams",
@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T20:25:00.000Z",
   "game_when_label": "2026-10-25 20:25 UTC",
   "published_at": null,
-  "updated_at": "2026-10-18T20:33:38.140Z",
-  "generated_at": "2026-10-18T20:33:38.140Z",
+  "updated_at": "2026-10-17T15:27:16.692Z",
+  "generated_at": "2026-10-17T20:29:56.324Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "STALE MARKET",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.9-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Las Vegas Raiders +5.0",
@@ -130,8 +130,8 @@
       "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 80 absorbed 2026 games.",
       "sample_games": 80,
       "seeded": true,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "STALE MARKET",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.9-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1164,18 +1164,34 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Las Vegas Raiders +5.0",
       "model_raw": "Las Vegas Raiders +5.1",
+      "market": "Las Vegas Raiders +7.0",
+      "difference": "1.9 points",
+      "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "key_number": {
+        "text": "Market sits on 7; model is below 7.",
+        "detail": "Los Angeles Rams: market −7.0, model fair −5.0.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
       "total_model": "49.5",
       "total_model_raw": "49.7",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "48.5",
+      "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "total_difference": "1.2 points",
+      "book": "nflverse reference",
+      "capture_age": null,
+      "stale": false,
+      "classification": "STALE MARKET",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.9-point gap is context only and the game is excluded from research ranking.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Los Angeles Rams 27, Las Vegas Raiders 22.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "STALE MARKET",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.9-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1307,8 +1323,7 @@
     },
     "notes": [
       "EdgeDesk’s line is Las Vegas Raiders +5.0 with a fair total of 49.5, before any book is consulted.",
-      "Las Vegas Raiders wins 32% of the time in EdgeDesk’s distribution, Los Angeles Rams 68%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "Las Vegas Raiders wins 32% of the time in EdgeDesk’s distribution, Los Angeles Rams 68%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1318,6 +1333,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-18T20:33:38.140Z"
+    "at": "2026-10-17T20:29:56.324Z"
   }
 }
