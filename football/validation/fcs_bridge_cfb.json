@@ -1,58 +1,58 @@
 {
  "schema": "edgedesk_fcs_bridge_validation_v1",
  "season": 2026,
- "generated_at": "2026-10-17T18:09:26.841Z",
+ "generated_at": "2026-10-18T04:48:12.082Z",
  "method": "walk-forward over every completed 2026 FBS-vs-FCS game: the FCS side rated from the 2025 fit carried forward and only the 2026 results before kickoff; the FBS side at the rating EdgeDesk priced it at before the game (engine replay). Errors are against the final margin, capped at the engine’s own ±35 (and uncapped beside it).",
- "n": 119,
+ "n": 121,
  "capped": {
   "floor": {
-   "n": 119,
-   "mae": 9.57,
-   "rmse": 12.16,
-   "bias": 0.05
+   "n": 121,
+   "mae": 9.49,
+   "rmse": 12.08,
+   "bias": -0.04
   },
   "bridge": {
-   "n": 119,
-   "mae": 9.5,
-   "rmse": 11.88,
-   "bias": -0.74
+   "n": 121,
+   "mae": 9.44,
+   "rmse": 11.8,
+   "bias": -0.82
   },
   "prior_only": {
-   "n": 119,
-   "mae": 9.36,
-   "rmse": 11.84,
-   "bias": -1.52
+   "n": 121,
+   "mae": 9.27,
+   "rmse": 11.75,
+   "bias": -1.57
   }
  },
  "uncapped": {
   "floor": {
-   "n": 119,
-   "mae": 17.23,
-   "rmse": 20.94,
+   "n": 121,
+   "mae": 17.09,
+   "rmse": 20.8,
    "bias": -9.11
   },
   "bridge": {
-   "n": 119,
-   "mae": 16.16,
-   "rmse": 19.37,
+   "n": 121,
+   "mae": 16.05,
+   "rmse": 19.26,
    "bias": -9.89
   },
   "prior_only": {
-   "n": 119,
-   "mae": 16.35,
-   "rmse": 19.67,
-   "bias": -10.67
+   "n": 121,
+   "mae": 16.21,
+   "rmse": 19.54,
+   "bias": -10.64
   }
  },
  "paired_abs_error_reduction": {
-  "mean": 0.07,
-  "se": 0.65,
-  "t": 0.11,
-  "bridge_closer": 58,
-  "of": 119
+  "mean": 0.06,
+  "se": 0.64,
+  "t": 0.09,
+  "bridge_closer": 59,
+  "of": 121
  },
  "floor_value": -28,
- "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.11, n = 119).",
+ "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.09, n = 121).",
  "rows": [
   {
    "game_id": "401856767",
@@ -1243,6 +1243,26 @@
    "floor": 41.59,
    "bridge": 43.95,
    "bridge_sd": 7.53
+  },
+  {
+   "game_id": "401858261",
+   "week": 7,
+   "fcs": "charlestonsouthern",
+   "fbs": "clemson",
+   "actual": 37,
+   "floor": 29.04,
+   "bridge": 30.44,
+   "bridge_sd": 6.51
+  },
+  {
+   "game_id": "401856725",
+   "week": 7,
+   "fcs": "thecitadel",
+   "fbs": "texasam",
+   "actual": 41,
+   "floor": 30.75,
+   "bridge": 28.1,
+   "bridge_sd": 6.55
   }
  ]
 }
