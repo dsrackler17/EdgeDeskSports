@@ -20,9 +20,9 @@
   "week": 7,
   "season": 2026,
   "game_time": "2026-10-17T23:30:00.000Z",
-  "published_at": "2026-10-18T03:40:43.211Z",
-  "updated_at": "2026-10-18T03:40:43.211Z",
-  "generated_at": "2026-10-18T03:40:43.211Z",
+  "published_at": null,
+  "updated_at": "2026-10-18T04:00:47.439Z",
+  "generated_at": "2026-10-18T04:00:47.439Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "UNTESTED",
   "model_status_note": "The number landed, in a game whose scoreline came largely from outside the matchup. That is a result, not a verification.",
@@ -34,9 +34,9 @@
   "canonical_url": "https://edgedesksports.com/articles/notre-dame-vs-byu-2026-postgame-analysis",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "published",
+  "status": "draft",
   "frozen": true,
-  "frozen_at": "2026-10-18T03:40:43.211Z",
+  "frozen_at": "2026-10-18T04:00:47.439Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-16. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -4152,7 +4152,7 @@
     "sport": "CFB",
     "season": 2026,
     "week": 7,
-    "observed_at": "2026-10-18T03:40:43.211Z",
+    "observed_at": "2026-10-18T04:00:47.439Z",
     "kickoff": "2026-10-17T23:30:00.000Z",
     "final_seen_at": null,
     "home_team": "BYU Cougars",
@@ -4228,7 +4228,7 @@
         "clock": "9:21",
         "team": "BYU Cougars",
         "type": "TD",
-        "text": "B. Bachmeier run for 5 yds, for a TD (M. Dunn KICK)",
+        "text": "Bear Bachmeier 5 Yd Run (Matthias Dunn Kick)",
         "scoring_type": "Touchdown",
         "home_score": 7,
         "away_score": 0
@@ -4238,7 +4238,7 @@
         "clock": "5:06",
         "team": "Notre Dame Fighting Irish",
         "type": "FG",
-        "text": "S. Porath 46 yd FG GOOD",
+        "text": "Spencer Porath 46 Yd Field Goal",
         "scoring_type": "Field Goal",
         "home_score": 7,
         "away_score": 3
@@ -4248,7 +4248,7 @@
         "clock": "10:37",
         "team": "Notre Dame Fighting Irish",
         "type": "TD",
-        "text": "N. James Jr. run for 8 yds, for a TD (S. Porath KICK)",
+        "text": "Nolan James Jr. 8 Yd Run (Spencer Porath Kick)",
         "scoring_type": "Touchdown",
         "home_score": 7,
         "away_score": 10
@@ -4257,8 +4257,8 @@
         "period": 2,
         "clock": "5:52",
         "team": "BYU Cougars",
-        "type": "TD",
-        "text": "K. Kasper pass to B. Bachmeier for 15 yds, for a TD (M. Dunn KICK)",
+        "type": "REC",
+        "text": "Bear Bachmeier 15 Yd pass from Kyler Kasper (Matthias Dunn Kick)",
         "scoring_type": "Touchdown",
         "home_score": 14,
         "away_score": 10
@@ -4268,7 +4268,7 @@
         "clock": "1:29",
         "team": "BYU Cougars",
         "type": "TD",
-        "text": "B. Bachmeier run for 1 yd, for a TD (M. Dunn KICK)",
+        "text": "Bear Bachmeier 1 Yd Run (Matthias Dunn Kick)",
         "scoring_type": "Touchdown",
         "home_score": 21,
         "away_score": 10
@@ -4278,7 +4278,7 @@
         "clock": "3:17",
         "team": "Notre Dame Fighting Irish",
         "type": "FG",
-        "text": "S. Porath 31 yd FG GOOD",
+        "text": "Spencer Porath 31 Yd Field Goal",
         "scoring_type": "Field Goal",
         "home_score": 21,
         "away_score": 13
@@ -4288,7 +4288,7 @@
         "clock": "0:11",
         "team": "Notre Dame Fighting Irish",
         "type": "FG",
-        "text": "S. Porath 39 yd FG GOOD",
+        "text": "Spencer Porath 39 Yd Field Goal",
         "scoring_type": "Field Goal",
         "home_score": 21,
         "away_score": 16
@@ -4298,7 +4298,7 @@
         "clock": "9:31",
         "team": "Notre Dame Fighting Irish",
         "type": "TD",
-        "text": "J. Walton run for 3 yds, for a TD (J. Walton Run For Two-point Conversion)",
+        "text": "Jonaz Walton 3 Yd Run (Jonaz Walton Run for Two-Point Conversion)",
         "scoring_type": "Touchdown",
         "home_score": 21,
         "away_score": 24
@@ -4308,7 +4308,7 @@
         "clock": "1:47",
         "team": "BYU Cougars",
         "type": "TD",
-        "text": "B. Bachmeier pass to W. Lyons for 6 yds, for a TD (M. Dunn KICK)",
+        "text": "Walker Lyons 6 Yd pass from Bear Bachmeier (Matthias Dunn Kick)",
         "scoring_type": "Touchdown",
         "home_score": 28,
         "away_score": 24
@@ -4319,12 +4319,13 @@
         "team": "BYU Cougars",
         "drives": 10,
         "plays": 67,
-        "yards": 376,
+        "yards": 375,
         "scoring": 4,
         "results": {
           "TD": 4,
           "PUNT": 3,
-          "DOWNS": 2,
+          "END OF HALF": 1,
+          "DOWNS": 1,
           "INT": 1
         }
       },
@@ -4337,23 +4338,22 @@
         "results": {
           "FG": 3,
           "TD": 2,
-          "PUNT": 3,
-          "END OF HALF": 1,
+          "PUNT": 4,
           "FUMBLE": 1,
-          "END OF QUARTER": 1
+          "END OF GAME": 1
         }
       }
     ],
     "win_probability": {
       "provider": "espn win probability",
-      "points": 195,
-      "opening_home_pct": 21.9,
+      "points": 196,
+      "opening_home_pct": 20.8,
       "closing_home_pct": 100,
       "largest_swing": {
-        "delta": 0.49,
-        "from": 0.51,
-        "to": 1,
-        "play_id": "401856809828"
+        "delta": 0.35,
+        "from": 0.52,
+        "to": 0.87,
+        "play_id": "401856809750"
       }
     },
     "leaders": [
@@ -4919,7 +4919,7 @@
     "game_id": "401856809",
     "sport": "CFB",
     "snapshot_id": "snap_330e022721206aea",
-    "graded_at": "2026-10-18T03:40:43.211Z",
+    "graded_at": "2026-10-18T04:00:47.439Z",
     "final": {
       "home_team": "BYU Cougars",
       "away_team": "Notre Dame Fighting Irish",
@@ -5035,7 +5035,7 @@
       "suggested_investigation": "These claims carried 12.5 points of the published number between them and were contradicted. Check whether the same category has been contradicted in other games this season before touching anything.",
       "bet_result": "WIN",
       "process_grade": "UNTESTED",
-      "created_at": "2026-10-18T03:40:43.211Z"
+      "created_at": "2026-10-18T04:00:47.439Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -5059,7 +5059,7 @@
       "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
       "bet_result": "WIN",
       "process_grade": "UNTESTED",
-      "created_at": "2026-10-18T03:40:43.211Z"
+      "created_at": "2026-10-18T04:00:47.439Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -5083,7 +5083,7 @@
       "suggested_investigation": "Track disagreements of this size across the season. The question is not whether one landed; it is whether the class of them has any edge at all.",
       "bet_result": "WIN",
       "process_grade": "UNTESTED",
-      "created_at": "2026-10-18T03:40:43.211Z"
+      "created_at": "2026-10-18T04:00:47.439Z"
     }
   ],
   "pregame_published_at": null,
@@ -5096,23 +5096,22 @@
   "generation_version": "edgedesk_postgame_article_v1",
   "quality": {
     "score": 100,
-    "publishable": true,
-    "manual_review_required": false,
-    "hold_reason": null,
-    "integrity_failed": [],
+    "publishable": false,
+    "manual_review_required": true,
+    "hold_reason": "FACTUAL INTEGRITY: no_unsupported_statistics",
+    "integrity_failed": [
+      {
+        "id": "no_unsupported_statistics",
+        "why": "every figure on the page must trace to the research snapshot, the result record or this repository’s own arithmetic",
+        "detail": "87 in \"MEDIUM The largest single swing The provider’s own win-probability series moved 35 percentage points on one play, from 52% to 87% for the ho\""
+      }
+    ],
     "craft_failed": [],
-    "at": "2026-10-18T03:40:43.211Z"
+    "at": "2026-10-18T04:00:47.439Z"
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-18T03:40:43.211Z"
-  },
-  "publish_state": {
-    "ok": true,
-    "at": "2026-10-18T03:40:43.211Z",
-    "blocking": [],
-    "warnings": [],
-    "hold_reason": null
+    "at": "2026-10-18T04:00:47.439Z"
   }
 }
