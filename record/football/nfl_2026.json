@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk Football Engine · NFL",
  "projection_source": "football/nfl/slate.json",
- "updated_at": "2026-10-18T22:30:13.008Z",
+ "updated_at": "2026-10-18T23:40:49.152Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -12436,20 +12436,109 @@
     "book": "consensus",
     "at": "2026-10-13T19:53:23.706Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -12.5,
+    "total": 51.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "prices": {
+     "home": -115,
+     "away": -105,
+     "over": -105,
+     "under": -115,
+     "home_ml": -700,
+     "away_ml": 500
+    }
+   },
+   "final": {
+    "home_score": 16,
+    "away_score": 18,
+    "source": "nflverse",
+    "at": "2026-10-18T23:40:49.152Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 4.1,
+     "result": "win"
+    },
+    "total": {
+     "side": "under",
+     "gap": 0.01,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": -10.5,
+      "close": -12.5,
+      "gap": 3.2,
+      "pts": -2
+     },
+     "total": {
+      "side": "under",
+      "market": 51.5,
+      "close": 51.5,
+      "gap": 1.04,
+      "pts": 0
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "away",
+      "market": -12.5,
+      "close": -12.5,
+      "gap": 4.1,
+      "pts": 0
+     },
+     "total": {
+      "side": "under",
+      "market": 52.5,
+      "close": 51.5,
+      "gap": 1.01,
+      "pts": 1
+     }
+    },
+    "error": {
+     "margin": -2,
+     "model_margin_err": 10.4,
+     "close_margin_err": 14.5,
+     "model_total_err": 17.49,
+     "close_total_err": 17.5
+    },
+    "brier": 0.6142,
     "beyond_guard": false,
     "reliability": null,
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -105,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9524
+     },
+     "total": {
+      "side": "under",
+      "odds": -115,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8696
+     },
+     "ml": {
+      "side": "home",
+      "odds": -700,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": 0.822,
+     "bets": 3
+    }
    }
   },
   "2026_06_LAC_KC": {
@@ -12545,20 +12634,109 @@
     "book": "consensus",
     "at": "2026-10-12T16:48:50.642Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -7.5,
+    "total": 41.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "prices": {
+     "home": -108,
+     "away": -112,
+     "over": -112,
+     "under": -108,
+     "home_ml": -455,
+     "away_ml": 350
+    }
+   },
+   "final": {
+    "home_score": 22,
+    "away_score": 6,
+    "source": "nflverse",
+    "at": "2026-10-18T23:40:49.152Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 2.78,
+     "result": "loss"
+    },
+    "total": {
+     "side": "under",
+     "gap": 2.02,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": -7.5,
+      "close": -7.5,
+      "gap": 3.3,
+      "pts": 0
+     },
+     "total": {
+      "side": "under",
+      "market": 45.5,
+      "close": 41.5,
+      "gap": 5.9,
+      "pts": 4
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "away",
+      "market": -8.5,
+      "close": -7.5,
+      "gap": 3.78,
+      "pts": 1
+     },
+     "total": {
+      "side": "under",
+      "market": 42.5,
+      "close": 41.5,
+      "gap": 3.02,
+      "pts": 1
+     }
+    },
+    "error": {
+     "margin": 16,
+     "model_margin_err": 11.28,
+     "close_margin_err": 8.5,
+     "model_total_err": 11.48,
+     "close_total_err": 13.5
+    },
+    "brier": 0.1086,
     "beyond_guard": false,
     "reliability": null,
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -112,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "under",
+      "odds": -108,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9259
+     },
+     "ml": {
+      "side": "home",
+      "odds": -455,
+      "basis": "close",
+      "result": "win",
+      "units": 0.2198
+     },
+     "units": 0.1457,
+     "bets": 3
+    }
    }
   },
   "2026_06_BUF_LV": {
@@ -13414,7 +13592,21 @@
      "at": "2026-10-13T19:53:23.706Z"
     }
    },
-   "market_pick": null,
+   "market_pick": {
+    "home_line": -9.5,
+    "total": 42.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-18T23:40:49.152Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110,
+     "home_ml": -470,
+     "away_ml": 360
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
@@ -13499,7 +13691,21 @@
      "at": "2026-10-13T19:53:23.706Z"
     }
    },
-   "market_pick": null,
+   "market_pick": {
+    "home_line": -6,
+    "total": 42.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-18T23:40:49.152Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110,
+     "home_ml": -278,
+     "away_ml": 225
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
@@ -13584,7 +13790,21 @@
      "at": "2026-10-13T19:53:23.706Z"
     }
    },
-   "market_pick": null,
+   "market_pick": {
+    "home_line": -4.5,
+    "total": 38.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-18T23:40:49.152Z",
+    "prices": {
+     "home": -105,
+     "away": -115,
+     "over": -110,
+     "under": -110,
+     "home_ml": -205,
+     "away_ml": 170
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
@@ -13660,7 +13880,21 @@
      "at": "2026-10-13T19:53:23.706Z"
     }
    },
-   "market_pick": null,
+   "market_pick": {
+    "home_line": 1.5,
+    "total": 36.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-18T23:40:49.152Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110,
+     "home_ml": 102,
+     "away_ml": -122
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
@@ -14118,7 +14352,21 @@
      "at": "2026-10-15T15:58:10.737Z"
     }
    },
-   "market_pick": null,
+   "market_pick": {
+    "home_line": 5.5,
+    "total": 44.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-18T23:40:49.152Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110,
+     "home_ml": 200,
+     "away_ml": -245
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
