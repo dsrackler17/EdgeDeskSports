@@ -1,6 +1,6 @@
 {
  "attribution": "each row is graded under the model_version that produced it (its own, else its snapshot file's); never relabelled (audit F-02)",
- "bias": -1.5637828947368415,
+ "bias": -0.8439826589595376,
  "by_model_version": {
   "edgedesk_cfb_v2.0.0": {
    "bias": -0.448646511627907,
@@ -13,13 +13,13 @@
    }
   },
   "edgedesk_cfb_v2.1.0": {
-   "bias": -1.5637828947368415,
-   "fcs_not_priced_games": 5,
-   "games_scored": 152,
-   "mae": 12.45870394736842,
-   "major_miss_share": 0.14473684210526316,
+   "bias": -0.8439826589595376,
+   "fcs_not_priced_games": 6,
+   "games_scored": 173,
+   "mae": 12.234017341040461,
+   "major_miss_share": 0.1329479768786127,
    "sources": {
-    "FROZEN": 152
+    "FROZEN": 173
    }
   }
  },
@@ -37,30 +37,30 @@
    "week": 6
   },
   {
-   "bias": -3.261,
-   "mae": 12.666,
-   "n": 38,
+   "bias": -0.546,
+   "mae": 11.934,
+   "n": 59,
    "week": 7
   }
  ],
  "expected_major_miss_share_if_calibrated": 0.134,
  "fcs_not_priced": {
-  "bias": -5.883399999999999,
-  "games": 5,
-  "mae": 8.3698,
+  "bias": -5.827666666666666,
+  "games": 6,
+  "mae": 7.899666666666666,
   "note": "FBS-vs-FCS rows are NOT PRICED; tracked so the known bias stays measured"
  },
- "games_scored": 152,
- "generated_at": "2026-10-18T10:08:30Z",
+ "games_scored": 173,
+ "generated_at": "2026-10-18T13:59:08Z",
  "graded_with": {
   "finality_rule": "cfb_v2_finality_v2",
   "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)"
  },
- "mae": 12.45870394736842,
- "major_miss_share": 0.14473684210526316,
+ "mae": 12.234017341040461,
+ "major_miss_share": 0.1329479768786127,
  "miss_classes": {
   "explosive_variance": 2,
-  "garbage_time": 3,
+  "garbage_time": 4,
   "market_news_unavailable": 2,
   "ordinary_variance": 9,
   "qb_injury_miss": 3,
@@ -72,6 +72,6 @@
  "scope": "priced games (FBS-vs-FBS) of edgedesk_cfb_v2.1.0 only; rows of other versions are in by_model_version",
  "season": 2026,
  "sources": {
-  "FROZEN": 152
+  "FROZEN": 173
  }
 }
