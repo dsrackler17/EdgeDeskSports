@@ -27,6 +27,17 @@ const cp = require('child_process');
 const ROOT = path.join(__dirname, '..', '..');
 const SQL = fs.readFileSync(path.join(ROOT, 'supabase', 'games_slate.sql'), 'utf8');
 
+/* THE FIXTURE'S GAME DAY IS TODAY IN NEW YORK. slate_live_ingest prunes every
+   row more than four days old by the database's own clock, so a fixed date
+   stops being writable four days after it: the suite was written for
+   2026-10-13 and failed from 2026-10-18 on, its rows deleted as they landed.
+   Every date below is relative to DAY. */
+const DAY = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+const plusDays = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const at = (hm, d) => (d || DAY) + 'T' + hm + ':00Z';
+const FROM = at('05:00'), TO = at('05:00', plusDays(DAY, 1));
+const WINDOW = "'" + FROM + "', '" + TO + "'";
+
 let pass = 0, fail = 0;
 function chk(name, ok, detail) { if (ok) pass++; else { fail++; console.log('FAIL | ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 400) : '')); } }
 function skip(why) { console.log('SKIP | games slate SQL | ' + why); process.exit(0); }
@@ -88,65 +99,65 @@ chk('its report has eight rows, every one ok', report.length === 8 && report.eve
 /* ── THE POLLER WRITES ─────────────────────────────────────────────── */
 function evRow(id, status, upd, o) {
   o = o || {};
-  return { id, sport: 'nhl', feed: 'nhl:hockey/nhl', sb_day: o.day || '2026-10-13', start_utc: o.start || '2026-10-13T23:00:00Z', status, updated_at: upd,
-    event: { id, sport: 'nhl', status, start_utc: o.start || '2026-10-13T23:00:00Z', feed: 'nhl:hockey/nhl', sb_day: o.day || '2026-10-13', home: { name: 'Detroit Red Wings', score: o.hs != null ? o.hs : null }, away: { name: 'New Jersey Devils', score: o.as != null ? o.as : null } },
+  return { id, sport: 'nhl', feed: 'nhl:hockey/nhl', sb_day: o.day || DAY, start_utc: o.start || at('23:00'), status, updated_at: upd,
+    event: { id, sport: 'nhl', status, start_utc: o.start || at('23:00'), feed: 'nhl:hockey/nhl', sb_day: o.day || DAY, home: { name: 'Detroit Red Wings', score: o.hs != null ? o.hs : null }, away: { name: 'New Jersey Devils', score: o.as != null ? o.as : null } },
     market: o.market || null };
 }
-const feedOk = (day, at) => ({ feed: 'nhl:hockey/nhl', sport: 'nhl', day: day || '2026-10-13', ok: true, fetched_at: at, count: 2 });
+const feedOk = (day, at) => ({ feed: 'nhl:hockey/nhl', sport: 'nhl', day: day || DAY, ok: true, fetched_at: at, count: 2 });
 const ingest = (evs, feeds, role) => as(role || 'service_role', "select public.slate_live_ingest('" + JSON.stringify(evs).replace(/'/g, "''") + "'::jsonb, '" + JSON.stringify(feeds).replace(/'/g, "''") + "'::jsonb)");
-const w1 = ingest([evRow('nhl:espn:1', 'LIVE', '2026-10-13T22:30:00Z', { hs: 2, as: 1 }), evRow('nhl:espn:2', 'SCHEDULED', '2026-10-13T22:30:00Z', { market: { book: 'DraftKings', captured_at: '2026-10-13T22:30:00Z', moneyline: { home: -140, away: 120 } } })], [feedOk('2026-10-13', '2026-10-13T22:30:00Z')]);
+const w1 = ingest([evRow('nhl:espn:1', 'LIVE', at('22:30'), { hs: 2, as: 1 }), evRow('nhl:espn:2', 'SCHEDULED', at('22:30'), { market: { book: 'DraftKings', captured_at: at('22:30'), moneyline: { home: -140, away: 120 } } })], [feedOk(DAY, at('22:30'))]);
 chk('the poller writes through slate_live_ingest', w1.ok && /"upserted": 2/.test(w1.out), w1.err || w1.out);
 
 const live = (from, to, role) => json(as(role || 'anon', "select public.public_slate_live('" + from + "', '" + to + "')"));
-const r1 = live('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z');
+const r1 = live(FROM, TO);
 chk('a visitor reads both games, scores and the pregame quote', r1 && r1.events.length === 2 && r1.events.find((e) => e.id === 'nhl:espn:1').home.score === 2
   && r1.events.find((e) => e.id === 'nhl:espn:2').market.book === 'DraftKings', r1);
-chk('with the (feed, day) it covered and when', r1 && r1.covered.length === 1 && r1.covered[0].feed === 'nhl:hockey/nhl' && r1.covered[0].day === '2026-10-13');
+chk('with the (feed, day) it covered and when', r1 && r1.covered.length === 1 && r1.covered[0].feed === 'nhl:hockey/nhl' && r1.covered[0].day === DAY);
 
 /* ── WHAT A VISITOR CANNOT DO ──────────────────────────────────────── */
 chk('a visitor cannot read the table', /permission denied/.test(as('anon', 'select count(*) from public.slate_live').err));
 chk('a visitor cannot write', /permission denied/.test(ingest([], [], 'anon').err));
 chk('a signed-in reader cannot write', /permission denied/.test(ingest([], [], 'authenticated').err));
-chk('a visitor cannot read prices', /permission denied/.test(as('anon', "select public.slate_markets('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z')").err));
-const tooLong = live('2026-10-01T00:00:00Z', '2026-10-13T00:00:00Z');
+chk('a visitor cannot read prices', /permission denied/.test(as('anon', "select public.slate_markets(" + WINDOW + ")").err));
+const tooLong = live(at('00:00', plusDays(DAY, -12)), at('00:00'));
 chk('a window over four days is refused', tooLong && /one to four days/.test(tooLong.error) && tooLong.events.length === 0);
 
 /* ── THE LIVE RULES ────────────────────────────────────────────────── */
-const w2 = ingest([evRow('nhl:espn:1', 'FINAL', '2026-10-13T22:00:00Z', { hs: 9, as: 9 })], []);
-chk('an older read never overwrites a newer one', w2.ok && live('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z').events.find((e) => e.id === 'nhl:espn:1').status === 'LIVE');
-const w3 = ingest([evRow('nhl:espn:1', 'LIVE', '2026-10-13T22:45:00Z', { hs: 3, as: 1 })], [feedOk('2026-10-13', '2026-10-13T22:45:00Z')]);
-const r3 = live('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z');
+const w2 = ingest([evRow('nhl:espn:1', 'FINAL', at('22:00'), { hs: 9, as: 9 })], []);
+chk('an older read never overwrites a newer one', w2.ok && live(FROM, TO).events.find((e) => e.id === 'nhl:espn:1').status === 'LIVE');
+const w3 = ingest([evRow('nhl:espn:1', 'LIVE', at('22:45'), { hs: 3, as: 1 })], [feedOk(DAY, at('22:45'))]);
+const r3 = live(FROM, TO);
 chk('a game gone from a day that answered (moved, dropped) leaves it', w3.ok && r3.events.length === 1 && r3.events[0].home.score === 3, r3 && r3.events.map((e) => e.id));
-const w4 = ingest([], [{ feed: 'nhl:hockey/nhl', sport: 'nhl', day: '2026-10-13', ok: false, fetched_at: '2026-10-13T23:00:00Z', count: 0, error: '503 from scoreboard' }]);
-const r4 = live('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z');
+const w4 = ingest([], [{ feed: 'nhl:hockey/nhl', sport: 'nhl', day: DAY, ok: false, fetched_at: at('23:00'), count: 0, error: '503 from scoreboard' }]);
+const r4 = live(FROM, TO);
 chk('a failed read writes no events, removes none, and keeps the last good read time', w4.ok && r4.events.length === 1 && r4.covered.length === 0 && r4.failed.length === 1
-  && r4.failed[0].last_ok_at.indexOf('2026-10-13T22:45') === 0, r4);
-chk('a malformed event id is refused', !ingest([evRow('<script>', 'LIVE', '2026-10-13T23:00:00Z')], []).ok);
-chk('an unknown status is refused', !ingest([evRow('nhl:espn:7', 'MAYBE', '2026-10-13T23:00:00Z')], []).ok);
+  && r4.failed[0].last_ok_at.indexOf(DAY + 'T22:45') === 0, r4);
+chk('a malformed event id is refused', !ingest([evRow('<script>', 'LIVE', at('23:00'))], []).ok);
+chk('an unknown status is refused', !ingest([evRow('nhl:espn:7', 'MAYBE', at('23:00'))], []).ok);
 
 /* ── THE SUBSCRIBER'S PRICES ───────────────────────────────────────── */
 const U = '11111111-1111-1111-1111-111111111111', V = '22222222-2222-2222-2222-222222222222';
-const m0 = json(as('authenticated', "select public.slate_markets('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z')", U));
+const m0 = json(as('authenticated', "select public.slate_markets(" + WINDOW + ")", U));
 chk('without the entitlement function nobody is entitled', m0 && m0.entitled === false && m0.events.length === 0, m0);
 const setup = run(`
   create or replace function public.edp_entitled(p_user uuid) returns boolean language sql stable as $f$ select p_user = '${U}'::uuid $f$;
   grant execute on function public.edp_entitled(uuid) to authenticated, service_role;`);
 chk('an entitlement stub', setup.ok, setup.err);
-const m1 = json(as('authenticated', "select public.slate_markets('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z')", U));
+const m1 = json(as('authenticated', "select public.slate_markets(" + WINDOW + ")", U));
 chk('entitled, with no snapshot store installed: entitled, unavailable, no events', m1 && m1.entitled === true && m1.available === false, m1);
 const store = run(`
   create table if not exists public.odds_api_snapshots (fingerprint text primary key, category text, sport_key text, odds_format text, last_success_at timestamptz, body jsonb);
   insert into public.odds_api_snapshots values
    ('f1', 'featured', 'icehockey_nhl', 'decimal', now() - interval '1 hour',
-     '[{"id":"in1","sport_key":"icehockey_nhl","commence_time":"2026-10-13T23:00:00Z","home_team":"Detroit Red Wings","away_team":"New Jersey Devils","bookmakers":[{"key":"draftkings","title":"DraftKings","markets":[]}]},
-       {"id":"out1","sport_key":"icehockey_nhl","commence_time":"2026-10-20T23:00:00Z","home_team":"A","away_team":"B","bookmakers":[]}]'::jsonb),
-   ('f2', 'close', 'icehockey_nhl', 'decimal', now() - interval '1 hour', '[{"id":"close1","commence_time":"2026-10-13T23:00:00Z"}]'::jsonb),
-   ('f3', 'featured', 'icehockey_nhl', 'decimal', now() - interval '5 days', '[{"id":"old1","commence_time":"2026-10-13T23:00:00Z"}]'::jsonb);`);
+     '[{"id":"in1","sport_key":"icehockey_nhl","commence_time":"${at('23:00')}","home_team":"Detroit Red Wings","away_team":"New Jersey Devils","bookmakers":[{"key":"draftkings","title":"DraftKings","markets":[]}]},
+       {"id":"out1","sport_key":"icehockey_nhl","commence_time":"${at('23:00', plusDays(DAY, 7))}","home_team":"A","away_team":"B","bookmakers":[]}]'::jsonb),
+   ('f2', 'close', 'icehockey_nhl', 'decimal', now() - interval '1 hour', '[{"id":"close1","commence_time":"${at('23:00')}"}]'::jsonb),
+   ('f3', 'featured', 'icehockey_nhl', 'decimal', now() - interval '5 days', '[{"id":"old1","commence_time":"${at('23:00')}"}]'::jsonb);`);
 chk('a snapshot store', store.ok, store.err);
-const m2 = json(as('authenticated', "select public.slate_markets('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z')", U));
+const m2 = json(as('authenticated', "select public.slate_markets(" + WINDOW + ")", U));
 chk('an entitled reader gets the featured capture inside the window, nothing outside it, no close and nothing past 72 h',
   m2 && m2.entitled === true && m2.events.length === 1 && m2.events[0].event_id === 'in1' && m2.events[0].bookmakers[0].title === 'DraftKings' && m2.events[0].odds_format === 'decimal', m2);
-const m3 = json(as('authenticated', "select public.slate_markets('2026-10-13T05:00:00Z', '2026-10-14T05:00:00Z')", V));
+const m3 = json(as('authenticated', "select public.slate_markets(" + WINDOW + ")", V));
 chk('a signed-in reader without the entitlement gets none', m3 && m3.entitled === false && m3.events.length === 0, m3);
 
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'games slate SQL — ' + pass + ' passed, ' + fail + ' failed');
