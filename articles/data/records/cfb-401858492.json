@@ -21,8 +21,8 @@
   "game_time": "2026-10-18T03:00:00.000Z",
   "game_when_label": "2026-10-18 03:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-18T02:00:45.403Z",
-  "generated_at": "2026-10-18T02:00:45.403Z",
+  "updated_at": "2026-10-18T02:10:58.666Z",
+  "generated_at": "2026-10-18T02:10:58.666Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1928,10 +1928,10 @@
     "publication_window": "late_window",
     "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-18T03:00:00.000Z",
-    "minutes_before_kickoff": 59,
+    "minutes_before_kickoff": 49,
     "published_at": null,
     "refreshed": true,
-    "at": "2026-10-18T02:00:45.403Z"
+    "at": "2026-10-18T02:10:58.666Z"
   },
   "featured": {
     "editorial_priority": 58.6,
@@ -2234,17 +2234,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-18T02:00:45.403Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Dante Moore has completed 70 of 100 passes (70.0%) for 935 yards, 9.4 yards per attempt, 9",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-18T02:10:58.666Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-18T02:00:45.403Z",
+    "at": "2026-10-18T02:10:58.666Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2252,12 +2259,18 @@
         "detail": "DATA_FAULT"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Dante Moore has completed 70 of 100 passes (70.0%) for 935 yards, 9.4 yards per attempt, 9"
+      }
+    ],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "6jz6f61mun09s",
+    "packet_hash": "1d9kzldd823df",
     "status": "UNEXPLAINED",
     "input_suspect": true,
     "question": "Can Oregon get Nebraska off the field on third down?",
@@ -2358,10 +2371,10 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-18T02:00:45.403Z"
+    "at": "2026-10-18T02:10:58.666Z"
   },
   "freshness": {
-    "at": "2026-10-18T02:00:45.403Z",
+    "at": "2026-10-18T02:10:58.666Z",
     "fields": {
       "market.line": {
         "value": "Oregon −12.5",
