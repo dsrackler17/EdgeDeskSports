@@ -1,6 +1,6 @@
 {
  "attribution": "each row is graded under the model_version that produced it (its own, else its snapshot file's); never relabelled (audit F-02)",
- "bias": -1.1968467741935485,
+ "bias": -1.5637828947368415,
  "by_model_version": {
   "edgedesk_cfb_v2.0.0": {
    "bias": -0.448646511627907,
@@ -13,13 +13,13 @@
    }
   },
   "edgedesk_cfb_v2.1.0": {
-   "bias": -1.1968467741935485,
-   "fcs_not_priced_games": 3,
-   "games_scored": 124,
-   "mae": 12.26766935483871,
-   "major_miss_share": 0.13709677419354838,
+   "bias": -1.5637828947368415,
+   "fcs_not_priced_games": 5,
+   "games_scored": 152,
+   "mae": 12.45870394736842,
+   "major_miss_share": 0.14473684210526316,
    "sources": {
-    "FROZEN": 124
+    "FROZEN": 152
    }
   }
  },
@@ -37,34 +37,34 @@
    "week": 6
   },
   {
-   "bias": -3.464,
-   "mae": 10.88,
-   "n": 10,
+   "bias": -3.261,
+   "mae": 12.666,
+   "n": 38,
    "week": 7
   }
  ],
  "expected_major_miss_share_if_calibrated": 0.134,
  "fcs_not_priced": {
-  "bias": -9.369333333333332,
-  "games": 3,
-  "mae": 9.369333333333332,
+  "bias": -5.883399999999999,
+  "games": 5,
+  "mae": 8.3698,
   "note": "FBS-vs-FCS rows are NOT PRICED; tracked so the known bias stays measured"
  },
- "games_scored": 124,
- "generated_at": "2026-10-17T10:50:35Z",
+ "games_scored": 152,
+ "generated_at": "2026-10-18T10:08:30Z",
  "graded_with": {
   "finality_rule": "cfb_v2_finality_v2",
   "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)"
  },
- "mae": 12.26766935483871,
- "major_miss_share": 0.13709677419354838,
+ "mae": 12.45870394736842,
+ "major_miss_share": 0.14473684210526316,
  "miss_classes": {
   "explosive_variance": 2,
   "garbage_time": 3,
   "market_news_unavailable": 2,
-  "ordinary_variance": 6,
-  "qb_injury_miss": 2,
-  "special_teams": 1,
+  "ordinary_variance": 9,
+  "qb_injury_miss": 3,
+  "special_teams": 2,
   "turnover_variance": 1
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -72,6 +72,6 @@
  "scope": "priced games (FBS-vs-FBS) of edgedesk_cfb_v2.1.0 only; rows of other versions are in by_model_version",
  "season": 2026,
  "sources": {
-  "FROZEN": 124
+  "FROZEN": 152
  }
 }
