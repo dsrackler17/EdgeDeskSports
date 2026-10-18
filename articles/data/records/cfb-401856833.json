@@ -21,8 +21,8 @@
   "game_time": "2026-10-18T02:15:00.000Z",
   "game_when_label": "2026-10-18 02:15 UTC",
   "published_at": null,
-  "updated_at": "2026-10-18T01:30:07.175Z",
-  "generated_at": "2026-10-18T01:30:07.175Z",
+  "updated_at": "2026-10-18T01:32:26.902Z",
+  "generated_at": "2026-10-18T01:32:26.902Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1849,111 +1849,17 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "dogafl10s3dmb",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Colorado stop Utah’s run game?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Utah, and its own breakdown accounts for about 0.0 of the 7.5 points, but not the full gap. Input warning: EdgeDesk’s published number sits 7.7 points from the middle of its own other models. It is a research question, not a bet.",
-    "gap": {
-      "points": 7.5,
-      "toward": "Utah",
-      "other": "Colorado"
-    },
-    "supporting": [
-      "When Colorado has the ball (third down): Colorado’s offense converts 32.6% of its third downs, and Utah’s defense allows opponents to convert 28.6% of their third downs (FBS average 39.5%).",
-      "When Colorado has the ball (big plays on the ground): Colorado’s offense turns 4.0% of its runs into explosive gains, and Utah’s defense gives up explosive gains on 2.6% of opponent runs (FBS average 6.6%).",
-      "When Colorado has the ball (the line of scrimmage on running plays): Colorado’s offense is stopped at or behind the line on 17.9% of its runs, and Utah’s defense stops 25.6% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Utah has the ball (pass protection against the pass rush): Utah’s offense has allowed a sack on 3.8% of its dropbacks, and Colorado’s defense sacks the quarterback on 5.1% of opponent dropbacks (FBS average 5.6%)."
-    ],
-    "contradicting": [
-      "When Utah has the ball (the line of scrimmage on running plays): Utah’s offense is stopped at or behind the line on 18.2% of its runs, and Colorado’s defense stops 28.3% of opponent runs at or behind the line (FBS average 17.4%).",
-      "In his last two games (Iowa State and Kansas), Dampier averaged 7.7 yards per attempt, against 9.4 in his three games before that.",
-      "In his last two games (Utah State and Kansas), Ficklin averaged 8.8 yards per attempt, against 11.1 in his two games before that.",
-      "Colorado comes in on 14 days of rest after an open week; Utah has had 7 days."
-    ],
-    "quarterbacks": [
-      "Julian Lewis has completed 58 of 93 passes (62.4%) for 709 yards, 7.6 yards per attempt, 6 touchdowns and 2 interceptions in four games for Colorado, and has been sacked on 8 of 101 dropbacks.",
-      "Isaac Wilson has completed 40 of 70 passes (57.1%) for 443 yards, 6.3 yards per attempt, 2 touchdowns and 2 interceptions in three games for Colorado, and has been sacked on 3 of 73 dropbacks.",
-      "Devon Dampier has completed 94 of 132 passes (71.2%) for 1,143 yards, 8.7 yards per attempt, 12 touchdowns and 2 interceptions in five games for Utah, and has been sacked on 6 of 138 dropbacks.",
-      "Byrd Ficklin has completed 10 of 18 passes (55.6%) for 186 yards, 10.3 yards per attempt, 2 touchdowns and no interceptions in four games for Utah, and has been sacked on 0 of 18 dropbacks.",
-      "Julian Lewis does not appear on Colorado’s game day availability report.",
-      "Devon Dampier does not appear on Utah’s game day availability report."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Utah’s offense has to keep winning on the ground: it averages 6.2 yards per carry, and Colorado’s defense allows 4.0 yards per carry.",
-        "Utah’s offense has to hold its own at the line of scrimmage against a defense that stops 28.3% of opponent runs at or behind the line.",
-        "Utah’s defense has to come out ahead on long runs: it gives up explosive gains on 2.6% of opponent runs, against an offense that turns 4.0% of its runs into explosive gains.",
-        "Utah’s defense has to come out ahead at the line of scrimmage: it stops 25.6% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 17.9% of its runs."
-      ],
-      "market": [
-        "Colorado’s defense has to come out ahead at the line of scrimmage: it stops 28.3% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 18.2% of its runs.",
-        "Colorado’s defense has to come out ahead on the ground: it allows 4.0 yards per carry, against an offense that averages 6.2 yards per carry.",
-        "Lewis keeps producing at his season rate (62.4% completions, 7.6 yards per attempt, 6 TD, 2 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed for Utah.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Utah); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 7.7 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Utah: new head coach; transfers out at the 79th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-17T23:13:30.046Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-17T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Kickoff times of each team’s previous game",
-        "url": null,
-        "path": "record/football/cfb_2026.json",
-        "observed_at": "2026-10-17T23:28:25.781Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big 12 Conference availability report (Game Day)",
-        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-18T00:45:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-18T01:30:07.175Z"
-  },
   "snapshot_id": "snap_85679ed058eba872",
+  "publication_snapshot_id": "snap_85679ed058eba872",
+  "timing": {
+    "publication_window": "late_window",
+    "classified_window": "late_window",
+    "scheduled_kickoff": "2026-10-18T02:15:00.000Z",
+    "minutes_before_kickoff": 43,
+    "published_at": null,
+    "refreshed": true,
+    "at": "2026-10-18T01:32:26.902Z"
+  },
   "featured": {
     "editorial_priority": 39,
     "status": "featured",
@@ -2215,11 +2121,127 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-18T01:30:07.175Z"
+    "at": "2026-10-18T01:32:26.902Z"
   },
-  "publication_snapshot_id": "snap_85679ed058eba872",
+  "publish_state": {
+    "ok": false,
+    "at": "2026-10-18T01:32:26.902Z",
+    "blocking": [
+      {
+        "id": "evidence_inputs_suspect",
+        "why": "EdgeDesk’s own inputs for this game are suspect, so a person reviews the page before it goes out",
+        "detail": "CROSS_MODEL_OUTLIER"
+      }
+    ],
+    "warnings": [],
+    "hold_reason": "evidence_inputs_suspect"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1sx1b8y1adpes0",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": true,
+    "question": "Can Colorado stop Utah’s run game?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Utah, and its own breakdown accounts for about 0.0 of the 7.5 points, but not the full gap. Input warning: EdgeDesk’s published number sits 7.7 points from the middle of its own other models. It is a research question, not a bet.",
+    "gap": {
+      "points": 7.5,
+      "toward": "Utah",
+      "other": "Colorado"
+    },
+    "supporting": [
+      "When Colorado has the ball (third down): Colorado’s offense converts 32.6% of its third downs, and Utah’s defense allows opponents to convert 28.6% of their third downs (FBS average 39.5%).",
+      "When Colorado has the ball (big plays on the ground): Colorado’s offense turns 4.0% of its runs into explosive gains, and Utah’s defense gives up explosive gains on 2.6% of opponent runs (FBS average 6.6%).",
+      "When Colorado has the ball (the line of scrimmage on running plays): Colorado’s offense is stopped at or behind the line on 17.9% of its runs, and Utah’s defense stops 25.6% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Utah has the ball (pass protection against the pass rush): Utah’s offense has allowed a sack on 3.8% of its dropbacks, and Colorado’s defense sacks the quarterback on 5.1% of opponent dropbacks (FBS average 5.6%)."
+    ],
+    "contradicting": [
+      "When Utah has the ball (the line of scrimmage on running plays): Utah’s offense is stopped at or behind the line on 18.2% of its runs, and Colorado’s defense stops 28.3% of opponent runs at or behind the line (FBS average 17.4%).",
+      "In his last two games (Iowa State and Kansas), Dampier averaged 7.7 yards per attempt, against 9.4 in his three games before that.",
+      "In his last two games (Utah State and Kansas), Ficklin averaged 8.8 yards per attempt, against 11.1 in his two games before that.",
+      "Colorado comes in on 14 days of rest after an open week; Utah has had 7 days."
+    ],
+    "quarterbacks": [
+      "Julian Lewis has completed 58 of 93 passes (62.4%) for 709 yards, 7.6 yards per attempt, 6 touchdowns and 2 interceptions in four games for Colorado, and has been sacked on 8 of 101 dropbacks.",
+      "Isaac Wilson has completed 40 of 70 passes (57.1%) for 443 yards, 6.3 yards per attempt, 2 touchdowns and 2 interceptions in three games for Colorado, and has been sacked on 3 of 73 dropbacks.",
+      "Devon Dampier has completed 94 of 132 passes (71.2%) for 1,143 yards, 8.7 yards per attempt, 12 touchdowns and 2 interceptions in five games for Utah, and has been sacked on 6 of 138 dropbacks.",
+      "Byrd Ficklin has completed 10 of 18 passes (55.6%) for 186 yards, 10.3 yards per attempt, 2 touchdowns and no interceptions in four games for Utah, and has been sacked on 0 of 18 dropbacks.",
+      "Julian Lewis does not appear on Colorado’s game day availability report.",
+      "Devon Dampier does not appear on Utah’s game day availability report."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Utah’s offense has to keep winning on the ground: it averages 6.2 yards per carry, and Colorado’s defense allows 4.0 yards per carry.",
+        "Utah’s offense has to hold its own at the line of scrimmage against a defense that stops 28.3% of opponent runs at or behind the line.",
+        "Utah’s defense has to come out ahead on long runs: it gives up explosive gains on 2.6% of opponent runs, against an offense that turns 4.0% of its runs into explosive gains.",
+        "Utah’s defense has to come out ahead at the line of scrimmage: it stops 25.6% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 17.9% of its runs."
+      ],
+      "market": [
+        "Colorado’s defense has to come out ahead at the line of scrimmage: it stops 28.3% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 18.2% of its runs.",
+        "Colorado’s defense has to come out ahead on the ground: it allows 4.0 yards per carry, against an offense that averages 6.2 yards per carry.",
+        "Lewis keeps producing at his season rate (62.4% completions, 7.6 yards per attempt, 6 TD, 2 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed for Utah.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Utah); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "high",
+        "text": "EdgeDesk’s published number sits 7.7 points from the middle of its own other models."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Utah: new head coach; transfers out at the 79th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-17T23:13:30.046Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-17T00:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Kickoff times of each team’s previous game",
+        "url": null,
+        "path": "record/football/cfb_2026.json",
+        "observed_at": "2026-10-17T23:28:25.781Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Big 12 Conference availability report (Game Day)",
+        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-18T00:45:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-18T01:32:26.902Z"
+  },
   "freshness": {
-    "at": "2026-10-18T01:30:07.175Z",
+    "at": "2026-10-18T01:32:26.902Z",
     "fields": {
       "market.line": {
         "value": null,
@@ -2325,27 +2347,5 @@
     "rules_hit": [],
     "minor": [],
     "summary": "nothing moved"
-  },
-  "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
-    "scheduled_kickoff": "2026-10-18T02:15:00.000Z",
-    "minutes_before_kickoff": 45,
-    "published_at": null,
-    "refreshed": true,
-    "at": "2026-10-18T01:30:07.175Z"
-  },
-  "publish_state": {
-    "ok": false,
-    "at": "2026-10-18T01:30:07.175Z",
-    "blocking": [
-      {
-        "id": "evidence_inputs_suspect",
-        "why": "EdgeDesk’s own inputs for this game are suspect, so a person reviews the page before it goes out",
-        "detail": "CROSS_MODEL_OUTLIER"
-      }
-    ],
-    "warnings": [],
-    "hold_reason": "evidence_inputs_suspect"
   }
 }
