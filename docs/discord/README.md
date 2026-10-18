@@ -7,6 +7,7 @@ helper, `postToDiscord(webhookSecretName, payload)`.
 | post | channel (secret) | when (Central) | action |
 |---|---|---|---|
 | Weekly CLV scorecard, plus the free samples' record | `DISCORD_WEBHOOK_CLV_RESULTS` | Mondays 10:00 | `scorecard` |
+| Yesterday's results, every sport (the same post each sport's channel gets) | `DISCORD_WEBHOOK_CLV_RESULTS` | daily 10:00 (or 10:30, with the sport's channel) | `slate` |
 | Yesterday's results (how EdgeDesk's numbers did), then the daily slate with EdgeDesk's own numbers | `DISCORD_WEBHOOK_NFL`, `_CFB`, `_NBA`, `_CBB`, `_NHL` | daily 10:00 (results wait for 10:30 if a final is unverified) | `slate` |
 | Free research sample, and its follow-up after the close | `DISCORD_WEBHOOK_CFB`, `DISCORD_WEBHOOK_NFL` | detection + 3 h, never later than kickoff − 60 min | `samples` (every 15 min) |
 
@@ -118,7 +119,9 @@ cases:
 ### Morning results
 
 Before each slate, the sport's channel gets yesterday's results: how
-EdgeDesk's pregame numbers did, every game. They come from the `/performance/`
+EdgeDesk's pregame numbers did, every game. #clv-results gets the same post
+for every sport, so the model's daily results sit next to the weekly CLV
+scorecard. They come from the `/performance/`
 record (`performance/data`, rebuilt hourly from the hash-chained ledger), so
 the grades are the public page's own.
 
@@ -139,6 +142,14 @@ games yesterday gets no results post.
 
 The skip is written to `discord_posts` with status `skipped` and the reason.
 The 10:30 tick tries once more.
+
+**In #clv-results.** Each sport's results post is sent there as well, with the
+same embeds and at the same tick. It is claimed apart from the sport channel's
+copy, under `results:DISCORD_WEBHOOK_CLV_RESULTS:<sport>:<date>`, so:
+
+- a failure in one channel never holds or repeats the other;
+- a refused #clv-results copy (a 4xx) is retried at the 10:30 tick on its own;
+- a skip (an unreadable `/performance/` record) is logged for both channels.
 
 ### Free research samples (CFB and NFL)
 
