@@ -63176,7 +63176,10 @@ function fbNflGameHead(g,u,aDisp,hDisp,q){
   var dome=(String(g.roof)==='dome'||String(g.roof)==='closed');
   return {away:aDisp,home:hDisp,title:aDisp+' at '+hDisp,
     when:fbBrWhen(kick),kickoff:kick,
-    venue:g.stadium||null,neutral:false,
+    /* the same neutral-site rule the pricing request uses (fbNflGameReq); a
+       hard false here put a Wembley game in the article record as a home game
+       for the terminal while the pipeline, reading the slate row, said neutral */
+    venue:g.stadium||null,neutral:fbNflNeutral(g),
     week:g.week!=null?('Week '+g.week):null,
     season:g.season!=null?String(g.season):null,
     /* see fbBrGameHead: the identifiers an article record is keyed on */
