@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-18T13:16:38.654Z",
+ "evaluated_at": "2026-10-18T16:08:07.527Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 366 without a price, 0 stale."
+  "No market had a fresh executable price: 360 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.0167
  },
  "counts": {
-  "RESEARCH": 366
+  "RESEARCH": 360
  },
  "gate_failures": {
-  "NO_PRICE": 366,
-  "NEEDS_PRICE": 366
+  "NO_PRICE": 360,
+  "NEEDS_PRICE": 360
  },
- "n_candidates": 366,
+ "n_candidates": 360,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -415,77 +415,6 @@
    "model_id": "edgedesk_football_v1.0.0"
   },
   {
-   "id": "07fcc668",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_07_SF_ATL",
-   "event": {
-    "home": "Atlanta Falcons",
-    "away": "San Francisco 49ers",
-    "start_utc": "2026-10-25T17:00:00.000Z",
-    "label": "San Francisco 49ers @ Atlanta Falcons"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Atlanta Falcons",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "San Francisco 49ers @ Atlanta Falcons — Atlanta Falcons moneyline",
-   "quote": null,
-   "fair_american": -112,
-   "break_even": null,
-   "prob": {
-    "model": 0.5278,
-    "push": 0,
-    "market_novig": 0.3425,
-    "shrink_k": 0.1286,
-    "posterior": 0.3663,
-    "sd": 0.014,
-    "conservative": 0.3484,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 193,
-   "disagreement": 0.0059,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +193 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -0.8 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
    "id": "7f6c6fc5",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -557,6 +486,77 @@
    "model_id": "edgedesk_football_v1.0.0"
   },
   {
+   "id": "07fcc668",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_SF_ATL",
+   "event": {
+    "home": "Atlanta Falcons",
+    "away": "San Francisco 49ers",
+    "start_utc": "2026-10-25T17:00:00.000Z",
+    "label": "San Francisco 49ers @ Atlanta Falcons"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Atlanta Falcons",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "San Francisco 49ers @ Atlanta Falcons — Atlanta Falcons moneyline",
+   "quote": null,
+   "fair_american": -112,
+   "break_even": null,
+   "prob": {
+    "model": 0.5278,
+    "push": 0,
+    "market_novig": 0.3553,
+    "shrink_k": 0.1286,
+    "posterior": 0.3775,
+    "sd": 0.014,
+    "conservative": 0.3595,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 184,
+   "disagreement": 0.0042,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +184 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -0.8 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
    "id": "437b89a3",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -581,11 +581,11 @@
    "prob": {
     "model": 0.9142,
     "push": 0,
-    "market_novig": 0.7478,
+    "market_novig": 0.7508,
     "shrink_k": 0.1286,
-    "posterior": 0.7692,
+    "posterior": 0.7718,
     "sd": 0.014,
-    "conservative": 0.7512,
+    "conservative": 0.7539,
     "components": {
      "model_sd": 0.03,
      "calibration_sd": 0.015,
@@ -595,8 +595,8 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -280,
-   "disagreement": 0.0034,
+   "min_acceptable_american": -283,
+   "disagreement": 0.0031,
    "gates": [
     {
      "gate": "PRICE",
@@ -608,7 +608,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -280 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -283 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
@@ -912,77 +912,6 @@
    "model_id": "edgedesk_football_v1.0.0"
   },
   {
-   "id": "11edb2e9",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_CAR_PHI",
-   "event": {
-    "home": "Philadelphia Eagles",
-    "away": "Carolina Panthers",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Carolina Panthers @ Philadelphia Eagles"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Philadelphia Eagles",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Carolina Panthers @ Philadelphia Eagles — Philadelphia Eagles moneyline",
-   "quote": null,
-   "fair_american": -118,
-   "break_even": null,
-   "prob": {
-    "model": 0.5419,
-    "push": 0,
-    "market_novig": 0.3908,
-    "shrink_k": 0.1286,
-    "posterior": 0.4102,
-    "sd": 0.014,
-    "conservative": 0.3923,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 160,
-   "disagreement": 0.0015,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +160 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -1.2 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
    "id": "6fe41f64",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -1054,35 +983,35 @@
    "model_id": "edgedesk_football_v1.0.0"
   },
   {
-   "id": "4bf21f11",
+   "id": "11edb2e9",
    "status": "RESEARCH",
    "sport_id": "nfl",
    "sport_label": "NFL",
-   "event_key": "NFL|2026_06_PIT_TB",
+   "event_key": "NFL|2026_06_CAR_PHI",
    "event": {
-    "home": "Tampa Bay Buccaneers",
-    "away": "Pittsburgh Steelers",
+    "home": "Philadelphia Eagles",
+    "away": "Carolina Panthers",
     "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers"
+    "label": "Carolina Panthers @ Philadelphia Eagles"
    },
    "market": {
     "kind": "moneyline",
-    "side": "Tampa Bay Buccaneers",
+    "side": "Philadelphia Eagles",
     "line": null,
     "settles": "includes overtime"
    },
-   "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers — Tampa Bay Buccaneers moneyline",
+   "label": "Carolina Panthers @ Philadelphia Eagles — Philadelphia Eagles moneyline",
    "quote": null,
-   "fair_american": -122,
+   "fair_american": -111,
    "break_even": null,
    "prob": {
-    "model": 0.5497,
+    "model": 0.5252,
     "push": 0,
-    "market_novig": 0.4279,
+    "market_novig": 0.4004,
     "shrink_k": 0.1286,
-    "posterior": 0.4436,
+    "posterior": 0.4164,
     "sd": 0.014,
-    "conservative": 0.4256,
+    "conservative": 0.3985,
     "components": {
      "model_sd": 0.03,
      "calibration_sd": 0.015,
@@ -1092,8 +1021,8 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 140,
-   "disagreement": -0.0023,
+   "min_acceptable_american": 156,
+   "disagreement": -0.0019,
    "gates": [
     {
      "gate": "PRICE",
@@ -1105,13 +1034,13 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +140 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +156 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "fair spread -1.4 vs consensus 2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "fair spread -0.7 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
    ],
    "invalidators": [
@@ -1267,35 +1196,35 @@
    "model_id": "edgedesk_football_v1.0.0"
   },
   {
-   "id": "c1eaf4d5",
+   "id": "4bf21f11",
    "status": "RESEARCH",
    "sport_id": "nfl",
    "sport_label": "NFL",
-   "event_key": "NFL|2026_07_PIT_NO",
+   "event_key": "NFL|2026_06_PIT_TB",
    "event": {
-    "home": "New Orleans Saints",
+    "home": "Tampa Bay Buccaneers",
     "away": "Pittsburgh Steelers",
-    "start_utc": "2026-10-25T13:30:00.000Z",
-    "label": "Pittsburgh Steelers @ New Orleans Saints"
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers"
    },
    "market": {
     "kind": "moneyline",
-    "side": "New Orleans Saints",
+    "side": "Tampa Bay Buccaneers",
     "line": null,
     "settles": "includes overtime"
    },
-   "label": "Pittsburgh Steelers @ New Orleans Saints — New Orleans Saints moneyline",
+   "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers — Tampa Bay Buccaneers moneyline",
    "quote": null,
-   "fair_american": -123,
+   "fair_american": -122,
    "break_even": null,
    "prob": {
-    "model": 0.5508,
+    "model": 0.5497,
     "push": 0,
     "market_novig": 0.4365,
     "shrink_k": 0.1286,
-    "posterior": 0.4512,
+    "posterior": 0.4511,
     "sd": 0.014,
-    "conservative": 0.4333,
+    "conservative": 0.4331,
     "components": {
      "model_sd": 0.03,
      "calibration_sd": 0.015,
@@ -1305,8 +1234,8 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 135,
-   "disagreement": -0.0032,
+   "min_acceptable_american": 136,
+   "disagreement": -0.0034,
    "gates": [
     {
      "gate": "PRICE",
@@ -1318,7 +1247,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +135 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +136 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
@@ -1480,77 +1409,6 @@
    "model_id": "edgedesk_football_v1.0.0"
   },
   {
-   "id": "f8298b8e",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_CAR_PHI",
-   "event": {
-    "home": "Philadelphia Eagles",
-    "away": "Carolina Panthers",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Carolina Panthers @ Philadelphia Eagles"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 39.5,
-    "settles": "includes overtime"
-   },
-   "label": "Carolina Panthers @ Philadelphia Eagles — over 39.5",
-   "quote": null,
-   "fair_american": -153,
-   "break_even": null,
-   "prob": {
-    "model": 0.6052,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5135,
-    "sd": 0.014,
-    "conservative": 0.4956,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 106,
-   "disagreement": -0.0044,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -1.2 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
    "id": "5ed50dac",
    "status": "RESEARCH",
    "sport_id": "nfl",
@@ -1609,6 +1467,148 @@
    "settlement": null,
    "evidence": [
     "fair spread -4.7 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "f8298b8e",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_CAR_PHI",
+   "event": {
+    "home": "Philadelphia Eagles",
+    "away": "Carolina Panthers",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "Carolina Panthers @ Philadelphia Eagles"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 39.5,
+    "settles": "includes overtime"
+   },
+   "label": "Carolina Panthers @ Philadelphia Eagles — over 39.5",
+   "quote": null,
+   "fair_american": -153,
+   "break_even": null,
+   "prob": {
+    "model": 0.6047,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5135,
+    "sd": 0.014,
+    "conservative": 0.4955,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 106,
+   "disagreement": -0.0045,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -0.7 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "c1eaf4d5",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_PIT_NO",
+   "event": {
+    "home": "New Orleans Saints",
+    "away": "Pittsburgh Steelers",
+    "start_utc": "2026-10-25T13:30:00.000Z",
+    "label": "Pittsburgh Steelers @ New Orleans Saints"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "New Orleans Saints",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Pittsburgh Steelers @ New Orleans Saints — New Orleans Saints moneyline",
+   "quote": null,
+   "fair_american": -123,
+   "break_even": null,
+   "prob": {
+    "model": 0.5508,
+    "push": 0,
+    "market_novig": 0.4486,
+    "shrink_k": 0.1286,
+    "posterior": 0.4617,
+    "sd": 0.014,
+    "conservative": 0.4438,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 130,
+   "disagreement": -0.0048,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +130 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -1.4 vs consensus 2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
    ],
    "invalidators": [
@@ -5370,9 +5370,9 @@
    "label": "NFL",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 156,
+   "candidates": 150,
    "priced": 0,
-   "note": "156 sides at the consensus line (a reference, not a price); captured book prices live in the desk (Supabase), not in this static board",
+   "note": "150 sides at the consensus line (a reference, not a price); captured book prices live in the desk (Supabase), not in this static board",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -5727,19 +5727,19 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-18T13:16:38.628Z",
-  "nhl_slate_generated_at": "2026-10-18T11:40:16.721Z",
+  "registry_generated_at": "2026-10-18T16:08:07.496Z",
+  "nhl_slate_generated_at": "2026-10-18T16:07:58.629Z",
   "basketball_slate_generated_at": "2026-10-18T13:16:37.894Z",
   "nhl_quotes": {
    "status": "DISABLED",
-   "generated_at": "2026-10-18T11:40:16.657Z",
+   "generated_at": "2026-10-18T16:07:58.562Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
-  "football_sheets_generated_at": "2026-10-18T11:23:03.343Z",
+  "football_sheets_generated_at": "2026-10-18T15:59:06.372Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 366,
+  "research_total": 360,
   "research_kept": 72,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
