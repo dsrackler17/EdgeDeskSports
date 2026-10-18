@@ -6,7 +6,7 @@
    No coordinate, roof or surface is here: those are what the venue coefficients were fitted
    on and are never restated from a second source.
    Source: https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_teams/parquet/cfb_teams_2026.parquet
-   Generated: 2026-10-18T21:35:04.087Z */
+   Generated: 2026-10-18T23:58:04.953Z */
 (function (root, factory) {
   var api = factory();
   root.EDVenueText = api;
