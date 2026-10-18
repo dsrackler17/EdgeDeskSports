@@ -51546,6 +51546,10 @@ function fbP4Ensure(){
        parameters. Both optional: without them the engine publishes no shadow
        margin and the gate runs on its declared defaults */
     .then(function(){return fbScript('football/cfb_p4/margin_calibration.js').catch(function(){});})
+    /* the live calibration (football/cfb_p4/live_calibration.js): a SHADOW
+       number unless its own file says promoted, so the board and the
+       committed slate price from the same file either way */
+    .then(function(){return fbScript('football/cfb_p4/live_calibration.js').catch(function(){});})
     .then(function(){return fbScript('football/cfb_p4/disagreement_params.js').catch(function(){});})
     .then(function(){fbDgSubEnsure();})
     /* THE CONFIDENCE LEDGER AND THE OUTCOME RENDERER, shared with the offline
