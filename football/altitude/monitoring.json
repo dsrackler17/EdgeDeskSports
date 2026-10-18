@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_altitude_monitoring_v1",
- "generated_at": "2026-10-17T17:51:34.816Z",
+ "generated_at": "2026-10-18T01:11:38.983Z",
  "policy": "warnings inform a person; nothing here retrains, re-tunes, enables or disables anything",
  "ok": true,
  "params": {
@@ -11,13 +11,25 @@
   "flag": "cfb_altitude_adjustment_enabled"
  },
  "slate": {
-  "generated_at": "2026-10-17T16:32:07.224Z",
-  "games": 108,
-  "with_section": 0,
-  "usable": 0,
-  "exposure": {},
+  "generated_at": "2026-10-18T01:11:38.459Z",
+  "games": 90,
+  "with_section": 90,
+  "usable": 89,
+  "exposure": {
+   "MINIMAL": 68,
+   "MODERATE": 3,
+   "HIGH": 7,
+   "DESCENT": 11,
+   "UNKNOWN": 1
+  },
   "applied_games": 0,
-  "unavailable": []
+  "unavailable": [
+   {
+    "game_id": "401858498",
+    "game": "Rutgers @ Northwestern",
+    "why": "venue 11823 has no sourced elevation; Northwestern’s normal home venue (id 11823) has no sourced elevation"
+   }
+  ]
  },
  "registry": {
   "generated_at": "2026-10-17T17:15:04.059Z",
@@ -33,31 +45,35 @@
   "season": 2026,
   "fit_window": "2006-2025, 13511 non-neutral FBS home games",
   "what": "the frozen shadow candidate applied to V1’s own published pregame margin (record/football/cfb_2026.json), graded on finals; 2026 was never seen by the fit",
-  "graded_games": 288,
-  "usable": 280,
+  "graded_games": 314,
+  "usable": 305,
   "affected": {
-   "n": 12,
-   "mae_v1": 13.541,
-   "mae_shadow": 13.643,
-   "improvement": -0.102,
-   "v1_bias": -1.366
+   "n": 14,
+   "mae_v1": 12.47,
+   "mae_shadow": 12.449,
+   "improvement": 0.021,
+   "v1_bias": -0.307
   },
   "high_exposure": {
-   "n": 12,
-   "v1_residual": -1.366,
-   "close_residual": 0.833,
-   "visitor_covers": "5 of 12"
+   "n": 14,
+   "v1_residual": -0.307,
+   "close_residual": 2.107,
+   "visitor_covers": "5 of 14"
   },
   "reading": "fewer than 30 affected games: too few to read anything into, by design"
  },
  "alerts": [
   {
-   "kind": "SECTION_NOT_PUBLISHED",
+   "kind": "ELEVATION_UNAVAILABLE",
    "level": "WARN",
-   "message": "football/fbs/slate.json carries no altitude_travel section (the slate was built before the module, or the module failed to load)",
-   "evidence": {
-    "slate_generated_at": "2026-10-17T16:32:07.224Z"
-   }
+   "message": "1 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
+   "evidence": [
+    {
+     "game_id": "401858498",
+     "game": "Rutgers @ Northwestern",
+     "why": "venue 11823 has no sourced elevation; Northwestern’s normal home venue (id 11823) has no sourced elevation"
+    }
+   ]
   }
  ]
 }
