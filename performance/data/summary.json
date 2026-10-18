@@ -2,21 +2,21 @@
  "schema": "edgedesk_perf_summary_v1",
  "version": "edgedesk_performance_v1",
  "grader": "perf_grader_v1",
- "generated_at": "2026-10-18T09:40:44.649Z",
+ "generated_at": "2026-10-18T14:03:17.634Z",
  "what": "Every eligible EdgeDesk pregame forecast, locked before the game and graded against the verified final, misses included. Research, not picks.",
  "ledger": {
   "epoch": "2026-10-16T19:35:25.897Z",
-  "last_capture_at": "2026-10-18T09:40:44.649Z",
-  "forecasts": 1701,
-  "verified_forecasts": 353,
+  "last_capture_at": "2026-10-18T14:03:17.634Z",
+  "forecasts": 1789,
+  "verified_forecasts": 441,
   "recorded_forecasts": 1348,
-  "quotes": 354,
-  "results": 519,
-  "grades": 519,
+  "quotes": 365,
+  "results": 520,
+  "grades": 520,
   "chains": {
    "ok": true,
-   "files": 22,
-   "rows": 4227
+   "files": 25,
+   "rows": 4450
   }
  },
  "tiers": {
@@ -37,8 +37,8 @@
    "schema": "edgedesk_performance_v1:metrics",
    "min_n": 20,
    "eligibility": {
-    "games": 72,
-    "graded": 68,
+    "games": 73,
+    "graded": 69,
     "void": 0,
     "flagged_pregame": 3,
     "awaiting_result": 1,
@@ -48,14 +48,14 @@
     }
    },
    "winner": {
-    "n": 68,
-    "called": 68,
-    "correct": 45,
-    "pct": 0.6618,
+    "n": 69,
+    "called": 69,
+    "correct": 46,
+    "pct": 0.6667,
     "ties": 0,
-    "scored": 68,
-    "brier": 0.2238,
-    "log_loss": 0.6602,
+    "scored": 69,
+    "brier": 0.2234,
+    "log_loss": 0.6591,
     "sample_state": "EARLY_SIGNAL",
     "calibration": [
      {
@@ -111,11 +111,11 @@
      {
       "from": 0.5,
       "to": 0.6,
-      "n": 15,
-      "mean_predicted": 0.5483,
-      "observed": 0.6,
-      "wilson_low": 0.3575,
-      "wilson_high": 0.8018,
+      "n": 16,
+      "mean_predicted": 0.5489,
+      "observed": 0.625,
+      "wilson_low": 0.3864,
+      "wilson_high": 0.8152,
       "inside_interval": true
      },
      {
@@ -171,10 +171,10 @@
      {
       "from": 0.55,
       "to": 0.6,
-      "n": 12,
-      "correct": 7,
+      "n": 13,
+      "correct": 8,
       "pct": null,
-      "mean_p": 0.5724
+      "mean_p": 0.5713
      },
      {
       "from": 0.6,
@@ -211,17 +211,17 @@
     ]
    },
    "margin": {
-    "n": 52,
-    "mae": 11.49,
-    "bias": -1.45,
-    "rmse": 14.22,
+    "n": 53,
+    "mae": 11.31,
+    "bias": -1.39,
+    "rmse": 14.09,
     "sample_state": "EARLY_SIGNAL"
    },
    "total": {
-    "n": 68,
-    "mae": 10.28,
-    "bias": -0.54,
-    "rmse": 14.06,
+    "n": 69,
+    "mae": 10.55,
+    "bias": -0.95,
+    "rmse": 14.38,
     "sample_state": "EARLY_SIGNAL"
    },
    "market": {
@@ -347,19 +347,19 @@
    "trend": [
     {
      "period": "2026-W42",
-     "n": 68,
-     "called": 68,
-     "correct": 45,
-     "margin_n": 52,
-     "margin_mae": 11.49,
-     "total_n": 68,
-     "total_mae": 10.28,
-     "cum_called": 68,
-     "cum_correct": 45,
-     "cum_pct": 0.6618,
-     "cum_brier": 0.2238,
-     "cum_margin_mae": 11.49,
-     "cum_total_mae": 10.28
+     "n": 69,
+     "called": 69,
+     "correct": 46,
+     "margin_n": 53,
+     "margin_mae": 11.31,
+     "total_n": 69,
+     "total_mae": 10.55,
+     "cum_called": 69,
+     "cum_correct": 46,
+     "cum_pct": 0.6667,
+     "cum_brier": 0.2234,
+     "cum_margin_mae": 11.31,
+     "cum_total_mae": 10.55
     }
    ]
   },
@@ -1518,11 +1518,11 @@
     "schema": "edgedesk_performance_v1:metrics",
     "min_n": 20,
     "eligibility": {
-     "games": 0,
+     "games": 1,
      "graded": 0,
      "void": 0,
      "flagged_pregame": 0,
-     "awaiting_result": 0,
+     "awaiting_result": 1,
      "conflict": 0,
      "by_why": {}
     },
@@ -2600,20 +2600,20 @@
     "min_n": 20,
     "eligibility": {
      "games": 1,
-     "graded": 0,
+     "graded": 1,
      "void": 0,
      "flagged_pregame": 0,
-     "awaiting_result": 1,
+     "awaiting_result": 0,
      "conflict": 0,
      "by_why": {}
     },
     "winner": {
-     "n": 0,
-     "called": 0,
-     "correct": 0,
+     "n": 1,
+     "called": 1,
+     "correct": 1,
      "pct": null,
      "ties": 0,
-     "scored": 0,
+     "scored": 1,
      "brier": null,
      "log_loss": null,
      "sample_state": "TOO_EARLY",
@@ -2630,10 +2630,10 @@
       {
        "from": 0.55,
        "to": 0.6,
-       "n": 0,
-       "correct": 0,
+       "n": 1,
+       "correct": 1,
        "pct": null,
-       "mean_p": null
+       "mean_p": 0.5577
       },
       {
        "from": 0.6,
@@ -2670,14 +2670,14 @@
      ]
     },
     "margin": {
-     "n": 0,
+     "n": 1,
      "mae": null,
      "bias": null,
      "rmse": null,
      "sample_state": "TOO_EARLY"
     },
     "total": {
-     "n": 0,
+     "n": 1,
      "mae": null,
      "bias": null,
      "rmse": null,
@@ -2803,7 +2803,24 @@
       "sample_state": "TOO_EARLY"
      }
     },
-    "trend": []
+    "trend": [
+     {
+      "period": "2026-W42",
+      "n": 1,
+      "called": 1,
+      "correct": 1,
+      "margin_n": 1,
+      "margin_mae": 2,
+      "total_n": 1,
+      "total_mae": 28.7,
+      "cum_called": 1,
+      "cum_correct": 1,
+      "cum_pct": null,
+      "cum_brier": null,
+      "cum_margin_mae": null,
+      "cum_total_mae": null
+     }
+    ]
    },
    "recorded": {
     "schema": "edgedesk_performance_v1:metrics",
@@ -3103,6 +3120,34 @@
    }
   },
   {
+   "sport": "nfl",
+   "model_version": "edgedesk_football_v1.0.0",
+   "tier": "VERIFIED",
+   "graded": 0,
+   "winner": {
+    "called": 0,
+    "correct": 0,
+    "pct": null,
+    "brier": null,
+    "log_loss": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "margin": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "total": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   }
+  },
+  {
    "sport": "nhl",
    "model_version": "edgedesk_nhl_v1:xg_core",
    "tier": "RECORDED",
@@ -3190,24 +3235,24 @@
    "sport": "wnba",
    "model_version": "edgedesk_bb_points_v1:points",
    "tier": "VERIFIED",
-   "graded": 0,
+   "graded": 1,
    "winner": {
-    "called": 0,
-    "correct": 0,
+    "called": 1,
+    "correct": 1,
     "pct": null,
     "brier": null,
     "log_loss": null,
     "sample_state": "TOO_EARLY"
    },
    "margin": {
-    "n": 0,
+    "n": 1,
     "mae": null,
     "bias": null,
     "rmse": null,
     "sample_state": "TOO_EARLY"
    },
    "total": {
-    "n": 0,
+    "n": 1,
     "mae": null,
     "bias": null,
     "rmse": null,
@@ -3245,10 +3290,10 @@
    "sport": "wnba",
    "label": "WNBA",
    "league": "WNBA",
-   "status": "RECORDED_ONLY",
+   "status": "GRADED",
    "why": null,
    "games": 1,
-   "verified_graded": 0,
+   "verified_graded": 1,
    "recorded_graded": 0,
    "models": [
     "edgedesk_bb_points_v1:points"
@@ -3282,7 +3327,7 @@
    "league": "NFL",
    "status": "RECORDED_ONLY",
    "why": null,
-   "games": 64,
+   "games": 65,
    "verified_graded": 0,
    "recorded_graded": 64,
    "models": [
@@ -3582,7 +3627,7 @@
    "sport": "nfl",
    "season": 2026,
    "path": "/performance/data/games/nfl-2026.json",
-   "rows": 64
+   "rows": 65
   },
   {
    "sport": "nhl",
