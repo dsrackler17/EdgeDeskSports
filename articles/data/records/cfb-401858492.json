@@ -21,8 +21,8 @@
   "game_time": "2026-10-18T03:00:00.000Z",
   "game_when_label": "2026-10-18 03:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-18T01:20:40.643Z",
-  "generated_at": "2026-10-18T01:20:40.643Z",
+  "updated_at": "2026-10-18T01:30:07.175Z",
+  "generated_at": "2026-10-18T01:30:07.175Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1470,7 +1470,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 179h old",
+          "text": "odds is 180h old",
           "widening": null
         },
         {
@@ -1543,7 +1543,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-10-10T14:00:01.583+00:00",
-      "capture_age": "179 hours old",
+      "capture_age": "180 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1922,15 +1922,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-17. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_ab77d3ec93372bab",
+  "snapshot_id": "snap_396204709b673071",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-18T03:00:00.000Z",
-    "minutes_before_kickoff": 99,
+    "minutes_before_kickoff": 90,
     "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-18T01:20:40.643Z"
+    "refreshed": true,
+    "at": "2026-10-18T01:30:07.175Z"
   },
   "featured": {
     "editorial_priority": 58.6,
@@ -2233,24 +2233,17 @@
     }
   ],
   "quality": {
-    "score": 88,
+    "score": 100,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [
-      {
-        "id": "duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Dante Moore has completed 70 of 100 passes (70.0%) for 935 yards, 9.4 yards per attempt, 9",
-        "cost": 12
-      }
-    ],
-    "at": "2026-10-18T01:20:40.643Z"
+    "craft_failed": [],
+    "at": "2026-10-18T01:30:07.175Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-18T01:20:40.643Z",
+    "at": "2026-10-18T01:30:07.175Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2258,13 +2251,7 @@
         "detail": "DATA_FAULT"
       }
     ],
-    "warnings": [
-      {
-        "id": "craft_duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Dante Moore has completed 70 of 100 passes (70.0%) for 935 yards, 9.4 yards per attempt, 9"
-      }
-    ],
+    "warnings": [],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
@@ -2370,6 +2357,100 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-18T01:20:40.643Z"
+    "at": "2026-10-18T01:30:07.175Z"
+  },
+  "publication_snapshot_id": "snap_396204709b673071",
+  "freshness": {
+    "at": "2026-10-18T01:30:07.175Z",
+    "fields": {
+      "market.line": {
+        "value": "Oregon −12.5",
+        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.total": {
+        "value": 58.5,
+        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.book": {
+        "value": "captured consensus (stale) · 1 book · best at DraftKings",
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
