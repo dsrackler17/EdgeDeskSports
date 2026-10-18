@@ -1,6 +1,6 @@
 {
  "schema": "cfb_ops_v1",
- "generated_at": "2026-10-18T10:07:53.363Z",
+ "generated_at": "2026-10-18T11:08:00.798Z",
  "season": 2026,
  "in_season": true,
  "reads": [
@@ -177,23 +177,23 @@
   "last_weekly_run": {
    "status": "OK",
    "detail": null,
-   "run_id": "cfbw_573265ea1e45eeb2aa4dcff2",
-   "mode": "daily",
+   "run_id": "cfbw_63d2f37c554279ec8e3d8882",
+   "mode": "weekly",
    "run_status": "PUBLISHED",
-   "started_at": "2026-10-17T10:48:03.948Z",
-   "completed_at": "2026-10-17T10:50:38.234Z",
-   "last_published_at": "2026-10-17T10:50:38.234Z",
-   "age_minutes": 1397,
+   "started_at": "2026-10-18T10:06:00.614Z",
+   "completed_at": "2026-10-18T10:08:32.848Z",
+   "last_published_at": "2026-10-18T10:08:32.848Z",
+   "age_minutes": 59,
    "stage_groups": {
-    "score_ingestion_status": "OK",
+    "score_ingestion_status": "WARN",
     "pbp_status": "OK",
     "team_rating_status": "OK",
-    "projection_status": "WARN",
+    "projection_status": "OK",
     "market_status": "OK",
     "model_lab_status": "OK"
    },
    "errors": [],
-   "runs_recorded": 25
+   "runs_recorded": 26
   },
   "source_health": {
    "status": "WARNING",
@@ -202,7 +202,7 @@
      "source": "schedule",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-10-17T10:48:03.948Z",
+     "last_success": "2026-10-18T10:06:00.614Z",
      "age_minutes": null,
      "coverage": 1,
      "error_rate": null,
@@ -213,19 +213,19 @@
      "source": "pbp",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-10-17T10:48:03.948Z",
+     "last_success": "2026-10-18T10:06:00.614Z",
      "age_minutes": null,
      "coverage": 1,
      "error_rate": 0,
      "critical": true,
-     "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0306"
+     "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0287"
     },
     {
      "source": "roster",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-10-17T10:48:03.948Z",
-     "age_minutes": 6670,
+     "last_success": "2026-10-18T10:06:00.614Z",
+     "age_minutes": 8068,
      "coverage": null,
      "error_rate": null,
      "critical": true,
@@ -236,7 +236,7 @@
      "origin": "weekly engine",
      "status": "DEGRADED",
      "last_success": null,
-     "age_minutes": 95,
+     "age_minutes": 37,
      "coverage": 0,
      "error_rate": null,
      "critical": true,
@@ -246,9 +246,9 @@
      "source": "qb_status",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-10-17T10:48:03.948Z",
-     "age_minutes": 658,
-     "coverage": 0.9062,
+     "last_success": "2026-10-18T10:06:00.614Z",
+     "age_minutes": 318,
+     "coverage": 0.8754,
      "error_rate": null,
      "critical": true,
      "detail": "starter context; the pure model derives the expected starter from play-by-play"
@@ -257,8 +257,8 @@
      "source": "market",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-10-17T10:48:03.948Z",
-     "age_minutes": 40,
+     "last_success": "2026-10-18T10:06:00.614Z",
+     "age_minutes": 58,
      "coverage": null,
      "error_rate": null,
      "critical": true,
@@ -268,8 +268,8 @@
      "source": "weather",
      "origin": "weekly engine",
      "status": "NOT_USED_BY_MODEL",
-     "last_success": "2026-10-17T10:48:03.948Z",
-     "age_minutes": 79,
+     "last_success": "2026-10-18T10:06:00.614Z",
+     "age_minutes": 22,
      "coverage": null,
      "error_rate": null,
      "critical": true,
@@ -279,7 +279,7 @@
      "source": "espn_scoreboard",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-10-18T10:07:37.000Z",
+     "last_success": "2026-10-18T11:07:39.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -288,7 +288,7 @@
      "source": "cfbfastr_schedule",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-10-18T10:07:37.000Z",
+     "last_success": "2026-10-18T11:07:39.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -298,266 +298,35 @@
   },
   "odds_age": {
    "status": "OK",
-   "newest_quote_at": "2026-10-18T10:07:37.000Z",
+   "newest_quote_at": "2026-10-18T11:07:39.000Z",
    "age_minutes": 0,
    "stale_after_minutes": 180,
    "games_within_48h": 0,
-   "games_marked_stale": 45,
+   "games_marked_stale": 44,
    "games_this_week": 56,
    "rule": "decisions fail closed (MARKET_STALE) past 180 min (decision policy cfb_decision_policy_v1); football projections still display"
   },
   "pbp_age": {
    "status": "OK",
    "pbp_status": "HEALTHY",
-   "last_success": "2026-10-17T10:48:03.948Z",
-   "age_minutes": 1400,
+   "last_success": "2026-10-18T10:06:00.614Z",
+   "age_minutes": 62,
    "coverage": 1,
    "error_rate": 0,
-   "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0306",
+   "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0287",
    "rule": "incomplete PBP never becomes zero EPA: the game is FINAL_PARTIAL_DATA and the weekly engine degrades (DEGRADED_PBP) or holds"
   },
   "failed_jobs": {
    "status": "OK",
    "failed": [],
-   "lab_last_run_at": "2026-10-18T10:07:37.000Z",
+   "lab_last_run_at": "2026-10-18T11:07:39.000Z",
    "lab_last_run_age_minutes": 0,
    "note": "Mirror / workflow failures and heartbeats live in Postgres (cfb_job_heartbeat_status, cfb_incidents_current) and GitHub Actions; this file sees what the jobs committed."
   },
   "degraded_games": {
    "status": "OK",
-   "v21_rows": 108,
+   "v21_rows": 58,
    "degraded": [
-    {
-     "game_id": "401858261",
-     "home": "Clemson",
-     "away": "Charleston Southern",
-     "modes": [
-      "NOT_PRICED"
-     ],
-     "fallback_level": null,
-     "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)"
-    },
-    {
-     "game_id": "401858267",
-     "home": "Boston College",
-     "away": "Pittsburgh",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401866441",
-     "home": "Bowling Green",
-     "away": "Ball State",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401856725",
-     "home": "Texas A&M",
-     "away": "The Citadel",
-     "modes": [
-      "NOT_PRICED"
-     ],
-     "fallback_level": null,
-     "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)"
-    },
-    {
-     "game_id": "401862803",
-     "home": "Temple",
-     "away": "Charlotte",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401866442",
-     "home": "Buffalo",
-     "away": "Massachusetts",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401856723",
-     "home": "Tennessee",
-     "away": "Alabama",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401856828",
-     "home": "Texas Tech",
-     "away": "Arizona State",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401864524",
-     "home": "Air Force",
-     "away": "UNLV",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401866478",
-     "home": "Miami (OH)",
-     "away": "Akron",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401862805",
-     "home": "Rice",
-     "away": "Tulsa",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401856726",
-     "home": "Vanderbilt",
-     "away": "Arkansas",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401856832",
-     "home": "Baylor",
-     "away": "TCU",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401869934",
-     "home": "Southern Miss",
-     "away": "Arkansas State",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401858262",
-     "home": "Stanford",
-     "away": "Elon",
-     "modes": [
-      "NOT_PRICED",
-      "QB_MISSING"
-     ],
-     "fallback_level": null,
-     "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)"
-    },
-    {
-     "game_id": "401858265",
-     "home": "Syracuse",
-     "away": "Louisville",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401862804",
-     "home": "UTSA",
-     "away": "Navy",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401871091",
-     "home": "UL Monroe",
-     "away": "Louisiana Tech",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401864523",
-     "home": "UTEP",
-     "away": "San José State",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401866445",
-     "home": "Sacramento State",
-     "away": "Ohio",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401856833",
-     "home": "Colorado",
-     "away": "Utah",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401858269",
-     "home": "California",
-     "away": "Wake Forest",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
-    {
-     "game_id": "401858492",
-     "home": "Oregon",
-     "away": "Nebraska",
-     "modes": [
-      "QB_UNSETTLED"
-     ],
-     "fallback_level": null,
-     "reason": null
-    },
     {
      "game_id": "401871055",
      "home": "Florida International",
@@ -678,7 +447,6 @@
      "away": "Army",
      "modes": [
       "DEGRADED_AVAILABILITY",
-      "QB_UNSETTLED",
       "NO_PLAYER_DATA",
       "QB_UNCERTAIN",
       "MARKET_DEGRADED"
@@ -794,9 +562,7 @@
      "away": "Texas Tech",
      "modes": [
       "DEGRADED_AVAILABILITY",
-      "QB_UNSETTLED",
       "NO_PLAYER_DATA",
-      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ],
      "fallback_level": 2,
@@ -973,9 +739,7 @@
      "away": "Miami (OH)",
      "modes": [
       "DEGRADED_AVAILABILITY",
-      "QB_UNSETTLED",
       "NO_PLAYER_DATA",
-      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ],
      "fallback_level": 2,
@@ -999,7 +763,9 @@
      "away": "Oklahoma",
      "modes": [
       "DEGRADED_AVAILABILITY",
+      "QB_UNSETTLED",
       "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ],
      "fallback_level": 2,
@@ -1063,9 +829,7 @@
      "away": "Sacramento State",
      "modes": [
       "DEGRADED_AVAILABILITY",
-      "QB_UNSETTLED",
       "NO_PLAYER_DATA",
-      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ],
      "fallback_level": 2,
@@ -1276,25 +1040,50 @@
      ],
      "fallback_level": 2,
      "reason": null
+    },
+    {
+     "game_id": "401871071",
+     "home": "Western Kentucky",
+     "away": "Delaware",
+     "modes": [
+      "QB_UNSETTLED",
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ],
+     "fallback_level": 2,
+     "reason": null
+    },
+    {
+     "game_id": "401871072",
+     "home": "Missouri State",
+     "away": "Sam Houston",
+     "modes": [
+      "QB_UNSETTLED",
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ],
+     "fallback_level": 2,
+     "reason": null
     }
    ],
-   "degraded_count": 79,
+   "degraded_count": 58,
    "lab_data_quality": {
     "GREEN": 3,
     "YELLOW": 55,
     "RED": 0
    },
-   "canonical_projections_as_of": "2026-10-18T10:07:45.360Z",
+   "canonical_projections_as_of": "2026-10-18T11:07:49.877Z",
    "canonical_by_level": {
-    "2": 56,
-    "3": 2
+    "2": 58
    }
   },
   "predictions": {
    "status": "OK",
-   "v21_current_generated_at": "2026-10-17T10:48:03Z",
-   "v21_current_age_minutes": 1400,
-   "v21_rows": 108,
+   "v21_current_generated_at": "2026-10-18T10:06:00Z",
+   "v21_current_age_minutes": 62,
+   "v21_rows": 58,
    "v21_mode": "shadow",
    "frozen_snapshot_files": 3,
    "lab_models": [
@@ -1311,18 +1100,18 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "label": "V2 · candidate 001",
      "role": "candidate",
-     "snapshots": 1744,
-     "latest_snapshot_at": "2026-10-18T02:07:42.000Z",
-     "upcoming_games": 56,
+     "snapshots": 1749,
+     "latest_snapshot_at": "2026-10-18T11:07:39.000Z",
+     "upcoming_games": 58,
      "avg_confidence_upcoming": 75.1
     },
     {
      "model_version": "edgedesk_cfb_v2.1.0",
      "label": "V2.1 · hardened",
      "role": "challenger",
-     "snapshots": 1744,
-     "latest_snapshot_at": "2026-10-18T02:07:42.000Z",
-     "upcoming_games": 56,
+     "snapshots": 1749,
+     "latest_snapshot_at": "2026-10-18T11:07:39.000Z",
+     "upcoming_games": 58,
      "avg_confidence_upcoming": 75.2
     }
    ],
@@ -1382,15 +1171,6 @@
      "message": "last-100 win ECE 0.1064 > 0.06",
      "detail": {
       "n": 100
-     }
-    },
-    {
-     "source": "model lab",
-     "rule": "market_source_stale",
-     "severity": "WARNING",
-     "message": "33% of snapshots within 72 h fail odds_freshness",
-     "detail": {
-      "share": 0.333
      }
     }
    ],
@@ -1687,7 +1467,7 @@
     "status": "OK",
     "detail": "connected: 17.6, postgres",
     "observed": {
-     "now": "2026-10-18T10:07:53.363+00:00",
+     "now": "2026-10-18T11:08:00.798+00:00",
      "in_season": true
     }
    },
@@ -1710,19 +1490,19 @@
    {
     "check_name": "latest_team_state",
     "status": "OK",
-    "detail": "newest team state as of 2026-10-13 12:00:00+00 (7088 min old), 4421 rows",
+    "detail": "newest team state as of 2026-10-13 12:00:00+00 (7148 min old), 4421 rows",
     "observed": {
      "rows": 4421,
      "as_of": "2026-10-13T12:00:00+00:00",
-     "age_minutes": 7088
+     "age_minutes": 7148
     }
    },
    {
     "check_name": "odds_freshness",
     "status": "OK",
-    "detail": "newest odds_api quote 11288 min old; games within 48 h: f",
+    "detail": "newest odds_api quote 11348 min old; games within 48 h: f",
     "observed": {
-     "age_minutes": 11288,
+     "age_minutes": 11348,
      "newest_quote": "2026-10-10T14:00:01.583+00:00",
      "games_within_48h": false
     }
@@ -1730,12 +1510,12 @@
    {
     "check_name": "pbp_freshness",
     "status": "OK",
-    "detail": "PBP HEALTHY at 2026-10-17 10:48:03.948+00; last successful ingestion 1400 min ago",
+    "detail": "PBP HEALTHY at 2026-10-18 10:06:00.614+00; last successful ingestion 62 min ago",
     "observed": {
-     "as_of": "2026-10-17T10:48:03.948+00:00",
+     "as_of": "2026-10-18T10:06:00.614+00:00",
      "status": "HEALTHY",
-     "age_minutes": 1400,
-     "last_success": "2026-10-17T10:48:03.948+00:00"
+     "age_minutes": 62,
+     "last_success": "2026-10-18T10:06:00.614+00:00"
     }
    },
    {
