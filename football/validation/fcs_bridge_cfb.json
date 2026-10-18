@@ -1,58 +1,58 @@
 {
  "schema": "edgedesk_fcs_bridge_validation_v1",
  "season": 2026,
- "generated_at": "2026-10-18T11:25:07.454Z",
+ "generated_at": "2026-10-18T13:34:30.102Z",
  "method": "walk-forward over every completed 2026 FBS-vs-FCS game: the FCS side rated from the 2025 fit carried forward and only the 2026 results before kickoff; the FBS side at the rating EdgeDesk priced it at before the game (engine replay). Errors are against the final margin, capped at the engine’s own ±35 (and uncapped beside it).",
- "n": 121,
+ "n": 122,
  "capped": {
   "floor": {
-   "n": 121,
-   "mae": 9.49,
+   "n": 122,
+   "mae": 9.51,
    "rmse": 12.08,
-   "bias": -0.04
+   "bias": -0.14
   },
   "bridge": {
-   "n": 121,
-   "mae": 9.44,
-   "rmse": 11.8,
-   "bias": -0.82
+   "n": 122,
+   "mae": 9.47,
+   "rmse": 11.82,
+   "bias": -0.92
   },
   "prior_only": {
-   "n": 121,
-   "mae": 9.27,
-   "rmse": 11.75,
-   "bias": -1.57
+   "n": 122,
+   "mae": 9.32,
+   "rmse": 11.79,
+   "bias": -1.68
   }
  },
  "uncapped": {
   "floor": {
-   "n": 121,
-   "mae": 17.09,
-   "rmse": 20.8,
-   "bias": -9.11
+   "n": 122,
+   "mae": 17.05,
+   "rmse": 20.74,
+   "bias": -9.13
   },
   "bridge": {
-   "n": 121,
-   "mae": 16.05,
-   "rmse": 19.26,
-   "bias": -9.89
+   "n": 122,
+   "mae": 16.03,
+   "rmse": 19.22,
+   "bias": -9.91
   },
   "prior_only": {
-   "n": 121,
+   "n": 122,
    "mae": 16.21,
-   "rmse": 19.54,
-   "bias": -10.64
+   "rmse": 19.51,
+   "bias": -10.67
   }
  },
  "paired_abs_error_reduction": {
-  "mean": 0.06,
+  "mean": 0.05,
   "se": 0.64,
-  "t": 0.09,
+  "t": 0.07,
   "bridge_closer": 59,
-  "of": 121
+  "of": 122
  },
  "floor_value": -28,
- "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.09, n = 121).",
+ "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.07, n = 122).",
  "rows": [
   {
    "game_id": "401856767",
@@ -1263,6 +1263,16 @@
    "floor": 30.75,
    "bridge": 28.1,
    "bridge_sd": 6.55
+  },
+  {
+   "game_id": "401858262",
+   "week": 7,
+   "fcs": "elon",
+   "fbs": "stanford",
+   "actual": 27,
+   "floor": 15.04,
+   "bridge": 13.65,
+   "bridge_sd": 7.34
   }
  ]
 }
