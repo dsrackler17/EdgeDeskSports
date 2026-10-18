@@ -1,0 +1,89 @@
+{
+ "generated_at": "2026-10-18T00:07:35.000Z",
+ "rule": "cfb_lab_promotion_v1",
+ "champion": "edgedesk_cfb_p4_v1.0.0",
+ "evaluations": [
+  {
+   "challenger": "edgedesk_cfb_v2.1.0",
+   "role": "challenger",
+   "champion": "edgedesk_cfb_p4_v1.0.0",
+   "rule": "cfb_lab_promotion_v1",
+   "n": 152,
+   "min_n": 150,
+   "ready": true,
+   "decision": "NOT_ELIGIBLE",
+   "mae_diff": 0.019,
+   "mae_diff_ci": [
+    -0.625,
+    0.683
+   ],
+   "weekly_win_share": 0.333,
+   "weeks": 3,
+   "gates": {
+    "G1_mae_ci_below_zero": false,
+    "G2_brier_not_worse": true,
+    "G3_ece_within_001": true,
+    "G4_coverage80_in_band": true,
+    "G5_tail_not_worse": true,
+    "G6_weekly_stability": false
+   },
+   "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
+   "champion_stats": {
+    "mae": 12.477,
+    "rmse": 15.818,
+    "brier": 0.21132,
+    "ece": 0.0961,
+    "p95_ae": 33.994
+   },
+   "challenger_stats": {
+    "mae": 12.496,
+    "rmse": 16.039,
+    "brier": 0.20414,
+    "ece": 0.0902,
+    "p95_ae": 31.932,
+    "coverage_80": 0.7829
+   }
+  },
+  {
+   "challenger": "edgedesk_cfb_v2.0.0",
+   "role": "candidate",
+   "champion": "edgedesk_cfb_p4_v1.0.0",
+   "rule": "cfb_lab_promotion_v1",
+   "n": 152,
+   "min_n": 150,
+   "ready": true,
+   "decision": "NOT_ELIGIBLE",
+   "mae_diff": 0.039,
+   "mae_diff_ci": [
+    -0.594,
+    0.679
+   ],
+   "weekly_win_share": 0.333,
+   "weeks": 3,
+   "gates": {
+    "G1_mae_ci_below_zero": false,
+    "G2_brier_not_worse": true,
+    "G3_ece_within_001": true,
+    "G4_coverage80_in_band": true,
+    "G5_tail_not_worse": true,
+    "G6_weekly_stability": false
+   },
+   "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
+   "champion_stats": {
+    "mae": 12.477,
+    "rmse": 15.818,
+    "brier": 0.21132,
+    "ece": 0.0961,
+    "p95_ae": 33.994
+   },
+   "challenger_stats": {
+    "mae": 12.516,
+    "rmse": 16.051,
+    "brier": 0.2047,
+    "ece": 0.0589,
+    "p95_ae": 32.156,
+    "coverage_80": 0.7895
+   }
+  }
+ ]
+}

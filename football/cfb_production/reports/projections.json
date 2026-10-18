@@ -1,7 +1,7 @@
 {
  "schema": "cfb_canonical_projections_v1",
- "generated_at": "2026-10-17T23:07:44.538Z",
- "as_of_ts": "2026-10-17T23:07:44.538Z",
+ "generated_at": "2026-10-18T00:07:44.552Z",
+ "as_of_ts": "2026-10-18T00:07:44.552Z",
  "season": 2026,
  "model_version": "edgedesk_cfb_v2.1.0",
  "champion": "edgedesk_cfb_p4_v1.0.0",
@@ -54,258 +54,37 @@
    "rows": 108
   },
   "slate_json": {
-   "generated_at": "2026-10-17T18:09:36.360Z",
-   "sha256": "0437780b0eb0b286666f1d1be3c234020e87b0212dc2e79fab0573df425839d0"
+   "generated_at": "2026-10-17T23:13:58.606Z",
+   "sha256": "650ad16d9d20c29c30459d06c022ca7b5d2ef9e35f8777bec76ba36522905ed3"
   },
-  "lab_predictions": 5402,
-  "decision_rows": 2864,
-  "v1_games": 108,
+  "lab_predictions": 5412,
+  "decision_rows": 2870,
+  "v1_games": 89,
   "v1_error": null
  },
  "counts": {
-  "games": 71,
+  "games": 64,
   "by_level": {
-   "1": 4,
-   "2": 66,
-   "NOT_PRICED": 1
+   "1": 1,
+   "2": 62,
+   "3": 1
   },
   "by_mode": {
-   "MARKET_DEGRADED": 70,
-   "NO_PLAYER_DATA": 62,
-   "QB_UNCERTAIN": 32
+   "NO_PLAYER_DATA": 59,
+   "MARKET_DEGRADED": 63,
+   "QB_UNCERTAIN": 29
   },
   "official": {
-   "PASS": 10,
-   "NO_DECISION": 56,
-   "RESEARCH": 4,
-   "NO_BET": 1
+   "NO_DECISION": 57,
+   "PASS": 5,
+   "RESEARCH": 2
   },
   "research": {
-   "PASS": 68,
-   "LEAN": 2
+   "PASS": 62,
+   "LEAN": 1
   }
  },
  "games": [
-  {
-   "game_id": "401856722",
-   "season": 2026,
-   "week": 7,
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "home": "Oklahoma",
-   "away": "Kentucky",
-   "neutral_site": false,
-   "hours_to_kickoff": 0.37,
-   "canonical": {
-    "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
-    "game_id": "401856722",
-    "season": 2026,
-    "week": 7,
-    "home": "Oklahoma",
-    "away": "Kentucky",
-    "home_id": "201",
-    "away_id": "96",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "neutral_site": false,
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "feature_version": "cfb_v2_fv2",
-    "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
-    "prediction_ts": "2026-10-13T12:00:00Z",
-    "feature_ts": "2026-10-13T12:00:00Z",
-    "row_state": "FROZEN",
-    "source": "football/cfb_v2/current.json",
-    "status": "PREDICTED",
-    "reason": null,
-    "projection": {
-     "projected_margin": 7.86,
-     "fair_spread_home_line": -7.86,
-     "fair_spread_display": "Oklahoma -8.0",
-     "fair_total": 48,
-     "home_win_prob": 0.6969,
-     "away_win_prob": 0.3031,
-     "home_win_prob_raw": 0.6969,
-     "sigma": 15.349,
-     "t_df": 100,
-     "intervals": {
-      "p50": [
-       -2.3,
-       18
-      ],
-      "p80": [
-       -11.9,
-       27.6
-      ],
-      "p95": [
-       -22,
-       37.7
-      ]
-     },
-     "football_prediction_confidence": 99,
-     "confidence_basis": [
-      "error model only"
-     ],
-     "components": {
-      "C_ridge": 7.273,
-      "D_gbm": 8.444
-     },
-     "ensemble_sd": 0.83,
-     "drivers": [
-      {
-       "feature": "elo_diff",
-       "points": 1.64
-      },
-      {
-       "feature": "match_mix_edge",
-       "points": -1.16
-      },
-      {
-       "feature": "edge_epa",
-       "points": 1.02
-      }
-     ],
-     "uncertainty_drivers": [
-      "uncertain team ratings",
-      "model disagreement"
-     ],
-     "why": {
-      "primary_matchup_edge": {
-       "label": "results-based strength",
-       "favours": "Oklahoma",
-       "points": 1.6
-      },
-      "secondary_matchup_edge": {
-       "label": "play-mix-weighted efficiency",
-       "favours": "Kentucky",
-       "points": 1.2
-      },
-      "main_uncertainty": "uncertain team ratings"
-     }
-    },
-    "contract": {
-     "version": "cfb_input_contract_1",
-     "ok": true,
-     "critical": [],
-     "degrade": [],
-     "decision_inputs_complete": true
-    },
-    "numeric": {
-     "version": "cfb_numeric_safety_v1",
-     "ok": true,
-     "problems": [],
-     "notes": []
-    },
-    "degraded": {
-     "modes": [
-      "MARKET_DEGRADED"
-     ],
-     "primary": "MARKET_DEGRADED",
-     "football": [],
-     "reasons": {
-      "MARKET_DEGRADED": [
-       "market DEGRADED (MARKET_DEGRADED)"
-      ]
-     }
-    },
-    "fallback_level": 1,
-    "input_hash": "0dabc56259648df1e10522c4277553be741613bedc86dd396edd28a08be39ac8",
-    "projection_hash": "2f2052cba05dd2680453360f189b15b7dcc97b21ff047e8e8cba16b17d3637ce",
-    "snapshot_id": "cfbcs_d126b82853604476521a7046",
-    "display": {
-     "label": "Market data limited",
-     "notes": [
-      "Market data limited"
-     ],
-     "show_numbers": true,
-     "show_confidence_score": true,
-     "win_probability_text": "70%"
-    }
-   },
-   "v1": {
-    "status": "PREDICTED",
-    "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 7.82,
-    "home_win_prob": 0.7035,
-    "fair_total": 48.9,
-    "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "home": "Oklahoma",
-    "away": "Kentucky",
-    "week": 7,
-    "season": 2026
-   },
-   "resolved": {
-    "level": 1,
-    "mode": "FULL",
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "modes": [
-     "MARKET_DEGRADED"
-    ],
-    "source": "V2.1 canonical projection"
-   },
-   "market": {
-    "home_line": -6.5,
-    "as_of": "2026-10-17T22:07:36.000Z",
-    "books": 1,
-    "stale": false,
-    "actionable_status": "MARKET_DEGRADED",
-    "gap": 1.36,
-    "snapshot_ts": "2026-10-17T22:38:08.000Z"
-   },
-   "official_decision": {
-    "status": "PASS",
-    "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
-    "side": "HOME",
-    "line_for_side": -6.5,
-    "price": -122,
-    "book": "draftkings",
-    "observed_at": "2026-10-17T23:07:35.000Z",
-    "decision_id": "cfbd_daae859e96771e5082686c4c",
-    "probability_edge": -0.0213,
-    "decision_cover_probability": 0.5282,
-    "break_even_probability": 0.5495,
-    "reason_codes": [
-     "PASS_PRICE"
-    ],
-    "books": 2,
-    "closing_line_tendency": {
-     "label": "LOW",
-     "p_positive_clv": 0.4886,
-     "note": "P(the close moves toward this side) from the decision calibration: it ranks closing-line movement, not bet quality (close-implied EV <= 0 in every tier; audit F-23)"
-    }
-   },
-   "research": {
-    "status": "PASS",
-    "engine_status": "PASS",
-    "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
-    "stage8_ev_strength": 0,
-    "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_53cc2d1ebbe08daba09f73a7",
-    "checkpoint_type": "FINAL",
-    "prediction_ts": "2026-10-17T22:38:08.000Z",
-    "row_hash": "77e1f820f1b8e89f9a588eeb285fa7b84c5a49db0fdf9a2c4f081da58fd4b9e8",
-    "canonical_modes": [
-     "MARKET_DEGRADED"
-    ]
-   },
-   "display": {
-    "label": "Market data limited",
-    "notes": [
-     "Market data limited"
-    ],
-    "show_numbers": true,
-    "show_confidence_score": true,
-    "win_probability_text": "70%"
-   },
-   "trace": {
-    "current_generated_at": "2026-10-17T10:48:03Z",
-    "row_state": "FROZEN",
-    "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_53cc2d1ebbe08daba09f73a7",
-    "lab_row_hash": "77e1f820f1b8e89f9a588eeb285fa7b84c5a49db0fdf9a2c4f081da58fd4b9e8",
-    "official_decision_id": "cfbd_daae859e96771e5082686c4c"
-   }
-  },
   {
    "game_id": "401856727",
    "season": 2026,
@@ -314,10 +93,10 @@
    "home": "Alabama",
    "away": "Texas A&M",
    "neutral_site": false,
-   "hours_to_kickoff": 164.37,
+   "hours_to_kickoff": 163.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856727",
     "season": 2026,
     "week": 8,
@@ -436,7 +215,7 @@
     "fallback_level": 2,
     "input_hash": "8a214f831817723eac7cf154b0fa45d8078cc656bcef17053da6403f9468ff83",
     "projection_hash": "b3a20c5c39519aed1ea28520af9e81dddae7e5599f10d10842e13fbbc7ff8917",
-    "snapshot_id": "cfbcs_ce645a22fe327e4653866622",
+    "snapshot_id": "cfbcs_e9a688a649a55b9b7101bc5c",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -451,12 +230,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 21.01,
-    "home_win_prob": 0.9245,
-    "fair_total": 51.8,
+    "margin": 20.03,
+    "home_win_prob": 0.9145,
+    "fair_total": 51.7,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T19:30:00.000Z",
     "home": "Alabama",
     "away": "Texas A&M",
     "week": 8,
@@ -528,10 +307,10 @@
    "home": "Auburn",
    "away": "LSU",
    "neutral_site": false,
-   "hours_to_kickoff": 160.87,
+   "hours_to_kickoff": 159.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856728",
     "season": 2026,
     "week": 8,
@@ -650,7 +429,7 @@
     "fallback_level": 2,
     "input_hash": "c86fa57b01615fa61fd7cc4c7139a8271674a76da4a56c8e785063e47f4d2775",
     "projection_hash": "a4e6e757bc3b20038211421d1ca7442c242b133d7a3275f8add8455e3a51b4f3",
-    "snapshot_id": "cfbcs_81f49b744d5e0c44aea73b49",
+    "snapshot_id": "cfbcs_7b2504a23016b36abeb9475c",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -665,11 +444,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -3.03,
-    "home_win_prob": 0.4181,
-    "fair_total": 51,
+    "margin": -6.45,
+    "home_win_prob": 0.3296,
+    "fair_total": 50,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T16:00:00.000Z",
     "home": "Auburn",
     "away": "LSU",
@@ -742,10 +521,10 @@
    "home": "Kentucky",
    "away": "Vanderbilt",
    "neutral_site": false,
-   "hours_to_kickoff": 168.37,
+   "hours_to_kickoff": 167.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856729",
     "season": 2026,
     "week": 8,
@@ -870,7 +649,7 @@
     "fallback_level": 2,
     "input_hash": "0778c1a7084f187f52d2b42e599a0f3396621f5e58273c564232755ddf6e0940",
     "projection_hash": "83c3164d66914e483ad324fe0b5810063813f7eb67f14de2c2e9169c5a618389",
-    "snapshot_id": "cfbcs_7b5a9d5e501e961d5abeb0da",
+    "snapshot_id": "cfbcs_73bb387f5a71a9b0c6d2b3f8",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -888,10 +667,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 12.8,
     "home_win_prob": 0.8092,
-    "fair_total": 56,
+    "fair_total": 56.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T23:30:00.000Z",
     "home": "Kentucky",
     "away": "Vanderbilt",
     "week": 8,
@@ -966,10 +745,10 @@
    "home": "Mississippi State",
    "away": "Oklahoma",
    "neutral_site": false,
-   "hours_to_kickoff": 164.37,
+   "hours_to_kickoff": 163.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856730",
     "season": 2026,
     "week": 8,
@@ -1089,7 +868,7 @@
     "fallback_level": 2,
     "input_hash": "2f6357d79587b225faccb8dfc2d1c4a4b1477bedeced6cc681598202f259f8e5",
     "projection_hash": "fadf4d093e83d52048dff8ec4e0122538dc14d9b8b297b5f6687c84701a9f965",
-    "snapshot_id": "cfbcs_da24d5805a45afe30208bc96",
+    "snapshot_id": "cfbcs_beb092c5a29552cd85f9481e",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -1104,12 +883,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 0.1,
-    "home_win_prob": 0.5028,
-    "fair_total": 52.6,
+    "margin": -4.78,
+    "home_win_prob": 0.372,
+    "fair_total": 51.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T19:30:00.000Z",
     "home": "Mississippi State",
     "away": "Oklahoma",
     "week": 8,
@@ -1181,10 +960,10 @@
    "home": "South Carolina",
    "away": "Tennessee",
    "neutral_site": false,
-   "hours_to_kickoff": 164.37,
+   "hours_to_kickoff": 163.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856731",
     "season": 2026,
     "week": 8,
@@ -1308,7 +1087,7 @@
     "fallback_level": 2,
     "input_hash": "a05e87522ffef2bbdffa1b796520b95350432731b8cbe9b83f08da821842fa52",
     "projection_hash": "d98f22c5c4d6c2fa0817283d329ea9b19ca3a59e1a29c4312e11ae3eb223be14",
-    "snapshot_id": "cfbcs_0cd58cfd49e608310a7b8d26",
+    "snapshot_id": "cfbcs_a9a3b0718f82ebd502a74de7",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -1324,12 +1103,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 0.61,
+    "margin": 0.62,
     "home_win_prob": 0.5168,
-    "fair_total": 54.4,
+    "fair_total": 54.8,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T19:30:00.000Z",
     "home": "South Carolina",
     "away": "Tennessee",
     "week": 8,
@@ -1404,10 +1183,10 @@
    "home": "Texas",
    "away": "Ole Miss",
    "neutral_site": false,
-   "hours_to_kickoff": 168.37,
+   "hours_to_kickoff": 167.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856732",
     "season": 2026,
     "week": 8,
@@ -1526,7 +1305,7 @@
     "fallback_level": 2,
     "input_hash": "76512bf7163fb6e9c114d1619ed8fea5ca0a55066196325ad52973fcfc89ddea",
     "projection_hash": "dcf74675edd01c5ca6be32f3a1606d1161361d32c3308d71f8959e9e58650aea",
-    "snapshot_id": "cfbcs_d80f49632ac99c20646370bb",
+    "snapshot_id": "cfbcs_d760807161bd926482d9d0bd",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -1541,12 +1320,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 3.92,
-    "home_win_prob": 0.6056,
-    "fair_total": 55.3,
+    "margin": -1.8,
+    "home_win_prob": 0.451,
+    "fair_total": 55.8,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T23:30:00.000Z",
     "home": "Texas",
     "away": "Ole Miss",
     "week": 8,
@@ -1611,456 +1390,6 @@
    }
   },
   {
-   "game_id": "401856809",
-   "season": 2026,
-   "week": 7,
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "home": "BYU",
-   "away": "Notre Dame",
-   "neutral_site": false,
-   "hours_to_kickoff": 0.37,
-   "canonical": {
-    "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
-    "game_id": "401856809",
-    "season": 2026,
-    "week": 7,
-    "home": "BYU",
-    "away": "Notre Dame",
-    "home_id": "252",
-    "away_id": "87",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "neutral_site": false,
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "feature_version": "cfb_v2_fv2",
-    "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
-    "prediction_ts": "2026-10-13T12:00:00Z",
-    "feature_ts": "2026-10-13T12:00:00Z",
-    "row_state": "FROZEN",
-    "source": "football/cfb_v2/current.json",
-    "status": "PREDICTED",
-    "reason": null,
-    "projection": {
-     "projected_margin": -10.62,
-     "fair_spread_home_line": 10.62,
-     "fair_spread_display": "Notre Dame -10.5",
-     "fair_total": 53.1,
-     "home_win_prob": 0.2403,
-     "away_win_prob": 0.7597,
-     "home_win_prob_raw": 0.2403,
-     "sigma": 15.152,
-     "t_df": 100,
-     "intervals": {
-      "p50": [
-       -20.7,
-       -0.6
-      ],
-      "p80": [
-       -30.1,
-       8.8
-      ],
-      "p95": [
-       -40.1,
-       18.9
-      ]
-     },
-     "football_prediction_confidence": 100,
-     "confidence_basis": [
-      "error model only"
-     ],
-     "components": {
-      "C_ridge": -8.349,
-      "D_gbm": -12.894
-     },
-     "ensemble_sd": 3.21,
-     "drivers": [
-      {
-       "feature": "edge_epa",
-       "points": -3.81
-      },
-      {
-       "feature": "match_mix_edge",
-       "points": 2.76
-      },
-      {
-       "feature": "elo_diff",
-       "points": -2.38
-      }
-     ],
-     "uncertainty_drivers": [
-      "uncertain team ratings",
-      "early-season sample"
-     ],
-     "why": {
-      "primary_matchup_edge": {
-       "label": "overall efficiency",
-       "favours": "Notre Dame",
-       "points": 3.8
-      },
-      "secondary_matchup_edge": {
-       "label": "play-mix-weighted efficiency",
-       "favours": "BYU",
-       "points": 2.8
-      },
-      "main_uncertainty": "uncertain team ratings"
-     }
-    },
-    "contract": {
-     "version": "cfb_input_contract_1",
-     "ok": true,
-     "critical": [],
-     "degrade": [],
-     "decision_inputs_complete": true
-    },
-    "numeric": {
-     "version": "cfb_numeric_safety_v1",
-     "ok": true,
-     "problems": [],
-     "notes": []
-    },
-    "degraded": {
-     "modes": [
-      "NO_PLAYER_DATA",
-      "MARKET_DEGRADED"
-     ],
-     "primary": "NO_PLAYER_DATA",
-     "football": [
-      "NO_PLAYER_DATA"
-     ],
-     "reasons": {
-      "NO_PLAYER_DATA": [
-       "availability certainty 30 < 60"
-      ],
-      "MARKET_DEGRADED": [
-       "market DEGRADED (MARKET_DEGRADED)"
-      ]
-     }
-    },
-    "fallback_level": 2,
-    "input_hash": "b8462759e97be80ef6c0e358f3df96988e8da6da5d52038e133bfc9d64122d47",
-    "projection_hash": "e85b0e6db3b4e15d59a4db3ea5b0f2a0b129a7ad12548d1a6e56e25736c12b0d",
-    "snapshot_id": "cfbcs_552d0243f724e3fffef195b8",
-    "display": {
-     "label": "Limited availability data",
-     "notes": [
-      "Limited availability data",
-      "Market data limited"
-     ],
-     "show_numbers": true,
-     "show_confidence_score": false,
-     "win_probability_text": "76%"
-    }
-   },
-   "v1": {
-    "status": "PREDICTED",
-    "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -3.2,
-    "home_win_prob": 0.4135,
-    "fair_total": 51.2,
-    "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "home": "BYU",
-    "away": "Notre Dame",
-    "week": 7,
-    "season": 2026
-   },
-   "resolved": {
-    "level": 2,
-    "mode": "DEGRADED",
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "modes": [
-     "NO_PLAYER_DATA",
-     "MARKET_DEGRADED"
-    ],
-    "source": "V2.1 canonical projection"
-   },
-   "market": {
-    "home_line": 10.5,
-    "as_of": "2026-10-17T22:07:36.000Z",
-    "books": 1,
-    "stale": false,
-    "actionable_status": "MARKET_DEGRADED",
-    "gap": -0.12,
-    "snapshot_ts": "2026-10-17T22:38:08.000Z"
-   },
-   "official_decision": {
-    "status": "PASS",
-    "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
-    "side": "AWAY",
-    "line_for_side": -10.5,
-    "price": -110,
-    "book": "draftkings",
-    "observed_at": "2026-10-17T22:07:36.000Z",
-    "decision_id": "cfbd_e8356c67dbc41b9dc4bb2168",
-    "probability_edge": -0.0231,
-    "decision_cover_probability": 0.5007,
-    "break_even_probability": 0.5238,
-    "reason_codes": [
-     "PASS_PRICE"
-    ],
-    "books": 2,
-    "closing_line_tendency": {
-     "label": "LOW",
-     "p_positive_clv": 0.4672,
-     "note": "P(the close moves toward this side) from the decision calibration: it ranks closing-line movement, not bet quality (close-implied EV <= 0 in every tier; audit F-23)"
-    }
-   },
-   "research": {
-    "status": "PASS",
-    "engine_status": "PASS",
-    "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
-    "stage8_ev_strength": 0,
-    "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_4773bb360d8745b5455b4de5",
-    "checkpoint_type": "FINAL",
-    "prediction_ts": "2026-10-17T22:38:08.000Z",
-    "row_hash": "ebab331276c35476c57261aa89e1e335f688d249aa58c6ac1d3c605fa0c842e2",
-    "canonical_modes": [
-     "NO_PLAYER_DATA",
-     "MARKET_DEGRADED"
-    ]
-   },
-   "display": {
-    "label": "Limited availability data",
-    "notes": [
-     "Limited availability data",
-     "Market data limited"
-    ],
-    "show_numbers": true,
-    "show_confidence_score": false,
-    "win_probability_text": "76%"
-   },
-   "trace": {
-    "current_generated_at": "2026-10-17T10:48:03Z",
-    "row_state": "FROZEN",
-    "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_4773bb360d8745b5455b4de5",
-    "lab_row_hash": "ebab331276c35476c57261aa89e1e335f688d249aa58c6ac1d3c605fa0c842e2",
-    "official_decision_id": "cfbd_e8356c67dbc41b9dc4bb2168"
-   }
-  },
-  {
-   "game_id": "401856831",
-   "season": 2026,
-   "week": 7,
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "home": "Houston",
-   "away": "Oklahoma State",
-   "neutral_site": false,
-   "hours_to_kickoff": 0.37,
-   "canonical": {
-    "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
-    "game_id": "401856831",
-    "season": 2026,
-    "week": 7,
-    "home": "Houston",
-    "away": "Oklahoma State",
-    "home_id": "248",
-    "away_id": "197",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "neutral_site": false,
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "feature_version": "cfb_v2_fv2",
-    "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
-    "prediction_ts": "2026-10-13T12:00:00Z",
-    "feature_ts": "2026-10-13T12:00:00Z",
-    "row_state": "FROZEN",
-    "source": "football/cfb_v2/current.json",
-    "status": "PREDICTED",
-    "reason": null,
-    "projection": {
-     "projected_margin": 13.11,
-     "fair_spread_home_line": -13.11,
-     "fair_spread_display": "Houston -13.0",
-     "fair_total": 59.6,
-     "home_win_prob": 0.7896,
-     "away_win_prob": 0.2104,
-     "home_win_prob_raw": 0.7896,
-     "sigma": 16.385,
-     "t_df": 100,
-     "intervals": {
-      "p50": [
-       2.3,
-       24
-      ],
-      "p80": [
-       -7.9,
-       34.2
-      ],
-      "p95": [
-       -18.8,
-       45
-      ]
-     },
-     "football_prediction_confidence": 66,
-     "confidence_basis": [
-      "error model only"
-     ],
-     "components": {
-      "C_ridge": 13.631,
-      "D_gbm": 12.593
-     },
-     "ensemble_sd": 0.73,
-     "drivers": [
-      {
-       "feature": "elo_diff",
-       "points": 2.81
-      },
-      {
-       "feature": "edge_epa",
-       "points": 1.86
-      },
-      {
-       "feature": "match_mix_edge",
-       "points": -1.7
-      }
-     ],
-     "uncertainty_drivers": [
-      "uncertain team ratings",
-      "high-scoring environment"
-     ],
-     "why": {
-      "primary_matchup_edge": {
-       "label": "results-based strength",
-       "favours": "Houston",
-       "points": 2.8
-      },
-      "secondary_matchup_edge": {
-       "label": "overall efficiency",
-       "favours": "Houston",
-       "points": 1.9
-      },
-      "main_uncertainty": "uncertain team ratings"
-     }
-    },
-    "contract": {
-     "version": "cfb_input_contract_1",
-     "ok": true,
-     "critical": [],
-     "degrade": [],
-     "decision_inputs_complete": true
-    },
-    "numeric": {
-     "version": "cfb_numeric_safety_v1",
-     "ok": true,
-     "problems": [],
-     "notes": []
-    },
-    "degraded": {
-     "modes": [
-      "MARKET_DEGRADED"
-     ],
-     "primary": "MARKET_DEGRADED",
-     "football": [],
-     "reasons": {
-      "MARKET_DEGRADED": [
-       "market DEGRADED (MARKET_DEGRADED)"
-      ]
-     }
-    },
-    "fallback_level": 1,
-    "input_hash": "408e3d974f457200320eef01941541ecb69b8d7adbcc03b96ec2ae094f629ab7",
-    "projection_hash": "5a043851d9c924da5ca00aed3e1c8ad844202ef59080a2e16dbffc28d7c64a8d",
-    "snapshot_id": "cfbcs_a54bcef463623b44a2cf73e9",
-    "display": {
-     "label": "Market data limited",
-     "notes": [
-      "Market data limited"
-     ],
-     "show_numbers": true,
-     "show_confidence_score": true,
-     "win_probability_text": "79%"
-    }
-   },
-   "v1": {
-    "status": "PREDICTED",
-    "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 10.93,
-    "home_win_prob": 0.7724,
-    "fair_total": 54.3,
-    "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "home": "Houston",
-    "away": "Oklahoma State",
-    "week": 7,
-    "season": 2026
-   },
-   "resolved": {
-    "level": 1,
-    "mode": "FULL",
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "modes": [
-     "MARKET_DEGRADED"
-    ],
-    "source": "V2.1 canonical projection"
-   },
-   "market": {
-    "home_line": -4,
-    "as_of": "2026-10-17T22:38:08.000Z",
-    "books": 1,
-    "stale": false,
-    "actionable_status": "MARKET_DEGRADED",
-    "gap": 9.11,
-    "snapshot_ts": "2026-10-17T22:38:08.000Z"
-   },
-   "official_decision": {
-    "status": "RESEARCH",
-    "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
-    "side": "HOME",
-    "line_for_side": -4,
-    "price": -108,
-    "book": "draftkings",
-    "observed_at": "2026-10-17T23:07:35.000Z",
-    "decision_id": "cfbd_5c797f9a2fc6b2e43d4e337d",
-    "probability_edge": 0.0289,
-    "decision_cover_probability": 0.5481,
-    "break_even_probability": 0.5192,
-    "reason_codes": [
-     "RESEARCH_MARKET_IMMATURE"
-    ],
-    "books": 2,
-    "closing_line_tendency": {
-     "label": "HIGH",
-     "p_positive_clv": 0.6586,
-     "note": "P(the close moves toward this side) from the decision calibration: it ranks closing-line movement, not bet quality (close-implied EV <= 0 in every tier; audit F-23)"
-    }
-   },
-   "research": {
-    "status": "LEAN",
-    "engine_status": "LEAN",
-    "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
-    "stage8_ev_strength": 53,
-    "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_d5630f873e1f10a0bf9b41d6",
-    "checkpoint_type": "FINAL",
-    "prediction_ts": "2026-10-17T22:38:08.000Z",
-    "row_hash": "9a825683fea575976ef710f79e39d6856ab71ef90d7a8e6e85ed29e8075822a4",
-    "canonical_modes": [
-     "MARKET_DEGRADED"
-    ]
-   },
-   "display": {
-    "label": "Market data limited",
-    "notes": [
-     "Market data limited"
-    ],
-    "show_numbers": true,
-    "show_confidence_score": true,
-    "win_probability_text": "79%"
-   },
-   "trace": {
-    "current_generated_at": "2026-10-17T10:48:03Z",
-    "row_state": "FROZEN",
-    "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_d5630f873e1f10a0bf9b41d6",
-    "lab_row_hash": "9a825683fea575976ef710f79e39d6856ab71ef90d7a8e6e85ed29e8075822a4",
-    "official_decision_id": "cfbd_5c797f9a2fc6b2e43d4e337d"
-   }
-  },
-  {
    "game_id": "401856833",
    "season": 2026,
    "week": 7,
@@ -2068,10 +1397,10 @@
    "home": "Colorado",
    "away": "Utah",
    "neutral_site": false,
-   "hours_to_kickoff": 3.12,
+   "hours_to_kickoff": 2.12,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856833",
     "season": 2026,
     "week": 7,
@@ -2189,7 +1518,7 @@
     "fallback_level": 2,
     "input_hash": "36c3462cd6538cb8d145ad892001a0735df382001fbb4191c1a71bc9bce45dcc",
     "projection_hash": "68a7752ee249df890c2ac7f73c9db5b7d5e66b7e5277307b7e8fc67df30f3872",
-    "snapshot_id": "cfbcs_de16245bacfe04e1abb0ecee",
+    "snapshot_id": "cfbcs_65aa7e4c15e299b71c945d4d",
     "display": {
      "label": "Quarterback not confirmed",
      "notes": [
@@ -2206,9 +1535,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -22.96,
     "home_win_prob": 0.0583,
-    "fair_total": 51.8,
+    "fair_total": 52.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-18T02:15:00.000Z",
     "home": "Colorado",
     "away": "Utah",
@@ -2298,10 +1627,10 @@
    "home": "Kansas",
    "away": "Baylor",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856834",
     "season": 2026,
     "week": 8,
@@ -2426,7 +1755,7 @@
     "fallback_level": 2,
     "input_hash": "1c71ea4e189191b120ce1d037642e4843c931ba3feff26dedb93ea7fd55d5cf4",
     "projection_hash": "15d4c60698d7b167a1f4898b17a90b160d870be1e12a15c1a21186c253cf6c0e",
-    "snapshot_id": "cfbcs_e2c8a389f1e70021855cf873",
+    "snapshot_id": "cfbcs_04f30ecc6daf67bc0bfa3a53",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -2442,11 +1771,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 0.13,
-    "home_win_prob": 0.5036,
-    "fair_total": 55.1,
+    "margin": -2.91,
+    "home_win_prob": 0.4212,
+    "fair_total": 55.8,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Kansas",
     "away": "Baylor",
@@ -2522,10 +1851,10 @@
    "home": "UCF",
    "away": "BYU",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856835",
     "season": 2026,
     "week": 8,
@@ -2644,7 +1973,7 @@
     "fallback_level": 2,
     "input_hash": "105a432b3d81ca21646d2c0db8e0440924c72f0cee3d8daf73404d779093572e",
     "projection_hash": "3f8d3fbf8bb7c4b07e21b6d92b722a4eaf009f7aa5462a91c177499a72f73d4b",
-    "snapshot_id": "cfbcs_c46937307d8ef15d710b5c40",
+    "snapshot_id": "cfbcs_1150385fed3b03d5cf2c24d4",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -2661,9 +1990,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -10.08,
     "home_win_prob": 0.2454,
-    "fair_total": 49,
+    "fair_total": 49.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "UCF",
     "away": "BYU",
@@ -2736,10 +2065,10 @@
    "home": "Oklahoma State",
    "away": "Colorado",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856836",
     "season": 2026,
     "week": 8,
@@ -2864,7 +2193,7 @@
     "fallback_level": 2,
     "input_hash": "7e3006b591384e9c711650bfaf520aff5e361c4d00a9fcb609b5ff28d89bd7f6",
     "projection_hash": "341e6fec6b6914266ac7d0fd4a100423a6e452f0c438972c863f376d513bf9a4",
-    "snapshot_id": "cfbcs_2184d87fe46bfb0e53bfaaf5",
+    "snapshot_id": "cfbcs_e81e4de1aa47d4340c18c757",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -2882,9 +2211,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 15.51,
     "home_win_prob": 0.8555,
-    "fair_total": 50.5,
+    "fair_total": 50.9,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Oklahoma State",
     "away": "Colorado",
@@ -2960,10 +2289,10 @@
    "home": "Utah",
    "away": "Houston",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856837",
     "season": 2026,
     "week": 8,
@@ -3082,7 +2411,7 @@
     "fallback_level": 2,
     "input_hash": "6a42028e326d891c553828fa8c6978bb002816f2a354c4236aa3055e6a7b8163",
     "projection_hash": "55d6c69e8d4bec1c5d946fe8100243192714daf1d5c5f5c10f2de907c1f3c6b6",
-    "snapshot_id": "cfbcs_5d5ae67933231e15a3f26a4b",
+    "snapshot_id": "cfbcs_ffd31619e6a492ba12cf4ae8",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -3099,9 +2428,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 12.84,
     "home_win_prob": 0.81,
-    "fair_total": 55.6,
+    "fair_total": 56,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Utah",
     "away": "Houston",
@@ -3174,10 +2503,10 @@
    "home": "Arizona",
    "away": "Iowa State",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856838",
     "season": 2026,
     "week": 8,
@@ -3296,7 +2625,7 @@
     "fallback_level": 2,
     "input_hash": "5e7c315c64b7b6c908ac6114fa235612f48dbf2f346dd049e172699ae31f2f41",
     "projection_hash": "a847b9ef43236821657df24d3e5c50d746b6f5db438038fa5cd4e081e10cdc3d",
-    "snapshot_id": "cfbcs_a27907402e7fc1a0beeb7a98",
+    "snapshot_id": "cfbcs_f2d6f400f787f3c416635212",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -3313,9 +2642,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 15.49,
     "home_win_prob": 0.8551,
-    "fair_total": 51.4,
+    "fair_total": 51.8,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Arizona",
     "away": "Iowa State",
@@ -3388,10 +2717,10 @@
    "home": "Arizona State",
    "away": "Kansas State",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856839",
     "season": 2026,
     "week": 8,
@@ -3511,7 +2840,7 @@
     "fallback_level": 2,
     "input_hash": "9216dd20fa437a45d69b2e3bbf16ed8347d9de00e5b769446535299587032804",
     "projection_hash": "b24e909ad8e26ed97812e4530fb74e7ce7438fa6a078faa13084b450285b48dd",
-    "snapshot_id": "cfbcs_5da53919cb5b938fa595d83e",
+    "snapshot_id": "cfbcs_0c60bb314f3b4b5897b8d307",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -3526,11 +2855,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -1.32,
-    "home_win_prob": 0.4641,
-    "fair_total": 54.6,
+    "margin": -1.81,
+    "home_win_prob": 0.4509,
+    "fair_total": 55.3,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Arizona State",
     "away": "Kansas State",
@@ -3603,10 +2932,10 @@
    "home": "Cincinnati",
    "away": "Texas Tech",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856840",
     "season": 2026,
     "week": 8,
@@ -3731,7 +3060,7 @@
     "fallback_level": 2,
     "input_hash": "df157b91b1950c35d7ca2dbca3afcadb134680b834bfc8e1b0420a1dff686c11",
     "projection_hash": "34e630da7170a115f8b511d640b4eff565fe8b6d37473eb7428ef92a47b6a650",
-    "snapshot_id": "cfbcs_2c33035b7ba86fdc90981359",
+    "snapshot_id": "cfbcs_91451fc039ccb37694c1f46e",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -3747,11 +3076,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -10.28,
-    "home_win_prob": 0.2411,
-    "fair_total": 52.1,
+    "margin": -12.46,
+    "home_win_prob": 0.1973,
+    "fair_total": 54.5,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Cincinnati",
     "away": "Texas Tech",
@@ -3827,10 +3156,10 @@
    "home": "TCU",
    "away": "West Virginia",
    "neutral_site": false,
-   "hours_to_kickoff": 160.87,
+   "hours_to_kickoff": 159.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401856841",
     "season": 2026,
     "week": 8,
@@ -3950,7 +3279,7 @@
     "fallback_level": 2,
     "input_hash": "75303e407e94d41b76d7f9d446f9147624a92c4454ea12dfdfe0004ff1ed009b",
     "projection_hash": "103fb4941334d108180df91581ca1a1d6c7d7d26ff71729448354e532df9925e",
-    "snapshot_id": "cfbcs_98490370fc5d603b4b886982",
+    "snapshot_id": "cfbcs_125282a5bab699c99782cea3",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -3965,12 +3294,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 12.9,
-    "home_win_prob": 0.811,
-    "fair_total": 54.6,
+    "margin": 12.6,
+    "home_win_prob": 0.8054,
+    "fair_total": 56.5,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T16:00:00.000Z",
     "home": "TCU",
     "away": "West Virginia",
     "week": 8,
@@ -4035,352 +3364,6 @@
    }
   },
   {
-   "game_id": "401858262",
-   "season": 2026,
-   "week": 7,
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "home": "Stanford",
-   "away": "Elon",
-   "neutral_site": false,
-   "hours_to_kickoff": 0.37,
-   "canonical": {
-    "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
-    "game_id": "401858262",
-    "season": 2026,
-    "week": 7,
-    "home": "Stanford",
-    "away": "Elon",
-    "home_id": "24",
-    "away_id": "2210",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "neutral_site": false,
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "feature_version": "cfb_v2_fv2",
-    "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
-    "prediction_ts": "2026-10-13T12:00:00Z",
-    "feature_ts": "2026-10-13T12:00:00Z",
-    "row_state": "FROZEN",
-    "source": "football/cfb_v2/current.json",
-    "status": "NOT_PRICED",
-    "reason": "FBS-vs-FCS: V2 has no validated FCS model (measured bias against the FBS side -6.1 pts on the 2024-25 holdout)",
-    "projection": null,
-    "contract": {
-     "version": "cfb_input_contract_1",
-     "ok": true,
-     "critical": [],
-     "degrade": [],
-     "decision_inputs_complete": true
-    },
-    "numeric": {
-     "version": "cfb_numeric_safety_v1",
-     "ok": true,
-     "problems": [],
-     "notes": []
-    },
-    "degraded": {
-     "modes": [],
-     "primary": null,
-     "football": [],
-     "reasons": {}
-    },
-    "fallback_level": null,
-    "input_hash": "dd81fb2047acd230be333ca8be8ea66ecaecdb6598bcc37e19f7d12107033987",
-    "projection_hash": null,
-    "snapshot_id": "cfbcs_88295f0bdf06119b2f3dd4c6",
-    "display": {
-     "label": "Projected, not priced",
-     "show_numbers": true,
-     "show_confidence_score": false,
-     "notes": []
-    }
-   },
-   "v1": {
-    "status": "PREDICTED",
-    "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 15.92,
-    "home_win_prob": 0.8618,
-    "fair_total": null,
-    "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "home": "Stanford",
-    "away": "Elon",
-    "week": 7,
-    "season": 2026
-   },
-   "resolved": {
-    "level": null,
-    "mode": "NOT_PRICED",
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "modes": [],
-    "source": "V2.1 canonical projection (FBS-vs-FCS: projected, never priced)"
-   },
-   "market": null,
-   "official_decision": {
-    "status": "NO_BET",
-    "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
-    "side": null,
-    "line_for_side": null,
-    "price": null,
-    "book": "draftkings",
-    "observed_at": "2026-10-17T19:07:37.000Z",
-    "decision_id": "cfbd_b1388f4e43a0bad1a0e4aed1",
-    "reason_codes": [
-     "NO_BET_COMPUTATION"
-    ],
-    "books": 1,
-    "closing_line_tendency": null
-   },
-   "research": null,
-   "display": {
-    "label": "Projected, not priced",
-    "show_numbers": true,
-    "show_confidence_score": false,
-    "notes": []
-   },
-   "trace": {
-    "current_generated_at": "2026-10-17T10:48:03Z",
-    "row_state": "FROZEN",
-    "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": null,
-    "lab_row_hash": null,
-    "official_decision_id": "cfbd_b1388f4e43a0bad1a0e4aed1"
-   }
-  },
-  {
-   "game_id": "401858265",
-   "season": 2026,
-   "week": 7,
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "home": "Syracuse",
-   "away": "Louisville",
-   "neutral_site": false,
-   "hours_to_kickoff": 0.37,
-   "canonical": {
-    "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
-    "game_id": "401858265",
-    "season": 2026,
-    "week": 7,
-    "home": "Syracuse",
-    "away": "Louisville",
-    "home_id": "183",
-    "away_id": "97",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "neutral_site": false,
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "feature_version": "cfb_v2_fv2",
-    "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
-    "prediction_ts": "2026-10-13T12:00:00Z",
-    "feature_ts": "2026-10-13T12:00:00Z",
-    "row_state": "FROZEN",
-    "source": "football/cfb_v2/current.json",
-    "status": "PREDICTED",
-    "reason": null,
-    "projection": {
-     "projected_margin": -8.02,
-     "fair_spread_home_line": 8.02,
-     "fair_spread_display": "Louisville -8.0",
-     "fair_total": 58.7,
-     "home_win_prob": 0.31,
-     "away_win_prob": 0.69,
-     "home_win_prob_raw": 0.31,
-     "sigma": 16.282,
-     "t_df": 100,
-     "intervals": {
-      "p50": [
-       -18.8,
-       2.8
-      ],
-      "p80": [
-       -28.9,
-       12.9
-      ],
-      "p95": [
-       -39.7,
-       23.7
-      ]
-     },
-     "football_prediction_confidence": 70,
-     "confidence_basis": [
-      "quarterback unsettled"
-     ],
-     "components": {
-      "C_ridge": -7.645,
-      "D_gbm": -8.393
-     },
-     "ensemble_sd": 0.53,
-     "drivers": [
-      {
-       "feature": "elo_diff",
-       "points": -5.84
-      },
-      {
-       "feature": "edge_epa",
-       "points": -1.9
-      },
-      {
-       "feature": "match_mix_edge",
-       "points": 1.48
-      }
-     ],
-     "uncertainty_drivers": [
-      "uncertain team ratings",
-      "high-scoring environment"
-     ],
-     "why": {
-      "primary_matchup_edge": {
-       "label": "results-based strength",
-       "favours": "Louisville",
-       "points": 5.8
-      },
-      "secondary_matchup_edge": {
-       "label": "overall efficiency",
-       "favours": "Louisville",
-       "points": 1.9
-      },
-      "main_uncertainty": "uncertain team ratings"
-     }
-    },
-    "contract": {
-     "version": "cfb_input_contract_1",
-     "ok": true,
-     "critical": [],
-     "degrade": [],
-     "decision_inputs_complete": true
-    },
-    "numeric": {
-     "version": "cfb_numeric_safety_v1",
-     "ok": true,
-     "problems": [],
-     "notes": []
-    },
-    "degraded": {
-     "modes": [
-      "QB_UNCERTAIN",
-      "MARKET_DEGRADED"
-     ],
-     "primary": "QB_UNCERTAIN",
-     "football": [
-      "QB_UNCERTAIN"
-     ],
-     "reasons": {
-      "QB_UNCERTAIN": [
-       "a starting quarterback is unsettled",
-       "quarterback certainty 20 < 70"
-      ],
-      "MARKET_DEGRADED": [
-       "market DEGRADED (MARKET_DEGRADED)"
-      ]
-     }
-    },
-    "fallback_level": 2,
-    "input_hash": "b2970708159afffadcd4dda8a1af4506506547a3b1df1d24fa17273f5b840d3a",
-    "projection_hash": "328fa6df4b7f877e9363b7a063746f543beed1b8d4e3a01ac5e9ca546425fd6f",
-    "snapshot_id": "cfbcs_6dd3207195b0dfa13a5537b2",
-    "display": {
-     "label": "Quarterback not confirmed",
-     "notes": [
-      "Quarterback not confirmed",
-      "Market data limited"
-     ],
-     "show_numbers": true,
-     "show_confidence_score": false,
-     "win_probability_text": "69%"
-    }
-   },
-   "v1": {
-    "status": "PREDICTED",
-    "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -7.7,
-    "home_win_prob": 0.2993,
-    "fair_total": 57.1,
-    "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "home": "Syracuse",
-    "away": "Louisville",
-    "week": 7,
-    "season": 2026
-   },
-   "resolved": {
-    "level": 2,
-    "mode": "DEGRADED",
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "modes": [
-     "QB_UNCERTAIN",
-     "MARKET_DEGRADED"
-    ],
-    "source": "V2.1 canonical projection"
-   },
-   "market": {
-    "home_line": 14.5,
-    "as_of": "2026-10-17T22:07:36.000Z",
-    "books": 1,
-    "stale": false,
-    "actionable_status": "MARKET_DEGRADED",
-    "gap": 6.48,
-    "snapshot_ts": "2026-10-17T22:38:08.000Z"
-   },
-   "official_decision": {
-    "status": "RESEARCH",
-    "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
-    "side": "HOME",
-    "line_for_side": 14.5,
-    "price": -115,
-    "book": "draftkings",
-    "observed_at": "2026-10-17T19:07:37.000Z",
-    "decision_id": "cfbd_4687793cfdab4e7526d40bf7",
-    "probability_edge": 0.0101,
-    "decision_cover_probability": 0.5449,
-    "break_even_probability": 0.5349,
-    "reason_codes": [
-     "RESEARCH_QB",
-     "RESEARCH_MARKET_IMMATURE"
-    ],
-    "books": 2,
-    "closing_line_tendency": {
-     "label": "HIGH",
-     "p_positive_clv": 0.6097,
-     "note": "P(the close moves toward this side) from the decision calibration: it ranks closing-line movement, not bet quality (close-implied EV <= 0 in every tier; audit F-23)"
-    }
-   },
-   "research": {
-    "status": "PASS",
-    "engine_status": "PASS",
-    "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
-    "stage8_ev_strength": 0,
-    "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_d879928f0d9ccf1138d634fe",
-    "checkpoint_type": "FINAL",
-    "prediction_ts": "2026-10-17T22:38:08.000Z",
-    "row_hash": "296dcd37b12bfeebfefc09f5c761d07889131372f14f0786300e4a4690cf88dc",
-    "canonical_modes": [
-     "QB_UNCERTAIN",
-     "MARKET_DEGRADED"
-    ]
-   },
-   "display": {
-    "label": "Quarterback not confirmed",
-    "notes": [
-     "Quarterback not confirmed",
-     "Market data limited"
-    ],
-    "show_numbers": true,
-    "show_confidence_score": false,
-    "win_probability_text": "69%"
-   },
-   "trace": {
-    "current_generated_at": "2026-10-17T10:48:03Z",
-    "row_state": "FROZEN",
-    "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_d879928f0d9ccf1138d634fe",
-    "lab_row_hash": "296dcd37b12bfeebfefc09f5c761d07889131372f14f0786300e4a4690cf88dc",
-    "official_decision_id": "cfbd_4687793cfdab4e7526d40bf7"
-   }
-  },
-  {
    "game_id": "401858269",
    "season": 2026,
    "week": 7,
@@ -4388,10 +3371,10 @@
    "home": "California",
    "away": "Wake Forest",
    "neutral_site": false,
-   "hours_to_kickoff": 3.37,
+   "hours_to_kickoff": 2.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858269",
     "season": 2026,
     "week": 7,
@@ -4509,7 +3492,7 @@
     "fallback_level": 2,
     "input_hash": "e7035e01374adf739aad50082c34557761da06f1f05999cf6188a679d39cadc8",
     "projection_hash": "733d35d6fb23873b433bc5df2fa11f55f6643fa300461499a9dffbb8f0a27107",
-    "snapshot_id": "cfbcs_7c4f37d4771fe1fe71e1a902",
+    "snapshot_id": "cfbcs_e070c3d600744e491cf66c31",
     "display": {
      "label": "Quarterback not confirmed",
      "notes": [
@@ -4526,9 +3509,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -13.47,
     "home_win_prob": 0.1787,
-    "fair_total": 53.7,
+    "fair_total": 54.1,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-18T02:30:00.000Z",
     "home": "California",
     "away": "Wake Forest",
@@ -4559,13 +3542,13 @@
     "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
     "side": "AWAY",
     "line_for_side": -10.5,
-    "price": -108,
+    "price": -110,
     "book": "draftkings",
-    "observed_at": "2026-10-17T17:31:56.000Z",
-    "decision_id": "cfbd_4751d9fece2dd20d9d9c865e",
-    "probability_edge": 0.0052,
-    "decision_cover_probability": 0.5244,
-    "break_even_probability": 0.5192,
+    "observed_at": "2026-10-18T00:07:35.000Z",
+    "decision_id": "cfbd_ca31691f24568e7ac0a25074",
+    "probability_edge": 0.0039,
+    "decision_cover_probability": 0.5277,
+    "break_even_probability": 0.5238,
     "reason_codes": [
      "RESEARCH_QB",
      "RESEARCH_MARKET_IMMATURE"
@@ -4608,7 +3591,7 @@
     "row_prediction_ts": "2026-10-13T12:00:00Z",
     "lab_prediction_id": "cfbp_1f0b5f122003ae4a0a15eb86",
     "lab_row_hash": "e876513460334fc96bea474e51991c65554e35370b67b3107d4fc716379c7e29",
-    "official_decision_id": "cfbd_4751d9fece2dd20d9d9c865e"
+    "official_decision_id": "cfbd_ca31691f24568e7ac0a25074"
    }
   },
   {
@@ -4619,10 +3602,10 @@
    "home": "SMU",
    "away": "California",
    "neutral_site": false,
-   "hours_to_kickoff": 160.87,
+   "hours_to_kickoff": 159.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858270",
     "season": 2026,
     "week": 8,
@@ -4747,7 +3730,7 @@
     "fallback_level": 2,
     "input_hash": "ba6b02fae4934443b0f7000a4eb29914db6d018765415f69639706814761ea82",
     "projection_hash": "6b940a1822e7268639b37098beaf85b43153cca421caa30502917160ead1a7d5",
-    "snapshot_id": "cfbcs_9be4b2d1d281b9211f2a12a9",
+    "snapshot_id": "cfbcs_8f33aaa0e5b3d83132df7e72",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -4763,12 +3746,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 15.84,
-    "home_win_prob": 0.8605,
-    "fair_total": 53.1,
+    "margin": 14.11,
+    "home_win_prob": 0.8325,
+    "fair_total": 52.5,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T16:00:00.000Z",
     "home": "SMU",
     "away": "California",
     "week": 8,
@@ -4843,10 +3826,10 @@
    "home": "Virginia",
    "away": "Duke",
    "neutral_site": false,
-   "hours_to_kickoff": 143.87,
+   "hours_to_kickoff": 142.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858271",
     "season": 2026,
     "week": 8,
@@ -4965,7 +3948,7 @@
     "fallback_level": 2,
     "input_hash": "1e3bc9d6428cfff96bf1390685ef1145b69d6c2674effe811ca59697da925270",
     "projection_hash": "1de0be900d41edbaea66e2471af018ffabfee6b2568d295a65aca91d7d9f0629",
-    "snapshot_id": "cfbcs_44bd7f7536d19cb3c109fcd8",
+    "snapshot_id": "cfbcs_760fe9c6f05391fcf09c393b",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -4980,11 +3963,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -1.36,
-    "home_win_prob": 0.4631,
-    "fair_total": 52,
+    "margin": -2.23,
+    "home_win_prob": 0.4394,
+    "fair_total": 51.6,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-23T23:00:00.000Z",
     "home": "Virginia",
     "away": "Duke",
@@ -5057,10 +4040,10 @@
    "home": "Stanford",
    "away": "NC State",
    "neutral_site": false,
-   "hours_to_kickoff": 147.37,
+   "hours_to_kickoff": 146.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858272",
     "season": 2026,
     "week": 8,
@@ -5180,7 +4163,7 @@
     "fallback_level": 2,
     "input_hash": "d35e2fe6d5efa7a445aaa1d03d09d07754847ab31fd0a89baedf71a21df32639",
     "projection_hash": "0f76ef335efcaf260c060642579b8addbe3d4c0fbe2c52b9becfbef9bdf97600",
-    "snapshot_id": "cfbcs_88fb211d2c7a5c2d6229462d",
+    "snapshot_id": "cfbcs_c22d2b9ec7204639e6df1ecc",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -5197,9 +4180,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -7.09,
     "home_win_prob": 0.314,
-    "fair_total": 55.5,
+    "fair_total": 55.9,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T02:30:00.000Z",
     "home": "Stanford",
     "away": "NC State",
@@ -5272,10 +4255,10 @@
    "home": "Georgia Tech",
    "away": "Boston College",
    "neutral_site": false,
-   "hours_to_kickoff": 164.37,
+   "hours_to_kickoff": 163.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858273",
     "season": 2026,
     "week": 8,
@@ -5395,7 +4378,7 @@
     "fallback_level": 2,
     "input_hash": "909233918afa7f843640d1e774404edb8a9ec75f365836aa155883547bc3a54b",
     "projection_hash": "f4129c37b6d7a4d88e08bdbf7472ac7ae5c5b4a73c5faa3972d32b8b75aece0e",
-    "snapshot_id": "cfbcs_7b784ff10556da692ce976d8",
+    "snapshot_id": "cfbcs_dc749123e239b269a426b929",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -5410,12 +4393,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 10.87,
-    "home_win_prob": 0.7712,
-    "fair_total": 51.1,
+    "margin": 7.47,
+    "home_win_prob": 0.6953,
+    "fair_total": 51.7,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T19:30:00.000Z",
     "home": "Georgia Tech",
     "away": "Boston College",
     "week": 8,
@@ -5487,10 +4470,10 @@
    "home": "Miami",
    "away": "Pittsburgh",
    "neutral_site": false,
-   "hours_to_kickoff": 160.87,
+   "hours_to_kickoff": 159.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858274",
     "season": 2026,
     "week": 8,
@@ -5614,7 +4597,7 @@
     "fallback_level": 2,
     "input_hash": "2c09d000033803d45daea1cfb2acd10f8ac70d1ee9045cce7fc7b11e28bdc361",
     "projection_hash": "c73674e4bbea3c20ce435fd284c8c9d5878d8b172490af24835038f3be96b064",
-    "snapshot_id": "cfbcs_d0f08a783c8ee1008e2e77c3",
+    "snapshot_id": "cfbcs_130b67cfda8f8c0cd9c2f46a",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -5630,12 +4613,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 25.15,
-    "home_win_prob": 0.9572,
-    "fair_total": 51.8,
+    "margin": 27.44,
+    "home_win_prob": 0.9696,
+    "fair_total": 52,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T16:00:00.000Z",
     "home": "Miami",
     "away": "Pittsburgh",
     "week": 8,
@@ -5710,10 +4693,10 @@
    "home": "North Carolina",
    "away": "Syracuse",
    "neutral_site": false,
-   "hours_to_kickoff": 168.37,
+   "hours_to_kickoff": 167.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858275",
     "season": 2026,
     "week": 8,
@@ -5839,7 +4822,7 @@
     "fallback_level": 2,
     "input_hash": "e73f00386efff787d91157d27f6b794659f1a2d0e1127e178123c97f5a9a0a8c",
     "projection_hash": "7af14bd8634cdd46d03263cda0113143758675554b92768777eeb7cd706d166f",
-    "snapshot_id": "cfbcs_c45ca89669ca3b5b7eef868e",
+    "snapshot_id": "cfbcs_bea27773206c2c6ea0791b23",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -5857,10 +4840,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 10.15,
     "home_win_prob": 0.756,
-    "fair_total": 50.1,
+    "fair_total": 50.5,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T23:30:00.000Z",
     "home": "North Carolina",
     "away": "Syracuse",
     "week": 8,
@@ -5935,10 +4918,10 @@
    "home": "Clemson",
    "away": "Virginia Tech",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858276",
     "season": 2026,
     "week": 8,
@@ -6057,7 +5040,7 @@
     "fallback_level": 2,
     "input_hash": "2af4a200f021ea32937cc49e82dfa0b96aac75981120aafda352d74277fd8640",
     "projection_hash": "2df4fc6b158ab239c6b4061aad7683589ec4f374190f6b20dafe0d3eb44f3e68",
-    "snapshot_id": "cfbcs_5a0e0bfcd8494dc5bfd092ce",
+    "snapshot_id": "cfbcs_ed98ec4fb53124ee920a0024",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -6072,11 +5055,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 1.87,
-    "home_win_prob": 0.5508,
-    "fair_total": 49.3,
+    "margin": 0.6,
+    "home_win_prob": 0.5164,
+    "fair_total": 49.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Clemson",
     "away": "Virginia Tech",
@@ -6149,10 +5132,10 @@
    "home": "Oregon",
    "away": "Nebraska",
    "neutral_site": false,
-   "hours_to_kickoff": 3.87,
+   "hours_to_kickoff": 2.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858492",
     "season": 2026,
     "week": 7,
@@ -6270,7 +5253,7 @@
     "fallback_level": 2,
     "input_hash": "44773f6c3ee825a747d70c8dd6c2f6e1a44eb8d20d1c1dd87f2bd6c95250a208",
     "projection_hash": "c4450ad4bedf87531d8593e07859bdcb47ff10655f3df43c5289863945578527",
-    "snapshot_id": "cfbcs_911cae3fbf2c381ef64d027a",
+    "snapshot_id": "cfbcs_5ac535ecacb6913444276667",
     "display": {
      "label": "Quarterback not confirmed",
      "notes": [
@@ -6287,9 +5270,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 0.66,
     "home_win_prob": 0.5181,
-    "fair_total": 54.5,
+    "fair_total": 54.9,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-18T03:00:00.000Z",
     "home": "Oregon",
     "away": "Nebraska",
@@ -6372,226 +5355,6 @@
    }
   },
   {
-   "game_id": "401858494",
-   "season": 2026,
-   "week": 7,
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "home": "UCLA",
-   "away": "Wisconsin",
-   "neutral_site": false,
-   "hours_to_kickoff": 0.37,
-   "canonical": {
-    "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
-    "game_id": "401858494",
-    "season": 2026,
-    "week": 7,
-    "home": "UCLA",
-    "away": "Wisconsin",
-    "home_id": "26",
-    "away_id": "275",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "neutral_site": false,
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "feature_version": "cfb_v2_fv2",
-    "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
-    "prediction_ts": "2026-10-13T12:00:00Z",
-    "feature_ts": "2026-10-13T12:00:00Z",
-    "row_state": "FROZEN",
-    "source": "football/cfb_v2/current.json",
-    "status": "PREDICTED",
-    "reason": null,
-    "projection": {
-     "projected_margin": 3.7,
-     "fair_spread_home_line": -3.7,
-     "fair_spread_display": "UCLA -3.5",
-     "fair_total": 50.2,
-     "home_win_prob": 0.5933,
-     "away_win_prob": 0.4067,
-     "home_win_prob_raw": 0.5933,
-     "sigma": 15.791,
-     "t_df": 100,
-     "intervals": {
-      "p50": [
-       -6.8,
-       14.2
-      ],
-      "p80": [
-       -16.6,
-       24
-      ],
-      "p95": [
-       -27,
-       34.4
-      ]
-     },
-     "football_prediction_confidence": 85,
-     "confidence_basis": [
-      "error model only"
-     ],
-     "components": {
-      "C_ridge": 5.107,
-      "D_gbm": 2.294
-     },
-     "ensemble_sd": 1.99,
-     "drivers": [
-      {
-       "feature": "edge_epa",
-       "points": -0.46
-      },
-      {
-       "feature": "elo_diff",
-       "points": -0.05
-      },
-      {
-       "feature": "match_mix_edge",
-       "points": 0
-      }
-     ],
-     "uncertainty_drivers": [
-      "uncertain team ratings",
-      "turnover-dependent teams"
-     ],
-     "why": {
-      "primary_matchup_edge": {
-       "label": "overall efficiency",
-       "favours": "Wisconsin",
-       "points": 0.5
-      },
-      "secondary_matchup_edge": {
-       "label": "results-based strength",
-       "favours": "Wisconsin",
-       "points": 0.1
-      },
-      "main_uncertainty": "uncertain team ratings"
-     }
-    },
-    "contract": {
-     "version": "cfb_input_contract_1",
-     "ok": true,
-     "critical": [],
-     "degrade": [],
-     "decision_inputs_complete": true
-    },
-    "numeric": {
-     "version": "cfb_numeric_safety_v1",
-     "ok": true,
-     "problems": [],
-     "notes": []
-    },
-    "degraded": {
-     "modes": [
-      "MARKET_DEGRADED"
-     ],
-     "primary": "MARKET_DEGRADED",
-     "football": [],
-     "reasons": {
-      "MARKET_DEGRADED": [
-       "market DEGRADED (MARKET_DEGRADED)"
-      ]
-     }
-    },
-    "fallback_level": 1,
-    "input_hash": "79463a4a59962b68117a1f208e4940a3a36cfaa65d59ea8b908b81c8d9442613",
-    "projection_hash": "2bc0fae2501e9f81951f0125793769fffe495ed68415676fcb5077863f0306ba",
-    "snapshot_id": "cfbcs_89b355ea2d58e1d15ec6bb90",
-    "display": {
-     "label": "Market data limited",
-     "notes": [
-      "Market data limited"
-     ],
-     "show_numbers": true,
-     "show_confidence_score": true,
-     "win_probability_text": "59%"
-    }
-   },
-   "v1": {
-    "status": "PREDICTED",
-    "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 2.37,
-    "home_win_prob": 0.5642,
-    "fair_total": 46.1,
-    "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-17T23:30:00.000Z",
-    "home": "UCLA",
-    "away": "Wisconsin",
-    "week": 7,
-    "season": 2026
-   },
-   "resolved": {
-    "level": 1,
-    "mode": "FULL",
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "modes": [
-     "MARKET_DEGRADED"
-    ],
-    "source": "V2.1 canonical projection"
-   },
-   "market": {
-    "home_line": -1.5,
-    "as_of": "2026-10-17T22:07:36.000Z",
-    "books": 1,
-    "stale": false,
-    "actionable_status": "MARKET_DEGRADED",
-    "gap": 2.2,
-    "snapshot_ts": "2026-10-17T22:38:08.000Z"
-   },
-   "official_decision": {
-    "status": "PASS",
-    "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
-    "side": "HOME",
-    "line_for_side": -1.5,
-    "price": -105,
-    "book": "draftkings",
-    "observed_at": "2026-10-17T16:07:38.000Z",
-    "decision_id": "cfbd_6003858925e9ce57106680fc",
-    "probability_edge": -0.0078,
-    "decision_cover_probability": 0.5044,
-    "break_even_probability": 0.5122,
-    "reason_codes": [
-     "PASS_PRICE"
-    ],
-    "books": 2,
-    "closing_line_tendency": {
-     "label": "LOW",
-     "p_positive_clv": 0.519,
-     "note": "P(the close moves toward this side) from the decision calibration: it ranks closing-line movement, not bet quality (close-implied EV <= 0 in every tier; audit F-23)"
-    }
-   },
-   "research": {
-    "status": "PASS",
-    "engine_status": "PASS",
-    "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
-    "stage8_ev_strength": 0,
-    "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_f059d15696063b0b3d22f3f6",
-    "checkpoint_type": "FINAL",
-    "prediction_ts": "2026-10-17T22:38:08.000Z",
-    "row_hash": "7acb2a666fcc3c85d153aa7aea4c1e4f20d3cdf386b70b43501ca78c3f60fed4",
-    "canonical_modes": [
-     "MARKET_DEGRADED"
-    ]
-   },
-   "display": {
-    "label": "Market data limited",
-    "notes": [
-     "Market data limited"
-    ],
-    "show_numbers": true,
-    "show_confidence_score": true,
-    "win_probability_text": "59%"
-   },
-   "trace": {
-    "current_generated_at": "2026-10-17T10:48:03Z",
-    "row_state": "FROZEN",
-    "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_f059d15696063b0b3d22f3f6",
-    "lab_row_hash": "7acb2a666fcc3c85d153aa7aea4c1e4f20d3cdf386b70b43501ca78c3f60fed4",
-    "official_decision_id": "cfbd_6003858925e9ce57106680fc"
-   }
-  },
-  {
    "game_id": "401858495",
    "season": 2026,
    "week": 8,
@@ -6599,10 +5362,10 @@
    "home": "Illinois",
    "away": "Oregon",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858495",
     "season": 2026,
     "week": 8,
@@ -6727,7 +5490,7 @@
     "fallback_level": 2,
     "input_hash": "886d7bba231ceb4bdb05623749dd5ab6819941170f46022205cb7b232781ddc5",
     "projection_hash": "015bddef595d3fcfc1d572f069cf9f7ca249ed0aef32ffdc26ef10f75081e7ec",
-    "snapshot_id": "cfbcs_a8cf36d8a2994fef7855042d",
+    "snapshot_id": "cfbcs_0e620114d29722e43c63d928",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -6745,9 +5508,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -8.72,
     "home_win_prob": 0.2757,
-    "fair_total": 56.5,
+    "fair_total": 56.9,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Illinois",
     "away": "Oregon",
@@ -6823,10 +5586,10 @@
    "home": "Michigan",
    "away": "Indiana",
    "neutral_site": false,
-   "hours_to_kickoff": 160.87,
+   "hours_to_kickoff": 159.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858496",
     "season": 2026,
     "week": 8,
@@ -6945,7 +5708,7 @@
     "fallback_level": 2,
     "input_hash": "e301d6cedec5b66b944dbd6fa227fd09c26648570ead83d79adfab6a3dc0560c",
     "projection_hash": "633852817ef738911fb50fd87ba7799ba625fafec6fdd7370bb27dc70968701b",
-    "snapshot_id": "cfbcs_862d405626b21b926b3491dc",
+    "snapshot_id": "cfbcs_cbf416e9c98e423fd77a4e70",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -6960,12 +5723,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -10.04,
-    "home_win_prob": 0.2464,
-    "fair_total": 46.6,
+    "margin": -8.86,
+    "home_win_prob": 0.2724,
+    "fair_total": 46,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T16:00:00.000Z",
     "home": "Michigan",
     "away": "Indiana",
     "week": 8,
@@ -7037,10 +5800,10 @@
    "home": "Minnesota",
    "away": "Iowa",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858497",
     "season": 2026,
     "week": 8,
@@ -7165,7 +5928,7 @@
     "fallback_level": 2,
     "input_hash": "05a49f5082a5175e5f19b368e185bc573b45418f1628d178ca18c2be4c4bde07",
     "projection_hash": "cbeddd5c574926619d781ba35ab22d9ac707c2b9b100941c0bd08d1fa301e926",
-    "snapshot_id": "cfbcs_c405b137633bc57b1dfe9703",
+    "snapshot_id": "cfbcs_2305cf82bf0424f4f5ed6cf8",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -7183,9 +5946,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -9.28,
     "home_win_prob": 0.2631,
-    "fair_total": 45.8,
+    "fair_total": 46.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "Minnesota",
     "away": "Iowa",
@@ -7261,10 +6024,10 @@
    "home": "Northwestern",
    "away": "Rutgers",
    "neutral_site": false,
-   "hours_to_kickoff": 160.87,
+   "hours_to_kickoff": 159.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858498",
     "season": 2026,
     "week": 8,
@@ -7389,7 +6152,7 @@
     "fallback_level": 2,
     "input_hash": "3e6a9593cdfff36b9f93666bfd427c9d4109693acf7f113297f05035170484c4",
     "projection_hash": "a1d11c29e3600fbcb17b3d0240a9e6b9c200b7a2574220dad5ada0d487d202c4",
-    "snapshot_id": "cfbcs_fc8235fc5fd7340c901d141d",
+    "snapshot_id": "cfbcs_d40a960afd35e318f299cf3b",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -7405,12 +6168,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 19.72,
-    "home_win_prob": 0.9111,
-    "fair_total": 53.3,
+    "margin": 16.83,
+    "home_win_prob": 0.8749,
+    "fair_total": 54,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T16:00:00.000Z",
     "home": "Northwestern",
     "away": "Rutgers",
     "week": 8,
@@ -7485,10 +6248,10 @@
    "home": "UCLA",
    "away": "Michigan State",
    "neutral_site": false,
-   "hours_to_kickoff": 148.87,
+   "hours_to_kickoff": 147.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858499",
     "season": 2026,
     "week": 8,
@@ -7608,7 +6371,7 @@
     "fallback_level": 2,
     "input_hash": "42d66980669cb45b74f00853e7854c41bd5adcba6bb737b41ba4de67d7793aae",
     "projection_hash": "3db57f5176c19f8aca9dc141688a3b572569b89b5ee57960b5d6ab8113ad40ba",
-    "snapshot_id": "cfbcs_e2b5f283047c033a88c1ec96",
+    "snapshot_id": "cfbcs_d2e163f369f7db441ac8f26a",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -7623,11 +6386,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 18.4,
-    "home_win_prob": 0.8957,
-    "fair_total": 50.2,
+    "margin": 16.92,
+    "home_win_prob": 0.8762,
+    "fair_total": 50.3,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T04:00:00.000Z",
     "home": "UCLA",
     "away": "Michigan State",
@@ -7700,10 +6463,10 @@
    "home": "Wisconsin",
    "away": "USC",
    "neutral_site": false,
-   "hours_to_kickoff": 168.37,
+   "hours_to_kickoff": 167.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401858500",
     "season": 2026,
     "week": 8,
@@ -7822,7 +6585,7 @@
     "fallback_level": 2,
     "input_hash": "30eee080bb78c4f1361d965181ac6d8cadf8fd32415274318c229f2cfc1fa564",
     "projection_hash": "19cb74f76b8c203cf1ee22dcbbcb27cb15491c14654c62607bf63906aa51f5e3",
-    "snapshot_id": "cfbcs_c7825588a3ef269e6cfc18ee",
+    "snapshot_id": "cfbcs_3ce0f79144e38fe073004c36",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -7839,10 +6602,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 3.83,
     "home_win_prob": 0.6032,
-    "fair_total": 49.6,
+    "fair_total": 50,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T23:30:00.000Z",
     "home": "Wisconsin",
     "away": "USC",
     "week": 8,
@@ -7914,10 +6677,10 @@
    "home": "San Diego State",
    "away": "Fresno State",
    "neutral_site": false,
-   "hours_to_kickoff": 3.37,
+   "hours_to_kickoff": 2.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401860904",
     "season": 2026,
     "week": 7,
@@ -8029,7 +6792,7 @@
     "fallback_level": 1,
     "input_hash": "5f494b0f0a9af3b9b61a3246827125bbd7af9cccce8caca927db319c452f62e1",
     "projection_hash": "5b141ee79c0e3b6d3d4354d5ddaa664f32cf5a25c0f53dd92044d2a14bf40cbd",
-    "snapshot_id": "cfbcs_f3cba40b6001b31d17fee1b3",
+    "snapshot_id": "cfbcs_00fb63b5d7e7e7269b49cb1a",
     "display": {
      "label": "Market data limited",
      "notes": [
@@ -8045,9 +6808,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -10.89,
     "home_win_prob": 0.2284,
-    "fair_total": 48.7,
+    "fair_total": 49.1,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-18T02:30:00.000Z",
     "home": "San Diego State",
     "away": "Fresno State",
@@ -8134,10 +6897,10 @@
    "home": "Colorado State",
    "away": "San Diego State",
    "neutral_site": false,
-   "hours_to_kickoff": 167.37,
+   "hours_to_kickoff": 166.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401860905",
     "season": 2026,
     "week": 8,
@@ -8257,7 +7020,7 @@
     "fallback_level": 2,
     "input_hash": "b7cb50b6c12c57d786ebc8081092aa83a82ebb7c7dca31b76eae6b1e0adc7d43",
     "projection_hash": "f6516e2c4bc1ba5e0d3769acbf9712b44fcc22ab14801795f6cce5dd62c78194",
-    "snapshot_id": "cfbcs_d7e9f2ce4b9930e5b9d52673",
+    "snapshot_id": "cfbcs_597ac5df7053140f1a02e905",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -8272,11 +7035,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 3.37,
-    "home_win_prob": 0.5912,
-    "fair_total": 57.2,
+    "margin": -0.73,
+    "home_win_prob": 0.4802,
+    "fair_total": 59.5,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T22:30:00.000Z",
     "home": "Colorado State",
     "away": "San Diego State",
@@ -8349,10 +7112,10 @@
    "home": "Texas State",
    "away": "Utah State",
    "neutral_site": false,
-   "hours_to_kickoff": 168.37,
+   "hours_to_kickoff": 167.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401860906",
     "season": 2026,
     "week": 8,
@@ -8472,7 +7235,7 @@
     "fallback_level": 2,
     "input_hash": "3392c648bdac310ec0b32d009f6aab56b4349a3f0b5ea2d0dd4b9f4c27767821",
     "projection_hash": "3f9852105f6755a1c507fb3f86f7964c0530b2177962d16a82ee3161a88e2bfe",
-    "snapshot_id": "cfbcs_74bc22bda2df167a8069b536",
+    "snapshot_id": "cfbcs_76f9e3bcdef12ac77c43cbc6",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -8487,11 +7250,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 15.08,
-    "home_win_prob": 0.8487,
-    "fair_total": 56,
+    "margin": 16.4,
+    "home_win_prob": 0.8688,
+    "fair_total": 58.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T23:30:00.000Z",
     "home": "Texas State",
     "away": "Utah State",
@@ -8564,10 +7327,10 @@
    "home": "Washington State",
    "away": "Boise State",
    "neutral_site": false,
-   "hours_to_kickoff": 166.87,
+   "hours_to_kickoff": 165.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401860907",
     "season": 2026,
     "week": 8,
@@ -8687,7 +7450,7 @@
     "fallback_level": 2,
     "input_hash": "0e978ea3626b7b8d0f95d0fddc7a0123ba05dc7ecdf58acbef60b7be4a96ad26",
     "projection_hash": "657e86d60823c7602d7a4a8806e84836b0bc7bef5aa5ec5a64639d94a742ef6d",
-    "snapshot_id": "cfbcs_26c7e37dd3efc8fdf4b9cf1b",
+    "snapshot_id": "cfbcs_512e9550d0dd37afcc12308b",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -8704,9 +7467,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -11.27,
     "home_win_prob": 0.2205,
-    "fair_total": 48.7,
+    "fair_total": 49.1,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T22:00:00.000Z",
     "home": "Washington State",
     "away": "Boise State",
@@ -8779,10 +7542,10 @@
    "home": "UConn",
    "away": "Massachusetts",
    "neutral_site": false,
-   "hours_to_kickoff": 143.87,
+   "hours_to_kickoff": 142.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401861965",
     "season": 2026,
     "week": 8,
@@ -8908,7 +7671,7 @@
     "fallback_level": 2,
     "input_hash": "31ce6a90366c111f3924e8d93ae5338774c62313b9fab8ecf0d6e74b32892112",
     "projection_hash": "19c41ee351c6dba40ffef30989c0cc814fa132e0bfb9a356a18ac0036db8a19d",
-    "snapshot_id": "cfbcs_25df99701afcfc1fdb4fabe0",
+    "snapshot_id": "cfbcs_43b77df9be9611a108afa812",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -8924,11 +7687,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 17.31,
-    "home_win_prob": 0.8815,
+    "margin": 17.47,
+    "home_win_prob": 0.8838,
     "fair_total": 54.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-23T23:00:00.000Z",
     "home": "UConn",
     "away": "Massachusetts",
@@ -8997,245 +7760,6 @@
    }
   },
   {
-   "game_id": "401862804",
-   "season": 2026,
-   "week": 7,
-   "kickoff": "2026-10-18T00:00:00.000Z",
-   "home": "UTSA",
-   "away": "Navy",
-   "neutral_site": false,
-   "hours_to_kickoff": 0.87,
-   "canonical": {
-    "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
-    "game_id": "401862804",
-    "season": 2026,
-    "week": 7,
-    "home": "UTSA",
-    "away": "Navy",
-    "home_id": "2636",
-    "away_id": "2426",
-    "kickoff": "2026-10-18T00:00:00.000Z",
-    "neutral_site": false,
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "feature_version": "cfb_v2_fv2",
-    "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
-    "prediction_ts": "2026-10-13T12:00:00Z",
-    "feature_ts": "2026-10-13T12:00:00Z",
-    "row_state": "FROZEN",
-    "source": "football/cfb_v2/current.json",
-    "status": "PREDICTED",
-    "reason": null,
-    "projection": {
-     "projected_margin": 7.59,
-     "fair_spread_home_line": -7.59,
-     "fair_spread_display": "UTSA -7.5",
-     "fair_total": 55.4,
-     "home_win_prob": 0.6809,
-     "away_win_prob": 0.3191,
-     "home_win_prob_raw": 0.6809,
-     "sigma": 16.249,
-     "t_df": 100,
-     "intervals": {
-      "p50": [
-       -3.2,
-       18.3
-      ],
-      "p80": [
-       -13.3,
-       28.5
-      ],
-      "p95": [
-       -24,
-       39.2
-      ]
-     },
-     "football_prediction_confidence": 71,
-     "confidence_basis": [
-      "quarterback unsettled"
-     ],
-     "components": {
-      "C_ridge": 7.872,
-      "D_gbm": 7.3
-     },
-     "ensemble_sd": 0.41,
-     "drivers": [
-      {
-       "feature": "elo_diff",
-       "points": 1.66
-      },
-      {
-       "feature": "edge_epa",
-       "points": 1.38
-      },
-      {
-       "feature": "match_mix_edge",
-       "points": -0.51
-      }
-     ],
-     "uncertainty_drivers": [
-      "uncertain team ratings",
-      "turnover-dependent teams"
-     ],
-     "why": {
-      "primary_matchup_edge": {
-       "label": "results-based strength",
-       "favours": "UTSA",
-       "points": 1.7
-      },
-      "secondary_matchup_edge": {
-       "label": "overall efficiency",
-       "favours": "UTSA",
-       "points": 1.4
-      },
-      "main_uncertainty": "uncertain team ratings"
-     }
-    },
-    "contract": {
-     "version": "cfb_input_contract_1",
-     "ok": true,
-     "critical": [],
-     "degrade": [],
-     "decision_inputs_complete": true
-    },
-    "numeric": {
-     "version": "cfb_numeric_safety_v1",
-     "ok": true,
-     "problems": [],
-     "notes": []
-    },
-    "degraded": {
-     "modes": [
-      "NO_PLAYER_DATA",
-      "QB_UNCERTAIN",
-      "MARKET_DEGRADED"
-     ],
-     "primary": "NO_PLAYER_DATA",
-     "football": [
-      "NO_PLAYER_DATA",
-      "QB_UNCERTAIN"
-     ],
-     "reasons": {
-      "QB_UNCERTAIN": [
-       "a starting quarterback is unsettled"
-      ],
-      "NO_PLAYER_DATA": [
-       "availability certainty 30 < 60"
-      ],
-      "MARKET_DEGRADED": [
-       "market DEGRADED (MARKET_DEGRADED)"
-      ]
-     }
-    },
-    "fallback_level": 2,
-    "input_hash": "69d5a1c36096bed4beb8d4f70c7a9211adf897087c931aa600ea0074ed5deb90",
-    "projection_hash": "eb2e2d53f4128a08b455b27ff4157bbb7eeb96c81d14cad207928f6cd8042a14",
-    "snapshot_id": "cfbcs_807fb78be0570ba91dabd91e",
-    "display": {
-     "label": "Limited availability data",
-     "notes": [
-      "Limited availability data",
-      "Quarterback not confirmed",
-      "Market data limited"
-     ],
-     "show_numbers": true,
-     "show_confidence_score": false,
-     "win_probability_text": "68%"
-    }
-   },
-   "v1": {
-    "status": "PREDICTED",
-    "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 5.87,
-    "home_win_prob": 0.656,
-    "fair_total": 55,
-    "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-18T00:00:00.000Z",
-    "home": "UTSA",
-    "away": "Navy",
-    "week": 7,
-    "season": 2026
-   },
-   "resolved": {
-    "level": 2,
-    "mode": "DEGRADED",
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "modes": [
-     "NO_PLAYER_DATA",
-     "QB_UNCERTAIN",
-     "MARKET_DEGRADED"
-    ],
-    "source": "V2.1 canonical projection"
-   },
-   "market": {
-    "home_line": -5.5,
-    "as_of": "2026-10-17T23:07:35.000Z",
-    "books": 1,
-    "stale": false,
-    "actionable_status": "MARKET_DEGRADED",
-    "gap": 2.09,
-    "snapshot_ts": "2026-10-17T23:07:35.000Z"
-   },
-   "official_decision": {
-    "status": "PASS",
-    "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
-    "side": "HOME",
-    "line_for_side": -5.5,
-    "price": -110,
-    "book": "draftkings",
-    "observed_at": "2026-10-17T23:07:35.000Z",
-    "decision_id": "cfbd_8c3acd936e2e501a13f00e3f",
-    "probability_edge": -0.012,
-    "decision_cover_probability": 0.5118,
-    "break_even_probability": 0.5238,
-    "reason_codes": [
-     "PASS_PRICE"
-    ],
-    "books": 2,
-    "closing_line_tendency": {
-     "label": "MEDIUM",
-     "p_positive_clv": 0.5237,
-     "note": "P(the close moves toward this side) from the decision calibration: it ranks closing-line movement, not bet quality (close-implied EV <= 0 in every tier; audit F-23)"
-    }
-   },
-   "research": {
-    "status": "PASS",
-    "engine_status": "PASS",
-    "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
-    "stage8_ev_strength": 0,
-    "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_654988002cf777ec84167715",
-    "checkpoint_type": "FINAL",
-    "prediction_ts": "2026-10-17T23:07:35.000Z",
-    "row_hash": "ad7ebeca0f6e28d5a4b8d9b20e4488ca5b95edc7391c3638f2b77fdc9e84c743",
-    "canonical_modes": [
-     "NO_PLAYER_DATA",
-     "QB_UNCERTAIN",
-     "MARKET_DEGRADED"
-    ]
-   },
-   "display": {
-    "label": "Limited availability data",
-    "notes": [
-     "Limited availability data",
-     "Quarterback not confirmed",
-     "Market data limited"
-    ],
-    "show_numbers": true,
-    "show_confidence_score": false,
-    "win_probability_text": "68%"
-   },
-   "trace": {
-    "current_generated_at": "2026-10-17T10:48:03Z",
-    "row_state": "FROZEN",
-    "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_654988002cf777ec84167715",
-    "lab_row_hash": "ad7ebeca0f6e28d5a4b8d9b20e4488ca5b95edc7391c3638f2b77fdc9e84c743",
-    "official_decision_id": "cfbd_8c3acd936e2e501a13f00e3f"
-   }
-  },
-  {
    "game_id": "401862807",
    "season": 2026,
    "week": 8,
@@ -9243,10 +7767,10 @@
    "home": "Memphis",
    "away": "East Carolina",
    "neutral_site": false,
-   "hours_to_kickoff": 120.37,
+   "hours_to_kickoff": 119.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401862807",
     "season": 2026,
     "week": 8,
@@ -9366,7 +7890,7 @@
     "fallback_level": 2,
     "input_hash": "de1b3911c70482e59ed7eb9b2d813680b2a7de69ccdda48eded9c2de6235f794",
     "projection_hash": "b0bb42addeb73bb3305f402346a1715762c37b9ecc677e2dd5f4af1b6e917611",
-    "snapshot_id": "cfbcs_f7b0a58b69d8155101759354",
+    "snapshot_id": "cfbcs_f72bf5cc197a9b8b900d5437",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -9381,11 +7905,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 8.26,
-    "home_win_prob": 0.7137,
-    "fair_total": 53.5,
+    "margin": 9.96,
+    "home_win_prob": 0.7519,
+    "fair_total": 53.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-22T23:30:00.000Z",
     "home": "Memphis",
     "away": "East Carolina",
@@ -9459,10 +7983,10 @@
    "home": "Tulsa",
    "away": "Army",
    "neutral_site": false,
-   "hours_to_kickoff": 145.37,
+   "hours_to_kickoff": 144.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401862808",
     "season": 2026,
     "week": 8,
@@ -9588,7 +8112,7 @@
     "fallback_level": 2,
     "input_hash": "0ab4df12f477b87211b37efddbc75ef442533771984fce2cd2534bb9c817a20b",
     "projection_hash": "7177f588834c02c3ab775ce037a704215878b553630e52cd3ddb147a46e6e501",
-    "snapshot_id": "cfbcs_16c638186608eb731e6d92c6",
+    "snapshot_id": "cfbcs_6673176948f8c27e1ce62ca8",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -9604,11 +8128,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -5.56,
-    "home_win_prob": 0.352,
-    "fair_total": 49.9,
+    "margin": -8.49,
+    "home_win_prob": 0.2809,
+    "fair_total": 52.3,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T00:30:00.000Z",
     "home": "Tulsa",
     "away": "Army",
@@ -9684,10 +8208,10 @@
    "home": "Florida Atlantic",
    "away": "Rice",
    "neutral_site": false,
-   "hours_to_kickoff": 160.87,
+   "hours_to_kickoff": 159.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401862809",
     "season": 2026,
     "week": 8,
@@ -9807,7 +8331,7 @@
     "fallback_level": 2,
     "input_hash": "ab3cbc9b0c0a3801fa203f0f106967cb55a8c1fb6f3ae03d89829489f1124170",
     "projection_hash": "60ae7066c5f378664266ceac82d66d028d636ace88a20513bf9cb6580347e9c7",
-    "snapshot_id": "cfbcs_0171ffb0501c974c2ff8b0c3",
+    "snapshot_id": "cfbcs_e0fa4e44d5f47c1b2eaad244",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -9822,12 +8346,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 13.5,
-    "home_win_prob": 0.8219,
-    "fair_total": 54.8,
+    "margin": 8.14,
+    "home_win_prob": 0.7111,
+    "fair_total": 56.3,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T16:00:00.000Z",
     "home": "Florida Atlantic",
     "away": "Rice",
     "week": 8,
@@ -9899,10 +8423,10 @@
    "home": "Navy",
    "away": "North Texas",
    "neutral_site": false,
-   "hours_to_kickoff": 164.37,
+   "hours_to_kickoff": 163.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401862810",
     "season": 2026,
     "week": 8,
@@ -10027,7 +8551,7 @@
     "fallback_level": 2,
     "input_hash": "85da337194ba01fd095455685d261f9c9438c3dca4357a8ca3eddebedb392f8f",
     "projection_hash": "978374de6da0d5d6acd1aa1e25e8bc33da9f86fa4506e580ec6e39774ffe13d7",
-    "snapshot_id": "cfbcs_4d6ced7e9dc9037ce3c86650",
+    "snapshot_id": "cfbcs_8e628809b6e85995dd722052",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -10045,9 +8569,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 0.31,
     "home_win_prob": 0.5083,
-    "fair_total": 61,
+    "fair_total": 61.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T19:30:00.000Z",
     "home": "Navy",
     "away": "North Texas",
@@ -10123,10 +8647,10 @@
    "home": "Tulane",
    "away": "UTSA",
    "neutral_site": false,
-   "hours_to_kickoff": 168.87,
+   "hours_to_kickoff": 167.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401862811",
     "season": 2026,
     "week": 8,
@@ -10251,7 +8775,7 @@
     "fallback_level": 2,
     "input_hash": "985e0c7ed5819a7843106d75900064880b49cc9ec731dbd20a14c9ab31175b33",
     "projection_hash": "9bb97d809b46c151052e309fd66c949433b150c2ebcbb4bc3df5fbffefc35caa",
-    "snapshot_id": "cfbcs_8e670dad3f2b56e1244e68cd",
+    "snapshot_id": "cfbcs_51c0f57daf42b728ba5d03fd",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -10267,12 +8791,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -0.77,
-    "home_win_prob": 0.4791,
-    "fair_total": 52.5,
+    "margin": 1.64,
+    "home_win_prob": 0.5446,
+    "fair_total": 53,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-25T00:00:00.000Z",
     "home": "Tulane",
     "away": "UTSA",
     "week": 8,
@@ -10346,10 +8870,10 @@
    "home": "Hawai'i",
    "away": "New Mexico",
    "neutral_site": false,
-   "hours_to_kickoff": 3.37,
+   "hours_to_kickoff": 2.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401864521",
     "season": 2026,
     "week": 7,
@@ -10467,7 +8991,7 @@
     "fallback_level": 2,
     "input_hash": "0b5ee1fbf2b94732575f07c48bf70706e08264e167d71d444474b9ea7fc77a25",
     "projection_hash": "052f097321a2565aa2e6dc7dabc9e5088680e0d3d711ddb89a067d73ec3a8c88",
-    "snapshot_id": "cfbcs_efd4aea9332863afa1f0df0a",
+    "snapshot_id": "cfbcs_e57e1629568a1310a4cd0b26",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -10484,9 +9008,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -19.19,
     "home_win_prob": 0.0949,
-    "fair_total": 48.8,
+    "fair_total": 49.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-18T02:30:00.000Z",
     "home": "Hawai'i",
     "away": "New Mexico",
@@ -10517,13 +9041,13 @@
     "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
     "side": "AWAY",
     "line_for_side": -14.5,
-    "price": -110,
+    "price": -112,
     "book": "draftkings",
-    "observed_at": "2026-10-16T14:42:57.000Z",
-    "decision_id": "cfbd_35de4a1fada1fbd6f917173d",
-    "probability_edge": -0.005,
-    "decision_cover_probability": 0.5188,
-    "break_even_probability": 0.5238,
+    "observed_at": "2026-10-18T00:07:35.000Z",
+    "decision_id": "cfbd_b1e6a338ae2a0f6733012bdc",
+    "probability_edge": -0.0061,
+    "decision_cover_probability": 0.5222,
+    "break_even_probability": 0.5283,
     "reason_codes": [
      "PASS_PRICE"
     ],
@@ -10565,7 +9089,7 @@
     "row_prediction_ts": "2026-10-13T12:00:00Z",
     "lab_prediction_id": "cfbp_bb2a765b1d2209215b68a132",
     "lab_row_hash": "af49b4fdbc0ade2d3e1d7f1768bcca025951ef43df04bb03fa7562cd56820d2e",
-    "official_decision_id": "cfbd_35de4a1fada1fbd6f917173d"
+    "official_decision_id": "cfbd_b1e6a338ae2a0f6733012bdc"
    }
   },
   {
@@ -10576,10 +9100,10 @@
    "home": "UTEP",
    "away": "San José State",
    "neutral_site": false,
-   "hours_to_kickoff": 1.87,
+   "hours_to_kickoff": 0.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401864523",
     "season": 2026,
     "week": 7,
@@ -10702,7 +9226,7 @@
     "fallback_level": 2,
     "input_hash": "9eda8699d2a62af424cea2f15e3962c465aab416794a3ab463571802afdca4dd",
     "projection_hash": "6d289e0db222c682f64bd39ce1f0c859a550bc7c7ff30b32ca029ef6f281bd5d",
-    "snapshot_id": "cfbcs_923ee54da73810cd62b70e05",
+    "snapshot_id": "cfbcs_c91e60ed4faeb90288fa7c9c",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -10720,9 +9244,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -5.56,
     "home_win_prob": 0.3519,
-    "fair_total": 50.5,
+    "fair_total": 50.9,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-18T01:00:00.000Z",
     "home": "UTEP",
     "away": "San José State",
@@ -10742,12 +9266,12 @@
    },
    "market": {
     "home_line": 6.5,
-    "as_of": "2026-10-17T23:07:35.000Z",
+    "as_of": "2026-10-18T00:07:35.000Z",
     "books": 1,
     "stale": false,
     "actionable_status": "MARKET_DEGRADED",
     "gap": -0.11,
-    "snapshot_ts": "2026-10-17T23:07:35.000Z"
+    "snapshot_ts": "2026-10-18T00:07:35.000Z"
    },
    "official_decision": {
     "status": "PASS",
@@ -10777,10 +9301,10 @@
     "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
     "stage8_ev_strength": 0,
     "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_3ccf9a45299af0afc2d5c354",
-    "checkpoint_type": "T2",
-    "prediction_ts": "2026-10-17T23:07:35.000Z",
-    "row_hash": "424533beb8811e99ac7aeab7703d625bff924c28ce2f81e6e6f17b6e86c89d20",
+    "prediction_id": "cfbp_6b133ca2ef648360bebc67cd",
+    "checkpoint_type": "FINAL",
+    "prediction_ts": "2026-10-18T00:07:35.000Z",
+    "row_hash": "2d585187fb3cc224cea6e30f46794471c033c2bdb825af5b4d26ec4285bd02e8",
     "canonical_modes": [
      "NO_PLAYER_DATA",
      "QB_UNCERTAIN",
@@ -10802,8 +9326,8 @@
     "current_generated_at": "2026-10-17T10:48:03Z",
     "row_state": "FROZEN",
     "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_3ccf9a45299af0afc2d5c354",
-    "lab_row_hash": "424533beb8811e99ac7aeab7703d625bff924c28ce2f81e6e6f17b6e86c89d20",
+    "lab_prediction_id": "cfbp_6b133ca2ef648360bebc67cd",
+    "lab_row_hash": "2d585187fb3cc224cea6e30f46794471c033c2bdb825af5b4d26ec4285bd02e8",
     "official_decision_id": "cfbd_43f6ccee27039b3e2568092d"
    }
   },
@@ -10815,10 +9339,10 @@
    "home": "Wyoming",
    "away": "Air Force",
    "neutral_site": false,
-   "hours_to_kickoff": 145.87,
+   "hours_to_kickoff": 144.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401864525",
     "season": 2026,
     "week": 8,
@@ -10944,7 +9468,7 @@
     "fallback_level": 2,
     "input_hash": "64ae53bf8973e7d058300c796538816ece1a0768edd477b59636e05ed7e3257a",
     "projection_hash": "8d07ad6f008308a25f264e9b6c3ffc42a72a960c2ce881597890d3ffe7ccf5ba",
-    "snapshot_id": "cfbcs_84e9ddebb310852ff2a8f68c",
+    "snapshot_id": "cfbcs_76e2d66378557edda2dfb891",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -10960,11 +9484,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -8.16,
-    "home_win_prob": 0.2884,
-    "fair_total": 41.4,
+    "margin": -8.6,
+    "home_win_prob": 0.2783,
+    "fair_total": 43.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T01:00:00.000Z",
     "home": "Wyoming",
     "away": "Air Force",
@@ -11040,10 +9564,10 @@
    "home": "Northern Illinois",
    "away": "Hawai'i",
    "neutral_site": false,
-   "hours_to_kickoff": 164.37,
+   "hours_to_kickoff": 163.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401864526",
     "season": 2026,
     "week": 8,
@@ -11163,7 +9687,7 @@
     "fallback_level": 2,
     "input_hash": "91eb920ae811ec4974eb3e36d442e6a0c3133abdd2dd8493742aba61d145af38",
     "projection_hash": "db8782e4b69d2af6b5fa063d86938fafb4888e523ddd9ec2a63f1aba0ff47ea7",
-    "snapshot_id": "cfbcs_986e3782e39c3993cec32118",
+    "snapshot_id": "cfbcs_1052df48c91dd8bd02fffce8",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -11180,10 +9704,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -0.76,
     "home_win_prob": 0.4792,
-    "fair_total": 45.3,
+    "fair_total": 45.7,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T19:30:00.000Z",
     "home": "Northern Illinois",
     "away": "Hawai'i",
     "week": 8,
@@ -11255,10 +9779,10 @@
    "home": "New Mexico",
    "away": "North Dakota State",
    "neutral_site": false,
-   "hours_to_kickoff": 170.87,
+   "hours_to_kickoff": 169.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401864527",
     "season": 2026,
     "week": 8,
@@ -11377,7 +9901,7 @@
     "fallback_level": 2,
     "input_hash": "c5092166eb06c09432f8b02a4fc86532c15732b500285ee9e2225e3ff89da493",
     "projection_hash": "751d2cf6b6b98b421a51533218704224bafb2c4816a9d450d4fa927a93428403",
-    "snapshot_id": "cfbcs_f6455a5ab7bc8d6f5b3cd841",
+    "snapshot_id": "cfbcs_85f72086cbafed7a82915d95",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -11394,9 +9918,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 11.15,
     "home_win_prob": 0.777,
-    "fair_total": 47.5,
+    "fair_total": 47.9,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-25T02:00:00.000Z",
     "home": "New Mexico",
     "away": "North Dakota State",
@@ -11469,10 +9993,10 @@
    "home": "Nevada",
    "away": "San José State",
    "neutral_site": false,
-   "hours_to_kickoff": 165.87,
+   "hours_to_kickoff": 164.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401864528",
     "season": 2026,
     "week": 8,
@@ -11592,7 +10116,7 @@
     "fallback_level": 2,
     "input_hash": "60ffea716d8acc1c9768a2ef5dda6513ad3004bff0e4fcf9c29d868a790dabf7",
     "projection_hash": "930c4a5e3a8be066a3fdcd020f79c1466356adbaf327b80a35a2738ee3fa0c9d",
-    "snapshot_id": "cfbcs_73f7bfd36f62929f9669c57e",
+    "snapshot_id": "cfbcs_3f0e7c89d1c19a3f45e3726a",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -11609,9 +10133,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 9.8,
     "home_win_prob": 0.7485,
-    "fair_total": 47.3,
+    "fair_total": 47.7,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T21:00:00.000Z",
     "home": "Nevada",
     "away": "San José State",
@@ -11684,10 +10208,10 @@
    "home": "Sacramento State",
    "away": "Ohio",
    "neutral_site": false,
-   "hours_to_kickoff": 2.87,
+   "hours_to_kickoff": 1.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401866445",
     "season": 2026,
     "week": 7,
@@ -11810,7 +10334,7 @@
     "fallback_level": 2,
     "input_hash": "2f0c733f4c92abba4e55200bbf89a84648e16dc1a2dbed03d70e59810e489d37",
     "projection_hash": "a930ac3195b9ea2a10d75c12fcdc06255a8040cc1fa873dc837fce2722c42e0f",
-    "snapshot_id": "cfbcs_bfb985d0818b525d2c1aad7a",
+    "snapshot_id": "cfbcs_f5dcceb10cf3947b78c59db5",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -11828,9 +10352,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -16.64,
     "home_win_prob": 0.1277,
-    "fair_total": 47.9,
+    "fair_total": 48.3,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-18T02:00:00.000Z",
     "home": "Sacramento State",
     "away": "Ohio",
@@ -11849,26 +10373,26 @@
     "source": "V2.1 canonical projection"
    },
    "market": {
-    "home_line": 15.5,
-    "as_of": "2026-10-17T15:07:38.000Z",
+    "home_line": 16.5,
+    "as_of": "2026-10-18T00:07:35.000Z",
     "books": 1,
     "stale": false,
     "actionable_status": "MARKET_DEGRADED",
-    "gap": 0.34,
-    "snapshot_ts": "2026-10-17T20:07:44.000Z"
+    "gap": 1.34,
+    "snapshot_ts": "2026-10-18T00:07:35.000Z"
    },
    "official_decision": {
     "status": "PASS",
     "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
     "side": "HOME",
     "line_for_side": 16.5,
-    "price": -112,
+    "price": -102,
     "book": "draftkings",
-    "observed_at": "2026-10-17T23:07:35.000Z",
-    "decision_id": "cfbd_41157df30480404b438d56af",
-    "probability_edge": -0.0172,
-    "decision_cover_probability": 0.5111,
-    "break_even_probability": 0.5283,
+    "observed_at": "2026-10-18T00:07:35.000Z",
+    "decision_id": "cfbd_6f3c553fbb71ad566d553a17",
+    "probability_edge": -0.0106,
+    "decision_cover_probability": 0.4943,
+    "break_even_probability": 0.505,
     "reason_codes": [
      "PASS_PRICE"
     ],
@@ -11885,10 +10409,10 @@
     "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
     "stage8_ev_strength": 0,
     "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_7543b7ba427bce2333209d36",
-    "checkpoint_type": "T6",
-    "prediction_ts": "2026-10-17T20:07:44.000Z",
-    "row_hash": "b7fe6476be0f6d7567a6b98c159b96d39eda7402f71494083eea7f35d2e0c927",
+    "prediction_id": "cfbp_ec14f5f9f3e5d46bdc47b62e",
+    "checkpoint_type": "T2",
+    "prediction_ts": "2026-10-18T00:07:35.000Z",
+    "row_hash": "b9f7b31f54c52601cc6788832ad15b97cb6cc8fc5075cb2f60ce9a56596afc4a",
     "canonical_modes": [
      "NO_PLAYER_DATA",
      "QB_UNCERTAIN",
@@ -11910,9 +10434,9 @@
     "current_generated_at": "2026-10-17T10:48:03Z",
     "row_state": "FROZEN",
     "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_7543b7ba427bce2333209d36",
-    "lab_row_hash": "b7fe6476be0f6d7567a6b98c159b96d39eda7402f71494083eea7f35d2e0c927",
-    "official_decision_id": "cfbd_41157df30480404b438d56af"
+    "lab_prediction_id": "cfbp_ec14f5f9f3e5d46bdc47b62e",
+    "lab_row_hash": "b9f7b31f54c52601cc6788832ad15b97cb6cc8fc5075cb2f60ce9a56596afc4a",
+    "official_decision_id": "cfbd_6f3c553fbb71ad566d553a17"
    }
   },
   {
@@ -11923,10 +10447,10 @@
    "home": "Kent State",
    "away": "Akron",
    "neutral_site": false,
-   "hours_to_kickoff": 161.87,
+   "hours_to_kickoff": 160.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401866446",
     "season": 2026,
     "week": 8,
@@ -12046,7 +10570,7 @@
     "fallback_level": 2,
     "input_hash": "1e4722e498b1d06298b6eaecb682c4a7e5642d230d9e202ee0f743f11ef38a98",
     "projection_hash": "26649201d6b1191adb684052f4ce675cf3188eec9fc469c07f888bded20caae3",
-    "snapshot_id": "cfbcs_43dbce116a34a8fc1fb791b8",
+    "snapshot_id": "cfbcs_f09f6f292b9ec68f419fbaad",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -12061,12 +10585,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 4.78,
-    "home_win_prob": 0.628,
-    "fair_total": 49,
+    "margin": 5.83,
+    "home_win_prob": 0.6549,
+    "fair_total": 49.3,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T17:00:00.000Z",
     "home": "Kent State",
     "away": "Akron",
     "week": 8,
@@ -12138,10 +10662,10 @@
    "home": "Ball State",
    "away": "Sacramento State",
    "neutral_site": false,
-   "hours_to_kickoff": 164.37,
+   "hours_to_kickoff": 163.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401866447",
     "season": 2026,
     "week": 8,
@@ -12266,7 +10790,7 @@
     "fallback_level": 2,
     "input_hash": "31142779164debb641935e461d81adf4fef5f71188dcd1b70604b93991da53fd",
     "projection_hash": "d7b4d9bb5540247b033aaa8ea13431e8d5e0d2f822824196c588befec3e88333",
-    "snapshot_id": "cfbcs_8cb569750b222654a8465c3f",
+    "snapshot_id": "cfbcs_fc9536912259f3ae1776cbdc",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -12282,12 +10806,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 7.39,
-    "home_win_prob": 0.6933,
-    "fair_total": 50.1,
+    "margin": 9.58,
+    "home_win_prob": 0.7438,
+    "fair_total": 51.1,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T19:30:00.000Z",
     "home": "Ball State",
     "away": "Sacramento State",
     "week": 8,
@@ -12362,10 +10886,10 @@
    "home": "Buffalo",
    "away": "Bowling Green",
    "neutral_site": false,
-   "hours_to_kickoff": 164.37,
+   "hours_to_kickoff": 163.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401866448",
     "season": 2026,
     "week": 8,
@@ -12485,7 +11009,7 @@
     "fallback_level": 2,
     "input_hash": "bc3588b8d1e2a78fba670f3b9e34c124ba80f380de8927b0c714122cb5e0b66c",
     "projection_hash": "1882454adcde3fe6c6a7113471ed871e7d79a9a4f95bc61a1b681eab669995e9",
-    "snapshot_id": "cfbcs_e2cde1e187f7eb6d667c4e9e",
+    "snapshot_id": "cfbcs_ba3d4cd78f7f2cab4b43d3dd",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -12500,12 +11024,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 6.01,
-    "home_win_prob": 0.6594,
-    "fair_total": 45.6,
+    "margin": 8.37,
+    "home_win_prob": 0.7163,
+    "fair_total": 46.7,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T19:30:00.000Z",
     "home": "Buffalo",
     "away": "Bowling Green",
     "week": 8,
@@ -12577,10 +11101,10 @@
    "home": "Ohio",
    "away": "Eastern Michigan",
    "neutral_site": false,
-   "hours_to_kickoff": 164.87,
+   "hours_to_kickoff": 163.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401866449",
     "season": 2026,
     "week": 8,
@@ -12705,7 +11229,7 @@
     "fallback_level": 2,
     "input_hash": "bed0d65d8e61b58c24d97898009a6988e63de2c979c7c276ba4167b95182878b",
     "projection_hash": "0ee15e0c86a80ce5600466994b12bf48031660d8b7e00a4d98605b7859ea5897",
-    "snapshot_id": "cfbcs_6393a78bc18e2893ecf0435e",
+    "snapshot_id": "cfbcs_aea58d4e571ae5becba4854e",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -12723,10 +11247,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 10.86,
     "home_win_prob": 0.7711,
-    "fair_total": 48,
+    "fair_total": 48.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T20:00:00.000Z",
     "home": "Ohio",
     "away": "Eastern Michigan",
     "week": 8,
@@ -12801,10 +11325,10 @@
    "home": "Toledo",
    "away": "Western Michigan",
    "neutral_site": false,
-   "hours_to_kickoff": 160.87,
+   "hours_to_kickoff": 159.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401866450",
     "season": 2026,
     "week": 8,
@@ -12924,7 +11448,7 @@
     "fallback_level": 2,
     "input_hash": "6b24f7e70239aca51f274bfb5066061d5180d926c798be595e0e5bccb0947792",
     "projection_hash": "f4ce3c0101534c6954b162163d26460371ef66273e67f2e3fe3c2918eeb5efa1",
-    "snapshot_id": "cfbcs_e0987c559bb11fcd7fe58f10",
+    "snapshot_id": "cfbcs_c786ca0e3b70811e026fa35e",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -12939,12 +11463,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 2.2,
-    "home_win_prob": 0.5597,
-    "fair_total": 47.6,
+    "margin": 2.17,
+    "home_win_prob": 0.5589,
+    "fair_total": 47.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T16:00:00.000Z",
     "home": "Toledo",
     "away": "Western Michigan",
     "week": 8,
@@ -13016,10 +11540,10 @@
    "home": "Central Michigan",
    "away": "Miami (OH)",
    "neutral_site": false,
-   "hours_to_kickoff": 161.87,
+   "hours_to_kickoff": 160.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401866476",
     "season": 2026,
     "week": 8,
@@ -13144,7 +11668,7 @@
     "fallback_level": 2,
     "input_hash": "2732b9cd54f652e5f2c4412be47b890ac2a2f9db10fe872a4bfc82010d00e5fb",
     "projection_hash": "90bd7879bcac81e1c0afbe8c5fe29aec2fdb1af3d1b38861f3754e444b121dae",
-    "snapshot_id": "cfbcs_9b8eacc5ced195fa3dd84582",
+    "snapshot_id": "cfbcs_a2b2c163674ff3cac93bbea4",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -13160,12 +11684,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 0.08,
-    "home_win_prob": 0.5022,
-    "fair_total": 45,
+    "margin": -1,
+    "home_win_prob": 0.4727,
+    "fair_total": 44.7,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T17:00:00.000Z",
     "home": "Central Michigan",
     "away": "Miami (OH)",
     "week": 8,
@@ -13240,10 +11764,10 @@
    "home": "App State",
    "away": "James Madison",
    "neutral_site": false,
-   "hours_to_kickoff": 119.87,
+   "hours_to_kickoff": 118.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401869845",
     "season": 2026,
     "week": 8,
@@ -13363,7 +11887,7 @@
     "fallback_level": 2,
     "input_hash": "4524c1141184d3610f7ec8a993773ce3f9866162462fc0d0a478102e4ec268f4",
     "projection_hash": "372dae91753a812ad7bbd7bb7905601d75297516ce39c3613ee0d37c2f95a390",
-    "snapshot_id": "cfbcs_7e81acfc01e88626cb2948ea",
+    "snapshot_id": "cfbcs_34e0d640cd9692eca7deff85",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -13378,11 +11902,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -14.87,
-    "home_win_prob": 0.1547,
-    "fair_total": 53.6,
+    "margin": -18.27,
+    "home_win_prob": 0.1059,
+    "fair_total": 55.8,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-22T23:00:00.000Z",
     "home": "App State",
     "away": "James Madison",
@@ -13455,10 +11979,10 @@
    "home": "Arkansas State",
    "away": "Georgia State",
    "neutral_site": false,
-   "hours_to_kickoff": 167.87,
+   "hours_to_kickoff": 166.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401869935",
     "season": 2026,
     "week": 8,
@@ -13578,7 +12102,7 @@
     "fallback_level": 2,
     "input_hash": "a7abd2ea45da47f98be7940127fa9cccd7c86e1f9630457017791fe032410bf0",
     "projection_hash": "c0e6b2e5922698a60bbfae9bdc9cd95c6c514f8d4d9c82a47bd80317eab1b921",
-    "snapshot_id": "cfbcs_e56d8c6b5e786228fb062454",
+    "snapshot_id": "cfbcs_79f0f6f89f35002db93c3f6f",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -13593,11 +12117,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -4.59,
-    "home_win_prob": 0.3769,
-    "fair_total": 55.7,
+    "margin": -1.32,
+    "home_win_prob": 0.464,
+    "fair_total": 57.1,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-24T23:00:00.000Z",
     "home": "Arkansas State",
     "away": "Georgia State",
@@ -13670,10 +12194,10 @@
    "home": "Southern Miss",
    "away": "Louisiana",
    "neutral_site": false,
-   "hours_to_kickoff": 165.87,
+   "hours_to_kickoff": 164.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401869967",
     "season": 2026,
     "week": 8,
@@ -13798,7 +12322,7 @@
     "fallback_level": 2,
     "input_hash": "8429bf630b51ed7134927936680d851d2766b51fc1c795a81257ad1a8f6ed8aa",
     "projection_hash": "f89bff5daed836efb61a0cb150795ec183d10e2a9d35a90109bb5fe8b48dd33f",
-    "snapshot_id": "cfbcs_948d106a45b21e43e5ed0f3e",
+    "snapshot_id": "cfbcs_a92f393dc9c15ad6fb706d95",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -13816,10 +12340,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": -5.67,
     "home_win_prob": 0.3493,
-    "fair_total": 54.8,
+    "fair_total": 55.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T21:00:00.000Z",
     "home": "Southern Miss",
     "away": "Louisiana",
     "week": 8,
@@ -13894,10 +12418,10 @@
    "home": "Florida International",
    "away": "Middle Tennessee",
    "neutral_site": false,
-   "hours_to_kickoff": 71.87,
+   "hours_to_kickoff": 70.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401871055",
     "season": 2026,
     "week": 8,
@@ -14016,7 +12540,7 @@
     "fallback_level": 2,
     "input_hash": "2556bce6be48dc1f392e16e1c73f49711cb1bfc492abc4b611b8c17e4cfb70b7",
     "projection_hash": "b7cef62fea2495caa9d7344b86a591743937b5fb1e02c24f3acf59d8f0b6740c",
-    "snapshot_id": "cfbcs_dfc8c995f13317561e88ff4f",
+    "snapshot_id": "cfbcs_f595121d0016f2f1c1f5535c",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -14031,11 +12555,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 14.08,
-    "home_win_prob": 0.8321,
-    "fair_total": 47.1,
+    "margin": 13.86,
+    "home_win_prob": 0.8282,
+    "fair_total": 48.6,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-20T23:00:00.000Z",
     "home": "Florida International",
     "away": "Middle Tennessee",
@@ -14108,10 +12632,10 @@
    "home": "Kennesaw State",
    "away": "Liberty",
    "neutral_site": false,
-   "hours_to_kickoff": 119.87,
+   "hours_to_kickoff": 118.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401871056",
     "season": 2026,
     "week": 8,
@@ -14230,7 +12754,7 @@
     "fallback_level": 2,
     "input_hash": "24d6c1176ac8c7e735edb2535634773b3f02c3240d8d612e9f64fbdc0ab0774c",
     "projection_hash": "030aed964ebc269ab856d9437dd102a344d7197e62f7bf15ff95860b6dd60cba",
-    "snapshot_id": "cfbcs_da38228c88e9b80ba786f49a",
+    "snapshot_id": "cfbcs_e87c14b8c8e49cc127aaaf4d",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -14245,11 +12769,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -9.98,
-    "home_win_prob": 0.2477,
-    "fair_total": 49,
+    "margin": -11.87,
+    "home_win_prob": 0.2087,
+    "fair_total": 49.1,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-22T23:00:00.000Z",
     "home": "Kennesaw State",
     "away": "Liberty",
@@ -14322,10 +12846,10 @@
    "home": "Delaware",
    "away": "Missouri State",
    "neutral_site": false,
-   "hours_to_kickoff": 71.87,
+   "hours_to_kickoff": 70.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401871069",
     "season": 2026,
     "week": 8,
@@ -14451,7 +12975,7 @@
     "fallback_level": 2,
     "input_hash": "3e49f7327bc79788f7b6ee404d9455241a2aadb0f2960769568f88c869274f51",
     "projection_hash": "5947de00386e35570449400e0021daa20095657ae1584788610d865e7c5b12c1",
-    "snapshot_id": "cfbcs_0facee857a9d4da986ccb56f",
+    "snapshot_id": "cfbcs_a228d8406a31f6957c971631",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -14467,11 +12991,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 6.93,
-    "home_win_prob": 0.6821,
-    "fair_total": 52.8,
+    "margin": 5.15,
+    "home_win_prob": 0.6377,
+    "fair_total": 53.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-20T23:00:00.000Z",
     "home": "Delaware",
     "away": "Missouri State",
@@ -14547,10 +13071,10 @@
    "home": "Sam Houston",
    "away": "New Mexico State",
    "neutral_site": false,
-   "hours_to_kickoff": 96.87,
+   "hours_to_kickoff": 95.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401871070",
     "season": 2026,
     "week": 8,
@@ -14674,7 +13198,7 @@
     "fallback_level": 2,
     "input_hash": "736348f29a0b69099b68c19f1e4a245dc6acba7260041044223e6405b45ec616",
     "projection_hash": "298cd16fa141df503a9ccbc349b16ed866c6a7d87c94fcaa4ae073ebd7b79ab5",
-    "snapshot_id": "cfbcs_6a353db97ed8144912f6f75a",
+    "snapshot_id": "cfbcs_525dff51cf5880eef553d19a",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -14690,11 +13214,11 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 0.75,
-    "home_win_prob": 0.5204,
-    "fair_total": 49.3,
+    "margin": -1.92,
+    "home_win_prob": 0.4479,
+    "fair_total": 47.8,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-22T00:00:00.000Z",
     "home": "Sam Houston",
     "away": "New Mexico State",
@@ -14763,242 +13287,62 @@
    }
   },
   {
-   "game_id": "401871091",
+   "game_id": "401871071",
    "season": 2026,
-   "week": 7,
-   "kickoff": "2026-10-18T00:00:00.000Z",
-   "home": "UL Monroe",
-   "away": "Louisiana Tech",
+   "week": 9,
+   "kickoff": "2026-10-27T23:00:00.000Z",
+   "home": "Western Kentucky",
+   "away": "Delaware",
    "neutral_site": false,
-   "hours_to_kickoff": 0.87,
-   "canonical": {
-    "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
-    "game_id": "401871091",
-    "season": 2026,
-    "week": 7,
-    "home": "UL Monroe",
-    "away": "Louisiana Tech",
-    "home_id": "2433",
-    "away_id": "2348",
-    "kickoff": "2026-10-18T00:00:00.000Z",
-    "neutral_site": false,
-    "model_version": "edgedesk_cfb_v2.1.0",
-    "feature_version": "cfb_v2_fv2",
-    "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
-    "prediction_ts": "2026-10-13T12:00:00Z",
-    "feature_ts": "2026-10-13T12:00:00Z",
-    "row_state": "FROZEN",
-    "source": "football/cfb_v2/current.json",
-    "status": "PREDICTED",
-    "reason": null,
-    "projection": {
-     "projected_margin": -11.15,
-     "fair_spread_home_line": 11.15,
-     "fair_spread_display": "Louisiana Tech -11.0",
-     "fair_total": 57.4,
-     "home_win_prob": 0.2486,
-     "away_win_prob": 0.7514,
-     "home_win_prob_raw": 0.2486,
-     "sigma": 16.526,
-     "t_df": 100,
-     "intervals": {
-      "p50": [
-       -22.1,
-       -0.2
-      ],
-      "p80": [
-       -32.4,
-       10.1
-      ],
-      "p95": [
-       -43.3,
-       21
-      ]
-     },
-     "football_prediction_confidence": 62,
-     "confidence_basis": [
-      "quarterback unsettled"
-     ],
-     "components": {
-      "C_ridge": -11.976,
-      "D_gbm": -10.324
-     },
-     "ensemble_sd": 1.17,
-     "drivers": [
-      {
-       "feature": "elo_diff",
-       "points": -5.56
-      },
-      {
-       "feature": "edge_epa",
-       "points": -2.29
-      },
-      {
-       "feature": "match_mix_edge",
-       "points": 0.99
-      }
-     ],
-     "uncertainty_drivers": [
-      "turnover-dependent teams",
-      "uncertain team ratings"
-     ],
-     "why": {
-      "primary_matchup_edge": {
-       "label": "results-based strength",
-       "favours": "Louisiana Tech",
-       "points": 5.6
-      },
-      "secondary_matchup_edge": {
-       "label": "overall efficiency",
-       "favours": "Louisiana Tech",
-       "points": 2.3
-      },
-      "main_uncertainty": "turnover-dependent teams"
-     }
-    },
-    "contract": {
-     "version": "cfb_input_contract_1",
-     "ok": true,
-     "critical": [],
-     "degrade": [],
-     "decision_inputs_complete": true
-    },
-    "numeric": {
-     "version": "cfb_numeric_safety_v1",
-     "ok": true,
-     "problems": [],
-     "notes": []
-    },
-    "degraded": {
-     "modes": [
-      "NO_PLAYER_DATA",
-      "QB_UNCERTAIN",
-      "MARKET_DEGRADED"
-     ],
-     "primary": "NO_PLAYER_DATA",
-     "football": [
-      "NO_PLAYER_DATA",
-      "QB_UNCERTAIN"
-     ],
-     "reasons": {
-      "QB_UNCERTAIN": [
-       "a starting quarterback is unsettled"
-      ],
-      "NO_PLAYER_DATA": [
-       "availability certainty 30 < 60"
-      ],
-      "MARKET_DEGRADED": [
-       "market DEGRADED (MARKET_DEGRADED)"
-      ]
-     }
-    },
-    "fallback_level": 2,
-    "input_hash": "b4348fbfb1e69f5475f7ce7508edef19f8a28edb8b6613c52b6d3fbe0f973704",
-    "projection_hash": "342b2f13886d2db5f7e8cdf936e4389659f8fd4b86da736fd3a89a34216454cc",
-    "snapshot_id": "cfbcs_2c4a76f08a310e2268284468",
-    "display": {
-     "label": "Limited availability data",
-     "notes": [
-      "Limited availability data",
-      "Quarterback not confirmed",
-      "Market data limited"
-     ],
-     "show_numbers": true,
-     "show_confidence_score": false,
-     "win_probability_text": "75%"
-    }
-   },
+   "hours_to_kickoff": 238.87,
+   "canonical": null,
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": -13.9,
-    "home_win_prob": 0.1711,
-    "fair_total": 56.6,
+    "margin": 8.2,
+    "home_win_prob": 0.7125,
+    "fair_total": 51.3,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-18T00:00:00.000Z",
-    "home": "UL Monroe",
-    "away": "Louisiana Tech",
-    "week": 7,
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-27T23:00:00.000Z",
+    "home": "Western Kentucky",
+    "away": "Delaware",
+    "week": 9,
     "season": 2026
    },
    "resolved": {
-    "level": 2,
-    "mode": "DEGRADED",
-    "model_version": "edgedesk_cfb_v2.1.0",
+    "level": 3,
+    "mode": "FALLBACK_MODEL",
+    "model_version": "edgedesk_cfb_p4_v1.0.0",
     "modes": [
-     "NO_PLAYER_DATA",
-     "QB_UNCERTAIN",
-     "MARKET_DEGRADED"
+     "FALLBACK_MODEL"
     ],
-    "source": "V2.1 canonical projection"
+    "source": "V1 board (football/fbs/slate.json)",
+    "reason": "no V2.1 row for this game"
    },
-   "market": {
-    "home_line": 13.5,
-    "as_of": "2026-10-17T23:07:35.000Z",
-    "books": 1,
-    "stale": false,
-    "actionable_status": "MARKET_DEGRADED",
-    "gap": 2.35,
-    "snapshot_ts": "2026-10-17T23:07:35.000Z"
-   },
+   "market": null,
    "official_decision": {
-    "status": "PASS",
-    "basis": "cfb_decision_policy_v1 (cfb_decision_engine_v1, SHADOW, betting disabled)",
-    "side": "HOME",
-    "line_for_side": 13.5,
-    "price": -108,
-    "book": "draftkings",
-    "observed_at": "2026-10-17T19:07:37.000Z",
-    "decision_id": "cfbd_ab3e30ed41cf4e100c3c0edc",
-    "probability_edge": -0.0095,
-    "decision_cover_probability": 0.5097,
-    "break_even_probability": 0.5192,
-    "reason_codes": [
-     "PASS_MARKET_DISPERSION"
-    ],
-    "books": 2,
-    "closing_line_tendency": {
-     "label": "MEDIUM",
-     "p_positive_clv": 0.5373,
-     "note": "P(the close moves toward this side) from the decision calibration: it ranks closing-line movement, not bet quality (close-implied EV <= 0 in every tier; audit F-23)"
-    }
+    "status": "NO_DECISION",
+    "basis": "cfb_decision_policy_v1",
+    "reason": "the V2.1 projection is unavailable and the V1 number shown is the fallback (level 3): no governed decision is published beside it",
+    "withheld_decision_id": null
    },
-   "research": {
-    "status": "PASS",
-    "engine_status": "PASS",
-    "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
-    "stage8_ev_strength": 0,
-    "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_97b878337169932fb1011a53",
-    "checkpoint_type": "FINAL",
-    "prediction_ts": "2026-10-17T23:07:35.000Z",
-    "row_hash": "832b03aa1a45f2c159fd0ef6505e3aacda21319b3356aec5816ef8ab5ae11c7b",
-    "canonical_modes": [
-     "NO_PLAYER_DATA",
-     "QB_UNCERTAIN",
-     "MARKET_DEGRADED"
-    ]
-   },
+   "research": null,
    "display": {
-    "label": "Limited availability data",
+    "label": "Fallback model",
     "notes": [
-     "Limited availability data",
-     "Quarterback not confirmed",
-     "Market data limited"
+     "Fallback model"
     ],
     "show_numbers": true,
-    "show_confidence_score": false,
-    "win_probability_text": "75%"
+    "show_confidence_score": false
    },
    "trace": {
     "current_generated_at": "2026-10-17T10:48:03Z",
-    "row_state": "FROZEN",
-    "row_prediction_ts": "2026-10-13T12:00:00Z",
-    "lab_prediction_id": "cfbp_97b878337169932fb1011a53",
-    "lab_row_hash": "832b03aa1a45f2c159fd0ef6505e3aacda21319b3356aec5816ef8ab5ae11c7b",
-    "official_decision_id": "cfbd_ab3e30ed41cf4e100c3c0edc"
+    "row_state": null,
+    "row_prediction_ts": null,
+    "lab_prediction_id": null,
+    "lab_row_hash": null,
+    "official_decision_id": null
    }
   },
   {
@@ -15009,10 +13353,10 @@
    "home": "Marshall",
    "away": "South Alabama",
    "neutral_site": false,
-   "hours_to_kickoff": 72.37,
+   "hours_to_kickoff": 71.37,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401871092",
     "season": 2026,
     "week": 8,
@@ -15124,14 +13468,14 @@
        "availability certainty 30 < 60"
       ],
       "MARKET_DEGRADED": [
-       "market MISSING (MARKET_MISSING)"
+       "market DEGRADED (MARKET_DEGRADED)"
       ]
      }
     },
     "fallback_level": 2,
     "input_hash": "90ae1e55b5b388527a39ae9d4749a2f45f27db5d5d5783a14629c50ee6f7dfbb",
     "projection_hash": "bf81601265ea530428abae17f208da0c6f022aa6393f289b28afaed4fa8eb0d9",
-    "snapshot_id": "cfbcs_31bcb562e72fc920fcd1cfa2",
+    "snapshot_id": "cfbcs_bba6c95b9fcad50232bcd3ef",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -15148,9 +13492,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 0,
     "home_win_prob": 0.5,
-    "fair_total": 61.1,
+    "fair_total": 61.5,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
     "kickoff": "2026-10-20T23:30:00.000Z",
     "home": "Marshall",
     "away": "South Alabama",
@@ -15168,13 +13512,13 @@
     "source": "V2.1 canonical projection"
    },
    "market": {
-    "home_line": null,
-    "as_of": null,
-    "books": 0,
-    "stale": true,
-    "actionable_status": "MARKET_MISSING",
-    "gap": null,
-    "snapshot_ts": "2026-10-11T11:07:31.000Z"
+    "home_line": 3.5,
+    "as_of": "2026-10-17T21:07:39.000Z",
+    "books": 1,
+    "stale": false,
+    "actionable_status": "MARKET_DEGRADED",
+    "gap": 0.22,
+    "snapshot_ts": "2026-10-18T00:07:35.000Z"
    },
    "official_decision": {
     "status": "NO_DECISION",
@@ -15185,12 +13529,12 @@
     "status": "PASS",
     "engine_status": "PASS",
     "basis": "stage-8 engine.decide() rule of football/cfb_v2/engine.js: a RESEARCH status, not the governed decision policy (audit F-22)",
-    "stage8_ev_strength": null,
+    "stage8_ev_strength": 0,
     "stage8_ev_strength_note": "engine.decide() betting_edge_strength = uncalibrated EV / 10%: does not sort outcomes (Model Lab DOES_NOT_SORT; audit F-22); never shown as edge or quality",
-    "prediction_id": "cfbp_be6b98eac424618481b7ea00",
-    "checkpoint_type": "OPEN",
-    "prediction_ts": "2026-10-11T11:07:31.000Z",
-    "row_hash": "5b64470d2805942a6e4e532c98e1837e137b1092c70f04e3eec373f6c4f0a4f9",
+    "prediction_id": "cfbp_e5af6cdcf0face6679c456f6",
+    "checkpoint_type": "T72",
+    "prediction_ts": "2026-10-18T00:07:35.000Z",
+    "row_hash": "0dbc2024f8d710dc3115d1059066ee696564ae0d6e3d9581ed6b42582d080aed",
     "canonical_modes": [
      "NO_PLAYER_DATA",
      "MARKET_DEGRADED"
@@ -15210,8 +13554,8 @@
     "current_generated_at": "2026-10-17T10:48:03Z",
     "row_state": "PROVISIONAL",
     "row_prediction_ts": "2026-10-20T12:00:00Z",
-    "lab_prediction_id": "cfbp_be6b98eac424618481b7ea00",
-    "lab_row_hash": "5b64470d2805942a6e4e532c98e1837e137b1092c70f04e3eec373f6c4f0a4f9",
+    "lab_prediction_id": "cfbp_e5af6cdcf0face6679c456f6",
+    "lab_row_hash": "0dbc2024f8d710dc3115d1059066ee696564ae0d6e3d9581ed6b42582d080aed",
     "official_decision_id": null
    }
   },
@@ -15223,10 +13567,10 @@
    "home": "Louisiana Tech",
    "away": "Old Dominion",
    "neutral_site": false,
-   "hours_to_kickoff": 165.87,
+   "hours_to_kickoff": 164.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401871093",
     "season": 2026,
     "week": 8,
@@ -15351,7 +13695,7 @@
     "fallback_level": 2,
     "input_hash": "1137181d9f8948d9465fd24b4eb86bb96500ac0693dfbe78e997608bbcb9d71d",
     "projection_hash": "0ed8240ce189cba664f4512eff042c2cba3c7c9591eefbfbbd6a7429cdd4660a",
-    "snapshot_id": "cfbcs_1cee607795cc0d807e85b597",
+    "snapshot_id": "cfbcs_969ca6ac548f379eac79b571",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -15367,12 +13711,12 @@
    "v1": {
     "status": "PREDICTED",
     "model_version": "edgedesk_cfb_p4_v1.0.0",
-    "margin": 9.75,
-    "home_win_prob": 0.7475,
-    "fair_total": 50.5,
+    "margin": 10.77,
+    "home_win_prob": 0.7692,
+    "fair_total": 50.4,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T21:00:00.000Z",
     "home": "Louisiana Tech",
     "away": "Old Dominion",
     "week": 8,
@@ -15447,10 +13791,10 @@
    "home": "Troy",
    "away": "UL Monroe",
    "neutral_site": false,
-   "hours_to_kickoff": 164.87,
+   "hours_to_kickoff": 163.87,
    "canonical": {
     "schema": "cfb_canonical_projection_v1",
-    "as_of_ts": "2026-10-17T23:07:44.538Z",
+    "as_of_ts": "2026-10-18T00:07:44.552Z",
     "game_id": "401871094",
     "season": 2026,
     "week": 8,
@@ -15575,7 +13919,7 @@
     "fallback_level": 2,
     "input_hash": "97f8e044acbe007b2925d61ec4c71472b481bfbb88f3eb083f8cf0eb42886dfd",
     "projection_hash": "4edf7c5e92c6893123a94af1d67c5d8f27df0348efd8033452ac17c65ffd995c",
-    "snapshot_id": "cfbcs_6613c94490a3d580b642880a",
+    "snapshot_id": "cfbcs_74c78a8eb5d1a62212ea826e",
     "display": {
      "label": "Limited availability data",
      "notes": [
@@ -15593,10 +13937,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "margin": 21.6,
     "home_win_prob": 0.9301,
-    "fair_total": 53.8,
+    "fair_total": 54.2,
     "source": "football/fbs/slate.json",
-    "slate_generated_at": "2026-10-17T18:09:36.360Z",
-    "kickoff": "2026-10-24T04:00:00.000Z",
+    "slate_generated_at": "2026-10-17T23:13:58.606Z",
+    "kickoff": "2026-10-24T20:00:00.000Z",
     "home": "Troy",
     "away": "UL Monroe",
     "week": 8,

@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-17T23:07:48.844Z",
- "board_generated_at": "2026-10-17T23:07:45.802Z",
+ "generated_at": "2026-10-18T00:07:48.019Z",
+ "board_generated_at": "2026-10-18T00:07:45.321Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,46 +15,6 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
-  {
-   "game_id": "401858265",
-   "game": "Louisville @ Syracuse",
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Louisville −7.5",
-   "market": "Louisville −14.5",
-   "books": 1,
-   "gap": 6.8,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
-  {
-   "game_id": "401856831",
-   "game": "Oklahoma State @ Houston",
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Houston −11.0",
-   "market": "Houston −4.0",
-   "books": 1,
-   "gap": 6.9,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
   {
    "game_id": "401856833",
    "game": "Utah @ Colorado",
@@ -95,7 +55,7 @@
     {
      "requirement": "resolved QB",
      "result": "PASS",
-     "detail": "PASS: Colorado: Isaac Wilson (previous game) · PASS: Utah: Devon Dampier (previous game)"
+     "detail": "WARN: Colorado: starter unresolved (competition) · PASS: Utah: Devon Dampier (previous game)"
     },
     {
      "requirement": "no abnormal availability",
@@ -122,146 +82,80 @@
    "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
   },
   {
-   "game_id": "401856809",
-   "game": "Notre Dame @ BYU",
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Notre Dame −3.0",
-   "market": "Notre Dame −10.5",
-   "books": 1,
-   "gap": 7.3,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-17T23:30:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (LaVell Edwards Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 5 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 2.5 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: BYU: Bear Bachmeier (previous game) · PASS: Notre Dame: CJ Carr (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "FAIL",
-     "detail": "FAIL: Notre Dame: availability feed fetch failed — abnormal missing data"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: 1 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (1 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.1 pts on the market’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.1 — the extreme is not supported by how margins of this size have actually finished"
-    }
-   ],
-   "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail; football-only calibration preserves the major gap fail."
-  },
-  {
-   "game_id": "401858262",
-   "game": "Elon @ Stanford",
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Stanford −16.0",
-   "market": "Stanford −34.5",
-   "books": 1,
-   "gap": 18.6,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-17T23:30:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Stanford Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 3 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "FAIL",
-     "detail": "FAIL: an FCS opponent is priced from a pooled FCS rating, not its own"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Stanford: Davis Warren (previous game) · PASS: Elon: Brady Stober (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Stanford: availability sources checked, nothing filed · PASS: Elon: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "INCOMPLETE",
-     "detail": "INCOMPLETE: no independent ensemble number"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 20.5"
-    }
-   ],
-   "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; current team states fail; submodel support incomplete."
-  },
-  {
    "game_id": "401858271",
    "game": "Duke @ Virginia",
    "kickoff": "2026-10-23T23:00:00.000Z",
    "named": false,
-   "edgedesk": "Duke −1.5",
+   "edgedesk": "Duke −2.0",
    "market": "Virginia −6.5",
    "books": 0,
-   "gap": 7.9,
+   "gap": 8.7,
+   "gap_class": "MAJOR",
+   "favorite_flip": true,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+  },
+  {
+   "game_id": "401856732",
+   "game": "Ole Miss @ Texas",
+   "kickoff": "2026-10-24T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Ole Miss −2.0",
+   "market": "Texas −6.5",
+   "books": 0,
+   "gap": 8.3,
    "gap_class": "MAJOR",
    "favorite_flip": true,
    "research_status": "NO_MARKET",
