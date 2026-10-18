@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-18T20:07:57.741Z",
- "board_generated_at": "2026-10-18T20:07:50.595Z",
+ "generated_at": "2026-10-18T21:07:56.674Z",
+ "board_generated_at": "2026-10-18T21:07:49.446Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -26,8 +26,8 @@
    "gap": 8,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
@@ -79,7 +79,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401869845",
@@ -153,9 +153,9 @@
    "kickoff": "2026-10-24T23:30:00.000Z",
    "named": false,
    "edgedesk": "Ole Miss −6.0",
-   "market": "Texas −3.0",
+   "market": "Texas −3.5",
    "books": 1,
-   "gap": 8.9,
+   "gap": 9.4,
    "gap_class": "MAJOR",
    "favorite_flip": true,
    "research_status": "INVESTIGATE",
@@ -202,12 +202,12 @@
     {
      "requirement": "submodel support",
      "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (3 on the market’s side; 2 required) · FAIL: the independent ensemble is 2.4 pts on the market’s side (at least 3 on EdgeDesk’s side required) · FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (1 on the market’s side; 2 required) · FAIL: the independent ensemble is 1.9 pts on the market’s side (at least 3 on EdgeDesk’s side required) · FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 10"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 10.5"
     }
    ],
    "consistent": true,
