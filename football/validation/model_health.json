@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-18T21:07:49.446Z",
+ "as_of": "2026-10-18T21:50:13.559Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "94143c76a87aeaae",
+ "inputs_key": "553f2eb7a0133399",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 4250,
+   "rows": 4263,
    "mode": "LIVE",
-   "sha1": "853c96ac3ddf"
+   "sha1": "859cca095e46"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "c58e0453c214"
+   "sha1": "932f5d8d8d90"
   },
   {
    "file": "football/params.js",
@@ -52,7 +52,7 @@
   {
    "file": "football/validation/key_numbers.json",
    "mode": "DESCRIPTIVE (final margins)",
-   "sha1": "da731573195c"
+   "sha1": "0eebe41d0ef4"
   }
  ],
  "maturity": [
@@ -99,7 +99,7 @@
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "4250 decision snapshots issued before kickoff; 227 settled"
+   "note": "4263 decision snapshots issued before kickoff; 227 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,10 +133,10 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 4250,
+  "issued_snapshots": 4263,
   "issued_by_decision": {
    "NO_DECISION": 1767,
-   "PASS": 2295,
+   "PASS": 2308,
    "WATCH": 188
   },
   "graded_rows": 233,
@@ -15949,7 +15949,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-18T21:03:03.851Z",
+  "generated_at": "2026-10-18T21:36:29.085Z",
   "sports": {
    "nfl": {
     "versions": [
@@ -16128,10 +16128,10 @@
      },
      {
       "closing_expected_margin": -2.5,
-      "n": 244,
+      "n": 245,
       "learned_mean": -2.12,
-      "actual_mean": -1.11,
-      "gap": -1.01
+      "actual_mean": -1.13,
+      "gap": -0.99
      },
      {
       "closing_expected_margin": -2,
@@ -16910,19 +16910,19 @@
    "ranked": [
     {
      "margin": 3,
-     "mass": 0.15143
+     "mass": 0.15141
     },
     {
      "margin": 7,
-     "mass": 0.09059
+     "mass": 0.09071
     },
     {
      "margin": 6,
-     "mass": 0.06017
+     "mass": 0.06016
     },
     {
      "margin": 10,
-     "mass": 0.05487
+     "mass": 0.05486
     },
     {
      "margin": 4,
@@ -16930,15 +16930,15 @@
     },
     {
      "margin": 14,
-     "mass": 0.04862
+     "mass": 0.04861
     },
     {
      "margin": 1,
-     "mass": 0.04129
+     "mass": 0.04128
     },
     {
      "margin": 2,
-     "mass": 0.04061
+     "mass": 0.0406
     },
     {
      "margin": 8,
@@ -17007,7 +17007,7 @@
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
   },
   "n": {
-   "NFL": 7363,
+   "NFL": 7364,
    "CFB": 11502
   }
  },
