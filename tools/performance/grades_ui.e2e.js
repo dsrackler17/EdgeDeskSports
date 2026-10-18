@@ -4,8 +4,9 @@
    The research grade in a real Chromium, at a 390 px phone and a 1280 px
    desktop:
 
-     DASHBOARD  /performance/grades/ on the committed files (the honest
-                "Insufficient Historical Data" state), on a populated record
+     DASHBOARD  /performance/grades/ on a record with no settled grade (the
+                honest "Insufficient Historical Data" state), on the committed
+                files (whatever they hold, they render), on a populated record
                 built by the kernel from settled rows (charts, the grade table,
                 the ordering evidence, filters, hover and keyboard tooltips,
                 table views), and on a failed load (nothing stale is shown)
@@ -60,6 +61,17 @@ function populated() {
   return { summary: sum, games: { schema: 'edgedesk_research_grade_games_v1', rows } };
 }
 
+/* ------------------------------------------------- an empty record */
+/* The "Insufficient Historical Data" state, built by the same kernel from no
+   settled rows. It used to be read off the committed files, which stopped
+   being that state the day real grades settled (65 games by 2026-10-17). */
+function empty() {
+  const st = { research_grades: [], forecasts: [], grade_outcomes: [] };
+  const sum = GB.buildSummary(st, [], Date.parse('2026-10-16T00:00:00Z'), {});
+  sum.games = [];
+  return { summary: sum };
+}
+
 /* ------------------------------------------------- the live grade file */
 function liveFiles() {
   const cap = new Date(SF.NOW - 3600e3).toISOString();
@@ -92,6 +104,7 @@ function liveFiles() {
   const built = await SF.buildFixture({ now: SF.NOW - 10 * 60000 });
   const SLATE = built.snap;
   const POP = populated();
+  const EMPTY = empty();
   const LIVE = liveFiles();
   const M = { grades: 'committed', live: 'on' };
   const reads = [];
@@ -105,6 +118,7 @@ function liveFiles() {
     if (p === '/today/slate.json') return json(res, SLATE);
     if (/^\/performance\/data\/grades\//.test(p)) {
       if (M.grades === 'down') return json(res, '{}', 503);
+      if (M.grades === 'empty' && /summary\.json$/.test(p)) return json(res, EMPTY.summary);
       if (M.grades === 'populated') {
         if (/summary\.json$/.test(p)) return json(res, POP.summary);
         if (/all-2026\.json$/.test(p)) return json(res, POP.games);
@@ -163,13 +177,14 @@ function liveFiles() {
   const text = (page, sel) => page.$eval(sel, (e) => e.innerText).catch(() => '');
   const shot = async (page, name) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: true }); } };
   const PHONE = { width: 390, height: 844 }, DESK = { width: 1280, height: 900 };
-  /* the site's own fonts, analytics tag and anonymous visit counter (lib/edgedesk_public.js), as on /performance/; no other door */
-  const sameOrigin = (foreign) => foreign.every((u) => /fonts\.(googleapis|gstatic)\.com|googletagmanager\.com|\/rest\/v1\/rpc\/acq_track_visit$/.test(u));
+  /* the site's own fonts, analytics tag, anonymous visit counter (lib/edgedesk_public.js) and event tracker
+     (lib/edgedesk_track.js), as on /performance/; no other door */
+  const sameOrigin = (foreign) => foreign.every((u) => /fonts\.(googleapis|gstatic)\.com|googletagmanager\.com|\/rest\/v1\/rpc\/(acq_track_visit|ed_track)$/.test(u));
 
   try {
-    /* ── DASHBOARD: the committed files (insufficient data) ─────────────── */
+    /* ── DASHBOARD: no settled grade yet (insufficient data) ───────────── */
     for (const [label, vp] of [['phone', PHONE], ['desktop', DESK]]) {
-      M.grades = 'committed';
+      M.grades = 'empty';
       const { ctx, page, errors, foreign } = await open(vp, '/performance/grades/');
       await page.waitForFunction(() => !/Loading/.test((document.getElementById('gp-status') || {}).innerText || ''), null, { timeout: 15000 });
       await page.waitForSelector('#gp-cmp tbody tr', { timeout: 15000 });
@@ -244,7 +259,17 @@ function liveFiles() {
       chk('a failed load throws no page error', errors.length === 0, errors);
       await ctx.close();
     }
+
+    /* ── DASHBOARD: the committed files, whatever they hold ─────────────── */
     M.grades = 'committed';
+    {
+      const { ctx, page, errors } = await open(DESK, '/performance/grades/');
+      await page.waitForFunction(() => !/Loading/.test((document.getElementById('gp-status') || {}).innerText || ''), null, { timeout: 15000 });
+      const st = await text(page, '#gp-status');
+      chk('the committed record loads and says what it holds', !/could not load/.test(st) && /completed games|Insufficient Historical Data/.test(st), st);
+      chk('the committed record throws no page error', errors.length === 0, errors);
+      await ctx.close();
+    }
 
     /* ── TERMINAL: badges, the letter filter, the Grade Breakdown ───────── */
     for (const [label, vp] of [['phone', PHONE], ['desktop', DESK]]) {
