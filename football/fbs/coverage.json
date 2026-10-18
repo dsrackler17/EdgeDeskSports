@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-18T04:52:41.905Z",
+ "generated_at": "2026-10-18T09:43:55.118Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,31 +119,30 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 79,
+  "total": 58,
   "by_group": {
-   "p4": 39,
-   "other": 40,
-   "independent": 2
+   "other": 31,
+   "p4": 27,
+   "independent": 1
   },
   "by_matchup": {
-   "conference": 75,
-   "non_conference": 3,
-   "fbs_fcs": 1
+   "conference": 57,
+   "non_conference": 1
   },
   "by_conference": {
-   "sec": 8,
-   "big12": 12,
-   "acc": 11,
-   "american": 7,
-   "mac": 9,
-   "mwc": 7,
-   "sunbelt": 8,
-   "independents": 2,
-   "bigten": 8,
-   "pac12": 4,
-   "cusa": 6
+   "cusa": 6,
+   "sunbelt": 6,
+   "american": 5,
+   "acc": 7,
+   "independents": 1,
+   "mac": 7,
+   "mwc": 4,
+   "big12": 8,
+   "bigten": 6,
+   "sec": 6,
+   "pac12": 3
   },
-  "fbs_fcs_in_source": 1
+  "fbs_fcs_in_source": 0
  },
  "ok": true,
  "lookahead_days": 10,
@@ -198,22 +197,25 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 79
+  "PREDICTED": 58
  },
  "weather": {
-  "requested": 76,
-  "answered": 76,
-  "dome": 3,
+  "requested": 58,
+  "answered": 5,
+  "dome": 0,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 53,
+  "carried": 53,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 429": 3,
+   "host circuit open: HTTP 429 x3": 50
+  },
   "host": "api.open-meteo.com",
-  "summary": "76 of 76 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "5 of 58 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 53 request(s) failed; 53 carried the last observed forecast forward at its real age (HTTP 429 x3, host circuit open: HTTP 429 x3 x50)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 79
+  "NO_MARKET": 58
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -282,12 +284,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 40,
-    "total": 79,
+    "non_power_games": 31,
+    "total": 58,
     "example": [
-     "Kent State @ South Florida",
-     "Nevada @ North Dakota State",
-     "Arkansas State @ Southern Miss"
+     "Middle Tennessee @ Florida International",
+     "Missouri State @ Delaware",
+     "South Alabama @ Marshall"
     ]
    }
   },
@@ -302,7 +304,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 75,
+    "conference_games": 57,
     "wrong": 0
    }
   },
@@ -310,8 +312,8 @@
    "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
    "ok": true,
    "detail": {
-    "fbs_fcs_games": 1,
-    "fbs_fcs_in_source": 1,
+    "fbs_fcs_games": 0,
+    "fbs_fcs_in_source": 0,
     "dropped": [],
     "graded": []
    }
@@ -336,8 +338,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 79,
-    "audit_total": 79
+    "slate": 58,
+    "audit_total": 58
    }
   },
   {
