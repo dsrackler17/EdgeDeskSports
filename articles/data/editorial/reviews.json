@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-18T06:10:39.898Z",
+  "generated_at": "2026-10-18T06:20:40.651Z",
   "open": 13,
   "count": 13,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -593,6 +593,46 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:QB:advantage",
+      "sport": "CFB",
+      "category": "QB",
+      "question": "Does EdgeDesk’s QB handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-18T02:50:38.414Z",
+      "updated_at": "2026-10-18T06:20:40.651Z",
+      "evidence": [
+        {
+          "lesson_id": "401858494:contradicted:QB",
+          "game_id": "401858494",
+          "season": 2026,
+          "week": 7,
+          "team": "Wisconsin",
+          "expectation": "Wisconsin holds the largest measured edge in this matchup: Wisconsin 61.1 (#24 of 138) vs UCLA 51.5 (#134 of 138) — 110 places on the national board.",
+          "result": "Wisconsin Badgers 4.13 yards per pass attempt against UCLA Bruins 7.77.",
+          "severity": "high",
+          "at": "2026-10-18T02:50:38.414Z"
+        },
+        {
+          "lesson_id": "401856833:contradicted:QB",
+          "game_id": "401856833",
+          "season": 2026,
+          "week": 7,
+          "team": "Utah",
+          "expectation": "Utah holds the largest measured edge in this matchup: Utah 63.1 (#9 of 138) vs Colorado 53.7 (#121 of 138) — 112 places on the national board.",
+          "result": "Utah Utes 6.78 yards per pass attempt against Colorado Buffaloes 8.26.",
+          "severity": "high",
+          "at": "2026-10-18T06:20:40.651Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "CFB:passing:advantage",
       "sport": "CFB",
       "category": "passing",
@@ -611,35 +651,6 @@
           "result": "USC Trojans 7.76 yards per pass attempt against Oregon Ducks 10.46; USC Trojans 326 net passing yards against Oregon Ducks 366.",
           "severity": "high",
           "at": "2026-09-27T03:30:36.660Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "CFB:QB:advantage",
-      "sport": "CFB",
-      "category": "QB",
-      "question": "Does EdgeDesk’s QB handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-18T02:50:38.414Z",
-      "updated_at": "2026-10-18T02:50:38.414Z",
-      "evidence": [
-        {
-          "lesson_id": "401858494:contradicted:QB",
-          "game_id": "401858494",
-          "season": 2026,
-          "week": 7,
-          "team": "Wisconsin",
-          "expectation": "Wisconsin holds the largest measured edge in this matchup: Wisconsin 61.1 (#24 of 138) vs UCLA 51.5 (#134 of 138) — 110 places on the national board.",
-          "result": "Wisconsin Badgers 4.13 yards per pass attempt against UCLA Bruins 7.77.",
-          "severity": "high",
-          "at": "2026-10-18T02:50:38.414Z"
         }
       ],
       "occurrences": 1,
