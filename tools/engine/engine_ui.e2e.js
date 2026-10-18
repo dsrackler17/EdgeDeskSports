@@ -58,7 +58,13 @@ const TODAY = (() => {
       home: Object.assign({}, tpl.home, { name: g.home, short: g.home, abbr: g.home, score: null }), away: Object.assign({}, tpl.away, { name: g.away, short: g.away, abbr: g.away, score: null }),
       research: { module: 'nhl', entity: String(g.game_id), model: null, metrics: true, read: null, signal: null, article: null } }));
     const [h, a] = i === 0 ? price(g.prices.moneyline.home, 1.06, 0.045) : price(g.prices.moneyline.home, 1 / 1.0225, 0.045);
-    T.markets[id] = { book: 'Draft Kings', source: 'espn_scoreboard', captured_at: cap, moneyline: { home: h, away: a }, total: { point: g.prices.total.fair_line, over: -110, under: -110 }, partial: ['puck line not priced on both sides'] };
+    /* the second game's total gets the same 4.5% margin around EdgeDesk's own
+       over/under split at its fair line, so nothing pays whatever that line's
+       fair price is (a flat -110 pays whenever the fair over is shorter) */
+    const tl = g.prices.total.lines && g.prices.total.lines[String(g.prices.total.fair_line)];
+    const qo = tl && tl.over + tl.under > 0 ? tl.over / (tl.over + tl.under) : 0.5;
+    const [ov, un] = i === 0 ? [-110, -110] : price(qo, 1 / 1.0225, 0.045);
+    T.markets[id] = { book: 'Draft Kings', source: 'espn_scoreboard', captured_at: cap, moneyline: { home: h, away: a }, total: { point: g.prices.total.fair_line, over: ov, under: un }, partial: ['puck line not priced on both sides'] };
   });
   return T;
 })();
