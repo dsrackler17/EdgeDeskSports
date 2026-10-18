@@ -276,7 +276,13 @@ if (require.main === module) {
       chk(S.name + ': sample-size labels print beside the metrics, as each sample earns them', want.every((l) => ssOf(perf).indexOf(l) >= 0) && okWords(ssOf(perf))
         && (!want.length || ssOf(sectionOf(h, 'comparison')).length > 0) && okWords(ssOf(sectionOf(h, 'comparison'))),
         { want, performance: ssOf(perf), comparison: ssOf(sectionOf(h, 'comparison')) });
-      chk(S.name + ': the six promotion gates render with their decision', ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'].every((g) => sectionOf(h, 'comparison').indexOf('<b>' + g + '</b>') >= 0) && /INSUFFICIENT SAMPLE/.test(h) && /Eligibility never changes the champion/.test(h));
+      /* each evaluation's own decision (lab_core promotionEval). This asserted
+         INSUFFICIENT SAMPLE outright, which expired when the common official
+         set passed its 150 games (173 by 2026-10-18) and the real lab
+         correctly read NOT ELIGIBLE. */
+      const decisions = (((S.lab.comparison || {}).promotion || {}).evaluations || []).map((e) => String(e.decision || '').replace(/_/g, ' ')).filter(Boolean);
+      chk(S.name + ': the six promotion gates render with their decision', ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'].every((g) => sectionOf(h, 'comparison').indexOf('<b>' + g + '</b>') >= 0)
+        && decisions.length > 0 && decisions.every((d) => sectionOf(h, 'comparison').indexOf(d) >= 0) && /Eligibility never changes the champion/.test(h), decisions);
       chk(S.name + ': drift alerts are said never to act', /never retrain, re-weight, re-calibrate or promote anything/.test(sectionOf(h, 'health')));
       const rc = sectionOf(h, 'reconstructed');
       const rbm = (S.lab.reconstructed || {}).by_model || {};
