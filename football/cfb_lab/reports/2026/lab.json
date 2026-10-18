@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-18T01:07:35.000Z",
+ "generated_at": "2026-10-18T01:30:28.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,17 +46,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1442,
-    "latest_snapshot_at": "2026-10-18T01:07:35.000Z",
-    "upcoming_games": 63,
-    "avg_confidence_upcoming": 76.6
+    "snapshots": 1447,
+    "latest_snapshot_at": "2026-10-18T01:30:28.000Z",
+    "upcoming_games": 64,
+    "avg_confidence_upcoming": 76.5
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1739,
-    "latest_snapshot_at": "2026-10-18T01:07:35.000Z",
+    "snapshots": 1743,
+    "latest_snapshot_at": "2026-10-18T01:30:28.000Z",
     "upcoming_games": 62,
     "avg_confidence_upcoming": 75.4
    },
@@ -64,17 +64,17 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1739,
-    "latest_snapshot_at": "2026-10-18T01:07:35.000Z",
+    "snapshots": 1743,
+    "latest_snapshot_at": "2026-10-18T01:30:28.000Z",
     "upcoming_games": 62,
     "avg_confidence_upcoming": 75.4
    }
   ],
   "data_quality": {
-   "games": 63,
+   "games": 64,
    "counts": {
     "GREEN": 8,
-    "YELLOW": 55,
+    "YELLOW": 56,
     "RED": 0
    },
    "by_check": {
@@ -83,7 +83,7 @@
      "RED": 0
     },
     "odds_freshness": {
-     "YELLOW": 54,
+     "YELLOW": 55,
      "RED": 0
     }
    },
@@ -802,11 +802,24 @@
      ],
      "kickoff": "2026-10-27T23:00:00.000Z",
      "matchup": "Delaware @ Western Kentucky"
+    },
+    {
+     "game_id": "401871072",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-28T00:00:00.000Z",
+     "matchup": "Sam Houston @ Missouri State"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-18T01:07:35.000Z",
-    "quotes_total": 18894,
+    "last_quote_at": "2026-10-18T01:30:28.000Z",
+    "quotes_total": 18897,
     "last_result_at": "2026-10-18T00:07:35.000Z"
    }
   },
@@ -840,9 +853,9 @@
    }
   ],
   "ledger": {
-   "predictions": 5430,
-   "live_predictions": 4920,
-   "quotes": 18894,
+   "predictions": 5443,
+   "live_predictions": 4933,
+   "quotes": 18897,
    "lines": 3257,
    "results": 439,
    "evaluations": 4713,
@@ -956,10 +969,10 @@
    "models": {
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -15.15,
      "fair": "Utah -15.0",
      "p_home": 0.1701,
@@ -979,10 +992,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -15.17,
      "fair": "Utah -15.0",
      "p_home": 0.1685,
@@ -1002,15 +1015,15 @@
     },
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -22.96,
      "fair": "Utah -23.0",
      "p_home": 0.0583,
      "sigma": 14.632,
-     "conf": 93,
+     "conf": 92,
      "dq": "GREEN",
      "decision": "LEAN",
      "status": "LEAN",
@@ -1041,10 +1054,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -10.89,
      "fair": "Fresno State -11.0",
      "p_home": 0.2284,
@@ -1061,10 +1074,10 @@
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -10.96,
      "fair": "Fresno State -11.0",
      "p_home": 0.2418,
@@ -1083,10 +1096,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -10.74,
      "fair": "Fresno State -10.5",
      "p_home": 0.2446,
@@ -1124,10 +1137,10 @@
    "models": {
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -17.76,
      "fair": "New Mexico -18.0",
      "p_home": 0.1304,
@@ -1148,10 +1161,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -17.32,
      "fair": "New Mexico -17.5",
      "p_home": 0.1354,
@@ -1172,10 +1185,10 @@
     },
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -19.19,
      "fair": "New Mexico -19.0",
      "p_home": 0.0949,
@@ -1211,10 +1224,10 @@
    "models": {
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -15.34,
      "fair": "Wake Forest -15.5",
      "p_home": 0.168,
@@ -1234,10 +1247,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
      "margin": -14.45,
      "fair": "Wake Forest -14.5",
      "p_home": 0.1817,
@@ -1257,20 +1270,20 @@
     },
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-18T01:07:35.000Z",
-     "margin": -13.47,
-     "fair": "Wake Forest -13.5",
-     "p_home": 0.1787,
-     "sigma": 14.636,
-     "conf": 95,
+     "prediction_ts": "2026-10-18T01:30:28.000Z",
+     "margin": -12.88,
+     "fair": "Wake Forest -13.0",
+     "p_home": 0.1893,
+     "sigma": 14.628,
+     "conf": 96,
      "dq": "GREEN",
      "decision": "LEAN",
      "status": "LEAN",
      "side": "AWAY",
-     "gap": -3.47,
+     "gap": -2.88,
      "line": -10,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
@@ -10589,7 +10602,7 @@
   "data_fault": 0,
   "market_fault": 24,
   "verification_not_run": 0,
-  "average_raw_gap": 3.88,
+  "average_raw_gap": 3.876,
   "average_raw_gap_7plus": 10.214,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
