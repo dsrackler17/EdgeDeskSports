@@ -397,8 +397,19 @@ section('9. THE HUBS — a publication front page, filterable and crawlable');
   has(nfl, '<link rel="canonical" href="' + MODEL.SITE + '/articles/nfl/">', 'the NFL hub canonicalises to itself');
   has(cfb, '"@type": "BreadcrumbList"', 'a sport hub carries its breadcrumb trail');
   has(cfb, 'aria-label="Breadcrumb"', 'and shows it');
-  chk('the hub is lighter than it was: each card graphic is drawn once, not in every ordering',
-    Buffer.byteLength(hub) < 450 * 1024, Math.round(Buffer.byteLength(hub) / 1024) + ' KB');
+  /* The invariant is asserted directly, not through a fixed byte total: a
+     450 KB cap began failing at 61 cards with every graphic drawn exactly
+     once, purely because the archive grew, and the editorial run that gates
+     on this suite stopped publishing. The weight budget scales per card. */
+  const hubLists = hub.split('<div class="a-list ').slice(1);
+  const imgsIn = s => (s.match(/<img class="a-cardimg"/g) || []).length;
+  const hubCards = hubLists.length ? (hubLists[0].match(/<article class="a-cardart"/g) || []).length : 0;
+  chk('each card graphic is drawn once, on the visible list, not in every ordering',
+    hubLists.length > 1 && hubLists.slice(1).every(l => imgsIn(l) === 0) && imgsIn(hubLists[0]) <= hubCards,
+    hubLists.map(l => imgsIn(l)).join('/') + ' graphics per list');
+  chk('the hub stays light per card',
+    Buffer.byteLength(hub) < (48 + 12 * hubCards) * 1024,
+    Math.round(Buffer.byteLength(hub) / 1024) + ' KB for ' + hubCards + ' cards');
   chk('a sport hub is written even before anything is published in it',
     fs.existsSync(path.join(ROOT, 'articles', 'nfl', 'index.html')));
   /* the sort control must not be the only way to reach an article */
