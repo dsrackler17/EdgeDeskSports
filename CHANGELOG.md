@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-18 — CFB calibration: the season audited, every fix tested walk-forward, a home-field correction kept in shadow
+
+**No published CFB number changes.** The research and diagnostic report is `docs/cfb-calibration/README.md`; every table is in `football/cfb_p4/research/report/LIVE_CALIBRATION.md`.
+
+- **The season (410 graded games, weeks 2–7) does not show broad overconfidence.**
+  - The 90%+ picks won 92.1% against 95.7% predicted (n 76, inside the interval).
+  - FBS-vs-FBS margins are not too spread out: the slope of actual on predicted is 0.96 (se 0.06).
+  - Refitting sigma barely moves Brier (0.1655 → 0.1653).
+- **Two systematic errors were measured.**
+  - Home field is applied inconsistently. Ratings learn against 3.2 points, projections add 4.082, and outcomes since 2015 fit about 2.6. The model leans 1.9 points to the home side against the close, and does so every week.
+  - FBS-vs-FCS games price every FCS opponent at one floor, so predicted 21+ favourites beat the model by 8.6 points.
+- **Disagreement with the line observed at publication has no measurable value for results** (slope 0.09, se 0.28).
+- **Every fix was tested walk-forward on 250 unseen games.** Options were global shrinkage, a publish-time market blend (with w by disagreement and by margin size), a sigma refit, probit-Platt, isotonic and a 95% cap, each fitted only on games final before each pick was published.
+  - No option's Brier interval excludes zero, except isotonic's, which is significantly worse.
+  - The blend's fitted model weight is about 0.1, so it publishes the sportsbook line.
+- **The pre-registered home-field correction is the best candidate, and it ships in shadow.**
+  - `cfb_margin_cal_v1`, fitted on 2015–2025 only: Brier −0.0015, log loss −0.006, better in 3 of 4 weeks.
+  - Every slate row now carries `calibration_shadow` (margin, sigma, win probability from one equation) and `model_version`.
+  - It needs about 3,150 unseen games to confirm an effect this size, so it stays unpromoted.
+- **Promotion is versioned and switched by a person.**
+  - It requires `promote: true` in `football/cfb_p4/live_calibration_config.json` AND a VALIDATED record from `npm run cfb:livecal:write`.
+  - New projections would then carry `edgedesk_cfb_p4_v1.1.0`. Published picks and grades are never rewritten.
+  - The pricing-path change is declared as `edgedesk_cfb_r1+p8`. A side-by-side slate build gave identical numbers on all 59 games.
+- **Tests:** `npm run cfb:livecal:test` (also in the new CFB live calibration tests workflow).
+
 ## 2026-10-18 — Discord: the model's daily results also post in #clv-results
 
 **Each morning's results post (how EdgeDesk's pregame numbers did yesterday, every game) now also goes to #clv-results**, one post per sport, next to the weekly CLV scorecard. It uses the existing `DISCORD_WEBHOOK_CLV_RESULTS` webhook, so no new secret is needed.

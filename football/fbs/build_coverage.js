@@ -335,6 +335,19 @@ function shadowEffect(base, sh, asm) {
 function isFiniteNum(v) { return typeof v === 'number' && isFinite(v); }
 function r2n(v, scale) { return isFiniteNum(v) ? Math.round(v * scale) / scale : null; }
 
+/* The engine's live-calibration block, as the slate publishes it. */
+function calibrationShadow(p) {
+  const c = p && p.status === 'PREDICTED' && p.model ? p.model.live_calibration : null;
+  if (!c) return null;
+  return {
+    version: c.version, candidate: c.candidate, status: c.status, promoted: c.promoted === true,
+    home_margin: r2n(c.margin, 100), home_line: r2n(isFiniteNum(c.margin) ? -c.margin : null, 100),
+    adjustment: r2n(c.adjustment, 100), sigma: r2n(c.sigma, 1000),
+    home_win_prob: r2n(c.home_win_prob, 10000), capped: c.capped === true,
+    projected_home: r2n(c.projected_home, 10), projected_away: r2n(c.projected_away, 10)
+  };
+}
+
 /* ------------------------------------------------------------- the checks */
 function run(report, name, detail, ok) {
   report.checks.push({ name, ok: !!ok, detail });
@@ -901,6 +914,18 @@ async function main() {
         ? CONF.outcomeLabel(p.model.home_win_prob).text : null,
       model_away_win_text: (p && p.status === 'PREDICTED' && isFiniteNum(p.model.home_win_prob))
         ? CONF.outcomeLabel(1 - p.model.home_win_prob).text : null,
+      /* WHICH MODEL PRODUCED THIS NUMBER: the engine's effective version. It
+         is the params version while the live calibration is a shadow and the
+         calibrated version once a person promotes it. The football record
+         keys every new pick by this field, which is how the performance page
+         shows the moment the model changed. Nothing already published is
+         rewritten. */
+      model_version: (p && p.status === 'PREDICTED') ? (p.model_version || null) : null,
+      /* THE LIVE CALIBRATION IN SHADOW (football/cfb_p4/live_calibration.js):
+         the candidate's margin, sigma and win probability from one equation,
+         published beside the priced number so its own pregame record exists
+         in this artifact's history. Priced nowhere while `promoted` is false. */
+      calibration_shadow: calibrationShadow(p),
       data_completeness: (unc && unc.information_missing != null) ? Math.round((1 - unc.information_missing) * 1000) / 1000 : null,
       /* THE CONTRACT, IN THE SEVEN STATES THAT ARE NOT THE SAME THING. The
          engine's own `data_completeness` is its internal probe count and is
@@ -961,8 +986,10 @@ async function main() {
       home_qb_epa: qbEpaCard('home'),
       away_qb_epa: qbEpaCard('away'),
       /* the unvalidated experiment, kept apart from the priced number and
-         never published as one */
-      shadow_model_version: sh && sh.status === 'PREDICTED' ? 'edgedesk_cfb_p4_v1.0.0+starter_context_v1' : null,
+         never published as one. Its base is the engine's effective version,
+         so a promoted live calibration reaches the performance ledger
+         (lib/edgedesk_projections.js keys the CFB model id on this field) */
+      shadow_model_version: sh && sh.status === 'PREDICTED' ? (sh.model_version || P.model_version) + '+starter_context_v1' : null,
       shadow_home_line: r2n((sh && sh.status === 'PREDICTED' && isFiniteNum(sh.model.fair_spread)) ? -sh.model.fair_spread : null, 100),
       shadow_fair_total: r2n(sh && sh.status === 'PREDICTED' ? sh.model.fair_total : null, 10),
       shadow_delta_vs_model: (sh && sh.status === 'PREDICTED' && p && p.status === 'PREDICTED'

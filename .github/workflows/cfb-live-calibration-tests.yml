@@ -1,0 +1,56 @@
+# EdgeDesk CFB live calibration — run its suites on the pull request.
+#
+# The live calibration publishes a SHADOW margin, sigma and win probability
+# beside every CFB projection and replaces the priced number only when its
+# generated file says promoted (a person's switch AND a walk-forward record
+# that passed the rule). A change that lets it move a published number without
+# that, breaks the margin/probability consistency, flips the sign convention
+# of a market input or lets a fit read a close or a later result has to fail
+# on the PR that makes it.
+#
+# Offline: every suite reads committed files (the graded record and the quote
+# ledgers); nothing is fetched and nothing is written.
+name: CFB live calibration tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/cfb_p4/engine.js'
+      - 'football/cfb_p4/params.js'
+      - 'football/cfb_p4/live_calibration.js'
+      - 'football/cfb_p4/live_calibration_config.json'
+      - 'football/cfb_p4/live_calibration.test.js'
+      - 'football/cfb_p4/research/live_calibration.js'
+      - 'football/fbs/build_coverage.js'
+      - '.github/workflows/cfb-live-calibration-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/cfb_p4/live_calibration.js'
+      - 'football/cfb_p4/live_calibration_config.json'
+      - 'football/cfb_p4/research/live_calibration.js'
+      - '.github/workflows/cfb-live-calibration-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-live-calibration-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Shadow, consistency, promotion, sign convention, no leakage, the switch
+        run: node football/cfb_p4/live_calibration.test.js
+      - name: V1 still prices exactly as before (the live calibration is a shadow)
+        run: node football/cfb_p4/tests.js
+      - name: The walk-forward still runs on the committed record (report only, writes nothing)
+        run: node football/cfb_p4/research/live_calibration.js
