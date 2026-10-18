@@ -21,8 +21,8 @@
   "game_time": "2026-10-18T03:00:00.000Z",
   "game_when_label": "2026-10-18 03:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-18T02:30:42.041Z",
-  "generated_at": "2026-10-18T02:30:42.041Z",
+  "updated_at": "2026-10-18T02:40:52.518Z",
+  "generated_at": "2026-10-18T02:40:52.518Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/nebraska-vs-oregon-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "manual_review",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1925,13 +1925,13 @@
   "snapshot_id": "snap_6b66286322c877f6",
   "publication_snapshot_id": "snap_6b66286322c877f6",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-18T03:00:00.000Z",
-    "minutes_before_kickoff": 29,
+    "minutes_before_kickoff": 19,
     "published_at": null,
-    "refreshed": true,
-    "at": "2026-10-18T02:30:42.041Z"
+    "refreshed": false,
+    "at": "2026-10-18T02:40:52.518Z"
   },
   "featured": {
     "editorial_priority": 58.6,
@@ -2240,20 +2240,14 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-18T02:30:42.041Z"
+    "at": "2026-10-18T02:40:52.518Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-18T02:30:42.041Z",
-    "blocking": [
-      {
-        "id": "evidence_inputs_suspect",
-        "why": "EdgeDesk’s own inputs for this game are suspect, so a person reviews the page before it goes out",
-        "detail": "DATA_FAULT"
-      }
-    ],
+    "at": "2026-10-18T02:40:52.518Z",
+    "blocking": [],
     "warnings": [],
-    "hold_reason": "evidence_inputs_suspect"
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
@@ -2358,99 +2352,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-18T02:30:42.041Z"
-  },
-  "freshness": {
-    "at": "2026-10-18T02:30:42.041Z",
-    "fields": {
-      "market.line": {
-        "value": "Oregon −12.5",
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 58.5,
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at DraftKings",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-18T02:40:52.518Z"
   }
 }
