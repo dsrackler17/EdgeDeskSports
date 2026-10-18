@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-18T18:53:56.205Z",
- "board_generated_at": "2026-10-18T18:53:49.038Z",
+ "generated_at": "2026-10-18T19:07:58.609Z",
+ "board_generated_at": "2026-10-18T19:07:52.275Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -153,9 +153,9 @@
    "kickoff": "2026-10-24T20:00:00.000Z",
    "named": false,
    "edgedesk": "Ohio −18.5",
-   "market": "Ohio −9.5",
+   "market": "Ohio −10.0",
    "books": 1,
-   "gap": 9,
+   "gap": 8.5,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -197,17 +197,17 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (2.8 pts) lifts the gap over 7: without it the gap is 6.2 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (2.8 pts) lifts the gap over 7: without it the gap is 5.7 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.9 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.4 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7 — the extreme is not supported by how margins of this size have actually finished"
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.5 — the extreme is not supported by how margins of this size have actually finished"
     }
    ],
    "consistent": true,
