@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Houston vs. Utah: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Houston vs. Utah 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Houston at Utah: Utah −8.5, fair total 55.0. Utah wins 72% of simulations. Data confidence 85%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Houston at Utah: Utah −8.5, fair total 55.0. Utah wins 72% of simulations. Data confidence 85%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Utah carries the stronger underlying team rating — +10.1 against +5.0, a 5.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Utah −8.5 before any sportsbook number is consulted, with Utah winning 72% of simulations.",
   "home_team": "Utah",
   "away_team": "Houston",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-25T02:15:00.000Z",
   "game_when_label": "2026-10-25 02:15 UTC",
   "published_at": null,
-  "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "updated_at": "2026-10-19T23:02:06.396Z",
+  "generated_at": "2026-10-19T23:02:06.396Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "RESEARCH",
+  "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
   "confidence": 85,
   "priced": true,
   "fair_spread_text": "Utah −8.5",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-19. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-09-03, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -164,8 +164,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -252,7 +252,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T23:30:00.000Z",
-        "retrieved_at": "2026-10-19T17:23:44.343Z"
+        "retrieved_at": "2026-10-19T22:56:03.518Z"
       },
       "home": {
         "team": "Utah",
@@ -330,9 +330,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-18T02:15:00.000Z",
-        "retrieved_at": "2026-10-19T17:23:44.343Z"
+        "retrieved_at": "2026-10-19T22:56:03.518Z"
       },
-      "generated_at": "2026-10-19T17:24:40.287Z",
+      "generated_at": "2026-10-19T22:56:02.456Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1441,6 +1441,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 1107h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Houston — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1473,18 +1479,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "REGIME CHANGE (Utah): REGIME CHANGE: new head coach; transfers out at the 79th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played.",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         }
       ],
@@ -1541,11 +1535,31 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Utah −8.5",
       "model_raw": "Utah -8.5",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Utah −6.5",
+      "rounding_note": null,
+      "key_number": {
+        "text": "Market is below 7; model is above 7.",
+        "detail": "Utah: market −6.5, model fair −8.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
+      "difference": "2.0 points",
+      "difference_n": 2,
+      "difference_exact": 1.98999778273628,
+      "total_model": "55.0",
+      "total_model_raw": "55.1",
+      "total_market": "50.5",
+      "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "total_market_held": null,
+      "book": "captured consensus (stale) · 1 book · best at DraftKings",
+      "captured": "2026-09-03T19:41:25.624+00:00",
+      "capture_age": "1107 hours old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1557,9 +1571,9 @@
       "engine_status": "PREDICTED",
       "label": {
         "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1572,8 +1586,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 2,
+        "toward_team": "Utah",
+        "text": "2.0 pts toward Utah",
+        "market_line_text": "Utah −6.5",
+        "market_home_margin": 6.5,
+        "favorite_differs": false,
+        "source": "captured consensus (stale) · 1 book · best at DraftKings",
+        "as_of": "2026-09-03T19:41:25.624+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 85,
@@ -1584,7 +1608,7 @@
         "pct": 89,
         "tier": "STRONG",
         "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Utah or Houston’s starting QB can play",
+        "sub": "main deduction: Houston’s availability report is not due yet",
         "score": 89,
         "grade": "STRONG",
         "grade_label": "STRONG",
@@ -1617,7 +1641,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1627,22 +1651,9 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Utah or Houston’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
-        "next_actions": [
-          {
-            "action": "Capture a market quote",
-            "potential_gain": 2,
-            "text": "up to +2 once re-read availability inside the filing window (Utah) and Re-read availability inside the filing window (Houston) is done"
-          },
-          {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Utah) and Re-read availability inside the filing window (Houston) is done"
-          }
-        ],
+        "main_deduction": "Houston’s availability report is not due yet; the impact of Houston’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
+        "next_actions": [],
         "stability": {
           "tier": "VERY_STABLE",
           "sd": 1.36,
@@ -1677,7 +1688,7 @@
       },
       "best_available_line": {
         "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "NOT_COMPARED",
@@ -1726,8 +1737,8 @@
     },
     "headline": "EdgeDesk projects Utah 32, Houston 23.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1885,7 +1896,7 @@
       "EdgeDesk’s line is Utah −8.5 on a neutral read of the two teams, before any book is consulted. Projected total 55.0.",
       "Utah wins 72% of the time in EdgeDesk’s simulation, Houston 28%.",
       "Eight games in ten land between -13.5 and +28.5 for Utah. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Utah −6.5 at captured consensus (stale) · 1 book · best at DraftKings, 2.0 points from EdgeDesk’s number.",
       "Houston quarterback: Conner Weigman — started the last game; no announcement for this one.",
       "Utah quarterback: Devon Dampier — started the last game; no announcement for this one."
     ],
@@ -1899,7 +1910,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "10u31qx19hgfy3",
+    "packet_hash": "5llwuyowux4o",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Utah win at the line of scrimmage?",
@@ -1966,7 +1977,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-19T17:24:47.861Z",
+        "observed_at": "2026-10-19T22:56:22.585Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1982,6 +1993,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-19T23:02:06.396Z"
   }
 }
