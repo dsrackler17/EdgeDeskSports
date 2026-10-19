@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-18T23:58:32.282Z",
+ "generated_at": "2026-10-19T02:01:31.477Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,18 +119,18 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 59,
+  "total": 60,
   "by_group": {
-   "other": 32,
+   "other": 33,
    "p4": 27,
    "independent": 1
   },
   "by_matchup": {
-   "conference": 58,
+   "conference": 59,
    "non_conference": 1
   },
   "by_conference": {
-   "cusa": 7,
+   "cusa": 8,
    "sunbelt": 6,
    "american": 5,
    "acc": 7,
@@ -148,7 +148,12 @@
  "lookahead_days": 10,
  "absorbed_games": 510,
  "engine": {
-  "model_version": "edgedesk_cfb_p4_v1.0.0",
+  "model_version": "edgedesk_cfb_p4_v1.0.1",
+  "home_field": {
+   "version": "cfb_hfa_unified_v1",
+   "hfa": 2.8,
+   "model_version": "edgedesk_cfb_p4_v1.0.1"
+  },
   "trained_through": 2025,
   "rating_backbone": {
    "source": "edgedesk_national_rankings_v1",
@@ -195,22 +200,24 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 59
+  "PREDICTED": 60
  },
  "weather": {
-  "requested": 59,
+  "requested": 60,
   "answered": 59,
   "dome": 0,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 1,
+  "carried": 1,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 429": 1
+  },
   "host": "api.open-meteo.com",
-  "summary": "59 of 59 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "59 of 60 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (HTTP 429 x1)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 59
+  "NO_MARKET": 60
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -279,8 +286,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 32,
-    "total": 59,
+    "non_power_games": 33,
+    "total": 60,
     "example": [
      "Middle Tennessee @ Florida International",
      "Missouri State @ Delaware",
@@ -299,7 +306,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 58,
+    "conference_games": 59,
     "wrong": 0
    }
   },
@@ -333,8 +340,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 59,
-    "audit_total": 59
+    "slate": 60,
+    "audit_total": 60
    }
   },
   {

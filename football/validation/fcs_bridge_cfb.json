@@ -1,58 +1,58 @@
 {
  "schema": "edgedesk_fcs_bridge_validation_v1",
  "season": 2026,
- "generated_at": "2026-10-18T23:58:26.228Z",
+ "generated_at": "2026-10-19T02:01:25.833Z",
  "method": "walk-forward over every completed 2026 FBS-vs-FCS game: the FCS side rated from the 2025 fit carried forward and only the 2026 results before kickoff; the FBS side at the rating EdgeDesk priced it at before the game (engine replay). Errors are against the final margin, capped at the engine’s own ±35 (and uncapped beside it).",
  "n": 122,
  "capped": {
   "floor": {
    "n": 122,
    "mae": 9.51,
-   "rmse": 12.08,
-   "bias": -0.14
+   "rmse": 12.1,
+   "bias": 0.16
   },
   "bridge": {
    "n": 122,
-   "mae": 9.47,
-   "rmse": 11.82,
-   "bias": -0.92
+   "mae": 9.49,
+   "rmse": 11.84,
+   "bias": -0.81
   },
   "prior_only": {
    "n": 122,
    "mae": 9.32,
-   "rmse": 11.79,
-   "bias": -1.68
+   "rmse": 11.78,
+   "bias": -1.38
   }
  },
  "uncapped": {
   "floor": {
    "n": 122,
-   "mae": 17.05,
-   "rmse": 20.74,
-   "bias": -9.13
+   "mae": 16.91,
+   "rmse": 20.6,
+   "bias": -8.83
   },
   "bridge": {
    "n": 122,
-   "mae": 16.03,
-   "rmse": 19.22,
-   "bias": -9.91
+   "mae": 15.97,
+   "rmse": 19.14,
+   "bias": -9.81
   },
   "prior_only": {
    "n": 122,
-   "mae": 16.21,
-   "rmse": 19.51,
-   "bias": -10.67
+   "mae": 16.04,
+   "rmse": 19.33,
+   "bias": -10.37
   }
  },
  "paired_abs_error_reduction": {
-  "mean": 0.05,
+  "mean": 0.02,
   "se": 0.64,
-  "t": 0.07,
+  "t": 0.03,
   "bridge_closer": 59,
   "of": 122
  },
  "floor_value": -28,
- "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.07, n = 122).",
+ "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.03, n = 122).",
  "rows": [
   {
    "game_id": "401856767",
@@ -60,8 +60,8 @@
    "fcs": "bethunecookman",
    "fbs": "ucf",
    "actual": 67,
-   "floor": 26.74,
-   "bridge": 29.88,
+   "floor": 27.06,
+   "bridge": 30.2,
    "bridge_sd": 8.7
   },
   {
@@ -70,8 +70,8 @@
    "fcs": "merrimack",
    "fbs": "delaware",
    "actual": 35,
-   "floor": 22.68,
-   "bridge": 24.8,
+   "floor": 22.9,
+   "bridge": 25.02,
    "bridge_sd": 10.06
   },
   {
@@ -80,8 +80,8 @@
    "fcs": "westgeorgia",
    "fbs": "kennesawstate",
    "actual": 47,
-   "floor": 24.59,
-   "bridge": 14.48,
+   "floor": 24.54,
+   "bridge": 14.43,
    "bridge_sd": 8.85
   },
   {
@@ -90,8 +90,8 @@
    "fcs": "ualbany",
    "fbs": "buffalo",
    "actual": 4,
-   "floor": 22.18,
-   "bridge": 27.97,
+   "floor": 22.51,
+   "bridge": 28.3,
    "bridge_sd": 8.54
   },
   {
@@ -100,8 +100,8 @@
    "fcs": "arkansaspinebluff",
    "fbs": "missouri",
    "actual": 40,
-   "floor": 36.35,
-   "bridge": 46.81,
+   "floor": 36.81,
+   "bridge": 47.21,
    "bridge_sd": 8.45
   },
   {
@@ -110,8 +110,8 @@
    "fcs": "easternillinois",
    "fbs": "minnesota",
    "actual": 52,
-   "floor": 29.89,
-   "bridge": 34.68,
+   "floor": 30.49,
+   "bridge": 35.26,
    "bridge_sd": 8.7
   },
   {
@@ -120,8 +120,8 @@
    "fcs": "idaho",
    "fbs": "utah",
    "actual": 52,
-   "floor": 43.52,
-   "bridge": 34.8,
+   "floor": 43.87,
+   "bridge": 35.09,
    "bridge_sd": 8.43
   },
   {
@@ -130,8 +130,8 @@
    "fcs": "indianastate",
    "fbs": "purdue",
    "actual": 25,
-   "floor": 22.93,
-   "bridge": 17.98,
+   "floor": 23.43,
+   "bridge": 18.42,
    "bridge_sd": 8.56
   },
   {
@@ -140,8 +140,8 @@
    "fcs": "northcarolinaat",
    "fbs": "georgiastate",
    "actual": 49,
-   "floor": 18.77,
-   "bridge": 26.74,
+   "floor": 18.8,
+   "bridge": 26.68,
    "bridge_sd": 8.26
   },
   {
@@ -150,8 +150,8 @@
    "fcs": "longislanduniversity",
    "fbs": "kansas",
    "actual": 45,
-   "floor": 29.43,
-   "bridge": 31.39,
+   "floor": 29.81,
+   "bridge": 31.7,
    "bridge_sd": 8.59
   },
   {
@@ -160,8 +160,8 @@
    "fcs": "newhampshire",
    "fbs": "syracuse",
    "actual": 63,
-   "floor": 20.79,
-   "bridge": 14.76,
+   "floor": 21.26,
+   "bridge": 15.13,
    "bridge_sd": 8.07
   },
   {
@@ -170,8 +170,8 @@
    "fcs": "lafayette",
    "fbs": "uconn",
    "actual": 49,
-   "floor": 27.93,
-   "bridge": 23.58,
+   "floor": 28.13,
+   "bridge": 23.71,
    "bridge_sd": 8.51
   },
   {
@@ -180,8 +180,8 @@
    "fcs": "bryant",
    "fbs": "army",
    "actual": 56,
-   "floor": 31.37,
-   "bridge": 36.04,
+   "floor": 31.57,
+   "bridge": 36.15,
    "bridge_sd": 8.11
   },
   {
@@ -190,8 +190,8 @@
    "fcs": "tarletonstate",
    "fbs": "bowlinggreen",
    "actual": -7,
-   "floor": 21.14,
-   "bridge": 3.69,
+   "floor": 21.24,
+   "bridge": 3.73,
    "bridge_sd": 8.46
   },
   {
@@ -200,8 +200,8 @@
    "fcs": "youngstownstate",
    "fbs": "kentucky",
    "actual": 32,
-   "floor": 28.09,
-   "bridge": 15.44,
+   "floor": 28.52,
+   "bridge": 15.73,
    "bridge_sd": 8.28
   },
   {
@@ -210,8 +210,8 @@
    "fcs": "southeastmissouristate",
    "fbs": "iowastate",
    "actual": 28,
-   "floor": 33.4,
-   "bridge": 36.27,
+   "floor": 33.74,
+   "bridge": 36.47,
    "bridge_sd": 8.41
   },
   {
@@ -220,8 +220,8 @@
    "fcs": "duquesne",
    "fbs": "airforce",
    "actual": 34,
-   "floor": 26.38,
-   "bridge": 27.86,
+   "floor": 26.51,
+   "bridge": 27.87,
    "bridge_sd": 8.38
   },
   {
@@ -230,8 +230,8 @@
    "fcs": "rhodeisland",
    "fbs": "temple",
    "actual": 24,
-   "floor": 22.33,
-   "bridge": 14.8,
+   "floor": 22.49,
+   "bridge": 14.81,
    "bridge_sd": 7.81
   },
   {
@@ -240,8 +240,8 @@
    "fcs": "tennesseestate",
    "fbs": "georgia",
    "actual": 60,
-   "floor": 42.37,
-   "bridge": 52.03,
+   "floor": 43.08,
+   "bridge": 52.57,
    "bridge_sd": 8.23
   },
   {
@@ -250,8 +250,8 @@
    "fcs": "furman",
    "fbs": "tennessee",
    "actual": 47,
-   "floor": 35.78,
-   "bridge": 38.46,
+   "floor": 36.42,
+   "bridge": 38.97,
    "bridge_sd": 8.46
   },
   {
@@ -260,8 +260,8 @@
    "fcs": "thecitadel",
    "fbs": "charlotte",
    "actual": -2,
-   "floor": 14.23,
-   "bridge": 15.41,
+   "floor": 14.42,
+   "bridge": 15.48,
    "bridge_sd": 8.49
   },
   {
@@ -270,8 +270,8 @@
    "fcs": "towson",
    "fbs": "navy",
    "actual": 27,
-   "floor": 33.48,
-   "bridge": 33.4,
+   "floor": 33.71,
+   "bridge": 33.47,
    "bridge_sd": 7.76
   },
   {
@@ -280,8 +280,8 @@
    "fcs": "utriograndevalley",
    "fbs": "utsa",
    "actual": 29,
-   "floor": 33.91,
-   "bridge": 26.53,
+   "floor": 34.29,
+   "bridge": 26.79,
    "bridge_sd": 8.57
   },
   {
@@ -290,8 +290,8 @@
    "fcs": "fordham",
    "fbs": "northdakotastate",
    "actual": 38,
-   "floor": 23.41,
-   "bridge": 31.47,
+   "floor": 23.49,
+   "bridge": 31.42,
    "bridge_sd": 8.27
   },
   {
@@ -300,8 +300,8 @@
    "fcs": "maine",
    "fbs": "appstate",
    "actual": 52,
-   "floor": 20.75,
-   "bridge": 20.59,
+   "floor": 21.06,
+   "bridge": 20.74,
    "bridge_sd": 7.76
   },
   {
@@ -310,8 +310,8 @@
    "fcs": "northalabama",
    "fbs": "arkansas",
    "actual": 17,
-   "floor": 30.63,
-   "bridge": 30.86,
+   "floor": 31.2,
+   "bridge": 31.32,
    "bridge_sd": 8.28
   },
   {
@@ -320,7 +320,7 @@
    "fcs": "alcornstate",
    "fbs": "southernmiss",
    "actual": 46,
-   "floor": 22.36,
+   "floor": 22.56,
    "bridge": 27.11,
    "bridge_sd": 8.14
   },
@@ -330,8 +330,8 @@
    "fcs": "norfolkstate",
    "fbs": "olddominion",
    "actual": 21,
-   "floor": 36.1,
-   "bridge": 45.8,
+   "floor": 36.31,
+   "bridge": 45.87,
    "bridge_sd": 8.71
   },
   {
@@ -340,8 +340,8 @@
    "fcs": "austinpeay",
    "fbs": "vanderbilt",
    "actual": 19,
-   "floor": 41.44,
-   "bridge": 29.32,
+   "floor": 42.06,
+   "bridge": 29.77,
    "bridge_sd": 8.13
   },
   {
@@ -350,8 +350,8 @@
    "fcs": "abilenechristian",
    "fbs": "texastech",
    "actual": 23,
-   "floor": 45.76,
-   "bridge": 33,
+   "floor": 46.17,
+   "bridge": 33.25,
    "bridge_sd": 8.09
   },
   {
@@ -360,8 +360,8 @@
    "fcs": "nicholls",
    "fbs": "kansasstate",
    "actual": 68,
-   "floor": 33.78,
-   "bridge": 31.59,
+   "floor": 34.15,
+   "bridge": 31.79,
    "bridge_sd": 8.27
   },
   {
@@ -370,8 +370,8 @@
    "fcs": "idahostate",
    "fbs": "utahstate",
    "actual": -12,
-   "floor": 28.36,
-   "bridge": 16.61,
+   "floor": 28.57,
+   "bridge": 16.65,
    "bridge_sd": 8.15
   },
   {
@@ -380,8 +380,8 @@
    "fcs": "houstonchristian",
    "fbs": "rice",
    "actual": 28,
-   "floor": 17.39,
-   "bridge": 24.08,
+   "floor": 17.73,
+   "bridge": 24.25,
    "bridge_sd": 8.29
   },
   {
@@ -390,8 +390,8 @@
    "fcs": "murraystate",
    "fbs": "middletennessee",
    "actual": 24,
-   "floor": 18.79,
-   "bridge": 20.7,
+   "floor": 18.88,
+   "bridge": 20.58,
    "bridge_sd": 8.1
   },
   {
@@ -400,8 +400,8 @@
    "fcs": "easternkentucky",
    "fbs": "jacksonvillestate",
    "actual": 42,
-   "floor": 22.25,
-   "bridge": 16.03,
+   "floor": 22.38,
+   "bridge": 15.99,
    "bridge_sd": 8.13
   },
   {
@@ -410,8 +410,8 @@
    "fcs": "charlestonsouthern",
    "fbs": "georgiasouthern",
    "actual": 31,
-   "floor": 25.24,
-   "bridge": 25.21,
+   "floor": 25.43,
+   "bridge": 25.15,
    "bridge_sd": 8.08
   },
   {
@@ -420,8 +420,8 @@
    "fcs": "selouisiana",
    "fbs": "southalabama",
    "actual": 25,
-   "floor": 22.8,
-   "bridge": 12.29,
+   "floor": 22.88,
+   "bridge": 12.19,
    "bridge_sd": 8.25
   },
   {
@@ -430,8 +430,8 @@
    "fcs": "vmi",
    "fbs": "virginiatech",
    "actual": 70,
-   "floor": 25.15,
-   "bridge": 35.17,
+   "floor": 25.68,
+   "bridge": 35.5,
    "bridge_sd": 8.12
   },
   {
@@ -440,8 +440,8 @@
    "fcs": "northwesternstate",
    "fbs": "louisianatech",
    "actual": 74,
-   "floor": 27,
-   "bridge": 37.16,
+   "floor": 27.08,
+   "bridge": 37.04,
    "bridge_sd": 7.9
   },
   {
@@ -450,8 +450,8 @@
    "fcs": "utahtech",
    "fbs": "byu",
    "actual": 56,
-   "floor": 37.78,
-   "bridge": 34.64,
+   "floor": 38.16,
+   "bridge": 34.84,
    "bridge_sd": 8.02
   },
   {
@@ -460,8 +460,8 @@
    "fcs": "hampton",
    "fbs": "maryland",
    "actual": 62,
-   "floor": 24.05,
-   "bridge": 37.18,
+   "floor": 24.57,
+   "bridge": 37.5,
    "bridge_sd": 7.63
   },
   {
@@ -470,7 +470,7 @@
    "fcs": "southdakotastate",
    "fbs": "northwestern",
    "actual": 16,
-   "floor": 33.26,
+   "floor": 33.46,
    "bridge": 20.28,
    "bridge_sd": 7.93
   },
@@ -480,8 +480,8 @@
    "fcs": "lamar",
    "fbs": "louisiana",
    "actual": 31,
-   "floor": 23.39,
-   "bridge": 18.37,
+   "floor": 23.54,
+   "bridge": 18.33,
    "bridge_sd": 7.79
   },
   {
@@ -490,8 +490,8 @@
    "fcs": "mercyhurst",
    "fbs": "newmexicostate",
    "actual": 37,
-   "floor": 18.18,
-   "bridge": 22.65,
+   "floor": 18.31,
+   "bridge": 22.6,
    "bridge_sd": 8.13
   },
   {
@@ -500,8 +500,8 @@
    "fcs": "northernarizona",
    "fbs": "arizona",
    "actual": 28,
-   "floor": 37.66,
-   "bridge": 26.01,
+   "floor": 38.03,
+   "bridge": 26.17,
    "bridge_sd": 7.86
   },
   {
@@ -510,8 +510,8 @@
    "fcs": "portlandstate",
    "fbs": "sandiegostate",
    "actual": 33,
-   "floor": 31.06,
-   "bridge": 30.07,
+   "floor": 31.27,
+   "bridge": 30.08,
    "bridge_sd": 7.87
   },
   {
@@ -520,8 +520,8 @@
    "fcs": "morganstate",
    "fbs": "arizonastate",
    "actual": 63,
-   "floor": 32.47,
-   "bridge": 33.08,
+   "floor": 32.93,
+   "bridge": 33.37,
    "bridge_sd": 8.52
   },
   {
@@ -530,8 +530,8 @@
    "fcs": "mississippivalleystate",
    "fbs": "sacramentostate",
    "actual": 52,
-   "floor": 18.53,
-   "bridge": 33.26,
+   "floor": 18.51,
+   "bridge": 33.04,
    "bridge_sd": 7.98
   },
   {
@@ -540,8 +540,8 @@
    "fcs": "floridaam",
    "fbs": "miami",
    "actual": 70,
-   "floor": 49.3,
-   "bridge": 59.87,
+   "floor": 49.68,
+   "bridge": 60.06,
    "bridge_sd": 7.89
   },
   {
@@ -550,8 +550,8 @@
    "fcs": "villanova",
    "fbs": "louisville",
    "actual": 46,
-   "floor": 36.17,
-   "bridge": 26.29,
+   "floor": 36.77,
+   "bridge": 26.72,
    "bridge_sd": 8.04
   },
   {
@@ -560,8 +560,8 @@
    "fcs": "norfolkstate",
    "fbs": "virginia",
    "actual": 56,
-   "floor": 37.65,
-   "bridge": 39.48,
+   "floor": 38.15,
+   "bridge": 39.77,
    "bridge_sd": 7.03
   },
   {
@@ -570,8 +570,8 @@
    "fcs": "richmond",
    "fbs": "ncstate",
    "actual": 73,
-   "floor": 30.65,
-   "bridge": 31.03,
+   "floor": 31.16,
+   "bridge": 31.38,
    "bridge_sd": 8.06
   },
   {
@@ -580,8 +580,8 @@
    "fcs": "easttennesseestate",
    "fbs": "northcarolina",
    "actual": 32,
-   "floor": 26.34,
-   "bridge": 19.49,
+   "floor": 26.66,
+   "bridge": 19.56,
    "bridge_sd": 7.96
   },
   {
@@ -590,8 +590,8 @@
    "fcs": "howard",
    "fbs": "indiana",
    "actual": 55,
-   "floor": 54.88,
-   "bridge": 57.6,
+   "floor": 55.35,
+   "bridge": 57.83,
    "bridge_sd": 8.22
   },
   {
@@ -600,8 +600,8 @@
    "fcs": "wofford",
    "fbs": "kentstate",
    "actual": 21,
-   "floor": 17.2,
-   "bridge": 12.04,
+   "floor": 17.19,
+   "bridge": 11.79,
    "bridge_sd": 7.96
   },
   {
@@ -610,8 +610,8 @@
    "fcs": "wagner",
    "fbs": "jamesmadison",
    "actual": 84,
-   "floor": 37.76,
-   "bridge": 47.07,
+   "floor": 37.99,
+   "bridge": 47.11,
    "bridge_sd": 8
   },
   {
@@ -620,8 +620,8 @@
    "fcs": "gardnerwebb",
    "fbs": "liberty",
    "actual": 1,
-   "floor": 25.74,
-   "bridge": 23.06,
+   "floor": 25.84,
+   "bridge": 22.89,
    "bridge_sd": 7.94
   },
   {
@@ -630,8 +630,8 @@
    "fcs": "utmartin",
    "fbs": "westvirginia",
    "actual": 45,
-   "floor": 26.06,
-   "bridge": 22.92,
+   "floor": 26.46,
+   "bridge": 23.07,
    "bridge_sd": 7.85
   },
   {
@@ -640,8 +640,8 @@
    "fcs": "colgate",
    "fbs": "centralmichigan",
    "actual": 3,
-   "floor": 21.16,
-   "bridge": 21.97,
+   "floor": 21.27,
+   "bridge": 21.85,
    "bridge_sd": 7.85
   },
   {
@@ -650,8 +650,8 @@
    "fcs": "holycross",
    "fbs": "miamioh",
    "actual": 38,
-   "floor": 23.33,
-   "bridge": 23.76,
+   "floor": 23.53,
+   "bridge": 23.72,
    "bridge_sd": 7.85
   },
   {
@@ -660,8 +660,8 @@
    "fcs": "stonybrook",
    "fbs": "ballstate",
    "actual": 24,
-   "floor": 16.59,
-   "bridge": 14.36,
+   "floor": 16.6,
+   "bridge": 14.14,
    "bridge_sd": 7.53
   },
   {
@@ -670,8 +670,8 @@
    "fcs": "weberstate",
    "fbs": "colorado",
    "actual": 31,
-   "floor": 26.21,
-   "bridge": 20.04,
+   "floor": 26.48,
+   "bridge": 20.09,
    "bridge_sd": 7.69
   },
   {
@@ -680,8 +680,8 @@
    "fcs": "robertmorris",
    "fbs": "akron",
    "actual": 35,
-   "floor": 20.22,
-   "bridge": 29.46,
+   "floor": 20.29,
+   "bridge": 29.34,
    "bridge_sd": 7.92
   },
   {
@@ -690,8 +690,8 @@
    "fcs": "centralconnecticut",
    "fbs": "toledo",
    "actual": 53,
-   "floor": 33.24,
-   "bridge": 34.36,
+   "floor": 33.38,
+   "bridge": 34.31,
    "bridge_sd": 7.9
   },
   {
@@ -700,8 +700,8 @@
    "fcs": "sacredheart",
    "fbs": "massachusetts",
    "actual": 27,
-   "floor": 11.55,
-   "bridge": 13.17,
+   "floor": 11.72,
+   "bridge": 13.12,
    "bridge_sd": 7.57
   },
   {
@@ -710,8 +710,8 @@
    "fcs": "ucdavis",
    "fbs": "smu",
    "actual": 46,
-   "floor": 39.13,
-   "bridge": 24.05,
+   "floor": 39.41,
+   "bridge": 24.1,
    "bridge_sd": 7.59
   },
   {
@@ -720,8 +720,8 @@
    "fcs": "northerncolorado",
    "fbs": "wyoming",
    "actual": 8,
-   "floor": 18.74,
-   "bridge": 13.61,
+   "floor": 18.81,
+   "bridge": 13.45,
    "bridge_sd": 7.65
   },
   {
@@ -730,8 +730,8 @@
    "fcs": "mercyhurst",
    "fbs": "newmexico",
    "actual": 63,
-   "floor": 32.28,
-   "bridge": 39.92,
+   "floor": 32.66,
+   "bridge": 40.13,
    "bridge_sd": 6.64
   },
   {
@@ -740,8 +740,8 @@
    "fcs": "alabamastate",
    "fbs": "troy",
    "actual": 17,
-   "floor": 24.55,
-   "bridge": 16.4,
+   "floor": 24.59,
+   "bridge": 16.23,
    "bridge_sd": 7.82
   },
   {
@@ -750,8 +750,8 @@
    "fcs": "campbell",
    "fbs": "florida",
    "actual": 49,
-   "floor": 34.45,
-   "bridge": 39.53,
+   "floor": 35.11,
+   "bridge": 39.98,
    "bridge_sd": 7.45
   },
   {
@@ -760,8 +760,8 @@
    "fcs": "monmouth",
    "fbs": "westernmichigan",
    "actual": 35,
-   "floor": 34.47,
-   "bridge": 29.79,
+   "floor": 34.53,
+   "bridge": 29.62,
    "bridge_sd": 7.41
   },
   {
@@ -770,8 +770,8 @@
    "fcs": "towson",
    "fbs": "southcarolina",
    "actual": 36,
-   "floor": 36.55,
-   "bridge": 35.92,
+   "floor": 37.18,
+   "bridge": 36.32,
    "bridge_sd": 6.39
   },
   {
@@ -780,8 +780,8 @@
    "fcs": "westerncarolina",
    "fbs": "cincinnati",
    "actual": 52,
-   "floor": 30.02,
-   "bridge": 26.35,
+   "floor": 30.52,
+   "bridge": 26.61,
    "bridge_sd": 7.78
   },
   {
@@ -790,8 +790,8 @@
    "fcs": "southern",
    "fbs": "houston",
    "actual": 71,
-   "floor": 31.14,
-   "bridge": 42.34,
+   "floor": 31.5,
+   "bridge": 42.49,
    "bridge_sd": 7.69
   },
   {
@@ -800,8 +800,8 @@
    "fcs": "southernutah",
    "fbs": "coloradostate",
    "actual": 34,
-   "floor": 20.04,
-   "bridge": 7.63,
+   "floor": 20.39,
+   "bridge": 7.76,
    "bridge_sd": 7.56
   },
   {
@@ -810,8 +810,8 @@
    "fcs": "illinoisstate",
    "fbs": "northernillinois",
    "actual": -4,
-   "floor": 18.23,
-   "bridge": 4.41,
+   "floor": 18.45,
+   "bridge": 4.42,
    "bridge_sd": 7.76
   },
   {
@@ -820,8 +820,8 @@
    "fcs": "westgeorgia",
    "fbs": "arkansasstate",
    "actual": 45,
-   "floor": 24.26,
-   "bridge": 19.01,
+   "floor": 24.41,
+   "bridge": 19,
    "bridge_sd": 6.71
   },
   {
@@ -830,8 +830,8 @@
    "fcs": "lindenwood",
    "fbs": "missouristate",
    "actual": 34,
-   "floor": 20.93,
-   "bridge": 18.75,
+   "floor": 21.13,
+   "bridge": 18.68,
    "bridge_sd": 7.77
   },
   {
@@ -840,8 +840,8 @@
    "fcs": "westernillinois",
    "fbs": "wisconsin",
    "actual": 27,
-   "floor": 28.03,
-   "bridge": 31.53,
+   "floor": 28.53,
+   "bridge": 31.76,
    "bridge_sd": 7.71
   },
   {
@@ -850,8 +850,8 @@
    "fcs": "fordham",
    "fbs": "coastalcarolina",
    "actual": 38,
-   "floor": 21.37,
-   "bridge": 30.45,
+   "floor": 21.53,
+   "bridge": 30.42,
    "bridge_sd": 6.61
   },
   {
@@ -860,8 +860,8 @@
    "fcs": "grambling",
    "fbs": "tcu",
    "actual": 56,
-   "floor": 32.55,
-   "bridge": 35.17,
+   "floor": 32.92,
+   "bridge": 35.32,
    "bridge_sd": 7.69
   },
   {
@@ -870,8 +870,8 @@
    "fcs": "prairieviewam",
    "fbs": "baylor",
    "actual": 41,
-   "floor": 29.56,
-   "bridge": 25.53,
+   "floor": 30.12,
+   "bridge": 25.86,
    "bridge_sd": 7.55
   },
   {
@@ -880,8 +880,8 @@
    "fcs": "calpoly",
    "fbs": "sanjosestate",
    "actual": 10,
-   "floor": 20.06,
-   "bridge": 12.1,
+   "floor": 20.26,
+   "bridge": 12.07,
    "bridge_sd": 7.5
   },
   {
@@ -890,8 +890,8 @@
    "fcs": "texassouthern",
    "fbs": "utep",
    "actual": 41,
-   "floor": 15.26,
-   "bridge": 19.2,
+   "floor": 15.4,
+   "bridge": 19.1,
    "bridge_sd": 7.59
   },
   {
@@ -900,8 +900,8 @@
    "fcs": "montanastate",
    "fbs": "nevada",
    "actual": -13,
-   "floor": 26.32,
-   "bridge": 4.83,
+   "floor": 26.63,
+   "bridge": 4.91,
    "bridge_sd": 7.35
   },
   {
@@ -910,8 +910,8 @@
    "fcs": "portlandstate",
    "fbs": "oregon",
    "actual": 84,
-   "floor": 39.63,
-   "bridge": 40.74,
+   "floor": 40.17,
+   "bridge": 41.05,
    "bridge_sd": 6.4
   },
   {
@@ -920,8 +920,8 @@
    "fcs": "mercer",
    "fbs": "georgiatech",
    "actual": 33,
-   "floor": 28.28,
-   "bridge": 21.27,
+   "floor": 28.86,
+   "bridge": 21.6,
    "bridge_sd": 7.7
   },
   {
@@ -930,8 +930,8 @@
    "fcs": "maine",
    "fbs": "bostoncollege",
    "actual": 6,
-   "floor": 24.67,
-   "bridge": 28.66,
+   "floor": 25.21,
+   "bridge": 28.94,
    "bridge_sd": 6.37
   },
   {
@@ -940,8 +940,8 @@
    "fcs": "southernillinois",
    "fbs": "illinois",
    "actual": 38,
-   "floor": 33.1,
-   "bridge": 19.47,
+   "floor": 33.74,
+   "bridge": 19.87,
    "bridge_sd": 7.79
   },
   {
@@ -950,8 +950,8 @@
    "fcs": "wagner",
    "fbs": "california",
    "actual": 42,
-   "floor": 24.67,
-   "bridge": 30.94,
+   "floor": 24.95,
+   "bridge": 31,
    "bridge_sd": 6.61
   },
   {
@@ -960,8 +960,8 @@
    "fcs": "duquesne",
    "fbs": "washingtonstate",
    "actual": 41,
-   "floor": 29.74,
-   "bridge": 33.05,
+   "floor": 29.97,
+   "bridge": 33.09,
    "bridge_sd": 6.62
   },
   {
@@ -970,8 +970,8 @@
    "fcs": "stonehill",
    "fbs": "massachusetts",
    "actual": 22,
-   "floor": 13.72,
-   "bridge": 22.06,
+   "floor": 13.91,
+   "bridge": 22.05,
    "bridge_sd": 7.7
   },
   {
@@ -980,8 +980,8 @@
    "fcs": "northerniowa",
    "fbs": "iowa",
    "actual": 55,
-   "floor": 41.1,
-   "bridge": 38.6,
+   "floor": 41.72,
+   "bridge": 38.97,
    "bridge_sd": 7.69
   },
   {
@@ -990,8 +990,8 @@
    "fcs": "selouisiana",
    "fbs": "ulmonroe",
    "actual": -3,
-   "floor": 14.45,
-   "bridge": 8.69,
+   "floor": 14.39,
+   "bridge": 8.44,
    "bridge_sd": 6.61
   },
   {
@@ -1000,8 +1000,8 @@
    "fcs": "murraystate",
    "fbs": "oklahomastate",
    "actual": 59,
-   "floor": 23.06,
-   "bridge": 26.08,
+   "floor": 23.54,
+   "bridge": 26.32,
    "bridge_sd": 6.57
   },
   {
@@ -1010,8 +1010,8 @@
    "fcs": "utmartin",
    "fbs": "memphis",
    "actual": 24,
-   "floor": 30.24,
-   "bridge": 31.33,
+   "floor": 30.49,
+   "bridge": 31.27,
    "bridge_sd": 6.58
   },
   {
@@ -1020,8 +1020,8 @@
    "fcs": "delawarestate",
    "fbs": "southflorida",
    "actual": 42,
-   "floor": 36.4,
-   "bridge": 31.32,
+   "floor": 36.64,
+   "bridge": 31.29,
    "bridge_sd": 8.12
   },
   {
@@ -1030,8 +1030,8 @@
    "fcs": "nicholls",
    "fbs": "samhouston",
    "actual": 59,
-   "floor": 15.69,
-   "bridge": 15.71,
+   "floor": 15.63,
+   "bridge": 15.4,
    "bridge_sd": 6.59
   },
   {
@@ -1040,8 +1040,8 @@
    "fcs": "northdakota",
    "fbs": "nebraska",
    "actual": 27,
-   "floor": 34.94,
-   "bridge": 18.68,
+   "floor": 35.48,
+   "bridge": 18.93,
    "bridge_sd": 7.56
   },
   {
@@ -1050,8 +1050,8 @@
    "fcs": "easternwashington",
    "fbs": "washington",
    "actual": 32,
-   "floor": 38.52,
-   "bridge": 31.87,
+   "floor": 39.1,
+   "bridge": 32.19,
    "bridge_sd": 7.37
   },
   {
@@ -1060,8 +1060,8 @@
    "fcs": "easttexasam",
    "fbs": "tulsa",
    "actual": 42,
-   "floor": 22.21,
-   "bridge": 25.29,
+   "floor": 22.43,
+   "bridge": 25.32,
    "bridge_sd": 7.63
   },
   {
@@ -1070,8 +1070,8 @@
    "fcs": "southdakota",
    "fbs": "boisestate",
    "actual": 14,
-   "floor": 34.79,
-   "bridge": 25.74,
+   "floor": 35.17,
+   "bridge": 25.81,
    "bridge_sd": 7.5
   },
   {
@@ -1080,8 +1080,8 @@
    "fcs": "montana",
    "fbs": "oregonstate",
    "actual": 35,
-   "floor": 20.47,
-   "bridge": 1.48,
+   "floor": 20.73,
+   "bridge": 1.47,
    "bridge_sd": 7.3
   },
   {
@@ -1090,8 +1090,8 @@
    "fcs": "howard",
    "fbs": "rutgers",
    "actual": 51,
-   "floor": 24,
-   "bridge": 20.8,
+   "floor": 24.52,
+   "bridge": 21.01,
    "bridge_sd": 6.81
   },
   {
@@ -1100,8 +1100,8 @@
    "fcs": "bucknell",
    "fbs": "pittsburgh",
    "actual": 59,
-   "floor": 35.11,
-   "bridge": 42.51,
+   "floor": 35.67,
+   "bridge": 42.84,
    "bridge_sd": 7.66
   },
   {
@@ -1110,8 +1110,8 @@
    "fcs": "lindenwood",
    "fbs": "easternmichigan",
    "actual": 26,
-   "floor": 13.77,
-   "bridge": 15.63,
+   "floor": 13.99,
+   "bridge": 15.58,
    "bridge_sd": 6.55
   },
   {
@@ -1120,8 +1120,8 @@
    "fcs": "centralarkansas",
    "fbs": "floridastate",
    "actual": 27,
-   "floor": 30.86,
-   "bridge": 27.69,
+   "floor": 31.26,
+   "bridge": 27.84,
    "bridge_sd": 7.77
   },
   {
@@ -1130,8 +1130,8 @@
    "fcs": "williammary",
    "fbs": "duke",
    "actual": 55,
-   "floor": 38.2,
-   "bridge": 36.59,
+   "floor": 38.67,
+   "bridge": 36.81,
    "bridge_sd": 7.65
   },
   {
@@ -1140,8 +1140,8 @@
    "fcs": "robertmorris",
    "fbs": "buffalo",
    "actual": 3,
-   "floor": 17.91,
-   "bridge": 29.26,
+   "floor": 18.12,
+   "bridge": 29.28,
    "bridge_sd": 6.54
   },
   {
@@ -1150,8 +1150,8 @@
    "fcs": "stonehill",
    "fbs": "ohio",
    "actual": 28,
-   "floor": 25.79,
-   "bridge": 34.5,
+   "floor": 25.91,
+   "bridge": 34.4,
    "bridge_sd": 6.53
   },
   {
@@ -1160,8 +1160,8 @@
    "fcs": "gardnerwebb",
    "fbs": "marshall",
    "actual": 1,
-   "floor": 24.17,
-   "bridge": 16.99,
+   "floor": 24.29,
+   "bridge": 16.87,
    "bridge_sd": 6.53
   },
   {
@@ -1170,8 +1170,8 @@
    "fcs": "northcarolinacentral",
    "fbs": "eastcarolina",
    "actual": 33,
-   "floor": 28.94,
-   "bridge": 22.85,
+   "floor": 29.13,
+   "bridge": 22.76,
    "bridge_sd": 7.95
   },
   {
@@ -1180,8 +1180,8 @@
    "fcs": "incarnateword",
    "fbs": "texasstate",
    "actual": 53,
-   "floor": 31.11,
-   "bridge": 28.95,
+   "floor": 31.48,
+   "bridge": 29.12,
    "bridge_sd": 7.58
   },
   {
@@ -1190,8 +1190,8 @@
    "fcs": "longislanduniversity",
    "fbs": "floridainternational",
    "actual": 17,
-   "floor": 24.66,
-   "bridge": 27.8,
+   "floor": 24.85,
+   "bridge": 27.74,
    "bridge_sd": 6.48
   },
   {
@@ -1200,8 +1200,8 @@
    "fcs": "mercyhurst",
    "fbs": "westernkentucky",
    "actual": 45,
-   "floor": 20.45,
-   "bridge": 26.33,
+   "floor": 20.53,
+   "bridge": 26.19,
    "bridge_sd": 5.77
   },
   {
@@ -1210,8 +1210,8 @@
    "fcs": "houstonchristian",
    "fbs": "northtexas",
    "actual": 49,
-   "floor": 35.05,
-   "bridge": 45.62,
+   "floor": 35.25,
+   "bridge": 45.58,
    "bridge_sd": 6.51
   },
   {
@@ -1220,8 +1220,8 @@
    "fcs": "samford",
    "fbs": "uab",
    "actual": 19,
-   "floor": 20.11,
-   "bridge": 30.72,
+   "floor": 20.29,
+   "bridge": 30.61,
    "bridge_sd": 7.64
   },
   {
@@ -1230,8 +1230,8 @@
    "fcs": "texassouthern",
    "fbs": "floridaatlantic",
    "actual": 56,
-   "floor": 24.18,
-   "bridge": 32.34,
+   "floor": 24.41,
+   "bridge": 32.35,
    "bridge_sd": 6.5
   },
   {
@@ -1240,8 +1240,8 @@
    "fcs": "mcneese",
    "fbs": "lsu",
    "actual": 49,
-   "floor": 41.59,
-   "bridge": 43.95,
+   "floor": 42.12,
+   "bridge": 44.28,
    "bridge_sd": 7.53
   },
   {
@@ -1250,8 +1250,8 @@
    "fcs": "charlestonsouthern",
    "fbs": "clemson",
    "actual": 37,
-   "floor": 29.04,
-   "bridge": 30.44,
+   "floor": 29.43,
+   "bridge": 30.56,
    "bridge_sd": 6.51
   },
   {
@@ -1260,8 +1260,8 @@
    "fcs": "thecitadel",
    "fbs": "texasam",
    "actual": 41,
-   "floor": 30.75,
-   "bridge": 28.1,
+   "floor": 31.13,
+   "bridge": 28.22,
    "bridge_sd": 6.55
   },
   {
@@ -1270,8 +1270,8 @@
    "fcs": "elon",
    "fbs": "stanford",
    "actual": 27,
-   "floor": 15.04,
-   "bridge": 13.65,
+   "floor": 15.29,
+   "bridge": 13.63,
    "bridge_sd": 7.34
   }
  ]
