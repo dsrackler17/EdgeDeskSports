@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-19T14:46:31.494Z",
+ "generated_at": "2026-10-19T16:39:39.062Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -169,8 +169,8 @@
   "efficiency_replay": {
    "source_schema": "edgedesk_cfb_engine_efficiency_v1",
    "season": 2026,
-   "artifact_games_with_stats": 924,
-   "artifact_team_game_rows": 1833,
+   "artifact_games_with_stats": 925,
+   "artifact_team_game_rows": 1835,
    "games_absorbed_with_stats": 510,
    "team_rows_absorbed": 898,
    "final_games_without_play_stats": 0,
@@ -204,19 +204,15 @@
  },
  "weather": {
   "requested": 60,
-  "answered": 54,
+  "answered": 60,
   "dome": 0,
   "no_venue": 0,
-  "failed": 6,
-  "carried": 6,
+  "failed": 0,
+  "carried": 0,
   "carry_dropped": 0,
-  "failures": {
-   "HTTP 503": 4,
-   "fetch failed": 1,
-   "timeout after 15000ms": 1
-  },
+  "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "54 of 60 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 6 request(s) failed; 6 carried the last observed forecast forward at its real age (HTTP 503 x4, fetch failed x1, timeout after 15000ms x1)"
+  "summary": "60 of 60 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
   "NO_MARKET": 60
@@ -224,7 +220,7 @@
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
-  "games_in_artifact": 924,
+  "games_in_artifact": 925,
   "completed_games_replayed": 510,
   "completed_games_with_both_team_efficiency": 388,
   "missing_count": 122,
