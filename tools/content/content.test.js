@@ -231,6 +231,8 @@ const ours = (t) => CE.BANNED.some((b) => new RegExp('\\b' + b[0] + '\\b', 'i').
   const sample = b[0].replace(/\(\?:([^|)]+)[^)]*\)\??/g, '$1').replace(/\.\?/g, ' ').replace(/\?/g, '').replace(/\\/g, '');
   chk('V parity: community term “' + b[0] + '” is caught', ours(sample), sample);
 });
+chk('V a venue is not staking talk: "FBC Mortgage Stadium" passes, "mortgage the house" and "a second mortgage" do not',
+  !ours('BYU travels to UCF (FBC Mortgage Stadium).') && ours('I would mortgage the house on this.') && ours('Take out a second mortgage for this one.'));
 chk('V parity: every AI tell the editorial system knows is ours too', (QUALITY.AI_TELLS || []).every((re) => CE.AI_TELLS.some((r) => r.source === re.source)));
 
 /* ── A AI ─────────────────────────────────────────────────────────────── */
