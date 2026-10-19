@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-19T01:07:58.701Z",
- "board_generated_at": "2026-10-19T01:07:52.079Z",
+ "generated_at": "2026-10-19T02:07:58.748Z",
+ "board_generated_at": "2026-10-19T02:07:52.295Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -16,16 +16,16 @@
  ],
  "games": [
   {
-   "game_id": "401866449",
-   "game": "Eastern Michigan @ Ohio",
-   "kickoff": "2026-10-24T20:00:00.000Z",
+   "game_id": "401856731",
+   "game": "Tennessee @ South Carolina",
+   "kickoff": "2026-10-24T19:30:00.000Z",
    "named": false,
-   "edgedesk": "Ohio −18.5",
-   "market": "Ohio −10.5",
+   "edgedesk": "Tennessee −5.0",
+   "market": "South Carolina −2.5",
    "books": 1,
-   "gap": 8,
+   "gap": 7.7,
    "gap_class": "MAJOR",
-   "favorite_flip": false,
+   "favorite_flip": true,
    "research_status": "MARKET_FAULT",
    "research_label": "MARKET FAULT",
    "decision_status": "PASS",
@@ -35,12 +35,12 @@
     {
      "requirement": "correct game",
      "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T20:00:00.000Z"
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T19:30:00.000Z"
     },
     {
      "requirement": "correct home/away",
      "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Peden Stadium), declared by the schedule feed"
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Williams-Brice Stadium), declared by the schedule feed"
     },
     {
      "requirement": "fresh multi-book consensus",
@@ -50,50 +50,116 @@
     {
      "requirement": "current team states",
      "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 0.9 rating pts"
+     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 1.1 rating pts"
     },
     {
      "requirement": "resolved QB",
      "result": "PASS",
-     "detail": "PASS: Ohio: Nick Poulos (previous game) · PASS: Eastern Michigan: Noah Kim (previous game)"
+     "detail": "PASS: South Carolina: LaNorris Sellers (previous game) · PASS: Tennessee: George MacIntyre (previous game)"
     },
     {
      "requirement": "no abnormal availability",
      "result": "PASS",
-     "detail": "PASS: Ohio: availability sources checked, nothing filed · PASS: Eastern Michigan: availability sources checked, nothing filed"
+     "detail": "PASS: South Carolina: availability sources checked, nothing filed · PASS: Tennessee: availability sources checked, nothing filed"
     },
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (2.8 pts) lifts the gap over 7: without it the gap is 5.2 — historically informative, flagged for scrutiny"
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
     },
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.9 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.7 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · PASS: favorite flip: the independent ensemble also favour EdgeDesk’s team · PASS: the submodels disagree with each other by SD 0.9 (limit 6)"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6 — the extreme is not supported by how margins of this size have actually finished"
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.7"
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail."
+  },
+  {
+   "game_id": "401862808",
+   "game": "Army @ Tulsa",
+   "kickoff": "2026-10-24T00:30:00.000Z",
+   "named": false,
+   "edgedesk": "Army −6.5",
+   "market": "Tulsa −1.5",
+   "books": 1,
+   "gap": 7.9,
+   "gap_class": "MAJOR",
+   "favorite_flip": true,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T00:30:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Chapman Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 1.8 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "FAIL",
+     "detail": "FAIL: Army: starter unresolved (competition) — must be resolved or scenario-weighted at this size"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Tulsa: availability sources checked, nothing filed · PASS: Army: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 5.6 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · PASS: favorite flip: the independent ensemble also favour EdgeDesk’s team · PASS: the submodels disagree with each other by SD 1.4 (limit 6)"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.8"
+    }
+   ],
+   "consistent": true,
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; resolved QB fail."
   },
   {
    "game_id": "401869845",
    "game": "James Madison @ App State",
    "kickoff": "2026-10-22T23:00:00.000Z",
    "named": false,
-   "edgedesk": "James Madison −18.0",
+   "edgedesk": "James Madison −19.5",
    "market": "James Madison −10.5",
    "books": 1,
-   "gap": 7.5,
+   "gap": 8.8,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
@@ -116,7 +182,7 @@
     {
      "requirement": "current team states",
      "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 0.1 rating pts"
+     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 0 rating pts"
     },
     {
      "requirement": "resolved QB",
@@ -131,7 +197,7 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (-2.6 pts) lifts the gap over 7: without it the gap is 4.9 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (-2.6 pts) lifts the gap over 7: without it the gap is 6.2 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
@@ -145,21 +211,21 @@
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
   },
   {
    "game_id": "401856732",
    "game": "Ole Miss @ Texas",
    "kickoff": "2026-10-24T23:30:00.000Z",
    "named": false,
-   "edgedesk": "Ole Miss −6.0",
+   "edgedesk": "Ole Miss −7.0",
    "market": "Texas −3.5",
    "books": 1,
-   "gap": 9.4,
+   "gap": 10.6,
    "gap_class": "MAJOR",
    "favorite_flip": true,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "research_status": "DATA_FAULT",
+   "research_label": "DATA FAULT",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
@@ -182,7 +248,7 @@
     {
      "requirement": "current team states",
      "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 6.6 rating pts"
+     "detail": "PASS: fewest current-season games behind a rating: 6 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 6.6 rating pts (limit 10)"
     },
     {
      "requirement": "resolved QB",
@@ -211,7 +277,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
+   "verdict": "DATA FAULT is correct: fresh multi-book consensus fail; submodel support fail."
   }
  ],
  "inconsistent": [],

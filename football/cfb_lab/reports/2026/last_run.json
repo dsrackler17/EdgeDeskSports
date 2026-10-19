@@ -1,5 +1,5 @@
 {
- "started_at": "2026-10-19T01:07:39.000Z",
+ "started_at": "2026-10-19T02:07:38.000Z",
  "season": 2026,
  "steps": {
   "seed": {
@@ -7,12 +7,12 @@
    "roles": 0,
    "experiments": 0,
    "partitions": 0,
-   "ms": 0
+   "ms": 1
   },
   "supabase_pull": {
    "ok": true,
    "quotes": 0,
-   "ms": 657
+   "ms": 1230
   },
   "market": {
    "ok": true,
@@ -34,9 +34,9 @@
       "cooldown_min": null,
       "last_error": null,
       "last_error_class": null,
-      "last_success_at": "2026-10-19T01:07:39.000Z",
+      "last_success_at": "2026-10-19T02:07:38.000Z",
       "last_failure_at": null,
-      "calls": 12225,
+      "calls": 12248,
       "failures": 0
      }
     },
@@ -68,40 +68,44 @@
      "reasons": {}
     },
     "confirmations": {
-     "confirmed": 151,
-     "kept": 2582,
+     "confirmed": 154,
+     "kept": 2599,
      "written": true
     }
    },
    "dedupe": {
     "received": 3304,
-    "written": 26,
-    "duplicates": 3278,
+    "written": 23,
+    "duplicates": 3281,
     "refused": 0,
     "refusals": {},
-    "confirmed": 151
+    "confirmed": 154
    },
-   "written": 26,
+   "written": 23,
    "conflicts": [],
    "schedule_games": 113,
-   "ms": 1153
+   "ms": 2365
   },
   "freeze_import": {
    "ok": true,
    "files": 3,
    "imported": 0,
    "skipped": [],
-   "ms": 688
+   "ms": 693
   },
   "checkpoints": {
    "ok": true,
-   "now": "2026-10-19T01:07:39.000Z",
+   "now": "2026-10-19T02:07:38.000Z",
    "season": 2026,
-   "due": 0,
-   "taken": 0,
+   "due": 1,
+   "taken": 1,
    "skipped_no_projection": 0,
-   "by_model": {},
-   "by_checkpoint": {},
+   "by_model": {
+    "edgedesk_cfb_p4_v1.0.0": 1
+   },
+   "by_checkpoint": {
+    "OPEN": 1
+   },
    "skipped_schedule": {},
    "kickoff_moved": [
     {
@@ -306,16 +310,16 @@
    "rescheduled_adhoc": 0,
    "bet_gated": 0,
    "refused_duplicate_checkpoint": [],
-   "ms": 955
+   "ms": 922
   },
   "audit": {
    "ok": true,
-   "events": 0,
-   "ms": 0
+   "events": 1,
+   "ms": 1
   },
   "settle": {
    "ok": true,
-   "now": "2026-10-19T01:07:39.000Z",
+   "now": "2026-10-19T02:07:38.000Z",
    "season": 2026,
    "espn_schema": {
     "rejected_payloads": 0,
@@ -331,9 +335,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-19T01:07:39.000Z",
+     "last_success_at": "2026-10-19T02:07:38.000Z",
      "last_failure_at": null,
-     "calls": 532,
+     "calls": 533,
      "failures": 0
     },
     "espn_scoreboard": {
@@ -344,9 +348,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-19T01:07:39.000Z",
+     "last_success_at": "2026-10-19T02:07:38.000Z",
      "last_failure_at": null,
-     "calls": 12236,
+     "calls": 12259,
      "failures": 0
     }
    },
@@ -365,50 +369,50 @@
    },
    "evaluations": 0,
    "miss_reviews": 0,
-   "ms": 1978
+   "ms": 2236
   },
   "report": {
    "ok": true,
-   "now": "2026-10-19T01:07:39.000Z",
+   "now": "2026-10-19T02:07:38.000Z",
    "weekly_written": [],
    "research_events": 0,
    "alerts": 3,
    "public_graded": 179,
-   "ms": 521
+   "ms": 488
   },
   "verify": {
    "ok": true,
    "problems": 0,
-   "ms": 1453
+   "ms": 1424
   }
  },
  "freshness": {
   "rule": "cfb_source_freshness_v1",
-  "at": "2026-10-19T01:07:39.000Z",
+  "at": "2026-10-19T02:07:38.000Z",
   "odds": {
    "source": "odds",
    "status": "FRESH",
    "age_h": 0,
    "max_age_h": 6,
    "importance": "CRITICAL",
-   "upcoming_quotes": 1205
+   "upcoming_quotes": 1228
   },
   "schedule": {
    "source": "schedule",
    "status": "FRESH",
-   "age_h": 1.15,
+   "age_h": 0.1,
    "max_age_h": 26,
    "importance": "CRITICAL"
   },
   "model_features": {
    "source": "pbp",
    "status": "FRESH",
-   "age_h": 11.18,
+   "age_h": 12.18,
    "max_age_h": 192,
    "importance": "CRITICAL"
   },
   "results_newest": "2026-10-18T07:07:34.000Z"
  },
- "finished_at": "2026-10-19T01:07:47.248Z",
+ "finished_at": "2026-10-19T02:07:48.116Z",
  "ok": true
 }

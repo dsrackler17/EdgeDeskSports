@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-19T01:07:39.000Z",
+ "generated_at": "2026-10-19T02:07:38.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,9 +46,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1453,
-    "latest_snapshot_at": "2026-10-19T00:07:39.000Z",
-    "upcoming_games": 59,
+    "snapshots": 1454,
+    "latest_snapshot_at": "2026-10-19T02:07:38.000Z",
+    "upcoming_games": 60,
     "avg_confidence_upcoming": 75.9
    },
    {
@@ -71,15 +71,15 @@
    }
   ],
   "data_quality": {
-   "games": 59,
+   "games": 60,
    "counts": {
     "GREEN": 5,
-    "YELLOW": 54,
+    "YELLOW": 55,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 54,
+     "YELLOW": 55,
      "RED": 0
     }
    },
@@ -785,11 +785,24 @@
      ],
      "kickoff": "2026-10-28T23:00:00.000Z",
      "matchup": "Kennesaw State @ Middle Tennessee"
+    },
+    {
+     "game_id": "401871057",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-29T00:00:00.000Z",
+     "matchup": "Jacksonville State @ New Mexico State"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-19T01:07:39.000Z",
-    "quotes_total": 19760,
+    "last_quote_at": "2026-10-19T02:07:38.000Z",
+    "quotes_total": 19783,
     "last_result_at": "2026-10-18T07:07:34.000Z"
    }
   },
@@ -823,9 +836,9 @@
    }
   ],
   "ledger": {
-   "predictions": 5475,
-   "live_predictions": 4965,
-   "quotes": 19760,
+   "predictions": 5476,
+   "live_predictions": 4966,
+   "quotes": 19783,
    "lines": 3559,
    "results": 461,
    "evaluations": 5267,
@@ -10214,6 +10227,40 @@
    }
   ],
   "audit_tail": [
+   {
+    "event_type": "CALIBRATION_CHANGED",
+    "subject": "edgedesk_cfb_p4_v1.0.0",
+    "before": {
+     "facts": {
+      "feature_version": "cfb_p4_fv1",
+      "calibration_version": "edgedesk_cfb_p4_v1.0.0",
+      "ensemble_version": "edgedesk_cfb_p4_v1.0.0",
+      "params_hash": "fac5ae0e37d5ea7319a407e4de70baa728741687e54a3f7649d15a0053dd4b0b",
+      "engine_id": "edgedesk_cfb_p4",
+      "source": "football/fbs/slate.json"
+     },
+     "changed": [
+      "calibration_version"
+     ]
+    },
+    "after": {
+     "facts": {
+      "feature_version": "cfb_p4_fv1",
+      "calibration_version": "edgedesk_cfb_p4_v1.0.1",
+      "ensemble_version": "edgedesk_cfb_p4_v1.0.0",
+      "params_hash": "fac5ae0e37d5ea7319a407e4de70baa728741687e54a3f7649d15a0053dd4b0b",
+      "engine_id": "edgedesk_cfb_p4",
+      "source": "football/fbs/slate.json"
+     },
+     "changed": [
+      "calibration_version"
+     ]
+    },
+    "reason": "detected by the hourly lab run (calibration_version)",
+    "actor": "automation",
+    "created_at": "2026-10-19T02:07:38.000Z",
+    "event_id": "cfbg_50074b04fdb2cf36e87e23d8"
+   },
    {
     "event_type": "THRESHOLD_CHANGED",
     "subject": "edgedesk_cfb_v2.0.0",
