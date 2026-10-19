@@ -34,6 +34,8 @@
      with no picture. A real 1200x630 PNG on the site is used instead wherever
      the record has no raster image of its own. */
   var OG_DEFAULT = SITE + '/assets/og/edgedesk-research.png';
+  /* A typical game, kickoff to final whistle, for the SportsEvent endDate */
+  var GAME_MINUTES = { NFL: 195, CFB: 210 };
   /* THE OFFER, worded by lib/edgedesk_pricing.js (CTA_LINE). This file loads
      in a browser without that module, so the line is copied here and
      tools/growth/public_pages.test.js holds the two equal. */
@@ -894,9 +896,28 @@
       ]
     };
     if (rec.game_time) ev.startDate = iso(rec.game_time);
+    /* The schedule carries a kickoff, not a final whistle, so the end is
+       kickoff plus a typical game in this sport — the estimate Google asks
+       for when an event's end is not fixed. */
+    if (ev.startDate) ev.endDate = new Date(Date.parse(ev.startDate) + (GAME_MINUTES[rec.sport] || GAME_MINUTES.CFB) * 60000).toISOString();
     if (!rec.neutral_site) ev.homeTeam = { '@type': 'SportsTeam', name: rec.home_team };
     if (!rec.neutral_site) ev.awayTeam = { '@type': 'SportsTeam', name: rec.away_team };
+    /* the town is attached by the build (tools/articles/venue_address.js);
+       a venue it could not place carries its name and no address */
+    var place = rec.venue_address;
     if (rec.venue) ev.location = { '@type': 'Place', name: rec.venue };
+    if (ev.location && place && place.locality && place.country) {
+      ev.location.address = { '@type': 'PostalAddress', addressLocality: place.locality, addressRegion: place.region || undefined, addressCountry: place.country };
+    }
+    ev.image = [ogImage(rec)];
+    ev.description = rec.away_team + ' at ' + rec.home_team
+      + ' (' + [rec.sport_label, rec.season ? String(rec.season) : null, rec.week ? 'Week ' + rec.week : null].filter(has).join(', ') + ')'
+      + (rec.venue ? ' at ' + rec.venue + (place && place.locality ? ' in ' + place.locality + (place.region ? ', ' + place.region : '') : '') : '')
+      + (rec.neutral_site ? ', a neutral site' : '') + '.';
+    /* the league runs an NFL game; a college game is put on by the school
+       whose stadium it is in, and a neutral-site promoter is not on record */
+    if (rec.sport === 'NFL') ev.organizer = { '@type': 'SportsOrganization', name: 'National Football League', url: 'https://www.nfl.com' };
+    else if (!rec.neutral_site) ev.organizer = { '@type': 'SportsTeam', name: rec.home_team };
     /* A GAME THAT HAS BEEN PLAYED IS NOT "SCHEDULED". Saying so, and carrying
        the final score, is the difference between structured data that
        describes the page and structured data that contradicts it. */
@@ -910,6 +931,8 @@
       ev.subjectOf = { '@type': 'Article', '@id': rec.canonical_url };
       ev.description = rec.away_team + ' ' + fin.away.points + ', ' + rec.home_team + ' ' + fin.home.points + ' (final).';
     }
+    /* the teams ARE the performers of a game; Google reads performer, not competitor */
+    ev.performer = ev.competitor;
     out.push(ev);
 
     out.push({
