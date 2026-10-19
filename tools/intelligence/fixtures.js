@@ -139,10 +139,33 @@ function build(now) {
     outcome_range: { p10: -9, p50: 8, p90: 25, sigma: 10.7, basis: 'margin_pmf_by_spread', unit: 'home margin, points' },
     reference_market: Object.assign({}, NFLG.reference_market, { home_line: -3, home_margin: 3, home_ml: -170, away_ml: 145 }),
   });
+  /* ── A CARD THAT HAS MOVED PAST THE CLOCK ─────────────────────────────
+     The suites run on a fixed clock; the committed NFL artifact does not stand
+     still. On 19 October 2026 it held nothing before the next Monday night, so
+     "this weekend" on the suite clock (Monday 12 October) found only the two
+     games built above and A1, which needs a card of at least three, failed
+     everywhere research_host runs. Picking the games still ahead (above) cannot
+     help when every one of them is a week or more out. So when the artifact's
+     next game is at least a week past the clock, its rows are moved back by
+     whole weeks: the weekday, the kickoff time and every other byte stay the
+     artifact's own, and its next slate lands on the clock's week. The clock's
+     own day stays the scenarios' ("nothing tonight"), so a leftover Monday
+     night game from the artifact's previous week, which the move would put on
+     that evening, is left off. */
+  const DAY = 86400000, WEEK = 7 * DAY;
+  const onClock = (games) => {
+    const next = games.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b)[0];
+    const weeks = next == null ? 0 : Math.floor((next - now) / WEEK);
+    if (weeks < 1) return games;
+    const back = (ms) => new Date(ms - weeks * WEEK).toISOString();
+    return games.map((g) => Object.assign({}, g, { kickoff: back(Date.parse(g.kickoff)) },
+      g.gameday ? { gameday: back(Date.parse(g.gameday + 'T12:00:00Z')).slice(0, 10) } : {}))
+      .filter((g) => Date.parse(g.kickoff) > now + DAY);
+  };
   /* The real card's Detroit, Buffalo, Houston and Indianapolis games are left off
      so "the Lions at Buffalo" and "the Texans" each resolve to exactly one game
      whatever week the artifact is from. */
-  const nflRest = ahead(NFL_SLATE.games.filter((g) => !/^(det|buf|hou|ind)$/i.test(String(g.home_team_id)) && !/^(det|buf|hou|ind)$/i.test(String(g.away_team_id))), 6);
+  const nflRest = ahead(onClock(NFL_SLATE.games.filter((g) => !/^(det|buf|hou|ind)$/i.test(String(g.home_team_id)) && !/^(det|buf|hou|ind)$/i.test(String(g.away_team_id)))), 6);
   const nfl = Object.assign({}, NFL_SLATE, { games: [NFLG, NFLW].concat(nflRest) });
 
   const teams = [
