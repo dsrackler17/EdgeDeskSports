@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-19 — Calibration across the other sports: college basketball's neutral-site pricing fixed; NHL, NFL, NBA, WNBA and baseball left as they are
+
+The CFB audit's method, applied to every other model that publishes a probability. The report is `docs/sports-calibration/README.md`.
+
+- **College basketball (NCAAM, NCAAW): fixed, as calibration v2 (`bb_cal_v2_home_intercept`).**
+  - **The fault.** The calibration fitted its moneyline and margin intercepts on home and neutral games pooled, then applied them at neutral sites where the ratings' home edge is already 0. Every neutral-site game was priced 3–4 points of probability short for the side listed at home.
+  - **The fix.** The intercepts are now a home-game correction only.
+  - **The evidence.** Walked forward on the three prior seasons, log loss improves in both windows of both leagues, every 95% interval below zero. That holds in 14 of 15 seasons in each league and in every favourite bucket, and margin error improves too. WNBA and the NBA fallback are unchanged.
+  - **Versioning.** The slate's model id carries the version, so the record splits on it. A v1 params file still prices exactly as before.
+- **NHL: no change.**
+  - Win probabilities are calibrated (2021–26 slope 1.064). Extra recalibration walked forward does not help.
+  - Total-goal probabilities have slopes of 0.72–0.78, but no correction improves them out of sample: the log-loss-optimal compression is about the current one, and fixing the slope worsens log loss. The totals simply carry little signal.
+- **NFL: no change, monitor.** The model leans about 0.9 pt more to the home side than the close. But in 2022–25 home teams won by 2.20 (se 0.43) against the model's 2.48 and the market's 1.61, so correcting it would only move the number toward the sportsbook.
+- **NBA:** sealed 2018–26 test slope 0.999, no change.
+- **WNBA:** win probabilities fine. 2026 totals ran 4.1 pts low, and the season is over.
+- **MLB, college baseball:** no live probability is published. College baseball's moneyline is calibrated.
+- **Two test fixtures that `main`'s committed data had broken:**
+  - the NHL engine UI's second-game total now gets the same 4.5% margin as the moneyline;
+  - the Mahomes benchmark accepts a week when Kansas City is on the card.
+
 ## 2026-10-18 — CFB calibration: the season audited, every fix tested walk-forward, a home-field correction kept in shadow
 
 **No published CFB number changes.** The research and diagnostic report is `docs/cfb-calibration/README.md`; every table is in `football/cfb_p4/research/report/LIVE_CALIBRATION.md`.
