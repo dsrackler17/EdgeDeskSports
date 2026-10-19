@@ -1,0 +1,581 @@
+{
+ "article_key": "research_notes:cfb:EXP-001:NOT_ELIGIBLE:n150",
+ "type": "research_notes",
+ "sport": "CFB",
+ "season": 2026,
+ "week": null,
+ "period": "exp-001-n150",
+ "slug": "research-note-exp-001-v2-1-hardened-vs-v1-champion-150-games",
+ "title": "Research note: V2.1 hardened vs V1 champion after 173 live games",
+ "description": "A registered study of my college football model: V2.1 hardened vs V1 champion. The sample, what it shows so far and what it does not show yet. Experimental.",
+ "lead": "After 173 live college games, CFB V2.1 challenger misses the final margin by 12.267 points on average, against 12.172 for CFB production pricing model (V1), the model that prices my games now. The challenger is not ahead.",
+ "highlights": [
+  "The difference in margin error is +0.095 points, with an interval from -0.494 to +0.692.",
+  "Nothing changes today: CFB production pricing model (V1) still prices every college number I publish."
+ ],
+ "reddit_title": "I ran a registered test of my new college football model against the old one. After 173 live games, the new one is not ahead.",
+ "record_link": "https://edgedesksports.com/record.html#cfb-model-lab",
+ "generated_body": "**After 173 live college games, CFB V2.1 challenger misses the final margin by 12.267 points on average, against 12.172 for CFB production pricing model (V1), the model that prices my games now. The challenger is not ahead.**\n\n> Experimental. This is a registered study running beside my published numbers. Nothing in it moves a number I publish until it passes every gate below and I promote it by hand.\n\n## The study\n\n- Study: EXP-001, V2.1 hardened vs V1 champion.\n- Status: RUNNING since Sep 27.\n- What it tests: V2 architecture (whole model generation).\n- The hypothesis, as I registered it on Sep 27: The V2 architecture (opponent-adjusted play-by-play ensemble) predicts margins more accurately than V1 on live 2026 games, as it did on the 2024-25 holdout (-0.28 MAE).\n- Evaluation window: LIVE 2026, promotion evaluation at 150 common official games.\n\n## What it shows so far\n\n| Measure | CFB V2.1 challenger | CFB production pricing model (V1) |\n|---|---|---|\n| Average margin miss (MAE) | 12.267 | 12.172 |\n| Root mean square miss | 15.654 | 15.437 |\n| Win probability error (Brier) | 0.2005 | 0.2057 |\n| Calibration error (ECE) | 0.0737 | 0.0843 |\n| Bad-game miss (one game in twenty is worse) | 31.23 | 33.37 |\n\nSo the challenger is behind on average margin error and ahead on win probability, calibration and its worst misses. A model can be better calibrated and still miss the margin by more.\n\nThe difference in margin error is +0.095 points (challenger minus champion), and its interval runs from -0.494 to +0.692. That interval includes zero, so on margin error this sample cannot tell the two models apart.\n\nAcross 3 weeks the challenger won 33% of the weekly comparisons. Its middle ranges, meant to hold four results in five, held 80.3% of results.\n\n## The gates\n\n- margin error clearly better (the interval sits below zero): not passed.\n- win probability no worse (Brier): passed.\n- calibration within tolerance: passed.\n- its middle ranges hold about four results in five, as they claim to: passed.\n- its worst misses no worse: passed.\n- better week after week, not just on average: not passed.\n\nThe sample reached the 150-game minimum at 173 games, so the promotion check ran. Its answer: not eligible.\n\n## What it does not show yet\n\n- Whether CFB V2.1 challenger is more accurate than CFB production pricing model (V1) on margin. The interval above says this sample cannot answer that.\n- Whether it beats the closing line. My pipeline’s CLV status for it: NOT APPLICABLE.\n- Its maturity: SHADOW.\n- Anything about betting. This study grades forecasts, not prices.\n\nWhat changes because of it today: nothing. My CFB production pricing model (V1) still prices every college number I publish, and the study keeps running.\n\n[My CFB Model Lab record](https://edgedesksports.com/record.html#cfb-model-lab) grades the lab’s numbers in public as the games finish, and [my live CLV record](https://edgedesksports.com/record.html) carries everything I publish.\n\n## Next on the list\n\n- EXP-003, Prior-by-week fade: Letting preseason priors fade by week fixes under-use in weeks 0-2 and over-use in weeks 7-10 (development dMAE -0.023). Not built yet.\n- EXP-004, P4 tier term: A P4-tier term removes the systematic under-rating of the P4 side in P4-vs-G5 games (development dMAE -0.030). Not built yet.\n",
+ "body_hash": "d1b00d759a103156cb38f8e652f2afe505eab6d5f34af7361fe7889bd820f2d3",
+ "generator_version": "edgedesk_desk_v1",
+ "source_commit": "24d97e75780b150f28a3b89bd68fdeb44d514ebd",
+ "generated_at": "2026-10-19T16:00:00.000Z",
+ "data_as_of": "2026-10-19T15:07:44.000Z",
+ "data_snapshot": {
+  "schema": "edgedesk_desk_snapshot_v1",
+  "generated_at": "2026-10-19T16:00:00.000Z",
+  "data_as_of": "2026-10-19T15:07:44.000Z",
+  "newest_source_at": "2026-10-19T15:08:01.061Z",
+  "commit": "24d97e75780b150f28a3b89bd68fdeb44d514ebd",
+  "sources": [
+   {
+    "id": "cfb_experiments",
+    "file": "football/cfb_lab/governance/experiments.jsonl",
+    "what": "CFB Lab experiment registry",
+    "sha256": "c8bf8af981c03cf777df95fed486f0bc5f23eedef052df722e970e16f2c645f6",
+    "generated_at": null,
+    "commit": "e62bb9a9a2ef4a91450641f506d61e9a5c235876"
+   },
+   {
+    "id": "cfb_maturity",
+    "file": "football/cfb_validation/maturity.json",
+    "what": "CFB model module maturity",
+    "sha256": "908a257ac217b93409359ab1d3df4f8b88b9e00cac920e7044825c3dda6c8b90",
+    "generated_at": "2026-10-19T15:08:01.061Z",
+    "commit": "f0ba999ff6fde10eada0971d92067b05d123f42e"
+   },
+   {
+    "id": "cfb_promotion",
+    "file": "football/cfb_lab/reports/2026/promotion.json",
+    "what": "CFB Lab promotion evaluations",
+    "sha256": "1efe616656156ae22fb23f4602aa0e8f32faf38d21302abd6cbc83b8beb4a38d",
+    "generated_at": "2026-10-19T15:07:44.000Z",
+    "commit": "f0ba999ff6fde10eada0971d92067b05d123f42e"
+   }
+  ],
+  "numbers": [
+   {
+    "key": "n",
+    "value": 173,
+    "display": "173",
+    "format": "int",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "n"
+     ]
+    }
+   },
+   {
+    "key": "min_n",
+    "value": 150,
+    "display": "150",
+    "format": "int",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "min_n"
+     ]
+    }
+   },
+   {
+    "key": "mae_ch",
+    "value": 12.267,
+    "display": "12.267",
+    "format": "fix3",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "challenger_stats",
+      "mae"
+     ]
+    }
+   },
+   {
+    "key": "mae_champ",
+    "value": 12.172,
+    "display": "12.172",
+    "format": "fix3",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "champion_stats",
+      "mae"
+     ]
+    }
+   },
+   {
+    "key": "start",
+    "value": "2026-09-27",
+    "display": "Sep 27",
+    "format": "date",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      0,
+      "start_date"
+     ]
+    }
+   },
+   {
+    "key": "registered",
+    "value": "2026-09-27",
+    "display": "Sep 27",
+    "format": "date",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      0,
+      "start_date"
+     ]
+    }
+   },
+   {
+    "key": "ch_rmse",
+    "value": 15.654,
+    "display": "15.654",
+    "format": "fix3",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "challenger_stats",
+      "rmse"
+     ]
+    }
+   },
+   {
+    "key": "cb_rmse",
+    "value": 15.437,
+    "display": "15.437",
+    "format": "fix3",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "champion_stats",
+      "rmse"
+     ]
+    }
+   },
+   {
+    "key": "ch_brier",
+    "value": 0.20051,
+    "display": "0.2005",
+    "format": "fix4",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "challenger_stats",
+      "brier"
+     ]
+    }
+   },
+   {
+    "key": "cb_brier",
+    "value": 0.20568,
+    "display": "0.2057",
+    "format": "fix4",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "champion_stats",
+      "brier"
+     ]
+    }
+   },
+   {
+    "key": "ch_ece",
+    "value": 0.0737,
+    "display": "0.0737",
+    "format": "fix4",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "challenger_stats",
+      "ece"
+     ]
+    }
+   },
+   {
+    "key": "cb_ece",
+    "value": 0.0843,
+    "display": "0.0843",
+    "format": "fix4",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "champion_stats",
+      "ece"
+     ]
+    }
+   },
+   {
+    "key": "ch_p95_ae",
+    "value": 31.23,
+    "display": "31.23",
+    "format": "num2",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "challenger_stats",
+      "p95_ae"
+     ]
+    }
+   },
+   {
+    "key": "cb_p95_ae",
+    "value": 33.37,
+    "display": "33.37",
+    "format": "num2",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "champion_stats",
+      "p95_ae"
+     ]
+    }
+   },
+   {
+    "key": "ci_lo",
+    "value": -0.494,
+    "display": "-0.494",
+    "format": "pts3",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "mae_diff_ci",
+      0
+     ]
+    }
+   },
+   {
+    "key": "ci_hi",
+    "value": 0.692,
+    "display": "+0.692",
+    "format": "pts3",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "mae_diff_ci",
+      1
+     ]
+    }
+   },
+   {
+    "key": "mae_diff",
+    "value": 0.095,
+    "display": "+0.095",
+    "format": "pts3",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "mae_diff"
+     ]
+    }
+   },
+   {
+    "key": "weeks",
+    "value": 3,
+    "display": "3",
+    "format": "int",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "weeks"
+     ]
+    }
+   },
+   {
+    "key": "win_share",
+    "value": 0.333,
+    "display": "33%",
+    "format": "prob0",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "weekly_win_share"
+     ]
+    }
+   },
+   {
+    "key": "cov80",
+    "value": 0.8035,
+    "display": "80.3%",
+    "format": "prob1",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "challenger_stats",
+      "coverage_80"
+     ]
+    }
+   }
+  ],
+  "facts": [
+   {
+    "key": "name",
+    "value": "V2.1 hardened vs V1 champion",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      0,
+      "experiment_name"
+     ]
+    }
+   },
+   {
+    "key": "study_id",
+    "value": "EXP-001",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      0,
+      "experiment_id"
+     ]
+    }
+   },
+   {
+    "key": "challenger",
+    "value": "CFB V2.1 challenger",
+    "query": {
+     "src": "cfb_maturity",
+     "path": [
+      "modules",
+      1,
+      "model"
+     ]
+    }
+   },
+   {
+    "key": "baseline",
+    "value": "CFB production pricing model (V1)",
+    "query": {
+     "src": "cfb_maturity",
+     "path": [
+      "modules",
+      0,
+      "model"
+     ]
+    }
+   },
+   {
+    "key": "status",
+    "value": "RUNNING",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      0,
+      "status"
+     ]
+    }
+   },
+   {
+    "key": "change",
+    "value": "V2 architecture (whole model generation)",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      0,
+      "change"
+     ]
+    }
+   },
+   {
+    "key": "hypothesis",
+    "value": "The V2 architecture (opponent-adjusted play-by-play ensemble) predicts margins more accurately than V1 on live 2026 games, as it did on the 2024-25 holdout (-0.28 MAE).",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      0,
+      "hypothesis"
+     ]
+    }
+   },
+   {
+    "key": "window",
+    "value": "LIVE 2026, promotion evaluation at 150 common official games",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      0,
+      "evaluation_window"
+     ]
+    }
+   },
+   {
+    "key": "decision",
+    "value": "NOT_ELIGIBLE",
+    "query": {
+     "src": "cfb_promotion",
+     "path": [
+      "evaluations",
+      0,
+      "decision"
+     ]
+    }
+   },
+   {
+    "key": "clv_status",
+    "value": "NOT APPLICABLE",
+    "query": {
+     "src": "cfb_maturity",
+     "path": [
+      "modules",
+      1,
+      "clv_status"
+     ]
+    }
+   },
+   {
+    "key": "maturity",
+    "value": "SHADOW",
+    "query": {
+     "src": "cfb_maturity",
+     "path": [
+      "modules",
+      1,
+      "status_label"
+     ]
+    }
+   },
+   {
+    "key": "champion",
+    "value": "CFB production pricing model (V1)",
+    "query": {
+     "src": "cfb_maturity",
+     "path": [
+      "modules",
+      0,
+      "model"
+     ]
+    }
+   },
+   {
+    "key": "pl_2",
+    "value": "EXP-003",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      2,
+      "experiment_id"
+     ]
+    }
+   },
+   {
+    "key": "pln_2",
+    "value": "Prior-by-week fade",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      2,
+      "experiment_name"
+     ]
+    }
+   },
+   {
+    "key": "plh_2",
+    "value": "Letting preseason priors fade by week fixes under-use in weeks 0-2 and over-use in weeks 7-10 (development dMAE -0.023).",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      2,
+      "hypothesis"
+     ]
+    }
+   },
+   {
+    "key": "pl_3",
+    "value": "EXP-004",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      3,
+      "experiment_id"
+     ]
+    }
+   },
+   {
+    "key": "pln_3",
+    "value": "P4 tier term",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      3,
+      "experiment_name"
+     ]
+    }
+   },
+   {
+    "key": "plh_3",
+    "value": "A P4-tier term removes the systematic under-rating of the P4 side in P4-vs-G5 games (development dMAE -0.030).",
+    "query": {
+     "src": "cfb_experiments",
+     "path": [
+      "rows",
+      3,
+      "hypothesis"
+     ]
+    }
+   }
+  ],
+  "checks": {
+   "voice": {
+    "ok": true,
+    "issues": []
+   },
+   "verify": {
+    "ok": true,
+    "checked": 38,
+    "problems": []
+   }
+  }
+ }
+}

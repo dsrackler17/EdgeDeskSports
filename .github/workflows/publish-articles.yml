@@ -79,6 +79,12 @@ jobs:
       - name: Pull what was published from a browser
         run: node tools/articles/sync.js --write
 
+      # The desk's published articles (supabase/desk_articles.sql, view
+      # desk_published): anon key, published rows only, so a draft cannot
+      # reach the repository. A failed read leaves the store as it was.
+      - name: Pull the published desk articles
+        run: node tools/desk/sync.js --write
+
       - name: Refresh every article record from the research
         run: |
           node tools/articles/generate.js --network \

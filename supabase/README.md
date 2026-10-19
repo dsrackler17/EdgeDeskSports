@@ -83,6 +83,19 @@ Run them in that order. They are T0 observations and T2 transforms only, and non
 
 Tested against a real PostgreSQL by `tools/football/market_structure_sql.test.js`, `tools/football/circa_ownership.test.js` and `tools/football/market_structure_prereg.test.js`.
 
+### `desk_articles.sql` + `desk_articles_cron.sql` — data-first articles with a required take
+
+Run after `site_articles.sql` (the guard says so). `funnel.sql` and `growth.sql` are read by Article Performance when present.
+
+- **`article_drafts`** is append-only: every generated draft with its body and a `data_snapshot` holding every printed number, the query that produced it, and each source file's digest and commit. Content cannot be edited, deleted or truncated; `status` only moves out of `draft`. Written only by `desk_draft_put()` (service role), which stores an identical draft once.
+- **`desk_articles`** holds publication state. **The publish gate is a trigger** (`desk_articles_gate`): an article becomes published only with a take of at least `desk_settings.min_take_chars` in `article_takes` and a draft that passed its own voice and source checks, whoever the caller is. The take is copied onto the row at that moment.
+- **`article_takes`** (+ append-only `article_take_revisions`) holds "My take" for desk and game articles. `site_articles_take_gate` holds a game article's FIRST publication from a browser to the same rule; earlier publications are untouched.
+- **Doors:** owner (`site_article_is_admin`): `desk_queue`, `desk_article`, `article_take_save`, `desk_publish`, `desk_withdraw`, `desk_settings_save`, `desk_pending_count`, `article_takes_owner`, `desk_article_performance`. Service role: `desk_draft_put`, `desk_notify_claim`/`desk_notify_done` (claim before send), `article_takes_for_pipeline`. Anon: the view `desk_published` (published only) and `article_takes_published`.
+- **RLS on, no client policy** on any desk table.
+- **`desk_articles_cron.sql`** schedules `desk_generate` (daily 14:23 UTC) and `desk_notify` (every 30 minutes) through `desk_poke()` and the Vault secret `desk_cron_secret`.
+
+Tested against a real PostgreSQL by `tools/desk/desk_sql.test.js`; see `docs/desk/README.md`.
+
 ### `content_engine.sql` — the owner-only Sports Media Content Engine
 
 Run after `affiliates.sql`, `growth.sql` and `growth_outbound.sql` (the guard says so). Everything lives in the private schema `content_engine`, which PostgREST does not serve; the only way in is a `public.content_engine_*` security-definer door.

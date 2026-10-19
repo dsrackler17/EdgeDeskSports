@@ -1,0 +1,89 @@
+# The desk: data-first articles with a required take.
+#
+#   offline     the generators against this season's committed data, every
+#               number re-derived at the commit it was read from, the voice
+#               rules, the pages and their JSON-LD, the editorial gate, the
+#               kit, and the desk_cron function imported as deployed
+#   migrations  supabase/desk_articles.sql applied over the real Supabase
+#               chain on a throwaway PostgreSQL and attacked: the publish gate,
+#               append-only drafts, RLS, notifications, Article Performance
+#   articles    the article and editorial suites, because the renderer and the
+#               publisher both changed
+name: Desk tests
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_desk.js'
+      - 'tools/desk/**'
+      - 'admin/desk/**'
+      - 'supabase/desk_articles.sql'
+      - 'supabase/desk_articles_cron.sql'
+      - 'supabase/functions/desk_cron/**'
+      - 'tools/articles/article_render.js'
+      - 'tools/articles/build_articles.js'
+      - 'tools/articles/store.js'
+      - 'tools/editorial/publisher.js'
+      - 'tools/editorial/run.js'
+      - 'articles/articles.css'
+      - 'record/football/summary.json'
+      - '.github/workflows/desk-tests.yml'
+      - '.github/workflows/desk-drafts.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_desk.js'
+      - 'tools/desk/**'
+      - 'supabase/desk_articles.sql'
+      - 'supabase/functions/desk_cron/**'
+      - 'tools/editorial/publisher.js'
+      - '.github/workflows/desk-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desk-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Generators, verifier, voice, pages, editorial gate, kit, desk_cron
+        run: node tools/desk/desk.test.js
+      - name: Today's drafts, held to their own checks (nothing is stored)
+        run: node tools/desk/generate.js --due
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The publish gate, append-only drafts, RLS, notifications, Article Performance
+        run: node tools/desk/desk_sql.test.js
+  articles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The article system and the editorial publisher
+        run: |
+          node tools/articles/articles.test.js
+          node tools/editorial/editorial.test.js
+          node tools/editorial/publisher.test.js
+          node tools/articles/build_articles.js --check

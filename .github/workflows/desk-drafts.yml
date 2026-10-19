@@ -1,0 +1,65 @@
+# EdgeDesk: draft the data-first desk articles from the committed record.
+#
+# Woken daily by Supabase pg_cron (supabase/desk_articles_cron.sql ->
+# desk_cron -> workflow_dispatch); the schedule below is the backup, because
+# GitHub's scheduler has been seen to skip hours on this repository.
+#
+# It DRAFTS. It never publishes: every draft lands in public.article_drafts,
+# the owner is told, and the database refuses to publish one until the owner
+# has written "My take" (supabase/desk_articles.sql). A draft that fails its
+# own voice or source checks is held here and never sent.
+#
+# SECRETS: SB_URL and SB_SERVICE_ROLE, the ones every database job uses.
+# Until they exist the job prints a ::warning:: naming what is missing and
+# exits green, so nothing silently pretends to have drafted.
+name: Desk drafts
+on:
+  schedule:
+    - cron: '41 15 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Who woke the job (supabase_cron, manual)'
+        type: string
+        default: manual
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desk-drafts
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The desk's own checks
+        run: node tools/desk/desk.test.js
+      - name: Draft what is due
+        env:
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          SB_URL: ${{ secrets.SB_URL }}
+          SRC: ${{ github.event.inputs.source }}
+        run: |
+          missing=""
+          [ -n "$SB_SERVICE_ROLE" ] || missing="$missing SB_SERVICE_ROLE"
+          [ -n "$SB_URL" ] || missing="$missing SB_URL"
+          if [ -n "$missing" ]; then
+            echo "::warning::Desk drafts not stored. Missing secret(s):$missing"
+            node tools/desk/generate.js --due
+            echo "**Desk drafts:** generated but NOT stored. Missing secret(s):$missing." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          case "$SRC" in supabase_cron|manual|'') ;; *) SRC=manual ;; esac
+          echo "woken by: ${SRC:-schedule}"
+          node tools/desk/generate.js --due --push
+          echo "**Desk drafts:** done (woken by ${SRC:-schedule})." >> "$GITHUB_STEP_SUMMARY"

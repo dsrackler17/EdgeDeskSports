@@ -166,7 +166,12 @@ function buildIndex(records, opts) {
          console both want without loading a megabyte of payload */
       bet_result: r.grading ? r.grading.bet_headline : null,
       process_grade: r.grading ? r.grading.process_headline : null,
-      snapshot_id: r.snapshot_id || null
+      snapshot_id: r.snapshot_id || null,
+      /* why the publisher is holding it (the owner's desk lists the ones
+         waiting on "My take"), and whether a take is on the record. The take
+         itself is never in this public file. */
+      hold: r.publish_state && r.publish_state.ok === false ? (r.publish_state.hold_reason || null) : null,
+      has_take: !!r.my_take
     })).sort((a, b) => (Date.parse(b.published_at || b.updated_at || 0) || 0) - (Date.parse(a.published_at || a.updated_at || 0) || 0))
   };
 }

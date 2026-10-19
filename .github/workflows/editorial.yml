@@ -170,6 +170,15 @@ jobs:
       - name: Run the editorial pipeline
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # "My take": the publisher holds every NEW article until the owner has
+          # written one (tools/desk/takes.js). Read under the desk's own names
+          # so the runtime's lease and heartbeat paths stay exactly as they were.
+          DESK_SB_URL: ${{ secrets.SB_URL }}
+          DESK_SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          # the off switch, without a code change: a repository VARIABLE (not
+          # a secret) set to false. Empty means on. The desk's Settings tab
+          # (desk_settings) wins over it once the database answers.
+          EDGD_REQUIRE_MY_TAKE: ${{ vars.EDGD_REQUIRE_MY_TAKE }}
         run: |
           ARGS="--network"
           # WHO WOKE US, recorded on the heartbeat so scheduler health is

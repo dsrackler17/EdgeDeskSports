@@ -116,6 +116,19 @@ function preflight(rec, opts) {
 
   block('archived', rec.status !== STATUS.ARCHIVED,
     'an archived article was withdrawn on purpose and is not republished by a cron job');
+
+  /* ---- MY TAKE: a person publishes, not a cron job ---- */
+  /* An auto-generated article goes public only after the owner has written
+     "My take" in their own words (tools/desk/takes.js reads it from the
+     database and the run merges it into the record). The caller turns the
+     rule on; a page that was ever public is never pulled back by it. */
+  if (opts.requireTake && !isPublic(rec) && !rec.published_at) {
+    const min = opts.minTake || 240;
+    const len = String(rec.my_take || '').replace(/\s+/g, ' ').trim().length;
+    block('my_take', len >= min,
+      'an auto-generated article publishes only after the owner writes "My take" of at least ' + min + ' characters',
+      len + ' characters on file');
+  }
   block('operator_hold', !rec.manual_review_required,
     'an operator marked this article as requiring review',
     txt(rec.manual_review_reason));

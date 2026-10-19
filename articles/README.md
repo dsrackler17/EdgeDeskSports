@@ -203,6 +203,25 @@ that work without it.
 
 ---
 
+# The desk, and the take every new article needs
+
+Since 2026-10-19 a second kind of article lives here: **desk articles**, built
+only on data I own (my weekly card against the close, my disagreements with
+the market, line moves, my worst misses, study notes), each with every number
+traced to the file it came from. They are drafted into `public.article_drafts`,
+published only after I write "My take", pulled into
+`articles/data/desk/records/` by `tools/desk/sync.js` and rendered by this same
+builder (`tools/desk/desk_render.js`) at `/articles/<slug>/`, with a hub at
+`/articles/desk/`.
+
+The same rule now covers game articles: the editorial publisher holds every
+new pregame and postgame article until a take is on file (check `my_take`),
+and a game article with a take shows it under the hero. Every article carries
+the author layer (name, bio, "Data as of", the live CLV record, a `Person`
+author in the JSON-LD). See [`docs/desk/README.md`](../docs/desk/README.md).
+
+---
+
 # The editorial system
 
 The pages above are what EdgeDesk **thinks**. For the games that matter, a
