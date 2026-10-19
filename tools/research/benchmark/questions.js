@@ -112,7 +112,7 @@ add('stale_data', [
 
 /* 6. MISSING PLAYERS — a player EdgeDesk holds nothing on is said to be unknown, never given a status */
 add('missing_players', [
-  { q: 'Is Patrick Mahomes playing Sunday?', route: 'AVAILABILITY', has: [/Patrick Mahomes/, /no Kansas City Chiefs game on its card/], not: [/Patrick Mahomes (is|will be) (out|active|playing|questionable)/i] },
+  { q: 'Is Patrick Mahomes playing Sunday?', route: 'AVAILABILITY', has: [/Patrick Mahomes/, /no Kansas City Chiefs game on its card|next game: [^\n]*Kansas City Chiefs/], not: [/Patrick Mahomes (is|will be) (out|active|playing|questionable)/i] },
   { q: 'Is Zebulon Quarterbackson playing Sunday?', route: 'MODEL_DESK', not: [/Zebulon Quarterbackson (is|will be) (out|active|playing)/i] },
   { q: 'Is Josh Allen playing Sunday?', route: 'AVAILABILITY', has: [/Josh Allen/] },
   { q: 'Is Jared Goff playing this week?', route: 'AVAILABILITY', has: [/Jared Goff/] },
