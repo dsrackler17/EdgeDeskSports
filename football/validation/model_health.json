@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-19T04:07:53.316Z",
+ "as_of": "2026-10-19T05:07:48.415Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "4a95ca84c92d18aa",
+ "inputs_key": "2b1684f8c2c01975",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 4355,
+   "rows": 4359,
    "mode": "LIVE",
-   "sha1": "871962491851"
+   "sha1": "6a1c82992a18"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "ecfebf4edf1c"
+   "sha1": "f37514c80eb6"
   },
   {
    "file": "football/params.js",
@@ -52,7 +52,7 @@
   {
    "file": "football/validation/key_numbers.json",
    "mode": "DESCRIPTIVE (final margins)",
-   "sha1": "b3d3c564d9af"
+   "sha1": "7520dac7237f"
   }
  ],
  "maturity": [
@@ -99,7 +99,7 @@
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "4355 decision snapshots issued before kickoff; 228 settled"
+   "note": "4359 decision snapshots issued before kickoff; 228 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,10 +133,10 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 4355,
+  "issued_snapshots": 4359,
   "issued_by_decision": {
    "NO_DECISION": 1770,
-   "PASS": 2396,
+   "PASS": 2400,
    "WATCH": 189
   },
   "graded_rows": 234,
@@ -15949,56 +15949,56 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-19T02:02:48.328Z",
+  "generated_at": "2026-10-19T04:55:31.982Z",
   "sports": {
    "nfl": {
     "versions": [
      "edgedesk_football_v1.0.0"
     ],
-    "graded": 75,
+    "graded": 76,
     "ats": {
-     "n": 75,
-     "w": 37,
+     "n": 76,
+     "w": 38,
      "l": 33,
      "p": 5,
-     "pct": 52.9,
+     "pct": 53.5,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 75,
-      "text": "n=75 · Early signal",
+      "n": 76,
+      "text": "n=76 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 73,
-     "avg": 0.5,
-     "beat": 34,
+     "n": 74,
+     "avg": 0.51,
+     "beat": 35,
      "flat": 25,
      "lost": 14,
-     "beat_pct": 46.6,
+     "beat_pct": 47.3,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 73,
-      "text": "n=73 · Early signal",
+      "n": 74,
+      "text": "n=74 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 75,
-     "model_mae": 9.25,
-     "close_mae": 8.96,
-     "model_closer_pct": 48,
-     "total_n": 75,
-     "model_total_mae": 10.81,
-     "close_total_mae": 10.26
+     "n": 76,
+     "model_mae": 9.23,
+     "close_mae": 8.99,
+     "model_closer_pct": 48.7,
+     "total_n": 76,
+     "model_total_mae": 10.85,
+     "close_total_mae": 10.36
     },
     "brier": {
-     "n": 75,
-     "model": 0.2386
+     "n": 76,
+     "model": 0.2377
     }
    },
    "cfb": {
@@ -16143,10 +16143,10 @@
      },
      {
       "closing_expected_margin": -1.5,
-      "n": 97,
+      "n": 98,
       "learned_mean": -1.14,
-      "actual_mean": 0.27,
-      "gap": -1.41
+      "actual_mean": 0.37,
+      "gap": -1.51
      },
      {
       "closing_expected_margin": -1,
@@ -16325,7 +16325,7 @@
      }
     ],
     "n_numbers": 37,
-    "n_off_centre": 17,
+    "n_off_centre": 18,
     "max_abs_gap": 4.07
    },
    "CFB": {
@@ -16885,7 +16885,7 @@
     "code": "DISTRIBUTION_CENTRE_DRIFT",
     "severity": "INFO",
     "league": "NFL",
-    "text": "NOTE: NFL learned margin distribution is off-centre at 17 of 37 closing numbers (worst: at -6 its mean is -5.01 while 117 games closing there averaged -9.09), consistent with kernel smoothing (bandwidth 3). football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.",
+    "text": "NOTE: NFL learned margin distribution is off-centre at 18 of 37 closing numbers (worst: at -6 its mean is -5.01 while 117 games closing there averaged -9.09), consistent with kernel smoothing (bandwidth 3). football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.",
     "note": "This is a research alert, not an automatic change."
    },
    {
@@ -16911,31 +16911,31 @@
    "ranked": [
     {
      "margin": 3,
-     "mass": 0.15149
+     "mass": 0.15147
     },
     {
      "margin": 7,
-     "mass": 0.09067
+     "mass": 0.09066
     },
     {
      "margin": 6,
-     "mass": 0.06013
+     "mass": 0.06012
     },
     {
      "margin": 10,
-     "mass": 0.05484
+     "mass": 0.05497
     },
     {
      "margin": 4,
-     "mass": 0.04887
+     "mass": 0.04886
     },
     {
      "margin": 14,
-     "mass": 0.0486
+     "mass": 0.04859
     },
     {
      "margin": 1,
-     "mass": 0.04127
+     "mass": 0.04126
     },
     {
      "margin": 2,
@@ -17008,7 +17008,7 @@
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
   },
   "n": {
-   "NFL": 7367,
+   "NFL": 7368,
    "CFB": 11502
   }
  },
@@ -17102,7 +17102,7 @@
    "code": "DISTRIBUTION_CENTRE_DRIFT",
    "severity": "INFO",
    "league": "NFL",
-   "text": "NOTE: NFL learned margin distribution is off-centre at 17 of 37 closing numbers (worst: at -6 its mean is -5.01 while 117 games closing there averaged -9.09), consistent with kernel smoothing (bandwidth 3). football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.",
+   "text": "NOTE: NFL learned margin distribution is off-centre at 18 of 37 closing numbers (worst: at -6 its mean is -5.01 while 117 games closing there averaged -9.09), consistent with kernel smoothing (bandwidth 3). football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.",
    "note": "This is a research alert, not an automatic change."
   },
   {
