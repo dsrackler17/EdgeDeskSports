@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-19T02:01:31.477Z",
+ "generated_at": "2026-10-19T05:01:29.851Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-19T02:01:31.477Z",
-  "reliability_generated_at": "2026-10-19T02:01:31.477Z",
-  "enrichment_generated_at": "2026-10-19T02:01:26.449Z",
+  "at": "2026-10-19T05:01:29.851Z",
+  "reliability_generated_at": "2026-10-19T05:01:29.851Z",
+  "enrichment_generated_at": "2026-10-19T05:01:24.168Z",
   "counts": {
    "games": 60,
    "mean": 86.6,
@@ -310,6 +310,7 @@
     "fam": {
      "availability": 4.6,
      "qb_status": 2,
+     "starters": 0.6,
      "stability": 0.4,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
@@ -1298,69 +1299,33 @@
   }
  },
  "previous": {
-  "at": "2026-10-18T23:58:32.282Z",
+  "at": "2026-10-19T02:01:31.477Z",
   "counts": {
-   "games": 59,
-   "mean": 86.4,
+   "games": 60,
+   "mean": 86.6,
    "median": 89,
    "by_band": {
-    "STRONG": 47,
-    "ADEQUATE": 11,
+    "STRONG": 49,
+    "ADEQUATE": 10,
     "CAUTION": 1
    },
-   "missing_qb_status": 118,
+   "missing_qb_status": 120,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 14,
+   "games_lacking_injury_information": 15,
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 0,
-   "games_under_two_market_sources": 59,
+   "games_under_two_market_sources": 60,
    "stale_evidence_records": 87,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
- "what_improved": [
-  "+0.2 mean reliability (86.4 → 86.6)",
-  "2 games moved ADEQUATE → STRONG"
- ],
- "what_degraded": [
-  "+2 QB statuses missing (118 → 120)",
-  "+1 games lacking injury information (14 → 15)",
-  "+1 games under two market sources (59 → 60)",
-  "1 game moved STRONG → ADEQUATE"
- ],
- "why": [
-  "the slate itself changed: 1 game entered the window, 0 left it (kicked off or rolled out)",
-  "Baylor @ Kansas: STRONG → ADEQUATE (89 → 79); largest change: favorite_flips -3 pts",
-  "Kennesaw State @ Middle Tennessee: ADEQUATE → STRONG (79 → 87); largest change: favorite_flips +4.1 pts",
-  "South Alabama @ Marshall: ADEQUATE → STRONG (79 → 86); largest change: favorite_flips +5.3 pts"
- ],
+ "what_improved": [],
+ "what_degraded": [],
+ "why": [],
  "history": [
-  {
-   "at": "2026-10-12T06:15:52.146Z",
-   "counts": {
-    "games": 66,
-    "mean": 85.5,
-    "median": 89,
-    "by_band": {
-     "STRONG": 52,
-     "LOW": 3,
-     "ADEQUATE": 11
-    },
-    "missing_qb_status": 132,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 15,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 66,
-    "stale_evidence_records": 85,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-12T15:50:40.707Z",
    "counts": {
@@ -2756,6 +2721,29 @@
   },
   {
    "at": "2026-10-19T02:01:31.477Z",
+   "counts": {
+    "games": 60,
+    "mean": 86.6,
+    "median": 89,
+    "by_band": {
+     "STRONG": 49,
+     "ADEQUATE": 10,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 120,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 15,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 0,
+    "games_under_two_market_sources": 60,
+    "stale_evidence_records": 87,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-19T05:01:29.851Z",
    "counts": {
     "games": 60,
     "mean": 86.6,
