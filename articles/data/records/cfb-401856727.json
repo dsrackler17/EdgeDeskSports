@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Texas A&M vs. Alabama: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Texas A&M vs. Alabama 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Texas A&M at Alabama: Alabama −13.0, fair total 49.0. Alabama wins 81% of simulations. Data confidence 78%. Model status DATA FAULT. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Texas A&M at Alabama: Alabama −13.0, fair total 49.0. Alabama wins 81% of simulations. Data confidence 78%. Model status NO MARKET. Research, not picks.",
   "excerpt": "Alabama carries the stronger underlying team rating — +6.8 against +4.6, a 2.2-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Alabama −13.0 before any sportsbook number is consulted, with Alabama winning 81% of…",
   "home_team": "Alabama",
   "away_team": "Texas A&M",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-24T19:30:00.000Z",
   "game_when_label": "2026-10-24 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-19T23:02:06.396Z",
-  "generated_at": "2026-10-19T23:02:06.396Z",
+  "updated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-19T20:32:51.575Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
-  "model_status": "DATA FAULT",
-  "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+  "model_status": "NO MARKET",
+  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
   "confidence": 78,
   "priced": true,
   "fair_spread_text": "Alabama −13.0",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-19. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-09-05, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": null,
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -164,8 +164,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "DATA FAULT",
-      "status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+      "status": "NO MARKET",
+      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -252,7 +252,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T17:00:00.000Z",
-        "retrieved_at": "2026-10-19T22:56:03.518Z"
+        "retrieved_at": "2026-10-19T17:23:44.343Z"
       },
       "home": {
         "team": "Alabama",
@@ -336,9 +336,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T19:30:00.000Z",
-        "retrieved_at": "2026-10-19T22:56:03.518Z"
+        "retrieved_at": "2026-10-19T17:23:44.343Z"
       },
-      "generated_at": "2026-10-19T22:56:02.456Z",
+      "generated_at": "2026-10-19T17:24:40.287Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1432,7 +1432,7 @@
           "Continuity: Texas A&M 59.3 (#7 of 138) vs Alabama 42.5 (#80 of 138) — 73 places on the national board.",
           "Secondary: Texas A&M 56.3 (#31 of 138) vs Alabama 49.9 (#100 of 138) — 69 places on the national board.",
           "The outcome range is 14.6 points wide at one sigma — p10 -8.9 to p90 +33.1 for Alabama, so a projection of +13.1 still produces results a long way either side of it.",
-          "The market disagrees by 10.6 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
+          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
@@ -1441,20 +1441,8 @@
       "items": [
         {
           "sev": "MEDIUM",
-          "label": "market disagreement",
-          "text": "The market disagrees by 10.6 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "stale",
-          "text": "odds is 1063h old",
           "widening": null
         },
         {
@@ -1491,6 +1479,18 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "no book spread joined to this game — no edge is claimed",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "no book total joined to this game",
           "widening": null
         }
       ],
@@ -1547,31 +1547,11 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": true,
+      "available": false,
       "model": "Alabama −13.0",
       "model_raw": "Alabama -13.1",
-      "market": "Alabama −2.5",
-      "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
-      "key_number": {
-        "text": "Market is below 3; model is above 7.",
-        "detail": "Alabama: market −2.5, model fair −13.0.",
-        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
-      },
-      "difference": "10.6 points",
-      "difference_n": 10.6,
-      "difference_exact": 10.595157381396854,
-      "total_model": "49.0",
-      "total_model_raw": "48.9",
-      "total_market": "54.5",
-      "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
-      "total_market_held": null,
-      "book": "captured consensus (stale) · 1 book · best at DraftKings",
-      "captured": "2026-09-05T16:00:03.65+00:00",
-      "capture_age": "1063 hours old",
-      "stale": false,
-      "classification": "DATA FAULT",
-      "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
-      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+      "headline": "No sportsbook spread is currently joined to this game.",
+      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1583,25 +1563,11 @@
       "engine_status": "PREDICTED",
       "label": {
         "key": "NO_MARKET",
-        "label": "STALE MARKET",
-        "rule": "stale_market",
-        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
+        "label": "NO MARKET",
+        "rule": "no_market",
+        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
       },
-      "disagreement": {
-        "status": "MARKET_FAULT",
-        "verified": false,
-        "raw_market_gap": 10.6,
-        "verified_market_gap": null,
-        "calibrated_gap": 10,
-        "root_cause": "STALE_MARKET",
-        "failed": [
-          "MARKET.quote_fresh",
-          "MARKET.book_count"
-        ],
-        "incomplete": [],
-        "favorite_flip": false,
-        "manual_review": false
-      },
+      "disagreement": null,
       "fair": {
         "line_text": "Alabama −13.0",
         "favorite_team": "Alabama",
@@ -1612,18 +1578,8 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": true,
-        "points": 10.6,
-        "toward_team": "Alabama",
-        "text": "10.6 pts toward Alabama",
-        "market_line_text": "Alabama −2.5",
-        "market_home_margin": 2.5,
-        "favorite_differs": false,
-        "source": "captured consensus (stale) · 1 book · best at DraftKings",
-        "as_of": "2026-09-05T16:00:03.65+00:00",
-        "stale": true,
-        "measured_from": "raw",
-        "note": null
+        "available": false,
+        "reason": "no market line is joined to this game"
       },
       "confidence": {
         "score": 78,
@@ -1631,11 +1587,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 87,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "87 · STRONG",
+        "text": "88 · STRONG",
         "sub": "main deduction: Texas A&M’s availability report is not due yet",
-        "score": 87,
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1667,7 +1623,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14.7,
+            "score": 15,
             "max": 15
           },
           {
@@ -1682,18 +1638,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Texas A&M)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
             "action": "Re-read availability inside the filing window (Alabama)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
-            "action": "Refresh the market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Capture a market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1730,7 +1686,7 @@
       },
       "best_available_line": {
         "available": false,
-        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+        "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
         "key": "NOT_COMPARED",
@@ -1779,8 +1735,8 @@
     },
     "headline": "EdgeDesk projects Alabama 31, Texas A&M 18.",
     "state": {
-      "label": "DATA FAULT",
-      "note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+      "label": "NO MARKET",
+      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1938,7 +1894,7 @@
       "EdgeDesk’s line is Alabama −13.0 on a neutral read of the two teams, before any book is consulted. Projected total 49.0.",
       "Alabama wins 81% of the time in EdgeDesk’s simulation, Texas A&M 19%.",
       "Eight games in ten land between -8.9 and +33.1 for Alabama. A single result inside that band tells you nothing new about either team.",
-      "The market has Alabama −2.5 at captured consensus (stale) · 1 book · best at DraftKings, 10.6 points from EdgeDesk’s number.",
+      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
       "Texas A&M quarterback: Marcel Reed — started the last game; no announcement for this one.",
       "Alabama quarterback: Keelon Russell — started the last game; no announcement for this one."
     ],
@@ -1952,13 +1908,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "mlntxjdiggv9",
+    "packet_hash": "1xkvuc0capoj6",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Alabama win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.9 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.4 points.",
     "gap": {
-      "points": 0.9,
+      "points": 1.4,
       "toward": "Texas A&M",
       "other": "Alabama"
     },
@@ -2009,7 +1965,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-19T22:56:22.585Z",
+        "observed_at": "2026-10-19T17:24:47.861Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2032,6 +1988,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T23:02:06.396Z"
+    "at": "2026-10-19T20:32:51.575Z"
   }
 }

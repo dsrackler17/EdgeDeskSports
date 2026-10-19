@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-19T23:02:06.396Z",
-  "generated_at": "2026-10-19T23:02:06.396Z",
+  "updated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-19T20:32:51.575Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 5.9-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Carolina Panthers −4.5",
@@ -44,7 +44,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 92 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": null,
   "research": {
     "kind": "NFL_GAME",
     "game": {
@@ -131,7 +131,7 @@
       "sample_games": 92,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 5.9-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1174,31 +1174,31 @@
       "available": true,
       "model": "Carolina Panthers −4.5",
       "model_raw": "Carolina Panthers -4.4",
-      "market": "Carolina Panthers +1.5",
-      "difference": "5.9 points",
+      "market": "Carolina Panthers −3.0",
+      "difference": "1.4 points",
       "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "key_number": {
-        "text": "Model favors Carolina Panthers by more than a field goal; market makes Carolina Panthers an underdog.",
-        "detail": "Carolina Panthers: model fair −4.5, market +1.5.",
+        "text": "Market sits on 3; model is above 3.",
+        "detail": "Carolina Panthers: market −3.0, model fair −4.5.",
         "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
       },
       "total_model": "44.0",
       "total_model_raw": "44.0",
-      "total_market": "45.5",
+      "total_market": "44.5",
       "total_rounding_note": null,
-      "total_difference": "1.5 points",
-      "book": "DraftKings",
-      "capture_age": "871 hours old",
+      "total_difference": "0.5 points",
+      "book": "nflverse reference",
+      "capture_age": null,
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 5.9-point gap is context only and the game is excluded from research ranking.",
-      "reference": null,
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Carolina Panthers 24, Tampa Bay Buccaneers 20.",
     "state": {
       "label": "STALE MARKET",
-      "note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 5.9-point gap is context only and the game is excluded from research ranking.",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1340,6 +1340,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T23:02:06.396Z"
+    "at": "2026-10-19T20:32:51.575Z"
   }
 }
