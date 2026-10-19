@@ -143,6 +143,14 @@ async function main() {
       if (e.notReady) { skipped++; log('  skip  ' + j.type.padEnd(15) + e.message); continue; }
       failed++; console.error('  FAIL  ' + j.type.padEnd(15) + (e.stack || e.message)); continue;
     }
+    /* a stored draft must be traceable to a commit: the job runs on a clean
+       checkout, and a draft read from uncommitted files is never stored */
+    const loose = doPush ? SRC.provenance(S, d.sources_used).filter(p => !p.commit) : [];
+    if (loose.length) {
+      failed++;
+      console.error('  HELD  ' + d.article_key + '  read from uncommitted file(s): ' + loose.map(p => p.file).join(', '));
+      continue;
+    }
     if (!d.voice.ok || !d.verify.ok) {
       failed++;
       console.error('  HELD  ' + d.article_key + '  voice: ' + JSON.stringify(d.voice.issues) + '  verify: ' + JSON.stringify(d.verify.problems));

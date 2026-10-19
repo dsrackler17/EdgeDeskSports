@@ -99,8 +99,19 @@ function load(id, opts) {
     doc = spec.kind === 'jsonl' ? { rows: parseJsonl(buf.toString('utf8')) } : JSON.parse(buf.toString('utf8'));
     stamp = stampOf(doc);
   }
-  const commit = opts.commit || git(['log', '-1', '--format=%H', '--', file], opts.root) || null;
-  return { id, file, what: spec.what, sha256: digest, generated_at: stamp, commit, doc };
+  /* THE COMMIT IS ONLY RECORDED WHEN IT HOLDS THE BYTES THAT WERE READ. The
+     last commit to touch a path is not that when the working tree differs
+     (an uncommitted refresh, a merge in progress): a draft then records no
+     commit and says it was read from an uncommitted file, rather than naming
+     one whose content it never saw. */
+  let commit = opts.commit || null, uncommitted = false;
+  if (!opts.commit) {
+    const last = git(['log', '-1', '--format=%H', '--', file], opts.root);
+    const clean = last && git(['status', '--porcelain', '--', file], opts.root) === '';
+    commit = clean ? last : null;
+    uncommitted = !clean;
+  }
+  return { id, file, what: spec.what, sha256: digest, generated_at: stamp, commit, uncommitted, doc };
 }
 
 /* Load several, lazily: a generator asks for what it needs. */
@@ -122,7 +133,7 @@ function loader(opts) {
 function provenance(sources, used) {
   return used.filter(id => sources[id]).map(id => {
     const s = sources[id];
-    return { id, file: s.file, what: s.what, sha256: s.sha256, generated_at: s.generated_at, commit: s.commit };
+    return { id, file: s.file, what: s.what, sha256: s.sha256, generated_at: s.generated_at, commit: s.commit, uncommitted: !!s.uncommitted };
   });
 }
 

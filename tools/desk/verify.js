@@ -21,6 +21,7 @@ function verifyRow(row, opts) {
   const snap = row.data_snapshot || {};
   const sources = Object.create(null), problems = [];
   (snap.sources || []).forEach(p => {
+    if (!opts.tree && !p.commit) { problems.push({ key: p.id, why: p.file + ' was read from an uncommitted file, so there is no commit to re-read it at (verify with --tree)' }); return; }
     const s = SRC.load(p.id, { season: row.season || 2026, commit: opts.tree ? null : p.commit });
     if (!s) { problems.push({ key: p.id, why: 'source file ' + p.file + ' not found' + (opts.tree ? '' : ' at ' + p.commit) }); return; }
     if (!opts.tree && s.sha256 !== p.sha256) problems.push({ key: p.id, why: 'digest at ' + p.commit + ' is ' + s.sha256.slice(0, 12) + ', the draft recorded ' + String(p.sha256).slice(0, 12) });

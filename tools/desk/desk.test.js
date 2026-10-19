@@ -107,8 +107,13 @@ function section(s) { console.log('· ' + s); }
     chk(t + ': cites the public record, never the signed-in terminal', /edgedesksports\.com\/record(\.html|\/football\/)/.test(d.body_md) && !/app\.html#/.test(d.body_md));
     chk(t + ': slug fits the tracker', /^[a-z0-9-]{3,70}$/.test(d.slug), d.slug);
     const row = GEN.packageDraft(d, S, NOW);
-    const at = V.verifyRow(row);
-    chk(t + ': re-verified at the commit it recorded', at.ok && at.checked === d.numbers.length + d.facts.length, at.problems.slice(0, 3));
+    /* a clean checkout (CI, the drafting job) re-reads every file at its
+       commit; a working tree with uncommitted data records no commit for
+       those files, and is verified against the files as they stand */
+    const committed = row.data_snapshot.sources.every(p => p.commit);
+    const at = V.verifyRow(row, { tree: !committed });
+    chk(t + ': re-verified ' + (committed ? 'at the commit it recorded' : 'against the working tree (uncommitted data)'), at.ok && at.checked === d.numbers.length + d.facts.length, at.problems.slice(0, 3));
+    if (!committed) chk(t + ': an uncommitted source never claims a commit', row.data_snapshot.sources.filter(p => !p.commit).every(p => p.uncommitted === true));
   }
   const wk = made['weekly_clv:nfl'];
   chk('weekly: wins AND losses are on the page', wk && /\| Win \|/.test(wk.body_md) && /\| Loss \|/.test(wk.body_md));
