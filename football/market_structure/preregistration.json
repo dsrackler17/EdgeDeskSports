@@ -1,0 +1,245 @@
+{
+ "schema": "edgedesk_preregistration_v1",
+ "registered_at": "2026-10-19",
+ "registered_by": "EdgeDesk research (NFL Contest Signals build)",
+ "status": "EXPERIMENTAL",
+ "frozen_protocol": "These studies are registered under the frozen research protocol and evaluation window. None of them changes an NFL projection, spread, probability, EV, ranking or grade. None may feed the prediction engine until a research_model_results row for it shows passed = true on its holdout, and then only through a validation report that promotes ONE module against the frozen baseline.",
+ "family_correction": "Four studies are registered together. Each primary test is one-sided at alpha = 0.0125 (Bonferroni, 0.05 / 4). A study that reports more than its one primary test reports the rest as descriptive.",
+ "amendments": "This document is append-only. A change is a new version with its own registered_at and the reason, written before the data it changes is read; content_sha256 below covers `studies` exactly as registered, and tools/football/market_structure_prereg.test.js fails if it moves.",
+ "studies": [
+  {
+   "id": "H-NFL-KEY-01",
+   "title": "Sides priced through 6",
+   "hypothesis": "Sides priced through 6 (taking +6/+6.5 or laying -5.5) capture positive CLV versus closing at a rate above baseline.",
+   "objective": "Measure whether the frozen Thursday number on a side that wins or pushes on a six-point margin holds value into the close more often than other frozen sides, as the recent rise in six-point margins would predict if the market under-prices it.",
+   "unit": "One NFL game side at the Thursday 13:00 ET freeze (public.nfl_line_snapshots, status ok): the home main line and its opposite. Regular season and postseason.",
+   "treatment": "The side frozen at +6, +6.5 (underdog) or -5.5 (favourite).",
+   "baseline": "Every other frozen main-line side in the same window (both sides of every game).",
+   "outcome": "CLV of that side's frozen best price at its frozen number: entry decimal × closing de-vigged fair at the same number − 1 (the close pipeline's formula; its close where it priced the number, else the last capture tick before kickoff). Positive CLV = success.",
+   "primary_metric": "Treatment rate of CLV > 0 minus baseline rate of CLV > 0 (two-proportion z, one-sided).",
+   "secondary_metrics": [
+    "mean CLV, treatment minus baseline, with a game-clustered bootstrap 95% interval",
+    "the same split by +6, +6.5 and -5.5"
+   ],
+   "training_window": "None fitted: no parameter is estimated. 2026 Weeks 1–7 (freezes reconstructed from capture history by nfl_line_snapshot_backfill) are used only to confirm the pipeline produces rows; their CLV is not computed for this hypothesis.",
+   "validation_window": "2026 Week 8 through the 2026 postseason (live freezes). Reported descriptively; it does not decide the test.",
+   "holdout_window": "2027 and 2028 seasons, Week 1 through the postseason (live freezes), evaluated once after the 2028 Super Bowl.",
+   "minimum_sample": {
+    "treated_sides_holdout": 80,
+    "baseline_sides_holdout": 800,
+    "note": "About two qualifying main-line sides a week; at n = 80 the test detects a difference of roughly 13 percentage points."
+   },
+   "decision_rule": "passed = true only if, on the holdout, the treatment-minus-baseline rate of CLV > 0 is positive with one-sided p < 0.0125 AND mean CLV difference is positive AND the minimum sample is met. Otherwise passed = false; below the minimum sample the result row is not written.",
+   "forking_paths": {
+    "alternatives_considered": [
+     "the opener instead of the Thursday freeze",
+     "median book price instead of best price",
+     "including -6 (laying six) as treatment",
+     "alternate-line rows instead of main lines",
+     "CLV in points instead of price"
+    ],
+    "choice_and_reason": "Thursday freeze (the contest-relevant number), best price (the existing CLV entry convention), main lines only (one row per side, no within-game duplication), price CLV (the close pipeline's own measure). -6 is excluded because laying six pushes rather than wins on six.",
+    "data_already_seen": "Before registration: the full-history and 2023+ margin distributions (football/market_structure/nfl.json): six-point favourite wins are 3.6% of games overall and 4.6% since 2023; and the per-season share of games decided by exactly 6 (2019-2026, absolute margin) was printed while the build was explored. No CLV for any treated or baseline side has been computed.",
+    "comparisons_made": 1,
+    "stopping_rule": "Fixed horizon: the holdout is read once, at its end. No interim look decides the test."
+   },
+   "machine": {
+    "window_dates": {
+     "training": [
+      "2026-09-09",
+      "2026-10-27"
+     ],
+     "validation": [
+      "2026-10-27",
+      "2027-02-16"
+     ],
+     "holdout": [
+      "2027-09-01",
+      "2029-02-20"
+     ]
+    },
+    "window_note": "[from, to): dates of the games inside each window, Eastern",
+    "minimum_sample": 80,
+    "alpha_one_sided": 0.0125,
+    "version": "1.0.0-prereg",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3"
+   }
+  },
+  {
+   "id": "H-NFL-STALE-01",
+   "title": "Stale contest lines",
+   "hypothesis": "Sides flagged by the snapshot delta detector capture positive CLV from snapshot to close above baseline.",
+   "objective": "Measure whether a material move after the Thursday freeze, seen BEFORE the close, leaves the frozen number on the side the market moved toward with value at the close more often than smaller moves do — the stale-contest-line effect.",
+   "unit": "One NFL game with a Thursday freeze (status ok) and a close (status ok).",
+   "decision_time": "Saturday 12:00 ET of the contest week (the current number is read then from capture history with nfl_consensus_spread_at). The flag computed AT THE CLOSE is hindsight and is never the treatment.",
+   "treatment": "Games flagged at decision time: |current − freeze| ≥ 1.0 or the move touched 3, 6, 7, 10 or 14. Side = the side the market had moved toward at decision time.",
+   "baseline": "Games not flagged at decision time whose number had moved (nonzero delta). Side = the side it had moved toward.",
+   "outcome": "CLV of the frozen best price on that side at the frozen number at the close (as H-NFL-KEY-01). Positive CLV = success.",
+   "primary_metric": "Treatment rate of CLV > 0 minus baseline rate of CLV > 0 (two-proportion z, one-sided).",
+   "secondary_metrics": [
+    "mean CLV difference with a bootstrap 95% interval",
+    "the share of flagged moves that reversed by the close"
+   ],
+   "training_window": "None fitted. 2026 Weeks 1–7 reconstructed freezes: pipeline check only, not evidence.",
+   "validation_window": "2026 Week 8 through the 2026 postseason. Descriptive.",
+   "holdout_window": "2027 season, Week 1 through the postseason, evaluated once at its end.",
+   "minimum_sample": {
+    "treated_games_holdout": 60,
+    "baseline_games_holdout": 100
+   },
+   "decision_rule": "passed = true only if, on the holdout, the rate difference is positive with one-sided p < 0.0125, the mean CLV difference is positive, and the minimum sample is met.",
+   "forking_paths": {
+    "alternatives_considered": [
+     "the flag at the close",
+     "decision time Friday 18:00 ET or kickoff − 24 h",
+     "a 0.5-point threshold",
+     "the minor key numbers"
+    ],
+    "choice_and_reason": "The flag at the close is circular (the side the market moved toward has positive CLV at the close by construction) and is excluded. Saturday 12:00 ET is the latest moment a contest entrant can act on the move. The threshold and the key list are the detector's own (1.0 point; 3, 6, 7, 10, 14 — capture's KEY_NUMBERS), not tuned here.",
+    "data_already_seen": "None: no snapshot exists in production at registration.",
+    "comparisons_made": 1,
+    "stopping_rule": "Fixed horizon, one read at the end of the holdout."
+   },
+   "machine": {
+    "window_dates": {
+     "training": [
+      "2026-09-09",
+      "2026-10-27"
+     ],
+     "validation": [
+      "2026-10-27",
+      "2027-02-16"
+     ],
+     "holdout": [
+      "2027-09-01",
+      "2028-02-20"
+     ]
+    },
+    "window_note": "[from, to): dates of the games inside each window, Eastern",
+    "minimum_sample": 60,
+    "alpha_one_sided": 0.0125,
+    "version": "1.0.0-prereg",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3"
+   }
+  },
+  {
+   "id": "H-NFL-OWN-01",
+   "title": "Contest ownership",
+   "hypothesis": "Low-ownership Circa sides cover at a higher rate than high-ownership sides.",
+   "objective": "Describe, and once the sample allows test, whether the side a small minority of Circa Million entries took covers the contest line more often than the side the majority took.",
+   "unit": "One NFL game in a Circa Million week whose ownership is LOPSIDED: one side holds ≥ 70% of that game's picks (share_of_game), the other ≤ 30%. In such a game the low and high sides are the two sides of one game, so their cover rates are complements; the unit is therefore the game, and the question is whether the minority side covers above 50%.",
+   "thresholds": {
+    "low_ownership_share_of_game_max": 0.3,
+    "high_ownership_share_of_game_min": 0.7,
+    "min_game_picks": 200,
+    "note": "Recorded at registration, before any ownership is read. Games between the thresholds are excluded, not re-cut."
+   },
+   "data_rules": "The latest complete run per week, or a partial run whose quarantined picks are under 1% of its picks. Ownership is by entry (cards), not unique player.",
+   "outcome": "The minority side's result against the CONTEST line (Circa's own frozen number). Pushes excluded.",
+   "primary_metric": "Minority-side cover rate (binomial test against 0.50, one-sided).",
+   "secondary_metrics": [
+    "the same against the market close",
+    "cover rate by share_of_cards decile, descriptive"
+   ],
+   "descriptive_until": "At least 60 graded lopsided games. Until then the study reports counts and rates only, with intervals, and no test.",
+   "training_window": "None fitted.",
+   "validation_window": "The first live ingest (2026 Week 8 at the earliest) through 2026 Week 18. Descriptive.",
+   "holdout_window": "2027 Circa Million, Weeks 1–18, evaluated once at its end (pooled with 2028 if fewer than 60 lopsided games).",
+   "minimum_sample": {
+    "lopsided_games_holdout": 60
+   },
+   "decision_rule": "passed = true only if, on the holdout, the minority-side cover rate exceeds 0.50 with one-sided p < 0.0125 and the minimum sample is met.",
+   "forking_paths": {
+    "alternatives_considered": [
+     "share_of_cards thresholds",
+     "65/35 or 75/25 cuts",
+     "cover against the market close as primary",
+     "weighting by unique player"
+    ],
+    "choice_and_reason": "share_of_game is the contest-relevant split; 70/30 fixed now; the contest line is the number the entrants actually took. Unique-player weighting is not observable from the PDF.",
+    "data_already_seen": "None: no ownership has been ingested at registration (circasports.com was unreachable from the build environment).",
+    "comparisons_made": 1,
+    "stopping_rule": "Descriptive until the minimum sample; then one read at the end of the holdout."
+   },
+   "machine": {
+    "window_dates": {
+     "training": null,
+     "validation": [
+      "2026-10-27",
+      "2027-01-12"
+     ],
+     "holdout": [
+      "2027-09-01",
+      "2028-01-12"
+     ]
+    },
+    "window_note": "[from, to): dates of the games inside each window, Eastern",
+    "minimum_sample": 60,
+    "alpha_one_sided": 0.0125,
+    "version": "1.0.0-prereg",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3"
+   }
+  },
+  {
+   "id": "H-NFL-DIV-01",
+   "title": "Divisional underdogs",
+   "hypothesis": "Divisional underdogs cover above 50% after controlling for the line.",
+   "objective": "Measure whether underdogs in division games cover the closing number more often than non-divisional underdogs at the same number.",
+   "unit": "One NFL regular-season game with a nonzero closing line (football/pricing/lines_nfl.json, nflverse consensus close); side = the closing underdog. Divisional = nflverse div_game (era-correct; the seeded nfl_team_divisions table agrees for 2026).",
+   "treatment": "Divisional games.",
+   "baseline": "Non-divisional games, matched on closing-line stratum: 0.5–2.5, 3, 3.5–6.5, 7, 7.5–9.5, 10–13.5, 14+.",
+   "outcome": "The underdog covers the closing line. Pushes excluded.",
+   "primary_metric": "Mantel–Haenszel risk difference (divisional minus non-divisional underdog cover rate) across the line strata, one-sided; and the stratum-standardised divisional underdog cover rate against 0.50.",
+   "secondary_metrics": [
+    "home and road divisional underdogs separately",
+    "logistic regression cover ~ divisional + line stratum + season"
+   ],
+   "training_window": "2002–2019 regular seasons (the current alignment). Exploratory: the estimate and its interval are reported; nothing is tuned.",
+   "validation_window": "2020–2025 regular seasons: the direction must agree with training for the study to proceed to the holdout read.",
+   "holdout_window": "2026 Week 8 through 2027 Week 18 (prospective; 2026 Weeks 1–7 are excluded because the season-to-date divisional records are displayed on the card).",
+   "minimum_sample": {
+    "divisional_underdogs_validation": 400,
+    "divisional_underdogs_holdout": 120
+   },
+   "decision_rule": "passed = true only if the validation risk difference is positive AND, on the holdout, the risk difference is positive with one-sided p < 0.0125 AND the standardised divisional underdog cover rate exceeds 0.50 AND the minimum samples are met.",
+   "forking_paths": {
+    "alternatives_considered": [
+     "the opener instead of the close",
+     "home divisional underdogs only",
+     "regression adjustment as primary",
+     "including the postseason"
+    ],
+    "choice_and_reason": "The close is the line EdgeDesk owns for every season; all divisional underdogs (home and road) is the stated hypothesis; MH stratification is the simplest control for the line; postseason division games are rare and excluded.",
+    "data_already_seen": "Before registration, the 2026 season-to-date records through Week 6 were computed and displayed on the card: divisional underdogs 20-8 (28 graded), divisional home underdogs 7-4 (11). Those weeks are outside every window of this study (the holdout starts 2026-10-27). No divisional ATS rate was computed for 2002-2025. EdgeDesk's NFL engine carries a divisional feature fitted on historical seasons, so the training and validation seasons are not naive to the divisional effect on margins; the prospective holdout is.",
+    "comparisons_made": 1,
+    "stopping_rule": "Training and validation are read once at registration's first analysis; the holdout once at the end of 2027 Week 18."
+   },
+   "machine": {
+    "window_dates": {
+     "training": [
+      "2002-09-01",
+      "2020-03-01"
+     ],
+     "validation": [
+      "2020-09-01",
+      "2026-03-01"
+     ],
+     "holdout": [
+      "2026-10-27",
+      "2028-01-12"
+     ]
+    },
+    "window_note": "[from, to): dates of the games inside each window, Eastern",
+    "minimum_sample": 120,
+    "alpha_one_sided": 0.0125,
+    "version": "1.0.0-prereg",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3"
+   }
+  }
+ ],
+ "content_sha256": "28ee9ba0dc0d4a83de48768751015c8a696031f10e9ecd7c42143365e2b15c76"
+}

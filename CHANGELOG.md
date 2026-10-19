@@ -13,6 +13,22 @@ AI summaries answer a generic game preview without a click; they cannot answer m
 - **Owner desk** (`/admin/desk/`): drafts with every number's query, My take, Publish, game-article takes, a distribution kit (X, LinkedIn, Discord, Reddit; UTM-tagged by channel and article; each post quotes the lead number and links the published page; Reddit body link-free), Article Performance ranked by paid conversions with Discord and Reddit as channels, and settings.
 - **Found, reported, not changed** (the grading layer is frozen): on 17% of graded model rows the P&L ledger's `clv_points` has the opposite sign from the football model record, which is why `/record.html` shows NFL "Avg CLV" -1.11 against the model record's +0.51. Details in `docs/desk/README.md`.
 
+## 2026-10-19 — NFL Market Structure: key numbers, the Thursday freeze, situations, Circa ownership; four studies registered EXPERIMENTAL
+
+A Market Structure section on every NFL card and a Drift strip above the board. It is made of T0 observations and T2 transforms of data EdgeDesk owns, plus four preregistered EXPERIMENTAL studies. **No projection, spread, probability, EV, ranking or grade changes.** The full slate rebuilt from the old and new `app.html` agrees on all 111,060 values across 180 games and 32 teams, and the browser suite reads all 16 cards line for line on both. The design and deploy steps are in `docs/market-structure/README.md`.
+
+- **Key numbers (T2).** The margin distribution of 7,368 settled games (full history and 2023+, absolute and favourite-signed) drives `half_point_value(line, window)` in SQL, held equal to the JS at every half point.
+  - Each card says which key number its line sits on or straddles, and carries a Six watch.
+  - A six-point favourite win is 3.6% of games overall and 4.6% since 2023.
+- **Drift.** The two-point try share from play-by-play is 9.2% in 2026 against 9.5% in 2023–25 (z −0.18, stable). Rising two-point attempts are not in the data this season.
+- **The Thursday freeze (T0 + T2).** `nfl_line_snapshots` holds the consensus main line at Thursday 1 PM ET, read from capture history. The card shows the move to now and to the close, flags a move of a full point or one that touches 3/6/7/10/14, and shows the CLV of the frozen price on the side the market moved toward.
+  - Injury timing is **Coming Soon**: nflverse publishes no change times for 2026.
+- **Situations.** The card marks favourite/underdog, home/road/neutral, divisional (a seeded `nfl_team_divisions`) and divisional home dog. It shows the season-to-date ATS record of each bucket with its n and interval.
+- **Circa Million ownership (T0).** The `circa_ownership_sync` edge function ships with pg_cron on Saturday and Sunday mornings. A failed read publishes nothing; unresolved picks are quarantined and the week shows as PARTIAL.
+  - **Not yet verified against a real Circa PDF:** the build environment could not reach circasports.com.
+- **Studies.** H-NFL-KEY-01, H-NFL-STALE-01, H-NFL-OWN-01 and H-NFL-DIV-01 are in `football/market_structure/preregistration.json` (sha256 pinned). Each has its windows, minimum sample, metric, decision rule and forking-paths disclosure.
+  - The registry SQL reads the live registry's columns rather than assuming them, and writes no result row.
+
 ## 2026-10-19 — CFB: one home field for learning and projection (`edgedesk_cfb_p4_v1.0.1`)
 
 The root cause the CFB audit found, fixed at its source and tested walk-forward. The report is `docs/cfb-calibration/README.md` ("The root cause, fixed").

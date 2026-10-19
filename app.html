@@ -50667,7 +50667,7 @@ function fbGameCardNfl(u){
   var p=fbPredict('nfl',fbNflGameReq(g),mkt,fbNum(g.season));
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div></div>'
-      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+fbPropsSecHTML('nfl',g.game_id,u.t)+'</div>';
+      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+'</div>';
   var mdl=p.model;
   var cov=p.cover,ov=p.over;
   var lines='';
@@ -50706,7 +50706,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
     +fbGameResearchLead('nfl',g.game_id,homeName,awayName,mdl.fair_spread,mdl.fair_total,mdl.home_win_prob,u.t!=null&&u.t<=Date.now())
-    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id,u.t)+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id,u.t)+(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,u,M.mkt):'')+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -50739,6 +50739,7 @@ function fbGameCardNflGraded(it){
   lines+='<div class="gd-line"><span class="l">Total '+(tPick?fbEsc(tPick)+' '+fbPts(p.market.total_gap)+' gap':'')+'</span><span class="v">'+fbResChip(G.total_ou)+'</span></div>';
   lines+='<div class="gd-line"><span class="l">ML '+fbEsc(m.home_win_prob>=0.5?g.home_team:g.away_team)+'</span><span class="v">'+fbResChip(G.ml)+'</span></div>';
   return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'+head+lines
+    +(window.fbMarketStructureHTML?window.fbMarketStructureHTML('nfl',g,null,null,{final:true}):'')
     +(window.fbStoredBriefBtn?fbStoredBriefBtn('nfl-'+g.game_id):'')+'</div>';
 }
 function fbWeekRecord(items){
@@ -64837,6 +64838,354 @@ try{
   .bottomnav button{letter-spacing:0;padding-left:0;padding-right:0}
 }
 </style>
+<!-- ═══ ADDED: NFL MARKET STRUCTURE (docs/market-structure/README.md) ═══════════
+     A "Market Structure" section on every NFL game card, and a Drift strip
+     above the NFL board. T0 observations and T2 deterministic transforms, plus
+     the four EXPERIMENTAL studies registered against them. It changes NO
+     projection, spread, probability, EV, ranking or grade: the football module
+     calls window.fbMarketStructureHTML() from three guarded one-line hooks and
+     appends what it returns; nothing here is read back by the module. -->
+<style id="ms-styles">
+.ms-wrap{margin:8px 12px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface,rgba(255,255,255,.015))}
+.ms-wrap>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;font-size:11px;color:var(--dim)}
+.ms-wrap>summary::-webkit-details-marker{display:none}
+.ms-wrap>summary>b{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--text);margin-right:2px}
+.ms-wrap>summary .ms-chev{margin-left:auto;color:var(--faint);transition:transform .15s}
+.ms-wrap[open]>summary .ms-chev{transform:rotate(90deg)}
+.ms-body{padding:0 10px 9px}
+.ms-sub{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:9px 0 3px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.ms-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:11.5px;border-bottom:1px dashed var(--border)}
+.ms-row:last-child{border-bottom:none}
+.ms-row .l{color:var(--dim);flex:0 1 auto;max-width:44%}
+.ms-row .v{color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;text-align:right;flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.ms-row .v .m,.ms-m{color:var(--faint)}
+.ms-chip{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--dim);white-space:nowrap}
+.ms-chip.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.ms-chip.flag{color:var(--neg);border-color:rgba(224,90,90,.45)}
+.ms-chip.ok{color:var(--pos);border-color:rgba(91,191,135,.4)}
+.ms-soon{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);border:1px dashed var(--border);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.ms-t{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:10.5px;margin:2px 0 3px}
+.ms-t th{color:var(--faint);font-weight:600;text-align:right;padding:3px 4px;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.ms-t th:first-child,.ms-t td:first-child{text-align:left;font-family:'Inter',sans-serif;color:var(--dim)}
+.ms-t td{padding:3px 4px;text-align:right;border-top:1px dashed var(--border);color:var(--text);white-space:nowrap}
+.ms-note{font-size:10.5px;color:var(--faint);line-height:1.45;margin:2px 0 4px}
+.ms-lim{font-size:10.5px;color:var(--faint);margin-top:8px;padding-top:7px;border-top:1px solid var(--border);line-height:1.45}
+.ms-lim b{color:var(--dim);font-weight:600}
+.ms-study{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px}
+.ms-study:last-child{border-bottom:none}
+.ms-study .id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text)}
+.ms-study .ttl{color:var(--dim);flex:1 1 140px}
+.ms-study .res{flex:1 1 100%;font-size:10.5px;color:var(--faint)}
+.ms-strip{display:flex;flex-wrap:wrap;gap:5px 14px;align-items:center;margin:0 0 10px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;font-size:11px;color:var(--dim);background:var(--surface,transparent)}
+.ms-strip>b{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--text)}
+.ms-strip .v{font-family:'JetBrains Mono',monospace;color:var(--text)}
+@media(max-width:560px){.ms-row{flex-wrap:wrap}.ms-row .l{max-width:none}.ms-t{font-size:10px}.ms-wrap{margin:8px 8px 10px}}
+</style>
+<script src="/lib/edgedesk_market_structure.js?v=20261019a"></script>
+<script>
+/* ═══ NFL MARKET STRUCTURE ═══════════════════════════════════════════════════
+   GLUE ONLY. Every number comes from somewhere EdgeDesk owns, and is labelled
+   with what it is:
+     Observed (T0)       the Thursday 13:00 ET freeze, the current number and
+                         the close (public.nfl_snapshot_board, read from
+                         EdgeDesk's own capture history), the move and its
+                         flag, the CLV of the frozen price; the situational
+                         flags and the season-to-date records
+                         (football/market_structure/nfl.json); Circa Million
+                         ownership (public.contest_ownership_latest)
+     Deterministic (T2)  the key numbers a line sits on or straddles, the
+                         value of a half point from the league's own margin
+                         distribution, the Six watch (lib/edgedesk_market_structure.js)
+     Research Models     the four EXPERIMENTAL studies
+     (Experimental)      (football/market_structure/preregistration.json), with
+                         their registry status and an empty result until a
+                         validation report writes one
+   What EdgeDesk does not own is shown as visibly inactive, never filled in:
+   injury-status timing is Coming Soon, an undeployed table says so, a failed
+   or partial contest read says so.
+
+   It reads its own tables as the anon visitor, NOT through sbFetch: a table
+   whose migration is not applied yet answers 404, and sbFetch would record
+   that as a database outage on System health. Not deployed is a state of this
+   section, not of the database.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  if(window.__edMarketStructure)return;
+  window.__edMarketStructure=true;
+  var MS=window.EDMarketStructure;
+  var ART='/football/market_structure/nfl.json',PRE='/football/market_structure/preregistration.json';
+  var TTL=5*60e3;
+  var S={art:null,pre:null,board:null,own:null,ostat:null,alerts:null,err:{},st:{},at:{}};
+  var LIMITS='<b>Known limitations.</b> Not owned, so not shown: the timing of injury-status changes (Coming Soon), margins before 1999, '
+    +'ownership by unique player (Circa counts entries, so a three-entry player counts three times). The freeze, current and close are EdgeDesk’s own capture '
+    +'(Odds API books), not Circa’s line source; season-to-date records are small samples and describe, they do not predict.';
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function num(x){if(x===null||x===undefined||x==='')return null;var n=Number(x);return isFinite(n)?n:null;}
+  function pct(x,dp){return x==null?'—':(100*x).toFixed(dp==null?1:dp)+'%';}
+  function ln(v){v=num(v);if(v==null)return '—';if(Math.abs(v)<1e-9)return 'PK';var s=String(Math.round(v*10)/10);return (v>0?'+':'−')+s.replace('-','');}
+  function int(n){return n==null?'—':String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  function badge(cls,label,title){return '<span class="rs-badge '+cls+'"'+(title?' title="'+esc(title)+'"':'')+' style="cursor:default"><span class="dot"></span>'+esc(label)+'</span>';}
+  function chip(t,cls){return '<span class="ms-chip'+(cls?' '+cls:'')+'">'+esc(t)+'</span>';}
+  function row(l,v){return '<div class="ms-row"><span class="l">'+l+'</span><span class="v">'+v+'</span></div>';}
+  function soon(t){return '<span class="ms-soon">'+esc(t||'Coming soon')+'</span>';}
+  function etText(iso){try{return new Date(iso).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET';}catch(_){return String(iso);}}
+
+  /* ------------------------------------------------------------- loads */
+  var repaintT=null;
+  function repaint(){
+    if(repaintT)return;
+    repaintT=setTimeout(function(){repaintT=null;try{if(window.FB&&window.FB.sport==='nfl'&&typeof window.renderFootball==='function')window.renderFootball();}catch(_){}} ,60);
+  }
+  function getJson(url){return fetch(url,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});}
+  function anon(q){
+    if(typeof SB_URL==='undefined'||typeof SB_KEY==='undefined')return Promise.reject(new Error('no database configured'));
+    return fetch(SB_URL+'/rest/v1/'+q,{headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY}}).then(function(r){
+      if(r.ok)return r.json();
+      return r.text().then(function(b){var e=new Error('HTTP '+r.status);e.status=r.status;
+        e.notDeployed=r.status===404||/PGRST20[0-9]|42P01|42883|does not exist|Could not find/.test(b||'');throw e;});
+    });
+  }
+  function load(key,fn){
+    if(S.st[key]==='loading')return;
+    if(S.at[key]&&Date.now()-S.at[key]<TTL)return;
+    S.st[key]='loading';
+    fn().then(function(v){S[key]=v;S.err[key]=null;S.st[key]='ok';S.at[key]=Date.now();repaint();},
+      function(e){S.err[key]=e;S.st[key]=e&&e.notDeployed?'not_deployed':'error';S.at[key]=Date.now();repaint();});
+  }
+  function ensure(){
+    load('art',function(){return getJson(ART);});
+    load('pre',function(){return getJson(PRE);});
+    var from=new Date(Date.now()-150*864e5).toISOString(),to=new Date(Date.now()+10*864e5).toISOString();
+    load('board',function(){return anon('rpc/nfl_snapshot_board?p_from='+encodeURIComponent(from)+'&p_to='+encodeURIComponent(to));});
+    load('own',function(){return anon('contest_ownership_latest?contest=eq.circa_million&select=*');});
+    load('ostat',function(){return anon('contest_ownership_status?contest=eq.circa_million&select=*');});
+    load('alerts',function(){return anon('market_structure_alerts?select=module,severity,code,message,created_at&order=created_at.desc&limit=30');});
+    try{if(typeof rsModelsLoad==='function'&&typeof RS_MODELS!=='undefined'&&RS_MODELS.state==='unread')Promise.resolve(rsModelsLoad()).then(repaint,repaint);}catch(_){}
+  }
+  function stateNote(key,what,file){
+    var st=S.st[key];
+    if(st==='not_deployed')return soon('Not deployed')+' <span class="ms-m">'+esc(what)+' — '+esc(file)+' is not applied yet</span>';
+    if(st==='error')return chip('unavailable','warn')+' <span class="ms-m">'+esc(what)+' could not be read ('+esc(S.err[key]&&S.err[key].message||'error')+')</span>';
+    return '<span class="ms-m">loading…</span>';
+  }
+
+  /* the next freeze (Thursday 13:00 America/New_York), for "no freeze yet" */
+  function nextFreeze(){
+    try{
+      var f=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+      for(var t=Math.ceil(Date.now()/9e5)*9e5,i=0;i<8*96;i++,t+=9e5){var p=f.format(new Date(t));if(/^Thu/.test(p)&&/13:00/.test(p))return new Date(t).toISOString();}
+    }catch(_){}
+    return null;
+  }
+
+  /* --------------------------------------------------------- lookups */
+  function boardRow(hc,ac,t){
+    var B=S.board;if(!B||!B.length)return null;
+    for(var i=0;i<B.length;i++){var r=B[i];
+      if(MS.codeOfName(r.home_team)===hc&&MS.codeOfName(r.away_team)===ac&&(t==null||Math.abs(Date.parse(r.commence_time)-t)<36*3600e3))return r;}
+    return null;
+  }
+  function ownFor(season,week,hc,ac){
+    var O=S.own;if(!O||!O.length)return null;
+    var h=null,a=null;
+    O.forEach(function(r){if(Number(r.season)!==Number(season)||Number(r.week)!==Number(week))return;if(r.side_team_code===hc)h=r;else if(r.side_team_code===ac)a=r;});
+    if(h&&a&&h.event_id!==a.event_id)return {conflict:true};
+    return h||a?{home:h,away:a}:null;
+  }
+  function ownStatus(season,week){
+    var O=S.ostat;if(!O||!O.length)return null;
+    for(var i=0;i<O.length;i++)if(Number(O[i].season)===Number(season)&&Number(O[i].week)===Number(week))return O[i];
+    return null;
+  }
+  function study(id){var P=S.pre;if(!P)return null;for(var i=0;i<P.studies.length;i++)if(P.studies[i].id===id)return P.studies[i];return null;}
+  function registry(id){
+    try{
+      if(typeof rsModelRow!=='function'||typeof RS_MODELS==='undefined')return {state:'unread'};
+      if(!RS_MODELS.rows)return {state:RS_MODELS.state||'unread'};
+      var r=rsModelRow(id);
+      if(!r)return {state:'unregistered'};
+      var st=String(r.status||r.model_status||'').toLowerCase(),passed=r.passed===true;
+      return {state:'registered',status:st||'experimental',passed:passed};
+    }catch(_){return {state:'unread'};}
+  }
+
+  /* ---------------------------------------------------- the sections */
+  function observedHTML(ctx){
+    var h='',b=ctx.board,home=ctx.hc,away=ctx.ac;
+    /* the freeze */
+    var snapV;
+    if(S.st.board!=='ok')snapV=stateNote('board','the snapshot board','supabase/nfl_market_structure.sql');
+    else if(!b){var nf=nextFreeze();snapV='<span class="ms-m">no freeze for this game'+(ctx.final?'':' yet'+(nf?' — next '+esc(etText(nf)):''))+'</span>';}
+    else if(b.snapshot_status!=='ok')snapV=chip(String(b.snapshot_status).replace(/_/g,' '),'warn')+' <span class="ms-m">nothing captured to freeze — no line is shown in its place</span>';
+    else snapV=esc(home)+' '+ln(b.snap_home_spread)+' <span class="m">· '+int(b.snap_n_books)+' books · fair '+pct(num(b.snap_fair_home))+(b.snapshot_backfilled?' · reconstructed from capture history':'')+'</span>';
+    h+=row('Freeze <span class="ms-m">Thu 1:00 PM ET</span>',snapV);
+    if(b&&b.snapshot_status==='ok'){
+      var dk=ctx.final?'close':'current';
+      var st=b[dk+'_status'],sp=b[dk+'_home_spread'],d=num(b[dk+'_delta']),cr=b[dk+'_crossed']||[],fl=b[dk+'_flagged'];
+      var lab=ctx.final?'Close <span class="ms-m">last capture before kickoff</span>':'Now <span class="ms-m">latest capture</span>';
+      if(st==='ok'){
+        var mv=MS.snapshotDelta(num(b.snap_home_spread),num(sp));
+        h+=row(lab,esc(home)+' '+ln(sp)+' <span class="m">· moved '+(d==null?'—':(d>0?'+':d<0?'−':'')+Math.abs(d))+(mv&&mv.toward?' toward '+esc(mv.toward==='home'?home:away):'')
+          +(cr.length?' · touched '+cr.join(', '):'')+'</span> '+(fl?chip('stale line','flag'):chip('no flag')));
+      }else if(st)h+=row(lab,chip(String(st).replace(/_/g,' '),'warn')+' <span class="ms-m">no usable capture</span>');
+      if(ctx.final){
+        var c=num(b.clv);
+        h+=row('Frozen price at the close <span class="ms-m">CLV, side it moved toward</span>',c!=null
+          ?'<span style="color:'+(c>0?'var(--pos)':c<0?'var(--neg)':'var(--text)')+'">'+(c>0?'+':'')+pct(c,2)+'</span> <span class="m">on '+esc(b.moved_toward==='home'?home:away)+' · '+esc(String(b.clv_source||'').replace('_',' '))+'</span>'
+          :'<span class="ms-m">none — '+esc(String(b.clv_reason||'not graded').replace(/_/g,' '))+'</span>');
+      }
+    }
+    h+=row('Status changes after the freeze',soon()+' <span class="ms-m">EdgeDesk does not own timestamped injury or QB status changes (nflverse publishes no change times for 2026)</span>');
+
+    /* situations */
+    var sd=ctx.sides;
+    function side(s){
+      if(!s)return '—';
+      var bits=[s.venue==='neutral'?'neutral site':s.venue,s.role==='pickem'?"pick'em":(s.role||'no line')];
+      if(s.divisional)bits.push('division rival');
+      return esc(s.team)+' <span class="m">'+esc(bits.join(' · '))+'</span>'+(s.divisional_home_dog?' '+chip('div home dog','warn'):'');
+    }
+    h+=row('Situation',side(sd&&sd.home)+'<br>'+side(sd&&sd.away));
+    var A=S.art&&S.art.situational;
+    if(A&&sd&&sd.home.role&&sd.home.role!=='pickem'&&Number(A.season)===Number(ctx.season)){
+      var seen={},rows='';
+      [sd.home,sd.away].forEach(function(s){s.buckets.forEach(function(k){if(seen[k])return;seen[k]=1;var x=A.ats.buckets[k];if(!x)return;
+        rows+='<tr><td>'+esc(k.replace(/_/g,' '))+'</td><td>'+x.w+'-'+x.l+(x.p?'-'+x.p:'')+'</td><td>'+(x.cover_rate==null?'—':pct(x.cover_rate,0))+'</td><td>'+x.n+'</td><td>'
+          +(x.ci95?Math.round(100*x.ci95[0])+'–'+Math.round(100*x.ci95[1])+'%':'—')+'</td></tr>';});});
+      h+='<table class="ms-t"><tr><th>'+esc(A.season)+' to date, ATS vs the close</th><th>W-L-P</th><th>cover</th><th>n</th><th>95%</th></tr>'+rows+'</table>'
+        +'<div class="ms-note">Settled '+esc(A.season)+' games through '+esc(A.ats.through||'—')+' ('+int(A.ats.n_games)+'), nflverse consensus close. Descriptive: a record, not an edge.</div>';
+    }else if(S.st.art&&S.st.art!=='ok'&&S.st.art!=='loading')h+=row('Season to date',stateNote('art','the situational records','football/market_structure/nfl.json'));
+
+    /* contest ownership */
+    var ov;
+    if(S.st.own!=='ok')ov=stateNote('own','contest ownership','supabase/contest_ownership.sql');
+    else{
+      var o=ownFor(ctx.season,ctx.week,home,away),os=ownStatus(ctx.season,ctx.week);
+      if(o&&o.conflict)ov=chip('mismatch','flag')+' <span class="ms-m">the two sides resolved to different games — not shown</span>';
+      else if(o){
+        var one=function(r,code){return r?esc(code)+' '+ln(r.contest_line)+' <span class="m">'+pct(num(r.share_of_game))+' of game picks ('+int(r.picks)+') · '+pct(num(r.share_of_cards))+' of cards</span>':esc(code)+' <span class="m">no picks</span>';};
+        var any=o.home||o.away;
+        ov=one(o.home,home)+'<br>'+one(o.away,away)+'<br><span class="m">'+int(any.entries)+' entries · circasports.com selections PDF · fetched '+esc(etText(any.fetched_at))+'</span>'
+          +(any.run_status==='partial'?' '+chip('partial · '+int(any.picks_quarantined)+' picks quarantined','warn'):'')
+          +(os&&os.status==='failed'?' '+chip('a later read failed','warn'):'');
+        var mkH=ctx.homeLine;
+        if(o.home&&mkH!=null&&num(o.home.contest_line)!==mkH)ov+='<br><span class="m">contest line '+esc(home)+' '+ln(o.home.contest_line)+' vs '+(ctx.final?'close':'market')+' '+esc(home)+' '+ln(mkH)+'</span>';
+      }else if(os&&os.status==='failed')ov=chip('not published','flag')+' <span class="ms-m">'+esc(os.code||'failed')+': '+esc(os.message||'')+'</span>';
+      else ov='<span class="ms-m">not posted for week '+esc(ctx.week)+' yet — Circa publishes Saturday</span>';
+    }
+    h+=row('Circa Million <span class="ms-m">week '+esc(ctx.week)+'</span>',ov);
+    return '<div class="ms-sub">'+badge('rs-t0','Observed','T0: observed, with its source')+'</div>'+h;
+  }
+
+  function deterministicHTML(ctx){
+    var L=ctx.homeLine,h='';
+    if(L==null)return '<div class="ms-sub">'+badge('rs-t2','Computed','T2: deterministic transforms')+' Deterministic</div><div class="ms-note">No line on the card: nothing to value.</div>';
+    var favCode=L<0?ctx.hc:(L>0?ctx.ac:ctx.hc),favLine=L<0?L:(L>0?-L:0);
+    var kc=MS.keyContext(favLine);
+    var kt=kc.on.length?'sits on '+kc.on.join(', '):(kc.straddles.length?'straddles '+kc.straddles.join(' and '):'no key number within half a point');
+    h+=row('Key numbers <span class="ms-m">3 6 7 10 14</span>',esc(favCode)+' '+ln(favLine)+' <span class="m">'+esc(kt)+'</span>'+(kc.six_watch?' '+chip('six watch','warn'):''));
+    var W=S.art&&S.art.margin_frequency&&S.art.margin_frequency.windows;
+    if(W){
+      var t='',up=null,dn=null;
+      W.forEach(function(w){var hp=MS.halfPoint(w.fav_signed.rows,favLine,w.fav_signed);if(!hp)return;up=hp.up;dn=hp.down;
+        var eff=function(x){return (x.moved_mass?pct(x.moved_mass):'0.0%');};
+        t+='<tr><td>'+(w.window_label==='full'?esc(w.first_season)+'–'+esc(w.last_season):'since '+esc(w.first_season))+' <span class="ms-m">n '+int(w.fav_signed.n_games)+'</span></td><td>'+pct(hp.push_prob)+'</td><td>'+eff(hp.up)+'</td><td>'+eff(hp.down)+'</td></tr>';});
+      var nm={push_to_win:'push → win',loss_to_push:'loss → push',push_to_loss:'push → loss',win_to_push:'win → push'};
+      if(up)h+='<table class="ms-t"><tr><th>Half-point value at '+esc(ln(favLine))+'</th><th>push here</th><th>to '+esc(ln(up.to_line))+'<br>'+esc(nm[up.effect])+'</th><th>to '+esc(ln(dn.to_line))+'<br>'+esc(nm[dn.effect])+'</th></tr>'+t+'</table>'
+        +'<div class="ms-note">Share of settled games whose final margin moves the result when the number moves half a point, from the favourite’s side; the underdog’s '+esc(ln(-favLine))+' is the mirror. A league distribution, not this game’s cover probability.</div>';
+      if(kc.six_watch){
+        var six=W.map(function(w){var r=w.fav_signed.rows.filter(function(x){return x.margin===6;})[0];return {w:w,f:r?r.frequency:0};});
+        h+=row('Six watch',six.map(function(x){return pct(x.f)+' <span class="m">'+(x.w.window_label==='full'?'all games':'since '+esc(x.w.first_season))+'</span>';}).join(' → ')
+          +' <span class="m">favourite wins by exactly 6</span>');
+      }
+    }else h+=row('Half-point value',stateNote('art','the margin distribution','football/market_structure/nfl.json'));
+    return '<div class="ms-sub">'+badge('rs-t2','Computed','T2: deterministic transforms of owned data')+' Deterministic</div>'+h;
+  }
+
+  function studiesHTML(ctx){
+    var P=S.pre;
+    if(!P)return '<div class="ms-sub">'+badge('rs-t3','Research Model')+' '+badge('rs-mat-exp','Experimental')+'</div><div class="ms-note">'+(S.st.pre&&S.st.pre!=='loading'?'The study registry document could not be read.':'Loading the studies…')+'</div>';
+    var applies={'H-NFL-KEY-01':ctx.keySide,'H-NFL-STALE-01':!!(ctx.board&&(ctx.board.current_flagged||ctx.board.close_flagged)),'H-NFL-OWN-01':ctx.hasOwn,'H-NFL-DIV-01':!!(ctx.sides&&ctx.sides.divisional)};
+    var out=P.studies.map(function(s){
+      var r=registry(s.id),mat;
+      if(r.state==='registered')mat=r.passed?badge('rs-mat-val','Validated'):badge('rs-mat-exp',r.status==='experimental'?'Experimental':r.status);
+      else mat=badge('rs-mat-exp','Experimental')+' <span class="ms-m">'+(r.state==='unregistered'?'registration not applied yet':'registry '+esc(r.state))+'</span>';
+      var W=s.machine&&s.machine.window_dates&&s.machine.window_dates.holdout;
+      return '<div class="ms-study"><span class="id">'+esc(s.id)+'</span><span class="ttl">'+esc(s.title)+'</span>'+mat+(applies[s.id]?' '+chip('applies here'):'')
+        +'<span class="res">No result — holdout '+(W?esc(W[0])+' to '+esc(W[1]):'—')+'; feeds nothing until a result shows passed = true.</span></div>';
+    }).join('');
+    return '<div class="ms-sub">'+badge('rs-t3','Research Model')+' Research Models (Experimental)</div>'+out;
+  }
+
+  function cardHTML(sport,g,u,mkt,opts){
+    if(sport!=='nfl'||!MS||!g)return '';
+    ensure();
+    opts=opts||{};
+    var hc=MS.teamCode(g.home_team),ac=MS.teamCode(g.away_team);
+    if(!hc||!ac)return '';
+    var t=u&&u.t!=null?u.t:(g.gameday?Date.parse(g.gameday+'T17:00:00Z'):null);
+    var sl=mkt&&mkt.spread_line!=null?num(mkt.spread_line):num(g.spread_line);
+    var homeLine=sl==null?null:(sl===0?0:-sl);
+    var A=S.art&&S.art.situational,gf=A&&A.games?A.games[g.game_id]:null;
+    var neutral=gf?gf.neutral:String(g.location||'')==='Neutral';
+    var sides=MS.sides({home:hc,away:ac,home_line:homeLine,neutral:neutral});
+    var b=boardRow(hc,ac,t);
+    var o=S.st.own==='ok'?ownFor(g.season,g.week,hc,ac):null;
+    var keySide=homeLine!=null&&[homeLine,-homeLine].some(function(x){return x===6||x===6.5||x===-5.5;});
+    var ctx={hc:hc,ac:ac,homeLine:homeLine,sides:sides,board:b,season:g.season,week:g.week,final:!!opts.final,keySide:keySide,hasOwn:!!(o&&!o.conflict)};
+    var kc=homeLine!=null?MS.keyContext(homeLine):null;
+    var sum='<b>Market Structure</b>';
+    if(kc&&kc.six_watch)sum+=chip('six watch','warn');
+    if(b&&(ctx.final?b.close_flagged:b.current_flagged))sum+=chip('stale line','flag');
+    if(sides.home.divisional_home_dog)sum+=chip('div home dog','warn');
+    if(ctx.hasOwn){var big=(o.home&&(!o.away||num(o.home.share_of_game)>=num(o.away.share_of_game)))?o.home:o.away;sum+=chip('Circa '+pct(num(big.share_of_game),0)+' '+big.side_team_code);}
+    sum+='<span class="ms-chev">›</span>';
+    var body='';
+    try{body+=observedHTML(ctx);}catch(e){body+='<div class="ms-note">Observed could not render: '+esc(e.message)+'</div>';}
+    try{body+=deterministicHTML(ctx);}catch(e){body+='<div class="ms-note">Deterministic could not render: '+esc(e.message)+'</div>';}
+    try{body+=studiesHTML(ctx);}catch(e){body+='<div class="ms-note">Studies could not render: '+esc(e.message)+'</div>';}
+    return '<details class="ms-wrap" data-ms="'+esc(g.game_id)+'"'+(OPEN[g.game_id]?' open':'')+' ontoggle="window.fbMarketStructureToggle&&fbMarketStructureToggle(this)"><summary>'+sum+'</summary><div class="ms-body">'+body+'<div class="ms-lim">'+LIMITS+'</div></div></details>';
+  }
+  /* an open section stays open across the repaints its own loads cause */
+  var OPEN={};
+  window.fbMarketStructureToggle=function(el){try{OPEN[el.getAttribute('data-ms')]=el.open;}catch(_){}};
+  window.fbMarketStructureHTML=function(sport,g,u,mkt,opts){
+    try{return cardHTML(sport,g,u,mkt,opts);}
+    catch(e){try{console.error('EdgeDesk Market Structure: the section failed in the page',e);}catch(_){}return '';}
+  };
+
+  /* ---------------------------------------------- the Drift strip */
+  function stripHTML(){
+    var A=S.art,h='<b>Market Structure · Drift</b>';
+    if(!A)return h+'<span class="ms-m">'+(S.st.art&&S.st.art!=='loading'?'the market-structure artifact could not be read':'loading…')+'</span>';
+    var d=A.two_point&&A.two_point.drift,cur=d&&A.two_point.seasons.filter(function(s){return s.season===d.season;})[0];
+    if(d)h+='<span>'+badge('rs-t0','Observed')+' two-point try share <span class="v">'+pct(d.share)+'</span> '+esc(d.season)+' <span class="ms-m">('+int(cur&&cur.two_pt_att)+' of '+int(d.n_tries)+' tries)</span> vs <span class="v">'+pct(d.baseline_share)+'</span> '
+      +esc(d.baseline_seasons[0])+'–'+esc(String(d.baseline_seasons[d.baseline_seasons.length-1]).slice(2))+' <span class="ms-m">z '+esc(d.z)+'</span> '+chip(d.status,d.status==='STABLE'?'':'warn')+'</span>';
+    var W=A.margin_frequency.windows,six=W.map(function(w){var r=w.fav_signed.rows.filter(function(x){return x.margin===6;})[0];return pct(r?r.frequency:0)+' <span class="ms-m">'+(w.window_label==='full'?'since '+w.first_season:'since '+w.first_season)+', n '+int(w.fav_signed.n_games)+'</span>';});
+    h+='<span>'+badge('rs-t2','Computed')+' favourite wins by exactly 6 <span class="v">'+six.join(' → ')+'</span></span>';
+    var nf=nextFreeze();if(nf)h+='<span class="ms-m">next contest freeze '+esc(etText(nf))+'</span>';
+    var al=(S.alerts||[]).filter(function(a){return a.severity==='FAILURE'&&Date.now()-Date.parse(a.created_at)<7*864e5;});
+    if(al.length)h+=chip(al.length+' failure'+(al.length===1?'':'s')+' this week: '+al[0].module.replace(/_/g,' '),'flag');
+    return h;
+  }
+  var orig=window.renderFootball;
+  if(typeof orig==='function'){
+    window.renderFootball=function(){
+      var r=orig.apply(this,arguments);
+      try{
+        if(window.FB&&window.FB.sport==='nfl'&&MS){
+          ensure();
+          var host=document.getElementById('fbBody');
+          if(host&&!host.querySelector('.ms-strip'))host.insertAdjacentHTML('afterbegin','<div class="ms-strip">'+stripHTML()+'</div>');
+        }
+      }catch(e){try{console.error('EdgeDesk Market Structure: the Drift strip failed in the page',e);}catch(_){}}
+      return r;
+    };
+  }
+})();
+</script>
 <!-- =====================================================================
      THE DESK: an owner-only badge, and a deep link the desk articles use.
 

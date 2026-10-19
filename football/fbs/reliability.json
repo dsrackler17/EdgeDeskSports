@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-10-19T14:46:31.494Z",
+ "generated_at": "2026-10-19T16:39:39.062Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -300,16 +300,16 @@
     "points": 9.3
    },
    {
-    "key": "favorite_flips",
-    "label": "Projection flips favorite under perturbation",
-    "games": 7,
-    "points": 19.4
-   },
-   {
     "key": "starters",
     "label": "Starter evidence stale",
-    "games": 7,
-    "points": 5
+    "games": 9,
+    "points": 6.8
+   },
+   {
+    "key": "favorite_flips",
+    "label": "Projection flips favorite under perturbation",
+    "games": 8,
+    "points": 20.1
    },
    {
     "key": "contract_conflicts",
@@ -555,22 +555,22 @@
     "points": 9.3
    },
    {
+    "key": "starters",
+    "label": "Starter evidence stale",
+    "games": 9,
+    "points": 6.8
+   },
+   {
     "key": "favorite_flips",
     "label": "Projection flips favorite under perturbation",
-    "games": 7,
-    "points": 19.4
+    "games": 8,
+    "points": 20.1
    },
    {
     "key": "contract_conflicts",
     "label": "Conflicting sources",
     "games": 7,
     "points": 9.8
-   },
-   {
-    "key": "starters",
-    "label": "Starter evidence stale",
-    "games": 7,
-    "points": 5
    },
    {
     "key": "venue",
@@ -587,7 +587,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-10-19T13:45:40.678Z",
+  "artifact_generated_at": "2026-10-19T16:39:33.749Z",
   "games_with_evidence": 60,
   "summary": {
    "games": 60,
@@ -620,8 +620,8 @@
     "historical_rows_refused": 4
    },
    "player_quality": {
-    "projected_starters_rated_pct": 56.5,
-    "starters_rated": 1628,
+    "projected_starters_rated_pct": 56.6,
+    "starters_rated": 1629,
     "starters_total": 2880,
     "key_contributors_rated_pct": 51.6,
     "unrated_meaningful_absences": 0,
@@ -765,7 +765,7 @@
      "label": "FCS rating bridge build",
      "kind": "fcs_ratings",
      "state": "HEALTHY",
-     "reason": "built 12h ago",
+     "reason": "built 0h ago",
      "attributable_to": null
     },
     {
@@ -846,14 +846,14 @@
     "label": "Availability feed",
     "games_affected": 60,
     "current_points_lost": 445.3,
-    "maximum_recoverable_points": 454,
+    "maximum_recoverable_points": 451,
     "games_recoverable": 49,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 272.4,
-    "enrichment_roi": 90.8,
+    "estimated_recoverable_points": 270.6,
+    "enrichment_roi": 90.2,
     "engineering_priority": 1
    },
    {
@@ -876,21 +876,21 @@
     "label": "QB confirmation",
     "games_affected": 60,
     "current_points_lost": 86.8,
-    "maximum_recoverable_points": 87,
-    "games_recoverable": 19,
+    "maximum_recoverable_points": 86,
+    "games_recoverable": 18,
     "cost": 3,
     "feasible": 0.5,
     "how": "official announcements, a provider depth chart, or trusted beat reporting above the observed previous start",
     "recover": "starters resolved only from the previous game",
-    "estimated_recoverable_points": 43.5,
-    "enrichment_roi": 14.5,
+    "estimated_recoverable_points": 43,
+    "enrichment_roi": 14.33,
     "engineering_priority": 3
    },
    {
     "key": "starters",
     "label": "Starter evidence staleness",
-    "games_affected": 7,
-    "current_points_lost": 5,
+    "games_affected": 9,
+    "current_points_lost": 6.8,
     "maximum_recoverable_points": 3,
     "games_recoverable": 3,
     "cost": 1,
@@ -905,7 +905,7 @@
     "key": "stability",
     "label": "Projection stability",
     "games_affected": 17,
-    "current_points_lost": 28.7,
+    "current_points_lost": 29.4,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -1775,9 +1775,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.81,
-     "p10": 12,
-     "p50": 13.07,
-     "p90": 14.13,
+     "p10": 12.03,
+     "p50": 13.1,
+     "p90": 14.16,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -2056,9 +2056,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.81,
-     "p10": 14.39,
-     "p50": 15.46,
-     "p90": 16.52,
+     "p10": 14.43,
+     "p50": 15.5,
+     "p90": 16.56,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -2201,7 +2201,7 @@
     "stability": {
      "sd": 1.82,
      "p10": -4.64,
-     "p50": -2.17,
+     "p50": -2.18,
      "p90": 0.29,
      "favorite_flip_rate": 0.063,
      "tier": "STABLE"
@@ -2378,9 +2378,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1,
-     "p10": -6.5,
-     "p50": -5.23,
-     "p90": -3.96,
+     "p10": -6.4,
+     "p50": -5.13,
+     "p90": -3.86,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -2659,9 +2659,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.5,
-     "p10": -2.19,
-     "p50": -0.02,
-     "p90": 2.14,
+     "p10": -2.17,
+     "p50": 0,
+     "p90": 2.16,
      "favorite_flip_rate": 0.281,
      "tier": "UNSTABLE"
     },
@@ -2766,7 +2766,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 92.5,
+    "raw": 91.9,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -2785,7 +2785,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -2838,6 +2838,13 @@
       "action_key": "availability:home"
      },
      {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "UCF’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:home"
+     },
+     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Bear Bachmeier — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
@@ -2867,9 +2874,25 @@
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Confirm BYU’s starting QB (Bear Bachmeier)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm UCF’s starting QB (Keyone Jenkins)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read UCF’s starter evidence",
+      "key": "starters:home",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
-     "availability": 10
+     "availability": 9
     }
    },
    "reliability_without_evidence": {
@@ -2928,9 +2951,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.18,
-     "p10": 12.62,
-     "p50": 14.24,
-     "p90": 15.85,
+     "p10": 12.66,
+     "p50": 14.27,
+     "p90": 15.88,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -3072,9 +3095,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.36,
-     "p10": 6.67,
-     "p50": 8.52,
-     "p90": 10.37,
+     "p10": 6.64,
+     "p50": 8.49,
+     "p90": 10.34,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -3166,7 +3189,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 91.5,
+    "raw": 90.9,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -3185,7 +3208,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 14.4,
+      "score": 13.8,
       "max": 15
      },
      "source_integrity": {
@@ -3240,9 +3263,16 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Iowa State’s starter record was re-read 1 min ago and describes evidence from 9.5 days ago",
+      "reason": "Iowa State’s starter record was re-read 1 min ago and describes evidence from 9.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
+     },
+     {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "Arizona’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:home"
      },
      {
       "component": "projection_stability",
@@ -3283,13 +3313,28 @@
     "missing": [],
     "next_actions": [
      {
+      "action": "Confirm Iowa State’s starting QB (Jaylen Raynor)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Arizona’s starting QB (Noah Fifita)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     },
+     {
       "action": "Re-read Iowa State’s starter evidence",
       "key": "starters:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read Arizona’s starter evidence",
+      "key": "starters:home",
       "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 9
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
@@ -3348,9 +3393,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.86,
-     "p10": -10.47,
-     "p50": -7.77,
-     "p90": -5.07,
+     "p10": -10.43,
+     "p50": -7.73,
+     "p90": -5.03,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -3499,9 +3544,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.63,
-     "p10": -16.07,
-     "p50": -13.73,
-     "p90": -11.39,
+     "p10": -16,
+     "p50": -13.66,
+     "p90": -11.32,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -3766,8 +3811,8 @@
     "stability": {
      "sd": 1.31,
      "p10": 15.77,
-     "p50": 17.57,
-     "p90": 19.38,
+     "p50": 17.58,
+     "p90": 19.39,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -4011,7 +4056,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 92.2,
+    "raw": 91.6,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -4030,7 +4075,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -4049,7 +4094,7 @@
      "sd": 1.58,
      "p10": -7.64,
      "p50": -5.66,
-     "p90": -3.69,
+     "p90": -3.68,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -4081,6 +4126,13 @@
       "reason": "Stanford’s availability report is not due yet — nobody is assumed fit",
       "family": "qb_status",
       "action_key": "availability:home"
+     },
+     {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "NC State’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:away"
      },
      {
       "component": "roster_availability",
@@ -4119,9 +4171,25 @@
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Confirm NC State’s starting QB (CJ Bailey)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Stanford’s starting QB (Davis Warren)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read NC State’s starter evidence",
+      "key": "starters:away",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
-     "availability": 10
+     "availability": 9
     }
    },
    "reliability_without_evidence": {
@@ -4180,9 +4248,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.49,
-     "p10": 3.86,
-     "p50": 6.03,
-     "p90": 8.19,
+     "p10": 3.79,
+     "p50": 5.95,
+     "p90": 8.12,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -4313,9 +4381,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.29,
-     "p10": 19.04,
-     "p50": 20.83,
-     "p90": 22.63,
+     "p10": 19.11,
+     "p50": 20.91,
+     "p90": 22.7,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -4464,9 +4532,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.16,
-     "p10": 8.3,
-     "p50": 10.03,
-     "p90": 11.75,
+     "p10": 8.29,
+     "p50": 10.02,
+     "p90": 11.74,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -5130,7 +5198,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Iowa’s starter record was re-read 1 min ago and describes evidence from 9.6 days ago",
+      "reason": "Iowa’s starter record was re-read 1 min ago and describes evidence from 9.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -5369,7 +5437,7 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.8,
-     "p10": 15.19,
+     "p10": 15.18,
      "p50": 16.32,
      "p90": 17.45,
      "favorite_flip_rate": 0,
@@ -5634,9 +5702,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.05,
-     "p10": -6.5,
-     "p50": -5.16,
-     "p90": -3.82,
+     "p10": -6.46,
+     "p50": -5.12,
+     "p90": -3.78,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -5765,7 +5833,7 @@
     "stability": {
      "sd": 1.68,
      "p10": 13.15,
-     "p50": 15.46,
+     "p50": 15.47,
      "p90": 17.78,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
@@ -5823,7 +5891,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Utah State’s starter record was re-read 1 min ago and describes evidence from 9.6 days ago",
+      "reason": "Utah State’s starter record was re-read 1 min ago and describes evidence from 9.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -6069,9 +6137,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.86,
-     "p10": 14.74,
-     "p50": 15.96,
-     "p90": 17.18,
+     "p10": 14.69,
+     "p50": 15.91,
+     "p90": 17.13,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -6223,9 +6291,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.36,
-     "p10": 6.79,
-     "p50": 8.64,
-     "p90": 10.49,
+     "p10": 6.96,
+     "p50": 8.81,
+     "p90": 10.66,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -6356,9 +6424,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.11,
-     "p10": -7.85,
-     "p50": -6.37,
-     "p90": -4.89,
+     "p10": -7.8,
+     "p50": -6.32,
+     "p90": -4.84,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -6498,9 +6566,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.88,
-     "p10": 9.46,
-     "p50": 10.7,
-     "p90": 11.94,
+     "p10": 9.52,
+     "p50": 10.76,
+     "p90": 12,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -6599,7 +6667,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.8,
+    "raw": 89.4,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -6614,7 +6682,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 19.4,
+      "score": 19,
       "max": 20
      },
      "freshness": {
@@ -6635,10 +6703,10 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.67,
-     "p10": -4.57,
-     "p50": -2.25,
-     "p90": 0.07,
-     "favorite_flip_rate": 0,
+     "p10": -4.53,
+     "p50": -2.21,
+     "p90": 0.11,
+     "favorite_flip_rate": 0.016,
      "tier": "STABLE"
     },
     "penalties": [
@@ -6696,6 +6764,13 @@
       "points": 0.6,
       "reason": "the projected spread moves ±1.67 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.11 pts)",
       "family": "stability",
+      "action_key": null
+     },
+     {
+      "component": "projection_stability",
+      "points": 0.4,
+      "reason": "the projection flips favorite in 2% of sensitivity runs",
+      "family": "favorite_flips",
       "action_key": null
      },
      {
@@ -6798,7 +6873,7 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.08,
-     "p10": -1.03,
+     "p10": -1.02,
      "p50": 0.31,
      "p90": 1.65,
      "favorite_flip_rate": 0.109,
@@ -6969,9 +7044,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.99,
-     "p10": -10.15,
-     "p50": -8.88,
-     "p90": -7.62,
+     "p10": -10.12,
+     "p50": -8.86,
+     "p90": -7.59,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -7113,9 +7188,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1,
-     "p10": -7.11,
-     "p50": -5.83,
-     "p90": -4.56,
+     "p10": -7.09,
+     "p50": -5.82,
+     "p90": -4.54,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -7239,9 +7314,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.92,
-     "p10": 5.98,
-     "p50": 7.22,
-     "p90": 8.45,
+     "p10": 6.02,
+     "p50": 7.25,
+     "p90": 8.48,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -7284,7 +7359,7 @@
      {
       "component": "source_integrity",
       "points": 0.9,
-      "reason": "resolved by the source hierarchy: Toa Fa'avae opened the last game with 90% of the dropbacks",
+      "reason": "resolved by the source hierarchy: Toa Fa'avae opened the last game with 89% of the dropbacks",
       "family": "qb_conflict",
       "action_key": "qb_conflict:home"
      },
@@ -7298,7 +7373,7 @@
      {
       "component": "roster_availability",
       "points": 0.4,
-      "reason": "Toa Fa'avae — expected (Toa Fa'avae opened the last game with 90% of the dropbacks); measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "reason": "Toa Fa'avae — expected (Toa Fa'avae opened the last game with 89% of the dropbacks); measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
      }
@@ -7388,9 +7463,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.8,
-     "p10": 5.03,
-     "p50": 6.16,
-     "p90": 7.28,
+     "p10": 5.08,
+     "p50": 6.2,
+     "p90": 7.33,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -7704,9 +7779,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.81,
-     "p10": 11.48,
-     "p50": 12.54,
-     "p90": 13.61,
+     "p10": 11.45,
+     "p50": 12.52,
+     "p90": 13.58,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -7837,9 +7912,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.81,
-     "p10": 5.85,
-     "p50": 6.91,
-     "p90": 7.98,
+     "p10": 5.8,
+     "p50": 6.87,
+     "p90": 7.93,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -7970,9 +8045,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.81,
-     "p10": 16.07,
-     "p50": 17.13,
-     "p90": 18.2,
+     "p10": 16.09,
+     "p50": 17.15,
+     "p90": 18.22,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -8107,9 +8182,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.81,
-     "p10": 3.9,
-     "p50": 4.96,
-     "p90": 6.03,
+     "p10": 3.91,
+     "p50": 4.97,
+     "p90": 6.04,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -8233,9 +8308,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.81,
-     "p10": -3.54,
-     "p50": -2.48,
-     "p90": -1.41,
+     "p10": -3.59,
+     "p50": -2.52,
+     "p90": -1.46,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -8377,9 +8452,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.99,
-     "p10": -20.6,
-     "p50": -19.33,
-     "p90": -18.06,
+     "p10": -20.62,
+     "p50": -19.35,
+     "p90": -18.08,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -8535,9 +8610,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.99,
-     "p10": -3.31,
-     "p50": -2.04,
-     "p90": -0.78,
+     "p10": -3.3,
+     "p50": -2.03,
+     "p90": -0.77,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -8671,9 +8746,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.12,
-     "p10": -14.42,
-     "p50": -13.03,
-     "p90": -11.65,
+     "p10": -14.46,
+     "p50": -13.07,
+     "p90": -11.69,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -8800,9 +8875,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.16,
-     "p10": 10.27,
-     "p50": 11.99,
-     "p90": 13.71,
+     "p10": 10.23,
+     "p50": 11.95,
+     "p90": 13.67,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -8971,9 +9046,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.06,
-     "p10": -14.95,
-     "p50": -13.53,
-     "p90": -12.11,
+     "p10": -15.05,
+     "p50": -13.63,
+     "p90": -12.21,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -9148,9 +9223,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.9,
-     "p10": -6.42,
-     "p50": -5.17,
-     "p90": -3.91,
+     "p10": -6.47,
+     "p50": -5.21,
+     "p90": -3.95,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -9200,7 +9275,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "New Mexico State’s starter record was re-read 1 min ago and describes evidence from 11.6 days ago",
+      "reason": "New Mexico State’s starter record was re-read 1 min ago and describes evidence from 11.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -9278,7 +9353,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 86.9,
+    "raw": 86.6,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -9291,7 +9366,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 18.1,
+      "score": 17.8,
       "max": 20
      },
      "freshness": {
@@ -9308,14 +9383,14 @@
      }
     },
     "main_deduction": "every source that covers Kennesaw State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Kennesaw State’s absences cannot be assessed: no current availability read for this game",
-    "potential": 98,
+    "potential": 97,
     "evidence_used": true,
     "stability": {
      "sd": 1.3,
-     "p10": -2.97,
-     "p50": -1.1,
-     "p90": 0.77,
-     "favorite_flip_rate": 0.078,
+     "p10": -2.87,
+     "p50": -1,
+     "p90": 0.87,
+     "favorite_flip_rate": 0.094,
      "tier": "STABLE"
     },
     "penalties": [
@@ -9334,6 +9409,13 @@
       "action_key": "availability:home"
      },
      {
+      "component": "projection_stability",
+      "points": 2.2,
+      "reason": "the projection flips favorite in 9% of sensitivity runs",
+      "family": "favorite_flips",
+      "action_key": null
+     },
+     {
       "component": "roster_availability",
       "points": 2,
       "reason": "no source states whether Rickie Collins can play — silence is not health",
@@ -9346,13 +9428,6 @@
       "reason": "no source states whether Roman Gagliano can play — silence is not health",
       "family": "qb_status",
       "action_key": "availability:home"
-     },
-     {
-      "component": "projection_stability",
-      "points": 1.9,
-      "reason": "the projection flips favorite in 8% of sensitivity runs",
-      "family": "favorite_flips",
-      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -9409,8 +9484,7 @@
      }
     ],
     "recoverable_by_family": {
-     "availability": 10,
-     "qb_identity": 1
+     "availability": 10
     }
    },
    "reliability_without_evidence": {
@@ -9467,9 +9541,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.49,
-     "p10": 1.43,
-     "p50": 3.5,
-     "p90": 5.58,
+     "p10": 1.36,
+     "p50": 3.43,
+     "p90": 5.5,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -9631,9 +9705,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.15,
-     "p10": -5.39,
-     "p50": -3.65,
-     "p90": -1.91,
+     "p10": -5.34,
+     "p50": -3.6,
+     "p90": -1.87,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -9676,7 +9750,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "New Mexico State’s starter record was re-read 1 min ago and describes evidence from 11.6 days ago",
+      "reason": "New Mexico State’s starter record was re-read 1 min ago and describes evidence from 11.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -9786,9 +9860,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.17,
-     "p10": 5.06,
-     "p50": 6.66,
-     "p90": 8.26,
+     "p10": 5.01,
+     "p50": 6.61,
+     "p90": 8.21,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -9942,9 +10016,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.36,
-     "p10": 6.35,
-     "p50": 8.31,
-     "p90": 10.28,
+     "p10": 6.37,
+     "p50": 8.34,
+     "p90": 10.3,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -10160,7 +10234,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "South Alabama’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "South Alabama’s starter record was re-read 1 min ago and describes evidence from 10.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -10287,9 +10361,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 0.92,
-     "p10": 8.3,
-     "p50": 9.54,
-     "p90": 10.77,
+     "p10": 8.38,
+     "p50": 9.62,
+     "p90": 10.86,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
@@ -10438,9 +10512,9 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.36,
-     "p10": 15.4,
-     "p50": 17.44,
-     "p90": 19.48,
+     "p10": 15.72,
+     "p50": 17.76,
+     "p90": 19.8,
      "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
