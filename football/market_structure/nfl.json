@@ -1,0 +1,5501 @@
+{
+ "schema": "edgedesk_nfl_market_structure_v1",
+ "version": 1,
+ "generated_at": "2026-10-19T16:08:26.766Z",
+ "engine": "edgedesk_market_structure_v1",
+ "tier": "T0 observations and T2 deterministic transforms; nothing here is a model, a price, a projection or a grade",
+ "source": {
+  "lines": {
+   "file": "football/pricing/lines_nfl.json",
+   "schema": "edgedesk_lines_archive_v1",
+   "generated_at": "2026-10-19T14:45:59.711Z",
+   "basis": "nflverse/nfldata games.csv; the spread, total and moneyline columns are the consensus close as nflverse carries them, no book, no capture time"
+  },
+  "schedule": {
+   "url": "https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv",
+   "games": 7548
+  },
+  "play_by_play": {
+   "url_pattern": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_<season>.csv.gz",
+   "columns": [
+    "game_id",
+    "season",
+    "week",
+    "season_type",
+    "play_type",
+    "two_point_attempt",
+    "two_point_conv_result",
+    "extra_point_attempt",
+    "touchdown"
+   ]
+  }
+ },
+ "key_numbers": [
+  3,
+  6,
+  7,
+  10,
+  14
+ ],
+ "six_watch": [
+  5.5,
+  6,
+  6.5
+ ],
+ "config": {
+  "version": "edgedesk_market_structure_config_v1",
+  "flag_delta": 1,
+  "snapshot": {
+   "sport_key": "americanfootball_nfl",
+   "dow": 4,
+   "local_time": "13:00",
+   "tz": "America/New_York"
+  }
+ },
+ "margin_frequency": {
+  "sign_convention": "abs: |home − away|. fav_signed: the closing favourite's score minus the underdog's (negative = the favourite lost); pick'em closes are excluded and counted.",
+  "includes": "regular season and postseason, overtime included",
+  "windows": [
+   {
+    "window_label": "full",
+    "first_season": 1999,
+    "last_season": 2026,
+    "note": "every settled game in the archive",
+    "abs": {
+     "basis": "abs",
+     "n_games": 7368,
+     "rows": [
+      {
+       "margin": 0,
+       "games": 16,
+       "frequency": 0.002172
+      },
+      {
+       "margin": 1,
+       "games": 304,
+       "frequency": 0.04126
+      },
+      {
+       "margin": 2,
+       "games": 300,
+       "frequency": 0.040717
+      },
+      {
+       "margin": 3,
+       "games": 1116,
+       "frequency": 0.151466
+      },
+      {
+       "margin": 4,
+       "games": 360,
+       "frequency": 0.04886
+      },
+      {
+       "margin": 5,
+       "games": 265,
+       "frequency": 0.035966
+      },
+      {
+       "margin": 6,
+       "games": 443,
+       "frequency": 0.060125
+      },
+      {
+       "margin": 7,
+       "games": 668,
+       "frequency": 0.090662
+      },
+      {
+       "margin": 8,
+       "games": 276,
+       "frequency": 0.037459
+      },
+      {
+       "margin": 9,
+       "games": 117,
+       "frequency": 0.015879
+      },
+      {
+       "margin": 10,
+       "games": 405,
+       "frequency": 0.054967
+      },
+      {
+       "margin": 11,
+       "games": 173,
+       "frequency": 0.02348
+      },
+      {
+       "margin": 12,
+       "games": 124,
+       "frequency": 0.01683
+      },
+      {
+       "margin": 13,
+       "games": 202,
+       "frequency": 0.027416
+      },
+      {
+       "margin": 14,
+       "games": 358,
+       "frequency": 0.048588
+      },
+      {
+       "margin": 15,
+       "games": 109,
+       "frequency": 0.014794
+      },
+      {
+       "margin": 16,
+       "games": 155,
+       "frequency": 0.021037
+      },
+      {
+       "margin": 17,
+       "games": 264,
+       "frequency": 0.035831
+      },
+      {
+       "margin": 18,
+       "games": 170,
+       "frequency": 0.023073
+      },
+      {
+       "margin": 19,
+       "games": 86,
+       "frequency": 0.011672
+      },
+      {
+       "margin": 20,
+       "games": 158,
+       "frequency": 0.021444
+      },
+      {
+       "margin": 21,
+       "games": 196,
+       "frequency": 0.026602
+      },
+      {
+       "margin": 22,
+       "games": 78,
+       "frequency": 0.010586
+      },
+      {
+       "margin": 23,
+       "games": 84,
+       "frequency": 0.011401
+      },
+      {
+       "margin": 24,
+       "games": 160,
+       "frequency": 0.021716
+      },
+      {
+       "margin": 25,
+       "games": 83,
+       "frequency": 0.011265
+      },
+      {
+       "margin": 26,
+       "games": 57,
+       "frequency": 0.007736
+      },
+      {
+       "margin": 27,
+       "games": 94,
+       "frequency": 0.012758
+      },
+      {
+       "margin": 28,
+       "games": 121,
+       "frequency": 0.016422
+      },
+      {
+       "margin": 29,
+       "games": 40,
+       "frequency": 0.005429
+      },
+      {
+       "margin": 30,
+       "games": 35,
+       "frequency": 0.00475
+      },
+      {
+       "margin": 31,
+       "games": 87,
+       "frequency": 0.011808
+      },
+      {
+       "margin": 32,
+       "games": 36,
+       "frequency": 0.004886
+      },
+      {
+       "margin": 33,
+       "games": 19,
+       "frequency": 0.002579
+      },
+      {
+       "margin": 34,
+       "games": 41,
+       "frequency": 0.005565
+      },
+      {
+       "margin": 35,
+       "games": 43,
+       "frequency": 0.005836
+      },
+      {
+       "margin": 36,
+       "games": 5,
+       "frequency": 0.000679
+      },
+      {
+       "margin": 37,
+       "games": 23,
+       "frequency": 0.003122
+      },
+      {
+       "margin": 38,
+       "games": 34,
+       "frequency": 0.004615
+      },
+      {
+       "margin": 39,
+       "games": 4,
+       "frequency": 0.000543
+      },
+      {
+       "margin": 40,
+       "games": 10,
+       "frequency": 0.001357
+      },
+      {
+       "margin": 41,
+       "games": 13,
+       "frequency": 0.001764
+      },
+      {
+       "margin": 42,
+       "games": 7,
+       "frequency": 0.00095
+      },
+      {
+       "margin": 43,
+       "games": 5,
+       "frequency": 0.000679
+      },
+      {
+       "margin": 44,
+       "games": 2,
+       "frequency": 0.000271
+      },
+      {
+       "margin": 45,
+       "games": 8,
+       "frequency": 0.001086
+      },
+      {
+       "margin": 46,
+       "games": 3,
+       "frequency": 0.000407
+      },
+      {
+       "margin": 48,
+       "games": 2,
+       "frequency": 0.000271
+      },
+      {
+       "margin": 49,
+       "games": 3,
+       "frequency": 0.000407
+      },
+      {
+       "margin": 50,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": 52,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": 55,
+       "games": 2,
+       "frequency": 0.000271
+      },
+      {
+       "margin": 58,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": 59,
+       "games": 1,
+       "frequency": 0.000136
+      }
+     ]
+    },
+    "fav_signed": {
+     "basis": "fav_signed",
+     "n_games": 7337,
+     "excluded_pickem": 31,
+     "excluded_no_line": 0,
+     "rows": [
+      {
+       "margin": -45,
+       "games": 3,
+       "frequency": 0.000409
+      },
+      {
+       "margin": -43,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": -41,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": -38,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": -37,
+       "games": 4,
+       "frequency": 0.000545
+      },
+      {
+       "margin": -35,
+       "games": 6,
+       "frequency": 0.000818
+      },
+      {
+       "margin": -34,
+       "games": 4,
+       "frequency": 0.000545
+      },
+      {
+       "margin": -33,
+       "games": 2,
+       "frequency": 0.000273
+      },
+      {
+       "margin": -32,
+       "games": 2,
+       "frequency": 0.000273
+      },
+      {
+       "margin": -31,
+       "games": 17,
+       "frequency": 0.002317
+      },
+      {
+       "margin": -30,
+       "games": 9,
+       "frequency": 0.001227
+      },
+      {
+       "margin": -29,
+       "games": 5,
+       "frequency": 0.000681
+      },
+      {
+       "margin": -28,
+       "games": 23,
+       "frequency": 0.003135
+      },
+      {
+       "margin": -27,
+       "games": 19,
+       "frequency": 0.00259
+      },
+      {
+       "margin": -26,
+       "games": 12,
+       "frequency": 0.001636
+      },
+      {
+       "margin": -25,
+       "games": 16,
+       "frequency": 0.002181
+      },
+      {
+       "margin": -24,
+       "games": 32,
+       "frequency": 0.004361
+      },
+      {
+       "margin": -23,
+       "games": 21,
+       "frequency": 0.002862
+      },
+      {
+       "margin": -22,
+       "games": 13,
+       "frequency": 0.001772
+      },
+      {
+       "margin": -21,
+       "games": 40,
+       "frequency": 0.005452
+      },
+      {
+       "margin": -20,
+       "games": 35,
+       "frequency": 0.00477
+      },
+      {
+       "margin": -19,
+       "games": 25,
+       "frequency": 0.003407
+      },
+      {
+       "margin": -18,
+       "games": 45,
+       "frequency": 0.006133
+      },
+      {
+       "margin": -17,
+       "games": 80,
+       "frequency": 0.010904
+      },
+      {
+       "margin": -16,
+       "games": 40,
+       "frequency": 0.005452
+      },
+      {
+       "margin": -15,
+       "games": 41,
+       "frequency": 0.005588
+      },
+      {
+       "margin": -14,
+       "games": 102,
+       "frequency": 0.013902
+      },
+      {
+       "margin": -13,
+       "games": 72,
+       "frequency": 0.009813
+      },
+      {
+       "margin": -12,
+       "games": 38,
+       "frequency": 0.005179
+      },
+      {
+       "margin": -11,
+       "games": 50,
+       "frequency": 0.006815
+      },
+      {
+       "margin": -10,
+       "games": 135,
+       "frequency": 0.0184
+      },
+      {
+       "margin": -9,
+       "games": 46,
+       "frequency": 0.00627
+      },
+      {
+       "margin": -8,
+       "games": 95,
+       "frequency": 0.012948
+      },
+      {
+       "margin": -7,
+       "games": 253,
+       "frequency": 0.034483
+      },
+      {
+       "margin": -6,
+       "games": 178,
+       "frequency": 0.024261
+      },
+      {
+       "margin": -5,
+       "games": 101,
+       "frequency": 0.013766
+      },
+      {
+       "margin": -4,
+       "games": 146,
+       "frequency": 0.019899
+      },
+      {
+       "margin": -3,
+       "games": 473,
+       "frequency": 0.064468
+      },
+      {
+       "margin": -2,
+       "games": 130,
+       "frequency": 0.017718
+      },
+      {
+       "margin": -1,
+       "games": 138,
+       "frequency": 0.018809
+      },
+      {
+       "margin": 0,
+       "games": 16,
+       "frequency": 0.002181
+      },
+      {
+       "margin": 1,
+       "games": 165,
+       "frequency": 0.022489
+      },
+      {
+       "margin": 2,
+       "games": 169,
+       "frequency": 0.023034
+      },
+      {
+       "margin": 3,
+       "games": 639,
+       "frequency": 0.087093
+      },
+      {
+       "margin": 4,
+       "games": 212,
+       "frequency": 0.028895
+      },
+      {
+       "margin": 5,
+       "games": 164,
+       "frequency": 0.022352
+      },
+      {
+       "margin": 6,
+       "games": 263,
+       "frequency": 0.035846
+      },
+      {
+       "margin": 7,
+       "games": 412,
+       "frequency": 0.056154
+      },
+      {
+       "margin": 8,
+       "games": 179,
+       "frequency": 0.024397
+      },
+      {
+       "margin": 9,
+       "games": 71,
+       "frequency": 0.009677
+      },
+      {
+       "margin": 10,
+       "games": 270,
+       "frequency": 0.0368
+      },
+      {
+       "margin": 11,
+       "games": 123,
+       "frequency": 0.016764
+      },
+      {
+       "margin": 12,
+       "games": 86,
+       "frequency": 0.011721
+      },
+      {
+       "margin": 13,
+       "games": 128,
+       "frequency": 0.017446
+      },
+      {
+       "margin": 14,
+       "games": 256,
+       "frequency": 0.034892
+      },
+      {
+       "margin": 15,
+       "games": 67,
+       "frequency": 0.009132
+      },
+      {
+       "margin": 16,
+       "games": 113,
+       "frequency": 0.015401
+      },
+      {
+       "margin": 17,
+       "games": 180,
+       "frequency": 0.024533
+      },
+      {
+       "margin": 18,
+       "games": 124,
+       "frequency": 0.016901
+      },
+      {
+       "margin": 19,
+       "games": 61,
+       "frequency": 0.008314
+      },
+      {
+       "margin": 20,
+       "games": 119,
+       "frequency": 0.016219
+      },
+      {
+       "margin": 21,
+       "games": 156,
+       "frequency": 0.021262
+      },
+      {
+       "margin": 22,
+       "games": 65,
+       "frequency": 0.008859
+      },
+      {
+       "margin": 23,
+       "games": 62,
+       "frequency": 0.00845
+      },
+      {
+       "margin": 24,
+       "games": 128,
+       "frequency": 0.017446
+      },
+      {
+       "margin": 25,
+       "games": 67,
+       "frequency": 0.009132
+      },
+      {
+       "margin": 26,
+       "games": 45,
+       "frequency": 0.006133
+      },
+      {
+       "margin": 27,
+       "games": 75,
+       "frequency": 0.010222
+      },
+      {
+       "margin": 28,
+       "games": 97,
+       "frequency": 0.013221
+      },
+      {
+       "margin": 29,
+       "games": 35,
+       "frequency": 0.00477
+      },
+      {
+       "margin": 30,
+       "games": 26,
+       "frequency": 0.003544
+      },
+      {
+       "margin": 31,
+       "games": 70,
+       "frequency": 0.009541
+      },
+      {
+       "margin": 32,
+       "games": 34,
+       "frequency": 0.004634
+      },
+      {
+       "margin": 33,
+       "games": 17,
+       "frequency": 0.002317
+      },
+      {
+       "margin": 34,
+       "games": 37,
+       "frequency": 0.005043
+      },
+      {
+       "margin": 35,
+       "games": 37,
+       "frequency": 0.005043
+      },
+      {
+       "margin": 36,
+       "games": 5,
+       "frequency": 0.000681
+      },
+      {
+       "margin": 37,
+       "games": 19,
+       "frequency": 0.00259
+      },
+      {
+       "margin": 38,
+       "games": 33,
+       "frequency": 0.004498
+      },
+      {
+       "margin": 39,
+       "games": 4,
+       "frequency": 0.000545
+      },
+      {
+       "margin": 40,
+       "games": 10,
+       "frequency": 0.001363
+      },
+      {
+       "margin": 41,
+       "games": 12,
+       "frequency": 0.001636
+      },
+      {
+       "margin": 42,
+       "games": 7,
+       "frequency": 0.000954
+      },
+      {
+       "margin": 43,
+       "games": 4,
+       "frequency": 0.000545
+      },
+      {
+       "margin": 44,
+       "games": 2,
+       "frequency": 0.000273
+      },
+      {
+       "margin": 45,
+       "games": 5,
+       "frequency": 0.000681
+      },
+      {
+       "margin": 46,
+       "games": 3,
+       "frequency": 0.000409
+      },
+      {
+       "margin": 48,
+       "games": 2,
+       "frequency": 0.000273
+      },
+      {
+       "margin": 49,
+       "games": 3,
+       "frequency": 0.000409
+      },
+      {
+       "margin": 50,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": 52,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": 55,
+       "games": 2,
+       "frequency": 0.000273
+      },
+      {
+       "margin": 58,
+       "games": 1,
+       "frequency": 0.000136
+      },
+      {
+       "margin": 59,
+       "games": 1,
+       "frequency": 0.000136
+      }
+     ]
+    }
+   },
+   {
+    "window_label": "recent_2023",
+    "first_season": 2023,
+    "last_season": 2026,
+    "note": "2023 onward",
+    "abs": {
+     "basis": "abs",
+     "n_games": 947,
+     "rows": [
+      {
+       "margin": 0,
+       "games": 2,
+       "frequency": 0.002112
+      },
+      {
+       "margin": 1,
+       "games": 45,
+       "frequency": 0.047518
+      },
+      {
+       "margin": 2,
+       "games": 52,
+       "frequency": 0.05491
+      },
+      {
+       "margin": 3,
+       "games": 143,
+       "frequency": 0.151003
+      },
+      {
+       "margin": 4,
+       "games": 49,
+       "frequency": 0.051742
+      },
+      {
+       "margin": 5,
+       "games": 47,
+       "frequency": 0.04963
+      },
+      {
+       "margin": 6,
+       "games": 62,
+       "frequency": 0.06547
+      },
+      {
+       "margin": 7,
+       "games": 80,
+       "frequency": 0.084477
+      },
+      {
+       "margin": 8,
+       "games": 39,
+       "frequency": 0.041183
+      },
+      {
+       "margin": 9,
+       "games": 11,
+       "frequency": 0.011616
+      },
+      {
+       "margin": 10,
+       "games": 38,
+       "frequency": 0.040127
+      },
+      {
+       "margin": 11,
+       "games": 11,
+       "frequency": 0.011616
+      },
+      {
+       "margin": 12,
+       "games": 20,
+       "frequency": 0.021119
+      },
+      {
+       "margin": 13,
+       "games": 19,
+       "frequency": 0.020063
+      },
+      {
+       "margin": 14,
+       "games": 42,
+       "frequency": 0.044351
+      },
+      {
+       "margin": 15,
+       "games": 10,
+       "frequency": 0.01056
+      },
+      {
+       "margin": 16,
+       "games": 17,
+       "frequency": 0.017951
+      },
+      {
+       "margin": 17,
+       "games": 44,
+       "frequency": 0.046463
+      },
+      {
+       "margin": 18,
+       "games": 21,
+       "frequency": 0.022175
+      },
+      {
+       "margin": 19,
+       "games": 12,
+       "frequency": 0.012672
+      },
+      {
+       "margin": 20,
+       "games": 18,
+       "frequency": 0.019007
+      },
+      {
+       "margin": 21,
+       "games": 21,
+       "frequency": 0.022175
+      },
+      {
+       "margin": 22,
+       "games": 13,
+       "frequency": 0.013728
+      },
+      {
+       "margin": 23,
+       "games": 18,
+       "frequency": 0.019007
+      },
+      {
+       "margin": 24,
+       "games": 25,
+       "frequency": 0.026399
+      },
+      {
+       "margin": 25,
+       "games": 12,
+       "frequency": 0.012672
+      },
+      {
+       "margin": 26,
+       "games": 6,
+       "frequency": 0.006336
+      },
+      {
+       "margin": 27,
+       "games": 6,
+       "frequency": 0.006336
+      },
+      {
+       "margin": 28,
+       "games": 13,
+       "frequency": 0.013728
+      },
+      {
+       "margin": 29,
+       "games": 4,
+       "frequency": 0.004224
+      },
+      {
+       "margin": 30,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": 31,
+       "games": 13,
+       "frequency": 0.013728
+      },
+      {
+       "margin": 32,
+       "games": 6,
+       "frequency": 0.006336
+      },
+      {
+       "margin": 33,
+       "games": 2,
+       "frequency": 0.002112
+      },
+      {
+       "margin": 34,
+       "games": 9,
+       "frequency": 0.009504
+      },
+      {
+       "margin": 35,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": 37,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": 38,
+       "games": 4,
+       "frequency": 0.004224
+      },
+      {
+       "margin": 40,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": 42,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": 46,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": 50,
+       "games": 1,
+       "frequency": 0.001056
+      }
+     ]
+    },
+    "fav_signed": {
+     "basis": "fav_signed",
+     "n_games": 947,
+     "excluded_pickem": 0,
+     "excluded_no_line": 0,
+     "rows": [
+      {
+       "margin": -34,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": -31,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": -30,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": -29,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": -28,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": -27,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": -25,
+       "games": 2,
+       "frequency": 0.002112
+      },
+      {
+       "margin": -24,
+       "games": 5,
+       "frequency": 0.00528
+      },
+      {
+       "margin": -23,
+       "games": 4,
+       "frequency": 0.004224
+      },
+      {
+       "margin": -22,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": -21,
+       "games": 5,
+       "frequency": 0.00528
+      },
+      {
+       "margin": -20,
+       "games": 7,
+       "frequency": 0.007392
+      },
+      {
+       "margin": -19,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": -18,
+       "games": 6,
+       "frequency": 0.006336
+      },
+      {
+       "margin": -17,
+       "games": 15,
+       "frequency": 0.015839
+      },
+      {
+       "margin": -16,
+       "games": 6,
+       "frequency": 0.006336
+      },
+      {
+       "margin": -15,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": -14,
+       "games": 13,
+       "frequency": 0.013728
+      },
+      {
+       "margin": -13,
+       "games": 2,
+       "frequency": 0.002112
+      },
+      {
+       "margin": -12,
+       "games": 8,
+       "frequency": 0.008448
+      },
+      {
+       "margin": -10,
+       "games": 10,
+       "frequency": 0.01056
+      },
+      {
+       "margin": -9,
+       "games": 4,
+       "frequency": 0.004224
+      },
+      {
+       "margin": -8,
+       "games": 14,
+       "frequency": 0.014784
+      },
+      {
+       "margin": -7,
+       "games": 22,
+       "frequency": 0.023231
+      },
+      {
+       "margin": -6,
+       "games": 18,
+       "frequency": 0.019007
+      },
+      {
+       "margin": -5,
+       "games": 16,
+       "frequency": 0.016895
+      },
+      {
+       "margin": -4,
+       "games": 20,
+       "frequency": 0.021119
+      },
+      {
+       "margin": -3,
+       "games": 66,
+       "frequency": 0.069694
+      },
+      {
+       "margin": -2,
+       "games": 28,
+       "frequency": 0.029567
+      },
+      {
+       "margin": -1,
+       "games": 22,
+       "frequency": 0.023231
+      },
+      {
+       "margin": 0,
+       "games": 2,
+       "frequency": 0.002112
+      },
+      {
+       "margin": 1,
+       "games": 23,
+       "frequency": 0.024287
+      },
+      {
+       "margin": 2,
+       "games": 24,
+       "frequency": 0.025343
+      },
+      {
+       "margin": 3,
+       "games": 77,
+       "frequency": 0.081309
+      },
+      {
+       "margin": 4,
+       "games": 29,
+       "frequency": 0.030623
+      },
+      {
+       "margin": 5,
+       "games": 31,
+       "frequency": 0.032735
+      },
+      {
+       "margin": 6,
+       "games": 44,
+       "frequency": 0.046463
+      },
+      {
+       "margin": 7,
+       "games": 58,
+       "frequency": 0.061246
+      },
+      {
+       "margin": 8,
+       "games": 25,
+       "frequency": 0.026399
+      },
+      {
+       "margin": 9,
+       "games": 7,
+       "frequency": 0.007392
+      },
+      {
+       "margin": 10,
+       "games": 28,
+       "frequency": 0.029567
+      },
+      {
+       "margin": 11,
+       "games": 11,
+       "frequency": 0.011616
+      },
+      {
+       "margin": 12,
+       "games": 12,
+       "frequency": 0.012672
+      },
+      {
+       "margin": 13,
+       "games": 17,
+       "frequency": 0.017951
+      },
+      {
+       "margin": 14,
+       "games": 29,
+       "frequency": 0.030623
+      },
+      {
+       "margin": 15,
+       "games": 7,
+       "frequency": 0.007392
+      },
+      {
+       "margin": 16,
+       "games": 11,
+       "frequency": 0.011616
+      },
+      {
+       "margin": 17,
+       "games": 29,
+       "frequency": 0.030623
+      },
+      {
+       "margin": 18,
+       "games": 15,
+       "frequency": 0.015839
+      },
+      {
+       "margin": 19,
+       "games": 9,
+       "frequency": 0.009504
+      },
+      {
+       "margin": 20,
+       "games": 11,
+       "frequency": 0.011616
+      },
+      {
+       "margin": 21,
+       "games": 16,
+       "frequency": 0.016895
+      },
+      {
+       "margin": 22,
+       "games": 12,
+       "frequency": 0.012672
+      },
+      {
+       "margin": 23,
+       "games": 14,
+       "frequency": 0.014784
+      },
+      {
+       "margin": 24,
+       "games": 20,
+       "frequency": 0.021119
+      },
+      {
+       "margin": 25,
+       "games": 10,
+       "frequency": 0.01056
+      },
+      {
+       "margin": 26,
+       "games": 6,
+       "frequency": 0.006336
+      },
+      {
+       "margin": 27,
+       "games": 5,
+       "frequency": 0.00528
+      },
+      {
+       "margin": 28,
+       "games": 12,
+       "frequency": 0.012672
+      },
+      {
+       "margin": 29,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": 30,
+       "games": 2,
+       "frequency": 0.002112
+      },
+      {
+       "margin": 31,
+       "games": 10,
+       "frequency": 0.01056
+      },
+      {
+       "margin": 32,
+       "games": 6,
+       "frequency": 0.006336
+      },
+      {
+       "margin": 33,
+       "games": 2,
+       "frequency": 0.002112
+      },
+      {
+       "margin": 34,
+       "games": 8,
+       "frequency": 0.008448
+      },
+      {
+       "margin": 35,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": 37,
+       "games": 3,
+       "frequency": 0.003168
+      },
+      {
+       "margin": 38,
+       "games": 4,
+       "frequency": 0.004224
+      },
+      {
+       "margin": 40,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": 42,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": 46,
+       "games": 1,
+       "frequency": 0.001056
+      },
+      {
+       "margin": 50,
+       "games": 1,
+       "frequency": 0.001056
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "two_point": {
+  "definition": "two-point tries ÷ (extra-point tries + two-point tries), nflverse play-by-play; no_play rows (penalties) excluded",
+  "first_season": 2015,
+  "scope": "regular season (the drift line); postseason weeks are kept in weeks[] and excluded from the share",
+  "weeks": [
+   {
+    "season": 2015,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 75,
+    "two_pt_att": 6,
+    "two_pt_made": 4,
+    "touchdowns": 81,
+    "share": 0.0741
+   },
+   {
+    "season": 2015,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 80,
+    "two_pt_att": 9,
+    "two_pt_made": 4,
+    "touchdowns": 89,
+    "share": 0.1011
+   },
+   {
+    "season": 2015,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 84,
+    "two_pt_att": 10,
+    "two_pt_made": 4,
+    "touchdowns": 94,
+    "share": 0.1064
+   },
+   {
+    "season": 2015,
+    "week": 4,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 63,
+    "two_pt_att": 4,
+    "two_pt_made": 3,
+    "touchdowns": 68,
+    "share": 0.0597
+   },
+   {
+    "season": 2015,
+    "week": 5,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 63,
+    "two_pt_att": 8,
+    "two_pt_made": 2,
+    "touchdowns": 72,
+    "share": 0.1127
+   },
+   {
+    "season": 2015,
+    "week": 6,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 73,
+    "two_pt_att": 4,
+    "two_pt_made": 1,
+    "touchdowns": 77,
+    "share": 0.0519
+   },
+   {
+    "season": 2015,
+    "week": 7,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 67,
+    "two_pt_att": 5,
+    "two_pt_made": 4,
+    "touchdowns": 72,
+    "share": 0.0694
+   },
+   {
+    "season": 2015,
+    "week": 8,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 68,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 69,
+    "share": 0.0145
+   },
+   {
+    "season": 2015,
+    "week": 9,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 64,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 74,
+    "share": 0.0986
+   },
+   {
+    "season": 2015,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 54,
+    "two_pt_att": 7,
+    "two_pt_made": 1,
+    "touchdowns": 61,
+    "share": 0.1148
+   },
+   {
+    "season": 2015,
+    "week": 11,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 63,
+    "two_pt_att": 2,
+    "two_pt_made": 1,
+    "touchdowns": 65,
+    "share": 0.0308
+   },
+   {
+    "season": 2015,
+    "week": 12,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 76,
+    "two_pt_att": 8,
+    "two_pt_made": 3,
+    "touchdowns": 85,
+    "share": 0.0952
+   },
+   {
+    "season": 2015,
+    "week": 13,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 83,
+    "two_pt_att": 8,
+    "two_pt_made": 4,
+    "touchdowns": 93,
+    "share": 0.0879
+   },
+   {
+    "season": 2015,
+    "week": 14,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 71,
+    "two_pt_att": 1,
+    "two_pt_made": 0,
+    "touchdowns": 73,
+    "share": 0.0139
+   },
+   {
+    "season": 2015,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 93,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 94,
+    "share": 0.0106
+   },
+   {
+    "season": 2015,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 68,
+    "two_pt_att": 9,
+    "two_pt_made": 4,
+    "touchdowns": 78,
+    "share": 0.1169
+   },
+   {
+    "season": 2015,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 72,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 73,
+    "share": 0.0137
+   },
+   {
+    "season": 2015,
+    "week": 18,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 10,
+    "two_pt_att": 3,
+    "two_pt_made": 1,
+    "touchdowns": 13,
+    "share": 0.2308
+   },
+   {
+    "season": 2015,
+    "week": 19,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 17,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 19,
+    "share": 0.0556
+   },
+   {
+    "season": 2015,
+    "week": 20,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 9,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 12,
+    "share": 0.25
+   },
+   {
+    "season": 2015,
+    "week": 21,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 2,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 3,
+    "share": 0.3333
+   },
+   {
+    "season": 2016,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 72,
+    "two_pt_att": 5,
+    "two_pt_made": 3,
+    "touchdowns": 79,
+    "share": 0.0649
+   },
+   {
+    "season": 2016,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 75,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 78,
+    "share": 0.0385
+   },
+   {
+    "season": 2016,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 75,
+    "two_pt_att": 10,
+    "two_pt_made": 4,
+    "touchdowns": 86,
+    "share": 0.1176
+   },
+   {
+    "season": 2016,
+    "week": 4,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 72,
+    "two_pt_att": 4,
+    "two_pt_made": 3,
+    "touchdowns": 78,
+    "share": 0.0526
+   },
+   {
+    "season": 2016,
+    "week": 5,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 65,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 68,
+    "share": 0.0441
+   },
+   {
+    "season": 2016,
+    "week": 6,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 78,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 81,
+    "share": 0.037
+   },
+   {
+    "season": 2016,
+    "week": 7,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 63,
+    "two_pt_att": 4,
+    "two_pt_made": 3,
+    "touchdowns": 67,
+    "share": 0.0597
+   },
+   {
+    "season": 2016,
+    "week": 8,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 65,
+    "two_pt_att": 9,
+    "two_pt_made": 5,
+    "touchdowns": 76,
+    "share": 0.1216
+   },
+   {
+    "season": 2016,
+    "week": 9,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 68,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 75,
+    "share": 0.0811
+   },
+   {
+    "season": 2016,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 57,
+    "two_pt_att": 13,
+    "two_pt_made": 4,
+    "touchdowns": 70,
+    "share": 0.1857
+   },
+   {
+    "season": 2016,
+    "week": 11,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 64,
+    "two_pt_att": 4,
+    "two_pt_made": 2,
+    "touchdowns": 68,
+    "share": 0.0588
+   },
+   {
+    "season": 2016,
+    "week": 12,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 79,
+    "two_pt_att": 8,
+    "two_pt_made": 3,
+    "touchdowns": 87,
+    "share": 0.092
+   },
+   {
+    "season": 2016,
+    "week": 13,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 64,
+    "two_pt_att": 8,
+    "two_pt_made": 2,
+    "touchdowns": 72,
+    "share": 0.1111
+   },
+   {
+    "season": 2016,
+    "week": 14,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 63,
+    "two_pt_att": 5,
+    "two_pt_made": 2,
+    "touchdowns": 69,
+    "share": 0.0735
+   },
+   {
+    "season": 2016,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 67,
+    "two_pt_att": 4,
+    "two_pt_made": 1,
+    "touchdowns": 71,
+    "share": 0.0563
+   },
+   {
+    "season": 2016,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 91,
+    "two_pt_att": 5,
+    "two_pt_made": 4,
+    "touchdowns": 97,
+    "share": 0.0521
+   },
+   {
+    "season": 2016,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 77,
+    "two_pt_att": 6,
+    "two_pt_made": 1,
+    "touchdowns": 85,
+    "share": 0.0723
+   },
+   {
+    "season": 2016,
+    "week": 18,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 18,
+    "two_pt_att": 1,
+    "two_pt_made": 0,
+    "touchdowns": 19,
+    "share": 0.0526
+   },
+   {
+    "season": 2016,
+    "week": 19,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 18,
+    "two_pt_att": 2,
+    "two_pt_made": 1,
+    "touchdowns": 20,
+    "share": 0.1
+   },
+   {
+    "season": 2016,
+    "week": 20,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 12,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 15,
+    "share": 0.2
+   },
+   {
+    "season": 2016,
+    "week": 21,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 5,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 8,
+    "share": 0.1667
+   },
+   {
+    "season": 2017,
+    "week": 1,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 58,
+    "two_pt_att": 7,
+    "two_pt_made": 2,
+    "touchdowns": 65,
+    "share": 0.1077
+   },
+   {
+    "season": 2017,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 65,
+    "two_pt_att": 2,
+    "two_pt_made": 0,
+    "touchdowns": 67,
+    "share": 0.0299
+   },
+   {
+    "season": 2017,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 88,
+    "two_pt_att": 3,
+    "two_pt_made": 1,
+    "touchdowns": 92,
+    "share": 0.033
+   },
+   {
+    "season": 2017,
+    "week": 4,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 67,
+    "two_pt_att": 8,
+    "two_pt_made": 2,
+    "touchdowns": 77,
+    "share": 0.1067
+   },
+   {
+    "season": 2017,
+    "week": 5,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 60,
+    "two_pt_att": 7,
+    "two_pt_made": 2,
+    "touchdowns": 67,
+    "share": 0.1045
+   },
+   {
+    "season": 2017,
+    "week": 6,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 69,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 76,
+    "share": 0.08
+   },
+   {
+    "season": 2017,
+    "week": 7,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 63,
+    "two_pt_att": 1,
+    "two_pt_made": 0,
+    "touchdowns": 64,
+    "share": 0.0156
+   },
+   {
+    "season": 2017,
+    "week": 8,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 52,
+    "two_pt_att": 7,
+    "two_pt_made": 2,
+    "touchdowns": 59,
+    "share": 0.1186
+   },
+   {
+    "season": 2017,
+    "week": 9,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 66,
+    "two_pt_att": 3,
+    "two_pt_made": 1,
+    "touchdowns": 69,
+    "share": 0.0435
+   },
+   {
+    "season": 2017,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 71,
+    "two_pt_att": 4,
+    "two_pt_made": 3,
+    "touchdowns": 75,
+    "share": 0.0533
+   },
+   {
+    "season": 2017,
+    "week": 11,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 63,
+    "two_pt_att": 6,
+    "two_pt_made": 5,
+    "touchdowns": 71,
+    "share": 0.087
+   },
+   {
+    "season": 2017,
+    "week": 12,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 70,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 76,
+    "share": 0.0789
+   },
+   {
+    "season": 2017,
+    "week": 13,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 69,
+    "two_pt_att": 4,
+    "two_pt_made": 2,
+    "touchdowns": 74,
+    "share": 0.0548
+   },
+   {
+    "season": 2017,
+    "week": 14,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 76,
+    "two_pt_att": 4,
+    "two_pt_made": 2,
+    "touchdowns": 82,
+    "share": 0.05
+   },
+   {
+    "season": 2017,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 76,
+    "two_pt_att": 4,
+    "two_pt_made": 2,
+    "touchdowns": 80,
+    "share": 0.05
+   },
+   {
+    "season": 2017,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 58,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 62,
+    "share": 0.0492
+   },
+   {
+    "season": 2017,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 63,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 69,
+    "share": 0.087
+   },
+   {
+    "season": 2017,
+    "week": 18,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 14,
+    "two_pt_att": 2,
+    "two_pt_made": 0,
+    "touchdowns": 16,
+    "share": 0.125
+   },
+   {
+    "season": 2017,
+    "week": 19,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 26,
+    "two_pt_att": 1,
+    "two_pt_made": 0,
+    "touchdowns": 27,
+    "share": 0.037
+   },
+   {
+    "season": 2017,
+    "week": 20,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 11,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 11,
+    "share": 0
+   },
+   {
+    "season": 2017,
+    "week": 21,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 7,
+    "two_pt_att": 2,
+    "two_pt_made": 0,
+    "touchdowns": 9,
+    "share": 0.2222
+   },
+   {
+    "season": 2018,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 76,
+    "two_pt_att": 11,
+    "two_pt_made": 6,
+    "touchdowns": 87,
+    "share": 0.1264
+   },
+   {
+    "season": 2018,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 80,
+    "two_pt_att": 7,
+    "two_pt_made": 6,
+    "touchdowns": 87,
+    "share": 0.0805
+   },
+   {
+    "season": 2018,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 76,
+    "two_pt_att": 6,
+    "two_pt_made": 4,
+    "touchdowns": 83,
+    "share": 0.0732
+   },
+   {
+    "season": 2018,
+    "week": 4,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 72,
+    "two_pt_att": 14,
+    "two_pt_made": 8,
+    "touchdowns": 87,
+    "share": 0.1628
+   },
+   {
+    "season": 2018,
+    "week": 5,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 70,
+    "two_pt_att": 10,
+    "two_pt_made": 3,
+    "touchdowns": 80,
+    "share": 0.125
+   },
+   {
+    "season": 2018,
+    "week": 6,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 75,
+    "two_pt_att": 5,
+    "two_pt_made": 4,
+    "touchdowns": 80,
+    "share": 0.0625
+   },
+   {
+    "season": 2018,
+    "week": 7,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 71,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 77,
+    "share": 0.0779
+   },
+   {
+    "season": 2018,
+    "week": 8,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 70,
+    "two_pt_att": 10,
+    "two_pt_made": 4,
+    "touchdowns": 80,
+    "share": 0.125
+   },
+   {
+    "season": 2018,
+    "week": 9,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 69,
+    "two_pt_att": 6,
+    "two_pt_made": 1,
+    "touchdowns": 75,
+    "share": 0.08
+   },
+   {
+    "season": 2018,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 73,
+    "two_pt_att": 7,
+    "two_pt_made": 2,
+    "touchdowns": 80,
+    "share": 0.0875
+   },
+   {
+    "season": 2018,
+    "week": 11,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 71,
+    "two_pt_att": 8,
+    "two_pt_made": 4,
+    "touchdowns": 79,
+    "share": 0.1013
+   },
+   {
+    "season": 2018,
+    "week": 12,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 80,
+    "two_pt_att": 5,
+    "two_pt_made": 2,
+    "touchdowns": 85,
+    "share": 0.0588
+   },
+   {
+    "season": 2018,
+    "week": 13,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 67,
+    "two_pt_att": 8,
+    "two_pt_made": 4,
+    "touchdowns": 75,
+    "share": 0.1067
+   },
+   {
+    "season": 2018,
+    "week": 14,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 73,
+    "two_pt_att": 6,
+    "two_pt_made": 4,
+    "touchdowns": 81,
+    "share": 0.0759
+   },
+   {
+    "season": 2018,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 60,
+    "two_pt_att": 6,
+    "two_pt_made": 2,
+    "touchdowns": 66,
+    "share": 0.0909
+   },
+   {
+    "season": 2018,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 74,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 83,
+    "share": 0.0864
+   },
+   {
+    "season": 2018,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 78,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 86,
+    "share": 0.0824
+   },
+   {
+    "season": 2018,
+    "week": 18,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 10,
+    "two_pt_att": 5,
+    "two_pt_made": 3,
+    "touchdowns": 15,
+    "share": 0.3333
+   },
+   {
+    "season": 2018,
+    "week": 19,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 22,
+    "two_pt_att": 2,
+    "two_pt_made": 1,
+    "touchdowns": 25,
+    "share": 0.0833
+   },
+   {
+    "season": 2018,
+    "week": 20,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 12,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 13,
+    "share": 0
+   },
+   {
+    "season": 2018,
+    "week": 21,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 1,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 1,
+    "share": 0
+   },
+   {
+    "season": 2019,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 81,
+    "two_pt_att": 8,
+    "two_pt_made": 5,
+    "touchdowns": 90,
+    "share": 0.0899
+   },
+   {
+    "season": 2019,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 64,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 70,
+    "share": 0.0857
+   },
+   {
+    "season": 2019,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 82,
+    "two_pt_att": 8,
+    "two_pt_made": 2,
+    "touchdowns": 91,
+    "share": 0.0889
+   },
+   {
+    "season": 2019,
+    "week": 4,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 68,
+    "two_pt_att": 5,
+    "two_pt_made": 1,
+    "touchdowns": 73,
+    "share": 0.0685
+   },
+   {
+    "season": 2019,
+    "week": 5,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 75,
+    "two_pt_att": 4,
+    "two_pt_made": 1,
+    "touchdowns": 79,
+    "share": 0.0506
+   },
+   {
+    "season": 2019,
+    "week": 6,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 63,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 70,
+    "share": 0.087
+   },
+   {
+    "season": 2019,
+    "week": 7,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 70,
+    "two_pt_att": 5,
+    "two_pt_made": 3,
+    "touchdowns": 75,
+    "share": 0.0667
+   },
+   {
+    "season": 2019,
+    "week": 8,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 64,
+    "two_pt_att": 8,
+    "two_pt_made": 4,
+    "touchdowns": 73,
+    "share": 0.1111
+   },
+   {
+    "season": 2019,
+    "week": 9,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 67,
+    "two_pt_att": 5,
+    "two_pt_made": 3,
+    "touchdowns": 73,
+    "share": 0.0694
+   },
+   {
+    "season": 2019,
+    "week": 10,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 61,
+    "two_pt_att": 6,
+    "two_pt_made": 4,
+    "touchdowns": 67,
+    "share": 0.0896
+   },
+   {
+    "season": 2019,
+    "week": 11,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 61,
+    "two_pt_att": 11,
+    "two_pt_made": 4,
+    "touchdowns": 73,
+    "share": 0.1528
+   },
+   {
+    "season": 2019,
+    "week": 12,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 58,
+    "two_pt_att": 6,
+    "two_pt_made": 2,
+    "touchdowns": 64,
+    "share": 0.0938
+   },
+   {
+    "season": 2019,
+    "week": 13,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 73,
+    "two_pt_att": 8,
+    "two_pt_made": 4,
+    "touchdowns": 82,
+    "share": 0.0988
+   },
+   {
+    "season": 2019,
+    "week": 14,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 86,
+    "two_pt_att": 6,
+    "two_pt_made": 2,
+    "touchdowns": 93,
+    "share": 0.0652
+   },
+   {
+    "season": 2019,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 84,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 93,
+    "share": 0.0769
+   },
+   {
+    "season": 2019,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 76,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 84,
+    "share": 0.0843
+   },
+   {
+    "season": 2019,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 77,
+    "two_pt_att": 4,
+    "two_pt_made": 2,
+    "touchdowns": 82,
+    "share": 0.0494
+   },
+   {
+    "season": 2019,
+    "week": 18,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 10,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 14,
+    "share": 0.2308
+   },
+   {
+    "season": 2019,
+    "week": 19,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 25,
+    "two_pt_att": 2,
+    "two_pt_made": 0,
+    "touchdowns": 27,
+    "share": 0.0741
+   },
+   {
+    "season": 2019,
+    "week": 20,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 14,
+    "two_pt_att": 1,
+    "two_pt_made": 0,
+    "touchdowns": 15,
+    "share": 0.0667
+   },
+   {
+    "season": 2019,
+    "week": 21,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 6,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 6,
+    "share": 0
+   },
+   {
+    "season": 2020,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 79,
+    "two_pt_att": 9,
+    "two_pt_made": 5,
+    "touchdowns": 88,
+    "share": 0.1023
+   },
+   {
+    "season": 2020,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 87,
+    "two_pt_att": 11,
+    "two_pt_made": 5,
+    "touchdowns": 98,
+    "share": 0.1122
+   },
+   {
+    "season": 2020,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 86,
+    "two_pt_att": 9,
+    "two_pt_made": 3,
+    "touchdowns": 95,
+    "share": 0.0947
+   },
+   {
+    "season": 2020,
+    "week": 4,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 79,
+    "two_pt_att": 11,
+    "two_pt_made": 8,
+    "touchdowns": 90,
+    "share": 0.1222
+   },
+   {
+    "season": 2020,
+    "week": 5,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 75,
+    "two_pt_att": 7,
+    "two_pt_made": 3,
+    "touchdowns": 82,
+    "share": 0.0854
+   },
+   {
+    "season": 2020,
+    "week": 6,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 65,
+    "two_pt_att": 11,
+    "two_pt_made": 5,
+    "touchdowns": 77,
+    "share": 0.1447
+   },
+   {
+    "season": 2020,
+    "week": 7,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 75,
+    "two_pt_att": 8,
+    "two_pt_made": 3,
+    "touchdowns": 83,
+    "share": 0.0964
+   },
+   {
+    "season": 2020,
+    "week": 8,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 70,
+    "two_pt_att": 9,
+    "two_pt_made": 4,
+    "touchdowns": 79,
+    "share": 0.1139
+   },
+   {
+    "season": 2020,
+    "week": 9,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 83,
+    "two_pt_att": 3,
+    "two_pt_made": 0,
+    "touchdowns": 86,
+    "share": 0.0349
+   },
+   {
+    "season": 2020,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 62,
+    "two_pt_att": 8,
+    "two_pt_made": 1,
+    "touchdowns": 70,
+    "share": 0.1143
+   },
+   {
+    "season": 2020,
+    "week": 11,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 67,
+    "two_pt_att": 4,
+    "two_pt_made": 4,
+    "touchdowns": 72,
+    "share": 0.0563
+   },
+   {
+    "season": 2020,
+    "week": 12,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 75,
+    "two_pt_att": 10,
+    "two_pt_made": 6,
+    "touchdowns": 85,
+    "share": 0.1176
+   },
+   {
+    "season": 2020,
+    "week": 13,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 82,
+    "two_pt_att": 6,
+    "two_pt_made": 4,
+    "touchdowns": 88,
+    "share": 0.0682
+   },
+   {
+    "season": 2020,
+    "week": 14,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 85,
+    "two_pt_att": 6,
+    "two_pt_made": 5,
+    "touchdowns": 91,
+    "share": 0.0659
+   },
+   {
+    "season": 2020,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 89,
+    "two_pt_att": 7,
+    "two_pt_made": 3,
+    "touchdowns": 98,
+    "share": 0.0729
+   },
+   {
+    "season": 2020,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 88,
+    "two_pt_att": 3,
+    "two_pt_made": 0,
+    "touchdowns": 91,
+    "share": 0.033
+   },
+   {
+    "season": 2020,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 91,
+    "two_pt_att": 9,
+    "two_pt_made": 4,
+    "touchdowns": 100,
+    "share": 0.09
+   },
+   {
+    "season": 2020,
+    "week": 18,
+    "season_type": "POST",
+    "games": 6,
+    "xp_att": 27,
+    "two_pt_att": 7,
+    "two_pt_made": 2,
+    "touchdowns": 35,
+    "share": 0.2059
+   },
+   {
+    "season": 2020,
+    "week": 19,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 14,
+    "two_pt_att": 3,
+    "two_pt_made": 1,
+    "touchdowns": 17,
+    "share": 0.1765
+   },
+   {
+    "season": 2020,
+    "week": 20,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 12,
+    "two_pt_att": 2,
+    "two_pt_made": 0,
+    "touchdowns": 14,
+    "share": 0.1429
+   },
+   {
+    "season": 2020,
+    "week": 21,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 4,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 4,
+    "share": 0
+   },
+   {
+    "season": 2021,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 80,
+    "two_pt_att": 8,
+    "two_pt_made": 5,
+    "touchdowns": 90,
+    "share": 0.0909
+   },
+   {
+    "season": 2021,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 81,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 88,
+    "share": 0.0795
+   },
+   {
+    "season": 2021,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 78,
+    "two_pt_att": 5,
+    "two_pt_made": 4,
+    "touchdowns": 83,
+    "share": 0.0602
+   },
+   {
+    "season": 2021,
+    "week": 4,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 80,
+    "two_pt_att": 9,
+    "two_pt_made": 4,
+    "touchdowns": 90,
+    "share": 0.1011
+   },
+   {
+    "season": 2021,
+    "week": 5,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 76,
+    "two_pt_att": 15,
+    "two_pt_made": 8,
+    "touchdowns": 92,
+    "share": 0.1648
+   },
+   {
+    "season": 2021,
+    "week": 6,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 69,
+    "two_pt_att": 9,
+    "two_pt_made": 6,
+    "touchdowns": 80,
+    "share": 0.1154
+   },
+   {
+    "season": 2021,
+    "week": 7,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 59,
+    "two_pt_att": 5,
+    "two_pt_made": 2,
+    "touchdowns": 64,
+    "share": 0.0781
+   },
+   {
+    "season": 2021,
+    "week": 8,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 67,
+    "two_pt_att": 11,
+    "two_pt_made": 5,
+    "touchdowns": 78,
+    "share": 0.141
+   },
+   {
+    "season": 2021,
+    "week": 9,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 61,
+    "two_pt_att": 8,
+    "two_pt_made": 4,
+    "touchdowns": 69,
+    "share": 0.1159
+   },
+   {
+    "season": 2021,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 62,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 68,
+    "share": 0.0882
+   },
+   {
+    "season": 2021,
+    "week": 11,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 69,
+    "two_pt_att": 4,
+    "two_pt_made": 2,
+    "touchdowns": 73,
+    "share": 0.0548
+   },
+   {
+    "season": 2021,
+    "week": 12,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 66,
+    "two_pt_att": 11,
+    "two_pt_made": 5,
+    "touchdowns": 77,
+    "share": 0.1429
+   },
+   {
+    "season": 2021,
+    "week": 13,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 54,
+    "two_pt_att": 13,
+    "two_pt_made": 4,
+    "touchdowns": 68,
+    "share": 0.194
+   },
+   {
+    "season": 2021,
+    "week": 14,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 68,
+    "two_pt_att": 10,
+    "two_pt_made": 5,
+    "touchdowns": 80,
+    "share": 0.1282
+   },
+   {
+    "season": 2021,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 59,
+    "two_pt_att": 5,
+    "two_pt_made": 1,
+    "touchdowns": 67,
+    "share": 0.0781
+   },
+   {
+    "season": 2021,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 75,
+    "two_pt_att": 9,
+    "two_pt_made": 2,
+    "touchdowns": 84,
+    "share": 0.1071
+   },
+   {
+    "season": 2021,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 72,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 79,
+    "share": 0.0886
+   },
+   {
+    "season": 2021,
+    "week": 18,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 81,
+    "two_pt_att": 11,
+    "two_pt_made": 6,
+    "touchdowns": 93,
+    "share": 0.1196
+   },
+   {
+    "season": 2021,
+    "week": 19,
+    "season_type": "POST",
+    "games": 6,
+    "xp_att": 34,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 36,
+    "share": 0.0286
+   },
+   {
+    "season": 2021,
+    "week": 20,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 18,
+    "two_pt_att": 2,
+    "two_pt_made": 1,
+    "touchdowns": 21,
+    "share": 0.1
+   },
+   {
+    "season": 2021,
+    "week": 21,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 8,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 9,
+    "share": 0.1111
+   },
+   {
+    "season": 2021,
+    "week": 22,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 4,
+    "two_pt_att": 1,
+    "two_pt_made": 0,
+    "touchdowns": 5,
+    "share": 0.2
+   },
+   {
+    "season": 2022,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 65,
+    "two_pt_att": 11,
+    "two_pt_made": 5,
+    "touchdowns": 76,
+    "share": 0.1447
+   },
+   {
+    "season": 2022,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 71,
+    "two_pt_att": 7,
+    "two_pt_made": 6,
+    "touchdowns": 79,
+    "share": 0.0897
+   },
+   {
+    "season": 2022,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 61,
+    "two_pt_att": 8,
+    "two_pt_made": 2,
+    "touchdowns": 70,
+    "share": 0.1159
+   },
+   {
+    "season": 2022,
+    "week": 4,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 81,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 87,
+    "share": 0.069
+   },
+   {
+    "season": 2022,
+    "week": 5,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 64,
+    "two_pt_att": 10,
+    "two_pt_made": 4,
+    "touchdowns": 74,
+    "share": 0.1351
+   },
+   {
+    "season": 2022,
+    "week": 6,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 53,
+    "two_pt_att": 10,
+    "two_pt_made": 2,
+    "touchdowns": 63,
+    "share": 0.1587
+   },
+   {
+    "season": 2022,
+    "week": 7,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 65,
+    "two_pt_att": 3,
+    "two_pt_made": 3,
+    "touchdowns": 68,
+    "share": 0.0441
+   },
+   {
+    "season": 2022,
+    "week": 8,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 77,
+    "two_pt_att": 6,
+    "two_pt_made": 2,
+    "touchdowns": 83,
+    "share": 0.0723
+   },
+   {
+    "season": 2022,
+    "week": 9,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 58,
+    "two_pt_att": 5,
+    "two_pt_made": 4,
+    "touchdowns": 63,
+    "share": 0.0794
+   },
+   {
+    "season": 2022,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 70,
+    "two_pt_att": 4,
+    "two_pt_made": 0,
+    "touchdowns": 75,
+    "share": 0.0541
+   },
+   {
+    "season": 2022,
+    "week": 11,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 58,
+    "two_pt_att": 3,
+    "two_pt_made": 1,
+    "touchdowns": 63,
+    "share": 0.0492
+   },
+   {
+    "season": 2022,
+    "week": 12,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 70,
+    "two_pt_att": 7,
+    "two_pt_made": 5,
+    "touchdowns": 79,
+    "share": 0.0909
+   },
+   {
+    "season": 2022,
+    "week": 13,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 64,
+    "two_pt_att": 5,
+    "two_pt_made": 2,
+    "touchdowns": 69,
+    "share": 0.0725
+   },
+   {
+    "season": 2022,
+    "week": 14,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 65,
+    "two_pt_att": 4,
+    "two_pt_made": 2,
+    "touchdowns": 69,
+    "share": 0.058
+   },
+   {
+    "season": 2022,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 69,
+    "two_pt_att": 11,
+    "two_pt_made": 7,
+    "touchdowns": 83,
+    "share": 0.1375
+   },
+   {
+    "season": 2022,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 60,
+    "two_pt_att": 9,
+    "two_pt_made": 4,
+    "touchdowns": 69,
+    "share": 0.1304
+   },
+   {
+    "season": 2022,
+    "week": 17,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 71,
+    "two_pt_att": 3,
+    "two_pt_made": 1,
+    "touchdowns": 74,
+    "share": 0.0405
+   },
+   {
+    "season": 2022,
+    "week": 18,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 65,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 71,
+    "share": 0.0845
+   },
+   {
+    "season": 2022,
+    "week": 19,
+    "season_type": "POST",
+    "games": 6,
+    "xp_att": 32,
+    "two_pt_att": 7,
+    "two_pt_made": 5,
+    "touchdowns": 40,
+    "share": 0.1795
+   },
+   {
+    "season": 2022,
+    "week": 20,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 17,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 17,
+    "share": 0
+   },
+   {
+    "season": 2022,
+    "week": 21,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 9,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 9,
+    "share": 0
+   },
+   {
+    "season": 2022,
+    "week": 22,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 8,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 9,
+    "share": 0.1111
+   },
+   {
+    "season": 2023,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 63,
+    "two_pt_att": 5,
+    "two_pt_made": 3,
+    "touchdowns": 69,
+    "share": 0.0735
+   },
+   {
+    "season": 2023,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 78,
+    "two_pt_att": 9,
+    "two_pt_made": 7,
+    "touchdowns": 88,
+    "share": 0.1034
+   },
+   {
+    "season": 2023,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 65,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 72,
+    "share": 0.0972
+   },
+   {
+    "season": 2023,
+    "week": 4,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 68,
+    "two_pt_att": 10,
+    "two_pt_made": 6,
+    "touchdowns": 79,
+    "share": 0.1282
+   },
+   {
+    "season": 2023,
+    "week": 5,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 61,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 68,
+    "share": 0.1029
+   },
+   {
+    "season": 2023,
+    "week": 6,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 49,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 52,
+    "share": 0.0577
+   },
+   {
+    "season": 2023,
+    "week": 7,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 57,
+    "two_pt_att": 6,
+    "two_pt_made": 2,
+    "touchdowns": 64,
+    "share": 0.0952
+   },
+   {
+    "season": 2023,
+    "week": 8,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 74,
+    "two_pt_att": 7,
+    "two_pt_made": 3,
+    "touchdowns": 82,
+    "share": 0.0864
+   },
+   {
+    "season": 2023,
+    "week": 9,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 55,
+    "two_pt_att": 7,
+    "two_pt_made": 3,
+    "touchdowns": 63,
+    "share": 0.1129
+   },
+   {
+    "season": 2023,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 59,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 66,
+    "share": 0.1061
+   },
+   {
+    "season": 2023,
+    "week": 11,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 60,
+    "two_pt_att": 4,
+    "two_pt_made": 1,
+    "touchdowns": 64,
+    "share": 0.0625
+   },
+   {
+    "season": 2023,
+    "week": 12,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 66,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 75,
+    "share": 0.0959
+   },
+   {
+    "season": 2023,
+    "week": 13,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 63,
+    "two_pt_att": 8,
+    "two_pt_made": 3,
+    "touchdowns": 72,
+    "share": 0.1127
+   },
+   {
+    "season": 2023,
+    "week": 14,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 63,
+    "two_pt_att": 10,
+    "two_pt_made": 5,
+    "touchdowns": 74,
+    "share": 0.137
+   },
+   {
+    "season": 2023,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 81,
+    "two_pt_att": 2,
+    "two_pt_made": 1,
+    "touchdowns": 83,
+    "share": 0.0241
+   },
+   {
+    "season": 2023,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 71,
+    "two_pt_att": 14,
+    "two_pt_made": 9,
+    "touchdowns": 86,
+    "share": 0.1647
+   },
+   {
+    "season": 2023,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 73,
+    "two_pt_att": 4,
+    "two_pt_made": 0,
+    "touchdowns": 78,
+    "share": 0.0519
+   },
+   {
+    "season": 2023,
+    "week": 18,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 63,
+    "two_pt_att": 4,
+    "two_pt_made": 4,
+    "touchdowns": 67,
+    "share": 0.0597
+   },
+   {
+    "season": 2023,
+    "week": 19,
+    "season_type": "POST",
+    "games": 6,
+    "xp_att": 34,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 37,
+    "share": 0.0811
+   },
+   {
+    "season": 2023,
+    "week": 20,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 21,
+    "two_pt_att": 2,
+    "two_pt_made": 1,
+    "touchdowns": 23,
+    "share": 0.087
+   },
+   {
+    "season": 2023,
+    "week": 21,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 11,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 11,
+    "share": 0
+   },
+   {
+    "season": 2023,
+    "week": 22,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 3,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 4,
+    "share": 0
+   },
+   {
+    "season": 2024,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 65,
+    "two_pt_att": 10,
+    "two_pt_made": 2,
+    "touchdowns": 76,
+    "share": 0.1333
+   },
+   {
+    "season": 2024,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 55,
+    "two_pt_att": 5,
+    "two_pt_made": 1,
+    "touchdowns": 60,
+    "share": 0.0833
+   },
+   {
+    "season": 2024,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 70,
+    "two_pt_att": 9,
+    "two_pt_made": 3,
+    "touchdowns": 79,
+    "share": 0.1139
+   },
+   {
+    "season": 2024,
+    "week": 4,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 76,
+    "two_pt_att": 5,
+    "two_pt_made": 2,
+    "touchdowns": 81,
+    "share": 0.0617
+   },
+   {
+    "season": 2024,
+    "week": 5,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 67,
+    "two_pt_att": 7,
+    "two_pt_made": 3,
+    "touchdowns": 75,
+    "share": 0.0946
+   },
+   {
+    "season": 2024,
+    "week": 6,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 70,
+    "two_pt_att": 7,
+    "two_pt_made": 1,
+    "touchdowns": 77,
+    "share": 0.0909
+   },
+   {
+    "season": 2024,
+    "week": 7,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 66,
+    "two_pt_att": 9,
+    "two_pt_made": 4,
+    "touchdowns": 75,
+    "share": 0.12
+   },
+   {
+    "season": 2024,
+    "week": 8,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 80,
+    "two_pt_att": 6,
+    "two_pt_made": 2,
+    "touchdowns": 87,
+    "share": 0.0698
+   },
+   {
+    "season": 2024,
+    "week": 9,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 66,
+    "two_pt_att": 13,
+    "two_pt_made": 5,
+    "touchdowns": 81,
+    "share": 0.1646
+   },
+   {
+    "season": 2024,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 56,
+    "two_pt_att": 3,
+    "two_pt_made": 1,
+    "touchdowns": 59,
+    "share": 0.0508
+   },
+   {
+    "season": 2024,
+    "week": 11,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 67,
+    "two_pt_att": 9,
+    "two_pt_made": 2,
+    "touchdowns": 76,
+    "share": 0.1184
+   },
+   {
+    "season": 2024,
+    "week": 12,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 57,
+    "two_pt_att": 10,
+    "two_pt_made": 5,
+    "touchdowns": 67,
+    "share": 0.1493
+   },
+   {
+    "season": 2024,
+    "week": 13,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 72,
+    "two_pt_att": 12,
+    "two_pt_made": 8,
+    "touchdowns": 84,
+    "share": 0.1429
+   },
+   {
+    "season": 2024,
+    "week": 14,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 65,
+    "two_pt_att": 6,
+    "two_pt_made": 5,
+    "touchdowns": 72,
+    "share": 0.0845
+   },
+   {
+    "season": 2024,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 75,
+    "two_pt_att": 4,
+    "two_pt_made": 1,
+    "touchdowns": 80,
+    "share": 0.0506
+   },
+   {
+    "season": 2024,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 83,
+    "two_pt_att": 6,
+    "two_pt_made": 4,
+    "touchdowns": 90,
+    "share": 0.0674
+   },
+   {
+    "season": 2024,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 77,
+    "two_pt_att": 6,
+    "two_pt_made": 3,
+    "touchdowns": 85,
+    "share": 0.0723
+   },
+   {
+    "season": 2024,
+    "week": 18,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 74,
+    "two_pt_att": 8,
+    "two_pt_made": 3,
+    "touchdowns": 83,
+    "share": 0.0976
+   },
+   {
+    "season": 2024,
+    "week": 19,
+    "season_type": "POST",
+    "games": 6,
+    "xp_att": 23,
+    "two_pt_att": 2,
+    "two_pt_made": 1,
+    "touchdowns": 25,
+    "share": 0.08
+   },
+   {
+    "season": 2024,
+    "week": 20,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 22,
+    "two_pt_att": 2,
+    "two_pt_made": 0,
+    "touchdowns": 24,
+    "share": 0.0833
+   },
+   {
+    "season": 2024,
+    "week": 21,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 12,
+    "two_pt_att": 6,
+    "two_pt_made": 2,
+    "touchdowns": 18,
+    "share": 0.3333
+   },
+   {
+    "season": 2024,
+    "week": 22,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 4,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 7,
+    "share": 0.4286
+   },
+   {
+    "season": 2025,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 61,
+    "two_pt_att": 9,
+    "two_pt_made": 2,
+    "touchdowns": 70,
+    "share": 0.1286
+   },
+   {
+    "season": 2025,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 81,
+    "two_pt_att": 7,
+    "two_pt_made": 3,
+    "touchdowns": 88,
+    "share": 0.0795
+   },
+   {
+    "season": 2025,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 77,
+    "two_pt_att": 5,
+    "two_pt_made": 2,
+    "touchdowns": 83,
+    "share": 0.061
+   },
+   {
+    "season": 2025,
+    "week": 4,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 77,
+    "two_pt_att": 10,
+    "two_pt_made": 6,
+    "touchdowns": 87,
+    "share": 0.1149
+   },
+   {
+    "season": 2025,
+    "week": 5,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 73,
+    "two_pt_att": 8,
+    "two_pt_made": 5,
+    "touchdowns": 81,
+    "share": 0.0988
+   },
+   {
+    "season": 2025,
+    "week": 6,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 62,
+    "two_pt_att": 5,
+    "two_pt_made": 2,
+    "touchdowns": 67,
+    "share": 0.0746
+   },
+   {
+    "season": 2025,
+    "week": 7,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 71,
+    "two_pt_att": 7,
+    "two_pt_made": 3,
+    "touchdowns": 78,
+    "share": 0.0897
+   },
+   {
+    "season": 2025,
+    "week": 8,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 67,
+    "two_pt_att": 7,
+    "two_pt_made": 4,
+    "touchdowns": 74,
+    "share": 0.0946
+   },
+   {
+    "season": 2025,
+    "week": 9,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 75,
+    "two_pt_att": 5,
+    "two_pt_made": 3,
+    "touchdowns": 80,
+    "share": 0.0625
+   },
+   {
+    "season": 2025,
+    "week": 10,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 61,
+    "two_pt_att": 15,
+    "two_pt_made": 5,
+    "touchdowns": 78,
+    "share": 0.1974
+   },
+   {
+    "season": 2025,
+    "week": 11,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 60,
+    "two_pt_att": 10,
+    "two_pt_made": 2,
+    "touchdowns": 70,
+    "share": 0.1429
+   },
+   {
+    "season": 2025,
+    "week": 12,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 61,
+    "two_pt_att": 3,
+    "two_pt_made": 2,
+    "touchdowns": 64,
+    "share": 0.0469
+   },
+   {
+    "season": 2025,
+    "week": 13,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 69,
+    "two_pt_att": 9,
+    "two_pt_made": 5,
+    "touchdowns": 78,
+    "share": 0.1154
+   },
+   {
+    "season": 2025,
+    "week": 14,
+    "season_type": "REG",
+    "games": 14,
+    "xp_att": 71,
+    "two_pt_att": 7,
+    "two_pt_made": 3,
+    "touchdowns": 78,
+    "share": 0.0897
+   },
+   {
+    "season": 2025,
+    "week": 15,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 83,
+    "two_pt_att": 7,
+    "two_pt_made": 1,
+    "touchdowns": 90,
+    "share": 0.0778
+   },
+   {
+    "season": 2025,
+    "week": 16,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 78,
+    "two_pt_att": 6,
+    "two_pt_made": 6,
+    "touchdowns": 85,
+    "share": 0.0714
+   },
+   {
+    "season": 2025,
+    "week": 17,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 80,
+    "two_pt_att": 1,
+    "two_pt_made": 0,
+    "touchdowns": 81,
+    "share": 0.0123
+   },
+   {
+    "season": 2025,
+    "week": 18,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 55,
+    "two_pt_att": 7,
+    "two_pt_made": 5,
+    "touchdowns": 63,
+    "share": 0.1129
+   },
+   {
+    "season": 2025,
+    "week": 19,
+    "season_type": "POST",
+    "games": 6,
+    "xp_att": 30,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 31,
+    "share": 0.0323
+   },
+   {
+    "season": 2025,
+    "week": 20,
+    "season_type": "POST",
+    "games": 4,
+    "xp_att": 20,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 20,
+    "share": 0
+   },
+   {
+    "season": 2025,
+    "week": 21,
+    "season_type": "POST",
+    "games": 2,
+    "xp_att": 9,
+    "two_pt_att": 0,
+    "two_pt_made": 0,
+    "touchdowns": 9,
+    "share": 0
+   },
+   {
+    "season": 2025,
+    "week": 22,
+    "season_type": "POST",
+    "games": 1,
+    "xp_att": 3,
+    "two_pt_att": 1,
+    "two_pt_made": 0,
+    "touchdowns": 4,
+    "share": 0.25
+   },
+   {
+    "season": 2026,
+    "week": 1,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 89,
+    "two_pt_att": 4,
+    "two_pt_made": 1,
+    "touchdowns": 93,
+    "share": 0.043
+   },
+   {
+    "season": 2026,
+    "week": 2,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 68,
+    "two_pt_att": 1,
+    "two_pt_made": 1,
+    "touchdowns": 69,
+    "share": 0.0145
+   },
+   {
+    "season": 2026,
+    "week": 3,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 73,
+    "two_pt_att": 10,
+    "two_pt_made": 6,
+    "touchdowns": 83,
+    "share": 0.1205
+   },
+   {
+    "season": 2026,
+    "week": 4,
+    "season_type": "REG",
+    "games": 16,
+    "xp_att": 72,
+    "two_pt_att": 11,
+    "two_pt_made": 6,
+    "touchdowns": 84,
+    "share": 0.1325
+   },
+   {
+    "season": 2026,
+    "week": 5,
+    "season_type": "REG",
+    "games": 15,
+    "xp_att": 73,
+    "two_pt_att": 9,
+    "two_pt_made": 6,
+    "touchdowns": 82,
+    "share": 0.1098
+   },
+   {
+    "season": 2026,
+    "week": 6,
+    "season_type": "REG",
+    "games": 13,
+    "xp_att": 49,
+    "two_pt_att": 8,
+    "two_pt_made": 4,
+    "touchdowns": 57,
+    "share": 0.1404
+   }
+  ],
+  "seasons": [
+   {
+    "season": 2015,
+    "games": 256,
+    "xp_att": 1217,
+    "two_pt_att": 91,
+    "two_pt_made": 42,
+    "touchdowns": 1318,
+    "weeks": 17,
+    "share": 0.0696,
+    "ci95": [
+     0.057,
+     0.0847
+    ],
+    "per_game": 0.355
+   },
+   {
+    "season": 2016,
+    "games": 256,
+    "xp_att": 1195,
+    "two_pt_att": 100,
+    "two_pt_made": 46,
+    "touchdowns": 1307,
+    "weeks": 17,
+    "share": 0.0772,
+    "ci95": [
+     0.0639,
+     0.093
+    ],
+    "per_game": 0.391
+   },
+   {
+    "season": 2017,
+    "games": 256,
+    "xp_att": 1134,
+    "two_pt_att": 81,
+    "two_pt_made": 35,
+    "touchdowns": 1225,
+    "weeks": 17,
+    "share": 0.0667,
+    "ci95": [
+     0.054,
+     0.0821
+    ],
+    "per_game": 0.316
+   },
+   {
+    "season": 2018,
+    "games": 256,
+    "xp_att": 1235,
+    "two_pt_att": 129,
+    "two_pt_made": 65,
+    "touchdowns": 1371,
+    "weeks": 17,
+    "share": 0.0946,
+    "ci95": [
+     0.0802,
+     0.1113
+    ],
+    "per_game": 0.504
+   },
+   {
+    "season": 2019,
+    "games": 256,
+    "xp_att": 1210,
+    "two_pt_att": 110,
+    "two_pt_made": 51,
+    "touchdowns": 1332,
+    "weeks": 17,
+    "share": 0.0833,
+    "ci95": [
+     0.0696,
+     0.0995
+    ],
+    "per_game": 0.43
+   },
+   {
+    "season": 2020,
+    "games": 256,
+    "xp_att": 1338,
+    "two_pt_att": 131,
+    "two_pt_made": 63,
+    "touchdowns": 1473,
+    "weeks": 17,
+    "share": 0.0892,
+    "ci95": [
+     0.0757,
+     0.1048
+    ],
+    "per_game": 0.512
+   },
+   {
+    "season": 2021,
+    "games": 272,
+    "xp_att": 1257,
+    "two_pt_att": 153,
+    "two_pt_made": 74,
+    "touchdowns": 1423,
+    "weeks": 18,
+    "share": 0.1085,
+    "ci95": [
+     0.0933,
+     0.1258
+    ],
+    "per_game": 0.563
+   },
+   {
+    "season": 2022,
+    "games": 271,
+    "xp_att": 1187,
+    "two_pt_att": 118,
+    "two_pt_made": 56,
+    "touchdowns": 1315,
+    "weeks": 18,
+    "share": 0.0904,
+    "ci95": [
+     0.076,
+     0.1072
+    ],
+    "per_game": 0.435
+   },
+   {
+    "season": 2023,
+    "games": 272,
+    "xp_att": 1169,
+    "two_pt_att": 121,
+    "two_pt_made": 65,
+    "touchdowns": 1302,
+    "weeks": 18,
+    "share": 0.0938,
+    "ci95": [
+     0.0791,
+     0.1109
+    ],
+    "per_game": 0.445
+   },
+   {
+    "season": 2024,
+    "games": 272,
+    "xp_att": 1241,
+    "two_pt_att": 135,
+    "two_pt_made": 55,
+    "touchdowns": 1387,
+    "weeks": 18,
+    "share": 0.0981,
+    "ci95": [
+     0.0835,
+     0.115
+    ],
+    "per_game": 0.496
+   },
+   {
+    "season": 2025,
+    "games": 272,
+    "xp_att": 1262,
+    "two_pt_att": 128,
+    "two_pt_made": 59,
+    "touchdowns": 1395,
+    "weeks": 18,
+    "share": 0.0921,
+    "ci95": [
+     0.078,
+     0.1084
+    ],
+    "per_game": 0.471
+   },
+   {
+    "season": 2026,
+    "games": 92,
+    "xp_att": 424,
+    "two_pt_att": 43,
+    "two_pt_made": 24,
+    "touchdowns": 468,
+    "weeks": 6,
+    "share": 0.0921,
+    "ci95": [
+     0.0691,
+     0.1217
+    ],
+    "per_game": 0.467
+   }
+  ],
+  "drift": {
+   "season": 2026,
+   "share": 0.0921,
+   "baseline_seasons": [
+    2023,
+    2024,
+    2025
+   ],
+   "baseline_share": 0.0947,
+   "diff_pp": -0.26,
+   "z": -0.18,
+   "n_tries": 467,
+   "baseline_tries": 4056,
+   "status": "STABLE",
+   "rule": "share of tries that went for two, season to date vs the pooled prior three seasons; |z| ≥ 2 is reported as a move. Descriptive: it feeds nothing."
+  },
+  "missing": []
+ },
+ "situational": {
+  "season": 2026,
+  "ats": {
+   "season": 2026,
+   "through": "2026-10-18",
+   "n_games": 92,
+   "basis": "closing consensus line (nflverse games.csv), pushes shown and excluded from the rate",
+   "buckets": {
+    "favorites": {
+     "w": 39,
+     "l": 47,
+     "p": 6,
+     "n": 92,
+     "cover_rate": 0.4535,
+     "ci95": [
+      0.3525,
+      0.5584
+     ]
+    },
+    "underdogs": {
+     "w": 47,
+     "l": 39,
+     "p": 6,
+     "n": 92,
+     "cover_rate": 0.5465,
+     "ci95": [
+      0.4416,
+      0.6475
+     ]
+    },
+    "home_favorites": {
+     "w": 22,
+     "l": 27,
+     "p": 3,
+     "n": 52,
+     "cover_rate": 0.449,
+     "ci95": [
+      0.3185,
+      0.5869
+     ]
+    },
+    "home_underdogs": {
+     "w": 17,
+     "l": 16,
+     "p": 2,
+     "n": 35,
+     "cover_rate": 0.5152,
+     "ci95": [
+      0.3522,
+      0.675
+     ]
+    },
+    "road_favorites": {
+     "w": 16,
+     "l": 17,
+     "p": 2,
+     "n": 35,
+     "cover_rate": 0.4848,
+     "ci95": [
+      0.325,
+      0.6478
+     ]
+    },
+    "road_underdogs": {
+     "w": 27,
+     "l": 22,
+     "p": 3,
+     "n": 52,
+     "cover_rate": 0.551,
+     "ci95": [
+      0.4131,
+      0.6815
+     ]
+    },
+    "neutral_favorites": {
+     "w": 1,
+     "l": 3,
+     "p": 1,
+     "n": 5,
+     "cover_rate": 0.25,
+     "ci95": [
+      0.0456,
+      0.6994
+     ]
+    },
+    "neutral_underdogs": {
+     "w": 3,
+     "l": 1,
+     "p": 1,
+     "n": 5,
+     "cover_rate": 0.75,
+     "ci95": [
+      0.3006,
+      0.9544
+     ]
+    },
+    "divisional_favorites": {
+     "w": 8,
+     "l": 20,
+     "p": 0,
+     "n": 28,
+     "cover_rate": 0.2857,
+     "ci95": [
+      0.1525,
+      0.4706
+     ]
+    },
+    "divisional_underdogs": {
+     "w": 20,
+     "l": 8,
+     "p": 0,
+     "n": 28,
+     "cover_rate": 0.7143,
+     "ci95": [
+      0.5294,
+      0.8475
+     ]
+    },
+    "divisional_home_underdogs": {
+     "w": 7,
+     "l": 4,
+     "p": 0,
+     "n": 11,
+     "cover_rate": 0.6364,
+     "ci95": [
+      0.3538,
+      0.8483
+     ]
+    }
+   }
+  },
+  "games": {
+   "2026_01_ARI_LAC": {
+    "week": 1,
+    "home": "LAC",
+    "away": "ARI",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_ATL_PIT": {
+    "week": 1,
+    "home": "PIT",
+    "away": "ATL",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_BAL_IND": {
+    "week": 1,
+    "home": "IND",
+    "away": "BAL",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_BUF_HOU": {
+    "week": 1,
+    "home": "HOU",
+    "away": "BUF",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_CHI_CAR": {
+    "week": 1,
+    "home": "CAR",
+    "away": "CHI",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_CLE_JAX": {
+    "week": 1,
+    "home": "JAX",
+    "away": "CLE",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_DAL_NYG": {
+    "week": 1,
+    "home": "NYG",
+    "away": "DAL",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_01_DEN_KC": {
+    "week": 1,
+    "home": "KC",
+    "away": "DEN",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_01_GB_MIN": {
+    "week": 1,
+    "home": "MIN",
+    "away": "GB",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_01_MIA_LV": {
+    "week": 1,
+    "home": "LV",
+    "away": "MIA",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_NE_SEA": {
+    "week": 1,
+    "home": "SEA",
+    "away": "NE",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_NO_DET": {
+    "week": 1,
+    "home": "DET",
+    "away": "NO",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_NYJ_TEN": {
+    "week": 1,
+    "home": "TEN",
+    "away": "NYJ",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_SF_LA": {
+    "week": 1,
+    "home": "LA",
+    "away": "SF",
+    "neutral": true,
+    "divisional": true,
+    "location": "Neutral"
+   },
+   "2026_01_TB_CIN": {
+    "week": 1,
+    "home": "CIN",
+    "away": "TB",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_01_WAS_PHI": {
+    "week": 1,
+    "home": "PHI",
+    "away": "WAS",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_02_CAR_ATL": {
+    "week": 2,
+    "home": "ATL",
+    "away": "CAR",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_02_CIN_HOU": {
+    "week": 2,
+    "home": "HOU",
+    "away": "CIN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_CLE_TB": {
+    "week": 2,
+    "home": "TB",
+    "away": "CLE",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_DET_BUF": {
+    "week": 2,
+    "home": "BUF",
+    "away": "DET",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_GB_NYJ": {
+    "week": 2,
+    "home": "NYJ",
+    "away": "GB",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_IND_KC": {
+    "week": 2,
+    "home": "KC",
+    "away": "IND",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_JAX_DEN": {
+    "week": 2,
+    "home": "DEN",
+    "away": "JAX",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_LV_LAC": {
+    "week": 2,
+    "home": "LAC",
+    "away": "LV",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_02_MIA_SF": {
+    "week": 2,
+    "home": "SF",
+    "away": "MIA",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_MIN_CHI": {
+    "week": 2,
+    "home": "CHI",
+    "away": "MIN",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_02_NO_BAL": {
+    "week": 2,
+    "home": "BAL",
+    "away": "NO",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_NYG_LA": {
+    "week": 2,
+    "home": "LA",
+    "away": "NYG",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_PHI_TEN": {
+    "week": 2,
+    "home": "TEN",
+    "away": "PHI",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_PIT_NE": {
+    "week": 2,
+    "home": "NE",
+    "away": "PIT",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_02_SEA_ARI": {
+    "week": 2,
+    "home": "ARI",
+    "away": "SEA",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_02_WAS_DAL": {
+    "week": 2,
+    "home": "DAL",
+    "away": "WAS",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_03_ARI_SF": {
+    "week": 3,
+    "home": "SF",
+    "away": "ARI",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_03_ATL_GB": {
+    "week": 3,
+    "home": "GB",
+    "away": "ATL",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_BAL_DAL": {
+    "week": 3,
+    "home": "DAL",
+    "away": "BAL",
+    "neutral": true,
+    "divisional": false,
+    "location": "Neutral"
+   },
+   "2026_03_CAR_CLE": {
+    "week": 3,
+    "home": "CLE",
+    "away": "CAR",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_CIN_PIT": {
+    "week": 3,
+    "home": "PIT",
+    "away": "CIN",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_03_HOU_IND": {
+    "week": 3,
+    "home": "IND",
+    "away": "HOU",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_03_KC_MIA": {
+    "week": 3,
+    "home": "MIA",
+    "away": "KC",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_LA_DEN": {
+    "week": 3,
+    "home": "DEN",
+    "away": "LA",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_LAC_BUF": {
+    "week": 3,
+    "home": "BUF",
+    "away": "LAC",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_LV_NO": {
+    "week": 3,
+    "home": "NO",
+    "away": "LV",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_MIN_TB": {
+    "week": 3,
+    "home": "TB",
+    "away": "MIN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_NE_JAX": {
+    "week": 3,
+    "home": "JAX",
+    "away": "NE",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_NYJ_DET": {
+    "week": 3,
+    "home": "DET",
+    "away": "NYJ",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_PHI_CHI": {
+    "week": 3,
+    "home": "CHI",
+    "away": "PHI",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_SEA_WAS": {
+    "week": 3,
+    "home": "WAS",
+    "away": "SEA",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_03_TEN_NYG": {
+    "week": 3,
+    "home": "NYG",
+    "away": "TEN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_ARI_NYG": {
+    "week": 4,
+    "home": "NYG",
+    "away": "ARI",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_ATL_NO": {
+    "week": 4,
+    "home": "NO",
+    "away": "ATL",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_04_DAL_HOU": {
+    "week": 4,
+    "home": "HOU",
+    "away": "DAL",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_DEN_SF": {
+    "week": 4,
+    "home": "SF",
+    "away": "DEN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_DET_CAR": {
+    "week": 4,
+    "home": "CAR",
+    "away": "DET",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_GB_TB": {
+    "week": 4,
+    "home": "TB",
+    "away": "GB",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_IND_WAS": {
+    "week": 4,
+    "home": "WAS",
+    "away": "IND",
+    "neutral": true,
+    "divisional": false,
+    "location": "Neutral"
+   },
+   "2026_04_JAX_CIN": {
+    "week": 4,
+    "home": "CIN",
+    "away": "JAX",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_KC_LV": {
+    "week": 4,
+    "home": "LV",
+    "away": "KC",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_04_LA_PHI": {
+    "week": 4,
+    "home": "PHI",
+    "away": "LA",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_LAC_SEA": {
+    "week": 4,
+    "home": "SEA",
+    "away": "LAC",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_MIA_MIN": {
+    "week": 4,
+    "home": "MIN",
+    "away": "MIA",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_NE_BUF": {
+    "week": 4,
+    "home": "BUF",
+    "away": "NE",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_04_NYJ_CHI": {
+    "week": 4,
+    "home": "CHI",
+    "away": "NYJ",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_04_PIT_CLE": {
+    "week": 4,
+    "home": "CLE",
+    "away": "PIT",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_04_TEN_BAL": {
+    "week": 4,
+    "home": "BAL",
+    "away": "TEN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_BAL_ATL": {
+    "week": 5,
+    "home": "ATL",
+    "away": "BAL",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_BUF_LA": {
+    "week": 5,
+    "home": "LA",
+    "away": "BUF",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_CHI_GB": {
+    "week": 5,
+    "home": "GB",
+    "away": "CHI",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_05_CIN_MIA": {
+    "week": 5,
+    "home": "MIA",
+    "away": "CIN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_CLE_NYJ": {
+    "week": 5,
+    "home": "NYJ",
+    "away": "CLE",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_DEN_LAC": {
+    "week": 5,
+    "home": "LAC",
+    "away": "DEN",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_05_DET_ARI": {
+    "week": 5,
+    "home": "ARI",
+    "away": "DET",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_HOU_TEN": {
+    "week": 5,
+    "home": "TEN",
+    "away": "HOU",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_05_IND_PIT": {
+    "week": 5,
+    "home": "PIT",
+    "away": "IND",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_LV_NE": {
+    "week": 5,
+    "home": "NE",
+    "away": "LV",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_MIN_NO": {
+    "week": 5,
+    "home": "NO",
+    "away": "MIN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_05_NYG_WAS": {
+    "week": 5,
+    "home": "WAS",
+    "away": "NYG",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_05_PHI_JAX": {
+    "week": 5,
+    "home": "JAX",
+    "away": "PHI",
+    "neutral": true,
+    "divisional": false,
+    "location": "Neutral"
+   },
+   "2026_05_SF_SEA": {
+    "week": 5,
+    "home": "SEA",
+    "away": "SF",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_05_TB_DAL": {
+    "week": 5,
+    "home": "DAL",
+    "away": "TB",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_06_ARI_LA": {
+    "week": 6,
+    "home": "LA",
+    "away": "ARI",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_06_BAL_CLE": {
+    "week": 6,
+    "home": "CLE",
+    "away": "BAL",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_06_BUF_LV": {
+    "week": 6,
+    "home": "LV",
+    "away": "BUF",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_06_CAR_PHI": {
+    "week": 6,
+    "home": "PHI",
+    "away": "CAR",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_06_CHI_ATL": {
+    "week": 6,
+    "home": "ATL",
+    "away": "CHI",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_06_DAL_GB": {
+    "week": 6,
+    "home": "GB",
+    "away": "DAL",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_06_HOU_JAX": {
+    "week": 6,
+    "home": "JAX",
+    "away": "HOU",
+    "neutral": true,
+    "divisional": true,
+    "location": "Neutral"
+   },
+   "2026_06_LAC_KC": {
+    "week": 6,
+    "home": "KC",
+    "away": "LAC",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_06_NO_NYG": {
+    "week": 6,
+    "home": "NYG",
+    "away": "NO",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_06_NYJ_NE": {
+    "week": 6,
+    "home": "NE",
+    "away": "NYJ",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_06_PIT_TB": {
+    "week": 6,
+    "home": "TB",
+    "away": "PIT",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_06_SEA_DEN": {
+    "week": 6,
+    "home": "DEN",
+    "away": "SEA",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_06_TEN_IND": {
+    "week": 6,
+    "home": "IND",
+    "away": "TEN",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_06_WAS_SF": {
+    "week": 6,
+    "home": "SF",
+    "away": "WAS",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_CIN_BAL": {
+    "week": 7,
+    "home": "BAL",
+    "away": "CIN",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_07_CLE_TEN": {
+    "week": 7,
+    "home": "TEN",
+    "away": "CLE",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_DAL_PHI": {
+    "week": 7,
+    "home": "PHI",
+    "away": "DAL",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_07_DEN_ARI": {
+    "week": 7,
+    "home": "ARI",
+    "away": "DEN",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_GB_DET": {
+    "week": 7,
+    "home": "DET",
+    "away": "GB",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_07_IND_MIN": {
+    "week": 7,
+    "home": "MIN",
+    "away": "IND",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_KC_SEA": {
+    "week": 7,
+    "home": "SEA",
+    "away": "KC",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_LA_LV": {
+    "week": 7,
+    "home": "LV",
+    "away": "LA",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_MIA_NYJ": {
+    "week": 7,
+    "home": "NYJ",
+    "away": "MIA",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   },
+   "2026_07_NE_CHI": {
+    "week": 7,
+    "home": "CHI",
+    "away": "NE",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_NYG_HOU": {
+    "week": 7,
+    "home": "HOU",
+    "away": "NYG",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_PIT_NO": {
+    "week": 7,
+    "home": "NO",
+    "away": "PIT",
+    "neutral": true,
+    "divisional": false,
+    "location": "Neutral"
+   },
+   "2026_07_SF_ATL": {
+    "week": 7,
+    "home": "ATL",
+    "away": "SF",
+    "neutral": false,
+    "divisional": false,
+    "location": "Home"
+   },
+   "2026_07_TB_CAR": {
+    "week": 7,
+    "home": "CAR",
+    "away": "TB",
+    "neutral": false,
+    "divisional": true,
+    "location": "Home"
+   }
+  },
+  "division_check": {
+   "checked": 107,
+   "mismatches": []
+  },
+  "neutral_source": "nflverse games.csv location"
+ },
+ "divisions": [
+  {
+   "team_code": "BUF",
+   "nflverse_code": "BUF",
+   "team_name": "Buffalo Bills",
+   "conference": "AFC",
+   "division": "AFC East"
+  },
+  {
+   "team_code": "MIA",
+   "nflverse_code": "MIA",
+   "team_name": "Miami Dolphins",
+   "conference": "AFC",
+   "division": "AFC East"
+  },
+  {
+   "team_code": "NE",
+   "nflverse_code": "NE",
+   "team_name": "New England Patriots",
+   "conference": "AFC",
+   "division": "AFC East"
+  },
+  {
+   "team_code": "NYJ",
+   "nflverse_code": "NYJ",
+   "team_name": "New York Jets",
+   "conference": "AFC",
+   "division": "AFC East"
+  },
+  {
+   "team_code": "BAL",
+   "nflverse_code": "BAL",
+   "team_name": "Baltimore Ravens",
+   "conference": "AFC",
+   "division": "AFC North"
+  },
+  {
+   "team_code": "CIN",
+   "nflverse_code": "CIN",
+   "team_name": "Cincinnati Bengals",
+   "conference": "AFC",
+   "division": "AFC North"
+  },
+  {
+   "team_code": "CLE",
+   "nflverse_code": "CLE",
+   "team_name": "Cleveland Browns",
+   "conference": "AFC",
+   "division": "AFC North"
+  },
+  {
+   "team_code": "PIT",
+   "nflverse_code": "PIT",
+   "team_name": "Pittsburgh Steelers",
+   "conference": "AFC",
+   "division": "AFC North"
+  },
+  {
+   "team_code": "HOU",
+   "nflverse_code": "HOU",
+   "team_name": "Houston Texans",
+   "conference": "AFC",
+   "division": "AFC South"
+  },
+  {
+   "team_code": "IND",
+   "nflverse_code": "IND",
+   "team_name": "Indianapolis Colts",
+   "conference": "AFC",
+   "division": "AFC South"
+  },
+  {
+   "team_code": "JAX",
+   "nflverse_code": "JAX",
+   "team_name": "Jacksonville Jaguars",
+   "conference": "AFC",
+   "division": "AFC South"
+  },
+  {
+   "team_code": "TEN",
+   "nflverse_code": "TEN",
+   "team_name": "Tennessee Titans",
+   "conference": "AFC",
+   "division": "AFC South"
+  },
+  {
+   "team_code": "DEN",
+   "nflverse_code": "DEN",
+   "team_name": "Denver Broncos",
+   "conference": "AFC",
+   "division": "AFC West"
+  },
+  {
+   "team_code": "KC",
+   "nflverse_code": "KC",
+   "team_name": "Kansas City Chiefs",
+   "conference": "AFC",
+   "division": "AFC West"
+  },
+  {
+   "team_code": "LV",
+   "nflverse_code": "LV",
+   "team_name": "Las Vegas Raiders",
+   "conference": "AFC",
+   "division": "AFC West"
+  },
+  {
+   "team_code": "LAC",
+   "nflverse_code": "LAC",
+   "team_name": "Los Angeles Chargers",
+   "conference": "AFC",
+   "division": "AFC West"
+  },
+  {
+   "team_code": "DAL",
+   "nflverse_code": "DAL",
+   "team_name": "Dallas Cowboys",
+   "conference": "NFC",
+   "division": "NFC East"
+  },
+  {
+   "team_code": "NYG",
+   "nflverse_code": "NYG",
+   "team_name": "New York Giants",
+   "conference": "NFC",
+   "division": "NFC East"
+  },
+  {
+   "team_code": "PHI",
+   "nflverse_code": "PHI",
+   "team_name": "Philadelphia Eagles",
+   "conference": "NFC",
+   "division": "NFC East"
+  },
+  {
+   "team_code": "WAS",
+   "nflverse_code": "WAS",
+   "team_name": "Washington Commanders",
+   "conference": "NFC",
+   "division": "NFC East"
+  },
+  {
+   "team_code": "CHI",
+   "nflverse_code": "CHI",
+   "team_name": "Chicago Bears",
+   "conference": "NFC",
+   "division": "NFC North"
+  },
+  {
+   "team_code": "DET",
+   "nflverse_code": "DET",
+   "team_name": "Detroit Lions",
+   "conference": "NFC",
+   "division": "NFC North"
+  },
+  {
+   "team_code": "GB",
+   "nflverse_code": "GB",
+   "team_name": "Green Bay Packers",
+   "conference": "NFC",
+   "division": "NFC North"
+  },
+  {
+   "team_code": "MIN",
+   "nflverse_code": "MIN",
+   "team_name": "Minnesota Vikings",
+   "conference": "NFC",
+   "division": "NFC North"
+  },
+  {
+   "team_code": "ATL",
+   "nflverse_code": "ATL",
+   "team_name": "Atlanta Falcons",
+   "conference": "NFC",
+   "division": "NFC South"
+  },
+  {
+   "team_code": "CAR",
+   "nflverse_code": "CAR",
+   "team_name": "Carolina Panthers",
+   "conference": "NFC",
+   "division": "NFC South"
+  },
+  {
+   "team_code": "NO",
+   "nflverse_code": "NO",
+   "team_name": "New Orleans Saints",
+   "conference": "NFC",
+   "division": "NFC South"
+  },
+  {
+   "team_code": "TB",
+   "nflverse_code": "TB",
+   "team_name": "Tampa Bay Buccaneers",
+   "conference": "NFC",
+   "division": "NFC South"
+  },
+  {
+   "team_code": "ARI",
+   "nflverse_code": "ARI",
+   "team_name": "Arizona Cardinals",
+   "conference": "NFC",
+   "division": "NFC West"
+  },
+  {
+   "team_code": "LAR",
+   "nflverse_code": "LA",
+   "team_name": "Los Angeles Rams",
+   "conference": "NFC",
+   "division": "NFC West"
+  },
+  {
+   "team_code": "SF",
+   "nflverse_code": "SF",
+   "team_name": "San Francisco 49ers",
+   "conference": "NFC",
+   "division": "NFC West"
+  },
+  {
+   "team_code": "SEA",
+   "nflverse_code": "SEA",
+   "team_name": "Seattle Seahawks",
+   "conference": "NFC",
+   "division": "NFC West"
+  }
+ ],
+ "note": "Descriptive. The Market Structure section shows it; the registered EXPERIMENTAL studies read it; no projection, spread, probability, EV, ranking or grade does."
+}

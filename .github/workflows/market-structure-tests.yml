@@ -1,0 +1,92 @@
+# EdgeDesk Football — the NFL Market Structure suites (docs/market-structure/README.md).
+#
+# The core, the committed artifact, the SQL on a real PostgreSQL (the runner's
+# own server binaries; pg_harness starts a throwaway cluster), the Circa parser
+# through the same PDF library the edge function bundles, the edge function
+# itself under Deno, the preregistration and its registry SQL, and the page in
+# Chromium. No credentials, nothing written anywhere but the runner.
+name: Market structure suites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.html'
+      - 'lib/edgedesk_market_structure.js'
+      - 'lib/edgedesk_execution.js'
+      - 'lib/football_identity.js'
+      - 'football/market_structure/**'
+      - 'supabase/nfl_market_structure*.sql'
+      - 'supabase/contest_ownership*.sql'
+      - 'supabase/functions/circa_ownership_sync/**'
+      - 'supabase/functions/capture/index.ts'
+      - 'tools/football/*market_structure*'
+      - 'tools/football/circa_ownership.test.js'
+      - 'tools/football/inline_circa_core.js'
+      - 'tools/football/build_prereg_sql.js'
+      - 'tools/football/fixtures/circa/**'
+      - '.github/workflows/market-structure-tests.yml'
+  pull_request:
+    paths:
+      - 'app.html'
+      - 'lib/edgedesk_market_structure.js'
+      - 'lib/edgedesk_execution.js'
+      - 'lib/football_identity.js'
+      - 'football/market_structure/**'
+      - 'supabase/nfl_market_structure*.sql'
+      - 'supabase/contest_ownership*.sql'
+      - 'supabase/functions/circa_ownership_sync/**'
+      - 'supabase/functions/capture/index.ts'
+      - 'tools/football/*market_structure*'
+      - 'tools/football/circa_ownership.test.js'
+      - 'tools/football/inline_circa_core.js'
+      - 'tools/football/build_prereg_sql.js'
+      - 'tools/football/fixtures/circa/**'
+      - '.github/workflows/market-structure-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.5.4
+
+      - name: The PDF library the edge function bundles (pinned)
+        run: mkdir -p "$RUNNER_TEMP/unpdf" && npm install --prefix "$RUNNER_TEMP/unpdf" unpdf@1.8.1 --no-audit --no-fund
+
+      - name: Core, builder and committed artifact
+        run: node tools/football/market_structure.test.js
+
+      - name: The SQL on a real PostgreSQL (snapshot, half-point parity, loader)
+        run: node tools/football/market_structure_sql.test.js
+
+      - name: Circa ownership (parser, PDF, database, edge function under Deno)
+        env:
+          EDGEDESK_UNPDF: ${{ runner.temp }}/unpdf/node_modules/unpdf
+        run: EDGEDESK_DENO="$(command -v deno)" node tools/football/circa_ownership.test.js
+
+      - name: The edge function carries the core verbatim
+        run: node tools/football/inline_circa_core.js --check
+
+      - name: Preregistration and its registry SQL
+        run: |
+          node tools/football/build_prereg_sql.js --check
+          node tools/football/market_structure_prereg.test.js
+
+      - name: The page in Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+          node tools/football/market_structure_ui.e2e.js
