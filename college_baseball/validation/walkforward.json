@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cbase_walkforward_v1",
  "model_version": "cbase_v1.0.0",
- "generated_at": "2026-10-14T02:56:24.029Z",
+ "generated_at": "2026-10-19T19:00:04.390Z",
  "protocol": "college_baseball/research/PROTOCOL.md",
  "windows": {
   "burn_in": [
@@ -5806,7 +5806,9 @@
       "sample_state": "MEANINGFUL"
      }
     }
-   }
+   },
+   "carried_from": "2026-10-14T02:56:24.029Z",
+   "note": "the registered holdout look for this model version, carried forward unchanged; a new look needs --holdout"
   }
  },
  "comparisons": {
@@ -6740,13 +6742,13 @@
   }
  },
  "timing_seconds": {
-  "home_rate": 0.093,
-  "pythag": 0.267,
-  "elo": 0.231,
-  "bt": 50.177,
-  "massey": 45.677,
-  "poisson_flat": 21.825,
-  "hier": 44.963
+  "home_rate": 0.049,
+  "pythag": 0.17,
+  "elo": 0.153,
+  "bt": 41.847,
+  "massey": 38.738,
+  "poisson_flat": 20.066,
+  "hier": 49.591
  },
  "market": {
   "market_status": "NOT_TESTED",
@@ -6774,13 +6776,6 @@
   "coherent_runs": "the chosen run model's run-space calibrated expectations",
   "rule": "the ensemble prices only if its VALIDATION log loss beats the chosen single model with a block-bootstrap 95% interval below zero"
  },
- "status": {
-  "moneyline": {
-   "status": "OUTCOME_VALIDATED",
-   "failed": []
-  },
-  "model": "hier_cal"
- },
  "markets": {
   "moneyline": {
    "market": "moneyline",
@@ -6793,6 +6788,13 @@
    "market_status": "NOT_TESTED",
    "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
   }
+ },
+ "status": {
+  "moneyline": {
+   "status": "OUTCOME_VALIDATED",
+   "failed": []
+  },
+  "model": "hier_cal"
  },
  "holdout_evaluated_at": "2026-10-14T02:56:24.029Z"
 }

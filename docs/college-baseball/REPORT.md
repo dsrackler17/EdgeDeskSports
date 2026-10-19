@@ -182,10 +182,10 @@ VALIDATION 2023-2024 (every second game with a reconciled inning line); 4,240 ga
 
 | Market (VALIDATION) | Closed form | Simulator | Simulator on calibrated inputs | Closed form − simulator | Verdict |
 |---|---|---|---|---|---|
-| Moneyline log loss | 0.60820 | 0.61139 | 0.61703 | -0.0032 (95% -0.0050 to -0.0016) | better |
-| Total-runs log score | 3.21974 | 3.28399 | 3.27063 | -0.0643 (95% -0.0973 to -0.0345) | better |
-| Home −1.5 log loss | 0.63264 | 0.63409 | 0.63957 | -0.0015 (95% -0.0044 to 0.0014) | not distinguishable |
-| Moneyline calibration-in-the-large | 0.0050 | 0.0064 | 0.0414 |  |  |
+| Moneyline log loss | 0.60820 | 0.60923 | 0.61413 | -0.0010 (95% -0.0025 to 0.0003) | not distinguishable |
+| Total-runs log score | 3.21974 | 3.27940 | 3.28440 | -0.0597 (95% -0.0904 to -0.0310) | better |
+| Home −1.5 log loss | 0.63264 | 0.63272 | 0.63765 | -0.0001 (95% -0.0027 to 0.0025) | not distinguishable |
+| Moneyline calibration-in-the-large | 0.0050 | 0.0040 | 0.0375 |  |  |
 
 Which expectations the closed form uses (every VALIDATION game, n 11,950; same moneyline either way). Chosen: **the run model's own expectations re-weighted to the validated P(home)**. Differences are re-weighted minus calibrated; negative favours re-weighting.
 
@@ -199,30 +199,30 @@ Which expectations the closed form uses (every VALIDATION game, n 11,950; same m
 | Expected home runs (observed 7.40444) | 7.7779 | 7.57528 |  |  |
 | Expected away runs (observed 6.07615) | 5.77601 | 5.8848 |  |  |
 
-Why the simulator is fed the run model's own expectations: the run-space calibration moves the expectations so the closed form's P(home) is right, which leaves them biased in level (home 7.711 vs 7.356 scored, away 5.829 vs 6.202; the raw model: 7.333 and 6.085). The simulator models the home side's unplayed or cut-short last inning itself, so the calibrated inputs count that effect twice: on them it favours the home side (calibration-in-the-large 0.0414), and on the raw ones it is better by -0.0056 (95% -0.0088 to -0.0026).
+Why the simulator is fed the run model's own expectations: the run-space calibration moves the expectations so the closed form's P(home) is right, which leaves them biased in level (home 7.711 vs 7.356 scored, away 5.829 vs 6.202; the raw model: 7.333 and 6.085). The simulator models the home side's unplayed or cut-short last inning itself, so the calibrated inputs count that effect twice: on them it favours the home side (calibration-in-the-large 0.0375), and on the raw ones it is better by -0.0049 (95% -0.0075 to -0.0022).
 
-First five innings (simulator only): home-win log loss 0.65943, calibration-in-the-large 0.0011, slope 0.7240; tie calibration-in-the-large -0.0021. Walk-off share predicted 0.0786 vs observed 0.0757; run-rule share predicted 0.0991 vs observed 0.0903. Coherence failures of the combined price: 0.
+First five innings (simulator only): home-win log loss 0.65840, calibration-in-the-large 0.0028, slope 0.7480; tie calibration-in-the-large -0.0075. Walk-off share predicted 0.0748 vs observed 0.0757; run-rule share predicted 0.1066 vs observed 0.0903. Coherence failures of the combined price: 0.
 
 | Draws | Mean first-five P(home) | Spread over 4 seeds | Theoretical SE |
 |---|---|---|---|
-| 1,000 | 0.5140 | 0.0180 | 0.0158 |
-| 5,000 | 0.5301 | 0.0176 | 0.0071 |
-| 20,000 | 0.5261 | 0.0084 | 0.0035 |
-| 50,000 | 0.5201 | 0.0064 | 0.0022 |
+| 1,000 | 0.5323 | 0.0650 | 0.0158 |
+| 5,000 | 0.5195 | 0.0154 | 0.0071 |
+| 20,000 | 0.5224 | 0.0126 | 0.0035 |
+| 50,000 | 0.5241 | 0.0093 | 0.0022 |
 
 The spread over seeds exceeds the sampling SE because every run also recalibrates its inning rates on its own pilot draws; the full-game prices carry no Monte Carlo error at all.
 
 ## 7. Starting pitching, bullpen and workload
 
-Box-score window: fitted on 2024 (n 8,418), chosen on 2025 (n 8,363), holdout 2026 (n 8,333). Starters are PROJECTED from rotation patterns; the oracle (the actual starter) is a measurement of what confirmation would be worth, never a candidate.
+Box-score window: fitted on 2024 (n 8,418), chosen on 2025 (n 8,363). Starters are PROJECTED from rotation patterns; the oracle (the actual starter) is a measurement of what confirmation would be worth, never a candidate.
 
-| Variant | SELECTION log loss | SELECTION Brier | HOLDOUT log loss | HOLDOUT Brier |
-|---|---|---|---|---|
-| `team` | 0.59600 | 0.20571 | 0.60914 | 0.21121 |
-| `bullpen` | 0.59596 | 0.20570 | 0.60904 | 0.21116 |
-| `starter_proj` | 0.59572 | 0.20559 | 0.60888 | 0.21112 |
-| `hybrid_proj` | 0.59568 | 0.20557 | 0.60878 | 0.21107 |
-| `hybrid_oracle` | 0.59499 | 0.20525 | 0.60847 | 0.21095 |
+| Variant | SELECTION log loss | SELECTION Brier |
+|---|---|---|
+| `team` | 0.59600 | 0.20571 |
+| `bullpen` | 0.59596 | 0.20570 |
+| `starter_proj` | 0.59572 | 0.20559 |
+| `hybrid_proj` | 0.59568 | 0.20557 |
+| `hybrid_oracle` | 0.59499 | 0.20525 |
 
 | Comparison | Window | Mean difference | Verdict |
 |---|---|---|---|
@@ -230,10 +230,6 @@ Box-score window: fitted on 2024 (n 8,418), chosen on 2025 (n 8,363), holdout 20
 | bullpen vs team | SELECTION | -0.0000 (95% -0.0002 to 0.0001) | not distinguishable |
 | starter proj vs team | SELECTION | -0.0003 (95% -0.0006 to 0.0001) | not distinguishable |
 | oracle vs proj | SELECTION | -0.0007 (95% -0.0012 to -0.0002) | better |
-| hybrid proj vs team | HOLDOUT | -0.0004 (95% -0.0007 to 0.0000) | not distinguishable |
-| bullpen vs team | HOLDOUT | -0.0001 (95% -0.0002 to 0.0000) | not distinguishable |
-| starter proj vs team | HOLDOUT | -0.0003 (95% -0.0006 to 0.0001) | not distinguishable |
-| oracle vs proj | HOLDOUT | -0.0003 (95% -0.0008 to 0.0002) | not distinguishable |
 
 Chosen: `team`. Starter projection on 2025: top-1 accuracy 53.4% (mean stated probability 51.5%), 19.9% of starts by a pitcher outside the recent rotation. Bullpen availability model: log loss 0.50214 vs 0.54246 climatology, slope 1.019.
 
@@ -319,18 +315,18 @@ VALIDATION 2023-2024, n 11,950; full hierarchical model log loss 0.59705. Positi
 | G10 Probability calibration verified | PASS | moneyline OUTCOME_VALIDATED |
 | G11 Scoring distribution consistency verified | FAIL | audit TAILS FAIL; 80% total interval coverage 0.8295 |
 | G12 Market settlement verified | FAIL | no sportsbook settlement rules verified and no authorised baseball_ncaa feed; pushes and conditional prices are unit-tested, but settlement against a real book is unverified |
-| G13 Stress tests | PASS | 400 synthetic games priced coherently, 11 ms each; degenerate games blocked |
+| G13 Stress tests | PASS | 400 synthetic games priced coherently, 9 ms each; degenerate games blocked |
 | G14 Frontend and API tests | PASS | college-baseball suite pass; UI pass (at 2026-10-14T03:09:54.485Z) |
 | G15 Existing EdgeDesk sports still work | FAIL | 13/14 existing suites pass |
 | G16 Deployment and rollback documented | PASS | docs/college-baseball/DEPLOYMENT.md has Deploy and Rollback sections |
 
 ## 11. Batch inference and the board
 
-Mode: **REPLAY** (RETROSPECTIVE) — No upcoming Division I games are published by the source (the 2026 schedule is not out). This is a RETROSPECTIVE replay of 2026: each price is what the model would have said before the game, from final data; results are shown as postgame information. Season 2026: 8,793 games, 8,333 priced (8,333 provisional), 460 blocked with a stated reason, 0 failures, 0 incoherent price sets. Value claims: DISABLED (no authorised college-baseball market feed; release gates not passed). Latency: {"p50":19,"p95":31,"total_s":249}.
+Mode: **REPLAY** (RETROSPECTIVE) — No upcoming Division I games are published by the source (the 2026 schedule is not out). This is a RETROSPECTIVE replay of 2026: each price is what the model would have said before the game, from final data; results are shown as postgame information. Season 2026: 8,793 games, 8,333 priced (8,333 provisional), 460 blocked with a stated reason, 0 failures, 0 incoherent price sets. Value claims: DISABLED (no authorised college-baseball market feed; release gates not passed). Latency: {"p50":15,"p95":18,"total_s":190}.
 
 ## 12. Experiment registry
 
-27 experiments (latest revision of each); ACCEPT 17, REJECT 8, INCONCLUSIVE 2. Hash chain: verified. Holdout looks recorded: CBX-PITCHER-HYBRID, CBX-TEAM-HOLDOUT, CBX-PITCHER-HYBRID-HOLDOUT. Rejected and inconclusive experiments are listed in research/FAILED_EXPERIMENTS.md.
+27 experiments (latest revision of each); ACCEPT 17, REJECT 8, INCONCLUSIVE 2. Hash chain: verified. Holdout looks recorded: CBX-TEAM-HOLDOUT, CBX-PITCHER-HYBRID-HOLDOUT. Rejected and inconclusive experiments are listed in research/FAILED_EXPERIMENTS.md.
 
 ## 13. Tests
 

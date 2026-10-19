@@ -2033,127 +2033,6 @@
       }
      }
     }
-   },
-   "HOLDOUT": {
-    "n": 8333,
-    "models": {
-     "team": {
-      "n": 8333,
-      "log_loss": 0.60914,
-      "brier": 0.21121,
-      "citl": 0.002,
-      "slope": 0.945,
-      "team_runs_log_score": 2.76607
-     },
-     "bullpen": {
-      "n": 8333,
-      "log_loss": 0.60904,
-      "brier": 0.21116,
-      "citl": 0.002,
-      "slope": 0.946,
-      "team_runs_log_score": 2.76602
-     },
-     "starter_proj": {
-      "n": 8333,
-      "log_loss": 0.60888,
-      "brier": 0.21112,
-      "citl": 0.0018,
-      "slope": 0.947,
-      "team_runs_log_score": 2.76528
-     },
-     "hybrid_proj": {
-      "n": 8333,
-      "log_loss": 0.60878,
-      "brier": 0.21107,
-      "citl": 0.0018,
-      "slope": 0.948,
-      "team_runs_log_score": 2.76525
-     },
-     "hybrid_oracle": {
-      "n": 8333,
-      "log_loss": 0.60847,
-      "brier": 0.21095,
-      "citl": 0.0017,
-      "slope": 0.95,
-      "team_runs_log_score": 2.76431
-     }
-    },
-    "comparisons": {
-     "hybrid_proj_vs_team": {
-      "n": 8333,
-      "blocks": 117,
-      "mean_diff": -0.00036,
-      "ci95": [
-       -0.000712,
-       0.000038
-      ],
-      "a_better": false,
-      "b_better": false
-     },
-     "bullpen_vs_team": {
-      "n": 8333,
-      "blocks": 117,
-      "mean_diff": -0.000101,
-      "ci95": [
-       -0.000234,
-       0.00004
-      ],
-      "a_better": false,
-      "b_better": false
-     },
-     "starter_proj_vs_team": {
-      "n": 8333,
-      "blocks": 117,
-      "mean_diff": -0.000261,
-      "ci95": [
-       -0.000585,
-       0.000103
-      ],
-      "a_better": false,
-      "b_better": false
-     },
-     "oracle_vs_proj": {
-      "n": 8333,
-      "blocks": 117,
-      "mean_diff": -0.00031,
-      "ci95": [
-       -0.000798,
-       0.00018
-      ],
-      "a_better": false,
-      "b_better": false
-     }
-    },
-    "by_day": {
-     "weekend": {
-      "team": {
-       "n": 6218,
-       "log_loss": 0.6143
-      },
-      "hybrid_proj": {
-       "n": 6218,
-       "log_loss": 0.61399
-      },
-      "hybrid_oracle": {
-       "n": 6218,
-       "log_loss": 0.61385
-      }
-     },
-     "midweek": {
-      "team": {
-       "n": 2115,
-       "log_loss": 0.59397
-      },
-      "hybrid_proj": {
-       "n": 2115,
-       "log_loss": 0.59347
-      },
-      "hybrid_oracle": {
-       "n": 2115,
-       "log_loss": 0.59266
-      }
-     }
-    }
    }
   },
   "starter_projection": {
@@ -2306,82 +2185,6 @@
       "mean_top_p": 0.4009,
       "log_loss": 1.4031,
       "unseen_share": 0.094
-     }
-    }
-   },
-   "HOLDOUT": {
-    "all": {
-     "n": 16658,
-     "top1_accuracy": 0.5585,
-     "mean_top_p": 0.5199,
-     "log_loss": 1.0684,
-     "unseen_share": 0.2014
-    },
-    "by_status": {
-     "UNKNOWN": {
-      "n": 6502,
-      "top1_accuracy": 0.3576,
-      "mean_top_p": 0.2981,
-      "log_loss": 1.1695,
-      "unseen_share": 0.347
-     },
-     "PROJECTED": {
-      "n": 10156,
-      "top1_accuracy": 0.6871,
-      "mean_top_p": 0.6618,
-      "log_loss": 1.0037,
-      "unseen_share": 0.1082
-     }
-    },
-    "by_day": {
-     "Fri": {
-      "n": 4340,
-      "top1_accuracy": 0.6749,
-      "mean_top_p": 0.508,
-      "log_loss": 0.9058,
-      "unseen_share": 0.1217
-     },
-     "Sat": {
-      "n": 4750,
-      "top1_accuracy": 0.5819,
-      "mean_top_p": 0.53,
-      "log_loss": 0.9745,
-      "unseen_share": 0.1541
-     },
-     "Sun": {
-      "n": 3338,
-      "top1_accuracy": 0.6519,
-      "mean_top_p": 0.5996,
-      "log_loss": 0.9146,
-      "unseen_share": 0.1585
-     },
-     "Mon": {
-      "n": 182,
-      "top1_accuracy": 0.2912,
-      "mean_top_p": 0.3421,
-      "log_loss": 1.2696,
-      "unseen_share": 0.4341
-     },
-     "Tue": {
-      "n": 2308,
-      "top1_accuracy": 0.3154,
-      "mean_top_p": 0.5159,
-      "log_loss": 1.4392,
-      "unseen_share": 0.4415
-     },
-     "Wed": {
-      "n": 946,
-      "top1_accuracy": 0.2019,
-      "mean_top_p": 0.4154,
-      "log_loss": 1.5946,
-      "unseen_share": 0.4144
-     },
-     "Thu": {
-      "n": 794,
-      "top1_accuracy": 0.5819,
-      "mean_top_p": 0.3654,
-      "log_loss": 1.4145,
-      "unseen_share": 0.0957
      }
     }
    }
@@ -2594,7 +2397,7 @@
   "point_in_time": "RETROSPECTIVE",
   "window": "VALIDATION 2023-2024 (every second game with a reconciled inning line)",
   "sims_per_game": 2000,
-  "seconds": 106,
+  "seconds": 81,
   "n": 4240,
   "inputs": {
    "closed_form": "the pricing model's run-space calibrated expectations, mixed over rating uncertainty and scheduled length (distribution.closedForm)",
@@ -2610,8 +2413,8 @@
    "cal_la": 5.829
   },
   "frailty": {
-   "team_k": 12,
-   "shared_k": 16
+   "team_k": 8,
+   "shared_k": 60
   },
   "construction": {
    "n": 11950,
@@ -2730,28 +2533,28 @@
     },
     "simulator": {
      "n": 4240,
-     "log_loss": 0.61139,
-     "brier": 0.21174,
-     "citl": 0.0064,
-     "slope": 0.845
+     "log_loss": 0.60923,
+     "brier": 0.21098,
+     "citl": 0.004,
+     "slope": 0.9
     },
     "simulator_on_calibrated_inputs": {
      "n": 4240,
-     "log_loss": 0.61703,
-     "brier": 0.21327,
-     "citl": 0.0414,
-     "slope": 0.787
+     "log_loss": 0.61413,
+     "brier": 0.21246,
+     "citl": 0.0375,
+     "slope": 0.835
     }
    },
    "moneyline_log_loss": {
     "closed_form": 0.6082,
-    "simulator": 0.61139,
-    "simulator_on_calibrated_inputs": 0.61703
+    "simulator": 0.60923,
+    "simulator_on_calibrated_inputs": 0.61413
    },
    "total_log_score": {
     "closed_form": 3.21974,
-    "simulator": 3.28399,
-    "simulator_on_calibrated_inputs": 3.27063
+    "simulator": 3.2794,
+    "simulator_on_calibrated_inputs": 3.2844
    },
    "home_minus_1_5": {
     "closed_form": {
@@ -2763,38 +2566,38 @@
     },
     "simulator": {
      "n": 4240,
-     "log_loss": 0.63409,
-     "brier": 0.22124,
-     "citl": -0.0014,
-     "slope": 0.809
+     "log_loss": 0.63272,
+     "brier": 0.22087,
+     "citl": 0.0028,
+     "slope": 0.848
     },
     "simulator_on_calibrated_inputs": {
      "n": 4240,
-     "log_loss": 0.63957,
-     "brier": 0.22306,
-     "citl": 0.036,
-     "slope": 0.751
+     "log_loss": 0.63765,
+     "brier": 0.22248,
+     "citl": 0.0383,
+     "slope": 0.791
     }
    },
    "comparisons": {
     "moneyline_cf_vs_sim": {
      "n": 4240,
      "blocks": 119,
-     "mean_diff": -0.003191,
+     "mean_diff": -0.001031,
      "ci95": [
-      -0.005035,
-      -0.001591
+      -0.00253,
+      0.000323
      ],
-     "a_better": true,
+     "a_better": false,
      "b_better": false
     },
     "total_cf_vs_sim": {
      "n": 4240,
      "blocks": 119,
-     "mean_diff": -0.064257,
+     "mean_diff": -0.059666,
      "ci95": [
-      -0.097296,
-      -0.03445
+      -0.090433,
+      -0.031045
      ],
      "a_better": true,
      "b_better": false
@@ -2802,10 +2605,10 @@
     "run_line_cf_vs_sim": {
      "n": 4240,
      "blocks": 119,
-     "mean_diff": -0.001451,
+     "mean_diff": -0.000073,
      "ci95": [
-      -0.004447,
-      0.001382
+      -0.00275,
+      0.002488
      ],
      "a_better": false,
      "b_better": false
@@ -2813,10 +2616,10 @@
     "moneyline_sim_vs_sim_on_calibrated_inputs": {
      "n": 4240,
      "blocks": 119,
-     "mean_diff": -0.005643,
+     "mean_diff": -0.004901,
      "ci95": [
-      -0.008798,
-      -0.002565
+      -0.007532,
+      -0.002217
      ],
      "a_better": true,
      "b_better": false
@@ -2824,60 +2627,60 @@
    },
    "mean_p_home": {
     "closed_form": 0.5993,
-    "simulator": 0.60072,
-    "simulator_on_calibrated_inputs": 0.63572,
+    "simulator": 0.59829,
+    "simulator_on_calibrated_inputs": 0.63186,
     "observed": 0.59434
    }
   },
   "first_five": {
    "home_win": {
     "n": 4240,
-    "log_loss": 0.65943,
-    "brier": 0.23281,
-    "citl": 0.0011,
-    "slope": 0.724
+    "log_loss": 0.6584,
+    "brier": 0.23253,
+    "citl": 0.0028,
+    "slope": 0.748
    },
    "tie": {
     "n": 4240,
-    "log_loss": 0.33604,
-    "brier": 0.09376,
-    "citl": -0.0021,
-    "slope": 0.355
+    "log_loss": 0.33508,
+    "brier": 0.09359,
+    "citl": -0.0075,
+    "slope": 0.486
    },
    "max_mc_se": 0.0112
   },
   "walkoff_share": {
-   "predicted": 0.0786,
+   "predicted": 0.0748,
    "observed": 0.0757
   },
   "run_rule_share": {
-   "predicted": 0.0991,
+   "predicted": 0.1066,
    "observed": 0.0903
   },
   "coherence_failures": 0,
   "convergence": [
    {
     "n": 1000,
-    "mean_f5_home": 0.514,
-    "seed_spread": 0.018,
+    "mean_f5_home": 0.5323,
+    "seed_spread": 0.065,
     "theoretical_se": 0.0158
    },
    {
     "n": 5000,
-    "mean_f5_home": 0.5301,
-    "seed_spread": 0.0176,
+    "mean_f5_home": 0.5195,
+    "seed_spread": 0.0154,
     "theoretical_se": 0.0071
    },
    {
     "n": 20000,
-    "mean_f5_home": 0.5261,
-    "seed_spread": 0.0084,
+    "mean_f5_home": 0.5224,
+    "seed_spread": 0.0126,
     "theoretical_se": 0.0035
    },
    {
     "n": 50000,
-    "mean_f5_home": 0.5201,
-    "seed_spread": 0.0064,
+    "mean_f5_home": 0.5241,
+    "seed_spread": 0.0093,
     "theoretical_se": 0.0022
    }
   ],
@@ -3213,7 +3016,7 @@
      0.002223
     ],
     "verdict": "KEEPS ITS PLACE",
-    "seconds": 19
+    "seconds": 20
    },
    {
     "removed": "parks",
@@ -3224,7 +3027,7 @@
      0.000627
     ],
     "verdict": "KEEPS ITS PLACE",
-    "seconds": 32
+    "seconds": 37
    },
    {
     "removed": "carryover",
@@ -3235,7 +3038,7 @@
      0.025997
     ],
     "verdict": "KEEPS ITS PLACE",
-    "seconds": 38
+    "seconds": 42
    },
    {
     "removed": "uncertainty integration",
@@ -3246,7 +3049,7 @@
      -0.000147
     ],
     "verdict": "REMOVAL IMPROVES",
-    "seconds": 37
+    "seconds": 42
    },
    {
     "removed": "seven inning mixture",
@@ -3257,7 +3060,7 @@
      0.000005
     ],
     "verdict": "NO MEASURABLE VALUE",
-    "seconds": 39
+    "seconds": 42
    },
    {
     "removed": "prior-season calibration map",
@@ -3646,7 +3449,7 @@
     "id": "G13",
     "name": "Stress tests",
     "status": "PASS",
-    "why": "400 synthetic games priced coherently, 11 ms each; degenerate games blocked"
+    "why": "400 synthetic games priced coherently, 9 ms each; degenerate games blocked"
    },
    {
     "id": "G14",
@@ -4054,9 +3857,9 @@
    "id": "CBX-PITCHER-HYBRID",
    "title": "Pitcher-aware hybrid (starter projection + bullpen availability) vs team model",
    "decision": "REJECT",
-   "revision": 3,
-   "created_at": "2026-10-14T02:57:22.165Z",
-   "holdout": true,
+   "revision": 4,
+   "created_at": "2026-10-19T19:00:42.446Z",
+   "holdout": false,
    "metrics": {
     "team": 0.596,
     "bullpen": 0.59596,
@@ -4130,8 +3933,8 @@
    "id": "CBX-ML-GBM",
    "title": "gbm on base-model OOS predictions + context",
    "decision": "REJECT",
-   "revision": 2,
-   "created_at": "2026-10-14T02:40:37.955Z",
+   "revision": 3,
+   "created_at": "2026-10-19T19:02:20.983Z",
    "holdout": false,
    "metrics": {
     "validation": {
@@ -4224,38 +4027,38 @@
    "id": "CBX-SIMULATOR",
    "title": "Inning-level simulator vs closed-form run distribution",
    "decision": "REJECT",
-   "revision": 3,
-   "created_at": "2026-10-14T03:02:33.728Z",
+   "revision": 4,
+   "created_at": "2026-10-19T19:02:09.330Z",
    "holdout": false,
    "metrics": {
     "moneyline_log_loss": {
      "closed_form": 0.6082,
-     "simulator": 0.61139,
-     "simulator_on_calibrated_inputs": 0.61703
+     "simulator": 0.60923,
+     "simulator_on_calibrated_inputs": 0.61413
     },
     "total_log_score": {
      "closed_form": 3.21974,
-     "simulator": 3.28399,
-     "simulator_on_calibrated_inputs": 3.27063
+     "simulator": 3.2794,
+     "simulator_on_calibrated_inputs": 3.2844
     },
     "run_line_log_loss": {
      "closed_form": 0.63264,
-     "simulator": 0.63409
+     "simulator": 0.63272
     },
     "first_five": {
      "home_win": {
       "n": 4240,
-      "log_loss": 0.65943,
-      "brier": 0.23281,
-      "citl": 0.0011,
-      "slope": 0.724
+      "log_loss": 0.6584,
+      "brier": 0.23253,
+      "citl": 0.0028,
+      "slope": 0.748
      },
      "tie": {
       "n": 4240,
-      "log_loss": 0.33604,
-      "brier": 0.09376,
-      "citl": -0.0021,
-      "slope": 0.355
+      "log_loss": 0.33508,
+      "brier": 0.09359,
+      "citl": -0.0075,
+      "slope": 0.486
      },
      "max_mc_se": 0.0112
     }
@@ -4337,8 +4140,8 @@
    "id": "CBX-PRICING-ENGINE",
    "title": "Which engine prices full-game markets",
    "decision": "ACCEPT",
-   "revision": 2,
-   "created_at": "2026-10-14T03:02:33.757Z",
+   "revision": 3,
+   "created_at": "2026-10-19T19:02:09.348Z",
    "holdout": false,
    "metrics": {
     "moneyline": {
@@ -4351,23 +4154,23 @@
      },
      "simulator": {
       "n": 4240,
-      "log_loss": 0.61139,
-      "brier": 0.21174,
-      "citl": 0.0064,
-      "slope": 0.845
+      "log_loss": 0.60923,
+      "brier": 0.21098,
+      "citl": 0.004,
+      "slope": 0.9
      },
      "simulator_on_calibrated_inputs": {
       "n": 4240,
-      "log_loss": 0.61703,
-      "brier": 0.21327,
-      "citl": 0.0414,
-      "slope": 0.787
+      "log_loss": 0.61413,
+      "brier": 0.21246,
+      "citl": 0.0375,
+      "slope": 0.835
      }
     },
     "total_log_score": {
      "closed_form": 3.21974,
-     "simulator": 3.28399,
-     "simulator_on_calibrated_inputs": 3.27063
+     "simulator": 3.2794,
+     "simulator_on_calibrated_inputs": 3.2844
     },
     "run_line": {
      "closed_form": {
@@ -4379,17 +4182,17 @@
      },
      "simulator": {
       "n": 4240,
-      "log_loss": 0.63409,
-      "brier": 0.22124,
-      "citl": -0.0014,
-      "slope": 0.809
+      "log_loss": 0.63272,
+      "brier": 0.22087,
+      "citl": 0.0028,
+      "slope": 0.848
      },
      "simulator_on_calibrated_inputs": {
       "n": 4240,
-      "log_loss": 0.63957,
-      "brier": 0.22306,
-      "citl": 0.036,
-      "slope": 0.751
+      "log_loss": 0.63765,
+      "brier": 0.22248,
+      "citl": 0.0383,
+      "slope": 0.791
      }
     },
     "level_check": {
@@ -4406,23 +4209,23 @@
    "id": "CBX-SIMULATOR-F5",
    "title": "First-five-inning prices from the simulator",
    "decision": "REJECT",
-   "revision": 1,
-   "created_at": "2026-10-14T02:51:04.708Z",
+   "revision": 2,
+   "created_at": "2026-10-19T19:02:09.364Z",
    "holdout": false,
    "metrics": {
     "home_win": {
      "n": 4240,
-     "log_loss": 0.65943,
-     "brier": 0.23281,
-     "citl": 0.0011,
-     "slope": 0.724
+     "log_loss": 0.6584,
+     "brier": 0.23253,
+     "citl": 0.0028,
+     "slope": 0.748
     },
     "tie": {
      "n": 4240,
-     "log_loss": 0.33604,
-     "brier": 0.09376,
-     "citl": -0.0021,
-     "slope": 0.355
+     "log_loss": 0.33508,
+     "brier": 0.09359,
+     "citl": -0.0075,
+     "slope": 0.486
     },
     "max_mc_se": 0.0112
    }

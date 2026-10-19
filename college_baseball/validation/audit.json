@@ -322,21 +322,21 @@
      "moneyline_cf_vs_sim": {
       "n": 4240,
       "blocks": 119,
-      "mean_diff": -0.003191,
+      "mean_diff": -0.001031,
       "ci95": [
-       -0.005035,
-       -0.001591
+       -0.00253,
+       0.000323
       ],
-      "a_better": true,
+      "a_better": false,
       "b_better": false
      },
      "total_cf_vs_sim": {
       "n": 4240,
       "blocks": 119,
-      "mean_diff": -0.064257,
+      "mean_diff": -0.059666,
       "ci95": [
-       -0.097296,
-       -0.03445
+       -0.090433,
+       -0.031045
       ],
       "a_better": true,
       "b_better": false
@@ -344,10 +344,10 @@
      "run_line_cf_vs_sim": {
       "n": 4240,
       "blocks": 119,
-      "mean_diff": -0.001451,
+      "mean_diff": -0.000073,
       "ci95": [
-       -0.004447,
-       0.001382
+       -0.00275,
+       0.002488
       ],
       "a_better": false,
       "b_better": false
@@ -355,10 +355,10 @@
      "moneyline_sim_vs_sim_on_calibrated_inputs": {
       "n": 4240,
       "blocks": 119,
-      "mean_diff": -0.005643,
+      "mean_diff": -0.004901,
       "ci95": [
-       -0.008798,
-       -0.002565
+       -0.007532,
+       -0.002217
       ],
       "a_better": true,
       "b_better": false
@@ -367,17 +367,17 @@
     "first_five": {
      "home_win": {
       "n": 4240,
-      "log_loss": 0.65943,
-      "brier": 0.23281,
-      "citl": 0.0011,
-      "slope": 0.724
+      "log_loss": 0.6584,
+      "brier": 0.23253,
+      "citl": 0.0028,
+      "slope": 0.748
      },
      "tie": {
       "n": 4240,
-      "log_loss": 0.33604,
-      "brier": 0.09376,
-      "citl": -0.0021,
-      "slope": 0.355
+      "log_loss": 0.33508,
+      "brier": 0.09359,
+      "citl": -0.0075,
+      "slope": 0.486
      },
      "max_mc_se": 0.0112
     },
@@ -395,7 +395,7 @@
    "threshold": "in season: warehouse rebuilt within 2 days (FAIL); off season: within 30 days (WARN)",
    "evidence": {
     "latest_build": "2026-10-14T01:09:07.618Z",
-    "age_days": 0.08,
+    "age_days": 5.75,
     "in_season": false,
     "board_mode": "REPLAY"
    },
@@ -543,7 +543,7 @@
    "threshold": "the experiment registry hash chain is intact",
    "evidence": {
     "ok": true,
-    "records": 54,
+    "records": 59,
     "errors": []
    },
    "remediation": null
@@ -554,5 +554,5 @@
  ],
  "promotion_allowed": false,
  "summary": "17 PASS, 1 WARN, 1 FAIL; promotion BLOCKED by TAILS",
- "generated_at": "2026-10-14T03:07:21.168Z"
+ "generated_at": "2026-10-19T19:09:28.875Z"
 }
