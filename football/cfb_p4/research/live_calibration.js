@@ -47,6 +47,11 @@ global.window = global.window || global;
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
 const E = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
 const P = global.window.EDCfbP4Params;
+/* the one-home-field file, when promoted (football/cfb_p4/home_field.js):
+   picks published under its model_version were priced with its home field,
+   picks before it with params.js's league constant */
+const HF = E.homeField();
+function appliedHfaOf(modelVersion) { return HF && modelVersion === HF.model_version ? HF.hfa : P.venue.league_hfa; }
 
 const CONFIG_FILE = path.join(ROOT, 'football', 'cfb_p4', 'live_calibration_config.json');
 const OUT_JS = path.join(ROOT, 'football', 'cfb_p4', 'live_calibration.js');
@@ -213,7 +218,7 @@ function buildDataset(season) {
       ? x.model_margin / normInv(x.p_home) : fallback;
     x.sigma_pub = Math.min(hi, Math.max(lo, s));
     x.is_home = x.neutral ? 0 : 1;
-    x.applied_hfa = x.neutral ? 0 : P.venue.league_hfa;
+    x.applied_hfa = x.neutral ? 0 : appliedHfaOf(x.model_version);
   });
   return { rows, record_updated_at: rec.updated_at || null, model: rec.model || null, implied_sigma: valid };
 }
@@ -674,7 +679,8 @@ function diagnostics(D) {
       actual_minus_model: r(mean(e), 2), se: r(sd(e) / Math.sqrt(g.length), 2), actual_minus_close: r(mean(g.map((x) => (x.actual_margin - x.close_margin) * sg(x))), 2) }; };
   const hw = hm.filter((x) => isNum(x.p_home));
   out.home_field = {
-    applied_in_projection: P.venue.league_hfa, learned_in_rating_recursion: P.rating.hyperparams.hfa,
+    applied_in_projection: HF ? P.venue.league_hfa + ' (' + P.model_version + ' picks), ' + HF.hfa + ' (' + HF.model_version + ' picks)' : P.venue.league_hfa,
+    learned_in_rating_recursion: HF ? P.rating.hyperparams.hfa + ' (' + P.model_version + '), ' + HF.hfa + ' (' + HF.model_version + ')' : P.rating.hyperparams.hfa,
     fitted_on_2015_2025_final_margins: 2.582,
     favourite_side: [side('home favourite', (x) => x.model_margin >= 0), side('road favourite', (x) => x.model_margin < 0)],
     home_team_win_rate: { n: hw.length, model_mean_p_home: r(mean(hw.map((x) => x.p_home)), 3), actual: r(mean(hw.map((x) => x.home_win)), 3),

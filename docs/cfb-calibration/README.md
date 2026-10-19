@@ -2,6 +2,8 @@
 
 **Bottom line.** The college football model is not broadly overconfident. The sample does not show that any calibration fix beats it on unseen games, so the production number is unchanged. The audit did find one structural fault: the home field is applied inconsistently. A correction for it now runs in **shadow** beside every new projection, so it builds its own pregame record. It moves the published number only when it passes a rule declared before the test, and a person turns it on.
 
+**Update, 2026-10-19: the root cause is fixed at its source.** The engine now learns and projects with one home field, 2.8 points, chosen walk-forward (`edgedesk_cfb_p4_v1.0.1`). Over 2014–2025 that cuts spread error by 0.052 points a game (95% CI 0.021–0.082), better in 11 of 12 seasons. 2026 is too small to confirm it yet. See [The root cause, fixed](#the-root-cause-fixed-one-home-field-edgedesk_cfb_p4_v101).
+
 - Every table behind this page: `football/cfb_p4/research/report/LIVE_CALIBRATION.md` (generated) and `football/validation/cfb_live_calibration.json` (complete).
 - To rerun: `npm run cfb:livecal` (report only) or `npm run cfb:livecal:write`.
 - Tests: `npm run cfb:livecal:test`.
@@ -20,7 +22,7 @@
 
 - **Margin.** The fair spread is the sum of the engine's terms (`football/cfb_p4/engine.js`):
   - the rating gap: a capped-margin rating recursion (k 0.14, cap 35), blended with a carried preseason prior. At week 7 the prior still carries about 60% of the weight.
-  - home field: 4.082 points at every non-neutral venue.
+  - home field: 4.082 points at every non-neutral venue (2.8 from `edgedesk_cfb_p4_v1.0.1`, below).
   - a matchup term.
   - schedule, about 0.
 - **Unpriced inputs.** The QB value term, injuries, travel, altitude and weather all contribute 0.0 points. Each is unpriced by design and says why. They widen uncertainty instead.
@@ -31,6 +33,7 @@
   - The rating recursion learns team strength against a 3.2-point home field (`params.rating.hyperparams.hfa`).
   - Every projection then adds 4.082 (`params.venue.league_hfa`, measured on 2001–2013; the per-venue table was rejected and is empty).
   - So every home game carries about 0.9 points the ratings never earned. Home field has also declined: fitted on 2015–2025 final margins it is about 2.6 (`football/cfb_p4/margin_calibration.js`).
+  - **Fixed in `edgedesk_cfb_p4_v1.0.1`:** one value for both, see [The root cause, fixed](#the-root-cause-fixed-one-home-field-edgedesk_cfb_p4_v101).
   - No other input is counted twice. QB, injury, travel, altitude and weather are each 0.0 points and only widen sigma.
 - **Immutable pregame numbers.**
   - The record refuses any number published at or after kickoff. The pick is the last pregame number.
@@ -151,8 +154,8 @@
 
 | | |
 | --- | --- |
-| Production number | **unchanged**: `edgedesk_cfb_p4_v1.0.0`, raw margin, Phi(margin/sigma) |
-| Shadow | `HFA_PRE` from `cfb_live_cal_v1`: margin = 0.9637 × (raw − 4.082) + 2.582 at a home venue (× 0.9637 at a neutral one); P = Phi(margin / engine sigma); total unchanged; projected score re-derived from both |
+| Production number | raw margin, Phi(margin/sigma): `edgedesk_cfb_p4_v1.0.0` until 2026-10-19, then `edgedesk_cfb_p4_v1.0.1` (one home field, [below](#the-root-cause-fixed-one-home-field-edgedesk_cfb_p4_v101)) |
+| Shadow | `HFA_PRE` from `cfb_live_cal_v1`: margin = 0.9637 × (raw − applied home field) + 2.582 at a home venue (× 0.9637 at a neutral one); P = Phi(margin / engine sigma); total unchanged; projected score re-derived from both. The applied home field is 4.082 on v1.0.0 picks and 2.8 on v1.0.1 picks |
 | Where it shows | the engine's `model.live_calibration`, and every slate row's `calibration_shadow` (`football/fbs/slate.json`), committed hourly before kickoff |
 | Parameters | `football/cfb_p4/live_calibration.js`, GENERATED; every option's season fit (k, h, w and both w slopes, sigma scale, probit a/b) is in `cfb_live_calibration.json` → `season_fit` |
 | Switch and rule | `football/cfb_p4/live_calibration_config.json`: `promote` (false) and `promotion_rule` |
@@ -171,7 +174,89 @@
 **What the sample can and cannot show.**
 - An effect the size of the home-field fix's (−0.0015 Brier) needs about **3,150** unseen FBS games to be told from noise at 95% confidence and 80% power. That is roughly four seasons.
 - The 2026 record alone will not settle it this year. The run reports that number every time (`promotion.games_needed`).
-- The more direct fix is to remove the inconsistency at its source in the next retrain. The rating recursion and the projection should use one home-field constant, fitted on recent seasons. That is a change to `football/cfb_p4/research/train_p4.py` and its walk-forward, not a calibration layer.
+- The more direct fix is to remove the inconsistency at its source: one home-field constant for the rating recursion and the projection, fitted on recent seasons. That fix is now made and tested on twelve seasons of history; see [The root cause, fixed](#the-root-cause-fixed-one-home-field-edgedesk_cfb_p4_v101).
+
+## The root cause, fixed: one home field (`edgedesk_cfb_p4_v1.0.1`)
+
+**Where the split came from.**
+- The python trainer (`research/train_p4.py`, `run`) learns and predicts with one home field: its final pass uses `league_hfa` (4.082) for both. The shipped seeds come from that pass: a cold replay of the JS engine under 4.082 reproduces all 136 seed ratings to 0.0001.
+- The JS rating update instead defaults to `rating.hyperparams.hfa` (3.2, the value tuned before `league_hfa` was measured), while every projection adds `venue.league_hfa`. Every live update since the seeds learned against a different number than the projection adds.
+- **Matching the trainer is not the fix.** 4.082 for both is worse than today: MAE +0.022 (0.017 to 0.027). 4.082 was measured on 2001–2013, and home field has declined since.
+
+**The fix.**
+- One value for the rating update and the projection, chosen walk-forward. Each season takes the grid value (2.0 to 4.082) whose cold replay had the lowest spread MAE over the four seasons before it. Each replay used that value for its whole history, so its pregame state is the state production would have held.
+- **For 2026 the rule gives 2.8** (fitted on 2022–2025). Since 2014 its choices drifted from 3.0 to 2.2–2.6.
+- The seed ratings are rebuilt under 2.8 by the same recursion. The seeded game counts and scoring do not depend on the home field and are unchanged.
+- Nothing reads a market number: the close is used to score, never to fit.
+- **The bar was declared before the test** (`football/cfb_p4/v12_correction.js`): pooled walk-forward MAE better by at least 0.05 points, and better in a majority of seasons.
+
+**The evidence: replays of the shipped engine, 2014–2025** (n 8,724 FBS-vs-FBS games, 95% intervals from a bootstrap over season-weeks):
+
+| | current (learn 3.2, add 4.082) | one home field, walk-forward | change (95% CI) |
+| --- | --- | --- | --- |
+| spread MAE | 13.017 | 12.965 | **−0.052** (−0.082, −0.021) |
+| Brier | 0.1812 | 0.1802 | −0.0010 (−0.0015, −0.0004) |
+| log loss | 0.5362 | 0.5338 | −0.0024 (−0.0038, −0.0009) |
+| home games, actual − model | −1.52 | +0.05 | |
+| home games, model − close | +1.27 | −0.31 | |
+
+**Stable, not just better on average.**
+- **Seasons.** Better in 11 of 12; the twelfth, 2024, is +0.001. Any fixed value from 2.6 to 3.2 beats the current engine in all 12 test seasons, and 2.8 does in 18 of 20 since 2006.
+- **Window length.** Trailing windows of 3, 5, 6 and 8 seasons give −0.053, −0.054, −0.054 and −0.052, every interval excluding 0. Two seasons gives −0.046.
+- **Segments.** No segment is significantly worse, on MAE or on log loss. Spread MAE change (\* = interval excludes 0):
+
+| segment | n | MAE change | segment | n | MAE change |
+| --- | --- | --- | --- | --- | --- |
+| weeks 1–4 | 2,217 | −0.020 | home team Power conference | 4,719 | −0.016 |
+| weeks 5–9 | 3,136 | −0.043 | home team Group of 5 | 4,005 | −0.095\* |
+| weeks 10+ | 3,237 | −0.084\* | conference games | 6,303 | −0.078\* |
+| postseason | 134 | −0.028 | non-conference | 2,421 | +0.015 |
+| predicted margin 0–3 | 1,584 | −0.021 | 7–14 | 2,619 | −0.083\* |
+| 3–7 | 1,963 | −0.084\* | 14–21 | 1,458 | −0.051 |
+| 21+ | 1,100 | +0.032 | neutral sites | 382 | −0.015 |
+
+- **The market window, 2022–2025** (n 3,127): MAE −0.034 (−0.094, +0.028), log loss −0.0022 (−0.0051, +0.0010). The same direction, but not significant on its own.
+
+**The unseen season.**
+- **The frame.** 2026 through October 17, n 386. This is production's exact frame: the shipped seeds and the rebuilt seeds, every game absorbed in kickoff order.
+- **The numbers.** MAE +0.027 (−0.059, +0.091). Brier −0.0005 (−0.0018, +0.0007). Log loss −0.0020 (−0.0053, +0.0011). The home lean against the close falls from +1.49 to +0.20.
+- **Too small to confirm or refute a 0.05-point effect.** The interval covers both. Home teams have outperformed the fixed model by 0.65 points so far (production: −0.62), within one standard error either way.
+
+**Is it fixed?**
+- **The inconsistency: yes, by construction.** The rating update and the projection read the same number, and `football/cfb_p4/home_field.test.js` fails if they ever differ.
+- **The symptom: mostly.** The home lean against the close went from +1.27 to −0.31 over 2014–2025, and from +1.49 to +0.20 in 2026.
+- **Accuracy: better out of sample.** Over twelve seasons it improves by the repo's pre-declared bar, narrowly (0.052 against 0.05), and stably. 2026 alone cannot confirm it yet.
+
+**What changes, and what does not.**
+- **New projections.** On the October 19 slate, every home-game margin moves toward the visitor by 1.15–1.56 points (mean 1.34). Neutral sites move only by the small seed change.
+- **Versioning.** New projections carry `edgedesk_cfb_p4_v1.0.1`:
+  - on the slate row's `model_version`;
+  - as the base of `shadow_model_version`, which the performance ledger keys its CFB model id on;
+  - on every new record pick.
+- **Published numbers are untouched.** Every pick and grade published before keeps its v1.0.0 number.
+- **The freeze.** `football/cfb_validation/versions.jsonl` row `edgedesk_cfb_r1+p9`. `home_field.js` is now on the pricing path.
+- **The Model Lab.** V1 keeps its identity (`edgedesk_cfb_p4_v1.0.0`), because its champion role and EXP-001 are keyed to it. The build version rides as V1's `calibration_version`, so the hourly run logs a `CALIBRATION_CHANGED` audit event. Registering v1.0.1 as a separate lab model is a governance decision for a person.
+- **The shadows stay coherent.** The margin calibrator and `HFA_PRE` subtract the home field each pick actually applied. `HFA_PRE`'s original reason is now fixed at the source; it stays a shadow.
+- **The board and its harness.** The board loads `home_field.js` right after the engine, and waits for it, as it does for the regime curve. The test harness (`tools/football/_module.js`) loads it too.
+
+**Where it lives, and how to rerun.**
+- `football/cfb_p4/home_field.js` is GENERATED. It holds the value, the rebuilt seeds and the record, and it applies only to the `params.js` it was built for (`for_params_built_at`). A regenerated `params.js` turns it off rather than mixing two trainings, so regenerate the file with it.
+- The trainer still measures `league_hfa` once, on 2001–2013. Adopting the walk-forward rule inside `train_p4.py` is the follow-up for the next full retrain.
+- The complete report is `football/validation/cfb_home_field.json`.
+
+```
+npm run cfb:hfa -- --data DIR                      # replays + walk-forward, writes nothing
+npm run cfb:hfa -- --data DIR --live-sched cfb_schedules_2026.csv --live-record record/football/cfb_2026.json \
+    --write football/validation/cfb_home_field.json --write-home-field football/cfb_p4/home_field.js --promote
+npm run cfb:hfa:test
+```
+
+- `DIR` is the layout of `research/fetch_data.sh`, plus `out/market.csv` from `research/build_market.py`. `--promote` is a person's switch: the file is promoted only when it is passed AND the record passes the bar.
+
+**Limits.**
+- **No efficiency feed in the replay.** The replay has no team-game efficiency feed, so the matchup layer stays on its shipped seed. Both arms share that frame. On 2022–2025 it gives MAE 12.751, against 12.769 in the shipped headline.
+- **Residual layers.** Travel, rivalry and the conference term were fitted on residuals under 4.082. They are validated here end to end as shipped, not refitted.
+- **One unrelated observation, not acted on.** At neutral sites the team listed at home beats every variant's margin by about 1.5 points (n 382, about 1.9 se). The home-field value does not change this.
 
 ## Refitting as the season grows
 

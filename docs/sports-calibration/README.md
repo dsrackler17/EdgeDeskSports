@@ -82,7 +82,7 @@ The over/under probabilities have calibration slopes of 0.72–0.78 at every lin
 - **Outcomes back the model.** In those same 2022–25 seasons, home teams won by **2.20 points (se 0.43)**. That is within one se of the model's 2.48, and 0.6 points above what the market priced.
 - **Correcting would mean copying the market.** Over 2022–25 the market under-priced home field, so the correction would move the model toward the sportsbook and away from the outcomes.
 - **This season is too small to say.** Home teams in 2026 are about −2.5 against the model (se 1.4, n 70–74).
-- **CFB was different.** CFB had an internal inconsistency (ratings learned on 3.2, projections adding 4.08) and a decade of outcomes below both. The NFL intercept is fitted jointly with the ratings, and no double count was found.
+- **CFB was different.** CFB had an internal inconsistency (ratings learned on 3.2, projections adding 4.08) and a decade of outcomes below both. It is now fixed at its source: one walk-forward home field, 2.8, in `edgedesk_cfb_p4_v1.0.1` (`docs/cfb-calibration/README.md`). The NFL intercept is fitted jointly with the ratings, and no double count was found.
 
 **What would change this.**
 - A per-game historical out-of-sample file. None is committed (`football/research/train_nfl.py` writes `out/nfl_oos.csv`).

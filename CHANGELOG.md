@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-19 — CFB: one home field for learning and projection (`edgedesk_cfb_p4_v1.0.1`)
+
+The root cause the CFB audit found, fixed at its source and tested walk-forward. The report is `docs/cfb-calibration/README.md` ("The root cause, fixed").
+
+- **The fault.** The engine's rating update learned every home result against 3.2 points (`rating.hyperparams.hfa`), but every projection added 4.082 (`venue.league_hfa`). The python trainer uses one value for both, and the shipped seeds were built that way: a cold replay under 4.082 reproduces all 136 seeds to 0.0001. The JS update had drifted from it.
+- **The fix.** One value for both, chosen walk-forward: each season takes the value whose cold replay had the lowest spread error over the four seasons before it. For 2026 that is **2.8** (from 2022–25), with the seed ratings rebuilt under it. It ships as a generated file, `football/cfb_p4/home_field.js`, which applies only to the `params.js` it was built for.
+- **The evidence.** Out of sample, 2014–25 (n 8,724):
+  - spread MAE −0.052 (95% CI −0.082 to −0.021), better in 11 of 12 seasons;
+  - Brier −0.0010 and log loss −0.0024, both intervals below zero;
+  - the home lean against the close falls from +1.27 to −0.31 points.
+  - The result holds for every trailing window from 3 to 8 seasons, and no week, conference or margin segment is significantly worse. It passes the repo's pre-declared bar (≥ 0.05 MAE, better in most seasons), narrowly.
+  - Simply matching the trainer (4.082 for both) is worse than today.
+- **The unseen season.** 2026 (386 games, production's exact frame) cannot confirm or refute the gain yet: MAE +0.027 (CI −0.059 to +0.091), log loss −0.0020 (CI −0.0053 to +0.0011). The home lean against the close falls from +1.49 to +0.20.
+- **What changes.** New home-game margins move about 1.3 points toward the visitor.
+  - New projections carry `edgedesk_cfb_p4_v1.0.1` on the slate row, the record and the performance ledger. No published pick or grade changes.
+  - The Model Lab keeps V1's identity and logs the change as a calibration change.
+  - The freeze row is `edgedesk_cfb_r1+p9`, and the board and its test harness load the file.
+
 ## 2026-10-19 — Calibration across the other sports: college basketball's neutral-site pricing fixed; NHL, NFL, NBA, WNBA and baseball left as they are
 
 The CFB audit's method, applied to every other model that publishes a probability. The report is `docs/sports-calibration/README.md`.

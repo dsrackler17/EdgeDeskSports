@@ -51516,9 +51516,14 @@ function fbQevAltEnsure(sport){
     .catch(function(e){FBQEV.alt[sport]={data:null,err:String(e&&e.message||e)};FBQEV.altP[sport]=null;});
 }
 function fbP4Ensure(){
-  if(window.EDCfbP4&&window.EDCfbP4Params&&window.EDFbs&&window.EDCfbP4RegimeCurve)return Promise.resolve();
+  if(window.EDCfbP4&&window.EDCfbP4Params&&window.EDFbs&&window.EDCfbP4RegimeCurve&&window.EDCfbP4HomeField)return Promise.resolve();
   return fbScript('football/cfb_p4/params.js')
     .then(function(){return fbScript('football/cfb_p4/engine.js');})
+    /* ONE HOME FIELD (football/cfb_p4/home_field.js): the value the ratings
+       learn against and every projection adds, with the seeds rebuilt under
+       it. It moves numbers, so like the regime curve it GATES the board: a
+       board without it would not match the committed slate */
+    .then(function(){return fbScript('football/cfb_p4/home_field.js');})
     /* THE REGIME-CHANGE CURVE moves numbers (a new head coach and a turned-over
        roster weight the long-run state on the fitted steeper curve), so unlike
        the display-only calibration records below it GATES the board: the

@@ -62,7 +62,7 @@ chk('the generated file is unpromoted', GEN.promoted === false, GEN.promoted);
 chk('shadow: fair spread unchanged', shadow.model.fair_spread === base.model.fair_spread, [shadow.model.fair_spread, base.model.fair_spread]);
 chk('shadow: win probability unchanged', shadow.model.home_win_prob === base.model.home_win_prob);
 chk('shadow: sigma unchanged', shadow.model.sigma_margin === base.model.sigma_margin);
-chk('shadow: model version unchanged', shadow.model_version === base.model_version && shadow.model_version === P.model_version, shadow.model_version);
+chk('shadow: model version unchanged', shadow.model_version === base.model_version && shadow.model_version === E.version(), shadow.model_version);
 chk('shadow: cover probability unchanged',
   JSON.stringify(withCalibration(none, () => E.projectGame(req({ market: { spread_line: 3.5 } }))).cover)
   === JSON.stringify(E.projectGame(req({ market: { spread_line: 3.5 } })).cover));
@@ -77,8 +77,11 @@ chk('one number: P(away) = 1 - P(home)', near(lc.away_win_prob, 1 - lc.home_win_
 chk('one number: the projected score adds to the total', near(lc.projected_home + lc.projected_away, lc.total, 1e-9));
 chk('one number: the projected score differs by the margin', near(lc.projected_home - lc.projected_away, lc.margin, 1e-9));
 chk('the candidate is the configured one', GEN.candidate === CONFIG.candidate && lc.candidate === CONFIG.candidate);
-chk('HFA_PRE: margin = 0.9637 x (raw - 4.082) + 2.582 at a home venue',
-  near(lc.margin, CONFIG.prior.k * (lc.raw_margin - P.venue.league_hfa) + CONFIG.prior.h, 1e-9), lc);
+/* the home field the engine applied: params.js's league constant, or the
+   one-home-field value once football/cfb_p4/home_field.js is promoted */
+const appliedHfa = E.homeField() ? E.homeField().hfa : P.venue.league_hfa;
+chk('HFA_PRE: margin = 0.9637 x (raw - applied home field) + 2.582 at a home venue',
+  near(lc.margin, CONFIG.prior.k * (lc.raw_margin - appliedHfa) + CONFIG.prior.h, 1e-9), lc);
 const neutral = E.projectGame(req({ game: { home: HOME, away: AWAY, neutral_site: true, kickoff: '2025-10-11T19:00:00Z' } }));
 chk('neutral site: no home field is added back', near(neutral.model.live_calibration.margin, CONFIG.prior.k * neutral.model.live_calibration.raw_margin, 1e-9),
   neutral.model.live_calibration);
