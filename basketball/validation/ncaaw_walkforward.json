@@ -2,7 +2,7 @@
  "schema": "edgedesk_lab_walkforward_v1",
  "sport": "ncaaw",
  "label": "Women's college basketball",
- "generated_at": "2026-10-14T15:59:51.862Z",
+ "generated_at": "2026-10-19T00:13:28.618Z",
  "protocol": {
   "windows": {
    "burn_in": [
@@ -90,8 +90,8 @@
  "selection": {
   "rule": "lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= 0.001",
   "ll": {
-   "points": 0.46896,
-   "points_rest": 0.46891,
+   "points": 0.46875,
+   "points_rest": 0.46876,
    "elo": 0.50745,
    "const_home": 0.66483
   },
@@ -101,10 +101,10 @@
   "points_vs_elo": {
    "n": 44014,
    "blocks": 1092,
-   "mean_diff": -0.049334,
+   "mean_diff": -0.049782,
    "ci95": [
-    -0.05272,
-    -0.045748
+    -0.053148,
+    -0.046198
    ],
    "a_better": true,
    "b_better": false
@@ -112,10 +112,10 @@
   "points_vs_const_home": {
    "n": 44014,
    "blocks": 1092,
-   "mean_diff": -0.204658,
+   "mean_diff": -0.205106,
    "ci95": [
-    -0.209849,
-    -0.199062
+    -0.210231,
+    -0.19943
    ],
    "a_better": true,
    "b_better": false
@@ -123,10 +123,10 @@
   "points_rest_vs_points": {
    "n": 44014,
    "blocks": 1092,
-   "mean_diff": 0.000003,
+   "mean_diff": 0.000067,
    "ci95": [
-    -0.000129,
-    0.00014
+    -0.000016,
+    0.000153
    ],
    "a_better": false,
    "b_better": false
@@ -134,10 +134,10 @@
   "margin_crps_vs_baseline": {
    "n": 44014,
    "blocks": 1092,
-   "mean_diff": -3.548272,
+   "mean_diff": -3.550071,
    "ci95": [
-    -3.665115,
-    -3.436877
+    -3.666498,
+    -3.438423
    ],
    "a_better": true,
    "b_better": false
@@ -161,9 +161,9 @@
    "status": "OUTCOME_VALIDATED",
    "failed": [],
    "n": 44014,
-   "log_loss": 0.46084,
-   "brier": 0.15252,
-   "calibration_in_the_large": 0.0065,
+   "log_loss": 0.46039,
+   "brier": 0.15235,
+   "calibration_in_the_large": 0.0059,
    "calibration_slope": 0.99,
    "market_status": "NOT_TESTED",
    "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
@@ -173,10 +173,10 @@
    "status": "OUTCOME_VALIDATED",
    "failed": [],
    "n": 44014,
-   "crps": 7.4774,
-   "mean_bias": 0.095,
+   "crps": 7.4756,
+   "mean_bias": 0.105,
    "mean_outcome": 6.71,
-   "coverage_80": 0.8171,
+   "coverage_80": 0.8172,
    "market_status": "NOT_TESTED",
    "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
   },
@@ -205,36 +205,36 @@
      "moneyline": {
       "n": 39009,
       "sample_state": "MEANINGFUL",
-      "log_loss": 0.46896,
-      "brier": 0.15513,
+      "log_loss": 0.46875,
+      "brier": 0.15505,
       "climatology": {
        "rate": 0.6263,
        "log_loss": 0.66089,
        "brier": 0.23404
       },
-      "brier_skill": 0.3372,
-      "mean_p": 0.6268,
+      "brier_skill": 0.3375,
+      "mean_p": 0.6263,
       "mean_y": 0.6263,
-      "calibration_in_the_large": 0.0005,
-      "calibration_slope": 1.004,
-      "calibration_intercept": -0.004
+      "calibration_in_the_large": -0.0001,
+      "calibration_slope": 1.003,
+      "calibration_intercept": -0.001
      }
     },
     "points_rest": {
      "moneyline": {
       "n": 39009,
       "sample_state": "MEANINGFUL",
-      "log_loss": 0.46891,
-      "brier": 0.1551,
+      "log_loss": 0.46876,
+      "brier": 0.15505,
       "climatology": {
        "rate": 0.6263,
        "log_loss": 0.66089,
        "brier": 0.23404
       },
-      "brier_skill": 0.3373,
-      "mean_p": 0.6268,
+      "brier_skill": 0.3375,
+      "mean_p": 0.6267,
       "mean_y": 0.6263,
-      "calibration_in_the_large": 0.0005,
+      "calibration_in_the_large": 0.0004,
       "calibration_slope": 1.003,
       "calibration_intercept": -0.004
      }
@@ -281,17 +281,17 @@
    "margin": {
     "points": {
      "n": 39009,
-     "crps": 7.0884,
-     "mean_bias": 0.007,
+     "crps": 7.0867,
+     "mean_bias": -0.006,
      "mean_outcome": 5.97,
-     "coverage_80": 0.8172
+     "coverage_80": 0.8175
     },
     "points_rest": {
      "n": 39009,
-     "crps": 7.0892,
-     "mean_bias": 0.015,
+     "crps": 7.0877,
+     "mean_bias": -0.002,
      "mean_outcome": 5.97,
-     "coverage_80": 0.8171
+     "coverage_80": 0.8174
     },
     "baseline": {
      "n": 39009,
@@ -330,38 +330,38 @@
      "moneyline": {
       "n": 44014,
       "sample_state": "MEANINGFUL",
-      "log_loss": 0.46084,
-      "brier": 0.15252,
+      "log_loss": 0.46039,
+      "brier": 0.15235,
       "climatology": {
        "rate": 0.6232,
        "log_loss": 0.66249,
        "brier": 0.23483
       },
-      "brier_skill": 0.3505,
-      "mean_p": 0.6297,
+      "brier_skill": 0.3512,
+      "mean_p": 0.6291,
       "mean_y": 0.6232,
-      "calibration_in_the_large": 0.0065,
+      "calibration_in_the_large": 0.0059,
       "calibration_slope": 0.99,
-      "calibration_intercept": -0.04
+      "calibration_intercept": -0.036
      }
     },
     "points_rest": {
      "moneyline": {
       "n": 44014,
       "sample_state": "MEANINGFUL",
-      "log_loss": 0.46084,
-      "brier": 0.15253,
+      "log_loss": 0.46046,
+      "brier": 0.15237,
       "climatology": {
        "rate": 0.6232,
        "log_loss": 0.66249,
        "brier": 0.23483
       },
-      "brier_skill": 0.3505,
-      "mean_p": 0.6298,
+      "brier_skill": 0.3512,
+      "mean_p": 0.6293,
       "mean_y": 0.6232,
-      "calibration_in_the_large": 0.0066,
+      "calibration_in_the_large": 0.0061,
       "calibration_slope": 0.989,
-      "calibration_intercept": -0.04
+      "calibration_intercept": -0.037
      }
     },
     "elo": {
@@ -406,17 +406,17 @@
    "margin": {
     "points": {
      "n": 44014,
-     "crps": 7.4774,
-     "mean_bias": 0.095,
+     "crps": 7.4756,
+     "mean_bias": 0.105,
      "mean_outcome": 6.71,
-     "coverage_80": 0.8171
+     "coverage_80": 0.8172
     },
     "points_rest": {
      "n": 44014,
-     "crps": 7.4775,
-     "mean_bias": 0.101,
+     "crps": 7.4756,
+     "mean_bias": 0.102,
      "mean_outcome": 6.71,
-     "coverage_80": 0.8169
+     "coverage_80": 0.8171
     },
     "baseline": {
      "n": 44014,
@@ -502,105 +502,105 @@
   "2012": {
    "n": 5463,
    "ml_log_loss": {
-    "points": 0.47351,
+    "points": 0.47355,
     "elo": 0.51354
    }
   },
   "2013": {
    "n": 5484,
    "ml_log_loss": {
-    "points": 0.48004,
+    "points": 0.47998,
     "elo": 0.51493
    }
   },
   "2014": {
    "n": 5588,
    "ml_log_loss": {
-    "points": 0.48055,
+    "points": 0.48015,
     "elo": 0.51688
    }
   },
   "2015": {
    "n": 5603,
    "ml_log_loss": {
-    "points": 0.47263,
+    "points": 0.47245,
     "elo": 0.50629
    }
   },
   "2016": {
    "n": 5619,
    "ml_log_loss": {
-    "points": 0.46007,
+    "points": 0.4598,
     "elo": 0.49898
    }
   },
   "2017": {
    "n": 5622,
    "ml_log_loss": {
-    "points": 0.46621,
+    "points": 0.46588,
     "elo": 0.50734
    }
   },
   "2018": {
    "n": 5630,
    "ml_log_loss": {
-    "points": 0.45017,
+    "points": 0.44997,
     "elo": 0.49459
    }
   },
   "2019": {
    "n": 5658,
    "ml_log_loss": {
-    "points": 0.45929,
+    "points": 0.45899,
     "elo": 0.50297
    }
   },
   "2020": {
    "n": 5434,
    "ml_log_loss": {
-    "points": 0.47298,
+    "points": 0.47272,
     "elo": 0.51708
    }
   },
   "2021": {
    "n": 3823,
    "ml_log_loss": {
-    "points": 0.49713,
+    "points": 0.49686,
     "elo": 0.53797
    }
   },
   "2022": {
    "n": 5512,
    "ml_log_loss": {
-    "points": 0.46766,
+    "points": 0.46706,
     "elo": 0.51574
    }
   },
   "2023": {
    "n": 5820,
    "ml_log_loss": {
-    "points": 0.46431,
+    "points": 0.46414,
     "elo": 0.51571
    }
   },
   "2024": {
    "n": 5898,
    "ml_log_loss": {
-    "points": 0.45448,
+    "points": 0.45377,
     "elo": 0.50613
    }
   },
   "2025": {
    "n": 5840,
    "ml_log_loss": {
-    "points": 0.4391,
+    "points": 0.43899,
     "elo": 0.49393
    }
   },
   "2026": {
    "n": 6029,
    "ml_log_loss": {
-    "points": 0.44605,
+    "points": 0.44499,
     "elo": 0.50236
    }
   }

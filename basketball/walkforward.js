@@ -93,34 +93,67 @@ function ols(xs, ys) {
   const b = (n * sxy - sx * sy) / (n * sxx - sx * sx || 1); return { a: (sy - b * sx) / n, b };
 }
 
+/* least squares y ~ a·home + b·x, no constant: the fitted intercept is a
+   HOME-game correction, and a neutral site has no home side to correct */
+function olsHome(homes, xs, ys) {
+  const n = xs.length; if (n < 30) return { a: 0, b: 1 };
+  let shh = 0, shx = 0, sxx = 0, shy = 0, sxy = 0;
+  for (let i = 0; i < n; i++) { shh += homes[i] * homes[i]; shx += homes[i] * xs[i]; sxx += xs[i] * xs[i]; shy += homes[i] * ys[i]; sxy += xs[i] * ys[i]; }
+  const det = shh * sxx - shx * shx || 1;
+  return { a: (sxx * shy - shx * sxy) / det, b: (shh * sxy - shx * shy) / det };
+}
+
+/* THE CALIBRATION VERSION, carried into the live params and the slate's model
+   id so the record and the performance ledger split on the change.
+
+   v2 (bb_cal_v2_home_intercept): the fitted moneyline and margin intercepts
+   apply to home games only. v1 fitted one intercept on home and neutral
+   games pooled and applied it at neutral sites too, where the ratings' home
+   edge is already 0. That pooled intercept corrects a home edge the ratings
+   carry too large (h ~3.9 pts in college basketball while home court has
+   fallen), so every neutral-site game was priced ~3-4 points of probability
+   short for the side listed at home (NCAAM 5,289 neutral games 2019-26: mean
+   p 0.547, won 0.585). Walked forward on the three prior seasons exactly as
+   production, v2 improves moneyline log loss in both windows of both
+   college leagues with every 95% interval below zero (NCAAM 2012-18
+   -0.00032, 2019-26 -0.00053; NCAAW -0.00020, -0.00045), in 14 of 15
+   seasons from 2012 in each league, in every favourite-probability bucket,
+   and margin MAE with it; WNBA and the NBA fallback, with almost no neutral games, are
+   unchanged (docs/sports-calibration/README.md). */
+const CAL_VERSION = 'bb_cal_v2_home_intercept';
+/* 1 where the fitted intercept applies: every game under v1, home games only from v2 */
+function interceptOn(c, neutral) { return c && c.intercept === 'home_games_only' ? (neutral ? 0 : 1) : 1; }
+
 /** season-S calibration from the OOS rows of the seasons before S */
 function calibrate(prior) {
   if (prior.length < 200) return null;
-  const lg = S.logistic(prior.map((r) => [1, r.m]), prior.map((r) => r.y.hw), { l2: 1e-6 });
-  const lgR = S.logistic(prior.map((r) => [1, r.m, r.x_rest]), prior.map((r) => r.y.hw), { l2: 1e-6 });
-  const mm = ols(prior.map((r) => r.m), prior.map((r) => r.y.margin));
+  const home = (r) => (r.neutral ? 0 : 1);
+  const lg = S.logistic(prior.map((r) => [home(r), r.m]), prior.map((r) => r.y.hw), { l2: 1e-6 });
+  const lgR = S.logistic(prior.map((r) => [home(r), r.m, r.x_rest]), prior.map((r) => r.y.hw), { l2: 1e-6 });
+  const mm = olsHome(prior.map(home), prior.map((r) => r.m), prior.map((r) => r.y.margin));
   const tt = ols(prior.map((r) => r.t), prior.map((r) => r.y.total));
   let sm = 0, st = 0;
-  for (const r of prior) { sm += Math.pow(r.y.margin - (mm.a + mm.b * r.m), 2); st += Math.pow(r.y.total - (tt.a + tt.b * r.t), 2); }
+  for (const r of prior) { sm += Math.pow(r.y.margin - (mm.a * home(r) + mm.b * r.m), 2); st += Math.pow(r.y.total - (tt.a + tt.b * r.t), 2); }
   /* back-to-back effect on the margin, from residuals */
   const res = prior.filter((r) => r.x_rest !== 0);
-  let rest = 0; if (res.length >= 50) rest = res.reduce((a, r) => a + (r.y.margin - (mm.a + mm.b * r.m)) * r.x_rest, 0) / res.length;
+  let rest = 0; if (res.length >= 50) rest = res.reduce((a, r) => a + (r.y.margin - (mm.a * home(r) + mm.b * r.m)) * r.x_rest, 0) / res.length;
   const nn = prior.filter((r) => !r.neutral);
   const homeRate = nn.length ? nn.reduce((a, r) => a + r.y.hw, 0) / nn.length : 0.5;
   const meanMargin = nn.length ? nn.reduce((a, r) => a + r.y.margin, 0) / nn.length : 0;
   const meanTotal = prior.reduce((a, r) => a + r.y.total, 0) / prior.length;
   const sdMargin0 = Math.sqrt(prior.reduce((a, r) => a + Math.pow(r.y.margin - (r.neutral ? 0 : meanMargin), 2), 0) / prior.length);
   const sdTotal0 = Math.sqrt(prior.reduce((a, r) => a + Math.pow(r.y.total - meanTotal, 2), 0) / prior.length);
-  return { win: lg.beta, win_rest: lgR.beta, margin: mm, total: tt, sd_margin: Math.sqrt(sm / prior.length), sd_total: Math.sqrt(st / prior.length), rest_points: rest,
+  return { version: CAL_VERSION, intercept: 'home_games_only', win: lg.beta, win_rest: lgR.beta, margin: mm, total: tt, sd_margin: Math.sqrt(sm / prior.length), sd_total: Math.sqrt(st / prior.length), rest_points: rest,
     baseline: { home_rate: homeRate, home_margin: meanMargin, sd_margin: sdMargin0, mean_total: meanTotal, sd_total: sdTotal0 }, n: prior.length };
 }
 
 function applyCal(r, c) {
   const sig = (z) => 1 / (1 + Math.exp(-z));
-  const mu = c.margin.a + c.margin.b * r.m;
+  const on = interceptOn(c, r.neutral);
+  const mu = c.margin.a * on + c.margin.b * r.m;
   return {
-    points: sig(c.win[0] + c.win[1] * r.m),
-    points_rest: sig(c.win_rest[0] + c.win_rest[1] * r.m + c.win_rest[2] * r.x_rest),
+    points: sig(c.win[0] * on + c.win[1] * r.m),
+    points_rest: sig(c.win_rest[0] * on + c.win_rest[1] * r.m + c.win_rest[2] * r.x_rest),
     elo: r.elo,
     const_home: r.neutral ? 0.5 : c.baseline.home_rate,
     margin: { mu, sd: c.sd_margin }, margin_rest: { mu: mu + c.rest_points * r.x_rest, sd: c.sd_margin },
@@ -267,7 +300,7 @@ function check(league) {
   console.log('[bb walkforward --check] ' + league + ' ok: ' + r.data.games_scored + ' games, moneyline ' + r.markets.moneyline.status);
 }
 
-module.exports = { pass, calibrate, applyCal, score, windowsFor, load };
+module.exports = { pass, calibrate, applyCal, score, windowsFor, load, interceptOn, CAL_VERSION };
 
 if (require.main === module) {
   const lg = arg('league', 'all'); const leagues = lg === 'all' ? Object.keys(C.LEAGUES) : lg.split(',');

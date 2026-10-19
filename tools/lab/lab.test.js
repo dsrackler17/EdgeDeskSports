@@ -57,6 +57,25 @@ ok('basketball: the pass is causal — no input known at or after its prediction
 const BS = R('basketball/build_slate.js');
 const ou = BS.overUnder(220.2, 18, 220);
 ok('basketball: a whole-number line has a push; the three outcomes sum to 1', ou.push > 0.01 && near(ou.over + ou.push + ou.under, 1, 1e-9) && BS.overUnder(220.2, 18, 220.5).push === 0);
+{
+  /* calibration v2: the fitted intercept is a HOME-game correction; a neutral site gets none */
+  const prior = []; for (let i = 0; i < 400; i++) { const neutral = i % 5 === 0; const m = ((i * 37) % 21) - 10 + (neutral ? 0 : 3); const margin = m - (neutral ? 0 : 1.5) + ((i * 13) % 17) - 8; prior.push({ neutral, m, t: 140, x_rest: 0, y: { hw: margin > 0 ? 1 : 0, margin, total: 140 } }); }
+  const cal = W.calibrate(prior);
+  ok('basketball calibration v2: versioned, intercept on home games only', cal.version === W.CAL_VERSION && cal.version === 'bb_cal_v2_home_intercept' && cal.intercept === 'home_games_only');
+  const nZero = W.applyCal({ neutral: true, m: 0, x_rest: 0, t: 140, elo: 0.5 }, cal);
+  ok('basketball calibration v2: two equal teams at a neutral site are 50/50 with a 0 margin', near(nZero.points, 0.5, 1e-12) && near(nZero.margin.mu, 0, 1e-12) && near(nZero.points_rest, 0.5, 1e-12), nZero);
+  const hZero = W.applyCal({ neutral: false, m: 0, x_rest: 0, t: 140, elo: 0.5 }, cal);
+  ok('basketball calibration v2: at a home venue the fitted intercept still applies', near(hZero.margin.mu, cal.margin.a, 1e-12) && near(hZero.points, 1 / (1 + Math.exp(-cal.win[0])), 1e-12));
+  const v1 = Object.assign({}, cal, { version: undefined, intercept: undefined });
+  const v1n = W.applyCal({ neutral: true, m: 0, x_rest: 0, t: 140, elo: 0.5 }, v1);
+  ok('basketball calibration: a v1 file (no intercept field) prices exactly as before, intercept everywhere', near(v1n.margin.mu, cal.margin.a, 1e-12) && near(v1n.points, 1 / (1 + Math.exp(-cal.win[0])), 1e-12));
+  const live = { model: 'points', calibration: cal, ratings: { mu: 70, h: 3.9, teams: { A: { o: 0, d: 0, games: 5 }, B: { o: 0, d: 0, games: 5 } } } };
+  const pn = BS.priceGame({ home_id: 'A', away_id: 'B', neutral: true, start_utc: '2026-11-10T00:00:00Z' }, live, () => null);
+  const ph = BS.priceGame({ home_id: 'A', away_id: 'B', neutral: false, start_utc: '2026-11-10T00:00:00Z' }, live, () => null);
+  ok('basketball slate: the published price follows the same rule (neutral 50/50, home side favoured at home)', near(pn.p_home, 0.5, 1e-12) && near(pn.margin, 0, 1e-12) && ph.p_home > 0.5, [pn.p_home, ph.p_home]);
+  const liveFiles = ['ncaam', 'ncaaw'].map((lg) => JSON.parse(fs.readFileSync(path.join(ROOT, 'basketball', 'params', lg + '_live.json'), 'utf8')));
+  ok('basketball: the committed college live params carry calibration v2', liveFiles.every((L) => L.calibration && L.calibration.version === W.CAL_VERSION && L.calibration.intercept === 'home_games_only'));
+}
 
 /* 3. split settlement (a quarter line is two half stakes) */
 const Q = R('engine/quant.js');

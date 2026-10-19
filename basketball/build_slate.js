@@ -42,8 +42,11 @@ function priceGame(g, live, lastStart) {
   const x = b2b(g.home_id) - b2b(g.away_id);
   const sig = (z) => 1 / (1 + Math.exp(-z));
   const rest = live.model === 'points_rest';
-  const pHome = rest ? sig(cal.win_rest[0] + cal.win_rest[1] * m + cal.win_rest[2] * x) : sig(cal.win[0] + cal.win[1] * m);
-  const mu = cal.margin.a + cal.margin.b * m + (rest ? cal.rest_points * x : 0);
+  /* the fitted intercept: every game under calibration v1, home games only
+     from v2 (basketball/walkforward.js CAL_VERSION) */
+  const on = cal.intercept === 'home_games_only' ? (g.neutral ? 0 : 1) : 1;
+  const pHome = rest ? sig(cal.win_rest[0] * on + cal.win_rest[1] * m + cal.win_rest[2] * x) : sig(cal.win[0] * on + cal.win[1] * m);
+  const mu = cal.margin.a * on + cal.margin.b * m + (rest ? cal.rest_points * x : 0);
   const tmu = cal.total.a + cal.total.b * t;
   const fairSpread = -Math.round(mu * 2) / 2; /* the home line at which the home side is closest to even */
   const spreadLines = {}; for (const L of [fairSpread - 1, fairSpread - 0.5, fairSpread, fairSpread + 0.5, fairSpread + 1]) { const o = overUnder(mu, cal.sd_margin, -L); spreadLines[L] = { home_cover: r4(o.over), push: r4(o.push), away_cover: r4(o.under), fair_home: fair(o.over, o.push), fair_away: fair(o.under, o.push) }; }
@@ -71,7 +74,12 @@ function build(o) {
     const lastFinal = season.filter((g) => g.status === 'FINAL').sort((a, b) => (a.start_utc < b.start_utc ? 1 : -1))[0] || null;
     const status = Object.fromEntries(Object.entries(val.markets).map(([k, m]) => [k, m.status]));
     out.leagues[league] = {
-      label: L.label, sport_key: L.sport_key, registry: L.registry, model: live.model, params_generated_at: live.generated_at, for_season: live.for_season,
+      /* the model id carries the calibration version, so the board, the
+         projections and the performance ledger split on the change */
+      label: L.label, sport_key: L.sport_key, registry: L.registry,
+      model: live.model + (live.calibration && live.calibration.version ? '+' + live.calibration.version : ''),
+      calibration_version: (live.calibration && live.calibration.version) || null,
+      params_generated_at: live.generated_at, for_season: live.for_season,
       validation: status, value_claims: 'DISABLED', value_reason: 'never compared with closing prices, and no book price is captured for basketball',
       latest_result: lastFinal ? lastFinal.date : null, next_game: next ? next.start_utc : null,
       note: upcoming.length ? null : (next ? 'no game in the next ' + hours + ' h; the next is ' + next.start_utc : 'no scheduled game on file for the ' + cur + ' season'),
