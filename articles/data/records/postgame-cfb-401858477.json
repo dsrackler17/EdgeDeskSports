@@ -20,9 +20,9 @@
   "week": 5,
   "season": 2026,
   "game_time": "2026-10-04T00:00:00.000Z",
-  "published_at": "2026-10-19T17:10:49.457Z",
-  "updated_at": "2026-10-19T17:10:49.457Z",
-  "generated_at": "2026-10-19T17:10:49.457Z",
+  "published_at": null,
+  "updated_at": "2026-10-19T17:30:17.430Z",
+  "generated_at": "2026-10-19T17:30:17.430Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "UNTESTED",
   "model_status_note": "The number did not land, in a game the statistics cannot grade the reasoning on. It goes in the record and teaches little.",
@@ -34,9 +34,9 @@
   "canonical_url": "https://edgedesksports.com/articles/indiana-vs-rutgers-2026-postgame-analysis",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "published",
+  "status": "manual_review",
   "frozen": true,
-  "frozen_at": "2026-10-19T17:10:49.457Z",
+  "frozen_at": "2026-10-19T17:30:17.430Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-03. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -4103,7 +4103,7 @@
     "sport": "CFB",
     "season": 2026,
     "week": 5,
-    "observed_at": "2026-10-19T17:10:49.457Z",
+    "observed_at": "2026-10-19T17:30:17.430Z",
     "kickoff": "2026-10-04T00:00:00.000Z",
     "final_seen_at": null,
     "home_team": "Rutgers Scarlet Knights",
@@ -4937,7 +4937,7 @@
     "game_id": "401858477",
     "sport": "CFB",
     "snapshot_id": "snap_74c3ec75f5e8ea81",
-    "graded_at": "2026-10-19T17:10:49.457Z",
+    "graded_at": "2026-10-19T17:30:17.430Z",
     "final": {
       "home_team": "Rutgers Scarlet Knights",
       "away_team": "Indiana Hoosiers",
@@ -5060,7 +5060,7 @@
       "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
       "bet_result": "LOSS",
       "process_grade": "UNTESTED",
-      "created_at": "2026-10-19T17:10:49.457Z"
+      "created_at": "2026-10-19T17:30:17.430Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -5084,7 +5084,7 @@
       "suggested_investigation": null,
       "bet_result": "LOSS",
       "process_grade": "UNTESTED",
-      "created_at": "2026-10-19T17:10:49.457Z"
+      "created_at": "2026-10-19T17:30:17.430Z"
     }
   ],
   "pregame_published_at": "2026-10-03T12:02:33.500Z",
@@ -5102,18 +5102,24 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-19T17:10:49.457Z"
+    "at": "2026-10-19T17:30:17.430Z"
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T17:10:49.457Z"
+    "at": "2026-10-19T17:30:17.430Z"
   },
   "publish_state": {
-    "ok": true,
-    "at": "2026-10-19T17:10:49.457Z",
-    "blocking": [],
+    "ok": false,
+    "at": "2026-10-19T17:30:17.430Z",
+    "blocking": [
+      {
+        "id": "my_take",
+        "why": "an auto-generated article publishes only after the owner writes \"My take\" of at least 240 characters",
+        "detail": "0 characters on file"
+      }
+    ],
     "warnings": [],
-    "hold_reason": null
+    "hold_reason": "my_take"
   }
 }
