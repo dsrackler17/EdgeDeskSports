@@ -552,7 +552,10 @@ async function main() {
   report.lookahead_days = a.lookahead;
   report.absorbed_games = absorbed;
   report.engine = {
-    model_version: P.model_version,
+    /* the effective version: params.js's, or the one-home-field version
+       once football/cfb_p4/home_field.js is promoted */
+    model_version: E.version(),
+    home_field: (E.meta() || {}).home_field || null,
     trained_through: P.trained_through_season,
     rating_backbone: {
       source: st.canonicalRatingMeta && st.canonicalRatingMeta.schema,

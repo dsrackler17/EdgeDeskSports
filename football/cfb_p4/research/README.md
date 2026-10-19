@@ -18,6 +18,13 @@ node backtest_engine.js --data "$CFB_P4_DATA" --from 2022 --to 2025
                                    # train_p4.py scores the rating core rather
                                    # than the nine-term number engine.js emits
 python3 make_params.py out         # -> ../params.js
+node hfa_unify.js --data "$CFB_P4_DATA" --write-home-field ../home_field.js --promote \
+     --write ../../validation/cfb_home_field.json
+                                   # ONE home field for the rating update and the
+                                   # projection, chosen walk-forward, seeds rebuilt
+                                   # under it (docs/cfb-calibration). The file
+                                   # applies only to the params.js it was built
+                                   # for, so it must follow every make_params run
 python3 gen_goldens.py out         # -> ../goldens.json
 python3 gen_report.py out          # -> report/BACKTEST.md
 node ../tests.js                   # must exit 0
@@ -116,6 +123,7 @@ Each was found by execution, and each would silently corrupt the model:
 | `train_p4.py` | ratings, venue HFA, rivalry, blend, volatility, distributions, market backtest |
 | `train_layers.py` | QB, QB absence, schedule stress, total pace, score weights |
 | `make_params.py` | bundle → `../params.js` with provenance and the record |
+| `hfa_unify.js` | cold replays per home-field value, the walk-forward choice, `../home_field.js` and `../../validation/cfb_home_field.json` |
 | `gen_goldens.py` | python-reference parity vectors for `../tests.js` |
 | `gen_report.py` | render `report/BACKTEST.md` |
 | `report/` | the committed backtest report |

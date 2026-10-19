@@ -208,6 +208,11 @@ function loadEngine(win, root, opts) {
   vm.runInContext(fs.readFileSync(path.join(root, 'football', 'cfb_p4', 'engine.js'), 'utf8'), win, { filename: 'engine.js' });
   delete win.module;
   if (!win.EDCfbP4 || !win.EDCfbP4Params) throw new Error('the Power 4 engine loaded but its globals are missing');
+  /* the one-home-field file, as fbP4Ensure loads it right after the engine:
+     it sets the home field the ratings learn and project with, so a harness
+     without it would price every home game on the split the build retired */
+  vm.runInContext(fs.readFileSync(path.join(root, 'football', 'cfb_p4', 'home_field.js'), 'utf8'), win, { filename: 'home_field.js' });
+  if (!win.EDCfbP4HomeField) throw new Error('the home-field file loaded but EDCfbP4HomeField is missing');
   /* the fitted regime-change curve, as fbP4Ensure loads it right after the
      engine (audit 2026-09-30 #1): it moves numbers for a programme in a
      regime change, so a harness without it would price those games on the

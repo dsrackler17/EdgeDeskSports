@@ -151,6 +151,12 @@ function v1Adapter(opts) {
   const ptxt = (() => { try { return fs.readFileSync(pfile, 'utf8'); } catch (e) { return ''; } })();
   const mv = (/"model_version":"([^"]+)"/.exec(ptxt) || [])[1] || 'edgedesk_cfb_p4_v1.0.0';
   const fv = (/"feature_version":"([^"]+)"/.exec(ptxt) || [])[1] || null;
+  /* V1's lab identity stays params.js's version (the champion's roles and
+     experiments are keyed by it). The build the slate was priced with is the
+     slate rows' own model_version (edgedesk_cfb_p4_v1.0.1 once the one-home-
+     field file is promoted), carried as the calibration version so the hourly
+     run audits the change as CALIBRATION_CHANGED instead of hiding it. */
+  const cv = (((slate && slate.games) || []).map((g) => g && g.model_version).find(Boolean)) || mv;
   const meta = { sport: 'cfb', season: slate && slate.season, generated_at: slate && slate.generated_at, model_version: mv };
   const out = new Map();
   ((slate && slate.games) || []).forEach((g) => {
@@ -164,7 +170,7 @@ function v1Adapter(opts) {
     out.set(String(g.game_id), {
       model_version: mv, model_label: 'V1', engine_id: 'edgedesk_cfb_p4', source: 'football/fbs/slate.json',
       projection_computed_at: U.iso(slate.generated_at), feature_ts: U.iso(slate.generated_at), feature_version: fv,
-      calibration_version: mv, ensemble_version: mv, params_hash: hashFile(pfile),
+      calibration_version: cv, ensemble_version: mv, params_hash: hashFile(pfile),
       game: { game_id: String(g.game_id), season: p.season, week: p.week, season_type: g.season_type || 'regular',
         home: g.home_team, away: g.away_team, home_id: g.home_team_id || null, away_id: g.away_team_id || null,
         neutral_site: !!g.neutral_site, kickoff: p.kickoff },

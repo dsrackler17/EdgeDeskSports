@@ -140,6 +140,11 @@
     } else {
       var st = E.newState();
       chk('newState builds from the shipped seeds', !!st && !!st.r && !!st.hp);
+      /* the goldens replay the trainer's own state. When the one-home-field
+         file is promoted, newState seeds from ratings rebuilt under its value
+         (football/cfb_p4/home_field.test.js checks those); the recursion
+         checked here is the same, so it starts from params.js's seeds */
+      if (E.homeField && E.homeField()) { st.r = JSON.parse(JSON.stringify(P.rating.seed_ratings)); st.r0 = JSON.parse(JSON.stringify(st.r)); }
       var s0 = G.steps[0].state, t, f, okSeed = true, badSeed = null;
       for (var i = 0; i < G.teams.length; i++) {
         t = G.teams[i];

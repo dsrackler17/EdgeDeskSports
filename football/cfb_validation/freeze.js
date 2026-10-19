@@ -36,7 +36,7 @@ const PLAN = path.join(__dirname, 'next100_plan.json');
 
 const PATHS = {
   PRICING: ['football/cfb_p4/engine.js', 'football/cfb_p4/params.js', 'football/fbs/build_coverage.js', 'football/fbs/fbs.js',
-    'football/matchup/inputs.js', 'football/rankings/engine_efficiency.js'],
+    'football/matchup/inputs.js', 'football/rankings/engine_efficiency.js', 'football/cfb_p4/home_field.js'],
   RESEARCH: ['lib/cfb_disagreement.js', 'football/cfb_p4/disagreement_params.js', 'lib/edgedesk_canon.js', 'lib/cfb_terminal.js', 'lib/cfb_research_view.js'],
   DECISION: ['football/cfb_decision/decision.js', 'football/cfb_v2/artifacts/decision/cfb_decision_policy_v1/policy.json',
     'football/cfb_v2/artifacts/decision/cfb_decision_calibration_v1/calibration.json']
