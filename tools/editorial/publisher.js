@@ -121,8 +121,18 @@ function preflight(rec, opts) {
   /* An auto-generated article goes public only after the owner has written
      "My take" in their own words (tools/desk/takes.js reads it from the
      database and the run merges it into the record). The caller turns the
-     rule on; a page that was ever public is never pulled back by it. */
-  if (opts.requireTake && !isPublic(rec) && !rec.published_at) {
+     rule on; a page that was ever public is never pulled back by it.
+
+     "Ever public" includes the record AS STORED (opts.previous): the
+     postgame half rebuilds its record from scratch on every run, so the
+     record handed in carries no published_at even when its page is live.
+     Checking only that record pulled 13 live postgame pages on 19 October.
+     And an article about a game that kicked off before the rule started
+     (opts.takeFrom) was published under the old rule, so it is not held. */
+  const prev = opts.previous;
+  const everPublic = isPublic(rec) || !!rec.published_at || !!(prev && (isPublic(prev) || prev.published_at));
+  const beforeRule = !!opts.takeFrom && Date.parse(rec.game_time) < Date.parse(opts.takeFrom);
+  if (opts.requireTake && !everPublic && !beforeRule) {
     const min = opts.minTake || 240;
     const len = String(rec.my_take || '').replace(/\s+/g, ' ').trim().length;
     block('my_take', len >= min,
