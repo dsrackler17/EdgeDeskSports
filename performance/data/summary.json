@@ -2,21 +2,21 @@
  "schema": "edgedesk_perf_summary_v1",
  "version": "edgedesk_performance_v1",
  "grader": "perf_grader_v1",
- "generated_at": "2026-10-18T23:17:35.755Z",
+ "generated_at": "2026-10-19T01:22:22.401Z",
  "what": "Every eligible EdgeDesk pregame forecast, locked before the game and graded against the verified final, misses included. Research, not picks.",
  "ledger": {
   "epoch": "2026-10-16T19:35:25.897Z",
-  "last_capture_at": "2026-10-18T23:17:35.755Z",
-  "forecasts": 1800,
-  "verified_forecasts": 452,
+  "last_capture_at": "2026-10-19T01:22:22.401Z",
+  "forecasts": 1801,
+  "verified_forecasts": 453,
   "recorded_forecasts": 1348,
-  "quotes": 415,
-  "results": 528,
-  "grades": 528,
+  "quotes": 434,
+  "results": 531,
+  "grades": 531,
   "chains": {
    "ok": true,
    "files": 26,
-   "rows": 4700
+   "rows": 4790
   }
  },
  "tiers": {
@@ -37,11 +37,11 @@
    "schema": "edgedesk_performance_v1:metrics",
    "min_n": 20,
    "eligibility": {
-    "games": 84,
-    "graded": 75,
+    "games": 86,
+    "graded": 78,
     "void": 0,
     "flagged_pregame": 5,
-    "awaiting_result": 4,
+    "awaiting_result": 3,
     "conflict": 0,
     "by_why": {
      "FLAGGED_PREGAME_INVALIDATED": 2,
@@ -49,14 +49,14 @@
     }
    },
    "winner": {
-    "n": 75,
-    "called": 75,
-    "correct": 47,
-    "pct": 0.6267,
+    "n": 78,
+    "called": 78,
+    "correct": 49,
+    "pct": 0.6282,
     "ties": 0,
-    "scored": 75,
-    "brier": 0.2303,
-    "log_loss": 0.6718,
+    "scored": 78,
+    "brier": 0.2314,
+    "log_loss": 0.6741,
     "sample_state": "EARLY_SIGNAL",
     "calibration": [
      {
@@ -82,11 +82,11 @@
      {
       "from": 0.2,
       "to": 0.3,
-      "n": 3,
-      "mean_predicted": 0.2474,
-      "observed": 0.3333,
-      "wilson_low": 0.0615,
-      "wilson_high": 0.7923,
+      "n": 4,
+      "mean_predicted": 0.2431,
+      "observed": 0.25,
+      "wilson_low": 0.0456,
+      "wilson_high": 0.6994,
       "inside_interval": true
      },
      {
@@ -122,21 +122,21 @@
      {
       "from": 0.6,
       "to": 0.7,
-      "n": 12,
-      "mean_predicted": 0.6603,
-      "observed": 0.75,
-      "wilson_low": 0.4677,
-      "wilson_high": 0.9111,
+      "n": 13,
+      "mean_predicted": 0.6611,
+      "observed": 0.7692,
+      "wilson_low": 0.4974,
+      "wilson_high": 0.9182,
       "inside_interval": true
      },
      {
       "from": 0.7,
       "to": 0.8,
-      "n": 7,
-      "mean_predicted": 0.7447,
-      "observed": 0.5714,
-      "wilson_low": 0.2505,
-      "wilson_high": 0.8418,
+      "n": 8,
+      "mean_predicted": 0.7496,
+      "observed": 0.5,
+      "wilson_low": 0.2152,
+      "wilson_high": 0.7848,
       "inside_interval": true
      },
      {
@@ -188,18 +188,18 @@
      {
       "from": 0.65,
       "to": 0.7,
-      "n": 10,
-      "correct": 6,
+      "n": 11,
+      "correct": 7,
       "pct": null,
-      "mean_p": 0.6763
+      "mean_p": 0.6758
      },
      {
       "from": 0.7,
       "to": 0.8,
-      "n": 10,
-      "correct": 6,
+      "n": 12,
+      "correct": 7,
       "pct": null,
-      "mean_p": 0.7471
+      "mean_p": 0.752
      },
      {
       "from": 0.8,
@@ -212,104 +212,104 @@
     ]
    },
    "margin": {
-    "n": 59,
-    "mae": 11.13,
-    "bias": -2.22,
-    "rmse": 13.74,
+    "n": 62,
+    "mae": 11.02,
+    "bias": -2.02,
+    "rmse": 13.56,
     "sample_state": "EARLY_SIGNAL"
    },
    "total": {
-    "n": 75,
-    "mae": 10.47,
-    "bias": -0.21,
-    "rmse": 14.24,
+    "n": 78,
+    "mae": 10.59,
+    "bias": -0.42,
+    "rmse": 14.22,
     "sample_state": "EARLY_SIGNAL"
    },
    "market": {
     "spread": {
-     "n": 58,
-     "model_mae": 11.29,
-     "market_mae": 10.32,
-     "model_nearer": 19,
-     "market_nearer": 39,
-     "sample_state": "EARLY_SIGNAL"
-    },
-    "total": {
-     "n": 74,
-     "model_mae": 10.22,
-     "market_mae": 9.74,
-     "model_nearer": 33,
+     "n": 61,
+     "model_mae": 11.17,
+     "market_mae": 10.23,
+     "model_nearer": 20,
      "market_nearer": 41,
      "sample_state": "EARLY_SIGNAL"
     },
+    "total": {
+     "n": 77,
+     "model_mae": 10.35,
+     "market_mae": 9.89,
+     "model_nearer": 35,
+     "market_nearer": 42,
+     "sample_state": "EARLY_SIGNAL"
+    },
     "moneyline": {
-     "n": 74,
-     "model_brier": 0.2308,
-     "market_brier": 0.2168,
+     "n": 77,
+     "model_brier": 0.2319,
+     "market_brier": 0.2199,
      "sample_state": "EARLY_SIGNAL"
     }
    },
    "picks": {
     "spread": [
      {
-      "n": 58,
-      "w": 20,
-      "l": 36,
+      "n": 61,
+      "w": 21,
+      "l": 38,
       "p": 2,
-      "pct": 0.3571,
-      "priced": 58,
-      "units": -17.6,
-      "roi": -0.3034,
+      "pct": 0.3559,
+      "priced": 61,
+      "units": -18.674,
+      "roi": -0.3061,
       "sample_state": "EARLY_SIGNAL",
       "min_gap": 0
      },
      {
-      "n": 39,
-      "w": 14,
-      "l": 25,
+      "n": 42,
+      "w": 15,
+      "l": 27,
       "p": 0,
-      "pct": 0.359,
-      "priced": 39,
-      "units": -12.258,
-      "roi": -0.3143,
+      "pct": 0.3571,
+      "priced": 42,
+      "units": -13.332,
+      "roi": -0.3174,
       "sample_state": "TOO_EARLY",
       "min_gap": 1.5
      },
      {
-      "n": 30,
-      "w": 10,
+      "n": 31,
+      "w": 11,
       "l": 20,
       "p": 0,
-      "pct": 0.3333,
-      "priced": 30,
-      "units": -10.895,
-      "roi": -0.3632,
+      "pct": 0.3548,
+      "priced": 31,
+      "units": -9.969,
+      "roi": -0.3216,
       "sample_state": "TOO_EARLY",
       "min_gap": 3
      }
     ],
     "total": [
      {
-      "n": 74,
-      "w": 34,
-      "l": 40,
+      "n": 77,
+      "w": 36,
+      "l": 41,
       "p": 0,
-      "pct": 0.4595,
-      "priced": 74,
-      "units": -9.777,
-      "roi": -0.1321,
+      "pct": 0.4675,
+      "priced": 77,
+      "units": -8.927,
+      "roi": -0.1159,
       "sample_state": "EARLY_SIGNAL",
       "min_gap": 0
      },
      {
-      "n": 42,
-      "w": 20,
-      "l": 22,
+      "n": 44,
+      "w": 21,
+      "l": 23,
       "p": 0,
-      "pct": 0.4762,
-      "priced": 42,
-      "units": -3.557,
-      "roi": -0.0847,
+      "pct": 0.4773,
+      "priced": 44,
+      "units": -3.688,
+      "roi": -0.0838,
       "sample_state": "TOO_EARLY",
       "min_gap": 1.5
      },
@@ -348,19 +348,19 @@
    "trend": [
     {
      "period": "2026-W42",
-     "n": 75,
-     "called": 75,
-     "correct": 47,
-     "margin_n": 59,
-     "margin_mae": 11.13,
-     "total_n": 75,
-     "total_mae": 10.47,
-     "cum_called": 75,
-     "cum_correct": 47,
-     "cum_pct": 0.6267,
-     "cum_brier": 0.2303,
-     "cum_margin_mae": 11.13,
-     "cum_total_mae": 10.47
+     "n": 78,
+     "called": 78,
+     "correct": 49,
+     "margin_n": 62,
+     "margin_mae": 11.02,
+     "total_n": 78,
+     "total_mae": 10.59,
+     "cum_called": 78,
+     "cum_correct": 49,
+     "cum_pct": 0.6282,
+     "cum_brier": 0.2314,
+     "cum_margin_mae": 11.02,
+     "cum_total_mae": 10.59
     }
    ]
   },
@@ -1519,23 +1519,23 @@
     "schema": "edgedesk_performance_v1:metrics",
     "min_n": 20,
     "eligibility": {
-     "games": 11,
-     "graded": 6,
+     "games": 12,
+     "graded": 9,
      "void": 0,
      "flagged_pregame": 2,
-     "awaiting_result": 3,
+     "awaiting_result": 1,
      "conflict": 0,
      "by_why": {
       "FLAGGED_PREGAME_INVALIDATED": 2
      }
     },
     "winner": {
-     "n": 6,
-     "called": 6,
-     "correct": 1,
+     "n": 9,
+     "called": 9,
+     "correct": 3,
      "pct": null,
      "ties": 0,
-     "scored": 6,
+     "scored": 9,
      "brier": null,
      "log_loss": null,
      "sample_state": "TOO_EARLY",
@@ -1568,18 +1568,18 @@
       {
        "from": 0.65,
        "to": 0.7,
-       "n": 0,
-       "correct": 0,
+       "n": 1,
+       "correct": 1,
        "pct": null,
-       "mean_p": null
+       "mean_p": 0.6705
       },
       {
        "from": 0.7,
        "to": 0.8,
-       "n": 0,
-       "correct": 0,
+       "n": 2,
+       "correct": 1,
        "pct": null,
-       "mean_p": null
+       "mean_p": 0.7768
       },
       {
        "from": 0.8,
@@ -1592,14 +1592,14 @@
      ]
     },
     "margin": {
-     "n": 6,
+     "n": 9,
      "mae": null,
      "bias": null,
      "rmse": null,
      "sample_state": "TOO_EARLY"
     },
     "total": {
-     "n": 6,
+     "n": 9,
      "mae": null,
      "bias": null,
      "rmse": null,
@@ -1607,23 +1607,23 @@
     },
     "market": {
      "spread": {
-      "n": 6,
+      "n": 9,
       "model_mae": null,
       "market_mae": null,
-      "model_nearer": 1,
-      "market_nearer": 5,
+      "model_nearer": 2,
+      "market_nearer": 7,
       "sample_state": "TOO_EARLY"
      },
      "total": {
-      "n": 6,
+      "n": 9,
       "model_mae": null,
       "market_mae": null,
-      "model_nearer": 0,
-      "market_nearer": 6,
+      "model_nearer": 2,
+      "market_nearer": 7,
       "sample_state": "TOO_EARLY"
      },
      "moneyline": {
-      "n": 6,
+      "n": 9,
       "model_brier": null,
       "market_brier": null,
       "sample_state": "TOO_EARLY"
@@ -1632,37 +1632,37 @@
     "picks": {
      "spread": [
       {
-       "n": 6,
-       "w": 1,
-       "l": 5,
+       "n": 9,
+       "w": 2,
+       "l": 7,
        "p": 0,
        "pct": null,
-       "priced": 6,
-       "units": -4,
+       "priced": 9,
+       "units": -5.074,
        "roi": null,
        "sample_state": "TOO_EARLY",
        "min_gap": 0
       },
       {
-       "n": 5,
-       "w": 0,
-       "l": 5,
+       "n": 8,
+       "w": 1,
+       "l": 7,
        "p": 0,
        "pct": null,
-       "priced": 5,
-       "units": -5,
+       "priced": 8,
+       "units": -6.074,
        "roi": null,
        "sample_state": "TOO_EARLY",
        "min_gap": 1.5
       },
       {
-       "n": 3,
-       "w": 0,
+       "n": 4,
+       "w": 1,
        "l": 3,
        "p": 0,
        "pct": null,
-       "priced": 3,
-       "units": -3,
+       "priced": 4,
+       "units": -2.074,
        "roi": null,
        "sample_state": "TOO_EARLY",
        "min_gap": 3
@@ -1670,25 +1670,25 @@
      ],
      "total": [
       {
-       "n": 6,
-       "w": 0,
-       "l": 6,
+       "n": 9,
+       "w": 2,
+       "l": 7,
        "p": 0,
        "pct": null,
-       "priced": 6,
-       "units": -6,
+       "priced": 9,
+       "units": -5.15,
        "roi": null,
        "sample_state": "TOO_EARLY",
        "min_gap": 0
       },
       {
-       "n": 4,
-       "w": 0,
-       "l": 4,
+       "n": 6,
+       "w": 1,
+       "l": 5,
        "p": 0,
        "pct": null,
-       "priced": 4,
-       "units": -4,
+       "priced": 6,
+       "units": -4.13,
        "roi": null,
        "sample_state": "TOO_EARLY",
        "min_gap": 1.5
@@ -1728,15 +1728,15 @@
     "trend": [
      {
       "period": "2026-W42",
-      "n": 6,
-      "called": 6,
-      "correct": 1,
-      "margin_n": 6,
-      "margin_mae": 9.53,
-      "total_n": 6,
-      "total_mae": 9.53,
-      "cum_called": 6,
-      "cum_correct": 1,
+      "n": 9,
+      "called": 9,
+      "correct": 3,
+      "margin_n": 9,
+      "margin_mae": 9.31,
+      "total_n": 9,
+      "total_mae": 10.89,
+      "cum_called": 9,
+      "cum_correct": 3,
       "cum_pct": null,
       "cum_brier": null,
       "cum_margin_mae": null,
@@ -2122,11 +2122,11 @@
     "schema": "edgedesk_performance_v1:metrics",
     "min_n": 20,
     "eligibility": {
-     "games": 17,
+     "games": 18,
      "graded": 16,
      "void": 0,
      "flagged_pregame": 0,
-     "awaiting_result": 1,
+     "awaiting_result": 2,
      "conflict": 0,
      "by_why": {}
     },
@@ -3143,24 +3143,24 @@
    "sport": "nfl",
    "model_version": "edgedesk_football_v1.0.0",
    "tier": "VERIFIED",
-   "graded": 6,
+   "graded": 9,
    "winner": {
-    "called": 6,
-    "correct": 1,
+    "called": 9,
+    "correct": 3,
     "pct": null,
     "brier": null,
     "log_loss": null,
     "sample_state": "TOO_EARLY"
    },
    "margin": {
-    "n": 6,
+    "n": 9,
     "mae": null,
     "bias": null,
     "rmse": null,
     "sample_state": "TOO_EARLY"
    },
    "total": {
-    "n": 6,
+    "n": 9,
     "mae": null,
     "bias": null,
     "rmse": null,
@@ -3287,7 +3287,7 @@
    "league": "NHL",
    "status": "GRADED",
    "why": null,
-   "games": 46,
+   "games": 47,
    "verified_graded": 16,
    "recorded_graded": 29,
    "models": [
@@ -3347,8 +3347,8 @@
    "league": "NFL",
    "status": "GRADED",
    "why": null,
-   "games": 75,
-   "verified_graded": 6,
+   "games": 76,
+   "verified_graded": 9,
    "recorded_graded": 64,
    "models": [
     "edgedesk_football_v1.0.0"
@@ -3523,7 +3523,7 @@
      "market": "moneyline",
      "state": "OUTCOME_VALIDATED",
      "n": 11546,
-     "headline": "NBA moneyline (incl. overtime): OUTCOME_VALIDATED; held-out log loss 0.62234; vs close: not tested; vs Elo Δ -0.002315 (95% -0.004342 to -0.000256)",
+     "headline": "NBA moneyline (incl. overtime): OUTCOME_VALIDATED; held-out log loss 0.62234; vs close: not tested; vs Elo Δ -0.002317 (95% -0.004344 to -0.000257)",
      "file": "basketball/validation/nba_walkforward.json"
     },
     {
@@ -3551,14 +3551,14 @@
      "market": "moneyline",
      "state": "EXPERIMENTAL",
      "n": 1873,
-     "headline": "WNBA moneyline (incl. overtime): PROVISIONAL (does not beat the best baseline with a 95% interval below zero); held-out log loss 0.61321; vs close: not tested; vs Elo Δ -0.001191 (95% -0.008062 to 0.005435)",
+     "headline": "WNBA moneyline (incl. overtime): PROVISIONAL (does not beat the best baseline with a 95% interval below zero); held-out log loss 0.61325; vs close: not tested; vs Elo Δ -0.001157 (95% -0.008065 to 0.005525)",
      "file": "basketball/validation/wnba_walkforward.json"
     },
     {
      "market": "spread",
      "state": "OUTCOME_VALIDATED",
      "n": 1873,
-     "headline": "WNBA point spread (margin distribution, incl. overtime): OUTCOME_VALIDATED; held-out CRPS 7.0613; vs close: not tested",
+     "headline": "WNBA point spread (margin distribution, incl. overtime): OUTCOME_VALIDATED; held-out CRPS 7.0615; vs close: not tested",
      "file": "basketball/validation/wnba_walkforward.json"
     },
     {
@@ -3579,14 +3579,14 @@
      "market": "moneyline",
      "state": "OUTCOME_VALIDATED",
      "n": 47123,
-     "headline": "Men's college basketball moneyline (incl. overtime): OUTCOME_VALIDATED; held-out log loss 0.50583; vs close: not tested; vs Elo Δ -0.032909 (95% -0.036683 to -0.029546)",
+     "headline": "Men's college basketball moneyline (incl. overtime): OUTCOME_VALIDATED; held-out log loss 0.5053; vs close: not tested; vs Elo Δ -0.033436 (95% -0.037201 to -0.030199)",
      "file": "basketball/validation/ncaam_walkforward.json"
     },
     {
      "market": "spread",
      "state": "OUTCOME_VALIDATED",
      "n": 47123,
-     "headline": "Men's college basketball point spread (margin distribution, incl. overtime): OUTCOME_VALIDATED; held-out CRPS 7.0002; vs close: not tested",
+     "headline": "Men's college basketball point spread (margin distribution, incl. overtime): OUTCOME_VALIDATED; held-out CRPS 6.9949; vs close: not tested",
      "file": "basketball/validation/ncaam_walkforward.json"
     },
     {
@@ -3607,14 +3607,14 @@
      "market": "moneyline",
      "state": "OUTCOME_VALIDATED",
      "n": 44014,
-     "headline": "Women's college basketball moneyline (incl. overtime): OUTCOME_VALIDATED; held-out log loss 0.46084; vs close: not tested; vs Elo Δ -0.049334 (95% -0.05272 to -0.045748)",
+     "headline": "Women's college basketball moneyline (incl. overtime): OUTCOME_VALIDATED; held-out log loss 0.46039; vs close: not tested; vs Elo Δ -0.049782 (95% -0.053148 to -0.046198)",
      "file": "basketball/validation/ncaaw_walkforward.json"
     },
     {
      "market": "spread",
      "state": "OUTCOME_VALIDATED",
      "n": 44014,
-     "headline": "Women's college basketball point spread (margin distribution, incl. overtime): OUTCOME_VALIDATED; held-out CRPS 7.4774; vs close: not tested",
+     "headline": "Women's college basketball point spread (margin distribution, incl. overtime): OUTCOME_VALIDATED; held-out CRPS 7.4756; vs close: not tested",
      "file": "basketball/validation/ncaaw_walkforward.json"
     },
     {
@@ -3647,13 +3647,13 @@
    "sport": "nfl",
    "season": 2026,
    "path": "/performance/data/games/nfl-2026.json",
-   "rows": 75
+   "rows": 76
   },
   {
    "sport": "nhl",
    "season": 2027,
    "path": "/performance/data/games/nhl-2027.json",
-   "rows": 46
+   "rows": 47
   },
   {
    "sport": "wnba",
