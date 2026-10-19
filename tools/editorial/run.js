@@ -57,6 +57,8 @@ const GRAPHIC = require('./graphic.js');
 const POST = require('./postgame_model.js');
 const FETCH = require('./fetch_results.js');
 const PUBLISH = require('./publisher.js');
+/* "My take": the owner's own words, required before a new article publishes */
+const TAKES_LOADER = require('../desk/takes.js');
 const WINDOWS = require('./windows.js');
 const REFRESH = require('./refresh.js');
 const FRESH = require('./freshness.js');
@@ -119,6 +121,28 @@ const LEASE_TTL_SECONDS = 900;   /* fifteen minutes: longer than a run, shorter 
 let heldLease = false;
 
 let CFG = STORE.settings();
+/* the takes on file, loaded once per run (phaseTakes) */
+let TAKES = { map: Object.create(null), require: true, min: TAKES_LOADER.DEFAULT_MIN, reachable: false, note: 'not loaded' };
+/* A take is merged only into a record that has never been public: a page
+   that is already live (or frozen) is not rewritten by a later edit. */
+function withTake(rec) {
+  if (!rec || PUBLISH.isPublic(rec) || rec.published_at) return rec;
+  const t = TAKES.map[rec.id];
+  return t ? Object.assign({}, rec, { my_take: t }) : rec;
+}
+function takeOpts() { return { requireTake: TAKES.require, minTake: TAKES.min }; }
+/* Every publication goes through here. A record that did NOT publish is
+   saved without the take: unpublished records are served as public JSON, and
+   the owner's words are not public until their article is. The next run
+   merges the take again from the database. */
+function publishWithTake(rec, opts) {
+  const pub = PUBLISH.publish(withTake(rec), Object.assign({}, opts, takeOpts()));
+  if (!pub.ok && pub.record && !PUBLISH.isPublic(pub.record) && !pub.record.published_at && 'my_take' in pub.record) {
+    pub.record = Object.assign({}, pub.record);
+    delete pub.record.my_take;
+  }
+  return pub;
+}
 let CFG_SOURCES = {};
 let CFG_NOTES = [];
 function settings() { return CFG; }
@@ -524,7 +548,7 @@ async function phasePregame(host) {
       }
       /* `prior` is the record as stored, so an unchanged republish leaves
          updated_at alone and a real edit moves it. */
-      const pub = PUBLISH.publish(rec, { now: NOW, quality: gate, others: articles, previous: prior, requireEvidence: true });
+      const pub = publishWithTake(rec, { now: NOW, quality: gate, others: articles, previous: prior, requireEvidence: true });
       rec = pub.record;
       if (pub.ok) {
         /* the timing block the later analytics read: which window it went out
@@ -743,7 +767,7 @@ async function phasePostgame() {
       } else {
         const storedAll = ASTORE.loadAll();
         const storedPost = storedAll.filter(x => x && x.id === rec.id)[0] || null;
-        pub = PUBLISH.publish(rec, { now: NOW, quality: q, others: storedAll, previous: storedPost });
+        pub = publishWithTake(rec, { now: NOW, quality: q, others: storedAll, previous: storedPost });
         rec = pub.record;
         if (pub.ok) {
           record('postgame_published', key, true, rec.slug + ' (' + pub.action + ')',
@@ -782,6 +806,39 @@ async function phasePostgame() {
   out.forEach(r => log('  ' + pad(r.action, 11) + pad(r.slug || r.key, 52)
     + (r.bet ? pad(r.bet + ' / ' + r.process, 22) : '')
     + (r.score != null ? 'quality ' + r.score : '') + (r.why ? '  — ' + r.why : '')));
+  return out;
+}
+
+/* ==================================================================== */
+/* MY TAKE — load the owner's takes; release the articles they unblock    */
+/* ==================================================================== */
+/* An article the publisher HELD only because it had no take goes back
+   through the same single publisher, every check re-run, once a take exists.
+   A pregame article whose game has kicked off stays unpublished: a preview
+   published after its own game is worthless. */
+async function phaseTakes() {
+  TAKES = await TAKES_LOADER.load({});
+  record('takes', null, true, TAKES.note, { reachable: TAKES.reachable, required: TAKES.require, takes: Object.keys(TAKES.map).length });
+  log('  [takes] ' + TAKES.note);
+  if (!TAKES.require || !Object.keys(TAKES.map).length) return [];
+  const all = ASTORE.loadAll(), out = [];
+  const onlyTake = (r) => r && r.publish_state && r.publish_state.ok === false
+    && (r.publish_state.blocking || []).length > 0 && r.publish_state.blocking.every(b => b.id === 'my_take');
+  all.filter(r => !PUBLISH.isPublic(r) && onlyTake(r) && TAKES.map[r.id]).forEach(r => {
+    const type = AMODEL.typeOf(r);
+    if (type !== 'postgame' && Date.parse(r.game_time) <= Date.parse(NOW)) {
+      record('take_release', r.id, true, r.slug + ': the game has kicked off, so the preview stays unpublished', { skipped: true });
+      return;
+    }
+    const q = QUALITY.inspect(r, { now: NOW });
+    const pub = publishWithTake(r, { now: NOW, quality: q, others: all, previous: r, requireEvidence: type === 'pregame' });
+    record('take_release', r.id, pub.ok, pub.ok ? r.slug + ' published with your take (' + pub.action + ')' : r.slug + ': ' + pub.reason,
+      { slug: r.slug, blocking: (pub.blocking || []).map(b => b.id) });
+    if (!DRY) ASTORE.save(pub.record);
+    out.push({ id: r.id, ok: pub.ok });
+  });
+  if (!DRY && out.length) ASTORE.saveIndex(ASTORE.loadAll(), { now: NOW });
+  if (out.length) log('\nTAKES · ' + out.filter(x => x.ok).length + ' of ' + out.length + ' held article(s) released');
   return out;
 }
 
@@ -865,6 +922,11 @@ async function main() {
     }
     return await finish({ ok: true, paused: true, considered: 0, executed: 0, entries });
   }
+
+  /* ---- MY TAKE: load the takes, release what they unblock -------------- */
+  /* Before the due check, because a take the owner wrote at 9:05 should not
+     wait for the next game window to go out. Cheap: one database read. */
+  await phaseTakes();
 
   let host = null;
   /* ---- THE DISPATCHER ----------------------------------------------- */
@@ -1031,7 +1093,7 @@ function phaseBackfill() {
       }
     }
     const q = QUALITY.inspect(rec, { now: NOW });
-    const pub = PUBLISH.publish(rec, { now: NOW, quality: q, others: all, previous: rec });
+    const pub = publishWithTake(rec, { now: NOW, quality: q, others: all, previous: rec });
     if (pub.ok) {
       record('backfill', key, true, pub.record.slug + ' published (' + pub.action + ')',
         { slug: pub.record.slug, url: pub.record.canonical_url, score: q.score });

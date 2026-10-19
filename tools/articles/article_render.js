@@ -28,7 +28,7 @@
 
   var SITE = 'https://edgedesksports.com';
   var ORG = 'EdgeDesk Sports';
-  var CSS_HREF = '/articles/articles.css?v=4';
+  var CSS_HREF = '/articles/articles.css?v=5';
   /* THE SHARE IMAGE. Every article's hero graphic is an inline SVG data URI,
      which X, Facebook, LinkedIn and Slack all refuse as an og:image: a card
      with no picture. A real 1200x630 PNG on the site is used instead wherever
@@ -45,6 +45,67 @@
      a draft preview or an alias stub records nothing */
   var TRACK_JS = '<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>'
     + '<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>';
+
+  /* THE AUTHOR. Every article has a person on it: me. Stated in
+     lib/edgedesk_desk.js (AUTHOR); this file loads in a browser without that
+     module, so the facts are copied here and tools/desk/desk.test.js holds
+     the two equal. The photo is the owner's file to supply; until the build
+     finds assets/author/davis-rackler.jpg it draws initials and the
+     structured data carries no image. */
+  var AUTHOR = {
+    name: 'Davis Rackler', initials: 'DR',
+    url: SITE + '/articles/author/davis-rackler/', path: '/articles/author/davis-rackler/',
+    photo: '/assets/author/davis-rackler.jpg', job: 'Founder, EdgeDesk',
+    bio: 'I am a Navy submarine veteran, and I am building EdgeDesk. Every number I publish is graded against the closing line in public, misses included.',
+    short: 'Navy submarine veteran, building EdgeDesk.',
+    record_url: SITE + '/record.html', record_label: 'My live CLV record', sameAs: []
+  };
+  var AUTHOR_PHOTO = false;
+  function setAuthorPhoto(b) { AUTHOR_PHOTO = !!b; }
+  function personLD() {
+    var p = { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url, description: AUTHOR.bio, jobTitle: AUTHOR.job,
+      worksFor: { '@type': 'Organization', name: ORG, url: SITE } };
+    if (AUTHOR_PHOTO) p.image = SITE + AUTHOR.photo;
+    if (AUTHOR.sameAs.length) p.sameAs = AUTHOR.sameAs.slice();
+    return p;
+  }
+  function avatarHTML(px) {
+    return AUTHOR_PHOTO
+      ? '<img class="au-img" src="' + esc(AUTHOR.photo) + '" alt="' + esc(AUTHOR.name) + '" width="' + px + '" height="' + px + '" loading="lazy">'
+      : '<span class="au-ini" aria-hidden="true" style="width:' + px + 'px;height:' + px + 'px">' + esc(AUTHOR.initials) + '</span>';
+  }
+  /* The line under the headline: who, when, and how fresh the data is. */
+  function bylineHTML(o) {
+    o = o || {};
+    return '<div class="a-byline au-byline">' + avatarHTML(36)
+      + '<span class="au-who">By <a href="' + esc(AUTHOR.path) + '" rel="author">' + esc(AUTHOR.name) + '</a>'
+      + '<span class="au-short">' + esc(AUTHOR.short) + '</span></span>'
+      + (o.published ? '<span>Published <time datetime="' + esc(iso(o.published)) + '">' + esc(dayLabel(o.published)) + '</time></span>' : '')
+      + (o.updated ? '<span>Updated <time datetime="' + esc(iso(o.updated)) + '">' + esc(dayLabel(o.updated)) + '</time></span>' : '')
+      + (o.dataAsOf ? '<span class="au-asof">Data as of <time datetime="' + esc(iso(o.dataAsOf)) + '">' + esc(dateLabel(o.dataAsOf)) + '</time></span>' : '')
+      + (o.extra || '')
+      + '<a class="au-rec" href="' + esc(o.recordUrl || AUTHOR.record_url) + '">' + esc(o.recordLabel || AUTHOR.record_label) + ' \u2192</a>'
+      + '</div>';
+  }
+  /* The box at the foot of every article. */
+  function authorBoxHTML(o) {
+    o = o || {};
+    return '<aside class="au-box" aria-label="About the author">' + avatarHTML(64)
+      + '<div class="au-boxt"><p class="au-boxk">About the author</p>'
+      + '<p class="au-boxn"><a href="' + esc(AUTHOR.path) + '" rel="author">' + esc(AUTHOR.name) + '</a></p>'
+      + '<p class="au-boxb">' + esc(AUTHOR.bio) + '</p>'
+      + (o.note ? '<p class="au-boxb">' + esc(o.note) + '</p>' : '')
+      + '<p class="au-boxl"><a href="' + esc(AUTHOR.record_url) + '">' + esc(AUTHOR.record_label) + '</a>'
+      + '<a href="/performance/">Model performance</a><a href="/methodology/">How I build the numbers</a></p></div></aside>';
+  }
+  /* "My take": the owner's own words, escaped, paragraphs and nothing else. */
+  function takeSectionHTML(take, id) {
+    var paras = String(take || '').replace(/\r/g, '').split(/\n{2,}/).map(function (p) { return p.trim(); }).filter(Boolean);
+    if (!paras.length) return '';
+    return '<section class="a-take" id="' + esc(id || 'sec-my-take') + '" aria-label="My take"><h2 class="a-takeh">My take</h2>'
+      + '<div class="a-takeby">' + avatarHTML(28) + '<span>' + esc(AUTHOR.name) + ', in my own words</span></div>'
+      + paras.map(function (p) { return '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>'; }).join('') + '</section>';
+  }
 
   /* ONE URL PER PAGE. Every article is a directory with an index.html, and
      GitHub Pages answers /articles/x with a 301 to /articles/x/. A canonical,
@@ -705,12 +766,13 @@
     if (rec.game_time) h += '<div class="a-when"><time datetime="' + esc(iso(rec.game_time)) + '">' + esc(dateLabel(rec.game_time)) + '</time></div>';
     if (bits.length) h += '<div class="a-gmeta">' + esc(bits.join(' · ')) + '</div>';
     h += '</div>';
-    h += '<div class="a-byline">'
-      + '<span>By <a href="/app.html#research/football" rel="author">' + esc(rec.author) + '</a></span>'
-      + (rec.published_at ? '<span>Published <time datetime="' + esc(iso(rec.published_at)) + '">' + esc(dayLabel(rec.published_at)) + '</time></span>' : '')
-      + (rec.updated_at ? '<span>Updated <time datetime="' + esc(iso(rec.updated_at)) + '">' + esc(dayLabel(rec.updated_at)) + '</time></span>' : '')
-      + (rec.frozen ? '<span class="a-frozen">Frozen at kickoff</span>' : '')
-      + '</div>';
+    /* the research these pages are built from was read at generated_at; a
+       frozen page says the moment it froze instead */
+    h += bylineHTML({ published: rec.published_at, updated: rec.updated_at,
+      dataAsOf: rec.frozen && rec.frozen_at ? rec.frozen_at : rec.generated_at,
+      extra: rec.frozen ? '<span class="a-frozen">Frozen at kickoff</span>' : '',
+      recordUrl: rec.article_type === 'postgame' ? AUTHOR.record_url : SITE + '/performance/',
+      recordLabel: rec.article_type === 'postgame' ? AUTHOR.record_label : 'How my pregame numbers are graded' });
     return h + '</header>';
   }
 
@@ -719,6 +781,7 @@
     var items = (rec.article.sections || []).map(function (s) {
       return '<li><a href="#' + esc(anchorId(s.title)) + '">' + esc(s.title) + '</a></li>';
     });
+    if (rec.my_take) items.unshift('<li><a href="#sec-my-take">My take</a></li>');
     items.push('<li><a href="#sec-the-edgedesk-bottom-line">The EdgeDesk bottom line</a></li>');
     return '<nav class="a-toc" aria-label="On this page"><h2 class="a-tocH">On this page</h2><ol>' + items.join('') + '</ol></nav>';
   }
@@ -863,7 +926,7 @@
       articleSection: rec.sport_label,
       inLanguage: 'en-US',
       isAccessibleForFree: true,
-      author: { '@type': 'Organization', name: rec.author, url: SITE },
+      author: personLD(),
       publisher: { '@type': 'Organization', name: ORG, url: SITE,
         logo: { '@type': 'ImageObject', url: OG_DEFAULT, width: 1200, height: 630 } },
       url: rec.canonical_url,
@@ -966,6 +1029,7 @@
     h += shareHTML(rec);
     h += tocHTML(rec);
     if (!opts.noTrial) h += trialStripHTML();
+    if (rec.my_take) h += takeSectionHTML(rec.my_take);
     (rec.article.sections || []).forEach(function (s) {
       var fn = SECTION_HTML[s.kind];
       if (fn) h += fn(s);
@@ -974,6 +1038,7 @@
     h += relatedHTML(rec, published);
     h += ctaHTML(rec, published);
     h += moreHTML(rec, opts.more);
+    h += authorBoxHTML({ note: rec.my_take ? null : 'This page was written by my research pipeline from my model\u2019s own numbers. I am accountable for every one of them, and the record linked above grades them after the game.' });
     /* PART 15 — the methodology notice. Rendered from the record so it says
        what is true of THIS page: which snapshot it read, which providers the
        statistics came from, and when. */
@@ -1201,7 +1266,10 @@
     hubPage: hubPage, cardHTML: cardHTML, articleBody: articleBody, dateLabel: dateLabel,
     slashed: slashed, OG_DEFAULT: OG_DEFAULT, TRIAL_LINE: TRIAL_LINE, TRIAL_HREF: TRIAL_HREF,
     /* the shared chrome, for the other article types' own pages (tools/editorial/feature_model.js) */
-    siteHeader: siteHeader, siteFooter: siteFooter, shareHTML: shareHTML, SHARE_JS: SHARE_JS, TRACK_JS: TRACK_JS
+    siteHeader: siteHeader, siteFooter: siteFooter, shareHTML: shareHTML, SHARE_JS: SHARE_JS, TRACK_JS: TRACK_JS,
+    /* the author and trust layer, shared with the desk pages (tools/desk/desk_render.js) */
+    AUTHOR: AUTHOR, setAuthorPhoto: setAuthorPhoto, personLD: personLD, avatarHTML: avatarHTML, bylineHTML: bylineHTML,
+    authorBoxHTML: authorBoxHTML, takeSectionHTML: takeSectionHTML, trialStripHTML: trialStripHTML, jsonld: jsonld, iso: iso
   };
 });
 /*__EDART_RENDER_END__*/

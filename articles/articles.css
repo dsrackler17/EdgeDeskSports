@@ -538,3 +538,65 @@ a{color:var(--accent)}
 .a-morelist a{font-weight:700;text-decoration:none}
 .a-morek{color:var(--faint);font-size:12.5px;font-family:var(--mono)}
 @media (max-width:640px){.a-trial{padding:14px}.a-morelist li{padding:10px}}
+
+/* ---- the author and trust layer (every article) -------------------------- */
+.au-byline{align-items:center;gap:10px 14px}
+.au-img,.au-ini{border-radius:50%;flex:none;object-fit:cover;border:1px solid var(--border)}
+.au-ini{display:inline-flex;align-items:center;justify-content:center;background:var(--surface2);
+  color:var(--accent);font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.04em}
+.au-who{display:flex;flex-direction:column;line-height:1.35}
+.au-who a{color:var(--text);font-weight:700;text-decoration:none}
+.au-short{color:var(--faint);font-size:12px}
+.au-asof{color:var(--dim)}
+.au-rec{color:var(--accent)!important;font-weight:600}
+.au-box{display:flex;gap:16px;align-items:flex-start;margin:28px 0 18px;padding:18px;
+  border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.au-box .au-ini{font-size:16px}
+.au-boxt{min-width:0}
+.au-boxk{margin:0 0 4px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.au-boxn{margin:0 0 6px;font-size:17px;font-weight:800}
+.au-boxn a{color:var(--text);text-decoration:none}
+.au-boxb{margin:0 0 8px;font-size:14px;line-height:1.6;color:var(--dim)}
+.au-boxl{margin:0;display:flex;gap:14px;flex-wrap:wrap;font-size:13px;font-weight:600}
+
+/* ---- My take: the one section a machine never writes ---------------------- */
+.a-take{margin:22px 0 26px;padding:18px 20px;border-radius:14px;background:var(--surface2);
+  border:1px solid var(--border);border-left:3px solid var(--accent)}
+.a-takeh{margin:0 0 8px;font-size:13px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.a-takeby{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:12.5px;color:var(--faint)}
+.a-take p{margin:0 0 12px;font-size:16.5px;line-height:1.7}
+.a-take p:last-child{margin-bottom:0}
+
+/* ---- desk articles: owned data, rendered from a short Markdown ----------- */
+.d-type{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 8px}
+.d-body p{margin:0 0 14px;font-size:16.5px;line-height:1.72}
+.d-body b{color:var(--text)}
+.d-h2{margin:32px 0 12px;font-size:21px;letter-spacing:-.01em;line-height:1.3}
+.d-h3{margin:22px 0 10px;font-size:16.5px}
+.d-ul{margin:0 0 16px;padding-left:20px}
+.d-ul li{margin:0 0 8px;line-height:1.62}
+.d-note{padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);
+  font-size:14px!important;color:var(--dim)}
+.d-tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 0 18px;border:1px solid var(--border);border-radius:12px}
+.d-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.d-table th,.d-table td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.d-table th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+  background:var(--surface);position:sticky;top:0}
+.d-table tbody tr:last-child td{border-bottom:0}
+.d-src{margin:28px 0 0;padding:16px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface)}
+.d-src h2{margin:0 0 8px;font-size:12px;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+.d-src p{margin:0 0 10px;font-size:13px;line-height:1.6;color:var(--dim)}
+.d-src ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--faint);line-height:1.6}
+.d-src code{font-family:var(--mono);font-size:11.5px;color:var(--dim);overflow-wrap:anywhere}
+.d-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin:0 0 24px}
+.d-card{display:block;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);
+  color:var(--text);text-decoration:none}
+.d-card:hover{border-color:var(--accent)}
+.d-card b{display:block;font-size:15px;line-height:1.35;margin:4px 0 6px}
+.d-card span{font-size:12.5px;color:var(--faint)}
+@media (max-width:560px){
+  .au-box{flex-direction:column}
+  .d-table{font-size:12px}
+  .a-take{padding:16px}
+}

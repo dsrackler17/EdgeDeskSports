@@ -64837,5 +64837,68 @@ try{
   .bottomnav button{letter-spacing:0;padding-left:0;padding-right:0}
 }
 </style>
+<!-- =====================================================================
+     THE DESK: an owner-only badge, and a deep link the desk articles use.
+
+     1. #record/football[/nfl|/cfb] opens the football model record for a
+        signed-in reader (the terminal's own view of record/football/). Public
+        articles link the committed record file instead, because this page
+        sends a signed-out visitor to the landing page.
+     2. The badge: when the signed-in account is the owner (edIsOwner, a
+        surface gate only), ask the database how many desk drafts are
+        waiting on "My take" and show the count in the app bar, linking to
+        /admin/desk/. The database decides who the owner is
+        (desk_pending_count returns owner:false to anyone else), and the
+        badge never shows a number it did not get from it.
+     ===================================================================== -->
+<style>
+.ed-desk-badge{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:36px;padding:0 10px;border-radius:18px;
+  border:1px solid rgba(217,154,43,.55);color:#d99a2b;background:rgba(217,154,43,.08);font:700 12px Inter,system-ui,sans-serif;text-decoration:none;white-space:nowrap}
+.ed-desk-badge b{display:inline-block;min-width:18px;text-align:center;border-radius:9px;background:#d99a2b;color:#14100a;padding:1px 5px;font-size:11px}
+@media(max-width:479px){.ed-desk-badge span{display:none}}
+</style>
+<script>
+(function(){
+  'use strict';
+  function fbRecordRoute(){
+    var m=/^#record\/football(?:\/(nfl|cfb))?$/.exec(location.hash||'');
+    if(!m)return;
+    var go=function(){try{if(window.EDFootballRecord&&window.EDFootballRecord.open){window.EDFootballRecord.open(m[1]||'nfl');return true;}}catch(_){}return false;};
+    if(!go())setTimeout(go,600);
+  }
+  window.addEventListener('hashchange',fbRecordRoute);
+  if(document.readyState==='complete')fbRecordRoute();else window.addEventListener('load',fbRecordRoute);
+
+  var busy=false;
+  function paint(n){
+    var el=document.getElementById('edDeskBadge');
+    var bar=document.querySelector('.appbar-in'),av=document.querySelector('.appbar-in .edav-wrap');
+    if(!n){if(el)el.remove();return;}
+    if(!el&&bar){
+      el=document.createElement('a');el.id='edDeskBadge';el.className='ed-desk-badge';el.href='/admin/desk/';
+      el.title='Desk drafts waiting on your take';
+      bar.insertBefore(el,av||null);
+    }
+    if(el)el.innerHTML='<span>Desk</span><b>'+String(n)+'</b>';
+  }
+  async function check(){
+    if(busy)return;
+    try{
+      if(!(typeof window.edIsOwner==='function'&&window.edIsOwner())){paint(0);return;}
+      busy=true;
+      var tok=(typeof edToken==='function')?await edToken():null;
+      if(!tok){paint(0);return;}
+      var r=await fetch(SB_URL+'/rest/v1/rpc/desk_pending_count',{method:'POST',
+        headers:{apikey:SB_KEY,authorization:'Bearer '+tok,'content-type':'application/json'},body:'{}'});
+      if(!r.ok){paint(0);return;}
+      var j=await r.json();
+      paint(j&&j.owner?(j.awaiting_take||0)+(j.ready||0)+(j.newer_drafts||0):0);
+    }catch(_){paint(0);}finally{busy=false;}
+  }
+  if(document.readyState==='complete')setTimeout(check,1500);else window.addEventListener('load',function(){setTimeout(check,1500);});
+  setInterval(check,10*60000);
+  window.addEventListener('focus',check);
+})();
+</script>
 </body>
 </html>

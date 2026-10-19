@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-19 — The desk: data-first articles in my voice, my take required, every number traced
+
+AI summaries answer a generic game preview without a click; they cannot answer my own logged numbers or a person accountable for them. The audit is `docs/desk/AUDIT.md`; the guide is `docs/desk/README.md`.
+
+- **Five article types built only on owned data** (`tools/desk/generators.js`): Weekly CLV Report, Where My Number Disagrees, Line Movement Recap, What I Got Wrong, Research Notes. First person, no em dashes, losses printed like wins. Each refuses, with its reason, when the data is not there (CFB disagreements and CFB line moves for now).
+- **Every number traced.** Printed only through a stored query against a committed file (`lib/edgedesk_desk.js`); the verifier re-runs every query and refuses any number typed by hand. `data_snapshot` keeps each file's digest and commit, and `tools/desk/verify.js` re-derives a draft at that commit. This season's six sample drafts re-derive 2,676 values.
+- **Drafts never publish themselves.** `public.article_drafts` is append-only; the publish gate is a database trigger that refuses an article without "My take" of the minimum length (240 characters by default) and a draft that failed its own checks (`supabase/desk_articles.sql`, 57 checks on a real PostgreSQL).
+- **The editorial pipeline is held to the same rule.** Its publisher now holds every NEW pregame and postgame article until a take is on file, and each run releases what a new take unblocks. Pages already published are untouched. It fails closed: no takes readable, nothing new published. Off switch: the desk's Settings tab, or the repository variable `EDGD_REQUIRE_MY_TAKE=false`.
+- **Notifications.** `desk_cron` (pg_cron, `x-cron-secret`) wakes the drafting job daily and tells me about new drafts every 30 minutes by Discord DM, an owner-only webhook, or the terminal badge alone; claim before send, never twice.
+- **Author and trust layer on every article.** My name, bio, "Data as of", a link to my live CLV record and an author box; JSON-LD `Person` author on every article, `Dataset` on desk pages with tables; `/articles/author/davis-rackler/`; `/articles/desk/`. The photo is mine to add at `assets/author/davis-rackler.jpg`.
+- **Owner desk** (`/admin/desk/`): drafts with every number's query, My take, Publish, game-article takes, a distribution kit (X, LinkedIn, Discord, Reddit; UTM-tagged by channel and article; each post quotes the lead number and links the published page; Reddit body link-free), Article Performance ranked by paid conversions with Discord and Reddit as channels, and settings.
+- **Found, reported, not changed** (the grading layer is frozen): on 17% of graded model rows the P&L ledger's `clv_points` has the opposite sign from the football model record, which is why `/record.html` shows NFL "Avg CLV" -1.11 against the model record's +0.51. Details in `docs/desk/README.md`.
+
 ## 2026-10-19 — CFB: one home field for learning and projection (`edgedesk_cfb_p4_v1.0.1`)
 
 The root cause the CFB audit found, fixed at its source and tested walk-forward. The report is `docs/cfb-calibration/README.md` ("The root cause, fixed").

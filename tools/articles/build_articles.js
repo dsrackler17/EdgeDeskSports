@@ -39,6 +39,9 @@ const MODEL = require('./article_model.js');
 const R = require('./article_render.js');
 const FEATURE = require('../editorial/feature_model.js');
 const VENUE = require('./venue_address.js');
+/* the desk: data-first articles with a required take (tools/desk/) */
+const DESK_STORE = require('../desk/store.js');
+const DESK = require('../desk/desk_render.js');
 
 const ROOT = STORE.ROOT;
 const OUT = path.join(ROOT, 'articles');
@@ -103,6 +106,7 @@ function lastmod(rec) {
    board before it did kept saying "hourly" forever) */
 function settled(r, nowIso) {
   if (r.frozen || r.article_type === 'postgame' || r.article_type === 'feature') return true;
+  if (r.article_type === 'desk') return false;
   const k = Date.parse(r.game_time), n = Date.parse(nowIso || NOW);
   return isFinite(k) && isFinite(n) && k <= n;
 }
@@ -115,6 +119,9 @@ function articleSitemap(recs, nowIso) {
   ];
   /* the features hub exists once a feature does */
   if (recs.some(r => r.article_type === 'feature')) hubs.push({ loc: SITE + '/articles/features/', freq: 'weekly', pri: '0.8', lm: newest('FEATURE') });
+  /* the desk hub and the author page are always written */
+  hubs.push({ loc: SITE + '/articles/desk/', freq: 'weekly', pri: '0.8', lm: newest('DESK') });
+  hubs.push({ loc: SITE + '/articles/author/davis-rackler/', freq: 'monthly', pri: '0.5', lm: newest('DESK') });
   let x = '<?xml version="1.0" encoding="UTF-8"?>\n';
   x += '<!-- EdgeDesk research articles. PUBLISHED ONLY: a draft, a preview and a\n';
   x += '     short alias URL are all deliberately absent. Written by\n';
@@ -127,7 +134,7 @@ function articleSitemap(recs, nowIso) {
   recs.slice().sort((a, b) => String(a.slug).localeCompare(String(b.slug))).forEach(r => {
     const lm = lastmod(r);
     /* a frozen or played article is history and will not change again */
-    const freq = settled(r, nowIso) ? 'yearly' : 'hourly';
+    const freq = r.article_type === 'desk' ? 'weekly' : settled(r, nowIso) ? 'yearly' : 'hourly';
     x += '  <url><loc>' + xmlEsc(R.slashed(r.canonical_url)) + '</loc>'
       + (lm ? '<lastmod>' + lm + '</lastmod>' : '')
       + '<changefreq>' + freq + '</changefreq><priority>0.7</priority></url>\n';
@@ -170,15 +177,24 @@ function build() {
   /* EdgeDesk's own features: a separate list, so nothing that walks game
      articles (neighbours, sport hubs, cards) ever meets one */
   const feats = STORE.loadFeatures().filter(r => r.status === 'published');
+  /* the desk's published articles, committed by tools/desk/sync.js */
+  const desk = DESK_STORE.loadPublished();
   const problems = [];
+  /* the photo is the owner's to add; until it exists every byline draws initials */
+  R.setAuthorPhoto(fs.existsSync(path.join(ROOT, 'assets', 'author', 'davis-rackler.jpg')));
 
   /* two published articles cannot share a URL */
   const seen = Object.create(null);
-  pub.concat(feats).forEach(r => {
+  ['desk', 'author', 'features', 'nfl', 'college-football'].forEach(s => { seen[s] = '(reserved)'; });
+  pub.concat(feats).concat(desk.map(d => ({ id: d.article_key, slug: d.slug }))).forEach(r => {
     [r.slug].concat(r.aliases || []).forEach(s => {
       if (seen[s] && seen[s] !== r.id) problems.push('duplicate URL /articles/' + s + ' claimed by ' + seen[s] + ' and ' + r.id);
       seen[s] = r.id;
     });
+  });
+  desk.forEach(d => {
+    const v = DESK.publishable(d);
+    if (!v.ok) problems.push(d.slug + ': published desk article failing ' + v.failed.map(f => f.id + ' (' + f.why + ')').join(', '));
   });
   /* and a published article must still pass its own checks */
   pub.concat(feats).forEach(r => {
@@ -187,7 +203,7 @@ function build() {
   });
 
   if (CHECK) {
-    log(all.length + ' record(s), ' + pub.length + ' published, ' + feats.length + ' feature(s)');
+    log(all.length + ' record(s), ' + pub.length + ' published, ' + feats.length + ' feature(s), ' + desk.length + ' desk article(s)');
     problems.forEach(p => log('  PROBLEM: ' + p));
     log(problems.length ? '\n' + problems.length + ' problem(s)' : '\nno problems');
     return { written: [], problems: problems, published: pub.length };
@@ -238,12 +254,17 @@ function build() {
   });
   if (feats.length) written.push(page('features', FEATURE.hub(feats)));
 
+  /* the desk: each published article, its hub and the author page */
+  desk.forEach(d => { written.push(page(d.slug, DESK.page(d, { more: desk }))); });
+  written.push(page('desk', DESK.hub(desk)));
+  written.push(page(path.join('author', 'davis-rackler'), DESK.authorPage(desk)));
+
   /* the hubs. A sport hub is written for every sport the model knows, even
      with nothing published in it yet: an empty section that says so is a
      better answer to a crawler and a reader than a 404. */
   written.push(page('', R.hubPage({
     records: pub, canonical: SITE + '/articles/', active: '/articles/', now: NOW,
-    extraHTML: FEATURE.strip(feats), featuresLink: feats.length > 0,
+    extraHTML: DESK.strip(desk) + FEATURE.strip(feats), featuresLink: feats.length > 0,
     title: 'EdgeDesk Research Articles — Model Projections, Fair Spreads and Matchup Analysis',
     og_title: 'EdgeDesk research — every game, priced and explained',
     description: 'EdgeDesk publishes a research article for every game it prices: the fair spread, the projected score, what moved the number, where each team has an edge, and what the model could not measure. Research, not picks.',
@@ -290,9 +311,13 @@ function build() {
       type: r.article_type || 'pregame', slug: r.slug, url: R.slashed(r.canonical_url),
       title: r.article_type === 'feature' ? r.title : (r.page_label || (r.away_team + ' vs. ' + r.home_team)), game_time: r.game_time || null,
       updated_at: lastmod(r)
-    }))
+    })).concat(desk.slice().sort((a, b) => String(a.slug).localeCompare(String(b.slug))).map(d => ({
+      game_id: null, sport: d.sport, sport_slug: null, type: d.type, slug: d.slug, url: d.canonical_url,
+      title: d.title, game_time: null, updated_at: lastmod(d), published_at: d.published_at
+    })))
   }, null, 1) + '\n');
-  const articlesXml = articleSitemap(pub.concat(feats), NOW);
+  const deskForMap = desk.map(d => ({ slug: d.slug, canonical_url: d.canonical_url, updated_at: d.updated_at, published_at: d.published_at, article_type: 'desk', sport: 'DESK' }));
+  const articlesXml = articleSitemap(pub.concat(feats).concat(deskForMap), NOW);
   write(path.join(ROOT, 'sitemap-articles.xml'), articlesXml);
   write(path.join(ROOT, 'sitemap.xml'), sitemapIndex(articlesXml));
 
@@ -303,8 +328,8 @@ function build() {
     const rep = require('../seo/audit.js').write(ROOT);
     log('  seo report: ' + rep.summary.pages + ' pages, ' + rep.summary.errors + ' error(s), ' + rep.summary.warnings + ' warning(s)');
   } catch (e) { log('  seo report not written: ' + (e && e.message || e)); }
-  log(written.length + ' file(s) written · ' + pub.length + ' published article(s) · ' + feats.length + ' feature(s)');
-  return { written: written, problems: [], published: pub.length, features: feats.length };
+  log(written.length + ' file(s) written · ' + pub.length + ' published article(s) · ' + feats.length + ' feature(s) · ' + desk.length + ' desk article(s)');
+  return { written: written, problems: [], published: pub.length, features: feats.length, desk: desk.length };
 }
 
 if (require.main === module) {
