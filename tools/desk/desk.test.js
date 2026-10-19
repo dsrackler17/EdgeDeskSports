@@ -205,6 +205,12 @@ function section(s) { console.log('· ' + s); }
   const live = ASTORE.loadAll().filter(r => r.status === 'published')[0];
   chk('an article already published is never held for a take', !PUBLISH.preflight(live, { now: NOW, requireTake: true }).blocking.some(b => b.id === 'my_take'));
   chk('the rule is off unless the caller turns it on', !PUBLISH.preflight(unpublished, { now: NOW }).blocking.some(b => b.id === 'my_take'));
+  /* the postgame half rebuilds its record every run: the stored copy decides */
+  const takeBlocks = (r, o) => PUBLISH.preflight(r, Object.assign({ now: NOW, requireTake: true }, o)).blocking.some(b => b.id === 'my_take');
+  chk('a rebuilt record whose stored copy is live is not held for a take', !takeBlocks(unpublished, { previous: Object.assign({}, unpublished, { status: 'published', published_at: NOW }) }));
+  chk('a stored copy that was never public does not excuse it', takeBlocks(unpublished, { previous: unpublished }));
+  chk('a game that kicked off before the rule started is not held', !takeBlocks(Object.assign({}, unpublished, { game_time: '2026-10-18T17:00:00.000Z' }), { takeFrom: TAKES.RULE_FROM }));
+  chk('a game after the rule started still is', takeBlocks(Object.assign({}, unpublished, { game_time: '2026-10-25T17:00:00.000Z' }), { takeFrom: TAKES.RULE_FROM }));
   const held = PUBLISH.publish(unpublished, { now: NOW, requireTake: true });
   chk('publish() holds it in manual_review and names the take', !held.ok && held.record.status === 'manual_review' && /my_take/.test(held.record.publish_state.hold_reason), held.reason);
 

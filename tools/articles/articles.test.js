@@ -283,7 +283,9 @@ PUBLISHED.forEach(r => {
   chk(r.slug + ': carries SportsEvent structured data', types.indexOf('SportsEvent') >= 0, types.join(','));
   chk(r.slug + ': carries a breadcrumb trail', types.indexOf('BreadcrumbList') >= 0, types.join(','));
   const art = blocks[types.indexOf('Article')];
-  eq(r.slug + ': the structured author is EdgeDesk Research', art.author.name, 'EdgeDesk Research');
+  /* every article has a person on it (tools/articles/article_render.js AUTHOR), not the house name */
+  eq(r.slug + ': the structured author is ' + RENDER.AUTHOR.name, art.author.name, RENDER.AUTHOR.name);
+  eq(r.slug + ': the structured author is a Person with an author page', art.author['@type'] + ' ' + art.author.url, 'Person ' + RENDER.AUTHOR.url);
   eq(r.slug + ': the structured publisher is EdgeDesk Sports', art.publisher.name, 'EdgeDesk Sports');
   chk(r.slug + ': datePublished is present and parseable', isFinite(Date.parse(art.datePublished)), art.datePublished);
   chk(r.slug + ': dateModified is present and parseable', isFinite(Date.parse(art.dateModified)), art.dateModified);

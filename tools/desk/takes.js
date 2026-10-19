@@ -19,6 +19,10 @@
 'use strict';
 
 const DEFAULT_MIN = 240;
+/* When the rule went live (the merge that added it). An article about a game
+   that kicked off before this was published under the old rule and is never
+   held for a take; the publisher reads it as opts.takeFrom. */
+const RULE_FROM = '2026-10-19T17:22:10Z';
 
 function envBool(v) {
   if (v == null || v === '') return null;
@@ -63,4 +67,4 @@ async function load(opts) {
   return out;
 }
 
-module.exports = { load, takeLen, DEFAULT_MIN };
+module.exports = { load, takeLen, DEFAULT_MIN, RULE_FROM };

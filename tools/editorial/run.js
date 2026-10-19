@@ -130,7 +130,7 @@ function withTake(rec) {
   const t = TAKES.map[rec.id];
   return t ? Object.assign({}, rec, { my_take: t }) : rec;
 }
-function takeOpts() { return { requireTake: TAKES.require, minTake: TAKES.min }; }
+function takeOpts() { return { requireTake: TAKES.require, minTake: TAKES.min, takeFrom: TAKES_LOADER.RULE_FROM }; }
 /* Every publication goes through here. A record that did NOT publish is
    saved without the take: unpublished records are served as public JSON, and
    the owner's words are not public until their article is. The next run
