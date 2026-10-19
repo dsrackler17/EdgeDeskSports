@@ -68,6 +68,13 @@ jobs:
       - name: Closing-line archive and opener ledger
         run: node tools/football/build_lines_archive.js || true
 
+      # The NFL Market Structure margin windows are read from the line archive
+      # just rebuilt, so they are committed with it (as key_numbers.json is).
+      # --no-pbp keeps the two-point weeks as committed; nfl-market-structure.yml
+      # refreshes those daily from play-by-play.
+      - name: Market structure margin windows and situational records
+        run: node tools/football/build_market_structure.js --no-pbp || true
+
       - name: Injury archive (official report, every season)
         run: node tools/football/build_injury_archive.js || true
 
@@ -86,7 +93,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           # a directory, not a glob: an unmatched glob is passed through
           # literally and fails the whole add
-          git add -A -- football/injuries/ football/matchup/metrics.json football/identity/ football/pricing/ football/validation/key_numbers.json
+          git add -A -- football/injuries/ football/matchup/metrics.json football/identity/ football/pricing/ football/validation/key_numbers.json football/market_structure/nfl.json
           if git diff --cached --quiet; then
             echo 'injury report unchanged — nothing to commit'
             exit 0

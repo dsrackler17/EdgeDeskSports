@@ -1,0 +1,70 @@
+# EdgeDesk Football — NFL Market Structure (docs/market-structure/README.md).
+#
+# Rebuilds football/market_structure/nfl.json from data EdgeDesk already owns:
+# the margin-frequency windows from the closing-line archive
+# (football/pricing/lines_nfl.json, refreshed by injury-sync.yml), the
+# two-point try share from nflverse play-by-play (the season in progress only;
+# finished seasons are kept as committed), and the season-to-date situational
+# records. Then copies the margin and two-point tables into Supabase.
+#
+# Nothing here prices, projects, ranks or grades. The snapshot line job runs in
+# the database itself (supabase/nfl_market_structure_cron.sql); the contest
+# ownership sync is its own edge function (circa_ownership_sync).
+name: NFL market structure
+
+on:
+  workflow_dispatch:
+  schedule:
+    # daily through the season, after the overnight finals have reached the
+    # line archive (injury-sync runs at :15 every six hours)
+    - cron: '41 11 * 9-12,1,2 *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nfl-market-structure
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The rules must pass before they are allowed to write
+        run: node tools/football/market_structure.test.js
+
+      - name: Build the artifact
+        run: node tools/football/build_market_structure.js
+
+      - name: Commit the artifact
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- football/market_structure/
+          if git diff --cached --quiet; then
+            echo 'market structure unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'market structure: NFL margin frequency, two-point drift, situational records'
+          for i in 1 2 3 4; do
+            git push origin "${{ github.ref_name }}" && exit 0
+            git pull --rebase origin "${{ github.ref_name }}" || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the market structure artifact after 4 attempts'
+          exit 1
+
+      - name: Copy the tables into Supabase
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/football/market_structure_sync.js
