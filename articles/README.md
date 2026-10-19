@@ -186,7 +186,12 @@ capture date, and says the number is the book's rather than EdgeDesk's.
 Every published page carries a unique `<title>` (written for a result list,
 distinct from the visible H1), a meta description built only from figures the
 payload carried, a canonical URL, OpenGraph and Twitter cards, and three
-JSON-LD blocks: `Article`, `SportsEvent` and `BreadcrumbList`. The primary
+JSON-LD blocks: `Article`, `SportsEvent` and `BreadcrumbList`. The
+`SportsEvent` carries what Google's Event report asks for — `endDate` (kickoff
+plus a typical game), `image`, `description`, `performer` (the two teams),
+`organizer`, and a `location.address` town the build looks up from the venue
+registers (`tools/articles/venue_address.js`). It carries no `offers`: EdgeDesk
+sells no tickets and has no ticket prices to state. The primary
 `sitemap.xml` is an index pointing at `sitemap-pages.xml` (standing pages, by
 hand) and `sitemap-articles.xml` (published articles, rewritten by the build).
 Drafts, previews and short alias URLs are in no sitemap.

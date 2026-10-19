@@ -292,6 +292,14 @@ PUBLISHED.forEach(r => {
   const ev = blocks[types.indexOf('SportsEvent')];
   chk(r.slug + ': the event names both competitors', (ev.competitor || []).length === 2);
   chk(r.slug + ': the event carries a start date', isFinite(Date.parse(ev.startDate)), ev.startDate);
+  /* the fields Google's Event report asks for */
+  chk(r.slug + ': the event ends after it starts', Date.parse(ev.endDate) > Date.parse(ev.startDate), ev.endDate);
+  chk(r.slug + ': the event names both teams as performers', (ev.performer || []).length === 2 && ev.performer.every(p => p.name));
+  chk(r.slug + ': the event carries an absolute image', (ev.image || []).length > 0 && ev.image.every(u => /^https:\/\//.test(u)));
+  chk(r.slug + ': the event carries a description', typeof ev.description === 'string' && ev.description.length > 10);
+  chk(r.slug + ': the event venue carries a town and country',
+    !!(ev.location && ev.location.address && ev.location.address.addressLocality && ev.location.address.addressCountry), JSON.stringify(ev.location));
+  chk(r.slug + ': the event names an organizer unless the site is neutral', r.neutral_site && r.sport !== 'NFL' ? true : !!(ev.organizer && ev.organizer.name));
   /* JSON-LD must not be able to close its own script element */
   chk(r.slug + ': no ld+json block can break out of its script tag',
     (head.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g) || []).every(b => b.split('</script>').length === 2));

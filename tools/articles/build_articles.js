@@ -38,6 +38,7 @@ const STORE = require('./store.js');
 const MODEL = require('./article_model.js');
 const R = require('./article_render.js');
 const FEATURE = require('../editorial/feature_model.js');
+const VENUE = require('./venue_address.js');
 
 const ROOT = STORE.ROOT;
 const OUT = path.join(ROOT, 'articles');
@@ -218,8 +219,10 @@ function build() {
      touches a record, and a page without an entry simply has no block) */
   let POSTGAME = {};
   try { POSTGAME = (JSON.parse(fs.readFileSync(path.join(ROOT, 'performance', 'articles', 'postgame.json'), 'utf8')).articles) || {}; } catch (_) { POSTGAME = {}; }
+  /* the stadium's town, for the SportsEvent address (venue_address.js) */
+  const placed = (r) => Object.assign({}, r, { venue_address: VENUE.addressFor(r) });
   pub.forEach(r => {
-    written.push(page(r.slug, R.articlePage(r, { published: published, more: moreFor(r), now: NOW, postgame: r.article_type === 'postgame' ? null : POSTGAME[r.id] || null })));
+    written.push(page(r.slug, R.articlePage(placed(r), { published: published, more: moreFor(r), now: NOW, postgame: r.article_type === 'postgame' ? null : POSTGAME[r.id] || null })));
     (r.aliases || []).forEach(a => { written.push(page(a, R.aliasPage(r, a))); });
   });
 
