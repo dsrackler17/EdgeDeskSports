@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-19T13:45:46.966Z",
+ "generated_at": "2026-10-19T14:46:31.494Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -137,9 +137,9 @@
    "independents": 1,
    "mac": 7,
    "mwc": 4,
+   "sec": 6,
    "big12": 8,
    "bigten": 6,
-   "sec": 6,
    "pac12": 3
   },
   "fbs_fcs_in_source": 0
@@ -204,15 +204,19 @@
  },
  "weather": {
   "requested": 60,
-  "answered": 60,
+  "answered": 54,
   "dome": 0,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 6,
+  "carried": 6,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 503": 4,
+   "fetch failed": 1,
+   "timeout after 15000ms": 1
+  },
   "host": "api.open-meteo.com",
-  "summary": "60 of 60 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "54 of 60 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 6 request(s) failed; 6 carried the last observed forecast forward at its real age (HTTP 503 x4, fetch failed x1, timeout after 15000ms x1)"
  },
  "spread_recommendation": {
   "NO_MARKET": 60
@@ -422,8 +426,8 @@
    "count": 122,
    "detail": [
     {
-     "game_id": "401866409",
-     "game": "UAlbany @ Buffalo",
+     "game_id": "401864424",
+     "game": "Merrimack @ Delaware",
      "home": true,
      "away": false
     },
@@ -434,26 +438,26 @@
      "away": false
     },
     {
+     "game_id": "401866409",
+     "game": "UAlbany @ Buffalo",
+     "home": true,
+     "away": false
+    },
+    {
      "game_id": "401856767",
      "game": "Bethune-Cookman @ UCF",
      "home": true,
      "away": false
     },
     {
-     "game_id": "401864424",
-     "game": "Merrimack @ Delaware",
+     "game_id": "401858422",
+     "game": "Eastern Illinois @ Minnesota",
      "home": true,
      "away": false
     },
     {
      "game_id": "401856663",
      "game": "Arkansas-Pine Bluff @ Missouri",
-     "home": true,
-     "away": false
-    },
-    {
-     "game_id": "401858422",
-     "game": "Eastern Illinois @ Minnesota",
      "home": true,
      "away": false
     },
