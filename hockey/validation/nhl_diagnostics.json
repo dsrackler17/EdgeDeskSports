@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_diagnostics_v1",
- "generated_at": "2026-10-19T05:16:58.418Z",
+ "generated_at": "2026-10-19T13:55:01.903Z",
  "model": "edgedesk_nhl_v1:xg_core (production)",
  "source": "out-of-sample predictions rebuilt by hockey/lab/base.js (reproduces hockey/validation/nhl_walkforward.json)",
  "windows": {
@@ -25,14 +25,14 @@
    "calibration_slope": 1.064
   },
   "live": {
-   "n": 134,
-   "log_loss": 0.65326,
-   "brier": 0.23053,
-   "auc": 0.6651,
-   "mean_p": 0.533,
-   "mean_y": 0.5597,
-   "calibration_in_the_large": -0.0267,
-   "calibration_slope": 2.024
+   "n": 136,
+   "log_loss": 0.65401,
+   "brier": 0.2309,
+   "auc": 0.661,
+   "mean_p": 0.5326,
+   "mean_y": 0.5662,
+   "calibration_in_the_large": -0.0335,
+   "calibration_slope": 1.921
   }
  },
  "by_season": {
@@ -167,14 +167,14 @@
    "calibration_slope": 0.783
   },
   "2027": {
-   "n": 134,
-   "log_loss": 0.65326,
-   "brier": 0.23053,
-   "auc": 0.6651,
-   "mean_p": 0.533,
-   "mean_y": 0.5597,
-   "calibration_in_the_large": -0.0267,
-   "calibration_slope": 2.024
+   "n": 136,
+   "log_loss": 0.65401,
+   "brier": 0.2309,
+   "auc": 0.661,
+   "mean_p": 0.5326,
+   "mean_y": 0.5662,
+   "calibration_in_the_large": -0.0335,
+   "calibration_slope": 1.921
   }
  },
  "season_phase": {
@@ -761,9 +761,9 @@
     "rate": 0.6596
    },
    "2027": {
-    "team_games": 268,
-    "projected_started": 167,
-    "rate": 0.6231
+    "team_games": 272,
+    "projected_started": 170,
+    "rate": 0.625
    }
   },
   "note": "projected = the most likely starter from recent usage and the league's back-to-back rule (hockey/model/ratings.js); actual = the box score's starter",
@@ -826,20 +826,20 @@
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
   },
   "live": {
-   "n": 134,
-   "coverage_80": 0.9104,
-   "mean_bias_goals": -0.006,
+   "n": 136,
+   "coverage_80": 0.9118,
+   "mean_bias_goals": 0.027,
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
   }
  },
  "drift": {
-  "n": 134,
-  "live_mean_log_loss": 0.65326,
+  "n": 136,
+  "live_mean_log_loss": 0.65401,
   "reference_mean": 0.66286,
   "reference_sd_per_game": 0.232,
-  "z": -0.48,
-  "rolling_100": 0.64768,
-  "cusum": 0,
+  "z": -0.44,
+  "rolling_100": 0.6485,
+  "cusum": 0.149,
   "cusum_max": 0.411,
   "decision_interval": 1.16,
   "status": "OK",
@@ -865,8 +865,8 @@
     "cusum": 0
    },
    {
-    "n": 134,
-    "cusum": 0
+    "n": 136,
+    "cusum": 0.149
    }
   ],
   "rule": "one-sided CUSUM on per-game log loss minus the confirmation mean, allowance half a per-game sd, alarm at 5 sd; WATCH when the season mean sits 2 standard errors above the reference. A monitor: it never retrains or reprices anything."
