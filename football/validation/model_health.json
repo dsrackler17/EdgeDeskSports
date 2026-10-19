@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-18T23:07:50.474Z",
+ "as_of": "2026-10-19T00:07:53.247Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "1e73aa1b278b2221",
+ "inputs_key": "06573796841e8cfc",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 4279,
+   "rows": 4288,
    "mode": "LIVE",
-   "sha1": "8fd56278bcf6"
+   "sha1": "6d86c063d77a"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "932f5d8d8d90"
+   "sha1": "d66253924f1d"
   },
   {
    "file": "football/params.js",
@@ -52,7 +52,7 @@
   {
    "file": "football/validation/key_numbers.json",
    "mode": "DESCRIPTIVE (final margins)",
-   "sha1": "0eebe41d0ef4"
+   "sha1": "b3d3c564d9af"
   }
  ],
  "maturity": [
@@ -99,7 +99,7 @@
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "4279 decision snapshots issued before kickoff; 227 settled"
+   "note": "4288 decision snapshots issued before kickoff; 227 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,10 +133,10 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 4279,
+  "issued_snapshots": 4288,
   "issued_by_decision": {
-   "NO_DECISION": 1767,
-   "PASS": 2324,
+   "NO_DECISION": 1768,
+   "PASS": 2332,
    "WATCH": 188
   },
   "graded_rows": 233,
@@ -15949,56 +15949,56 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-18T21:36:29.085Z",
+  "generated_at": "2026-10-18T23:59:45.407Z",
   "sports": {
    "nfl": {
     "versions": [
      "edgedesk_football_v1.0.0"
     ],
-    "graded": 72,
+    "graded": 75,
     "ats": {
-     "n": 72,
-     "w": 36,
-     "l": 31,
+     "n": 75,
+     "w": 37,
+     "l": 33,
      "p": 5,
-     "pct": 53.7,
+     "pct": 52.9,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 72,
-      "text": "n=72 · Early signal",
+      "n": 75,
+      "text": "n=75 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 70,
-     "avg": 0.54,
-     "beat": 33,
-     "flat": 24,
-     "lost": 13,
-     "beat_pct": 47.1,
+     "n": 73,
+     "avg": 0.5,
+     "beat": 34,
+     "flat": 25,
+     "lost": 14,
+     "beat_pct": 46.6,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 70,
-      "text": "n=70 · Early signal",
+      "n": 73,
+      "text": "n=73 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 72,
-     "model_mae": 9.27,
-     "close_mae": 8.98,
-     "model_closer_pct": 48.6,
-     "total_n": 72,
-     "model_total_mae": 10.69,
-     "close_total_mae": 10.13
+     "n": 75,
+     "model_mae": 9.25,
+     "close_mae": 8.96,
+     "model_closer_pct": 48,
+     "total_n": 75,
+     "model_total_mae": 10.81,
+     "close_total_mae": 10.26
     },
     "brier": {
-     "n": 72,
-     "model": 0.2377
+     "n": 75,
+     "model": 0.2386
     }
    },
    "cfb": {
@@ -16093,10 +16093,10 @@
      },
      {
       "closing_expected_margin": -5.5,
-      "n": 98,
+      "n": 99,
       "learned_mean": -4.63,
-      "actual_mean": -7.68,
-      "gap": 3.05
+      "actual_mean": -7.64,
+      "gap": 3
      },
      {
       "closing_expected_margin": -4.5,
@@ -16247,10 +16247,10 @@
      },
      {
       "closing_expected_margin": 7.5,
-      "n": 213,
+      "n": 214,
       "learned_mean": 6.68,
-      "actual_mean": 8.49,
-      "gap": -1.82
+      "actual_mean": 8.53,
+      "gap": -1.85
      },
      {
       "closing_expected_margin": 8,
@@ -16906,47 +16906,47 @@
     6,
     10
    ],
-   "average_mass": 0.04038,
+   "average_mass": 0.04039,
    "ranked": [
     {
      "margin": 3,
-     "mass": 0.15141
+     "mass": 0.15149
     },
     {
      "margin": 7,
-     "mass": 0.09071
+     "mass": 0.09067
     },
     {
      "margin": 6,
-     "mass": 0.06016
+     "mass": 0.06013
     },
     {
      "margin": 10,
-     "mass": 0.05486
+     "mass": 0.05484
     },
     {
      "margin": 4,
-     "mass": 0.04889
+     "mass": 0.04887
     },
     {
      "margin": 14,
-     "mass": 0.04861
+     "mass": 0.0486
     },
     {
      "margin": 1,
-     "mass": 0.04128
+     "mass": 0.04127
     },
     {
      "margin": 2,
-     "mass": 0.0406
+     "mass": 0.04072
     },
     {
      "margin": 8,
-     "mass": 0.03748
+     "mass": 0.03746
     },
     {
      "margin": 5,
-     "mass": 0.03599
+     "mass": 0.03597
     }
    ],
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
@@ -17007,7 +17007,7 @@
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
   },
   "n": {
-   "NFL": 7364,
+   "NFL": 7367,
    "CFB": 11502
   }
  },
