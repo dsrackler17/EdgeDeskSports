@@ -2,7 +2,7 @@
  "schema": "edgedesk_collective_settled_v1",
  "sport": "NFL",
  "season": 2026,
- "generated_at": "2026-10-19T00:58:17.968Z",
+ "generated_at": "2026-10-19T06:00:04.822Z",
  "rule": "Each game is graded on the final score against the Collective's own captured closing line. A score comes only from a public feed that carries the game as completed with two integer scores, agreed by every feed that carries it; 0-0 is never a final. A missing close is null, never invented.",
  "games": {
   "00f67c05-8dbc-42d4-99bc-6c3343e55def": {
@@ -199,6 +199,21 @@
    "score_source": "collective",
    "settled_at": "2026-10-04T21:04:57.163Z",
    "week": 4
+  },
+  "25724480-3b3b-48d5-b2df-3498bfb73d78": {
+   "away": "DAL",
+   "away_score": 13,
+   "close_source": null,
+   "closing_home_ml_prob": null,
+   "closing_spread": null,
+   "closing_total": null,
+   "home": "GB",
+   "home_score": 23,
+   "kickoff_at": "2026-10-19T00:20:00+00:00",
+   "label": "DAL @ GB",
+   "score_source": "espn+nflverse",
+   "settled_at": "2026-10-19T06:00:04.822Z",
+   "week": 6
   },
   "25e7bbb8-3f4e-40da-ab65-05b707affe0b": {
    "away": "CHI",
@@ -661,7 +676,7 @@
    "home_score": 16,
    "kickoff_at": "2026-10-18T20:05:00+00:00",
    "label": "ARI @ LAR",
-   "score_source": "espn+nflverse",
+   "score_source": "collective",
    "settled_at": "2026-10-19T00:58:17.968Z",
    "week": 6
   },
@@ -713,8 +728,8 @@
   "880d69c4-2b85-47de-a398-e5b2b3ae5d80": {
    "away": "SF",
    "away_score": 32,
-   "close_source": "collective_odds_board",
-   "closing_home_ml_prob": null,
+   "close_source": "collective_odds",
+   "closing_home_ml_prob": 0.5984,
    "closing_spread": -3,
    "closing_total": 46.5,
    "home": "SEA",
@@ -856,7 +871,7 @@
    "home_score": 22,
    "kickoff_at": "2026-10-18T20:25:00+00:00",
    "label": "LAC @ KC",
-   "score_source": "espn+nflverse",
+   "score_source": "collective",
    "settled_at": "2026-10-19T00:58:17.968Z",
    "week": 6
   },
@@ -871,7 +886,7 @@
    "home_score": 30,
    "kickoff_at": "2026-10-18T20:25:00+00:00",
    "label": "BUF @ LV",
-   "score_source": "espn+nflverse",
+   "score_source": "collective",
    "settled_at": "2026-10-19T00:58:17.968Z",
    "week": 6
   },
@@ -1238,8 +1253,8 @@
   "e5f0546e-14ef-4e66-a28d-ddc97ad44286": {
    "away": "DET",
    "away_score": 45,
-   "close_source": "collective_odds",
-   "closing_home_ml_prob": 0.3195,
+   "close_source": "collective_odds_board",
+   "closing_home_ml_prob": null,
    "closing_spread": 5.5,
    "closing_total": 54.5,
    "home": "ARI",
