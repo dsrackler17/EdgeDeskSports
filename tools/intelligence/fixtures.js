@@ -25,7 +25,14 @@ const AVAIL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/availability/
    NFL slate the browser's own projection wrote through Node, and the venue
    forecasts. Each is served as-is; a test that needs one absent passes null. */
 const METRICS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/matchup/metrics.json'), 'utf8'));
-const NFL_SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/nfl/slate.json'), 'utf8'));
+/* THE NFL SLATE IS FROZEN, unlike the others. The suites pin their clock to
+   2026-10-12 (research_host.test.js NOW), and the committed football/nfl/slate.json
+   is rewritten every day: once it rolled past that weekend (2026-10-19, commit
+   19df8652) every real game was still "ahead" of the pinned clock but none was
+   inside its weekend, and the A1 weekend slate fell to the two fixture games.
+   A pinned clock needs pinned bytes. This is the artifact exactly as committed
+   in 65395ec0 (generated_at 2026-10-18T21:35:10Z), unedited. */
+const NFL_SLATE = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'nfl_slate_2026-10-18.json'), 'utf8'));
 const FORECASTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/venues/forecasts.json'), 'utf8'));
 /* The Slice 3 identity profiles: the REAL committed team files for the four
    clubs the suites name, so the interaction engine is exercised on the
