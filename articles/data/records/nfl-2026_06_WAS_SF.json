@@ -21,8 +21,8 @@
   "game_time": "2026-10-20T00:15:00.000Z",
   "game_when_label": "2026-10-20 00:15 UTC",
   "published_at": "2026-10-19T17:21:44.323Z",
-  "updated_at": "2026-10-19T17:21:44.323Z",
-  "generated_at": "2026-10-19T17:21:44.323Z",
+  "updated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-19T20:32:51.575Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.3-point gap is context only and the game is excluded from research ranking.",
@@ -1146,7 +1146,7 @@
       "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "total_difference": "0.4 points",
       "book": "BetRivers",
-      "capture_age": "219 hours old",
+      "capture_age": "223 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.3-point gap is context only and the game is excluded from research ranking.",
@@ -1295,87 +1295,16 @@
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
     "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 92 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "x134zo12glkyu",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can the Commanders’ pass rush get to Brock Purdy?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.3 points.",
-    "gap": {
-      "points": 0.3,
-      "toward": "San Francisco 49ers",
-      "other": "Washington Commanders"
-    },
-    "supporting": [
-      "When San Francisco 49ers have the ball: their passing game ranks No. 1, and Washington Commanders’ pass defense ranks No. 28.",
-      "When San Francisco 49ers have the ball: their run game ranks No. 9, and Washington Commanders’ run defense ranks No. 31.",
-      "San Francisco 49ers’ offense ranks No. 2 of 32 in efficiency per play this season.",
-      "San Francisco 49ers’ passing offense ranks No. 1 of 32 in passing efficiency this season."
-    ],
-    "contradicting": [
-      "When Washington Commanders have the ball: their run game ranks No. 11, and San Francisco 49ers’ run defense ranks No. 29.",
-      "San Francisco 49ers’ run defense ranks No. 29 of 32 in run defense this season.",
-      "San Francisco 49ers’ pass rush ranks No. 30 of 32 in sack rate this season.",
-      "When Washington Commanders have the ball: their pass protection ranks No. 20, and San Francisco 49ers’ pass rush ranks No. 30."
-    ],
-    "quarterbacks": [
-      "San Francisco 49ers’ passers have completed 98 of 142 (69.0%) for 1,196 yards, 8.4 yards per attempt, with 13 touchdowns, 2 interceptions and 3 sacks taken in five games.",
-      "Washington Commanders’ passers have completed 95 of 162 (58.6%) for 985 yards, 6.1 yards per attempt, with 8 touchdowns, 1 interceptions and 10 sacks taken in five games."
-    ],
-    "availability": [
-      "The official injury report lists four San Francisco 49ers players as out or doubtful, including WR Deebo Samuel Sr. (out), LB Garret Wallow (out), S Marques Sigle (out) and DE Nick Bosa (out).",
-      "The official injury report lists four Washington Commanders players as out or doubtful, including DE Charles Omenihu (out), RB Jacory Croskey-Merritt (out), LB Javontae Jean-Baptiste (out) and QB Marcus Mariota (out)."
-    ],
-    "script": {
-      "model": [
-        "The San Francisco 49ers have to win in the pass-rush matchup (San Francisco 49ers’ No. 1 pass protection against Washington Commanders’ No. 11 pass rush).",
-        "The San Francisco 49ers have to slow the Washington Commanders on the ground (Washington Commanders’ No. 11 run game against San Francisco 49ers’ No. 29 run defense).",
-        "The San Francisco 49ers have to slow the Washington Commanders in the pass-rush matchup (Washington Commanders’ No. 20 pass protection against San Francisco 49ers’ No. 30 pass rush).",
-        "The San Francisco 49ers have to win through the air (San Francisco 49ers’ No. 1 passing game against Washington Commanders’ No. 28 pass defense)."
-      ],
-      "market": [
-        "The Washington Commanders have to win on the ground (Washington Commanders’ No. 11 run game against San Francisco 49ers’ No. 29 run defense).",
-        "The Washington Commanders have to win in the pass-rush matchup (Washington Commanders’ No. 20 pass protection against San Francisco 49ers’ No. 30 pass rush).",
-        "The Washington Commanders have to win in the pass-rush matchup (San Francisco 49ers’ No. 1 pass protection against Washington Commanders’ No. 11 pass rush)."
-      ]
-    },
-    "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
-      "The line on file was captured Oct. 10 and may have moved."
-    ],
-    "flags": [],
-    "sources": [
-      {
-        "label": "EdgeDesk NFL team ratings (2026)",
-        "url": null,
-        "path": "football/nfl/slate.json",
-        "observed_at": "2026-10-19T14:45:59.206Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "nflverse team-week stats (2026)",
-        "url": null,
-        "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-19T17:21:35.217Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "NFL injury report via nflverse (third-party mirror of the league report)",
-        "url": null,
-        "path": "football/injuries/nfl_2026.json",
-        "observed_at": "2026-10-18T11:11:11.560Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
-  "checks": {
-    "ok": true,
-    "failed": [],
+  "snapshot_id": "snap_08094aa950692c47",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-20T00:15:00.000Z",
+    "minutes_before_kickoff": 413,
+    "published_at": "2026-10-19T17:21:44.323Z",
+    "refreshed": false,
     "at": "2026-10-19T17:21:44.323Z"
   },
-  "snapshot_id": "snap_08094aa950692c47",
   "featured": {
     "editorial_priority": 40.4,
     "status": "featured",
@@ -1804,15 +1733,6 @@
     ],
     "at": "2026-10-19T17:21:44.323Z"
   },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-20T00:15:00.000Z",
-    "minutes_before_kickoff": 413,
-    "published_at": "2026-10-19T17:21:44.323Z",
-    "refreshed": false,
-    "at": "2026-10-19T17:21:44.323Z"
-  },
   "publish_state": {
     "ok": true,
     "at": "2026-10-19T17:21:44.323Z",
@@ -1830,5 +1750,85 @@
       }
     ],
     "hold_reason": null
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "x134zo12glkyu",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Commanders’ pass rush get to Brock Purdy?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.3 points.",
+    "gap": {
+      "points": 0.3,
+      "toward": "San Francisco 49ers",
+      "other": "Washington Commanders"
+    },
+    "supporting": [
+      "When San Francisco 49ers have the ball: their passing game ranks No. 1, and Washington Commanders’ pass defense ranks No. 28.",
+      "When San Francisco 49ers have the ball: their run game ranks No. 9, and Washington Commanders’ run defense ranks No. 31.",
+      "San Francisco 49ers’ offense ranks No. 2 of 32 in efficiency per play this season.",
+      "San Francisco 49ers’ passing offense ranks No. 1 of 32 in passing efficiency this season."
+    ],
+    "contradicting": [
+      "When Washington Commanders have the ball: their run game ranks No. 11, and San Francisco 49ers’ run defense ranks No. 29.",
+      "San Francisco 49ers’ run defense ranks No. 29 of 32 in run defense this season.",
+      "San Francisco 49ers’ pass rush ranks No. 30 of 32 in sack rate this season.",
+      "When Washington Commanders have the ball: their pass protection ranks No. 20, and San Francisco 49ers’ pass rush ranks No. 30."
+    ],
+    "quarterbacks": [
+      "San Francisco 49ers’ passers have completed 98 of 142 (69.0%) for 1,196 yards, 8.4 yards per attempt, with 13 touchdowns, 2 interceptions and 3 sacks taken in five games.",
+      "Washington Commanders’ passers have completed 95 of 162 (58.6%) for 985 yards, 6.1 yards per attempt, with 8 touchdowns, 1 interceptions and 10 sacks taken in five games."
+    ],
+    "availability": [
+      "The official injury report lists four San Francisco 49ers players as out or doubtful, including WR Deebo Samuel Sr. (out), LB Garret Wallow (out), S Marques Sigle (out) and DE Nick Bosa (out).",
+      "The official injury report lists four Washington Commanders players as out or doubtful, including DE Charles Omenihu (out), RB Jacory Croskey-Merritt (out), LB Javontae Jean-Baptiste (out) and QB Marcus Mariota (out)."
+    ],
+    "script": {
+      "model": [
+        "The San Francisco 49ers have to win in the pass-rush matchup (San Francisco 49ers’ No. 1 pass protection against Washington Commanders’ No. 11 pass rush).",
+        "The San Francisco 49ers have to slow the Washington Commanders on the ground (Washington Commanders’ No. 11 run game against San Francisco 49ers’ No. 29 run defense).",
+        "The San Francisco 49ers have to slow the Washington Commanders in the pass-rush matchup (Washington Commanders’ No. 20 pass protection against San Francisco 49ers’ No. 30 pass rush).",
+        "The San Francisco 49ers have to win through the air (San Francisco 49ers’ No. 1 passing game against Washington Commanders’ No. 28 pass defense)."
+      ],
+      "market": [
+        "The Washington Commanders have to win on the ground (Washington Commanders’ No. 11 run game against San Francisco 49ers’ No. 29 run defense).",
+        "The Washington Commanders have to win in the pass-rush matchup (Washington Commanders’ No. 20 pass protection against San Francisco 49ers’ No. 30 pass rush).",
+        "The Washington Commanders have to win in the pass-rush matchup (San Francisco 49ers’ No. 1 pass protection against Washington Commanders’ No. 11 pass rush)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
+      "The line on file was captured Oct. 10 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T14:45:59.206Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-19T20:32:42.009Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "NFL injury report via nflverse (third-party mirror of the league report)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-18T11:11:11.560Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-19T20:32:51.575Z"
   }
 }
