@@ -272,8 +272,9 @@ section('8. A MEMBER POST IS NOT RESEARCH');
   const ART = fs.readFileSync(path.join(ROOT, 'articles', 'missouri-vs-kansas-2026', 'index.html'), 'utf8');
   has(ART, 'name="robots" content="index,follow"', 'a research article is still indexed');
   lacks(ART, 'a-membertag', 'and carries no member-post furniture');
-  has(ART, 'By <a href="/app.html#research/football" rel="author">EdgeDesk Research</a>',
-    'and is still bylined to the model');
+  /* bylined to the person accountable for the research (tools/articles/article_render.js AUTHOR), never a member */
+  has(ART, 'By <a href="/articles/author/davis-rackler/" rel="author">Davis Rackler</a>',
+    'and is still bylined to EdgeDesk\'s own author');
 })();
 
 /* ======================================================================== */
