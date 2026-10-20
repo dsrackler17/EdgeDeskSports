@@ -2921,7 +2921,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
 <link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261014bs2">
-<link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
+<link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
 <link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261020nba1">
@@ -26216,28 +26216,27 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
 #edaiScrim{position:fixed;inset:0;z-index:40;background:rgba(6,8,12,.55);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .18s}
 #edaiScrim.open{opacity:1;pointer-events:auto}
-/* ══ THE DESK — indigo ink and citron ═══════════════════════════════════
-   EdgeDesk Intelligence answers as "The Desk", and it looks like it. The
-   panel carried the app's teal-on-brown, which is the board's palette and
-   reads as a generic assistant bolted onto the side of a product. These
-   tokens are scoped to the panel so the board keeps its own colours and The
-   Desk keeps an identity a reader recognises before they read a word.
-   Ink is the ground, citron is the one accent, and citron is spent only on
-   the thing the reader should act on. */
+/* ══ THE DESK — the app's own palette ═══════════════════════════════════
+   The panel is part of EdgeDesk, so it wears the site's colours: the brown
+   ground, its surfaces and borders, and the teal accent. (It used to carry
+   its own indigo-and-citron identity, which read as a different product
+   bolted onto the side of this one.) The panel's tokens are aliases of the
+   app's, so a change to :root reaches The Desk too, and the accent is still
+   spent only on the thing the reader should act on. */
 #edaiPanel{
-  --ink:#141a3a; --ink-2:#1b2350; --ink-3:#242e63; --ink-line:#2f3a72;
-  --citron:#d8f24b; --citron-dim:#a8bf2e; --on-citron:#131a05;
-  --desk-fg:#eef1ff; --desk-dim:#9aa3d0; --desk-faint:#6f78a8;
+  --desk-bg:var(--bg); --desk-surf:var(--surface); --desk-surf2:var(--surface2); --desk-line:var(--border);
+  --desk-acc:var(--accent); --desk-acc-dim:#237d73; --desk-on-acc:var(--on-accent);
+  --desk-fg:var(--text); --desk-dim:var(--dim); --desk-faint:var(--faint);
   color:var(--desk-fg);
 }
-#edaiPanel{position:fixed;z-index:41;background:var(--ink);border-left:1px solid var(--ink-line);
+#edaiPanel{position:fixed;z-index:41;background:var(--desk-bg);border-left:1px solid var(--desk-line);
   display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);
   top:0;right:0;bottom:0;width:min(440px,100%);box-shadow:-14px 0 40px rgba(0,0,0,.5)}
 #edaiPanel.open{transform:translateX(0)}
 @media(max-width:620px){#edaiPanel{width:100%;border-left:none}}
 
 .edai-top{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:env(safe-area-inset-top) solid transparent;
-  border-bottom:1px solid var(--ink-line);background:rgba(20,26,58,.94);backdrop-filter:blur(8px)}
+  border-bottom:1px solid var(--desk-line);background:rgba(16,14,10,.94);backdrop-filter:blur(8px)}
 .edai-brand{display:flex;flex-direction:column;line-height:1.18}
 .edai-brand b{font-size:15px;font-weight:800;letter-spacing:.01em;color:var(--desk-fg)}
 /* THE TAGLINE IS THE PROMISE, so it sits under the name and never moves. */
@@ -26245,11 +26244,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 /* THE MARK. An ED monogram behind a scan line — the desk reading a card.
    Deliberately not a face and not a mascot: this thing has no opinions it
    cannot evidence, and a cartoon implies otherwise. */
-.edai-mark{width:28px;height:28px;flex:0 0 28px;border-radius:8px;background:var(--ink-3);
-  border:1px solid var(--ink-line);position:relative;overflow:hidden;display:grid;place-items:center}
+.edai-mark{width:28px;height:28px;flex:0 0 28px;border-radius:8px;background:var(--desk-surf2);
+  border:1px solid var(--desk-line);position:relative;overflow:hidden;display:grid;place-items:center}
 .edai-mark i{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
-  letter-spacing:-.04em;color:var(--citron)}
-.edai-mark:after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--citron);opacity:.55}
+  letter-spacing:-.04em;color:var(--desk-acc)}
+.edai-mark:after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--desk-acc);opacity:.55}
 .edai-x{margin-left:auto;background:none;border:1px solid var(--border);color:var(--dim);border-radius:9px;
   width:32px;height:32px;font-size:16px;cursor:pointer;line-height:1}
 .edai-x:active{transform:scale(.95)}
@@ -26261,15 +26260,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
 .edai-actions{display:flex;gap:7px;padding:10px 14px;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none}
 .edai-actions::-webkit-scrollbar{display:none}
-.edai-qa{flex:0 0 auto;background:var(--ink-2);border:1px solid var(--ink-line);color:var(--desk-fg);
+.edai-qa{flex:0 0 auto;background:var(--desk-surf);border:1px solid var(--desk-line);color:var(--desk-fg);
   border-radius:20px;padding:7px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap}
-.edai-qa:hover{border-color:var(--citron-dim)}
+.edai-qa:hover{border-color:var(--desk-acc-dim)}
 .edai-qa:active{transform:scale(.97)}
-.edai-qa.hot{border-color:var(--citron);color:var(--citron)}
+.edai-qa.hot{border-color:var(--desk-acc);color:var(--desk-acc)}
 
 .edai-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
 .edai-msg{max-width:100%;font-size:13.5px;line-height:1.5}
-.edai-msg.u{align-self:flex-end;background:var(--citron);color:var(--on-citron);border-radius:14px 14px 4px 14px;padding:9px 12px;font-weight:600;max-width:82%}
+.edai-msg.u{align-self:flex-end;background:var(--desk-acc);color:var(--desk-on-acc);border-radius:14px 14px 4px 14px;padding:9px 12px;font-weight:600;max-width:82%}
 .edai-msg.a{align-self:flex-start;color:var(--text)}
 .edai-msg.a p{margin:0 0 8px}.edai-msg.a p:last-child{margin:0}
 .edai-msg.a b{color:#fff}
@@ -26279,7 +26278,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .edai-msg.a li{padding:2px 0 2px 16px;position:relative;color:var(--text)}
 .edai-msg.a li:before{content:'';position:absolute;left:2px;top:10px;width:5px;height:5px;border-radius:50%;background:var(--dim)}
 .edai-msg.a li.pos:before{background:var(--pos)}.edai-msg.a li.neg:before{background:var(--neg)}.edai-msg.a li.warn:before{background:var(--warn)}
-.edai-src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--desk-faint);margin-top:6px;border-top:1px dashed var(--ink-line);padding-top:5px}
+.edai-src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--desk-faint);margin-top:6px;border-top:1px dashed var(--desk-line);padding-top:5px}
 
 /* ── THE DESK'S ANSWER ─────────────────────────────────────────────────
    Four sections, in the order a reader asks for them. The read is the
@@ -26290,19 +26289,63 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
    second quarter must not have to scroll to find that out. */
 .dk-live{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;
   margin:0 0 10px;padding:8px 11px;border-radius:9px;
-  background:rgba(216,242,75,.13);border:1px solid rgba(216,242,75,.42)}
-.dk-live b{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--citron)}
+  background:rgba(47,167,154,.13);border:1px solid rgba(47,167,154,.42)}
+.dk-live b{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--desk-acc)}
 .dk-live span{font-size:12px;color:var(--desk-dim)}
-.dk-live.over{background:rgba(111,120,168,.16);border-color:rgba(111,120,168,.42)}
+.dk-live.over{background:rgba(149,138,122,.16);border-color:rgba(149,138,122,.42)}
 .dk-live.over b{color:var(--desk-dim)}
-.dk-read{border:1px solid var(--ink-line);border-left:3px solid var(--citron);background:var(--ink-2);
+.dk-read{border:1px solid var(--desk-line);border-left:3px solid var(--desk-acc);background:var(--desk-surf);
   border-radius:10px;padding:11px 13px;margin:0 0 10px}
-.dk-read .lab{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--citron)}
+.dk-read .lab{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--desk-acc)}
 .dk-read p{margin:5px 0 0;font-size:14px;line-height:1.52;color:var(--desk-fg)}
+/* THE SHORT LIST (msBriefHTML): the multi-sport answer in the order a bettor
+   uses it — the bottom line, the games worth researching with the price to
+   bet at and what to confirm first, the closest priced market, and the
+   follow-up questions. The full packet folds underneath. */
+.msd-bl{margin:8px 0 2px}
+.edai-msg.a .msd-head{margin:0;font-size:16px;font-weight:800;line-height:1.35;color:var(--desk-fg)}
+.edai-msg.a .msd-sub{margin:5px 0 0;font-size:13.5px;line-height:1.5}
+.edai-msg.a .msd-why{margin:6px 0 0;font-size:11.5px;line-height:1.45;color:var(--desk-dim)}
+.msd-dim{color:var(--desk-dim)}
+.msd-h{margin:14px 0 6px;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--desk-acc)}
+.msd-list{display:flex;flex-direction:column;gap:8px}
+.msd-g{padding:10px 11px;border:1px solid var(--desk-line);border-radius:10px;background:var(--desk-surf2)}
+.msd-g-top{display:flex;align-items:flex-start;gap:9px}
+.msd-rk{flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;color:var(--desk-on-acc);background:var(--desk-acc)}
+.msd-g-id{flex:1;min-width:0}
+.msd-g-t{font-size:13.5px;font-weight:700;line-height:1.3;color:var(--desk-fg);overflow-wrap:anywhere}
+.msd-g-s{margin-top:1px;font-size:11px;color:var(--desk-dim)}
+.msd-g-s .msd-st{margin-left:7px;white-space:nowrap}
+.msd-g-pick{margin-top:8px;font-size:13px;line-height:1.45;color:var(--desk-fg)}
+.msd-g-px{margin-top:5px;padding:6px 8px;border-radius:8px;border:1px dashed var(--desk-line);background:var(--desk-bg);font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
+.msd-g-px b{color:var(--gold)}
+.msd-g-l{margin:7px 0 0;padding:0;list-style:none}
+.edai-msg.a .msd-g-l li{padding:2px 0 2px 15px;font-size:12px;line-height:1.45;color:var(--desk-fg)}
+.edai-msg.a .msd-g-l li:before{top:9px}
+.edai-msg.a .msd-g-l li.chk:before{background:var(--warn)}
+.edai-msg.a .msd-g-l li.pro:before{background:var(--pos)}
+.edai-msg.a .msd-g-l li.con:before{background:var(--neg)}
+.msd-g-a{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.msd-btn{min-height:32px;padding:5px 10px;border-radius:8px;border:1px solid var(--desk-line);background:var(--desk-surf);color:var(--desk-fg);font:inherit;font-size:12px;font-weight:650;cursor:pointer}
+.msd-btn:hover{border-color:var(--desk-acc)}
+.msd-btn:active,.msd-chip:active{transform:scale(.97)}
+.msd-mw{display:flex;flex-direction:column;gap:3px;padding:9px 11px;border-radius:10px;border:1px solid rgba(217,154,43,.45);background:var(--desk-surf2);font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
+.msd-mw b{color:var(--gold)}
+.msd-be{margin-top:10px;border-color:color-mix(in srgb,var(--desk-acc) 55%,var(--desk-line))}
+.msd-warn{margin-top:10px;padding:8px 10px;border-radius:9px;border:1px solid rgba(226,96,68,.45);background:rgba(226,96,68,.08);font-size:12px;line-height:1.45;color:var(--desk-fg)}
+.edai-msg.a p.msd-warn{margin:6px 0;font-size:12.5px}
+.msd-asks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
+.msd-asks>span{width:100%;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--desk-dim)}
+.msd-chip{min-height:32px;padding:6px 11px;border-radius:999px;border:1px solid var(--desk-line);background:var(--desk-surf);color:var(--desk-fg);font:inherit;font-size:12px;font-weight:600;line-height:1.25;text-align:left;cursor:pointer;max-width:100%}
+.msd-chip:hover{border-color:var(--desk-acc);color:var(--desk-acc)}
+.msd-more>.msd-list{margin-top:8px}
+.msd-packet{margin-top:12px;padding-top:8px;border-top:1px solid var(--desk-line)}
+.msd-packet-b{margin-top:6px}
+.edai-msg.a .msd-fu-g{margin:0 0 4px}
 /* The quant desk: the verdict chip, the brief's fields as a grid, and the
    evidence tables. One column and a scrolling table on a phone. */
-.qd-chip{display:inline-block;margin-left:7px;padding:1px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.06em;vertical-align:1px;border:1px solid var(--ink-line);text-transform:uppercase}
-.qd-v{background:rgba(216,242,75,.16);color:var(--citron);border-color:rgba(216,242,75,.5)}
+.qd-chip{display:inline-block;margin-left:7px;padding:1px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.06em;vertical-align:1px;border:1px solid var(--desk-line);text-transform:uppercase}
+.qd-v{background:rgba(47,167,154,.16);color:var(--desk-acc);border-color:rgba(47,167,154,.5)}
 .qd-p{background:rgba(242,177,75,.14);color:var(--warn);border-color:rgba(242,177,75,.45)}
 .qd-w{color:var(--desk-fg)}
 .qd-x{color:var(--desk-dim)}
@@ -26310,7 +26353,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .qd-kv{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:3px 12px;margin:8px 0 0;font-size:13px;line-height:1.45}
 .qd-kv dt{color:var(--desk-dim);font-weight:600}
 .qd-kv dd{margin:0;color:var(--desk-fg);overflow-wrap:anywhere}
-.qd-kv dd.qd-dec{font-weight:800;color:var(--citron)}
+.qd-kv dd.qd-dec{font-weight:800;color:var(--desk-acc)}
 .qd-read h4{margin:10px 0 0;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--desk-dim)}
 .qd-read ol{margin:6px 0 0;padding-left:0;list-style:none;counter-reset:qd;font-size:13px;line-height:1.45;color:var(--desk-fg)}
 .edai-msg.a .qd-read ol li{margin:3px 0;padding-left:20px;counter-increment:qd}
@@ -26318,14 +26361,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .qd-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 .qd-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;color:var(--desk-fg)}
 .qd-cov{margin-top:4px}
-.qd-cov-r{padding:6px 0;border-bottom:1px solid var(--ink-line)}
+.qd-cov-r{padding:6px 0;border-bottom:1px solid var(--desk-line)}
 .qd-cov-h{font-weight:700;color:var(--desk-fg);font-size:12.5px}
 .qd-cov-n{font-size:12px;color:var(--desk-fg);overflow-wrap:anywhere}
 .qd-cov-b{font-size:11.5px;color:var(--desk-dim);margin-top:2px;overflow-wrap:anywhere}
-.qd-tbl th,.qd-tbl td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--ink-line);vertical-align:top}
+.qd-tbl th,.qd-tbl td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--desk-line);vertical-align:top}
 .qd-tbl th{color:var(--desk-dim);font-weight:700}
 .qd-res{font-weight:800;font-size:10.5px;letter-spacing:.05em}
-.qd-res.PASS{color:var(--citron)}.qd-res.WARN{color:var(--warn)}.qd-res.FAIL{color:var(--neg)}.qd-res.NOT_CHECKED{color:var(--desk-dim)}
+.qd-res.PASS{color:var(--desk-acc)}.qd-res.WARN{color:var(--warn)}.qd-res.FAIL{color:var(--neg)}.qd-res.NOT_CHECKED{color:var(--desk-dim)}
 @media (max-width:520px){.qd-kv{grid-template-columns:1fr;gap:0}.qd-kv dt{margin-top:7px}.qd-tbl{font-size:11.5px}}
 .dk-sec{margin:10px 0 0}
 .dk-sec > .h{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--desk-dim);margin-bottom:4px}
@@ -26334,50 +26377,50 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .dk-sec li:before{content:'';position:absolute;left:2px;top:10px;width:5px;height:5px;border-radius:50%;background:var(--desk-faint)}
 .dk-sec.wrong li:before{background:var(--neg)}
 .dk-sec.limits li:before{background:var(--warn)}
-.dk-price{border:1px dashed var(--ink-line);border-radius:9px;padding:8px 10px;margin-top:8px;font-size:12.5px;color:var(--desk-fg)}
-.dk-price b{color:var(--citron)}
+.dk-price{border:1px dashed var(--desk-line);border-radius:9px;padding:8px 10px;margin-top:8px;font-size:12.5px;color:var(--desk-fg)}
+.dk-price b{color:var(--desk-acc)}
 /* The one market that leads, and the disclosure holding the rest. */
-.dk-primary{border:1px solid var(--ink-line);border-radius:10px;padding:10px 12px;margin:10px 0 0;background:var(--ink-2)}
+.dk-primary{border:1px solid var(--desk-line);border-radius:10px;padding:10px 12px;margin:10px 0 0;background:var(--desk-surf)}
 .dk-primary .mk{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--desk-dim);text-transform:uppercase}
 .dk-primary .sel{font-size:14px;font-weight:700;margin-top:2px;color:var(--desk-fg)}
 .dk-primary .px{font-size:12.5px;color:var(--desk-dim);margin-top:2px}
 .dk-primary .stale{color:var(--warn);font-weight:600}
 /* r12: the structured answer */
-.dk-label{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 10px;padding:8px 11px;border-radius:9px;border:1px solid var(--ink-line);background:var(--ink-2)}
+.dk-label{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 10px;padding:8px 11px;border-radius:9px;border:1px solid var(--desk-line);background:var(--desk-surf)}
 .dk-label .tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;letter-spacing:.08em}
 .dk-label .txt{font-size:12px;color:var(--desk-dim)}
 .dk-structured{margin-top:10px}
 .dk-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
 .dk-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:640px){.dk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.dk-cell{border:1px solid var(--ink-line);border-radius:9px;padding:8px 10px;background:var(--ink-2);min-width:0}
+.dk-cell{border:1px solid var(--desk-line);border-radius:9px;padding:8px 10px;background:var(--desk-surf);min-width:0}
 .dk-cell .k{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--desk-dim)}
 .dk-cell .v{font-size:14px;font-weight:700;color:var(--desk-fg);margin-top:2px;overflow-wrap:anywhere}
 .dk-cell .s{font-size:11px;color:var(--desk-dim);margin-top:2px;overflow-wrap:anywhere}
-.dk-fresh{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.08em;padding:1px 5px;border-radius:5px;border:1px solid var(--ink-line);vertical-align:middle}
-.dk-fresh.live{color:var(--citron);border-color:rgba(216,242,75,.5)}
+.dk-fresh{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.08em;padding:1px 5px;border-radius:5px;border:1px solid var(--desk-line);vertical-align:middle}
+.dk-fresh.live{color:var(--desk-acc);border-color:rgba(47,167,154,.5)}
 .dk-fresh.recent{color:var(--desk-fg)}
 .dk-fresh.stale{color:var(--warn);border-color:rgba(217,154,43,.5)}
 .dk-fresh.unknown{color:var(--desk-dim)}
 .dk-list{margin:6px 0 0;padding-left:16px;font-size:12px;color:var(--desk-fg)}
 .dk-list li{margin:2px 0}
 .dk-src{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
-.dk-src td{padding:3px 6px 3px 0;border-bottom:1px solid var(--ink-line);color:var(--desk-dim);vertical-align:top;overflow-wrap:anywhere}
+.dk-src td{padding:3px 6px 3px 0;border-bottom:1px solid var(--desk-line);color:var(--desk-dim);vertical-align:top;overflow-wrap:anywhere}
 .dk-src td:first-child{color:var(--desk-fg)}
 .dk-feedback{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:11px;color:var(--desk-dim)}
 .dk-more{margin-top:8px}
 .dk-more summary{cursor:pointer;font-size:11.5px;color:var(--desk-dim);list-style:none}
 .dk-more summary::-webkit-details-marker{display:none}
-.dk-more summary:before{content:'▸ ';color:var(--citron)}
+.dk-more summary:before{content:'▸ ';color:var(--desk-acc)}
 .dk-more[open] summary:before{content:'▾ '}
 /* Slice 2: the football evidence (drivers, availability, starters, situation) */
-.dk-state{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:1px 6px;border-radius:5px;border:1px solid var(--ink-line);color:var(--desk-dim);vertical-align:middle}
-.dk-state.official{color:var(--citron);border-color:rgba(216,242,75,.5)}
+.dk-state{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;letter-spacing:.07em;padding:1px 6px;border-radius:5px;border:1px solid var(--desk-line);color:var(--desk-dim);vertical-align:middle}
+.dk-state.official{color:var(--desk-acc);border-color:rgba(47,167,154,.5)}
 .dk-state.unknown{color:var(--warn);border-color:rgba(217,154,43,.5)}
 .dk-drv{margin:6px 0 0;padding:0;list-style:none}
-.dk-drv li{border-top:1px solid var(--ink-line);padding:6px 0;font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
+.dk-drv li{border-top:1px solid var(--desk-line);padding:6px 0;font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
 .dk-drv li:first-child{border-top:0;padding-top:2px}
-.dk-drv .fav{font-weight:700;color:var(--citron)}
+.dk-drv .fav{font-weight:700;color:var(--desk-acc)}
 .dk-drv .m{font-size:11px;color:var(--desk-dim);margin-top:2px}
 .dk-inj{margin:6px 0 0;padding:0;list-style:none;font-size:11.5px;color:var(--desk-fg)}
 .dk-inj li{padding:2px 0;overflow-wrap:anywhere}
@@ -26385,46 +26428,46 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .dk-inj .pr{color:var(--desk-dim)}
 /* Slice 3: the analyst layer */
 .dk-fac{margin:6px 0 0;padding:0;list-style:none;counter-reset:fac}
-.dk-fac li{position:relative;border-top:1px solid var(--ink-line);padding:7px 0 7px 26px;font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
+.dk-fac li{position:relative;border-top:1px solid var(--desk-line);padding:7px 0 7px 26px;font-size:12.5px;line-height:1.45;color:var(--desk-fg)}
 .dk-fac li:first-child{border-top:0;padding-top:2px}
-.dk-fac li:before{counter-increment:fac;content:counter(fac);position:absolute;left:0;top:7px;width:18px;height:18px;border-radius:50%;border:1px solid var(--ink-line);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;text-align:center;line-height:18px;color:var(--citron)}
+.dk-fac li:before{counter-increment:fac;content:counter(fac);position:absolute;left:0;top:7px;width:18px;height:18px;border-radius:50%;border:1px solid var(--desk-line);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;text-align:center;line-height:18px;color:var(--desk-acc)}
 .dk-fac li:first-child:before{top:2px}
-.dk-fac .fav{font-weight:700;color:var(--citron)}
+.dk-fac .fav{font-weight:700;color:var(--desk-acc)}
 .dk-fac .m{font-size:11px;color:var(--desk-dim);margin-top:2px}
-.dk-kind{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.07em;padding:1px 5px;border-radius:5px;border:1px solid var(--ink-line);color:var(--desk-dim);vertical-align:middle;margin-left:4px}
-.dk-kind.cond{color:var(--citron);border-color:rgba(216,242,75,.5)}
-.dk-kind.found{color:var(--citron);border-color:rgba(216,242,75,.5)}
+.dk-kind{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.07em;padding:1px 5px;border-radius:5px;border:1px solid var(--desk-line);color:var(--desk-dim);vertical-align:middle;margin-left:4px}
+.dk-kind.cond{color:var(--desk-acc);border-color:rgba(47,167,154,.5)}
+.dk-kind.found{color:var(--desk-acc);border-color:rgba(47,167,154,.5)}
 .dk-kind.blocked{color:var(--warn);border-color:rgba(217,154,43,.5)}
-.dk-counter{border:1px solid rgba(217,154,43,.45);border-radius:9px;padding:8px 10px;margin-top:8px;font-size:12.5px;color:var(--desk-fg);background:var(--ink-2)}
+.dk-counter{border:1px solid rgba(217,154,43,.45);border-radius:9px;padding:8px 10px;margin-top:8px;font-size:12.5px;color:var(--desk-fg);background:var(--desk-surf)}
 .dk-counter .k{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--warn)}
 .dk-lad{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
-.dk-lad td,.dk-lad th{padding:3px 6px 3px 0;border-bottom:1px solid var(--ink-line);color:var(--desk-dim);text-align:left;font-weight:500}
+.dk-lad td,.dk-lad th{padding:3px 6px 3px 0;border-bottom:1px solid var(--desk-line);color:var(--desk-dim);text-align:left;font-weight:500}
 .dk-lad td:first-child{color:var(--desk-fg);font-family:'JetBrains Mono',monospace}
-.dk-lad tr.at td{color:var(--citron);font-weight:700}
+.dk-lad tr.at td{color:var(--desk-acc);font-weight:700}
 .dk-inv{margin:6px 0 0;padding:0;list-style:none;font-size:11.5px;color:var(--desk-fg)}
-.dk-px{border:1px solid var(--ink-line);border-radius:9px;padding:8px 10px;margin-top:8px;background:var(--ink-2)}
+.dk-px{border:1px solid var(--desk-line);border-radius:9px;padding:8px 10px;margin-top:8px;background:var(--desk-surf)}
 .dk-px .hl{font-size:13px;color:var(--desk-fg);font-weight:600}
 .dk-px table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
-.dk-px th{font-weight:600;color:var(--desk-dim);text-align:left;padding:2px 4px;border-bottom:1px solid var(--ink-line)}
-.dk-px td{padding:3px 4px;border-bottom:1px solid var(--ink-line);vertical-align:top}
+.dk-px th{font-weight:600;color:var(--desk-dim);text-align:left;padding:2px 4px;border-bottom:1px solid var(--desk-line)}
+.dk-px td{padding:3px 4px;border-bottom:1px solid var(--desk-line);vertical-align:top}
 .dk-px td.n{font-family:'JetBrains Mono',monospace;white-space:nowrap}
-.dk-st{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.06em;padding:1px 5px;border-radius:5px;border:1px solid var(--ink-line);color:var(--desk-dim)}
+.dk-st{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.06em;padding:1px 5px;border-radius:5px;border:1px solid var(--desk-line);color:var(--desk-dim)}
 .dk-st.play{border-color:rgba(46,160,67,.6);color:#2ea043}
 .dk-st.lean{border-color:rgba(217,154,43,.6);color:#d99a2b}
-.dk-st.cond{border-color:var(--ink-line);color:var(--desk-dim)}
+.dk-st.cond{border-color:var(--desk-line);color:var(--desk-dim)}
 .dk-px .why{font-size:11px;color:var(--desk-dim);margin-top:4px}
-.dk-inv li{padding:3px 0;border-top:1px solid var(--ink-line);overflow-wrap:anywhere}
+.dk-inv li{padding:3px 0;border-top:1px solid var(--desk-line);overflow-wrap:anywhere}
 .dk-inv li:first-child{border-top:0}
 .dk-inv .q{font-weight:600}
 .dk-inv .s{color:var(--desk-dim)}
 .dk-more table{width:100%;border-collapse:collapse;margin-top:6px;font-size:11.5px}
-.dk-more td{padding:4px 6px;border-top:1px solid var(--ink-line);color:var(--desk-dim)}
+.dk-more td{padding:4px 6px;border-top:1px solid var(--desk-line);color:var(--desk-dim)}
 .dk-more td.s{color:var(--desk-fg);font-weight:600}
 /* Contextual follow-ups: what a reader asks next, not a generic menu. */
 .dk-next{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.dk-next button{background:none;border:1px solid var(--ink-line);color:var(--desk-dim);border-radius:16px;
+.dk-next button{background:none;border:1px solid var(--desk-line);color:var(--desk-dim);border-radius:16px;
   padding:6px 11px;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer}
-.dk-next button:hover{border-color:var(--citron);color:var(--citron)}
+.dk-next button:hover{border-color:var(--desk-acc);color:var(--desk-acc)}
 
 /* structured verdict card */
 .edai-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
@@ -26535,7 +26578,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .ed-num.stale{border-color:var(--warn)}
 .ed-num.none{border-style:dashed}
 .ed-sec{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:13px 0 5px}
-.ed-dv{border-left:2px solid var(--citron-dim,var(--accent));padding:1px 0 1px 9px;margin:0 0 9px}
+.ed-dv{border-left:2px solid var(--desk-acc-dim,var(--accent));padding:1px 0 1px 9px;margin:0 0 9px}
 .ed-dv b{font-size:11.5px;color:var(--text);text-transform:capitalize}
 .ed-dv .st{display:block;font-size:12.5px;color:var(--text);line-height:1.5;margin-top:1px}
 .ed-dv .me{display:block;font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:3px}
@@ -36632,6 +36675,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      contract has negative EV" land on the right answer. The server re-reads
      every price; nothing here is believed on the browser's say-so. */
   var LAST_QUANT=null;
+  /* THE MULTI-SPORT DESK'S LAST ANSWER (d.multisport, as the server sent it),
+     so "why #1?", "what should I check on the Hurricanes?" and "compare #1
+     and #2" are answered from the research on screen (msFollow). */
+  var LAST_MS=null;
   function clientTimeZone(){ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||null; }catch(_){ return null; } }
   function carriedContext(){
     var c=LAST_CTX?Object.assign({},LAST_CTX):{};
@@ -39532,12 +39579,12 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      EdgeDesk; the prose above it is the model's only when the critic let it
      through. Nothing below is computed in the browser. */
   var LABEL_TONE = {
-    'PASS':{fg:'var(--desk-dim)',bd:'var(--ink-line)'},
-    'RESEARCH LEAD':{fg:'var(--citron)',bd:'rgba(216,242,75,.5)'},
-    'PRICE DEPENDENT':{fg:'var(--citron)',bd:'rgba(216,242,75,.5)'},
+    'PASS':{fg:'var(--desk-dim)',bd:'var(--desk-line)'},
+    'RESEARCH LEAD':{fg:'var(--desk-acc)',bd:'rgba(47,167,154,.5)'},
+    'PRICE DEPENDENT':{fg:'var(--desk-acc)',bd:'rgba(47,167,154,.5)'},
     'MODEL DISAGREEMENT':{fg:'var(--warn)',bd:'rgba(217,154,43,.5)'},
     'STALE MARKET':{fg:'var(--warn)',bd:'rgba(217,154,43,.5)'},
-    'INSUFFICIENT DATA':{fg:'var(--desk-dim)',bd:'var(--ink-line)'}
+    'INSUFFICIENT DATA':{fg:'var(--desk-dim)',bd:'var(--desk-line)'}
   };
   function freshBadge(f){
     var k=String(f||'UNKNOWN').toUpperCase();
@@ -40303,6 +40350,138 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h+='<div class="edai-src">'+esc('Projections frozen '+(o.projections_frozen_at||'\u2014')+' and compared with prices '+(o.quotes_compared_at||'\u2014')+'; unchanged by the comparison: '+(o.snapshot_unchanged?'yes':'NO')+(ms.odds&&ms.odds.disabled?'. Odds integrations were off for this run.':''))+'</div>';
     return h;
   }
+  /* ══ TONIGHT'S RESEARCH, IN PLAIN WORDS (the multi-sport desk) ══════════
+     The desk's answer text is the full research packet: every gate, sigma,
+     source and coverage line. It is the record, and it stays one tap away.
+     A reader asking "what's the best opportunity tonight?" needs the short
+     list first: which games are worth their time, the side EdgeDesk's model
+     favours, the price that would make it a bet, and what to confirm before
+     betting. Every number here is the server's (d.multisport); nothing is
+     computed, re-ranked or upgraded in the browser, and a game without a
+     verified price is never called a bet. */
+  function msWhen(ms){ var l=String(ms&&ms.window&&ms.window.label||'tonight').split(',')[0]; return /^\d/.test(l)?'on '+l.split(' ')[0]:l; }
+  function msTime(iso, tz){
+    var t=Date.parse(iso); if(!isFinite(t)) return '';
+    var o={weekday:'short',hour:'numeric',minute:'2-digit',timeZoneName:'short'};
+    try{ return new Date(t).toLocaleString('en-US',Object.assign({timeZone:tz||undefined},o)); }catch(_){ return new Date(t).toLocaleString('en-US',o); }
+  }
+  /* #1, the runners-up, then every other sport's best, in the server's rank order */
+  function msGames(ms){
+    var seen={}, out=[];
+    [ms.best_research].concat(ms.alternatives||[], ms.best_by_sport||[]).forEach(function(r){
+      if(!r||!r.projection_id||seen[r.projection_id]) return; seen[r.projection_id]=1; out.push(r); });
+    return out.sort(function(a,b){ return (a.rank||99)-(b.rank||99); });
+  }
+  function msNeed(ms, r){ return (ms.price_needed||[]).filter(function(x){ return x.projection_id===r.projection_id; })[0]||null; }
+  /* the priced markets the comparison ranked on this game: a verified bet, the market watch, a data check */
+  function msMarkets(ms, r){
+    return [ms.best_verified, ms.market_watch].concat(ms.data_checks||[]).filter(function(x){ return x&&(x.projection_id===r.projection_id||x.event===r.event); });
+  }
+  /* the model's own side, priced (a market row on another market of the same game is reported separately) */
+  function msOnPick(x, r){ return !!(x&&x.market&&x.market.kind===(r.modeled&&r.modeled.market)&&r.modeled&&String(x.selection||'').indexOf(r.modeled.selection)===0); }
+  function msState(r){
+    var rs=(r.research_reasons||[]).join(' ');
+    if(r.invalidated) return {k:'x',t:'Projection invalidated',when:''};
+    if(r.research_outcome==='RESEARCH_READY') return {k:'v',t:'Ready — needs a price',when:''};
+    if(r.research_outcome==='DATA_INSUFFICIENT') return {k:'x',t:'Data incomplete',when:''};
+    if(/STARTER CONFLICT/.test(rs)) return {k:'x',t:'Starter conflict',when:'the starter conflict is resolved'};
+    if(/starting goalies/.test(rs)) return {k:'p',t:'Confirm goalies',when:'both starting goalies are confirmed'};
+    if(/starting quarterbacks/.test(rs)) return {k:'p',t:'Confirm QBs',when:'both starting quarterbacks are confirmed'};
+    if(/availability|key roles/.test(rs)) return {k:'p',t:'Check injuries',when:'the injury report and lineups check out'};
+    if(/ model is /.test(rs)) return {k:'u',t:'Experimental model',when:''};
+    if(/early season/.test(rs)) return {k:'p',t:'Early season',when:''};
+    return {k:'p',t:'Conditional',when:''};
+  }
+  /* what to confirm before betting, in the reader's words, from the research outcome's own reasons */
+  function msChecks(r){
+    var out=[];
+    (r.research_reasons||[]).forEach(function(s){
+      s=String(s||'');
+      if(!s||/^fresh build, validated primary market/.test(s)) return;
+      if(/starting goalies/.test(s)) out.push('Confirm both starting goalies — the number assumes the projected starters.');
+      else if(/starting quarterbacks/.test(s)) out.push('Confirm both starting quarterbacks — the number assumes the listed starters.');
+      else if(/availability \(no injury report/.test(s)) out.push('Check the injury report and starting lineups — EdgeDesk had no confirmed lineup for this game.');
+      else if(/ model is /.test(s)) out.push('Research only: '+s+'.');
+      else if(/early season/.test(s)) out.push('Early season: the ratings still lean on last season.');
+      else out.push(s.charAt(0).toUpperCase()+s.slice(1)+(/[.!?]$/.test(s)?'':'.'));
+    });
+    return out;
+  }
+  function msQuote(x){ var q=x&&x.quote; return q?qdAm(q.american)+(q.book?' at '+q.book:'')+(q.age_min!=null?' ('+q.age_min+' min old)':''):''; }
+  /* the price line for one game: the bar to bet at, and what is on file */
+  function msPriceHTML(ms, r){
+    var n=msNeed(ms,r), m=r.modeled||{}, rows=msMarkets(ms,r), pick=rows.filter(function(x){ return msOnPick(x,r)&&!x.data_check; })[0]||null;
+    var h='';
+    if(pick&&pick.outcome==='VERIFIED_POSITIVE_EV') h='<b>Verified bet:</b> '+esc(pick.selection)+' '+esc(msQuote(pick));
+    else if(n&&n.needs!=null) h='Bet only at <b>'+esc(qdAm(n.needs))+' or better</b> on the '+esc(m.selection)+' '+(m.market==='three_way'?'result':'moneyline');
+    else if(n) h='No price makes this a bet yet — '+esc(n.why);
+    else h='Ask for the price that would make it a bet';
+    if(pick&&pick.outcome!=='VERIFIED_POSITIVE_EV') h+=' <span class="msd-dim">· on file '+esc(msQuote(pick))+' — '+esc(String(pick.outcome_label||'').toLowerCase())+'</span>';
+    else if(!pick) h+=' <span class="msd-dim">· no current price on file: check your book</span>';
+    return h;
+  }
+  function msDeepQ(r){
+    var ev=String(r.event||'').replace(' @ ',' at ');
+    return r.sport==='nhl'?'NHL: what’s your price on '+ev+'?':r.sport==='nba'?'NBA: what’s your price on '+ev+'?':(r.sport==='nfl'||r.sport==='cfb')?'Who has the edge in '+ev+'?':null;
+  }
+  function msGameHTML(ms, r){
+    var m=r.modeled||{}, st=msState(r), tz=ms.window&&ms.window.timezone;
+    var chk=msChecks(r), edge=(r.advantages||[])[0], against=(r.counterarguments||[])[0];
+    var others=msMarkets(ms,r).filter(function(x){ return x.data_check||!msOnPick(x,r); });
+    var h='<div class="msd-g" role="listitem" data-rank="'+esc(r.rank)+'" data-sport="'+esc(r.sport)+'">'
+      +'<div class="msd-g-top"><span class="msd-rk">'+esc(r.rank)+'</span><div class="msd-g-id"><div class="msd-g-t">'+esc(r.event)+'</div>'
+      +'<div class="msd-g-s">'+esc(r.sport_label)+(r.start_utc?' · '+esc(msTime(r.start_utc,tz)):'')+'<span class="qd-chip qd-'+st.k+' msd-st">'+esc(st.t)+'</span></div></div></div>'
+      +'<div class="msd-g-pick">Model: <b>'+esc(m.selection)+'</b> '+esc(qdPct(m.probability,1))+' to win'+(m.fair_american!=null?' <span class="msd-dim">(fair '+esc(qdAm(m.fair_american))+'; '+esc(qdPct(m.conservative_probability,1))+' on the cautious read)</span>':'')+'</div>'
+      +'<div class="msd-g-px">'+msPriceHTML(ms,r)+'</div>';
+    var lis=chk.map(function(c){ return '<li class="chk">'+esc(c)+'</li>'; });
+    if(edge) lis.push('<li class="pro">Edge: '+esc(edge)+'</li>');
+    lis.push('<li class="con">Against: '+esc(against||'no measured factor runs against this side; the uncertainty is the risk')+'</li>');
+    others.forEach(function(x){ lis.push('<li class="con">'+(x.data_check?'Price that looks wrong (a data check, not an edge): ':'Also on watch in this game: ')+esc(x.selection)+' '+esc(msQuote(x))+'</li>'); });
+    h+='<ul class="msd-g-l">'+lis.join('')+'</ul>';
+    var dq=msDeepQ(r);
+    h+='<div class="msd-g-a"><button type="button" class="msd-btn" data-ms-ask="What should I check before betting #'+esc(r.rank)+'?">What to check</button>'
+      +'<button type="button" class="msd-btn" data-ms-ask="Why is #'+esc(r.rank)+' on the list?">Why this game?</button>'
+      +(dq?'<button type="button" class="msd-btn" data-ms-deep="'+esc(dq)+'">Full '+esc(r.sport_label)+' breakdown</button>':'')+'</div>';
+    return h+'</div>';
+  }
+  /* the captured-price audit's own verified candidate (d.scan): market-derived, said as such, never the verdict */
+  function msBenchEdge(sc){
+    if(!sc||sc.final_status!=='VERIFIED CANDIDATE'||!sc.best) return null;
+    var c=sc.best.candidate||{}, e=sc.best.evaluation||{}, q=c.quote||{};
+    return { sel:c.selection+(c.line!=null?' '+(c.line>0?'+':'')+c.line:''), price:e.entry_price!=null?e.entry_price:q.odds_american, book:q.book||(e.venue&&e.venue.label)||'', age:q.age_min, matchup:c.matchup||'', ev:e.net_ev_per_dollar, max:e.maximum_entry_price };
+  }
+  function msBriefHTML(ms, sc){
+    var games=msGames(ms), top=games[0]||null, v=ms.best_verified, mw=ms.market_watch, when=msWhen(ms), be=msBenchEdge(sc);
+    var h='<div class="msd-bl">';
+    if(v) h+='<p class="msd-head">One bet clears every check '+esc(when)+': '+esc(v.selection)+' '+esc(msQuote(v))+'.</p>';
+    else h+='<p class="msd-head">No bet clears every check '+esc(when)+'.</p>';
+    if(top){
+      var n=msNeed(ms,top), st=msState(top);
+      h+='<p class="msd-sub">'+esc(games.length+' game'+(games.length===1?' is':'s are')+' worth researching. Start with #1, '+top.event+': EdgeDesk’s model has '+top.modeled.selection+' at '+qdPct(top.modeled.probability,1)+'.')
+        +(n&&n.needs!=null&&!v?' '+esc('It becomes a bet at '+qdAm(n.needs)+' or better'+(st.when?', once '+st.when:'')+'.'):'')+'</p>';
+    } else h+='<p class="msd-sub">Nothing in this window could be researched — the coverage below says why.</p>';
+    if(!v&&ms.no_verified_reason) h+='<p class="msd-why">Why no bet yet: '+esc(ms.no_verified_reason)+'.</p>';
+    h+='</div>';
+    if(be) h+='<div class="msd-mw msd-be"><div><b>One price is out of line with the market:</b> '+esc(be.sel+' '+qdAm(be.price)+(be.book?' at '+be.book:'')+(be.age!=null?' ('+be.age+' min old)':''))+'</div>'
+      +'<div class="msd-dim">'+esc(be.matchup+(be.ev!=null?' · net EV '+qdPct(be.ev)+' per $1':'')+(be.max!=null?' · playable to '+qdAm(be.max):''))+'</div>'
+      +'<div>It passed the captured-price audit against the sharp market. That is a market-derived edge, not an EdgeDesk projection; its card is under the market benchmark below.</div></div>';
+    if(games.length) h+='<div class="msd-h">What to research '+esc(when)+'</div><div class="msd-list" role="list">'+games.slice(0,3).map(function(r){ return msGameHTML(ms,r); }).join('')+'</div>'
+      /* the top three lead; the rest are a tap away, so the answer reads in one screen */
+      +(games.length>3?'<details class="dk-more msd-more"><summary>'+(games.length-3)+' more game'+(games.length===4?'':'s')+' on the list</summary><div class="msd-list" role="list">'+games.slice(3).map(function(r){ return msGameHTML(ms,r); }).join('')+'</div></details>':'');
+    if(mw){
+      var mm=mw.math||{};
+      h+='<div class="msd-h">Closest to a bet</div><div class="msd-mw"><div class="msd-mw-t"><b>'+esc(mw.selection)+'</b> '+esc(msQuote(mw))+' <span class="qd-chip qd-'+(mw.outcome==='CONDITIONAL_EDGE'?'p':'w')+'">'+esc(mw.outcome_label||'')+'</span></div>'
+        +'<div class="msd-dim">'+esc(mw.event)+(mw.model?' · model '+qdPct(mw.model.p_win,1)+' (fair '+qdAm(mw.model.fair_american)+')':'')+'</div>'
+        +'<div>'+(mm.max_acceptable_american!=null?'It needs <b>'+esc(qdAm(mm.max_acceptable_american))+' or better</b> to clear EdgeDesk’s safety margin.':'')+(mw.outcome==='CONDITIONAL_EDGE'&&(mw.reasons||[]).length?' Still open: '+esc(mw.reasons.join('; '))+'.':'')+'</div></div>';
+    }
+    if((ms.data_checks||[]).length) h+='<div class="msd-warn"><b>Prices that look wrong, not edges.</b> '+esc(ms.data_checks.slice(0,4).map(function(x){ return x.selection+' '+qdAm(x.quote&&x.quote.american)+' ('+x.event+')'; }).join('; '))+'. An EV this large usually means a bad or mismatched price — re-check it at the book before trusting it.</div>';
+    var asks=['What should I check before betting #1?','Why is #1 ranked first?'];
+    if(games.length>1) asks.push('Compare #1 and #2');
+    asks.push(mw||v?'Which game is closest to a bet?':'What could change the answer?');
+    (ms.best_by_sport||[]).filter(function(r){ return top&&r.sport!==top.sport; }).slice(0,2).forEach(function(r){ asks.push('Best '+r.sport_label+' game on the list?'); });
+    h+='<div class="msd-asks"><span>Ask about this research</span>'+asks.map(function(a){ return '<button type="button" class="msd-chip" data-ms-ask="'+esc(a)+'">'+esc(a)+'</button>'; }).join('')+'</div>';
+    return '<div class="msd-brief">'+h+'</div>';
+  }
   function quantAnswerHTML(d){
     var intent=d.quant&&d.quant.intent, ans=String(d.answer||''), cls=null, bench=null, ev=null, au=null, cap=null, trail=null, rsrc=null;
     if(intent==='SCAN'&&d.scan){
@@ -40324,14 +40503,27 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       cls=d.game_research.game?(d.game_research.survivors>0?'VERIFIED_CANDIDATE':qdStatusKey(d.game_research.final_status)||null):null;
     } else if(d.contract){ ev=d.contract.evaluation||null; cls=ev&&ev.classification||'UNVERIFIED_DATA'; cap=d.contract.capability||null; }
     /* Phase 3: every researched candidate as an interactive card, the readiness table, the game's evidence */
-    var cards=(window.EDINTELUI&&typeof EDINTELUI.resultHTML==='function')?EDINTELUI.resultHTML(d):'';
+    var UIx=window.EDINTELUI, msA=d.multisport&&d.multisport.available?d.multisport:null;
+    var cards=(UIx&&typeof UIx.resultHTML==='function')?UIx.resultHTML(d):'';
     var fold=cards.indexOf('ia-card')>=0;
+    /* the multi-sport desk: the captured-price candidates are the market benchmark, so their cards fold under
+       that label, apart from the answer's own verification and plan */
+    var benchCards='';
+    if(msA&&fold&&d.scan&&UIx&&typeof UIx.candidateCardsHTML==='function'){
+      var brows=[d.scan.best].concat(d.scan.verified_rest||[], d.scan.potential||[], d.scan.near_misses||[]).filter(Boolean);
+      benchCards='<div class="ia-results">'+UIx.candidateCardsHTML(brows,[])+'</div>';
+      cards=UIx.resultHTML(Object.assign({},d,{scan:null}));
+      benchCards='<details class="dk-more qd-more msd-bench"'+(msBenchEdge(d.scan)?' open':'')+'><summary>Market benchmark — the captured-price audit ('+brows.length+' candidate'+(brows.length===1?'':'s')+', market-derived)</summary><div style="margin-top:6px">'+benchCards+'</div></details>';
+    }
     /* availability: the status reads here; each source, its time and any disagreement are in the card below */
     if(intent==='AVAILABILITY'&&cards.indexOf('ia-av')>=0) ans=ans.split(/\n\s*\n(?:What each source says:|For the model)/)[0];
     var lab=intent==='AVAILABILITY'?'Availability':intent==='UNSUPPORTED'?'Outside EdgeDesk\u2019s coverage':intent==='GAME_RESEARCH'?'Game research':intent==='READINESS'?'Research readiness':intent==='MATCHUP_EDGE'?'Matchup mismatches':intent==='VENUE_COMPARE'?'Venue comparison':intent==='BETS'?'Your betting history':(intent==='RESEARCH_SLATE'||(d.scan&&d.scan.researched))?'EdgeDesk research':'The Quant Desk';
     /* the captured-price auditor's status survives as a second, labelled chip: a market benchmark, never the verdict */
     var benchChip=bench?'<span class="qd-chip qd-'+((QD_LABEL[bench]||[0,'u'])[1])+' qd-bench" title="market-derived: a book against the sharp market or the model–market blend">Benchmark: '+esc((QD_LABEL[bench]||[String(bench).replace(/_/g,' ').toLowerCase()])[0])+'</span>':'';
-    var h='<div class="dk-read qd-read"><div class="lab">'+esc(lab)+(cls?qdChip(cls):'')+benchChip+'</div>'+qdLines(ans,{fold:fold})+'</div>'+cards;
+    var h=msA
+      ? '<div class="dk-read qd-read msd-read"><div class="lab">'+esc('EdgeDesk research \u2014 '+msWhen(msA))+(cls?qdChip(cls):'')+benchChip+'</div>'+msBriefHTML(msA, d.scan&&!d.scan.not_run?d.scan:null)
+        +'<details class="dk-more msd-packet"><summary>The full research packet \u2014 every number, check and source</summary><div class="msd-packet-b">'+qdLines(ans,{fold:fold})+cards+'</div></details></div>'+benchCards
+      : '<div class="dk-read qd-read"><div class="lab">'+esc(lab)+(cls?qdChip(cls):'')+benchChip+'</div>'+qdLines(ans,{fold:fold})+'</div>'+cards;
     var more='';
     function sec(title, body, open){ if(body) more+='<details class="dk-more qd-more"'+(open?' open':'')+'><summary>'+esc(title)+'</summary><div style="margin-top:6px">'+body+'</div></details>'; }
     if(d.research_slate&&!cards) sec('Model versus market, every game', qdSlateHTML(d.research_slate), true);
@@ -40346,7 +40538,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       sec('Model assumptions', qdModelHTML(ev, cap));
     } else if(rsrc) sec('Confidence — four separate measures', qdConfidenceHTML(rsrc));
     if(d.multisport&&d.multisport.available){
-      sec('Coverage — every sport, models first', qdMultiCoverageHTML(d.multisport), true);
+      sec('Coverage — every sport, models first', qdMultiCoverageHTML(d.multisport));
       sec('How the candidates were ranked', '<ol>'+[].concat(d.multisport.ranking_rules&&d.multisport.ranking_rules.research||[], d.multisport.ranking_rules&&d.multisport.ranking_rules.execution||[]).map(function(r){ return '<li>'+esc(r)+'</li>'; }).join('')+'</ol>');
     }
     if(d.scan){
@@ -42457,6 +42649,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       /* Slice 7: the board state rides back on its own field. */
       try{ if(d&&d.board_state&&d.board_state.schema==='edgedesk_board_state_v1') LAST_BOARD=d.board_state; }catch(_){}
       try{ if(d&&d.quant_state&&d.quant_state.schema==='edgedesk_quant_state_v1') LAST_QUANT=d.quant_state; }catch(_){}
+      try{ if(d&&d.multisport&&d.multisport.available) LAST_MS={ms:d.multisport, at:Date.now(), built:d.multisport.order&&d.multisport.order.quotes_compared_at||null}; }catch(_){}
       /* The pitcher ids this turn resolved. Only replaced when the server
          actually returns a state; a turn that was not about pitchers leaves
          the previous one in place. */
@@ -44997,6 +45190,278 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return false;
   }
 
+  /* ══ FOLLOW-UPS ON TONIGHT'S RESEARCH ═══════════════════════════════════
+     "What should I check before betting #1?", "why is the Hurricanes game
+     first?", "what price do I need on Columbus?", "compare #1 and #2",
+     "which game is closest to a bet?" — asked after the multi-sport answer,
+     these are answered from that answer's own research (LAST_MS), instantly
+     and with the same numbers, instead of being handed to a resolver that
+     does not know the list exists. A question that names nothing on the list,
+     asks for another window or another sport's scan runs on as before. */
+  var MS_TTL_MS=6*3600000, MS_FROM_LIST=false;
+  var MS_NUM={first:1,top:1,second:2,third:3,fourth:4,fifth:5,sixth:6,one:1,two:2,three:3,four:4,five:5,six:6};
+  var MS_GENERIC=/^(state|university|college|international|city|united|tech|a&m|am|st|new|los|san|las|the|of|fc|north|south|east|west|central|northern|southern|eastern|western)$/;
+  function msNorm(s){ return ' '+String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’'.]/g,'').replace(/[^a-z0-9&]+/g,' ').trim()+' '; }
+  function msRanks(q){
+    var out=[], m, re=/#\s*([1-9])\b|\b(?:number|no|rank|pick|game|option|matchup)\s*#?\s*([1-9])\b|\b([1-9])(?:st|nd|rd|th)\b/gi;
+    while((m=re.exec(q))) out.push(+(m[1]||m[2]||m[3]));
+    var w=/\b(?:the\s+)?(first|second|third|fourth|fifth|sixth)\b(?:\s+(?:one|game|pick|matchup|option))?|\btop\s+(?:one|game|pick|matchup|option|choice|spot)\b/gi;
+    while((m=w.exec(q))) out.push(m[1]?MS_NUM[m[1].toLowerCase()]:1);
+    return out;
+  }
+  /* the games on the list a question names, by full name, nickname or city: [{r, score}] best first */
+  function msNamed(q, games){
+    var qn=msNorm(q), hits=[];
+    games.forEach(function(r){
+      var best=0;
+      String(r.event||'').split(' @ ').forEach(function(team){
+        var w=msNorm(team).trim().split(' '), full=w.join(' ');
+        if(full&&qn.indexOf(' '+full+' ')>=0){ best=Math.max(best,3); return; }
+        if(w.length>2&&qn.indexOf(' '+w.slice(-2).join(' ')+' ')>=0) best=Math.max(best,2.5);
+        var last=w[w.length-1];
+        if(w.length>1&&last.length>=4&&!MS_GENERIC.test(last)&&qn.indexOf(' '+last+' ')>=0) best=Math.max(best,2);
+        [w.slice(0,-1).join(' '), w[0]].forEach(function(city){ if(w.length>1&&city.length>=4&&!MS_GENERIC.test(city)&&qn.indexOf(' '+city+' ')>=0) best=Math.max(best,1); });
+      });
+      if(best) hits.push({r:r,score:best});
+    });
+    return hits.sort(function(a,b){ return b.score-a.score||(a.r.rank||99)-(b.r.rank||99); });
+  }
+  function msSportIn(q, games){
+    var qn=msNorm(q), sp=null;
+    [['nhl',/ (nhl|hockey) /],['nba',/ (nba) /],['wnba',/ (wnba) /],['cfb',/ (college football|cfb|fbs|ncaaf) /],['nfl',/ (nfl) /],['ncaab_m',/ (college basketball|ncaab|march madness) /]].forEach(function(p){ if(!sp&&p[1].test(qn)) sp=p[0]; });
+    if(!sp&&/ basketball /.test(qn)) sp='nba';
+    if(!sp&&/ football /.test(qn)) sp=games.some(function(r){ return r.sport==='nfl'; })?'nfl':'cfb';
+    return sp;
+  }
+  function msIntent(q){
+    var s=String(q||'').toLowerCase();
+    if(/\bcompare\b|\bversus\b|\bvs\.?\b|\bbetter (?:bet|play|option|look)\b|\bwhich (?:one|is better)\b/.test(s)) return 'compare';
+    if(/closest to a bet|market watch|\b(?:any|anything)\b.{0,20}\b(?:bettable|to bet|worth betting|a bet)\b|\bwhat can i bet\b|\bbettable\b|\bany (?:edges?|bets?)\b/.test(s)) return 'closest';
+    if(/data checks?|looks? wrong|bad price|flagged|sanity/.test(s)) return 'datachecks';
+    if(/\bshould i (?:bet|take|play|hammer|back)\b|\bis (?:it|this|that|#?\d) (?:a )?(?:good )?bet\b|\bbet (?:it|this|that)\b|\bworth (?:a )?bet(?:ting)?\b|\bworth it\b|\bplay it\b/.test(s)) return 'bet';
+    if(/\b(?:goalies?|goaltenders?|qbs?|quarterbacks?|injur\w*|lineups?|starters?|scratch\w*|playing|out tonight)\b/.test(s)) return 'avail';
+    if(/what (?:could|would|might) change|change (?:the|tonight'?s|your) (?:answer|pick|ranking)|\binvalidat\w*/.test(s)) return 'change';
+    if(/\b(?:check|confirm|verify|look (?:at|for|into)|homework|need to know|watch for|before (?:i )?bet\w*|what to research)\b/.test(s)) return 'check';
+    if(/\b(?:risks?|wrong|against|counter\w*|downside|worr\w*|fade|lose)\b/.test(s)) return 'risk';
+    if(/\b(?:price|odds|number|bet (?:it )?at|max(?:imum)?|how (?:low|high))\b|[+\-−–]\s?\d{3,4}\b/.test(s)) return 'price';
+    if(/\bwhy\b|\bexplain\b|\breasons?\b|\bhow come\b|\branked\b/.test(s)) return 'why';
+    if(/\bwhat should i (?:research|look at|focus on|bet|do)\b|\bshort ?list\b|\bsummar\w*|\btl;?dr\b|\brecap\b|\b(?:which|what) games?\b|\btop (?:games|picks|plays)\b|\bbest\b.{0,30}\b(?:game|matchup|pick|play|bet|opportunit\w*)\b/.test(s)) return 'summary';
+    if(/\b(?:tell me|more|about|break ?down|details?|deep|dig|preview|thoughts?|what about|how about)\b/.test(s)) return 'game';
+    return null;
+  }
+  function msQuoted(q){ var m=/(?:^|[\s(])([+\-−–]\s?\d{3,4})\b/.exec(String(q||'')); return m?Number(m[1].replace(/[−–]/g,'-').replace(/\s/g,'')):null; }
+  function msDec(a){ a=Number(a); return !isFinite(a)||Math.abs(a)<100?null:a>0?1+a/100:1+100/-a; }
+  function msSec(head, items, cls){ return items&&items.length?'<div class="dk-sec'+(cls?' '+cls:'')+'"><div class="h">'+esc(head)+'</div><ul>'+items.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul></div>':''; }
+  function msAsks(list){ return '<div class="msd-asks">'+list.filter(Boolean).map(function(a){ return '<button type="button" class="msd-chip" data-ms-ask="'+esc(a)+'">'+esc(a)+'</button>'; }).join('')+'</div>'; }
+  function msReply(title, body, asks){ return '<div class="dk-read msd-fu"><div class="lab">'+esc(title)+'</div>'+body+'</div>'+(asks?msAsks(asks):''); }
+  function msStarted(r){ var t=Date.parse(r.start_utc); return isFinite(t)&&t<=Date.now(); }
+  function msHead(r, ms){ return '<p class="msd-fu-g"><b>#'+esc(r.rank)+' '+esc(r.event)+'</b> <span class="msd-dim">· '+esc(r.sport_label)+' · '+esc(msTime(r.start_utc, ms.window&&ms.window.timezone))+'</span></p>'+(msStarted(r)?'<p class="msd-warn">This game has started. EdgeDesk reads no live price, score or clock, so everything here describes it before the start.</p>':''); }
+  function msPickLine(r){ var m=r.modeled||{}; return 'EdgeDesk’s model has '+m.selection+' at '+qdPct(m.probability,1)+' to win (fair '+qdAm(m.fair_american)+'); on the cautious read, with the model’s uncertainty taken off, '+qdPct(m.conservative_probability,1)+'.'; }
+  function msReliability(r){ var c=r.model_confidence||{}; return String(c.validation_state||'').replace(/_/g,' ').toLowerCase()+(c.n?' on '+Number(c.n).toLocaleString('en-US')+' past games':'')+(c.value_claims?'; it has beaten the closing line':'; it has not been shown to beat the closing line, so treat the price bar as the minimum'); }
+  /* "starting goalie: home probability 30.4%–31.5%" is the engine's scenario range; said as what it means */
+  function msWrong(r){
+    var home=String(r.event||'').split(' @ ')[1]||'the home side';
+    return (r.could_be_wrong||[]).map(function(w){ var m=/^([a-z ]+): home probability (.+)$/i.exec(String(w)); return m?'Across the '+m[1].toLowerCase()+' scenarios, '+home+(/s$/.test(home)?'\u2019':'\u2019s')+' win probability stays within '+m[2]+'.':String(w); });
+  }
+  function msNeedText(ms, r){ var n=msNeed(ms,r); return n&&n.needs!=null?qdAm(n.needs)+' or better':null; }
+
+  function msWhyHTML(ms, r, games){
+    var i=games.indexOf(r), next=games[i+1]||null, m=r.modeled||{};
+    var lis=[msPickLine(r)];
+    lis.push(r.rank===1?(next?'It ranks first because its cautious probability ('+qdPct(m.conservative_probability,1)+') is the highest on the list; next is #'+next.rank+' '+next.event+' at '+qdPct(next.modeled.conservative_probability,1)+'.':'It is the only game that could be ranked.')
+      :'It ranks #'+r.rank+' by the same rule: the cautious probability ('+qdPct(m.conservative_probability,1)+'), with games from an out-of-sample validated model ahead of experimental ones.');
+    lis.push('Model reliability: '+msReliability(r)+'.');
+    if(r.freshness) lis.push('Built '+(r.freshness.age_hours!=null?r.freshness.age_hours+' h ago':'at an unknown time')+(r.freshness.inputs_known_at?', with inputs through '+String(r.freshness.inputs_known_at).slice(0,10):'')+'.');
+    return msHead(r,ms)+msSec('Why it is on the list',lis)+msSec('What the model sees for '+m.selection,(r.advantages||[]).slice(0,4))
+      +msSec('What runs against it',(r.counterarguments||[]).length?r.counterarguments:['No measured factor runs against this side; the uncertainty is the counterargument.'],'wrong')
+      +(r.context?msSec('Rest and travel',[r.context]):'');
+  }
+  function msCheckHTML(ms, r){
+    var chk=msChecks(r), need=msNeedText(ms,r), rows=msMarkets(ms,r), pick=rows.filter(function(x){ return msOnPick(x,r)&&!x.data_check; })[0]||null;
+    var steps=chk.slice();
+    steps.push(pick&&pick.quote?'Re-check the price: the best on file is '+msQuote(pick)+'. Get a fresh quote from your book before deciding.':'Get a current price from your book — EdgeDesk has no fresh price on this side.');
+    if(need) steps.push('Only bet '+r.modeled.selection+' at '+need+'. Anything worse and the edge does not survive the model’s uncertainty.');
+    else steps.push('No price is computed for this rank; ask for the price before betting it.');
+    return msHead(r,ms)+'<p>'+esc(msPickLine(r))+'</p>'+msSec('Before you bet it',steps,'limits')+msSec('What would move the number',msWrong(r).slice(0,3))+(r.context?msSec('Rest and travel',[r.context]):'');
+  }
+  function msPriceAnswerHTML(ms, r, quoted, bare){
+    var need=msNeed(ms,r), m=r.modeled||{}, rows=msMarkets(ms,r), lis=[];
+    lis.push('EdgeDesk’s fair price for '+m.selection+' is '+qdAm(m.fair_american)+' ('+qdPct(m.probability,1)+').');
+    if(need&&need.needs!=null) lis.push('The price to bet at: '+qdAm(need.needs)+' or better — '+need.why+'.');
+    else if(need) lis.push('No price makes it a bet yet — '+need.why+'.');
+    else lis.push('The research did not compute a betting price for #'+r.rank+'; only the top six get one.');
+    if(quoted!=null&&need&&need.needs!=null){
+      var ok=msDec(quoted)!=null&&msDec(need.needs)!=null&&msDec(quoted)>=msDec(need.needs);
+      lis.push('At '+qdAm(quoted)+': '+(ok?'that clears the bar of '+qdAm(need.needs)+'. It is still not a verified bet until '+(msState(r).when||'the research conditions are met')+' and the price is confirmed at your book.':'no — that is worse than '+qdAm(need.needs)+', so the edge does not survive the model’s uncertainty. Pass at that number.'));
+    }
+    rows.forEach(function(x){ lis.push((x.data_check?'Flagged as a data check (likely a bad price, not an edge): ':'On file: ')+x.selection+' '+msQuote(x)+' — '+String(x.outcome_label||'').toLowerCase()+(x.math&&x.math.max_acceptable_american!=null&&!x.data_check?'; it clears at '+qdAm(x.math.max_acceptable_american)+' or better':'')+'.'); });
+    if(!rows.length) lis.push('No current price for this game is on file, so check your book.');
+    var fl=[m.fair_total!=null?'total '+m.fair_total:null,m.fair_home_line!=null?'home '+(m.fair_home_line>0?'+':'')+m.fair_home_line:null,m.projected_score&&m.projected_score.home!=null?'projected '+Number(m.projected_score.away).toFixed(2)+'–'+Number(m.projected_score.home).toFixed(2)+' (away–home)':null].filter(Boolean);
+    if(fl.length) lis.push('EdgeDesk’s other fair lines: '+fl.join('; ')+'.');
+    return (bare?'':msHead(r,ms))+msSec('The price',lis);
+  }
+  function msRiskHTML(ms, r){
+    var lis=(r.counterarguments||[]).slice();
+    if(!lis.length) lis.push('No measured factor runs against this side; the uncertainty is the counterargument.');
+    return msHead(r,ms)+msSec('What runs against '+r.modeled.selection,lis,'wrong')+msSec('What could change the number',msWrong(r).slice(0,4),'limits')
+      +msSec('How far to trust the model',['Model reliability: '+msReliability(r)+'.','Uncertainty: ±'+qdPct(r.modeled.sigma&&r.modeled.sigma.total,1)+' on the win probability (model, calibration and lineup together).']);
+  }
+  function msAvailHTML(ms, r){
+    var a=r.availability||{}, role=a.key_role==='G'?'starting goalies':a.key_role==='QB'?'starting quarterbacks':a.key_role==='STAR'?'key players':'key roles';
+    var lis=['Key role for this sport: '+role+'. Status in this research: '+String(a.certainty||'unknown').replace(/_/g,' ').toLowerCase()+'.'];
+    (a.conflicts||[]).forEach(function(c){ lis.push('Conflict: '+c); });
+    var lu=msWrong(r).filter(function(w){ return /goalie|quarterback|lineup|scratch|starter|injur|availability/i.test(w); });
+    return msHead(r,ms)+msSec('Who is playing',lis)+msSec('Before you bet it',msChecks(r),'limits')+msSec('How much it matters',lu.length?lu:['EdgeDesk measured no single swing for this game; confirm the lineup before betting.']);
+  }
+  function msBetHTML(ms, r, quoted){
+    var rows=msMarkets(ms,r), v=rows.filter(function(x){ return x.outcome==='VERIFIED_POSITIVE_EV'; })[0], need=msNeedText(ms,r), st=msState(r);
+    var p=v?'<p><b>Yes, on EdgeDesk’s numbers:</b> '+esc(v.selection)+' '+esc(msQuote(v))+' cleared every check. Confirm the price is still there before you bet it.</p>'
+      :'<p><b>Not yet.</b> It is research, not a verified bet: '+esc(need?'it needs '+need:'no betting price is computed')+(st.when?esc(', and '+st.when):'')+'.</p>';
+    return msHead(r,ms)+p+(quoted!=null?msPriceAnswerHTML(ms,r,quoted,true):msSec('What would make it a bet',[need?'A price of '+need+' at your book.':'A computed betting price (ask for the price).',st.when?st.when.charAt(0).toUpperCase()+st.when.slice(1)+'.':null,'A fresh quote: prices on file go stale after about an hour.'].filter(Boolean),'limits'));
+  }
+  function msCompareHTML(ms, a, b){
+    function row(k, f){ return '<tr><th>'+esc(k)+'</th><td>'+esc(f(a))+'</td><td>'+esc(f(b))+'</td></tr>'; }
+    var t='<div class="qd-scroll"><table class="qd-tbl"><tr><th></th><th>#'+esc(a.rank)+'</th><th>#'+esc(b.rank)+'</th></tr>'
+      +row('Game',function(r){ return r.event; })+row('Sport',function(r){ return r.sport_label; })+row('Model side',function(r){ return r.modeled.selection; })
+      +row('Win probability',function(r){ return qdPct(r.modeled.probability,1); })+row('Cautious read',function(r){ return qdPct(r.modeled.conservative_probability,1); })
+      +row('Bet at',function(r){ return msNeedText(ms,r)||'—'; })+row('Status',function(r){ return msState(r).t; })
+      +row('Model',function(r){ return String(r.model_confidence&&r.model_confidence.validation_state||'').replace(/_/g,' ').toLowerCase(); })
+      +row('Biggest edge',function(r){ return (r.advantages||[])[0]||'—'; })+row('Against',function(r){ return (r.counterarguments||[])[0]||'—'; })+'</table></div>';
+    var lead=(a.modeled.conservative_probability||0)>=(b.modeled.conservative_probability||0)?a:b;
+    return '<p>#'+esc(lead.rank)+' ranks higher: its cautious probability is '+esc(qdPct(lead.modeled.conservative_probability,1))+'. Neither is a verified bet until it has a price at or better than its bar and its conditions are confirmed.</p>'+t;
+  }
+  function msClosestHTML(ms){
+    var v=ms.best_verified, mw=ms.market_watch, lis=[];
+    if(v) lis.push('Verified: '+v.selection+' '+msQuote(v)+' ('+v.event+') cleared every check.');
+    if(mw) lis.push((v?'Next closest: ':'Closest: ')+mw.selection+' '+msQuote(mw)+' ('+mw.event+') — '+String(mw.outcome_label||'').toLowerCase()+(mw.math&&mw.math.max_acceptable_american!=null?'; it clears at '+qdAm(mw.math.max_acceptable_american)+' or better':'')+'.');
+    if(!v&&!mw) lis.push('No priced market is positive against the model right now'+(ms.no_verified_reason?' ('+ms.no_verified_reason+')':'')+'.');
+    var games=msGames(ms).slice(0,3);
+    if(games.length) lis.push('To find one yourself: '+games.map(function(r){ var n=msNeedText(ms,r); return r.modeled.selection+(n?' at '+n:''); }).join('; ')+'.');
+    if((ms.data_checks||[]).length) lis.push((ms.data_checks.length)+' price'+(ms.data_checks.length===1?' looks':'s look')+' wrong rather than good (a data check): '+ms.data_checks.slice(0,3).map(function(x){ return x.selection+' '+qdAm(x.quote&&x.quote.american); }).join('; ')+'. Re-check before trusting.');
+    return msSec('On file now',lis);
+  }
+  function msChangeHTML(ms){
+    var top=msGames(ms)[0], lis=[];
+    if(top) msWrong(top).slice(0,3).forEach(function(w){ lis.push('#1 '+top.event+': '+w); });
+    lis.push('A fresh price at or better than a game’s bar — the list shows each one.');
+    lis.push('Goalie, quarterback and lineup confirmations closer to the start.');
+    (ms.held_back||[]).forEach(function(r){ lis.push('A re-run for '+r.event+' ('+r.sport_label+'): '+(r.invalidated?'its projection was invalidated':String(r.research_outcome||'').replace(/_/g,' ').toLowerCase())+'.'); });
+    return msSec('What could change the answer',lis,'limits');
+  }
+  function msSummaryHTML(ms){ return msBriefHTML(ms); }
+
+  /* a capitalised name in the question that is no team on the list, and no league or month */
+  function msForeign(q, games){
+    var known=msNorm(games.map(function(r){ return r.event+' '+r.sport_label; }).join(' '));
+    var words=String(q||'').replace(/[’']s\b/g,'').split(/[^A-Za-z&.]+/).slice(1).filter(function(w){ return /^[A-Z][a-z]/.test(w); });
+    return words.some(function(w){ w=w.replace(/\.$/,'').toLowerCase(); return !/^(i|im|nhl|nba|wnba|nfl|cfb|fbs|mlb|ufc|ok|okay|edgedesk|desk|tonight|today|vs|monday|tuesday|wednesday|thursday|friday|saturday|sunday|college|football|basketball|hockey|best|why|what|which|how|is|are|should|compare|tell|over|under|moneyline)$/.test(w)&&known.indexOf(' '+w+' ')<0; });
+  }
+  function msIsLatest(){ var all=document.querySelectorAll('#edaiLog .edai-msg.a'); var l=all[all.length-1]; return !!(l&&l.querySelector('.msd-brief,.msd-fu')); }
+  /* returns true when the question was answered from tonight's research */
+  function msFollow(t){
+    var fromList=MS_FROM_LIST; MS_FROM_LIST=false;
+    if(!LAST_MS||!LAST_MS.ms||Date.now()-LAST_MS.at>MS_TTL_MS) return false;
+    if(DSCAN&&DSCAN.ts&&DSCAN.ts>LAST_MS.at) return false;
+    var ms=LAST_MS.ms, q=String(t||'').trim(), games=msGames(ms);
+    if(!q||q.length>300) return false;
+    /* a new window or a cross-sport rescan is a new question */
+    if(/\b(tomorrow|this weekend|weekend|this week|next \d+ hours|next week|yesterday|all sports|every sport|across (?:all )?sports)\b/i.test(q)) return false;
+    var intent=msIntent(q), ranks=msRanks(q), named=msNamed(q, games), sp=msSportIn(q, games), latest=fromList||msIsLatest()||/\b(?:the|your|tonight'?s|this) (?:list|research|short ?list)\b/i.test(q);
+    /* "#2", "why?" and "what should I check?" mean this list only while it is the conversation's latest answer */
+    if(!latest&&!named.length) return false;
+    if(!latest&&(intent==='avail'||!intent)) return false;
+    /* the same opening question again is a fresh run, not a follow-up; a contract, a venue or a coverage
+       question belongs to the quant desk */
+    if(!ranks.length&&!named.length&&intelAsk(q)) return false;
+    if(quantAsk(q)) return false;
+    /* somebody the list does not hold ("Rays vs. Guardians", "is Josh Allen playing?") is a new subject */
+    if(msForeign(q, games)) return false;
+    /* "Hurricanes vs Canucks" names one game, not two to compare */
+    var distinct=named.filter(function(h,i){ return named.findIndex(function(x){ return x.r===h.r; })===i; });
+    if(intent==='compare'&&ranks.length<2&&distinct.length<2&&!/\bcompare\b/i.test(q)) intent=msIntent(q.replace(/\b(?:vs\.?|versus)\b/gi,' '));
+    var byRank=function(n){ return games.filter(function(r){ return r.rank===n; })[0]||null; };
+    var target=null;
+    if(ranks.length) target=byRank(ranks[0]);
+    if(!target&&named.length) target=named[0].r;
+    if(!target&&sp&&!/^(closest|datachecks|change|compare)$/.test(intent||'')) target=games.filter(function(r){ return r.sport===sp; })[0]||null;
+    /* a follow-up that names no game stays on the game the last follow-up was about */
+    if(!target&&!ranks.length&&!named.length&&!sp&&LAST_MS.subject&&/^(why|check|price|risk|avail|bet|game)$/.test(intent||'game')) target=games.filter(function(r){ return r.projection_id===LAST_MS.subject; })[0]||null;
+    /* nothing on the list named, and not a follow-up phrasing: not ours */
+    if(!target&&!ranks.length&&!named.length&&!intent) return false;
+    if(!target&&sp&&!games.some(function(r){ return r.sport===sp; })){
+      done(msReply('Not on tonight’s list','<p>'+esc('No '+sp.toUpperCase()+' game made the research list '+msWhen(ms)+'. The coverage section of the answer above says what was found for each sport.')+'</p>',['What should I research tonight?']), q);
+      return true;
+    }
+    if(ranks.length&&!target){
+      done(msReply('Not on the list','<p>'+esc('The list has '+games.length+' game'+(games.length===1?'':'s')+'; there is no #'+ranks[0]+'.')+'</p>',['What should I research tonight?']), q);
+      return true;
+    }
+    /* two games named with the same strength and no rank: ask which */
+    if(!ranks.length&&named.length>1&&named[0].score===named[1].score&&named[0].r!==named[1].r&&intent!=='compare'&&named[0].score<3){
+      done(msReply('Which game?','<p>That name fits more than one game on the list.</p>',named.slice(0,3).map(function(h){ return (intent==='check'?'What should I check before betting #':intent==='price'?'What price do I need on #':'Tell me about #')+h.r.rank+' ('+h.r.event+')'; })), q);
+      return true;
+    }
+    var r=target||games[0]||null, title, html;
+    var quoted=msQuoted(q);
+    if(intent==='compare'){
+      var a=ranks.length>1?byRank(ranks[0]):distinct.length>1?distinct[0].r:(target||byRank(1)), b=ranks.length>1?byRank(ranks[1]):distinct.length>1?distinct[1].r:(games[games.indexOf(a)+1]||(a===games[0]?null:games[0]));
+      if(!a||!b||a===b){ done(msReply('Compare','<p>Name two games on the list, for example “compare #1 and #2”.</p>'), q); return true; }
+      done(msReply('#'+a.rank+' against #'+b.rank, msCompareHTML(ms,a,b), ['What should I check before betting #'+Math.min(a.rank,b.rank)+'?','Which game is closest to a bet?']), q); return true;
+    }
+    if(intent==='closest'&&!target){ done(msReply('Closest to a bet',msClosestHTML(ms),['What should I check before betting #1?','What could change the answer?']), q); return true; }
+    if(intent==='datachecks'&&!target){
+      done(msReply('Prices that look wrong',(ms.data_checks||[]).length?msSec('Data checks — not edges',ms.data_checks.map(function(x){ return x.selection+' '+msQuote(x)+' ('+x.event+'): '+(x.reasons||[]).join('; '); }))+'<p class="msd-dim">An expected value past 15% almost always means a stale, mismatched or mistyped price, so these are never ranked. Re-check them at the book.</p>':'<p>No price was flagged as a data check in this research.</p>'), q); return true;
+    }
+    if(intent==='change'&&!target){ done(msReply('What could change the answer',msChangeHTML(ms),['What should I check before betting #1?']), q); return true; }
+    if(intent==='summary'&&!target){ LAST_MS.subject=null; done('<div class="dk-read msd-fu"><div class="lab">'+esc('What to research '+msWhen(ms))+'</div>'+msSummaryHTML(ms)+'</div>', q); return true; }
+    if(!r) return false;
+    LAST_MS.subject=r.projection_id;
+    var nx=games[games.indexOf(r)+1];
+    var asks=[];
+    if(intent!=='check') asks.push('What should I check before betting #'+r.rank+'?');
+    if(intent!=='price') asks.push('What price do I need on #'+r.rank+'?');
+    if(intent!=='risk') asks.push('What could go wrong with #'+r.rank+'?');
+    if(nx) asks.push('Compare #'+r.rank+' and #'+nx.rank);
+    if(intent==='why'||intent==='summary'){ title='Why #'+r.rank+' is on the list'; html=msWhyHTML(ms,r,games); }
+    else if(intent==='check'||intent==='change'){ title='Before you bet #'+r.rank; html=msCheckHTML(ms,r); }
+    else if(intent==='price'){ title='The price on #'+r.rank; html=msPriceAnswerHTML(ms,r,quoted); }
+    else if(intent==='risk'){ title='What could go wrong with #'+r.rank; html=msRiskHTML(ms,r); }
+    else if(intent==='avail'){ title='Who is playing in #'+r.rank; html=msAvailHTML(ms,r); }
+    else if(intent==='bet'){ title='Is #'+r.rank+' a bet?'; html=msBetHTML(ms,r,quoted); }
+    else { title='#'+r.rank+' '+r.event; html=msWhyHTML(ms,r,games)+'<div class="msd-g-px">'+msPriceHTML(ms,r)+'</div>'+msSec('Before you bet it',msChecks(r),'limits'); }
+    var dq=msDeepQ(r);
+    if(dq) html+='<div class="msd-g-a"><button type="button" class="msd-btn" data-ms-deep="'+esc(dq)+'">Full '+esc(r.sport_label)+' breakdown from the engine</button></div>';
+    done(msReply(title, html, asks), q);
+    return true;
+    function done(h, question){
+      var el=push('a',h);
+      if(el){ var s=document.createElement('div'); s.className='edai-src'; s.textContent='From the research above (built '+msTime(LAST_MS.built||new Date(LAST_MS.at).toISOString(), ms.window&&ms.window.timezone)+') · EdgeDesk’s own numbers, nothing new was read and no model wrote this'; el.appendChild(s); }
+      try{ HIST.push({role:'user',content:question}); HIST.push({role:'assistant',content:(el&&el.innerText||'').slice(0,1500)}); }catch(_){}
+    }
+  }
+  /* the engine's own breakdown of one game, asked straight of the server (the browser's football resolver would read "Carolina" as a college team) */
+  async function msDeep(q){
+    if(!q||BUSY) return;
+    push('u',q); BUSY=true; var sb=$id('edaiSend'); if(sb) sb.disabled=true;
+    try{
+      thinking(true);
+      LAST_ASK={mode:'chat',question:q,x:null,extra:null};
+      var res=await askAI('chat',q,null);
+      thinking(false);
+      var el=push('a',res.html); if(res.src&&el){ var s=document.createElement('div'); s.className='edai-src'; s.textContent=res.src; el.appendChild(s); }
+    }catch(e){ thinking(false); push('a','<p>The research desk could not be reached for that breakdown. Try again in a moment.</p>'); }
+    finally{ BUSY=false; var sb2=$id('edaiSend'); if(sb2) sb2.disabled=false; }
+  }
+  /* the list's own buttons: a follow-up runs as the reader's next turn, a breakdown goes straight to the server */
+  document.addEventListener('click', function(e){
+    var b=e.target&&e.target.closest?e.target.closest('[data-ms-ask],[data-ms-deep]'):null;
+    if(!b||!window.EDAI) return;
+    if(b.hasAttribute('data-ms-deep')){ msDeep(b.getAttribute('data-ms-deep')); return; }
+    var ta=$id('edaiText'); if(!ta||BUSY) return;
+    /* a button on the list is about the list, however many answers came after it */
+    ta.value=b.getAttribute('data-ms-ask'); MS_FROM_LIST=true; window.EDAI.sendText();
+  });
+
   /* ======================= PUBLIC API ======================= */
   /* ── SLICE 8: THE BANKROLL SETTINGS EDITOR ──────────────────────────────
      The engine answers in units without this and says so. What the row adds
@@ -45355,7 +45820,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* A new conversation drops the subject as well as the log — otherwise the
        first question of the next conversation inherits the last one's game. */
     newConversation:function(){
-      HIST=[]; SESSION={eventId:null,cache:{},matchup:null,matchupId:null}; LAST_TURN=null; LAST_BOARD=null; LAST_CTX=null; LAST_DESK=null; LAST_QUANT=null;
+      HIST=[]; SESSION={eventId:null,cache:{},matchup:null,matchupId:null}; LAST_TURN=null; LAST_BOARD=null; LAST_CTX=null; LAST_DESK=null; LAST_QUANT=null; LAST_MS=null;
       emptyState(); renderActions();
     },
     resolveMatchupFor:function(q){
@@ -45673,6 +46138,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       try{
         // native DAILY_SCAN: build the packet ourselves, never require an attached signal
         if(isDailyScan(t)){ await dailyScanCore(); return; }
+        /* follow-ups on the multi-sport research on screen ("why #1?", "what should I check on the Hurricanes?") */
+        if(msFollow(t)) return;
         // daily-scan follow-ups ("Why #1", "Attack #1", "Compare #1 and #2", ...) reuse the stored scan
         if(dscanFollow(t)) return;
         /* Phase 3: a research question runs on the research engine with its activity shown (intelTurn) */

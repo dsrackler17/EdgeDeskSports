@@ -232,9 +232,12 @@ function siteHandler(req, res) {
       if (!act) return null;
       /* the answer is the message after the activity's message */
       let msg = act.closest('#edaiLog > *'); let ans = msg ? msg.nextElementSibling : null;
+      /* a multi-sport answer leads with its short list and folds the engine's full text under it: open it, as a reader would */
+      const brief = ans && ans.querySelector('.msd-brief') ? ans.querySelector('.msd-brief').innerText : null;
+      if (ans) ans.querySelectorAll('details.msd-packet').forEach((d) => { d.open = true; });
       const txt = ans ? ans.innerText : '';
       return { state: act.getAttribute('data-state'), steps: [...act.querySelectorAll('.ia-step')].map((s) => ({ st: s.getAttribute('data-st'), status: s.getAttribute('data-status'), label: s.querySelector('.ia-step-l').textContent, detail: s.querySelector('.ia-step-d').textContent })),
-        title: (act.querySelector('.ia-act-t, summary') || {}).textContent || '', answer: txt, cards: ans ? ans.querySelectorAll('.ia-card').length : 0, html: ans ? ans.innerHTML.length : 0 };
+        title: (act.querySelector('.ia-act-t, summary') || {}).textContent || '', answer: txt, brief, cards: ans ? ans.querySelectorAll('.ia-card').length : 0, html: ans ? ans.innerHTML.length : 0 };
     });
   }
   async function noSideScroll(page) { return page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth })); }
@@ -315,6 +318,7 @@ function siteHandler(req, res) {
       const evs1 = R.b_tonight.events.filter((e) => e.type === 'progress');
       chk(T + '4 · every step the server streamed is on screen with its status and detail, in its order', r1 && r1.state === 'done' && evs1.every((e) => r1.steps.some((s) => s.st === e.stage)) && r1.steps.filter((s) => s.st !== 'SENT').every((s) => s.status !== 'running'), r1 && r1.steps);
       chk(T + '4 · the answer is the engine\'s, to the word: nothing verified tonight, with the coverage', r1 && /No verified positive-EV trade currently clears/.test(r1.answer) && /Coverage — no eligible games/.test(r1.answer) && want1 && r1.answer.indexOf(want1.answer.split('\n')[0].slice(0, 60)) >= 0, r1 && r1.answer.slice(0, 300));
+      chk(T + '4 · …led by the short answer in plain words: no bet clears, and why', r1 && /^No bet clears every check tonight\./.test(r1.brief || '') && /Why no bet yet/.test(r1.brief || ''), r1 && r1.brief);
       chk(T + '4 · no card is drawn for an answer with no candidate (nothing is manufactured)', r1 && r1.cards === 0, r1 && r1.cards);
       await shot(page, '04-answer-tonight-' + vp.tag);
 
