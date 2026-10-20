@@ -54,6 +54,20 @@ const NAME = {}; MS.DIVISIONS.forEach((d) => { NAME[d[1]] = d[2]; NAME[d[0]] = d
 /* the schedule's ET kickoff, as the odds feed would carry it */
 function kickIso(day, time) { const d = new Date(day + 'T' + (time || '13:00') + ':00-04:00'); return d.toISOString(); }
 
+/* IND @ MIN's line is the schedule's own spread_line, which nflverse updates
+   as the market moves (5.5 when this suite was written, 6.5 a day later). The
+   suite pins it to MIN −5.5 in the copy it serves, so the Six watch case is
+   staged like everything else rather than read from the live market. */
+function pinLine(csv, season, week, away, home, spreadLine) {
+  const rows = csv.split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k), sl = ix('spread_line');
+  if (sl < 0) return csv;
+  return rows.map((l, i) => {
+    if (!i || !l) return l;
+    const c = l.split(',');
+    if (c[ix('season')] === season && c[ix('week')] === week && c[ix('away_team')] === away && c[ix('home_team')] === home) { c[sl] = spreadLine; return c.join(','); }
+    return l;
+  }).join('\n');
+}
 function staged(csv) {
   const rows = csv.trim().split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
   const want = {};
@@ -80,8 +94,9 @@ function staged(csv) {
   let pw = null;
   for (const p of ['playwright', '/opt/node22/lib/node_modules/playwright', '/opt/node-tools/node_modules/playwright']) { try { pw = require(p); break; } catch (_) { /* next */ } }
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
-  const csv = await gamesCsv();
-  if (!csv) { console.log('SKIPPED: the nflverse schedule is neither cached nor reachable'); process.exit(0); }
+  const raw = await gamesCsv();
+  if (!raw) { console.log('SKIPPED: the nflverse schedule is neither cached nor reachable'); process.exit(0); }
+  const csv = pinLine(raw, '2026', '7', 'IND', 'MIN', '5.5');
   const ST = staged(csv);
   if (!ST) { console.log('SKIPPED: the schedule carries no 2026 Week 7 DAL @ PHI / IND @ MIN to stage'); process.exit(0); }
   let HEAD_APP = null;
