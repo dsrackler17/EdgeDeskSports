@@ -737,19 +737,22 @@
        dropped, nothing is rounded before it is summed, and each term belongs to
        exactly one row. Points are SIGNED, home-positive. Team-strength rows
        carry their prior / this-season split. */
+    /* the rows cover v1's terms and every v2 term (football/nfl_model.js
+       CARD_ROWS): split offence/defence, personnel and market priors, the
+       season home field, travel */
     CARD_ROWS: [
-      { key: 'base_strength', label: 'Base team strength', terms: ['spread:net_pts', 'spread:net_epa'] },
-      { key: 'passing', label: 'Passing', terms: ['spread:net_pass'] },
-      { key: 'rushing', label: 'Rushing', terms: ['spread:net_rush'] },
+      { key: 'base_strength', label: 'Base team strength', terms: ['spread:net_pts', 'spread:net_pts_fix', 'spread:net_epa', 'spread:off_epa', 'spread:def_epa', 'spread:pers_rb', 'spread:pers_wr', 'spread:pers_ol', 'spread:mkt_diff'] },
+      { key: 'passing', label: 'Passing', terms: ['spread:net_pass', 'spread:pass_off', 'spread:pass_def'] },
+      { key: 'rushing', label: 'Rushing', terms: ['spread:net_rush', 'spread:rush_off', 'spread:rush_def'] },
       { key: 'quarterback', label: 'Quarterback', terms: ['spread:qb_adj_diff'] },
-      { key: 'home_field', label: 'Home field', terms: ['spread:baseline', 'ctx:baseline', 'ctx:week_frac'] },
+      { key: 'home_field', label: 'Home field', terms: ['spread:baseline', 'ctx:baseline', 'ctx:week_frac', 'hfa:hfa'] },
       { key: 'context', label: 'Context (venue, division)', terms: ['spread:div_game', 'ctx:div_game', 'ctx:is_dome', 'ctx:grass'] },
-      { key: 'rest_travel', label: 'Rest / travel', terms: ['spread:rest_diff', 'ctx:rest_diff', 'ctx:home_short', 'ctx:away_short', 'ctx:home_off_bye', 'ctx:away_off_bye'] }
+      { key: 'rest_travel', label: 'Rest / travel', terms: ['spread:rest_diff', 'ctx:rest_diff', 'ctx:home_short', 'ctx:away_short', 'ctx:home_off_bye', 'ctx:away_off_bye', 'ctx:travel_diff', 'ctx:tz_diff', 'ctx:west_early'] }
     ],
     card: function (pr, rowsDef) {
       if (!pr || !pr.terms) return null;
       var defs = rowsDef || nfl.CARD_ROWS, byKey = {}, rows = [], seen = {}, i, j, sum = 0, unplaced = [];
-      ['spread', 'ctx'].forEach(function (m) {
+      ['spread', 'ctx', 'hfa'].forEach(function (m) {
         (pr.terms[m] || []).forEach(function (t) { byKey[m + ':' + t.key] = t; });
       });
       for (i = 0; i < defs.length; i++) {
