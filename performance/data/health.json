@@ -1,8 +1,25 @@
 {
  "schema": "edgedesk_perf_health_v1",
- "generated_at": "2026-10-20T06:05:27.198Z",
+ "generated_at": "2026-10-20T11:44:51.556Z",
  "status": "WARN",
  "items": [
+  {
+   "level": "WARN",
+   "check": "missing_finals",
+   "detail": "1 started game(s) with no verified final 8+ hours after the start",
+   "count": 1,
+   "sample": [
+    {
+     "event_key": "WNBA|401918306",
+     "sport": "wnba",
+     "pending": "NO_SOURCE",
+     "hours_past_start": 12,
+     "start_utc": "2026-10-20T00:00:00.000Z",
+     "home": "Golden State Valkyries",
+     "away": "Atlanta Dream"
+    }
+   ]
+  },
   {
    "level": "WARN",
    "check": "source_read_failed",
@@ -25,11 +42,11 @@
   }
  ],
  "counts": {
-  "forecasts": 1934,
-  "results": 535,
-  "grades": 535,
-  "quotes": 592,
-  "research_grades": 1820,
-  "grade_outcomes": 84
+  "forecasts": 1935,
+  "results": 539,
+  "grades": 539,
+  "quotes": 618,
+  "research_grades": 1892,
+  "grade_outcomes": 88
  }
 }
