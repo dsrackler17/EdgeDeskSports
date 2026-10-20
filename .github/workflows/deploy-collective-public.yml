@@ -1,0 +1,203 @@
+# Deploy supabase/functions/collective_public — the API behind /collective/
+# (the model directory, the wall, profiles, rankings) and the app's
+# Collective tab.
+#
+# This function used to be shipped by pasting the file into the Supabase
+# dashboard. supabase/functions/README.md says why that is risky: the repo
+# copy was TRANSCRIBED from the deployed function, so "diff it against the
+# deployed function before treating it as authoritative". This workflow does
+# that diff every time, before it deploys anything:
+#
+#   1. the suites that drive the real handler must pass;
+#   2. the DEPLOYED copy is downloaded and compared with every committed
+#      version of the file. If it matches one, the repo is that version plus
+#      known commits, and it is safe to ship. If it matches none, somebody
+#      changed it in the dashboard: the diff is printed and NOTHING is
+#      deployed unless `force` is set (the dashboard change would be lost);
+#   3. deploy, JWT verification OFF (the function checks sessions itself:
+#      most of its routes are public);
+#   4. smoke: /v1/meta, /v1/wall and /v1/rankings must answer 200 from the
+#      live function, and the wall's members are listed. If they do not, the
+#      copy downloaded in step 2 is put back.
+#
+# HOW IT RUNS
+#   * workflow_dispatch with stage = check (steps 1-2, production untouched)
+#     or deploy.
+#   * A push to a claude/** branch that changes the function or this file
+#     runs step 1 only, UNLESS its head commit message names a stage:
+#     [collective-public:check] or [collective-public:deploy] — the same
+#     pattern as deploy-affiliates.yml.
+#
+# SECRETS (the ones the other deploy workflows already use):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF
+name: Deploy collective_public
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'check (compare with the deployed copy, deploy nothing) or deploy'
+        type: choice
+        options: [check, deploy]
+        default: check
+      force:
+        description: 'Deploy even when the deployed copy matches no committed version (a dashboard edit is overwritten)'
+        type: boolean
+        default: false
+  push:
+    branches: ['claude/**']
+    paths:
+      - '.github/workflows/deploy-collective-public.yml'
+      - 'supabase/functions/collective_public/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-collective-public
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STAGE: ${{ inputs.stage || (contains(github.event.head_commit.message, '[collective-public:deploy]') && 'deploy') || (contains(github.event.head_commit.message, '[collective-public:check]') && 'check') || 'test_only' }}
+      FORCE: ${{ inputs.force && 'yes' || 'no' }}
+      FN: supabase/functions/collective_public/index.ts
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Which stage
+        run: |
+          echo "stage: $STAGE (event: ${{ github.event_name }}, ref: ${{ github.ref_name }}, force: $FORCE)"
+          case "$STAGE" in test_only) echo "Tests only: production is not touched.";; esac
+
+      - name: The suites that drive the real handler must pass
+        run: |
+          node tools/collective/football_api.test.js
+          node tools/collective/removed_members_api.test.js
+          node tools/collective/closeless_grades.test.js
+          node tools/collective/dashboard_model_resolution.test.js
+          node tools/collective/week_resolution.test.js
+
+      - name: Check the credentials exist before claiming anything
+        if: ${{ env.STAGE != 'test_only' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set as repository secrets."
+            exit 1
+          fi
+
+      - name: Install the Supabase CLI
+        if: ${{ env.STAGE != 'test_only' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Compare the deployed copy with the repo
+        id: deployed
+        if: ${{ env.STAGE != 'test_only' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -uo pipefail
+          D="$RUNNER_TEMP/deployed"; mkdir -p "$D"
+          ( cd "$D" && supabase functions download collective_public --project-ref "$REF" --use-api ) \
+            || ( cd "$D" && supabase functions download collective_public --project-ref "$REF" ) \
+            || true
+          SRC=$(find "$D" -type f -name 'index.ts' -printf '%s %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+          if [ -z "$SRC" ]; then
+            echo "::error::The deployed collective_public could not be downloaded, so it cannot be compared."
+            echo "match=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cp "$SRC" "$RUNNER_TEMP/previous-index.ts"
+          echo "file=$RUNNER_TEMP/previous-index.ts" >> "$GITHUB_OUTPUT"
+          echo "deployed copy: $(wc -l < "$SRC") lines"
+
+          # Line endings, trailing spaces and trailing blank lines are not changes.
+          norm() { sed -e 's/\r$//' -e 's/[[:space:]]*$//' | awk 'NF{for(;n>0;n--)print "";print;next}{n++}'; }
+          norm < "$SRC" > "$RUNNER_TEMP/deployed.norm"
+          MATCH=""; AHEAD=0
+          for c in $(git log --format=%H -- "$FN"); do
+            git show "$c:$FN" 2>/dev/null | norm > "$RUNNER_TEMP/commit.norm"
+            if cmp -s "$RUNNER_TEMP/deployed.norm" "$RUNNER_TEMP/commit.norm"; then MATCH="$c"; break; fi
+            AHEAD=$((AHEAD+1))
+          done
+          if [ -n "$MATCH" ]; then
+            echo "The deployed copy IS $(git log -1 --format='%h (%ad) %s' --date=short "$MATCH")."
+            echo "The repo is $AHEAD committed change(s) ahead of it:"
+            git log --format='  %h %ad %s' --date=short "$MATCH"..HEAD -- "$FN"
+            git diff --stat "$MATCH" HEAD -- "$FN"
+            echo "match=yes" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::warning::The deployed copy matches NO committed version of $FN: it was changed in the dashboard."
+          # Public logs: never print a line that looks like a credential.
+          SECRETS='(sk-[A-Za-z0-9_-]{16,}|sk_live_[A-Za-z0-9]{16,}|rk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|xox[baprs]-|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,})'
+          if grep -qE "$SECRETS" "$RUNNER_TEMP/deployed.norm"; then
+            echo "::error::The deployed copy contains something that looks like a credential (lines $(grep -nE "$SECRETS" "$RUNNER_TEMP/deployed.norm" | cut -d: -f1 | tr '\n' ' ')). The diff is not printed."
+          else
+            echo "--- deployed   +++ repo HEAD"
+            norm < "$FN" | diff -u "$RUNNER_TEMP/deployed.norm" - | head -600
+          fi
+          echo "match=no" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy collective_public
+        id: deploy
+        if: ${{ env.STAGE == 'deploy' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          MATCH: ${{ steps.deployed.outputs.match }}
+        run: |
+          if [ "$MATCH" != "yes" ] && [ "$FORCE" != "yes" ]; then
+            echo "::error::Not deploying: the deployed copy could not be matched to a committed version (match=$MATCH). Read the step above; re-run with force only if what it shows may be overwritten."
+            exit 1
+          fi
+          supabase functions deploy collective_public --project-ref "$REF" --no-verify-jwt
+
+      - name: Smoke the live function
+        id: smoke
+        if: ${{ env.STAGE == 'deploy' && steps.deploy.outcome == 'success' }}
+        env:
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -uo pipefail
+          BASE="https://${REF}.supabase.co/functions/v1/collective_public"
+          ok=0
+          for attempt in 1 2 3 4 5 6; do
+            ok=1
+            for p in /v1/meta /v1/wall /v1/rankings; do
+              code=$(curl -s -o "$RUNNER_TEMP/smoke$(echo $p | tr / _).json" -w '%{http_code}' "$BASE$p?_=$(date +%s)")
+              echo "attempt $attempt  GET $p -> $code"
+              [ "$code" = "200" ] || ok=0
+            done
+            jq -e '.rows | type == "array"' "$RUNNER_TEMP/smoke_v1_wall.json" >/dev/null 2>&1 || ok=0
+            [ "$ok" = 1 ] && break
+            sleep 10
+          done
+          if [ "$ok" != 1 ]; then echo "::error::The live function does not answer after the deploy."; exit 1; fi
+          echo "On the wall now:"
+          jq -r '.rows[] | "  \(.creator_slug) / \(.model_slug)  \(.membership)"' "$RUNNER_TEMP/smoke_v1_wall.json"
+
+      - name: The live function is broken — put the previous version back
+        if: ${{ failure() && steps.deploy.outcome == 'success' && steps.deployed.outputs.file != '' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PREV: ${{ steps.deployed.outputs.file }}
+        run: |
+          cp "$PREV" "$FN"
+          supabase functions deploy collective_public --project-ref "$REF" --no-verify-jwt
+          echo "::error::Rolled back to the copy that was deployed before this run."
