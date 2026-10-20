@@ -4,7 +4,7 @@
   "game_id": "2026_06_WAS_SF",
   "sport": "NFL",
   "snapshot_id": "snap_08094aa950692c47",
-  "audited_at": "2026-10-20T14:50:53.991Z",
+  "audited_at": "2026-10-20T14:57:45.440Z",
   "theses": [
     {
       "schema": "edgedesk_thesis_v1",
@@ -994,7 +994,7 @@
     "game_id": "2026_06_WAS_SF",
     "sport": "NFL",
     "snapshot_id": "snap_08094aa950692c47",
-    "graded_at": "2026-10-20T14:50:53.991Z",
+    "graded_at": "2026-10-20T14:57:45.440Z",
     "final": {
       "home_team": "San Francisco 49ers",
       "away_team": "Washington Commanders",
@@ -1049,8 +1049,14 @@
     },
     "bet_headline": "WIN",
     "closing_line": {
-      "available": false,
-      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+      "available": true,
+      "captured_home_margin": 7.5,
+      "closing_home_margin": -7.5,
+      "close_source": "EdgeDesk Collective captured close (collective_odds_board)",
+      "movement_points": 15,
+      "moved_toward_edgedesk": true,
+      "clv_points": 15,
+      "note": "The line moved 15 points toward the side EdgeDesk’s number leaned before kickoff. That is the market arriving where EdgeDesk already was, and over many games it is the only evidence that a disagreement carried information."
     },
     "model_accuracy": {
       "available": true,
@@ -1112,7 +1118,7 @@
       "suggested_investigation": null,
       "bet_result": "WIN",
       "process_grade": "MIXED",
-      "created_at": "2026-10-20T14:50:53.991Z"
+      "created_at": "2026-10-20T14:57:45.440Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -1136,7 +1142,7 @@
       "suggested_investigation": "These claims carried 4.8 points of the published number between them and were contradicted. Check whether the same category has been contradicted in other games this season before touching anything.",
       "bet_result": "WIN",
       "process_grade": "MIXED",
-      "created_at": "2026-10-20T14:50:53.991Z"
+      "created_at": "2026-10-20T14:57:45.440Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -1160,7 +1166,7 @@
       "suggested_investigation": "Consider whether a postgame data source exists for model.",
       "bet_result": "WIN",
       "process_grade": "MIXED",
-      "created_at": "2026-10-20T14:50:53.991Z"
+      "created_at": "2026-10-20T14:57:45.440Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -1184,7 +1190,7 @@
       "suggested_investigation": null,
       "bet_result": "WIN",
       "process_grade": "MIXED",
-      "created_at": "2026-10-20T14:50:53.991Z"
+      "created_at": "2026-10-20T14:57:45.440Z"
     }
   ]
 }
