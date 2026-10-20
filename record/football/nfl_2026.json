@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk Football Engine · NFL",
  "projection_source": "football/nfl/slate.json",
- "updated_at": "2026-10-20T04:18:54.803Z",
+ "updated_at": "2026-10-20T18:01:41.652Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -13580,59 +13580,50 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-19T14:45:59.206Z",
-    "home_line": -0.07,
-    "total": 48.41,
-    "home_win_prob": 0.5027,
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -0.08,
+    "total": 48.08,
+    "home_win_prob": 0.5031,
     "model_version": "edgedesk_football_v1.0.0",
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-19T14:45:59.206Z",
+     "decided_at": "2026-10-20T18:00:18.356Z",
      "spread": {
       "status": "locked",
       "source": "record_quotes",
-      "quote_id": "edq_29e7e475181adf75c8a8dba7",
+      "quote_id": "edq_3cd107931f34bd9210343ea7",
       "book": "draftkings",
-      "observed_at": "2026-10-19T13:38:24.161Z",
-      "home_line": 4.5,
+      "observed_at": "2026-10-20T15:23:03.226Z",
+      "home_line": 3,
       "total": null,
       "prices": {
-       "home": -110,
-       "away": -110
+       "home": -105,
+       "away": -115
       },
-      "locked_at": "2026-10-19T14:47:56.548Z"
+      "locked_at": "2026-10-20T18:01:41.652Z"
      },
      "total": {
-      "status": "locked",
-      "source": "record_quotes",
-      "quote_id": "edq_62f1339f5f05a8aac6986df0",
-      "book": "draftkings",
-      "observed_at": "2026-10-19T13:38:24.161Z",
-      "home_line": null,
-      "total": 50.5,
-      "prices": {
-       "over": -115,
-       "under": -105
-      },
-      "locked_at": "2026-10-19T14:47:56.548Z"
+      "status": "historical_price_unavailable",
+      "why": "stale",
+      "detail": "the latest stored total price before the decision was 368 minutes old — past the 360-minute limit"
      },
      "moneyline": {
       "status": "locked",
       "source": "record_quotes",
-      "quote_id": "edq_e33b977a255788c7e8c68d0c",
+      "quote_id": "edq_59b60274880cf7d991e0b836",
       "book": "draftkings",
-      "observed_at": "2026-10-19T13:38:24.161Z",
+      "observed_at": "2026-10-20T17:21:30.345Z",
       "home_line": null,
       "total": null,
       "prices": {
-       "home_ml": 185,
-       "away_ml": -225
+       "home_ml": 145,
+       "away_ml": -175
       },
-      "locked_at": "2026-10-19T14:47:56.548Z"
+      "locked_at": "2026-10-20T18:01:41.652Z"
      }
     }
    },
-   "revisions": 3,
+   "revisions": 4,
    "entry": {
     "model_at": "2026-10-13T19:53:23.706Z",
     "home_line": -0.39,
@@ -13646,11 +13637,11 @@
     }
    },
    "market_pick": {
-    "home_line": 4.5,
+    "home_line": 3,
     "total": 50.5,
     "source": "nflverse",
     "book": "consensus",
-    "at": "2026-10-19T14:45:59.206Z"
+    "at": "2026-10-20T18:00:18.356Z"
    },
    "close": null,
    "final": null,
@@ -14895,8 +14886,553 @@
     "model_version": "edgedesk_football_v1.0.0"
    },
    "revisions": 2,
-   "entry": null,
-   "market_pick": null,
+   "entry": {
+    "model_at": "2026-10-19T14:45:59.206Z",
+    "home_line": -1.5,
+    "total": 45.64,
+    "market": {
+     "home_line": null,
+     "total": 45.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:01:41.652Z",
+     "prices": {
+      "over": -115,
+      "under": -105,
+      "home_ml": -158,
+      "away_ml": 134
+     }
+    }
+   },
+   "market_pick": {
+    "home_line": null,
+    "total": 45.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:01:41.652Z",
+    "prices": {
+     "over": -115,
+     "under": -105,
+     "home_ml": -158,
+     "away_ml": 134
+    }
+   },
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": null,
+    "pnl": null
+   }
+  },
+  "2026_08_BAL_BUF": {
+   "game_id": "2026_08_BAL_BUF",
+   "season": 2026,
+   "week": 8,
+   "kickoff": "2026-11-01T18:00:00.000Z",
+   "home": "Buffalo Bills",
+   "away": "Baltimore Ravens",
+   "model_version": "edgedesk_football_v1.0.0",
+   "home_line": -8.89,
+   "total": 51.74,
+   "home_win_prob": 0.797,
+   "home_code": "BUF",
+   "away_code": "BAL",
+   "first": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -8.89,
+    "total": 51.74,
+    "home_win_prob": 0.797,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "pick": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -8.89,
+    "total": 51.74,
+    "home_win_prob": 0.797,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "revisions": 0,
+   "entry": {
+    "model_at": "2026-10-20T18:00:18.356Z",
+    "home_line": -8.89,
+    "total": 51.74,
+    "market": {
+     "home_line": -2.5,
+     "total": 53.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:00:18.356Z"
+    }
+   },
+   "market_pick": {
+    "home_line": -2.5,
+    "total": 53.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:00:18.356Z"
+   },
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": null,
+    "pnl": null
+   }
+  },
+  "2026_08_TEN_CIN": {
+   "game_id": "2026_08_TEN_CIN",
+   "season": 2026,
+   "week": 8,
+   "kickoff": "2026-11-01T18:00:00.000Z",
+   "home": "Cincinnati Bengals",
+   "away": "Tennessee Titans",
+   "model_version": "edgedesk_football_v1.0.0",
+   "home_line": -10.41,
+   "total": 46.1,
+   "home_win_prob": 0.8346,
+   "home_code": "CIN",
+   "away_code": "TEN",
+   "first": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -10.41,
+    "total": 46.1,
+    "home_win_prob": 0.8346,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "pick": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -10.41,
+    "total": 46.1,
+    "home_win_prob": 0.8346,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "revisions": 0,
+   "entry": {
+    "model_at": "2026-10-20T18:00:18.356Z",
+    "home_line": -10.41,
+    "total": 46.1,
+    "market": {
+     "home_line": -10.5,
+     "total": 45.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:00:18.356Z"
+    }
+   },
+   "market_pick": {
+    "home_line": -10.5,
+    "total": 45.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:00:18.356Z"
+   },
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": null,
+    "pnl": null
+   }
+  },
+  "2026_08_ARI_DAL": {
+   "game_id": "2026_08_ARI_DAL",
+   "season": 2026,
+   "week": 8,
+   "kickoff": "2026-11-01T18:00:00.000Z",
+   "home": "Dallas Cowboys",
+   "away": "Arizona Cardinals",
+   "model_version": "edgedesk_football_v1.0.0",
+   "home_line": -4.05,
+   "total": 51.67,
+   "home_win_prob": 0.6476,
+   "home_code": "DAL",
+   "away_code": "ARI",
+   "first": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -4.05,
+    "total": 51.67,
+    "home_win_prob": 0.6476,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "pick": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -4.05,
+    "total": 51.67,
+    "home_win_prob": 0.6476,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "revisions": 0,
+   "entry": {
+    "model_at": "2026-10-20T18:00:18.356Z",
+    "home_line": -4.05,
+    "total": 51.67,
+    "market": {
+     "home_line": -6.5,
+     "total": 51.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:00:18.356Z"
+    }
+   },
+   "market_pick": {
+    "home_line": -6.5,
+    "total": 51.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:00:18.356Z"
+   },
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": null,
+    "pnl": null
+   }
+  },
+  "2026_08_MIN_DET": {
+   "game_id": "2026_08_MIN_DET",
+   "season": 2026,
+   "week": 8,
+   "kickoff": "2026-11-01T18:00:00.000Z",
+   "home": "Detroit Lions",
+   "away": "Minnesota Vikings",
+   "model_version": "edgedesk_football_v1.0.0",
+   "home_line": -5.69,
+   "total": 44.55,
+   "home_win_prob": 0.7026,
+   "home_code": "DET",
+   "away_code": "MIN",
+   "first": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -5.69,
+    "total": 44.55,
+    "home_win_prob": 0.7026,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "pick": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -5.69,
+    "total": 44.55,
+    "home_win_prob": 0.7026,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "revisions": 0,
+   "entry": {
+    "model_at": "2026-10-20T18:00:18.356Z",
+    "home_line": -5.69,
+    "total": 44.55,
+    "market": {
+     "home_line": null,
+     "total": 48.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:01:41.652Z",
+     "prices": {
+      "over": -105,
+      "under": -115,
+      "home_ml": -164,
+      "away_ml": 138
+     }
+    }
+   },
+   "market_pick": {
+    "home_line": null,
+    "total": 48.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:01:41.652Z",
+    "prices": {
+     "over": -105,
+     "under": -115,
+     "home_ml": -164,
+     "away_ml": 138
+    }
+   },
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": null,
+    "pnl": null
+   }
+  },
+  "2026_08_IND_JAX": {
+   "game_id": "2026_08_IND_JAX",
+   "season": 2026,
+   "week": 8,
+   "kickoff": "2026-11-01T18:00:00.000Z",
+   "home": "Jacksonville Jaguars",
+   "away": "Indianapolis Colts",
+   "model_version": "edgedesk_football_v1.0.0",
+   "home_line": -8.98,
+   "total": 47.58,
+   "home_win_prob": 0.7993,
+   "home_code": "JAX",
+   "away_code": "IND",
+   "first": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -8.98,
+    "total": 47.58,
+    "home_win_prob": 0.7993,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "pick": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -8.98,
+    "total": 47.58,
+    "home_win_prob": 0.7993,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "revisions": 0,
+   "entry": {
+    "model_at": "2026-10-20T18:00:18.356Z",
+    "home_line": -8.98,
+    "total": 47.58,
+    "market": {
+     "home_line": -7.5,
+     "total": 47.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:00:18.356Z"
+    }
+   },
+   "market_pick": {
+    "home_line": -7.5,
+    "total": 47.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:00:18.356Z"
+   },
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": null,
+    "pnl": null
+   }
+  },
+  "2026_08_LV_NYJ": {
+   "game_id": "2026_08_LV_NYJ",
+   "season": 2026,
+   "week": 8,
+   "kickoff": "2026-11-01T18:00:00.000Z",
+   "home": "New York Jets",
+   "away": "Las Vegas Raiders",
+   "model_version": "edgedesk_football_v1.0.0",
+   "home_line": 1.64,
+   "total": 43.69,
+   "home_win_prob": 0.4392,
+   "home_code": "NYJ",
+   "away_code": "LV",
+   "first": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": 1.64,
+    "total": 43.69,
+    "home_win_prob": 0.4392,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "pick": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": 1.64,
+    "total": 43.69,
+    "home_win_prob": 0.4392,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "revisions": 0,
+   "entry": {
+    "model_at": "2026-10-20T18:00:18.356Z",
+    "home_line": 1.64,
+    "total": 43.69,
+    "market": {
+     "home_line": -1.5,
+     "total": 43.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:00:18.356Z"
+    }
+   },
+   "market_pick": {
+    "home_line": -1.5,
+    "total": 43.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:00:18.356Z"
+   },
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": null,
+    "pnl": null
+   }
+  },
+  "2026_08_CLE_PIT": {
+   "game_id": "2026_08_CLE_PIT",
+   "season": 2026,
+   "week": 8,
+   "kickoff": "2026-11-01T18:00:00.000Z",
+   "home": "Pittsburgh Steelers",
+   "away": "Cleveland Browns",
+   "model_version": "edgedesk_football_v1.0.0",
+   "home_line": -2.77,
+   "total": 37.89,
+   "home_win_prob": 0.6021,
+   "home_code": "PIT",
+   "away_code": "CLE",
+   "first": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -2.77,
+    "total": 37.89,
+    "home_win_prob": 0.6021,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "pick": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": -2.77,
+    "total": 37.89,
+    "home_win_prob": 0.6021,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "revisions": 0,
+   "entry": {
+    "model_at": "2026-10-20T18:00:18.356Z",
+    "home_line": -2.77,
+    "total": 37.89,
+    "market": {
+     "home_line": -4.5,
+     "total": 39.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:00:18.356Z"
+    }
+   },
+   "market_pick": {
+    "home_line": -4.5,
+    "total": 39.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:00:18.356Z"
+   },
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": null,
+    "pnl": null
+   }
+  },
+  "2026_08_ATL_TB": {
+   "game_id": "2026_08_ATL_TB",
+   "season": 2026,
+   "week": 8,
+   "kickoff": "2026-11-01T18:00:00.000Z",
+   "home": "Tampa Bay Buccaneers",
+   "away": "Atlanta Falcons",
+   "model_version": "edgedesk_football_v1.0.0",
+   "home_line": 0.81,
+   "total": 43.38,
+   "home_win_prob": 0.4698,
+   "home_code": "TB",
+   "away_code": "ATL",
+   "first": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": 0.81,
+    "total": 43.38,
+    "home_win_prob": 0.4698,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "pick": {
+    "at": "2026-10-20T18:00:18.356Z",
+    "home_line": 0.81,
+    "total": 43.38,
+    "home_win_prob": 0.4698,
+    "model_version": "edgedesk_football_v1.0.0"
+   },
+   "revisions": 0,
+   "entry": {
+    "model_at": "2026-10-20T18:00:18.356Z",
+    "home_line": 0.81,
+    "total": 43.38,
+    "market": {
+     "home_line": -1.5,
+     "total": 44.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-20T18:00:18.356Z"
+    }
+   },
+   "market_pick": {
+    "home_line": -1.5,
+    "total": 44.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-20T18:00:18.356Z"
+   },
    "close": null,
    "final": null,
    "grade": {
