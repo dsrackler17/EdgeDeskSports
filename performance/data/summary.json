@@ -2,7 +2,7 @@
  "schema": "edgedesk_perf_summary_v1",
  "version": "edgedesk_performance_v1",
  "grader": "perf_grader_v1",
- "generated_at": "2026-10-19T21:07:05.525Z",
+ "generated_at": "2026-10-20T00:24:33.530Z",
  "what": "Every eligible EdgeDesk pregame forecast, locked before the game and graded against the verified final, misses included. Research, not picks.",
  "ledger": {
   "epoch": "2026-10-16T19:35:25.897Z",
@@ -10,13 +10,13 @@
   "forecasts": 1921,
   "verified_forecasts": 573,
   "recorded_forecasts": 1348,
-  "quotes": 542,
+  "quotes": 562,
   "results": 534,
   "grades": 534,
   "chains": {
    "ok": true,
    "files": 26,
-   "rows": 5299
+   "rows": 5372
   }
  },
  "tiers": {
@@ -37,11 +37,11 @@
    "schema": "edgedesk_performance_v1:metrics",
    "min_n": 20,
    "eligibility": {
-    "games": 86,
+    "games": 91,
     "graded": 81,
     "void": 0,
     "flagged_pregame": 5,
-    "awaiting_result": 0,
+    "awaiting_result": 5,
     "conflict": 0,
     "by_why": {
      "FLAGGED_PREGAME_INVALIDATED": 2,
@@ -1535,11 +1535,11 @@
     "schema": "edgedesk_performance_v1:metrics",
     "min_n": 20,
     "eligibility": {
-     "games": 12,
+     "games": 13,
      "graded": 10,
      "void": 0,
      "flagged_pregame": 2,
-     "awaiting_result": 0,
+     "awaiting_result": 1,
      "conflict": 0,
      "by_why": {
       "FLAGGED_PREGAME_INVALIDATED": 2
@@ -2154,11 +2154,11 @@
     "schema": "edgedesk_performance_v1:metrics",
     "min_n": 20,
     "eligibility": {
-     "games": 18,
+     "games": 21,
      "graded": 18,
      "void": 0,
      "flagged_pregame": 0,
-     "awaiting_result": 0,
+     "awaiting_result": 3,
      "conflict": 0,
      "by_why": {}
     },
@@ -2667,11 +2667,11 @@
     "schema": "edgedesk_performance_v1:metrics",
     "min_n": 20,
     "eligibility": {
-     "games": 1,
+     "games": 2,
      "graded": 1,
      "void": 0,
      "flagged_pregame": 0,
-     "awaiting_result": 0,
+     "awaiting_result": 1,
      "conflict": 0,
      "by_why": {}
     },
@@ -3301,6 +3301,34 @@
   },
   {
    "sport": "wnba",
+   "model_version": "edgedesk_bb_points_v1:points+bb_cal_v2_home_intercept",
+   "tier": "VERIFIED",
+   "graded": 0,
+   "winner": {
+    "called": 0,
+    "correct": 0,
+    "pct": null,
+    "brier": null,
+    "log_loss": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "margin": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "total": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   }
+  },
+  {
+   "sport": "wnba",
    "model_version": "edgedesk_bb_points_v1:points",
    "tier": "VERIFIED",
    "graded": 1,
@@ -3335,7 +3363,7 @@
    "league": "NHL",
    "status": "GRADED",
    "why": null,
-   "games": 47,
+   "games": 50,
    "verified_graded": 18,
    "recorded_graded": 29,
    "models": [
@@ -3360,11 +3388,12 @@
    "league": "WNBA",
    "status": "GRADED",
    "why": null,
-   "games": 1,
+   "games": 2,
    "verified_graded": 1,
    "recorded_graded": 0,
    "models": [
-    "edgedesk_bb_points_v1:points"
+    "edgedesk_bb_points_v1:points",
+    "edgedesk_bb_points_v1:points+bb_cal_v2_home_intercept"
    ]
   },
   {
@@ -3395,7 +3424,7 @@
    "league": "NFL",
    "status": "GRADED",
    "why": null,
-   "games": 76,
+   "games": 77,
    "verified_graded": 10,
    "recorded_graded": 64,
    "models": [
@@ -3695,19 +3724,19 @@
    "sport": "nfl",
    "season": 2026,
    "path": "/performance/data/games/nfl-2026.json",
-   "rows": 76
+   "rows": 77
   },
   {
    "sport": "nhl",
    "season": 2027,
    "path": "/performance/data/games/nhl-2027.json",
-   "rows": 47
+   "rows": 50
   },
   {
    "sport": "wnba",
    "season": 2026,
    "path": "/performance/data/games/wnba-2026.json",
-   "rows": 1
+   "rows": 2
   }
  ]
 }
