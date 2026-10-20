@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk Football Engine · NFL",
  "projection_source": "football/nfl/slate.json",
- "updated_at": "2026-10-20T03:18:00.762Z",
+ "updated_at": "2026-10-20T04:18:54.803Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -13228,20 +13228,109 @@
     "book": "consensus",
     "at": "2026-10-12T16:48:50.642Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -7.5,
+    "total": 51.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "prices": {
+     "home": -102,
+     "away": -118,
+     "over": -115,
+     "under": -105,
+     "home_ml": -395,
+     "away_ml": 310
+    }
+   },
+   "final": {
+    "home_score": 23,
+    "away_score": 17,
+    "source": "nflverse",
+    "at": "2026-10-20T04:18:54.803Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 0.25,
+     "result": "loss"
+    },
+    "total": {
+     "side": "under",
+     "gap": 1.41,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -7.5,
+      "close": -7.5,
+      "gap": 0.41,
+      "pts": 0
+     },
+     "total": {
+      "side": "under",
+      "market": 50.5,
+      "close": 51.5,
+      "gap": 0.83,
+      "pts": -1
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": -7.5,
+      "close": -7.5,
+      "gap": 0.25,
+      "pts": 0
+     },
+     "total": {
+      "side": "under",
+      "market": 50.5,
+      "close": 51.5,
+      "gap": 0.41,
+      "pts": -1
+     }
+    },
+    "error": {
+     "margin": 6,
+     "model_margin_err": 1.75,
+     "close_margin_err": 1.5,
+     "model_total_err": 10.09,
+     "close_total_err": 11.5
+    },
+    "brier": 0.0549,
     "beyond_guard": false,
     "reliability": null,
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -102,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "under",
+      "odds": -105,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9524
+     },
+     "ml": {
+      "side": "home",
+      "odds": -395,
+      "basis": "close",
+      "result": "win",
+      "units": 0.2532
+     },
+     "units": 0.2056,
+     "bets": 3
+    }
    }
   },
   "2026_07_NE_CHI": {
