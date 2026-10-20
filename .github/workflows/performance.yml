@@ -41,6 +41,12 @@ name: Model performance
 on:
   schedule:
     - cron: '19 * * * *'   # hourly, after the :07 slate commit
+  # GitHub runs the hourly schedule hours late at busy times, so a game the
+  # NHL build just added could wait hours for its research grade: grade again
+  # as soon as each NHL build finishes (its slate is committed by then)
+  workflow_run:
+    workflows: ['NHL engine build']
+    types: [completed]
   workflow_dispatch:
     inputs:
       network:

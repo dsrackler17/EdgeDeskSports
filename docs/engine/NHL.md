@@ -315,6 +315,45 @@ that already weighs every row with home ice.
 Tests: `node tools/hockey/nhl_compare.test.js`, the NHL and Today's Games
 browser suites (`tools/engine/engine_ui.e2e.js`, `tools/slate/games_ui.e2e.js`).
 
+## 3b. The matchup graphic, and every game keeps its research
+
+**The graphic.** Every NHL game page opens with the same shareable graphic the
+football research page draws (square 1080×1080 or portrait 1080×1350, with
+Download PNG, Share and Copy link). `lib/edgedesk_nhl_graphic.js` fills the
+football template (`lib/edgedesk_game_graphic.js`) from the slate's own
+numbers. It shows:
+
+- the two clubs as monograms in their colours;
+- the fair moneyline and the model win probability;
+- the projected score: each club's expected goals including overtime and the
+  shootout goal, at one decimal and adding to the expected total;
+- the fair total;
+- a strip with either a named-book price captured in the last 180 minutes,
+  labelled a reference, or EdgeDesk's own puck line, overtime chance and
+  60-minute result;
+- what to watch for: the Shapley decomposition's three largest factors, then
+  the goalies;
+- the research grade in the footer.
+
+Nothing on it is re-estimated, and the copy rule runs over every string.
+
+**Started games.** The slate lists upcoming games only, so a game used to lose
+its research page at puck drop. Now each build moves every game that has
+started, exactly as the previous slate priced it, to `hockey/recent.json`
+(`carryRecent` in `hockey/build_slate.js`), with `frozen_at` before the start.
+Each game stays there for `RECENT_HOURS` (96: the two Eastern days Today's
+Games lists back, plus the gaps between builds). Today's Games links a live or
+final game to it, the NHL list shows started games under their own heading,
+and the game page says it is the research frozen before puck drop.
+`build_slate.js --check` refuses a frozen game whose `frozen_at` is not before
+its start.
+
+**Grades right after each build.** The performance workflow also runs when
+the NHL build finishes (`workflow_run`), so a game the build has just added
+is graded within minutes, even when GitHub delays the hourly schedule.
+
+Tests: `node tools/hockey/nhl_graphic.test.js`, `tools/engine/engine_ui.e2e.js`.
+
 ## 4. Honest limits
 
 - **Not tested against the market.** Beating Elo is not beating a sportsbook.

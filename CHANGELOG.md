@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-20 — NHL: the football graphic on every game, research for every game, a readable Grade Breakdown
+
+- **The Grade Breakdown was unreadable on every board.** Its summary paragraph used the class `edg-x`, which the help guide also uses for its 34×34 px close button. The guide's styles squeezed the paragraph into that box at 18 px, so the text overlapped the rest of the breakdown. It is now `edg-expl`, styled inside `.edg-bd` only. A sub-factor's "unvalidated" no longer runs off the right edge at phone width.
+- **Every NHL game page opens with the matchup graphic football has** (`lib/edgedesk_nhl_graphic.js`, drawn by `lib/edgedesk_game_graphic.js`): square or portrait PNG, with Download, Share and Copy link. It shows:
+  - the fair moneyline, the projected score (expected goals including overtime) and the fair total;
+  - DraftKings via ESPN when captured in the last three hours, labelled a reference; otherwise EdgeDesk's puck line, overtime chance and 60-minute result;
+  - what to watch for, from the model's own factor decomposition and the goalies;
+  - the research grade.
+
+  Nothing on it is re-estimated. The data, model and market status now folds under the game instead of leading the page.
+- **Started games keep their research.** The NHL slate lists upcoming games only, so a game lost its research page at puck drop. Before this change 19 of the 45 NHL games on Today's Games had no research; with this change all 45 link to research. Each build moves started games, exactly as priced, to `hockey/recent.json` for 96 hours. The first file was backfilled from the committed slate history (21 games). `build_slate.js --check` refuses a game frozen at or after its start.
+- **Grades right after each NHL build.** GitHub ran the hourly grade job two to eight hours apart, so newly added games waited for a grade (7 of 37 ungraded). `performance.yml` now also runs when the NHL build finishes.
+- **The football graphic, portrait only:** "what to watch for" text that ran past its row (33 of 174 committed graphics, 20 of them past the panel's edge) now steps down a size to fit. Square graphics are unchanged, compared instruction by instruction.
+
+Tests: `node tools/hockey/nhl_graphic.test.js` (394), `npm run nhl:test`, `npm run grades:test`, `npm run game:research:test`, `tools/engine/engine_ui.e2e.js` (134).
+
 ## 2026-10-19 — The desk: data-first articles in my voice, my take required, every number traced
 
 AI summaries answer a generic game preview without a click; they cannot answer my own logged numbers or a person accountable for them. The audit is `docs/desk/AUDIT.md`; the guide is `docs/desk/README.md`.

@@ -358,6 +358,13 @@ requests drafted, not sent). An optional Supabase warehouse
 ([`docs/engine/NHL_OPERATIONS.md`](docs/engine/NHL_OPERATIONS.md)).
 Props: [`docs/engine/NHL_PROPS.md`](docs/engine/NHL_PROPS.md).
 
+Every NHL game page now opens with the same matchup graphic as football
+(PNG download and share), drawn from the slate's own numbers
+(`lib/edgedesk_nhl_graphic.js`). A game that has started keeps the research
+frozen before puck drop (`hockey/recent.json`), so every NHL game on Today's
+Games has research, and each NHL build triggers the research grades
+(docs/engine/NHL.md §3b).
+
 The NHL list now opens with **EdgeDesk vs the market**: for every game,
 EdgeDesk's likelier winner, the book's number with its margin removed, the
 side EdgeDesk rates higher and by how much, and whether any price pays above

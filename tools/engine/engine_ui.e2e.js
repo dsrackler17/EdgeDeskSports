@@ -36,6 +36,12 @@ function done(note) {
   process.exit(fail === 0 ? 0 : 1);
 }
 const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'slate.json'), 'utf8'));
+/* started games the list shows: the slate's own past their start, and recent.json's from the last 36 hours */
+const RECENT = fs.existsSync(path.join(ROOT, 'hockey', 'recent.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'recent.json'), 'utf8')) : { games: [] };
+const startedCount = () => {
+  const now = Date.parse(NOW), on = new Set(SLATE.games.map((g) => String(g.game_id)));
+  return SLATE.games.filter((g) => Date.parse(g.start_utc) <= now).length + RECENT.games.filter((g) => !on.has(String(g.game_id)) && Date.parse(g.start_utc) <= now && now - Date.parse(g.start_utc) < 36 * 3600e3).length;
+};
 const BOARD = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'board.json'), 'utf8'));
 const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
 /* Today's Games as the NHL panel reads it: the committed slate with its NHL
@@ -143,7 +149,11 @@ const TODAY = (() => {
       await page.waitForSelector('#nhlHost .xe-game', { timeout: 20000 });
       chk(label + ': #research/nhl opens the NHL panel inside Research', await page.evaluate(() => !document.getElementById('v-nhl').classList.contains('hide') && !document.getElementById('v-research').classList.contains('hide')));
       chk(label + ': the Other seat names NHL while it is open', await page.evaluate(() => document.getElementById('rsOtherLbl').textContent === 'NHL' && document.querySelector('#rsOther button[data-sub="nhl"]').classList.contains('on')));
-      chk(label + ': every upcoming game is listed', (await page.$$eval('#nhlHost .xe-game', (x) => x.length)) === SLATE.games.length);
+      chk(label + ': every upcoming game is listed', (await page.$$eval('#nhlHost .xe-game:not(.xe-started)', (x) => x.length)) === SLATE.games.filter((g) => Date.parse(g.start_utc) > Date.parse(NOW)).length);
+      /* started games keep the research frozen before puck drop (hockey/recent.json): listed after the upcoming ones */
+      const wantStarted = startedCount();
+      await page.waitForFunction((n) => document.querySelectorAll('#nhlHost .xe-started').length >= n, wantStarted, { timeout: 8000 }).catch(() => {});
+      chk(label + ': started games are listed with their frozen research', (await page.$$eval('#nhlHost .xe-started', (x) => x.length)) === wantStarted, wantStarted);
       chk(label + ': readiness says value claims are disabled and why', await page.evaluate(() => /value claims/i.test(document.querySelector('.xe-ready').textContent) && /disabled/i.test(document.querySelector('.xe-ready').textContent) && /closing/i.test(document.querySelector('.xe-ready').textContent)));
       chk(label + ': each card shows a fair moneyline and a total', await page.evaluate(() => Array.from(document.querySelectorAll('.xe-game')).every((c) => /ML/.test(c.textContent) && /Total/.test(c.textContent))));
       chk(label + ': no horizontal scroll on the NHL list', await noHScroll(page));
@@ -230,7 +240,7 @@ const TODAY = (() => {
       await shot(page, label + '_nhl_game');
       await page.click('[data-act="back"]');
       await page.waitForSelector('#nhlHost .xe-game');
-      chk(label + ': Back returns to the list', (await page.$$eval('#nhlHost .xe-game', (x) => x.length)) === SLATE.games.length);
+      chk(label + ': Back returns to the list', (await page.$$eval('#nhlHost .xe-game:not(.xe-started)', (x) => x.length)) === SLATE.games.filter((g) => Date.parse(g.start_utc) > Date.parse(NOW)).length);
       if (SLATE.games.length > 2) {
         const g2 = SLATE.games[2];
         await page.click('#nhlHost table.xe-vs .xe-lnk[data-game="' + g2.game_id + '"]');

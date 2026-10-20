@@ -276,7 +276,7 @@
     "nhl:diagnostics": "node --max-old-space-size=8192 hockey/model/diagnostics.js",
     "nhl:registry": "node hockey/sources/registry.js",
     "nhl:warehouse": "node hockey/warehouse/sync.js",
-    "nhl:test": "node tools/hockey/hockey.test.js && node tools/hockey/market_test.test.js && node tools/hockey/nhl_desk.test.js && node tools/hockey/nhl_v2.test.js && node tools/hockey/nhl_compare.test.js",
+    "nhl:test": "node tools/hockey/hockey.test.js && node tools/hockey/market_test.test.js && node tools/hockey/nhl_desk.test.js && node tools/hockey/nhl_v2.test.js && node tools/hockey/nhl_compare.test.js && node tools/hockey/nhl_graphic.test.js",
     "nhl:sql": "node tools/hockey/nhl_sql.test.js && node tools/hockey/nhl_warehouse_sql.test.js",
     "nba:backfill": "node --max-old-space-size=6144 nba/ingest/season.js --season all && node --max-old-space-size=4096 nba/tools/lineups.js",
     "nba:ingest": "node --max-old-space-size=6144 nba/ingest/season.js --season current && node --max-old-space-size=4096 nba/tools/lineups.js",
