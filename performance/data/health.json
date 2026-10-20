@@ -1,8 +1,22 @@
 {
  "schema": "edgedesk_perf_health_v1",
- "generated_at": "2026-10-20T05:16:05.332Z",
- "status": "OK",
+ "generated_at": "2026-10-20T06:05:27.198Z",
+ "status": "WARN",
  "items": [
+  {
+   "level": "WARN",
+   "check": "source_read_failed",
+   "detail": "an ESPN scoreboard read failed (it is retried next run)",
+   "count": 1,
+   "sample": [
+    {
+     "day": "20261019",
+     "sport": "wnba",
+     "ok": false,
+     "error": "no feed"
+    }
+   ]
+  },
   {
    "level": "INFO",
    "check": "no_pregame_grade",
@@ -15,7 +29,7 @@
   "results": 535,
   "grades": 535,
   "quotes": 592,
-  "research_grades": 1805,
+  "research_grades": 1820,
   "grade_outcomes": 84
  }
 }
