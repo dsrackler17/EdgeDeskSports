@@ -12,6 +12,16 @@
 - **Started games keep their research.** The slate drops a game three hours after tip and prices it again before that. Each build now moves started games, exactly as priced before tip, to `nba/recent.json` for 96 hours; the panel lists them under their own heading and Today's Games links live and final games to them. `build_slate.js --check` refuses a game frozen at or after its start. No game has tipped yet this season, so the first file is empty.
 
 Tests: `node tools/nba/nba_graphic.test.js` (236), `tools/nba/nba_ui.e2e.js` (74), `node tools/slate/build.test.js` (63), `tools/slate/games_ui.e2e.js` (105), `tools/engine/engine_ui.e2e.js` (134), `node tools/hockey/nhl_graphic.test.js` (394), `node tools/football/game_research.test.js` (125).
+## 2026-10-20 — An open tab picks up a new deploy by itself
+
+- **Why.** app.html is a single page: moving between games, sports and tabs never reloads it. A tab opened before a deploy kept running the old code until it was reloaded by hand. After the NHL release went live, a phone kept showing the garbled Grade Breakdown and no graphic.
+- **What.**
+  - `/app-version.json` holds a hash of app.html and lib/ (`tools/app/app_version.js`). `.github/workflows/app-version.yml` restamps it whenever either changes on main; the data jobs never change it.
+  - `lib/edgedesk_update.js` reads it when the page loads, when the tab comes back into view, and every ten minutes. When the deployed version differs:
+    - if the reader has just come back to the tab, it reloads at once;
+    - otherwise a bar says "EdgeDesk was updated" with a Reload button, and the next screen change or return to the tab reloads.
+  - The route survives the reload. There is one reload per version, so a stale cached copy cannot loop.
+- **Tests.** `node tools/app/app_update.test.js` (18, with a simulated tab), run in `slate-tests.yml`.
 
 ## 2026-10-20 — NHL: the football graphic on every game, research for every game, a readable Grade Breakdown
 
