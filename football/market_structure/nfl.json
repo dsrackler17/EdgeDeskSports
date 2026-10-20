@@ -1,14 +1,14 @@
 {
  "schema": "edgedesk_nfl_market_structure_v1",
  "version": 1,
- "generated_at": "2026-10-20T04:55:01.592Z",
+ "generated_at": "2026-10-20T15:50:13.913Z",
  "engine": "edgedesk_market_structure_v1",
  "tier": "T0 observations and T2 deterministic transforms; nothing here is a model, a price, a projection or a grade",
  "source": {
   "lines": {
    "file": "football/pricing/lines_nfl.json",
    "schema": "edgedesk_lines_archive_v1",
-   "generated_at": "2026-10-20T04:55:01.045Z",
+   "generated_at": "2026-10-20T14:26:23.751Z",
    "basis": "nflverse/nfldata games.csv; the spread, total and moneyline columns are the consensus close as nflverse carries them, no book, no capture time"
   },
   "schedule": {
@@ -4068,12 +4068,12 @@
     "season": 2026,
     "week": 6,
     "season_type": "REG",
-    "games": 13,
-    "xp_att": 49,
+    "games": 14,
+    "xp_att": 54,
     "two_pt_att": 8,
     "two_pt_made": 4,
-    "touchdowns": 57,
-    "share": 0.1404
+    "touchdowns": 62,
+    "share": 0.129
    }
   ],
   "seasons": [
@@ -4244,32 +4244,32 @@
    },
    {
     "season": 2026,
-    "games": 92,
-    "xp_att": 424,
+    "games": 93,
+    "xp_att": 429,
     "two_pt_att": 43,
     "two_pt_made": 24,
-    "touchdowns": 468,
+    "touchdowns": 473,
     "weeks": 6,
-    "share": 0.0921,
+    "share": 0.0911,
     "ci95": [
-     0.0691,
-     0.1217
+     0.0683,
+     0.1205
     ],
-    "per_game": 0.467
+    "per_game": 0.462
    }
   ],
   "drift": {
    "season": 2026,
-   "share": 0.0921,
+   "share": 0.0911,
    "baseline_seasons": [
     2023,
     2024,
     2025
    ],
    "baseline_share": 0.0947,
-   "diff_pp": -0.26,
-   "z": -0.18,
-   "n_tries": 467,
+   "diff_pp": -0.36,
+   "z": -0.25,
+   "n_tries": 472,
    "baseline_tries": 4056,
    "status": "STABLE",
    "rule": "share of tries that went for two, season to date vs the pooled prior three seasons; |z| ≥ 2 is reported as a move. Descriptive: it feeds nothing."
