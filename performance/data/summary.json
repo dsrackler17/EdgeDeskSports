@@ -2,21 +2,21 @@
  "schema": "edgedesk_perf_summary_v1",
  "version": "edgedesk_performance_v1",
  "grader": "perf_grader_v1",
- "generated_at": "2026-10-20T17:13:47.069Z",
+ "generated_at": "2026-10-20T20:39:24.006Z",
  "what": "Every eligible EdgeDesk pregame forecast, locked before the game and graded against the verified final, misses included. Research, not picks.",
  "ledger": {
   "epoch": "2026-10-16T19:35:25.897Z",
-  "last_capture_at": "2026-10-20T12:06:36.593Z",
-  "forecasts": 1954,
-  "verified_forecasts": 606,
+  "last_capture_at": "2026-10-20T20:39:24.006Z",
+  "forecasts": 1963,
+  "verified_forecasts": 615,
   "recorded_forecasts": 1348,
-  "quotes": 666,
+  "quotes": 713,
   "results": 540,
   "grades": 540,
   "chains": {
    "ok": true,
    "files": 26,
-   "rows": 5790
+   "rows": 5928
   }
  },
  "tiers": {
@@ -37,11 +37,11 @@
    "schema": "edgedesk_performance_v1:metrics",
    "min_n": 20,
    "eligibility": {
-    "games": 92,
+    "games": 93,
     "graded": 87,
     "void": 0,
     "flagged_pregame": 5,
-    "awaiting_result": 0,
+    "awaiting_result": 1,
     "conflict": 0,
     "by_why": {
      "FLAGGED_PREGAME_INVALIDATED": 2,
@@ -1528,6 +1528,428 @@
       "cum_total_mae": 12.63
      }
     ]
+   }
+  },
+  "nba": {
+   "verified": {
+    "schema": "edgedesk_performance_v1:metrics",
+    "min_n": 20,
+    "eligibility": {
+     "games": 1,
+     "graded": 0,
+     "void": 0,
+     "flagged_pregame": 0,
+     "awaiting_result": 1,
+     "conflict": 0,
+     "by_why": {}
+    },
+    "winner": {
+     "n": 0,
+     "called": 0,
+     "correct": 0,
+     "pct": null,
+     "ties": 0,
+     "scored": 0,
+     "brier": null,
+     "log_loss": null,
+     "sample_state": "TOO_EARLY",
+     "calibration": [],
+     "bands": [
+      {
+       "from": 0.5,
+       "to": 0.55,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.55,
+       "to": 0.6,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.6,
+       "to": 0.65,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.65,
+       "to": 0.7,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.7,
+       "to": 0.8,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.8,
+       "to": 1,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      }
+     ]
+    },
+    "margin": {
+     "n": 0,
+     "mae": null,
+     "bias": null,
+     "rmse": null,
+     "sample_state": "TOO_EARLY"
+    },
+    "total": {
+     "n": 0,
+     "mae": null,
+     "bias": null,
+     "rmse": null,
+     "sample_state": "TOO_EARLY"
+    },
+    "market": {
+     "spread": {
+      "n": 0,
+      "model_mae": null,
+      "market_mae": null,
+      "model_nearer": 0,
+      "market_nearer": 0,
+      "sample_state": "TOO_EARLY"
+     },
+     "total": {
+      "n": 0,
+      "model_mae": null,
+      "market_mae": null,
+      "model_nearer": 0,
+      "market_nearer": 0,
+      "sample_state": "TOO_EARLY"
+     },
+     "moneyline": {
+      "n": 0,
+      "model_brier": null,
+      "market_brier": null,
+      "sample_state": "TOO_EARLY"
+     }
+    },
+    "picks": {
+     "spread": [
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 0
+      },
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 1.5
+      },
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 3
+      }
+     ],
+     "total": [
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 0
+      },
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 1.5
+      },
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 3
+      }
+     ]
+    },
+    "clv": {
+     "spread": {
+      "n": 0,
+      "avg_pts": null,
+      "beat": 0,
+      "flat": 0,
+      "lost": 0,
+      "sample_state": "TOO_EARLY"
+     },
+     "total": {
+      "n": 0,
+      "avg_pts": null,
+      "beat": 0,
+      "flat": 0,
+      "lost": 0,
+      "sample_state": "TOO_EARLY"
+     }
+    },
+    "trend": []
+   },
+   "recorded": {
+    "schema": "edgedesk_performance_v1:metrics",
+    "min_n": 20,
+    "eligibility": {
+     "games": 0,
+     "graded": 0,
+     "void": 0,
+     "flagged_pregame": 0,
+     "awaiting_result": 0,
+     "conflict": 0,
+     "by_why": {}
+    },
+    "winner": {
+     "n": 0,
+     "called": 0,
+     "correct": 0,
+     "pct": null,
+     "ties": 0,
+     "scored": 0,
+     "brier": null,
+     "log_loss": null,
+     "sample_state": "TOO_EARLY",
+     "calibration": [],
+     "bands": [
+      {
+       "from": 0.5,
+       "to": 0.55,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.55,
+       "to": 0.6,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.6,
+       "to": 0.65,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.65,
+       "to": 0.7,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.7,
+       "to": 0.8,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      },
+      {
+       "from": 0.8,
+       "to": 1,
+       "n": 0,
+       "correct": 0,
+       "pct": null,
+       "mean_p": null
+      }
+     ]
+    },
+    "margin": {
+     "n": 0,
+     "mae": null,
+     "bias": null,
+     "rmse": null,
+     "sample_state": "TOO_EARLY"
+    },
+    "total": {
+     "n": 0,
+     "mae": null,
+     "bias": null,
+     "rmse": null,
+     "sample_state": "TOO_EARLY"
+    },
+    "market": {
+     "spread": {
+      "n": 0,
+      "model_mae": null,
+      "market_mae": null,
+      "model_nearer": 0,
+      "market_nearer": 0,
+      "sample_state": "TOO_EARLY"
+     },
+     "total": {
+      "n": 0,
+      "model_mae": null,
+      "market_mae": null,
+      "model_nearer": 0,
+      "market_nearer": 0,
+      "sample_state": "TOO_EARLY"
+     },
+     "moneyline": {
+      "n": 0,
+      "model_brier": null,
+      "market_brier": null,
+      "sample_state": "TOO_EARLY"
+     }
+    },
+    "picks": {
+     "spread": [
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 0
+      },
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 1.5
+      },
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 3
+      }
+     ],
+     "total": [
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 0
+      },
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 1.5
+      },
+      {
+       "n": 0,
+       "w": 0,
+       "l": 0,
+       "p": 0,
+       "pct": null,
+       "priced": 0,
+       "units": 0,
+       "roi": null,
+       "sample_state": "TOO_EARLY",
+       "min_gap": 3
+      }
+     ]
+    },
+    "clv": {
+     "spread": {
+      "n": 0,
+      "avg_pts": null,
+      "beat": 0,
+      "flat": 0,
+      "lost": 0,
+      "sample_state": "TOO_EARLY"
+     },
+     "total": {
+      "n": 0,
+      "avg_pts": null,
+      "beat": 0,
+      "flat": 0,
+      "lost": 0,
+      "sample_state": "TOO_EARLY"
+     }
+    },
+    "trend": []
    }
   },
   "nfl": {
@@ -3217,6 +3639,34 @@
    }
   },
   {
+   "sport": "nba",
+   "model_version": "edgedesk_nba_v1:G_stack_P",
+   "tier": "VERIFIED",
+   "graded": 0,
+   "winner": {
+    "called": 0,
+    "correct": 0,
+    "pct": null,
+    "brier": null,
+    "log_loss": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "margin": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   },
+   "total": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "rmse": null,
+    "sample_state": "TOO_EARLY"
+   }
+  },
+  {
    "sport": "nfl",
    "model_version": "edgedesk_football_v1.0.0",
    "tier": "RECORDED",
@@ -3432,12 +3882,14 @@
    "sport": "nba",
    "label": "NBA",
    "league": "NBA",
-   "status": "AWAITING_GAMES",
+   "status": "RECORDED_ONLY",
    "why": null,
-   "games": 0,
+   "games": 1,
    "verified_graded": 0,
    "recorded_graded": 0,
-   "models": []
+   "models": [
+    "edgedesk_nba_v1:G_stack_P"
+   ]
   },
   {
    "sport": "wnba",
@@ -3776,6 +4228,12 @@
    "season": 2026,
    "path": "/performance/data/games/cfb-2026.json",
    "rows": 410
+  },
+  {
+   "sport": "nba",
+   "season": 2027,
+   "path": "/performance/data/games/nba-2027.json",
+   "rows": 1
   },
   {
    "sport": "nfl",
