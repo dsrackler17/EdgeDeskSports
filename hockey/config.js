@@ -27,6 +27,11 @@ const CURRENT_SEASON = currentSeason();
    builds: 99 hours. 120 leaves a day's margin for a late build.
    tools/hockey/hockey.test.js holds this to the slate's window. */
 const SLATE_HORIZON_HOURS = 120;
+/* How long a started game keeps the research the slate froze before puck
+   drop (hockey/recent.json). Today's Games lists every game from the start of
+   the Eastern day two days ago (tools/slate/build.js WINDOW.from = -2): up to
+   72 hours back, plus the gap between builds. 96 covers it. */
+const RECENT_HOURS = 96;
 
 const SOURCES = {
   /* sportsdataverse/fastRhockey-nhl-data: season datasets compiled from the NHL's
@@ -62,6 +67,7 @@ const PATHS = {
   xgModels: path.join(HOCKEY, 'xg', 'models'),
   validation: path.join(HOCKEY, 'validation'),
   slate: path.join(HOCKEY, 'slate.json'),
+  recent: path.join(HOCKEY, 'recent.json'),
   ledger: path.join(HOCKEY, 'ledger'),
   pyHelper: path.join(HOCKEY, 'tools', 'parquet_select.py'),
   market: path.join(HOCKEY, 'market'),
@@ -72,6 +78,7 @@ const SCHEMA = {
   xg: 'edgedesk_nhl_xg_v1',
   validation: 'edgedesk_nhl_walkforward_v1',
   slate: 'edgedesk_nhl_slate_v1',
+  recent: 'edgedesk_nhl_recent_v1',
   ledger: 'edgedesk_nhl_ledger_v1',
   market: 'edgedesk_market_quotes_v1',
 };
@@ -94,4 +101,4 @@ const GOALIE_BOX_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 
 const TEAM_BOX_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 'goals', 'shots_on_goal', 'power_play_goals', 'pim', 'hits', 'blocked_shots', 'saves', 'goals_against'];
 const SCHEDULE_COLUMNS = ['game_id', 'season_full', 'game_type', 'game_date', 'game_time', 'home_team_abbr', 'away_team_abbr', 'home_score', 'away_score', 'game_state', 'venue'];
 
-module.exports = { ROOT, HOCKEY, FIRST_SEASON, CURRENT_SEASON, currentSeason, SLATE_HORIZON_HOURS, SOURCES, LICENSE, PATHS, SCHEMA, PBP_COLUMNS, GOALIE_COLUMNS, SKATER_COLUMNS, SCHEDULE_COLUMNS, SKATER_BOX_COLUMNS, GOALIE_BOX_COLUMNS, TEAM_BOX_COLUMNS };
+module.exports = { ROOT, HOCKEY, FIRST_SEASON, CURRENT_SEASON, currentSeason, SLATE_HORIZON_HOURS, RECENT_HOURS, SOURCES, LICENSE, PATHS, SCHEMA, PBP_COLUMNS, GOALIE_COLUMNS, SKATER_COLUMNS, SCHEDULE_COLUMNS, SKATER_BOX_COLUMNS, GOALIE_BOX_COLUMNS, TEAM_BOX_COLUMNS };

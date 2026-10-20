@@ -14,6 +14,13 @@
    hockey/slate.json (schema edgedesk_nhl_slate_v1) and appends changed
    pregame sheets to hockey/ledger/<season>.jsonl.
 
+   STARTED GAMES KEEP THEIR RESEARCH. The slate lists upcoming games only, so
+   a game leaves it at puck drop. Before the new slate is written, every game
+   the previous slate priced that has now started moves, exactly as it was
+   priced, to hockey/recent.json (schema edgedesk_nhl_recent_v1) with the
+   time it was frozen, and stays there for C.RECENT_HOURS. Nothing in it is
+   re-priced after the start; Today's Games links a live or final game to it.
+
    WHAT A PRICE HERE IS. EdgeDesk's own fair line from the validated model
    (hockey/validation/nhl_walkforward.json). It is NOT a betting opinion:
    NHL prices are not captured by default, the model has never been tested
@@ -308,6 +315,43 @@ function build(o) {
   };
 }
 
+/* ---------- started games: the research frozen before puck drop ---------- */
+/**
+ * The next hockey/recent.json: every game the previous slate priced that has
+ * started by `now`, as it was priced (frozen_at = that slate's build time,
+ * always before the start), plus the previous file's games still inside
+ * C.RECENT_HOURS. A game back on the new slate (a postponement) is dropped;
+ * for a game held twice the later pregame freeze wins.
+ */
+function carryRecent(prevSlate, prevRecent, nextSlate, now, hours) {
+  const win = (hours || C.RECENT_HOURS) * 3600e3;
+  const upcoming = new Set(((nextSlate && nextSlate.games) || []).map((g) => String(g.game_id)));
+  const keep = new Map();
+  const add = (g, frozenAt, modelId) => {
+    const t = Date.parse(g && g.start_utc), f = Date.parse(frozenAt);
+    if (!isFinite(t) || !isFinite(f) || t > now || now - t > win || !(f < t) || upcoming.has(String(g.game_id))) return;
+    const prev = keep.get(String(g.game_id));
+    if (prev && Date.parse(prev.frozen_at) >= f) return;
+    keep.set(String(g.game_id), Object.assign({}, g, { frozen_at: new Date(f).toISOString(), model_id: g.model_id || modelId || null }));
+  };
+  if (prevRecent && prevRecent.schema === C.SCHEMA.recent) (prevRecent.games || []).forEach((g) => add(g, g.frozen_at, g.model_id));
+  if (prevSlate && prevSlate.schema === C.SCHEMA.slate) (prevSlate.games || []).forEach((g) => add(g, prevSlate.generated_at, prevSlate.model && prevSlate.model.id));
+  const games = Array.from(keep.values()).sort((a, b) => Date.parse(a.start_utc) - Date.parse(b.start_utc) || a.game_id - b.game_id);
+  return {
+    schema: C.SCHEMA.recent, sport: 'NHL', generated_at: new Date(now).toISOString(), window_hours: hours || C.RECENT_HOURS,
+    note: 'Games that have started, each exactly as the slate priced it before puck drop (frozen_at). Nothing here is re-priced after the start. Research, not picks.',
+    attribution: (nextSlate && nextSlate.attribution) || (prevSlate && prevSlate.attribution) || null,
+    games,
+  };
+}
+/** Write hockey/recent.json only when its games changed (a build with nothing new adds no commit noise). */
+function writeRecent(rec) {
+  const old = readJson(C.PATHS.recent, null);
+  const same = old && old.schema === rec.schema && JSON.stringify(old.games) === JSON.stringify(rec.games);
+  if (!same) fs.writeFileSync(C.PATHS.recent, JSON.stringify(rec) + '\n');
+  return !same;
+}
+
 /* ---------- the append-only pregame ledger ---------- */
 function ledgerAppend(slate, now) {
   fs.mkdirSync(C.PATHS.ledger, { recursive: true });
@@ -346,6 +390,12 @@ function check() {
       const r = g.prices.regulation; if (!(Math.abs(r.home + r.draw + r.away - 1) < 1e-3)) fails.push(g.game_id + ' 3-way does not sum to 1');
       if (!(g.prices.puck_line.home_minus_1_5 < m.home)) fails.push(g.game_id + ' -1.5 is not below the moneyline');
     }
+    /* started games: research frozen strictly before the start, never re-priced */
+    const rec = readJson(C.PATHS.recent, null);
+    if (rec) {
+      if (rec.schema !== C.SCHEMA.recent || !Array.isArray(rec.games)) fails.push('recent.json is not ' + C.SCHEMA.recent);
+      else rec.games.forEach((g) => { if (!(Date.parse(g.frozen_at) < Date.parse(g.start_utc))) fails.push('recent ' + g.game_id + ' frozen at or after its start'); });
+    }
     const file = path.join(C.PATHS.ledger, C.CURRENT_SEASON + '.jsonl');
     if (fs.existsSync(file)) {
       const seen = new Set();
@@ -369,10 +419,12 @@ async function main() {
   const { games: schedule, source } = await loadSchedule(offline);
   const api = await refreshFromApi(schedule, now, hours, offline);
   const slate = build({ now, hours, schedule, scheduleSource: source, api });
+  const recent = carryRecent(readJson(C.PATHS.slate, null), readJson(C.PATHS.recent, null), slate, now);
   fs.writeFileSync(C.PATHS.slate, JSON.stringify(slate, null, 1) + '\n');
+  writeRecent(recent);
   const added = flag('no-ledger') ? 0 : ledgerAppend(slate, now);
-  console.log('[nhl slate] ' + slate.games.length + ' upcoming games priced; data ' + slate.readiness.data.state + ' (latest result ' + slate.readiness.data.latest_completed_game + '); NHL API ' + (api.used ? 'used' : 'not used (' + (api.reason || (api.error && api.error.code) || 'unreachable') + ')') + '; ledger +' + added + '; value claims ' + slate.readiness.value_claims.state);
+  console.log('[nhl slate] ' + slate.games.length + ' upcoming games priced; data ' + slate.readiness.data.state + ' (latest result ' + slate.readiness.data.latest_completed_game + '); NHL API ' + (api.used ? 'used' : 'not used (' + (api.reason || (api.error && api.error.code) || 'unreachable') + ')') + '; ledger +' + added + '; value claims ' + slate.readiness.value_claims.state + '; started games with frozen research ' + recent.games.length);
 }
 
 if (require.main === module) main().catch((e) => { console.error(e.stack || e); process.exit(1); });
-module.exports = { build, ledgerAppend };
+module.exports = { build, ledgerAppend, carryRecent };

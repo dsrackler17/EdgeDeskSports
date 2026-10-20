@@ -40,6 +40,9 @@ function loadSources(files) {
     cfb: r('cfb', 'football/cfb_terminal/board.json'),
     home: r('home', 'football/home/schedule.json'),
     nhl: r('nhl', 'hockey/slate.json'),
+    /* started games keep the research frozen before puck drop (hockey/build_slate.js carryRecent);
+       a test that stages its own NHL slate stages its own started games too, or none */
+    nhlRecent: files.nhlRecent !== undefined ? files.nhlRecent : (files.nhl !== undefined ? null : readJson('hockey/recent.json')),
     nhlTeams: r('nhlTeams', 'hockey/data/teams.json'),
     basketball: r('basketball', 'basketball/slate.json'),
     engine: r('engine', 'engine/board.json'),
@@ -78,7 +81,11 @@ function cfbIndex(src) {
 function nhlIndex(src) {
   const t = (src.nhlTeams && src.nhlTeams.teams) || {};
   const val = src.nhl && src.nhl.readiness && src.nhl.readiness.model ? src.nhl.readiness.model : {};
-  return ((src.nhl && src.nhl.games) || []).map((g) => ({ g, val, ev: { sport: 'nhl', start_utc: g.start_utc,
+  const games = ((src.nhl && src.nhl.games) || []).slice();
+  const on = new Set(games.map((g) => String(g.game_id)));
+  const R = src.nhlRecent;
+  if (R && R.schema === 'edgedesk_nhl_recent_v1') (R.games || []).forEach((g) => { if (!on.has(String(g.game_id))) games.push(g); });
+  return games.map((g) => ({ g, val, ev: { sport: 'nhl', start_utc: g.start_utc,
     home: { name: (t[g.home] && t[g.home].name) || g.home, abbr: g.home }, away: { name: (t[g.away] && t[g.away].name) || g.away, abbr: g.away } } }));
 }
 function basketballIndex(src) {
@@ -202,6 +209,7 @@ function join(events, src, o) {
       if (!hit) { const c = nhl.filter((x) => G.sameEvent(e, x.ev, 6)); if (c.length === 1) hit = c[0]; }
       if (hit) {
         r.module = 'nhl'; r.entity = String(hit.g.game_id); r.model = modelFromNhl(hit.g, hit.val, src.nhl); r.metrics = true;
+        if (hit.g.frozen_at && r.model) r.model.frozen_at = hit.g.frozen_at;
         /* a match by teams that the two sources list the other way round
            keeps its research link, but EdgeDesk's numbers are never set
            against this event's prices: the comparison is refused, not repaired */
