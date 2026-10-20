@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-20T03:07:41.000Z",
+ "generated_at": "2026-10-20T04:07:37.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,10 +46,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1461,
-    "latest_snapshot_at": "2026-10-20T00:07:40.000Z",
-    "upcoming_games": 60,
-    "avg_confidence_upcoming": 76.7
+    "snapshots": 1463,
+    "latest_snapshot_at": "2026-10-20T04:07:37.000Z",
+    "upcoming_games": 62,
+    "avg_confidence_upcoming": 76.6
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
@@ -71,15 +71,15 @@
    }
   ],
   "data_quality": {
-   "games": 60,
+   "games": 62,
    "counts": {
     "GREEN": 8,
-    "YELLOW": 52,
+    "YELLOW": 54,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 52,
+     "YELLOW": 54,
      "RED": 0
     }
    },
@@ -759,11 +759,37 @@
      ],
      "kickoff": "2026-10-29T00:00:00.000Z",
      "matchup": "Jacksonville State @ New Mexico State"
+    },
+    {
+     "game_id": "401862812",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-29T23:30:00.000Z",
+     "matchup": "Florida Atlantic @ North Texas"
+    },
+    {
+     "game_id": "401869963",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-29T23:30:00.000Z",
+     "matchup": "Troy @ James Madison"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-20T03:07:41.000Z",
-    "quotes_total": 20607,
+    "last_quote_at": "2026-10-20T04:07:37.000Z",
+    "quotes_total": 20626,
     "last_result_at": "2026-10-18T07:07:34.000Z"
    }
   },
@@ -797,9 +823,9 @@
    }
   ],
   "ledger": {
-   "predictions": 5501,
-   "live_predictions": 4991,
-   "quotes": 20607,
+   "predictions": 5503,
+   "live_predictions": 4993,
+   "quotes": 20626,
    "lines": 3559,
    "results": 461,
    "evaluations": 5267,

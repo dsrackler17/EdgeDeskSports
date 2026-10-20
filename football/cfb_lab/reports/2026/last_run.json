@@ -1,5 +1,5 @@
 {
- "started_at": "2026-10-20T03:07:41.000Z",
+ "started_at": "2026-10-20T04:07:37.000Z",
  "season": 2026,
  "steps": {
   "seed": {
@@ -12,7 +12,7 @@
   "supabase_pull": {
    "ok": true,
    "quotes": 0,
-   "ms": 1008
+   "ms": 786
   },
   "market": {
    "ok": true,
@@ -34,9 +34,9 @@
       "cooldown_min": null,
       "last_error": null,
       "last_error_class": null,
-      "last_success_at": "2026-10-20T03:07:41.000Z",
+      "last_success_at": "2026-10-20T04:07:37.000Z",
       "last_failure_at": null,
-      "calls": 12938,
+      "calls": 12961,
       "failures": 0
      }
     },
@@ -68,40 +68,44 @@
      "reasons": {}
     },
     "confirmations": {
-     "confirmed": 131,
-     "kept": 1675,
+     "confirmed": 158,
+     "kept": 1720,
      "written": true
     }
    },
    "dedupe": {
     "received": 3304,
-    "written": 46,
-    "duplicates": 3258,
+    "written": 19,
+    "duplicates": 3285,
     "refused": 0,
     "refusals": {},
-    "confirmed": 131
+    "confirmed": 158
    },
-   "written": 46,
+   "written": 19,
    "conflicts": [],
-   "schedule_games": 112,
-   "ms": 1257
+   "schedule_games": 62,
+   "ms": 1559
   },
   "freeze_import": {
    "ok": true,
    "files": 3,
    "imported": 0,
    "skipped": [],
-   "ms": 772
+   "ms": 457
   },
   "checkpoints": {
    "ok": true,
-   "now": "2026-10-20T03:07:41.000Z",
+   "now": "2026-10-20T04:07:37.000Z",
    "season": 2026,
-   "due": 0,
-   "taken": 0,
+   "due": 2,
+   "taken": 2,
    "skipped_no_projection": 0,
-   "by_model": {},
-   "by_checkpoint": {},
+   "by_model": {
+    "edgedesk_cfb_p4_v1.0.0": 2
+   },
+   "by_checkpoint": {
+    "OPEN": 2
+   },
    "skipped_schedule": {},
    "kickoff_moved": [
     {
@@ -240,16 +244,16 @@
    "rescheduled_adhoc": 0,
    "bet_gated": 0,
    "refused_duplicate_checkpoint": [],
-   "ms": 1092
+   "ms": 777
   },
   "audit": {
    "ok": true,
    "events": 0,
-   "ms": 0
+   "ms": 1
   },
   "settle": {
    "ok": true,
-   "now": "2026-10-20T03:07:41.000Z",
+   "now": "2026-10-20T04:07:37.000Z",
    "season": 2026,
    "espn_schema": {
     "rejected_payloads": 0,
@@ -265,9 +269,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-20T03:07:41.000Z",
+     "last_success_at": "2026-10-20T04:07:37.000Z",
      "last_failure_at": null,
-     "calls": 563,
+     "calls": 564,
      "failures": 0
     },
     "espn_scoreboard": {
@@ -278,14 +282,14 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-20T03:07:41.000Z",
+     "last_success_at": "2026-10-20T04:07:37.000Z",
      "last_failure_at": null,
-     "calls": 12949,
+     "calls": 12972,
      "failures": 0
     }
    },
    "readings": [
-    113,
+    108,
     510
    ],
    "results": 0,
@@ -299,52 +303,50 @@
    },
    "evaluations": 0,
    "miss_reviews": 0,
-   "ms": 1506
+   "ms": 1530
   },
   "report": {
    "ok": true,
-   "now": "2026-10-20T03:07:41.000Z",
-   "weekly_written": [
-    7
-   ],
+   "now": "2026-10-20T04:07:37.000Z",
+   "weekly_written": [],
    "research_events": 0,
    "alerts": 3,
    "public_graded": 179,
-   "ms": 536
+   "ms": 327
   },
   "verify": {
    "ok": true,
    "problems": 0,
-   "ms": 1524
+   "ms": 984
   }
  },
  "freshness": {
   "rule": "cfb_source_freshness_v1",
-  "at": "2026-10-20T03:07:41.000Z",
+  "at": "2026-10-20T04:07:37.000Z",
   "odds": {
    "source": "odds",
    "status": "FRESH",
    "age_h": 0,
    "max_age_h": 6,
    "importance": "CRITICAL",
-   "upcoming_quotes": 2052
+   "upcoming_quotes": 2071
   },
   "schedule": {
    "source": "schedule",
    "status": "FRESH",
-   "age_h": 4.18,
+   "age_h": 0.85,
    "max_age_h": 26,
    "importance": "CRITICAL"
   },
   "model_features": {
    "source": "pbp",
    "status": "FRESH",
-   "age_h": 17.03,
+   "age_h": 18.03,
    "max_age_h": 192,
    "importance": "CRITICAL"
   },
   "results_newest": "2026-10-18T07:07:34.000Z"
  },
- "finished_at": "2026-10-20T03:07:49.000Z",
+ "finished_at": "2026-10-20T04:07:44.273Z",
  "ok": true
 }
