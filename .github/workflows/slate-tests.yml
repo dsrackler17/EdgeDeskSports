@@ -29,6 +29,9 @@ on:
       - 'supabase/games_slate.sql'
       - 'app.html'
       - 'today/**'
+      - 'lib/edgedesk_update.js'
+      - 'tools/app/**'
+      - 'app-version.json'
       - '.github/workflows/slate-tests.yml'
   push:
     branches: [main]
@@ -63,7 +66,7 @@ jobs:
       - name: The committed slate still parses and still builds offline
         run: node -e "const s=require('./today/slate.json');if(s.schema!=='edgedesk_slate/1'||!Array.isArray(s.events))process.exit(1)" && node tools/slate/build.js --offline
       - name: The app's navigation and the free pages' doors still hold
-        run: node tools/app/navigation.test.js && node tools/site/nav.test.js && node tools/site/free_access.test.js
+        run: node tools/app/navigation.test.js && node tools/site/nav.test.js && node tools/site/free_access.test.js && node tools/app/app_update.test.js
 
   migration:
     runs-on: ubuntu-latest

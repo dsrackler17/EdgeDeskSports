@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-20 — An open tab picks up a new deploy by itself
+
+- **Why.** app.html is a single page: moving between games, sports and tabs never reloads it. A tab opened before a deploy kept running the old code until it was reloaded by hand. After the NHL release went live, a phone kept showing the garbled Grade Breakdown and no graphic.
+- **What.**
+  - `/app-version.json` holds a hash of app.html and lib/ (`tools/app/app_version.js`). `.github/workflows/app-version.yml` restamps it whenever either changes on main; the data jobs never change it.
+  - `lib/edgedesk_update.js` reads it when the page loads, when the tab comes back into view, and every ten minutes. When the deployed version differs:
+    - if the reader has just come back to the tab, it reloads at once;
+    - otherwise a bar says "EdgeDesk was updated" with a Reload button, and the next screen change or return to the tab reloads.
+  - The route survives the reload. There is one reload per version, so a stale cached copy cannot loop.
+- **Tests.** `node tools/app/app_update.test.js` (18, with a simulated tab), run in `slate-tests.yml`.
+
 ## 2026-10-20 — NHL: the football graphic on every game, research for every game, a readable Grade Breakdown
 
 - **The Grade Breakdown was unreadable on every board.** Its summary paragraph used the class `edg-x`, which the help guide also uses for its 34×34 px close button. The guide's styles squeezed the paragraph into that box at 18 px, so the text overlapped the rest of the breakdown. It is now `edg-expl`, styled inside `.edg-bd` only. A sub-factor's "unvalidated" no longer runs off the right edge at phone width.
