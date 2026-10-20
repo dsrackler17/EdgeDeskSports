@@ -4,7 +4,7 @@
 //  DEPLOY:  create a function named `ingest_nfl_features`, paste this file,
 //           Verify JWT OFF. No new secrets: it uses the CRON_SECRET and
 //           service credentials every other cron here already has.
-//  BUILD:   ingest_nfl_features-v1   (reported in every response)
+//  BUILD:   ingest_nfl_features-v2   (reported in every response)
 //  RUN:     weekly in the offseason; every 6-12h in season (cheap: two public
 //           CSV fetches, no odds quota spent).
 //  MODES:   ?dry=1&secret=YOUR_CRON_SECRET   compute + full diag, write NOTHING
@@ -38,6 +38,15 @@
 // change engine.js, regenerate this file's copy with it. Nothing here is a
 // hand-set weight.
 //
+// v2 (the defence-freeze fix, audit_report.md §0.2): training builds every
+// def_* feature from the OPPONENT's offence row of the same game
+// (football/research/build_features.py). v1 absorbed the offence row alone, so
+// every defensive level this function wrote sat at its 2025 seed x carry all
+// season. mirrorDefence() now does what training does, and the two clubs are
+// absorbed in the feed's row order, the order training absorbs them in
+// (football/engine.js nfl.gamePairs; football/parity.test.js checks this file
+// carries the mirror).
+//
 // FAILURE POSTURE (house rules):
 //   - A run that cannot produce 32 sane rows writes NOTHING and says why.
 //   - stats_team_week for the current season not published yet (404) is a
@@ -47,7 +56,7 @@
 //     ratings source, per-team sample, and any sanity-gate refusals.
 // ============================================================
 
-const BUILD = "ingest_nfl_features-v1";
+const BUILD = "ingest_nfl_features-v2";
 
 const SB_URL = (globalThis).Deno?.env.get("SUPABASE_URL") ?? "";
 const SB_SVC = (globalThis).Deno?.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -121,6 +130,19 @@ function teamGameFromStw(r) {
   };
 }
 
+/* a team's defence in a game IS its opponent's offence in that game
+   (football/engine.js NFL_DEF_OF; research/build_features.py) */
+const DEF_OF = {off_epa_play:"def_epa_play",pass_epa_db:"def_pass_epa_db",rush_epa_att:"def_rush_epa_att",expl_pass:"def_expl_pass",expl_rush:"def_expl_rush",sack_rate_all:"sack_rate_made"};
+const FRANCHISE = {STL:"LA",SD:"LAC",OAK:"LV"};
+const franchise = (t) => FRANCHISE[t] || t;
+function mirrorDefence(r0, r1) {
+  const o0 = clone(r0), o1 = clone(r1);
+  for (const k in DEF_OF) {
+    r0[DEF_OF[k]] = isNum(o1[k]) ? o1[k] : NaN;
+    r1[DEF_OF[k]] = isNum(o0[k]) ? o0[k] : NaN;
+  }
+}
+
 /* nflverse code -> full name -> team_norm exactly as model_predict's nrm() */
 const CODE_NAMES = {ARI:"Arizona Cardinals",ATL:"Atlanta Falcons",BAL:"Baltimore Ravens",BUF:"Buffalo Bills",CAR:"Carolina Panthers",CHI:"Chicago Bears",CIN:"Cincinnati Bengals",CLE:"Cleveland Browns",DAL:"Dallas Cowboys",DEN:"Denver Broncos",DET:"Detroit Lions",GB:"Green Bay Packers",HOU:"Houston Texans",IND:"Indianapolis Colts",JAX:"Jacksonville Jaguars",KC:"Kansas City Chiefs",LA:"Los Angeles Rams",LAC:"Los Angeles Chargers",LV:"Las Vegas Raiders",MIA:"Miami Dolphins",MIN:"Minnesota Vikings",NE:"New England Patriots",NO:"New Orleans Saints",NYG:"New York Giants",NYJ:"New York Jets",PHI:"Philadelphia Eagles",PIT:"Pittsburgh Steelers",SEA:"Seattle Seahawks",SF:"San Francisco 49ers",TB:"Tampa Bay Buccaneers",TEN:"Tennessee Titans",WAS:"Washington Commanders"};
 const nrm = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -171,15 +193,18 @@ export function computeFeatures(games, stwBySeason) {
   const byGame = {};
   for (const y in stwBySeason) for (const r of stwBySeason[y]) (byGame[r.game_id] = byGame[r.game_id] || []).push(r);
   for (const g of toAbsorb) {
+    /* engine.js nfl.gamePairs: both rows, in the feed's order, defence mirrored */
     const pair = byGame[g.game_id];
     if (!pair || pair.length !== 2) continue;
-    let hRow = null, aRow = null;
-    for (const x of pair) { if (x.team === g.home_team) hRow = x; if (x.team === g.away_team) aRow = x; }
-    if (!hRow || !aRow) continue;
-    const hr = teamGameFromStw(hRow), ar = teamGameFromStw(aRow);
-    hr.pts_for = num(g.home_score); hr.pts_against = num(g.away_score);
-    ar.pts_for = num(g.away_score); ar.pts_against = num(g.home_score);
-    absorbGame(st, [[g.home_team, hr], [g.away_team, ar]]);
+    const home = franchise(g.home_team), away = franchise(g.away_team);
+    const t0 = franchise(pair[0].team), t1 = franchise(pair[1].team);
+    if (!((t0 === home && t1 === away) || (t0 === away && t1 === home))) continue;
+    const r0 = teamGameFromStw(pair[0]), r1 = teamGameFromStw(pair[1]);
+    mirrorDefence(r0, r1);
+    const hs = num(g.home_score), as = num(g.away_score);
+    r0.pts_for = t0 === home ? hs : as; r0.pts_against = t0 === home ? as : hs;
+    r1.pts_for = t1 === home ? hs : as; r1.pts_against = t1 === home ? as : hs;
+    absorbGame(st, [[t0, r0], [t1, r1]]);
     absorbed++;
   }
   diag.completed_post_seed_games = toAbsorb.length;

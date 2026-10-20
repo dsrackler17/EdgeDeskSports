@@ -443,5 +443,29 @@ section('11. landing.json embeds current.json’s snapshots as written');
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
+/* ======================================================================= */
+section('12. the NFL card adds up, shows its median, and flags a 3-point disagreement');
+{
+  const nfl = proj.filter((g) => g.league === 'nfl');
+  const cards = nfl.filter((g) => g.drivers && g.drivers.basis === 'nfl_card_rows');
+  chk('every projected NFL game shows the seven-row card', cards.length === nfl.length && cards.every((g) => g.drivers.rows.length === 7), { nfl: nfl.length, cards: cards.length });
+  chk('every card reconciles to its slate margin', cards.every((g) => g.drivers.reconciles), cards.filter((g) => !g.drivers.reconciles).map((g) => g.game_key));
+  const tenths = (x) => Math.round(x * 10);
+  chk('the displayed rows add up to the displayed margin, to the tenth', cards.every((g) => tenths(g.drivers.rows.reduce((a, r) => a + r.display, 0)) === tenths(g.drivers.display_total)),
+    cards.filter((g) => tenths(g.drivers.rows.reduce((a, r) => a + r.display, 0)) !== tenths(g.drivers.display_total)).map((g) => g.game_key));
+  chk('team-strength rows carry their last-season / this-season split, and it adds up', cards.every((g) => g.drivers.rows.filter((r) => ['base_strength', 'passing', 'rushing'].includes(r.key)).every((r) => r.prior != null && Math.abs(r.prior + r.current - r.signed) < 0.02)));
+  chk('no card claims a post-model adjustment', !/post-model adjustments are applied/.test(JSON.stringify(GS.DRIVER_BASIS)));
+  chk('every NFL range carries its median, and the median is the projection rounded', nfl.every((g) => !g.model.range80 || (g.model.range80.median != null && Math.abs(g.model.range80.median - g.model.home_margin) <= 0.5 + 1e-9)),
+    nfl.filter((g) => g.model.range80 && (g.model.range80.median == null || Math.abs(g.model.range80.median - g.model.home_margin) > 0.5)).map((g) => [g.game_key, g.model.range80.median, g.model.home_margin]));
+  const one = cards[0];
+  const d3 = GS.disagreement(one, one.model.home_margin - 3.2, { kind: 'LIVE', source: 'test' });
+  const d2 = GS.disagreement(one, one.model.home_margin - 2.9, { kind: 'LIVE', source: 'test' });
+  chk('the disagreement flag fires at 3+ points and names the side', d3 && d3.flagged && /Model disagrees with market by 3\.2 pts/.test(d3.text) && d3.toward === 'home', d3);
+  chk('… and not below 3', d2 && !d2.flagged && d2.text === null, d2);
+  chk('… with the card rows pushing toward EdgeDesk\'s side, largest first', d3 && d3.drivers.every((x, i, a) => i === 0 || a[i - 1].points >= x.points) && d3.drivers.every((x) => one.drivers.rows.find((r) => r.key === x.key).signed > 0));
+  const viaQuote = GS.compareMarket(one, { current: true, home_line: -(one.model.home_margin - 4), total: one.model.total, book: 'test' });
+  chk('a live quote 4 points off flags it through compareMarket', viaQuote && viaQuote.disagreement && viaQuote.disagreement.flagged && viaQuote.disagreement.market_kind === 'LIVE');
+}
+
 console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | game research (snapshot, graphic, history, price check, wiring) | ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

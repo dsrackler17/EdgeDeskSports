@@ -123,6 +123,35 @@
     chk('stw expl_pass', near(tgf.expl_pass, 6 / 30, 1e-12));
     chk('stw sack_rate', near(tgf.sack_rate_all, 2 / 32, 1e-12));
 
+    /* ---- the one absorb path (audit_report.md §0.2/§0.3) ---- */
+    (function () {
+      var rowA = { team: 'OAK', attempts: 30, carries: 20, sacks_suffered: 2, passing_epa: 4, rushing_epa: -1, passing_20: 3, rushing_10: 2 };
+      var rowB = { team: 'KC', attempts: 35, carries: 25, sacks_suffered: 3, passing_epa: 9, rushing_epa: 2, passing_20: 5, rushing_10: 4 };
+      var g = { home_team: 'KC', away_team: 'OAK', home_score: 27, away_score: 20 };
+      var pr = E.nfl.gamePairs(g, [rowA, rowB]);
+      chk('gamePairs keeps the feed\'s row order (training absorbs in it)', pr && pr[0][0] === 'LV' && pr[1][0] === 'KC', pr && [pr[0][0], pr[1][0]]);
+      chk('gamePairs maps relocated franchises (OAK -> LV)', pr && pr[0][0] === 'LV');
+      chk('gamePairs: a team\'s pass defence is the opponent\'s pass offence in the game',
+        pr && near(pr[0][1].def_pass_epa_db, 9 / 38, 1e-15) && near(pr[1][1].def_pass_epa_db, 4 / 32, 1e-15));
+      chk('gamePairs: every def_* feature is mirrored', pr && Object.keys(E.nfl.DEF_OF).every(function (k) {
+        return near(pr[0][1][E.nfl.DEF_OF[k]], pr[1][1][k], 1e-15) && near(pr[1][1][E.nfl.DEF_OF[k]], pr[0][1][k], 1e-15); }));
+      chk('gamePairs: points for/against follow each row\'s team', pr && pr[0][1].pts_for === 20 && pr[0][1].pts_against === 27 && pr[1][1].pts_for === 27);
+      chk('gamePairs refuses rows that are not this game\'s two clubs', E.nfl.gamePairs(g, [rowA, { team: 'DEN' }]) === null);
+      var qst2 = { lmean: { pass_epa_db: 0 } };
+      var qrows = [
+        { team: 'KC', position: 'QB', player_id: 'starter', attempts: 30, sacks_suffered: 2, passing_epa: 6.4 },
+        { team: 'KC', position: 'QB', player_id: 'backup', attempts: 32, sacks_suffered: 0, passing_epa: 1 },   /* tie at 32: first in file order */
+        { team: 'KC', position: 'WR', player_id: 'trick', attempts: 40, sacks_suffered: 0, passing_epa: 9 },  /* not a QB */
+        { team: 'OAK', position: 'QB', player_id: 'mopup', attempts: 6, sacks_suffered: 1, passing_epa: 2 },   /* under 10 dropbacks: no deviation */
+        { team: 'OAK', position: 'QB', player_id: 'nan', attempts: '', sacks_suffered: 0, passing_epa: 2 }     /* missing attempts: NaN, excluded */
+      ];
+      var qs = E.nfl.qbStarts(qst2, pr, qrows);
+      var byT = {}; qs.forEach(function (x) { byT[x[0]] = x; });
+      chk('qbStarts credits the most dropbacks, first in file order on a tie (training\'s rule)', byT.KC && byT.KC[1] === 'starter' && near(byT.KC[2], 6.4 / 32, 1e-15), byT.KC);
+      chk('qbStarts ignores a non-QB passer', byT.KC && byT.KC[1] !== 'trick');
+      chk('qbStarts records a start under 10 dropbacks with no deviation', byT.LV && byT.LV[1] === 'mopup' && byT.LV[2] === null, byT.LV);
+    })();
+
     /* ---- the QB pass deviation, as research/train_nfl.py sequential_pass ---- */
     var qst = { lmean: { pass_epa_db: 0.02 } };
     chk('qbPassDev = EPA per dropback minus the league mean', near(E.nfl.qbPassDev(qst, 6.4, 32), 6.4 / 32 - 0.02, 1e-15));
@@ -173,8 +202,19 @@
     chk('key 3 worth more than off-key 8 at fair 3', hpv > hpv2, [hpv, hpv2]);
     chk('cover basis is spread-conditioned in range',
       E.dist.coverProbSpread('nfl', 3, -2.5).basis === 'margin_pmf_by_spread');
-    chk('cover falls back out of range',
-      E.dist.coverProbSpread('nfl', 22, 20).basis === 'pooled_residual');
+    /* one distribution everywhere (Step 1): past the key range the table's
+       extreme key is moved onto the fair margin, never a different table */
+    chk('cover past the key range still reads the spread-conditioned table',
+      E.dist.coverProbSpread('nfl', 22, 20).basis === 'margin_pmf_by_spread');
+    (function () {
+      var prev = -1, bad = 0, f;
+      for (f = -40; f <= 40; f += 0.05) { var p = E.dist.winProb('nfl', f); if (p < prev - 1e-12) bad++; prev = p; }
+      chk('NFL win probability is monotone in the fair margin (no table seams)', bad === 0, bad);
+      var c = E.dist.coverProbSpread('nfl', 6.72, 0);
+      chk('NFL win probability is the PMF\'s own P(margin > 0) + half the tie',
+        Math.abs(E.dist.winProb('nfl', 6.72) - (c.win + 0.5 * c.push)) < 1e-12);
+      chk('fairSpreadFromWinProb inverts winProb', Math.abs(E.dist.fairSpreadFromWinProb('nfl', E.dist.winProb('nfl', 4.4)) - 4.4) < 1e-6);
+    })();
     var km = E.dist.keyMass('nfl');
     chk('NFL key mass 3 > 7 > 10', km && km['3'] > km['7'] && km['7'] > km['10']);
     var kc = E.dist.keyMass('cfb');
@@ -250,10 +290,31 @@
       chk('predictGame publishes an outcome range off its own learned PMF', !!r
         && (r.basis === 'margin_pmf_by_spread' || r.basis === 'pooled_residual')
         && r.q['0.1'] <= r.q['0.5'] && r.q['0.5'] <= r.q['0.9'], r);
-      /* a spread outside the conditioned table falls back, and says so */
+      /* a spread outside the key range reads the same table, moved onto it */
       var far = E.dist.marginQuantiles('nfl', 40, [0.1, 0.5, 0.9]);
-      chk('a fair spread past the conditioned table falls back to the pooled residual',
-        !!far && far.basis === 'pooled_residual' && far.q['0.5'] > 20, far);
+      chk('a fair spread past the key range is priced by the same table, centred on it',
+        !!far && far.basis === 'margin_pmf_by_spread' && far.q['0.5'] === 40, far);
+      /* THE CARD (audit_report.md §0.5): seven rows, every term placed once */
+      var cd = full.card;
+      chk('the card reconciles to the fair spread within 1e-9', !!cd && cd.reconciles && Math.abs(cd.total - full.model.fair_spread) < 1e-9, cd && { total: cd.total, fair: full.model.fair_spread });
+      chk('the card places every non-zero term of both spread models', !!cd && cd.unplaced.length === 0, cd && cd.unplaced);
+      chk('the card has the seven rows the page shows', !!cd && cd.rows.map(function (x) { return x.key; }).join() === 'base_strength,passing,rushing,quarterback,home_field,context,rest_travel');
+      var splitOk = !!cd && cd.rows.every(function (x) { return x.prior == null || Math.abs(x.prior + x.current - x.points) < 1e-9; });
+      chk('team-strength rows split exactly into prior + this season', splitOk);
+      chk('the win probability is the outcome range\'s own distribution (P(margin > 0) + half a tie)',
+        Math.abs(full.model.home_win_prob - E.dist.winProb('nfl', full.model.fair_spread)) < 1e-12
+        && Math.abs(full.model.home_win_prob - (E.dist.coverProbSpread('nfl', full.model.fair_spread, 0).win + 0.5 * E.dist.coverProbSpread('nfl', full.model.fair_spread, 0).push)) < 1e-12);
+      chk('the fair moneyline restates that probability', full.model.fair_home_ml === E.odds.decToAm(1 / full.model.home_win_prob));
+    })();
+    /* the prior book: at the season break every rating IS its prior; one game moves it by exactly (1 - alpha) */
+    (function () {
+      var st3 = E.nfl.newState(); E.nfl.seasonBreak(st3);
+      chk('at the season break the prior part is the whole rating', near(E.nfl.priorPart(st3, 'KC', 'pass_epa_db'), st3.team.KC.pass_epa_db, 1e-15));
+      var row = function (t, pe) { return { team: t, attempts: 30, carries: 25, sacks_suffered: 2, passing_epa: pe, rushing_epa: 1, passing_20: 4, rushing_10: 3 }; };
+      var p0 = E.nfl.priorPart(st3, 'KC', 'pass_epa_db');
+      E.nfl.absorbCompleted(st3, { home_team: 'KC', away_team: 'BUF', home_score: 24, away_score: 21 }, [row('BUF', 3), row('KC', 8)], []);
+      chk('one game keeps (1 - alpha) of the prior', near(E.nfl.priorPart(st3, 'KC', 'pass_epa_db'), p0 * (1 - st3.hp.alpha), 1e-15));
+      chk('season_games counts this season\'s games', st3.season_games.KC === 1 && st3.season_games.BUF === 1);
     })();
     var full2 = E.predictGame({ sport: 'nfl', state: nst,
       game: { home: 'KC', away: 'BUF', week: 10 },

@@ -150,7 +150,8 @@ section('execution: prices, key numbers, the half point');
 }
 
 /* the NFL fixtures, as tools/bettor/football_decision.test.js builds them */
-const NFL_VAL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'pricing_nfl.json'), 'utf8'));
+/* the LEAN-tier record the blend rules are tested on (tools/bettor/football_decision.test.js explains why it is pinned) */
+const NFL_VAL = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'fixtures', 'pricing_nfl_lean_2026-10-20.json'), 'utf8'));
 function nflModel(fair, blendAt) {
   return { sport: 'NFL', available: true, model_version: 'edgedesk_football_v1.0.0', fair_home_margin: fair, home_cover: (t) => E.dist.coverProbSpread('nfl', fair, t), tail: { validated_within_pts: 0 },
     projection_timestamp: '2026-10-04T06:00:00Z',

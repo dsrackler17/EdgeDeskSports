@@ -61,7 +61,15 @@ const ESSENTIAL = ['INVALID_GAME', 'MAPPING_FAILED', 'DUPLICATE_GAME', 'GAME_CAN
 
 /* ------------------------------------------------------------ fixtures */
 const NOW = Date.parse('2026-10-04T12:00:00Z'), FRESH = '2026-10-04T11:50:00Z', KICK = '2026-10-04T17:00:00Z';
-const NFL_VAL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'pricing_nfl.json'), 'utf8'));
+/* THE BLEND RULES ARE TESTED ON A FIXED LEAN-TIER RECORD: the committed
+   football/validation/pricing_nfl.json as it stood on 2026-10-20, before the NFL
+   defence-parity fix (audit_report.md §0.2). The committed record moves with every
+   recalibration, and after that fix the corrected engine's blend is RESEARCH tier
+   (the model adds no usable information over the close), which a blend is not
+   allowed to price from, so it would exercise none of these rules. What the
+   COMMITTED record does to the live board is checked on its own below. */
+const NFL_VAL = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'fixtures', 'pricing_nfl_lean_2026-10-20.json'), 'utf8'));
+const NFL_VAL_COMMITTED = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'pricing_nfl.json'), 'utf8'));
 const nflCover = (fair) => (t) => E.dist.coverProbSpread('nfl', fair, t);
 function blend(fair, marketHomeLine) { return D.blendAdjusted({ validation: NFL_VAL.markets.spread, model_home_margin: fair, market_home_line: marketHomeLine, cover: (c, t) => E.dist.coverProbSpread('nfl', c, t), version: 'pricing_nfl test' }); }
 function nflModel(fair, opts) {
@@ -522,7 +530,11 @@ if (nflReal.length >= 6) {
   chk('real NFL: favourites and underdogs both appear as the evaluated side', nflReal.some((x) => x.d.selected_line < 0) && nflReal.some((x) => x.d.selected_line > 0));
   chk('real NFL: positive and negative decision EVs both appear', nflReal.some((x) => x.d.decision_ev_pct > 0) && nflReal.some((x) => x.d.decision_ev_pct < 0));
 }
-const withRow = nflReal.map((x) => ({ x, row: ((SLATE.pricing && SLATE.pricing.rows) || []).filter((r) => r.game_id === x.g.game_id && r.side === 'home')[0] })).filter((y) => y.row && y.row.fair_line != null);
+/* the kernel's fair line on the SAME record the board blends with (the fixture,
+   loaded into the kernel in the section above), so the two engines are compared
+   on one blend; the committed slate's rows are priced on the committed record */
+const kernelRow = (g) => { const k = PRICE.fairSpread({ sport: 'americanfootball_nfl', model_home_line: -g.model_home_margin, market_home_line: g.reference_market.home_line }); return k && k.ok ? { fair_line: k.fair_home_line, fair_status: k.status, market_line: g.reference_market.home_line } : null; };
+const withRow = nflReal.map((x) => ({ x, row: kernelRow(x.g) })).filter((y) => y.row && y.row.fair_line != null);
 /* THE BLEND MAY SHRINK THE DISAGREEMENT, NEVER REVERSE IT (audit 2026-09-30
    #4). The fitted blend (1.16 on the market, an intercept of -0.38) lands PAST
    the market line against the projection on most home underdogs — PIT @ CLE:
@@ -561,6 +573,16 @@ chk('real NFL: where the board holds, it moves the fitted blend toward the proje
   heldB.map((y) => [y.x.g.game_id, y.x.model.adjusted.raw_blend_home_margin, y.x.model.adjusted.fair_home_margin, y.x.g.model_home_margin]));
 chk('real NFL: no game’s best spread EV sits on the side the displayed projection is against (the side invariant holds on every real game)', nflReal.every((x) => x.G.side_invariant && x.G.side_invariant.ok !== false), nflReal.filter((x) => !x.G.side_invariant || x.G.side_invariant.ok === false).map((x) => [x.g.game_id, x.G.side_invariant && x.G.side_invariant.reason]));
 chk('real NFL: raw and blended EV are both reported on every decision', nflReal.every((x) => x.d.raw_ev_pct != null && x.d.calibrated_ev_pct != null));
+/* the COMMITTED record decides what the live board may price from: a blend below
+   LEAN is never a probability source, and the board says so in the reason */
+{
+  const cs = NFL_VAL_COMMITTED.markets.spread, tierOk = cs.tier === 'LEAN' || cs.tier === 'VALIDATED';
+  const live = SLATE.games.filter((g) => g.reference_market && g.reference_market.home_line != null && g.model_home_margin != null)
+    .map((g) => D.blendAdjusted({ validation: cs, model_home_margin: g.model_home_margin, market_home_line: g.reference_market.home_line, cover: (c, t) => E.dist.coverProbSpread('nfl', c, t), version: 'committed' }));
+  chk('real NFL: the committed pricing record (tier ' + cs.tier + ') is a probability source only at LEAN or VALIDATED, and the board says why when it is not',
+    live.length > 0 && live.every((a) => tierOk ? a.available : (!a.available && new RegExp('pricing blend is ' + cs.tier).test(a.reason))), live.map((a) => a.reason).slice(0, 3));
+  chk('real NFL: the committed slate\'s pricing rows carry the committed tier', ((SLATE.pricing && SLATE.pricing.rows) || []).every((r) => r.tier === cs.tier || r.tier == null), (SLATE.pricing.rows || []).map((r) => r.tier).slice(0, 4));
+}
 console.log('    NFL real payloads (model, consensus line at -110 — the repo holds no captured NFL book prices):');
 nflReal.forEach((x) => console.log('      ' + (x.g.away_code + ' @ ' + x.g.home_code).padEnd(10) + ' ' + String(x.d.decision_display).padEnd(40) + ' ' + String(x.d.action.selection || '').padEnd(34) + ' edge ' + String(x.d.edge_pp).padStart(6) + ' pp · EV ' + String(x.d.decision_ev_pct).padStart(6) + '% (raw ' + String(x.d.raw_ev_pct).padStart(6) + '%) · conf ' + x.d.decision_confidence));
 

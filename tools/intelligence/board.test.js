@@ -139,7 +139,7 @@ function decision(over) {
 
 /* ═══ 4. the model-blend candidate: sign, tier, thresholds, totals ═══════ */
 {
-  P.loadValidation('americanfootball_nfl', require(path.join(ROOT, 'football/validation/pricing_nfl.json')));
+  P.loadValidation('americanfootball_nfl', require(path.join(ROOT, 'tools/fixtures/pricing_nfl_lean_2026-10-20.json')) /* the LEAN-tier record these scenarios are written for (tools/intelligence/fixtures.js) */);
   const NG = { sport: 'americanfootball_nfl', game_id: 'nfl-1', home_team: 'Buffalo Bills', away_team: 'Detroit Lions', matchup: 'Detroit Lions @ Buffalo Bills', kickoff, status: 'scheduled', model_home_line: -7, model_total: 52.4 };
   const FS = P.fairSpread({ sport: 'americanfootball_nfl', model_home_line: -7, market_home_line: -2.5 });
   const home = P.priceSpreadSide({ fair: FS, side: 'home', selection: 'Buffalo Bills', odds_american: -110, book: 'FanDuel', observed_at: new Date(NOW - 5 * 60000).toISOString() });

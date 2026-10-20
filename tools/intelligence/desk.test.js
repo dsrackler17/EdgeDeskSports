@@ -25,7 +25,7 @@ require(path.join(FN, '_intelligence.js'));
 require(path.join(FN, '_research.js'));
 const P = require(path.join(FN, '_pricing.js'));
 require(path.join(FN, '_board.js'));
-P.loadValidation('americanfootball_nfl', require(path.join(ROOT, 'football/validation/pricing_nfl.json')));
+P.loadValidation('americanfootball_nfl', require(path.join(ROOT, 'tools/fixtures/pricing_nfl_lean_2026-10-20.json')) /* the LEAN-tier record these scenarios are written for (tools/intelligence/fixtures.js) */);
 P.loadValidation('americanfootball_ncaaf', require(path.join(ROOT, 'football/validation/pricing_cfb.json')));
 const D = require(path.join(FN, '_desk.js'));
 const F = require('./desk_fixtures.js');
@@ -222,7 +222,7 @@ function ask(q, Es, st) { return D.answer({ question: q, evidence: Es, state: st
   P.loadValidation('americanfootball_nfl', { markets: {} });   /* no validation: RESEARCH tier */
   const NR = D.evidence(F.nflGame(NOW, { market_home_line: -4.5 }));
   ok('an unvalidated NFL spread uses the model\u2019s own margin distribution', /own margin distribution/.test(D.evaluate(NR, { market: 'spread', side: 'home', team: 'Los Angeles Rams', line: -4.5 }).prob.basis));
-  P.loadValidation('americanfootball_nfl', require(path.join(ROOT, 'football/validation/pricing_nfl.json')));
+  P.loadValidation('americanfootball_nfl', require(path.join(ROOT, 'tools/fixtures/pricing_nfl_lean_2026-10-20.json')) /* the LEAN-tier record these scenarios are written for (tools/intelligence/fixtures.js) */);
   ok('CFB tier is the pricing kernel’s (RESEARCH)', C.fair.tier === 'RESEARCH' && C.fair.spread.tier_basis.length > 10);
   ok('NFL tier is the pricing kernel’s (LEAN)', N.fair.tier === 'LEAN');
   ok('CFB cannot be graded above LOW on a RESEARCH tier with good evidence', D.confidence(C, D.evaluate(C, { market: 'spread', side: 'away', team: 'UCLA', line: 3.5 })).grade === 'LOW');

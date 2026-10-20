@@ -323,7 +323,8 @@ function buildSummary(ledgers, sums, now) {
 
 async function run(opts) {
   const now = opts.now || new Date().toISOString();
-  const slates = { nfl: readJson(path.join(ROOT, SLATES.nfl)), cfb: readJson(path.join(ROOT, SLATES.cfb)) };
+  /* opts.slates: the two slates as objects (a test that needs a fixed publication order); default the committed files */
+  const slates = opts.slates || { nfl: readJson(path.join(ROOT, SLATES.nfl)), cfb: readJson(path.join(ROOT, SLATES.cfb)) };
   const season = opts.season || (slates.nfl && slates.nfl.season) || (slates.cfb && slates.cfb.season);
   if (!season) throw new Error('no season: neither slate could be read');
   const outDir = path.isAbsolute(opts.out) ? opts.out : path.join(ROOT, opts.out);

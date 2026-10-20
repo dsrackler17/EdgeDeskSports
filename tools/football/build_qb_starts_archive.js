@@ -128,6 +128,22 @@ function startsFor(E, st, rec, home, away, rule) {
   return out;
 }
 
+/** The archive record as the quarterback lines engine.js nfl.qbStarts reads (the
+    shape of football/nfl/qb_games_<season>.csv), so a replay over the archive absorbs
+    through the same nfl.absorbCompleted path as the live board. With rule
+    'top_passer' (training's rule, research/train_nfl.py) each club's line is the
+    passer with the most dropbacks; with 'listed_starter' it is games.csv's starter. */
+function qbRowsFor(rec, home, away, rule) {
+  if (!rec) return [];
+  const out = [];
+  [[home, 'h'], [away, 'a']].forEach(([team, k]) => {
+    const line = rule === 'top_passer' && rec[k + 't'] ? rec[k + 't'] : rec[k];
+    if (!line || !line[0] || line.length < 4) return;
+    out.push({ team, position: 'QB', player_id: line[0], attempts: line[1], sacks_suffered: line[2], passing_epa: line[3] });
+  });
+  return out;
+}
+
 function readArchive(file) { try { return JSON.parse(fs.readFileSync(file || OUT, 'utf8')); } catch (_) { return null; } }
 
 async function fetchTo(url, file) {
@@ -168,5 +184,5 @@ async function main() {
   console.log(writeIfChanged(OUT, art) + ' ' + path.relative(ROOT, OUT) + ' (' + Math.round(fs.statSync(OUT).size / 1024) + ' KB)');
 }
 
-module.exports = { build, passerLines, startsFor, readArchive, franchise, SCHEMA, OUT, FILE, URL, FIRST };
+module.exports = { build, passerLines, startsFor, qbRowsFor, readArchive, franchise, SCHEMA, OUT, FILE, URL, FIRST };
 if (require.main === module) main().catch((e) => { console.error(e.stack || e); process.exit(2); });

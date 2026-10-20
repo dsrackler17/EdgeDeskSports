@@ -33,7 +33,11 @@ DATA = sys.argv[1] if len(sys.argv) > 1 else 'data'
 OUT  = sys.argv[2] if len(sys.argv) > 2 else 'out'
 os.makedirs(OUT, exist_ok=True)
 
-NFL_SEASONS = range(1999, 2026)   # completed seasons used for training
+# completed seasons used for training. NFL_LAST_SEASON lets the parity check
+# (nfl_v2/parity_dump.py) replay the season in progress through the same code;
+# training itself never sets it.
+NFL_LAST = int(os.environ.get('NFL_LAST_SEASON', '2025'))
+NFL_SEASONS = range(1999, NFL_LAST + 1)
 CFB_SEASONS = range(2002, 2026)
 
 # Franchise continuity across relocations (nflverse team codes).
@@ -43,7 +47,7 @@ def franchise(t): return FRANCHISE.get(t, t)
 
 def build_nfl():
     g = pd.read_csv(os.path.join(DATA, 'nfl', 'games.csv'))
-    g = g[(g.season >= 1999) & (g.season <= 2025)].copy()
+    g = g[(g.season >= 1999) & (g.season <= NFL_LAST)].copy()
     g = g.dropna(subset=['home_score', 'away_score'])
     g['margin'] = g.home_score - g.away_score          # == result column
     g['total_pts'] = g.home_score + g.away_score

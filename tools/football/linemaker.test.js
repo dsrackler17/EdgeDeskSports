@@ -155,7 +155,15 @@ chk('a sheet with no calibration record is refused', FL.sheet({ game_id: 'x', ra
 
 /* ═══ 4. the price check ════════════════════════════════════════════════ */
 section('the price check');
-const MN = { bands: CN.live.bands, bands_at_market: CN.live.bands_at_market, band_min_n: CN.live.band_min_n };
+/* THE PRICE-CHECK LOGIC, on a CONTROLLED table: every spread band at market numbers
+   holds 400 held-out events that came true 50% of the time (no resolution at the
+   numbers the market posted). The committed calibration's own table moves with every
+   recalibration (the defence-parity fix concentrated the model's probabilities at
+   market numbers, emptying the upper bands), so the verdict rules are tested here on
+   fixed inputs and the committed record is checked for its shape above. */
+const wilsonLo = (k, n) => { const z = 1.96, ph = k / n, d = 1 + z * z / n; return (ph + z * z / (2 * n) - z * Math.sqrt(ph * (1 - ph) / n + z * z / (4 * n * n))) / d; };
+const noRes = (bands) => bands.map((b) => Object.assign({}, b, { n: 400, mean_p: (b.lo + b.hi) / 2, observed: 0.5, wilson_lo: wilsonLo(200, 400), wilson_hi: 1 - wilsonLo(200, 400) }));
+const MN = { bands: CN.live.bands, bands_at_market: Object.assign({}, CN.live.bands_at_market, { spread: noRes(CN.live.bands_at_market.spread) }), band_min_n: CN.live.band_min_n };
 const pcGood = FL.priceCheck(shN, { market: 'spread', side: 'home', line: shN.markets.spread.fair_home_line_half + 6, american: -110 }, MN);
 chk('six points better than fair at -110 has a positive expected return', pcGood.expected_roi > 0, pcGood);
 chk('but at market numbers the model\'s probabilities had little resolution, so it is THIN, not VALUE', pcGood.verdict === 'THIN' && /market posted/.test(pcGood.why.join(' ')), pcGood.why);

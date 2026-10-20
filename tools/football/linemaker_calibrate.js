@@ -144,7 +144,10 @@ function replayNfl(opts) {
   games.sort((a, b) => a.season - b.season || String(a.type).localeCompare(String(b.type)) || a.week - b.week || String(a.date).localeCompare(String(b.date)) || String(a.id).localeCompare(String(b.id)));
   const groups = []; let cur = null;
   for (const g of games) { const k = g.season + '|' + g.type + '|' + g.week; if (!cur || cur.k !== k) { cur = { k, season: g.season, games: [] }; groups.push(cur); } cur.games.push(g); }
-  const st = E.nfl.newState(); st.team = {}; st.ngames = {}; st.teamQb = {}; st.qb = {}; st.seededThrough = 2005;
+  /* cold state (training starts with no ratings and no league means), franchises mapped, every game absorbed
+     through engine.js nfl.absorbCompleted — the live board's path (football/parity.test.js) */
+  const st = E.nfl.coldState(); st.seededThrough = 2005;
+  const FR = E.nfl.franchise;
   const rows = []; let season = null, refused = 0, absorbed = 0, noRows = 0, qbWithDev = 0;
   const qbArc = opts.qbStarts && opts.qbStarts.games ? opts.qbStarts : null;
   for (const grp of groups) {
@@ -152,22 +155,22 @@ function replayNfl(opts) {
     season = grp.season;
     for (const g of grp.games) {
       if (g.season < LEAGUES.nfl.first_row) continue;
-      const req = { sport: 'nfl', state: st, season: g.season, game: { home: g.home, away: g.away, week: g.week, home_rest: g.ctx.home_rest, away_rest: g.ctx.away_rest, roof: g.ctx.roof, surface: g.ctx.surface, div_game: g.ctx.divisional ? 1 : 0, temp: g.ctx.temp, wind: g.ctx.wind, home_qb_id: g.ctx.home_qb_id, away_qb_id: g.ctx.away_qb_id }, market: {} };
+      const req = { sport: 'nfl', state: st, season: g.season, game: { home: FR(g.home), away: FR(g.away), week: g.week, home_rest: g.ctx.home_rest, away_rest: g.ctx.away_rest, roof: g.ctx.roof, surface: g.ctx.surface, div_game: g.ctx.divisional ? 1 : 0, temp: g.ctx.temp, wind: g.ctx.wind, home_qb_id: g.ctx.home_qb_id, away_qb_id: g.ctx.away_qb_id }, market: {} };
       let p = null; try { p = E.predictGame(req); } catch (_) { p = null; }
-      if (p && p.status === 'PREDICTED' && (st.ngames[g.home] || 0) >= 8 && (st.ngames[g.away] || 0) >= 8) {
+      if (p && p.status === 'PREDICTED' && (st.ngames[FR(g.home)] || 0) >= 8 && (st.ngames[FR(g.away)] || 0) >= 8) {
         rows.push({ id: g.id, season: g.season, week: g.week, type: g.type, m: p.model.fair_spread, t: p.model.fair_total, hs: g.home_score, as: g.away_score,
           close_margin: g.close && g.close.home_line != null ? -g.close.home_line : null, close_total: g.close ? num(g.close.total) : null });
       } else refused++;
     }
     for (const g of grp.games) {
       if (g.home_score == null) continue;
-      const pair = stw[g.id]; if (!pair || pair.length !== 2) { noRows++; continue; }
-      const h = pair.find((x) => x.team === g.home), a = pair.find((x) => x.team === g.away); if (!h || !a) { noRows++; continue; }
-      const hr = E.nfl.teamGameFromStw(h), ar = E.nfl.teamGameFromStw(a);
-      hr.pts_for = g.home_score; hr.pts_against = g.away_score; ar.pts_for = g.away_score; ar.pts_against = g.home_score;
-      const qbs = qbArc ? QB.startsFor(E, st, qbArc.games[g.id], g.home, g.away) : [];
-      qbWithDev += qbs.filter((x) => x[2] != null).length;
-      E.nfl.absorbGame(st, [[g.home, hr], [g.away, ar]], qbs); absorbed++;
+      /* training's quarterback rule: the passer with the most dropbacks */
+      const qbRows = qbArc ? QB.qbRowsFor(qbArc.games[g.id], g.home, g.away, 'top_passer') : [];
+      const gg = { home_team: g.home, away_team: g.away, home_score: g.home_score, away_score: g.away_score };
+      const pairs = E.nfl.gamePairs(gg, stw[g.id] || []);
+      if (pairs) qbWithDev += E.nfl.qbStarts(st, pairs, qbRows).filter((x) => x[2] != null).length;
+      if (!E.nfl.absorbCompleted(st, gg, stw[g.id] || [], qbRows)) { noRows++; continue; }
+      absorbed++;
     }
   }
   const ou = (c) => (c ? { over: c.win, push: c.push, under: c.lose } : null);

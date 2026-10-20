@@ -7,6 +7,7 @@
    Exit 0 = the live pipeline produced sane, gated output. */
 const P = require('../params.js');
 const E = require('../engine.js');
+const QBG = require('../nfl/build_qb_games.js');
 
 function csv(text) {
   const rows = []; let row = [], cur = '', q = false;
@@ -49,17 +50,17 @@ const num = x => { const v = +x; return isFinite(v) ? v : null; };
       if (!r.ok) { console.log('note | stats_team_week_' + y + ' not published (' + r.status + ') — results not absorbed'); continue; }
       const byGame = {};
       csv(await r.text()).forEach(x => (byGame[x.game_id] = byGame[x.game_id] || []).push(x));
+      /* the quarterback lines training credits (football/nfl/build_qb_games.js) */
+      const qbByGame = {};
+      const rq = await fetch(`https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_${y}.csv`);
+      if (rq.ok) QBG.qbRows(await rq.text(), y).forEach(x => (qbByGame[x.game_id] = qbByGame[x.game_id] || []).push(x));
+      else console.log('note | stats_player_week_' + y + ' not published (' + rq.status + ') — quarterback values not updated');
+      /* training's order: gameday, then game_id */
       toAbsorb.filter(g => num(g.season) === y)
-        .sort((a, b) => String(a.gameday).localeCompare(String(b.gameday)))
+        .sort((a, b) => String(a.gameday).localeCompare(String(b.gameday)) || String(a.game_id).localeCompare(String(b.game_id)))
         .forEach(g => {
-          const pair = byGame[g.game_id]; if (!pair || pair.length !== 2) return;
-          const hRow = pair.find(x => x.team === g.home_team), aRow = pair.find(x => x.team === g.away_team);
-          if (!hRow || !aRow) return;
-          const hr = E.nfl.teamGameFromStw(hRow), ar = E.nfl.teamGameFromStw(aRow);
-          hr.pts_for = num(g.home_score); hr.pts_against = num(g.away_score);
-          ar.pts_for = num(g.away_score); ar.pts_against = num(g.home_score);
-          E.nfl.absorbGame(st, [[g.home_team, hr], [g.away_team, ar]], []);
-          absorbed++;
+          /* the one absorb path (engine.js nfl.absorbCompleted): mirrored defence + credited QB */
+          if (E.nfl.absorbCompleted(st, g, byGame[g.game_id] || [], qbByGame[g.game_id] || [])) absorbed++;
         });
     }
   }

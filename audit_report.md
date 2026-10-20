@@ -394,7 +394,13 @@ The total model does split them (`pass_matchup`, `rush_matchup`, `off_epa_sum`, 
 4. **The context intercept survives neutral sites.** `nfl.predict` zeroes only the strength intercept, so +0.595 + week term still goes to the nominal home team at a neutral site.
 5. **`ngames` sentinel.** Seeded teams start at `ngames = 99`, so the `known` field (104 on this card) is meaningless.
 6. **The card's driver basis text** claims post-model adjustments explain the reconciliation gap; it is the dropped ctx model. The brief (`fbNflDrivers`) merges spread + ctx but truncates to 9, then 6 rows, while its text says the rows "add up to the projected spread exactly".
-7. **Preseason win totals stop at 2020.** `nflverse/nfldata/data/win_totals.csv` carries 32 teams × 2003–2020 (one consensus line per team, no book). It has nothing for 2021–2026, so a win-total prior can be neither validated on the 2025 holdout nor served for 2026. We own no other source, so it stays inactive. Prior-week **closing spreads** are in `games.csv` for every game since 1999 and can be used.
+7. **`net_pts` has the wrong sign on points allowed.**
+   - The definition in both `train_nfl.py:172` and `engine.js` is `(pts_for + pts_against)_home − (pts_for + pts_against)_away`.
+   - `pts_against` is points *allowed* above average (higher is worse), so the feature measures a scoring *environment*, not a margin; the intended sum is `pts_for − pts_against`.
+   - The card labels it "Scoring margin". It got a small weight (0.168).
+   - Training and serving agree, so this is a formula error, not a parity bug. The fix is a backtest-gated candidate in the build.
+   - For KC @ SEA the two definitions happen to give similar values: 3.25 now vs 3.83 corrected.
+8. **Preseason win totals stop at 2020.** `nflverse/nfldata/data/win_totals.csv` carries 32 teams × 2003–2020 (one consensus line per team, no book). It has nothing for 2021–2026, so a win-total prior can be neither validated on the 2025 holdout nor served for 2026. We own no other source, so it stays inactive. Prior-week **closing spreads** are in `games.csv` for every game since 1999 and can be used.
 
 ---
 

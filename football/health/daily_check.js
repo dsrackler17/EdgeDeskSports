@@ -65,6 +65,9 @@ const SB_KEY = process.env.EDGEDESK_SUPABASE_ANON_KEY ||
 
 const URL_GAMES = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 const URL_STW = y => `https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_${y}.csv`;
+/* the quarterback lines training credits (football/nfl/build_qb_games.js reads the same feed) */
+const URL_SPW = y => `https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_${y}.csv`;
+const QBG = require(path.join(REPO, 'football', 'nfl', 'build_qb_games.js'));
 const URL_CFB_SCHED = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_${y}.csv`;
 const URL_CFB_ROSTER = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/rosters/csv/cfb_rosters_${y}.csv`;
 
@@ -249,6 +252,7 @@ async function nflSection(out) {
   let absorbed = 0, joinMissed = 0, dataThrough = null;
   if (toAbsorb.length) {
     const byGame = {};
+    const qbByGame = {};
     for (const y of [...new Set(toAbsorb.map(g => num(g.season)))]) {
       try {
         parseCsv(await fetchText(URL_STW(y))).forEach(x =>
@@ -257,17 +261,18 @@ async function nflSection(out) {
         check('nfl_stats_' + y, `NFL: stats_team_week_${y} reachable`, 'warn',
           `${(e && e.message) || 'fetch failed'} — ${y} results not absorbed (the app degrades the same way)`);
       }
+      try {
+        QBG.qbRows(await fetchText(URL_SPW(y)), y).forEach(x =>
+          (qbByGame[x.game_id] = qbByGame[x.game_id] || []).push(x));
+      } catch (e) {
+        check('nfl_qb_' + y, `NFL: stats_player_week_${y} quarterback lines reachable`, 'warn',
+          `${(e && e.message) || 'fetch failed'} — ${y} quarterback values not updated (the app degrades the same way)`);
+      }
     }
     toAbsorb.sort((a, b) => String(a.gameday).localeCompare(String(b.gameday)) || String(a.game_id).localeCompare(String(b.game_id)));
     for (const g of toAbsorb) {
-      const pair = byGame[g.game_id];
-      if (!pair || pair.length !== 2) { joinMissed++; continue; }
-      const hRow = pair.find(x => x.team === g.home_team), aRow = pair.find(x => x.team === g.away_team);
-      if (!hRow || !aRow) { joinMissed++; continue; }
-      const hr = E.nfl.teamGameFromStw(hRow), ar = E.nfl.teamGameFromStw(aRow);
-      hr.pts_for = num(g.home_score); hr.pts_against = num(g.away_score);
-      ar.pts_for = num(g.away_score); ar.pts_against = num(g.home_score);
-      E.nfl.absorbGame(st, [[g.home_team, hr], [g.away_team, ar]], []);
+      /* the one absorb path (engine.js nfl.absorbCompleted): mirrored defence + credited QB */
+      if (!E.nfl.absorbCompleted(st, g, byGame[g.game_id] || [], qbByGame[g.game_id] || [])) { joinMissed++; continue; }
       absorbed++;
       if (!dataThrough || String(g.gameday) > dataThrough) dataThrough = String(g.gameday);
     }

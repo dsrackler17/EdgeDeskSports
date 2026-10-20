@@ -171,7 +171,35 @@
     out.sort(function (a, b) { return a[0] - b[0]; });
     return out;
   }
+  /* NO SEAM WHERE ONE SIDE'S TABLE RUNS OUT (Step 1 of the NFL rebuild). The
+     away side's medians only reach lo0 (about -7.2): past it the mirrored
+     home-favourite shape takes over, and that switch moved the price of the
+     same game by up to 4 points of probability between fair -7.21 and -7.20.
+     Over the last BLEND points inside the shorter side's range the two shapes
+     are mixed, the mirrored share rising linearly to 1 at the edge. Both
+     components have their median exactly on `fair`, so the mixture does too. */
+  var CENTRE_BLEND = 2;
   function centredOn(sport, sp, fair) {
+    var rows = tableRows(sport, sp), mk = 'b|' + sport + '|' + fair;
+    if (!rows.length) return null;
+    if (CENTRE_MEMO[mk]) return CENTRE_MEMO[mk];
+    var lo0 = rows[0].median, hi0 = rows[rows.length - 1].median, u = 0;
+    if (-lo0 < hi0 && fair >= lo0 && fair < lo0 + CENTRE_BLEND && -fair <= hi0) u = (lo0 + CENTRE_BLEND - fair) / CENTRE_BLEND;
+    else if (hi0 < -lo0 && fair <= hi0 && fair > hi0 - CENTRE_BLEND && -fair >= lo0) u = (fair - (hi0 - CENTRE_BLEND)) / CENTRE_BLEND;
+    var direct = centredOnRaw(sport, sp, fair), out = direct;
+    if (u > 0 && direct) {
+      var mir = centredOnRaw(sport, sp, -fair), by = {}, list = [], k, j;
+      for (j = 0; j < direct.entries.length; j++) by[direct.entries[j][0]] = (by[direct.entries[j][0]] || 0) + (1 - u) * direct.entries[j][1];
+      for (j = 0; j < mir.entries.length; j++) by[-mir.entries[j][0]] = (by[-mir.entries[j][0]] || 0) + u * mir.entries[j][1];
+      for (k in by) if (by.hasOwnProperty(k)) list.push([parseInt(k, 10), by[k]]);
+      list.sort(function (a, b) { return a[0] - b[0]; });
+      out = { entries: list, method: 'edge_blend', keys: direct.keys.concat(mir.keys.map(function (x) { return -x; })), mirrored_share: u };
+    }
+    if (CENTRE_MEMO_N > 2048) { CENTRE_MEMO = {}; CENTRE_MEMO_N = 0; }
+    CENTRE_MEMO[mk] = out; CENTRE_MEMO_N++;
+    return out;
+  }
+  function centredOnRaw(sport, sp, fair) {
     var rows = tableRows(sport, sp), mk = sport + '|' + fair;
     if (!rows.length) return null;
     if (CENTRE_MEMO[mk]) return CENTRE_MEMO[mk];
@@ -180,7 +208,7 @@
       /* past one side's range but inside the other's: the mirrored table (a
          home favourite by 9 read as an away favourite by 9), so the spikes
          land on -3, -7, -10 rather than being shifted off them */
-      var mir = centredOn(sport, sp, -fair);
+      var mir = centredOnRaw(sport, sp, -fair);
       out = { entries: mir.entries.map(function (e) { return [-e[0], e[1]]; }).sort(function (a, b) { return a[0] - b[0]; }),
         method: 'mirrored_' + mir.method, keys: mir.keys.map(function (k) { return -k; }) };
     } else if (fair <= lo0 || fair >= hi0) {
@@ -211,9 +239,20 @@
     return out;
   }
   var dist = {
+    /* ONE DISTRIBUTION FOR THE NFL (audit_report.md §0.6). The win
+       probability, the moneyline, every cover probability and the outcome
+       range are read off the SAME median-centred margin PMF
+       (coverProbSpread at a line of 0: P(margin > 0) plus half the tie mass).
+       It used to be a Normal(fair, sigma_margin) beside a PMF for everything
+       else, so the card's win probability and its range disagreed. The
+       college layer keeps its Normal until its own audit (Step 6). */
     winProb: function (sport, fairSpread) {
       var sp = sportParams(sport);
       if (!sp || !isNum(fairSpread)) return null;
+      if (sport === 'nfl' && (sp.margin_pmf_by_spread || sp.margin_resid_pmf)) {
+        var c = dist.coverProbSpread(sport, fairSpread, 0);
+        if (c) return Math.min(1 - 1e-6, Math.max(1e-6, c.win + 0.5 * c.push));
+      }
       return normCdf(fairSpread / sp.sigma_margin);
     },
     /* P(home side of `line` wins / pushes / loses) given the model's fair
@@ -225,9 +264,13 @@
     coverProbSpread: function (sport, fairSpread, line) {
       var sp = sportParams(sport);
       if (!sp || !isNum(fairSpread) || !isNum(line)) return null;
-      var tab = sp.margin_pmf_by_spread, rng = sp.pmf_spread_range;
+      /* the spread-keyed table prices EVERY fair margin: past its key range
+         it already reads the extreme key moved onto the fair margin
+         (centredOn), and switching to the pooled residual there made a
+         2-4 point probability step at +/-14 (Step 1 of the NFL rebuild) */
+      var tab = sp.margin_pmf_by_spread;
       var win = 0, push = 0, tot = 0, i, es;
-      if (tab && rng && fairSpread >= rng[0] && fairSpread <= rng[1]) {
+      if (tab) {
         var ce = centredOn(sport, sp, fairSpread);
         if (ce) {
           for (i = 0; i < ce.entries.length; i++) {
@@ -298,9 +341,9 @@
     marginQuantiles: function (sport, fairSpread, ps) {
       var sp = sportParams(sport);
       if (!sp || !isNum(fairSpread) || !ps || !ps.length) return null;
-      var tab = sp.margin_pmf_by_spread, rng = sp.pmf_spread_range;
+      var tab = sp.margin_pmf_by_spread;
       var es = null, shift = 0, basis = null, tot = 0, i;
-      if (tab && rng && fairSpread >= rng[0] && fairSpread <= rng[1]) {
+      if (tab) {
         /* the same median-centred shape coverProbSpread prices from */
         var ce2 = centredOn(sport, sp, fairSpread);
         if (ce2) { es = ce2.entries; tot = 1; basis = 'margin_pmf_by_spread'; }
@@ -324,11 +367,12 @@
     fairSpreadFromWinProb: function (sport, p) {
       var sp = sportParams(sport);
       if (!sp || !(p > 0 && p < 1)) return null;
-      /* inverse Phi by bisection on the same erf (no new approximations) */
+      /* the inverse of winProb by bisection on winProb itself, so the two can
+         never disagree (it is monotone in the fair margin) */
       var lo = -60, hi = 60, m, i;
       for (i = 0; i < 60; i++) {
         m = (lo + hi) / 2;
-        if (normCdf(m / sp.sigma_margin) < p) lo = m; else hi = m;
+        if (dist.winProb(sport, m) < p) lo = m; else hi = m;
       }
       return (lo + hi) / 2;
     }
@@ -355,20 +399,44 @@
     'is_dome', 'temp_c', 'wind_o', 'div_game', 'week_frac'];
   var NFL_CTX_FEATS = ['rest_diff', 'home_short', 'away_short',
     'home_off_bye', 'away_off_bye', 'div_game', 'week_frac', 'is_dome', 'grass'];
+  /* relocated franchises carry one rating history (research/build_features.py FRANCHISE) */
+  var NFL_FRANCHISE = { STL: 'LA', SD: 'LAC', OAK: 'LV' };
+  /* a team's defence in a game IS its opponent's offence in that game: training
+     builds every def_* feature from the opponent's offence row
+     (research/build_features.py, the rename that makes `d`). */
+  var NFL_DEF_OF = { off_epa_play: 'def_epa_play', pass_epa_db: 'def_pass_epa_db',
+    rush_epa_att: 'def_rush_epa_att', expl_pass: 'def_expl_pass',
+    expl_rush: 'def_expl_rush', sack_rate_all: 'sack_rate_made' };
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
+  /* PRIOR vs THIS SEASON, exactly (audit_report.md §2). Every rating is
+     r = pw·p0 + (this season's evidence), where p0 is the rating the season
+     started from (last season carried) and pw the product of (1−α) over the
+     games this season that observed the feature. Bookkeeping only: the
+     ratings themselves are computed exactly as before (python parity). */
+  function priorBook(st, t) {
+    var b = st.pri[t], i;
+    if (!b) {
+      b = st.pri[t] = {};
+      for (i = 0; i < NFL_RATE_FEATS.length; i++) b[NFL_RATE_FEATS[i]] = [st.team[t] ? st.team[t][NFL_RATE_FEATS[i]] : 0, 1];
+    }
+    return b;
+  }
+
   var nfl = {
     RATE_FEATS: NFL_RATE_FEATS,
+    DEF_OF: NFL_DEF_OF,
+    franchise: function (t) { return NFL_FRANCHISE[t] || t; },
     /* fresh mutable rating state from the shipped end-of-training seeds */
     newState: function () {
       var sp = sportParams('nfl'); if (!sp) return null;
       var st = { hp: clone(sp.hyperparams), team: clone(sp.seed_ratings),
         lmean: clone(sp.league_means), teamQb: clone(sp.seed_team_qb || {}),
-        qb: clone(sp.seed_qb_values || {}), ngames: {},
+        qb: clone(sp.seed_qb_values || {}), ngames: {}, season_games: {}, pri: {},
         seededThrough: sp.trained_through_season };
       var t;
-      for (t in st.team) if (st.team.hasOwnProperty(t)) st.ngames[t] = 99;
+      for (t in st.team) if (st.team.hasOwnProperty(t)) { st.ngames[t] = 99; st.season_games[t] = 0; priorBook(st, t); }
       return st;
     },
     _team: function (st, t) {
@@ -376,15 +444,27 @@
         var o = {}, i;
         for (i = 0; i < NFL_RATE_FEATS.length; i++) o[NFL_RATE_FEATS[i]] = 0;
         st.team[t] = o; st.ngames[t] = 0; st.teamQb[t] = 0;
+        if (st.season_games) st.season_games[t] = 0;
+        if (st.pri) priorBook(st, t);
       }
       return st.team[t];
     },
     seasonBreak: function (st) {
-      var c = st.hp.carry, t, i;
+      var c = st.hp.carry, t, i, f;
       for (t in st.team) if (st.team.hasOwnProperty(t)) {
         for (i = 0; i < NFL_RATE_FEATS.length; i++) st.team[t][NFL_RATE_FEATS[i]] *= c;
         st.teamQb[t] = (st.teamQb[t] || 0) * c;
+        if (st.season_games) st.season_games[t] = 0;
+        if (st.pri) {
+          var b = priorBook(st, t);
+          for (i = 0; i < NFL_RATE_FEATS.length; i++) { f = NFL_RATE_FEATS[i]; b[f][0] = st.team[t][f]; b[f][1] = 1; }
+        }
       }
+    },
+    /* the prior part of one team's rating on one feature (see priorBook) */
+    priorPart: function (st, t, f) {
+      var b = st.pri && st.pri[t] && st.pri[t][f];
+      return b ? b[0] * b[1] : null;
     },
     qbEff: function (st, qbId) {
       var q = st.qb[qbId];
@@ -425,6 +505,79 @@
         plays: plays
       };
     },
+    /* a cold state: no seeds, no league means, no quarterbacks: what the
+       python training pass starts from in 1999 (train_nfl.Ratings()) */
+    coldState: function () {
+      var st = nfl.newState(); if (!st) return null;
+      st.team = {}; st.ngames = {}; st.teamQb = {}; st.qb = {}; st.lmean = {};
+      st.season_games = {}; st.pri = {};
+      return st;
+    },
+    /* THE ONE WAY A COMPLETED GAME'S TEAM ROWS ARE BUILT (audit_report.md §0.2).
+       Training gives each team-game its OWN offence row and builds its def_*
+       features from the OPPONENT's offence row of the same game; every caller
+       used to pass the offence row alone, so no defensive rating ever moved in
+       season (live board) or ever left zero (the JS replays). `rows` are the
+       game's two stats_team_week rows IN FILE ORDER: train_nfl.py absorbs a
+       game's teams in that order and the league means update sequentially
+       inside absorbGame, so the order is part of the arithmetic.
+       g = {home_team, away_team, home_score, away_score} (raw nflverse codes).
+       Returns [[team, raw], [team, raw]] or null when the two rows are not this
+       game's two clubs. */
+    gamePairs: function (g, rows) {
+      if (!g || !rows || rows.length !== 2) return null;
+      var home = nfl.franchise(g.home_team), away = nfl.franchise(g.away_team);
+      var hs = +g.home_score, as = +g.away_score;
+      var t0 = nfl.franchise(rows[0].team), t1 = nfl.franchise(rows[1].team);
+      if (!((t0 === home && t1 === away) || (t0 === away && t1 === home))) return null;
+      var r0 = nfl.teamGameFromStw(rows[0]), r1 = nfl.teamGameFromStw(rows[1]), k;
+      var o0 = clone(r0), o1 = clone(r1);
+      for (k in NFL_DEF_OF) if (NFL_DEF_OF.hasOwnProperty(k)) {
+        r0[NFL_DEF_OF[k]] = isNum(o1[k]) ? o1[k] : NaN;
+        r1[NFL_DEF_OF[k]] = isNum(o0[k]) ? o0[k] : NaN;
+      }
+      r0.pts_for = t0 === home ? hs : as; r0.pts_against = t0 === home ? as : hs;
+      r1.pts_for = t1 === home ? hs : as; r1.pts_against = t1 === home ? as : hs;
+      return [[t0, r0], [t1, r1]];
+    },
+    /* THE QUARTERBACK EACH TEAM-GAME CREDITS, by training's rule
+       (research/train_nfl.py sequential_pass): of the club's stats_player_week
+       rows at position QB with a dropback, the one with the MOST dropbacks
+       (attempts + sacks; the first in file order on a tie), his pass deviation
+       measured against the league mean BEFORE the game (qbPassDev; none under
+       10 dropbacks). qbRows: this game's player rows, any club, file order.
+       Must be called before absorbGame. Returns [[team, qbId, dev], ...]. */
+    qbStarts: function (st, pairs, qbRows) {
+      var out = [], i, j;
+      if (!pairs || !qbRows || !qbRows.length) return out;
+      for (i = 0; i < pairs.length; i++) {
+        var t = pairs[i][0], best = null, bestDb = -1;
+        for (j = 0; j < qbRows.length; j++) {
+          var r = qbRows[j];
+          if (!r || nfl.franchise(r.team) !== t || String(r.position) !== 'QB') continue;
+          /* pandas: a missing attempts or sacks makes the dropbacks NaN, and NaN > 0 is false */
+          var att = (r.attempts == null || r.attempts === '') ? NaN : +r.attempts;
+          var sk = (r.sacks_suffered == null || r.sacks_suffered === '') ? NaN : +r.sacks_suffered;
+          var db = att + sk;
+          if (!(db > 0)) continue;
+          if (db > bestDb) { best = r; bestDb = db; }
+        }
+        if (!best || !best.player_id) continue;
+        var epa = (best.passing_epa == null || best.passing_epa === '') ? NaN : +best.passing_epa;
+        out.push([t, String(best.player_id), nfl.qbPassDev(st, epa, bestDb)]);
+      }
+      return out;
+    },
+    /* absorb one completed game the way training does: team rows with their
+       mirrored defence, then the credited quarterbacks. Returns true when the
+       game entered the ratings. */
+    absorbCompleted: function (st, g, stwRows, qbRows) {
+      var pairs = nfl.gamePairs(g, stwRows);
+      if (!pairs) return false;
+      var qbs = nfl.qbStarts(st, pairs, qbRows || []);
+      nfl.absorbGame(st, pairs, qbs);
+      return true;
+    },
     /* ordered absorb: pairs = [[homeTeam, homeRaw],[awayTeam, awayRaw]];
        qbStarts = [[team, qbId, passDevOrNull], ...] in the same order.
        Order is part of the algorithm (league means update sequentially). */
@@ -444,8 +597,10 @@
           a = (f === 'pts_for' || f === 'pts_against') ? st.hp.alpha_pts : st.hp.alpha;
           st.team[t][f] = (1 - a) * st.team[t][f] + a * perf;
           st.lmean[f] = (1 - st.hp.alpha_league) * lm + st.hp.alpha_league * v;
+          if (st.pri) priorBook(st, t)[f][1] *= (1 - a);
         }
         st.ngames[t] = (st.ngames[t] || 0) + 1;
+        if (st.season_games) st.season_games[t] = (st.season_games[t] || 0) + 1;
       }
       for (i = 0; i < (qbStarts || []).length; i++) {
         t = qbStarts[i][0];
@@ -548,10 +703,70 @@
       var koerner = lin(F.spread, NFL_SPREAD_FEATS, sp.w_spread, spreadTerms, game && game.neutral === true ? 0 : null);
       var ctxAdj = lin(F.ctx, NFL_CTX_FEATS, sp.w_ctx, ctxTerms);
       var total = lin(F.total, NFL_TOTAL_FEATS, sp.w_total, totalTerms);
+      /* the prior / this-season split of every team-strength term: the same
+         feature arithmetic run on each team's prior part (priorPart), times the
+         same weight. prior + current = points, exactly. */
+      var i, tm, pv, home = game.home, away = game.away;
+      for (i = 0; i < spreadTerms.length; i++) {
+        tm = spreadTerms[i];
+        pv = nfl.priorFeature(st, home, away, tm.key);
+        if (pv != null) { tm.prior = pv * tm.weight; tm.current = tm.points - tm.prior; }
+      }
       return { koerner_spread: koerner, ctx_adj: ctxAdj,
         model_spread: koerner + ctxAdj, sharp_total: total,
         terms: { spread: spreadTerms, ctx: ctxTerms, total: totalTerms },
-        features: F, known: F.known };
+        features: F, known: F.known,
+        season_games: { home: st.season_games ? (st.season_games[home] || 0) : null,
+          away: st.season_games ? (st.season_games[away] || 0) : null } };
+    },
+    /* one spread feature evaluated on the two teams' PRIOR parts only (null
+       when the state carries no prior book, or the feature is not a rating) */
+    priorFeature: function (st, home, away, key) {
+      if (!st.pri || !st.pri[home] || !st.pri[away]) return null;
+      function p(t, f) { return nfl.priorPart(st, t, f); }
+      switch (key) {
+        case 'net_pts': return (p(home, 'pts_for') + p(home, 'pts_against')) - (p(away, 'pts_for') + p(away, 'pts_against'));
+        case 'net_epa': return (p(home, 'off_epa_play') - p(home, 'def_epa_play')) - (p(away, 'off_epa_play') - p(away, 'def_epa_play'));
+        case 'net_pass': return (p(home, 'pass_epa_db') - p(home, 'def_pass_epa_db')) - (p(away, 'pass_epa_db') - p(away, 'def_pass_epa_db'));
+        case 'net_rush': return (p(home, 'rush_epa_att') - p(home, 'def_rush_epa_att')) - (p(away, 'rush_epa_att') - p(away, 'def_rush_epa_att'));
+        default: return null;
+      }
+    },
+    /* THE CARD (audit_report.md §0.5). Every term of both linear models, in
+       seven rows that add up to the published margin EXACTLY: nothing is
+       dropped, nothing is rounded before it is summed, and each term belongs to
+       exactly one row. Points are SIGNED, home-positive. Team-strength rows
+       carry their prior / this-season split. */
+    CARD_ROWS: [
+      { key: 'base_strength', label: 'Base team strength', terms: ['spread:net_pts', 'spread:net_epa'] },
+      { key: 'passing', label: 'Passing', terms: ['spread:net_pass'] },
+      { key: 'rushing', label: 'Rushing', terms: ['spread:net_rush'] },
+      { key: 'quarterback', label: 'Quarterback', terms: ['spread:qb_adj_diff'] },
+      { key: 'home_field', label: 'Home field', terms: ['spread:baseline', 'ctx:baseline', 'ctx:week_frac'] },
+      { key: 'context', label: 'Context (venue, division)', terms: ['spread:div_game', 'ctx:div_game', 'ctx:is_dome', 'ctx:grass'] },
+      { key: 'rest_travel', label: 'Rest / travel', terms: ['spread:rest_diff', 'ctx:rest_diff', 'ctx:home_short', 'ctx:away_short', 'ctx:home_off_bye', 'ctx:away_off_bye'] }
+    ],
+    card: function (pr, rowsDef) {
+      if (!pr || !pr.terms) return null;
+      var defs = rowsDef || nfl.CARD_ROWS, byKey = {}, rows = [], seen = {}, i, j, sum = 0, unplaced = [];
+      ['spread', 'ctx'].forEach(function (m) {
+        (pr.terms[m] || []).forEach(function (t) { byKey[m + ':' + t.key] = t; });
+      });
+      for (i = 0; i < defs.length; i++) {
+        var d = defs[i], pts = 0, prior = 0, cur = 0, split = false, parts = [];
+        for (j = 0; j < d.terms.length; j++) {
+          var t = byKey[d.terms[j]]; if (!t) continue;
+          seen[d.terms[j]] = 1;
+          pts += t.points;
+          if (t.prior != null) { split = true; prior += t.prior; cur += t.current; } else { cur += t.points; }
+          parts.push({ term: d.terms[j], points: t.points, prior: t.prior == null ? null : t.prior, current: t.current == null ? null : t.current });
+        }
+        sum += pts;
+        rows.push({ key: d.key, label: d.label, points: pts, prior: split ? prior : null, current: split ? cur : null, terms: parts });
+      }
+      for (var k in byKey) if (byKey.hasOwnProperty(k) && !seen[k] && byKey[k].points !== 0) unplaced.push(k);
+      return { rows: rows, total: sum, model_margin: pr.model_spread,
+        reconciles: unplaced.length === 0 && Math.abs(sum - pr.model_spread) < 1e-9, unplaced: unplaced };
     }
   };
 
@@ -729,7 +944,7 @@
     }
     var sp = sportParams(sport);
     var comp = {}, fairSpread = null, fairTotal = null;
-    var terms = null, feats = null;
+    var terms = null, feats = null, card = null, seasonGames = null;
     if (sport === 'nfl') {
       var pr = nfl.predict(req.state, req.game);
       comp.koerner_spread = pr.koerner_spread;
@@ -739,6 +954,8 @@
       fairTotal = pr.sharp_total;
       terms = pr.terms;
       feats = pr.features;
+      card = nfl.card(pr);
+      seasonGames = pr.season_games;
     } else {
       var g = req.game;
       fairSpread = cfb.predictMargin(req.state, g.home, g.away,
@@ -774,6 +991,9 @@
          range read off the engine's own learned margin distribution. Both
          are DESCRIPTIONS of the number above, never a second estimate of it. */
       contributions: terms,
+      /* the seven card rows that sum exactly to fair_spread (nfl.card) */
+      card: card,
+      season_games: seasonGames,
       features: feats,
       outcome_range: dist.marginQuantiles(sport, fairSpread, [0.1, 0.5, 0.9]),
       market: {

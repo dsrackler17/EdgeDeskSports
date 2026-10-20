@@ -101,8 +101,11 @@ function ols(rows, xf, yf) {
 function replayNfl(archive, opts) {
   opts = opts || {};
   const inj = opts.injuries && opts.injuries.seasons ? opts.injuries.seasons : null;
-  /* opts.qbStarts (football/pricing/qb_starts_nfl.json) feeds the engine's quarterback layer the listed starters; without it
-     the layer sees no start, as the live board runs. opts.qbRule 'top_passer' credits train_nfl.py's passer instead. */
+  /* opts.qbStarts (football/pricing/qb_starts_nfl.json) feeds the engine's quarterback layer; opts.qbRule 'top_passer'
+     credits train_nfl.py's passer (the live board's rule since the parity fix), 'listed_starter' games.csv's starter;
+     without an archive the layer sees no start. Every game is absorbed through engine.js nfl.absorbCompleted, the path
+     the live board uses: defence from the opponent's offence row, franchises mapped (STL->LA, SD->LAC, OAK->LV),
+     teams in the feed's row order (football/parity.test.js). */
   const qbArc = opts.qbStarts && opts.qbStarts.games ? opts.qbStarts : null;
   const qbLast = {}; let qbWithDev = 0, qbNoRecord = 0;
   const injFor = (season, week, team) => { const t = inj && inj[String(season)] && inj[String(season)].teams[team]; return t && t[String(week)] ? t[String(week)] : null; };
@@ -113,8 +116,10 @@ function replayNfl(archive, opts) {
     const p = STW(s); if (!fs.existsSync(p)) continue; seasonsLoaded.push(s);
     R.parseCsv(fs.readFileSync(p, 'utf8')).forEach((x) => { (stwByGame[x.game_id] = stwByGame[x.game_id] || []).push(x); });
   }
-  /* cold state: the shipped seeds contain the seasons being scored, so they are discarded */
-  const st = E.nfl.newState(); st.team = {}; st.ngames = {}; st.teamQb = {}; st.qb = {}; st.seededThrough = RULES.replay_from - 1;
+  /* cold state: the shipped seeds contain the seasons being scored, so they are discarded (league means too:
+     training starts with none) */
+  const st = E.nfl.coldState(); st.seededThrough = RULES.replay_from - 1;
+  const FR = E.nfl.franchise;
   games.sort((a, b) => a.season - b.season || String(a.date).localeCompare(String(b.date)) || String(a.id).localeCompare(String(b.id)));
   const rows = []; let season = null, absorbed = 0, refused = 0, noRows = 0;
   games.forEach((g) => {
@@ -123,25 +128,20 @@ function replayNfl(archive, opts) {
     /* a club starting a different listed quarterback from its previous game of the season */
     const qbChange = {}; ['home', 'away'].forEach((side) => { const k = g.season + '|' + g[side], id = g.ctx[side + '_qb_id']; qbChange[side] = !!(id && qbLast[k] && qbLast[k] !== id); if (id) qbLast[k] = id; });
     if (g.season >= RULES.first_eval) {
-      const req = { sport: 'nfl', state: st, season: g.season, game: { home: g.home, away: g.away, week: g.week, home_rest: g.ctx.home_rest, away_rest: g.ctx.away_rest, roof: g.ctx.roof, surface: g.ctx.surface, div_game: g.ctx.divisional ? 1 : 0, temp: g.ctx.temp, wind: g.ctx.wind, home_qb_id: g.ctx.home_qb_id, away_qb_id: g.ctx.away_qb_id }, market: { spread_line: -g.close.home_line, total_line: g.close.total } };
+      const req = { sport: 'nfl', state: st, season: g.season, game: { home: FR(g.home), away: FR(g.away), week: g.week, home_rest: g.ctx.home_rest, away_rest: g.ctx.away_rest, roof: g.ctx.roof, surface: g.ctx.surface, div_game: g.ctx.divisional ? 1 : 0, temp: g.ctx.temp, wind: g.ctx.wind, home_qb_id: g.ctx.home_qb_id, away_qb_id: g.ctx.away_qb_id }, market: { spread_line: -g.close.home_line, total_line: g.close.total } };
       let p = null; try { p = E.predictGame(req); } catch (_) { p = null; }
-      if (p && p.status === 'PREDICTED' && (st.ngames[g.home] || 0) >= 8 && (st.ngames[g.away] || 0) >= 8) {
+      if (p && p.status === 'PREDICTED' && (st.ngames[FR(g.home)] || 0) >= 8 && (st.ngames[FR(g.away)] || 0) >= 8) {
         rows.push({ id: g.id, season: g.season, week: g.week, type: g.type, model: p.model.fair_spread, close: -g.close.home_line, margin: g.margin, model_total: p.model.fair_total, close_total: g.close.total, points: g.points, p_home: p.model.home_win_prob, ml_home: g.close.home_moneyline, ml_away: g.close.away_moneyline,
           ctx: (() => { const hi = injFor(g.season, g.week, g.home), ai = injFor(g.season, g.week, g.away); const outs = (w) => (w ? (w.out || 0) + (w.doubtful || 0) : 0); const go = (w, x) => grp(w, x, 'out') + grp(w, x, 'doubtful');
             return { dome: g.ctx.roof === 'dome' || g.ctx.roof === 'closed', temp: g.ctx.temp, wind: g.ctx.wind, rest_diff: (g.ctx.home_rest != null && g.ctx.away_rest != null) ? g.ctx.home_rest - g.ctx.away_rest : null, divisional: !!g.ctx.divisional, grass: g.ctx.surface === 'grass', qb_known: !!(g.ctx.home_qb_id && g.ctx.away_qb_id), qb_change_home: qbChange.home, qb_change_away: qbChange.away,
               injuries_on_file: !!(hi || ai), out_home: outs(hi), out_away: outs(ai), ol_out_home: go(hi, 'OL'), ol_out_away: go(ai, 'OL'), qb_out_home: go(hi, 'QB'), qb_out_away: go(ai, 'QB'), dl_out_home: go(hi, 'DL'), dl_out_away: go(ai, 'DL'), db_out_home: go(hi, 'DB'), db_out_away: go(ai, 'DB'), wr_out_home: go(hi, 'WR') + go(hi, 'TE'), wr_out_away: go(ai, 'WR') + go(ai, 'TE') }; })() });
       } else refused++;
     }
-    const pair = stwByGame[g.id];
-    if (!pair || pair.length !== 2) { noRows++; return; }
-    const h = pair.find((x) => x.team === g.home), a = pair.find((x) => x.team === g.away);
-    if (!h || !a) { noRows++; return; }
-    const hr = E.nfl.teamGameFromStw(h), ar = E.nfl.teamGameFromStw(a);
-    hr.pts_for = g.home_score; hr.pts_against = g.away_score; ar.pts_for = g.away_score; ar.pts_against = g.home_score;
-    const qbs = qbArc ? QB.startsFor(E, st, qbArc.games[g.id], g.home, g.away, opts.qbRule) : [];
+    const qbRows = qbArc ? QB.qbRowsFor(qbArc.games[g.id], g.home, g.away, opts.qbRule) : [];
     if (qbArc && !qbArc.games[g.id]) qbNoRecord++;
-    qbWithDev += qbs.filter((x) => x[2] != null).length;
-    E.nfl.absorbGame(st, [[g.home, hr], [g.away, ar]], qbs);
+    const pairs = E.nfl.gamePairs({ home_team: g.home, away_team: g.away, home_score: g.home_score, away_score: g.away_score }, stwByGame[g.id] || []);
+    if (pairs) qbWithDev += E.nfl.qbStarts(st, pairs, qbRows).filter((x) => x[2] != null).length;
+    if (!E.nfl.absorbCompleted(st, { home_team: g.home, away_team: g.away, home_score: g.home_score, away_score: g.away_score }, stwByGame[g.id] || [], qbRows)) { noRows++; return; }
     absorbed++;
   });
   return { rows, absorbed, refused, no_rows: noRows, seasons_loaded: seasonsLoaded, qb: { starts_absorbed: !!qbArc, rule: qbArc ? (opts.qbRule === 'top_passer' ? 'top_passer' : 'listed_starter') : null, starts_with_pass_dev: qbWithDev, games_without_record: qbArc ? qbNoRecord : null } };
@@ -395,7 +395,7 @@ function qbLayer(off, on, top, qbArc) {
     verdict_text: verdict === 'BETTER' ? 'the layer earns its place: it cleared the feature intake on the held-out blend'
       : verdict === 'WORSE' ? 'the layer makes the projection measurably worse'
       : 'no different: with the starters absorbed the spread moves by ' + r3(mean(a0) - mean(a1)) + ' points of raw MAE (paired p ' + rawT.p + ') and ' + pooled + ' on the held-out blend (paired p ' + pt.p + '); totals cannot move',
-    live: verdict === 'BETTER' ? 'eligible for the live board as a reviewed change' : 'not wired into the live board: it keeps absorbing no quarterback starts, the arm this file’s tiers and blend were measured on',
+    live: 'the live board absorbs every start by training’s rule (the passer with the most dropbacks; football/parity.test.js), the arm this file’s tiers and blend are measured on; this study compares it with no starts and with the listed starter',
   };
 }
 
@@ -403,9 +403,10 @@ function buildNfl() {
   if (!fs.existsSync(ARCHIVE)) throw new Error('no closing-line archive; run tools/football/build_lines_archive.js first');
   const archive = JSON.parse(fs.readFileSync(ARCHIVE, 'utf8'));
   let injuries = null; try { injuries = JSON.parse(fs.readFileSync(INJURIES, 'utf8')); } catch (_) { injuries = null; }
-  const rep = replayNfl(archive, { injuries });
+  /* the replay the tiers are measured on is the LIVE arm: training's quarterback rule (top passer), as the board now runs */
   const qbArc = QB.readArchive();
-  const qb = qbArc ? qbLayer(rep, replayNfl(archive, { injuries, qbStarts: qbArc }), replayNfl(archive, { injuries, qbStarts: qbArc, qbRule: 'top_passer' }), qbArc)
+  const rep = qbArc ? replayNfl(archive, { injuries, qbStarts: qbArc, qbRule: 'top_passer' }) : replayNfl(archive, { injuries });
+  const qb = qbArc ? qbLayer(replayNfl(archive, { injuries }), replayNfl(archive, { injuries, qbStarts: qbArc }), rep, qbArc)
     : { status: 'NOT_EVALUATED', verdict: null, reasons: ['no quarterback-start archive (' + path.relative(ROOT, QB.OUT) + '); run tools/football/build_qb_starts_archive.js'] };
   const spread = scoreMarket(rep.rows, { modelOf: (r) => r.model, closeOf: (r) => r.close, actualOf: (r) => r.margin });
   const total = scoreMarket(rep.rows, { modelOf: (r) => r.model_total, closeOf: (r) => r.close_total, actualOf: (r) => r.points });

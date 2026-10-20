@@ -305,9 +305,25 @@ async function build(opts) {
       }
     }
     const q = priced && p.outcome_range && p.outcome_range.q ? p.outcome_range.q : null;
+    /* EVERY term of both spread models (audit_report.md §0.5): the context model
+       used to be dropped here, so the card's rows could never add up to the
+       margin. The team-strength terms carry their prior / this-season split. */
+    const term = (c) => Object.assign({ key: c.key, value: r4(c.value), points: r2(c.points) },
+      c.prior != null ? { prior: r2(c.prior), current: r2(c.current) } : {});
     const contributions = priced && p.contributions ? {
-      spread: (p.contributions.spread || []).map((c) => ({ key: c.key, value: r4(c.value), points: r2(c.points) })),
+      spread: (p.contributions.spread || []).map(term),
+      ctx: (p.contributions.ctx || []).map(term),
       total: (p.contributions.total || []).map((c) => ({ key: c.key, value: r4(c.value), points: r2(c.points) })),
+    } : null;
+    /* the seven card rows (engine.js nfl.card), kept to 6 decimals so they still
+       reconcile to the margin; the reader rounds them for display */
+    const r6 = (v) => { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? Math.round(n * 1e6) / 1e6 : null; };
+    const card = priced && p.card ? {
+      rows: p.card.rows.map((x) => ({ key: x.key, label: x.label, points: r6(x.points), prior: r6(x.prior), current: r6(x.current),
+        terms: x.terms.map((t) => ({ term: t.term, points: r6(t.points), prior: r6(t.prior), current: r6(t.current) })) })),
+      total: r6(p.card.total), model_margin: r6(p.card.model_margin), reconciles: p.card.reconciles,
+      season_games: p.season_games || null,
+      basis: 'every term of the strength and context models, each in exactly one row; rows sum to the fair margin (football/engine.js nfl.card)',
     } : null;
     return {
       game_id: String(g.game_id), season: num(g.season), week: num(g.week), game_type: g.game_type || 'REG',
@@ -356,7 +372,8 @@ async function build(opts) {
       model_home_win_prob: m ? r4(m.home_win_prob) : null,
       model_fair_home_ml: m ? m.fair_home_ml : null, model_fair_away_ml: m ? m.fair_away_ml : null,
       outcome_range: q ? { p10: r2(q['0.1']), p50: r2(q['0.5']), p90: r2(q['0.9']), sigma: r2(p.outcome_range.sigma), basis: p.outcome_range.basis, unit: 'home margin, points' } : null,
-      contributions, features: priced ? p.features : null,
+      model_home_margin_exact: m ? r6(m.fair_spread) : null,
+      contributions, card, features: priced ? p.features : null,
       scenarios: Object.keys(scen).length ? scen : null,
       cover_curve: curve.length ? curve : null,
       data_quality: p ? p.data_quality : null, qb_known: priced && p.features ? p.features.qb_known : null,
