@@ -280,6 +280,10 @@ jobs:
       # without the migration is told so instead of being offered a 404.
       - name: A contributor cannot be removed by accident
         run: node tools/collective/member_removal.test.js
+      # ...and once removed, they leave the public Collective: the directory,
+      # their profile, the rankings, the activity feed and the counts.
+      - name: A removed member leaves the public Collective
+        run: node tools/collective/removed_members_api.test.js
 
       # The other half, against a REAL PostgreSQL: the authorization, the
       # foreign-key ordering, the rollback, the audit log and the recalculation

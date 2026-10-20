@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-20 — Model Collective: a removed member leaves the public Collective
+
+- **A member removed from the admin page no longer shows in the model directory.** Removal stamps `removed_at` on the creator row and keeps the row and their model, and the directory (`model_wall`) never checked either, so JadedBettor(Murse2.0) stayed listed as "MEMBER, first submission pending" after being removed. `collective_public` now leaves removed members out of the wall and directory, their profile and model pages (now a 404), the rankings, the activity feed and the creator and model counts. When a removed member ranked ahead of others, each model below moves up one place per removed model ahead of it in the same league, and ties stay ties. Their stored submissions and grades are kept, as the removal promises. Clearing `removed_at` (`supabase/collective_restore_access.sql`) brings them back.
+- **This takes effect once `collective_public` is redeployed.** Paste `supabase/functions/collective_public/index.ts` into the dashboard (or `supabase functions deploy collective_public --no-verify-jwt`). No SQL to run.
+
+Tests: `node tools/collective/removed_members_api.test.js` (18), `node tools/collective/football_api.test.js` (14).
+
 ## 2026-10-20 — The Desk: a short answer you can act on, follow-ups from the research, the site's colours
 
 - **The answer to "What's the best researched opportunity tonight?" leads with a short list, not the research packet.** The multi-sport desk's answer was the full packet: every gate, sigma, source and coverage line, followed by stale market-benchmark cards (Knicks and Spurs quotes 14,337 minutes old). It now opens with (`msBriefHTML` in app.html):

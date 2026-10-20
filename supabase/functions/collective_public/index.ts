@@ -47,6 +47,12 @@
 //      corrected version 2 and a comment saying, exactly right, that changing
 //      it there alone "changes nothing anybody can see". This is that change,
 //      in the function readers actually reach.
+//
+//   8. A REMOVED MEMBER STAYED IN THE DIRECTORY. Removal (the admin page,
+//      supabase/collective_member_removal.sql) stamps removed_at on the
+//      creator row and keeps the row and its models; model_wall does not look
+//      at either. The wall, profiles, rankings, activity feed and counts now
+//      leave removed members out (removedCreators()).
 // ---------------------------------------------------------------------------
 
 // ---------- inlined _shared/env.ts ----------
@@ -512,15 +518,61 @@ function toWallRow(v: WallViewRow): WallRow {
   };
 }
 
+// ---------- who has been removed ----------
+// A member removed from the admin page (supabase/collective_member_removal.sql)
+// keeps their creator row: the removal stamps removed_at on it and moves its
+// status off 'active'. Their models stay too, and in membership_only mode so
+// does every projection. model_wall filters on neither, so a removed member
+// kept their row in the directory, their profile and the counts exactly as if
+// nothing had happened. Every public listing here leaves this set out.
+//
+// The statuses are the labels the removal writes when the column takes one
+// ('inactive', its last resort, always comes with removed_at). select=* rather
+// than naming removed_at: a project the removal file was never pasted into has
+// no such column, and naming it would fail the read.
+const REMOVED_STATUS = new Set(["removed", "disabled", "revoked", "suspended"]);
+interface RemovedSet { ids: Set<string>; slugs: Set<string> }
+async function removedCreators(): Promise<RemovedSet> {
+  const rows = await viewGet<Record<string, unknown>>("creators", "select=*");
+  const out: RemovedSet = { ids: new Set(), slugs: new Set() };
+  for (const c of rows) {
+    const status = String(c.status ?? c.account_status ?? "").toLowerCase();
+    if (c.removed_at == null && !REMOVED_STATUS.has(status)) continue;
+    out.ids.add(String(c.id));
+    out.slugs.add(String(c.slug));
+  }
+  return out;
+}
+
+// A removed member leaves the rankings, and each model below them moves up one
+// place per removed model that ranked ahead of it in the same league: the
+// database's own ranks, less the removed rows above them. Ties stay ties.
+type Ranked = { creator_slug: string | null; rank_win_pct: number | null; rank_margin_mae: number | null; rank_brier: number | null };
+const RANK_KEYS = ["rank_win_pct", "rank_margin_mae", "rank_brier"] as const;
+function withoutRemoved<T extends Ranked>(rows: T[], gone: Set<string>, league: (r: T) => string): T[] {
+  const lost = rows.filter((r) => gone.has(r.creator_slug ?? ""));
+  if (lost.length === 0) return rows;
+  return rows.filter((r) => !gone.has(r.creator_slug ?? "")).map((r) => {
+    const c = { ...r };
+    for (const k of RANK_KEYS) {
+      const rk = r[k];
+      if (rk === null) continue;
+      (c as Ranked)[k] = rk - lost.filter((x) => league(x) === league(r) && x[k] !== null && x[k]! < rk).length;
+    }
+    return c;
+  });
+}
+
 // Canonical order everywhere: membership rank, then graded desc, then name.
 // One ordering for every host and every surface (Section 4 hard rule).
 async function buildWall(): Promise<WallRow[]> {
-  const [rows, stand] = await Promise.all([
+  const [rows, stand, gone] = await Promise.all([
     viewGet<WallViewRow>("model_wall", "select=*"),
     fg2Get<Fg2Standing>("fg2_model_standings", "select=*"),
+    removedCreators(),
   ]);
   const latest = fg2Latest(stand);
-  return rows.map((v) => {
+  return rows.filter((v) => !gone.slugs.has(v.creator_slug)).map((v) => {
     const w = toWallRow(v);
     /* the settlement's record, where there is one: the SAME numbers the
        rankings, the model log and the database's own grades carry */
@@ -546,17 +598,19 @@ interface MetaShape {
 }
 
 async function buildMeta(): Promise<MetaShape> {
-  const [monthly, annual, billing, sports, seasons] = await Promise.all([
+  const [monthly, annual, billing, sports, seasons, gone] = await Promise.all([
     cfg("pricing.monthly_cents"),
     cfg("pricing.annual_cents"),
     cfg("billing.enabled"),
     viewGet<{ code: string; name: string; active: boolean }>("sports", "select=code,name,active&active=is.true"),
     viewGet<{ sport_code: string; season: number; starts_on: string; ends_on: string }>(
       "sport_seasons", "select=*&order=season.desc"),
+    removedCreators(),
   ]);
+  const goneIds = [...gone.ids].join(",");
   const [creators, models, settled, liveRows] = await Promise.all([
-    viewCount("creators", "is_listed=is.true&status=eq.active"),
-    viewCount("models", "is_listed=is.true"),
+    viewCount("creators", "is_listed=is.true&status=eq.active" + (goneIds ? `&id=not.in.(${goneIds})` : "")),
+    viewCount("models", "is_listed=is.true" + (goneIds ? `&creator_id=not.in.(${goneIds})` : "")),
     viewCount("games", "status=eq.final"),
     viewCount("projections", "data_origin=eq.live&resolution_status=eq.resolved"),
   ]);
@@ -1344,10 +1398,11 @@ Deno.serve(async (req) => {
          answers only where the migration is not installed. */
       const fr = fg2Latest(await fg2Get<Fg2Rank>("fg2_model_rankings", "select=*"));
       if (fr.size) {
-        const wall = await buildWall();
+        const [wall, gone] = await Promise.all([buildWall(), removedCreators()]);
         const nameOf = (r: Fg2Rank) => wall.find((w) => w.creator_slug === r.creator_slug && w.model_slug === r.model_slug &&
           fg2League(w.sport) === r.league) ?? null;
-        const ranked = [...fr.values()];
+        const all = [...fr.values()];
+        const ranked = withoutRemoved(all, gone.slugs, (r) => `${r.league}|${r.season}`);
         const fboard = (rankKey: "rank_win_pct" | "rank_margin_mae" | "rank_brier",
           valKey: "ats_pct" | "mae" | "brier", nKey: "ats_n" | "mae_n" | "brier_n") =>
           ranked.filter((r) => r[rankKey] !== null)
@@ -1361,7 +1416,7 @@ Deno.serve(async (req) => {
                 season: r.season, grading_version: FG2_VERSION,
               };
             });
-        const any = ranked[0];
+        const any = all[0];
         return json({
           rules_version: RULES.version, grading_version: FG2_VERSION,
           thresholds: { min_coverage_pct: Number(any.min_coverage_pct), min_graded_games: Number(any.min_graded_games) },
@@ -1383,11 +1438,13 @@ Deno.serve(async (req) => {
         is_ranked: boolean; unranked_reason: string | null;
         rank_win_pct: number | null; rank_margin_mae: number | null; rank_brier: number | null;
       }
-      const rows = await viewGet<RankRow>("model_rankings", "select=*");
-      const [minCov, minGraded] = await Promise.all([
+      const [all, gone, minCov, minGraded] = await Promise.all([
+        viewGet<RankRow>("model_rankings", "select=*"),
+        removedCreators(),
         cfg("ranking.min_coverage_pct"),
         cfg("ranking.min_graded_games"),
       ]);
+      const rows = withoutRemoved(all, gone.slugs, (r) => r.sport);
       const board = (rankKey: "rank_win_pct" | "rank_margin_mae" | "rank_brier",
         valKey: "win_pct" | "margin_mae" | "brier") =>
         rows.filter((r) => r.is_ranked && r[rankKey] !== null)
@@ -1416,9 +1473,12 @@ Deno.serve(async (req) => {
         at: string; creator_slug: string; creator_name: string; model_name: string;
         sport: string; n_rows: number; n_first: number; week: number | null;
       }
-      const rows = await viewGet<ActRow>("activity_feed", "select=*&limit=40");
+      const [rows, gone] = await Promise.all([
+        viewGet<ActRow>("activity_feed", "select=*&limit=40"),
+        removedCreators(),
+      ]);
       return json({
-        rows: rows.map((r) => ({
+        rows: rows.filter((r) => !gone.slugs.has(r.creator_slug)).map((r) => ({
           at: r.at, creator_slug: r.creator_slug, creator_name: r.creator_name,
           model_name: r.model_name, sport: r.sport, kind: "submission",
           n_rows: r.n_rows, n_first: r.n_first, week: r.week,
