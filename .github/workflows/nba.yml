@@ -32,8 +32,11 @@ on:
       - 'nba/**'
       - 'lib/edgedesk_nba_ui.js'
       - 'lib/edgedesk_nba.css'
+      - 'lib/edgedesk_nba_graphic.js'
+      - 'lib/edgedesk_game_graphic.js'
       - 'lib/edgedesk_sports.js'
       - 'tools/nba/**'
+      - 'tools/slate/research.js'
       - 'supabase/nba_engine.sql'
       - 'supabase/nba_odds_sport.sql'
       - 'supabase/functions/edgedesk_ai/index.ts'
@@ -48,6 +51,7 @@ on:
     paths:
       - 'nba/**'
       - 'lib/edgedesk_nba_ui.js'
+      - 'lib/edgedesk_nba_graphic.js'
       - 'tools/nba/**'
 
 permissions:
@@ -73,6 +77,8 @@ jobs:
         run: node tools/nba/nba.test.js
       - name: The NBA on the desk (module and the real edge handler, no model)
         run: node tools/nba/nba_desk.test.js
+      - name: The NBA matchup graphic, started games keeping their research, and Today's Games linking every game
+        run: node tools/nba/nba_graphic.test.js
       - name: The committed record, props record and slate pass their checks
         run: node nba/model/walkforward.js --check && node nba/props/walkforward.js --check && node nba/build_slate.js --check
       - name: The warehouse contract and the NBA odds row on a real PostgreSQL (disabled until authorised)

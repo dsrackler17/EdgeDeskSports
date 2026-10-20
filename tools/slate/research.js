@@ -44,6 +44,11 @@ function loadSources(files) {
        a test that stages its own NHL slate stages its own started games too, or none */
     nhlRecent: files.nhlRecent !== undefined ? files.nhlRecent : (files.nhl !== undefined ? null : readJson('hockey/recent.json')),
     nhlTeams: r('nhlTeams', 'hockey/data/teams.json'),
+    /* the NBA engine's slate (the NBA panel's research) and its started games
+       (nba/build_slate.js carryRecent); a test that stages its own basketball
+       sources stages these too, or none */
+    nba: files.nba !== undefined ? files.nba : (files.basketball !== undefined ? null : readJson('nba/slate.json')),
+    nbaRecent: files.nbaRecent !== undefined ? files.nbaRecent : (files.basketball !== undefined || files.nba !== undefined ? null : readJson('nba/recent.json')),
     basketball: r('basketball', 'basketball/slate.json'),
     engine: r('engine', 'engine/board.json'),
     published: r('published', 'articles/data/published.json')
@@ -88,6 +93,20 @@ function nhlIndex(src) {
   return games.map((g) => ({ g, val, ev: { sport: 'nhl', start_utc: g.start_utc,
     home: { name: (t[g.home] && t[g.home].name) || g.home, abbr: g.home }, away: { name: (t[g.away] && t[g.away].name) || g.away, abbr: g.away } } }));
 }
+/* NBA games by ESPN id (the NBA engine keys games by ESPN's own id). A started
+   game reads the research frozen before tip when there is one: the slate keeps
+   a game for three hours after tip and prices it again. */
+function nbaIndex(src, now) {
+  const by = {};
+  const S = src.nba && src.nba.schema === 'edgedesk_nba_slate_v1' ? src.nba : null;
+  if (S) (S.games || []).forEach((g) => { if (g && g.game_id != null) by[String(g.game_id)] = { g, frozen: null }; });
+  const R = src.nbaRecent;
+  if (R && R.schema === 'edgedesk_nba_recent_v1') (R.games || []).forEach((g) => {
+    const id = String(g.game_id), on = by[id];
+    if (!on || !(Date.parse(on.g.start_utc) > now)) by[id] = { g, frozen: g.frozen_at || null };
+  });
+  return by;
+}
 function basketballIndex(src) {
   const by = {};
   const L = (src.basketball && src.basketball.leagues) || {};
@@ -130,6 +149,17 @@ function modelFromNhl(row, val, slate) {
     view: NHLC.view(row, slate, { compact: true })
   };
 }
+function modelFromNba(g, slate) {
+  if (!g || !g.price || !g.price.moneyline) return null;
+  const P = g.price, ml = P.moneyline;
+  const og = ((g.decision && g.decision.gates) || []).find((x) => x.gate === 'outcome record');
+  return {
+    status: 'PREDICTED', tier: og ? (og.pass ? 'OUTCOME_VALIDATED' : 'PROVISIONAL') : null, data_quality: 'OK',
+    home_line: num(ml.home_american), source: 'nba/slate.json',
+    fair: { ml_home: num(ml.home_american), ml_away: num(ml.away_american), spread_home: num(P.spread && P.spread.fair_line_home), total: num(P.total && P.total.fair_line), home_win: num(ml.home) },
+    note: slate && slate.value_reason ? 'value claims are off: ' + slate.value_reason : 'value claims are off until the NBA model is tested against the closing market'
+  };
+}
 function modelFromLab(g, L, src) {
   if (!g || !g.prices) return null;
   const p = g.prices;
@@ -159,7 +189,7 @@ function join(events, src, o) {
   o = o || {};
   src = src || loadSources();
   const arts = articles(src.published);
-  const nfl = nflIndex(src), cfb = cfbIndex(src), nhl = nhlIndex(src), bb = basketballIndex(src);
+  const nfl = nflIndex(src), cfb = cfbIndex(src), nhl = nhlIndex(src), bb = basketballIndex(src), nba = nbaIndex(src, o.now != null ? o.now : Date.now());
   const homeKeys = {};
   ((src.home && src.home.games) || []).forEach((g) => { homeKeys[g.key] = true; });
   const stats = { joined: {}, unmatched: {} };
@@ -233,6 +263,14 @@ function join(events, src, o) {
       /* the UFC panel researches fighters and runs the live fight center; it
          has no per-card route, so the link opens the panel itself */
       r.module = 'ufc'; r.entity = null; r.note = 'Opens UFC research: fighter records and the live fight center.';
+    } else if (e.sport === 'nba' && e.provider === 'espn' && nba[e.provider_id]) {
+      /* the NBA panel's game: its research page and the number on it */
+      const hit = nba[e.provider_id];
+      r.module = 'nba'; r.entity = String(hit.g.game_id); r.model = modelFromNba(hit.g, src.nba); r.metrics = true;
+      if (hit.frozen && r.model) r.model.frozen_at = hit.frozen;
+      /* the same id with the sides the other way round keeps its link; EdgeDesk's numbers are not set against this event's prices */
+      const ha = hit.g.home && hit.g.home.abbr, aa = hit.g.away && hit.g.away.abbr;
+      if (ha && aa && e.home && e.away && (e.home.abbr !== ha || e.away.abbr !== aa)) { r.sides_swapped = true; r.model = null; }
     } else if (e.sport === 'nba' || e.sport === 'ncaam') {
       const hit = e.provider === 'espn' ? bb[e.sport + ':' + e.provider_id] : null;
       if (hit) { r.model = modelFromLab(hit.g, hit.L, 'basketball/slate.json'); r.metrics = true; }
