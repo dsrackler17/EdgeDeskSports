@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-20T23:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-20. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1936,94 +1936,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-20. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "oyyo655654cf",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Missouri State contain Delaware’s explosive runs?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.4 points.",
-    "gap": {
-      "points": 0.4,
-      "toward": "Delaware",
-      "other": "Missouri State"
-    },
-    "supporting": [
-      "When Delaware has the ball (big plays through the air): Delaware’s offense turns 13.8% of its pass plays into explosive gains, and Missouri State’s defense gives up explosive gains on 11.6% of opponent pass plays (FBS average 10.3%).",
-      "When Missouri State has the ball (pass protection against the pass rush): Missouri State’s offense has allowed a sack on 5.7% of its dropbacks, and Delaware’s defense sacks the quarterback on 8.6% of opponent dropbacks (FBS average 5.6%).",
-      "When Missouri State has the ball (big plays on the ground): Missouri State’s offense turns 5.2% of its runs into explosive gains, and Delaware’s defense gives up explosive gains on 8.2% of opponent runs (FBS average 6.6%).",
-      "In his last two games (SMU and Western Kentucky), Locklear averaged 4.4 yards per attempt, against 9.2 in his three games before that."
-    ],
-    "contradicting": [
-      "When Delaware has the ball (pass protection against the pass rush): Delaware’s offense has allowed a sack on 8.4% of its dropbacks, and Missouri State’s defense sacks the quarterback on 3.1% of opponent dropbacks (FBS average 5.6%).",
-      "When Delaware has the ball (big plays on the ground): Delaware’s offense turns 1.9% of its runs into explosive gains, and Missouri State’s defense gives up explosive gains on 5.5% of opponent runs (FBS average 6.6%).",
-      "EdgeDesk’s position-group ratings put Missouri State’s offense No. 89 nationally and Delaware’s No. 126.",
-      "When Delaware has the ball (the run game against the run defense): Delaware’s offense averages 4.3 yards per carry, and Missouri State’s defense allows 4.7 yards per carry (FBS average 5.1)."
-    ],
-    "quarterbacks": [
-      "Nick Minicucci has completed 59 of 102 passes (57.8%) for 889 yards, 8.7 yards per attempt, 6 touchdowns and 3 interceptions in four games for Delaware, and has been sacked on 8 of 110 dropbacks.",
-      "Tyler Bell has completed 26 of 45 passes (57.8%) for 348 yards, 7.7 yards per attempt, 3 touchdowns and 1 interception in two games for Delaware, and has been sacked on 7 of 52 dropbacks.",
-      "Skyler Locklear has completed 71 of 108 passes (65.7%) for 788 yards, 7.3 yards per attempt, 4 touchdowns and 2 interceptions in five games for Missouri State, and has been sacked on 9 of 117 dropbacks.",
-      "Henry Belin IV has completed 47 of 73 passes (64.4%) for 550 yards, 7.5 yards per attempt, 4 touchdowns and 2 interceptions in five games for Missouri State, and has been sacked on 3 of 76 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Delaware’s offense has to keep winning on long runs: it turns 1.9% of its runs into explosive gains, and Missouri State’s defense gives up explosive gains on 5.5% of opponent runs.",
-        "Delaware’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 3.1% of opponent dropbacks.",
-        "Delaware’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.6% of opponent dropbacks, against an offense that has allowed a sack on 5.7% of its dropbacks.",
-        "Delaware’s offense has to keep winning on big pass plays: it turns 13.8% of its pass plays into explosive gains, and Missouri State’s defense gives up explosive gains on 11.6% of opponent pass plays."
-      ],
-      "market": [
-        "Missouri State’s defense has to come out ahead on long runs: it gives up explosive gains on 5.5% of opponent runs, against an offense that turns 1.9% of its runs into explosive gains.",
-        "Missouri State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 3.1% of opponent dropbacks, against an offense that has allowed a sack on 8.4% of its dropbacks.",
-        "Locklear keeps producing at his season rate (65.7% completions, 7.3 yards per attempt, 4 TD, 2 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Delaware.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Delaware) and sack rate (Delaware); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Missouri State: new head coach; returning roster share at the 50th percentile; returning production at the 27th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-20T17:11:59.092Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-20T14:30:14.520Z",
-        "verification": "RATING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-20T17:58:33.779Z"
+    "at": "2026-10-20T23:48:14.024Z"
   }
 }
