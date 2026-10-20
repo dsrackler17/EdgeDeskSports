@@ -234,18 +234,22 @@ const FAILED = { build: 'e2e', answer: '', error: 'empty completion',
           tagline: top.querySelector('.edai-brand span').textContent.trim(),
           mark: mark ? mark.textContent.trim() : null,
           markIsImg: !!(mark && mark.querySelector('img')),
-          citron: cs.getPropertyValue('--citron').trim(),
-          ink: cs.getPropertyValue('--ink').trim(),
+          accent: cs.getPropertyValue('--desk-acc').trim(),
+          ground: cs.getPropertyValue('--desk-bg').trim(),
+          siteAccent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+          siteGround: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
           bg: cs.backgroundColor,
+          bodyBg: getComputedStyle(document.body).backgroundColor,
         };
       });
       eq('the panel introduces itself as The Desk', brand.name, 'The Desk');
       eq('and carries the tagline', brand.tagline, 'Sharp research. No fake certainty.');
       eq('the mark is an ED monogram', brand.mark, 'ED');
       chk('and is not a photo or avatar image', brand.markIsImg === false);
-      chk('the panel defines a citron accent', /^#d8f24b$/i.test(brand.citron), brand.citron);
-      chk('and an indigo ink ground', /^#141a3a$/i.test(brand.ink), brand.ink);
-      chk('the panel is no longer painted on the board’s brown', brand.bg !== 'rgb(16, 14, 10)', brand.bg);
+      /* The Desk wears the site's palette: its accent and ground are the app's own tokens */
+      chk('the panel accent is the site’s teal', brand.accent && brand.accent.toLowerCase() === brand.siteAccent.toLowerCase() && /^#2fa79a$/i.test(brand.siteAccent), [brand.accent, brand.siteAccent]);
+      chk('and its ground is the site’s own', brand.ground && brand.ground.toLowerCase() === brand.siteGround.toLowerCase(), [brand.ground, brand.siteGround]);
+      chk('the panel is painted on the same brown as the rest of the site', brand.bg === 'rgb(16, 14, 10)', [brand.bg, brand.bodyBg]);
       await ctx.close();
     }
 

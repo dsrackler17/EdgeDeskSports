@@ -125,11 +125,18 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const card = all[all.length - 1];
       if (!card) return null;
       const box = card.parentElement;
+      /* a multi-sport answer leads with its short list; the full packet and the market benchmark fold under it.
+         Their state as rendered is recorded, then they are opened, as a reader would, so the evidence can be read. */
+      const briefEl = card.querySelector('.msd-brief');
+      const folds = { packet: (card.querySelector('details.msd-packet') || {}).open, bench: (box.querySelector('details.msd-bench') || {}).open };
+      const lead = briefEl ? { text: briefEl.innerText, first: card.children[1] === briefEl, rows: [...briefEl.querySelectorAll(':scope > .msd-list > .msd-g')].map((g) => ({ rank: g.dataset.rank, t: g.querySelector('.msd-g-t').textContent, st: g.querySelector('.msd-st').textContent, px: g.querySelector('.msd-g-px').innerText })),
+        more: (briefEl.querySelector('details.msd-more > summary') || {}).textContent || null, asks: [...briefEl.querySelectorAll('.msd-asks [data-ms-ask]')].map((b) => b.getAttribute('data-ms-ask')) } : null;
+      box.querySelectorAll('details.msd-packet, details.msd-bench').forEach((d) => { d.open = true; });
       const chip = card.querySelector('.qd-chip');
       const bench = card.querySelector('.qd-bench');
       const kv = card.querySelector('.qd-kv');
       const sections = [...box.querySelectorAll('details.qd-more > summary')].map((s) => s.textContent.trim());
-      return { text: card.innerText, chip: chip ? chip.textContent.trim() : null, bench: bench ? bench.textContent.trim() : null, kvCols: kv ? getComputedStyle(kv).gridTemplateColumns.split(' ').length : 0,
+      return { lead, folds, text: card.innerText, chip: chip ? chip.textContent.trim() : null, bench: bench ? bench.textContent.trim() : null, kvCols: kv ? getComputedStyle(kv).gridTemplateColumns.split(' ').length : 0,
         keys: kv ? [...kv.querySelectorAll('dt')].map((d) => d.textContent.trim()) : [], allKeys: [...card.querySelectorAll('.qd-kv dt')].map((d) => d.textContent.trim()), sections, auditRows: box.querySelectorAll('details.qd-more .qd-tbl tr').length,
         src: ([...box.querySelectorAll(':scope > .edai-src')].pop() || {}).textContent || '', html: box.innerHTML.length,
         /* Phase 3: a researched candidate renders as a card (lib/edgedesk_intel_ui.js); its text block is folded into it */
@@ -168,6 +175,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       chk(vp.tag + ': the Phase-2 fields are all on the card (event, sport, market and venue in its header and price)', wc && /Detroit Lions @ Buffalo Bills/.test(wc.sub) && /NFL/.test(wc.sub) && wc.title === 'Buffalo Bills -2.5' && /at FanDuel/.test(wc.kv['Verified market price'] || '')
         && ['Verified market price', 'Fair probability', 'Break-even probability', 'Estimated net EV', 'Model reliability', 'Research freshness', 'Why the model disagrees with the market', 'Primary matchup advantage', 'Strongest counterargument', 'What would invalidate the opportunity', 'Audit status'].every((k) => wc.keys.includes(k)) && /max price -112/.test(wc.kv['Estimated net EV'] || ''), wc && [wc.title, wc.sub, wc.keys]);
       chk(vp.tag + ': the final status reads VERIFIED CANDIDATE, Buffalo Bills -2.5', wc && wc.chip === 'Verified candidate' && /final status VERIFIED CANDIDATE/.test(wc.kv['Audit status'] || '') && wc.title === 'Buffalo Bills -2.5', wc && [wc.chip, wc.kv['Audit status']]);
+      chk(vp.tag + ': the short answer names the audited market-derived price, and its benchmark card is open, not folded away', w && w.lead && /One price is out of line with the market: Buffalo Bills -2\.5 -105 at FanDuel/.test(w.lead.text) && /not an EdgeDesk projection/.test(w.lead.text) && w.folds.bench === true && w.folds.packet === false, w && [w.lead && w.lead.text.slice(0, 400), w.folds]);
       chk(vp.tag + ': the evidence is there to expand: the card\'s four sections and the answer\'s own', wc && ['Matchup research', 'Model calculations', 'Market comparison', 'Audit findings'].every((k) => wc.more.includes(k)) && ['Confidence — four separate measures', 'Coverage', 'Research level and cost', 'Historical performance'].every((k) => w.sections.includes(k)), w && [wc && wc.more, w.sections]);
       const links = await page.evaluate(() => { const r = [...document.querySelectorAll('#edaiLog .qd-read')].pop(); return r ? [...r.querySelectorAll('a')].map((a) => ({ href: a.getAttribute('href'), rel: a.getAttribute('rel') })) : []; });
       chk(vp.tag + ': the numbered sources are https links that open safely', links.length >= 2 && links.every((l) => /^https:\/\//.test(l.href) && /noopener/.test(l.rel || '')), links);
@@ -192,6 +200,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const s24 = await lastAnswer(page);
       chk(vp.tag + ': no verified trade: the chip says research only, the benchmark Watchlist, never Verified', s24 && /research only/i.test(s24.chip || '') && /^Benchmark: Watchlist$/i.test(s24.bench || '') && !/^verified/i.test(s24.chip || '') && /No verified positive-EV trade/.test(s24.text), s24 && [s24.chip, s24.bench, s24.text.slice(0, 160)]);
       chk(vp.tag + ': …and the final status reads WATCHLIST', s24 && s24.card && /final status WATCHLIST/.test(s24.card.kv['Audit status'] || ''), s24 && s24.card && s24.card.kv['Audit status']);
+      chk(vp.tag + ': …a watchlist benchmark is folded under the short answer, not shown as the lead', s24 && s24.lead && s24.lead.first && s24.folds.bench === false && s24.folds.packet === false && !/out of line with the market/.test(s24.lead.text), s24 && [s24.folds, s24.lead && s24.lead.text.slice(0, 200)]);
 
       /* 4. the contract: an MLB "A vs B" with a price reaches the server and passes */
       const a4 = await ask(page, R.contract_rays.question, 4);
@@ -232,11 +241,38 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       /* 9. the multi-sport desk, 2026-10-15 at 8 AM Chicago: research across every sport, nothing verified */
       await ask(page, R3.oct15.question, 8);
       const ms = await lastAnswer(page);
-      chk(vp.tag + ': the multi-sport answer renders with its own verdict chip (research only — no verified edge)', ms && /research only/i.test(ms.chip || '') && /^BEST VERIFIED OPPORTUNITY/.test(ms.text.split('\n').slice(1).join('\n').trim() || ms.text) , ms && [ms.chip, ms.text.slice(0, 120)]);
+      chk(vp.tag + ': the multi-sport answer renders with its own verdict chip (research only — no verified edge)', ms && /research only/i.test(ms.chip || '') && /\nBEST VERIFIED OPPORTUNITY\n/.test(ms.text), ms && [ms.chip, ms.text.slice(0, 120)]);
+      /* the short answer leads: the bottom line, then the games worth researching with the price to bet at and what to confirm */
+      const L9 = ms && ms.lead;
+      chk(vp.tag + ': the short answer comes first, in plain words, with the full packet folded under it', L9 && L9.first && /^No bet clears every check tonight\./.test(L9.text) && /Start with #1, Calgary Flames @ Vegas Golden Knights/.test(L9.text) && /It becomes a bet at -147 or better, once both starting goalies are confirmed\./.test(L9.text) && ms.folds.packet === false && ms.folds.bench !== true, L9 && [L9.text.slice(0, 300), ms.folds]);
+      chk(vp.tag + ': …the top three games lead, each with the model\'s side, the price to bet at and what to confirm; the rest fold', L9 && L9.rows.length === 3 && L9.rows[0].rank === '1' && /Calgary Flames @ Vegas Golden Knights/.test(L9.rows[0].t) && L9.rows[0].st === 'Confirm goalies' && /Bet only at -147 or better on the Vegas Golden Knights moneyline/.test(L9.rows[0].px) && /^4 more games on the list$/.test(L9.more || '') && /Confirm both starting goalies/.test(L9.text), L9 && [L9.rows, L9.more]);
+      chk(vp.tag + ': …and it offers follow-up questions about this research', L9 && ['What should I check before betting #1?', 'Why is #1 ranked first?', 'Compare #1 and #2'].every((a) => L9.asks.includes(a)), L9 && L9.asks);
       chk(vp.tag + ': …the best researched matchup is the NHL game, with its probability and validation as separate lines', ms && /BEST RESEARCHED MATCHUP/.test(ms.text) && /Calgary Flames @ Vegas Golden Knights/.test(ms.text) && ms.allKeys.includes('Modeled probability') && ms.allKeys.includes('Model reliability') && ms.allKeys.includes('Freshness (separate from reliability)') && ms.allKeys.includes('Price to watch'), ms && ms.allKeys);
       const covT = await page.evaluate(() => { const box = [...document.querySelectorAll('#edaiLog .qd-read')].pop().parentElement; const d = [...box.querySelectorAll('details.qd-more')].find((x) => /^Coverage — every sport, models first/.test(x.querySelector('summary').textContent)); if (!d) return null; return { open: d.open, rows: [...d.querySelectorAll('.qd-cov-r')].map((r) => ({ sport: r.dataset.sport, events: r.dataset.events, researched: r.dataset.researched, label: r.querySelector('.qd-cov-h').textContent, blockers: (r.querySelector('.qd-cov-b') || {}).textContent || '', fits: r.scrollWidth <= r.clientWidth + 1 })) }; });
-      chk(vp.tag + ': the per-sport coverage table is open: NHL 11 discovered and researched, NBA blocked as preseason, MLB without a projection', covT && covT.open && covT.rows.some((r) => r.label === 'NHL' && r.events === '11' && r.researched === '11') && covT.rows.some((r) => r.label === 'NBA' && /preseason/.test(r.blockers)) && covT.rows.some((r) => r.label === 'MLB' && /no per-game MLB projection/.test(r.blockers)) && covT.rows.every((r) => r.fits), covT);
+      chk(vp.tag + ': the per-sport coverage table is there, folded under the short answer: NHL 11 discovered and researched, NBA blocked as preseason, MLB without a projection', covT && covT.open === false &&covT.rows.some((r) => r.label === 'NHL' && r.events === '11' && r.researched === '11') && covT.rows.some((r) => r.label === 'NBA' && /preseason/.test(r.blockers)) && covT.rows.some((r) => r.label === 'MLB' && /no per-game MLB projection/.test(r.blockers)) && covT.rows.every((r) => r.fits), covT);
       chk(vp.tag + ': …and the captured-price result is a labelled benchmark section, never the verdict', ms && /MARKET BENCHMARK/.test(ms.text) && !/^Benchmark: Verified/i.test(ms.bench || ''), ms && ms.bench);
+      /* follow-ups on that research are answered from it, on screen, without a new request */
+      async function follow(q) {
+        const before = SENT.length, n = await page.evaluate(() => document.querySelectorAll('#edaiLog .edai-msg.a').length);
+        await page.evaluate((question) => { const t = document.getElementById('edaiText'); t.value = question; return window.EDAI.sendText(); }, q);
+        await page.waitForFunction((k) => document.querySelectorAll('#edaiLog .edai-msg.a').length > k, n, { timeout: 10000 }).catch(() => {});
+        return page.evaluate((b) => { const a = [...document.querySelectorAll('#edaiLog .edai-msg.a')].pop(); return { text: a.innerText, local: !!a.querySelector('.msd-fu'), asks: [...a.querySelectorAll('[data-ms-ask]')].map((x) => x.getAttribute('data-ms-ask')) }; }, before).then((r) => Object.assign(r, { reached_server: SENT.length > before }));
+      }
+      const f1 = await follow('Why is #1 ranked first?');
+      chk(vp.tag + ': follow-up "why #1": answered from the research, no new request, with the ranking rule and the model\'s reasons', f1.local && !f1.reached_server && /It ranks first because its cautious probability \(61\.8%\) is the highest on the list; next is #2 Vancouver Canucks @ Florida Panthers/.test(f1.text) && /outcome validated on 7,945 past games/.test(f1.text) && /no model wrote this/.test(f1.text), f1);
+      const f2 = await follow('What should I check before betting the Vegas game?');
+      chk(vp.tag + ': follow-up naming a team: the checklist for that game — goalies, a fresh price, the price bar, what moves the number', f2.local && !f2.reached_server && /#1 Calgary Flames @ Vegas Golden Knights/.test(f2.text) && /Confirm both starting goalies/.test(f2.text) && /Only bet Vegas Golden Knights at -147 or better/.test(f2.text) && /Across the starting goalie scenarios, Vegas Golden Knights’ win probability stays within/.test(f2.text), f2.text.slice(0, 500));
+      const f3 = await follow('is the goalie confirmed?');
+      chk(vp.tag + ': a bare follow-up stays on the game under discussion', f3.local && !f3.reached_server && /Who is playing in #1/i.test(f3.text) && /projected uncertain/.test(f3.text), f3.text.slice(0, 300));
+      const f4 = await follow('Should I bet Vegas at -150?');
+      chk(vp.tag + ': "should I bet it at -150?": not yet, -150 is worse than the -147 bar', f4.local && /Not yet\./.test(f4.text) && /At -150: no — that is worse than -147/.test(f4.text), f4.text.slice(0, 500));
+      const f5 = await follow('Compare #1 and #2');
+      chk(vp.tag + ': "compare #1 and #2": side by side, each with its price bar', f5.local && /#1 against #2/i.test(f5.text) && /-147 or better/.test(f5.text) && /-131 or better/.test(f5.text), f5.text.slice(0, 400));
+      const f6 = await follow('Who has the advantage in Rays vs. Guardians?');
+      chk(vp.tag + ': a question about teams not on the list is not answered from it — it goes to the server', !f6.local && f6.reached_server, f6);
+      const f7 = await follow('Which game is closest to a bet?');
+      chk(vp.tag + ': …and once another answer came in, "#1"-style follow-ups without a name go back to the normal route', !f7.local, f7.text.slice(0, 200));
+      if (SHOTS) await page.screenshot({ path: path.join(SHOT_DIR, 'quant-multisport-followup-' + vp.tag + '.png'), fullPage: false });
       /* every odds integration off: the captured-price audit never ran, so no benchmark chip is shown (it would read "Pass") */
       await ask(page, "What's the best researched opportunity tonight with the odds off?", 9);
       const off = await lastAnswer(page);

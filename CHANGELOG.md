@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-20 — The Desk: a short answer you can act on, follow-ups from the research, the site's colours
+
+- **The answer to "What's the best researched opportunity tonight?" leads with a short list, not the research packet.** The multi-sport desk's answer was the full packet: every gate, sigma, source and coverage line, followed by stale market-benchmark cards (Knicks and Spurs quotes 14,337 minutes old). It now opens with (`msBriefHTML` in app.html):
+  - the bottom line ("No bet clears every check tonight."), what #1 needs to become a bet, and why no bet cleared;
+  - the top three games worth researching, each with the model's side and probability, **the price to bet at** ("Bet only at −149 or better"), what to confirm first ("Confirm both starting goalies"), the strongest edge and the strongest point against it, and buttons for what to check, why it is listed, and the sport engine's full breakdown. The rest of the list is one tap away;
+  - the closest priced market (the market watch, with the price it needs) and any prices that look wrong (data checks);
+  - follow-up questions to tap.
+
+  The full packet, the coverage and the market benchmark fold underneath, unchanged. A market benchmark that passed the captured-price audit is still called out at the top and its card stays open: it is market-derived, said as such. Every number is the server's (`d.multisport`); nothing is recomputed or re-ranked in the browser.
+- **Follow-up questions are answered from that research** (`msFollow`): "Why is #1 ranked first?", "What should I check before betting the Vegas game?", "Is the goalie confirmed?", "Should I bet Vegas at −150?", "Compare #1 and #2", "Which game is closest to a bet?". A game can be named by rank, team, nickname or city; a question that names no game stays on the game under discussion. Questions that name teams or players not on the list, contract prices, coverage questions and a fresh "best opportunity" question still go to the server as before.
+- **The Desk uses the site's colours.** The panel had its own indigo-and-citron palette. Its tokens (`--desk-*`) are now aliases of the app's `--bg`, `--surface`, `--border`, `--text` and teal `--accent`, so the panel matches the rest of EdgeDesk and follows any change to `:root`.
+
+Tests: `tools/intelligence/quant_ui.e2e.js` (85, with the short list, the folds and seven follow-ups at both widths), `tools/intelligence/intel_ui.e2e.js` (158), `tools/intelligence/desk_ui.e2e.js` (71, the palette now asserted to be the site's).
+
 ## 2026-10-20 — NBA: the football graphic on every game, every game linked from Today's Games, research kept after tip
 
 - **Every NBA game page opens with the matchup graphic football and the NHL have** (`lib/edgedesk_nba_graphic.js`, drawn by `lib/edgedesk_game_graphic.js` on a court): square or portrait PNG, with Download, Share and Copy link. The three numbers to set against a sportsbook lead it:
