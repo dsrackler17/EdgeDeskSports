@@ -1,0 +1,44 @@
+# EdgeDesk — restamp /app-version.json whenever the app's code changes on main.
+# An open tab reads it to notice a new deploy and reload itself
+# (lib/edgedesk_update.js): app.html is a single page, so moving between
+# screens never reloads it, and without this a tab kept running the code it
+# was opened with. The stamp is a hash of app.html and lib/
+# (tools/app/app_version.js), so the data jobs that commit every few minutes
+# never change it. Pushes made by those jobs do not trigger workflows; a
+# merged pull request does.
+name: App version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.html'
+      - 'lib/**'
+      - 'tools/app/app_version.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: app-version
+  cancel-in-progress: false
+
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Stamp the app's code
+        run: node tools/app/app_version.js --write
+      - name: Commit via tools/ci/push_generated.sh (our path on top of the remote tip, never a rebase)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "app: version stamp for open tabs" -- app-version.json
