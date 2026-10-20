@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-20T00:15:49.092Z",
-  "generated_at": "2026-10-20T00:15:49.092Z",
+  "updated_at": "2026-10-20T08:25:49.385Z",
+  "generated_at": "2026-10-20T08:25:49.385Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.0-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Baltimore Ravens −1.5",
@@ -131,7 +131,7 @@
       "sample_games": 92,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.0-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1164,10 +1164,14 @@
       "available": true,
       "model": "Baltimore Ravens −1.5",
       "model_raw": "Baltimore Ravens -1.5",
-      "market": "Baltimore Ravens −2.5",
-      "difference": "1.0 points",
+      "market": "Baltimore Ravens −3.0",
+      "difference": "1.5 points",
       "rounding_note": null,
-      "key_number": null,
+      "key_number": {
+        "text": "Market sits on 3; model is below 3.",
+        "detail": "Baltimore Ravens: market −3.0, model fair −1.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
       "total_model": "48.5",
       "total_model_raw": "48.4",
       "total_market": "51.5",
@@ -1177,14 +1181,14 @@
       "capture_age": null,
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.0-point gap is context only and the game is excluded from research ranking.",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Baltimore Ravens 25, Cincinnati Bengals 23.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.0-point gap is context only and the game is excluded from research ranking.",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1323,11 +1327,6 @@
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
     "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 92 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-20T00:15:49.092Z"
-  },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
     "packet_hash": "1i60vb61g0sig0",
@@ -1386,10 +1385,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-20T00:15:40.703Z",
+        "observed_at": "2026-10-20T08:25:42.626Z",
         "verification": "VERIFIED_DATA"
       }
     ],
     "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-20T08:25:49.385Z"
   }
 }
