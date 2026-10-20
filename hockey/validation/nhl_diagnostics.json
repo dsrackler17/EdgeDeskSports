@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_diagnostics_v1",
- "generated_at": "2026-10-20T05:15:16.055Z",
+ "generated_at": "2026-10-20T12:05:46.918Z",
  "model": "edgedesk_nhl_v1:xg_core (production)",
  "source": "out-of-sample predictions rebuilt by hockey/lab/base.js (reproduces hockey/validation/nhl_walkforward.json)",
  "windows": {
@@ -25,14 +25,14 @@
    "calibration_slope": 1.064
   },
   "live": {
-   "n": 136,
-   "log_loss": 0.65401,
-   "brier": 0.2309,
-   "auc": 0.661,
-   "mean_p": 0.5326,
-   "mean_y": 0.5662,
-   "calibration_in_the_large": -0.0335,
-   "calibration_slope": 1.921
+   "n": 140,
+   "log_loss": 0.65477,
+   "brier": 0.23126,
+   "auc": 0.656,
+   "mean_p": 0.532,
+   "mean_y": 0.5786,
+   "calibration_in_the_large": -0.0465,
+   "calibration_slope": 1.823
   }
  },
  "by_season": {
@@ -167,14 +167,14 @@
    "calibration_slope": 0.783
   },
   "2027": {
-   "n": 136,
-   "log_loss": 0.65401,
-   "brier": 0.2309,
-   "auc": 0.661,
-   "mean_p": 0.5326,
-   "mean_y": 0.5662,
-   "calibration_in_the_large": -0.0335,
-   "calibration_slope": 1.921
+   "n": 140,
+   "log_loss": 0.65477,
+   "brier": 0.23126,
+   "auc": 0.656,
+   "mean_p": 0.532,
+   "mean_y": 0.5786,
+   "calibration_in_the_large": -0.0465,
+   "calibration_slope": 1.823
   }
  },
  "season_phase": {
@@ -761,8 +761,8 @@
     "rate": 0.6596
    },
    "2027": {
-    "team_games": 272,
-    "projected_started": 170,
+    "team_games": 280,
+    "projected_started": 175,
     "rate": 0.625
    }
   },
@@ -826,20 +826,20 @@
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
   },
   "live": {
-   "n": 136,
-   "coverage_80": 0.9118,
-   "mean_bias_goals": 0.027,
+   "n": 140,
+   "coverage_80": 0.9143,
+   "mean_bias_goals": 0.028,
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
   }
  },
  "drift": {
-  "n": 136,
-  "live_mean_log_loss": 0.65401,
+  "n": 140,
+  "live_mean_log_loss": 0.65477,
   "reference_mean": 0.66286,
   "reference_sd_per_game": 0.232,
-  "z": -0.44,
-  "rolling_100": 0.6485,
-  "cusum": 0.149,
+  "z": -0.41,
+  "rolling_100": 0.65344,
+  "cusum": 0,
   "cusum_max": 0.411,
   "decision_interval": 1.16,
   "status": "OK",
@@ -865,8 +865,8 @@
     "cusum": 0
    },
    {
-    "n": 136,
-    "cusum": 0.149
+    "n": 140,
+    "cusum": 0
    }
   ],
   "rule": "one-sided CUSUM on per-game log loss minus the confirmation mean, allowance half a per-game sd, alarm at 5 sd; WATCH when the season mean sits 2 standard errors above the reference. A monitor: it never retrains or reprices anything."
