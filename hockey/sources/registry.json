@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_source_registry_v1",
- "generated_at": "2026-10-20T12:05:47.268Z",
+ "generated_at": "2026-10-20T15:30:57.695Z",
  "counts": {
   "OPERATIONAL": 3,
   "RESEARCH_COPY": 1,
@@ -12,8 +12,8 @@
  "freshness": {
   "slate_data_state": "FRESH",
   "latest_completed_game": "2026-10-19",
-  "last_fetch": "2026-10-20T12:05:15.271Z",
-  "manifest_updated_at": "2026-10-20T12:05:16.034Z"
+  "last_fetch": "2026-10-20T15:15:44.690Z",
+  "manifest_updated_at": "2026-10-20T15:16:27.215Z"
  },
  "datasets_measured": {
   "sportsdataverse_nhl": {
@@ -44,7 +44,7 @@
   },
   "boxscore_reconciliation": {
    "role": "INTEGRITY",
-   "evidence": "team.goals 0.99995; team.shots_on_goal 0.99323; team.power_play_goals 0.98203; team.pim 0.97476; goalie.shots_against 0.99488; goalie.goals_against 0.99989; goalie.starter 1; skater.goals 0.99999; skater.assists 0.99999; skater.shots_on_goal 0.99961",
+   "evidence": "team.goals 0.99995; team.shots_on_goal 0.99322; team.power_play_goals 0.98203; team.pim 0.97477; goalie.shots_against 0.99489; goalie.goals_against 0.99989; goalie.starter 1; skater.goals 0.99999; skater.assists 0.99999; skater.shots_on_goal 0.99961",
    "file": "hockey/validation/nhl_crosscheck_box.json"
   }
  },
@@ -84,7 +84,7 @@
    "use": "every production input: shots, xG, ratings, results, starters, lineups; box scores for reconciliation and player research",
    "status": "OPERATIONAL",
    "data_permission": null,
-   "last_sync": "2026-10-20T12:05:15.271Z",
+   "last_sync": "2026-10-20T15:15:44.690Z",
    "contribution": {
     "role": "PRODUCTION",
     "evidence": "the production model (expected-goals GLM, xg_core) beats Elo by -0.003687 log loss on 7945 held-out games (95% -0.005417 to -0.002134)",

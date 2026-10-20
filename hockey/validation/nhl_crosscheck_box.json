@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_crosscheck_box_v1",
- "generated_at": "2026-10-13T14:06:48.490Z",
+ "generated_at": "2026-10-20T15:20:20.690Z",
  "sources": {
   "play_by_play": "sportsdataverse fastRhockey pbp_lite (the NHL play-by-play feed)",
   "box": "sportsdataverse fastRhockey skater_box / goalie_box / team_box (the NHL boxscore feed)"
@@ -8,71 +8,71 @@
  "rule": "neither source is overwritten: both values are kept and every disagreement counted; goals and goals against must agree in ≥ 99.5% of rows, every other count in ≥ 97%",
  "overall": {
   "team.goals": {
-   "rows": 41358,
-   "agree": 41356,
+   "rows": 41460,
+   "agree": 41458,
    "rate": 0.99995,
    "bar": 0.995,
    "status": "OK"
   },
   "team.shots_on_goal": {
-   "rows": 41358,
-   "agree": 41078,
-   "rate": 0.99323,
+   "rows": 41460,
+   "agree": 41179,
+   "rate": 0.99322,
    "bar": 0.97,
    "status": "OK"
   },
   "team.power_play_goals": {
-   "rows": 41358,
-   "agree": 40615,
+   "rows": 41460,
+   "agree": 40715,
    "rate": 0.98203,
    "bar": 0.97,
    "status": "OK"
   },
   "team.pim": {
-   "rows": 41358,
-   "agree": 40314,
-   "rate": 0.97476,
+   "rows": 41460,
+   "agree": 40414,
+   "rate": 0.97477,
    "bar": 0.97,
    "status": "OK"
   },
   "goalie.shots_against": {
-   "rows": 44308,
-   "agree": 44081,
-   "rate": 0.99488,
+   "rows": 44414,
+   "agree": 44187,
+   "rate": 0.99489,
    "bar": 0.97,
    "status": "OK"
   },
   "goalie.goals_against": {
-   "rows": 44308,
-   "agree": 44303,
+   "rows": 44414,
+   "agree": 44409,
    "rate": 0.99989,
    "bar": 0.995,
    "status": "OK"
   },
   "goalie.starter": {
-   "rows": 41358,
-   "agree": 41358,
+   "rows": 41460,
+   "agree": 41460,
    "rate": 1,
    "bar": 0.97,
    "status": "OK"
   },
   "skater.goals": {
-   "rows": 744341,
-   "agree": 744335,
+   "rows": 746177,
+   "agree": 746171,
    "rate": 0.99999,
    "bar": 0.995,
    "status": "OK"
   },
   "skater.assists": {
-   "rows": 744341,
-   "agree": 744337,
+   "rows": 746177,
+   "agree": 746173,
    "rate": 0.99999,
    "bar": 0.97,
    "status": "OK"
   },
   "skater.shots_on_goal": {
-   "rows": 744341,
-   "agree": 744053,
+   "rows": 746177,
+   "agree": 745888,
    "rate": 0.99961,
    "bar": 0.97,
    "status": "OK"
@@ -88,21 +88,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2011.parquet",
      "sha256": "6af1d3376f04206887a43d7345c53cae591d416774fb4afaddf0191228c20941",
      "bytes": 353409,
-     "fetched_at": "2026-10-13T13:40:36.464Z",
+     "fetched_at": "2026-10-20T15:16:27.498Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2011.parquet",
      "sha256": "fe526250eb45b8b4da4343eb6260e4dee1c336773307624184e805393fbb540e",
      "bytes": 75258,
-     "fetched_at": "2026-10-13T13:38:08.769Z",
+     "fetched_at": "2026-10-20T15:13:04.492Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2011.parquet",
      "sha256": "b0e5433899e4d80cc1b800ea4cfb6d99bb8a63d0b58f6e6b925839cf27d59ca7",
      "bytes": 49283,
-     "fetched_at": "2026-10-13T14:02:22.150Z",
+     "fetched_at": "2026-10-20T15:16:42.254Z",
      "missing_columns": []
     }
    },
@@ -378,21 +378,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2012.parquet",
      "sha256": "94ab08499641bdaf9388227d268a49d0bd5a162a1deae71ad0ddc5c1cb261ba4",
      "bytes": 350167,
-     "fetched_at": "2026-10-13T13:40:37.265Z",
+     "fetched_at": "2026-10-20T15:16:28.781Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2012.parquet",
      "sha256": "c7ee6d54c69b31f37d8a8ac2c02b11345904d644c561db1d14a1ae61b4671650",
      "bytes": 74551,
-     "fetched_at": "2026-10-13T13:38:19.221Z",
+     "fetched_at": "2026-10-20T15:13:10.468Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2012.parquet",
      "sha256": "a29d2bf4403d56ef5b2ca96863ba87695250e1c20ee508295896028506b29303",
      "bytes": 48829,
-     "fetched_at": "2026-10-13T14:02:23.703Z",
+     "fetched_at": "2026-10-20T15:16:43.107Z",
      "missing_columns": []
     }
    },
@@ -675,21 +675,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2013.parquet",
      "sha256": "c41e26be69ba44af8fdbe7b9ad1016fd35e9da68e1282b1fccdc5a41144e78ba",
      "bytes": 227082,
-     "fetched_at": "2026-10-13T13:40:38.052Z",
+     "fetched_at": "2026-10-20T15:16:29.220Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2013.parquet",
      "sha256": "e60b3bb9803c96e7d3494ec518e5b40b2fae4d0b0ba86fc18e3dcf67c1285248",
      "bytes": 50633,
-     "fetched_at": "2026-10-13T13:38:28.923Z",
+     "fetched_at": "2026-10-20T15:13:15.871Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2013.parquet",
      "sha256": "30d4adc6254cc080e5dd844516e9b08990c53d3c210f9a211e6255a6b20dd5b7",
      "bytes": 34136,
-     "fetched_at": "2026-10-13T14:02:25.088Z",
+     "fetched_at": "2026-10-20T15:16:43.897Z",
      "missing_columns": []
     }
    },
@@ -996,21 +996,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2014.parquet",
      "sha256": "dd47bf632ca99797a441c2c0f29eb2085dad7d7aa48f4084d406d4e621a1f487",
      "bytes": 355083,
-     "fetched_at": "2026-10-13T13:40:38.750Z",
+     "fetched_at": "2026-10-20T15:16:29.592Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2014.parquet",
      "sha256": "4bfaa0a543333e0826afea69ef55ccfe53ee4d0768045dbafa9d5f6f38137e90",
      "bytes": 76931,
-     "fetched_at": "2026-10-13T13:38:34.483Z",
+     "fetched_at": "2026-10-20T15:13:19.853Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2014.parquet",
      "sha256": "b1b6297c81dbe6df23dccc08d8f0a37ded2383599dc731cb7dcbf683bad79121",
      "bytes": 49017,
-     "fetched_at": "2026-10-13T14:02:26.474Z",
+     "fetched_at": "2026-10-20T15:16:44.686Z",
      "missing_columns": []
     }
    },
@@ -1317,21 +1317,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2015.parquet",
      "sha256": "95cf4c89e7478b746f40d805b47f3b23ca0061aa096762c2ff84ba804e2bc790",
      "bytes": 351003,
-     "fetched_at": "2026-10-13T13:40:39.497Z",
+     "fetched_at": "2026-10-20T15:16:30.024Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2015.parquet",
      "sha256": "7df788eeb8fb0c10ac565ee73a6816e9412fb6ff41170e1bfdc58283d0011396",
      "bytes": 76075,
-     "fetched_at": "2026-10-13T13:38:42.466Z",
+     "fetched_at": "2026-10-20T15:13:25.167Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2015.parquet",
      "sha256": "d42ba7d8fd4aeedf2646fc4ddd1aeb4853642344b701929d89107d5147ef0527",
      "bytes": 48928,
-     "fetched_at": "2026-10-13T14:02:28.052Z",
+     "fetched_at": "2026-10-20T15:16:45.545Z",
      "missing_columns": []
     }
    },
@@ -1622,21 +1622,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2016.parquet",
      "sha256": "beab4776cc40653d60f172868989609c51f35b5ab0ee61be190aadfd076c5747",
      "bytes": 345844,
-     "fetched_at": "2026-10-13T13:40:40.310Z",
+     "fetched_at": "2026-10-20T15:16:30.458Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2016.parquet",
      "sha256": "44b8460299d6d27cc2b9211b21eab38a052322f5b310f2cc2931d9584aa341ea",
      "bytes": 75269,
-     "fetched_at": "2026-10-13T13:38:51.745Z",
+     "fetched_at": "2026-10-20T15:13:30.434Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2016.parquet",
      "sha256": "f11a8bc2b178fadd2b81b5a656c4eb07b3256d5e3d27c24624201e11d813522d",
      "bytes": 48810,
-     "fetched_at": "2026-10-13T14:02:29.592Z",
+     "fetched_at": "2026-10-20T15:16:46.356Z",
      "missing_columns": []
     }
    },
@@ -1943,21 +1943,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2017.parquet",
      "sha256": "5a5df6d1e2823d4cfb95b807d2076e5906d3e45f84eceec5566d06a6d0a9d9a9",
      "bytes": 348234,
-     "fetched_at": "2026-10-13T13:40:41.040Z",
+     "fetched_at": "2026-10-20T15:16:31.860Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2017.parquet",
      "sha256": "301195c57c47098e84e579ce3dcc36b6baf2b1a4f0b12374388dfd04bc6ffd39",
      "bytes": 74627,
-     "fetched_at": "2026-10-13T13:39:00.265Z",
+     "fetched_at": "2026-10-20T15:13:35.695Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2017.parquet",
      "sha256": "faa256627c7d0ae3038a97614158727863142ba93f7ed4372bf744cabe48b259",
      "bytes": 48855,
-     "fetched_at": "2026-10-13T14:02:31.038Z",
+     "fetched_at": "2026-10-20T15:16:47.168Z",
      "missing_columns": []
     }
    },
@@ -2314,21 +2314,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2018.parquet",
      "sha256": "12c6095e8583f27917d0910188aa2c4c6cf3241ca9704ab7e7b3a03351646e98",
      "bytes": 357560,
-     "fetched_at": "2026-10-13T13:40:41.671Z",
+     "fetched_at": "2026-10-20T15:16:32.323Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2018.parquet",
      "sha256": "0830d7f93ecbbcd0b2dca8417c78b8875d023695c1628013ceb168a79d1a4e1f",
      "bytes": 78401,
-     "fetched_at": "2026-10-13T13:39:09.013Z",
+     "fetched_at": "2026-10-20T15:13:41.180Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2018.parquet",
      "sha256": "125fa15cc881e7d407250e6fe373db5a6f9167f82fd48bd364def7ff9e029a86",
      "bytes": 49954,
-     "fetched_at": "2026-10-13T14:02:32.554Z",
+     "fetched_at": "2026-10-20T15:16:48.014Z",
      "missing_columns": []
     }
    },
@@ -2635,21 +2635,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2019.parquet",
      "sha256": "42c6bd262976d6525c3cbad99e125137703f8ce08cf2c964ce5aca1d4fffbf6f",
      "bytes": 358552,
-     "fetched_at": "2026-10-13T13:40:42.469Z",
+     "fetched_at": "2026-10-20T15:16:32.930Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2019.parquet",
      "sha256": "8954b75ead8733b7c4c3c6aad2469bcc1f66b8f239b1b8df105bc7c70242e124",
      "bytes": 79095,
-     "fetched_at": "2026-10-13T13:39:19.410Z",
+     "fetched_at": "2026-10-20T15:13:46.779Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2019.parquet",
      "sha256": "0d416628ae47bee9bed7d67af4c5710766a0a191560d43737638975481f46f36",
      "bytes": 50208,
-     "fetched_at": "2026-10-13T14:02:34.051Z",
+     "fetched_at": "2026-10-20T15:16:48.832Z",
      "missing_columns": []
     }
    },
@@ -2956,21 +2956,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2020.parquet",
      "sha256": "4fbacb2fa534e8b63add01e1c0af66731646229a72e54dd9d25aab83f7c15269",
      "bytes": 333952,
-     "fetched_at": "2026-10-13T13:40:43.144Z",
+     "fetched_at": "2026-10-20T15:16:33.375Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2020.parquet",
      "sha256": "876193c46f9ab517d35d53d50f3d02689e87ebda0e77a43c05ad992e0bc1e4a0",
      "bytes": 69833,
-     "fetched_at": "2026-10-13T13:39:27.403Z",
+     "fetched_at": "2026-10-20T15:13:52.165Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2020.parquet",
      "sha256": "81fbeedce146aaacc4a1e204d56ef59e549f85f7dd792c9cacacc7f3f9a49b0a",
      "bytes": 45967,
-     "fetched_at": "2026-10-13T14:02:35.627Z",
+     "fetched_at": "2026-10-20T15:16:49.653Z",
      "missing_columns": []
     }
    },
@@ -3358,21 +3358,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2021.parquet",
      "sha256": "24b45b43cbdca70f969db979cbf25079ff0fe5292e99447fe4c8af70ba2dca76",
      "bytes": 264968,
-     "fetched_at": "2026-10-13T13:40:43.862Z",
+     "fetched_at": "2026-10-20T15:16:33.798Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2021.parquet",
      "sha256": "c68536928d1a5ad6c92ebd8b5c5adaa114ae0cbf6ace7400df0b1fe87a655e94",
      "bytes": 56820,
-     "fetched_at": "2026-10-13T13:39:34.522Z",
+     "fetched_at": "2026-10-20T15:13:57.094Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2021.parquet",
      "sha256": "7c3f4ff8b36d1fa37f53e4b0a8c406fa0495d74a5e2c00393230a0761df6a88a",
      "bytes": 38526,
-     "fetched_at": "2026-10-13T14:02:37.190Z",
+     "fetched_at": "2026-10-20T15:16:50.392Z",
      "missing_columns": []
     }
    },
@@ -3679,21 +3679,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2022.parquet",
      "sha256": "2d8a402ead4c4396b7634dc072d30b282d445eca96a32ea5ecd6d6407f9e98e2",
      "bytes": 382784,
-     "fetched_at": "2026-10-13T13:40:44.489Z",
+     "fetched_at": "2026-10-20T15:16:34.178Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2022.parquet",
      "sha256": "258efd9dbfb4415937699240e3a891856216e080ac8e3133c3fffe86ba508809",
      "bytes": 78790,
-     "fetched_at": "2026-10-13T13:39:40.842Z",
+     "fetched_at": "2026-10-20T15:14:01.052Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2022.parquet",
      "sha256": "a08aa657372a97c83bb0305c218c74ce4c20ef672b02d0e74b39176269c36a3d",
      "bytes": 51848,
-     "fetched_at": "2026-10-13T14:02:38.729Z",
+     "fetched_at": "2026-10-20T15:16:51.145Z",
      "missing_columns": []
     }
    },
@@ -4009,21 +4009,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2023.parquet",
      "sha256": "7e651f9225124ec7e01212ea1ba5b746c188d8aff5f5f67343330eda026c0cba",
      "bytes": 376973,
-     "fetched_at": "2026-10-13T13:40:45.322Z",
+     "fetched_at": "2026-10-20T15:16:34.638Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2023.parquet",
      "sha256": "266785b0e7f1e995bd446338d172ae7c2e999f109a8ba8c7c60d97007f42606d",
      "bytes": 80530,
-     "fetched_at": "2026-10-13T13:39:49.816Z",
+     "fetched_at": "2026-10-20T15:14:07.456Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2023.parquet",
      "sha256": "e25d9a613bdafb118eb0d2da7eb390ced29723db78071700fbf7527af9691daa",
      "bytes": 51510,
-     "fetched_at": "2026-10-13T14:02:40.165Z",
+     "fetched_at": "2026-10-20T15:16:51.967Z",
      "missing_columns": []
     }
    },
@@ -4330,21 +4330,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2024.parquet",
      "sha256": "6cafbbb90577bb3db70667b21aed10a79b7bc638a911ccc548e5f34bd8a697a5",
      "bytes": 372926,
-     "fetched_at": "2026-10-13T13:40:45.969Z",
+     "fetched_at": "2026-10-20T15:16:35.070Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2024.parquet",
      "sha256": "298555a6c8b3acd294fb6a4cb2588bc2fa72f72f139a9601058be41be262f639",
      "bytes": 78923,
-     "fetched_at": "2026-10-13T13:39:59.043Z",
+     "fetched_at": "2026-10-20T15:14:12.986Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2024.parquet",
      "sha256": "01d868a7b28e267cba091a8ef4183562285e60abd5fda3821b7df3edca8628bf",
      "bytes": 51362,
-     "fetched_at": "2026-10-13T14:02:41.646Z",
+     "fetched_at": "2026-10-20T15:16:52.794Z",
      "missing_columns": []
     }
    },
@@ -4651,21 +4651,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2025.parquet",
      "sha256": "72750d3beece47ae293eb798de22c80e7c8c0e35148695c22b199254d8d433e5",
      "bytes": 372340,
-     "fetched_at": "2026-10-13T13:40:46.700Z",
+     "fetched_at": "2026-10-20T15:16:35.461Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2025.parquet",
      "sha256": "f0059f79374cdf71892320fd449d123534b7b242a53c1b0cea46731495fcb3ad",
      "bytes": 78242,
-     "fetched_at": "2026-10-13T13:40:09.534Z",
+     "fetched_at": "2026-10-20T15:14:18.652Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2025.parquet",
      "sha256": "12374c84ac5c1385526ada81e431e3cd008197957cb1a823ff83e6663b5ce173",
      "bytes": 51137,
-     "fetched_at": "2026-10-13T14:02:43.212Z",
+     "fetched_at": "2026-10-20T15:16:53.622Z",
      "missing_columns": []
     }
    },
@@ -4972,21 +4972,21 @@
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2026.parquet",
      "sha256": "a802ecf217de46ec850630e9805011c8f070b2e178af53f5513c08a43e00367e",
      "bytes": 369744,
-     "fetched_at": "2026-10-13T13:40:47.406Z",
+     "fetched_at": "2026-10-20T15:16:35.840Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2026.parquet",
      "sha256": "7ce8fd512f14e7c990bb430f3ba89a09c2fb091752134ae6cd7de3dc95565323",
      "bytes": 78221,
-     "fetched_at": "2026-10-13T13:40:19.738Z",
+     "fetched_at": "2026-10-20T15:15:34.530Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2026.parquet",
      "sha256": "7406c64301697c7617de2fb30908e304d554b87de2b2e497c90780e2e4283e66",
      "bytes": 50202,
-     "fetched_at": "2026-10-13T14:02:45.021Z",
+     "fetched_at": "2026-10-20T15:16:54.440Z",
      "missing_columns": []
     }
    },
@@ -5285,43 +5285,43 @@
    }
   },
   "2027": {
-   "games_pbp": 89,
-   "games_matched": 89,
+   "games_pbp": 140,
+   "games_matched": 140,
    "games_without_box": 0,
    "box_source": {
     "skater_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2027.parquet",
-     "sha256": "97ea426f7eaf42b7c05974da32449f5672645d45006ec0b60c7695c81341f74b",
-     "bytes": 44144,
-     "fetched_at": "2026-10-13T13:40:48.068Z",
+     "sha256": "0899fa4911ff1a743acc53a6a87c4c6f45ef9fe411698d8e9e3e3aaa9e4fe95e",
+     "bytes": 57780,
+     "fetched_at": "2026-10-20T15:16:36.237Z",
      "missing_columns": []
     },
     "goalie_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2027.parquet",
-     "sha256": "23564a7f3937a19844b7b48b6e73fd475134fbc569ff3855f9d794e48c19916c",
-     "bytes": 16717,
-     "fetched_at": "2026-10-13T13:40:28.255Z",
+     "sha256": "e4155d24d3598beb00a2c69d1d3f607b7bd6f86bb04210cec8f193b7c6c2fe34",
+     "bytes": 19307,
+     "fetched_at": "2026-10-20T15:15:44.523Z",
      "missing_columns": []
     },
     "team_box": {
      "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2027.parquet",
-     "sha256": "aed96650f311f8101fa4d726e0d0e2930fad775947deab59b385a75f76bf9db0",
-     "bytes": 11891,
-     "fetched_at": "2026-10-13T14:02:46.375Z",
+     "sha256": "9834f6042f0d47347533c927083631ddde87f1610c8b93c5c4bb0c1cf24c4f86",
+     "bytes": 13629,
+     "fetched_at": "2026-10-20T15:16:55.123Z",
      "missing_columns": []
     }
    },
    "team": {
     "goals": {
-     "rows": 178,
-     "agree": 178,
+     "rows": 280,
+     "agree": 280,
      "rate": 1,
      "examples": []
     },
     "shots_on_goal": {
-     "rows": 178,
-     "agree": 177,
-     "rate": 0.99438,
+     "rows": 280,
+     "agree": 278,
+     "rate": 0.99286,
      "examples": [
       {
        "play_by_play": 32,
@@ -5329,13 +5329,20 @@
        "team": "EDM",
        "game_id": 2026020015,
        "date": "2026-10-01"
+      },
+      {
+       "play_by_play": 20,
+       "box": 19,
+       "team": "VGK",
+       "game_id": 2026020134,
+       "date": "2026-10-17"
       }
      ]
     },
     "power_play_goals": {
-     "rows": 178,
-     "agree": 175,
-     "rate": 0.98315,
+     "rows": 280,
+     "agree": 275,
+     "rate": 0.98214,
      "examples": [
       {
        "play_by_play": 0,
@@ -5357,13 +5364,27 @@
        "team": "STL",
        "game_id": 2026020050,
        "date": "2026-10-06"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "MTL",
+       "game_id": 2026020106,
+       "date": "2026-10-14"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "NSH",
+       "game_id": 2026020131,
+       "date": "2026-10-17"
       }
      ]
     },
     "pim": {
-     "rows": 178,
-     "agree": 173,
-     "rate": 0.97191,
+     "rows": 280,
+     "agree": 273,
+     "rate": 0.975,
      "examples": [
       {
        "play_by_play": 25,
@@ -5399,15 +5420,22 @@
        "team": "MIN",
        "game_id": 2026020089,
        "date": "2026-10-12"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "SEA",
+       "game_id": 2026020094,
+       "date": "2026-10-13"
       }
      ]
     }
    },
    "goalie": {
     "shots_against": {
-     "rows": 189,
-     "agree": 188,
-     "rate": 0.99471,
+     "rows": 295,
+     "agree": 294,
+     "rate": 0.99661,
      "examples": [
       {
        "play_by_play": 21,
@@ -5420,35 +5448,35 @@
      ]
     },
     "goals_against": {
-     "rows": 189,
-     "agree": 189,
+     "rows": 295,
+     "agree": 295,
      "rate": 1,
      "examples": []
     },
     "starter": {
-     "rows": 178,
-     "agree": 178,
+     "rows": 280,
+     "agree": 280,
      "rate": 1,
      "examples": []
     }
    },
    "skater": {
     "goals": {
-     "rows": 3204,
-     "agree": 3204,
+     "rows": 5040,
+     "agree": 5040,
      "rate": 1,
      "examples": []
     },
     "assists": {
-     "rows": 3204,
-     "agree": 3204,
+     "rows": 5040,
+     "agree": 5040,
      "rate": 1,
      "examples": []
     },
     "shots_on_goal": {
-     "rows": 3204,
-     "agree": 3203,
-     "rate": 0.99969,
+     "rows": 5040,
+     "agree": 5038,
+     "rate": 0.9996,
      "examples": [
       {
        "play_by_play": 5,
@@ -5457,6 +5485,14 @@
        "team": "EDM",
        "game_id": 2026020015,
        "date": "2026-10-01"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8479353,
+       "team": "VGK",
+       "game_id": 2026020134,
+       "date": "2026-10-17"
       }
      ]
     }

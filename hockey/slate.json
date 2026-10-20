@@ -2,7 +2,7 @@
  "schema": "edgedesk_nhl_slate_v1",
  "sport": "NHL",
  "sport_key": "icehockey_nhl",
- "generated_at": "2026-10-20T12:05:33.876Z",
+ "generated_at": "2026-10-20T15:30:32.990Z",
  "horizon_hours": 120,
  "model": {
   "id": "edgedesk_nhl_v1:xg_core",
@@ -11,8 +11,8 @@
    2022,
    2026
   ],
-  "params_generated_at": "2026-10-14T01:42:12.428Z",
-  "validation_generated_at": "2026-10-14T01:42:12.428Z",
+  "params_generated_at": "2026-10-20T15:19:46.910Z",
+  "validation_generated_at": "2026-10-20T15:19:46.910Z",
   "pair_calibration": {
    "a": 0.5,
    "b": 0.9,
@@ -25,11 +25,11 @@
   "data": {
    "state": "FRESH",
    "latest_completed_game": "2026-10-19",
-   "hours_since_latest_result": 7.09,
+   "hours_since_latest_result": 10.51,
    "results_lagging": [],
    "schedule": {
     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2027.parquet",
-    "fetched_at": "2026-10-20T12:05:14.837Z",
+    "fetched_at": "2026-10-20T15:15:44.468Z",
     "ok": true,
     "sha256": "e1cc359dc1f6dd6e8f4c27045a90ae9308db59a80db6ee28e7a51db70c55b99e"
    },
@@ -209,12 +209,12 @@
   },
   "leakage": {
    "basis": "inputs dated by assumed_available_at (scheduled start + 4 h); the source never recorded when it first published each game",
-   "checked": 17239,
+   "checked": 17290,
    "violations": 0,
    "examples": [],
    "ok": true
   },
-  "live_games_graded": 89,
+  "live_games_graded": 140,
   "second_source": {
    "season": "2024-25",
    "source": "ESPN (the NHL data pack, datapack/nhl_v1)",
@@ -565,8 +565,8 @@
     "role": "PRODUCTION",
     "selection": 0.67459,
     "confirmation": 0.66286,
-    "live": 0.65436,
-    "live_n": 86,
+    "live": 0.65477,
+    "live_n": 140,
     "vs_production": null,
     "promotion": null
    },
@@ -575,8 +575,8 @@
     "role": "RESEARCH",
     "selection": 0.67582,
     "confirmation": 0.66492,
-    "live": 0.65674,
-    "live_n": 86,
+    "live": 0.65536,
+    "live_n": 140,
     "vs_production": {
      "selection": 0.001228,
      "confirmation": 0.002066,
@@ -599,8 +599,8 @@
     "role": "RESEARCH",
     "selection": 0.67669,
     "confirmation": 0.66654,
-    "live": 0.65924,
-    "live_n": 86,
+    "live": 0.65265,
+    "live_n": 140,
     "vs_production": {
      "selection": 0.002096,
      "confirmation": 0.003687,
@@ -623,8 +623,8 @@
     "role": "RESEARCH",
     "selection": 0.67445,
     "confirmation": 0.66248,
-    "live": 0.65363,
-    "live_n": 86,
+    "live": 0.65318,
+    "live_n": 140,
     "vs_production": {
      "selection": -0.000142,
      "confirmation": -0.000371,
@@ -647,8 +647,8 @@
     "role": "RESEARCH",
     "selection": 0.67453,
     "confirmation": 0.66253,
-    "live": 0.65739,
-    "live_n": 86,
+    "live": 0.65572,
+    "live_n": 140,
     "vs_production": {
      "selection": -0.000057,
      "confirmation": -0.000329,
@@ -671,8 +671,8 @@
     "role": "RESEARCH",
     "selection": 0.67597,
     "confirmation": 0.66381,
-    "live": 0.65215,
-    "live_n": 86,
+    "live": 0.64838,
+    "live_n": 140,
     "vs_production": {
      "selection": 0.001378,
      "confirmation": 0.000956,
@@ -695,8 +695,8 @@
     "role": "RESEARCH",
     "selection": 0.67919,
     "confirmation": 0.66754,
-    "live": 0.65193,
-    "live_n": 86,
+    "live": 0.65133,
+    "live_n": 140,
     "vs_production": {
      "selection": 0.004595,
      "confirmation": 0.004688,
@@ -719,8 +719,8 @@
     "role": "RESEARCH",
     "selection": 0.67485,
     "confirmation": 0.66352,
-    "live": 0.65634,
-    "live_n": 86,
+    "live": 0.65447,
+    "live_n": 140,
     "vs_production": {
      "selection": 0.000261,
      "confirmation": 0.000664,
@@ -745,7 +745,7 @@
    "model": "B_incumbent",
    "why": "No challenger passes the promotion rule. The expected-goals GLM (edgedesk_nhl_v1:xg_core) stays the production model; the challengers are published as research and as model disagreement."
   },
-  "generated_at": "2026-10-14T01:24:02.112Z",
+  "generated_at": "2026-10-20T15:28:55.637Z",
   "file": "hockey/validation/nhl_lab.json"
  },
  "distribution": {
@@ -947,7 +947,7 @@
     "verdict": "NO MEASURABLE BENEFIT"
    }
   ],
-  "generated_at": "2026-10-14T01:24:02.112Z"
+  "generated_at": "2026-10-20T15:28:55.637Z"
  },
  "attribution": "NHL game data: sportsdataverse fastRhockey (compiled from the NHL's public game feeds). sportsdataverse/fastRhockey-nhl-data and -raw are MIT-licensed repositories; the game data inside them is compiled from the NHL's public game feeds and remains the NHL's. NHL.com terms restrict commercial use of its content: the owner must review this before NHL output is sold in a paid tier. Attribution is printed on every NHL artifact.",
  "games": [
