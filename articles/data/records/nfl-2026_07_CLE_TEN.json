@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.2-point gap is context only and the game is excluded from research ranking.",
@@ -1346,6 +1346,68 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1h9m6uzh0tec9",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Browns’ pass defense slow the Titans’ passing game?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.2 points.",
+    "gap": {
+      "points": 0.2,
+      "toward": "Tennessee Titans",
+      "other": "Cleveland Browns"
+    },
+    "supporting": [
+      "When Cleveland Browns have the ball: their pass protection ranks No. 32, and Tennessee Titans’ pass rush ranks No. 8.",
+      "Cleveland Browns’ offense ranks No. 32 of 32 in efficiency per play this season.",
+      "Cleveland Browns’ passing offense ranks No. 32 of 32 in passing efficiency this season.",
+      "Cleveland Browns’ pass protection ranks No. 32 of 32 in sack rate allowed this season."
+    ],
+    "contradicting": [
+      "When Tennessee Titans have the ball: their passing game ranks No. 31, and Cleveland Browns’ pass defense ranks No. 5.",
+      "Tennessee Titans’ offense ranks No. 29 of 32 in efficiency per play this season.",
+      "Tennessee Titans’ defense ranks No. 29 of 32 in efficiency allowed per play this season.",
+      "Tennessee Titans’ passing offense ranks No. 31 of 32 in passing efficiency this season."
+    ],
+    "quarterbacks": [
+      "Tennessee Titans’ passers have completed 109 of 177 (61.6%) for 998 yards, 5.6 yards per attempt, with 4 touchdowns, 4 interceptions and 10 sacks taken in six games.",
+      "Cleveland Browns’ passers have completed 112 of 175 (64.0%) for 1,174 yards, 6.7 yards per attempt, with 7 touchdowns, 2 interceptions and 24 sacks taken in six games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Tennessee Titans have to win through the air (Tennessee Titans’ No. 31 passing game against Cleveland Browns’ No. 5 pass defense).",
+        "The Tennessee Titans have to hold their own in the pass-rush matchup (Tennessee Titans’ No. 17 pass protection against Cleveland Browns’ No. 6 pass rush).",
+        "The Tennessee Titans have to win in the pass-rush matchup (Cleveland Browns’ No. 32 pass protection against Tennessee Titans’ No. 8 pass rush)."
+      ],
+      "market": [
+        "The Cleveland Browns have to win through the air (Tennessee Titans’ No. 31 passing game against Cleveland Browns’ No. 5 pass defense).",
+        "The Cleveland Browns have to win in the pass-rush matchup (Tennessee Titans’ No. 17 pass protection against Cleveland Browns’ No. 6 pass rush)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

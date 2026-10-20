@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "updated_at": "2026-10-20T00:15:49.092Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.9-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Carolina Panthers −4.5",
@@ -131,7 +131,7 @@
       "sample_games": 92,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.9-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1174,14 +1174,10 @@
       "available": true,
       "model": "Carolina Panthers −4.5",
       "model_raw": "Carolina Panthers -4.4",
-      "market": "Carolina Panthers −3.0",
-      "difference": "1.4 points",
+      "market": "Carolina Panthers −3.5",
+      "difference": "0.9 points",
       "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
-      "key_number": {
-        "text": "Market sits on 3; model is above 3.",
-        "detail": "Carolina Panthers: market −3.0, model fair −4.5.",
-        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
-      },
+      "key_number": null,
       "total_model": "44.0",
       "total_model_raw": "44.0",
       "total_market": "44.5",
@@ -1191,14 +1187,14 @@
       "capture_age": null,
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.9-point gap is context only and the game is excluded from research ranking.",
       "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Carolina Panthers 24, Tampa Bay Buccaneers 20.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.9-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1340,6 +1336,69 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "gn80jmt2o97k",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Panthers stop the Buccaneers’ run game?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.9 points.",
+    "gap": {
+      "points": 0.9,
+      "toward": "Carolina Panthers",
+      "other": "Tampa Bay Buccaneers"
+    },
+    "supporting": [
+      "When Carolina Panthers have the ball: their passing game ranks No. 12, and Tampa Bay Buccaneers’ pass defense ranks No. 27.",
+      "When Carolina Panthers have the ball: their pass protection ranks No. 9, and Tampa Bay Buccaneers’ pass rush ranks No. 24.",
+      "Carolina Panthers’ explosive passes allowed ranks No. 7 of 32 in explosive passes allowed this season.",
+      "Tampa Bay Buccaneers’ offense ranks No. 26 of 32 in efficiency per play this season."
+    ],
+    "contradicting": [
+      "When Tampa Bay Buccaneers have the ball: their run game ranks No. 6, and Carolina Panthers’ run defense ranks No. 26.",
+      "When Carolina Panthers have the ball: their run game ranks No. 22, and Tampa Bay Buccaneers’ run defense ranks No. 8.",
+      "Carolina Panthers’ run defense ranks No. 26 of 32 in run defense this season.",
+      "Tampa Bay Buccaneers’ running game ranks No. 6 of 32 in rushing efficiency this season."
+    ],
+    "quarterbacks": [
+      "Carolina Panthers’ passers have completed 121 of 202 (59.9%) for 1,549 yards, 7.7 yards per attempt, with 11 touchdowns, 2 interceptions and 12 sacks taken in five games.",
+      "Tampa Bay Buccaneers’ passers have completed 121 of 194 (62.4%) for 1,116 yards, 5.8 yards per attempt, with 5 touchdowns, 7 interceptions and 22 sacks taken in six games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Carolina Panthers have to win on the ground (Tampa Bay Buccaneers’ No. 6 run game against Carolina Panthers’ No. 26 run defense).",
+        "The Carolina Panthers have to hold their own on the ground (Carolina Panthers’ No. 22 run game against Tampa Bay Buccaneers’ No. 8 run defense).",
+        "The Carolina Panthers have to win through the air (Carolina Panthers’ No. 12 passing game against Tampa Bay Buccaneers’ No. 27 pass defense).",
+        "The Carolina Panthers have to win in the pass-rush matchup (Carolina Panthers’ No. 9 pass protection against Tampa Bay Buccaneers’ No. 24 pass rush)."
+      ],
+      "market": [
+        "The Tampa Bay Buccaneers have to win on the ground (Tampa Bay Buccaneers’ No. 6 run game against Carolina Panthers’ No. 26 run defense).",
+        "The Tampa Bay Buccaneers have to win on the ground (Carolina Panthers’ No. 22 run game against Tampa Bay Buccaneers’ No. 8 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

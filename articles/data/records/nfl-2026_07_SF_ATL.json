@@ -22,7 +22,7 @@
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 4.6-point gap is context only and the game is excluded from research ranking.",
@@ -1338,6 +1338,70 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "x4dj4hpsxek3",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Falcons’ pass rush get to Brock Purdy?",
+    "assessment": "EdgeDesk’s number is 4.6 points closer to Atlanta Falcons than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward San Francisco 49ers, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 4.6,
+      "toward": "Atlanta Falcons",
+      "other": "San Francisco 49ers"
+    },
+    "supporting": [
+      "When Atlanta Falcons have the ball: their run game ranks No. 15, and San Francisco 49ers’ run defense ranks No. 29.",
+      "Atlanta Falcons’ pass rush ranks No. 4 of 32 in sack rate this season.",
+      "San Francisco 49ers’ run defense ranks No. 29 of 32 in run defense this season.",
+      "San Francisco 49ers’ pass rush ranks No. 30 of 32 in sack rate this season."
+    ],
+    "contradicting": [
+      "When San Francisco 49ers have the ball: their run game ranks No. 9, and Atlanta Falcons’ run defense ranks No. 25.",
+      "When San Francisco 49ers have the ball: their passing game ranks No. 1, and Atlanta Falcons’ pass defense ranks No. 15.",
+      "San Francisco 49ers’ offense ranks No. 2 of 32 in efficiency per play this season.",
+      "San Francisco 49ers’ passing offense ranks No. 1 of 32 in passing efficiency this season."
+    ],
+    "quarterbacks": [
+      "Atlanta Falcons’ passers have completed 103 of 167 (61.7%) for 1,266 yards, 7.6 yards per attempt, with 7 touchdowns, 7 interceptions and 16 sacks taken in six games.",
+      "San Francisco 49ers’ passers have completed 98 of 142 (69.0%) for 1,196 yards, 8.4 yards per attempt, with 13 touchdowns, 2 interceptions and 3 sacks taken in five games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Atlanta Falcons have to win in the pass-rush matchup (San Francisco 49ers’ No. 1 pass protection against Atlanta Falcons’ No. 4 pass rush).",
+        "The Atlanta Falcons have to slow the San Francisco 49ers on the ground (San Francisco 49ers’ No. 9 run game against Atlanta Falcons’ No. 25 run defense).",
+        "The Atlanta Falcons have to slow the San Francisco 49ers through the air (San Francisco 49ers’ No. 1 passing game against Atlanta Falcons’ No. 15 pass defense).",
+        "The Atlanta Falcons have to win on the ground (Atlanta Falcons’ No. 15 run game against San Francisco 49ers’ No. 29 run defense)."
+      ],
+      "market": [
+        "The San Francisco 49ers have to win on the ground (San Francisco 49ers’ No. 9 run game against Atlanta Falcons’ No. 25 run defense).",
+        "The San Francisco 49ers have to win through the air (San Francisco 49ers’ No. 1 passing game against Atlanta Falcons’ No. 15 pass defense).",
+        "The San Francisco 49ers have to win in the pass-rush matchup (San Francisco 49ers’ No. 1 pass protection against Atlanta Falcons’ No. 4 pass rush)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

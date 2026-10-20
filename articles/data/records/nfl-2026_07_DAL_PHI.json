@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-27 00:15 UTC",
   "published_at": null,
   "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 6.4-point gap is context only and the game is excluded from research ranking.",
@@ -1350,6 +1350,67 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "ptvi1meyte7s",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Eagles’ pass defense slow the Cowboys’ passing game?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Philadelphia Eagles, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 5.9,
+      "toward": "Philadelphia Eagles",
+      "other": "Dallas Cowboys"
+    },
+    "supporting": [
+      "Dallas Cowboys’ defense ranks No. 32 of 32 in efficiency allowed per play this season.",
+      "Dallas Cowboys’ pass defense ranks No. 31 of 32 in pass defense this season.",
+      "Dallas Cowboys’ run defense ranks No. 30 of 32 in run defense this season.",
+      "Dallas Cowboys’ scoring defense ranks No. 31 of 32 in points allowed this season."
+    ],
+    "contradicting": [
+      "Philadelphia Eagles’ explosive passing ranks No. 32 of 32 in explosive pass rate this season.",
+      "Dallas Cowboys’ pass protection ranks No. 2 of 32 in sack rate allowed this season.",
+      "When Dallas Cowboys have the ball: their pass protection ranks No. 2, and Philadelphia Eagles’ pass rush ranks No. 12.",
+      "Philadelphia Eagles’ offense ranks No. 28 of 32 in efficiency per play this season."
+    ],
+    "quarterbacks": [
+      "Philadelphia Eagles’ passers have completed 115 of 200 (57.5%) for 1,148 yards, 5.7 yards per attempt, with 9 touchdowns, 4 interceptions and 16 sacks taken in six games.",
+      "Dallas Cowboys’ passers have completed 163 of 246 (66.3%) for 1,639 yards, 6.7 yards per attempt, with 10 touchdowns, 5 interceptions and 7 sacks taken in six games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Philadelphia Eagles have to win through the air (Dallas Cowboys’ No. 10 passing game against Philadelphia Eagles’ No. 6 pass defense).",
+        "The Philadelphia Eagles have to slow the Dallas Cowboys in the pass-rush matchup (Dallas Cowboys’ No. 2 pass protection against Philadelphia Eagles’ No. 12 pass rush)."
+      ],
+      "market": [
+        "The Dallas Cowboys have to win in the pass-rush matchup (Dallas Cowboys’ No. 2 pass protection against Philadelphia Eagles’ No. 12 pass rush).",
+        "The Dallas Cowboys have to win through the air (Dallas Cowboys’ No. 10 passing game against Philadelphia Eagles’ No. 6 pass defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

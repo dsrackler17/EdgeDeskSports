@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-26 00:20 UTC",
   "published_at": null,
   "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.3-point gap is context only and the game is excluded from research ranking.",
@@ -1350,6 +1350,68 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "ee2gep64u2nn",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Seahawks stop the Chiefs’ run game?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Seattle Seahawks, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 4.2,
+      "toward": "Seattle Seahawks",
+      "other": "Kansas City Chiefs"
+    },
+    "supporting": [
+      "When Kansas City Chiefs have the ball: their passing game ranks No. 16, and Seattle Seahawks’ pass defense ranks No. 2.",
+      "Seattle Seahawks’ defense ranks No. 2 of 32 in efficiency allowed per play this season.",
+      "Seattle Seahawks’ pass defense ranks No. 2 of 32 in pass defense this season.",
+      "Seattle Seahawks’ run defense ranks No. 4 of 32 in run defense this season."
+    ],
+    "contradicting": [
+      "When Seattle Seahawks have the ball: their run game ranks No. 30, and Kansas City Chiefs’ run defense ranks No. 9.",
+      "Seattle Seahawks’ running game ranks No. 30 of 32 in rushing efficiency this season.",
+      "Kansas City Chiefs’ running game ranks No. 3 of 32 in rushing efficiency this season.",
+      "Kansas City Chiefs’ scoring defense ranks No. 4 of 32 in points allowed this season."
+    ],
+    "quarterbacks": [
+      "Seattle Seahawks’ passers have completed 126 of 198 (63.6%) for 1,469 yards, 7.4 yards per attempt, with 11 touchdowns, 7 interceptions and 16 sacks taken in six games.",
+      "Kansas City Chiefs’ passers have completed 105 of 158 (66.5%) for 1,309 yards, 8.3 yards per attempt, with 9 touchdowns, 3 interceptions and 6 sacks taken in five games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Seattle Seahawks have to win on the ground (Kansas City Chiefs’ No. 3 run game against Seattle Seahawks’ No. 4 run defense).",
+        "The Seattle Seahawks have to hold their own on the ground (Seattle Seahawks’ No. 30 run game against Kansas City Chiefs’ No. 9 run defense).",
+        "The Seattle Seahawks have to win through the air (Kansas City Chiefs’ No. 16 passing game against Seattle Seahawks’ No. 2 pass defense)."
+      ],
+      "market": [
+        "The Kansas City Chiefs have to win on the ground (Seattle Seahawks’ No. 30 run game against Kansas City Chiefs’ No. 9 run defense).",
+        "The Kansas City Chiefs have to win on the ground (Kansas City Chiefs’ No. 3 run game against Seattle Seahawks’ No. 4 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

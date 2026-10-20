@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "updated_at": "2026-10-20T00:15:49.092Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.4-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.9-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Minnesota Vikings −5.0",
@@ -131,7 +131,7 @@
       "sample_games": 92,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.4-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.9-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1177,8 +1177,8 @@
       "available": true,
       "model": "Minnesota Vikings −5.0",
       "model_raw": "Minnesota Vikings -5.1",
-      "market": "Minnesota Vikings −5.5",
-      "difference": "0.4 points",
+      "market": "Minnesota Vikings −6.0",
+      "difference": "0.9 points",
       "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "key_number": null,
       "total_model": "43.5",
@@ -1190,14 +1190,14 @@
       "capture_age": null,
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.4-point gap is context only and the game is excluded from research ranking.",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.9-point gap is context only and the game is excluded from research ranking.",
       "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Minnesota Vikings 24, Indianapolis Colts 19.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.4-point gap is context only and the game is excluded from research ranking.",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.9-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1339,6 +1339,70 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "o1xnyx19p5v7f",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Vikings stop the Colts’ run game?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.9 points.",
+    "gap": {
+      "points": 0.9,
+      "toward": "Indianapolis Colts",
+      "other": "Minnesota Vikings"
+    },
+    "supporting": [
+      "Minnesota Vikings’ offense ranks No. 30 of 32 in efficiency per play this season.",
+      "Minnesota Vikings’ passing offense ranks No. 30 of 32 in passing efficiency this season.",
+      "Minnesota Vikings’ pass protection ranks No. 31 of 32 in sack rate allowed this season.",
+      "Indianapolis Colts’ running game ranks No. 2 of 32 in rushing efficiency this season."
+    ],
+    "contradicting": [
+      "When Indianapolis Colts have the ball: their passing game ranks No. 23, and Minnesota Vikings’ pass defense ranks No. 1.",
+      "Minnesota Vikings’ defense ranks No. 1 of 32 in efficiency allowed per play this season.",
+      "Minnesota Vikings’ pass defense ranks No. 1 of 32 in pass defense this season.",
+      "Minnesota Vikings’ run defense ranks No. 2 of 32 in run defense this season."
+    ],
+    "quarterbacks": [
+      "Minnesota Vikings’ passers have completed 92 of 140 (65.7%) for 938 yards, 6.7 yards per attempt, with 5 touchdowns, 2 interceptions and 15 sacks taken in five games.",
+      "Indianapolis Colts’ passers have completed 130 of 218 (59.6%) for 1,290 yards, 5.9 yards per attempt, with 4 touchdowns, 6 interceptions and 15 sacks taken in six games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Indianapolis Colts have to win on the ground (Indianapolis Colts’ No. 2 run game against Minnesota Vikings’ No. 2 run defense).",
+        "The Indianapolis Colts have to hold their own through the air (Indianapolis Colts’ No. 23 passing game against Minnesota Vikings’ No. 1 pass defense).",
+        "The Indianapolis Colts have to hold their own in the pass-rush matchup (Indianapolis Colts’ No. 10 pass protection against Minnesota Vikings’ No. 1 pass rush).",
+        "The Indianapolis Colts have to win through the air (Minnesota Vikings’ No. 30 passing game against Indianapolis Colts’ No. 20 pass defense)."
+      ],
+      "market": [
+        "The Minnesota Vikings have to win through the air (Indianapolis Colts’ No. 23 passing game against Minnesota Vikings’ No. 1 pass defense).",
+        "The Minnesota Vikings have to win in the pass-rush matchup (Indianapolis Colts’ No. 10 pass protection against Minnesota Vikings’ No. 1 pass rush).",
+        "The Minnesota Vikings have to win on the ground (Indianapolis Colts’ No. 2 run game against Minnesota Vikings’ No. 2 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

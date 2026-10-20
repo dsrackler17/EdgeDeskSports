@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-23 00:15 UTC",
   "published_at": null,
   "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 4.2-point gap is context only and the game is excluded from research ranking.",
@@ -1330,6 +1330,67 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "oge2vhzv4dwv",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Patriots’ pass defense slow the Bears’ passing game?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward New England Patriots, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 4.2,
+      "toward": "New England Patriots",
+      "other": "Chicago Bears"
+    },
+    "supporting": [
+      "New England Patriots’ explosive passing ranks No. 2 of 32 in explosive pass rate this season.",
+      "New England Patriots’ explosive passes allowed ranks No. 2 of 32 in explosive passes allowed this season.",
+      "When New England Patriots have the ball: their passing game ranks No. 7, and Chicago Bears’ pass defense ranks No. 16.",
+      "When New England Patriots have the ball: their run game ranks No. 12, and Chicago Bears’ run defense ranks No. 21."
+    ],
+    "contradicting": [
+      "When Chicago Bears have the ball: their pass protection ranks No. 7, and New England Patriots’ pass rush ranks No. 23.",
+      "Chicago Bears’ pass protection ranks No. 7 of 32 in sack rate allowed this season."
+    ],
+    "quarterbacks": [
+      "Chicago Bears’ passers have completed 143 of 208 (68.8%) for 1,476 yards, 7.1 yards per attempt, with 5 touchdowns, 5 interceptions and 15 sacks taken in six games.",
+      "New England Patriots’ passers have completed 121 of 189 (64.0%) for 1,509 yards, 8.0 yards per attempt, with 11 touchdowns, 7 interceptions and 11 sacks taken in six games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The New England Patriots have to win through the air (Chicago Bears’ No. 11 passing game against New England Patriots’ No. 7 pass defense).",
+        "The New England Patriots have to slow the Chicago Bears in the pass-rush matchup (Chicago Bears’ No. 7 pass protection against New England Patriots’ No. 23 pass rush).",
+        "The New England Patriots have to win through the air (New England Patriots’ No. 7 passing game against Chicago Bears’ No. 16 pass defense).",
+        "The New England Patriots have to win on the ground (New England Patriots’ No. 12 run game against Chicago Bears’ No. 21 run defense)."
+      ],
+      "market": [
+        "The Chicago Bears have to win in the pass-rush matchup (Chicago Bears’ No. 7 pass protection against New England Patriots’ No. 23 pass rush).",
+        "The Chicago Bears have to win through the air (Chicago Bears’ No. 11 passing game against New England Patriots’ No. 7 pass defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

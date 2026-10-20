@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-25 20:05 UTC",
   "published_at": null,
   "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.8-point gap is context only and the game is excluded from research ranking.",
@@ -1320,6 +1320,67 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "eoazjw1a4lwda",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Broncos’ pass rush get to Jacoby Brissett?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.8 points.",
+    "gap": {
+      "points": 1.8,
+      "toward": "Arizona Cardinals",
+      "other": "Denver Broncos"
+    },
+    "supporting": [
+      "Denver Broncos’ explosive passing ranks No. 27 of 32 in explosive pass rate this season.",
+      "Over their last two games, Denver Broncos’ passers averaged 4.3 yards per attempt, against 6.1 before that."
+    ],
+    "contradicting": [
+      "When Denver Broncos have the ball: their pass protection ranks No. 4, and Arizona Cardinals’ pass rush ranks No. 22.",
+      "When Arizona Cardinals have the ball: their passing game ranks No. 18, and Denver Broncos’ pass defense ranks No. 4.",
+      "When Arizona Cardinals have the ball: their pass protection ranks No. 14, and Denver Broncos’ pass rush ranks No. 2.",
+      "Arizona Cardinals’ pass defense ranks No. 29 of 32 in pass defense this season."
+    ],
+    "quarterbacks": [
+      "Arizona Cardinals’ passers have completed 157 of 235 (66.8%) for 1,335 yards, 5.7 yards per attempt, with 9 touchdowns, 6 interceptions and 12 sacks taken in six games.",
+      "Denver Broncos’ passers have completed 114 of 189 (60.3%) for 1,049 yards, 5.6 yards per attempt, with 6 touchdowns, 3 interceptions and 8 sacks taken in six games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Arizona Cardinals have to win in the pass-rush matchup (Arizona Cardinals’ No. 14 pass protection against Denver Broncos’ No. 2 pass rush).",
+        "The Arizona Cardinals have to slow the Denver Broncos in the pass-rush matchup (Denver Broncos’ No. 4 pass protection against Arizona Cardinals’ No. 22 pass rush).",
+        "The Arizona Cardinals have to hold their own through the air (Arizona Cardinals’ No. 18 passing game against Denver Broncos’ No. 4 pass defense)."
+      ],
+      "market": [
+        "The Denver Broncos have to win in the pass-rush matchup (Denver Broncos’ No. 4 pass protection against Arizona Cardinals’ No. 22 pass rush).",
+        "The Denver Broncos have to win through the air (Arizona Cardinals’ No. 18 passing game against Denver Broncos’ No. 4 pass defense).",
+        "The Denver Broncos have to win in the pass-rush matchup (Arizona Cardinals’ No. 14 pass protection against Denver Broncos’ No. 2 pass rush)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

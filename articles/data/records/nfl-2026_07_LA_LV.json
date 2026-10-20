@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T20:25:00.000Z",
   "game_when_label": "2026-10-25 20:25 UTC",
   "published_at": null,
-  "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "updated_at": "2026-10-20T00:15:49.092Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 2.1-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.1-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Las Vegas Raiders +3.5",
@@ -131,7 +131,7 @@
       "sample_games": 92,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 2.1-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.1-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1167,8 +1167,8 @@
       "available": true,
       "model": "Las Vegas Raiders +3.5",
       "model_raw": "Las Vegas Raiders +3.4",
-      "market": "Las Vegas Raiders +5.5",
-      "difference": "2.1 points",
+      "market": "Las Vegas Raiders +4.5",
+      "difference": "1.1 points",
       "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "key_number": null,
       "total_model": "49.0",
@@ -1180,14 +1180,14 @@
       "capture_age": null,
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 2.1-point gap is context only and the game is excluded from research ranking.",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.1-point gap is context only and the game is excluded from research ranking.",
       "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Los Angeles Rams 26, Las Vegas Raiders 23.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 2.1-point gap is context only and the game is excluded from research ranking.",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.1-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1329,6 +1329,67 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1b3lydz1n0tl11",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Raiders stop the Rams’ run game?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.1 points.",
+    "gap": {
+      "points": 1.1,
+      "toward": "Las Vegas Raiders",
+      "other": "Los Angeles Rams"
+    },
+    "supporting": [
+      "Las Vegas Raiders’ run defense ranks No. 7 of 32 in run defense this season.",
+      "Las Vegas Raiders’ explosive passes allowed ranks No. 8 of 32 in explosive passes allowed this season."
+    ],
+    "contradicting": [
+      "When Las Vegas Raiders have the ball: their run game ranks No. 32, and Los Angeles Rams’ run defense ranks No. 16.",
+      "When Los Angeles Rams have the ball: their passing game ranks No. 5, and Las Vegas Raiders’ pass defense ranks No. 22.",
+      "When Los Angeles Rams have the ball: their pass protection ranks No. 3, and Las Vegas Raiders’ pass rush ranks No. 15.",
+      "Las Vegas Raiders’ running game ranks No. 32 of 32 in rushing efficiency this season."
+    ],
+    "quarterbacks": [
+      "Las Vegas Raiders’ passers have completed 141 of 221 (63.8%) for 1,630 yards, 7.4 yards per attempt, with 14 touchdowns, 5 interceptions and 8 sacks taken in six games.",
+      "Los Angeles Rams’ passers have completed 166 of 252 (65.9%) for 1,807 yards, 7.2 yards per attempt, with 11 touchdowns, 6 interceptions and 10 sacks taken in six games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Las Vegas Raiders have to win on the ground (Los Angeles Rams’ No. 13 run game against Las Vegas Raiders’ No. 7 run defense).",
+        "The Las Vegas Raiders have to slow the Los Angeles Rams through the air (Los Angeles Rams’ No. 5 passing game against Las Vegas Raiders’ No. 22 pass defense).",
+        "The Las Vegas Raiders have to hold their own on the ground (Las Vegas Raiders’ No. 32 run game against Los Angeles Rams’ No. 16 run defense)."
+      ],
+      "market": [
+        "The Los Angeles Rams have to win through the air (Los Angeles Rams’ No. 5 passing game against Las Vegas Raiders’ No. 22 pass defense).",
+        "The Los Angeles Rams have to win on the ground (Las Vegas Raiders’ No. 32 run game against Los Angeles Rams’ No. 16 run defense).",
+        "The Los Angeles Rams have to win on the ground (Los Angeles Rams’ No. 13 run game against Las Vegas Raiders’ No. 7 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

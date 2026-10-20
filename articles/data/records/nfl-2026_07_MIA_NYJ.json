@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-19T20:32:51.575Z",
+  "generated_at": "2026-10-20T00:15:49.092Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 7.0-point gap is context only and the game is excluded from research ranking.",
@@ -1307,6 +1307,66 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-19T20:32:51.575Z"
+    "at": "2026-10-20T00:15:49.092Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1vsdzft4ouy8b",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Dolphins stop the Jets’ run game?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Miami Dolphins, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 7,
+      "toward": "Miami Dolphins",
+      "other": "New York Jets"
+    },
+    "supporting": [
+      "New York Jets’ defense ranks No. 31 of 32 in efficiency allowed per play this season.",
+      "New York Jets’ pass defense ranks No. 32 of 32 in pass defense this season.",
+      "New York Jets’ pass protection ranks No. 29 of 32 in sack rate allowed this season.",
+      "New York Jets’ pass rush ranks No. 32 of 32 in sack rate this season."
+    ],
+    "contradicting": [
+      "Miami Dolphins’ scoring offense ranks No. 29 of 32 in points scored this season.",
+      "Miami Dolphins’ offense ranks No. 25 of 32 in efficiency per play this season.",
+      "Miami Dolphins’ defense ranks No. 25 of 32 in efficiency allowed per play this season.",
+      "Miami Dolphins’ passing offense ranks No. 28 of 32 in passing efficiency this season."
+    ],
+    "quarterbacks": [
+      "New York Jets’ passers have completed 122 of 177 (68.9%) for 1,336 yards, 7.5 yards per attempt, with 7 touchdowns, 1 interceptions and 19 sacks taken in six games.",
+      "Miami Dolphins’ passers have completed 73 of 130 (56.2%) for 849 yards, 6.5 yards per attempt, with 2 touchdowns, 4 interceptions and 14 sacks taken in five games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Miami Dolphins have to win on the ground (New York Jets’ No. 28 run game against Miami Dolphins’ No. 17 run defense).",
+        "The Miami Dolphins have to win in the pass-rush matchup (New York Jets’ No. 29 pass protection against Miami Dolphins’ No. 20 pass rush)."
+      ],
+      "market": [
+        "The New York Jets have to win on the ground (New York Jets’ No. 28 run game against Miami Dolphins’ No. 17 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-19T22:56:24.524Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-20T00:15:40.703Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }
