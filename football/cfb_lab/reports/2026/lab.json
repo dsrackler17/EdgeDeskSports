@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-20T17:07:44.000Z",
+ "generated_at": "2026-10-20T17:30:25.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1468,
-    "latest_snapshot_at": "2026-10-20T17:04:05.000Z",
+    "snapshots": 1469,
+    "latest_snapshot_at": "2026-10-20T17:30:25.000Z",
     "upcoming_games": 62,
     "avg_confidence_upcoming": 76.6
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1828,
-    "latest_snapshot_at": "2026-10-20T17:04:05.000Z",
+    "snapshots": 1829,
+    "latest_snapshot_at": "2026-10-20T17:30:25.000Z",
     "upcoming_games": 62,
     "avg_confidence_upcoming": 77.2
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1828,
-    "latest_snapshot_at": "2026-10-20T17:04:05.000Z",
+    "snapshots": 1829,
+    "latest_snapshot_at": "2026-10-20T17:30:25.000Z",
     "upcoming_games": 62,
     "avg_confidence_upcoming": 76.9
    }
@@ -788,8 +788,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-20T17:07:44.000Z",
-    "quotes_total": 21010,
+    "last_quote_at": "2026-10-20T17:30:25.000Z",
+    "quotes_total": 21023,
     "last_result_at": "2026-10-18T07:07:34.000Z"
    }
   },
@@ -823,9 +823,9 @@
    }
   ],
   "ledger": {
-   "predictions": 5634,
-   "live_predictions": 5124,
-   "quotes": 21010,
+   "predictions": 5637,
+   "live_predictions": 5127,
+   "quotes": 21023,
    "lines": 3559,
    "results": 461,
    "evaluations": 5267,
@@ -1012,22 +1012,22 @@
    "home": "Marshall",
    "away": "South Alabama",
    "market": {
-    "current": 3.5,
+    "current": 2.5,
     "open": 3,
     "books": 1,
-    "as_of": "2026-10-20T12:08:06Z",
+    "as_of": "2026-10-20T15:07:49.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-20T12:07:39.000Z",
+     "prediction_ts": "2026-10-20T17:30:25.000Z",
      "margin": -1.21,
      "fair": "South Alabama -1.0",
      "p_home": 0.467,
@@ -1037,17 +1037,17 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "HOME",
-     "gap": 1.79,
-     "line": 3,
+     "gap": 1.29,
+     "line": 2.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-20T12:08:05.000Z",
+     "prediction_ts": "2026-10-20T17:30:25.000Z",
      "margin": -3.35,
      "fair": "South Alabama -3.5",
      "p_home": 0.4204,
@@ -1057,8 +1057,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": 0.15,
-     "line": -3.5,
+     "gap": -0.85,
+     "line": -2.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1067,10 +1067,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-20T12:08:05.000Z",
+     "prediction_ts": "2026-10-20T17:30:25.000Z",
      "margin": -3.54,
      "fair": "South Alabama -3.5",
      "p_home": 0.4161,
@@ -1080,8 +1080,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -0.04,
-     "line": -3.5,
+     "gap": -1.04,
+     "line": -2.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -10317,7 +10317,7 @@
   "data_fault": 0,
   "market_fault": 25,
   "verification_not_run": 0,
-  "average_raw_gap": 3.833,
+  "average_raw_gap": 3.831,
   "average_raw_gap_7plus": 10.16,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
