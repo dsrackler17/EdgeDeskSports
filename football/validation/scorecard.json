@@ -1,8 +1,8 @@
 {
  "schema": "edgedesk_scorecard_v1",
- "generated_at": "2026-10-19T16:36:35.451Z",
+ "generated_at": "2026-10-20T14:26:58.137Z",
  "inputs": {
-  "rows": 9,
+  "rows": 11,
   "rows_status": "OK",
   "rows_detail": null,
   "stake_rows": 0,
@@ -20,7 +20,46 @@
  "clv": {
   "groups": {
    "all": {
-    "packets": 9,
+    "packets": 11,
+    "with_close": 0,
+    "mean_clv_points": null,
+    "beat_close_rate": null,
+    "with_opener": 0,
+    "moved_toward_fair_rate": null,
+    "wins": 0,
+    "losses": 0,
+    "pushes": 0,
+    "sufficient_sample": false,
+    "reading": "below the sample floor of 50 closed packets: no reading"
+   },
+   "basketball_nba": {
+    "packets": 2,
+    "with_close": 0,
+    "mean_clv_points": null,
+    "beat_close_rate": null,
+    "with_opener": 0,
+    "moved_toward_fair_rate": null,
+    "wins": 0,
+    "losses": 0,
+    "pushes": 0,
+    "sufficient_sample": false,
+    "reading": "below the sample floor of 50 closed packets: no reading"
+   },
+   "basketball_nba|tier none": {
+    "packets": 2,
+    "with_close": 0,
+    "mean_clv_points": null,
+    "beat_close_rate": null,
+    "with_opener": 0,
+    "moved_toward_fair_rate": null,
+    "wins": 0,
+    "losses": 0,
+    "pushes": 0,
+    "sufficient_sample": false,
+    "reading": "below the sample floor of 50 closed packets: no reading"
+   },
+   "basketball_nba|status none": {
+    "packets": 2,
     "with_close": 0,
     "mean_clv_points": null,
     "beat_close_rate": null,
@@ -142,7 +181,7 @@
  },
  "staking": {
   "schema": "edgedesk_stake_scorecard_v1",
-  "generated_at": "2026-10-19T16:36:35.430Z",
+  "generated_at": "2026-10-20T14:26:58.110Z",
   "rows": 0,
   "sized": 0,
   "status": "OK",
@@ -171,12 +210,12 @@
  },
  "postmortem": {
   "counts": {
-   "rows": 9,
+   "rows": 11,
    "graded": 0,
    "hits": 0,
    "pushes": 0,
    "misses": 0,
-   "ungraded": 9
+   "ungraded": 11
   },
   "by_class": {},
   "candidates": [],
@@ -200,7 +239,7 @@
   "movement": {
    "nfl": {
     "tier": "RESEARCH",
-    "basis": "NOT_ESTABLISHED: 76 closed games in the ledger; 300 are the floor for a reading"
+    "basis": "NOT_ESTABLISHED: 77 closed games in the ledger; 300 are the floor for a reading"
    },
    "cfb": {
     "tier": "LEAN",
@@ -236,7 +275,7 @@
  },
  "by_model_version": {
   "market_devig": {
-   "packets": 7,
+   "packets": 9,
    "tiers": {},
    "statuses": {}
   },
