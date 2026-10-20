@@ -77,6 +77,9 @@ jobs:
         run: |
           echo "stage: $STAGE (event: ${{ github.event_name }}, ref: ${{ github.ref_name }}, force: $FORCE)"
           case "$STAGE" in test_only) echo "Tests only: production is not touched.";; esac
+          if [ "$STAGE" = "check" ] && [ "$FORCE" = "yes" ]; then
+            echo "::notice::force has no effect in the check stage: nothing is deployed. Choose stage deploy to ship."
+          fi
 
       - name: The suites that drive the real handler must pass
         run: |
@@ -110,7 +113,8 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          set -uo pipefail
+          # Not -e: diff and cmp answer 1 for "different", which is a result here.
+          set +e -uo pipefail
           D="$RUNNER_TEMP/deployed"; mkdir -p "$D"
           ( cd "$D" && supabase functions download collective_public --project-ref "$REF" --use-api ) \
             || ( cd "$D" && supabase functions download collective_public --project-ref "$REF" ) \
@@ -148,8 +152,14 @@ jobs:
           if grep -qE "$SECRETS" "$RUNNER_TEMP/deployed.norm"; then
             echo "::error::The deployed copy contains something that looks like a credential (lines $(grep -nE "$SECRETS" "$RUNNER_TEMP/deployed.norm" | cut -d: -f1 | tr '\n' ' ')). The diff is not printed."
           else
-            echo "--- deployed   +++ repo HEAD"
-            norm < "$FN" | diff -u "$RUNNER_TEMP/deployed.norm" - | head -600
+            # What matters: code running in production that the repo copy does
+            # not have. Comments that were reworded and code that moved are not.
+            node tools/collective/deployed_drift.js "$SRC" "$FN"
+            norm < "$FN" > "$RUNNER_TEMP/repo.norm"
+            diff -u "$RUNNER_TEMP/deployed.norm" "$RUNNER_TEMP/repo.norm" > "$RUNNER_TEMP/full.diff"
+            echo
+            echo "The full diff is $(wc -l < "$RUNNER_TEMP/full.diff") lines (--- deployed, +++ repo HEAD); the first 300:"
+            head -n 300 "$RUNNER_TEMP/full.diff"
           fi
           echo "match=no" >> "$GITHUB_OUTPUT"
 
