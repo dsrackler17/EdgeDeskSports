@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-20T14:16:14.018Z",
-  "generated_at": "2026-10-20T14:16:14.018Z",
+  "updated_at": "2026-10-20T17:58:33.779Z",
+  "generated_at": "2026-10-20T17:58:33.779Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.6-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.4-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Houston Texans −9.5",
@@ -44,7 +44,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 92 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Caesars on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
     "game": {
@@ -131,7 +131,7 @@
       "sample_games": 92,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.6-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.4-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1147,27 +1147,31 @@
       "available": true,
       "model": "Houston Texans −9.5",
       "model_raw": "Houston Texans -9.4",
-      "market": "Houston Texans −10.0",
-      "difference": "0.6 points",
+      "market": "Houston Texans −6.0",
+      "difference": "3.4 points",
       "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
-      "key_number": null,
+      "key_number": {
+        "text": "Market is below 7; model is above 7.",
+        "detail": "Houston Texans: market −6.0, model fair −9.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
       "total_model": "43.0",
       "total_model_raw": "43.0",
-      "total_market": "42.5",
+      "total_market": "41.5",
       "total_rounding_note": null,
-      "total_difference": "0.5 points",
-      "book": "nflverse reference",
-      "capture_age": null,
+      "total_difference": "1.5 points",
+      "book": "Caesars",
+      "capture_age": "890 hours old",
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.6-point gap is context only and the game is excluded from research ranking.",
-      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.4-point gap is context only and the game is excluded from research ranking.",
+      "reference": null,
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Houston Texans 26, New York Giants 17.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.6-point gap is context only and the game is excluded from research ranking.",
+      "note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.4-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1308,24 +1312,24 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "10cshs6trrd5w",
-    "status": "NO_MATERIAL_DISAGREEMENT",
+    "packet_hash": "14hl3igg8ilre",
+    "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can the Giants’ pass defense slow the Texans’ passing game?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.1 points.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Houston Texans, but not the full gap. It is a research question, not a bet.",
     "gap": {
-      "points": 0.1,
-      "toward": "New York Giants",
-      "other": "Houston Texans"
+      "points": 3.4,
+      "toward": "Houston Texans",
+      "other": "New York Giants"
     },
     "supporting": [
-      "Houston Texans’ running game ranks No. 29 of 32 in rushing efficiency this season."
-    ],
-    "contradicting": [
       "When New York Giants have the ball: their passing game ranks No. 26, and Houston Texans’ pass defense ranks No. 3.",
       "When New York Giants have the ball: their pass protection ranks No. 28, and Houston Texans’ pass rush ranks No. 5.",
       "When New York Giants have the ball: their run game ranks No. 17, and Houston Texans’ run defense ranks No. 3.",
       "Houston Texans’ defense ranks No. 3 of 32 in efficiency allowed per play this season."
+    ],
+    "contradicting": [
+      "Houston Texans’ running game ranks No. 29 of 32 in rushing efficiency this season."
     ],
     "quarterbacks": [
       "Houston Texans’ passers have completed 143 of 220 (65.0%) for 1,714 yards, 7.8 yards per attempt, with 9 touchdowns, 1 interceptions and 14 sacks taken in six games.",
@@ -1334,18 +1338,17 @@
     "availability": [],
     "script": {
       "model": [
-        "The New York Giants have to win through the air (Houston Texans’ No. 14 passing game against New York Giants’ No. 14 pass defense).",
-        "The New York Giants have to hold their own through the air (New York Giants’ No. 26 passing game against Houston Texans’ No. 3 pass defense).",
-        "The New York Giants have to hold their own in the pass-rush matchup (New York Giants’ No. 28 pass protection against Houston Texans’ No. 5 pass rush)."
+        "The Houston Texans have to win through the air (Houston Texans’ No. 14 passing game against New York Giants’ No. 14 pass defense).",
+        "The Houston Texans have to win through the air (New York Giants’ No. 26 passing game against Houston Texans’ No. 3 pass defense).",
+        "The Houston Texans have to win in the pass-rush matchup (New York Giants’ No. 28 pass protection against Houston Texans’ No. 5 pass rush)."
       ],
       "market": [
-        "The Houston Texans have to win through the air (New York Giants’ No. 26 passing game against Houston Texans’ No. 3 pass defense).",
-        "The Houston Texans have to win in the pass-rush matchup (New York Giants’ No. 28 pass protection against Houston Texans’ No. 5 pass rush).",
-        "The Houston Texans have to win through the air (Houston Texans’ No. 14 passing game against New York Giants’ No. 14 pass defense)."
+        "The New York Giants have to win through the air (Houston Texans’ No. 14 passing game against New York Giants’ No. 14 pass defense)."
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications."
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications.",
+      "The line on file was captured Sept. 13 and may have moved."
     ],
     "flags": [],
     "sources": [
@@ -1360,7 +1363,7 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-20T14:16:05.106Z",
+        "observed_at": "2026-10-20T17:58:07.396Z",
         "verification": "VERIFIED_DATA"
       }
     ],
@@ -1369,6 +1372,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-20T14:16:14.018Z"
+    "at": "2026-10-20T17:58:33.779Z"
   }
 }

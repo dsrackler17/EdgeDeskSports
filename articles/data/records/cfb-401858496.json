@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Indiana vs. Michigan: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Indiana vs. Michigan 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Indiana at Michigan: Michigan +11.5, fair total 44.0. Indiana wins 78% of simulations. Data confidence 78%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Indiana at Michigan: Michigan +11.5, fair total 44.0. Indiana wins 78% of simulations. Data confidence 78%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Indiana carries the stronger underlying team rating — +9.7 against +3.6, a 6.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Michigan +11.5 before any sportsbook number is consulted, with Indiana winning 78%…",
   "home_team": "Michigan",
   "away_team": "Indiana",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-24T16:00:00.000Z",
   "game_when_label": "2026-10-24 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-20T14:16:14.018Z",
-  "generated_at": "2026-10-20T14:16:14.018Z",
+  "updated_at": "2026-10-20T17:58:33.779Z",
+  "generated_at": "2026-10-20T17:58:33.779Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "RESEARCH",
+  "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
   "confidence": 78,
   "priced": true,
   "fair_spread_text": "Michigan +11.5",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-20. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-09-05, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -164,8 +164,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -252,7 +252,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T16:00:00.000Z",
-        "retrieved_at": "2026-10-20T04:15:56.836Z"
+        "retrieved_at": "2026-10-20T14:29:54.807Z"
       },
       "home": {
         "team": "Michigan",
@@ -342,9 +342,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T19:30:00.000Z",
-        "retrieved_at": "2026-10-20T04:15:56.836Z"
+        "retrieved_at": "2026-10-20T14:29:54.807Z"
       },
-      "generated_at": "2026-10-20T04:16:45.118Z",
+      "generated_at": "2026-10-20T14:30:36.240Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1427,8 +1427,20 @@
       "items": [
         {
           "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 5.5 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 1082h old",
           "widening": null
         },
         {
@@ -1471,18 +1483,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "REGIME CHANGE (Michigan): REGIME CHANGE: new head coach; transfers out at the 85th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played.",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         },
         {
@@ -1545,11 +1545,31 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Michigan +11.5",
       "model_raw": "Michigan +11.5",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Michigan +6.0",
+      "rounding_note": null,
+      "key_number": {
+        "text": "Market is below 7; model is above 7.",
+        "detail": "Indiana: market −6.0, model fair −11.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
+      "difference": "5.5 points",
+      "difference_n": 5.5,
+      "difference_exact": 5.507208318074191,
+      "total_model": "44.0",
+      "total_model_raw": "44.2",
+      "total_market": "52.5",
+      "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "total_market_held": null,
+      "book": "captured consensus (stale) · 1 book · best at DraftKings",
+      "captured": "2026-09-05T16:00:03.65+00:00",
+      "capture_age": "1082 hours old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1561,9 +1581,9 @@
       "engine_status": "PREDICTED",
       "label": {
         "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1576,8 +1596,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 5.5,
+        "toward_team": "Indiana",
+        "text": "5.5 pts toward Indiana",
+        "market_line_text": "Indiana −6.0",
+        "market_home_margin": -6,
+        "favorite_differs": false,
+        "source": "captured consensus (stale) · 1 book · best at DraftKings",
+        "as_of": "2026-09-05T16:00:03.65+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 78,
@@ -1585,11 +1615,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "88 · STRONG",
+        "text": "87 · STRONG",
         "sub": "main deduction: Indiana’s availability report is not due yet",
-        "score": 88,
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1621,7 +1651,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1636,18 +1666,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Indiana)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
             "action": "Re-read availability inside the filing window (Michigan)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
-            "action": "Capture a market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1673,12 +1703,18 @@
             "key": "matchup",
             "points": 2.3,
             "text": "+2.3 pts stylistic matchup"
+          },
+          {
+            "kind": "market",
+            "key": "market_gap",
+            "points": 5.5,
+            "text": "The market is 5.5 pts away from EdgeDesk’s number, toward Indiana (market: Indiana −6.0)"
           }
         ]
       },
       "best_available_line": {
         "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "NOT_COMPARED",
@@ -1727,8 +1763,8 @@
     },
     "headline": "EdgeDesk projects Indiana 28, Michigan 16.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1886,7 +1922,7 @@
       "EdgeDesk’s line is Michigan +11.5 on a neutral read of the two teams, before any book is consulted. Projected total 44.0.",
       "Michigan wins 22% of the time in EdgeDesk’s simulation, Indiana 78%.",
       "Eight games in ten land between -33.5 and +8.5 for Michigan. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Michigan +6.0 at captured consensus (stale) · 1 book · best at DraftKings, 5.5 points from EdgeDesk’s number.",
       "Indiana quarterback: Josh Hoover — started the last game; no announcement for this one.",
       "Michigan quarterback: Bryce Underwood — started the last game; no announcement for this one."
     ],
@@ -1900,7 +1936,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "4st93y9m3xrw",
+    "packet_hash": "1sb4usb1as5ho9",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Michigan contain Indiana’s explosive runs?",
@@ -1966,7 +2002,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-20T11:42:52.933Z",
+        "observed_at": "2026-10-20T17:11:59.092Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1982,6 +2018,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-20T14:16:14.018Z"
+    "at": "2026-10-20T17:58:33.779Z"
   }
 }

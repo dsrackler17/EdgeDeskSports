@@ -21,11 +21,11 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-20T14:16:14.018Z",
-  "generated_at": "2026-10-20T14:16:14.018Z",
+  "updated_at": "2026-10-20T17:58:33.779Z",
+  "generated_at": "2026-10-20T17:58:33.779Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.6-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.6-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "PK",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 92 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-09-11, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
     "game": {
@@ -129,7 +129,7 @@
       "sample_games": 92,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.6-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.6-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1172,31 +1172,31 @@
       "available": true,
       "model": "PK",
       "model_raw": "Atlanta Falcons -0.1",
-      "market": "Atlanta Falcons +3.5",
-      "difference": "3.6 points",
+      "market": "Atlanta Falcons +4.5",
+      "difference": "4.6 points",
       "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "key_number": {
         "text": "Market is above 3; model is a pick’em.",
-        "detail": "San Francisco 49ers: market −3.5, model fair PK.",
+        "detail": "San Francisco 49ers: market −4.5, model fair PK.",
         "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
       },
       "total_model": "48.5",
       "total_model_raw": "48.4",
-      "total_market": "50.5",
+      "total_market": "47.5",
       "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
-      "total_difference": "2.1 points",
-      "book": "nflverse reference",
-      "capture_age": null,
+      "total_difference": "0.9 points",
+      "book": "DraftKings",
+      "capture_age": "954 hours old",
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.6-point gap is context only and the game is excluded from research ranking.",
-      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.6-point gap is context only and the game is excluded from research ranking.",
+      "reference": null,
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Atlanta Falcons 24, San Francisco 49ers 24.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 3.6-point gap is context only and the game is excluded from research ranking.",
+      "note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.6-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1337,7 +1337,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "x4dj4hpsxek3",
+    "packet_hash": "1wjtx0w1ditlg2",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can the Falcons’ pass rush get to Brock Purdy?",
@@ -1378,7 +1378,8 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications."
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications.",
+      "The line on file was captured Sept. 10 and may have moved."
     ],
     "flags": [],
     "sources": [
@@ -1393,7 +1394,7 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-20T14:16:05.106Z",
+        "observed_at": "2026-10-20T17:58:07.396Z",
         "verification": "VERIFIED_DATA"
       }
     ],
@@ -1402,6 +1403,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-20T14:16:14.018Z"
+    "at": "2026-10-20T17:58:33.779Z"
   }
 }

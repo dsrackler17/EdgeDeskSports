@@ -23,11 +23,11 @@
   "game_time": "2026-10-25T13:30:00.000Z",
   "game_when_label": "2026-10-25 13:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-20T14:16:14.018Z",
-  "generated_at": "2026-10-20T14:16:14.018Z",
+  "updated_at": "2026-10-20T17:58:33.779Z",
+  "generated_at": "2026-10-20T17:58:33.779Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 5.7-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.7-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "New Orleans Saints −2.0",
@@ -44,7 +44,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 92 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Caesars and DraftKings on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
     "game": {
@@ -131,7 +131,7 @@
       "sample_games": 92,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 5.7-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.7-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1177,31 +1177,27 @@
       "available": true,
       "model": "New Orleans Saints −2.0",
       "model_raw": "New Orleans Saints -2.2",
-      "market": "New Orleans Saints +3.5",
-      "difference": "5.7 points",
+      "market": "New Orleans Saints +1.5",
+      "difference": "3.7 points",
       "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
-      "key_number": {
-        "text": "Model favors New Orleans Saints outright; market gives New Orleans Saints more than a field goal.",
-        "detail": "New Orleans Saints: model fair −2.0, market +3.5.",
-        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
-      },
+      "key_number": null,
       "total_model": "46.0",
       "total_model_raw": "45.9",
-      "total_market": "44.5",
+      "total_market": "42.5",
       "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
-      "total_difference": "1.4 points",
-      "book": "nflverse reference",
-      "capture_age": null,
+      "total_difference": "3.4 points",
+      "book": "Caesars",
+      "capture_age": "890 hours old",
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 5.7-point gap is context only and the game is excluded from research ranking.",
-      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.7-point gap is context only and the game is excluded from research ranking.",
+      "reference": null,
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects New Orleans Saints 24, Pittsburgh Steelers 22.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 5.7-point gap is context only and the game is excluded from research ranking.",
+      "note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.7-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1342,13 +1338,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "wsu71nn2s5zd",
+    "packet_hash": "1krp7y1tdhk7g",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can the Saints stop the Steelers’ run game?",
-    "assessment": "EdgeDesk’s number is 5.2 points closer to New Orleans Saints than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward Pittsburgh Steelers, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "assessment": "EdgeDesk’s number is 3.7 points closer to New Orleans Saints than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward Pittsburgh Steelers, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
     "gap": {
-      "points": 5.2,
+      "points": 3.7,
       "toward": "New Orleans Saints",
       "other": "Pittsburgh Steelers"
     },
@@ -1382,7 +1378,8 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications."
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "The line on file was captured Sept. 13 and may have moved."
     ],
     "flags": [],
     "sources": [
@@ -1397,7 +1394,7 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-20T14:16:05.106Z",
+        "observed_at": "2026-10-20T17:58:07.396Z",
         "verification": "VERIFIED_DATA"
       }
     ],
@@ -1406,6 +1403,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-20T14:16:14.018Z"
+    "at": "2026-10-20T17:58:33.779Z"
   }
 }

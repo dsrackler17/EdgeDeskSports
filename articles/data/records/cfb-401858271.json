@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Duke vs. Virginia: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Duke vs. Virginia 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Duke at Virginia: Virginia −0.5, fair total 49.5. Virginia wins 51% of simulations. Data confidence 85%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Duke at Virginia: Virginia −0.5, fair total 49.5. Virginia wins 51% of simulations. Data confidence 85%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Virginia carries the stronger underlying team rating — +4.8 against -1.9, a 6.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Virginia −0.5 before any sportsbook number is consulted, with Virginia winning 51%…",
   "home_team": "Virginia",
   "away_team": "Duke",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-23T23:00:00.000Z",
   "game_when_label": "2026-10-23 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-20T14:16:14.018Z",
-  "generated_at": "2026-10-20T14:16:14.018Z",
+  "updated_at": "2026-10-20T17:58:33.779Z",
+  "generated_at": "2026-10-20T17:58:33.779Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "RESEARCH",
+  "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
   "confidence": 85,
   "priced": true,
   "fair_spread_text": "Virginia −0.5",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-20. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-07-20, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -164,8 +164,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -252,7 +252,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T19:30:00.000Z",
-        "retrieved_at": "2026-10-20T04:15:56.836Z"
+        "retrieved_at": "2026-10-20T14:29:54.807Z"
       },
       "home": {
         "team": "Virginia",
@@ -324,9 +324,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T16:00:00.000Z",
-        "retrieved_at": "2026-10-20T04:15:56.836Z"
+        "retrieved_at": "2026-10-20T14:29:54.807Z"
       },
-      "generated_at": "2026-10-20T04:16:45.118Z",
+      "generated_at": "2026-10-20T14:30:36.240Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1419,8 +1419,20 @@
       "items": [
         {
           "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 6.0 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 2205h old",
           "widening": null
         },
         {
@@ -1463,12 +1475,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
         },
         {
@@ -1537,11 +1543,35 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Virginia −0.5",
       "model_raw": "Virginia -0.5",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Virginia −6.5",
+      "rounding_note": null,
+      "key_number": {
+        "text": "Market is above 3; model is below 3.",
+        "detail": "Virginia: market −6.5, model fair −0.5.",
+        "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
+      },
+      "difference": "6.0 points",
+      "difference_n": 6,
+      "difference_exact": 5.953831962470634,
+      "total_model": "49.5",
+      "total_model_raw": "49.4",
+      "total_market": null,
+      "total_rounding_note": null,
+      "total_market_held": {
+        "ok": false,
+        "value": null,
+        "reason": "no market total captured"
+      },
+      "book": "captured consensus (stale) · 1 book · best at DraftKings",
+      "captured": "2026-07-20T21:00:01.567+00:00",
+      "capture_age": "2205 hours old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1553,9 +1583,9 @@
       "engine_status": "PREDICTED",
       "label": {
         "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1568,8 +1598,18 @@
         "is_near_pickem": true
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 6,
+        "toward_team": "Duke",
+        "text": "6.0 pts toward Duke",
+        "market_line_text": "Virginia −6.5",
+        "market_home_margin": 6.5,
+        "favorite_differs": false,
+        "source": "captured consensus (stale) · 1 book · best at DraftKings",
+        "as_of": "2026-07-20T21:00:01.567+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": "A near pick’em: EdgeDesk’s number is Virginia −0.5 (raw Virginia -0.55); the gap is measured from the raw margin."
       },
       "confidence": {
         "score": 85,
@@ -1577,11 +1617,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "86 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: the projection flips favorite in 16% of sensitivity runs",
-        "score": 86,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1613,7 +1653,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1637,7 +1677,7 @@
             "text": "up to +3"
           },
           {
-            "action": "Capture a market quote",
+            "action": "Refresh the market quote",
             "potential_gain": 2,
             "text": "up to +2"
           }
@@ -1670,7 +1710,7 @@
       },
       "best_available_line": {
         "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "NOT_COMPARED",
@@ -1719,8 +1759,8 @@
     },
     "headline": "EdgeDesk projects Virginia 25, Duke 24.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1878,7 +1918,7 @@
       "EdgeDesk’s line is Virginia −0.5 on a neutral read of the two teams, before any book is consulted. It is a near pick’em: the raw projected margin is Virginia +0.55, and the one-point line is a display floor. Projected total 49.5.",
       "Virginia wins 51% of the time in EdgeDesk’s simulation, Duke 49%.",
       "Eight games in ten land between -21.5 and +20.5 for Virginia. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Virginia −6.5 at captured consensus (stale) · 1 book · best at DraftKings, 6.0 points from EdgeDesk’s number.",
       "Duke quarterback: Walker Eget — started the last game; no announcement for this one.",
       "Virginia quarterback: Beau Pribula — started the last game; no announcement for this one."
     ],
@@ -1892,7 +1932,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1k1ycnmlyl8ds",
+    "packet_hash": "iugk9prpku7",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Duke’s pass rush get to Beau Pribula?",
@@ -1949,7 +1989,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-20T11:42:52.933Z",
+        "observed_at": "2026-10-20T17:11:59.092Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1963,7 +2003,7 @@
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-20T04:16:18.796Z",
+        "observed_at": "2026-10-20T14:30:14.520Z",
         "verification": "RATING"
       }
     ],
@@ -1972,6 +2012,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-20T14:16:14.018Z"
+    "at": "2026-10-20T17:58:33.779Z"
   }
 }

@@ -23,8 +23,8 @@
   "game_time": "2026-10-30T00:15:00.000Z",
   "game_when_label": "2026-10-30 00:15 UTC",
   "published_at": null,
-  "updated_at": "2026-10-19T20:32:51.575Z",
-  "generated_at": "2026-10-20T14:16:14.018Z",
+  "updated_at": "2026-10-20T17:58:33.779Z",
+  "generated_at": "2026-10-20T17:58:33.779Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1206,13 +1206,25 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Green Bay Packers −1.5",
       "model_raw": "Green Bay Packers -1.5",
+      "market": null,
+      "difference": null,
+      "rounding_note": null,
+      "key_number": null,
       "total_model": "45.5",
       "total_model_raw": "45.6",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "45.5",
+      "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
+      "total_difference": "0.1 points",
+      "book": "nflverse reference",
+      "capture_age": null,
+      "stale": false,
+      "classification": "NO MARKET",
+      "classification_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Green Bay Packers 24, Carolina Panthers 22.",
     "state": {
@@ -1349,8 +1361,7 @@
     },
     "notes": [
       "EdgeDesk’s line is Green Bay Packers −1.5 with a fair total of 45.5, before any book is consulted.",
-      "Green Bay Packers wins 56% of the time in EdgeDesk’s distribution, Carolina Panthers 44%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "Green Bay Packers wins 56% of the time in EdgeDesk’s distribution, Carolina Panthers 44%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1360,6 +1371,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-20T14:16:14.018Z"
+    "at": "2026-10-20T17:58:33.779Z"
   }
 }
