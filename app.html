@@ -40359,7 +40359,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      betting. Every number here is the server's (d.multisport); nothing is
      computed, re-ranked or upgraded in the browser, and a game without a
      verified price is never called a bet. */
-  function msWhen(ms){ var l=String(ms&&ms.window&&ms.window.label||'tonight').split(',')[0]; return /^\d/.test(l)?'on '+l.split(' ')[0]:l; }
+  function msWhen(ms){ var l=String(ms&&ms.window&&ms.window.label||'tonight').split(',')[0]; return /^\d/.test(l)?'on '+l.split(' ')[0]:/^the next /.test(l)?'in '+l:l; }
   function msTime(iso, tz){
     var t=Date.parse(iso); if(!isFinite(t)) return '';
     var o={weekday:'short',hour:'numeric',minute:'2-digit',timeZoneName:'short'};
@@ -45205,8 +45205,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function msRanks(q){
     var out=[], m, re=/#\s*([1-9])\b|\b(?:number|no|rank|pick|game|option|matchup)\s*#?\s*([1-9])\b|\b([1-9])(?:st|nd|rd|th)\b/gi;
     while((m=re.exec(q))) out.push(+(m[1]||m[2]||m[3]));
-    var w=/\b(?:the\s+)?(first|second|third|fourth|fifth|sixth)\b(?:\s+(?:one|game|pick|matchup|option))?|\btop\s+(?:one|game|pick|matchup|option|choice|spot)\b/gi;
-    while((m=w.exec(q))) out.push(m[1]?MS_NUM[m[1].toLowerCase()]:1);
+    var w=/\bthe\s+(first|second|third|fourth|fifth|sixth)\b|\b(first|second|third|fourth|fifth|sixth)\s+(?:one|game|pick|matchup|option)\b|\btop\s+(?:one|game|pick|matchup|option|choice|spot)\b/gi;
+    while((m=w.exec(q))) out.push(m[1]||m[2]?MS_NUM[(m[1]||m[2]).toLowerCase()]:1);
     return out;
   }
   /* the games on the list a question names, by full name, nickname or city: [{r, score}] best first */
@@ -45354,7 +45354,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function msForeign(q, games){
     var known=msNorm(games.map(function(r){ return r.event+' '+r.sport_label; }).join(' '));
     var words=String(q||'').replace(/[’']s\b/g,'').split(/[^A-Za-z&.]+/).slice(1).filter(function(w){ return /^[A-Z][a-z]/.test(w); });
-    return words.some(function(w){ w=w.replace(/\.$/,'').toLowerCase(); return !/^(i|im|nhl|nba|wnba|nfl|cfb|fbs|mlb|ufc|ok|okay|edgedesk|desk|tonight|today|vs|monday|tuesday|wednesday|thursday|friday|saturday|sunday|college|football|basketball|hockey|best|why|what|which|how|is|are|should|compare|tell|over|under|moneyline)$/.test(w)&&known.indexOf(' '+w+' ')<0; });
+    return words.some(function(w){ w=w.replace(/\.$/,'').toLowerCase(); return !/^(i|im|nhl|nba|wnba|nfl|cfb|fbs|mlb|ufc|ok|okay|edgedesk|desk|tonight|today|vs|draftkings|fanduel|betmgm|caesars|espn|espnbet|bet365|bet|mgm|fanatics|pinnacle|circa|bovada|hard|rock|monday|tuesday|wednesday|thursday|friday|saturday|sunday|college|football|basketball|hockey|best|why|what|which|how|is|are|should|compare|tell|over|under|moneyline)$/.test(w)&&known.indexOf(' '+w+' ')<0; });
   }
   function msIsLatest(){ var all=document.querySelectorAll('#edaiLog .edai-msg.a'); var l=all[all.length-1]; return !!(l&&l.querySelector('.msd-brief,.msd-fu')); }
   /* returns true when the question was answered from tonight's research */
@@ -45389,11 +45389,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* nothing on the list named, and not a follow-up phrasing: not ours */
     if(!target&&!ranks.length&&!named.length&&!intent) return false;
     if(!target&&sp&&!games.some(function(r){ return r.sport===sp; })){
-      done(msReply('Not on tonight’s list','<p>'+esc('No '+sp.toUpperCase()+' game made the research list '+msWhen(ms)+'. The coverage section of the answer above says what was found for each sport.')+'</p>',['What should I research tonight?']), q);
+      done(msReply('Not on the list','<p>'+esc('No '+({nhl:'NHL',nba:'NBA',wnba:'WNBA',cfb:'college football',nfl:'NFL',ncaab_m:'college basketball'}[sp]||sp)+' game made the research list '+msWhen(ms)+'. The coverage section of the answer above says what was found for each sport.')+'</p>',['What should I research?']), q);
       return true;
     }
     if(ranks.length&&!target){
-      done(msReply('Not on the list','<p>'+esc('The list has '+games.length+' game'+(games.length===1?'':'s')+'; there is no #'+ranks[0]+'.')+'</p>',['What should I research tonight?']), q);
+      done(msReply('Not on the list','<p>'+esc('The list has '+games.length+' game'+(games.length===1?'':'s')+'; there is no #'+ranks[0]+'.')+'</p>',['What should I research?']), q);
       return true;
     }
     /* two games named with the same strength and no rank: ask which */

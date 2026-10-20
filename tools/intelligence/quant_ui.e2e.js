@@ -200,7 +200,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const s24 = await lastAnswer(page);
       chk(vp.tag + ': no verified trade: the chip says research only, the benchmark Watchlist, never Verified', s24 && /research only/i.test(s24.chip || '') && /^Benchmark: Watchlist$/i.test(s24.bench || '') && !/^verified/i.test(s24.chip || '') && /No verified positive-EV trade/.test(s24.text), s24 && [s24.chip, s24.bench, s24.text.slice(0, 160)]);
       chk(vp.tag + ': …and the final status reads WATCHLIST', s24 && s24.card && /final status WATCHLIST/.test(s24.card.kv['Audit status'] || ''), s24 && s24.card && s24.card.kv['Audit status']);
-      chk(vp.tag + ': …a watchlist benchmark is folded under the short answer, not shown as the lead', s24 && s24.lead && s24.lead.first && s24.folds.bench === false && s24.folds.packet === false && !/out of line with the market/.test(s24.lead.text), s24 && [s24.folds, s24.lead && s24.lead.text.slice(0, 200)]);
+      chk(vp.tag + ': …a watchlist benchmark is folded under the short answer, not shown as the lead', s24 && s24.lead && /^No bet clears every check in the next 24 hours\./.test(s24.lead.text) && s24.lead.first && s24.folds.bench === false && s24.folds.packet === false && !/out of line with the market/.test(s24.lead.text), s24 && [s24.folds, s24.lead && s24.lead.text.slice(0, 200)]);
 
       /* 4. the contract: an MLB "A vs B" with a price reaches the server and passes */
       const a4 = await ask(page, R.contract_rays.question, 4);
@@ -266,6 +266,10 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       chk(vp.tag + ': a bare follow-up stays on the game under discussion', f3.local && !f3.reached_server && /Who is playing in #1/i.test(f3.text) && /projected uncertain/.test(f3.text), f3.text.slice(0, 300));
       const f4 = await follow('Should I bet Vegas at -150?');
       chk(vp.tag + ': "should I bet it at -150?": not yet, -150 is worse than the -147 bar', f4.local && /Not yet\./.test(f4.text) && /At -150: no — that is worse than -147/.test(f4.text), f4.text.slice(0, 500));
+      const fa = await follow('What price do I need on #2 at DraftKings?');
+      chk(vp.tag + ': a sportsbook named in a follow-up is not a new subject: the price on #2, from the research', fa.local && !fa.reached_server && /The price on #2/i.test(fa.text) && /-131 or better/.test(fa.text), fa.text.slice(0, 300));
+      const fb = await follow('What should I check first?');
+      chk(vp.tag + ': "first" as a word is not a rank: the checklist stays on #2, the game under discussion', fb.local && /Before you bet #2/i.test(fb.text) && /Only bet Florida Panthers at -131 or better/.test(fb.text), fb.text.slice(0, 300));
       const f5 = await follow('Compare #1 and #2');
       chk(vp.tag + ': "compare #1 and #2": side by side, each with its price bar', f5.local && /#1 against #2/i.test(f5.text) && /-147 or better/.test(f5.text) && /-131 or better/.test(f5.text), f5.text.slice(0, 400));
       const f6 = await follow('Who has the advantage in Rays vs. Guardians?');
