@@ -2924,7 +2924,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261020nhl1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261020nba1">
 <link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261020nhl1">
 </head>
 <body>
@@ -4016,9 +4016,9 @@ window.mcRefresh=function(){
 <!-- football display lines (docs/system-integrity/FOOTBALL_LINES.md): half-point fair
      spreads and totals, whole-number projected scores, raw-number gaps, key-number notes -->
 <script src="/lib/edgedesk_football_lines.js?v=20261017fl1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261020nhl1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261020nhl1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261020nhl1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261020nba1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261020nba1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261020nba1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -5950,7 +5950,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261020nhl1';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261020nba1';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,

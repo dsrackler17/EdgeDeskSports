@@ -22,6 +22,14 @@
    default and the model has never been tested against a closing market, so
    `value_claims` is DISABLED on every market.
 
+   STARTED GAMES KEEP THEIR RESEARCH. The slate keeps a game for three hours
+   after tip, then drops it, and it prices a started game again. After the
+   new slate is written, every game the previous slate priced before its tip
+   that has now started moves, exactly as it was priced, to nba/recent.json
+   (schema edgedesk_nba_recent_v1) with the time it was frozen, and stays
+   there for C.RECENT_HOURS. Nothing in it is re-priced after the start; the
+   NBA panel and Today's Games open a started game from it.
+
    SCENARIOS. For each team's highest-impact players: the same model with that
    player removed from (or returned to) the available set — minutes
    redistributed to teammates, impact from his own RAPM — never a fixed number
@@ -281,6 +289,44 @@ async function build(o) {
   return out;
 }
 
+/* ---------- started games: the research frozen before tip ---------- */
+/**
+ * The next nba/recent.json: every game the previous slate priced before its
+ * tip that has started by `now`, as it was priced (frozen_at = when it was
+ * priced, always before the start), plus the previous file's games still
+ * inside C.RECENT_HOURS. A game back on the new slate with a later start (a
+ * postponement) is dropped; for a game held twice the later pregame freeze
+ * wins.
+ */
+function carryRecent(prevSlate, prevRecent, nextSlate, now, hours) {
+  const win = (hours || C.RECENT_HOURS) * 3600e3;
+  const ahead = new Set(((nextSlate && nextSlate.games) || []).filter((g) => !(Date.parse(g.start_utc) <= now)).map((g) => String(g.game_id)));
+  const keep = new Map();
+  const add = (g, frozenAt) => {
+    const t = Date.parse(g && g.start_utc), f = Date.parse(frozenAt);
+    if (!isFinite(t) || !isFinite(f) || t > now || now - t > win || !(f < t) || ahead.has(String(g.game_id))) return;
+    const prev = keep.get(String(g.game_id));
+    if (prev && Date.parse(prev.frozen_at) >= f) return;
+    keep.set(String(g.game_id), Object.assign({}, g, { frozen_at: new Date(f).toISOString() }));
+  };
+  if (prevRecent && prevRecent.schema === C.SCHEMA.recent) (prevRecent.games || []).forEach((g) => add(g, g.frozen_at));
+  if (prevSlate && prevSlate.schema === C.SCHEMA.slate) (prevSlate.games || []).forEach((g) => add(g, g.predicted_at || prevSlate.generated_at));
+  const games = Array.from(keep.values()).sort((a, b) => Date.parse(a.start_utc) - Date.parse(b.start_utc) || String(a.game_id).localeCompare(String(b.game_id)));
+  return {
+    schema: C.SCHEMA.recent, sport: 'NBA', generated_at: new Date(now).toISOString(), window_hours: hours || C.RECENT_HOURS,
+    note: 'Games that have started, each exactly as the slate priced it before tip (frozen_at). Nothing here is re-priced after the start. Research, not picks.',
+    value_claims: 'DISABLED', value_reason: (nextSlate && nextSlate.value_reason) || (prevSlate && prevSlate.value_reason) || null,
+    games,
+  };
+}
+/** Write nba/recent.json only when its games changed (a build with nothing new adds no commit noise). */
+function writeRecent(rec) {
+  const old = readJson(C.PATHS.recent, null);
+  const same = old && old.schema === rec.schema && JSON.stringify(old.games) === JSON.stringify(rec.games);
+  if (!same) fs.writeFileSync(C.PATHS.recent, JSON.stringify(rec) + '\n');
+  return !same;
+}
+
 function check() {
   const s = readJson(C.PATHS.slate, null); const fails = [];
   if (!s || s.schema !== C.SCHEMA.slate) fails.push('schema');
@@ -297,12 +343,26 @@ function check() {
       if ((m.home - 0.5) * (-g.price.spread.fair_line_home) < -0.02) fails.push(g.game_id + ' moneyline and spread disagree on the favourite');
     }
   }
+  /* started games: research frozen strictly before the start, never re-priced */
+  const rec = readJson(C.PATHS.recent, null);
+  if (rec) {
+    if (rec.schema !== C.SCHEMA.recent || !Array.isArray(rec.games)) fails.push('recent.json is not ' + C.SCHEMA.recent);
+    else rec.games.forEach((g) => { if (!(Date.parse(g.frozen_at) < Date.parse(g.start_utc))) fails.push('recent ' + g.game_id + ' frozen at or after its start'); if (!g.price) fails.push('recent ' + g.game_id + ' has no price'); });
+  }
   if (fails.length) { console.error('[nba slate --check] FAILED: ' + fails.join('; ')); process.exit(1); }
   console.log('[nba slate --check] ok: ' + s.games.length + ' games, ' + s.horizon);
 }
 
-module.exports = { build, check };
+module.exports = { build, check, carryRecent };
 if (require.main === module) {
   if (flag('check')) check();
-  else build({ hours: arg('hours', 72), now: arg('now', null), offline: flag('offline'), dryRun: flag('dry-run') }).then((s) => console.log('[nba slate] ' + s.games.length + ' games (' + s.horizon + '), ledger +' + s.ledger_appended)).catch((e) => { console.error(e); process.exit(1); });
+  else {
+    /* read before build() writes the new slate: the previous slate is where started games are frozen from */
+    const prevSlate = readJson(C.PATHS.slate, null), prevRecent = readJson(C.PATHS.recent, null);
+    build({ hours: arg('hours', 72), now: arg('now', null), offline: flag('offline'), dryRun: flag('dry-run') }).then((s) => {
+      let held = '';
+      if (!flag('dry-run')) { const rec = carryRecent(prevSlate, prevRecent, s, Date.parse(s.generated_at)); writeRecent(rec); held = '; started games with frozen research ' + rec.games.length; }
+      console.log('[nba slate] ' + s.games.length + ' games (' + s.horizon + '), ledger +' + s.ledger_appended + held);
+    }).catch((e) => { console.error(e); process.exit(1); });
+  }
 }

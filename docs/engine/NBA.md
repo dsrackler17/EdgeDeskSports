@@ -371,6 +371,7 @@ What changed on the way (all decided on the selection window before the test win
 The panel is Research → Other → **NBA** (`lib/edgedesk_nba_ui.js`, `lib/edgedesk_nba.css`, registered in `app.html`). It has four tabs.
 
 - **Games.** For every upcoming game:
+  - **The matchup graphic** leads the page (see below).
   - **Price:** win probability, fair moneyline, spread, total, team scores, team totals, alternates, first half and first quarter.
   - **Model comparison:** every model's number side by side, and how far they disagree.
   - **Matchup and context:** pace, the four factors, rest, travel and altitude.
@@ -383,9 +384,32 @@ The panel is Research → Other → **NBA** (`lib/edgedesk_nba_ui.js`, `lib/edge
 - **Record.** Every candidate, the comparisons with their intervals, the calibration bins, the seal and the leakage audit.
 - **Methods.** Data, licences, protocol and limits.
 
-`tools/nba/nba_ui.e2e.js` runs `app.html` in real Chromium, at desktop width and at a 390 px phone width, against the committed artifacts, with the clock pinned to the slate's build time. **52 of 52 checks pass.** They cover:
+### The matchup graphic, and every game keeps its research
+
+**The graphic.** Every NBA game page opens with the same shareable graphic the football research page draws (square 1080×1080 or portrait 1080×1350, with Download PNG, Share and Copy link). `lib/edgedesk_nba_graphic.js` fills the football template (`lib/edgedesk_game_graphic.js`, on a court instead of yard lines) from the slate's own numbers, so the three numbers to set against a sportsbook are the first thing on the page:
+
+- **Fair spread**, for the team it favours, with the model win probability;
+- **Projected score:** each team's expected points, overtime included, with the win-probability bar;
+- **Fair total**, with the expected total beside it.
+
+The strip under them is either:
+
+- **The market**, when Today's Games holds a price from a named book captured in the last 180 minutes and before tip (DraftKings via ESPN, labelled a reference): its spread, total and moneyline as received, the no-vig win split, and the gap between the book's line and the fair line printed above it ("Spread: EdgeDesk 4.0 pts toward DET", "Total: EdgeDesk 4.0 pts lower"); or
+- **EdgeDesk's own detail:** the 80% range of the final margin, the model moneyline and the overtime chance.
+
+What to watch for is the slate's own evidence: each offence against this defence, the ridge model's largest matchup factor (never a note on the data's state), rest or pace, and who is playing (the largest "if he sits" swing, or that the rotation is last season's). The footer carries the research grade when the ledger has one, and says "early season" while either team has fewer than 10 games. Nothing on it is re-estimated, and the copy rule runs over every string. The data, model and market status now folds under the game instead of leading the page.
+
+**Started games.** The slate keeps a game for three hours after tip, prices it again, then drops it, so a game used to lose its research page. Now each build moves every game the previous slate priced before its tip that has started, exactly as it was priced, to `nba/recent.json` (`carryRecent` in `nba/build_slate.js`), with `frozen_at` before the start. Each game stays there for `RECENT_HOURS` (96: the two Eastern days Today's Games lists back, plus the gaps between builds). The panel lists started games under their own heading, opens a started game from its frozen research and says so. `build_slate.js --check` refuses a frozen game whose `frozen_at` is not before its start.
+
+**Today's Games.** Every NBA game the engine has priced now links to its page here (`#research/nba/<ESPN id>`, `tools/slate/research.js`), live and final games to their frozen research, and the matchup view shows this panel's fair moneyline, spread and total (it used to show the lab model's, a different number from the one on this page). A game further out than the slate's 72 hours links once a build prices it.
+
+Tests: `node tools/nba/nba_graphic.test.js` (236), `tools/nba/nba_ui.e2e.js`, `tools/slate/build.test.js`.
+
+`tools/nba/nba_ui.e2e.js` runs `app.html` in real Chromium, at desktop width and at a 390 px phone width, against the committed artifacts, with the clock pinned to the slate's build time. **74 of 74 checks pass.** They cover:
 
 - **The games.** The game list; a game's every market table and section; the URL it writes; the numbers matching the slate; Back.
+- **The graphic.** Drawn on every game before the numbers and tables, read aloud in words, square and portrait at full size, with its buttons; the status folded under the game.
+- **A started game.** Listed under its own heading, opening the research frozen before tip with its graphic.
 - **The price check.** A valid quote and a malformed one.
 - **The other tabs.** Props, Record and Methods.
 - **Failure states.**

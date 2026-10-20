@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-20 — NBA: the football graphic on every game, every game linked from Today's Games, research kept after tip
+
+- **Every NBA game page opens with the matchup graphic football and the NHL have** (`lib/edgedesk_nba_graphic.js`, drawn by `lib/edgedesk_game_graphic.js` on a court): square or portrait PNG, with Download, Share and Copy link. The three numbers to set against a sportsbook lead it:
+  - the fair spread with the model win probability, the projected score (each team's expected points, overtime included) and the fair total;
+  - DraftKings via ESPN when captured in the last three hours and before tip, labelled a reference: the book's spread, total and moneyline, the no-vig split, and the gap from the fair line ("Spread: EdgeDesk 4.0 pts toward DET"); otherwise EdgeDesk's 80% margin range, model moneyline and overtime chance;
+  - what to watch for (each offence against this defence, the model's largest matchup factor, rest or pace, who is playing), the research grade, and "early season" while it applies.
+
+  Nothing on it is re-estimated. The data, model and market status now folds under the game instead of leading the page.
+- **Every NBA game on Today's Games links to its research.** NBA games said "Research not available yet" although the NBA panel priced them; all 15 games the slate priced now link to `#research/nba/<id>`. Their matchup view shows the NBA panel's fair moneyline, spread and total; it used to show the lab model's (DET −107, total 216 against the panel's DET −118, 218.5 for BOS @ DET).
+- **Started games keep their research.** The slate drops a game three hours after tip and prices it again before that. Each build now moves started games, exactly as priced before tip, to `nba/recent.json` for 96 hours; the panel lists them under their own heading and Today's Games links live and final games to them. `build_slate.js --check` refuses a game frozen at or after its start. No game has tipped yet this season, so the first file is empty.
+
+Tests: `node tools/nba/nba_graphic.test.js` (236), `tools/nba/nba_ui.e2e.js` (74), `node tools/slate/build.test.js` (63), `tools/slate/games_ui.e2e.js` (105), `tools/engine/engine_ui.e2e.js` (134), `node tools/hockey/nhl_graphic.test.js` (394), `node tools/football/game_research.test.js` (125).
 ## 2026-10-20 — An open tab picks up a new deploy by itself
 
 - **Why.** app.html is a single page: moving between games, sports and tabs never reloads it. A tab opened before a deploy kept running the old code until it was reloaded by hand. After the NHL release went live, a phone kept showing the garbled Grade Breakdown and no graphic.

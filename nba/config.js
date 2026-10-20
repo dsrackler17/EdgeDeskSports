@@ -21,6 +21,12 @@ function currentSeason(now) {
 }
 const CURRENT_SEASON = currentSeason();
 
+/* How long a started game keeps the research the slate froze before tip
+   (nba/recent.json). Today's Games lists every game from the start of the
+   Eastern day two days ago (tools/slate/build.js WINDOW.from = -2): up to 72
+   hours back, plus the gap between builds. 96 covers it. */
+const RECENT_HOURS = 96;
+
 /* THE WINDOWS — written here before any candidate was scored, and never moved.
      burn_in       rated and trained on, never scored (ratings and player
                    impact need seasons of history before a number means much)
@@ -68,6 +74,7 @@ const PATHS = {
   params: path.join(NBA, 'params'),
   validation: path.join(NBA, 'validation'),
   slate: path.join(NBA, 'slate.json'),
+  recent: path.join(NBA, 'recent.json'),
   ledger: path.join(NBA, 'ledger'),
   market: path.join(NBA, 'market'),
   availability: path.join(NBA, 'data', 'availability.json'),
@@ -82,6 +89,7 @@ const SCHEMA = {
   validation: 'edgedesk_nba_walkforward_v1',
   props: 'edgedesk_nba_props_validation_v1',
   slate: 'edgedesk_nba_slate_v1',
+  recent: 'edgedesk_nba_recent_v1',
   ledger: 'edgedesk_nba_ledger_v1',
   market: 'edgedesk_market_quotes_v1',
 };
@@ -105,4 +113,4 @@ const COLUMNS = {
 /* Basketball constants */
 const REG_SECONDS = 2880, PERIOD_SECONDS = 720, OT_SECONDS = 300;
 
-module.exports = { ROOT, NBA, FIRST_SEASON, CURRENT_SEASON, currentSeason, WINDOWS, windows, SOURCES, LICENSE, PATHS, SCHEMA, COLUMNS, REG_SECONDS, PERIOD_SECONDS, OT_SECONDS };
+module.exports = { ROOT, NBA, FIRST_SEASON, CURRENT_SEASON, currentSeason, RECENT_HOURS, WINDOWS, windows, SOURCES, LICENSE, PATHS, SCHEMA, COLUMNS, REG_SECONDS, PERIOD_SECONDS, OT_SECONDS };

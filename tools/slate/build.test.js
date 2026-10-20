@@ -133,7 +133,13 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   eq('CFB: the ESPN id is the research entity, with its free article and the board’s read', [R('cfb:espn:401871067').entity, R('cfb:espn:401871067').article.url, R('cfb:espn:401871067').read.label], ['401871067', '/articles/delaware-vs-middle-tennessee-2026/', 'RESEARCH']);
   chk('a RESEARCH read with a PASS decision is not a signal', R('cfb:espn:401871067').signal.actionable === false);
   eq('MLB: the card’s own key (Eastern date, both clubs, the game number)', R('mlb:espn:401803002').entity, 'g:mlb:2026-10-13|newyorkyankees|bostonredsox|2');
-  chk('college basketball and the NBA have no research page; a game with nothing says nothing', R('ncaam:espn:401910002').module === null && R('nba:espn:401900001').module === null);
+  chk('college basketball has no research page, nor an NBA game the NBA engine has not priced; a game with nothing says nothing', R('ncaam:espn:401910002').module === null && R('nba:espn:401900001').module === null);
+  const srcN = F.research();
+  srcN.nba = { schema: 'edgedesk_nba_slate_v1', value_reason: 'never compared with closing prices', games: [{ game_id: '401900001', start_utc: '2026-10-20T23:30:00Z', home: { abbr: 'NY', name: 'New York Knicks' }, away: { abbr: 'BOS', name: 'Boston Celtics' },
+    price: { moneyline: { home: 0.6, away: 0.4, home_american: -150, away_american: 150 }, spread: { fair_line_home: -3.5 }, total: { fair_line: 224.5 } }, decision: { gates: [{ gate: 'outcome record', pass: true }] } }] };
+  const evN = [JSON.parse(JSON.stringify(s.events.concat(s.upcoming).find((e) => e.id === 'nba:espn:401900001')))];
+  RES.join(evN, srcN, { now: F.NOW });
+  eq('NBA: the ESPN id is the NBA engine’s game, with the panel’s own fair prices', [evN[0].research.module, evN[0].research.entity, evN[0].research.model.fair.spread_home, evN[0].research.model.fair.total, evN[0].research.model.tier], ['nba', '401900001', -3.5, 224.5, 'OUTCOME_VALIDATED']);
   const src = F.research();
   src.cfb.rows[0].decision_status = 'BET'; src.cfb.rows[0].decision_label = 'BET';
   const evs = [JSON.parse(JSON.stringify(s.events.find((e) => e.id === 'cfb:espn:401871067')))];

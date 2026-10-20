@@ -405,6 +405,13 @@ provisional. NBA prices are not bought and value claims are off until a market
 test passes. Tests: `npm run nba:test`, `npm run nba:sql`, `npm run nba:e2e`,
 `npm run nba:check`.
 
+Every NBA game page now opens with the same matchup graphic as football and
+the NHL (PNG download and share): the fair spread, projected score and fair
+total, set beside the book's line when Today's Games holds a recent one
+(`lib/edgedesk_nba_graphic.js`). Every NBA game on Today's Games links to its
+page, and a game that has tipped keeps the research frozen before tip
+(`nba/recent.json`; docs/engine/NBA.md §10).
+
 ## Men's college basketball research — who is good, why, who makes them good, and how it plays against an opponent
 
 `/research/ncaam/` is an independent research engine for NCAA men's

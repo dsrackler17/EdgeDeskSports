@@ -7,7 +7,9 @@
 
    Games: the list, a game's every market table and section, the URL it
    writes, the numbers matching the slate, the price check (valid and
-   malformed), Back. Props, Record and Methods tabs. States: the slate
+   malformed), Back. The matchup graphic leading every game (drawn, read
+   aloud, square and portrait) with the status folded under it; a started
+   game opening the research frozen before tip (a staged nba/recent.json). Props, Record and Methods tabs. States: the slate
    failing and coming back on Try again, a stale slate, a slate that fails its
    integrity check. No page error and no horizontal page scroll at either width.
 
@@ -30,6 +32,9 @@ function done(note) {
 }
 const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'nba', 'slate.json'), 'utf8'));
 const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
+/* a started game, frozen before tip, not on the slate: what nba/recent.json holds after tip */
+const STARTED = Object.assign(JSON.parse(JSON.stringify(SLATE.games[0])), { game_id: '990000001', start_utc: new Date(Date.parse(NOW) - 2 * 36e5).toISOString().replace(/\.000Z$/, 'Z'), frozen_at: new Date(Date.parse(NOW) - 5 * 36e5).toISOString() });
+const RECENT = { schema: 'edgedesk_nba_recent_v1', sport: 'NBA', generated_at: NOW, window_hours: 96, games: [STARTED] };
 
 (async function main() {
   if (!SLATE.games.length) done('SKIP | the committed slate has no games to exercise');
@@ -46,6 +51,7 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
   function siteHandler(req, res) {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/') p = '/app.html';
+    if (p === '/nba/recent.json') { res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(JSON.stringify(RECENT)); return; }
     if (p === '/nba/slate.json') {
       if (mode === 'down') { res.writeHead(503, { 'content-type': 'text/plain' }); res.end('unavailable'); return; }
       res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(slateBody()); return;
@@ -101,7 +107,7 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       await page.waitForSelector('#nbaHost .xe-game', { timeout: 25000 });
       chk(label + ': #research/nba opens the NBA panel inside Research', await page.evaluate(() => !document.getElementById('v-nba').classList.contains('hide') && !document.getElementById('v-research').classList.contains('hide')));
       chk(label + ': the Other seat names NBA while it is open', await page.evaluate(() => document.getElementById('rsOtherLbl').textContent === 'NBA' && document.querySelector('#rsOther button[data-sub="nba"]').classList.contains('on')));
-      chk(label + ': every slate game is listed', (await page.$$eval('#nbaHost .xe-game', (x) => x.length)) === SLATE.games.length);
+      chk(label + ': every slate game is listed', (await page.$$eval('#nbaHost .xe-game:not(.xe-started)', (x) => x.length)) === SLATE.games.length);
       chk(label + ': readiness says value claims are disabled and availability is projected', await page.evaluate(() => { const t = document.querySelector('#nbaHost .xe-ready').textContent; return /Value claims/.test(t) && /disabled/i.test(t) && /projected/.test(t); }));
       chk(label + ': each card shows a win bar, moneyline, spread and total', await page.evaluate(() => Array.from(document.querySelectorAll('#nbaHost .xe-game')).every((c) => c.querySelector('.nb-win') && /ML/.test(c.textContent) && /Spread/.test(c.textContent) && /Total/.test(c.textContent))));
       chk(label + ': no horizontal scroll on the NBA list', await noHScroll(page), await overflowers(page));
@@ -110,6 +116,16 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       await page.click('#nbaHost .xe-game[data-game="' + g.game_id + '"]');
       await page.waitForSelector('#nbaHost .xe-detail');
       chk(label + ': opening a game writes its URL', await page.evaluate(() => location.hash) === '#research/nba/' + g.game_id, await page.evaluate(() => location.hash));
+      const drawn = () => page.waitForFunction(() => { const i = document.querySelector('#nbaHost #nbGfxImg'); return i && !i.hidden && /^(blob|data):/.test(i.src) && i.naturalWidth > 0; }, null, { timeout: 25000 }).then(() => true, () => false);
+      chk(label + ': the game opens with the matchup graphic', await drawn(), await page.evaluate(() => (document.querySelector('#nbaHost .xe-gfx') || {}).textContent));
+      chk(label + ': the graphic is read aloud: both teams, the fair spread and total, research not picks', await page.evaluate((a) => { const t = document.querySelector('#nbaHost #nbGfxImg').alt; return t.indexOf(a.h) >= 0 && t.indexOf(a.a) >= 0 && /fair spread/.test(t) && t.indexOf('fair total ' + a.t) >= 0 && /Research, not picks\.$/.test(t); }, { h: g.home.abbr, a: g.away.abbr, t: g.price.total.fair_line.toFixed(1) }));
+      chk(label + ': the graphic leads the game, before the numbers and tables', await page.evaluate(() => { const d = document.querySelector('#nbaHost .xe-detail'), x = d.querySelector('.xe-gfx'), k = d.querySelector('.nb-kpis'); return !!x && !!k && !!(x.compareDocumentPosition(k) & Node.DOCUMENT_POSITION_FOLLOWING); }));
+      chk(label + ': the data, model and market status folds away under the game', await page.evaluate(() => !!document.querySelector('#nbaHost details.xe-statusd .xe-ready') && !document.querySelector('#nbaHost details.xe-statusd').open));
+      chk(label + ': Download, Share and Copy link sit under the graphic', await page.evaluate(() => ['gfx-dl', 'gfx-share', 'gfx-copy'].every((a) => document.querySelector('#nbaHost .xe-gfx [data-act="' + a + '"]'))));
+      await page.click('#nbaHost [data-act="gfx-fmt"][data-v="portrait"]');
+      chk(label + ': portrait draws a 1080×1350 graphic', await drawn() && await page.evaluate(() => { const i = document.querySelector('#nbaHost #nbGfxImg'); return i.naturalWidth === 1080 && i.naturalHeight === 1350; }));
+      await page.click('#nbaHost [data-act="gfx-fmt"][data-v="square"]');
+      chk(label + ': square draws a 1080×1080 graphic', await drawn() && await page.evaluate(() => { const i = document.querySelector('#nbaHost #nbGfxImg'); return i.naturalWidth === 1080 && i.naturalHeight === 1080; }));
       const caps = await page.$$eval('#nbaHost .xe-t caption', (x) => x.map((c) => c.textContent));
       chk(label + ': a game shows every market and the research', ['Moneyline', 'Spread ladder', 'Total ladder', 'Team totals', 'First half', 'First quarter', 'Winning margin', 'Every candidate', 'Four factors', 'Scenarios'].every((k) => caps.some((c) => c.indexOf(k) === 0)), caps);
       const secs = await page.$$eval('#nbaHost .xe-sechd > span:first-child', (x) => x.map((c) => c.textContent));
@@ -127,7 +143,17 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       await shot(page, label + '_nba_game');
       await page.click('#nbaHost [data-act="back"]');
       await page.waitForSelector('#nbaHost .xe-game');
-      chk(label + ': Back returns to the list', (await page.$$eval('#nbaHost .xe-game', (x) => x.length)) === SLATE.games.length);
+      await page.waitForSelector('#nbaHost .xe-sechd', { timeout: 15000 });
+      await page.waitForFunction(() => /Started/.test((document.querySelector('#nbaHost') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => null);
+      chk(label + ': Back returns to the list', (await page.$$eval('#nbaHost .xe-game:not(.xe-started)', (x) => x.length)) === SLATE.games.length);
+      chk(label + ': a started game is listed under its own heading', await page.evaluate(() => /Started · research frozen before tip/.test(document.querySelector('#nbaHost').textContent) && !!document.querySelector('#nbaHost .xe-game.xe-started[data-game="990000001"]')));
+      await page.click('#nbaHost .xe-game[data-game="990000001"]');
+      await page.waitForSelector('#nbaHost .xe-detail');
+      chk(label + ': a started game opens the research frozen before tip, said plainly', await page.evaluate(() => /This game has started/.test(document.querySelector('#nbaHost .xe-detail').textContent)));
+      chk(label + ': …with its graphic, a pregame snapshot', await drawn() && await page.evaluate(() => /EdgeDesk research graphic/.test(document.querySelector('#nbaHost #nbGfxImg').alt)));
+      chk(label + ': no horizontal scroll on a started game', await noHScroll(page), await overflowers(page));
+      await page.click('#nbaHost [data-act="back"]');
+      await page.waitForSelector('#nbaHost .xe-game');
       /* tabs */
       await page.click('#nbaHost [data-tab="record"]');
       await page.waitForFunction(() => /Selection window/.test((document.querySelector('#nbaHost') || {}).textContent || ''), null, { timeout: 20000 });
