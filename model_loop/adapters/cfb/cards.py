@@ -102,10 +102,12 @@ def drivers(card, ref_margin):
 def build(cfg, days=10, now=None):
     now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     T = Tables(os.path.join(DATA, "build"))
-    season = int(T.games[T.games.result.notna()].season.max())
     v1, names = starters_from_v1()
-    up = T.games[(T.games.season == season) & T.games.result.isna()]
+    up = T.games[T.games.result.isna()]
     up = up[(up.kick_utc >= pd.Timestamp(now) - pd.Timedelta(hours=6)) & (up.kick_utc <= pd.Timestamp(now) + pd.Timedelta(days=days))]
+    # the season being carded: the upcoming games' (week 0 of a new season has no result yet)
+    season = int(up.season.max()) if len(up) else int(T.games[T.games.result.notna()].season.max())
+    up = up[up.season == season]
     overrides, basis = {}, {}
     for g in up.itertuples():
         pair = v1.get(int(g.game_id), ((None, None), (None, None)))
@@ -115,7 +117,10 @@ def build(cfg, days=10, now=None):
                 sides.append((qid, why))
             else:
                 ls = last_starter(T, team, season)
-                sides.append((ls, "most recent starter (play-by-play)" if ls else "no starter known (debut-QB prior)"))
+                why = "most recent starter (play-by-play)"
+                if not ls:
+                    ls, why = last_starter(T, team, season - 1), "last season's final starter (play-by-play)"
+                sides.append((ls, why if ls else "no starter known (debut-QB prior)"))
         overrides[g.game_id] = (sides[0][0], sides[1][0])
         basis[g.game_id] = (sides[0][1], sides[1][1])
     rp = CfbRatingPass(T, cfg["rating"])
