@@ -163,6 +163,16 @@ try {
   chk('a link claim never attributes a checkout-only creator', claim.ok === false && claim.reason === 'attributed_at_checkout', claim);
   chk('so nothing is attributed before the sale', one(`select count(*) from public.affiliate_attributions;`) === '0');
 
+  /* the seed starts the campaign when it is applied (now() - 1 minute) and a
+     sale is attributed on the campaign's terms only if the campaign was in force
+     at the sale; the simulated clock below runs from 2026-10-20, so once the real
+     date passed it every simulated sale predated the campaign and fell back to
+     the checkout's metadata with no terms. The campaign is dated to before the
+     clock, as the deal was in reality (affiliates_sql.test.js moves a campaign's
+     window the same way). */
+  one(`update public.affiliate_campaigns set starts_at = timestamptz '2026-10-01 00:00:00+00' where upper(code) = 'CONNOR10';`);
+  chk('the campaign is in force on the simulated clock', one(`select public.affiliate_campaign_in_force(id, timestamptz '2026-10-20 15:00:00+00') from public.affiliate_campaigns where upper(code) = 'CONNOR10';`) === 't');
+
   /* ── customer A: the full deal on a simulated test clock ───────────────── */
   const START = Math.floor(Date.UTC(2026, 9, 20, 15, 0, 0) / 1000);   // 2026-10-20 15:00 UTC, trial starts
   const TRIAL_END = START + 7 * DAY;                                   // 2026-10-27, first paid period

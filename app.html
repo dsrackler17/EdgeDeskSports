@@ -50719,6 +50719,11 @@ function fbLoadNfl(signal){
        backtest promoted (football/research/nfl_v2/RESULTS.md), started from its
        own trained seeds. Without them the board runs the v1 engine as before. */
     var V2=window.EDNflModel,PV=window.EDNflParamsV2,useV2=!!(V2&&PV&&PV.active&&PV.seeds&&PV.cfg&&PV.cfg.source==='stw');
+    /* the model file and the params must agree on every feature the weights read
+       (the two load separately and can be cached apart: a model that predates a
+       feature would price it as NaN). On a mismatch the board runs the v1 engine. */
+    if(useV2){try{var fn2=V2.featureNames(V2.config(PV.cfg));useV2=['spread','ctx','total'].every(function(k){return PV[k]&&fn2[k].join(',')===PV[k].names.join(',');});}catch(_){useV2=false;}
+      if(!useV2)S.notes.push('The NFL model file and its parameters are out of step in this session (one is cached), so the board is pricing with the previous engine until the page reloads.');}
     S.servedModel=useV2?PV.model_version:(E.version&&E.version())||null;
     var st=useV2?V2.fromSeeds(V2.config(PV.cfg),PV.seeds):E.nfl.newState();
     var y;

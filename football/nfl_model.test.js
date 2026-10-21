@@ -11,6 +11,9 @@
    3. The hyperbolic prior weight is k/(k+n), the prior/current split is exact,
       the season break carries the final rating, the ridge recovers a known
       linear model, isotonic calibration is monotone, travel is geometry.
+   4. Round 2: the regular starter (most starts in the club's last 8, ties to
+      the most recent) and qb_out_diff; the standardised ridge is the raw
+      ridge at lambda 0 and is scale-free otherwise.
 
    Run: node football/nfl_model.test.js
    ========================================================================== */
@@ -111,6 +114,45 @@ chk('hyperbolic prior weight is k/(k+n)', Math.abs(M.priorWeight(cfgH, 'pass_epa
   chk('travel: Seattle to MetLife is about 3,870 km and three time zones, a 1 pm ET body-clock game', t && Math.abs(t.away_km - 3870) < 60 && t.away_tz === 3 && t.away_west_early === 1 && t.home_km === 0, t);
   const t2 = M.travelFor(stad, { season: 2015, gameday: '2015-10-25', gametime: '16:25', home: 'LA', away: 'SF', neutral: false });
   chk('travel: the Rams\' 2015 home is St. Louis (relocation history)', t2 && Math.abs(t2.away_km - 2790) < 80, t2);
+}
+
+/* ---- 4. round 2 ---- */
+{
+  const cfgQ = M.config({ features: { qb_out: true } });
+  const st = M.newState(cfgQ);
+  const start = (t, id, dev) => M.absorbGame(st, [[t, {}], [t === 'A' ? 'B' : 'A', {}]], [[t, id, dev]]);
+  for (let i = 0; i < 5; i++) start('A', 'x', 0.1);
+  for (let i = 0; i < 3; i++) start('A', 'y', 0.0);
+  chk('regular starter: the most starts in the last 8 (5 of x against 3 of y)', M.regularStarter(st, 'A') === 'x' && st.starts.A.length === 8);
+  chk('a side is OUT when its starter is not the regular starter', M.qbOut(st, 'A', 'y') === 1 && M.qbOut(st, 'A', 'x') === 0);
+  chk('no named starter, or no history, is never OUT', M.qbOut(st, 'A', null) === 0 && M.qbOut(st, 'C', 'z') === 0);
+  start('A', 'y', null);
+  chk('a start with no EPA line still counts toward the window (now 4 x, 4 y: the tie goes to the most recent)', M.regularStarter(st, 'A') === 'y' && st.starts.A.length === 8);
+  M.seasonBreak(st, 2027);
+  chk('the window carries over the season break', M.regularStarter(st, 'A') === 'y');
+  for (let i = 0; i < 6; i++) start('B', 'p', 0.05);
+  const F = M.features(st, { season: 2027, week: 1, home: 'A', away: 'B', home_qb_id: 'x', away_qb_id: 'p', home_rest: 7, away_rest: 7, neutral: false });
+  chk('qb_out_diff = home out - away out', F.spread.qb_out_diff === 1, F.spread.qb_out_diff);
+  const F2 = M.features(st, { season: 2027, week: 1, home: 'B', away: 'A', home_qb_id: 'p', away_qb_id: 'x', home_rest: 7, away_rest: 7, neutral: false });
+  chk('… and -1 with the sides swapped', F2.spread.qb_out_diff === -1, F2.spread.qb_out_diff);
+  chk('qb_out_diff is a strength feature only when the configuration turns it on',
+    M.featureNames(cfgQ).spread.indexOf('qb_out_diff') >= 0 && M.featureNames(M.config()).spread.indexOf('qb_out_diff') < 0);
+  const st2 = M.fromSeeds(cfgQ, { starts: { A: ['x', 'x', 'y'] } });
+  st2.starts.A.push('y');
+  chk('the trained seeds carry the window, copied (the params are never written through)', M.regularStarter(M.fromSeeds(cfgQ, { starts: { A: ['x', 'x', 'y'] } }), 'A') === 'x' && st2.starts.A.length === 4);
+}
+{
+  const B = require(path.join(ROOT, 'football', 'research', 'nfl_v2', 'backtest.js'));
+  const X = [], y = [];
+  for (let i = 0; i < 300; i++) { const a = Math.sin(i), b = 40 * Math.cos(i * 1.3), c = (i % 7) / 7; X.push([a, b, c]); y.push(3 * a - 0.05 * b + 2 * c + 0.3 * Math.sin(i * 0.37) + 1); }
+  const raw = M.ridge(X, y, 0, true), std = B.ridgeStd(X, y, 0, true);
+  chk('standardised ridge at lambda 0 is the raw least-squares fit', raw.w.every((w, j) => Math.abs(w - std.w[j]) < 1e-8) && Math.abs(raw.b - std.b) < 1e-8, { raw, std });
+  const X100 = X.map((r) => [r[0] * 100, r[1], r[2]]);
+  const pr = (f, Z) => Z.map((r) => f.b + r.reduce((s, x, j) => s + f.w[j] * x, 0));
+  const p1 = pr(B.ridgeStd(X, y, 50, true), X), p2 = pr(B.ridgeStd(X100, y, 50, true), X100);
+  chk('standardised ridge is scale-free: rescaling a feature leaves every prediction unchanged', p1.every((v, i) => Math.abs(v - p2[i]) < 1e-8));
+  const q1 = pr(M.ridge(X, y, 50, true), X), q2 = pr(M.ridge(X100, y, 50, true), X100);
+  chk('… where the raw ridge is not (its penalty depends on the units)', q1.some((v, i) => Math.abs(v - q2[i]) > 1e-4));
 }
 
 console.log(fail ? `FAILURES ${pass} passed, ${fail} failed` : `ALL GREEN ${pass} passed, 0 failed`);

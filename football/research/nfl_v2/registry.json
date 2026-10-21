@@ -7,7 +7,7 @@
   "promotion": "beats the served model on margin MAE AND log loss on the full walk-forward backtest (2010 through the season being played), on the 2025 holdout, and on 2010-2025 without the season being played",
   "preregistration": "football/research/nfl_v2/preregistration.json"
  },
- "current": "edgedesk_nfl_v2.0.0",
+ "current": "edgedesk_nfl_v2.1.0",
  "versions": [
   {
    "model_version": "edgedesk_football_v1.0.0",
@@ -142,7 +142,7 @@
   },
   {
    "model_version": "edgedesk_nfl_v2.0.0",
-   "status": "served",
+   "status": "superseded",
    "role": "Step 4 promotion: the net_pts sign fix (T5)",
    "cfg": {
     "carry": 0.8,
@@ -240,6 +240,145 @@
      }
     },
     "beats_closing_line": false
+   }
+  },
+  {
+   "model_version": "edgedesk_nfl_v2.1.0",
+   "status": "served",
+   "role": "round 2 promotion: combination: QB prior -0.16 shrink 6 + regular starter out (qb_out_diff) + standardised strength ridge lambda 240",
+   "cfg": {
+    "carry": 0.8,
+    "prior": {
+     "kind": "geometric",
+     "alpha": 0.1,
+     "alpha_pts": 0.06,
+     "k": null,
+     "k_pts": null
+    },
+    "recency": null,
+    "alpha_league": 0.02,
+    "qb": {
+     "alpha_qb": 0.18,
+     "qb_shrink": 6,
+     "qb_prior": -0.16,
+     "alpha_team": 0.1
+    },
+    "features": {
+     "net_pts_fix": true,
+     "split_od": false,
+     "qb_out": true
+    },
+    "hfa": {
+     "kind": "intercept",
+     "rho": null,
+     "m": null
+    },
+    "ctx": {
+     "travel": false,
+     "venue": true
+    },
+    "market": {
+     "on": false,
+     "beta": null,
+     "carry_m": null
+    },
+    "personnel": {
+     "on": false
+    },
+    "source": "stw",
+    "calibration": {
+     "kind": "none"
+    },
+    "ridge": {
+     "strength": 240,
+     "context": 200,
+     "total": 60,
+     "standardize": true
+    }
+   },
+   "config_sha": "6c79095675f8a223",
+   "parent": "edgedesk_nfl_v2.0.0",
+   "created_at": "2026-10-21T03:38:00.557Z",
+   "archive": "football/research/nfl_v2/versions/edgedesk_nfl_v2.1.0.js",
+   "metrics": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3032,
+     "rmse": 13.2803,
+     "brier": 0.21774,
+     "logloss": 0.62458,
+     "ece": 0.0251,
+     "cal_slope": 0.941,
+     "home_lean": 0.405,
+     "ats3": {
+      "n": 1010,
+      "win_pct": 0.501980198019802
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.0764,
+     "rmse": 12.6812,
+     "brier": 0.21719,
+     "logloss": 0.62124,
+     "ece": 0.0655,
+     "cal_slope": 0.928,
+     "home_lean": 0.722,
+     "ats3": {
+      "n": 66,
+      "win_pct": 0.4696969696969697
+     },
+     "total_mae": 10.3798
+    },
+    "full": {
+     "n": 4456,
+     "mae": 10.2767,
+     "rmse": 13.2175,
+     "brier": 0.21794,
+     "logloss": 0.62484,
+     "ece": 0.0268,
+     "cal_slope": 0.94,
+     "home_lean": 0.436,
+     "ats3": {
+      "n": 1099,
+      "win_pct": 0.49772520473157417
+     },
+     "total_mae": 10.6803
+    },
+    "without_current_season": {
+     "n": 4363,
+     "mae": 10.2884,
+     "rmse": 13.242,
+     "brier": 0.21771,
+     "logloss": 0.62436,
+     "ece": 0.0258,
+     "cal_slope": 0.94,
+     "home_lean": 0.425,
+     "ats3": {
+      "n": 1076,
+      "win_pct": 0.5
+     },
+     "total_mae": 10.6685
+    },
+    "close": {
+     "valid": {
+      "mae": 10.081,
+      "logloss": 0.60982,
+      "brier": 0.21111
+     },
+     "holdout": {
+      "mae": 9.6702,
+      "logloss": 0.60699,
+      "brier": 0.21091
+     }
+    },
+    "beats_closing_line": false,
+    "weekly_gate": {
+     "full": true,
+     "holdout_2025": true,
+     "without_current_season": true
+    }
    }
   }
  ],
@@ -1079,6 +1218,531 @@
     }
    },
    "why": null
+  },
+  {
+   "run": "round2",
+   "candidate": "Q1_qb_prior:QB prior -0.16 shrink 6",
+   "family": "Q1_qb_prior",
+   "model_key": "edgedesk-nfl-margin-candidates",
+   "evaluated_at": "2026-10-21T03:36:50.118Z",
+   "cfg_sha": "12b62657b6299e36",
+   "passed": true,
+   "metrics": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3435,
+     "rmse": 13.3405,
+     "brier": 0.21982,
+     "logloss": 0.62943,
+     "ece": 0.0294,
+     "cal_slope": 0.898,
+     "home_lean": 0.43,
+     "ats3": {
+      "n": 1176,
+      "win_pct": 0.5144557823129252
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.123,
+     "rmse": 12.7725,
+     "brier": 0.22015,
+     "logloss": 0.62921,
+     "ece": 0.0698,
+     "cal_slope": 0.908,
+     "home_lean": 0.741,
+     "ats3": {
+      "n": 66,
+      "win_pct": 0.5
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "incumbent": {
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "valid": {
+     "n": 4078,
+     "mae": 10.3632,
+     "rmse": 13.3666,
+     "brier": 0.22033,
+     "logloss": 0.63072,
+     "ece": 0.0265,
+     "cal_slope": 0.89,
+     "home_lean": 0.433,
+     "ats3": {
+      "n": 1221,
+      "win_pct": 0.5176085176085176
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1679,
+     "rmse": 12.8293,
+     "brier": 0.2221,
+     "logloss": 0.63386,
+     "ece": 0.068,
+     "cal_slope": 0.881,
+     "home_lean": 0.742,
+     "ats3": {
+      "n": 67,
+      "win_pct": 0.5074626865671642
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "why": "beats the incumbent on validation and on the 2025 holdout (MAE and log loss)"
+  },
+  {
+   "run": "round2",
+   "candidate": "Q2_qb_out:regular starter out (qb_out_diff)",
+   "family": "Q2_qb_out",
+   "model_key": "edgedesk-nfl-margin-candidates",
+   "evaluated_at": "2026-10-21T03:36:50.118Z",
+   "cfg_sha": "72c5ba4c920b6c10",
+   "passed": true,
+   "metrics": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3235,
+     "rmse": 13.3091,
+     "brier": 0.21893,
+     "logloss": 0.62742,
+     "ece": 0.028,
+     "cal_slope": 0.901,
+     "home_lean": 0.419,
+     "ats3": {
+      "n": 1140,
+      "win_pct": 0.5280701754385965
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1433,
+     "rmse": 12.7682,
+     "brier": 0.22115,
+     "logloss": 0.63077,
+     "ece": 0.0857,
+     "cal_slope": 0.874,
+     "home_lean": 0.723,
+     "ats3": {
+      "n": 68,
+      "win_pct": 0.4264705882352941
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "incumbent": {
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "valid": {
+     "n": 4078,
+     "mae": 10.3632,
+     "rmse": 13.3666,
+     "brier": 0.22033,
+     "logloss": 0.63072,
+     "ece": 0.0265,
+     "cal_slope": 0.89,
+     "home_lean": 0.433,
+     "ats3": {
+      "n": 1221,
+      "win_pct": 0.5176085176085176
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1679,
+     "rmse": 12.8293,
+     "brier": 0.2221,
+     "logloss": 0.63386,
+     "ece": 0.068,
+     "cal_slope": 0.881,
+     "home_lean": 0.742,
+     "ats3": {
+      "n": 67,
+      "win_pct": 0.5074626865671642
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "why": "beats the incumbent on validation and on the 2025 holdout (MAE and log loss)"
+  },
+  {
+   "run": "round2",
+   "candidate": "S1_standardize:standardised strength ridge lambda 240",
+   "family": "S1_standardize",
+   "model_key": "edgedesk-nfl-margin-candidates",
+   "evaluated_at": "2026-10-21T03:36:50.118Z",
+   "cfg_sha": "2357d61a3f9ea834",
+   "passed": true,
+   "metrics": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3433,
+     "rmse": 13.3456,
+     "brier": 0.21969,
+     "logloss": 0.62897,
+     "ece": 0.0268,
+     "cal_slope": 0.922,
+     "home_lean": 0.422,
+     "ats3": {
+      "n": 1155,
+      "win_pct": 0.516017316017316
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1277,
+     "rmse": 12.773,
+     "brier": 0.21962,
+     "logloss": 0.62735,
+     "ece": 0.0454,
+     "cal_slope": 0.909,
+     "home_lean": 0.724,
+     "ats3": {
+      "n": 69,
+      "win_pct": 0.4492753623188406
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "incumbent": {
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "valid": {
+     "n": 4078,
+     "mae": 10.3632,
+     "rmse": 13.3666,
+     "brier": 0.22033,
+     "logloss": 0.63072,
+     "ece": 0.0265,
+     "cal_slope": 0.89,
+     "home_lean": 0.433,
+     "ats3": {
+      "n": 1221,
+      "win_pct": 0.5176085176085176
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1679,
+     "rmse": 12.8293,
+     "brier": 0.2221,
+     "logloss": 0.63386,
+     "ece": 0.068,
+     "cal_slope": 0.881,
+     "home_lean": 0.742,
+     "ats3": {
+      "n": 67,
+      "win_pct": 0.5074626865671642
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "why": "beats the incumbent on validation and on the 2025 holdout (MAE and log loss)"
+  },
+  {
+   "run": "round2",
+   "candidate": "combination:combination: QB prior -0.16 shrink 6 + regular starter out (qb_out_diff)",
+   "family": "combination",
+   "model_key": "edgedesk-nfl-margin-candidates",
+   "evaluated_at": "2026-10-21T03:36:50.118Z",
+   "cfg_sha": "fb2b6b0f11ab52a6",
+   "passed": true,
+   "metrics": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3151,
+     "rmse": 13.296,
+     "brier": 0.21846,
+     "logloss": 0.62634,
+     "ece": 0.0276,
+     "cal_slope": 0.908,
+     "home_lean": 0.417,
+     "ats3": {
+      "n": 1108,
+      "win_pct": 0.5279783393501805
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1124,
+     "rmse": 12.7313,
+     "brier": 0.22003,
+     "logloss": 0.62799,
+     "ece": 0.0766,
+     "cal_slope": 0.892,
+     "home_lean": 0.726,
+     "ats3": {
+      "n": 70,
+      "win_pct": 0.45714285714285713
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "incumbent": {
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "valid": {
+     "n": 4078,
+     "mae": 10.3632,
+     "rmse": 13.3666,
+     "brier": 0.22033,
+     "logloss": 0.63072,
+     "ece": 0.0265,
+     "cal_slope": 0.89,
+     "home_lean": 0.433,
+     "ats3": {
+      "n": 1221,
+      "win_pct": 0.5176085176085176
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1679,
+     "rmse": 12.8293,
+     "brier": 0.2221,
+     "logloss": 0.63386,
+     "ece": 0.068,
+     "cal_slope": 0.881,
+     "home_lean": 0.742,
+     "ats3": {
+      "n": 67,
+      "win_pct": 0.5074626865671642
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "why": "beats the incumbent on validation and on the 2025 holdout (MAE and log loss)"
+  },
+  {
+   "run": "round2",
+   "candidate": "combination:combination: QB prior -0.16 shrink 6 + standardised strength ridge lambda 240",
+   "family": "combination",
+   "model_key": "edgedesk-nfl-margin-candidates",
+   "evaluated_at": "2026-10-21T03:36:50.118Z",
+   "cfg_sha": "8d47d080b3830b88",
+   "passed": true,
+   "metrics": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3253,
+     "rmse": 13.3157,
+     "brier": 0.21894,
+     "logloss": 0.62718,
+     "ece": 0.0283,
+     "cal_slope": 0.93,
+     "home_lean": 0.415,
+     "ats3": {
+      "n": 1070,
+      "win_pct": 0.5102803738317757
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.0678,
+     "rmse": 12.7081,
+     "brier": 0.21803,
+     "logloss": 0.62334,
+     "ece": 0.0458,
+     "cal_slope": 0.931,
+     "home_lean": 0.732,
+     "ats3": {
+      "n": 69,
+      "win_pct": 0.463768115942029
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "incumbent": {
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "valid": {
+     "n": 4078,
+     "mae": 10.3632,
+     "rmse": 13.3666,
+     "brier": 0.22033,
+     "logloss": 0.63072,
+     "ece": 0.0265,
+     "cal_slope": 0.89,
+     "home_lean": 0.433,
+     "ats3": {
+      "n": 1221,
+      "win_pct": 0.5176085176085176
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1679,
+     "rmse": 12.8293,
+     "brier": 0.2221,
+     "logloss": 0.63386,
+     "ece": 0.068,
+     "cal_slope": 0.881,
+     "home_lean": 0.742,
+     "ats3": {
+      "n": 67,
+      "win_pct": 0.5074626865671642
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "why": "beats the incumbent on validation and on the 2025 holdout (MAE and log loss)"
+  },
+  {
+   "run": "round2",
+   "candidate": "combination:combination: regular starter out (qb_out_diff) + standardised strength ridge lambda 240",
+   "family": "combination",
+   "model_key": "edgedesk-nfl-margin-candidates",
+   "evaluated_at": "2026-10-21T03:36:50.118Z",
+   "cfg_sha": "f740f73b2073dd95",
+   "passed": true,
+   "metrics": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3121,
+     "rmse": 13.2939,
+     "brier": 0.21817,
+     "logloss": 0.62556,
+     "ece": 0.0272,
+     "cal_slope": 0.937,
+     "home_lean": 0.409,
+     "ats3": {
+      "n": 1056,
+      "win_pct": 0.5066287878787878
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1247,
+     "rmse": 12.7251,
+     "brier": 0.21894,
+     "logloss": 0.62529,
+     "ece": 0.063,
+     "cal_slope": 0.902,
+     "home_lean": 0.71,
+     "ats3": {
+      "n": 73,
+      "win_pct": 0.4794520547945205
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "incumbent": {
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "valid": {
+     "n": 4078,
+     "mae": 10.3632,
+     "rmse": 13.3666,
+     "brier": 0.22033,
+     "logloss": 0.63072,
+     "ece": 0.0265,
+     "cal_slope": 0.89,
+     "home_lean": 0.433,
+     "ats3": {
+      "n": 1221,
+      "win_pct": 0.5176085176085176
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1679,
+     "rmse": 12.8293,
+     "brier": 0.2221,
+     "logloss": 0.63386,
+     "ece": 0.068,
+     "cal_slope": 0.881,
+     "home_lean": 0.742,
+     "ats3": {
+      "n": 67,
+      "win_pct": 0.5074626865671642
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "why": "beats the incumbent on validation and on the 2025 holdout (MAE and log loss)"
+  },
+  {
+   "run": "round2",
+   "candidate": "combination:combination: QB prior -0.16 shrink 6 + regular starter out (qb_out_diff) + standardised strength ridge lambda 240",
+   "family": "combination",
+   "model_key": "edgedesk-nfl-margin-candidates",
+   "evaluated_at": "2026-10-21T03:36:50.118Z",
+   "cfg_sha": "6c79095675f8a223",
+   "passed": true,
+   "metrics": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3032,
+     "rmse": 13.2803,
+     "brier": 0.21774,
+     "logloss": 0.62458,
+     "ece": 0.0251,
+     "cal_slope": 0.941,
+     "home_lean": 0.405,
+     "ats3": {
+      "n": 1010,
+      "win_pct": 0.501980198019802
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.0764,
+     "rmse": 12.6812,
+     "brier": 0.21719,
+     "logloss": 0.62124,
+     "ece": 0.0655,
+     "cal_slope": 0.928,
+     "home_lean": 0.722,
+     "ats3": {
+      "n": 66,
+      "win_pct": 0.4696969696969697
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "incumbent": {
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "valid": {
+     "n": 4078,
+     "mae": 10.3632,
+     "rmse": 13.3666,
+     "brier": 0.22033,
+     "logloss": 0.63072,
+     "ece": 0.0265,
+     "cal_slope": 0.89,
+     "home_lean": 0.433,
+     "ats3": {
+      "n": 1221,
+      "win_pct": 0.5176085176085176
+     },
+     "total_mae": 10.6887
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.1679,
+     "rmse": 12.8293,
+     "brier": 0.2221,
+     "logloss": 0.63386,
+     "ece": 0.068,
+     "cal_slope": 0.881,
+     "home_lean": 0.742,
+     "ats3": {
+      "n": 67,
+      "win_pct": 0.5074626865671642
+     },
+     "total_mae": 10.3798
+    }
+   },
+   "why": "beats the incumbent on validation and on the 2025 holdout (MAE and log loss)"
   }
  ],
  "events": [
@@ -1088,7 +1752,14 @@
    "from": "edgedesk_football_v1.0.0+fixes",
    "to": "edgedesk_nfl_v2.0.0",
    "run": "step4"
+  },
+  {
+   "at": "2026-10-21T03:38:00.561Z",
+   "kind": "promote",
+   "from": "edgedesk_nfl_v2.0.0",
+   "to": "edgedesk_nfl_v2.1.0",
+   "run": "round2"
   }
  ],
- "updated_at": "2026-10-21T01:27:28.639Z"
+ "updated_at": "2026-10-21T03:38:00.561Z"
 }
