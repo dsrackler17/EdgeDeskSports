@@ -47,9 +47,10 @@ def board(odds=None, start="2026-10-22T23:00Z", state="pre", status="STATUS_SCHE
 
 
 def summary(state="post", name="STATUS_FINAL", pick=True):
+    pc = dict(copy.deepcopy(NHL_ODDS), provider={"id": "100", "name": "Draft Kings"})   # as ESPN's summaries spell it
     return {"header": {"competitions": [{"status": {"type": {"name": name, "state": state, "completed": state == "post"}},
                                          "competitors": [{"homeAway": "home", "score": "4"}, {"homeAway": "away", "score": "2"}]}]},
-            "pickcenter": [copy.deepcopy(NHL_ODDS)] if pick else []}
+            "pickcenter": [pc] if pick else []}
 
 
 class Fake:
@@ -139,6 +140,12 @@ class TestMarkets(unittest.TestCase):
         o["homeTeamOdds"]["teamId"], o["awayTeamOdds"]["teamId"] = "1", "21"
         self.assertEqual(C.quote(o, ev, "nhl", T0)[1], "odds name the other side as home")
 
+    def test_one_spelling_per_book(self):
+        for name in ("DraftKings", "Draft Kings", " draftkings "):
+            self.assertEqual(C.book_of({"provider": {"name": name}}), "DraftKings")
+        self.assertEqual(C.book_of({"provider": {"name": "Some Book"}}), "Some Book")
+        self.assertIsNone(C.book_of({"provider": {"name": "Team Rankings"}}))
+
     def test_numbers(self):
         self.assertEqual(C.american("EVEN"), 100)
         self.assertEqual(C.american({"american": "-130"}), -130)
@@ -212,6 +219,7 @@ class TestCapture(Base):
         self.assertEqual(rep["rows"]["settle"], 1)
         s = self.rows()[-1]
         self.assertEqual((s["status"], s["completed"], s["home_score"], s["away_score"]), ("STATUS_FINAL", True, 4.0, 2.0))
+        self.assertEqual(s["books"][0]["book"], "DraftKings")                         # the quote's spelling
         self.assertEqual(s["books"][0]["open"]["ml"], {"home": -190, "away": 160})
         self.assertEqual(s["books"][0]["close"]["ml"], {"home": -205, "away": 170})
         rep = C.capture_sport("nhl", later + dt.timedelta(hours=1), f, pause=0)
