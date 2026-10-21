@@ -1,28 +1,26 @@
 {
- "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 6: schedules on SIDEARM's older sites (about half of D-I baseball), this season and past ones, to read their results and the box-score links they carry.",
+ "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 7: (a) WMT, where the first full run read past seasons at few schools: a past season labelled by academic year ('2025-26' for spring 2026), a fall sport's current page on a site that labels that way, a four-digit split label, LSU's plain pages (nothing at LSU read) and two schedule pages the WMT reader found no games on; (b) box scores on SIDEARM's older sites, linked from the round-6 schedules (a nine-inning game, a seven-inning doubleheader game, an extra-inning game, 2016 and 2023); (c) the home pages of three D-I baseball schools whose /sports/baseball/roster is a 404.",
  "sources": [],
  "schools": [],
  "paths": [],
  "pages": [
-  {
-   "name": "legacy_schedule_2026_dayton",
-   "url": "https://daytonflyers.com/sports/baseball/schedule/2026"
-  },
-  {
-   "name": "legacy_schedule_2023_dayton",
-   "url": "https://daytonflyers.com/sports/baseball/schedule/2023"
-  },
-  {
-   "name": "legacy_schedule_2026_appstate",
-   "url": "https://appstatesports.com/sports/baseball/schedule/2026"
-  },
-  {
-   "name": "legacy_schedule_2016_wichita",
-   "url": "https://goshockers.com/sports/baseball/schedule/2016"
-  },
-  {
-   "name": "legacy_roster_2019_dayton",
-   "url": "https://daytonflyers.com/sports/baseball/roster/2019"
-  }
+  { "name": "wmt_plain_roster_lsu", "url": "https://lsusports.net/sports/baseball/roster" },
+  { "name": "wmt_plain_schedule_lsu", "url": "https://lsusports.net/sports/baseball/schedule" },
+  { "name": "wmt_split_roster_2026_virginia", "url": "https://virginiasports.com/sports/baseball/roster/season/2025-26" },
+  { "name": "wmt_split_schedule_2026_virginia", "url": "https://virginiasports.com/sports/baseball/schedule/season/2025-26" },
+  { "name": "wmt_fall_plain_roster_iowa", "url": "https://hawkeyesports.com/sports/football/roster" },
+  { "name": "wmt_split4_roster_byu", "url": "https://byucougars.com/sports/mens-basketball/roster/season/2025-2026" },
+  { "name": "wmt_split_roster_2026_pennst", "url": "https://gopsusports.com/sports/baseball/roster/season/2025-26" },
+  { "name": "wmt_empty_schedule_2026_auburn", "url": "https://auburntigers.com/sports/baseball/schedule/season/2026" },
+  { "name": "wmt_noschedule_2026_ucla", "url": "https://uclabruins.com/sports/baseball/schedule/season/2026" },
+  { "name": "legacy_box_2026_dayton_9inn", "url": "https://daytonflyers.com/sports/baseball/stats/2026/lipscomb/boxscore/17441" },
+  { "name": "legacy_box_2026_dayton_dh8", "url": "https://daytonflyers.com/sports/baseball/stats/2026/eastern-kentucky/boxscore/17444" },
+  { "name": "legacy_box_2023_dayton", "url": "https://daytonflyers.com/sports/baseball/stats/2023/tennessee/boxscore/14125" },
+  { "name": "legacy_box_2026_appstate_12inn", "url": "https://appstatesports.com/sports/baseball/stats/2026/gardner-webb/boxscore/9710" },
+  { "name": "legacy_box_2026_appstate_dh7", "url": "https://appstatesports.com/sports/baseball/stats/2026/canisius/boxscore/9703" },
+  { "name": "legacy_box_2016_wichita", "url": "https://goshockers.com/sports/baseball/stats/2016/northern-colorado/boxscore/3511" },
+  { "name": "notfound_home_georgiatech", "url": "https://ramblinwreck.com/" },
+  { "name": "notfound_home_miamioh", "url": "https://muredhawks.com/" },
+  { "name": "notfound_home_pepperdine", "url": "https://pepperdinesports.com/" }
  ]
 }
