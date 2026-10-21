@@ -55,6 +55,7 @@ class Config:
     seed: int = 20261021
     buckets: tuple = BUCKETS
     cluster: tuple = ("season", "week")
+    ci_level: float = 0.95          # two-sided; Phase 6 uses 1 - 0.05/k for a Bonferroni one-sided bound
     label: str = ""
     extra: dict = field(default_factory=dict)
 
@@ -183,9 +184,9 @@ def _stats(clv, clp):
             "share_unmoved": float(np.mean(clv == 0)) if len(clv) else float("nan")}
 
 
-def cluster_bootstrap(values, clusters, n_boot, rng, stat=np.mean):
-    """Percentile 95% interval of `stat` over resampled clusters. `values` is
-    an (n,) or (n, k) array; each row belongs to clusters[i]."""
+def cluster_bootstrap(values, clusters, n_boot, rng, stat=np.mean, level=0.95):
+    """Percentile interval (default 95%) of the mean over resampled clusters.
+    `values` is an (n,) or (n, k) array; each row belongs to clusters[i]."""
     values = np.asarray(values, float)
     if values.ndim == 1:
         values = values[:, None]
@@ -200,7 +201,8 @@ def cluster_bootstrap(values, clusters, n_boot, rng, stat=np.mean):
     S = sums[draws].sum(axis=1)
     C = cnts[draws].sum(axis=1)
     est = S / np.maximum(C, 1e-12)
-    lo, hi = np.nanpercentile(est, [2.5, 97.5], axis=0)
+    t = 100.0 * (1.0 - level) / 2.0
+    lo, hi = np.nanpercentile(est, [t, 100.0 - t], axis=0)
     return [[float(a), float(b)] for a, b in zip(lo, hi)]
 
 
@@ -253,7 +255,8 @@ def evaluate(df, cfg=None, dist=None):
     out["roi_at_bet_price"] = float(b.roi.mean()) if len(b) else float("nan")
     if len(b):
         hit = np.where(b.clv_pts.values != 0, (b.clv_pts.values > 0).astype(float), np.nan)
-        ci = cluster_bootstrap(np.column_stack([b.clv_pts.values, b.clv_prob.values, hit, b.roi.values]), cl, cfg.n_boot, rng)
+        ci = cluster_bootstrap(np.column_stack([b.clv_pts.values, b.clv_prob.values, hit, b.roi.values]), cl, cfg.n_boot, rng,
+                               level=cfg.ci_level)
         out["clv_pts_ci95"], out["clv_prob_ci95"], out["hit_rate_ci95"], out["roi_ci95"] = ci
     else:
         out["clv_pts_ci95"] = out["clv_prob_ci95"] = out["hit_rate_ci95"] = out["roi_ci95"] = [float("nan"), float("nan")]

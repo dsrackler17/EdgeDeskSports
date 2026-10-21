@@ -158,6 +158,15 @@ class TestInference(unittest.TestCase):
         self.assertTrue(lo_b < 0.3 < hi_b)
         self.assertLess(hi_b - lo_b, hi_s - lo_s)
 
+    def test_wider_level_gives_wider_interval(self):
+        rng = np.random.default_rng(9)
+        v = rng.normal(0.2, 1.0, 800)
+        c = np.arange(800) // 4
+        lo95, hi95 = H.cluster_bootstrap(v, c, 4000, np.random.default_rng(1))[0]
+        lo99, hi99 = H.cluster_bootstrap(v, c, 4000, np.random.default_rng(1), level=0.9875)[0]
+        self.assertLess(lo99, lo95)
+        self.assertGreater(hi99, hi95)
+
     def test_cluster_bootstrap_is_wider_for_correlated_weeks(self):
         rng = np.random.default_rng(4)
         weeks = np.repeat(np.arange(100), 10)

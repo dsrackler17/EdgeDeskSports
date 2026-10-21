@@ -218,6 +218,49 @@ def cfb_lines(build=CFB_BUILD, raw=CFB_RAW_ODDS):
     return L
 
 
+CFB_LAB_QUOTES = os.path.join(ROOT, "football", "cfb_lab", "ledger", "2026", "quotes")
+
+
+def cfb_2026_lines(build=CFB_BUILD, quotes=CFB_LAB_QUOTES):
+    """CFB 2026 (holdout only): EdgeDesk's own hourly DraftKings captures (ESPN
+    feed) in football/cfb_lab/ledger/2026/quotes. Early line = the EARLIEST
+    pregame quote of the game (the analogue of the archive's opener, with a
+    timestamp); close = the last pregame quote. home_line is the line the home
+    side lays, so the home margin is -home_line. No prices are carried (-110)."""
+    import glob
+    import json
+    rows = [json.loads(l) for f in sorted(glob.glob(os.path.join(quotes, "*.jsonl"))) for l in open(f)]
+    q = pd.DataFrame(rows)
+    q = q[(q.source == "espn") & (q.book == "draftkings") & q.market_type.isin(["spread", "total"])]
+    q["obs"] = pd.to_datetime(q.observed_at, utc=True)
+    q["kick"] = pd.to_datetime(q.kickoff_ts, utc=True)
+    q = q[q.obs < q.kick].sort_values("obs")
+    out = {}
+    for mk, col, sign in (("spread", "home_line", -1.0), ("total", "total_points", 1.0)):
+        x = q[(q.market_type == mk) & q[col].notna()]
+        g = x.groupby("game_id")
+        e, c = g.first(), g.last()
+        for gid in e.index:
+            o = out.setdefault(str(gid), {"game_id": str(gid)})
+            o[f"early_{mk}"] = sign * float(e.loc[gid, col])
+            o[f"close_{mk}"] = sign * float(c.loc[gid, col])
+            o[f"cons_close_{mk}"] = o[f"close_{mk}"]
+            o[f"early_{mk}_posted_at"] = e.loc[gid, "obs"]
+            o[f"{mk}_book"] = "DraftKings (EdgeDesk capture)"
+    L = pd.DataFrame(list(out.values()))
+    for mk in ("spread", "total"):
+        bad = (L[f"close_{mk}"] - L[f"early_{mk}"]).abs() > MAX_MOVE[mk]
+        L[f"{mk}_qa_dropped"] = bad
+        L.loc[bad, f"early_{mk}"] = np.nan
+        for c in (f"early_{mk}_p", f"close_{mk}_p", f"early_{mk}_odds_over", f"early_{mk}_odds_under"):
+            L[c] = np.nan
+    g = pd.read_parquet(os.path.join(build, "games.parquet"))
+    g["game_id"] = g.game_id.astype(str)
+    keep = ["game_id", "season", "week", "slate", "season_type", "home", "away", "home_div", "away_div",
+            "home_conf", "away_conf", "neutral", "kick_utc", "result", "total_pts"]
+    return g[g.season == 2026][keep].merge(L, on="game_id", how="inner")
+
+
 def main():
     import argparse
     ap = argparse.ArgumentParser()
@@ -230,6 +273,9 @@ def main():
         print("nfl", len(L))
     if a.which in ("cfb", "both"):
         L = cfb_lines()
+        L["game_id"] = L.game_id.astype(str)
+        L26 = cfb_2026_lines()
+        L = pd.concat([L[L.season != 2026], L26], ignore_index=True)
         L.to_parquet(os.path.join(CACHE, "cfb_lines.parquet"))
         print("cfb", len(L))
 

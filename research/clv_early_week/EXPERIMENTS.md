@@ -367,6 +367,58 @@ changing any content other than paths:
 the tests → `model_loop/tests/test_clv_early_harness.py`. The two studies share no code, data
 files or experiment IDs; their attempts are not pooled.
 
+---
+
+## Phase 6 — Holdout gate (pre-registered 2026-10-21, before any holdout season was scored)
+
+**Selection, from 2015–2024 development results only.** One candidate per sport-market. Each is
+the best called rule on development data under the instrument rules R-1/R-2. NFL spreads carry two,
+because the production board model (v2.1.0) and the best NFL spread baseline (Loop v2.0.0) are
+statistically tied on development data (+0.301 vs +0.307 under R-1). The owner asked for the
+production model's answer specifically. No Phase 4 or Phase 5 variant beat its baseline, so none
+is a candidate.
+
+| id | sport · market | rule (all inputs knowable at the bet line) | development CLV pts |
+|---|---|---|---|
+| H-1 | NFL spread | NFL v2.1.0 (board model), \|model − τ line\| ≥ 2.0, R-1 | +0.301 [+0.16, +0.43] |
+| H-2 | NFL spread | NFL Loop v2.0.0, \|model − τ line\| ≥ 2.0, R-1 | +0.307 [+0.15, +0.47] |
+| H-3 | NFL total | NFL v2.1.0, \|model − τ total\| ≥ 2.0, neutral weather, R-1 | +0.443 [+0.30, +0.59] |
+| H-4 | CFB spread | CFB Loop v2.0.0, ratings + QB through week W−2 (R-2), \|model − opener\| ≥ 3.0 | +0.250 [+0.16, +0.34] |
+| H-5 | CFB total | CFB Loop v2.0.0, R-2, \|model − opening total\| ≥ 3.0 | +0.713 [+0.57, +0.86] |
+
+Development effort behind this choice: **96 configurations scored** (143 scoring runs; 32 at a
+primary threshold), all in the ledger below.
+
+**Holdout data** (read once, all five candidates in one run):
+* NFL: 2025 weeks 2+ and 2026 weeks 2–7, the nflverse feed at τ under R-1; close = the last
+  pre-kick value (as in development).
+* CFB 2025: the archive's Bovada opener and close (as in development).
+* CFB 2026: the archive has no 2026 lines. EdgeDesk's own hourly DraftKings captures
+  (`football/cfb_lab/ledger/2026/quotes`, weeks 5–8, 235 games): early line = the earliest pregame
+  quote (median 148 h before kickoff), close = the last pregame quote, no prices (−110). This is a
+  different book from development, and that is stated with the results.
+* Model predictions are the walk-forward files already built in Phase 3 (fitted on seasons before
+  each holdout season). Distributions, eligibility and QA rules are unchanged.
+
+**Pass rule (per candidate, pooled 2025 + 2026-to-date), Bonferroni over k = 5:**
+1. at least **50 bets**;
+2. the **one-sided 99% lower bound** (α = 0.05/5) of mean CLV in points is above 0. This is the 1st
+   percentile of a week-cluster bootstrap with 4,000 resamples;
+3. within-week permutation p ≤ **0.01** (2,000 permutations);
+4. mean CLV in probability > 0.
+
+Reported but never gating: each season separately, ROI at the bet price, edge buckets.
+
+**If a candidate passes**, it is wired in as a live-tracking candidate and is never served:
+* CFB: an experiment in the CFB Model Lab registry (`football/cfb_lab/governance.js experiment`,
+  scope SINGLE_CHANGE, status RUNNING, metric CLV). No role is registered, because auto-promotion
+  considers challenger and candidate roles.
+* NFL: an event in `football/research/nfl_v2/registry.json` with status `CANDIDATE (CLV live
+  tracking)`, and `current` unchanged. This is done only if that registry's consumers still pass
+  their tests; otherwise it goes in a standalone tracking file, and the report says so.
+
+**If none passes:** stated plainly, with the most promising next direction from the evidence.
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on
