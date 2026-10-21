@@ -46,6 +46,20 @@ class CaptureTest(unittest.TestCase):
         self.assertEqual(got["1"]["home_margin"], 4.0)
         self.assertEqual(H2H.capture(os.path.join(d, "none.json"), led, 2026, "t"), 0)
 
+    def test_the_board_engines_own_number_is_read_from_v1_when_a_champion_prices_the_board(self):
+        from model_loop.core import head_to_head as H2H
+        d = tempfile.mkdtemp()
+        slate, led = os.path.join(d, "slate.json"), os.path.join(d, "site.jsonl")
+        g = {"game_id": 7, "season": 2026, "week": 9, "kickoff": "2026-10-31T17:00:00.000Z", "model_status": "PREDICTED",
+             "model_home_margin_exact": 6.25, "model_home_win_prob": 0.68, "model_version": "edgedesk_cfb_loop_v2.0.0",
+             "v1": {"model_status": "PREDICTED", "model_home_margin_exact": 3.1, "model_home_win_prob": 0.6,
+                    "model_version": "edgedesk_cfb_p4_v1.0.1"}}
+        with open(slate, "w") as f:
+            json.dump({"generated_at": "2026-10-30T12:00:00.000Z", "games": [g]}, f)
+        self.assertEqual(H2H.capture(slate, led, 2026, "t"), 1)
+        row = json.loads(open(led).read().splitlines()[0])
+        self.assertEqual((row["home_margin"], row["model_version"]), (3.1, "edgedesk_cfb_p4_v1.0.1"))
+
 
 class HeadToHeadTest(unittest.TestCase):
     def row(self, result, model, board, close, p_model, p_board):
