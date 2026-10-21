@@ -54,6 +54,16 @@ const CACHE = path.join(HERE, '.cache');
 global.window = global.window || global;
 require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
 const E = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
+/* THE GOVERNANCE CHAMPION (lib/cfb_champion.js): the table the hourly lab job
+   writes (football/cfb_production/champion.js). Empty while V1 is the
+   champion, so nothing changes; once a person promotes another model, the
+   engine prices each game it covers from that model's stored number and
+   every other game from V1. A missing or unreadable table is V1 everywhere. */
+global.window.EDCfbChampion = require(path.join(ROOT, 'lib', 'cfb_champion.js'));
+(function () {
+  try { global.window.EDCfbChampion.load(JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_production', 'reports', 'champion.json'), 'utf8'))); }
+  catch (e) { global.window.EDCfbChampion.load(null); }
+})();
 /* CFB V2 runs in SHADOW beside V1. Its frozen pure projections are read from
    football/cfb_v2/current.json and published under `v2_shadow` — appended, so
    no existing field changes. A missing file or engine means no block, never a
@@ -276,6 +286,10 @@ function project(st, item, season, ctx, si, altitude) {
   /* the altitude verdict for this game, on both requests (the engine decides
      whether it may move the number; today it may not) */
   if (altitude) { asm.baseline.altitude = altitude; asm.enriched.altitude = altitude; }
+  /* the priced request names its game, so the champion's number can price it;
+     the enriched one is a shadow of V1's own enrichment and stays V1 */
+  asm.baseline.game = Object.assign({}, asm.baseline.game, { game_id: m && m.id != null ? String(m.id) : null });
+  asm.enriched.no_champion = true;
   let base, shadow = null;
   try { base = E.projectGame(asm.baseline); } catch (e) { return { status: 'THREW', reason: String(e && e.message), assembly: asm }; }
   try { shadow = E.projectGame(asm.enriched); } catch (e) { shadow = { status: 'THREW', reason: String(e && e.message) }; }
@@ -924,6 +938,18 @@ async function main() {
          shows the moment the model changed. Nothing already published is
          rewritten. */
       model_version: (p && p.status === 'PREDICTED') ? (p.model_version || null) : null,
+      /* WHO PRICED IT, AND V1 BESIDE IT. priced_by is null while V1 prices the
+         game; once a promoted champion does, it names that model and when it
+         computed the number. v1 always carries cfb_p4's own number, so V1's
+         lab tracking, the production fallback and the model loop's head-to-head
+         keep reading V1 whichever model prices the board. */
+      priced_by: (p && p.status === 'PREDICTED' && p.model.champion) ? { model_version: p.model.champion.model_version, label: p.model.champion.label,
+        source: p.model.champion.source, as_of: p.model.champion.as_of } : null,
+      v1: (p && p.status === 'PREDICTED') ? (function (c) {
+        const v = c ? c.v1 : { margin: p.model.fair_spread, total: p.model.fair_total, win_prob: p.model.home_win_prob, model_version: p.model_version };
+        return { model_status: 'PREDICTED', model_home_margin: r2n(v.margin, 100), model_home_margin_exact: isFiniteNum(v.margin) ? v.margin : null,
+          model_fair_total: r2n(v.total, 10), model_home_win_prob: isFiniteNum(v.win_prob) ? v.win_prob : null, model_version: v.model_version || null };
+      })(p.model.champion) : null,
       /* THE LIVE CALIBRATION IN SHADOW (football/cfb_p4/live_calibration.js):
          the candidate's margin, sigma and win probability from one equation,
          published beside the priced number so its own pregame record exists

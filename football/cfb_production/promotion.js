@@ -23,6 +23,11 @@
      7 shadow complete      the Model Lab's promotion evaluation for this
                             version is ELIGIBLE on a sufficient live sample
                             (skipped only for --rollback to the previous champion)
+   A MODEL LOOP version (edgedesk_cfb_loop_vX.Y.Z, model_loop/adapters/cfb) has
+   no cfb_v2 artifact; its pathway is the stored cards the board prices from
+   (lib/cfb_champion.js), so checks 3-5 become: 3 the loop serves exactly this
+   version, 4 the champion table prices games from it, 5 the config it serves
+   is the one the Lab measured live (every captured row's calibration_version).
 
      node football/cfb_production/promotion.js --model <version> [--rollback] [--skip-tests-with <release_check.json>]
    ========================================================================== */
@@ -32,7 +37,8 @@ const path = require('path');
 const C = require('./compat.js');
 
 const REPO = C.REPO;
-const VERSION_RE = /^edgedesk_cfb_(p4_)?v\d+\.\d+\.\d+$/;
+const VERSION_RE = /^edgedesk_cfb_(p4_|loop_)?v\d+\.\d+\.\d+$/;
+const LOOP_RE = /^edgedesk_cfb_loop_v\d+\.\d+\.\d+$/;
 
 function readJson(p) { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { return null; } }
 function seasonFor(d) { d = d || new Date(); return d.getUTCMonth() <= 1 ? d.getUTCFullYear() - 1 : d.getUTCFullYear(); }
@@ -43,10 +49,11 @@ function guard(model, opts) {
   const repo = opts.repo || REPO;
   const out = [];
   const add = (n, check, ok, detail) => out.push({ n, check, ok: !!ok, detail: detail || null });
-  add(1, 'explicit version', typeof model === 'string' && VERSION_RE.test(model), 'got ' + JSON.stringify(model) + '; want edgedesk_cfb_[p4_]vMAJOR.MINOR.PATCH');
+  add(1, 'explicit version', typeof model === 'string' && VERSION_RE.test(model), 'got ' + JSON.stringify(model) + '; want edgedesk_cfb_[p4_|loop_]vMAJOR.MINOR.PATCH');
   const roles = opts.roles || {};
   const r = roles[model];
   add(2, 'registered, not champion, not retired', r && r.role !== 'champion' && r.role !== 'retired', r ? 'role ' + r.role : 'not registered');
+  if (typeof model === 'string' && LOOP_RE.test(model)) return loopGuard(model, opts, repo, out, add);
   const matrix = opts.matrix || C.loadMatrix();
   const ents = ((matrix && matrix.entries) || []).filter((e) => e.model_version === model && e.status === 'COMPATIBLE');
   const e = ents.find((x) => x.role === 'PRODUCTION_PATHWAY') || (opts.rollback ? ents.find((x) => x.role === 'FALLBACK') : null) || null;
@@ -84,7 +91,39 @@ function guard(model, opts) {
   return { model, ok: out.every((c) => c.ok), rollback: !!opts.rollback, checks: out, rule: 'cfb_promotion_guard_v1' };
 }
 
-module.exports = { guard, VERSION_RE };
+/* checks 3-7 for a model loop version (the header) */
+function loopGuard(model, opts, repo, out, add) {
+  const M = require(path.join(repo, 'football', 'cfb_lab', 'models.js'));
+  const CHB = require(path.join(repo, 'football', 'cfb_production', 'champion.js'));
+  const cur = opts.loopCurrent || readJson(path.join(repo, 'football', 'cfb', 'model_loop', 'current.json'));
+  const ad = M.loopAdapter({ loopCurrent: cur, slate: { games: [] } });
+  add(3, 'the model loop serves exactly this version', ad.model_version === model, 'football/cfb/model_loop/current.json serves ' + (ad.model_version || 'nothing readable'));
+  const sim = CHB.build({ roles: [{ model_version: model, model_label: model, role: 'champion', effective_at: '1970-01-01T00:00:00.000Z' }], loopCurrent: cur, now: opts.now });
+  const n = Object.keys(sim.games).length;
+  add(4, 'the champion table prices games from it (lib/cfb_champion.js)', n > 0, n + ' games; ' + sim.note);
+  const want = cur && cur.model_version ? 'model_loop:' + cur.model_version + ':' + String(cur.config_sha256 || '').slice(0, 12) : null;
+  const seen = opts.capturedCalibrations || (() => {
+    const G = require(path.join(repo, 'football', 'cfb_lab', 'ledger.js'));
+    const set = new Set(); new G.Store(Number(opts.season || seasonFor())).predictions().forEach((p) => { if (p.model_version === model && p.origin === 'LIVE') set.add(p.calibration_version); });
+    return [...set];
+  })();
+  add(5, 'the config it serves is the one the Lab measured live', !!want && seen.length > 0 && seen.every((c) => c === want),
+    seen.length ? 'captured ' + seen.join(', ') + '; serving ' + want : 'no live capture of ' + model + ' in the Lab');
+  let t = opts.tests;
+  if (t === 'run') {
+    const RC = require(path.join(repo, 'tools', 'cfb', 'release_check.js'));
+    const it = RC.check({ skipTests: false }).items.find((x) => x.n === 1);
+    t = { ok: it && it.status === 'PASS', detail: it ? it.detail : 'no test item' };
+  }
+  add(6, 'tests pass (release checklist item 1)', !!(t && t.ok), t ? String(t.detail || '').split('\n').filter((l) => !/^ok /.test(l)).slice(0, 5).join('; ') || 'PASS' : 'no test result (run with tests: "run")');
+  const lab = opts.lab || readJson(path.join(repo, 'football', 'cfb_lab', 'reports', String(opts.season || seasonFor()), 'lab.json'));
+  const ev = lab && lab.comparison && lab.comparison.promotion && (lab.comparison.promotion.evaluations || []).find((x) => x.challenger === model);
+  add(7, 'shadow evaluation complete (Model Lab promotion evaluation ELIGIBLE)', !!(ev && ev.decision === 'ELIGIBLE' && ev.ready),
+    ev ? ev.decision + ' (n ' + ev.n + ' of ' + ev.min_n + ')' : 'no promotion evaluation for ' + model + ' in lab.json');
+  return { model, ok: out.every((c) => c.ok), rollback: !!opts.rollback, checks: out, rule: 'cfb_promotion_guard_v1' };
+}
+
+module.exports = { guard, VERSION_RE, LOOP_RE };
 
 if (require.main === module) {
   const a = process.argv.slice(2);

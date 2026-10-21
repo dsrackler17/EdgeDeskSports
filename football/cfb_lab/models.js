@@ -36,6 +36,7 @@ const REC = require(path.join(G.REPO, 'tools', 'record', 'football_record_core.j
 /* the one canonical pathway to a V2 projection (docs/cfb-production/CANONICAL.md):
    input contract, the engine, numeric checks, degraded modes */
 const CANON = require(path.join(G.REPO, 'football', 'cfb_production', 'canonical.js'));
+const CHAMP = require(path.join(G.REPO, 'lib', 'cfb_champion.js'));
 
 const U = L.util;
 const V2DIR = path.join(G.REPO, 'football', 'cfb_v2');
@@ -162,10 +163,16 @@ function v1Adapter(opts) {
      slate rows' own model_version (edgedesk_cfb_p4_v1.0.1 once the one-home-
      field file is promoted), carried as the calibration version so the hourly
      run audits the change as CALIBRATION_CHANGED instead of hiding it. */
-  const cv = (((slate && slate.games) || []).map((g) => g && g.model_version).find(Boolean)) || mv;
+  const cv = (((slate && slate.games) || []).map((g) => g && ((g.v1 && g.v1.model_version) || g.model_version)).find(Boolean)) || mv;
   const meta = { sport: 'cfb', season: slate && slate.season, generated_at: slate && slate.generated_at, model_version: mv };
   const out = new Map();
-  ((slate && slate.games) || []).forEach((g) => {
+  ((slate && slate.games) || []).forEach((g0) => {
+    /* V1 is V1 whichever model prices the board: a row a promoted champion
+       priced carries cfb_p4's own number in its v1 block (build_coverage.js) */
+    const v = g0 && g0.v1 && g0.priced_by ? g0.v1 : null;
+    const g = v ? Object.assign({}, g0, { model_status: v.model_status, model_home_margin: v.model_home_margin,
+      model_home_line: v.model_home_margin == null ? null : (v.model_home_margin === 0 ? 0 : -v.model_home_margin),
+      model_fair_total: v.model_fair_total, model_home_win_prob: v.model_home_win_prob, model_version: v.model_version }) : g0;
     const p = REC.projectionFromSlate('cfb', g, meta);
     if (!p) return;
     const margin = L.conv.bookToMargin(p.home_line);
@@ -295,55 +302,10 @@ function v2Adapter(which, opts) {
   return { model_version: mv, label, projections: out, generated_at: cur && cur.generated_at, unavailable };
 }
 
-/* ------------------------------------------------------------ Loop v2 */
-/* The loop's published margin distribution (model_loop/core/distribution.py
-   KeyNumberMargin): P(M = k) proportional to exp(-((k - mu') / sigma)^2 / 2) x
-   mult[|k|] on k = -kmax..kmax, mu' solved (Newton) so the mean is the margin.
-   Ported, not re-fitted: every number below is the loop's own. */
-function keyNumberDist(D) {
-  const kmax = D.kmax, sigma = D.sigma, n = 2 * kmax + 1, mult = new Array(kmax + 1);
-  for (let i = 0; i <= kmax; i++) mult[i] = i < D.mult.length ? D.mult[i] : 1;
-  function raw(shift) {
-    const p = new Array(n); let s = 0;
-    for (let i = 0; i < n; i++) { const k = i - kmax, z = (k - shift) / sigma; p[i] = Math.exp(-0.5 * z * z) * mult[Math.abs(k)]; s += p[i]; }
-    for (let i = 0; i < n; i++) p[i] /= s;
-    return p;
-  }
-  function moments(p) {
-    let m = 0, v = 0;
-    for (let i = 0; i < n; i++) m += p[i] * (i - kmax);
-    for (let i = 0; i < n; i++) v += p[i] * (i - kmax - m) * (i - kmax - m);
-    return { mean: m, sd: Math.sqrt(v) };
-  }
-  function pmf(mu) {
-    const s2 = sigma * sigma; let shift = mu;
-    for (let it = 0; it < 50; it++) {
-      const mo = moments(raw(shift)), err = mu - mo.mean;
-      shift += err * s2 / Math.max(mo.sd * mo.sd, 1e-6 * s2);
-      if (Math.abs(err) < 1e-10) break;
-    }
-    return raw(shift);
-  }
-  /* smallest h with P(|M - mu| <= h) >= mass, whole margins spread evenly over [k - 1/2, k + 1/2) */
-  function centralHalfwidth(mu, mass, p) {
-    p = p || pmf(mu);
-    let lo = 0, hi = kmax;
-    for (let it = 0; it < 50; it++) {
-      const h = 0.5 * (lo + hi), a = mu - h, b = mu + h; let cov = 0;
-      for (let i = 0; i < n; i++) { const k = i - kmax, w = Math.min(k + 0.5, b) - Math.max(k - 0.5, a); if (w > 0) cov += p[i] * Math.min(w, 1); }
-      if (cov >= mass) hi = h; else lo = h;
-    }
-    return hi;
-  }
-  /* P(the home side covers home_line), a push removed: margin + line > 0 */
-  function coverHome(mu, homeLine, p) {
-    p = p || pmf(mu);
-    let win = 0, push = 0;
-    for (let i = 0; i < n; i++) { const x = i - kmax + homeLine; if (x > 1e-9) win += p[i]; else if (Math.abs(x) <= 1e-9) push += p[i]; }
-    return push < 1 ? win / (1 - push) : null;
-  }
-  return { pmf, moments, centralHalfwidth, coverHome, kmax };
-}
+/* ------------------------------------------------------------ Loop */
+/* the loop's published distribution, ported once in lib/cfb_champion.js (the
+   board prices a champion loop model from the same code) */
+const keyNumberDist = CHAMP.keyNumberDist;
 
 function loopAdapter(opts) {
   opts = opts || {};
@@ -403,7 +365,7 @@ function loopAdapter(opts) {
         const gap = margin - L.conv.bookToMargin(market.current_spread);
         const side = gap > 0 ? 'HOME' : (gap < 0 ? 'AWAY' : null);
         const lean = Math.abs(gap) >= L.constants.V1_LEAN_GAP;
-        const ch = K.coverHome(margin, market.current_spread, p);
+        const cv = K.coverHome(margin, market.current_spread, p), ch = cv.win + cv.lose > 0 ? cv.win / (cv.win + cv.lose) : null;
         return { status: lean ? 'LEAN' : 'PASS', side, decision_source: L.RULES.v1_decision,
           reason: lean ? label + ' differs from the market by ' + U.r(Math.abs(gap), 1) + ' pts (record lean rule: >= ' + L.constants.V1_LEAN_GAP + ')'
             : label + ' within ' + L.constants.V1_LEAN_GAP + ' pts of the market',

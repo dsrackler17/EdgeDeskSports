@@ -476,7 +476,7 @@ function q(o) {
       d1.status === 'LEAN' && d1.side === 'HOME' && d1.cover_probability > 0.5 && d1.decision_source === L.RULES.v1_decision
         && d2.status === 'PASS' && d0.status === 'PASS' && d0.cover_probability === null && d1.bet_enabled === false, [d1, d2]);
     const pw = pm.reduce((x, y, i) => x + (i - K.kmax > 0 ? y : 0), 0), pl = pm.reduce((x, y, i) => x + (i - K.kmax < 0 ? y : 0), 0);
-    chk('Loop v2: the cover probability at a pick\'em line is the win probability the distribution implies', Math.abs(K.coverHome(7.4, 0, pm) - pw / (pw + pl)) < 1e-12);
+    chk('Loop v2: the cover probability at a pick\'em line is the win probability the distribution implies', Math.abs(K.coverHome(7.4, 0, pm).win - pw) < 1e-12 && Math.abs(K.coverHome(7.4, 0, pm).lose - pl) < 1e-12);
     const v21 = M.loopAdapter({ loopCurrent: Object.assign({}, cur, { model_version: '2.1.0' }), slate: { games: [] } });
     const vbad = M.loopAdapter({ loopCurrent: Object.assign({}, cur, { model_version: 'latest' }), slate: { games: [] } });
     chk('Loop v2: a promoted loop version is a new lab identity; a non-version is never captured',

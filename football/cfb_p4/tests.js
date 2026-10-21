@@ -634,6 +634,50 @@
       })(),
       'an index of 100 driven by one input must not read as a game-specific judgement');
 
+    /* ================= the governance champion (lib/cfb_champion.js) ================= */
+    var CH = root.EDCfbChampion || (typeof require === 'function' ? (function () { try { return require('../../lib/cfb_champion.js'); } catch (e) { return null; } })() : null);
+    if (CH) {
+      var hadCH = root.EDCfbChampion;
+      root.EDCfbChampion = CH;
+      var now = Date.now(), iso = function (h) { return new Date(now + h * 3600000).toISOString(); };
+      var dist = { kind: 'key_number', sigma: 16.5, kmax: 100, mult: [0.001, 0.98, 0.79, 2.79, 1.01, 0.77, 0.96, 2.53, 0.8, 0.37, 1.43] };
+      var entry = function (o) { var e = { model_version: 'edgedesk_cfb_loop_v2.0.0', label: 'Loop v2.0.0', source: 'football/cfb/model_loop/current.json',
+        as_of: iso(-1), kickoff: iso(48), margin: 9.25, total: 51.5, p_home: 0.71, sigma: 16.3, intervals: { 80: [-11.4, 29.9] }, distribution: dist };
+        for (var k in o || {}) e[k] = o[k]; return e; };
+      var gReq = function (gid, extra) { var r = baseReq(extra); r.game = Object.assign({}, r.game, { game_id: gid }); return r; };
+      CH.load(null);
+      var v1 = E.projectGame(gReq('G1', { market: { spread_line: 7 } }));
+      CH.load({ schema: CH.SCHEMA, champion: 'edgedesk_cfb_p4_v1.0.0', games: {} });
+      var v1t = E.projectGame(gReq('G1', { market: { spread_line: 7 } }));
+      chk('champion: with V1 the champion (an empty table) every number is V1\'s',
+        v1.status === 'PREDICTED' && v1t.model.fair_spread === v1.model.fair_spread && v1t.model.champion === null && v1t.model_version === v1.model_version
+          && !v1t.contributions.some(function (c) { return c.key === 'champion'; }));
+      CH.load({ schema: CH.SCHEMA, champion: 'edgedesk_cfb_loop_v2.0.0', games: { G1: entry(), STALE: entry({ as_of: iso(-40) }), POST: entry({ as_of: iso(-1), kickoff: iso(-2) }) } });
+      var c = E.projectGame(gReq('G1', { market: { spread_line: 7 } }));
+      var sum = c.contributions.reduce(function (a, x) { return a + x.points; }, 0);
+      var row = c.contributions.filter(function (x) { return x.key === 'champion'; })[0];
+      chk('champion: a promoted champion\'s stored number prices the game (margin, win probability, total, version)',
+        c.status === 'PREDICTED' && c.model.fair_spread === 9.25 && c.model.home_win_prob === 0.71 && c.model.fair_total === 51.5
+          && c.model_version === 'edgedesk_cfb_loop_v2.0.0' && c.model.champion.model_version === 'edgedesk_cfb_loop_v2.0.0', c.model);
+      chk('champion: V1 is computed exactly as before and kept beside it',
+        Math.abs(c.model.champion.v1.margin - v1.model.fair_spread) < 1e-12 && c.model.champion.v1.model_version === v1.model_version
+          && Math.abs(c.model.raw_game_margin - v1.model.raw_game_margin) < 1e-12);
+      chk('champion: one last row (its number less V1\'s) keeps the contributions summing to the published margin',
+        row && Math.abs(row.points - (9.25 - v1.model.fair_spread)) < 1e-12 && Math.abs(sum - c.model.fair_spread) < 1e-9
+          && c.contributions[c.contributions.length - 1].key === 'champion' && /Loop v2\.0\.0/.test(row.label), { sum: sum, fair: c.model.fair_spread });
+      var cv = CH.coverMargin(entry(), 7);
+      chk('champion: the cover is read off the distribution the champion publishes, and its interval is the range',
+        c.cover && Math.abs(c.cover.win - cv.win) < 1e-12 && Math.abs(c.cover.win + c.cover.push + c.cover.lose - 1) < 1e-9 && /champion:key_number/.test(c.cover.basis)
+          && c.model.p10_margin === -11.4 && c.model.p90_margin === 29.9 && c.model.median_margin === 9.25, c.cover);
+      chk('champion: a counterfactual run asks for V1 and gets it',
+        E.projectGame(Object.assign(gReq('G1', { market: { spread_line: 7 } }), { no_champion: true })).model.fair_spread === v1.model.fair_spread);
+      chk('champion: a stale number, a post-kickoff number, an unlisted game and a request without a game id all fall back to V1',
+        [E.projectGame(gReq('STALE')), E.projectGame(gReq('POST')), E.projectGame(gReq('OTHER')), E.projectGame(baseReq())].every(function (x) {
+          return x.status === 'PREDICTED' && x.model.champion === null && Math.abs(x.model.fair_spread - v1.model.fair_spread) < 1e-12; }));
+      CH.load(null);
+      root.EDCfbChampion = hadCH;
+    }
+
     return finish();
   }
 

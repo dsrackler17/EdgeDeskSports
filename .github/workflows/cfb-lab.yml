@@ -125,6 +125,15 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node football/cfb_production/projections.js --write || echo "::warning::the canonical projections could not be built"
 
+      # The governance champion's table (lib/cfb_champion.js): empty while V1
+      # is the champion; once a person promotes another model, its stored
+      # pregame numbers per game, which the board and the slate build price
+      # from (every other game falls back to V1). A failure warns; the
+      # previous table stays, and its entries age out on their own (30 h).
+      - name: Champion table (football/cfb_production/reports/champion.json)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node football/cfb_production/champion.js --write || echo "::warning::the champion table could not be built"
+
       # Alternate spreads (football/cfb_terminal/alternates.js), CFB and NFL:
       # opt-in and budgeted. It runs only when the repository variable
       # READ_ALT_CAPTURE is 'on'. Since 2026-10-10 it asks
@@ -239,7 +248,7 @@ jobs:
           tools/ci/push_generated.sh main "cfb lab: hourly snapshots, market, settlement, reports" -- \
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
-            football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
+            football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json football/cfb_production/reports/champion.json \
             football/cfb_production/reports/traces.json football/cfb_terminal football/game_research football/cfb_validation football/markets \
             football/validation/model_health.json football/broadcasts/current.json football/content/packets.json football/evidence/packets.json \
             articles sitemap-articles.xml sitemap.xml
