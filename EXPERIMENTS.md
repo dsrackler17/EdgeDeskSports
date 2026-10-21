@@ -415,3 +415,70 @@ Run 2026-10-21 on SBR 2011–2019 (2,393 games) by `python3 -m research.clv.nfl 
 **Caveats:**
 - Proxy-holdout seasons sit inside the hyperparameter-selection windows of both base models (final scores, not line moves).
 - 2026 openers are early lookahead consensus numbers, not a book's opener.
+
+---
+
+## NBA
+
+Pre-registered 2026-10-21, before any NBA CLV number was computed.
+
+**Base models (predictions regenerated read-only into `.cache/clv/`):**
+
+| Model | Role | How it is replayed |
+|---|---|---|
+| `edgedesk_nba_v1:G_stack_P` | production `nba/` engine; prices the NBA panel and slate | Projected availability = the previous game's rotation, knowable at the open. Replayed by importing `nba/model/walkforward.js` `run()` in `research/clv/nba_prod.js`, after `npm run nba:backfill` into `.cache`. The backfill's rewrites of committed `nba/data` files are restored afterwards. **Reproduction check:** the replay's selection-window moneyline log loss must equal the committed `nba/validation/nba_walkforward.json` value within 1e-4. **Fallback:** if it cannot be produced or reproduced, NBA-B1, B2 and W1 are recorded INFEASIBLE (not counted), and R1 and W3 use the lab model's disagreement only |
+| `edgedesk_bb_points_v1` (`points_rest`) | basketball lab model; served by the model loop and named in `engine/registry.json` | `research/clv/bb_predict.js`. Each game is predicted at 09:00 UTC on its date (before any same-day result). Reproduction at tip − 30 min equals the committed confirmation log loss: 0.62234, n = 11,546 |
+
+**Reading the production model's sealed test window.** The `nba/` engine's test window (2018+) was already unsealed twice (`nba/validation/holdout_log.json`). Reading its predictions for the CLV test is recorded in that log (scope `clv`). Nothing in the engine's choice depends on it.
+
+**Lines:**
+- **SBR spread and total open/close, repo seasons 2012–2022.** The NBA archive keeps the moneyline close only, so no moneyline experiment can run before the holdout. Teams are joined by date (±1 day), id and final score.
+- **Holdout:** repo 2026 (ESPN DraftKings open/close, with prices) plus 2027 to date.
+
+**Settings:**
+- Clusters: game date.
+- σ (spread, total): from SBR 2012–2022.
+- First evaluable residual season: 2015.
+
+### NBA-B1: production G_stack_P, spread (Phase 3)
+- At ≥1.0. Pass: mean `clv_prob` > 0, one-sided p < 0.05, n ≥ 100.
+
+### NBA-B2: production G_stack_P, total (Phase 3)
+- At ≥2.0. Pass as B1.
+
+### NBA-B3: lab points_rest, spread (Phase 3)
+- At ≥1.0. Pass as B1.
+
+### NBA-B4: lab points_rest, total (Phase 3)
+- At ≥2.0. Pass as B1.
+
+### NBA-R1: residual ridge on d_prod and d_lab, spread (Phase 4)
+- At ≥0.25. Pass as B1.
+
+### NBA-R2: R1 plus an information block, spread (Phase 4, one change)
+- **Change:** add, as one block:
+  - `open_line`;
+  - `b2b_diff` (home on a back-to-back − away, from the schedule);
+  - `d_lab × early` (early = either team has played fewer than 15 games that season).
+- **Pass:** as B1, AND a higher mean `clv_prob` than R1 on the same games.
+
+### NBA-W1: projected star absences (Phase 5)
+- **Hypothesis:** where the production model's projected-availability adjustment differs from the healthy-roster rating by ≥ 2 pts net between the teams, the opener under-prices the absence. Production's bets there earn positive CLV.
+- **Change:** B1's bets restricted to those games.
+- **Pass:** mean `clv_prob` > 0, one-sided p < 0.05, n ≥ 50.
+- Late scratches are untestable: no injury timestamps exist.
+
+### NBA-W2: rest and back-to-backs (Phase 5)
+- **Hypothesis:** R1 earns positive CLV on games where exactly one team is on a back-to-back.
+- **Change:** R1's bets restricted to those games.
+- **Pass:** as W1.
+
+### NBA-W3: totals residual (Phase 5)
+- **Model:** ridge of the total move on `dt_prod` and `dt_lab`.
+- **Bet rule:** ≥0.25.
+- **Pass:** as B1.
+
+### NBA-W4: early season (Phase 5)
+- **Hypothesis:** before ratings stabilise (either team under 15 games), the lab model's disagreement still earns positive CLV.
+- **Change:** B3's bets restricted to early games.
+- **Pass:** as W1.
