@@ -1062,6 +1062,13 @@ current report.
     (`tools/cbb/espn_clubs.js`). A refused PDF now records how it was refused
     (an HTTP status, a timeout, or not a PDF) in the `official_unavailable`
     alert.
+14. **The PDF library is imported by its literal name,
+    `import("npm:unpdf@1.8.1")`.** A deployed function carries only the npm
+    packages its module graph names. The first deploy held the specifier in a
+    constant, so the bundle had no unpdf, and the live function answered "Could
+    not find constraint 'unpdf@1.8.1' in the list of packages". It fell back to
+    ESPN. `deno info` on the file lists unpdf only with the literal, and a sync
+    test now fails on any variable `import(...)` in the function.
 
 ### Acceptance
 
