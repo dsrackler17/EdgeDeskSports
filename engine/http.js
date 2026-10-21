@@ -53,6 +53,7 @@ class GuardError extends Error {
 /**
  * createClient({ cacheDir, providers, fetchImpl, now, sleep, retries, breakerFailures, breakerCooldownMs, log })
  * → { get(url, opts) → { ok, status, body(Buffer), text(), json(), fromCache, stale, revalidated, provider, fetchedAt, error },
+ *     (opts: ttlMs, noCache — never read the cache, noStore — never write it: a page parsed and thrown away)
  *     stats(), providerFor(url) }
  */
 function createClient(o) {
@@ -211,7 +212,7 @@ function createClient(o) {
         return result({ ok: true, status: 200, fromCache: true, stale: false, revalidated: true, provider: p, fetchedAt: new Date(now()).toISOString(), url }, cached.body);
       }
       if (r && r.status >= 200 && r.status < 300) {
-        writeCache(url, r.body, { url, status: r.status, etag: r.etag || null, last_modified: r.lastModified || null, fetched_at_ms: now(), bytes: r.body.length, sha256: sha(r.body) });
+        if (!opts.noStore) writeCache(url, r.body, { url, status: r.status, etag: r.etag || null, last_modified: r.lastModified || null, fetched_at_ms: now(), bytes: r.body.length, sha256: sha(r.body) });
         breakerRecord(p, true);
         return result({ ok: true, status: r.status, fromCache: false, stale: false, revalidated: false, provider: p, fetchedAt: new Date(now()).toISOString(), url, sha256: sha(r.body) }, r.body);
       }

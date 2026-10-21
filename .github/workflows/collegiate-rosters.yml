@@ -1,0 +1,58 @@
+# EdgeDesk collegiate — rosters from every Division I school's own site, and
+# the portal ledger built from them (collegiate/run.js, as collegiate/plan.json
+# says).
+#
+#   registry   ncaa.com's directory: every member school, its conference and
+#              its athletics website (rebuilt when older than 30 days)
+#   rosters    each plan sport's current and previous season at every school,
+#              read through collegiate/polite.js: robots.txt first (SIDEARM
+#              sites ask 30 s between reads; we wait it), EdgeDeskBot by name,
+#              every refusal recorded and respected. Snapshots keep when we
+#              first and last saw each player listed.
+#   backfill   past seasons the plan names, read once (baseball 2013-2026 for
+#              the college baseball model)
+#   portal     transfers, departures and newcomers per sport and season, and
+#              each team's continuity (collegiate/portal.js)
+#
+# Weekly on main; on a branch when the plan changes there. Whatever was read
+# is published even if the run is cut short (a snapshot is written per page).
+name: Collegiate rosters and portal (weekly)
+
+on:
+  schedule:
+    - cron: '41 7 * * 1'          # Monday 07:41 UTC
+  push:
+    paths:
+      - 'collegiate/plan.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collegiate-rosters-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The collector's own rules first
+        run: node tools/collegiate/collegiate.test.js
+      - name: Registry, rosters, backfill, portal
+        timeout-minutes: 320
+        run: node --max-old-space-size=6000 collegiate/run.js
+      - name: Publish what was read (tools/ci/push_generated.sh)
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          [ -d collegiate/data ] || exit 0
+          bash tools/ci/push_generated.sh "${{ github.ref_name }}" "collegiate: rosters and portal" -- collegiate/data
