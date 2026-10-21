@@ -45,6 +45,8 @@ SBR_TEAMS = {
     "Pittsburgh": "PIT", "Seahawks": "SEA", "Seattle": "SEA", "49ers": "SF", "SanFrancisco": "SF", "Buccaneers": "TB",
     "TampaBay": "TB", "Tampa": "TB", "Titans": "TEN", "Tennessee": "TEN", "Redskins": "WAS", "Washington": "WAS",
     "Commanders": "WAS", "FootballTeam": "WAS", "WashingtonFootballTeam": "WAS",
+    "BuffaloBills": "BUF", "Fortyniners": "SF", "KCChiefs": "KC", "Washingtom": "WAS",
+    "NewYork": "NY?",   # Giants or Jets: resolved by the schedule join (both tried)
 }
 FRANCHISE = {"OAK": "LV", "SD": "LAC", "STL": "LA"}
 
@@ -98,7 +100,13 @@ def sbr_lines():
     d, qa = S.sbr("nfl")
     d["home"] = d.home_team.str.replace(" ", "").map(SBR_TEAMS)
     d["away"] = d.away_team.str.replace(" ", "").map(SBR_TEAMS)
-    qa["unmapped_teams"] = sorted(set(d.home_team[d.home.isna()]) | set(d.away_team[d.away.isna()]))
+    qa["unmapped_teams"] = sorted(map(str, set(d.home_team[d.home.isna()]) | set(d.away_team[d.away.isna()])))
+    parts = [d]
+    for col in ("home", "away"):
+        amb = d[d[col] == "NY?"]
+        d = d[d[col] != "NY?"]
+        parts = [d] + [amb.assign(**{col: c}) for c in ("NYG", "NYJ")] + parts[1:]
+    d = pd.concat(parts, ignore_index=True)
     return d, qa
 
 

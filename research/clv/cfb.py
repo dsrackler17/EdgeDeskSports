@@ -184,9 +184,149 @@ def pre():
     return out
 
 
+# ------------------------------------------------------------- Phase 6
+def lines_2026():
+    """2026 holdout lines: the Lab ledger's OBSERVED open (first DraftKings
+    quote seen) and its close (OBSERVED or PROVIDER_DECLARED)."""
+    rows = [json.loads(l) for l in open(os.path.join(S.ROOT, "football", "cfb_lab", "ledger", "2026", "lines.jsonl"))]
+    x = pd.DataFrame(rows)
+    out = {}
+    for mk, col, name in (("spread", "home_line", "line"), ("total", "total_points", "total")):
+        y = x[x.market_type == mk]
+        o = y[(y.kind == "OPEN") & (y.quality == "OBSERVED")].groupby("game_id")[col].first()
+        c = y[(y.kind == "CLOSE") & y.quality.isin(["OBSERVED", "PROVIDER_DECLARED"])].groupby("game_id")[col].first()
+        out[f"open_{name}"], out[f"close_{name}"] = o, c
+    d = pd.DataFrame(out)
+    d.index = d.index.astype(int)
+    d["open_line"], d["close_line"] = -d.open_line, -d.close_line          # book sign -> expected home margin
+    return d.reset_index().rename(columns={"index": "game_id"})
+
+
+def holdout_frame():
+    d, _ = load()
+    h25 = d[d.season == 2025].copy()
+    g = pd.read_parquet(os.path.join(LOOP_DATA, "build", "games.parquet"))
+    g26 = g[g.season == 2026][["game_id", "season", "week", "season_type", "home_score", "away_score", "home_conf",
+                                "away_conf", "home_name", "away_name", "home_div", "away_div"]].copy()
+    g26["game_id"] = g26.game_id.astype(int)
+    l26 = lines_2026()
+    h26 = g26.merge(l26, on="game_id", how="inner")
+    h26["margin"] = h26.home_score - h26.away_score
+    h26["total_pts"] = h26.home_score + h26.away_score
+    h26["result"] = h26.margin
+    p4 = pd.read_csv(os.path.join(S.ROOT, "model_loop", "adapters", "cfb", "baselines", "cfb_p4_replay_predictions.csv.gz"))
+    v2 = pd.read_csv(V2_CACHE)
+    h26 = h26.merge(p4[["game_id", "fair_spread", "fair_total"]].rename(columns={"fair_spread": "p4", "fair_total": "p4_total"}),
+                    on="game_id", how="left")
+    h26 = h26.merge(v2[["game_id", "pred_margin", "pred_total"]].rename(columns={"pred_margin": "v2", "pred_total": "v2_total"}),
+                    on="game_id", how="left")
+    hp = h26.home_conf.isin(POWER - {"Pac-12"}) | h26.home_name.eq("Notre Dame")
+    ap = h26.away_conf.isin(POWER - {"Pac-12"}) | h26.away_name.eq("Notre Dame")
+    h26["nonpower"] = (~hp & ~ap).astype(float)
+    h26["fcs"] = (h26.home_div.ne("fbs") | h26.away_div.ne("fbs")).astype(float)
+    h26["early"] = (h26.week <= 4).astype(float) * h26.season_type.eq("regular")
+    h26["cluster"] = "2026-" + h26.season_type.astype(str) + "-" + h26.week.astype(str)
+    cols = ["season", "game_id", "cluster", "open_line", "close_line", "open_total", "close_total", "margin", "total_pts",
+            "result", "p4", "p4_total", "v2", "v2_total", "nonpower", "fcs", "early", "week"]
+    h = pd.concat([h25[cols], h26[cols]], ignore_index=True)
+    return d[d.season.isin(PRE)].copy(), h
+
+
+def frozen_residual(train, test, base_cols, extra, market):
+    """One ridge fit on every pre-holdout season (lambda by the inner
+    walk-forward on them), applied unchanged to the holdout."""
+    def feats(src, x):
+        o = src.open_line if market == "spread" else src.open_total
+        names = []
+        for c in base_cols:
+            x[f"d_{c}"] = (src[c] - o).values
+            names.append(f"d_{c}")
+        if extra:
+            x["open_lvl"] = x.open_line
+            x["d_early"] = x[f"d_{base_cols[0]}"] * x.early
+            x["d_nonpower"] = x[f"d_{base_cols[0]}"] * x.nonpower
+            x["d_fcs"] = x[f"d_{base_cols[0]}"] * x.fcs
+            names += ["open_lvl", "d_early", "d_nonpower", "d_fcs"]
+        x["move"] = x.close_line - x.open_line
+        return x[x[names].notna().all(axis=1)], names
+    tr, names = feats(train, frame(train, base_cols[0], market))
+    te, _ = feats(test, frame(test, base_cols[0], market))
+    tr = tr[tr.move.notna()]
+    lam = R.choose_lambda(tr, names, "move", [0.1, 1.0, 10.0, 100.0])
+    m = R.ridge_fit(tr[names], tr.move, lam)
+    te = te.copy()
+    te["pred_move"] = R.ridge_predict(m, te[names])
+    te["model_line"] = te.open_line + te.pred_move
+    log = {"lambda": lam, "n_train": int(len(tr)), "coef": {f: round(float(c), 5) for f, c in zip(names, m["coef_raw"])},
+           "intercept": round(float(m["intercept_raw"]), 5)}
+    return te, log
+
+
+def holdout():
+    pre_d, h = holdout_frame()
+    k = 13
+    out = {}
+    specs = [("CFB-H1", "spread", "p4", None, 2.0, "production cfb_p4 v1.0.1 spread (holdout)"),
+             ("CFB-H2", "total", "p4_total", None, 2.0, "production cfb_p4 v1.0.1 total (holdout)"),
+             ("CFB-H3", "spread", None, (["p4", "v2"], True), 0.25, "CFB-R2 frozen fit, spread (holdout)"),
+             ("CFB-H4", "total", None, (["p4_total", "v2_total"], False), 0.25, "CFB-W3 frozen fit, total (holdout)")]
+    full, _ = load()
+    for eid, mk, col, resid, thr, label in specs:
+        cfg = cfg_points(full, mk, thr, "base" if resid is None else "resid")
+        extra = {}
+        if resid is None:
+            x = frame(h, col, mk)
+        else:
+            x, log = frozen_residual(pre_d, h, resid[0], resid[1], mk)
+            extra = {"fit": log, "movement_calibration": H.movement_calibration(x.pred_move, x.move)}
+        rep = runner.run(SPORT, eid, x, cfg, label, holdout=True, k_tests=k, extra=extra)
+        out[eid] = {"pooled": runner.fmt(rep), "verdict": H.verdict(rep["primary"], k),
+                    "clv_pts_positive": (rep["primary"].get("clv_pts") or {}).get("mean", 0) > 0,
+                    "clv_ev": rep["primary"].get("clv_ev", {}).get("mean"),
+                    "by_season": {s["season"]: f"n={s['n_bets']} {100 * s['clv_prob']['mean']:+.2f} pp" for s in rep["by_season"]}}
+        print(eid, json.dumps(out[eid]))
+    with open(os.path.join(runner.RESULTS, SPORT, "holdout_summary.json"), "w") as f:
+        json.dump(out, f, indent=1, default=float)
+    return out
+
+
+def drift():
+    """CFB-D1 / D2: intercept-only residual (constant drift), walk-forward
+    pre-holdout and frozen on the holdout."""
+    d, _ = load()
+    pre_d, h = holdout_frame()
+    out = {}
+    for eid, mk in (("CFB-D1", "total"), ("CFB-D2", "spread")):
+        for part, src in (("pre", d[d.season.isin(PRE)]), ("holdout", h)):
+            x = frame(src, "p4" if mk == "spread" else "p4_total", mk)
+            x["move"] = x.close_line - x.open_line
+            x = x[x.move.notna()].copy()
+            if part == "pre":
+                x["one"] = 1.0
+                means = {s: x[x.season < s].move.mean() for s in PRE}
+                x["pred_move"] = [means[s] if (x.season < s).any() and x[x.season < s].season.nunique() >= 3 else np.nan
+                                  for s in x.season]
+            else:
+                tr = frame(pre_d, "p4" if mk == "spread" else "p4_total", mk)
+                x["pred_move"] = float((tr.close_line - tr.open_line).mean())
+            x = x[x.pred_move.notna()]
+            x["model_line"] = x.open_line + x.pred_move
+            rep = runner.run(SPORT, eid, x, cfg_points(d, mk, 0.25, "resid"), f"intercept-only drift, {mk}, {part}",
+                             holdout=(part == "holdout") and False, log=(part == "pre")) if part == "pre" else \
+                H.evaluate(x, cfg_points(d, mk, 0.25, "resid"))
+            out[f"{eid}-{part}"] = runner.fmt(rep) + f"; drift {x.pred_move.mean():+.3f}"
+            print(eid, part, out[f"{eid}-{part}"])
+    with open(os.path.join(runner.RESULTS, SPORT, "drift_diagnostic.json"), "w") as f:
+        json.dump(out, f, indent=1)
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "v2prevqb":
         v2_prev_qb()
     elif cmd == "pre":
         print(json.dumps(pre(), indent=1))
+    elif cmd == "holdout":
+        holdout()
+    elif cmd == "drift":
+        drift()

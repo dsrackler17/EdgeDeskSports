@@ -292,3 +292,49 @@ Run 2026-10-21 on 2012–2019 and 2021–2024 by `python3 -m research.clv.cfb pr
 ### CFB-H2: production cfb_p4 total on the holdout
 ### CFB-H3: CFB-R2 (frozen fit) spread on the holdout
 ### CFB-H4: CFB-W3 (frozen fit) total on the holdout
+
+### CFB-D1: diagnostic. How much of the totals residual's CLV is constant drift? (registered after the holdout)
+
+**Why added.** The frozen totals residual (H4) has an intercept of -0.61 points. On average, CFB totals fall from open to close, so a rule with no model would bet every under. D1 measures that rule alone.
+
+**Rule.** Predicted move = the mean move of all earlier walk-forward seasons (an intercept-only walk-forward ridge). Bet when |predicted move| ≥ 0.25.
+
+**Where it is evaluated.**
+- Pre-holdout: walk-forward.
+- Holdout: frozen, exactly as H4. The holdout is already unlocked.
+
+**Reading.** Counted as an attempt. It cannot become a candidate: it is market structure, not a model.
+
+### CFB-D2: diagnostic. The same intercept-only rule for spreads (registered after the holdout)
+
+**Rule.** As D1, for the spread move (H3's intercept is -0.13).
+
+### CFB holdout results (run once, 2026-10-21)
+
+**k = 13 at the gate.** With D1 and D2, the CFB family is now **15 attempts**. FINAL_REPORT.md re-applies the verdict at k = 15.
+
+| ID | Bets | CLV pts | CLV prob (pp) | α/13 one-sided LB | 2025 | 2026 | `clv_ev` at -110 | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| CFB-H1 production cfb_p4 spread ≥2.0 | 795 | +0.475 [+0.271, +0.688] | +1.19 [+0.66, +1.73] | +0.53 | n=633, +1.21 | n=162, +1.07 | -2.3% [-3.3, -1.2] | **PASS** |
+| CFB-H2 production cfb_p4 total ≥2.0 | 590 | +0.415 [+0.202, +0.632] | +0.99 [+0.50, +1.50] | +0.23 | n=477, +1.02 | n=113, +0.87 | -2.6% | **PASS** (failed pre-holdout: +0.07 pp, p = 0.30) |
+| CFB-H3 R2 frozen, spread ≥0.25 | 751 | +0.761 [+0.558, +0.953] | +1.91 [+1.39, +2.40] | +1.19 | n=604, +2.10 | n=147, +1.13 | -0.9% [-1.9, +0.04] | **PASS** |
+| CFB-H4 W3 frozen, total ≥0.25 | 757 | +0.616 [+0.432, +0.783] | +1.48 [+1.03, +1.89] | +0.88 | n=597, +1.50 | n=160, +1.41 | -1.7% | **PASS** |
+
+**Frozen fits:**
+- **R2** (λ = 10, trained on 9,520 games):
+  - move = -0.133 + 0.099·d_p4 + 0.101·d_v2 + 0.021·open − 0.069·d_p4·early + 0.003·d_p4·nonpower − 0.029·d_p4·fcs.
+  - The market moved about 10% of each model's disagreement toward it, and less early in the season.
+  - Holdout movement-calibration slope: 1.35.
+- **W3** (λ = 0.1): move = -0.606 − 0.065·dt_p4 + 0.248·dt_v2. Holdout slope: 0.66.
+
+**Caveats:**
+- The production replay's coefficients were fitted on 2001–2025 outcomes, so its 2025 holdout is not fully out of sample. Its 2026 numbers are: spread +1.07 pp (n = 162) and total +0.87 pp (n = 113).
+- 2026 openers are DraftKings first-seen quotes, not book openers.
+- Diagnostics (results at the opening price, not CLV):
+  - H3: 52.3% ATS, ROI -0.2%.
+  - H4: 53.7%, ROI +2.4%.
+
+### CFB-D1 / D2 results (diagnostic)
+- The constant drift is -0.14 pts for totals and +0.08 for spreads pre-holdout, and -0.21 / +0.01 on the frozen holdout.
+- Both are below the 0.25 bet threshold, so 0 bets.
+- **The residual models' CLV is not a constant "bet the under / the away side early" effect.**
