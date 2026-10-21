@@ -1,12 +1,12 @@
 {
  "schema": "edgedesk_bb_loop_week_v1",
- "at": "2026-10-21T01:51:19Z",
+ "at": "2026-10-21T23:31:16Z",
  "league": "wnba",
  "label": "WNBA",
  "date": "2026-10-21",
  "served_before": "1.0.0",
  "served_after": "1.0.0",
- "runs": 1,
+ "runs": 2,
  "promoted": null,
  "window": {
   "full": [
@@ -392,6 +392,385 @@
   },
   {
    "at": "2026-10-21T01:51:19Z",
+   "league": "wnba",
+   "served_version": "1.0.0",
+   "candidate": "recency_faster",
+   "change": {
+    "param": "half_life_days",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "late_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 3996,
+    "logloss": 0.611933,
+    "brier": 0.211892,
+    "margin_mae": 9.8385,
+    "total_mae": 13.3131
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 349,
+    "logloss": 0.602121,
+    "brier": 0.20668,
+    "margin_mae": 10.197,
+    "total_mae": 15.216
+   },
+   "ci95": [
+    -0.000305,
+    0.000173
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": -0.000075,
+    "full_mae": -0.0023,
+    "full_total_mae": -0.0082,
+    "recent_logloss": -0.000273,
+    "recent_mae": -0.0053,
+    "recent_total_mae": -0.0074
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change -0.000075 does not clear -0.0002; log loss 95% interval [-0.000305,0.000173] is not below zero; full margin MAE change -0.0023 does not clear -0.005"
+  },
+  {
+   "at": "2026-10-21T23:31:15Z",
+   "league": "wnba",
+   "served_version": "1.0.0",
+   "candidate": "scoring_level_looser",
+   "change": {
+    "param": "k_mu",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "total",
+    "total_early"
+   ],
+   "target": "total",
+   "full": {
+    "n": 3996,
+    "logloss": 0.612008,
+    "brier": 0.211929,
+    "margin_mae": 9.8408,
+    "total_mae": 13.3175
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 349,
+    "logloss": 0.602394,
+    "brier": 0.206794,
+    "margin_mae": 10.2023,
+    "total_mae": 15.1936
+   },
+   "ci95": [
+    -0.008727,
+    0.001193
+   ],
+   "ci_of": "total MAE change",
+   "delta": {
+    "full_logloss": 0,
+    "full_mae": 0,
+    "full_total_mae": -0.0038,
+    "recent_logloss": 0,
+    "recent_mae": 0,
+    "recent_total_mae": -0.0298
+   },
+   "decision": "FAIL",
+   "reason": "full total MAE change -0.0038 does not clear -0.005; total MAE 95% interval [-0.008727,0.001193] is not below zero"
+  },
+  {
+   "at": "2026-10-21T23:31:15Z",
+   "league": "wnba",
+   "served_version": "1.0.0",
+   "candidate": "scoring_level_tighter",
+   "change": {
+    "param": "k_mu",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "total"
+   ],
+   "target": "total",
+   "full": {
+    "n": 3996,
+    "logloss": 0.612008,
+    "brier": 0.211929,
+    "margin_mae": 9.8408,
+    "total_mae": 13.3252
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 349,
+    "logloss": 0.602394,
+    "brier": 0.206794,
+    "margin_mae": 10.2023,
+    "total_mae": 15.2536
+   },
+   "ci95": [
+    0.000375,
+    0.007588
+   ],
+   "ci_of": "total MAE change",
+   "delta": {
+    "full_logloss": 0,
+    "full_mae": 0,
+    "full_total_mae": 0.0039,
+    "recent_logloss": 0,
+    "recent_mae": 0,
+    "recent_total_mae": 0.0302
+   },
+   "decision": "FAIL",
+   "reason": "full total MAE change 0.0039 does not clear -0.005; total MAE 95% interval [0.000375,0.007588] is not below zero; worse on 2026 total MAE (0.0302)"
+  },
+  {
+   "at": "2026-10-21T23:31:15Z",
+   "league": "wnba",
+   "served_version": "1.0.0",
+   "candidate": "prior_stronger",
+   "change": {
+    "param": "prior_games",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "early_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 3996,
+    "logloss": 0.613055,
+    "brier": 0.212341,
+    "margin_mae": 9.8369,
+    "total_mae": 13.2828
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 349,
+    "logloss": 0.600492,
+    "brier": 0.205832,
+    "margin_mae": 10.1564,
+    "total_mae": 15.1181
+   },
+   "ci95": [
+    -0.000494,
+    0.002612
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.001047,
+    "full_mae": -0.0039,
+    "full_total_mae": -0.0385,
+    "recent_logloss": -0.001902,
+    "recent_mae": -0.0459,
+    "recent_total_mae": -0.1053
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.001047 does not clear -0.0002; log loss 95% interval [-0.000494,0.002612] is not below zero; full margin MAE change -0.0039 does not clear -0.005"
+  },
+  {
+   "at": "2026-10-21T23:31:15Z",
+   "league": "wnba",
+   "served_version": "1.0.0",
+   "candidate": "carry_lower",
+   "change": {
+    "param": "carry",
+    "how": [
+     "add",
+     -0.1
+    ]
+   },
+   "answers_patterns": [
+    "early_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 3996,
+    "logloss": 0.611898,
+    "brier": 0.211894,
+    "margin_mae": 9.8382,
+    "total_mae": 13.3241
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 349,
+    "logloss": 0.601874,
+    "brier": 0.206631,
+    "margin_mae": 10.2027,
+    "total_mae": 15.2022
+   },
+   "ci95": [
+    -0.000512,
+    0.000271
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": -0.00011,
+    "full_mae": -0.0026,
+    "full_total_mae": 0.0028,
+    "recent_logloss": -0.00052,
+    "recent_mae": 0.0004,
+    "recent_total_mae": -0.0212
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change -0.000110 does not clear -0.0002; log loss 95% interval [-0.000512,0.000271] is not below zero; full margin MAE change -0.0026 does not clear -0.005; worse on 2026 margin MAE (0.0004)"
+  },
+  {
+   "at": "2026-10-21T23:31:15Z",
+   "league": "wnba",
+   "served_version": "1.0.0",
+   "candidate": "carry_higher",
+   "change": {
+    "param": "carry",
+    "how": [
+     "add",
+     0.1
+    ]
+   },
+   "answers_patterns": [
+    "early_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 3996,
+    "logloss": 0.612258,
+    "brier": 0.212022,
+    "margin_mae": 9.8459,
+    "total_mae": 13.3211
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 349,
+    "logloss": 0.603031,
+    "brier": 0.207,
+    "margin_mae": 10.2058,
+    "total_mae": 15.2501
+   },
+   "ci95": [
+    -0.000118,
+    0.000643
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.00025,
+    "full_mae": 0.0051,
+    "full_total_mae": -0.0002,
+    "recent_logloss": 0.000637,
+    "recent_mae": 0.0035,
+    "recent_total_mae": 0.0267
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.000250 does not clear -0.0002; log loss 95% interval [-0.000118,0.000643] is not below zero; full margin MAE change 0.0051 does not clear -0.005; worse on 2026 log loss (0.000637); worse on 2026 margin MAE (0.0035)"
+  },
+  {
+   "at": "2026-10-21T23:31:15Z",
+   "league": "wnba",
+   "served_version": "1.0.0",
+   "candidate": "home_edge_looser",
+   "change": {
+    "param": "k_h",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "home_early"
+   ],
+   "target": "side",
+   "full": {
+    "n": 3996,
+    "logloss": 0.612369,
+    "brier": 0.212087,
+    "margin_mae": 9.8457,
+    "total_mae": 13.3213
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 349,
+    "logloss": 0.60281,
+    "brier": 0.207024,
+    "margin_mae": 10.2119,
+    "total_mae": 15.2234
+   },
+   "ci95": [
+    -0.000051,
+    0.000792
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.000361,
+    "full_mae": 0.0049,
+    "full_total_mae": 0,
+    "recent_logloss": 0.000416,
+    "recent_mae": 0.0096,
+    "recent_total_mae": 0
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.000361 does not clear -0.0002; log loss 95% interval [-0.000051,0.000792] is not below zero; full margin MAE change 0.0049 does not clear -0.005; worse on 2026 log loss (0.000416); worse on 2026 margin MAE (0.0096)"
+  },
+  {
+   "at": "2026-10-21T23:31:15Z",
+   "league": "wnba",
+   "served_version": "1.0.0",
+   "candidate": "home_edge_tighter",
+   "change": {
+    "param": "k_h",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "home"
+   ],
+   "target": "side",
+   "full": {
+    "n": 3996,
+    "logloss": 0.611755,
+    "brier": 0.211812,
+    "margin_mae": 9.8372,
+    "total_mae": 13.3213
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 349,
+    "logloss": 0.601854,
+    "brier": 0.206564,
+    "margin_mae": 10.1929,
+    "total_mae": 15.2234
+   },
+   "ci95": [
+    -0.000649,
+    0.000138
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": -0.000253,
+    "full_mae": -0.0036,
+    "full_total_mae": 0,
+    "recent_logloss": -0.00054,
+    "recent_mae": -0.0094,
+    "recent_total_mae": 0
+   },
+   "decision": "FAIL",
+   "reason": "log loss 95% interval [-0.000649,0.000138] is not below zero; full margin MAE change -0.0036 does not clear -0.005"
+  },
+  {
+   "at": "2026-10-21T23:31:15Z",
    "league": "wnba",
    "served_version": "1.0.0",
    "candidate": "recency_faster",

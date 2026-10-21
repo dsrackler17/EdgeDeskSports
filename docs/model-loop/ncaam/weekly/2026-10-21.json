@@ -1,12 +1,12 @@
 {
  "schema": "edgedesk_bb_loop_week_v1",
- "at": "2026-10-21T01:55:00Z",
+ "at": "2026-10-21T23:33:11Z",
  "league": "ncaam",
  "label": "Men's college basketball",
  "date": "2026-10-21",
  "served_before": "1.0.0",
  "served_after": "1.1.0",
- "runs": 1,
+ "runs": 2,
  "promoted": "1.1.0",
  "window": {
   "full": [
@@ -18,18 +18,18 @@
  "baseline": {
   "full": {
    "n": 88452,
-   "logloss": 0.501276,
-   "brier": 0.168136,
-   "margin_mae": 9.5058,
-   "total_mae": 13.5534
+   "logloss": 0.500974,
+   "brier": 0.168057,
+   "margin_mae": 9.49,
+   "total_mae": 13.5577
   },
   "recent_season": {
    "season": 2026,
    "n": 6300,
-   "logloss": 0.497368,
-   "brier": 0.168086,
-   "margin_mae": 10.0181,
-   "total_mae": 13.8396
+   "logloss": 0.496946,
+   "brier": 0.167975,
+   "margin_mae": 9.9957,
+   "total_mae": 13.8433
   },
   "this_season": {
    "n": 0
@@ -40,64 +40,64 @@
    "pattern": "home",
    "n": 5592,
    "note": "home games: result minus model, home side",
-   "outcome_bias": -0.168,
-   "t": -0.97
+   "outcome_bias": -0.156,
+   "t": -0.9
   },
   {
    "pattern": "home_early",
    "n": 1381,
    "note": "home games before either side has 6 games",
-   "outcome_bias": 2.825,
-   "t": 6.63
+   "outcome_bias": 2.761,
+   "t": 6.51
   },
   {
    "pattern": "neutral",
    "n": 708,
    "note": "neutral sites, listed home side",
-   "outcome_bias": -0.495,
-   "t": -1.12
+   "outcome_bias": -0.499,
+   "t": -1.13
   },
   {
    "pattern": "early_season",
    "n": 1564,
    "note": "either side has played fewer than 6 games",
-   "outcome_bias": 2.445,
-   "t": 6.24
+   "outcome_bias": 2.388,
+   "t": 6.13
   },
   {
    "pattern": "late_season",
    "n": 2321,
    "note": "both sides have played 20+",
-   "outcome_bias": -0.542,
-   "t": -2.3
+   "outcome_bias": -0.543,
+   "t": -2.31
   },
   {
    "pattern": "big_favourites",
-   "n": 2774,
+   "n": 2760,
    "note": "projected margin 10+ either way (sign: toward the favourite)",
-   "outcome_bias": -0.578,
+   "outcome_bias": -0.576,
    "t": -2.16
   },
   {
    "pattern": "back_to_back",
    "n": 182,
    "note": "one side on a back-to-back",
-   "outcome_bias": -0.398,
-   "t": -0.4
+   "outcome_bias": -0.384,
+   "t": -0.39
   },
   {
    "pattern": "total",
    "n": 6300,
    "note": "total points: result minus model",
-   "outcome_bias": 0.444,
-   "t": 2.03
+   "outcome_bias": 0.452,
+   "t": 2.06
   },
   {
    "pattern": "total_early",
    "n": 1564,
    "note": "total points, either side under 6 games",
-   "outcome_bias": 2.053,
-   "t": 4.47
+   "outcome_bias": 2.065,
+   "t": 4.5
   }
  ],
  "candidates": [
@@ -479,6 +479,385 @@
    },
    "decision": "FAIL",
    "reason": "full log loss change 0.002645 does not clear -0.0002; log loss 95% interval [0.002187,0.003083] is not below zero; full margin MAE change 0.1178 does not clear -0.005; worse on 2026 log loss (0.004790); worse on 2026 margin MAE (0.1645)"
+  },
+  {
+   "at": "2026-10-21T23:31:28Z",
+   "league": "ncaam",
+   "served_version": "1.1.0",
+   "candidate": "home_edge_looser",
+   "change": {
+    "param": "k_h",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "home_early"
+   ],
+   "target": "side",
+   "full": {
+    "n": 88452,
+    "logloss": 0.50134,
+    "brier": 0.168181,
+    "margin_mae": 9.4874,
+    "total_mae": 13.5577
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 6300,
+    "logloss": 0.497591,
+    "brier": 0.168135,
+    "margin_mae": 9.9923,
+    "total_mae": 13.8433
+   },
+   "ci95": [
+    0.000257,
+    0.000487
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.000366,
+    "full_mae": -0.0026,
+    "full_total_mae": 0,
+    "recent_logloss": 0.000645,
+    "recent_mae": -0.0034,
+    "recent_total_mae": 0
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.000366 does not clear -0.0002; log loss 95% interval [0.000257,0.000487] is not below zero; full margin MAE change -0.0026 does not clear -0.005; worse on 2026 log loss (0.000645)"
+  },
+  {
+   "at": "2026-10-21T23:31:41Z",
+   "league": "ncaam",
+   "served_version": "1.1.0",
+   "candidate": "recency_faster",
+   "change": {
+    "param": "half_life_days",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "late_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 88452,
+    "logloss": 0.501276,
+    "brier": 0.168136,
+    "margin_mae": 9.5058,
+    "total_mae": 13.5534
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 6300,
+    "logloss": 0.497368,
+    "brier": 0.168086,
+    "margin_mae": 10.0181,
+    "total_mae": 13.8396
+   },
+   "ci95": [
+    0.000253,
+    0.000353
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.000302,
+    "full_mae": 0.0158,
+    "full_total_mae": -0.0043,
+    "recent_logloss": 0.000422,
+    "recent_mae": 0.0224,
+    "recent_total_mae": -0.0037
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.000302 does not clear -0.0002; log loss 95% interval [0.000253,0.000353] is not below zero; full margin MAE change 0.0158 does not clear -0.005; worse on 2026 log loss (0.000422); worse on 2026 margin MAE (0.0224)"
+  },
+  {
+   "at": "2026-10-21T23:31:53Z",
+   "league": "ncaam",
+   "served_version": "1.1.0",
+   "candidate": "prior_weaker",
+   "change": {
+    "param": "prior_games",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 88452,
+    "logloss": 0.501421,
+    "brier": 0.168242,
+    "margin_mae": 9.4683,
+    "total_mae": 13.6213
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 6300,
+    "logloss": 0.496268,
+    "brier": 0.167857,
+    "margin_mae": 9.961,
+    "total_mae": 13.8796
+   },
+   "ci95": [
+    0.000094,
+    0.000834
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.000447,
+    "full_mae": -0.0217,
+    "full_total_mae": 0.0636,
+    "recent_logloss": -0.000678,
+    "recent_mae": -0.0347,
+    "recent_total_mae": 0.0363
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.000447 does not clear -0.0002; log loss 95% interval [0.000094,0.000834] is not below zero"
+  },
+  {
+   "at": "2026-10-21T23:32:07Z",
+   "league": "ncaam",
+   "served_version": "1.1.0",
+   "candidate": "scoring_level_looser",
+   "change": {
+    "param": "k_mu",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "total",
+    "total_early"
+   ],
+   "target": "total",
+   "full": {
+    "n": 88452,
+    "logloss": 0.500974,
+    "brier": 0.168057,
+    "margin_mae": 9.49,
+    "total_mae": 13.5551
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 6300,
+    "logloss": 0.496946,
+    "brier": 0.167975,
+    "margin_mae": 9.9957,
+    "total_mae": 13.8407
+   },
+   "ci95": [
+    -0.003661,
+    -0.001758
+   ],
+   "ci_of": "total MAE change",
+   "delta": {
+    "full_logloss": 0,
+    "full_mae": 0,
+    "full_total_mae": -0.0026,
+    "recent_logloss": 0,
+    "recent_mae": 0,
+    "recent_total_mae": -0.0026
+   },
+   "decision": "FAIL",
+   "reason": "full total MAE change -0.0026 does not clear -0.005"
+  },
+  {
+   "at": "2026-10-21T23:32:20Z",
+   "league": "ncaam",
+   "served_version": "1.1.0",
+   "candidate": "recency_slower",
+   "change": {
+    "param": "half_life_days",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "late_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 88452,
+    "logloss": 0.500845,
+    "brier": 0.168024,
+    "margin_mae": 9.4827,
+    "total_mae": 13.56
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 6300,
+    "logloss": 0.49676,
+    "brier": 0.167927,
+    "margin_mae": 9.9856,
+    "total_mae": 13.8454
+   },
+   "ci95": [
+    -0.000154,
+    -0.000106
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": -0.000129,
+    "full_mae": -0.0073,
+    "full_total_mae": 0.0023,
+    "recent_logloss": -0.000186,
+    "recent_mae": -0.0101,
+    "recent_total_mae": 0.0021
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change -0.000129 does not clear -0.0002"
+  },
+  {
+   "at": "2026-10-21T23:32:33Z",
+   "league": "ncaam",
+   "served_version": "1.1.0",
+   "candidate": "scoring_level_tighter",
+   "change": {
+    "param": "k_mu",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "total"
+   ],
+   "target": "total",
+   "full": {
+    "n": 88452,
+    "logloss": 0.500974,
+    "brier": 0.168057,
+    "margin_mae": 9.49,
+    "total_mae": 13.5617
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 6300,
+    "logloss": 0.496946,
+    "brier": 0.167975,
+    "margin_mae": 9.9957,
+    "total_mae": 13.847
+   },
+   "ci95": [
+    0.002887,
+    0.005258
+   ],
+   "ci_of": "total MAE change",
+   "delta": {
+    "full_logloss": 0,
+    "full_mae": 0,
+    "full_total_mae": 0.004,
+    "recent_logloss": 0,
+    "recent_mae": 0,
+    "recent_total_mae": 0.0037
+   },
+   "decision": "FAIL",
+   "reason": "full total MAE change 0.0040 does not clear -0.005; total MAE 95% interval [0.002887,0.005258] is not below zero; worse on 2026 total MAE (0.0037)"
+  },
+  {
+   "at": "2026-10-21T23:32:46Z",
+   "league": "ncaam",
+   "served_version": "1.1.0",
+   "candidate": "home_edge_tighter",
+   "change": {
+    "param": "k_h",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "home"
+   ],
+   "target": "side",
+   "full": {
+    "n": 88452,
+    "logloss": 0.500634,
+    "brier": 0.167942,
+    "margin_mae": 9.4936,
+    "total_mae": 13.5577
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 6300,
+    "logloss": 0.496309,
+    "brier": 0.167807,
+    "margin_mae": 10.0006,
+    "total_mae": 13.8433
+   },
+   "ci95": [
+    -0.000473,
+    -0.000216
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": -0.00034,
+    "full_mae": 0.0036,
+    "full_total_mae": 0,
+    "recent_logloss": -0.000637,
+    "recent_mae": 0.0049,
+    "recent_total_mae": 0
+   },
+   "decision": "FAIL",
+   "reason": "full margin MAE change 0.0036 does not clear -0.005; worse on 2026 margin MAE (0.0049)"
+  },
+  {
+   "at": "2026-10-21T23:32:58Z",
+   "league": "ncaam",
+   "served_version": "1.1.0",
+   "candidate": "prior_stronger",
+   "change": {
+    "param": "prior_games",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "early_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 88452,
+    "logloss": 0.503266,
+    "brier": 0.168805,
+    "margin_mae": 9.5959,
+    "total_mae": 13.5225
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 6300,
+    "logloss": 0.501256,
+    "brier": 0.169299,
+    "margin_mae": 10.1432,
+    "total_mae": 13.8445
+   },
+   "ci95": [
+    0.001843,
+    0.002716
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.002292,
+    "full_mae": 0.1059,
+    "full_total_mae": -0.0352,
+    "recent_logloss": 0.00431,
+    "recent_mae": 0.1475,
+    "recent_total_mae": 0.0012
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.002292 does not clear -0.0002; log loss 95% interval [0.001843,0.002716] is not below zero; full margin MAE change 0.1059 does not clear -0.005; worse on 2026 log loss (0.004310); worse on 2026 margin MAE (0.1475)"
   }
  ]
 }
