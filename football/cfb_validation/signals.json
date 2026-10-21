@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-10-21T00:09:57.986Z",
+ "generated_at": "2026-10-21T01:09:51.587Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -20,10 +20,10 @@
  },
  "investigate": {
   "summary": {
-   "n": 29,
+   "n": 30,
    "settled": 27,
-   "label": "small sample",
-   "average_gap": 9.76,
+   "label": null,
+   "average_gap": 9.69,
    "market_moved_toward_pct": 42.1,
    "positive_clv_pct": 29.6,
    "average_clv": -0.22,
@@ -745,11 +745,28 @@
     "favorite_flip": false,
     "closing_market": null,
     "final_margin": null
+   },
+   {
+    "game_id": "401862808",
+    "game": "Army @ Tulsa",
+    "week": 8,
+    "at": "2026-10-21T01:09:29.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": -6.32,
+    "market_at_snapshot": 1.5,
+    "gap": 7.82,
+    "toward": "Army",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": true,
+    "closing_market": null,
+    "final_margin": null
    }
   ],
   "outcomes": {
    "MARKET_MOVED": 3,
-   "BAD_INFORMATION": 25,
+   "BAD_INFORMATION": 26,
    "SHRANK_NATURALLY": 1
   },
   "outcome_definitions": {
@@ -777,10 +794,10 @@
    "ats_hypothetical": null
   },
   "investigate": {
-   "n": 29,
+   "n": 30,
    "settled": 27,
-   "label": "small sample",
-   "average_gap": 9.76,
+   "label": null,
+   "average_gap": 9.69,
    "market_moved_toward_pct": 42.1,
    "positive_clv_pct": 29.6,
    "average_clv": -0.22,
@@ -814,10 +831,10 @@
  },
  "favorite_flips": {
   "summary": {
-   "n": 15,
+   "n": 16,
    "settled": 15,
    "label": "small sample",
-   "average_gap": 6.39,
+   "average_gap": 6.48,
    "market_moved_toward_pct": 57.1,
    "positive_clv_pct": 26.7,
    "average_clv": 0.43,
@@ -1205,6 +1222,23 @@
     "close_error": 16.5,
     "edgedesk_closer_than_close": false,
     "ats_hypothetical": "LOSS"
+   },
+   {
+    "game_id": "401862808",
+    "game": "Army @ Tulsa",
+    "week": 8,
+    "at": "2026-10-21T01:09:29.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": -6.32,
+    "market_at_snapshot": 1.5,
+    "gap": 7.82,
+    "toward": "Army",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": true,
+    "closing_market": null,
+    "final_margin": null
    }
   ],
   "note": "EdgeDesk and the market favoured different teams at the snapshot",

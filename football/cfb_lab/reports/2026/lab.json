@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-21T00:09:38.000Z",
+ "generated_at": "2026-10-21T01:09:29.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,17 +46,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1481,
-    "latest_snapshot_at": "2026-10-21T00:07:15.000Z",
+    "snapshots": 1483,
+    "latest_snapshot_at": "2026-10-21T01:09:29.000Z",
     "upcoming_games": 59,
-    "avg_confidence_upcoming": 76.4
+    "avg_confidence_upcoming": 76.9
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1841,
-    "latest_snapshot_at": "2026-10-21T00:07:15.000Z",
+    "snapshots": 1843,
+    "latest_snapshot_at": "2026-10-21T01:09:29.000Z",
     "upcoming_games": 59,
     "avg_confidence_upcoming": 77.5
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1841,
-    "latest_snapshot_at": "2026-10-21T00:07:15.000Z",
+    "snapshots": 1843,
+    "latest_snapshot_at": "2026-10-21T01:09:29.000Z",
     "upcoming_games": 59,
     "avg_confidence_upcoming": 77.1
    }
@@ -73,43 +73,17 @@
   "data_quality": {
    "games": 59,
    "counts": {
-    "GREEN": 7,
-    "YELLOW": 52,
+    "GREEN": 9,
+    "YELLOW": 50,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 52,
+     "YELLOW": 50,
      "RED": 0
     }
    },
    "not_green": [
-    {
-     "game_id": "401862808",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-24T00:30:00.000Z",
-     "matchup": "Army @ Tulsa"
-    },
-    {
-     "game_id": "401864525",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-24T01:00:00.000Z",
-     "matchup": "Air Force @ Wyoming"
-    },
     {
      "game_id": "401858272",
      "status": "YELLOW",
@@ -762,8 +736,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-21T00:09:38.000Z",
-    "quotes_total": 21275,
+    "last_quote_at": "2026-10-21T01:09:29.000Z",
+    "quotes_total": 21306,
     "last_result_at": "2026-10-18T07:07:34.000Z"
    }
   },
@@ -797,9 +771,9 @@
    }
   ],
   "ledger": {
-   "predictions": 5673,
-   "live_predictions": 5163,
-   "quotes": 21275,
+   "predictions": 5679,
+   "live_predictions": 5169,
+   "quotes": 21306,
    "lines": 3559,
    "results": 461,
    "evaluations": 5267,
@@ -1331,39 +1305,39 @@
     "current": -1.5,
     "open": -1.5,
     "books": 1,
-    "as_of": "2026-10-20T12:08:06Z",
+    "as_of": "2026-10-20T20:51:01.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-14T03:07:30.000Z",
-     "margin": -5.56,
-     "fair": "Army -5.5",
-     "p_home": 0.352,
-     "sigma": 14.634,
-     "conf": 75,
-     "dq": "YELLOW",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "prediction_ts": "2026-10-21T01:09:29.000Z",
+     "margin": -6.32,
+     "fair": "Army -6.5",
+     "p_home": 0.3329,
+     "sigma": 14.632,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -7.82,
+     "line": 1.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-20T12:08:05.000Z",
+     "prediction_ts": "2026-10-21T01:09:29.000Z",
      "margin": -4.08,
      "fair": "Army -4.0",
      "p_home": 0.3993,
@@ -1378,15 +1352,16 @@
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ]
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-20T12:08:05.000Z",
+     "prediction_ts": "2026-10-21T01:09:29.000Z",
      "margin": -3.71,
      "fair": "Army -3.5",
      "p_home": 0.4088,
@@ -1401,6 +1376,7 @@
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ]
     }
@@ -1413,42 +1389,42 @@
    "home": "Wyoming",
    "away": "Air Force",
    "market": {
-    "current": 7.5,
+    "current": 5.5,
     "open": 6.5,
     "books": 1,
-    "as_of": "2026-10-20T12:08:06Z",
+    "as_of": "2026-10-20T20:07:46.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-14T03:07:30.000Z",
-     "margin": -8.16,
-     "fair": "Air Force -8.0",
-     "p_home": 0.2884,
-     "sigma": 14.622,
-     "conf": 75,
-     "dq": "YELLOW",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "prediction_ts": "2026-10-21T01:09:29.000Z",
+     "margin": -8.86,
+     "fair": "Air Force -9.0",
+     "p_home": 0.2725,
+     "sigma": 14.638,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -3.36,
+     "line": -5.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-20T12:08:05.000Z",
+     "prediction_ts": "2026-10-21T01:09:29.000Z",
      "margin": -9.36,
      "fair": "Air Force -9.5",
      "p_home": 0.2787,
@@ -1458,8 +1434,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -1.86,
-     "line": -7.5,
+     "gap": -3.86,
+     "line": -5.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1469,10 +1445,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-20T12:08:05.000Z",
+     "prediction_ts": "2026-10-21T01:09:29.000Z",
      "margin": -9.12,
      "fair": "Air Force -9.0",
      "p_home": 0.2825,
@@ -1482,8 +1458,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -1.62,
-     "line": -7.5,
+     "gap": -3.62,
+     "line": -5.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -10192,18 +10168,18 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 189,
-  "games_with_verdict": 189,
-  "raw_major_disagreements": 25,
+  "games_with_market": 191,
+  "games_with_verdict": 191,
+  "raw_major_disagreements": 26,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
   "verified_15plus": 0,
   "investigate": 0,
   "data_fault": 0,
-  "market_fault": 25,
+  "market_fault": 26,
   "verification_not_run": 0,
-  "average_raw_gap": 3.797,
-  "average_raw_gap_7plus": 10.16,
+  "average_raw_gap": 3.816,
+  "average_raw_gap_7plus": 10.07,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
   "verified_gap_mae": null,
@@ -10212,7 +10188,7 @@
   "false_extreme_rate_verified_pct": null,
   "graded": {
    "raw_7plus": {
-    "n": 25,
+    "n": 26,
     "settled": 23,
     "mae": 12.297,
     "market_mae_at_snapshot": 9.826,
@@ -10232,7 +10208,7 @@
     "false_extremes": 0
    },
    "unverified": {
-    "n": 25,
+    "n": 26,
     "settled": 23,
     "mae": 12.297,
     "market_mae_at_snapshot": 9.826,
@@ -10243,7 +10219,7 @@
    }
   },
   "root_causes_unverified": {
-   "THIN_MARKET": 25
+   "THIN_MARKET": 26
   },
   "by_week": {
    "5": {
@@ -10280,15 +10256,15 @@
     "favorite_flips": 1
    },
    "8": {
-    "raw_7plus": 2,
+    "raw_7plus": 3,
     "raw_10plus": 0,
     "raw_15plus": 0,
     "verified": 0,
     "investigate": 0,
     "data_fault": 0,
-    "market_fault": 2,
+    "market_fault": 3,
     "not_run": 0,
-    "favorite_flips": 0
+    "favorite_flips": 1
    }
   },
   "note": "VERIFIED is not a bet. The counts are what the gate found, never a quota."
