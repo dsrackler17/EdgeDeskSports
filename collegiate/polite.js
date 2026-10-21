@@ -112,10 +112,12 @@ function createPolite(o) {
 
   async function robotsFor(origin) {
     if (robots.has(origin)) return robots.get(origin);
-    let r;
-    try { r = await client.get(origin + '/robots.txt', { ttlMs: 24 * 3600 * 1000, headers: { 'user-agent': UA } }); }
-    catch (e) { r = { ok: false, status: 0 }; }
-    const st = httpStatus(r);
+    const fetchRobots = async () => { try { return await client.get(origin + '/robots.txt', { ttlMs: 24 * 3600 * 1000, headers: { 'user-agent': UA } }); } catch (e) { return { ok: false, status: 0, error: { code: e.code || 'ERROR', message: e.message } }; } };
+    let r = await fetchRobots();
+    let st = httpStatus(r);
+    /* no answer (a timeout, a 5xx): one more try after a pause before staying out for this run */
+    if (!(r.ok && st >= 200 && st < 300) && !(st >= 400 && st < 500)) { await sleep(retryMs); r = await fetchRobots(); st = httpStatus(r); }
+    unanswered.set(origin, r.ok ? null : ((r.error && (r.error.code || r.error.message)) || ('status ' + st)));
     let parsed;
     if (r.ok && st >= 200 && st < 300) parsed = parseRobots(r.text());
     /* a robots.txt that is itself refused (401/403) is a site keeping robots out: stay out (stricter than RFC 9309) */
@@ -127,6 +129,8 @@ function createPolite(o) {
   }
 
   const lastPage = new Map();
+  const unanswered = new Map();
+  const retryMs = o.robotsRetryMs == null ? 15000 : o.robotsRetryMs;
   async function get(url, opts) {
     let u;
     try { u = new URL(url); } catch (_) { return refuse('?', url, 'BAD_URL', 'not a URL', false); }
@@ -135,7 +139,7 @@ function createPolite(o) {
     if (!client.providerFor(url)) return refuse(host, url, 'UNREGISTERED', 'not a registered school host', false);
     const rb = await robotsFor(u.origin);
     if (rb === false) return refuse(host, url, 'ROBOTS_FORBIDDEN', 'robots.txt itself is refused to robots', true);
-    if (rb === null) return refuse(host, url, 'ROBOTS_UNREACHABLE', 'robots.txt did not answer (staying out)', false);
+    if (rb === null) return refuse(host, url, 'ROBOTS_UNREACHABLE', 'robots.txt did not answer twice (' + (unanswered.get(u.origin) || 'no answer') + '; staying out this run)', false);
     if (!rb.allows(u.pathname + u.search)) return refuse(host, url, 'ROBOTS_DISALLOW', 'robots.txt disallows it', true);
     /* the same page asked for twice in a row (a collector re-reading after it learnt the platform) is not a second visit */
     const again = lastPage.get(host);

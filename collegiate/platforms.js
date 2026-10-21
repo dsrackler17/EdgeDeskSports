@@ -131,6 +131,17 @@ function wmtRoster(data) {
   return { platform: 'wmt', sport, season_label: label, season: seasonKey(label), roster_id: meta.id || null, players, seasons };
 }
 
+/* which platform built a page, from the shape of its data alone (so a page with no roster on it, a sport the
+   school does not play or a season not posted yet, still says what the site is): SIDEARM's store has its
+   site-config; WMT's stores are its oas-* ones */
+function detectPlatform(data) {
+  const pinia = data && data.pinia;
+  if (pinia && (pinia['oas-config'] || pinia['oas-sports'])) return 'wmt';
+  if (data && data.data && Object.keys(data.data).some((k) => /^(i-wmt:|sport-view-)/.test(k))) return 'wmt';
+  if (pinia && pinia['site-config']) return 'sidearm';
+  return null;
+}
+
 /* a roster page, whichever platform built it; null when the page carries no roster */
 function parseRoster(html) {
   const data = nuxtData(html);
@@ -145,4 +156,4 @@ function rosterPath(platform, sport, label) {
   return null;
 }
 
-module.exports = { parseRoster, sidearmRoster, wmtRoster, rosterPath, seasonKey, seasonLabel, normClass, batsThrows, SPLIT };
+module.exports = { parseRoster, detectPlatform, sidearmRoster, wmtRoster, rosterPath, seasonKey, seasonLabel, normClass, batsThrows, SPLIT };
