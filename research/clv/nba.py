@@ -89,11 +89,23 @@ def sbr_lines(g):
 def models(m):
     lab = pd.read_csv(LAB)[["game_id", "model_margin", "model_total"]].rename(columns={"model_margin": "lab", "model_total": "lab_total"})
     m = m.merge(lab, on="game_id", how="left")
-    if os.path.exists(PROD):
+    if os.path.exists(PROD) and prod_reproduced():
         p = pd.read_csv(PROD)[["game_id", "model_margin", "model_total", "p_home", "adj_proj"]].rename(
             columns={"model_margin": "prod", "model_total": "prod_total", "p_home": "prod_p"})
         m = m.merge(p, on="game_id", how="left")
     return m
+
+
+def prod_reproduced(tol=1e-4):
+    """The pre-registered gate on the production replay: its selection-window
+    moneyline log loss must equal the committed record's."""
+    try:
+        chk = json.load(open(PROD + ".check.json"))["check"]["G_stack_P"]["selection_ll"]
+        rec = json.load(open(os.path.join(S.ROOT, "nba", "validation", "nba_walkforward.json")))
+        com = rec["choice"]["P"]["selection_ml_log_loss"]["G_stack_P"]
+        return abs(chk - com) <= tol
+    except (OSError, KeyError, ValueError):
+        return False
 
 
 def load():

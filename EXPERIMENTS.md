@@ -839,3 +839,24 @@ Pre-registered 2026-10-21, before any props CLV number was computed.
 **Matching losses** (first evaluations not graded): NFL 456 of 1,726, CFB 302 of 1,436.
 - **NFL:** line mismatch 209, one-sided book 202, other 45.
 - **CFB:** no book quote 91, line mismatch 85, one-sided 76, other 50.
+
+### NBA reproduction check (2026-10-21, before any NBA CLV number was computed)
+
+The production replay (`research/clv/nba_prod.js`, `run()` imported from `nba/model/walkforward.js`) **does not reproduce** the committed selection-window moneyline log loss:
+
+| Candidate | Committed | Replay | Within 1e-4? |
+|---|---|---|---|
+| `G_stack_P` | 0.59239 | 0.58910 | no |
+| `G_stack_C` | 0.59223 | 0.58344 | no |
+| `B_eff` | 0.59468 | 0.59468 | yes |
+
+The non-ML candidate reproduces exactly, so the difference is in the ML members of the stack. Likely causes:
+- the GBDT and ridge fits are not reproduced run to run;
+- the ML stage is trained through the test window when it is unsealed.
+
+The cause was not established.
+
+**Per the pre-registered fallback:**
+- NBA-B1, NBA-B2 and NBA-W1 are **INFEASIBLE** and are not counted.
+- NBA-R1, R2 and W3 use the lab model's disagreement only.
+- The production NBA model has no CLV verdict.
