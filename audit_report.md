@@ -486,3 +486,37 @@ from one distribution.
   serve time (class 3).
 
 Severity: no critical finding in a live product. Material: C1, C2, C3, C4, B1, B2, N1, N2, N3.
+
+## 9. Step 6 — what was fixed, and what was not
+
+The rule for Step 6 was the NFL's: correctness fixes (serving must equal what was validated; one
+distribution per number; components that add up) ship; anything that changes a validated number goes
+through its sport's backtest first. Each fix below has a test.
+
+**Fixed**
+
+| finding | fix | test |
+|---|---|---|
+| N1 NBA schedule context | `nba/ingest/season.js` advances rest / b2b / games-in-7 / travel / streaks over every game that is final **or still ahead** (a past-dated unplayed game is postponed and never counts); box-score fields stay final-only. Historical (all-final) training rows are unchanged. | `tools/nba/nba.test.js` (3 checks) |
+| N2 NBA drivers don't add up | `nba/build_slate.js` keeps the ridge model's largest rows and adds three reconciling rows — its other inputs, its value at an average matchup, and what the other blended models and the calibration add — so the rows sum to the published margin exactly; the page says so; the graphic's headline driver never picks a reconciling row. | `tools/nba/nba.test.js` (on the next slate build) |
+| B1 lab ratings a week stale | `basketball/walkforward.js --live-only` refits the ratings over every final through today with the committed tuning and chosen model, rewriting only the live params; `lab-build.yml` runs it daily before the slate and publishes `basketball/params`. Verified: on today's data it reproduces the committed params byte for byte (timestamp aside). The projection's `inputs_known_at` is now the last game the ratings absorbed. | `basketball/build_slate.js --check`, `tools/lab/lab.test.js` |
+| B2 (part) push at a pick'em | a basketball final margin includes overtime, so a pick'em spread line splits the regulation-tie mass between the sides instead of pricing a push. | `tools/lab/lab.test.js` (2 checks) |
+| C3 CFB range off-centre / mislabelled | the terminal's range is read off the same conditioned PMF that prices every line, so its stated basis is true; the engine's fallback range is centred on the fair margin. Across 61 games the range median moved from 0.97 pts below the fair margin on average (exactly 1.00 on every card) to +0.02. | `football/cfb_terminal/build.js --check`, the CFB suites |
+| C1 (label) CFB seed features shown as current | each efficiency feature is labelled by its own updates: one the play-level feed never supplies says "trained seed, not updated since" at seed confidence and is listed in `efficiency_seed_features`; absorbed games are counted once per game. | `football/cfb_p4/tests.js` |
+
+**Not fixed here, and why**
+
+| finding | why not | what it needs |
+|---|---|---|
+| C1 (numbers) CFB matchup uses 16 frozen features | serving ≠ the record either way: feeding them needs a live play-level EPA pipeline (`ep_surface`) that does not exist; dropping them changes the matchup in a way no backtest measured | build the live EPA features, then re-run `research/backtest_engine.js` on the served definitions |
+| C2 CFB feature definitions differ | a re-definition changes every matchup term (mean 0.40 pts) | emit the serving artifact with `build_team_game.py`'s definitions and re-validate, or retrain on the serving ones |
+| C4 CFB calibrators replay without efficiency | the calibrations they produced (linemaker statuses, HFA 2.8) would all be re-measured, i.e. re-decided | one shared replay helper passing per-game efficiency, then re-run each calibration through its gate |
+| C3 (rest) CFB win probability from a Normal | moving the moneyline onto the PMF changes the validated CFB moneyline | a backtest of the PMF moneyline against the Normal one |
+| B2 (rest) lab moneyline logistic vs Normal spreads | the logistic moneyline is the validated product (OUTCOME_VALIDATED); replacing it is a model change | run the walk-forward with the moneyline read off the margin distribution, promote only if it wins |
+| N3 board NBA ≠ NBA page | not a bug inside either system: the engine registry's NBA brain *is* the lab model, with the lab's validation as its evidence; choosing which NBA model the board shows is a product decision | the owner's call |
+| C5, C6, F3, N4, M1, M2, the tennis findings | display-only, shadow-only, comparison-only, documented design choices, or a retired product | — |
+
+The weekly improvement loop exists for the NFL only (§ Step 5). The other sports keep the loops
+they already had (the lab's weekly walk-forward, now with a daily refit; the NBA engine's 3-hourly
+pass; the CFB lab). A separate session is building a cross-sport loop in `model_loop/` (merged in
+PR #633); this branch does not touch it.

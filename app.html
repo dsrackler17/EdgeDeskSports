@@ -2925,7 +2925,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
 <link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261020nba1">
-<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261020nhl1">
+<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021nba2">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -4080,8 +4080,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_nhl_market.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_nhl_compare.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_games.js?v=20261015sc1"></script>
-<script src="/lib/edgedesk_grade_ui.js?v=20261020nhl1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261020nhl1"></script>
+<script src="/lib/edgedesk_grade_ui.js?v=20261021nba2"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261021nba2"></script>
 <script>
 /* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
    football boards price on it whenever the paid capture is not current, and
@@ -5936,7 +5936,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261020nhl1';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261021nba2';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
@@ -5950,7 +5950,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261020nba1';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261021nba2';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
