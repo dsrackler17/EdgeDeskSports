@@ -175,8 +175,11 @@ draw**, the pattern of `lib/edgedesk_share_card.js`.
   bar · **Fair total** with projected points; then either the **current
   market** (LIVE quotes only: book, capture time, spread, total, moneyline,
   no-vig win %, and EdgeDesk vs market) or **EdgeDesk model detail**
-  (neutral-field edge, 80% range, model moneyline, power rank); **What to
-  watch for**; reliability or data check, model status, snapshot time and id.
+  (neutral-field edge, 80% range, model moneyline, power rank); **Kalshi**
+  (each team's trusted YES mid: a column after the book's, or the third
+  model-detail cell; see README §Kalshi market data → The matchup graphic);
+  **What to watch for**; reliability or data check, model status, snapshot
+  time and id.
 - **No empty boxes.** A market without a moneyline draws no moneyline column;
   the model detail strip only prints cells that exist.
 - **Fonts.** Barlow Condensed (display) and Inter (body) from Google Fonts,
@@ -189,16 +192,16 @@ draw**, the pattern of `lib/edgedesk_share_card.js`.
   name). **No team logo or helmet is drawn**: EdgeDesk holds no licence for
   them. A team with no identity on file gets initials and neutral colours.
 - **Cache.** `EDGameGraphic.cacheKey` = renderer version + template + snapshot
-  id + the market quote shown + format. A page view reuses a drawn graphic; a
+  id + the market quote shown + format (+ the Kalshi prices shown, when any). A page view reuses a drawn graphic; a
   new snapshot or a new live quote draws a new one automatically. A stale
   quote does not change the key (it is never drawn).
 - **History.** `football/game_research/history/<season>.jsonl` stores the
   graphic spec each time what the graphic prints changes (pregame only,
   append-only). Any past graphic can be redrawn exactly.
 - **Batch export.** `npm run game:graphics -- [--league cfb] [--format both]
-  [--week 7] [--out dir]` renders PNGs through Playwright into
-  `.cache/game_graphics/`, named by snapshot id; files already on disk are
-  never redrawn.
+  [--week 7] [--out dir] [--no-kalshi]` renders PNGs through Playwright into
+  `.cache/game_graphics/`, named by snapshot id and the Kalshi snapshot shown;
+  files already on disk are never redrawn.
 
 ### What the reference graphics got wrong, and what the product does instead
 
@@ -220,7 +223,8 @@ draw**, the pattern of `lib/edgedesk_share_card.js`.
 `lib/edgedesk_game_view.js` + `lib/edgedesk_game_view.css`, mounted by the
 app at `#game/<nfl|cfb>/<game_id>[?f=portrait]`.
 
-1. **Status**: the four answers.
+1. **Status**: the four answers, and a fifth chip for Kalshi (why its price
+   is, or is not, on the graphic).
 2. **Graphic**, then Download PNG · Share (native share with the image where
    the browser allows, else the link) · Copy link · Save (the existing
    watchlist star) · Compare my number · Explore research.

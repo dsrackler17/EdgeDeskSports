@@ -138,6 +138,25 @@ const html = (sport, g, ev, opts) => vm.runInContext('window.fbKalshiHTML', win)
   html('nfl', G); await settle(); h = html('nfl', G);
   chk('unavailable: a failed read says so and shows nothing in its place', /unavailable/.test(h) && /nothing is shown in their place/.test(h) && !/\d+\.\d%/.test(h));
 
+  /* ---- the same rows for the research page's matchup graphic ---- */
+  const rowsOf = (sport, gid) => vm.runInContext('window.fbKalshiRows', win)(sport, gid);
+  reset();
+  ANSWER = [200, [PHI, DAL]];
+  let rr = await rowsOf('nfl', G.game_id);
+  chk('graphic rows: the first ask reads, and answers with the game’s rows by its own id', rr.state === 'ok' && rr.rows.length === 2 && rr.rows.every((x) => x.game_id === G.game_id) && CALLS.length === 1, rr);
+  rr = await rowsOf('nfl', G.game_id);
+  chk('graphic rows: one read shared with the cards, not a second request', rr.state === 'ok' && CALLS.length === 1);
+  chk('graphic rows: another game, or the other sport under the same id, gets none', (await rowsOf('nfl', 'other')).rows.length === 0 && (await rowsOf('cfb', G.game_id)).rows.length === 0);
+  chk('graphic rows: nothing for another sport', (await rowsOf('nba', G.game_id)).rows.length === 0);
+  reset();
+  ANSWER = [404, { code: 'PGRST205', message: "Could not find the table 'public.kalshi_card_current' in the schema cache" }];
+  rr = await rowsOf('nfl', G.game_id);
+  chk('graphic rows: not deployed is a state, with no rows', rr.state === 'not_deployed' && rr.rows === null, rr);
+  reset();
+  ANSWER = [500, { message: 'statement timeout' }];
+  rr = await rowsOf('nfl', G.game_id);
+  chk('graphic rows: a failed read is "error", with no rows', rr.state === 'error' && rr.rows === null && /HTTP 500/.test(rr.error), rr);
+
   console.log((fail ? 'FAILED' : 'ALL GREEN') + ' kalshi ui: ' + pass + ' passed, ' + fail + ' failed');
   for (const f of failures) console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 600) : ''));
   process.exit(fail ? 1 : 0);

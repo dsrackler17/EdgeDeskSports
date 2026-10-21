@@ -467,5 +467,105 @@ section('12. the NFL card adds up, shows its median, and flags a 3-point disagre
   chk('a live quote 4 points off flags it through compareMarket', viaQuote && viaQuote.disagreement && viaQuote.disagreement.flagged && viaQuote.disagreement.market_kind === 'LIVE');
 }
 
+/* ======================================================================= */
+section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing filled');
+{
+  const FI = require(path.join(ROOT, 'lib', 'football_identity.js'));
+  const SNAP_AT = new Date(t0 - 3 * 60000).toISOString();
+  /* public.kalshi_card_current's rows as the page reads them; the book's names carry mascots */
+  const krow = (s, yes, opp, st, mid, extra) => Object.assign({ sport: s.league, game_id: s.game_id, game_key: s.game_key, event_ticker: 'KX-' + s.game_id, market_ticker: 'KX-' + s.game_id + '-' + yes,
+    kalshi_yes_name: yes, yes_team: yes, opponent: opp, home_team: s.home.name, away_team: s.away.name, pregame: true, state: st, yes_mid: mid, spread: st === 'OK' ? 0.02 : 0.1,
+    volume: 900, snapshot_at: SNAP_AT, match_confidence: 'high' }, extra || {});
+  const both = (s, pa, ph, extra) => [krow(s, s.away.name, s.home.name, 'OK', pa, extra), krow(s, s.home.name, s.away.name, 'OK', ph, extra)];
+  const cfbG = proj.find((g) => g.league === 'cfb'), nflG = proj.find((g) => g.league === 'nfl');
+
+  /* placing */
+  const swapped = [krow(cfbG, cfbG.home.name + ' Hawks', cfbG.away.name + ' Owls', 'OK', 0.585, { home_team: cfbG.away.name + ' Owls', away_team: cfbG.home.name + ' Hawks' }),
+    krow(cfbG, cfbG.away.name + ' Owls', cfbG.home.name + ' Hawks', 'OK', 0.43, { home_team: cfbG.away.name + ' Owls', away_team: cfbG.home.name + ' Hawks' })];
+  let k = GS.kalshi({ state: 'ok', rows: swapped }, cfbG);
+  chk('Kalshi: each price lands on its own team by name, even when the book listed home and away the other way round', k.state === 'OK' && k.home && k.home.mid === 0.585 && k.away && k.away.mid === 0.43, k);
+  chk('…a half-cent mid rounds half up, once (58.5¢ → 59%)', k.home.text === '59%' && k.away.text === '43%', [k.home, k.away]);
+  chk('…pregame it is "priced", with the latest snapshot time and the match confidence', k.label === 'priced' && !k.close && k.snapshot_at === SNAP_AT && k.confidence === 'high');
+  k = GS.kalshi(both(nflG, 0.44, 0.57), nflG);
+  chk('Kalshi: an NFL game places by club name (rows alone are an ok read)', k.state === 'OK' && k.away.pct === 44 && k.home.pct === 57, k);
+  k = GS.kalshi({ state: 'ok', rows: both(nflG, 0.44, 0.57, { yes_team: 'unreadable' }).map((r, i) => Object.assign(r, { kalshi_yes_name: i ? nflG.home.name : nflG.away.name })) }, nflG);
+  chk('…and falls back to Kalshi’s own name when the book name does not resolve', k.state === 'OK' && k.away.pct === 44, k);
+  /* refusals */
+  k = GS.kalshi({ state: 'ok', rows: [krow(cfbG, 'Nowhere Tech', cfbG.away.name, 'OK', 0.5), krow(cfbG, cfbG.away.name, 'Nowhere Tech', 'OK', 0.5)] }, cfbG);
+  chk('Kalshi: a team that does not resolve places nothing (teams unconfirmed)', k.state === 'TEAMS_UNCONFIRMED' && !k.away && !k.home && !k.current, k);
+  k = GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.home.name, cfbG.home.name + ' Hawks', 'OK', 0.6)] }, cfbG);
+  chk('…nor a market whose opponent resolves to the same team', k.state === 'TEAMS_UNCONFIRMED', k);
+  k = GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.home.name, cfbG.away.name, 'OK', 0.6), krow(cfbG, cfbG.home.name + ' Hawks', cfbG.away.name, 'OK', 0.61)] }, cfbG);
+  chk('…nor two markets on one team', k.state === 'TEAMS_UNCONFIRMED', k);
+  k = GS.kalshi({ state: 'ok', rows: both(cfbG, 0.4, 0.6) }, cfbG, { identity: {} });
+  chk('…nor anything when the team resolver is not loaded', k.state === 'TEAMS_UNCONFIRMED' && !k.current, k);
+  k = GS.kalshi({ state: 'ok', rows: both(cfbG, 0.4, 0.6, { game_id: 'another-game' }) }, cfbG);
+  chk('Kalshi: rows for another game id are not this game’s (no market)', k.state === 'NO_MARKET' && k.label === 'no market', k);
+  /* the display rule, as the view applied it */
+  k = GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.away.name, cfbG.home.name, 'OK', 0.4), krow(cfbG, cfbG.home.name, cfbG.away.name, 'WIDE_SPREAD', null)] }, cfbG);
+  chk('Kalshi: a side too wide to trust is absent, never derived from the other', k.state === 'OK' && k.away && k.away.pct === 40 && k.home === null, k);
+  k = GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.away.name, cfbG.home.name, 'WIDE_SPREAD', null), krow(cfbG, cfbG.home.name, cfbG.away.name, 'WIDE_SPREAD', null)] }, cfbG);
+  chk('…both sides wide: matched, no price, labelled', k.state === 'NO_PRICE' && k.label === 'wide spread' && !k.current, k);
+  k = GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.away.name, cfbG.home.name, 'STALE', 0.4), krow(cfbG, cfbG.home.name, cfbG.away.name, 'STALE', 0.6)] }, cfbG);
+  chk('…a mid on a row that is not OK is never used', k.state === 'NO_PRICE' && k.label === 'stale' && !k.away && !k.home, k);
+  k = GS.kalshi({ state: 'ok', rows: both(cfbG, 0.4, 0.6, { pregame: false }) }, cfbG);
+  chk('Kalshi: after kickoff the price is the close', k.state === 'OK' && k.close && k.label === 'close');
+  chk('Kalshi: not deployed, a failed read, no read, no rows', GS.kalshi({ state: 'not_deployed' }, cfbG).state === 'NOT_DEPLOYED' && GS.kalshi({ state: 'error', error: 'HTTP 500' }, cfbG).state === 'UNAVAILABLE'
+    && GS.kalshi(null, cfbG).state === 'UNAVAILABLE' && GS.kalshi({ state: 'ok', rows: [] }, cfbG).state === 'NO_MARKET');
+  chk('Kalshi: the resolver is the one the sync links games with', typeof FI.resolveTeam === 'function');
+
+  /* the graphic */
+  const kOk = (s) => GS.kalshi(both(s, 0.415, 0.59), s);
+  const spec = GS.graphicSpec(cfbG), kc = GS.kalshi({ state: 'ok', rows: swapped }, cfbG);
+  const cd = GG.content(spec, null, { now: t0, kalshi: kc }).content;
+  chk('graphic: without a live book, Kalshi takes the third model-detail cell, both teams, with its time', cd.kalshi && cd.detail.cells.length === 3 && cd.detail.cells[2].k === 'KALSHI'
+    && cd.detail.cells[2].v.join('|') === cd.away.abbr + ' 43%|' + cd.home.abbr + ' 59%' && /^prediction market · \d{1,2}:\d{2} [AP]M ET$/.test(cd.detail.cells[2].s), cd.detail);
+  chk('…and the note no longer claims every number is EdgeDesk’s own', /Kalshi is a prediction market; every other number is EdgeDesk’s own\./.test(cd.detail.note), cd.detail.note);
+  const cm = GG.content(spec, live, { now: t0, kalshi: kc }).content, Lm = GG.layout(cm, 'square');
+  chk('graphic: with a live book, a KALSHI column after the book’s, one line per team', cm.market && Lm.ops.some((o) => o.type === 'text' && o.text === 'KALSHI') && Lm.ops.some((o) => o.text === cm.away.abbr + ' 43%') && Lm.ops.some((o) => o.text === cm.home.abbr + ' 59%')
+    && Lm.ops.findIndex((o) => o.text === 'KALSHI') > Lm.ops.findIndex((o) => o.text === 'MONEYLINE'));
+  const one = GG.content(spec, null, { now: t0, kalshi: GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.away.name, cfbG.home.name, 'OK', 0.4), krow(cfbG, cfbG.home.name, cfbG.away.name, 'WIDE_SPREAD', null)] }, cfbG) }).content;
+  chk('graphic: one trusted side prints one line, no dash for the other', one.detail.cells[2].v.length === 1 && one.detail.cells[2].v[0] === one.away.abbr + ' 40%', one.detail.cells[2]);
+  const cl = GG.content(spec, null, { now: t0, kalshi: GS.kalshi({ state: 'ok', rows: both(cfbG, 0.4, 0.6, { pregame: false }) }, cfbG) }).content;
+  chk('graphic: after kickoff it reads KALSHI CLOSE, the last price before kickoff', cl.kalshi.title === 'KALSHI CLOSE' && cl.detail.cells[2].s === 'last price before kickoff');
+  ['TEAMS_UNCONFIRMED', 'NO_PRICE', 'NO_MARKET'].forEach((st) => {
+    const fake = { state: st, current: false, away: null, home: null };
+    if (GG.content(spec, null, { now: t0, kalshi: fake }).content.kalshi) chk('graphic: a ' + st + ' Kalshi read draws nothing', false);
+  });
+  const nm = clone(spec); nm.model = { available: false, reason: 'test' };
+  chk('graphic: no projection, no Kalshi (as with the book)', !GG.content(nm, null, { now: t0, kalshi: kc }).content.kalshi);
+  const fz = clone(spec); fz.data.status = 'FAULT'; fz.data.faults = ['scores_reconcile: x'];
+  const fzc = GG.content(fz, live, { now: t0, kalshi: kc }).content;
+  chk('graphic: a data fault keeps the strip for the fault, and the alt text does not read a Kalshi price it does not show', !GG.layout(fzc, 'square').ops.some((o) => o.text === 'KALSHI') && !/Kalshi/.test(GG.altText(fzc)));
+  chk('graphic: the alt text reads the Kalshi prices as a prediction market', /Kalshi YES mid at \d{1,2}:\d{2} [AP]M ET \(a prediction market\): /.test(GG.altText(cd)) && GG.altText(cd).indexOf(cd.home.abbr + ' 59%') > 0, GG.altText(cd));
+  /* every projected game, both formats, both strips, with Kalshi: every text inside the canvas and its box */
+  let laidK = 0;
+  proj.forEach((s) => {
+    const sp = GS.graphicSpec(s), kk = kOk(s);
+    if (kk.state !== 'OK') { chk('Kalshi places on every committed game’s own names · ' + s.game_key, false, kk); return; }
+    const ml = GS.market({ home_line: -3.5, total: 47.5, ml_home: -170, ml_away: 145, book: 'williamhill_us', captured_at: new Date(t0 - 12 * 60000).toISOString() }, { now: t0 });
+    [null, live, ml].forEach((mk) => ['square', 'portrait'].forEach((f) => {
+      const L = GG.layout(GG.content(sp, mk, { now: t0, kalshi: kk }).content, f), [w, h] = W[f];
+      laidK++;
+      const bad = L.ops.filter((o) => o.type === 'text' && (o.y < 0 || o.y > h || (o.align === 'left' && o.x + Math.min(o.width || 0, o.maxW || 1e9) > w + 1) || (o.align === 'center' && (o.x - (o.width || 0) / 2 < -1 || o.x + (o.width || 0) / 2 > w + 1))));
+      const over = L.ops.filter((o) => o.type === 'text' && o.maxW && o.width > o.maxW + 1 && o.size > 12);
+      if (bad.length || over.length) chk('with Kalshi, every text inside the canvas and its box · ' + s.game_key + ' ' + f + (mk ? ' market' : ' detail'), false, bad.concat(over).slice(0, 3).map((o) => [o.text, o.x, o.y, o.width, o.maxW]));
+      if (!L.ops.some((o) => o.type === 'text' && /^KALSHI/.test(o.text))) chk('Kalshi is drawn · ' + s.game_key + ' ' + f, false);
+    }));
+  });
+  chk('laid out every projected game with Kalshi, three strips × two formats', laidK === proj.length * 6, laidK);
+  /* the cache */
+  const kk1 = GG.cacheKey(spec, live, 'square'), kk2 = GG.cacheKey(spec, live, 'square', kc);
+  chk('cache: a Kalshi price draws again; no Kalshi, or one not drawn, keeps the key as it was', kk1 !== kk2 && GG.cacheKey(spec, live, 'square', null) === kk1 && GG.cacheKey(spec, live, 'square', { state: 'NO_PRICE', current: false }) === kk1);
+  chk('cache: a new Kalshi price is a new key', kk2 !== GG.cacheKey(spec, live, 'square', GS.kalshi({ state: 'ok', rows: both(cfbG, 0.45, 0.56) }, cfbG)));
+  const badK = clone(kc); badK.home.text = 'lock';
+  chk('the copy rule covers the Kalshi strings too', GG.content(spec, null, { now: t0, kalshi: badK }).ok === false);
+  /* the app */
+  chk('app: the team resolver loads before the snapshot that uses it', at('/lib/football_identity.js') > 0 && at('/lib/football_identity.js') < at('/lib/edgedesk_game_snapshot.js'));
+  chk('app: the research page is handed the Kalshi rows, waiting for the parse when a #game link opened it first', /kalshi:function\(league,gid\)\{[\s\S]{0,400}window\.fbKalshiRows\(league,gid\)[\s\S]{0,300}DOMContentLoaded/.test(APP));
+  chk('app: the Kalshi section serves those rows from its one read', /window\.fbKalshiRows=function\(sport,gid\)\{[\s\S]{0,200}load\(\)[\s\S]{0,300}rowsFor\(sport,\{game_id:gid\},null\)/.test(APP));
+  chk('page: the graphic is drawn with the placed Kalshi prices, and downloads with them', /G\.render\(spec, m, fmt, \{ now: Date\.now\(\), kalshi: ks \}\)/.test(VIEW) && /S\.format, \{ now: Date\.now\(\), kalshi: ks \}\)/.test(VIEW) && /GS\(\)\.kalshi\(S\.ks, s\)/.test(VIEW));
+}
+
 console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | game research (snapshot, graphic, history, price check, wiring) | ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

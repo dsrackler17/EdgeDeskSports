@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-21 — Kalshi on the NFL and CFB matchup graphics
+
+- **Every NFL and college football matchup graphic now carries Kalshi's price** wherever Kalshi has a trusted one: each team's YES mid, as a whole percent.
+  - With a live sportsbook quote, it is a **KALSHI** column after Spread, Total and Moneyline, behind a rule, with the snapshot time under it.
+  - Without one, it is the third cell of **EdgeDesk model detail** (the model moneyline steps aside; the model's win probability is already in the panels). The note says Kalshi is a prediction market and every other number is EdgeDesk's own.
+  - After kickoff it reads **KALSHI CLOSE**, the last price before kickoff.
+  - The research page's Download PNG and Share carry it; so does `npm run game:graphics`.
+- **Which team gets which price.** The sync links a game even when the book lists home and away the other way round (a neutral site), so a row's `home_team` never decides the side. `EDGameSnapshot.kalshi` resolves each market's YES team onto the snapshot's own teams with `lib/football_identity.js`, the resolver the sync links games with (now loaded by app.html). A team that does not resolve, an opponent on the same side, or two markets on one team place nothing.
+- **Only what `kalshi_card_current` trusted.** A mid is drawn only from a row in state OK (fresh, YES spread at most 6¢). A side without one prints nothing; the other side is never derived from it. A game with no trusted price draws no Kalshi at all.
+- **The research page** adds a fifth chip, **KALSHI** (priced · close · wide spread · stale · no market · unavailable · not deployed · teams unconfirmed), and a Kalshi row under Lab → Market diagnostics saying why a price is, or is not, on the graphic. The prices come from the game cards' Kalshi section (`window.fbKalshiRows`): one read, shared.
+- **The batch export** reads `kalshi_card_current` once with the site's public key (anon sees Kalshi's prices, never the book fair), names each file with the Kalshi snapshot it shows, and draws model-only graphics if the read fails. `--no-kalshi` skips it.
+- **The landing page stays model-only**, as its contract says (`lib/edgedesk_home_model.js`: no market price is read or shown there).
+
+Tests: `node tools/football/game_research.test.js` (167: placing, refusals, the display rule, both strips, every projected game in both formats with Kalshi inside its boxes, the cache, the wiring), `node tools/football/game_research_ui.e2e.js` (53: the chip and the drawn graphic for a priced, a wide and an unlinked game), `node tools/kalshi/kalshi_ui.test.js` (40).
+
 ## 2026-10-21 — Odds API: nothing runs or buys more often than hourly
 
 - **The rule.** No paid Odds API path runs, and no stored snapshot is refreshed, more often than once an hour. October's 100,000 credits went in 9.5 days on jobs that fired every 5, 10 and 20 minutes.
