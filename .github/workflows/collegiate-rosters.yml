@@ -14,14 +14,16 @@
 #   portal     transfers, departures and newcomers per sport and season, and
 #              each team's continuity (collegiate/portal.js)
 #
-# Weekly on main; on a branch when the plan changes there. Whatever was read
-# is published even if the run is cut short (a snapshot is written per page).
+# Weekly on main, and on main when the plan changes (merging a plan change runs
+# it). Never on a branch. Whatever was read is published even if the run is cut
+# short (a snapshot is written per page).
 name: Collegiate rosters and portal (weekly)
 
 on:
   schedule:
     - cron: '41 7 * * 1'          # Monday 07:41 UTC
   push:
+    branches: [main]              # the data lives on main; a branch run would read every school twice
     paths:
       - 'collegiate/plan.json'
   workflow_dispatch:
@@ -29,8 +31,10 @@ on:
 permissions:
   contents: write
 
+# one collector run at a time across the repository: two would each wait a
+# host's crawl delay and together read it twice as often as it asks
 concurrency:
-  group: collegiate-rosters-${{ github.ref_name }}
+  group: collegiate-data
   cancel-in-progress: false
 
 jobs:

@@ -9,6 +9,10 @@
    guessing), the score, extra or shortened innings, a doubleheader flag,
    postseason, and the box score's address. A game the school lists as
    cancelled or postponed is kept with that status and no score.
+
+   SIDEARM keeps the games in the page's data (with each opponent's website,
+   an exact join to the registry); WMT renders them into the page, and its
+   opponents join by name.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -51,10 +55,42 @@ function sidearmSchedule(data) {
   return { platform: 'sidearm', sport, season_label: s.season && s.season.title, school_name: s.school_name || null, games };
 }
 
+/* WMT renders a schedule's games into the page (not its data): one .schedule-event-item per game, with the
+   venue label (home / away / neutral), a <time datetime>, the opponent's name, and the result as the school
+   reads it ("W 10-7": the school's runs first). No opponent website, so the opponent joins by name. */
+const text = (s) => String(s || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#0?39;|&apos;/g, "'").replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+function wmtSchedule(html, data) {
+  const h = String(html || '');
+  const starts = []; const re = /class="schedule-event-item(?=[ "])/g;
+  for (let m; (m = re.exec(h));) starts.push(m.index);
+  if (!starts.length) return null;
+  const d = data && data.data;
+  const view = d && Object.entries(d).find(([k, v]) => /^sport-view-/.test(k) && v && v.slug);
+  const bySlug = d && Object.entries(d).find(([k, v]) => /^sport-.+-schedule-by-slug-/.test(k) && v && v.season);
+  const games = starts.map((st, i) => {
+    const seg = h.slice(st, i + 1 < starts.length ? starts[i + 1] : st + 40000);
+    const site = /venue-label--home/.test(seg) ? 'H' : /venue-label--away/.test(seg) ? 'A' : /venue-label--neutral/.test(seg) ? 'N' : null;
+    const dt = (seg.match(/datetime="([^"]+)"/) || [])[1] || null;
+    const opp = seg.match(/schedule-event-item-team__opponent-name[^>]*>([\s\S]*?)<\/(?:div|span|h\d|p|a)>/);
+    const loc = seg.match(/schedule-event-item-team__location[^>]*>([\s\S]*?)<\/(?:div|span|p)>/);
+    const res = seg.match(/schedule-event-item-result__label[^>]*>([\s\S]*?)<\/div>/);
+    const rt = res ? text(res[1]) : '';
+    const sc = rt.match(/\b([WLT])\b[\s\S]*?(\d+)\s*-\s*(\d+)/);
+    const box = (seg.match(/href="([^"]*\/boxscore\/\d+)"/) || [])[1] || null;
+    const note = text((seg.match(/schedule-event-item-result__text[^>]*>([\s\S]*?)<\/(?:div|span)>/) || [])[1] || '');
+    const status = sc ? 'final' : /cancel/i.test(seg) ? 'cancelled' : /postpon/i.test(seg) ? 'postponed' : 'scheduled';
+    return { game_key: box ? box.match(/(\d+)$/)[1] : null, date: dt ? dt.slice(0, 10) : null, time: dt ? dt.slice(11, 16) : null, site,
+      opponent: opp ? cleanOpp(text(opp[1])) : null, opponent_host: null, conference: null, postseason: null, doubleheader: null, status,
+      us: sc ? +sc[2] : null, them: sc ? +sc[3] : null, outcome: sc ? sc[1] : null, innings: innings(note, rt),
+      location: loc ? text(loc[1]) || null : null, event: null, boxscore: box, note: note || null };
+  }).filter((g) => g.date && g.opponent);
+  return { platform: 'wmt', sport: view ? view[1].slug : null, season_label: bySlug ? (bySlug[1].season.name || bySlug[1].season.slug) : null, school_name: null, games };
+}
+
 function parseSchedule(html) {
   const data = nuxtData(html);
   if (!data) return null;
-  return sidearmSchedule(data);
+  return sidearmSchedule(data) || wmtSchedule(html, data);
 }
 
 /* where a season's schedule lives on each platform */
@@ -68,7 +104,7 @@ function schedulePath(platform, sport, label) {
 async function collectOne(polite, school, sport, season, o) {
   const plat = (o.platforms[school.id] || {}).platform;
   const miss = (code, why, url) => ({ ok: false, school: school.id, sport, season, url: url || null, code, why });
-  if (plat !== 'sidearm') return miss('PLATFORM_NOT_READ', plat === 'wmt' ? 'WMT schedules are not read yet' : 'the site\'s platform is not known (the roster collector learns it)');
+  if (plat !== 'sidearm' && plat !== 'wmt') return miss('PLATFORM_NOT_READ', 'the site\'s platform is not known or not read (the roster collector learns it)');
   const label = (o.labels && o.labels[school.id + '|' + sport + '|' + season]) || PL.seasonLabel(sport, season);
   const url = 'https://' + school.host + schedulePath(plat, sport, label);
   const past = season < o.current(sport);

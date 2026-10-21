@@ -310,6 +310,38 @@ def loop_health(L, now):
             "workflow": L["workflow"]}
 
 
+def collegiate_health(now):
+    """The collegiate collector (collegiate/run.js): the data feed behind the college baseball model's new inputs
+    and the portal ledger. STALE when its weekly run is over 8 days old; the backfill's progress and every host
+    that refused automated reads are named."""
+    last = _read("collegiate/data/last_run.json")
+    reg = _read("collegiate/data/schools.json")
+    back = _read("collegiate/data/backfill.json") or {}
+    refusals = 0
+    try:
+        with open(os.path.join(ROOT, "collegiate", "data", "refusals.jsonl")) as f:
+            refusals = sum(1 for line in f if line.strip())
+    except OSError:
+        pass
+    if not last:
+        return {"id": "collegiate", "label": "Collegiate collector", "status": "NOT_STARTED",
+                "reasons": ["the collector has not published a run (collegiate-rosters.yml)"], "last_run": None}
+    at = _ts(last.get("today"))
+    reasons = []
+    status = "OK"
+    if at is None or (now - at).days > RESEARCH_MAX_D:
+        status = "STALE"
+        reasons.append(f"last collector run {last.get('today')} (expected weekly)")
+    for bid, b in sorted(back.items()):
+        if not b.get("complete"):
+            reasons.append(f"backfill {bid}: in progress ({b.get('ok', b.get('read_this_run', 0))} read on {b.get('at')}"
+                           + (f", {b['left']} left" if b.get("left") is not None else "") + ")")
+    if refusals:
+        reasons.append(f"{refusals} host(s) refused automated reads and are left alone (collegiate/data/refusals.jsonl)")
+    return {"id": "collegiate", "label": "Collegiate collector", "status": status, "reasons": reasons, "last_run": last.get("today"),
+            "schools": (reg or {}).get("counts"), "steps": last.get("steps"), "workflow": "collegiate-rosters.yml"}
+
+
 def build(now=None):
     now = now or datetime.now(timezone.utc)
     loops = [loop_health(L, now) for L in LOOPS]
@@ -320,7 +352,7 @@ def build(now=None):
             "rules": {"refresh_max_hours": REFRESH_MAX_H, "research_max_days": RESEARCH_MAX_D, "results_max_days": RESULTS_MAX_D},
             "note": "Each learning loop's served version, when it last re-fitted and researched, and whether its data "
                     "is complete. A DEGRADED loop's cards say why; nothing here changes a number.",
-            "loops": loops}
+            "loops": loops, "feeds": [collegiate_health(now)]}
 
 
 def main(argv=None):

@@ -28,7 +28,7 @@ const fs = require('fs');
 const path = require('path');
 
 const DATA = path.join(__dirname, 'data');
-const SCHOOLS = path.join(__dirname, 'schools.json');
+const SCHOOLS = path.join(DATA, 'schools.json');
 const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return d; } };
 const writeJson = (p, o) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, JSON.stringify(o, null, 1) + '\n'); };
 
@@ -107,6 +107,7 @@ function build(o) {
   const dataDir = o.dataDir || DATA;
   const schools = o.schoolsList || (readJson(o.schoolsFile || SCHOOLS, { schools: [] }).schools || []);
   const resolve = resolver(schools);
+  const confOf = new Map(schools.map((x) => [x.id, x.conference || null]));
   const sport = o.sport; const season = o.season;
   const now = loadSeason(dataDir, sport, season); const before = loadSeason(dataDir, sport, season - 1);
   const both = [...now.keys()].filter((k) => before.has(k));
@@ -168,6 +169,14 @@ function build(o) {
       transfers_out: tout.length, departures_eligibility_done: dep.filter((r) => r.outcome === 'eligibility_likely_done').length,
       departures_other: dep.filter((r) => r.outcome !== 'eligibility_likely_done').length, newcomers: rows.filter((r) => r.kind === 'newcomer' && r.to === s).length };
   });
+  /* where moves cross conference lines (the registry's conference, as ncaa.com names it) */
+  for (const r of ledger) if (r.kind === 'transfer') { r.from_conference = r.from ? confOf.get(r.from) || null : null; r.to_conference = confOf.get(r.to) || null; }
+  for (const t of teams) {
+    const c = confOf.get(t.school);
+    t.conference = c || null;
+    t.transfers_in_same_conference = c ? ledger.filter((r) => r.kind === 'transfer' && r.to === t.school && r.from_conference === c).length : null;
+    t.transfers_out_same_conference = c ? ledger.filter((r) => r.kind === 'transfer' && r.from === t.school && r.to_conference === c).length : null;
+  }
   const unresolved = {};
   for (const r of ledger) if (r.kind === 'transfer' && !r.from && r.from_text && r.from_level !== 'juco') unresolved[r.from_text] = (unresolved[r.from_text] || 0) + 1;
   const out = { schema: 'edgedesk_collegiate_portal_v1', sport, season, built_at: new Date().toISOString(),
