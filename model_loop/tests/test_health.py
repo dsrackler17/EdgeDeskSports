@@ -147,6 +147,18 @@ class HealthTest(unittest.TestCase):
         self.assertIn("prices no live game", x["reasons"][0])
         self.assertEqual(H.loop_health(L, datetime(2026, 12, 2, tzinfo=timezone.utc))["status"], "STALE")
 
+    def test_a_staging_loop_is_ok_while_it_researches_and_names_what_is_staged(self):
+        L = next(L for L in H.LOOPS if L["id"] == "college_baseball")
+        now = datetime(2026, 11, 20, tzinfo=timezone.utc)
+        self.put("docs/model-loop/college_baseball/versions.json", {"current": "1.0.0", "staged": "1.1.0", "versions": [
+            {"version": "1.0.0", "status": "SERVED", "promoted_at": "2026-10-21T00:00:00Z", "promoted_by": "x"},
+            {"version": "1.1.0", "status": "STAGED", "promoted_at": "2026-11-19T00:00:00Z", "promoted_by": "weekly-loop"}]})
+        self.put("docs/model-loop/college_baseball/weekly/2026-11-19.json", {"at": "2026-11-19T13:30:00Z"})
+        x = H.loop_health(L, now)
+        self.assertEqual(x["status"], "OK", x["reasons"])
+        self.assertIn("1.1.0 is staged", x["reasons"][0])
+        self.assertEqual(H.loop_health(L, datetime(2026, 12, 2, tzinfo=timezone.utc))["status"], "STALE")
+
     def test_a_missing_history_is_degraded_even_out_of_season(self):
         x = H.loop_health(H.LOOPS[0], datetime(2026, 6, 1, tzinfo=timezone.utc))
         self.assertEqual(x["status"], "DEGRADED")

@@ -1,10 +1,14 @@
 # MLB weekly model report (lab brain): 2026-10-21
 
-Served version **1.0.0** (SERVED (RESEARCH: prices no live game); selection-window tuning, 2026-10-21). The lab brain (mlb/history) prices no live game: the browser card uses mlb/engine.js. This loop improves the brain on the whole 2012-to-date record so the 2027 engine can be chosen on evidence. Outcome-graded only: no MLB closing prices are archived.
+Served version **1.1.0** (SERVED (RESEARCH: prices no live game); weekly-loop, 2026-10-21). The lab brain (mlb/history) prices no live game: the browser card uses mlb/engine.js. This loop improves the brain on the whole 2012-to-date record so the 2027 engine can be chosen on evidence. Outcome-graded only: no MLB closing prices are archived.
 
 ## What changed
 
-**Nothing promoted.** 8 candidates were tested; none cleared the rule (over 2012–2025: log loss ≤ −0.0002 with its 95% interval below zero, Brier and run line no worse, no worse on 2025). v1.0.0 keeps serving.
+**Promoted 1.0.0 → 1.1.0.** weekly loop 2026-10-21: candidate starters_tighter (prior_starts ["mul",2]) cleared the full-window rule.
+
+- Full window 2012–2025: log loss 0.679372 → 0.679071 (95% interval of the change [-0.000525,-0.000073]), run line log loss 0.64555 → 0.644937
+- 2025: log loss 0.678302 → 0.677796
+- Roll back: point `current` in docs/model-loop/mlb/versions.json at 1.0.0.
 
 ## Accuracy (walk-forward, out of sample)
 
@@ -40,5 +44,8 @@ Moneyline: wins minus priced, z = (wins − Σp) / √Σp(1−p). Totals: runs m
 | park_prior_stronger | `prior_park_games` ["mul",2] | -0.000005 | [-0.000013,0.000005] | -0.000002 | -0.000043 | 0 | -0.000003 | FAIL: full log loss change -0.000005 does not clear -0.0002; log loss 95% interval [-0.000013,0.000005] is not below zero |
 | window_longer | `window_days` ["mul",1.5] | 0.000273 | [0.000086,0.000463] | 0.000133 | 0.000195 | -0.0026 | 0.000088 | FAIL: full log loss change 0.000273 does not clear -0.0002; log loss 95% interval [0.000086,0.000463] is not below zero; Brier worse (0.000133); run line log loss worse (0.000195); worse on 2025 (0.000088) |
 | starters_looser | `prior_starts` ["mul",0.5] | 0.000748 | [0.000531,0.000961] | 0.000366 | 0.001348 | 0.0053 | 0.001213 | FAIL: full log loss change 0.000748 does not clear -0.0002; log loss 95% interval [0.000531,0.000961] is not below zero; Brier worse (0.000366); run line log loss worse (0.001348); worse on 2025 (0.001213) |
+| starters_tighter | `prior_starts` ["mul",2] | -0.000301 | [-0.000525,-0.000073] | -0.000146 | -0.000613 | -0.0006 | -0.000506 | PASS: clears every condition |
+| recency_faster | `half_life_days` ["mul",0.5] | -0.00022 | [-0.000579,0.00012] | -0.0001 | -0.000259 | 0.0002 | 0.00003 | FAIL: log loss 95% interval [-0.000579,0.00012] is not below zero; worse on 2025 (0.00003) |
+| recency_slower | `half_life_days` ["mul",2] | 0.000471 | [0.000273,0.000686] | 0.000228 | 0.000573 | 0.0033 | 0.000321 | FAIL: full log loss change 0.000471 does not clear -0.0002; log loss 95% interval [0.000273,0.000686] is not below zero; Brier worse (0.000228); run line log loss worse (0.000573); worse on 2025 (0.000321) |
 
 Every candidate ever tried: `docs/model-loop/mlb/candidates.jsonl`. Versions: `docs/model-loop/mlb/versions.json`. The weekly record (`mlb/history/walkforward.js`, lab-validate.yml) is built with the served version.

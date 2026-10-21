@@ -46,7 +46,7 @@ jobs:
         with:
           node-version: '22'
       - name: The engine's tests (synthetic, then the committed artifacts)
-        run: node tools/college_baseball/college_baseball.test.js
+        run: node tools/college_baseball/college_baseball.test.js && node tools/college_baseball/loop.test.js
       - name: Every committed record reproduces and passes its check
         run: |
           node college_baseball/coverage.js --check
