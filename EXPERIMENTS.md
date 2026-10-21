@@ -388,3 +388,30 @@ Run 2026-10-21 on SBR 2011–2019 (2,393 games) by `python3 -m research.clv.nfl 
 ### NFL-H2: production v2.1.0 total on the proxy holdout (as selected above)
 ### NFL-H3: NFL-R1 frozen, spread, on the proxy holdout (as selected above)
 ### NFL-H4: NFL-W2 frozen, total, on the proxy holdout (as selected above)
+
+### NFL holdout results (run once, 2026-10-21)
+
+**k = 12.**
+- **Gate data:** proxy holdout SBR 2020–2021.
+- **2026 (reported only):** first-seen consensus open (a median 11 days before kickoff) to consensus close, 77 games.
+
+| ID | Proxy bets | Proxy CLV pts | Proxy CLV prob (pp) | α/12 LB | 2020 / 2021 | Proxy `clv_ev` | 2026 (out of sample) | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| NFL-H1 production v2.1.0, spread ≥1.0 | 384 | +0.578 [+0.272, +0.900] | +1.79 [+0.81, +2.80] | +0.48 | +1.24 / +2.35 | -1.1% [-3.0, +0.7] | n=52: +0.71 pts, +2.16 pp [+0.77, +4.96] | **PASS** |
+| NFL-H2 production v2.1.0, total ≥1.5 | 422 | +0.995 [+0.746, +1.266] | +2.97 [+2.23, +3.77] | +1.98 | +2.67 / +3.31 | **+1.1%** [-0.3, +2.6] | n=48: +0.96 pts, +2.83 pp [+1.09, +4.80] | **PASS** |
+| NFL-H3 R1 frozen, spread ≥0.25 | 290 | +0.898 [+0.571, +1.251] | +2.94 [+1.92, +4.02] | +1.53 | +2.67 / +3.20 | **+1.0%** [-0.9, +3.0] | n=37: +1.00 pts, +3.44 pp [+1.04, +6.34] | **PASS** |
+| NFL-H4 W2 frozen, total ≥0.25 | 448 | +1.162 [+0.911, +1.439] | +3.48 [+2.74, +4.30] | +2.48 | +3.43 / +3.52 | **+2.1%** [+0.7, +3.6] | n=54: +0.98 pts, +2.91 pp [+1.10, +4.93] | **PASS** |
+
+**Frozen fits:**
+- R1: move = -0.125 + 0.135·d_v21 + 0.024·d_loop (λ = 0.1).
+- W2: move = -0.053 + 0.142·dt_v21 + 0.201·dt_loop.
+
+**What it shows.** The NFL market moved about 13–14% of production v2.1.0's disagreement toward it. The loop adds a little on spreads and a lot on totals.
+
+**Results diagnostic** (win rate at the opening price; noisy at these n):
+- Proxy: H1 48.0%, H2 53.4%, H3 52.1%, H4 54.0%.
+- 2026: 49.0%, 47.9%, 50.0%, 46.3%.
+
+**Caveats:**
+- Proxy-holdout seasons sit inside the hyperparameter-selection windows of both base models (final scores, not line moves).
+- 2026 openers are early lookahead consensus numbers, not a book's opener.
