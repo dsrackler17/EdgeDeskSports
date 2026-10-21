@@ -8,7 +8,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from model_loop.clv import harness as H
+from model_loop.clv_early import harness as H
 
 
 def frame(rows):
@@ -245,7 +245,7 @@ class TestCompareMatched(unittest.TestCase):
 
 class TestHoldoutLock(unittest.TestCase):
     def test_holdout_refused_without_unlock(self):
-        from model_loop.clv import run as R
+        from model_loop.clv_early import run as R
         R.guard([2020, 2024], False)
         with self.assertRaises(R.HoldoutLocked):
             R.guard([2024, 2025], False)

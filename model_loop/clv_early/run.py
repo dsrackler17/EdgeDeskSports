@@ -1,11 +1,11 @@
 """Score a model's early-line predictions with the CLV harness.
 
-  python3 -m model_loop.clv.run --exp E-001 --sport nfl --pred .cache/clv/pred_nfl_v21.csv \
+  python3 -m model_loop.clv_early.run --exp E-001 --sport nfl --pred .cache/clv/pred_nfl_v21.csv \
       --market spread --threshold 2 --sweep 1,3,4 --label "NFL v2.1.0"
 
-Every invocation is appended to docs/model-loop/clv/results/ledger.jsonl (the
+Every invocation is appended to docs/model-loop/clv_early/results/ledger.jsonl (the
 mechanical variant count; failures included) and its scorecard is written to
-docs/model-loop/clv/results/<exp>__<label>.json.
+docs/model-loop/clv_early/results/<exp>__<label>.json.
 
 The holdout is locked: a season >= 2025 is refused unless --unlock-holdout is
 passed, which Phase 6 does exactly once.
@@ -24,7 +24,7 @@ from .baselines import previous_starters
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CACHE = os.path.join(ROOT, ".cache", "clv")
-RESULTS = os.path.join(ROOT, "docs", "model-loop", "clv", "results")
+RESULTS = os.path.join(ROOT, "docs", "model-loop", "clv_early", "results")
 HOLDOUT_FIRST = 2025
 DEV = {"nfl": list(range(2020, 2025)), "cfb": [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024]}
 

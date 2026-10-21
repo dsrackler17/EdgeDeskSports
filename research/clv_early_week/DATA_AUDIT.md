@@ -2,7 +2,7 @@
 
 Written 2026-10-21, before any model was scored against an early line. Everything
 below was established by running code on the data, not assumed. Reproduce with
-`model_loop/clv/nfl_line_history.py` and `model_loop/clv/lines.py` (inputs are public;
+`model_loop/clv_early/nfl_line_history.py` and `model_loop/clv_early/lines.py` (inputs are public;
 the derived tables live in the gitignored `.cache/clv/`).
 
 **Bottom line.** A real CLV study is possible for **CFB 2012–2019 and 2021–2025** (book

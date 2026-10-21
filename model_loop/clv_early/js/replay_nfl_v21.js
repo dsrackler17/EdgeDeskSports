@@ -15,7 +15,7 @@
      * weather neutral (the model's own defaults: 68F, no wind; roof is known).
 
    Read-only use of the model: nothing in football/ is modified.
-     node model_loop/clv/js/replay_nfl_v21.js <out.csv>
+     node model_loop/clv_early/js/replay_nfl_v21.js <out.csv>
    ============================================================================ */
 'use strict';
 const fs = require('fs');
@@ -28,6 +28,9 @@ require(path.join(ROOT, 'football', 'nfl_params_v2.js'));
 const P = globalThis.EDNflParamsV2;
 
 const OUT = process.argv[2] || path.join(ROOT, '.cache', 'clv', 'pred_nfl_v21.csv');
+/* 'climate' (EXPERIMENTS.md E-203): non-dome weather = the stadium's mean in the same calendar
+   month over seasons before the one being priced (league monthly mean under 3 such games) */
+const WEATHER = process.argv[3] || 'neutral';
 const cfg = JSON.parse(JSON.stringify(P.cfg));
 
 function vec(obj, names) { const v = new Array(names.length); for (let i = 0; i < names.length; i++) { const x = obj[names[i]]; v[i] = Number.isFinite(x) ? x : 0; } return v; }
@@ -43,12 +46,37 @@ function laggedStarters(games) {
   return out;
 }
 
+const isDome = (g) => String(g.roof) === 'dome' || String(g.roof) === 'closed';
+function climatology(games) {
+  const acc = {}; /* season -> {stadium|month: [sumT, sumW, n]} built cumulatively */
+  const out = {};
+  const bySeason = {};
+  for (const g of games) if (g.done && !isDome(g) && Number.isFinite(g.temp) && Number.isFinite(g.wind)) (bySeason[g.season] = bySeason[g.season] || []).push(g);
+  const seasons = [...new Set(games.map((g) => g.season))].sort((a, b) => a - b);
+  const cum = {}, lg = {};
+  for (const S of seasons) {
+    out[S] = { st: JSON.parse(JSON.stringify(cum)), lg: JSON.parse(JSON.stringify(lg)) };
+    for (const g of bySeason[S] || []) {
+      const m = String(g.gameday).slice(5, 7), k = g.stadium + '|' + m;
+      const a = (cum[k] = cum[k] || [0, 0, 0]); a[0] += g.temp; a[1] += g.wind; a[2]++;
+      const b = (lg[m] = lg[m] || [0, 0, 0]); b[0] += g.temp; b[1] += g.wind; b[2]++;
+    }
+  }
+  return function (g) {
+    const c = out[g.season]; if (!c) return null;
+    const m = String(g.gameday).slice(5, 7), a = c.st[g.stadium + '|' + m];
+    if (a && a[2] >= 3) return { temp: a[0] / a[2], wind: a[1] / a[2] };
+    const b = c.lg[m]; return b && b[2] ? { temp: b[0] / b[2], wind: b[1] / b[2] } : null;
+  };
+}
+
 function main() {
   const names = M.featureNames(cfg);
   const st = M.newState(cfg);
   const rows = D.teamRows(cfg.source), qb = D.qbRows();
   const games = D.games();
   const lag = laggedStarters(games);
+  const clim = WEATHER === 'climate' ? climatology(games) : null;
   const byWeek = {};
   for (const g of games) (byWeek[g.season + '|' + g.week] = byWeek[g.season + '|' + g.week] || []).push(g);
   const opened = {};
@@ -63,6 +91,7 @@ function main() {
         const go = B.gameObj(h);
         go.home_qb_id = lag[h.id].home; go.away_qb_id = lag[h.id].away;
         go.temp = null; go.wind = null;
+        if (clim && !isDome(h)) { const c = clim(h); if (c) { go.temp = c.temp; go.wind = c.wind; } }
         const F = M.features(st, go);
         early[h.id] = { g: h, s: vec(F.spread, names.spread), c: vec(F.ctx, names.ctx), t: vec(F.total, names.total), hfa: F.hfa };
       }

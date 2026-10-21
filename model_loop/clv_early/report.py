@@ -1,4 +1,4 @@
-"""Compact tables from the scorecards in docs/model-loop/clv/results/ (for
+"""Compact tables from the scorecards in docs/model-loop/clv_early/results/ (for
 EXPERIMENTS.md and FINAL_REPORT.md)."""
 import glob
 import json

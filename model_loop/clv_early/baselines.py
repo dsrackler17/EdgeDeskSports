@@ -1,10 +1,10 @@
 """Phase 3 baselines: the production models priced with only what was
 knowable at the early line (EXPERIMENTS.md E-001..E-006).
 
-  python3 -m model_loop.clv.baselines nfl_loop     # E-002 -> .cache/clv/pred_nfl_loop.parquet
-  python3 -m model_loop.clv.baselines cfb_loop     # E-004 (+ E-006 lagged)
-  python3 -m model_loop.clv.baselines cfb_v1       # E-003 (+ E-006 lagged), via node
-  python3 -m model_loop.clv.baselines nfl_v21      # E-001, via node
+  python3 -m model_loop.clv_early.baselines nfl_loop     # E-002 -> .cache/clv/pred_nfl_loop.parquet
+  python3 -m model_loop.clv_early.baselines cfb_loop     # E-004 (+ E-006 lagged)
+  python3 -m model_loop.clv_early.baselines cfb_v1       # E-003 (+ E-006 lagged), via node
+  python3 -m model_loop.clv_early.baselines nfl_v21      # E-001, via node
 
 Loop models: two rating passes. The production pass (the starter who
 actually played, observed weather) supplies the TRAINING rows exactly as the

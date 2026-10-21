@@ -1,9 +1,9 @@
 """Phase 4 runner: the market-residual experiments exactly as preregistered in
 EXPERIMENTS.md (E-101..E-114, E-120).
 
-  python3 -m model_loop.clv.phase4 nfl E-101 base
-  python3 -m model_loop.clv.phase4 nfl E-102 base,qb --comparator E-101
-  python3 -m model_loop.clv.phase4 cfb E-111 base
+  python3 -m model_loop.clv_early.phase4 nfl E-101 base
+  python3 -m model_loop.clv_early.phase4 nfl E-102 base,qb --comparator E-101
+  python3 -m model_loop.clv_early.phase4 cfb E-111 base
 """
 import argparse
 import json

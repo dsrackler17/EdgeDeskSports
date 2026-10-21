@@ -10,7 +10,7 @@ It reads; it never computes a line. A value that is blank in a commit stays
 blank (missing), never filled.
 
   git clone --bare https://github.com/nflverse/nfldata /home/user/nflverse/nfldata.git
-  python3 -m model_loop.clv.nfl_line_history --repo /home/user/nflverse/nfldata.git
+  python3 -m model_loop.clv_early.nfl_line_history --repo /home/user/nflverse/nfldata.git
 
 Output (gitignored): .cache/clv/nfl_line_changes.csv.gz, one row per (game,
 commit) where any market column changed, stamped with the commit time (UTC).

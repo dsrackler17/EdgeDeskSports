@@ -3,7 +3,7 @@
 Every experiment is written here **before** it is run: hypothesis, the exact change,
 and the pass threshold. The result is added afterwards, pass or fail, without editing
 anything above the `Result` line. Data and its gaps: [DATA_AUDIT.md](DATA_AUDIT.md).
-Code: `model_loop/clv/`. Raw scorecards: `docs/model-loop/clv/results/`.
+Code: `model_loop/clv_early/`. Raw scorecards: `docs/model-loop/clv_early/results/`.
 
 ## Protocol (fixed 2026-10-21, applies to every experiment)
 
@@ -44,7 +44,7 @@ discretised normal with σ from close-vs-result 2006/2012–2024.
 
 **Windows.** Development: NFL **2020–2024** (no early lines exist for 2015–2019), CFB
 **2015–2019 and 2021–2024** (no openers in 2020; 2012–2014 usable as training history only).
-**Holdout: 2025 and 2026-to-date, locked** — `model_loop/clv/run.py` refuses to score a season
+**Holdout: 2025 and 2026-to-date, locked** — `model_loop/clv_early/run.py` refuses to score a season
 ≥ 2025 without `--unlock-holdout`, which is used exactly once, in Phase 6.
 
 **Calling an edge (any single experiment, development data).** At its pre-registered primary
@@ -69,7 +69,7 @@ number of variants tried on development data.
   replay 1999→, features in kickoff order with the actual starters, ridge weights refitted on
   2002..S−1 for each season S. Prediction rows for season S: every week-W game priced from the
   state at the **start** of week W, with each team's previous-game starter, weather neutral.
-  `model_loop/clv/js/replay_nfl_v21.js`.
+  `model_loop/clv_early/js/replay_nfl_v21.js`.
 * **Primary:** spreads, threshold **2.0** points, NFL 2020–2024. Sweep 1, 3, 4 (descriptive).
 * **Pass (edge called):** protocol rule above.
 
@@ -90,7 +90,7 @@ number of variants tried on development data.
 * **Exact procedure.** `football/cfb_p4/engine.js` replayed cold from 2006 as
   `model_loop/adapters/cfb/baselines/replay_cfb_p4.js` does, except every game of a
   (season, season type, week) is projected from the state at the start of that week
-  (`model_loop/clv/js/replay_cfb_p4_weekstart.js`). The engine has no QB or weather input.
+  (`model_loop/clv_early/js/replay_cfb_p4_weekstart.js`). The engine has no QB or weather input.
 * **Primary:** spreads, threshold **3.0** points, CFB 2015–2019 + 2021–2024. Sweep 2, 4, 5, 6.
 * **Pass:** protocol rule.
 
@@ -122,7 +122,7 @@ number of variants tried on development data.
 
 _(added after each run; nothing above is edited after a result exists)_
 
-### Phase 3 results (run 2026-10-21; scorecards `docs/model-loop/clv/results/E_00*.json`)
+### Phase 3 results (run 2026-10-21; scorecards `docs/model-loop/clv_early/results/E_00*.json`)
 
 **Reproduction checks first.** The training side of each replay reproduces the published
 walk-forward exactly: NFL v2.1.0 margin MAE 2010–2024 = 10.3032 on 4,078 games (published
@@ -214,7 +214,7 @@ NFL v2.1.0 spread +0.301 [+0.16, +0.43], NFL Loop spread +0.307 [+0.15, +0.47], 
 
 **What it is.** A model of line **movement**: `y = close − early line`, fitted on inputs knowable
 at the early line, with the early line as the prior (predicted close = early + m̂). Code:
-`model_loop/clv/residual.py`. Ridge regression on standardised features with an intercept,
+`model_loop/clv_early/residual.py`. Ridge regression on standardised features with an intercept,
 **penalty λ = 25 fixed**, refitted walk-forward (every earlier development season predicts the
 next). A bet is placed when **|m̂| ≥ θ = 0.25 points**, on the side the predicted move points to,
 and is scored by the same harness.
@@ -253,7 +253,7 @@ not exist for CFB under R-2 (no week W−1 information; no intermediate snapshot
 both rules: the same ridge plus pairwise interactions of `d` with each other feature of that model,
 λ = 25, compared against that best simple model by the same matched-volume rule.
 
-### Phase 4 results (run 2026-10-21; scorecards `docs/model-loop/clv/results/E_1*.json`)
+### Phase 4 results (run 2026-10-21; scorecards `docs/model-loop/clv_early/results/E_1*.json`)
 
 θ = 0.25 pts of predicted movement; "matched" = candidate top-k by |m̂| vs the comparator's own
 bets, same games, paired week-cluster bootstrap.
@@ -332,9 +332,44 @@ E-112's top 3,230 by |m̂| vs the CFB Loop W−2 baseline's 3,230 bets: +0.263 v
 ### E-204 · Team totals — skipped (no line data exists; DATA_AUDIT.md §1)
 ### E-205 · First-half markets — skipped (no line data exists; DATA_AUDIT.md §1)
 
+### Phase 5 results (run 2026-10-21; scorecards `docs/model-loop/clv_early/results/E_20*.json`)
+
+| exp | games / bets | CLV pts [CI] | CLV prob [CI] | perm p | ROI at bet price | comparison | result |
+|---|---|---|---|---|---|---|---|
+| E-201 NFL backup-QB, Friday line, thr 2 | 66 / 35 | +0.214 [−0.10, +0.55] | +0.92% [−0.04, +1.86] | 0.043 | −1.85% | same games with previous-game starters: 42 bets, +0.012; mean \|model − Friday line\| 3.56 (Friday starters) vs 4.11 | **FAIL** (CI spans 0) |
+| E-202 CFB non-power, opener, thr 3 | — / 1,384 | +0.090 [−0.04, +0.23] | +0.16% [−0.17, +0.53] | 0.038 | −4.25% | power-involved: 1,846 bets, +0.370 [+0.26, +0.48]; non-power − power = **−0.280 [−0.44, −0.12]** | **FAIL** (and the opposite of the hypothesis) |
+| E-203 NFL totals, venue climatology, thr 2 (R-1) | — / 584 | +0.479 [+0.35, +0.62] | +1.43% [+1.02, +1.84] | 0.001 | −0.69% | matched vs neutral weather: +0.483 vs +0.443, diff +0.040 [−0.006, +0.089] | **FAIL** (edge rule passes; not better than neutral) |
+| E-204 team totals | — | — | — | — | — | no data | skipped |
+| E-205 1H | — | — | — | — | — | no data | skipped |
+
+**What Phase 5 says.**
+* **Backup-QB games are too rare to test.** With the Friday injury report there are only 66
+  eligible NFL games in five seasons (35 bets). Pricing the expected backup brings the model
+  closer to the Friday line (3.56 vs 4.11 points) and the point estimate is positive, but the
+  interval spans zero. Nothing can be concluded either way.
+* **Non-power CFB openers are not softer for this model.** The CFB Loop W−2 rule earns 0.28 pts
+  *less* outside the power conferences (interval excludes zero). Its CLV lives in the
+  power-involved games (+0.37). The likely reason is that the model's own inputs (EPA,
+  talent, QB) are thinner for those teams, not that those markets are sharp.
+* **Climatology does not improve NFL totals.** The +0.04 gain is inside the noise. The neutral
+  baseline stays.
+
+---
+
+### Note: relocation (2026-10-21, after Phase 5, before Phase 6)
+
+While this study ran, a separate session merged an independent CLV study into `main` with the same
+root file names (`DATA_AUDIT.md`, `EXPERIMENTS.md`, `model_loop/clv/harness.py`, `residual.py`,
+`model_loop/tests/test_clv_harness.py`). To keep both records intact, this study moved without
+changing any content other than paths:
+`DATA_AUDIT.md`, `EXPERIMENTS.md` → `research/clv_early_week/`; `model_loop/clv/` →
+`model_loop/clv_early/`; `docs/model-loop/clv/results/` → `docs/model-loop/clv_early/results/`;
+the tests → `model_loop/tests/test_clv_early_harness.py`. The two studies share no code, data
+files or experiment IDs; their attempts are not pooled.
+
 ## Variant ledger
 
-Generated from `docs/model-loop/clv/results/ledger.jsonl`, which `model_loop/clv/run.py` appends on
+Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on
 every scoring run (failures included). One row per unique (experiment, label, threshold); "runs"
 counts re-scorings of the identical configuration (e.g. re-run after the ROI column was added or a
 diagnostics bug was fixed — CLV unchanged). "CLV>0" = the protocol's edge rule on that row.
@@ -426,3 +461,14 @@ diagnostics bug was fixed — CLV unchanged). "CLV>0" = the protocol's edge rule
 | 83 | E-120 | CFB residual base+rest x d spread | spread | 0.25 | primary | 2367 | +0.280 | CLV>0 | 1 |
 | 84 | E-120 | CFB residual base+rest x d spread | spread | 0.5 | sweep | 677 | +0.453 | CLV>0 | 1 |
 | 85 | E-120 | CFB residual base+rest x d spread | spread | 0.75 | sweep | 161 | +0.615 | CLV>0 | 1 |
+| 86 | E-202 | CFB Loop W-2 non-power games | spread | 3 | primary | 1384 | +0.090 | no | 1 |
+| 87 | E-202 | CFB Loop W-2 non-power games | spread | 2 | sweep | 1798 | +0.043 | no | 1 |
+| 88 | E-202 | CFB Loop W-2 non-power games | spread | 5 | sweep | 778 | +0.129 | no | 1 |
+| 89 | E-202-ref | CFB Loop W-2 power-involved games | spread | 3 | primary | 1846 | +0.370 | CLV>0 | 1 |
+| 90 | E-203 | NFL v2.1.0 total, venue climatology | total | 2 | primary | 584 | +0.479 | CLV>0 | 1 |
+| 91 | E-203 | NFL v2.1.0 total, venue climatology | total | 1 | sweep | 855 | +0.358 | CLV>0 | 1 |
+| 92 | E-203 | NFL v2.1.0 total, venue climatology | total | 3 | sweep | 399 | +0.596 | CLV>0 | 1 |
+| 93 | E-201-ref | NFL Loop backup-QB games, Tuesday starters, Friday line | spread | 2 | primary | 42 | +0.012 | no | 1 |
+| 94 | E-201 | NFL Loop backup-QB games, Friday starters, Friday line | spread | 2 | primary | 35 | +0.214 | no | 1 |
+| 95 | E-201 | NFL Loop backup-QB games, Friday starters, Friday line | spread | 1 | sweep | 52 | +0.019 | no | 1 |
+| 96 | E-201 | NFL Loop backup-QB games, Friday starters, Friday line | spread | 3 | sweep | 25 | +0.100 | no | 1 |
