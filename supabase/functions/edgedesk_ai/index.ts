@@ -10982,7 +10982,7 @@ export function deriveState(
       var drows = (Array.isArray(r.drivers.rows) ? r.drivers.rows : []).map(function (d) {
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t, favours: txt(d.favours) } : null;
-      }).filter(Boolean).slice(0, 6);
+      }).filter(Boolean).slice(0, 8); /* the NFL card is seven rows that must all show to add up */
       var trows = (Array.isArray(r.drivers.total_rows) ? r.drivers.total_rows : []).map(function (d) {
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t } : null;
