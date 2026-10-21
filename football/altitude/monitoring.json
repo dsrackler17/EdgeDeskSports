@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_altitude_monitoring_v1",
- "generated_at": "2026-10-21T17:29:42.565Z",
+ "generated_at": "2026-10-21T21:52:57.811Z",
  "policy": "warnings inform a person; nothing here retrains, re-tunes, enables or disables anything",
  "ok": true,
  "params": {
@@ -11,16 +11,16 @@
   "flag": "cfb_altitude_adjustment_enabled"
  },
  "slate": {
-  "generated_at": "2026-10-21T17:29:42.034Z",
-  "games": 101,
-  "with_section": 101,
-  "usable": 99,
+  "generated_at": "2026-10-21T21:52:56.312Z",
+  "games": 106,
+  "with_section": 106,
+  "usable": 103,
   "exposure": {
-   "DESCENT": 11,
+   "DESCENT": 12,
    "MODERATE": 3,
-   "MINIMAL": 78,
-   "UNKNOWN": 2,
-   "HIGH": 7
+   "MINIMAL": 80,
+   "UNKNOWN": 3,
+   "HIGH": 8
   },
   "applied_games": 0,
   "unavailable": [
@@ -33,6 +33,11 @@
     "game_id": "401858505",
     "game": "Northwestern @ Oregon",
     "why": "Northwestern’s normal home venue (id 11823) has no sourced elevation"
+   },
+   {
+    "game_id": "401856734",
+    "game": "Florida @ Georgia",
+    "why": "venue 5348 has no sourced elevation"
    }
   ]
  },
@@ -71,7 +76,7 @@
   {
    "kind": "ELEVATION_UNAVAILABLE",
    "level": "WARN",
-   "message": "2 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
+   "message": "3 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
    "evidence": [
     {
      "game_id": "401858498",
@@ -82,6 +87,11 @@
      "game_id": "401858505",
      "game": "Northwestern @ Oregon",
      "why": "Northwestern’s normal home venue (id 11823) has no sourced elevation"
+    },
+    {
+     "game_id": "401856734",
+     "game": "Florida @ Georgia",
+     "why": "venue 5348 has no sourced elevation"
     }
    ]
   }
