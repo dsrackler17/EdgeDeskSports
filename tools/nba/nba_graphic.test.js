@@ -65,7 +65,9 @@ SLATE.games.forEach((g) => {
     chk('layout keeps every text on the canvas (' + f + '): ' + g.game_id, out.length === 0, out.map((o) => o.text));
   });
 });
-const G1 = SLATE.games[0];
+/* the game the graphic is drawn for has not started at the test's clock: a slate built on a game night
+   still lists the games under way, and a market quote captured after tip is (rightly) never drawn */
+const G1 = SLATE.games.find((g) => Date.parse(g.start_utc) > NOW) || SLATE.games[0];
 chk('every team on the slate has colours and a nickname', SLATE.games.every((g) => N.TEAMS[g.home.abbr] && N.TEAMS[g.away.abbr]));
 chk('all thirty teams are coloured', Object.keys(N.TEAMS).length === 30);
 const c0 = N.content(G1, base).content;
@@ -139,7 +141,7 @@ const ev = (g, status) => ({ id: 'nba:espn:' + g.game_id, sport: 'nba', provider
 const evs = SLATE.games.map((g) => ev(g, 'SCHEDULED'));
 RES.join(evs, { nba: SLATE, nbaRecent: null, basketball: { leagues: {} } }, { now: NOW });
 chk('Today’s Games links every NBA game the engine priced to its research page', evs.every((e) => e.research.module === 'nba' && e.research.entity === e.provider_id), evs.filter((e) => e.research.module !== 'nba').map((e) => e.id));
-const e0 = evs[0];
+const e0 = evs.find((e) => e.provider_id === String(G1.game_id));
 chk('…with the panel’s own numbers (fair moneyline, spread, total) and its validation', e0.research.model.source === 'nba/slate.json' && e0.research.model.fair.ml_home === G1.price.moneyline.home_american && e0.research.model.fair.spread_home === G1.price.spread.fair_line_home && e0.research.model.fair.total === G1.price.total.fair_line && e0.research.model.tier === 'OUTCOME_VALIDATED' && /value claims are off/.test(e0.research.model.note), e0.research.model);
 chk('…and its target is the NBA panel’s game route', require(path.join(ROOT, 'lib', 'edgedesk_games.js')).researchTarget(e0, 'app').href === '#research/nba/' + G1.game_id);
 const started = Object.assign(clone(G1), { game_id: '999', start_utc: '2026-10-20T19:00:00Z', frozen_at: '2026-10-20T15:23:00Z' });
