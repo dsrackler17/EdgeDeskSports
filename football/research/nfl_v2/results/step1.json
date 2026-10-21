@@ -1,0 +1,640 @@
+{
+ "step": 1,
+ "generated_at": "2026-10-20T19:40:47.260Z",
+ "note": "Correctness fixes ship regardless (audit_report.md); this is their measured effect. \"served\" is the pre-fix board emulated; \"fixed\" is the incumbent for Step 2.",
+ "served": {
+  "step": 1,
+  "family": "correctness",
+  "label": "v1 as served (defence frozen in season, no QB starts, Normal win prob)",
+  "cfg": {
+   "carry": 0.8,
+   "prior": {
+    "kind": "geometric",
+    "alpha": 0.1,
+    "alpha_pts": 0.06,
+    "k": null,
+    "k_pts": null
+   },
+   "recency": null,
+   "alpha_league": 0.02,
+   "qb": {
+    "alpha_qb": 0.18,
+    "qb_shrink": 12,
+    "qb_prior": -0.04,
+    "alpha_team": 0.1
+   },
+   "features": {
+    "net_pts_fix": false,
+    "split_od": false
+   },
+   "hfa": {
+    "kind": "intercept",
+    "rho": null,
+    "m": null
+   },
+   "ctx": {
+    "travel": false,
+    "venue": true
+   },
+   "market": {
+    "on": false,
+    "beta": null,
+    "carry_m": null
+   },
+   "personnel": {
+    "on": false
+   },
+   "source": "stw",
+   "calibration": {
+    "kind": "none"
+   },
+   "ridge": {
+    "strength": 60,
+    "context": 200,
+    "total": 60
+   }
+  },
+  "valid": {
+   "n": 4078,
+   "mae": 10.5024,
+   "rmse": 13.6275,
+   "brier": 0.22499,
+   "logloss": 0.64034,
+   "ece": 0.0282,
+   "cal_slope": 1.004,
+   "home_lean": 0.356,
+   "ats3": {
+    "n": 1689,
+    "win_pct": 0.5275310834813499
+   },
+   "total_mae": 10.6848
+  },
+  "holdout": {
+   "n": 285,
+   "mae": 10.4555,
+   "rmse": 13.3906,
+   "brier": 0.23719,
+   "logloss": 0.66733,
+   "ece": 0.077,
+   "cal_slope": 0.7,
+   "home_lean": 0.676,
+   "ats3": {
+    "n": 114,
+    "win_pct": 0.4473684210526316
+   },
+   "total_mae": 10.4185
+  },
+  "holdout_looked": true
+ },
+ "fixed": {
+  "step": 1,
+  "family": "correctness",
+  "label": "v1 fixed (defence mirrored, QB starts, PMF win prob)",
+  "cfg": {
+   "carry": 0.8,
+   "prior": {
+    "kind": "geometric",
+    "alpha": 0.1,
+    "alpha_pts": 0.06,
+    "k": null,
+    "k_pts": null
+   },
+   "recency": null,
+   "alpha_league": 0.02,
+   "qb": {
+    "alpha_qb": 0.18,
+    "qb_shrink": 12,
+    "qb_prior": -0.04,
+    "alpha_team": 0.1
+   },
+   "features": {
+    "net_pts_fix": false,
+    "split_od": false
+   },
+   "hfa": {
+    "kind": "intercept",
+    "rho": null,
+    "m": null
+   },
+   "ctx": {
+    "travel": false,
+    "venue": true
+   },
+   "market": {
+    "on": false,
+    "beta": null,
+    "carry_m": null
+   },
+   "personnel": {
+    "on": false
+   },
+   "source": "stw",
+   "calibration": {
+    "kind": "none"
+   },
+   "ridge": {
+    "strength": 60,
+    "context": 200,
+    "total": 60
+   }
+  },
+  "valid": {
+   "n": 4078,
+   "mae": 10.397,
+   "rmse": 13.4728,
+   "brier": 0.22243,
+   "logloss": 0.6349,
+   "ece": 0.0226,
+   "cal_slope": 1.092,
+   "home_lean": 0.357,
+   "ats3": {
+    "n": 1267,
+    "win_pct": 0.5090765588003157
+   },
+   "total_mae": 10.6887
+  },
+  "holdout": {
+   "n": 285,
+   "mae": 10.1944,
+   "rmse": 12.9447,
+   "brier": 0.22292,
+   "logloss": 0.63513,
+   "ece": 0.0451,
+   "cal_slope": 0.977,
+   "home_lean": 0.72,
+   "ats3": {
+    "n": 84,
+    "win_pct": 0.5238095238095238
+   },
+   "total_mae": 10.3798
+  },
+  "holdout_looked": true
+ },
+ "close": {
+  "valid": {
+   "mae": 10.081,
+   "logloss": 0.60982,
+   "brier": 0.21111,
+   "ece": 0.0166,
+   "cal_slope": 1.07
+  },
+  "holdout": {
+   "mae": 9.6702,
+   "logloss": 0.60699,
+   "brier": 0.21091,
+   "ece": 0.0465,
+   "cal_slope": 1.008
+  }
+ },
+ "live_2026": {
+  "served": {
+   "n": 93,
+   "mae": 9.5682,
+   "rmse": 11.9271,
+   "brier": 0.23135,
+   "logloss": 0.65064,
+   "ece": 0.1438,
+   "cal_slope": 0.973,
+   "home_lean": 0.786,
+   "ats3": {
+    "n": 40,
+    "win_pct": 0.6
+   },
+   "total_mae": 11.2034
+  },
+  "fixed": {
+   "n": 93,
+   "mae": 9.6565,
+   "rmse": 12.0073,
+   "brier": 0.23074,
+   "logloss": 0.65022,
+   "ece": 0.1175,
+   "cal_slope": 1.028,
+   "home_lean": 0.733,
+   "ats3": {
+    "n": 30,
+    "win_pct": 0.4666666666666667
+   },
+   "total_mae": 11.2338
+  },
+  "close_mae": 9.3065
+ },
+ "calibration_2025": {
+  "fixed": [
+   {
+    "lo": 0,
+    "n": 0,
+    "predicted": null,
+    "observed": null
+   },
+   {
+    "lo": 0.1,
+    "n": 2,
+    "predicted": 0.1890830624422169,
+    "observed": 0.5
+   },
+   {
+    "lo": 0.2,
+    "n": 15,
+    "predicted": 0.24619753734908464,
+    "observed": 0.26666666666666666
+   },
+   {
+    "lo": 0.3,
+    "n": 27,
+    "predicted": 0.34409670649776225,
+    "observed": 0.25925925925925924
+   },
+   {
+    "lo": 0.4,
+    "n": 55,
+    "predicted": 0.4730420895128948,
+    "observed": 0.45454545454545453
+   },
+   {
+    "lo": 0.5,
+    "n": 70,
+    "predicted": 0.5303226508689283,
+    "observed": 0.4857142857142857
+   },
+   {
+    "lo": 0.6,
+    "n": 47,
+    "predicted": 0.6594933235220101,
+    "observed": 0.6170212765957447
+   },
+   {
+    "lo": 0.7,
+    "n": 42,
+    "predicted": 0.7496478820445549,
+    "observed": 0.6904761904761905
+   },
+   {
+    "lo": 0.8,
+    "n": 24,
+    "predicted": 0.8416741338677586,
+    "observed": 0.875
+   },
+   {
+    "lo": 0.9,
+    "n": 2,
+    "predicted": 0.9191423806840384,
+    "observed": 1
+   }
+  ],
+  "close": [
+   {
+    "lo": 0,
+    "n": 0,
+    "predicted": null,
+    "observed": null
+   },
+   {
+    "lo": 0.1,
+    "n": 10,
+    "predicted": 0.16892735881141,
+    "observed": 0.1
+   },
+   {
+    "lo": 0.2,
+    "n": 25,
+    "predicted": 0.24716003225010813,
+    "observed": 0.24
+   },
+   {
+    "lo": 0.3,
+    "n": 36,
+    "predicted": 0.34630226787559815,
+    "observed": 0.4166666666666667
+   },
+   {
+    "lo": 0.4,
+    "n": 48,
+    "predicted": 0.4411938474934534,
+    "observed": 0.4166666666666667
+   },
+   {
+    "lo": 0.5,
+    "n": 47,
+    "predicted": 0.553553482276007,
+    "observed": 0.574468085106383
+   },
+   {
+    "lo": 0.6,
+    "n": 48,
+    "predicted": 0.6450965338286799,
+    "observed": 0.5416666666666666
+   },
+   {
+    "lo": 0.7,
+    "n": 41,
+    "predicted": 0.748538500278658,
+    "observed": 0.7317073170731707
+   },
+   {
+    "lo": 0.8,
+    "n": 26,
+    "predicted": 0.8573696930189312,
+    "observed": 0.9230769230769231
+   },
+   {
+    "lo": 0.9,
+    "n": 3,
+    "predicted": 0.9053888284179062,
+    "observed": 1
+   }
+  ]
+ },
+ "by_season": {
+  "served": [
+   {
+    "season": 2010,
+    "n": 267,
+    "mae": 11.01072448010555,
+    "close_mae": 10.754681647940075,
+    "logloss": 0.6572037101734561
+   },
+   {
+    "season": 2011,
+    "n": 267,
+    "mae": 10.709627249723148,
+    "close_mae": 10.50936329588015,
+    "logloss": 0.6068389304406878
+   },
+   {
+    "season": 2012,
+    "n": 267,
+    "mae": 11.26434358802633,
+    "close_mae": 10.715355805243446,
+    "logloss": 0.6462693568216948
+   },
+   {
+    "season": 2013,
+    "n": 267,
+    "mae": 10.366173341913923,
+    "close_mae": 9.808988764044944,
+    "logloss": 0.646893845639961
+   },
+   {
+    "season": 2014,
+    "n": 267,
+    "mae": 11.422764881892533,
+    "close_mae": 11.284644194756554,
+    "logloss": 0.6156784288868805
+   },
+   {
+    "season": 2015,
+    "n": 267,
+    "mae": 10.157254914441715,
+    "close_mae": 10.117977528089888,
+    "logloss": 0.6502254845075994
+   },
+   {
+    "season": 2016,
+    "n": 267,
+    "mae": 9.425750696406768,
+    "close_mae": 9.043071161048688,
+    "logloss": 0.6345793002593223
+   },
+   {
+    "season": 2017,
+    "n": 267,
+    "mae": 10.863360111497618,
+    "close_mae": 10.08052434456929,
+    "logloss": 0.6496587040562797
+   },
+   {
+    "season": 2018,
+    "n": 267,
+    "mae": 10.09315335843688,
+    "close_mae": 9.874531835205993,
+    "logloss": 0.6190913333507758
+   },
+   {
+    "season": 2019,
+    "n": 267,
+    "mae": 10.910298851927372,
+    "close_mae": 10.176029962546817,
+    "logloss": 0.6629626516950695
+   },
+   {
+    "season": 2020,
+    "n": 269,
+    "mae": 10.244677178157437,
+    "close_mae": 9.78996282527881,
+    "logloss": 0.6267586265244643
+   },
+   {
+    "season": 2021,
+    "n": 285,
+    "mae": 11.082896505811611,
+    "close_mae": 10.666666666666666,
+    "logloss": 0.6436500393904391
+   },
+   {
+    "season": 2022,
+    "n": 284,
+    "mae": 8.947030981458266,
+    "close_mae": 8.783450704225352,
+    "logloss": 0.6298137580592728
+   },
+   {
+    "season": 2023,
+    "n": 285,
+    "mae": 10.681403406665408,
+    "close_mae": 9.98421052631579,
+    "logloss": 0.6621129934229656
+   },
+   {
+    "season": 2024,
+    "n": 285,
+    "mae": 10.413072401093796,
+    "close_mae": 9.703508771929824,
+    "logloss": 0.6514082379248535
+   },
+   {
+    "season": 2025,
+    "n": 285,
+    "mae": 10.455514415660234,
+    "close_mae": 9.670175438596491,
+    "logloss": 0.6673262098731633
+   },
+   {
+    "season": 2026,
+    "n": 93,
+    "mae": 9.568243663809746,
+    "close_mae": 9.306451612903226,
+    "logloss": 0.6506379652786013
+   }
+  ],
+  "fixed": [
+   {
+    "season": 2010,
+    "n": 267,
+    "mae": 10.849327469242589,
+    "close_mae": 10.754681647940075,
+    "logloss": 0.6472765755486329
+   },
+   {
+    "season": 2011,
+    "n": 267,
+    "mae": 10.640466922032482,
+    "close_mae": 10.50936329588015,
+    "logloss": 0.6073980998796717
+   },
+   {
+    "season": 2012,
+    "n": 267,
+    "mae": 11.073550886969137,
+    "close_mae": 10.715355805243446,
+    "logloss": 0.6369986631917012
+   },
+   {
+    "season": 2013,
+    "n": 267,
+    "mae": 10.08585067991142,
+    "close_mae": 9.808988764044944,
+    "logloss": 0.632622662789372
+   },
+   {
+    "season": 2014,
+    "n": 267,
+    "mae": 11.416812863404825,
+    "close_mae": 11.284644194756554,
+    "logloss": 0.6108523990957633
+   },
+   {
+    "season": 2015,
+    "n": 267,
+    "mae": 10.076847473318448,
+    "close_mae": 10.117977528089888,
+    "logloss": 0.6417635819456494
+   },
+   {
+    "season": 2016,
+    "n": 267,
+    "mae": 9.466930284458625,
+    "close_mae": 9.043071161048688,
+    "logloss": 0.642556057298751
+   },
+   {
+    "season": 2017,
+    "n": 267,
+    "mae": 10.667190311185257,
+    "close_mae": 10.08052434456929,
+    "logloss": 0.6302141578667831
+   },
+   {
+    "season": 2018,
+    "n": 267,
+    "mae": 10.090101602050648,
+    "close_mae": 9.874531835205993,
+    "logloss": 0.6200049272617053
+   },
+   {
+    "season": 2019,
+    "n": 267,
+    "mae": 10.635948795384508,
+    "close_mae": 10.176029962546817,
+    "logloss": 0.6491349076838835
+   },
+   {
+    "season": 2020,
+    "n": 269,
+    "mae": 10.139748281084385,
+    "close_mae": 9.78996282527881,
+    "logloss": 0.6275958639401331
+   },
+   {
+    "season": 2021,
+    "n": 285,
+    "mae": 11.224317423947424,
+    "close_mae": 10.666666666666666,
+    "logloss": 0.6580252174920608
+   },
+   {
+    "season": 2022,
+    "n": 284,
+    "mae": 8.987080202591926,
+    "close_mae": 8.783450704225352,
+    "logloss": 0.634112518294099
+   },
+   {
+    "season": 2023,
+    "n": 285,
+    "mae": 10.47569644411785,
+    "close_mae": 9.98421052631579,
+    "logloss": 0.6532476905599018
+   },
+   {
+    "season": 2024,
+    "n": 285,
+    "mae": 10.171093658815806,
+    "close_mae": 9.703508771929824,
+    "logloss": 0.6292990784592293
+   },
+   {
+    "season": 2025,
+    "n": 285,
+    "mae": 10.194436717476785,
+    "close_mae": 9.670175438596491,
+    "logloss": 0.6351328760513105
+   },
+   {
+    "season": 2026,
+    "n": 93,
+    "mae": 9.656456016043892,
+    "close_mae": 9.306451612903226,
+    "logloss": 0.6502197102476837
+   }
+  ]
+ },
+ "promoted_cfg": {
+  "carry": 0.8,
+  "prior": {
+   "kind": "geometric",
+   "alpha": 0.1,
+   "alpha_pts": 0.06,
+   "k": null,
+   "k_pts": null
+  },
+  "recency": null,
+  "alpha_league": 0.02,
+  "qb": {
+   "alpha_qb": 0.18,
+   "qb_shrink": 12,
+   "qb_prior": -0.04,
+   "alpha_team": 0.1
+  },
+  "features": {
+   "net_pts_fix": false,
+   "split_od": false
+  },
+  "hfa": {
+   "kind": "intercept",
+   "rho": null,
+   "m": null
+  },
+  "ctx": {
+   "travel": false,
+   "venue": true
+  },
+  "market": {
+   "on": false,
+   "beta": null,
+   "carry_m": null
+  },
+  "personnel": {
+   "on": false
+  },
+  "source": "stw",
+  "calibration": {
+   "kind": "none"
+  },
+  "ridge": {
+   "strength": 60,
+   "context": 200,
+   "total": 60
+  }
+ }
+}

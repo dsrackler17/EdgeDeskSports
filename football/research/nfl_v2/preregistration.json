@@ -1,0 +1,67 @@
+{
+  "schema": "edgedesk_nfl_v2_preregistration_v1",
+  "registered_at": "2026-10-20T20:05:00Z",
+  "registered_before": "any candidate in Steps 2-4 was evaluated on the 2025 holdout",
+  "incumbent": {
+    "id": "nfl_v1_fixed",
+    "definition": "football/engine.js v1 recursion with the Step 1 correctness fixes (defence mirrored from the opponent's offence row, QB starts absorbed by training's rule, PMF win probability), its v1 feature set and two-stage ridge (strength lambda 60, context lambda 200) refitted walk-forward",
+    "why": "Step 1 fixes are correctness fixes and ship regardless; every Step 2-4 change is judged against this, not against the bugged served model"
+  },
+  "data": {
+    "sources": [
+      "nflverse/nfldata games.csv (schedule, scores, closing consensus spread/total/moneylines, rest, roof, surface, QB ids, location)",
+      "nflverse-data stats_team_week 1999-2026 (team-game efficiency)",
+      "nflverse-data stats_player_week 1999-2026 (QB game log; RB/WR/TE production for the personnel prior)",
+      "nflverse-data snap_counts 2012-2026, weekly_rosters 2012-2026 (personnel continuity)",
+      "nflverse-data play_by_play 1999-2026 (garbage-time toggle only)",
+      "football/venues/nfl_stadiums.json (verified stadium coordinates and time zones; three historical home cities added for STL/SD/OAK)"
+    ],
+    "not_used": [
+      "preseason win totals: nfldata win_totals.csv ends at 2020, so a win-total prior can be neither validated on 2025 nor served for 2026 (INACTIVE)",
+      "any paid feed (PFF grades, etc.): not owned (INACTIVE)"
+    ]
+  },
+  "protocol": {
+    "rating_warmup_from": 1999,
+    "regression_training_rows_from": 2002,
+    "validation_window": [2010, 2024],
+    "validation_method": "walk-forward: for each season S in 2010..2024 the ridge weights, the context model, the margin PMF and any calibration are fitted on seasons 2002..S-1 only and S is predicted pregame, game by game, from the rating state before each game",
+    "holdout": 2025,
+    "holdout_method": "the same walk-forward step for S = 2025 (weights fitted on 2002..2024); 2025 is never used to choose a hyperparameter, a feature or a toggle",
+    "rows_scored": "every 2010-2025 game (regular and postseason) with a closing spread and a final score",
+    "baseline": "the closing line: closing consensus spread as the margin forecast; de-vigged closing moneylines as the win probability (moneylines are complete from 2010)"
+  },
+  "metrics": {
+    "primary": ["margin MAE (spread)", "win-probability log loss"],
+    "secondary": ["win-probability Brier", "calibration: ECE over 10 equal-width bins and the logistic calibration slope", "ATS vs the close at |model - close| >= 1, 2, 3", "home lean: mean model home margin minus mean closing home margin", "total MAE"]
+  },
+  "selection_rule": "Within each candidate family the setting with the lowest 2010-2024 walk-forward margin MAE is selected (log loss for a probability-only change; ties broken by log loss). A family's selected setting is a FINALIST only if it also improves on the incumbent's 2010-2024 MAE and log loss.",
+  "promotion_rule": "A finalist is PROMOTED only if, on the 2025 holdout, it beats the incumbent on margin MAE AND on log loss (a probability-only change: log loss AND Brier, MAE unchanged). Promoted changes accumulate step by step: each step's incumbent is the previous step's result. Anything that only helps 2026 to date, or one game, is never a reason to promote.",
+  "disclosure": "Every variant evaluated is written to football/research/nfl_v2/results/variants.jsonl with its validation metrics; every holdout evaluation is written there too, flagged, so the number of looks at 2025 is on the record.",
+  "candidates": {
+    "step2": {
+      "P0_wide_geometric": {"what": "v1 structure (prior weight carry*(1-alpha)^n), widened grid", "carry": [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95], "alpha": [0.05, 0.07, 0.10, 0.14, 0.20], "alpha_pts": "0.6 x alpha (v1's ratio)"},
+      "P1_hyperbolic": {"what": "prior weight k/(k+n), n = games played this season; this season's evidence an equal-weight mean of opponent-adjusted games", "carry": [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95], "k": [1, 2, 3, 4, 6, 8, 12, 16], "k_pts": [2, 4, 8, 16]},
+      "P2_personnel": {"what": "offseason continuity from nflverse snap counts and week-1 rosters: RB rushing-EPA carried in/out, WR/TE receiving-EPA carried in/out, OL share of last season's snaps returning; QB changes are the QB layer's (absorbed every game since Step 1). Each enters the strength model scaled by the club's prior weight, so it fades as the season is played; weights by ridge. Measurable from 2013.", "variants": ["all three on"]},
+      "P3_market": {"what": "a market rating learned only from closing spreads of games already played (previous weeks, previous seasons), entered as a strength feature; its weight by ridge", "beta": [0.10, 0.20, 0.35], "carry_m": [0.6, 0.8, 1.0]},
+      "win_totals": "INACTIVE (data ends 2020)"
+    },
+    "step3": {
+      "H1_season_hfa": {"what": "home field from home margins of earlier seasons, weighted rho^(age), shrunk toward the long-run mean with m pseudo-games, plus this season's games to date; both models fitted without an intercept; every home constant zero at a neutral site", "rho": [0.5, 0.7, 0.85], "m": [250, 500, 1000]},
+      "H2_travel_tz": {"what": "away-minus-home travel (1000 km), time zones crossed, and a west-coast team in a 1 pm ET kickoff, as context features", "variants": ["on"]},
+      "H3_venue_terms": {"what": "the context model's dome and grass terms (the outdoor-turf home term)", "variants": ["drop both"]}
+    },
+    "step4": {
+      "T1_split_od": {"what": "pass offence, pass defence, rush offence, rush defence (and overall offence/defence) as separate features instead of net_pass/net_rush/net_epa"},
+      "T2_recency": {"what": "this season's evidence weighted lambda^(age) inside the season", "lambda": [0.80, 0.85, 0.90, 0.95]},
+      "T3_garbage_time": {"what": "team-game efficiency from play-by-play with garbage time removed", "variants": {"G1": "second half, offence win probability < 0.10 or > 0.90 dropped", "G2": "any quarter, < 0.05 or > 0.95 dropped"}, "control": "G0: the same play-by-play, unfiltered (isolates the filter from the source change)"},
+      "T4_isotonic": {"what": "isotonic (pool-adjacent-violators) map of the win probability, fitted on earlier seasons' out-of-sample predictions, clipped to [0.01, 0.99]"},
+      "T5_net_pts_fix": {"what": "net_pts = (pts_for - pts_against) home minus away (audit_report.md section 6.7; v1 adds points allowed)"},
+      "combinations": "every toggle that is individually a finalist, then their combinations; each combination's holdout result disclosed"
+    }
+  },
+  "seen_before_registration": [
+    "2025 descriptive statistics during the audit: mean home margin 2.18 and mean closing home spread 1.58 (non-neutral regular season); 2010-2025 closing home favourites of 6-7.5 finished p10/p50/p90 -9/7/26",
+    "the corrected v1 (the incumbent) replayed by tools/football/validate_pricing.js over 2016-2025, 2025 included: pooled spread MAE 10.187 vs close 9.777 (football/validation/pricing_nfl.json). No candidate has been evaluated on any season."
+  ]
+}

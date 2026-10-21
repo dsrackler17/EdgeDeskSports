@@ -84,11 +84,18 @@ const realFetch = S.fetchText;
   const R = require('./football_record.js');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'qledger-'));
   try {
-    const nflPub = Date.parse(NFL.generated_at), fbsPub = Date.parse(FBS.generated_at);
+    /* THE SCENARIO'S ORDER: the NFL numbers are published first, the college
+       numbers later. The two committed slates are rebuilt by different jobs, so
+       either can be newer; when the NFL one is, the scenario runs on a copy
+       stamped an hour before the college slate (nothing else about it changes). */
+    const NFLs = Date.parse(NFL.generated_at) < Date.parse(FBS.generated_at) ? NFL
+      : Object.assign({}, NFL, { generated_at: new Date(Date.parse(FBS.generated_at) - 3600e3).toISOString() });
+    const SL = { nfl: NFLs, cfb: FBS };
+    const nflPub = Date.parse(NFLs.generated_at), fbsPub = Date.parse(FBS.generated_at);
     /* RUN A: 30 minutes before the NFL slate was published */
     S.fetchText = mockFetch((g) => (Number(g.model_home_line) <= 0 ? -3.5 : 3.5));
     const tA = new Date(nflPub - 30 * 60e3).toISOString();
-    const A = await R.run({ write: true, out: tmp, now: tA });
+    const A = await R.run({ write: true, out: tmp, now: tA, slates: SL });
     const nflFile = path.join(tmp, 'quotes', 'nfl_' + A.season + '.jsonl'), cfbFile = path.join(tmp, 'quotes', 'cfb_' + A.season + '.jsonl');
     const nflRows = Q.read(nflFile), cfbRows = Q.read(cfbFile);
     /* "ahead" is the ledger's own quote window (quoteWanted: kickoff inside
@@ -113,7 +120,7 @@ const realFetch = S.fetchText;
     /* RUN B: 20 minutes before the FBS slate; the NFL market has moved */
     S.fetchText = mockFetch((g) => (Number(g.model_home_line) <= 0 ? -4.5 : 4.5));
     const tB = new Date(fbsPub - 20 * 60e3).toISOString();
-    const B = await R.run({ write: true, out: tmp, now: tB });
+    const B = await R.run({ write: true, out: tmp, now: tB, slates: SL });
     const nflRows2 = Q.read(nflFile), cfbRows2 = Q.read(cfbFile);
     chk('run B: the ledgers only grew — nothing written before was touched', nflRows2.slice(0, nflRows.length).every((r, i) => JSON.stringify(r) === JSON.stringify(nflRows[i]))
       && cfbRows2.slice(0, cfbRows.length).every((r, i) => JSON.stringify(r) === JSON.stringify(cfbRows[i])) && nflRows2.length > nflRows.length);
@@ -136,7 +143,7 @@ const realFetch = S.fetchText;
     const missedA = Object.values(A.ledgers.cfb.games).filter((e) => e.pick && Date.parse(e.pick.at) === fbsPub && cfbLockOf(e) && cfbLockOf(e).why === 'stale');
     chk('run B: every college number run A found stale locks at run B\'s reading', missedA.every((e) => { const l = cfbLockOf(B.ledgers.cfb.games[e.game_id]); return l && l.status === 'locked' && l.observed_at === tB; }), missedA.length);
     /* RUN C: the same hour again — idempotent */
-    const C = await R.run({ write: true, out: tmp, now: tB });
+    const C = await R.run({ write: true, out: tmp, now: tB, slates: SL });
     chk('run C: the same readings in the same hour add no row', Q.read(nflFile).length === nflRows2.length && Q.read(cfbFile).length === cfbRows2.length, C.written);
     chk('every stored row is pregame, priced and has a unique id', Q.read(nflFile).concat(Q.read(cfbFile)).every((r) => Date.parse(r.observed_at) < Date.parse(r.kickoff_ts) && (r.price_home != null || r.price_over != null))
       && new Set(Q.read(nflFile).concat(Q.read(cfbFile)).map((r) => r.quote_id)).size === Q.read(nflFile).length + Q.read(cfbFile).length);

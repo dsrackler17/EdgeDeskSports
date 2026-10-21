@@ -58,6 +58,7 @@ on:
     branches: [main]
     paths:
       - 'football/nfl/build_team_week.js'
+      - 'football/nfl/build_qb_games.js'
       - 'tools/football/build_nfl_slate.js'
       - 'tools/football/patch_nfl_live_paths.js'
       - '.github/workflows/starter-context.yml'
@@ -219,6 +220,13 @@ jobs:
 
       - name: NFL team-week snapshot for the football module
         run: node football/nfl/build_team_week.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # The quarterback lines the ratings absorb every game (training's rule:
+      # the club's passer with the most dropbacks; football/parity.test.js).
+      - name: NFL quarterback game log for the football module
+        run: node football/nfl/build_qb_games.js
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
 

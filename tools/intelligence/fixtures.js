@@ -32,6 +32,14 @@ const FORECASTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/venues/fo
    shape the identity build writes. */
 const PRICING = {};
 ['nfl', 'cfb'].forEach(function (k) { try { PRICING[k] = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/validation/pricing_' + k + '.json'), 'utf8')); } catch (_) { PRICING[k] = null; } });
+/* THE NFL SCENARIOS ARE WRITTEN FOR A LEAN-TIER NFL MODEL. After the defence-parity
+   fix (audit_report.md §0.2) the committed NFL record is RESEARCH tier: the corrected
+   engine adds no usable information over the close, so no NFL candidate would price
+   from the blend and every scenario below would lose its premise at the next
+   recalibration. The NFL record served here is pinned to the committed one as it
+   stood on 2026-10-20 (tools/fixtures/pricing_nfl_lean_2026-10-20.json); what the
+   live record does to the board is tested in tools/bettor/football_decision.test.js. */
+try { PRICING.nfl = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/fixtures/pricing_nfl_lean_2026-10-20.json'), 'utf8')); } catch (_) { /* keep the committed record */ }
 const MOVEMENT = {};
 ['nfl', 'cfb'].forEach(function (k) { try { MOVEMENT[k] = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/validation/movement_' + k + '.json'), 'utf8')); } catch (_) { MOVEMENT[k] = null; } });
 const IDENTITY = {};

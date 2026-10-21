@@ -97,17 +97,23 @@ chk('the NFL frame discards the shipped seeds', /seeds discarded/.test(nfl.frame
 const qRows = ctxRows.map((r, i) => Object.assign({}, r, { id: 'g' + i, model_total: 44, close_total: 44, points: 44 + (i % 9) - 4, p_home: 0.5, ml_home: -110, ml_away: -110, ctx: Object.assign({}, r.ctx, { qb_change_home: i % 7 === 0, qb_change_away: false }) }));
 const qArc = { scenario: 'CONFIRMED_STARTER', scenario_basis: 'synthetic', counts: { first_season: 2016, last_season: 2025 } };
 const qSame = V.qbLayer({ rows: qRows }, { rows: qRows, qb: { starts_with_pass_dev: 1, games_without_record: 0 }, absorbed: 1 }, { rows: qRows }, qArc);
-chk('an arm that moves nothing is NO_DIFFERENCE, fails the intake and stays off the live board', qSame.verdict === 'NO_DIFFERENCE' && qSame.status === 'REJECTED' && qSame.spread.raw.improvement === 0 && qSame.total.identical === true && /not wired/.test(qSame.live), { v: qSame.verdict, s: qSame.status, r: qSame.reasons });
+/* THE LIVE BOARD ABSORBS EVERY START BY TRAINING'S RULE (audit_report.md §0.3): the
+   coefficients were fitted with the layer running, so serving without it is a
+   training/serving mismatch, not a cautious default. The study below still
+   measures the layer against no starts and against the listed starter, and says
+   so, but its verdict no longer switches the board. */
+chk('an arm that moves nothing is NO_DIFFERENCE and fails the intake (the study verdict)', qSame.verdict === 'NO_DIFFERENCE' && qSame.status === 'REJECTED' && qSame.spread.raw.improvement === 0 && qSame.total.identical === true && /training’s rule/.test(qSame.live), { v: qSame.verdict, s: qSame.status, r: qSame.reasons });
 const qPerfect = qRows.map((r) => Object.assign({}, r, { model: r.margin }));
 const qBetter = V.qbLayer({ rows: qRows }, { rows: qPerfect, qb: { starts_with_pass_dev: 1, games_without_record: 0 }, absorbed: 1 }, { rows: qRows }, qArc);
-chk('an arm that clears the intake on the held-out blend is BETTER and only then eligible for the live board', qBetter.verdict === 'BETTER' && qBetter.status === 'VALIDATED' && /eligible/.test(qBetter.live), { v: qBetter.verdict, s: qBetter.status, r: qBetter.reasons });
+chk('an arm that clears the intake on the held-out blend is BETTER', qBetter.verdict === 'BETTER' && qBetter.status === 'VALIDATED' && /training’s rule/.test(qBetter.live), { v: qBetter.verdict, s: qBetter.status, r: qBetter.reasons });
 const qWorse = V.qbLayer({ rows: qPerfect }, { rows: qRows, qb: { starts_with_pass_dev: 1, games_without_record: 0 }, absorbed: 1 }, { rows: qPerfect }, qArc);
 chk('an arm that is measurably worse says so', qWorse.verdict === 'WORSE' && qWorse.status === 'REJECTED', { v: qWorse.verdict, s: qWorse.status });
 const ql = nfl.qb_layer;
 chk('the committed NFL record measures the quarterback layer, labelled a confirmed-starter scenario, never a pregame fact', ql && ql.scenario === 'CONFIRMED_STARTER' && /no announcement time/.test(ql.scenario_basis) && ['BETTER', 'WORSE', 'NO_DIFFERENCE'].includes(ql.verdict) && (ql.verdict === 'BETTER') === (ql.status === 'VALIDATED'), ql && { v: ql.verdict, s: ql.status });
 chk('the committed comparison covers the frozen window with the starters actually absorbed, and the total cannot move', ql && ql.spread.raw.window === '2016-2025' && ql.spread.raw.n > 2000 && ql.coverage.starts_with_pass_dev > 9000 && ql.total.identical === true, ql && ql.coverage);
-/* the live board absorbs quarterback starts only once the record says the layer earned it */
+/* the live board absorbs through the shared path with the quarterback game log: training's rule, every game */
 const appSrc = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
-const liveAbsorb = appSrc.match(/E\.nfl\.absorbGame\(st,\[\[g\.home_team,hr\],\[g\.away_team,ar\]\],([^)]*)\)/);
-chk('the live board’s NFL absorb matches the record: no quarterback starts unless the layer is BETTER', liveAbsorb && (ql.verdict === 'BETTER' || liveAbsorb[1].trim() === '[]'), liveAbsorb && liveAbsorb[1]);
+chk('the live board’s NFL absorb is training’s: nfl.absorbCompleted with the quarterback game log, never an empty start list',
+  /E\.nfl\.absorbCompleted\(st,g,byGame\[g\.game_id\]\|\|\[\],qbByGame\[g\.game_id\]\|\|\[\]\)/.test(appSrc) && /FB_URL_QBG\(/.test(appSrc)
+  && !/E\.nfl\.absorbGame\(st,\[\[g\.home_team,hr\],\[g\.away_team,ar\]\],\[\]\)/.test(appSrc));
 done();

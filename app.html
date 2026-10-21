@@ -29041,7 +29041,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var drows = (Array.isArray(r.drivers.rows) ? r.drivers.rows : []).map(function (d) {
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t, favours: txt(d.favours) } : null;
-      }).filter(Boolean).slice(0, 6);
+      }).filter(Boolean).slice(0, 8); /* the NFL card is seven rows that must all show to add up */
       var trows = (Array.isArray(r.drivers.total_rows) ? r.drivers.total_rows : []).map(function (d) {
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t } : null;
@@ -49395,6 +49395,7 @@ function fbKickedOffNoteHTML(started,names){
 }
 var FB_URL_GAMES='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 function FB_URL_STW(y){return '/football/nfl/stats_team_week_'+y+'.csv';}
+function FB_URL_QBG(y){return '/football/nfl/qb_games_'+y+'.csv';}
 function FB_URL_CFB(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_'+y+'.csv';}
 var FB_NFL_NAMES={'Arizona Cardinals':'ARI','Atlanta Falcons':'ATL','Baltimore Ravens':'BAL','Buffalo Bills':'BUF','Carolina Panthers':'CAR','Chicago Bears':'CHI','Cincinnati Bengals':'CIN','Cleveland Browns':'CLE','Dallas Cowboys':'DAL','Denver Broncos':'DEN','Detroit Lions':'DET','Green Bay Packers':'GB','Houston Texans':'HOU','Indianapolis Colts':'IND','Jacksonville Jaguars':'JAX','Kansas City Chiefs':'KC','Los Angeles Rams':'LA','Los Angeles Chargers':'LAC','Las Vegas Raiders':'LV','Miami Dolphins':'MIA','Minnesota Vikings':'MIN','New England Patriots':'NE','New Orleans Saints':'NO','New York Giants':'NYG','New York Jets':'NYJ','Philadelphia Eagles':'PHI','Pittsburgh Steelers':'PIT','Seattle Seahawks':'SEA','San Francisco 49ers':'SF','Tampa Bay Buccaneers':'TB','Tennessee Titans':'TEN','Washington Commanders':'WAS'};
 var FB_CODE_NAMES={};(function(){for(var k in FB_NFL_NAMES)if(FB_NFL_NAMES.hasOwnProperty(k))FB_CODE_NAMES[FB_NFL_NAMES[k]]=k;})();
@@ -50651,7 +50652,7 @@ function fbLoadNfl(signal){
       if(r.home_score==null||r.away_score==null)continue;
       toAbsorb.push(r);
     }
-    var stwP=Promise.resolve({});
+    var stwP=Promise.resolve({}),qbP2=Promise.resolve({});
     if(toAbsorb.length){
       var seasons={};toAbsorb.forEach(function(g){seasons[fbNum(g.season)]=1;});
       var fetches=Object.keys(seasons).map(function(y2){
@@ -50662,12 +50663,26 @@ function fbLoadNfl(signal){
         all.forEach(function(list){list.forEach(function(x){(byGame[x.game_id]=byGame[x.game_id]||[]).push(x);});});
         return byGame;
       });
+      /* THE QUARTERBACKS EVERY GAME CREDITS (audit_report.md §0.3): training moves
+         each club's starting-quarterback value with his EPA per dropback every game
+         (research/train_nfl.py); the board absorbed none, so every value sat at its
+         2025 seed all season. football/nfl/qb_games_<season>.csv carries the feed's
+         QB lines; engine.js nfl.qbStarts credits the passer training credits. A
+         missing log degrades to the team rows alone and says so. */
+      var qbFetches=Object.keys(seasons).map(function(y2){
+        return fbFetchText(FB_URL_QBG(y2),signal).then(function(t){return fbCsv(t);}).catch(function(e){if(e&&e.name==='AbortError')throw e;S.notes.push('The NFL quarterback game log could not be read, so quarterback values were not updated from this season\u2019s games in this session.');return [];});
+      });
+      qbP2=Promise.all(qbFetches).then(function(all){
+        var byGame={};
+        all.forEach(function(list){list.forEach(function(x){(byGame[x.game_id]=byGame[x.game_id]||[]).push(x);});});
+        return byGame;
+      });
     }
     /* the pregame snapshots below read the site (fbNflGameReq -> fbNflNeutral),
        so the venue table settles first: the same game is never graded with a
        home field on one load and without it on the next */
-    return Promise.all([stwP,venueP]).then(function(pp){
-      var byGame=pp[0],absorbed=0;
+    return Promise.all([stwP,venueP,qbP2]).then(function(pp){
+      var byGame=pp[0],qbByGame=pp[2]||{},absorbed=0;
       toAbsorb.sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));});
       S.weekPreds={};
       toAbsorb.forEach(function(g){
@@ -50680,19 +50695,12 @@ function fbLoadNfl(signal){
           try{S.weekPreds[g.game_id]=window.EDFootball.predictGame({sport:'nfl',state:st,season:maxSeason,
             game:fbNflGameReq(g),market:fbNflRefMarket(g)});}catch(_){}
         }
-        var pair=byGame[g.game_id];
-        if(!pair||pair.length!==2)return;
-        var hRow=null,aRow=null;
-        pair.forEach(function(x){ if(x.team===g.home_team)hRow=x; if(x.team===g.away_team)aRow=x; });
-        if(!hRow||!aRow)return;
-        var hr=E.nfl.teamGameFromStw(hRow),ar=E.nfl.teamGameFromStw(aRow);
-        hr.pts_for=fbNum(g.home_score);hr.pts_against=fbNum(g.away_score);
-        ar.pts_for=fbNum(g.away_score);ar.pts_against=fbNum(g.home_score);
-        /* no quarterback starts: the quarterback layer stays at its trained
-           seeds. Fed the listed starters, the replayed layer measured no
-           different on 2016-2025 (football/validation/pricing_nfl.json qb_layer) */
-        E.nfl.absorbGame(st,[[g.home_team,hr],[g.away_team,ar]],[]);
-        absorbed++;
+        /* THE ONE ABSORB PATH (engine.js nfl.absorbCompleted; audit_report.md §0.2):
+           each club's own offence row, its defence built from the opponent's offence
+           row exactly as training builds it, teams in the feed's row order, then the
+           quarterback training credits. football/parity.test.js holds this to the
+           python training pass within 1e-9 over 2025 and 2026. */
+        if(E.nfl.absorbCompleted(st,g,byGame[g.game_id]||[],qbByGame[g.game_id]||[]))absorbed++;
       });
       S.state=st;S.absorbed=absorbed;
       /* full current-season slate, for week scans / grading / CSV export */
@@ -59374,7 +59382,6 @@ function fbP4Render(host){
    card up here is a pick — the language is disagreement, movement,
    difference and context, and every number carries its source and age. */
 FB.ui={sysOpen:false,focus:null,pendingOpen:null};
-var FB_Z10=1.2815515655;   /* normal quantile for a p10 / p90 band */
 
 /* one projection + market join per Power 4 game, cached against the load
    stamp, so the overview does not re-run the engine on every repaint */
@@ -59664,6 +59671,8 @@ function fbWrNflObj(r){
       game:{sport:'NFL',week:r.week,game_id:r.gid,home:r.home,away:r.away,kickoff_at:r.t?new Date(r.t).toISOString():null},
       model:{model_id:'edgedesk_nfl',version:p.model_version||null,captured_at:p.prediction_timestamp||null,
         home_line:R.homeLineFromEngineFairSpread(p.model.fair_spread),total:p.model.fair_total,home_win_prob:p.model.home_win_prob,
+        /* the 80% interval from the same PMF the win probability is read off; sigma stays a SCALE for the gap */
+        p10_margin:p.outcome_range&&p.outcome_range.q?p.outcome_range.q['0.1']:null,p90_margin:p.outcome_range&&p.outcome_range.q?p.outcome_range.q['0.9']:null,
         sigma:sig,sigma_source:'learned NFL margin sigma (football/params.js)'},
       market:market,quality:{},quality_categories:[]});
   }catch(_){o=null;}
@@ -60138,10 +60147,13 @@ function fbMvmForRow(r){
       medLabel:'median '+fbPts(band?0:(m.median_margin!=null?m.median_margin:m.fair_spread)),bandLabel:'p10–p90 · volatility-adjusted'};
     band.medLabel='median '+fbPts(band.med);
   }else if(r.sport==='nfl'){
-    var sig=null;try{sig=window.EDFootballParams.nfl.sigma_margin;}catch(_){}
-    if(sig&&isFinite(sig))band={lo:m.fair_spread-FB_Z10*sig,med:m.fair_spread,hi:m.fair_spread+FB_Z10*sig,mkt:mk.spread_line,
-      loLabel:'p10 '+fbPts(m.fair_spread-FB_Z10*sig),hiLabel:'p90 '+fbPts(m.fair_spread+FB_Z10*sig),centre:'home margin · learned σ '+sig,
-      medLabel:'fair '+fbPts(m.fair_spread),bandLabel:'p10–p90 · normal margin band'};
+    /* ONE DISTRIBUTION (audit_report.md §0.6): the band is the engine's own
+       outcome range, read off the same margin PMF as the win probability and
+       every cover probability, never a second Normal beside it */
+    var oq=p.outcome_range&&p.outcome_range.q;
+    if(oq&&oq['0.1']!=null&&oq['0.9']!=null)band={lo:oq['0.1'],med:oq['0.5']!=null?oq['0.5']:m.fair_spread,hi:oq['0.9'],mkt:mk.spread_line,
+      loLabel:'p10 '+fbPts(oq['0.1']),hiLabel:'p90 '+fbPts(oq['0.9']),centre:'home margin · learned margin PMF',
+      medLabel:'median '+fbPts(oq['0.5']!=null?oq['0.5']:m.fair_spread),bandLabel:'p10–p90 · the engine’s learned margin distribution'};
   }
   var foot=(p.edge&&p.edge.spread&&p.edge.spread.recommendation==='RESEARCH_LEAN')
     ?'<b>Research lean, unproven.</b> The engine flags 2+ pts of disagreement as worth reviewing; its own record says this is not evidence of an edge.'
@@ -63472,7 +63484,27 @@ var FB_NFL_DRIVER_LABELS={
   temp_c:'Temperature',
   wind_o:'Wind'
 };
-function fbNflDrivers(contrib,homeName,awayName){
+function fbNflDrivers(contrib,homeName,awayName,card){
+  if(!contrib&&!card) return null;
+  /* THE CARD (audit_report.md §0.5; engine.js nfl.card): every term of both
+     linear models in seven rows that add up to the projection EXACTLY, so no
+     row is ever cut to fit. Team-strength rows carry the part carried from
+     last season and the part this season moved. */
+  if(card&&card.rows&&card.rows.length){
+    var crow=card.rows.map(function(x){
+      var split=(x.prior!=null&&x.current!=null)?' (last season '+fbPts(x.prior)+', this season '+fbPts(x.current)+')':'';
+      return {points:fbPts(x.points),points_n:x.points,
+        text:x.label+(Math.abs(x.points)<0.05?' — no lean':' — '+(x.points>0?homeName:awayName)+' by '+Math.abs(x.points).toFixed(1)+' points')+split,
+        favours:x.points>0?homeName:(x.points<0?awayName:null)};
+    });
+    var trow=(function(list){return (list||[]).filter(function(t){return t.points!=null&&isFinite(t.points)&&(t.key==='baseline'||Math.abs(t.points)>=0.05);})
+      .sort(function(x,y){return Math.abs(y.points)-Math.abs(x.points);}).slice(0,6)
+      .map(function(t){return {points:fbPts(t.points),points_n:t.points,text:(t.label||FB_NFL_DRIVER_LABELS[t.key]||String(t.key).replace(/_/g,' '))+(t.key==='baseline'?'':' — '+(t.points>0?'over':'under')+' by '+Math.abs(t.points).toFixed(1)+' points')};});})(contrib&&contrib.total);
+    return {rows:crow,total_rows:trow,reconciles:!!card.reconciles,
+      basis:'Both NFL spread models are linear, so these seven rows ARE the model: every fitted weight times the feature it multiplies, grouped, from '+homeName+'’s perspective. They add up to the projected spread exactly; nothing is applied after them.',
+      excluded:'No position-group grade, no coaching input and no injury term appears here, because the NFL model prices none of them. What is below the projection is research context and moves no number in it.',
+      empty:null};
+  }
   if(!contrib) return null;
   function rows(list,cap){
     /* a term that rounds to "by 0.0 points" is noise on the page and is not
@@ -63836,7 +63868,7 @@ function fbNflBriefGame(q){
     }
 
     /* ---- 2. WHY EDGEDESK PRICES IT HERE ---- */
-    var drivers=priced?fbNflDrivers(p.contributions,hDisp,aDisp):null;
+    var drivers=priced?fbNflDrivers(p.contributions,hDisp,aDisp,p.card):null;
 
     /* ---- 3. THE TEAMS, HEAD TO HEAD ---- */
     var groupOrder=['Team strength','Offence','Defence','Trenches','Tendency and pace'];
