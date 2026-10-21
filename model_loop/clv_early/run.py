@@ -142,9 +142,9 @@ def slug(s):
     return re.sub(r"[^A-Za-z0-9]+", "_", s).strip("_")
 
 
-def score(df, sport, market, threshold, label, exp, sweep=(), n_boot=2000, n_perm=1000, write=True, extra=None):
+def score(df, sport, market, threshold, label, exp, sweep=(), n_boot=2000, n_perm=1000, write=True, extra=None, ci_level=0.95):
     dist = distribution(sport, market)
-    cfg = H.Config(threshold=threshold, market=market, label=label, n_boot=n_boot, n_perm=n_perm)
+    cfg = H.Config(threshold=threshold, market=market, label=label, n_boot=n_boot, n_perm=n_perm, ci_level=ci_level)
     primary = H.evaluate(df, cfg, dist)
     sw = H.sweep(df, sweep, cfg, dist) if sweep else []
     rec = {"exp": exp, "label": label, "sport": sport, "market": market, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
