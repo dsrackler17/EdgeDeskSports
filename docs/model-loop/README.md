@@ -22,6 +22,8 @@ model_loop/
     snapshots.py             append-only rating snapshot ledger (-> public.model_rating_snapshots)
     registry_sql.py          research_model_versions / research_model_results SQL, schema-introspecting
     versions.py              a sport's version history: immutable versions, promote, rollback
+    data_status.py           the degraded-data flag stamped on every card and slate at each refresh
+    head_to_head.py          the board's own number captured beside the loop's and graded on the same games
     db_sync.py               SQL that mirrors the ledgers and versions.json into Supabase (idempotent)
   adapters/
     nfl/                     ingest (nflverse pbp, schedule, rosters, snaps), geo (travel, time zones),
@@ -36,6 +38,7 @@ model_loop/
   ledger/nfl/                append-only: cards_<season>.jsonl (every pregame publication),
                              site_<season>.jsonl (the board's number, for the head to head),
                              <season>.jsonl (rating snapshots); ledger/cfb/ the same for CFB
+  health.py                  every loop's status -> model_loop/health.json (the app's System health, "Learning loops")
   tests/                     core guarantees and the loop's rules (run: python3 -m unittest discover -s model_loop/tests -t .)
 football/{nfl,cfb}/model_loop/  current.json (this week's numbers from the served version), record_<season>.json
 supabase/model_loop.sql      append-only snapshot table, RLS, service-role ingest
@@ -121,6 +124,18 @@ python3 -m model_loop.adapters.nfl.weekly research --only hfa_recent_era,divisio
 node basketball/loop.js all --league nba,wnba,ncaam,ncaaw
 node basketball/loop.js research --league ncaam --only home_edge_tighter
 ```
+
+### Health, and the degraded-data flag
+
+- **On every card.** Each NFL and CFB refresh stamps `data_status` on every game and on the slate.
+  - A game is flagged when its starter is unresolved, it has no reference line, or its components do not sum to the fair line.
+  - The slate is DEGRADED when games already played have no result in the data yet (the ratings are behind by those games), or when a card does not reconcile.
+  - The flag labels the number; it never changes it.
+- **Across loops.** `python3 -m model_loop.health` (every three hours, `.github/workflows/model-loop-health.yml`) writes `model_loop/health.json`. Each loop is OK, STALE, DEGRADED or OFF_SEASON, with its reasons:
+  - STALE: no refresh within 36 hours; no weekly research within 8 days; the newest result in the ratings over 4 days old while games are played.
+  - DEGRADED: the cards say so, or the version history is missing.
+- **In the app.** The System health panel shows a "Learning loops" row.
+- **Head to head.** NFL and CFB both capture the board's own number (`football/nfl/slate.json`, `football/fbs/slate.json`) at each refresh and grade it beside the loop's on the same games (`core/head_to_head.py`).
 
 The frozen CLV ranking protocol is not touched by any of this.
 

@@ -1,0 +1,177 @@
+{
+ "schema": "edgedesk_model_loop_health_v1",
+ "generated_at": "2026-10-21T03:40:58Z",
+ "status": "STALE",
+ "summary": {
+  "OK": 2,
+  "STALE": 2,
+  "DEGRADED": 0,
+  "OFF_SEASON": 2
+ },
+ "rules": {
+  "refresh_max_hours": 36,
+  "research_max_days": 8,
+  "results_max_days": 4
+ },
+ "note": "Each learning loop's served version, when it last re-fitted and researched, and whether its data is complete. A DEGRADED loop's cards say why; nothing here changes a number.",
+ "loops": [
+  {
+   "id": "nfl",
+   "label": "NFL",
+   "status": "OK",
+   "in_season": true,
+   "reasons": [],
+   "served": {
+    "version": "2.0.0",
+    "since": "2026-10-21T01:28:58Z",
+    "promoted_by": "owner",
+    "versions": 1
+   },
+   "refreshed_at": "2026-10-21T01:29:31Z",
+   "refreshed_age_h": 2.2,
+   "research": {
+    "file": "docs/model-loop/nfl/weekly/2026-w06.json",
+    "at": "2026-10-21T01:44:52Z",
+    "promoted": null,
+    "candidates": 14
+   },
+   "data": {
+    "games_published": 28,
+    "data_status": null,
+    "graded_games": 0
+   },
+   "workflow": ".github/workflows/model-loop-nfl.yml"
+  },
+  {
+   "id": "cfb",
+   "label": "College football",
+   "status": "OK",
+   "in_season": true,
+   "reasons": [],
+   "served": {
+    "version": "2.0.0",
+    "since": "2026-10-21T03:02:31Z",
+    "promoted_by": "preregistered-rule",
+    "versions": 1
+   },
+   "refreshed_at": "2026-10-21T03:04:20Z",
+   "refreshed_age_h": 0.6,
+   "research": null,
+   "data": {
+    "games_published": 65,
+    "data_status": null,
+    "graded_games": 0
+   },
+   "workflow": ".github/workflows/model-loop-cfb.yml"
+  },
+  {
+   "id": "nba",
+   "label": "NBA",
+   "status": "STALE",
+   "in_season": true,
+   "reasons": [
+    "last refresh 52 h ago (expected daily)",
+    "the newest result in the ratings is from 2026-06-13, 130 days ago"
+   ],
+   "served": {
+    "version": "1.0.0",
+    "since": "2026-10-21T01:51:05Z",
+    "promoted_by": "selection-window tuning",
+    "versions": 1
+   },
+   "refreshed_at": "2026-10-19T00:12:41Z",
+   "refreshed_age_h": 51.5,
+   "research": {
+    "file": "docs/model-loop/nba/weekly/2026-10-21.json",
+    "at": "2026-10-21T01:51:18Z",
+    "promoted": null,
+    "candidates": 8
+   },
+   "data": {
+    "last_game_date": "2026-06-13",
+    "for_season": 2027
+   },
+   "workflow": ".github/workflows/model-loop-basketball.yml"
+  },
+  {
+   "id": "wnba",
+   "label": "WNBA",
+   "status": "STALE",
+   "in_season": true,
+   "reasons": [
+    "last refresh 52 h ago (expected daily)"
+   ],
+   "served": {
+    "version": "1.0.0",
+    "since": "2026-10-21T01:51:18Z",
+    "promoted_by": "selection-window tuning",
+    "versions": 1
+   },
+   "refreshed_at": "2026-10-19T00:12:41Z",
+   "refreshed_age_h": 51.5,
+   "research": {
+    "file": "docs/model-loop/wnba/weekly/2026-10-21.json",
+    "at": "2026-10-21T01:51:19Z",
+    "promoted": null,
+    "candidates": 8
+   },
+   "data": {
+    "last_game_date": "2026-10-17",
+    "for_season": 2026
+   },
+   "workflow": ".github/workflows/model-loop-basketball.yml"
+  },
+  {
+   "id": "ncaam",
+   "label": "Men's college basketball",
+   "status": "OFF_SEASON",
+   "in_season": false,
+   "reasons": [],
+   "served": {
+    "version": "1.1.0",
+    "since": "2026-10-21T01:55:00Z",
+    "promoted_by": "weekly-loop",
+    "versions": 2
+   },
+   "refreshed_at": "2026-10-19T00:13:06Z",
+   "refreshed_age_h": 51.5,
+   "research": {
+    "file": "docs/model-loop/ncaam/weekly/2026-10-21.json",
+    "at": "2026-10-21T01:55:00Z",
+    "promoted": "1.1.0",
+    "candidates": 8
+   },
+   "data": {
+    "last_game_date": "2026-04-06",
+    "for_season": 2027
+   },
+   "workflow": ".github/workflows/model-loop-basketball.yml"
+  },
+  {
+   "id": "ncaaw",
+   "label": "Women's college basketball",
+   "status": "OFF_SEASON",
+   "in_season": false,
+   "reasons": [],
+   "served": {
+    "version": "1.1.0",
+    "since": "2026-10-21T01:58:16Z",
+    "promoted_by": "weekly-loop",
+    "versions": 2
+   },
+   "refreshed_at": "2026-10-19T00:13:28Z",
+   "refreshed_age_h": 51.5,
+   "research": {
+    "file": "docs/model-loop/ncaaw/weekly/2026-10-21.json",
+    "at": "2026-10-21T01:58:16Z",
+    "promoted": "1.1.0",
+    "candidates": 8
+   },
+   "data": {
+    "last_game_date": "2026-04-05",
+    "for_season": 2027
+   },
+   "workflow": ".github/workflows/model-loop-basketball.yml"
+  }
+ ]
+}
