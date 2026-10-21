@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T19:30:00.000Z",
   "game_when_label": "2026-10-24 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-21T17:05:55.346Z",
-  "generated_at": "2026-10-21T17:05:55.346Z",
+  "updated_at": "2026-10-21T21:35:06.289Z",
+  "generated_at": "2026-10-21T21:35:06.289Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -138,9 +138,9 @@
           "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -148,6 +148,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Minnesota and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Iowa and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -258,7 +282,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T01:00:00.000Z",
-        "retrieved_at": "2026-10-21T14:40:56.965Z"
+        "retrieved_at": "2026-10-21T18:04:04.847Z"
       },
       "home": {
         "team": "Minnesota",
@@ -330,9 +354,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-11T00:00:00.000Z",
-        "retrieved_at": "2026-10-21T14:40:56.965Z"
+        "retrieved_at": "2026-10-21T18:04:04.847Z"
       },
-      "generated_at": "2026-10-21T14:41:45.224Z",
+      "generated_at": "2026-10-21T18:04:02.742Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1611,7 +1635,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.1,
+            "score": 7.6,
             "max": 20
           },
           {
@@ -1623,7 +1647,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 11.8,
+            "score": 10.9,
             "max": 15
           },
           {
@@ -1651,8 +1675,8 @@
           },
           {
             "action": "Confirm Iowa’s starting QB (Jeremy Hecklinski)",
-            "potential_gain": 7,
-            "text": "up to +7 once resolve Iowa’s starter conflict is done"
+            "potential_gain": 2,
+            "text": "up to +2 once resolve Iowa’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1905,7 +1929,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "33j0l71p3pw7t",
+    "packet_hash": "1mmeu841gc93fq",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Iowa’s pass rush get to Drake Lindsey?",
@@ -1944,7 +1968,7 @@
       ]
     },
     "unknown": [
-      "Weather: 76 degrees, overcast, gusts near 25 mph.",
+      "Weather: 73 degrees, drizzle, gusts near 25 mph.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Minnesota and Iowa.",
       "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
     ],
@@ -1960,7 +1984,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-21T14:41:52.977Z",
+        "observed_at": "2026-10-21T18:04:23.901Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1983,6 +2007,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-21T17:05:55.346Z"
+    "at": "2026-10-21T21:35:06.289Z"
   }
 }
