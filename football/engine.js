@@ -90,9 +90,26 @@
   }
   function normCdf(x) { return 0.5 * (1 + erf(x / Math.SQRT2)); }
 
+  /* THE SERVED NFL MODEL'S OWN MARGIN TABLE (football/nfl_params_v2.js, when it
+     is the active model): the same kernel over closing spreads, fitted only
+     through the season it was trained through. Everything else stays P.nfl. */
+  var NFL_OVERLAY = { base: null, v2: null, obj: null };
+  function activeV2() { var pv = root.EDNflParamsV2; return pv && pv.active && pv.margin_pmf_by_spread ? pv : null; }
   function sportParams(sport) {
     var P = params(); if (!P) return null;
-    return sport === 'nfl' ? P.nfl : sport === 'cfb' ? P.cfb : null;
+    if (sport === 'nfl') {
+      var pv = activeV2();
+      if (!pv) return P.nfl;
+      if (NFL_OVERLAY.base !== P.nfl || NFL_OVERLAY.v2 !== pv) {
+        var o = {}, k;
+        for (k in P.nfl) if (P.nfl.hasOwnProperty(k)) o[k] = P.nfl[k];
+        o.margin_pmf_by_spread = pv.margin_pmf_by_spread;
+        o.trained_through_season = pv.trained_through_season;
+        NFL_OVERLAY = { base: P.nfl, v2: pv, obj: o };
+      }
+      return NFL_OVERLAY.obj;
+    }
+    return sport === 'cfb' ? P.cfb : null;
   }
   function pmfEntries(pmf) {
     var out = [], k;
@@ -948,7 +965,24 @@
     var sp = sportParams(sport);
     var comp = {}, fairSpread = null, fairTotal = null;
     var terms = null, feats = null, card = null, seasonGames = null;
-    if (sport === 'nfl') {
+    var V2 = root.EDNflModel, PV = root.EDNflParamsV2, modelVersion = P.model_version, featureVersion = sp.feature_version;
+    if (sport === 'nfl' && req.state && req.state.v2 && V2 && PV) {
+      /* THE v2 MODEL (football/nfl_model.js with football/nfl_params_v2.js): the
+         board's state carries the live v2 state; same output contract */
+      var p2 = V2.predict(req.state.v2, req.game, PV);
+      comp.koerner_spread = p2.strength;
+      comp.stuckey_ctx_adj = p2.context;
+      comp.home_field = p2.hfa;
+      comp.sharp_total = p2.total;
+      fairSpread = p2.margin;
+      fairTotal = p2.total;
+      terms = V2.engineTerms(p2);
+      feats = p2.features;
+      card = nfl.card({ terms: terms, model_spread: fairSpread });
+      seasonGames = p2.season_games;
+      modelVersion = PV.model_version;
+      featureVersion = 'nfl_v2:' + (PV.config_sha || '');
+    } else if (sport === 'nfl') {
       var pr = nfl.predict(req.state, req.game);
       comp.koerner_spread = pr.koerner_spread;
       comp.stuckey_ctx_adj = pr.ctx_adj;
@@ -1015,15 +1049,15 @@
         ? dist.coverProbTotal(sport, fairTotal, mkt.total_line, 'over') : null,
       data_quality: q,
       unproven: true,
-      model_version: P.model_version,
-      feature_version: sp.feature_version,
+      model_version: modelVersion,
+      feature_version: featureVersion,
       trained_through_season: sp.trained_through_season,
       prediction_timestamp: nowIso,
       odds_timestamp: (req.timestamps && req.timestamps.odds) || null,
       injury_timestamp: (req.timestamps && req.timestamps.injuries) || null,
       weather_timestamp: (req.timestamps && req.timestamps.weather) || null,
       fingerprint: fingerprint({ g: req.game, s: sport,
-        v: P.model_version, f: sp.feature_version,
+        v: modelVersion, f: featureVersion,
         o: (req.timestamps && req.timestamps.odds) || null,
         m: [mkt.spread_line, mkt.total_line] })
     };

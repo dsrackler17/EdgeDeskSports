@@ -484,8 +484,23 @@
     return { w: w.slice(0, p), b: withIntercept ? w[p] : 0 };
   }
 
+  /* THE BOARD'S VIEW of a v2 state: the v1 shape every reader in app.html and
+     the slate builder already reads (team -> feature -> number, qb, teamQb,
+     lmean, ngames, the engine's prior book), with the live v2 state attached
+     as .v2 so engine.js predictGame prices from it. Rebuilt after the absorb
+     pass; the numbers are snapshots, never written back. */
+  function view(st, seededThrough) {
+    var out = { team: {}, qb: st.qb, teamQb: st.teamQb, lmean: st.lmean, ngames: st.ngames, season_games: st.games,
+      pri: {}, seededThrough: seededThrough, hp: null, v2: st }, t, i, f;
+    for (t in st.team) if (st.team.hasOwnProperty(t)) {
+      out.team[t] = snapshot(st, t); out.pri[t] = {};
+      for (i = 0; i < RATE_FEATS.length; i++) { f = RATE_FEATS[i]; out.pri[t][f] = [priorPart(st, t, f), 1]; }
+    }
+    return out;
+  }
+
   var API = {
-    RATE_FEATS: RATE_FEATS, V1: V1, CARD_ROWS: CARD,
+    RATE_FEATS: RATE_FEATS, V1: V1, CARD_ROWS: CARD, view: view,
     config: config, priorWeight: priorWeight, newState: newState, fromSeeds: fromSeeds, team: team,
     rating: rating, priorPart: priorPart, snapshot: snapshot, seasonBreak: seasonBreak,
     absorbGame: absorbGame, absorbCompleted: absorbCompleted, afterGame: afterGame,

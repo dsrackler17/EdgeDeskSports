@@ -1,0 +1,538 @@
+{
+ "step": 2,
+ "generated_at": "2026-10-20T19:44:51.054Z",
+ "family_winners": {
+  "P0_wide_geometric": {
+   "label": "geometric carry 0.8 alpha 0.1",
+   "cfg": {
+    "carry": 0.8,
+    "prior": {
+     "kind": "geometric",
+     "alpha": 0.1,
+     "alpha_pts": 0.06,
+     "k": null,
+     "k_pts": null
+    },
+    "recency": null,
+    "alpha_league": 0.02,
+    "qb": {
+     "alpha_qb": 0.18,
+     "qb_shrink": 12,
+     "qb_prior": -0.04,
+     "alpha_team": 0.1
+    },
+    "features": {
+     "net_pts_fix": false,
+     "split_od": false
+    },
+    "hfa": {
+     "kind": "intercept",
+     "rho": null,
+     "m": null
+    },
+    "ctx": {
+     "travel": false,
+     "venue": true
+    },
+    "market": {
+     "on": false,
+     "beta": null,
+     "carry_m": null
+    },
+    "personnel": {
+     "on": false
+    },
+    "source": "stw",
+    "calibration": {
+     "kind": "none"
+    },
+    "ridge": {
+     "strength": 60,
+     "context": 200,
+     "total": 60
+    }
+   },
+   "valid": {
+    "n": 4078,
+    "mae": 10.397,
+    "rmse": 13.4728,
+    "brier": 0.22243,
+    "logloss": 0.6349,
+    "ece": 0.0226,
+    "cal_slope": 1.092,
+    "home_lean": 0.357,
+    "ats3": {
+     "n": 1267,
+     "win_pct": 0.5090765588003157
+    },
+    "total_mae": 10.6887
+   }
+  },
+  "P1_hyperbolic": {
+   "label": "hyperbolic carry 0.85 k 6 k_pts 16",
+   "cfg": {
+    "carry": 0.85,
+    "prior": {
+     "kind": "hyperbolic",
+     "alpha": 0.1,
+     "alpha_pts": 0.06,
+     "k": 6,
+     "k_pts": 16
+    },
+    "recency": 1,
+    "alpha_league": 0.02,
+    "qb": {
+     "alpha_qb": 0.18,
+     "qb_shrink": 12,
+     "qb_prior": -0.04,
+     "alpha_team": 0.1
+    },
+    "features": {
+     "net_pts_fix": false,
+     "split_od": false
+    },
+    "hfa": {
+     "kind": "intercept",
+     "rho": null,
+     "m": null
+    },
+    "ctx": {
+     "travel": false,
+     "venue": true
+    },
+    "market": {
+     "on": false,
+     "beta": null,
+     "carry_m": null
+    },
+    "personnel": {
+     "on": false
+    },
+    "source": "stw",
+    "calibration": {
+     "kind": "none"
+    },
+    "ridge": {
+     "strength": 60,
+     "context": 200,
+     "total": 60
+    }
+   },
+   "valid": {
+    "n": 4078,
+    "mae": 10.4177,
+    "rmse": 13.4803,
+    "brier": 0.2224,
+    "logloss": 0.63488,
+    "ece": 0.0243,
+    "cal_slope": 1.109,
+    "home_lean": 0.355,
+    "ats3": {
+     "n": 1247,
+     "win_pct": 0.5036086607858862
+    },
+    "total_mae": 10.6901
+   }
+  }
+ },
+ "decisions": [
+  {
+   "family": "decay",
+   "label": "geometric carry 0.8 alpha 0.1",
+   "cfg": {
+    "carry": 0.8,
+    "prior": {
+     "kind": "geometric",
+     "alpha": 0.1,
+     "alpha_pts": 0.06,
+     "k": null,
+     "k_pts": null
+    },
+    "recency": null,
+    "alpha_league": 0.02,
+    "qb": {
+     "alpha_qb": 0.18,
+     "qb_shrink": 12,
+     "qb_prior": -0.04,
+     "alpha_team": 0.1
+    },
+    "features": {
+     "net_pts_fix": false,
+     "split_od": false
+    },
+    "hfa": {
+     "kind": "intercept",
+     "rho": null,
+     "m": null
+    },
+    "ctx": {
+     "travel": false,
+     "venue": true
+    },
+    "market": {
+     "on": false,
+     "beta": null,
+     "carry_m": null
+    },
+    "personnel": {
+     "on": false
+    },
+    "source": "stw",
+    "calibration": {
+     "kind": "none"
+    },
+    "ridge": {
+     "strength": 60,
+     "context": 200,
+     "total": 60
+    }
+   },
+   "valid": {
+    "n": 4078,
+    "mae": 10.397,
+    "rmse": 13.4728,
+    "brier": 0.22243,
+    "logloss": 0.6349,
+    "ece": 0.0226,
+    "cal_slope": 1.092,
+    "home_lean": 0.357,
+    "ats3": {
+     "n": 1267,
+     "win_pct": 0.5090765588003157
+    },
+    "total_mae": 10.6887
+   },
+   "holdout": null,
+   "incumbent_valid": {
+    "n": 4078,
+    "mae": 10.397,
+    "rmse": 13.4728,
+    "brier": 0.22243,
+    "logloss": 0.6349,
+    "ece": 0.0226,
+    "cal_slope": 1.092,
+    "home_lean": 0.357,
+    "ats3": {
+     "n": 1267,
+     "win_pct": 0.5090765588003157
+    },
+    "total_mae": 10.6887
+   },
+   "incumbent_holdout": {
+    "n": 285,
+    "mae": 10.1944,
+    "rmse": 12.9447,
+    "brier": 0.22292,
+    "logloss": 0.63513,
+    "ece": 0.0451,
+    "cal_slope": 0.977,
+    "home_lean": 0.72,
+    "ats3": {
+     "n": 84,
+     "win_pct": 0.5238095238095238
+    },
+    "total_mae": 10.3798
+   },
+   "finalist": false,
+   "promoted": false,
+   "why": "did not beat the incumbent on 2010-2024 validation (MAE and log loss)"
+  },
+  {
+   "family": "P2_personnel",
+   "label": "personnel prior (RB, WR/TE, OL)",
+   "cfg": {
+    "carry": 0.8,
+    "prior": {
+     "kind": "geometric",
+     "alpha": 0.1,
+     "alpha_pts": 0.06,
+     "k": null,
+     "k_pts": null
+    },
+    "recency": null,
+    "alpha_league": 0.02,
+    "qb": {
+     "alpha_qb": 0.18,
+     "qb_shrink": 12,
+     "qb_prior": -0.04,
+     "alpha_team": 0.1
+    },
+    "features": {
+     "net_pts_fix": false,
+     "split_od": false
+    },
+    "hfa": {
+     "kind": "intercept",
+     "rho": null,
+     "m": null
+    },
+    "ctx": {
+     "travel": false,
+     "venue": true
+    },
+    "market": {
+     "on": false,
+     "beta": null,
+     "carry_m": null
+    },
+    "personnel": {
+     "on": true
+    },
+    "source": "stw",
+    "calibration": {
+     "kind": "none"
+    },
+    "ridge": {
+     "strength": 60,
+     "context": 200,
+     "total": 60
+    }
+   },
+   "valid": {
+    "n": 4078,
+    "mae": 10.3963,
+    "rmse": 13.4718,
+    "brier": 0.22243,
+    "logloss": 0.6349,
+    "ece": 0.0228,
+    "cal_slope": 1.092,
+    "home_lean": 0.357,
+    "ats3": {
+     "n": 1267,
+     "win_pct": 0.510655090765588
+    },
+    "total_mae": 10.6887
+   },
+   "holdout": null,
+   "incumbent_valid": {
+    "n": 4078,
+    "mae": 10.397,
+    "rmse": 13.4728,
+    "brier": 0.22243,
+    "logloss": 0.6349,
+    "ece": 0.0226,
+    "cal_slope": 1.092,
+    "home_lean": 0.357,
+    "ats3": {
+     "n": 1267,
+     "win_pct": 0.5090765588003157
+    },
+    "total_mae": 10.6887
+   },
+   "incumbent_holdout": {
+    "n": 285,
+    "mae": 10.1944,
+    "rmse": 12.9447,
+    "brier": 0.22292,
+    "logloss": 0.63513,
+    "ece": 0.0451,
+    "cal_slope": 0.977,
+    "home_lean": 0.72,
+    "ats3": {
+     "n": 84,
+     "win_pct": 0.5238095238095238
+    },
+    "total_mae": 10.3798
+   },
+   "finalist": false,
+   "promoted": false,
+   "why": "did not beat the incumbent on 2010-2024 validation (MAE and log loss)"
+  },
+  {
+   "family": "P3_market",
+   "label": "market prior beta 0.35 carry 0.6",
+   "cfg": {
+    "carry": 0.8,
+    "prior": {
+     "kind": "geometric",
+     "alpha": 0.1,
+     "alpha_pts": 0.06,
+     "k": null,
+     "k_pts": null
+    },
+    "recency": null,
+    "alpha_league": 0.02,
+    "qb": {
+     "alpha_qb": 0.18,
+     "qb_shrink": 12,
+     "qb_prior": -0.04,
+     "alpha_team": 0.1
+    },
+    "features": {
+     "net_pts_fix": false,
+     "split_od": false
+    },
+    "hfa": {
+     "kind": "intercept",
+     "rho": null,
+     "m": null
+    },
+    "ctx": {
+     "travel": false,
+     "venue": true
+    },
+    "market": {
+     "on": true,
+     "beta": 0.35,
+     "carry_m": 0.6
+    },
+    "personnel": {
+     "on": false
+    },
+    "source": "stw",
+    "calibration": {
+     "kind": "none"
+    },
+    "ridge": {
+     "strength": 60,
+     "context": 200,
+     "total": 60
+    }
+   },
+   "valid": {
+    "n": 4078,
+    "mae": 10.2735,
+    "rmse": 13.3016,
+    "brier": 0.21849,
+    "logloss": 0.62655,
+    "ece": 0.0275,
+    "cal_slope": 0.925,
+    "home_lean": 0.453,
+    "ats3": {
+     "n": 1058,
+     "win_pct": 0.5321361058601134
+    },
+    "total_mae": 10.6887
+   },
+   "holdout": {
+    "n": 285,
+    "mae": 10.1009,
+    "rmse": 12.728,
+    "brier": 0.22428,
+    "logloss": 0.63884,
+    "ece": 0.0535,
+    "cal_slope": 0.825,
+    "home_lean": 0.778,
+    "ats3": {
+     "n": 70,
+     "win_pct": 0.4857142857142857
+    },
+    "total_mae": 10.3798
+   },
+   "incumbent_valid": {
+    "n": 4078,
+    "mae": 10.397,
+    "rmse": 13.4728,
+    "brier": 0.22243,
+    "logloss": 0.6349,
+    "ece": 0.0226,
+    "cal_slope": 1.092,
+    "home_lean": 0.357,
+    "ats3": {
+     "n": 1267,
+     "win_pct": 0.5090765588003157
+    },
+    "total_mae": 10.6887
+   },
+   "incumbent_holdout": {
+    "n": 285,
+    "mae": 10.1944,
+    "rmse": 12.9447,
+    "brier": 0.22292,
+    "logloss": 0.63513,
+    "ece": 0.0451,
+    "cal_slope": 0.977,
+    "home_lean": 0.72,
+    "ats3": {
+     "n": 84,
+     "win_pct": 0.5238095238095238
+    },
+    "total_mae": 10.3798
+   },
+   "finalist": true,
+   "promoted": false,
+   "why": "beat validation but not the 2025 holdout"
+  }
+ ],
+ "promoted_cfg": {
+  "carry": 0.8,
+  "prior": {
+   "kind": "geometric",
+   "alpha": 0.1,
+   "alpha_pts": 0.06,
+   "k": null,
+   "k_pts": null
+  },
+  "recency": null,
+  "alpha_league": 0.02,
+  "qb": {
+   "alpha_qb": 0.18,
+   "qb_shrink": 12,
+   "qb_prior": -0.04,
+   "alpha_team": 0.1
+  },
+  "features": {
+   "net_pts_fix": false,
+   "split_od": false
+  },
+  "hfa": {
+   "kind": "intercept",
+   "rho": null,
+   "m": null
+  },
+  "ctx": {
+   "travel": false,
+   "venue": true
+  },
+  "market": {
+   "on": false,
+   "beta": null,
+   "carry_m": null
+  },
+  "personnel": {
+   "on": false
+  },
+  "source": "stw",
+  "calibration": {
+   "kind": "none"
+  },
+  "ridge": {
+   "strength": 60,
+   "context": 200,
+   "total": 60
+  }
+ },
+ "incumbent_valid": {
+  "n": 4078,
+  "mae": 10.397,
+  "rmse": 13.4728,
+  "brier": 0.22243,
+  "logloss": 0.6349,
+  "ece": 0.0226,
+  "cal_slope": 1.092,
+  "home_lean": 0.357,
+  "ats3": {
+   "n": 1267,
+   "win_pct": 0.5090765588003157
+  },
+  "total_mae": 10.6887
+ },
+ "incumbent_holdout": {
+  "n": 285,
+  "mae": 10.1944,
+  "rmse": 12.9447,
+  "brier": 0.22292,
+  "logloss": 0.63513,
+  "ece": 0.0451,
+  "cal_slope": 0.977,
+  "home_lean": 0.72,
+  "ats3": {
+   "n": 84,
+   "win_pct": 0.5238095238095238
+  },
+  "total_mae": 10.3798
+ },
+ "inactive": [
+  "win-total prior: nfldata win_totals.csv ends at 2020"
+ ]
+}
