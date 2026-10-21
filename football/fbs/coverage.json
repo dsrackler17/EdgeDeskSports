@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-21T03:55:40.148Z",
+ "generated_at": "2026-10-21T04:06:23.535Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,28 +119,28 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 65,
+  "total": 102,
   "by_group": {
-   "other": 37,
-   "p4": 28,
+   "other": 48,
+   "p4": 55,
    "independent": 1
   },
   "by_matchup": {
-   "conference": 64,
-   "non_conference": 1
+   "conference": 100,
+   "non_conference": 2
   },
   "by_conference": {
    "cusa": 8,
-   "sunbelt": 7,
-   "american": 7,
-   "acc": 7,
+   "sunbelt": 12,
+   "american": 10,
+   "acc": 15,
    "independents": 1,
    "mac": 8,
-   "mwc": 4,
-   "sec": 6,
-   "big12": 9,
-   "bigten": 6,
-   "pac12": 3
+   "mwc": 6,
+   "sec": 10,
+   "big12": 15,
+   "bigten": 15,
+   "pac12": 4
   },
   "fbs_fcs_in_source": 0
  },
@@ -200,22 +200,22 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 65
+  "PREDICTED": 102
  },
  "weather": {
-  "requested": 65,
-  "answered": 65,
-  "dome": 0,
+  "requested": 101,
+  "answered": 101,
+  "dome": 1,
   "no_venue": 0,
   "failed": 0,
   "carried": 0,
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "65 of 65 outdoor game(s) got a forecast; 0 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "101 of 101 outdoor game(s) got a forecast; 1 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 65
+  "NO_MARKET": 102
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -284,8 +284,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 37,
-    "total": 65,
+    "non_power_games": 47,
+    "total": 102,
     "example": [
      "Middle Tennessee @ Florida International",
      "Missouri State @ Delaware",
@@ -304,7 +304,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 64,
+    "conference_games": 100,
     "wrong": 0
    }
   },
@@ -338,8 +338,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 65,
-    "audit_total": 65
+    "slate": 102,
+    "audit_total": 102
    }
   },
   {
