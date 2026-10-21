@@ -1,0 +1,103 @@
+# Deploy the NBA roster and injury layer: the nba_injury_sync edge function
+# and (optionally) its SQL — supabase/nba_injury_layer.sql (tables, views,
+# KPIs, the card), supabase/nba_roster_adjusted_registry.sql (the research
+# model, registered EXPERIMENTAL) and supabase/nba_injury_cron.sql (the
+# half-hourly pg_cron poke). README §NBA roster and injury layer.
+#
+# MANUAL ON PURPOSE, as every deploy-*.yml here: tests first, then the function,
+# then the SQL in dependency order. A report row that says CHECK THIS fails the
+# job (the layer's "pending: apply the registry file next" row is not one).
+#
+# SECRETS (the same ones Deploy research scheduler uses):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the function
+#   SB_DB_URL                                     to apply the SQL (optional;
+#                                                 or paste the files into the SQL editor)
+# And once, on the Supabase side (the function and pg_cron share one secret):
+#   supabase secrets set NBA_INJURY_CRON_SECRET=<a long random value>
+#   select vault.create_secret('<the same value>', 'nba_injury_cron_secret');
+name: Deploy NBA injury layer
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/nba_injury_sync (JWT verification OFF: pg_cron sends no JWT)'
+        type: boolean
+        default: true
+      apply_sql:
+        description: 'Apply nba_injury_layer.sql, nba_roster_adjusted_registry.sql and nba_injury_cron.sql (needs pg_cron, pg_net and the research registry)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-nba-injury
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # the deployed file itself is imported by the sync test (type stripping),
+      # against a mocked network: what ships is what was tested
+      - name: The layer, the function and the SQL must pass before anything ships
+        env:
+          NBA_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/nba/inline_injury_core.js --check
+          node tools/nba/build_roster_adjusted_registry_sql.js --check
+          node tools/nba/nba_injury_core.test.js
+          node tools/nba/nba_injury_sync.test.js
+          node tools/nba/nba_injury_sql.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — nba_injury_sync cannot be deployed from CI."; fi
+          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — paste the three SQL files into the SQL editor instead, in order."; fi
+
+      - name: Install the Supabase CLI
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # --no-verify-jwt IS LOAD-BEARING: pg_cron sends the x-cron-secret header,
+      # not a JWT. A POST without the secret is refused by the function itself.
+      - name: Deploy nba_injury_sync
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy nba_injury_sync \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
+      - name: Apply the SQL (layer, registry, cron — in that order)
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          for f in supabase/nba_injury_layer.sql supabase/nba_roster_adjusted_registry.sql supabase/nba_injury_cron.sql; do
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f")
+            echo "== $f"; echo "$out" | tail -8
+            if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::$f: a report row says CHECK THIS"; exit 1; fi
+          done

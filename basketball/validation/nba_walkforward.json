@@ -2,7 +2,7 @@
  "schema": "edgedesk_lab_walkforward_v1",
  "sport": "nba",
  "label": "NBA",
- "generated_at": "2026-10-21T04:05:34.736Z",
+ "generated_at": "2026-10-21T14:29:27.948Z",
  "protocol": {
   "windows": {
    "burn_in": [
@@ -55,8 +55,8 @@
    2008,
    2027
   ],
-  "games": 24443,
-  "games_scored": 21812,
+  "games": 24446,
+  "games_scored": 21815,
   "temporal": {
    "point_in_time": "RETROSPECTIVE",
    "known_at": "blank (first publication unknown; never backdated)",
@@ -65,7 +65,7 @@
  },
  "leakage": {
   "basis": "inputs dated by assumed_available_at (start + 4 h)",
-  "checked": 21812,
+  "checked": 21815,
   "violations": 0,
   "examples": [],
   "ok": true
@@ -458,53 +458,125 @@
     2027,
     2027
    ],
-   "n": 0,
+   "n": 3,
    "by_candidate": {
     "points": {
      "moneyline": {
-      "n": 0,
-      "sample_state": "TOO_EARLY"
+      "n": 3,
+      "sample_state": "TOO_EARLY",
+      "log_loss": 1.01863,
+      "brier": 0.38713,
+      "climatology": {
+       "rate": 0.3333,
+       "log_loss": 0.63651,
+       "brier": 0.22222
+      },
+      "brier_skill": -0.7421,
+      "mean_p": 0.6168,
+      "mean_y": 0.3333,
+      "calibration_in_the_large": 0.2835,
+      "calibration_slope": null,
+      "calibration_intercept": null
      }
     },
     "points_rest": {
      "moneyline": {
-      "n": 0,
-      "sample_state": "TOO_EARLY"
+      "n": 3,
+      "sample_state": "TOO_EARLY",
+      "log_loss": 1.0212,
+      "brier": 0.38792,
+      "climatology": {
+       "rate": 0.3333,
+       "log_loss": 0.63651,
+       "brier": 0.22222
+      },
+      "brier_skill": -0.7457,
+      "mean_p": 0.6168,
+      "mean_y": 0.3333,
+      "calibration_in_the_large": 0.2834,
+      "calibration_slope": null,
+      "calibration_intercept": null
      }
     },
     "elo": {
      "moneyline": {
-      "n": 0,
-      "sample_state": "TOO_EARLY"
+      "n": 3,
+      "sample_state": "TOO_EARLY",
+      "log_loss": 1.03923,
+      "brier": 0.39678,
+      "climatology": {
+       "rate": 0.3333,
+       "log_loss": 0.63651,
+       "brier": 0.22222
+      },
+      "brier_skill": -0.7855,
+      "mean_p": 0.6717,
+      "mean_y": 0.3333,
+      "calibration_in_the_large": 0.3383,
+      "calibration_slope": null,
+      "calibration_intercept": null
      }
     },
     "const_home": {
      "moneyline": {
-      "n": 0,
-      "sample_state": "TOO_EARLY"
+      "n": 3,
+      "sample_state": "TOO_EARLY",
+      "log_loss": 0.73106,
+      "brier": 0.26889,
+      "climatology": {
+       "rate": 0.3333,
+       "log_loss": 0.63651,
+       "brier": 0.22222
+      },
+      "brier_skill": -0.21,
+      "mean_p": 0.5494,
+      "mean_y": 0.3333,
+      "calibration_in_the_large": 0.216,
+      "calibration_slope": null,
+      "calibration_intercept": null
      }
     }
    },
    "margin": {
     "points": {
-     "n": 0
+     "n": 3,
+     "crps": 7.7802,
+     "mean_bias": 7.679,
+     "mean_outcome": -3.33,
+     "coverage_80": 1
     },
     "points_rest": {
-     "n": 0
+     "n": 3,
+     "crps": 7.7802,
+     "mean_bias": 7.679,
+     "mean_outcome": -3.33,
+     "coverage_80": 1
     },
     "baseline": {
-     "n": 0
+     "n": 3,
+     "crps": 6.0926,
+     "mean_bias": 5.333,
+     "mean_outcome": -3.33,
+     "coverage_80": 1
     }
    },
    "total": {
     "points": {
-     "n": 0
+     "n": 3,
+     "crps": 8.1606,
+     "mean_bias": 0.382,
+     "mean_outcome": 220,
+     "coverage_80": 1
     },
     "baseline": {
-     "n": 0
+     "n": 3,
+     "crps": 8.3227,
+     "mean_bias": 8.033,
+     "mean_outcome": 220,
+     "coverage_80": 1
     }
    },
-   "seasons": 0
+   "seasons": 1
   }
  },
  "by_season": {
@@ -625,6 +697,13 @@
    "ml_log_loss": {
     "points_rest": 0.60033,
     "elo": 0.6021
+   }
+  },
+  "2027": {
+   "n": 3,
+   "ml_log_loss": {
+    "points_rest": 1.0212,
+    "elo": 1.03923
    }
   }
  },

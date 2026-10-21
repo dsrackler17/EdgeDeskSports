@@ -1,19 +1,47 @@
 {
- "note": "What the collegiate collector reads (collegiate/run.js, collegiate-rosters.yml). weekly: every listed sport's current season and the one before, at every school of the division, every week. backfill: past seasons read once (a backfill item is done when collegiate/data/backfill.json records it). Changing this file on a branch runs the collector on that branch. Started small (baseball only, no backfill) to check the collector at full scale before widening.",
+ "note": "What the collegiate collector reads (collegiate/run.js). collegiate-rosters.yml (weekly, --skip-backfill): the registry when over 30 days old; every weekly sport's current season and the one before at every school of the division; each schedules sport's current and previous season; the ledger. collegiate-backfill.yml (daily, --only-backfill): past seasons the backfill names, read once (done when collegiate/data/backfill.json records it complete), and a per-host slice of the box scores the held schedules link, until none are left. lanes: how many schools are read at once (each one no faster than its robots.txt asks). Changing this file runs the weekly collector once it reaches main (never on a branch).",
  "division": 1,
  "directory_max_age_days": 30,
- "lanes": 64,
+ "lanes": 32,
  "weekly": {
+  "sports": [
+   "baseball",
+   "softball",
+   "football",
+   "mens-basketball",
+   "womens-basketball",
+   "womens-volleyball",
+   "mens-soccer",
+   "womens-soccer"
+  ]
+ },
+ "schedules": {
   "sports": [
    "baseball"
   ]
  },
- "backfill_next": [
+ "backfill": [
   {
-   "id": "baseball-2013-2026",
+   "id": "baseball-rosters-2013-2026",
    "sport": "baseball",
    "seasons": "2013-2026",
    "why": "roster continuity, transfers and handedness for the college baseball model's walk-forward (SELECTION starts 2014)"
+  },
+  {
+   "id": "baseball-schedules-2013-2026",
+   "kind": "schedules",
+   "sport": "baseball",
+   "seasons": "2013-2026",
+   "why": "results from both schools (the 2023 gap, DQ-06) and the box-score links"
+  }
+ ],
+ "boxscores": [
+  {
+   "id": "baseball-boxscores-2013-2026",
+   "sport": "baseball",
+   "seasons": "2013-2026",
+   "per_host": 40,
+   "why": "starting pitchers with their hand, lineups with bats, weather: inputs the college baseball model has never had"
   }
  ]
 }

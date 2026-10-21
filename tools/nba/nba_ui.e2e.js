@@ -13,6 +13,15 @@
    failing and coming back on Try again, a stale slate, a slate that fails its
    integrity check. No page error and no horizontal page scroll at either width.
 
+   Who is playing (README §NBA roster and injury layer): Hornets at Nets with
+   the injury card the database would return (the Roster-Adjusted Projection
+   computed by nba/injury/core.js from the real roster inputs fixture): the
+   OUT players, the departed players, the baseline beside the Experimental
+   adjusted number, every adjustment traced, the known limitations, the
+   graphic's line. Then the source killed: "Injury report not yet available"
+   with the last check time, no statuses, no adjusted number, and the System
+   health panel reporting the sync as failing.
+
    Run: node tools/nba/nba_ui.e2e.js [--shots DIR]
    =========================================================================== */
 'use strict';
@@ -38,6 +47,34 @@ const STARTED = Object.assign(JSON.parse(JSON.stringify(SLATE.games[0])), { game
    lists the games under way: those draw as started, so the upcoming list is the games after NOW */
 const UPCOMING = SLATE.games.filter((g) => Date.parse(g.start_utc) > Date.parse(NOW));
 const RECENT = { schema: 'edgedesk_nba_recent_v1', sport: 'NBA', generated_at: NOW, window_hours: 96, games: [STARTED] };
+
+/* ---- the injury layer as the database answers it (rpc/nba_injury_card, nba_injury_readiness) ---- */
+const K = require(path.join(ROOT, 'nba', 'injury', 'core.js'));
+const DIST = require(path.join(ROOT, 'nba', 'model', 'distribution.js'));
+const FX = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'nba', 'fixtures', 'nba_injury_cha_bkn_2026-10-21.json'), 'utf8'));
+const CB = SLATE.games.find((x) => String(x.game_id) === String(FX.game.game_id) && Date.parse(x.start_utc) > Date.parse(NOW)) || null;
+const ago = (min) => new Date(Date.parse(NOW) - min * 60000).toISOString();
+let injMode = 'ok';
+function injCard(gameId) {
+  if (injMode === 'down') return { game_id: gameId, state: 'UNAVAILABLE', reason: 'the last check failed: the official report and the ESPN fallback both failed', last_check_at: ago(5), last_check_status: 'error', last_success_at: ago(125), report: null, statuses: [], not_submitted: [], rosters: {}, adjusted: null };
+  if (!CB || String(gameId) !== String(CB.game_id)) return { game_id: gameId, state: 'NOT_ON_REPORT', reason: 'this game is not on the latest injury report yet', last_check_at: ago(7), last_check_status: 'ok', last_success_at: ago(7), report: null, statuses: [], not_submitted: [], rosters: {}, adjusted: null };
+  const ids = { 'White, Coby': '4395651', 'Knueppel, Kon': '5061575', 'Williams, Grant': '4066218' };
+  const statuses = Object.keys(ids).map((n, i) => ({ team_id: '30', team_abbr: 'CHA', player_id: ids[n], player_name: K.nbaDisplayName(n), status: 'OUT', source_status: 'Out', reason: 'Injury/Illness', match_method: 'team_exact', row_id: 900 + i }));
+  const res = K.nbaRosterAdjust({ game: FX.game, shape: FX.shape, players: FX.players, rosters: { home: FX.rosters['17'].map((p) => p.id), away: FX.rosters['30'].map((p) => p.id) },
+    roster_meta: { home: { capture_id: 41, captured_at: ago(30), source: 'espn_roster' }, away: { capture_id: 42, captured_at: ago(30), source: 'espn_roster' } },
+    statuses: { home: [], away: statuses.map((x) => ({ id: x.row_id, player_id: x.player_id, player_name: x.player_name, status: 'OUT', source_status: 'Out', match_method: 'team_exact' })) },
+    report: { id: 7, source: 'nba_official', published_at: ago(15), on_report: true, not_submitted: {} }, team_of: FX.team_of, slate_generated_at: CB.predicted_at || SLATE.generated_at }, DIST);
+  return { game_id: gameId, state: 'AVAILABLE', reason: null, last_check_at: ago(7), last_check_status: 'ok', last_success_at: ago(7),
+    report: { id: 7, source: 'nba_official', source_url: 'https://ak-static.cms.nba.com/referee/injury/Injury-Report_2026-10-21_01_00AM.pdf', published_at: ago(15), captured_at: ago(8), latest_seen_published_at: ago(15) },
+    statuses, not_submitted: [], rosters: { 30: { capture_id: 42, captured_at: ago(30), source: 'espn_roster', players: FX.rosters['30'].map((p) => ({ player_id: p.id, player_name: p.name })) } },
+    adjusted: Object.assign({ id: 501, model_key: 'NBA-ROSTER-ADJ', model_version: '0.1', model_version_ref: '42', injury_report_id: 7, report_source: 'nba_official', slate_generated_at: CB.predicted_at || SLATE.generated_at, computed_at: ago(7),
+      home_roster_capture_id: 41, away_roster_capture_id: 42, impact_snapshot_id: 3 }, { status: res.status, reasons: res.reasons, baseline: res.baseline, adjusted: res.adjusted, delta: res.delta, adjustments: res.adjustments, roster_changes: res.roster_changes }) };
+}
+function injReadiness() {
+  return injMode === 'down'
+    ? [{ state: 'error', state_reason: 'the last check failed: the official report and the ESPN fallback both failed', last_check_at: ago(5), last_check_status: 'error', last_success_at: ago(125), report_source: 'nba_official', failures_24h: 1, degraded_24h: 1, drift_24h: 0, consecutive_failures: 1, game_day: true, last_official_report_at: ago(135), minutes_since_official_report: 135, unmatched_players: 0, teams_missing: [], teams_missing_count: 0, unread_lines: 0, teams_with_roster: 30 }]
+    : [{ state: 'ok', state_reason: null, last_check_at: ago(7), last_check_status: 'ok', last_success_at: ago(7), report_source: 'nba_official', failures_24h: 0, degraded_24h: 0, drift_24h: 0, consecutive_failures: 0, game_day: true, last_official_report_at: ago(15), minutes_since_official_report: 15, unmatched_players: 0, teams_missing: [], teams_missing_count: 0, unread_lines: 0, teams_with_roster: 30 }];
+}
 
 (async function main() {
   if (!SLATE.games.length) done('SKIP | the committed slate has no games to exercise');
@@ -87,6 +124,9 @@ const RECENT = { schema: 'edgedesk_nba_recent_v1', sport: 'NBA', generated_at: N
       if (u.startsWith('http://127.0.0.1')) return route.continue();
       if (/supabase\.co/.test(u)) {
         if (/subscriptions/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]) });
+        if (/rpc\/nba_injury_card/.test(u)) { let b = {}; try { b = JSON.parse(route.request().postData() || '{}'); } catch (_) { b = {}; } return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(injCard(b.p_game_id)) }); }
+        if (/nba_injury_readiness/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(injReadiness()) });
+        if (/nba_injury_meta/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ key: 'nba_injury_sync_last_run', value: ago(injMode === 'down' ? 5 : 7) }, { key: 'nba_injury_sync_last_status', value: injMode === 'down' ? 'error' : 'ok' }, { key: 'row_count_nba_injury_sync', value: '3' }]) });
         return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
       }
       return route.fulfill({ status: 204, body: '' });
@@ -144,6 +184,50 @@ const RECENT = { schema: 'edgedesk_nba_recent_v1', sport: 'NBA', generated_at: N
       chk(label + ': a malformed price is refused with a hint', /Enter an American price/.test(await page.textContent('#nbaHost .xe-pc-res')));
       chk(label + ': no horizontal scroll on a game', await noHScroll(page), await overflowers(page));
       await shot(page, label + '_nba_game');
+
+      /* who is playing: Hornets at Nets */
+      if (CB) {
+        injMode = 'ok';
+        await page.click('#nbaHost [data-act="back"]');
+        await page.waitForSelector('#nbaHost .xe-game[data-game="' + CB.game_id + '"]');
+        await page.click('#nbaHost .xe-game[data-game="' + CB.game_id + '"]');
+        await page.waitForSelector('#nbaHost .nb-inj .nb-inj-team', { timeout: 15000 });
+        const inj = await page.evaluate(() => document.querySelector('#nbaHost .nb-inj').textContent);
+        chk(label + ': who is playing lists White, Knueppel and Williams out for Charlotte, from the league\'s report, with its time', /Coby White/.test(inj) && /Kon Knueppel/.test(inj) && /Grant Williams/.test(inj) && /NBA official injury report/.test(inj) && /published/.test(inj) && /last check/.test(inj), inj.slice(0, 400));
+        chk(label + ': …and Ball and Bridges are no longer on Charlotte\'s roster', /CHA no longer on the roster/.test(inj) && /LaMelo Ball/.test(inj) && /Miles Bridges/.test(inj));
+        chk(label + ': the old "rotations from last season" sentence is gone', !/Rotations from last season/.test(await page.evaluate(() => document.querySelector('#nbaHost').textContent)));
+        const cmp = await page.$$eval('#nbaHost table.nb-cmp tr', (rs) => rs.map((r) => Array.from(r.children).map((c) => c.textContent)));
+        const kpis = await page.$$eval('#nbaHost .nb-kpi', (ks) => ks.map((k) => [k.querySelector('.xe-k').textContent, k.querySelector('.nb-kv').textContent]));
+        const kv = (n) => (kpis.find((x) => x[0] === n) || [])[1];
+        const row = (n) => cmp.find((r) => r[0] === n) || [];
+        chk(label + ': the baseline column is the card\'s own fair spread and total, unchanged', row('Fair spread')[1] === kv('Fair spread') && row('Fair total')[1] === kv('Fair total') && row('Projected score')[1] === kv('Expected score'), { cmp, kpis });
+        chk(label + ': the roster-adjusted spread moves toward Brooklyn (at least six points), with its delta', /^BKN /.test(row('Fair spread')[2] || '') && /pts toward BKN/.test(row('Fair spread')[3] || '') && parseFloat(row('Fair spread')[3]) >= 6, row('Fair spread'));
+        chk(label + ': the adjusted column is badged Experimental', await page.evaluate(() => Array.from(document.querySelectorAll('#nbaHost .xe-sechd')).some((h) => /Baseline vs Roster-Adjusted/.test(h.textContent) && /Experimental/.test(h.textContent))));
+        const adj = await page.$$eval('#nbaHost .nb-adj li', (x) => x.map((l) => l.textContent));
+        chk(label + ': adjustments applied: each traced (Coby White OUT, LaMelo Ball no longer on the roster)', adj.some((t) => /Coby White OUT: −/.test(t) && /report #7/.test(t)) && adj.some((t) => /LaMelo Ball no longer on CHA/.test(t) && /roster capture #42/.test(t)), adj.slice(0, 6));
+        chk(label + ': known limitations say what is estimated', /Play probabilities for questionable players are fixed estimates/.test(inj) && /no lineup confirmation until tip/i.test(inj));
+        /* the graphic redraws once the card has read the report (its cache key carries the report) */
+        const gfxInj = await page.waitForFunction(() => { const i = document.querySelector('#nbaHost #nbGfxImg'); return i && !i.hidden && i.naturalWidth > 0 && /CHA out: White, Knueppel, Williams/.test(i.alt); }, null, { timeout: 25000 }).then(() => true, () => false);
+        chk(label + ': the graphic\'s who-is-playing line reads the report', gfxInj, await page.evaluate(() => (document.querySelector('#nbaHost #nbGfxImg') || {}).alt));
+        chk(label + ': no horizontal scroll with the injury sections', await noHScroll(page), await overflowers(page));
+        await shot(page, label + '_nba_injury');
+        /* the source killed */
+        injMode = 'down';
+        await page.click('#nbaHost [data-act="refresh"]');
+        await page.waitForFunction(() => /Injury report not yet available/.test((document.querySelector('#nbaHost .nb-inj') || {}).textContent || ''), null, { timeout: 15000 });
+        const dn = await page.evaluate(() => document.querySelector('#nbaHost .nb-inj').textContent);
+        chk(label + ': the source killed: "Injury report not yet available" with the last check time, and no statuses', /Injury report not yet available/.test(dn) && /last check/.test(dn) && /\(failed\)/.test(dn) && !/Coby White/.test(dn), dn.slice(0, 300));
+        const cmp2 = await page.$$eval('#nbaHost table.nb-cmp tr', (rs) => rs.map((r) => Array.from(r.children).map((c) => c.textContent)));
+        chk(label + ': …the adjusted number is withheld, the baseline still shown', (cmp2.find((r) => r[0] === 'Fair spread') || [])[2] === '—' && (cmp2.find((r) => r[0] === 'Fair spread') || [])[1] === kv('Fair spread') && /withheld/.test(await page.evaluate(() => document.querySelector('#nbaHost table.nb-cmp caption').textContent)));
+        /* the clock is pinned, so the panel's one-minute re-read is asked for directly */
+        await page.evaluate(() => (window.sysHealthNbaLoad ? window.sysHealthNbaLoad(true) : null));
+        await page.click('#sysHealthBtn');
+        await page.waitForFunction(() => /NBA injury sync/.test((document.getElementById('sysHealthPop') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => null);
+        const sh = await page.evaluate(() => (document.getElementById('sysHealthPop') || {}).textContent || '');
+        chk(label + ': System health reports the failed sync, its failure alert and the report\'s age', /NBA injury sync/.test(sh) && /failing/.test(sh) && /1 failure/.test(sh) && /NBA injury report freshness/.test(sh), sh.slice(0, 600));
+        await page.keyboard.press('Escape');
+        injMode = 'ok';
+      }
       await page.click('#nbaHost [data-act="back"]');
       await page.waitForSelector('#nbaHost .xe-game');
       await page.waitForSelector('#nbaHost .xe-sechd', { timeout: 15000 });

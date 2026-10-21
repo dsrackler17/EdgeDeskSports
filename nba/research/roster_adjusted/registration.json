@@ -1,0 +1,80 @@
+{
+  "schema": "edgedesk_research_registration_v1",
+  "model_key": "NBA-ROSTER-ADJ",
+  "name": "NBA Roster-Adjusted Projection",
+  "version": "0.1",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3",
+  "provenance_label": "EdgeDesk research",
+  "sport": "NBA",
+  "registered_at": "2026-10-21",
+  "hypothesis": "Pricing each game with the current roster and the league's injury report — the minutes-weighted impact change applied at full weight to the team ratings — projects final margins and totals more accurately than the baseline, which prices each team's previous game's rotation (last season's closing game at a season's start).",
+  "objective": "Lower the error of EdgeDesk's pregame NBA projections of final margin and final total by replacing the baseline's carried rotation with current rosters and the official injury report, without worse win-probability calibration, and with a detection-time edge against the market that tracks closing-line value at least as well as the baseline's.",
+  "primary_metric": "Paired difference in mean absolute error of the expected final margin (adjusted minus baseline), regular-season holdout games; then the same for the expected final total.",
+  "unit": "One NBA regular-season game in the holdout window with (a) a baseline row in nba/ledger/<season>.jsonl recorded before tip and (b) an nba_adjusted_projection_snapshots row with status OK, computed before tip from an official-report snapshot (source nba_official). Each side's last pre-tip value is the one evaluated.",
+  "baseline": "The published EdgeDesk NBA price (edgedesk_nba_v1, the walk-forward's chosen model on the projected-availability track), unchanged, as the ledger froze it before tip.",
+  "training_window": "None fitted. Every number in the transform is fixed in advance (spec below); the player impact (RAPM) and expected minutes are the baseline engine's own, point in time.",
+  "validation_window": "None. There is no tuning step to validate.",
+  "holdout_window": "Regular-season games tipping from 2026-10-22 through the end of the 2026-27 regular season, evaluated once after the last regular-season game. 2026-10-21 is excluded: its Hornets–Nets game was examined at registration (see forking_paths.data_already_seen).",
+  "machine": {
+    "window_dates": { "training": null, "validation": null, "holdout": ["2026-10-22", "2027-04-12"] },
+    "window_note": "[from, to): Eastern dates of the games inside each window",
+    "minimum_sample": 600,
+    "version": "0.1",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3"
+  },
+  "minimum_sample": {
+    "paired_games_holdout": 600,
+    "games_with_market_captures_for_clv": 300,
+    "note": "Below 600 paired games the holdout is reported descriptively and no result row is written. The CLV criterion needs 300 holdout games with an NBA price captured at the snapshot's time and a closing price; NBA prices are not captured today (repository variable NBA_PRICES off), so until they are, that criterion is NOT EVALUABLE and the model cannot pass."
+  },
+  "promotion_criteria": {
+    "decision_rule": "passed = true only if, on the holdout, every criterion below holds. A criterion that cannot be evaluated (too few games, no market captures) is not met. Evaluated once, after the regular season; no interim look decides anything. Passing makes the model eligible for promotion; a person promotes it, through a validation report that compares it with the frozen baseline.",
+    "criteria": [
+      { "id": "C1_MARGIN_MAE", "rule": "Mean absolute error of the expected final margin: adjusted < baseline, and the 95% upper bound of the paired difference (adjusted - baseline), date-blocked bootstrap with 2000 resamples, is below 0." },
+      { "id": "C2_TOTAL_MAE", "rule": "Mean absolute error of the expected final total: adjusted < baseline, with the same test." },
+      { "id": "C3_CLV", "rule": "Detection-time edge against the market correlates with positive CLV at least as well as the baseline's: Spearman correlation between (fair spread - market spread at the snapshot's time, signed toward the side the model favours) and spread CLV (closing spread - detection spread, signed the same way). Adjusted correlation >= baseline correlation, and the 95% bootstrap lower bound of their difference > -0.05. Needs 300 games with captured prices." },
+      { "id": "C4_CALIBRATION_GUARD", "rule": "Win-probability log loss is not worse: adjusted - baseline <= +0.005 on the paired games." },
+      { "id": "C5_COVERAGE_GUARD", "rule": "The model publishes (status OK, not WITHHELD) for at least 80% of holdout games; withheld games and their reasons are reported." }
+    ],
+    "family_correction": "C1 and C2 are both required (an intersection test): no correction is applied, and no criterion is reported as a pass on its own."
+  },
+  "forking_paths": {
+    "candidates_tried": [
+      { "version": "0.1", "status_mapping": { "OUT": 0, "DOUBTFUL": 0.25, "QUESTIONABLE": 0.5, "PROBABLE": 0.9, "AVAILABLE": 1, "UNKNOWN": 0.5 }, "rating_coefficient": 1.0, "minutes": "depth chart on expected minutes (EWM + preseason prior), exact expectation over statuses", "reference_rotation": "the baseline engine's full-strength reference (every player in the team's last ten games, at his usual minutes)", "evaluated_against_outcomes": false }
+    ],
+    "alternatives_considered_not_tried": [
+      "Feeding the new availability through the baseline's own learned availability features (the slate's existing roster scenario): it moves Hornets–Nets by under one point, because the stack learned a small weight for availability. Rejected on structure before any evaluation; it remains on the card as the slate's own scenario.",
+      "A rating coefficient below 1 (shrinking the impact change).",
+      "Other status mappings (Questionable 0.4 or 0.6; Doubtful 0.1; Probable 0.95).",
+      "Proportional redistribution over the whole roster instead of the depth chart.",
+      "A reference rotation of each team's observed minutes over its last 20 games.",
+      "Box-score impact (BPM-style) or a third-party metric instead of EdgeDesk's RAPM."
+    ],
+    "choice_and_reason": "One candidate, written before any evaluation: full weight because the hypothesis is structural (minutes x impact is what the team rating should move by); the mapping's values are round conventional estimates, not fitted; the depth chart because an absent starter's minutes go to the next players in the rotation, not to every rostered player; the reference is the baseline engine's own, so the reset and the shift stand on one definition.",
+    "data_already_seen": "At registration: the 2025-26 RAPM values and expected minutes the baseline already publishes; the Hornets–Nets 2026-10-21 market line (Brooklyn -1.5) and this model's output for that game, computed for the acceptance check from the statuses the product owner provided (Brooklyn -2.5). No other game's outcome or market line was compared with this model. That date is excluded from the holdout.",
+    "comparisons_made": 1,
+    "stopping_rule": "Fixed horizon: the holdout is read once, after the last regular-season game of 2026-27."
+  },
+  "spec": {
+    "transform": "adjusted mean margin = neutral mean margin + sum over home players of (A_i - R_i) / 48 * (o_i + d_i) * pace / 100 - the same over away players; adjusted mean total = neutral mean total + sum over all players of (A_i - R_i) / 48 * (o_i - d_i) * pace / 100. R_i: the reference rotation's minutes; A_i: tonight's expected minutes; o_i, d_i: RAPM offence and defence per 100 possessions (positive = good); pace: the baseline's expected possessions. The neutral means are the baseline's chosen model re-priced with its availability features set to each team's full-strength reference (adj_proj 0). The adjusted means are priced by the baseline's own distribution (nba/model/distribution.js) with its own standard-deviation rule; nothing else of the baseline changes.",
+    "play_probability": { "OUT": 0, "DOUBTFUL": 0.25, "QUESTIONABLE": 0.5, "PROBABLE": 0.9, "AVAILABLE": 1, "UNKNOWN": 0.5 },
+    "minutes": { "team_minutes": 240, "max_minutes": 40, "ewm_weight_games": 4, "preseason_weight_games": 4, "preseason_fade_games": 10, "rookie_minutes": 10, "max_uncertain": 12 },
+    "impact": { "measure": "edgedesk_rapm_v1", "tier": "T2", "prior_o": -0.5, "prior_d": -0.5 },
+    "rating_coefficient": 1.0,
+    "sanity": { "max_abs_margin_shift": 25, "max_abs_total_shift": 30 },
+    "withheld_when": [
+      "no injury report, or the game is not on the latest report",
+      "a team has not submitted its report (NOT YET SUBMITTED)",
+      "a listed player (not AVAILABLE) cannot be matched to a rostered player",
+      "the report lists a player the roster capture has on another team",
+      "a team has no roster capture",
+      "more than 12 players on a team with an uncertain status",
+      "the shift exceeds the sanity bound"
+    ],
+    "code": "nba/injury/core.js nbaRosterAdjust (copied verbatim into supabase/functions/nba_injury_sync/index.ts)",
+    "inputs": "nba/roster_inputs.json (nba/build_slate.js), public.nba_roster_snapshots, public.nba_injury_report_snapshots"
+  },
+  "result": null
+}

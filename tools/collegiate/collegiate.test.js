@@ -22,7 +22,8 @@ function web(pages) {
   const seen = [];
   const fetchImpl = async (url, init) => {
     seen.push({ url, ua: init && init.headers && init.headers['user-agent'] });
-    const p = pages[url];
+    let p = pages[url];
+    if (p && p.seq) p = p.seq.length > 1 ? p.seq.shift() : p.seq[0];     /* answers in turn, the last one repeated */
     if (!p) return new Response('nope', { status: 404 });
     return new Response(p.body == null ? '' : p.body, { status: p.status || 200, headers: p.headers || {} });
   };
@@ -189,6 +190,24 @@ function polite(pages, hosts, extra) {
     ok('rosters: a read listing under half the last one is refused, and the snapshot is untouched', r2.misses.length === 1 && r2.misses[0].code === 'SHRUNK' && fs.readFileSync(path.join(t2.dir, 'd/rosters/baseball/2026/stanford.json'), 'utf8') === before, r2.misses);
     ok('rosters: the current season comes first from the plain page; a past season from its own', RO.candidates({ id: 'x' }, 'wmt', 'baseball', 2026, { today: '2026-05-01' }).join() === '/sports/baseball/roster,/sports/baseball/roster/season/2026' && RO.candidates({ id: 'x' }, 'sidearm', 'baseball', 2019, { today: '2026-05-01' }).join() === '/sports/baseball/roster/2019');
     ok('rosters: seasons roll over in August for spring and split-year sports', RO.currentSeason('baseball', '2026-10-21') === 2027 && RO.currentSeason('football', '2026-10-21') === 2026 && RO.currentSeason('mens-basketball', '2026-10-21') === 2027 && RO.currentSeason('baseball', '2026-05-01') === 2026);
+  }
+
+  /* 7b. a page with no roster still says what built it; an old "unread" verdict is retried; robots.txt gets a second try */
+  {
+    ok('platforms: SIDEARM and WMT are told apart by the shape of any page; a site on neither is not guessed',
+      PL.detectPlatform(R('collegiate/nuxt.js').nuxtData(FX('texassports.com/sports_baseball_schedule_2026'))) === 'sidearm' && PL.detectPlatform(R('collegiate/nuxt.js').nuxtData(FX('12thman.com/home'))) === 'wmt'
+      && PL.detectPlatform(R('collegiate/nuxt.js').nuxtData(FX('arkansasrazorbacks.com/home'))) === null);
+    const t = polite({ 'https://nobase.edu/robots.txt': { body: '' }, 'https://nobase.edu/sports/baseball/roster': { body: FX('texassports.com/sports_baseball_schedule_2026') },
+      'https://old.edu/robots.txt': { body: '' }, 'https://old.edu/sports/baseball/roster': { body: FX('texassports.com/sports_baseball_roster_2026') },
+      'https://slow.edu/robots.txt': { seq: [{ status: 503 }, { body: '' }] }, 'https://slow.edu/sports/baseball/roster': { body: FX('texassports.com/sports_baseball_roster_2026') } }, ['nobase.edu', 'old.edu', 'slow.edu']);
+    const dataDir = path.join(t.dir, 'data');
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ old: { platform: 'unread', checked: '2026-04-28' } }));
+    const run = await RO.collect({ polite: t.c, schoolsList: [{ id: 'nobase', host: 'nobase.edu', division: 1 }, { id: 'old', host: 'old.edu', division: 1 }, { id: 'slow', host: 'slow.edu', division: 1 }], sports: ['baseball'], seasons: [2026], today: '2026-05-01', dataDir, log: false });
+    const plats = JSON.parse(fs.readFileSync(path.join(dataDir, 'platforms.json'), 'utf8'));
+    ok('rosters: a page with no roster teaches the platform, and the season is a plain miss, not a month away', plats.nobase.platform === 'sidearm' && run.misses.some((m) => m.school === 'nobase' && /^(NO_ROSTER|HTTP)$/.test(m.code)) && !run.misses.some((m) => m.code === 'PLATFORM_NOT_READ'), run.misses);
+    ok('rosters: an "unread" verdict made before the platform was read from the page\'s shape is retried', plats.old.platform === 'sidearm' && run.ok >= 1);
+    ok('polite: a robots.txt that does not answer gets a second try before the host is skipped', plats.slow && plats.slow.platform === 'sidearm' && run.ok === 2, run);
   }
 
   /* 8. the portal ledger */

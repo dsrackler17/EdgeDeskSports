@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_scorecard_v1",
- "generated_at": "2026-10-20T14:26:58.137Z",
+ "generated_at": "2026-10-21T14:35:59.426Z",
  "inputs": {
   "rows": 11,
   "rows_status": "OK",
@@ -9,8 +9,8 @@
   "stake_rows_status": "OK",
   "stake_rows_detail": null,
   "nfl_archive": {
-   "games": 7383,
-   "with_opener": 91
+   "games": 7397,
+   "with_opener": 105
   },
   "cfb_archive": {
    "games": 11502,
@@ -181,7 +181,7 @@
  },
  "staking": {
   "schema": "edgedesk_stake_scorecard_v1",
-  "generated_at": "2026-10-20T14:26:58.110Z",
+  "generated_at": "2026-10-21T14:35:59.403Z",
   "rows": 0,
   "sized": 0,
   "status": "OK",
@@ -224,10 +224,10 @@
  "tiers": {
   "pricing": {
    "nfl": {
-    "spread": "LEAN",
-    "total": "RESEARCH",
+    "spread": "RESEARCH",
+    "total": "LEAN",
     "moneyline": "RESEARCH",
-    "generated_at": "2026-10-13T13:36:53.421Z"
+    "generated_at": "2026-10-20T19:19:26.614Z"
    },
    "cfb": {
     "spread": "RESEARCH",
@@ -252,7 +252,7 @@
    "refused": [
     {
      "market": "americanfootball_nfl|team_totals",
-     "why": "the archive carries no home_team_total / away_team_total / home_team_total_over_odds on any of its 7383 games, so there is no history to hold out, no record to grade and no tier to award"
+     "why": "the archive carries no home_team_total / away_team_total / home_team_total_over_odds on any of its 7397 games, so there is no history to hold out, no record to grade and no tier to award"
     },
     {
      "market": "americanfootball_ncaaf|team_totals",
@@ -260,15 +260,16 @@
     },
     {
      "market": "americanfootball_nfl|player_props",
-     "why": "the archive carries no player_props on any of its 7383 games, so there is no history to hold out, no record to grade and no tier to award"
+     "why": "the archive carries no player_props on any of its 7397 games, so there is no history to hold out, no record to grade and no tier to award"
     }
    ],
-   "generated_at": "2026-10-19T16:36:34.670Z"
+   "generated_at": "2026-10-21T14:35:58.544Z"
   },
   "features": {
    "validated": 0,
    "candidates": [
     "players out or doubtful, all positions, home minus away",
+    "receivers and tight ends out or doubtful, home minus away",
     "quarterbacks out or doubtful, both sides summed"
    ]
   }

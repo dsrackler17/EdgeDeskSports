@@ -1,0 +1,178 @@
+{
+ "exp": "H-3",
+ "label": "NFL v2.1.0 total (holdout)",
+ "sport": "nfl",
+ "market": "total",
+ "at": "2026-10-21T14:18:02Z",
+ "primary": {
+  "label": "NFL v2.1.0 total (holdout)",
+  "market": "total",
+  "threshold": 2.0,
+  "n_rows": 309,
+  "seasons": [
+   2025,
+   2026
+  ],
+  "n": 114,
+  "clv_pts": 0.5043859649122807,
+  "clv_prob": 0.012403950772743307,
+  "hit_rate": 0.6973684210526315,
+  "share_moved_toward": 0.4649122807017544,
+  "share_moved_away": 0.20175438596491227,
+  "share_unmoved": 0.3333333333333333,
+  "roi_at_bet_price": -0.021411041294191455,
+  "clv_pts_ci95": [
+   0.23360382513661204,
+   0.787631709536018
+  ],
+  "clv_prob_ci95": [
+   0.00483986644718059,
+   0.020800622955662817
+  ],
+  "hit_rate_ci95": [
+   0.5733317073170732,
+   0.8051984126984126
+  ],
+  "roi_ci95": [
+   -0.035706524377647555,
+   -0.0056797880788910645
+  ],
+  "permutation": {
+   "p_value": 0.0014992503748125937,
+   "null_mean_pts": 0.081,
+   "null_sd_pts": 0.13535758360208894,
+   "n_perm": 2000
+  },
+  "buckets": [
+   {
+    "bucket": "0-1",
+    "n": 104,
+    "clv_pts": 0.0673076923076923,
+    "clv_prob": 0.002505541311526953,
+    "hit_rate": 0.5074626865671642,
+    "share_moved_toward": 0.3269230769230769,
+    "share_moved_away": 0.3173076923076923,
+    "share_unmoved": 0.3557692307692308,
+    "clv_pts_ci95": [
+     -0.22962155563306583,
+     0.38826530612244853
+    ]
+   },
+   {
+    "bucket": "1-2",
+    "n": 91,
+    "clv_pts": -0.1978021978021978,
+    "clv_prob": -0.007067804619654809,
+    "hit_rate": 0.4745762711864407,
+    "share_moved_toward": 0.3076923076923077,
+    "share_moved_away": 0.34065934065934067,
+    "share_unmoved": 0.3516483516483517,
+    "clv_pts_ci95": [
+     -0.505265987549519,
+     0.14474292518912846
+    ]
+   },
+   {
+    "bucket": "2-3",
+    "n": 49,
+    "clv_pts": 0.336734693877551,
+    "clv_prob": 0.009311085162950053,
+    "hit_rate": 0.5588235294117647,
+    "share_moved_toward": 0.3877551020408163,
+    "share_moved_away": 0.30612244897959184,
+    "share_unmoved": 0.30612244897959184,
+    "clv_pts_ci95": [
+     -0.08687499999999969,
+     0.7209302325581395
+    ]
+   },
+   {
+    "bucket": "3+",
+    "n": 65,
+    "clv_pts": 0.6307692307692307,
+    "clv_prob": 0.014735495617048993,
+    "hit_rate": 0.8095238095238095,
+    "share_moved_toward": 0.5230769230769231,
+    "share_moved_away": 0.12307692307692308,
+    "share_unmoved": 0.35384615384615387,
+    "clv_pts_ci95": [
+     0.34937477181453086,
+     0.9385849056603772
+    ]
+   }
+  ],
+  "by_season": [
+   {
+    "season": 2025,
+    "n": 96,
+    "clv_pts": 0.5885416666666666,
+    "clv_prob": 0.013380631794872373,
+    "hit_rate": 0.7272727272727273,
+    "share_moved_toward": 0.5,
+    "share_moved_away": 0.1875,
+    "share_unmoved": 0.3125
+   },
+   {
+    "season": 2026,
+    "n": 18,
+    "clv_pts": 0.05555555555555555,
+    "clv_prob": 0.007194985321388292,
+    "hit_rate": 0.5,
+    "share_moved_toward": 0.2777777777777778,
+    "share_moved_away": 0.2777777777777778,
+    "share_unmoved": 0.4444444444444444
+   }
+  ],
+  "movement": {
+   "slope": 0.11013304259959472,
+   "intercept": -0.2531743913395079,
+   "corr": 0.1869322371643314,
+   "n": 309
+  },
+  "diagnostics": {
+   "ats_win_rate_at_bet_line": 0.5263157894736842,
+   "ats_n": 114,
+   "model_mae_vs_result": 10.305240129449837,
+   "bet_line_mae_vs_result": 10.190938511326861,
+   "close_mae_vs_result": 10.18284789644013
+  },
+  "config": {
+   "threshold": 2.0,
+   "market": "total",
+   "n_boot": 4000,
+   "n_perm": 2000,
+   "seed": 20261021,
+   "buckets": [
+    "0.0",
+    "1.0",
+    "2.0",
+    "3.0",
+    "inf"
+   ],
+   "cluster": [
+    "season",
+    "week"
+   ],
+   "ci_level": 0.98,
+   "label": "NFL v2.1.0 total (holdout)"
+  }
+ },
+ "sweep": [],
+ "extra": {
+  "pred": "pred_nfl_v21.csv",
+  "seasons": [
+   2025,
+   2026
+  ],
+  "k": 5,
+  "alpha": 0.01,
+  "note": "clv_pts_ci95 holds the 98% two-sided interval: its lower end is the one-sided 99% bound"
+ },
+ "gate": {
+  "n_ok": true,
+  "lower_bound_ok": true,
+  "perm_ok": true,
+  "prob_ok": true,
+  "PASS": true
+ }
+}

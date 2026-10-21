@@ -9,7 +9,11 @@
    every season with its previous one (portal.js). collegiate-rosters.yml runs it weekly, and on a branch when
    the plan changes.
 
-     node collegiate/run.js [--today YYYY-MM-DD] [--skip-directory] [--only-backfill] [--force]
+     node collegiate/run.js [--today YYYY-MM-DD] [--skip-directory] [--only-backfill | --skip-backfill] [--force]
+
+   The weekly workflow runs --skip-backfill (registry, rosters, schedules,
+   ledger); the daily one --only-backfill (past seasons and box-score
+   slices, then the ledger), so neither nears a runner's time limit.
 
    --force reads the weekly sports even when they were read in the last six
    days (a plan change on its own does not re-read them).
@@ -72,7 +76,7 @@ async function run(o) {
   /* 3. backfills not yet done (rosters, or schedules with kind: "schedules") */
   const doneFile = path.join(DATA, 'backfill.json');
   const done = readJson(doneFile, {});
-  for (const b of plan.backfill || []) {
+  for (const b of o.skipBackfill ? [] : plan.backfill || []) {
     if (done[b.id] && done[b.id].complete) continue;
     const r = await (b.kind === 'schedules' ? SC : RO).collect({ polite, sports: [b.sport], seasons: range(b.seasons), today, division: plan.division, lanes, log: o.log });
     const hard = (r.misses_by_reason.HTTP || 0) + (r.misses_by_reason.SHRUNK || 0);
@@ -85,7 +89,7 @@ async function run(o) {
   }
 
   /* 3b. box scores for the schedules held: each item is read a per-host slice a run until nothing is left */
-  for (const b of plan.boxscores || []) {
+  for (const b of o.skipBackfill ? [] : plan.boxscores || []) {
     if (done[b.id] && done[b.id].complete) continue;
     const r = await BX.collect({ polite, sport: b.sport, seasons: range(b.seasons), today, division: plan.division, lanes, perHost: b.per_host || 100 });
     done[b.id] = { sport: b.sport, seasons: b.seasons, at: today, read_this_run: r.ok, left: r.left, misses_by_reason: r.misses_by_reason,
@@ -114,7 +118,7 @@ async function run(o) {
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const val = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
-  run({ today: val('--today'), skipDirectory: argv.includes('--skip-directory'), onlyBackfill: argv.includes('--only-backfill'), force: argv.includes('--force') })
+  run({ today: val('--today'), skipDirectory: argv.includes('--skip-directory'), onlyBackfill: argv.includes('--only-backfill'), skipBackfill: argv.includes('--skip-backfill'), force: argv.includes('--force') })
     .catch((e) => { console.error(e.stack || e); process.exit(1); });
 }
 module.exports = { run, range };
