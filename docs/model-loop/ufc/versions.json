@@ -1,0 +1,86 @@
+{
+ "schema": "edgedesk_model_loop_versions_v1",
+ "sport": "UFC",
+ "current": "1.1.0",
+ "versions": [
+  {
+   "version": "1.0.0",
+   "parent": null,
+   "config": {
+    "k": 64,
+    "k_new_mult": 1.0,
+    "new_bouts": 3,
+    "layoff_days": 365,
+    "layoff_regress": 0.25,
+    "scale": 400.0,
+    "calibration": "none"
+   },
+   "config_sha256": "a5e2c893272c05d137b002ce2b1619dea31db0cef419dae496b0ec7eec55f448",
+   "status": "SERVED (EXPERIMENTAL)",
+   "promoted_by": "preregistered-rule",
+   "promoted_at": "2026-10-21T04:09:11Z",
+   "reason": "Cleared the preregistered rule: clears every condition. Validation 2021-2024 log loss 0.67561 (coin flip 0.69315); 2025 holdout 0.66571. Outcome-graded only: no UFC closing prices are archived.",
+   "evidence": {
+    "validation": {
+     "n": 2225,
+     "logloss": 0.67561,
+     "brier": 0.24142,
+     "accuracy": 0.5685,
+     "vs_coin_flip": {
+      "n": 2225,
+      "mean_diff": -0.01754,
+      "t": -5.264,
+      "ci95": [
+       -0.02407,
+       -0.01103
+      ]
+     }
+    },
+    "holdout_2025": {
+     "n": 563,
+     "logloss": 0.66571,
+     "brier": 0.23657,
+     "accuracy": 0.5879,
+     "vs_coin_flip": {
+      "n": 563,
+      "mean_diff": -0.02743,
+      "t": -4.089,
+      "ci95": [
+       -0.04041,
+       -0.01463
+      ]
+     }
+    }
+   }
+  },
+  {
+   "version": "1.1.0",
+   "parent": "1.0.0",
+   "config": {
+    "k": 64,
+    "k_new_mult": 1.5,
+    "new_bouts": 3,
+    "layoff_days": 365,
+    "layoff_regress": 0.25,
+    "scale": 400.0,
+    "calibration": "none"
+   },
+   "config_sha256": "7aeca585b04434e178efa34de8566683781ce6fec4b2daa1a9c52c30a5c48b8a",
+   "status": "SERVED (EXPERIMENTAL)",
+   "promoted_by": "weekly-loop",
+   "promoted_at": "2026-10-21T04:09:13Z",
+   "reason": "weekly loop: candidate new_faster cleared the full-window rule",
+   "evidence": {
+    "delta": {
+     "logloss": -0.00158,
+     "brier": -0.00076,
+     "2025_logloss": -0.00463
+    },
+    "ci95": [
+     -0.00295,
+     -0.00033
+    ]
+   }
+  }
+ ]
+}

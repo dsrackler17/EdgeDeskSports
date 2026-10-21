@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_model_loop_ufc_current_v1",
- "generated_at": "2026-10-21T03:47:05Z",
+ "generated_at": "2026-10-21T04:09:13Z",
  "status": "EXPERIMENTAL",
  "data_status": {
   "status": "OK",
@@ -8,7 +8,513 @@
   "missing_results": []
  },
  "note": "Outcome-graded research only: no UFC closing prices are archived, so nothing here is compared with a market or claims value. A bout is priced the same whichever fighter is listed first.",
- "served": null,
- "bouts": [],
- "reason": "No version is served yet: the preregistered backtest has not run (it needs the 2014-2025 bouts, fetched by the first scheduled run), so no fight probability is published."
+ "served": {
+  "version": "1.1.0",
+  "promoted_at": "2026-10-21T04:09:13Z",
+  "reason": "weekly loop: candidate new_faster cleared the full-window rule"
+ },
+ "config_sha256": "7aeca585b04434e178efa34de8566683781ce6fec4b2daa1a9c52c30a5c48b8a",
+ "calibration_slopes": {},
+ "bouts": [
+  {
+   "bout_id": "401928047",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T14:00Z",
+   "weight_class": "Bantamweight",
+   "fighter_a": {
+    "id": "5264462",
+    "name": "Colby Thicknesse",
+    "ufc_bouts_in_data": 3
+   },
+   "fighter_b": {
+    "id": "5454811",
+    "name": "Asaf Chopurov",
+    "ufc_bouts_in_data": 0
+   },
+   "p_a": 0.5624,
+   "p_b": 0.4376,
+   "basis": "debut: priced as an average fighter"
+  },
+  {
+   "bout_id": "401930357",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T14:00Z",
+   "weight_class": "Middleweight",
+   "fighter_a": {
+    "id": "3960340",
+    "name": "Abubakar Vagaev",
+    "ufc_bouts_in_data": 1
+   },
+   "fighter_b": {
+    "id": "4687434",
+    "name": "Jacob Malkoun",
+    "ufc_bouts_in_data": 9
+   },
+   "p_a": 0.4004,
+   "p_b": 0.5996,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401930915",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T14:00Z",
+   "weight_class": "Featherweight",
+   "fighter_a": {
+    "id": "4881997",
+    "name": "Daniel Santos",
+    "ufc_bouts_in_data": 6
+   },
+   "fighter_b": {
+    "id": "5145682",
+    "name": "Bolaji Oki",
+    "ufc_bouts_in_data": 6
+   },
+   "p_a": 0.6046,
+   "p_b": 0.3954,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401930916",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T14:00Z",
+   "weight_class": "Lightweight",
+   "fighter_a": {
+    "id": "5145777",
+    "name": "Noah Gugnon",
+    "ufc_bouts_in_data": 1
+   },
+   "fighter_b": {
+    "id": "5212351",
+    "name": "Kody Steele",
+    "ufc_bouts_in_data": 3
+   },
+   "p_a": 0.5035,
+   "p_b": 0.4965,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401930917",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T14:00Z",
+   "weight_class": "W Strawweight",
+   "fighter_a": {
+    "id": "4239113",
+    "name": "Nicolle Caliari",
+    "ufc_bouts_in_data": 4
+   },
+   "fighter_b": {
+    "id": "5080935",
+    "name": "Iasmin Lucindo",
+    "ufc_bouts_in_data": 7
+   },
+   "p_a": 0.3443,
+   "p_b": 0.6557,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401911637",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T16:00Z",
+   "weight_class": "Light Heavyweight",
+   "fighter_a": {
+    "id": "4227265",
+    "name": "Azamat Murzakanov",
+    "ufc_bouts_in_data": 8
+   },
+   "fighter_b": {
+    "id": "4233039",
+    "name": "Dominick Reyes",
+    "ufc_bouts_in_data": 15
+   },
+   "p_a": 0.5178,
+   "p_b": 0.4822,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401911638",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T16:00Z",
+   "weight_class": "Middleweight",
+   "fighter_a": {
+    "id": "3077822",
+    "name": "Abus Magomedov",
+    "ufc_bouts_in_data": 8
+   },
+   "fighter_b": {
+    "id": "4694832",
+    "name": "Cam Rowston",
+    "ufc_bouts_in_data": 5
+   },
+   "p_a": 0.4773,
+   "p_b": 0.5227,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401911639",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T16:00Z",
+   "weight_class": "Light Heavyweight",
+   "fighter_a": {
+    "id": "3026263",
+    "name": "Nikita Krylov",
+    "ufc_bouts_in_data": 21
+   },
+   "fighter_b": {
+    "id": "5291025",
+    "name": "Abdul-Rakhman Yakhyaev",
+    "ufc_bouts_in_data": 4
+   },
+   "p_a": 0.3853,
+   "p_b": 0.6147,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401911640",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T16:00Z",
+   "weight_class": "Lightweight",
+   "fighter_a": {
+    "id": "3931156",
+    "name": "Grant Dawson",
+    "ufc_bouts_in_data": 16
+   },
+   "fighter_b": {
+    "id": "5092398",
+    "name": "Nurullo Aliev",
+    "ufc_bouts_in_data": 5
+   },
+   "p_a": 0.6078,
+   "p_b": 0.3922,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401911632",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T18:00Z",
+   "weight_class": "Featherweight",
+   "fighter_a": {
+    "id": "3949584",
+    "name": "Alexander Volkanovski",
+    "ufc_bouts_in_data": 18
+   },
+   "fighter_b": {
+    "id": "4029275",
+    "name": "Movsar Evloev",
+    "ufc_bouts_in_data": 10
+   },
+   "p_a": 0.4593,
+   "p_b": 0.5407,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401911633",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T18:00Z",
+   "weight_class": "Bantamweight",
+   "fighter_a": {
+    "id": "3948572",
+    "name": "Merab Dvalishvili",
+    "ufc_bouts_in_data": 17
+   },
+   "fighter_b": {
+    "id": "4293517",
+    "name": "Petr Yan",
+    "ufc_bouts_in_data": 16
+   },
+   "p_a": 0.5474,
+   "p_b": 0.4526,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401911634",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T18:00Z",
+   "weight_class": "Flyweight",
+   "fighter_a": {
+    "id": "4895691",
+    "name": "Ramazan Temirov",
+    "ufc_bouts_in_data": 3
+   },
+   "fighter_b": {
+    "id": "5147737",
+    "name": "Lone'er Kavanagh",
+    "ufc_bouts_in_data": 6
+   },
+   "p_a": 0.5565,
+   "p_b": 0.4435,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401911635",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T18:00Z",
+   "weight_class": "Heavyweight",
+   "fighter_a": {
+    "id": "2993650",
+    "name": "Alexander Volkov",
+    "ufc_bouts_in_data": 19
+   },
+   "fighter_b": {
+    "id": "4001837",
+    "name": "Rizvan Kuniev",
+    "ufc_bouts_in_data": 5
+   },
+   "p_a": 0.7057,
+   "p_b": 0.2943,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401929495",
+   "event_id": "600061267",
+   "event": "UFC 333: Volkanovski vs. Evloev",
+   "start": "2026-10-24T18:00Z",
+   "weight_class": "Featherweight",
+   "fighter_a": {
+    "id": "4199009",
+    "name": "Aaron Pico",
+    "ufc_bouts_in_data": 2
+   },
+   "fighter_b": {
+    "id": "5192314",
+    "name": "Losene Keita",
+    "ufc_bouts_in_data": 2
+   },
+   "p_a": 0.495,
+   "p_b": 0.505,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401914105",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-10-31T21:00Z",
+   "weight_class": "W Flyweight",
+   "fighter_a": {
+    "id": "4418809",
+    "name": "Tainara Lisboa",
+    "ufc_bouts_in_data": 4
+   },
+   "fighter_b": {
+    "id": "5130185",
+    "name": "Lucia Szabov\u00e1",
+    "ufc_bouts_in_data": 0
+   },
+   "p_a": 0.4839,
+   "p_b": 0.5161,
+   "basis": "debut: priced as an average fighter"
+  },
+  {
+   "bout_id": "401914106",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-10-31T21:00Z",
+   "weight_class": "Middleweight",
+   "fighter_a": {
+    "id": "4687604",
+    "name": "Joe Kropschot",
+    "ufc_bouts_in_data": 1
+   },
+   "fighter_b": {
+    "id": "5134399",
+    "name": "Nick Klein",
+    "ufc_bouts_in_data": 3
+   },
+   "p_a": 0.6139,
+   "p_b": 0.3861,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401928105",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-10-31T21:00Z",
+   "weight_class": "W Strawweight",
+   "fighter_a": {
+    "id": "4816066",
+    "name": "Piera Rodriguez",
+    "ufc_bouts_in_data": 8
+   },
+   "fighter_b": {
+    "id": "5139556",
+    "name": "Talita Alencar",
+    "ufc_bouts_in_data": 6
+   },
+   "p_a": 0.5528,
+   "p_b": 0.4472,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401928106",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-10-31T21:00Z",
+   "weight_class": "Welterweight",
+   "fighter_a": {
+    "id": "5085010",
+    "name": "Theodor Berggren",
+    "ufc_bouts_in_data": 1
+   },
+   "fighter_b": {
+    "id": "5289853",
+    "name": "Rodrigo Sezinando",
+    "ufc_bouts_in_data": 1
+   },
+   "p_a": 0.5005,
+   "p_b": 0.4995,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401928108",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-10-31T21:00Z",
+   "weight_class": "Middleweight",
+   "fighter_a": {
+    "id": "4697476",
+    "name": "Andre Petroski",
+    "ufc_bouts_in_data": 14
+   },
+   "fighter_b": {
+    "id": "5123963",
+    "name": "Azamat Bekoev",
+    "ufc_bouts_in_data": 4
+   },
+   "p_a": 0.5194,
+   "p_b": 0.4806,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401928109",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-10-31T21:00Z",
+   "weight_class": "Featherweight",
+   "fighter_a": {
+    "id": "3955577",
+    "name": "Julian Erosa",
+    "ufc_bouts_in_data": 19
+   },
+   "fighter_b": {
+    "id": "5068724",
+    "name": "JeongYeong Lee",
+    "ufc_bouts_in_data": 4
+   },
+   "p_a": 0.577,
+   "p_b": 0.423,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401928110",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-10-31T21:00Z",
+   "weight_class": "Featherweight",
+   "fighter_a": {
+    "id": "4393818",
+    "name": "Gaston Bola\u00f1os",
+    "ufc_bouts_in_data": 5
+   },
+   "fighter_b": {
+    "id": "5060394",
+    "name": "Francis Marshall",
+    "ufc_bouts_in_data": 8
+   },
+   "p_a": 0.46,
+   "p_b": 0.54,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401921310",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-11-01T00:00Z",
+   "weight_class": "Lightweight",
+   "fighter_a": {
+    "id": "3028863",
+    "name": "Renato Moicano",
+    "ufc_bouts_in_data": 20
+   },
+   "fighter_b": {
+    "id": "5144007",
+    "name": "Tom Nolan",
+    "ufc_bouts_in_data": 7
+   },
+   "p_a": 0.5166,
+   "p_b": 0.4834,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401928103",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-11-01T00:00Z",
+   "weight_class": "Welterweight",
+   "fighter_a": {
+    "id": "3146349",
+    "name": "Carlos Leal",
+    "ufc_bouts_in_data": 4
+   },
+   "fighter_b": {
+    "id": "3960071",
+    "name": "Randy Brown",
+    "ufc_bouts_in_data": 22
+   },
+   "p_a": 0.3512,
+   "p_b": 0.6488,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401928104",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-11-01T00:00Z",
+   "weight_class": "W Bantamweight",
+   "fighter_a": {
+    "id": "3154898",
+    "name": "Yana Santos",
+    "ufc_bouts_in_data": 12
+   },
+   "fighter_b": {
+    "id": "5110469",
+    "name": "Luana Santos",
+    "ufc_bouts_in_data": 7
+   },
+   "p_a": 0.365,
+   "p_b": 0.635,
+   "basis": "Elo from every earlier UFC bout in the data"
+  },
+  {
+   "bout_id": "401928107",
+   "event_id": "600061420",
+   "event": "UFC Fight Night: Moicano vs. Nolan",
+   "start": "2026-11-01T00:00Z",
+   "weight_class": "Welterweight",
+   "fighter_a": {
+    "id": "4629138",
+    "name": "Jean-Paul Lebosnoyani",
+    "ufc_bouts_in_data": 3
+   },
+   "fighter_b": {
+    "id": "5350562",
+    "name": "Farman Hasanov",
+    "ufc_bouts_in_data": 1
+   },
+   "p_a": 0.6498,
+   "p_b": 0.3502,
+   "basis": "Elo from every earlier UFC bout in the data"
+  }
+ ]
 }
