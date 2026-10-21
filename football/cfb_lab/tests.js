@@ -454,10 +454,59 @@ function q(o) {
   const sm = lab.comparison.submodels.rows.map((r) => r.name);
   chk('submodel scoreboard lists components and ensembles', sm.some((n) => /C_ridge/.test(n)) && sm.some((n) => /ensemble/.test(n)));
 
-  /* ═══ 10. real adapters load (the published files) ═══════════════════ */
+  /* ═══ 10. the model loop's CFB model (Loop v2), read from what it publishes ═ */
+  {
+    const dist = { sigma: 16.5, mult: [0.001, 0.98, 0.79, 2.79, 1.01, 0.77, 0.96, 2.53, 0.8, 0.37, 1.43], kmax: 100 };
+    const card = (id, kick, margin, pHome, extra) => Object.assign({ game_id: id, week: 9, home: 'Home ' + id, away: 'Away ' + id, home_id: 1, away_id: 2, neutral_site: false,
+      kickoff_utc: kick, fair_home_margin: margin, fair_total: 50, home_win_prob: pHome,
+      components: [{ key: 'home_field', label: 'Home field', points: 2.6 }, { key: 'qb', label: 'Quarterback', points: margin - 2.6 }, { key: 'rest', label: 'Rest days', points: 0 }] }, extra || {});
+    const cur = { schema: 'edgedesk_model_loop_cfb_current_v1', model_version: '2.0.0', generated_at: '2026-10-21T03:37:28Z', season: 2026, config_sha256: 'af284333aaaabbbbcccc', distribution: dist,
+      games: [card('played', '2026-10-20T23:00:00Z', 11, 0.75), card('ahead', '2026-10-24T19:30:00Z', 7.4, 0.66), card('nopx', '2026-10-24T19:30:00Z', null, null)] };
+    const a = M.loopAdapter({ loopCurrent: cur, slate: { games: [] } });
+    chk('Loop v2: a card made at or after kickoff is never offered as a pregame number', !a.projections.has('played') && a.skipped.some((x) => x.game_id === 'played' && /after kickoff/.test(x.reason)), a.skipped);
+    chk('Loop v2: a card without a margin is skipped, not guessed', !a.projections.has('nopx') && a.projections.size === 1);
+    const pj = a.projections.get('ahead'), K = M.keyNumberDist(dist), pm = K.pmf(7.4), mo = K.moments(pm);
+    chk('Loop v2: one lab identity per exact loop version (the guard pins versions), the config in calibration_version',
+      pj.model_version === 'edgedesk_cfb_loop_v2.0.0' && pj.model_label === 'Loop v2.0.0' && pj.calibration_version === 'model_loop:2.0.0:af284333aaaa' && pj.projection_computed_at === '2026-10-21T03:37:28.000Z', pj.calibration_version);
+    chk('Loop v2: the published distribution is centred on the margin (mean = margin)', Math.abs(mo.mean - 7.4) < 1e-9 && Math.abs(pm.reduce((x, y) => x + y, 0) - 1) < 1e-12);
+    const iv = pj.pure.intervals;
+    chk('Loop v2: 50/80/95 intervals nest and are centred on the margin', iv[50][0] > iv[80][0] && iv[80][0] > iv[95][0] && Math.abs((iv[80][0] + iv[80][1]) / 2 - 7.4) < 1e-3);
+    const d1 = pj.decide({ current_spread: -3 }), d2 = pj.decide({ current_spread: -6.5 }), d0 = pj.decide(null);
+    chk('Loop v2: held to the same record lean rule as V1 (>= 2 pts), with its own cover probability',
+      d1.status === 'LEAN' && d1.side === 'HOME' && d1.cover_probability > 0.5 && d1.decision_source === L.RULES.v1_decision
+        && d2.status === 'PASS' && d0.status === 'PASS' && d0.cover_probability === null && d1.bet_enabled === false, [d1, d2]);
+    const pw = pm.reduce((x, y, i) => x + (i - K.kmax > 0 ? y : 0), 0), pl = pm.reduce((x, y, i) => x + (i - K.kmax < 0 ? y : 0), 0);
+    chk('Loop v2: the cover probability at a pick\'em line is the win probability the distribution implies', Math.abs(K.coverHome(7.4, 0, pm) - pw / (pw + pl)) < 1e-12);
+    const v21 = M.loopAdapter({ loopCurrent: Object.assign({}, cur, { model_version: '2.1.0' }), slate: { games: [] } });
+    const vbad = M.loopAdapter({ loopCurrent: Object.assign({}, cur, { model_version: 'latest' }), slate: { games: [] } });
+    chk('Loop v2: a promoted loop version is a new lab identity; a non-version is never captured',
+      v21.model_version === 'edgedesk_cfb_loop_v2.1.0' && v21.projections.size === 1 && vbad.projections.size === 0 && /exact X\.Y\.Z/.test(vbad.skipped[0].reason));
+    /* the real published card file reproduces the loop's own 80% range */
+    const real = M.readJson(path.join(G.REPO, 'football', 'cfb', 'model_loop', 'current.json'));
+    if (real && Array.isArray(real.games) && real.distribution) {
+      const ra = M.loopAdapter({ loopCurrent: Object.assign({}, real, { generated_at: '2000-01-01T00:00:00Z' }), slate: { games: [] } });
+      let worst = 0, n = 0;
+      real.games.forEach((g) => { const p = ra.projections.get(String(g.game_id)); if (!p || !g.range80) return; n++; worst = Math.max(worst, Math.abs((p.pure.intervals[80][1] - p.pure.intervals[80][0]) / 2 - g.range80.half_width)); });
+      chk('Loop v2: the port reproduces every published 80% half-width (cards round to 0.01)', n > 0 && worst <= 0.011, { n, worst });
+    }
+  }
+  {
+    const d = tmp(), s = storeIn(d);
+    GOV.seed(s);
+    const ev = GOV.register(s, 'x_loop', 'X', 'challenger', 'loop', 'a reason on the record', 'tester', { at: '2026-10-21T00:00:00.000Z' });
+    const audit = s.gov('audit_log').filter((e) => e.subject === 'x_loop' || e.subject === 'config.models.x_loop');
+    chk('register: a new model enters as challenger, with ROLE_CHANGED and RULE_CHANGED on the audit log',
+      ev.role === 'challenger' && GOV.currentRoles(s.gov('model_roles')).x_loop.role === 'challenger' && audit.map((e) => e.event_type).sort().join() === 'ROLE_CHANGED,RULE_CHANGED');
+    const refuses = (fn) => { try { fn(); return false; } catch (e) { return true; } };
+    chk('register: never as champion, never twice, never without a reason and an actor',
+      refuses(() => GOV.register(s, 'y', 'Y', 'champion', 'loop', 'r', 'a')) && refuses(() => GOV.register(s, 'x_loop', 'X', 'candidate', 'loop', 'r', 'a'))
+        && refuses(() => GOV.register(s, 'z', 'Z', 'candidate', 'loop', '', 'a')) && GOV.champion(s.gov('model_roles')) === 'edgedesk_cfb_p4_v1.0.0');
+  }
+
+  /* ═══ 11. real adapters load (the published files) ═══════════════════ */
   try {
-    const ms = M.loadModels(['v1', 'v2.1', 'c001']);
-    chk('adapters load V1, V2.1 and candidate 001', ms.length === 3 && ms.every((m) => m.model_version));
+    const ms = M.loadModels(['v1', 'v2.1', 'c001', 'loop']);
+    chk('adapters load V1, V2.1, candidate 001 and Loop v2', ms.length === 4 && ms.every((m) => m.model_version));
     const any = ms.find((m) => m.projections.size);
     if (any) { const p = [...any.projections.values()][0]; chk('an adapter projection has a margin and a kickoff', U.isNum(p.pure.margin) && !!p.game.kickoff); }
   } catch (e) { chk('adapters load', false, e.message); }

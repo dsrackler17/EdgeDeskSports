@@ -13,6 +13,12 @@
      V2      edgedesk_cfb_v2.0.0      candidate 001, frozen; its projection rides
              in current.json's shadow block and is turned into a distribution by
              the candidate's own hash-locked params in an isolated engine.
+     Loop    edgedesk_cfb_loop_v<X.Y.Z>   football/cfb/model_loop/current.json,
+             the model loop's served CFB model (model_loop/adapters/cfb), priced
+             from the distribution it publishes. One lab identity per exact loop
+             version (the promotion guard pins exact versions, never a line);
+             a new loop version is captured under its own name and joins the
+             promotion evaluation once it is registered.
 
    An adapter returns, per game, the pure projection, the model state and a
    decide(market, now) function. It never reads a sportsbook number for the
@@ -289,6 +295,126 @@ function v2Adapter(which, opts) {
   return { model_version: mv, label, projections: out, generated_at: cur && cur.generated_at, unavailable };
 }
 
+/* ------------------------------------------------------------ Loop v2 */
+/* The loop's published margin distribution (model_loop/core/distribution.py
+   KeyNumberMargin): P(M = k) proportional to exp(-((k - mu') / sigma)^2 / 2) x
+   mult[|k|] on k = -kmax..kmax, mu' solved (Newton) so the mean is the margin.
+   Ported, not re-fitted: every number below is the loop's own. */
+function keyNumberDist(D) {
+  const kmax = D.kmax, sigma = D.sigma, n = 2 * kmax + 1, mult = new Array(kmax + 1);
+  for (let i = 0; i <= kmax; i++) mult[i] = i < D.mult.length ? D.mult[i] : 1;
+  function raw(shift) {
+    const p = new Array(n); let s = 0;
+    for (let i = 0; i < n; i++) { const k = i - kmax, z = (k - shift) / sigma; p[i] = Math.exp(-0.5 * z * z) * mult[Math.abs(k)]; s += p[i]; }
+    for (let i = 0; i < n; i++) p[i] /= s;
+    return p;
+  }
+  function moments(p) {
+    let m = 0, v = 0;
+    for (let i = 0; i < n; i++) m += p[i] * (i - kmax);
+    for (let i = 0; i < n; i++) v += p[i] * (i - kmax - m) * (i - kmax - m);
+    return { mean: m, sd: Math.sqrt(v) };
+  }
+  function pmf(mu) {
+    const s2 = sigma * sigma; let shift = mu;
+    for (let it = 0; it < 50; it++) {
+      const mo = moments(raw(shift)), err = mu - mo.mean;
+      shift += err * s2 / Math.max(mo.sd * mo.sd, 1e-6 * s2);
+      if (Math.abs(err) < 1e-10) break;
+    }
+    return raw(shift);
+  }
+  /* smallest h with P(|M - mu| <= h) >= mass, whole margins spread evenly over [k - 1/2, k + 1/2) */
+  function centralHalfwidth(mu, mass, p) {
+    p = p || pmf(mu);
+    let lo = 0, hi = kmax;
+    for (let it = 0; it < 50; it++) {
+      const h = 0.5 * (lo + hi), a = mu - h, b = mu + h; let cov = 0;
+      for (let i = 0; i < n; i++) { const k = i - kmax, w = Math.min(k + 0.5, b) - Math.max(k - 0.5, a); if (w > 0) cov += p[i] * Math.min(w, 1); }
+      if (cov >= mass) hi = h; else lo = h;
+    }
+    return hi;
+  }
+  /* P(the home side covers home_line), a push removed: margin + line > 0 */
+  function coverHome(mu, homeLine, p) {
+    p = p || pmf(mu);
+    let win = 0, push = 0;
+    for (let i = 0; i < n; i++) { const x = i - kmax + homeLine; if (x > 1e-9) win += p[i]; else if (Math.abs(x) <= 1e-9) push += p[i]; }
+    return push < 1 ? win / (1 - push) : null;
+  }
+  return { pmf, moments, centralHalfwidth, coverHome, kmax };
+}
+
+function loopAdapter(opts) {
+  opts = opts || {};
+  const file = path.join(G.REPO, 'football', 'cfb', 'model_loop', 'current.json');
+  const cur = opts.loopCurrent || readJson(file);
+  const slate = opts.slate || readJson(path.join(G.REPO, 'football', 'fbs', 'slate.json'));
+  const slateById = new Map(((slate && slate.games) || []).map((g) => [String(g.game_id), g]));
+  const out = new Map(), skipped = [];
+  const D = cur && cur.distribution;
+  const ver = cur && /^\d+\.\d+\.\d+$/.test(String(cur.model_version)) ? String(cur.model_version) : null;
+  const mv = ver ? 'edgedesk_cfb_loop_v' + ver : null, label = ver ? 'Loop v' + ver : 'Loop';
+  if (!cur || !Array.isArray(cur.games) || !D || !U.isNum(D.sigma) || !Array.isArray(D.mult) || !U.isNum(D.kmax) || !ver) {
+    return { model_version: mv, label, projections: out, generated_at: cur && cur.generated_at, skipped: [{ reason: ver || !cur ? 'no readable model loop card file' : 'model loop version ' + cur.model_version + ' is not an exact X.Y.Z version' }] };
+  }
+  const K = keyNumberDist(D);
+  const calV = 'model_loop:' + cur.model_version + ':' + String(cur.config_sha256 || '').slice(0, 12);
+  const pHash = hashObj({ distribution: D, coefficients: cur.coefficients || null, config_sha256: cur.config_sha256 || null });
+  const madeAt = U.ms(cur.generated_at);
+  cur.games.forEach((c) => {
+    const gid = String(c.game_id), kick = U.ms(c.kickoff_utc);
+    /* a card made at or after kickoff is not a pregame number: never offered */
+    if (madeAt === null || kick === null || !(madeAt < kick)) { skipped.push({ game_id: gid, reason: 'card made at or after kickoff' }); return; }
+    const margin = U.num(c.fair_home_margin), pHome = U.num(c.home_win_prob);
+    if (!U.isNum(margin) || !U.isNum(pHome)) { skipped.push({ game_id: gid, reason: 'no fair margin or win probability' }); return; }
+    const total = U.num(c.fair_total), p = K.pmf(margin), mo = K.moments(p);
+    const iv = {};
+    [[50, 0.5], [80, 0.8], [95, 0.95]].forEach(([k, mass]) => { const h = K.centralHalfwidth(margin, mass, p); iv[k] = [U.r(margin - h, 3), U.r(margin + h, 3)]; });
+    const comps = {};
+    (c.components || []).forEach((x) => { if (x && x.key && U.isNum(x.points)) comps[x.key] = x.points; });
+    const top = (c.components || []).filter((x) => x && U.isNum(x.points) && x.points !== 0).sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
+    const why = top.slice(0, 2).map((x) => x.label + ' ' + (x.points > 0 ? '+' : '') + U.r(x.points, 2) + ' pts (' + (x.points > 0 ? c.home : c.away) + ')');
+    const g = slateById.get(gid) || null;
+    out.set(gid, {
+      model_version: mv, model_label: label, engine_id: 'edgedesk_model_loop_cfb', source: 'football/cfb/model_loop/current.json',
+      projection_computed_at: U.iso(cur.generated_at), feature_ts: U.iso(cur.generated_at), feature_version: cur.schema || null,
+      calibration_version: calV, ensemble_version: calV, params_hash: pHash,
+      game: { game_id: gid, season: U.num(cur.season), week: U.num(c.week), season_type: 'regular', home: c.home, away: c.away,
+        home_id: c.home_id != null ? String(c.home_id) : null, away_id: c.away_id != null ? String(c.away_id) : null,
+        neutral_site: !!c.neutral_site, kickoff: U.iso(c.kickoff_utc) },
+      pure: { margin, total: U.isNum(total) ? total : null, p_home: pHome, sigma: U.r(mo.sd, 3), t_df: null, intervals: iv,
+        home_pts: U.isNum(total) ? (total + margin) / 2 : null, away_pts: U.isNum(total) ? (total - margin) / 2 : null,
+        confidence_raw: null, ens_sd: null },
+      components: comps,
+      state: { data_completeness: g ? U.num(g.data_completeness) : null, pbp_completeness: g ? teamDataCoverage(g) : null },
+      explain: { primary_edge: why[0] || null, secondary_edge: why[1] || null, primary_uncertainty: null,
+        disagreement_summary: c.disagreement ? String(c.disagreement.reason || c.disagreement.label || 'flagged against the reference line').slice(0, 240) : null },
+      slateGame: g,
+      inputs: { loop_generated_at: cur.generated_at, loop_sha256: opts.loopHash || hashFile(file), loop_version: cur.model_version },
+      decide(market) {
+        /* the same record lean rule V1 is held to, so the two decision layers
+           are compared like for like; the cover probability is the loop's own */
+        if (!market || !U.isNum(market.current_spread)) {
+          return { status: 'PASS', side: null, decision_source: L.RULES.v1_decision, reason: 'no market line to compare',
+            cover_probability: null, break_even_probability: null, estimated_ev: null, edge_quality: null,
+            betting_reliability: null, threshold_distance: null, bet_enabled: false };
+        }
+        const gap = margin - L.conv.bookToMargin(market.current_spread);
+        const side = gap > 0 ? 'HOME' : (gap < 0 ? 'AWAY' : null);
+        const lean = Math.abs(gap) >= L.constants.V1_LEAN_GAP;
+        const ch = K.coverHome(margin, market.current_spread, p);
+        return { status: lean ? 'LEAN' : 'PASS', side, decision_source: L.RULES.v1_decision,
+          reason: lean ? label + ' differs from the market by ' + U.r(Math.abs(gap), 1) + ' pts (record lean rule: >= ' + L.constants.V1_LEAN_GAP + ')'
+            : label + ' within ' + L.constants.V1_LEAN_GAP + ' pts of the market',
+          cover_probability: side && U.isNum(ch) ? U.r(side === 'HOME' ? ch : 1 - ch, 5) : null, break_even_probability: null, estimated_ev: null,
+          edge_quality: null, betting_reliability: null, threshold_distance: null, bet_enabled: false };
+      },
+    });
+  });
+  return { model_version: mv, label, projections: out, generated_at: cur.generated_at, skipped };
+}
+
 /* Submodel columns (METRICS §13 / SCHEMA): the V2 components by what they are. */
 const SUBMODEL_MAP = { A_adj_eff: 'efficiency_margin', C_ridge: 'bayesian_margin', E_drive: 'drive_margin', B_elo: 'dynamic_rating_margin', D_gbm: 'matchup_ml_margin' };
 
@@ -297,7 +423,8 @@ function loadModels(which, opts) {
   if (which.includes('v1')) out.push(v1Adapter(opts));
   if (which.includes('v2.1')) out.push(v2Adapter('current', opts));
   if (which.includes('c001')) out.push(v2Adapter('candidate_001', opts));
+  if (which.includes('loop')) out.push(loopAdapter(opts));
   return out;
 }
 
-module.exports = { loadEngine, v1Adapter, v2Adapter, loadModels, dataQuality, qbCertainty, injuryCertainty, teamDataCoverage, SUBMODEL_MAP, hashFile, hashObj, readJson, ensembleVersion };
+module.exports = { loadEngine, v1Adapter, v2Adapter, loopAdapter, keyNumberDist, loadModels, dataQuality, qbCertainty, injuryCertainty, teamDataCoverage, SUBMODEL_MAP, hashFile, hashObj, readJson, ensembleVersion };
