@@ -671,6 +671,45 @@ read for the W−2 rules.
 * It sits beside the W−2 rule on the same games.
 * The big-edge thresholds are also reported on the 2025–26 holdout bets already scored.
 
+### Step 4 first look (2026-10-21; never gating; `docs/model-loop/clv_early/results/step4_first_look.json`)
+
+**Timing.** Of 234 2026 CFB games with a DraftKings early capture, **200** have provable timing:
+the early quote was observed after both teams' previous games had kicked off + 4 h.
+
+**Results on those 200 games (edge ≥ 3, −110 assumed: the captures carry no prices):**
+
+| market | W−1 inputs | W−2 inputs |
+|---|---|---|
+| spread | **+0.811 pts** [+0.39, +1.59], 61 bets, +1.94%, perm p 0.004 | +0.311 [+0.14, +0.69], 90 bets, +0.66%, p 0.10 |
+| total | **+0.929 pts** [+0.55, +1.27], 70 bets, +2.28%, p 0.002 | +0.747 [+0.18, +1.25], 83 bets, +1.82%, p 0.002 |
+
+Where the line was demonstrably posted after last week's games, the Loop with last week's
+information still shows the larger CLV (spreads about 2.6×). This is the first direct evidence that
+the W−1 edge is real rather than a lookahead artefact. It rests on 61–70 bets from four weeks
+already read, so it decides nothing. The forward gate (EDGE-L1/L2) does.
+
+**Big edges on the 2025–26 holdout (descriptive):**
+
+| rule | threshold | bets | CLV pts [CI] | ROI |
+|---|---|---|---|---|
+| CFB totals | ≥ 3 | 426 | +0.418 [+0.20, +0.63] | −2.60% |
+| CFB totals | **≥ 5** | 169 | **+0.692** [+0.44, +0.93] | **−1.32%** |
+| CFB spreads | ≥ 3 | 460 | +0.259 [+0.11, +0.42] | −3.33% |
+| CFB spreads | ≥ 5 | 220 | +0.427 [+0.14, +0.70] | −2.56% |
+| NFL totals | ≥ 2 | 114 | +0.504 [+0.28, +0.75] | −2.14% |
+| NFL totals | ≥ 3 | 65 | +0.631 [+0.35, +0.95] | −1.70% |
+| NFL totals | ≥ 4 | 33 | +0.697 [+0.19, +1.30] | −1.10% |
+
+Larger edges carry more CLV and lose less at −110, but none is positive at −110 on the holdout.
+
+**Live status at registration.**
+* All eight EDGE entries run in the tracker with 0 graded bets so far: the forward variants count
+  only games kicking off after 2026-10-21T17:18:50Z.
+* The CFB Lab's derived OPEN/CLOSE lines (`football/cfb_lab/ledger/2026/lines.jsonl`) currently
+  run through week 7. CFB grading therefore lags by the Lab's settlement cadence.
+* The Lab began recording the Loop at its OPEN checkpoint on 2026-10-21 (EXP-005), so EDGE-L1/L2
+  accrue from week 9.
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on

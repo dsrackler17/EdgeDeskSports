@@ -63,6 +63,16 @@ class TestLive(unittest.TestCase):
         x = L.candidate_frame(c, f)
         self.assertEqual(list(x.dropna(subset=["model_line"]).game_id), ["g1"])
 
+    def test_forward_candidates_ignore_games_before_their_preregistration(self):
+        f = {"cfb": pd.DataFrame({"game_id": ["old", "new"], "season": 2026, "cluster": "c", "open_line": [3.0, 1.0],
+                                  "close_line": [4.0, 1.5], "v2": [9.0, 9.0],
+                                  "start_utc": ["2026-10-17T16:00:00Z", "2026-10-24T16:00:00Z"]})}
+        c = {"kind": "points", "market": "spread", "rule": "base", "input": "v2", "frame": "cfb", "threshold": 3.0,
+             "track_from": "2026-10-21T17:18:50Z"}
+        self.assertEqual(list(L.candidate_frame(c, f).game_id), ["new"])
+        c.pop("track_from")
+        self.assertEqual(list(L.candidate_frame(c, f).game_id), ["old", "new"])
+
     def test_missing_frame_is_empty(self):
         c = {"kind": "price", "market": "moneyline", "rule": "base", "input": "p", "frame": None, "threshold": 0.02}
         self.assertTrue(L.candidate_frame(c, self.frames()).empty)

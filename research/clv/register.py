@@ -142,6 +142,35 @@ def edge_candidates(sig):
     for c in C:
         c["status"] = "CANDIDATE (CLV live tracking)" if c["challenger"] else "PRODUCTION (CLV live tracking)"
         c["holdout"] = edge_holdout(c["study_id"])
+    return C + edge_forward(sig)
+
+
+EDGE_FORWARD_FROM = "2026-10-21T17:18:50Z"     # the step-4 preregistration commit (research/clv_early_week/EXPERIMENTS.md)
+
+
+def edge_forward(sig):
+    """Step 4's forward variants: graded only on games that kick off after their
+    preregistration; judged at 100 bets or the end of the 2026 season (k = 5)."""
+    pts = lambda s: {"type": "normal", "sigma": round(float(s), 4)}
+    gate = ("forward gate (research/clv_early_week/EXPERIMENTS.md, step 4): at 100 graded bets or season's end, "
+            "PASS = mean clv_pts > 0, clv_prob one-sided p <= 0.01 (0.05/5), n >= 100")
+    C = [
+        {"id": "EDGE-L1", "sport": "cfb", "market": "spread", "kind": "points", "rule": "base", "input": "v2", "threshold": 3.0,
+         "dist": pts(sig["cfb_spread"]), "frame": "cfb",
+         "label": "step 4 L1: CFB loop v2.0.0 at the Lab's OPEN checkpoint (week W-1 inputs), edge >= 3, timestamped opener"},
+        {"id": "EDGE-L2", "sport": "cfb", "market": "total", "kind": "points", "rule": "base", "input": "v2_total", "threshold": 3.0,
+         "dist": pts(sig["cfb_total"]), "frame": "cfb",
+         "label": "step 4 L2: CFB loop v2.0.0 total at the Lab's OPEN checkpoint, edge >= 3, timestamped opener"},
+        {"id": "EDGE-B1", "sport": "cfb", "market": "total", "kind": "points", "rule": "base", "input": "v2_w2_total", "threshold": 5.0,
+         "dist": pts(sig["cfb_total"]), "frame": "cfb", "label": "step 4 B1: H-5 (CFB loop W-2 total) at edge >= 5"},
+        {"id": "EDGE-B2", "sport": "cfb", "market": "spread", "kind": "points", "rule": "base", "input": "v2_w2", "threshold": 5.0,
+         "dist": pts(sig["cfb_spread"]), "frame": "cfb", "label": "step 4 B2: H-4 (CFB loop W-2 spread) at edge >= 5"},
+        {"id": "EDGE-B3", "sport": "nfl", "market": "total", "kind": "points", "rule": "base", "input": "v21_total", "threshold": 3.0,
+         "dist": pts(sig["nfl_total"]), "frame": "nfl", "label": "step 4 B3: H-3 (NFL v2.1.0 total) at edge >= 3"},
+    ]
+    for c in C:
+        c.update({"challenger": True, "status": "CANDIDATE (CLV live tracking, forward test)", "track_from": EDGE_FORWARD_FROM,
+                  "gate": gate, "holdout": None})
     return C
 
 

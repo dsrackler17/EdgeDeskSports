@@ -214,7 +214,8 @@ def cfb_frame():
         return p
     piv = p.pivot_table(index="game_id", columns="model", values=["margin", "total"], aggfunc="first")
     piv.columns = [f"{a}|{b}" for a, b in piv.columns]
-    meta = p.drop_duplicates("game_id").set_index("game_id")[["week", "season_type", "home", "away"]]
+    meta = p.drop_duplicates("game_id").set_index("game_id")[["week", "season_type", "home", "away", "kickoff_ts"]]
+    meta = meta.rename(columns={"kickoff_ts": "start_utc"})
     d = meta.join(piv)
     d["p4"] = d.get("margin|edgedesk_cfb_p4_v1.0.0")
     d["p4_total"] = d.get("total|edgedesk_cfb_p4_v1.0.0")
@@ -324,7 +325,7 @@ def nfl_frame():
             continue
         cap = _ts(r.captured_at)
         rec = {"game_id": r.game_id, "week": r.week, "v21": r.v21, "v21_total": r.v21_total, "loop": r.loop,
-               "loop_total": r.loop_total, "captured_at": r.captured_at}
+               "loop_total": r.loop_total, "captured_at": r.captured_at, "start_utc": getattr(r, "start_utc", None)}
         for mk, cols in (("spread", ("home_line", "price_home", "price_away")), ("total", ("total_points", "price_over", "price_under"))):
             x = g[g.market_type == mk]
             if x.empty:
@@ -410,6 +411,10 @@ def candidate_frame(c, frames):
     x = d.copy()
     if "late" in x:
         x = x[~x.late.fillna(True)]
+    if c.get("track_from"):
+        # a forward test: only games that kick off after its preregistration count
+        start = _ts(x["start_utc"]) if "start_utc" in x else pd.Series(pd.NaT, index=x.index)
+        x = x[start >= _ts(c["track_from"])]
     if c["kind"] == "points":
         if c["market"] == "total":
             x["open_line"], x["close_line"] = x.open_total, x.close_total
