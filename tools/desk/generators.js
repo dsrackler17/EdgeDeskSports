@@ -287,9 +287,21 @@ function disagreement(S, o) {
 
     const gr = ['games', { find: [['league', '=', 'nfl'], ['game_id', '=', gid]] }];
     const drivers = B.v(Q('game_research', gr.concat(['drivers', 'rows'])));
-    if (drivers && drivers.length) {
+    /* the components must be the ones inside THIS number: the research
+       snapshot and the slate are rebuilt on different clocks, so a snapshot
+       built before the slate's last model change explains a different line */
+    const grMargin = B.v(Q('game_research', gr.concat(['model', 'home_margin'])));
+    const slMargin = B.v(Q('nfl_slate', ['games', { find: [['game_id', '=', gid]] }, 'model_home_margin']));
+    const sameBuild = typeof grMargin === 'number' && typeof slMargin === 'number' && Math.abs(grMargin - slMargin) < 0.006;
+    /* the card lists all seven rows; a row worth 0 points favours neither
+       side and adds nothing to the sum, so it is left out of the table
+       (indices stay the card's own, so every fact traces to its row) */
+    const nonzero = (drivers || []).map((d, j) => j).filter((j) => drivers[j] && drivers[j].points !== 0);
+    if (nonzero.length && !sameBuild) {
+      B.p('My research snapshot for this game was built from an earlier number than the one above, so I am not listing its components until it catches up.');
+    } else if (nonzero.length) {
       B.h3('What is in my number');
-      B.table(['Component', 'Points', 'Favors'], drivers.map((d, j) => [
+      B.table(['Component', 'Points', 'Favors'], nonzero.map((j) => [
         B.t('drv_' + gid + '_' + j, Q('game_research', gr.concat(['drivers', 'rows', j, 'label']))),
         B.n('drvp_' + gid + '_' + j, Q('game_research', gr.concat(['drivers', 'rows', j, 'points'])), 'num2'),
         B.t('drvf_' + gid + '_' + j, Q('game_research', gr.concat(['drivers', 'rows', j, 'favors_team'])))
@@ -330,8 +342,16 @@ function disagreement(S, o) {
     + ' points off the market this season, the close moved my way by ' + lean('avg', 'pts2') + ' points on average across ' + lean('n')
     + ' games, and ' + lean('beat_pct', 'pct1') + ' of them beat the close.';
   B.p(recLine + ' Against the spread those games went ' + leanAts('w') + '-' + leanAts('l') + (la.p ? '-' + leanAts('p') : '') + ' (' + leanAts('pct', 'pct1') + ').');
-  B.p('My pricing validation puts the NFL spread in the ' + B.t('spread_tier', Q('nfl_slate', ['pricing', 'tier'])) + ' tier at gaps of '
-    + B.n('required_edge', Q('nfl_slate', ['pricing', 'required_edge_points']), 'num1') + ' points or more. That is break-even history, not an edge, and I am not going to call it one until the closing line says so for longer.');
+  const ptier = B.t('spread_tier', Q('nfl_slate', ['pricing', 'tier']));
+  /* a LEAN tier names the gap that cleared break-even; a RESEARCH tier has
+     none (required_edge_points is null), and says why */
+  if (B.v(Q('nfl_slate', ['pricing', 'required_edge_points'])) != null) {
+    B.p('My pricing validation puts the NFL spread in the ' + ptier + ' tier at gaps of '
+      + B.n('required_edge', Q('nfl_slate', ['pricing', 'required_edge_points']), 'num1') + ' points or more. That is break-even history, not an edge, and I am not going to call it one until the closing line says so for longer.');
+  } else {
+    B.p('My pricing validation puts the NFL spread in the ' + ptier + ' tier: ' + B.t('tier_basis', Q('nfl_slate', ['pricing', 'tier_basis']))
+      + '. None of these gaps is a position, and I am not going to call one an edge until the closing line says so.');
+  }
   highlights.push(recLine);
   B.p(RECORD_LINK + ' grades every one of these after the close, and ' + modelRecordLink(sp) + ' shows each game.');
 
