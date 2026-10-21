@@ -1,0 +1,97 @@
+# EdgeDesk model loop, NFL: the served model refreshed, scored and challenged
+# every week (model_loop/adapters/nfl/weekly.py, docs/model-loop/README.md).
+#
+#   Tuesday   the full cycle: refresh the ratings with the served version,
+#             grade every published pregame number that settled, find where
+#             the misses concentrate, walk-forward test the candidate fixes,
+#             promote one only if it improves BOTH margin MAE and log loss on
+#             the full 2011-to-date backtest and is no worse on the last full
+#             season, then re-publish and write the weekly report.
+#   Other days  refresh only (same formula): new starters and injury news
+#             reach the cards; nothing about the model changes.
+#
+# Publishes football/nfl/model_loop/current.json (the served numbers), the
+# record, the append-only ledgers and the version history, by commit.
+# SB_DB_URL (optional): mirrors snapshots and versions into Supabase; a
+# missing secret or table is a warning, never a reason to withhold the cards.
+name: Model loop NFL (weekly)
+
+on:
+  schedule:
+    - cron: '17 14 * 9-12,1,2 2'        # Tuesday 14:17 UTC, after Monday night and the nflverse refresh
+    - cron: '47 13 * 9-12,1,2 0,1,3-6'  # every other day: refresh only
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'all (refresh, score, research, report) or refresh'
+        required: false
+        default: 'all'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-loop-nfl
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python deps (pinned)
+        run: pip install --quiet -r model_loop/requirements.txt
+      - name: Core guarantees before anything is published
+        run: python3 -m unittest discover -s model_loop/tests -t .
+      # finished seasons never change: cache them; the current season is always refetched
+      - uses: actions/cache@v4
+        with:
+          path: .cache/model_loop/nfl/raw
+          key: model-loop-nfl-raw-${{ github.run_id }}
+          restore-keys: model-loop-nfl-raw-
+      - name: Mode
+        id: mode
+        run: |
+          m="${{ inputs.mode }}"
+          if [ -z "$m" ]; then
+            if [ "$(date -u +%u)" = "2" ]; then m=all; else m=refresh; fi
+          fi
+          echo "mode=$m" >> "$GITHUB_OUTPUT"
+          echo "mode: $m"
+      - name: Run the loop
+        run: python3 -m model_loop.adapters.nfl.weekly ${{ steps.mode.outputs.mode }}
+      - name: The published card reconciles (components sum to the fair line, range centred)
+        run: |
+          python3 - <<'EOF'
+          import json, sys
+          c = json.load(open('football/nfl/model_loop/current.json'))
+          bad = [g['game_id'] for g in c['games'] if abs(g['reconciliation']['unattributed']) > 1e-6
+                 or abs((g['range80']['lo'] + g['range80']['hi']) / 2 - g['fair_home_margin']) > 1e-6]
+          print(len(c['games']), 'games;', 'bad:', bad)
+          sys.exit(1 if bad else 0)
+          EOF
+      - name: Mirror to Supabase (optional)
+        continue-on-error: true
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then echo "::warning::SB_DB_URL is not set: snapshots and versions stay in the repo only."; exit 0; fi
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          season=$(python3 -c "import json;print(json.load(open('football/nfl/model_loop/current.json'))['season'])")
+          python3 -m model_loop.core.db_sync snapshots "model_loop/ledger/nfl/${season}.jsonl" > /tmp/snapshots.sql
+          psql "$PGURL" -X -q -v ON_ERROR_STOP=1 -f /tmp/snapshots.sql 2>&1 | tail -3
+          python3 -m model_loop.core.db_sync registry nfl > /tmp/registry.sql
+          psql "$PGURL" -X -q -v ON_ERROR_STOP=1 -f /tmp/registry.sql 2>&1 | tail -4
+      - name: Publish (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "model loop: NFL ${{ steps.mode.outputs.mode }} — served numbers, record and ledgers" -- \
+            football/nfl/model_loop model_loop/ledger/nfl docs/model-loop/nfl/versions.json \
+            docs/model-loop/nfl/candidates.jsonl docs/model-loop/nfl/weekly docs/model-loop/nfl/weekly_model_report.md

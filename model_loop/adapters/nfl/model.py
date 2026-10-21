@@ -64,6 +64,8 @@ MODEL_DEFAULTS = {
     "hl_season": 6.0,
     "ridge_lam": 2.0,
     "hfa_prior_games": 300.0,
+    "hfa_target": "long",           # shrink home field toward: "long" (every prior season equally) | "recent"
+    "hfa_hl_season": 2.0,           # the "recent" target's half-life in seasons
     "first_train": 2007,
     "min_train_seasons": 2,
     "calibration": "none",          # "none" | "platt"
@@ -199,10 +201,17 @@ def walk_forward(rows, cfg=None, predict_seasons=None):
             X[:, j] = X0[:, j] - X0[home_games, j].mean() * nn
         age = (S - 1 - rows.season.values[tr]).astype(float)
         w = recency_weights(age, cfg["hl_season"])
-        # the long-run home field (every prior season equally) is the shrinkage target
-        b_long = ridge(X[tr], rows.result.values[tr], None, cfg["ridge_lam"], unpenalized=(hfa_j,))
+        # the shrinkage target for home field: the long-run value (every prior
+        # season equally) or the recent era's (its own short half-life), so
+        # home field can follow its decline without shortening every other
+        # coefficient's memory
+        if cfg.get("hfa_target", "long") == "recent":
+            tw = recency_weights(age, cfg.get("hfa_hl_season", 2.0))
+        else:
+            tw = None
+        b_target = ridge(X[tr], rows.result.values[tr], tw, cfg["ridge_lam"], unpenalized=(hfa_j,))
         b = ridge(X[tr], rows.result.values[tr], w, cfg["ridge_lam"], unpenalized=(hfa_j,),
-                  prior_mean={hfa_j: b_long[hfa_j]},
+                  prior_mean={hfa_j: b_target[hfa_j]},
                   prior_lam={hfa_j: cfg["hfa_prior_games"]} if cfg["hfa_prior_games"] else None)
         coefs[int(S)] = {}
         for j, n in enumerate(names):

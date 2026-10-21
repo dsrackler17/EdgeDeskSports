@@ -5,7 +5,6 @@
 
      node basketball/walkforward.js --league nba [--tune]
      node basketball/walkforward.js --league nba --check
-     node basketball/walkforward.js --league all --live-only   # the daily refit: live params only
 
    The protocol is engine/lab/protocol.js, unchanged:
      1. One chronological pass in start order. A game is predicted 30 minutes
@@ -211,8 +210,10 @@ function main(league) {
   const W = windowsFor(league); const L = C.LEAGUES[league];
   if (!fs.existsSync(C.PATHS.tuning(league))) tune(league);
   const tuning = JSON.parse(fs.readFileSync(C.PATHS.tuning(league), 'utf8'));
+  /* structural switches enabled for this league (config.js `model`) sit on top of the tuned values */
+  const params = Object.assign({}, tuning.chosen, L.model || {});
   const { games, seasons } = load(league);
-  const { rows, ratings, elo } = pass(games, tuning.chosen, tuning.elo);
+  const { rows, ratings, elo } = pass(games, params, tuning.elo);
   const { scored, cal } = score(rows);
   const evalRows = scored.filter((r) => r.season >= W.selection[0]);
   const leak = V.leakageAudit(evalRows.map((r) => ({ id: r.id, predicted_at: r.predicted_at, event_start: r.start, inputs_known_at: r.inputs_known_at })));
@@ -254,7 +255,13 @@ function main(league) {
     total: mk('total points (incl. overtime)', stt, cw.total.points),
   };
 
-  const live = writeLive(league, tuning, games, rows, ratings, elo, cal, chosen);
+  /* live parameters: the ratings now, carried into the season in progress if it has not started */
+  const cur = C.currentSeason(league);
+  if (ratings.season !== cur) { ratings.startSeason(cur); elo.startSeason(cur); }
+  const lastCal = cal[cur] || calibrate(rows.filter((r) => r.season >= cur - CAL_SEASONS && r.season < cur));
+  const live = { schema: 'edgedesk_bb_live_v1', league, generated_at: new Date().toISOString(), for_season: cur, model: chosen, params, ratings: ratings.dump(), calibration: lastCal, elo: Object.fromEntries([...elo.r.entries()].map(([k, v]) => [k, Math.round(v)])), last_game_date: games.length ? games[games.length - 1].date : null };
+  fs.mkdirSync(path.dirname(C.PATHS.params(league)), { recursive: true });
+  fs.writeFileSync(C.PATHS.params(league), JSON.stringify(live) + '\n');
 
   const report = {
     schema: 'edgedesk_lab_walkforward_v1', sport: league, label: L.label, generated_at: live.generated_at,
@@ -262,7 +269,7 @@ function main(league) {
     data: { source: 'basketball/data/' + league + ' (sportsdataverse, from ESPN)', license: C.LICENSE, seasons: [seasons[0], seasons[seasons.length - 1]], games: games.length, games_scored: evalRows.length,
       temporal: { point_in_time: 'RETROSPECTIVE', known_at: 'blank (first publication unknown; never backdated)', assumed_available_at: 'start + 4 h' } },
     leakage: Object.assign({ basis: 'inputs dated by assumed_available_at (start + 4 h)' }, leak),
-    tuning: { chosen: tuning.chosen, elo: tuning.elo, rule: tuning.rule },
+    tuning: { chosen: tuning.chosen, elo: tuning.elo, rule: tuning.rule, model_overrides: L.model || null },
     selection: { rule: 'lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= ' + P.RULES.challenger_margin, ll: selLL, chosen },
     comparisons, best_baseline: bestBase, markets, windows,
     by_season: Object.fromEntries([...new Set(evalRows.map((r) => r.season))].map((s) => { const sub = evalRows.filter((r) => r.season === s); return [s, { n: sub.length, ml_log_loss: { [chosen]: V.r(sub.reduce((a, r) => a + V.logLoss(r.p[chosen], r.y.hw), 0) / sub.length, 5), elo: V.r(sub.reduce((a, r) => a + V.logLoss(r.p.elo, r.y.hw), 0) / sub.length, 5) } }]; })),
@@ -283,38 +290,6 @@ function main(league) {
   return report;
 }
 
-/* live parameters: the ratings now, carried into the season in progress if it has not started */
-function writeLive(league, tuning, games, rows, ratings, elo, cal, chosen) {
-  const cur = C.currentSeason(league);
-  if (ratings.season !== cur) { ratings.startSeason(cur); elo.startSeason(cur); }
-  const lastCal = cal[cur] || calibrate(rows.filter((r) => r.season >= cur - CAL_SEASONS && r.season < cur));
-  const live = { schema: 'edgedesk_bb_live_v1', league, generated_at: new Date().toISOString(), for_season: cur, model: chosen, params: tuning.chosen, ratings: ratings.dump(), calibration: lastCal, elo: Object.fromEntries([...elo.r.entries()].map(([k, v]) => [k, Math.round(v)])), last_game_date: games.length ? games[games.length - 1].date : null };
-  fs.mkdirSync(path.dirname(C.PATHS.params(league)), { recursive: true });
-  fs.writeFileSync(C.PATHS.params(league), JSON.stringify(live) + '\n');
-  return live;
-}
-
-/* THE DAILY REFIT (audit_report.md §8.2 B1). The slate is priced every day but
-   the ratings used to be refit only by the weekly walk-forward, so a game
-   played on Thursday reached the price the next Wednesday while the validated
-   record had absorbed it at once. This runs the same pass over every final
-   game through today, with the committed tuning and the model the committed
-   walk-forward chose (nothing is re-selected), and rewrites only the live
-   params; the record is the weekly job's. */
-function liveOnly(league) {
-  if (!fs.existsSync(C.PATHS.tuning(league)) || !fs.existsSync(C.PATHS.validation(league))) { console.log('[bb live] ' + league + ': no committed tuning or record yet; left to the weekly walk-forward'); return null; }
-  const tuning = JSON.parse(fs.readFileSync(C.PATHS.tuning(league), 'utf8'));
-  const rec = JSON.parse(fs.readFileSync(C.PATHS.validation(league), 'utf8'));
-  const chosen = rec.selection && rec.selection.chosen;
-  if (!chosen) { console.log('[bb live] ' + league + ': the committed record names no chosen model; left to the weekly walk-forward'); return null; }
-  const { games } = load(league);
-  const { rows, ratings, elo } = pass(games, tuning.chosen, tuning.elo);
-  const { cal } = score(rows);
-  const live = writeLive(league, tuning, games, rows, ratings, elo, cal, chosen);
-  console.log('[bb live] ' + league + ': ratings refit through ' + live.last_game_date + ' (' + games.length + ' games), model ' + chosen + ' (as the committed record chose)');
-  return live;
-}
-
 function check(league) {
   const r = JSON.parse(fs.readFileSync(C.PATHS.validation(league), 'utf8'));
   const fails = [];
@@ -327,9 +302,9 @@ function check(league) {
   console.log('[bb walkforward --check] ' + league + ' ok: ' + r.data.games_scored + ' games, moneyline ' + r.markets.moneyline.status);
 }
 
-module.exports = { pass, calibrate, applyCal, score, windowsFor, load, interceptOn, liveOnly, CAL_VERSION };
+module.exports = { pass, calibrate, applyCal, score, windowsFor, load, interceptOn, CAL_VERSION };
 
 if (require.main === module) {
   const lg = arg('league', 'all'); const leagues = lg === 'all' ? Object.keys(C.LEAGUES) : lg.split(',');
-  for (const l of leagues) { if (flag('check')) check(l); else if (flag('live-only')) liveOnly(l); else if (flag('tune')) { tune(l); main(l); } else main(l); }
+  for (const l of leagues) { if (flag('check')) check(l); else if (flag('tune')) { tune(l); main(l); } else main(l); }
 }

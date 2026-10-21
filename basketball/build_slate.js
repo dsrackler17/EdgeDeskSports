@@ -41,7 +41,8 @@ function marginOverUnder(mu, sd, L) {
 
 function priceGame(g, live, lastStart) {
   const R = live.ratings; const cal = live.calibration;
-  const T = (id) => R.teams[id] || { o: 0, d: 0, games: 0 };
+  /* a team the ratings have never seen: average, or under the D1 fix the learned non-D1 rating */
+  const T = (id) => R.teams[id] || (R.nd1 ? { o: R.nd1.o, d: R.nd1.d, games: 0 } : { o: 0, d: 0, games: 0 });
   const H = T(g.home_id), A = T(g.away_id); const hh = g.neutral ? 0 : R.h / 2;
   const ph = R.mu + hh + H.o - A.d, pa = R.mu - hh + A.o - H.d;
   const m = ph - pa, t = ph + pa;
