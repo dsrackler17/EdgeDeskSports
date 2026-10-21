@@ -1,0 +1,203 @@
+{
+ "label": "favourite drift only (diagnostic)",
+ "kind": "price",
+ "market": "moneyline",
+ "primary_threshold": 0.005,
+ "coverage": {
+  "rows": 11133,
+  "usable": 11133,
+  "mean_abs_move_prob": 0.02548
+ },
+ "thresholds": [
+  {
+   "n_bets": 0,
+   "threshold": 0.005
+  },
+  {
+   "n_bets": 0,
+   "threshold": 0.01
+  },
+  {
+   "n_bets": 0,
+   "threshold": 0.02
+  }
+ ],
+ "primary": {
+  "n_bets": 0,
+  "threshold": 0.005
+ },
+ "buckets": [
+  {
+   "n_bets": 11133,
+   "n_clusters": 900,
+   "clv_prob": {
+    "n": 11133,
+    "mean": 0.00052,
+    "se": 0.00034,
+    "ci95": [
+     -0.00013,
+     0.00123
+    ],
+    "p_one_sided": 0.06399
+   },
+   "clv_ev": {
+    "n": 11133,
+    "mean": -0.03647,
+    "se": 0.00071,
+    "ci95": [
+     -0.03781,
+     -0.03502
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 5548,
+   "moved_against": 5461,
+   "no_move": 124,
+   "direction_hit_rate": {
+    "n": 11009,
+    "mean": 0.50395,
+    "se": 0.00517,
+    "ci95": [
+     0.49371,
+     0.51398
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.00075,
+   "results": {
+    "n": 11133,
+    "wins": 5541,
+    "losses": 5592,
+    "pushes": 0,
+    "win_pct": 0.4977,
+    "roi_at_open": {
+     "n": 11133,
+     "mean": -0.04128,
+     "se": 0.00961,
+     "ci95": [
+      -0.05997,
+      -0.02206
+     ],
+     "p_one_sided": 0.99999
+    }
+   },
+   "bucket": "[0, 0.005)"
+  },
+  {
+   "n_bets": 0,
+   "bucket": "[0.005, 0.01)"
+  },
+  {
+   "n_bets": 0,
+   "bucket": "[0.01, 0.02)"
+  },
+  {
+   "n_bets": 0,
+   "bucket": "[0.02, 1)"
+  }
+ ],
+ "by_season": [],
+ "exp_id": "MLB-D1",
+ "sport": "mlb",
+ "holdout": false,
+ "seasons": [
+  2015,
+  2016,
+  2017,
+  2018,
+  2019
+ ],
+ "extra": {
+  "fit_log": [
+   {
+    "season": 2012,
+    "skipped": "not enough earlier seasons"
+   },
+   {
+    "season": 2013,
+    "skipped": "not enough earlier seasons"
+   },
+   {
+    "season": 2014,
+    "skipped": "not enough earlier seasons"
+   },
+   {
+    "season": 2015,
+    "n_train": 6691,
+    "lambda": 100.0,
+    "coef": {
+     "fav": -0.00419
+    },
+    "intercept": 0.00094
+   },
+   {
+    "season": 2016,
+    "n_train": 8917,
+    "lambda": 100.0,
+    "coef": {
+     "fav": -0.00951
+    },
+    "intercept": 0.0005
+   },
+   {
+    "season": 2017,
+    "n_train": 11150,
+    "lambda": 100.0,
+    "coef": {
+     "fav": -0.00674
+    },
+    "intercept": 0.00051
+   },
+   {
+    "season": 2018,
+    "n_train": 13375,
+    "lambda": 100.0,
+    "coef": {
+     "fav": 0.00036
+    },
+    "intercept": 0.00083
+   },
+   {
+    "season": 2019,
+    "n_train": 15606,
+    "lambda": 100.0,
+    "coef": {
+     "fav": -0.00023
+    },
+    "intercept": 0.001
+   }
+  ],
+  "movement_calibration": {
+   "n": 11133,
+   "slope": -1.1709,
+   "corr": -0.0191,
+   "bins": [
+    {
+     "n": 2226,
+     "pred": -0.0003,
+     "actual": 0.0027
+    },
+    {
+     "n": 2184,
+     "pred": 0.0005,
+     "actual": 0.0011
+    },
+    {
+     "n": 2243,
+     "pred": 0.0008,
+     "actual": 0.0014
+    },
+    {
+     "n": 2198,
+     "pred": 0.0009,
+     "actual": 0.0037
+    },
+    {
+     "n": 2282,
+     "pred": 0.0011,
+     "actual": -0.0021
+    }
+   ]
+  }
+ }
+}

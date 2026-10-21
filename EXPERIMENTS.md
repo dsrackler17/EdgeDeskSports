@@ -720,3 +720,49 @@ Run 2026-10-21 on 2012–2019 with the repaired SBR moneylines (17,824 games).
 
 ### MLB-H1: lab model (projected starter) moneyline on the proxy holdout
 ### MLB-H2: MLB-R2 frozen on the proxy holdout
+
+### MLB-D1 result
+- Favourite drift alone has a coefficient of -0.0002, so 0 bets.
+- **R2's gain is not plain favourite drift.** Its `fav` term matters only together with the model disagreements.
+
+### MLB holdout results (run once, 2026-10-21)
+
+**k = 8.** Gate data: proxy holdout SBR 2020–2021 (repaired).
+
+| ID | Bets | CLV prob (pp) | α/8 LB | 2020 / 2021 | `clv_ev` | Verdict |
+|---|---|---|---|---|---|---|
+| MLB-H1 lab, projected starter, ≥0.02 | 2,117 | +0.69 [+0.52, +0.89] | +0.48 | +0.89 / +0.62 | -2.2% [-2.7, -1.6] | **PASS** |
+| MLB-H2 R2 frozen, ≥0.005 | 1,451 | +0.90 [+0.68, +1.17] | +0.63 | +0.98 / +0.86 | -1.8% [-2.4, -1.1] | **PASS** |
+
+**R2 frozen fit:** move = -0.0006 + 0.029·d_proj + 0.070·d_tp + 0.053·fav + 0.036·d_proj·early − 0.0005·rotation_unknown.
+
+**Reading:**
+- MLB CLV is real but small, far below the moneyline vig.
+- The no-starter team model carries more of it than the projected starter does.
+- The SBR source is repaired; a different book's openers would be needed to confirm it.
+
+---
+
+## WNBA and NCAAM: single holdout runs (no pre-holdout openers exist)
+
+Pre-registered 2026-10-21, before any WNBA or NCAAM CLV number was computed.
+
+**Why only Phase 6.** Openers exist only in each sport's mandated holdout:
+- WNBA: ESPN DraftKings, 2026 (2025 has none).
+- NCAAM: ESPN DraftKings, 2025-26 = repo 2026. 2027 has no finals yet.
+
+So Phases 3–5 are infeasible. The only candidate is the production model, the basketball lab's served version for the league, replayed by `research/clv/bb_predict.js` at 09:00 UTC on each game date.
+
+**Settings:**
+- Lines: DraftKings open and close, with their own prices.
+- Points distributions are fixed now, because no pre-holdout closes exist to fit them: IntegerNormal with σ = 11.5 / 15.0 (WNBA spread / total) and 10.5 / 15.5 (NCAAM). These are the harness defaults.
+- Clusters: game date.
+
+**k = 3 per sport** (spread, total, moneyline). PASS per G7.
+
+### WNBA-H1: production bb_points (WNBA 1.0.0), spread ≥1.5, 2025–2026 holdout
+### WNBA-H2: production, total ≥2.0
+### WNBA-H3: production, moneyline ≥0.02
+### NCAAM-H1: production bb_points (NCAAM 1.1.0), spread ≥1.5, repo 2026–2027 holdout
+### NCAAM-H2: production, total ≥2.0
+### NCAAM-H3: production, moneyline ≥0.02
