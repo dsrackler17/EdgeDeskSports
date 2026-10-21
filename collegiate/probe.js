@@ -22,7 +22,7 @@ const { createPolite } = require('./polite');
 
 const DIR = path.join(__dirname, 'probe');
 const FIX = path.join(DIR, 'fixtures');
-const MAX_BYTES = 800 * 1024;
+const MAX_BYTES = 8 * 1024 * 1024;     /* whole pages: a roster's data sits at the end of the page */
 
 /* what a page looks built on, from markers in its HTML (a guess the parsers confirm) */
 function platformOf(html) {
@@ -39,7 +39,7 @@ const slug = (u) => { const x = new URL(u); return ((x.pathname.replace(/^\/+|\/
 async function main() {
   const T = JSON.parse(fs.readFileSync(path.join(DIR, 'targets.json'), 'utf8'));
   const hosts = new Set(T.schools.map((s) => s.host));
-  for (const s of T.sources) hosts.add(new URL(s.url).hostname);
+  for (const s of T.sources.concat(T.pages || [])) hosts.add(new URL(s.url).hostname.replace(/^www\./, ''));
   const polite = createPolite({ hosts: [...hosts], cacheDir: path.join(__dirname, '..', '.cache', 'collegiate_probe'), log: (m) => console.error(m) });
   const reads = [];
   const read = async (meta, url) => {
@@ -58,8 +58,15 @@ async function main() {
     reads.push(rec);
   };
   for (const s of T.sources) await read({ kind: 'source', name: s.name }, s.url);
-  /* schools in parallel (each host is its own budget), pages of one school in order */
-  await Promise.all(T.schools.map(async (s) => { for (const p of T.paths) await read({ kind: 'school', name: s.name, host: s.host, path: p }, 'https://' + s.host + p); }));
+  /* named pages (a season's roster, a schedule), each school's own in order */
+  const work = T.schools.map((s) => ({ host: s.host, list: T.paths.map((p) => [{ kind: 'school', name: s.name, host: s.host, path: p }, 'https://' + s.host + p]) }));
+  for (const pg of T.pages || []) {
+    const host = new URL(pg.url).hostname.replace(/^www\./, '');
+    let w = work.find((x) => x.host === host);
+    if (!w) work.push(w = { host, list: [] });
+    w.list.push([{ kind: 'page', name: pg.name, host }, pg.url]);
+  }
+  await Promise.all(work.map(async (w) => { for (const [meta, url] of w.list) await read(meta, url); }));
   const out = { schema: 'edgedesk_collegiate_probe_v1', generated_at: new Date().toISOString(), user_agent: polite.UA,
     summary: { reads: reads.length, ok: reads.filter((r) => r.ok).length, refused: reads.filter((r) => r.refused).length,
       platforms: reads.filter((r) => r.platform).reduce((a, r) => (a[r.platform] = (a[r.platform] || 0) + 1, a), {}) },

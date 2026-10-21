@@ -1,12 +1,9 @@
 {
- "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every school host is read through collegiate/polite.js (robots.txt first, one request at a time, 2 s apart). Hosts are candidates to verify, not facts: one that does not answer is recorded as such.",
+ "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 2: whole pages (round 1 cut them at 800 KB, before the roster data), past seasons' rosters on both platforms, a schedule and stats page, and a directory candidate (ncaa.com).",
  "sources": [
-  { "name": "ncaa_directory_robots", "url": "https://web1.ncaa.org/robots.txt" },
-  { "name": "ncaa_directory_d1_baseball", "url": "https://web1.ncaa.org/directory/memberList?type=12&division=I&sportCode=MBA" },
-  { "name": "stats_ncaa_robots", "url": "https://stats.ncaa.org/robots.txt" },
-  { "name": "espn_college_baseball_teams", "url": "https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams?limit=1000" },
-  { "name": "wikidata_robots", "url": "https://query.wikidata.org/robots.txt" },
-  { "name": "wikidata_program_shape", "url": "https://query.wikidata.org/sparql?format=json&query=SELECT%20%3Fitem%20%3Fp%20%3Fo%20%3FoLabel%20WHERE%20%7B%20VALUES%20%3Flab%20%7B%20%22Stanford%20Cardinal%22%40en%20%22LSU%20Tigers%22%40en%20%22Texas%20Longhorns%22%40en%20%7D%20%3Fitem%20rdfs%3Alabel%20%3Flab%20.%20%3Fitem%20%3Fp%20%3Fo%20.%20FILTER(STRSTARTS(STR(%3Fp)%2C%20%22http%3A%2F%2Fwww.wikidata.org%2Fprop%2Fdirect%2F%22))%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%22.%20%7D%20%7D%20LIMIT%20400" }
+  { "name": "ncaa_com_robots", "url": "https://www.ncaa.com/robots.txt" },
+  { "name": "ncaa_com_schools_index", "url": "https://www.ncaa.com/schools-index" },
+  { "name": "ncaa_com_school_texas", "url": "https://www.ncaa.com/schools/texas" }
  ],
  "schools": [
   { "name": "Stanford", "host": "gostanford.com" },
@@ -19,11 +16,26 @@
   { "name": "Wake Forest", "host": "godeacs.com" }
  ],
  "paths": [
-  "/",
-  "/sports/baseball/roster",
-  "/sports/baseball/schedule",
-  "/sports/baseball/stats",
-  "/sports/football/roster",
-  "/sports/womens-basketball/roster"
+  "/robots.txt"
+ ],
+ "pages": [
+  { "name": "sidearm_baseball_roster_2026", "url": "https://texassports.com/sports/baseball/roster/2026" },
+  { "name": "sidearm_baseball_roster_2025", "url": "https://texassports.com/sports/baseball/roster/2025" },
+  { "name": "sidearm_wbb_roster_2025_26", "url": "https://texassports.com/sports/womens-basketball/roster/2025-26" },
+  { "name": "sidearm_football_roster_2025", "url": "https://texassports.com/sports/football/roster/2025" },
+  { "name": "sidearm_baseball_schedule_2026", "url": "https://texassports.com/sports/baseball/schedule/2026" },
+  { "name": "sidearm_baseball_stats_2026", "url": "https://texassports.com/sports/baseball/stats/2026" },
+  { "name": "sidearm_baseball_roster_2026_b", "url": "https://floridagators.com/sports/baseball/roster/2026" },
+  { "name": "sidearm_baseball_roster_2025_b", "url": "https://floridagators.com/sports/baseball/roster/2025" },
+  { "name": "sidearm_baseball_roster_2026_c", "url": "https://godeacs.com/sports/baseball/roster/2026" },
+  { "name": "wmt_baseball_roster_2026", "url": "https://gostanford.com/sports/baseball/roster/season/2026" },
+  { "name": "wmt_baseball_roster_2025", "url": "https://gostanford.com/sports/baseball/roster/season/2025" },
+  { "name": "wmt_wbb_roster_2025_26", "url": "https://gostanford.com/sports/womens-basketball/roster/season/2025-26" },
+  { "name": "wmt_baseball_schedule_2026", "url": "https://gostanford.com/sports/baseball/schedule/season/2026" },
+  { "name": "wmt_baseball_roster_2026_b", "url": "https://12thman.com/sports/baseball/roster/season/2026" },
+  { "name": "wmt_baseball_roster_2025_b", "url": "https://12thman.com/sports/baseball/roster/season/2025" },
+  { "name": "wmt_baseball_roster_2026_c", "url": "https://lsusports.net/sports/baseball/roster/season/2026" },
+  { "name": "wmt_baseball_roster_2026_d", "url": "https://vucommodores.com/sports/baseball/roster/season/2026" },
+  { "name": "arkansas_baseball_roster", "url": "https://arkansasrazorbacks.com/sport/m-basebl/roster/" }
  ]
 }
