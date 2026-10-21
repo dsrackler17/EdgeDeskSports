@@ -48,7 +48,12 @@ function writeSnapshot(p, snap) {
   fs.writeFileSync(p, body + '\n');
 }
 
-function loadSchools(dataDir) { return (readJson(path.join(dataDir || DATA, 'schools.json'), { schools: [] }).schools) || []; }
+/* the registry, with any dead host replaced by the site the school's opponents name for it (hosts.js) */
+function loadSchools(dataDir) {
+  const d = dataDir || DATA;
+  const schools = (readJson(path.join(d, 'schools.json'), { schools: [] }).schools) || [];
+  return require('./hosts').apply(schools, readJson(path.join(d, 'host_corrections.json'), {}));
+}
 
 /* the current season of a sport on a date: split-year sports and spring sports roll over in August */
 function currentSeason(sport, today) {
@@ -168,7 +173,7 @@ async function collect(o) {
   const byCode = {};
   for (const r of results) if (!r.ok) byCode[r.code] = (byCode[r.code] || 0) + 1;
   const run = { schema: 'edgedesk_collegiate_run_v1', at: new Date().toISOString(), today, division, plan: o.sports.map((sp) => ({ sport: sp, seasons: seasonsOf(sp) })),
-    schools: schools.length, ok: results.filter((r) => r.ok).length, misses_by_reason: byCode,
+    schools: schools.length, ok: results.filter((r) => r.ok).length, read_schools: [...new Set(results.filter((r) => r.ok).map((r) => r.school))].sort(), misses_by_reason: byCode,
     platforms: Object.values(ctx.platforms).reduce((a, p) => (a[p.platform] = (a[p.platform] || 0) + 1, a), {}),
     misses: results.filter((r) => !r.ok), refusals: polite.refusals() };
   writeJson(path.join(dataDir, 'runs', today + '.json'), run);

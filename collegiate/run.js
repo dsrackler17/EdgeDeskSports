@@ -47,6 +47,10 @@ async function run(o) {
     console.error('[run] directory ' + JSON.stringify(d.counts));
   }
 
+  /* 1b. a registry host that gave nothing last run is replaced by the site the school's opponents name for it */
+  const fixed = require('./hosts').update(DATA, readJson(path.join(DATA, 'schools.json'), { schools: [] }).schools || []);
+  if (Object.keys(fixed).length) { summary.steps.push({ step: 'hosts', corrected: fixed }); console.error('[run] hosts corrected: ' + Object.entries(fixed).map(([k, v]) => k + ' ' + v.registry_host + ' -> ' + v.host).join(', ')); }
+
   /* 2. the weekly read; one reader for the whole run, so a host's crawl delay holds across every step */
   const lanes = plan.lanes || 32;
   const schools = RO.loadSchools(DATA).filter((s) => s.host && (plan.division === 'all' || s.division === plan.division));

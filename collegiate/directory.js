@@ -53,6 +53,7 @@ function parseSchool(html) {
   }
   let host = null;
   if (website) { try { host = new URL(website).hostname.toLowerCase().replace(/^www\./, ''); } catch (_) { host = null; } }
+  if (host && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) host = null;     /* "https://https//x.com" reads as host "https": not a site */
   return { conference: dd('Conference'), nickname: dd('Nickname'), website, host };
 }
 
