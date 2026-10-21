@@ -61,6 +61,8 @@ function train(cfg, through, opts) {
   for (const id of Object.keys(st.qb)) seeds.qb[id] = { v: r8(st.qb[id].v), n: st.qb[id].n };
   for (const t of Object.keys(st.teamQb)) seeds.team_qb[t] = r8(st.teamQb[t]);
   for (const t of Object.keys(st.mr)) seeds.mr[t] = r8(st.mr[t]);
+  /* each club's last starts (the regular-starter window), only when a feature reads them */
+  if (cfg.features.qb_out) seeds.starts = JSON.parse(JSON.stringify(st.starts || {}));
   /* the season in progress is closed into the home-field history, as the break would */
   if (st.hfa.cur.n > 0) { seeds.hfa.seasons[through] = { sum: st.hfa.cur.sum, n: st.hfa.cur.n }; seeds.hfa.cur = { sum: 0, n: 0 }; }
   /* calibration from the walk-forward predictions (seasons <= through) */

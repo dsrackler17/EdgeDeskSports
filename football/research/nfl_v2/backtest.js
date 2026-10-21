@@ -126,10 +126,22 @@ function predictRows(model, rows, sel) {
     return { strength, context: c, hfa: season ? x.hfa : 0, margin: strength + c + (season ? x.hfa : 0), total: t };
   });
 }
+/* round 2, S1: each column scaled to unit SD on these training rows before
+   the ridge, the weights mapped back to raw scale (serving reads raw weights) */
+function ridgeStd(X, y, lam, withIntercept) {
+  const p = X.length ? X[0].length : 0, n = X.length, sd = new Array(p).fill(1);
+  for (let j = 0; j < p; j++) {
+    let m = 0; for (let i = 0; i < n; i++) m += X[i][j]; m /= n || 1;
+    let v = 0; for (let i = 0; i < n; i++) v += (X[i][j] - m) * (X[i][j] - m);
+    const s = Math.sqrt(v / (n || 1)); if (s > 1e-9) sd[j] = s;
+  }
+  const f = M.ridge(X.map((r) => r.map((x, j) => x / sd[j])), y, lam, withIntercept);
+  return { w: f.w.map((w, j) => w / sd[j]), b: f.b };
+}
 function fit(cfg, train) {
   const season = cfg.hfa.kind === 'season';
   const ys = train.map((r) => (r.g.home_score - r.g.away_score) - (season ? r.hfa : 0));
-  const sFit = M.ridge(train.map((r) => r.s), ys, cfg.ridge.strength, !season);
+  const sFit = cfg.ridge.standardize ? ridgeStd(train.map((r) => r.s), ys, cfg.ridge.strength, !season) : M.ridge(train.map((r) => r.s), ys, cfg.ridge.strength, !season);
   const res = train.map((r, i) => { let p = sFit.b; for (let j = 0; j < r.s.length; j++) p += sFit.w[j] * r.s[j]; return ys[i] - p; });
   const cFit = M.ridge(train.map((r) => r.c), res, cfg.ridge.context, !season);
   const tTrain = train.filter((r) => r.g.home_score != null);
@@ -237,5 +249,5 @@ function logVariant(rec) {
   fs.appendFileSync(path.join(RES, 'variants.jsonl'), JSON.stringify(Object.assign({ at: new Date().toISOString() }, rec)) + '\n');
 }
 
-module.exports = { replay, walkForward, evaluate, score, slim, logVariant, pmfFor, withTable, fit, predictRows, marketProb, gameObj,
+module.exports = { replay, walkForward, evaluate, score, slim, logVariant, pmfFor, withTable, fit, ridgeStd, predictRows, marketProb, gameObj,
   FIRST_TRAIN, FIRST_PRED, VALID, HOLDOUT, LIVE, RES, range };
