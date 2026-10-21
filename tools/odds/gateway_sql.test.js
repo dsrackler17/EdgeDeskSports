@@ -102,9 +102,9 @@ try {
   /* ── 2 · the gateway file, twice ─────────────────────────────────────── */
   out = db.applyFile(path.join(ROOT, 'supabase', 'odds_api_gateway.sql'));
   const rows = (o) => (o.match(/\|(ok|CHECK THIS)$/gm) || []);
-  T.chk('2 · the gateway applies; every report row ok', rows(out).length === 9 && rows(out).every((r) => /ok$/.test(r)), out.slice(-900));
+  T.chk('2 · the gateway applies; every report row ok', rows(out).length === 10 && rows(out).every((r) => /ok$/.test(r)), out.slice(-900));
   out = db.applyFile(path.join(ROOT, 'supabase', 'odds_api_gateway.sql'));
-  T.chk('2 · and a second time', rows(out).length === 9 && rows(out).every((r) => /ok$/.test(r)));
+  T.chk('2 · and a second time', rows(out).length === 10 && rows(out).every((r) => /ok$/.test(r)));
   T.chk('2 · the breaker is still OFF and the budget still ZERO after the gateway is applied',
     db.sql('select odds_api_enabled::text || monthly_budget::text || daily_target::text from public.odds_api_config') === 'false00');
   T.chk('2 · the retention job is scheduled, and is not a spend path', db.sql("select count(*) from cron.job where jobname = 'odds_api_prune' and command not like '%functions/v1%'") === '1');
@@ -126,7 +126,7 @@ try {
   const capFile = path.join(db.home, 'capcron.sql');
   fs.writeFileSync(capFile, CAPCRON.replace(/^create extension if not exists pg_(cron|net);$/mg, '')); cp.execSync('chmod 644 ' + capFile);
   db.sql(fs.readFileSync(capFile, 'utf8'));
-  T.chk('4 · the capture schedule is 20 min / hourly / 6 h', db.sql("select string_agg(schedule, ',' order by jobname) from cron.job where jobname in ('capture_board','capture_day','capture_near')") === '18 */6 * * *,4 * * * *,*/20 * * * *');
+  T.chk('4 · the capture schedule is hourly / 2 h / 6 h', db.sql("select string_agg(schedule, ',' order by jobname) from cron.job where jobname in ('capture_board','capture_day','capture_near')") === '18 */6 * * *,4 */2 * * *,12 * * * *');
   let poke = J("select public.capture_poke('near')");
   T.chk('4 · breaker off: the poke sends nothing', poke.queued === false && db.sql('select count(*) from net.posted') === '0', poke);
   db.sql("update public.odds_api_config set odds_api_enabled = true where id = 1");
@@ -199,16 +199,30 @@ try {
   T.chk('9 · level 3 (over the allowance): only main markets inside 24 h', lv.near === 'granted' && lv.far === 'denied_daily_budget', lv);
   fill(1300); lv = tryAll(); clean();
   T.chk('9 · level 4 (past the overdraft): nothing paid at all', Object.values(lv).every((d) => d === 'denied_daily_budget'), lv);
-  /* the cadence stretches with the level: a near board 30 minutes old is due
-     at level 0 (20-minute interval) and still a cache hit at level 2 (x2) */
-  db.sql("insert into public.odds_api_snapshots (fingerprint, category, sport_key, endpoint, last_request_id, last_success_at, body) select fingerprint, 'featured', 'americanfootball_nfl', 'odds', id, now() - interval '30 minutes', '[]'::jsonb from public.odds_api_requests where caller = 'filler' limit 0");
+  /* the cadence stretches with the level: a near board 70 minutes old is due
+     at level 0 (60-minute interval) and still a cache hit at level 2 (x2) */
+  db.sql("insert into public.odds_api_snapshots (fingerprint, category, sport_key, endpoint, last_request_id, last_success_at, body) select fingerprint, 'featured', 'americanfootball_nfl', 'odds', id, now() - interval '70 minutes', '[]'::jsonb from public.odds_api_requests where caller = 'filler' limit 0");
   fill(0);
   const fp = acq({ caller: 't', category: 'featured', sport_key: 'americanfootball_nfl' }).fingerprint; clean();
-  db.sql("insert into public.odds_api_snapshots (fingerprint, category, sport_key, endpoint, last_request_id, last_success_at, body) values ('" + fp + "', 'featured', 'americanfootball_nfl', 'odds', 1, now() - interval '30 minutes', '[]'::jsonb) on conflict (fingerprint) do update set last_success_at = excluded.last_success_at");
+  const aged = (mins) => db.sql("insert into public.odds_api_snapshots (fingerprint, category, sport_key, endpoint, last_request_id, last_success_at, body) values ('" + fp + "', 'featured', 'americanfootball_nfl', 'odds', 1, now() - interval '" + mins + " minutes', '[]'::jsonb) on conflict (fingerprint) do update set last_success_at = excluded.last_success_at");
+  aged(70);
   const atZero = acq({ caller: 't', category: 'featured', sport_key: 'americanfootball_nfl' }).decision; clean();
   fill(850);
   const atTwo = acq({ caller: 't', category: 'featured', sport_key: 'americanfootball_nfl' }).decision; clean();
   T.chk('9 · under pressure the cadence stretches before anything is refused', atZero === 'granted' && atTwo === 'cache_hit', [atZero, atTwo]);
+  /* 2026-10-21 hourly floor: a near board is bought at most hourly, and an
+     hourly scheduler's few seconds of drift do not turn that into two hours */
+  fill(0);
+  aged(40);
+  const at40 = acq({ caller: 't', category: 'featured', sport_key: 'americanfootball_nfl' }).decision; clean();
+  aged(59);
+  const at59 = acq({ caller: 't', category: 'featured', sport_key: 'americanfootball_nfl' }).decision; clean();
+  T.chk('9 · inside 3 h of kickoff a main board 40 minutes old is served from cache (nothing faster than hourly)', at40 === 'cache_hit', at40);
+  T.chk('9 · an hourly scheduler that fires 1 minute early still buys (2 minutes of drift slack)', at59 === 'granted', at59);
+  const floor = (sql) => { try { db.sql(sql); return 'accepted'; } catch (e) { return /odds_api_cadence_hourly_floor/.test(String(e.message)) ? 'refused' : String(e.message).slice(0, 200); } };
+  T.chk('9 · the database refuses a cadence band under an hour (new row or edit)',
+    floor("insert into public.odds_api_cadence (category, sport_group, max_hours_to_start, interval_minutes) values ('featured', 'nfl', 1, 20)") === 'refused'
+    && floor("update public.odds_api_cadence set interval_minutes = 30 where category = 'featured' and max_hours_to_start = 3") === 'refused');
   fill(0);
 
   /* ── 10 · the monthly picture ────────────────────────────────────────── */

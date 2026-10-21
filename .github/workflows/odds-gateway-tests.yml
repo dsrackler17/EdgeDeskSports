@@ -38,6 +38,10 @@ jobs:
         env:
           ODDS_SQL_REQUIRED: '1'
         run: node tools/odds/gateway_sql.test.js
+      - name: Nothing runs or buys more often than hourly (supabase/odds_api_hourly_limits.sql on a production-shaped PostgreSQL)
+        env:
+          ODDS_SQL_REQUIRED: '1'
+        run: node tools/odds/hourly_limits_sql.test.js
       - name: The deployed gateway end to end (real PostgreSQL, mock provider; 429, 401, timeout, bounded retries, redaction)
         env:
           ODDS_SQL_REQUIRED: '1'

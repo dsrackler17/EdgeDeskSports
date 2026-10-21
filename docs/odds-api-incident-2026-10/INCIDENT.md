@@ -167,12 +167,13 @@ inside the interval are free cache hits.
 
 | Category | < 3 h | 3–24 h | 24–72 h | beyond |
 |---|---|---|---|---|
-| Main markets (`featured`, `close`, `collective`) | 20 min | 60 min | 120 min | 360 min |
+| Main markets (`featured`, `close`, `collective`) | 60 min (20 until 2026-10-21) | 60 min | 120 min | 360 min |
 | NFL props (11 core markets) | 60 min | 120 min | 360 min to 48 h | not polled |
 | CFB props | 60 min | 180 min | not polled | not polled |
 | Alternates, extra props, alt props | 120 min | 360 min | not polled | not polled |
 
 Other rules:
+- **Nothing faster than hourly (2026-10-21).** The operator's rule after this incident: no band, for any category, is under 60 minutes, and the constraint `odds_api_cadence_hourly_floor` refuses one. A snapshot within 2 minutes of its interval counts as due, so an hourly scheduler's drift does not turn hourly into every other hour. Every paid pg_cron job fires at most once an hour (`supabase/odds_api_hourly_limits.sql`).
 - Live and completed events are never polled. A completed event stops 5 h after kickoff.
 - A sport-level request uses the sport's nearest kickoff.
 - **Every interval stretches with the shed level** (×1 / 1.5 / 2 / 3 / 4).
@@ -280,10 +281,10 @@ bounded by construction: 60,000 a month, and the breaker latches at 57,000.
 
 | What | Before | After |
 |---|---|---|
-| Game lines inside 3 h | ≤ 10 min | ≤ 20 min |
+| Game lines inside 3 h | ≤ 10 min | ≤ 60 min (≤ 20 until 2026-10-21) |
 | Game lines 3–24 h | ≤ 30 min | ≤ 60 min |
 | Game lines beyond 72 h | ≤ 4 h | ≤ 6 h |
-| Closing lines (CLV) | close's own fetch at the window | the latest board snapshot, ≤ 20 min old at kickoff |
+| Closing lines (CLV) | close's own fetch at the window | the latest board snapshot, ≤ 60 min old at kickoff (≤ 20 until 2026-10-21) |
 | Player props inside 3 h | 15 min | 60 min. A prop EV is executable for 30 min after each refresh, then labelled aging, never shown as current |
 | Player props 3–24 h | 30–60 min | 120 min (NFL), 180 min (CFB) |
 | Props windows | 96 h both leagues | NFL 48 h, CFB 24 h. Earlier props show the last stored price, labelled with its age |
@@ -408,7 +409,7 @@ The **Deploy odds gateway** workflow applies 1 (opt-in) and 2 when the
     select public.odds_api_resume_schedules('<your name>');
     ```
 
-    Only gateway-routed jobs come back. Then apply `supabase/capture_cron.sql` and `supabase/player_props_cron.sql`, which replace the capture and props jobs with the slower schedules. A job those files already replaced is reported under `kept` by the resume, which is expected.
+    Only gateway-routed jobs come back. Then apply `supabase/odds_api_hourly_limits.sql`: every paid job at most hourly, and no purchase band under an hour. `supabase/capture_cron.sql` and `supabase/player_props_cron.sql` re-create the capture and props jobs on the same hourly schedules if they are ever re-applied. A job those files already replaced is reported under `kept` by the resume, which is expected.
 11. Watch the first hour on `admin/odds-usage/`:
     - the cache hit rate should climb above 80%;
     - spend should match the cadence table;

@@ -501,22 +501,22 @@ export interface CadenceTier {
 }
 /* 2026-10-10: THE TIERS ARE NOW POKES, NOT PURCHASES. Whether a sport's board
    is bought on a given run is decided by odds_gateway's event-aware cadence
-   (public.odds_api_cadence: 20 min inside 3 h of the sport's next kickoff,
-   60 min inside 24 h, 2 h inside 72 h, 6 h beyond; nothing live or
-   finished), by the shared credit budget and by the circuit breaker. A tier
-   that fires more often than its sport is due costs a cache hit and nothing
-   else. The cron cadences were loosened to match the gateway's tightest
-   interval: near every 20 minutes (was 10), day hourly (was 30), board every
-   6 hours (was 4). */
+   (public.odds_api_cadence: 60 min inside 24 h of the sport's next kickoff,
+   2 h inside 72 h, 6 h beyond; nothing live or finished), by the shared
+   credit budget and by the circuit breaker. A tier that fires more often than
+   its sport is due costs a cache hit and nothing else. 2026-10-21: nothing
+   runs or buys more often than hourly (supabase/odds_api_hourly_limits.sql):
+   near hourly (was 20 minutes, 10 before the incident), day every 2 hours
+   (was hourly), board every 6 hours. */
 export const CADENCE_TIERS: Record<string, CadenceTier> = {
   near: {
-    nearHours: 8, maxDaysToStart: 2, cadenceMin: 20,
-    note: "Pokes every 20 minutes: the gateway buys a sport's board only when its "
-      + "snapshot is older than that sport's event-aware cadence (20 min inside 3 h of kickoff).",
+    nearHours: 8, maxDaysToStart: 2, cadenceMin: 60,
+    note: "Pokes hourly: the gateway buys a sport's board only when its "
+      + "snapshot is older than that sport's event-aware cadence (60 min inside 24 h of kickoff).",
   },
   day: {
-    nearHours: 30, maxDaysToStart: 3, cadenceMin: 60,
-    note: "Hourly, for the board a customer researches the night before and the morning of; "
+    nearHours: 30, maxDaysToStart: 3, cadenceMin: 120,
+    note: "Every 2 hours, for the board a customer researches the night before and the morning of; "
       + "alternate ladders inside 24 h at the gateway's ladder cadence.",
   },
   board: {

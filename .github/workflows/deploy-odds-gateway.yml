@@ -31,6 +31,10 @@ on:
         description: 'Apply supabase/odds_api_gateway.sql (control plane, ledger, budget; idempotent; leaves the breaker as it is)'
         type: boolean
         default: true
+      apply_hourly_limits:
+        description: 'Apply supabase/odds_api_hourly_limits.sql (nothing runs or buys more often than hourly; idempotent; leaves the breaker, the budget and paused jobs as they are)'
+        type: boolean
+        default: true
       deploy_gateway:
         description: 'Deploy supabase/functions/odds_gateway (JWT verification OFF: it checks the service role / gateway secret itself)'
         type: boolean
@@ -98,6 +102,16 @@ jobs:
           out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/odds_api_gateway.sql)
           echo "$out" | tail -12
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::odds_api_gateway.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply supabase/odds_api_hourly_limits.sql
+        if: ${{ inputs.apply_hourly_limits && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/odds_api_hourly_limits.sql)
+          echo "$out" | tail -8
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::odds_api_hourly_limits.sql: a report row says CHECK THIS"; exit 1; fi
 
       - name: Install the Supabase CLI
         if: ${{ (inputs.deploy_gateway || inputs.deploy_callers) && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}

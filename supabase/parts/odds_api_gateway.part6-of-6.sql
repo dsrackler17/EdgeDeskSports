@@ -24,13 +24,16 @@ with checks as (
                 and not has_function_privilege('anon', 'public.odds_api_dashboard(integer)', 'execute') then 1 else 0 end), 1
   union all select 6, 'alternate player props, secondary props, scores and historical calls are OFF',
          (select count(*) from public.odds_api_categories where category in ('props_alt', 'props_extra', 'scores', 'historical_events', 'historical_props') and not enabled)::int, 5
-  union all select 7, 'main markets within 3 h of kickoff refresh at most every 20 minutes',
-         (select count(*) from public.odds_api_cadence where category = 'featured' and sport_group = '*' and max_hours_to_start = 3 and interval_minutes = 20)::int, 1
+  union all select 7, 'main markets within 3 h of kickoff refresh at most hourly',
+         (select count(*) from public.odds_api_cadence where category = 'featured' and sport_group = '*' and max_hours_to_start = 3 and interval_minutes = 60)::int, 1
   union all select 8, 'NFL props within 3 h at most hourly; beyond 48 h never',
          (select count(*) from public.odds_api_cadence where category = 'props' and sport_group = 'nfl'
             and ((max_hours_to_start = 3 and interval_minutes = 60) or (max_hours_to_start = 1000000 and interval_minutes is null)))::int, 2
   union all select 9, 'the provider allowlist is football first (NFL and NCAAF at priority 1)',
          (select count(*) from public.odds_api_sports where sport_key in ('americanfootball_nfl', 'americanfootball_ncaaf') and priority = 1)::int, 2
+  union all select 10, 'nothing refreshes more often than hourly (no band under 60 min; the floor constraint is on)',
+         (case when not exists (select 1 from public.odds_api_cadence where interval_minutes < 60)
+                and exists (select 1 from pg_constraint where conname = 'odds_api_cadence_hourly_floor') then 1 else 0 end), 1
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by n;

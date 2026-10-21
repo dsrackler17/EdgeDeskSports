@@ -10,11 +10,15 @@
 -- 2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): THESE ARE POKES,
 -- NOT PURCHASES. Capture buys nothing itself any more: every board goes
 -- through supabase/functions/odds_gateway, which serves the stored snapshot
--- until the sport's event-aware cadence is due (20 min inside 3 h of its next
--- kickoff, 60 min inside 24 h, 2 h inside 72 h, 6 h beyond), applies the shared
--- credit budget and the circuit breaker, and only then buys. The cadences were
--- loosened to the gateway's tightest interval (near 10 -> 20 min, day 30 ->
--- 60 min, board 4 -> 6 h), and a poke sends nothing while the breaker is off.
+-- until the sport's event-aware cadence is due (60 min inside 24 h of its next
+-- kickoff, 2 h inside 72 h, 6 h beyond), applies the shared credit budget and
+-- the circuit breaker, and only then buys. A poke sends nothing while the
+-- breaker is off.
+--
+-- 2026-10-21: NOTHING RUNS MORE OFTEN THAN HOURLY. near hourly at :12 (was
+-- every 20 min, 10 before the incident), day every 2 h at :04 (was hourly),
+-- board every 6 h at :18. supabase/odds_api_hourly_limits.sql applies the
+-- same schedules to a database without re-creating the jobs.
 -- Re-running this file re-creates the jobs ACTIVE: if the emergency stop is in
 -- force, run public.odds_api_emergency_stop(...) again afterwards (it pauses
 -- them and records them for public.odds_api_resume_schedules()).
@@ -62,8 +66,8 @@ select cron.unschedule('capture_day') where exists (select 1 from cron.job where
 select cron.unschedule('capture_board') where exists (select 1 from cron.job where jobname = 'capture_board');
 
 -- CADENCE CONTRACT: must match CADENCE_TIERS in capture/index.ts.
-select cron.schedule('capture_near', '*/20 * * * *', $job$ select public.capture_poke('near'); $job$);
-select cron.schedule('capture_day', '4 * * * *', $job$ select public.capture_poke('day'); $job$);
+select cron.schedule('capture_near', '12 * * * *', $job$ select public.capture_poke('near'); $job$);
+select cron.schedule('capture_day', '4 */2 * * *', $job$ select public.capture_poke('day'); $job$);
 select cron.schedule('capture_board', '18 */6 * * *', $job$ select public.capture_poke('board'); $job$);
 
 select jobname, schedule, active from cron.job

@@ -1,6 +1,7 @@
 -- ============================================================================
 -- THE PRIMARY PLAYER PROPS SCHEDULER — pg_cron calling the props_cron edge
--- function every fifteen minutes (every five until 2026-10-10).
+-- function hourly (every fifteen minutes until 2026-10-21, every five until
+-- 2026-10-10).
 --
 -- WHY NOT GITHUB ACTIONS. Because it does not fire. On 2026-09-29 the hourly
 -- Player props workflow ran on schedule twice in eight hours (08:42 and
@@ -66,11 +67,12 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- THE JOB. Every fifteen minutes (2026-10-10, docs/odds-api-incident-2026-10):
--- the tightest prop cadence is now hourly (inside 3 h of kickoff), and every
--- purchase goes through odds_gateway, which serves its snapshot until an
--- event is due. Five-minute ticks dispatched the workflow up to 201 times a
--- day for a capture that is due a few times an hour at most. Fire-and-forget: pg_net queues the request
+-- THE JOB. Hourly at :38 (2026-10-21: nothing runs or buys more often than
+-- hourly; it was every fifteen minutes after the 2026-10-10 incident, every
+-- five before it). The tightest prop cadence is hourly (inside 3 h of
+-- kickoff), and every purchase goes through odds_gateway, which serves its
+-- snapshot until an event is due. Five-minute ticks dispatched the workflow up
+-- to 201 times a day. Fire-and-forget: pg_net queues the request
 -- and returns at once; thirty seconds leaves room for a slow GitHub answer
 -- (pg_net's own default is five). props_cron debounces against its own last
 -- dispatch and the workflow's concurrency group serializes runs, so a
@@ -81,7 +83,7 @@ select cron.unschedule('player_props_dispatch')
 
 select cron.schedule(
   'player_props_dispatch',
-  '*/15 * * * *',
+  '38 * * * *',
   $job$
     select net.http_post(
       url                  := 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/props_cron',
@@ -93,14 +95,14 @@ select cron.schedule(
 );
 
 -- THE REPORT. Every row should say ok. Whether the ticks ARRIVE is proven
--- fifteen minutes later, not here:
+-- after the next :38, not here:
 --   select league, scheduler_tick_at, scheduler_action, scheduler_reason
 --   from player_props_pipeline_health;
--- scheduler_tick_at within the last fifteen minutes is a working scheduler; still
+-- scheduler_tick_at within the last hour is a working scheduler; still
 -- empty, look for a 401 in net._http_response (JWT verification is still on).
 with checks as (
-  select 1 as n, 'the player_props_dispatch job is scheduled every fifteen minutes' as check_name,
-         (select count(*) from cron.job where jobname = 'player_props_dispatch' and schedule = '*/15 * * * *' and active)::int as got, 1 as want
+  select 1 as n, 'the player_props_dispatch job is scheduled hourly (at :38)' as check_name,
+         (select count(*) from cron.job where jobname = 'player_props_dispatch' and schedule = '38 * * * *' and active)::int as got, 1 as want
   union all select 2, 'the job calls props_cron with no key and no database setting',
          (select count(*) from cron.job where jobname = 'player_props_dispatch'
             and command like '%/functions/v1/props_cron%' and command not like '%current_setting%')::int, 1

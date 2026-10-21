@@ -175,9 +175,9 @@ create table if not exists public.odds_api_cadence (
   primary key (category, sport_group, max_hours_to_start)
 );
 insert into public.odds_api_cadence (category, sport_group, max_hours_to_start, interval_minutes) values
-  ('featured', '*', 3, 20), ('featured', '*', 24, 60), ('featured', '*', 72, 120), ('featured', '*', 1000000, 360),
-  ('close', '*', 3, 20), ('close', '*', 24, 60), ('close', '*', 72, 120), ('close', '*', 1000000, 360),
-  ('collective', '*', 3, 20), ('collective', '*', 24, 60), ('collective', '*', 72, 120), ('collective', '*', 1000000, 360),
+  ('featured', '*', 3, 60), ('featured', '*', 24, 60), ('featured', '*', 72, 120), ('featured', '*', 1000000, 360),
+  ('close', '*', 3, 60), ('close', '*', 24, 60), ('close', '*', 72, 120), ('close', '*', 1000000, 360),
+  ('collective', '*', 3, 60), ('collective', '*', 24, 60), ('collective', '*', 72, 120), ('collective', '*', 1000000, 360),
   ('props', 'nfl', 3, 60), ('props', 'nfl', 24, 120), ('props', 'nfl', 48, 360), ('props', 'nfl', 1000000, null),
   ('props', 'ncaaf', 3, 60), ('props', 'ncaaf', 24, 180), ('props', 'ncaaf', 1000000, null),
   ('props', '*', 1000000, null),
@@ -188,6 +188,22 @@ insert into public.odds_api_cadence (category, sport_group, max_hours_to_start, 
   ('scores', '*', 1000000, 60),
   ('historical_events', '*', 1000000, 525600), ('historical_props', '*', 1000000, 525600)
 on conflict (category, sport_group, max_hours_to_start) do nothing;
+
+-- 2026-10-21: NOTHING IS BOUGHT MORE OFTEN THAN HOURLY. The operator's rule
+-- after October's quota was spent in 9.5 days: no band, for any category, sport
+-- or caller, refreshes a snapshot sooner than 60 minutes. The main markets'
+-- 20-minute band inside 3 h of kickoff became 60 (a database that already holds
+-- the old rows is upgraded here), and the constraint refuses any later row or
+-- edit under an hour, so a faster cadence takes a deliberate schema change, not
+-- a quiet update. supabase/odds_api_hourly_limits.sql applies the same floor on
+-- its own, together with the schedules.
+update public.odds_api_cadence set interval_minutes = 60 where interval_minutes < 60;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'odds_api_cadence_hourly_floor') then
+    alter table public.odds_api_cadence add constraint odds_api_cadence_hourly_floor
+      check (interval_minutes is null or interval_minutes >= 60);
+  end if;
+end $$;
 
 -- ── 2. THE LEDGER: one row per gateway decision ─────────────────────────────
 create table if not exists public.odds_api_requests (
@@ -264,19 +280,3 @@ create table if not exists public.odds_api_snapshots (
   cost_last           integer,
   updated_at          timestamptz not null default now()
 );
-create index if not exists odds_api_snapshots_sport_idx on public.odds_api_snapshots (sport_key, category, last_success_at desc);
-alter table public.odds_api_snapshots enable row level security;
-revoke all on public.odds_api_snapshots from anon, authenticated;
-
--- Commence times learned from responses: the cadence's clock, for free.
-create table if not exists public.odds_api_events (
-  event_id      text primary key,
-  sport_key     text not null,
-  commence_time timestamptz not null,
-  home_team     text,
-  away_team     text,
-  last_seen_at  timestamptz not null default now()
-);
-create index if not exists odds_api_events_sport_idx on public.odds_api_events (sport_key, commence_time);
-alter table public.odds_api_events enable row level security;
-revoke all on public.odds_api_events from anon, authenticated;

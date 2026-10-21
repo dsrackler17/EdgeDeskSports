@@ -37,10 +37,13 @@ What that changes here:
   included) does.
 - **Fixed sports.** NFL, NCAAF, MMA and MLB (`DEFAULT_SPORTS`, or
   `CAPTURE_SPORTS`), never every active sport the provider lists.
-- **Cadence is the gateway's.** A tick inside a snapshot's interval (20 / 60 /
-  120 / 360 min by hours to the nearest kickoff) is a free cache hit. The
-  schedules were slowed to match (`supabase/capture_cron.sql`: near `*/20`, day
-  hourly at :04, board every 6 h; `capture.yml` every 3 h, no curl retry).
+- **Cadence is the gateway's.** A tick inside a snapshot's interval (60 / 120 /
+  360 min by hours to the nearest kickoff) is a free cache hit. Since
+  2026-10-21 nothing runs or buys more often than hourly
+  (`supabase/odds_api_hourly_limits.sql`): near hourly at :12, day every 2 h at
+  :04, board every 6 h (`supabase/capture_cron.sql`; `capture.yml` every 3 h,
+  no curl retry). The 20-minute band inside 3 h of kickoff is gone, and the
+  database refuses any band under an hour.
 - **No overlap.** A run takes `odds_api_job_lock` for its tier; a second run of
   the same tier answers `skipped_overlap` and spends nothing.
 - **An untiered call is the day tier**, narrowed to `?sport=` when given (the
