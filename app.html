@@ -2924,7 +2924,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261020nba1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261021ks1">
 <link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021inj1">
 </head>
 <body>
@@ -4016,9 +4016,12 @@ window.mcRefresh=function(){
 <!-- football display lines (docs/system-integrity/FOOTBALL_LINES.md): half-point fair
      spreads and totals, whole-number projected scores, raw-number gaps, key-number notes -->
 <script src="/lib/edgedesk_football_lines.js?v=20261017fl1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261020nba1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261020nba1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261020nba1"></script>
+<!-- the canonical team resolver (the one supabase/functions/kalshi_sync links games with):
+     the graphic places each Kalshi price on this game's own home or away team with it -->
+<script src="/lib/football_identity.js?v=20261021ks1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261021ks1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261021ks1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261021ks1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -4131,6 +4134,8 @@ window.mcRefresh=function(){
      CFB  the hourly board build's market state and decision (cfb_terminal/board.json)
      NFL  the reader's live research state (fbResearchStateOf) once the
           football board has loaded, and the board's own decision
+     Kalshi  both leagues: public.kalshi_card_current's rows for the game, read by
+          the game cards' Kalshi section (window.fbKalshiRows), drawn on the graphic
    A market that cannot be read is "unavailable" and nothing else moves. */
 (function(){
   var GVB={board:null,p:null};
@@ -4175,6 +4180,13 @@ window.mcRefresh=function(){
   }
   function gvOpts(){return {
     market:function(league,gid){return league==='cfb'?gvCfb(gid):gvNfl(gid);},
+    /* a #game link opens this page while the document is still parsing: the Kalshi section's
+       script sits near its end, so wait for the parse before deciding it is absent */
+    kalshi:function(league,gid){
+      var go=function(){return window.fbKalshiRows?window.fbKalshiRows(league,gid):{state:'error',rows:null,error:'the Kalshi section is not loaded'};};
+      if(window.fbKalshiRows||document.readyState!=='loading')return Promise.resolve().then(go);
+      return new Promise(function(res){document.addEventListener('DOMContentLoaded',function(){res();},{once:true});}).then(go);
+    },
     starHTML:function(league,gid,meta){try{return window.EDMine&&EDMine.starHTML?EDMine.starHTML(league==='cfb'?'p4':'nfl',gid,meta):'';}catch(_){return '';}},
     compareFair:window.EDMine&&window.EDMine.compareOpen?function(league,gid){try{EDMine.compareOpen(league+'|'+gid);}catch(_){}}:null,
     boardCard:function(league,gid){researchGo('football');setTimeout(function(){try{window.fbOpenGame(league==='cfb'?'p4':'nfl',gid);}catch(_){}},80);},
@@ -66073,6 +66085,16 @@ try{
   }
   /* an open section stays open across the repaints its own loads cause */
   window.fbKalshiToggle=function(el){try{OPEN[el.getAttribute('data-ks')]=el.open;}catch(_){}};
+  /* the same rows for the research page's matchup graphic (lib/edgedesk_game_view.js opts.kalshi):
+     { state:'ok', rows } by the game's own id, or { state:'not_deployed'|'error', error }. One read,
+     shared with the cards; the graphic places each row on a team, nothing here does */
+  window.fbKalshiRows=function(sport,gid){
+    try{load();}catch(_){}
+    return Promise.resolve(S.p).then(function(){
+      if(S.st!=='ok')return {state:S.st==='unread'?'error':S.st,rows:null,error:S.err&&S.err.message||null};
+      return {state:'ok',rows:(sport==='nfl'||sport==='cfb')?(rowsFor(sport,{game_id:gid},null)||[]):[]};
+    });
+  };
   window.fbKalshiHTML=function(sport,g,t,ev,opts){
     try{return cardHTML(sport,g,t,ev,opts);}
     catch(e){try{console.error('EdgeDesk Kalshi: the section failed in the page',e);}catch(_){}return '';}

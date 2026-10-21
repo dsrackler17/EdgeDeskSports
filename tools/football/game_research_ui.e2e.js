@@ -11,8 +11,12 @@
      NONE    one game with no quote                          → unavailable
    The NFL runs with the odds feed down (no captured signals, no nflverse
    schedule): the research must stand complete. One snapshot is rewritten as
-   a DATA FAULT to prove it is prominent. Fonts and every third-party host
-   are stubbed, so the run is offline and deterministic.
+   a DATA FAULT to prove it is prominent. Kalshi (public.kalshi_card_current)
+   is staged too: FRESH has both teams priced, listed with the book's home
+   and away swapped and mascots on the names, so the graphic must place each
+   price by team; NONE has a market too wide to trust; the NFL game has none.
+   Fonts and every third-party host are stubbed, so the run is offline and
+   deterministic.
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
    Run:  node tools/football/game_research_ui.e2e.js [--shots <dir>]
@@ -64,6 +68,16 @@ function stagedBoard() {
   });
   return b;
 }
+/* kalshi_card_current's rows, as anon reads them (no gap) */
+function stagedKalshi() {
+  const row = (g, yes, opp, st, mid) => ({ sport: g.league, game_id: g.game_id, game_key: g.game_key, odds_event_id: 'ev-' + g.game_id, event_ticker: 'KXNCAAFGAME-E2E' + g.game_id,
+    market_ticker: 'KXNCAAFGAME-E2E' + g.game_id + '-' + yes.slice(0, 3).toUpperCase(), kalshi_yes_name: yes, yes_team: yes + ' Hawks', opponent: opp + ' Hawks',
+    home_team: g.away.name + ' Hawks', away_team: g.home.name + ' Hawks', kickoff_at: g.kickoff, match_confidence: 'high', pregame: true, state: st,
+    snapshot_at: new Date(NOW - 3 * 60000).toISOString(), snapshot_age_minutes: 3, yes_mid: st === 'OK' ? mid : null, yes_bid: mid - 0.01, yes_ask: mid + 0.01,
+    spread: st === 'OK' ? 0.02 : 0.11, volume: 4200, gap_pp: null, book_fair_prob: null });
+  return [row(FRESH, FRESH.away.name, FRESH.home.name, 'OK', 0.415), row(FRESH, FRESH.home.name, FRESH.away.name, 'OK', 0.59),
+    row(NONE, NONE.away.name, NONE.home.name, 'WIDE_SPREAD', 0.5), row(NONE, NONE.home.name, NONE.away.name, 'WIDE_SPREAD', 0.5)];
+}
 function stagedCurrent() {
   const c = JSON.parse(JSON.stringify(CUR));
   const f = c.games.find((g) => g.game_key === FAULT.game_key);
@@ -114,6 +128,7 @@ function siteHandler(req, res) {
       if (/supabase\.co/.test(url)) {
         if (/\/subscriptions/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json',
           body: JSON.stringify([{ status: 'active', price_id: 'price_e2e', current_period_end: new Date(Date.now() + 30 * 864e5).toISOString(), cancel_at_period_end: false, stripe_customer_id: 'cus_e2e' }]) });
+        if (/\/kalshi_card_current/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stagedKalshi()) });
         return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });   /* no captured odds: the provider is down */
       }
       return route.fulfill({ status: 204, body: '' });
@@ -132,6 +147,12 @@ function siteHandler(req, res) {
   }
   async function marketSettled(page) {
     await page.waitForFunction(() => { const m = document.getElementById('gvMarket'); return m && !/Checking for a current/.test(m.innerText); }, null, { timeout: 60000 }).catch(() => {});
+  }
+  /* the Kalshi read has answered and the graphic on screen was drawn with it */
+  async function kalshiSettled(page) {
+    await page.waitForFunction(() => { const s = window.EDGameView._state(), i = document.getElementById('gvImg');
+      return s.ks && s.img && i && !i.hidden && i.src === s.img.url && !/checking/i.test((document.querySelector('.gv-status') || {}).innerText || ''); }, null, { timeout: 30000 }).catch(() => {});
+    return page.evaluate(() => { const s = window.EDGameView._state(); return { content: s.img && s.img.content ? s.img.content.kalshi || null : null, alt: (document.getElementById('gvImg') || {}).alt || '' }; });
   }
   const shot = async (page, name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: true }); };
   const readPage = (page) => page.evaluate(() => {
@@ -159,6 +180,12 @@ function siteHandler(req, res) {
   chk('what to watch for lists the snapshot’s insights', r.watch === FRESH.insights.length && r.watch >= 2, r.watch);
   chk('a fresh quote: EdgeDesk beside the market, with book and capture time', /EDGEDESK/i.test(r.market) && /MARKET/.test(r.market) && /draftkings/i.test(r.market) && /captured/.test(r.market), r.market);
   chk('no horizontal scroll at 390 px', r.sw <= r.vw, { sw: r.sw, vw: r.vw });
+  let ks = await kalshiSettled(page);
+  r = await readPage(page);
+  chk('Kalshi: priced, a fifth chip beside the four answers', /KALSHI\s*priced/i.test(r.status), r.status);
+  chk('Kalshi on the graphic: each team’s YES mid on its own team, though the book listed them the other way round', ks.content && ks.content.title === 'KALSHI'
+    && ks.content.away === FRESH.away.abbr.toUpperCase() + ' 42%' && ks.content.home === FRESH.home.abbr.toUpperCase() + ' 59%', ks.content);
+  chk('…and in the alt text, named a prediction market', /Kalshi YES mid at .* \(a prediction market\)/.test(ks.alt), ks.alt);
   await shot(page, 'phone_fresh');
 
   /* levels */
@@ -236,6 +263,9 @@ function siteHandler(req, res) {
   chk('no odds: market unavailable, research and model untouched', /MARKET\s*unavailable/i.test(r.status) && /RESEARCH\s*(available|limited)/i.test(r.status) && /MODEL\s*active/i.test(r.status), r.status);
   chk('no odds: the calm note and the door to Compare my number', /Live sportsbook prices are currently unavailable/.test(r.market) && /Compare it with EdgeDesk’s model/.test(r.market), r.market);
   chk('no odds: no "NO DECISION" anywhere on the page', !/NO DECISION/.test(r.text), null);
+  ks = await kalshiSettled(S3.page);
+  r = await readPage(S3.page);
+  chk('a Kalshi market too wide to trust: the chip says so and the graphic shows no Kalshi price', /KALSHI\s*wide spread/i.test(r.status) && ks.content === null, { s: r.status, k: ks.content });
   await shot(S3.page, 'phone_no_odds');
   await S3.ctx.close();
 
@@ -245,6 +275,8 @@ function siteHandler(req, res) {
   await marketSettled(N.page);
   r = await readPage(N.page);
   chk('NFL: research available, market unavailable, decision not evaluated', /MARKET\s*unavailable/i.test(r.status) && /BETTING DECISION\s*not evaluated/i.test(r.status), r.status);
+  ks = await kalshiSettled(N.page);
+  chk('NFL with no Kalshi market linked: "no market", nothing drawn in its place', /KALSHI\s*no market/i.test((await readPage(N.page)).status) && ks.content === null, ks);
   chk('NFL: the overview is complete without a quote', r.overview.indexOf(fairOf(NFLG)) >= 0 && /Model moneyline/i.test(r.overview) && /Data check/i.test(r.overview), r.overview.slice(0, 300));
   await N.page.click('[data-gv-act=pmkt][data-gv-v=moneyline]');
   await N.page.selectOption('#gvPrice select[name=side]', 'away');

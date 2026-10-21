@@ -1240,6 +1240,29 @@ module's limitations):
 - wide-spread markets are excluded from the mid;
 - Kalshi's trading fees are not reflected in the raw gap.
 
+### The matchup graphic
+
+Every NFL and CFB matchup graphic (`lib/edgedesk_game_graphic.js`: the
+research page's image, its Download PNG and Share, and `npm run
+game:graphics`) carries Kalshi's price where `kalshi_card_current` trusted one:
+
+- each team's **YES mid as a whole percent**, in a **KALSHI** column beside the
+  live sportsbook quote, or as the third cell of **EdgeDesk model detail** when
+  there is none; **KALSHI CLOSE** after kickoff;
+- only from a row in state OK. A side without one prints nothing, and the other
+  side is never derived from it. No trusted price: no Kalshi on the graphic;
+- **placed by team, not by the row's home/away.** The link accepts a book listing
+  with home and away swapped, so `EDGameSnapshot.kalshi`
+  (`lib/edgedesk_game_snapshot.js`) resolves each YES team onto the snapshot's
+  own teams with `lib/football_identity.js`, the resolver the sync links games
+  with. A team that does not resolve places nothing.
+
+The research page shows why with a **KALSHI** status chip and a Kalshi row
+under Lab → Market diagnostics. The rows come from the cards' own read
+(`window.fbKalshiRows`). The batch export reads the view with the site's public
+key (anon sees Kalshi's prices and no gap) and draws model-only if it cannot.
+The landing page's graphics stay model-only.
+
 ### Readiness
 
 There is no "Research Readiness Dashboard" under that name; as with the NBA
