@@ -54,7 +54,8 @@ const espnRoster = (t) => ({ athletes: BY_TEAM[t].map((p) => ({ id: p.id, displa
 const REPORT_LINES = (o) => ['Injury Report: 10/21/26 05:30 PM', 'Game Date Game Time Matchup Team Player Name Current Status Reason',
   '10/21/2026 07:30 (ET) CHA@BKN Charlotte Hornets White, Coby Out Injury/Illness - Left Calf; Strain', 'Knueppel, Kon Out Injury/Illness - Right Ankle; Sprain', 'Williams, Grant Out Injury/Illness - Right Knee; Injury Management']
   .concat(o && o.bknNotSubmitted ? ['Brooklyn Nets NOT YET SUBMITTED'] : []).concat(o && o.unmatched ? ['Nobody, Some Out Rest'] : []).concat(['Page 1 of 1']);
-const W = { official: true, seasonPage: true, espnInj: true, roster: true, lines: REPORT_LINES(), inputs: true };
+const W = { official: true, seasonPage: true, espnInj: true, roster: true, lines: REPORT_LINES(), inputs: true, pdfStatus: 0 };
+const AGENTS = [];
 const ESPN_INJ = { injuries: [{ id: '30', displayName: 'Charlotte Hornets', injuries: [
   { status: 'Out', athlete: { displayName: 'Coby White', links: [{ href: 'https://www.espn.com/nba/player/_/id/4395651/coby-white' }] } },
   { status: 'Out', athlete: { displayName: 'Kon Knueppel', links: [{ href: 'https://www.espn.com/nba/player/_/id/5061575/kon-knueppel' }] } },
@@ -99,9 +100,10 @@ const PDF = new TextEncoder().encode('%PDF-1.7 a report');
 globalThis.fetch = async (u, init) => {
   u = String(u);
   if (u.startsWith(ENV.SUPABASE_URL)) { const [s, b] = rest(u, init); return resp(s, b); }
+  AGENTS.push((init && init.headers && init.headers['user-agent']) || '');
   if (u === ENV.NBA_INPUTS_URL) return W.inputs ? resp(200, INPUTS) : resp(503, 'down');
   if (u.startsWith('https://official.nba.com/nba-injury-report-2026-27-season')) return W.seasonPage && W.official ? resp(200, '<a href="https://ak-static.cms.nba.com/referee/injury/Injury-Report_2026-10-21_05_30PM.pdf">5:30</a><a href="https://ak-static.cms.nba.com/referee/injury/Injury-Report_2026-10-21_01_30PM.pdf">1:30</a>') : resp(503, 'down');
-  if (u.startsWith('https://ak-static.cms.nba.com/referee/injury/')) return W.official && /05_30PM/.test(u) ? resp(200, '', PDF) : resp(404, 'no');
+  if (u.startsWith('https://ak-static.cms.nba.com/referee/injury/')) return W.pdfStatus ? resp(W.pdfStatus, 'Access Denied') : W.official && /05_30PM/.test(u) ? resp(200, '', PDF) : resp(404, 'no');
   const ro = /\/teams\/(\d+)\/roster$/.exec(u);
   if (ro) return W.roster ? resp(200, espnRoster(ro[1])) : resp(503, 'down');
   if (u.endsWith('/basketball/nba/injuries')) return W.espnInj ? resp(200, ESPN_INJ) : resp(503, 'down');
@@ -175,6 +177,14 @@ globalThis.fetch = async (u, init) => {
     && DB.alerts.some((a) => a.severity === 'DEGRADED' && a.code === 'official_unavailable'), [rf, DB.alerts]);
   chk('fallback: ESPN ids matched directly; Day-To-Day stored as UNKNOWN with the source word', DB.rrows.every((x) => x.match_method === 'espn_id') && DB.rrows.find((x) => x.player_name === 'Grant Williams').status === 'UNKNOWN' && DB.rrows.find((x) => x.player_name === 'Grant Williams').source_status === 'Day-To-Day');
   chk('fallback: the projection is stored, from the fallback report, and says so', last('proj') && last('proj').report_source === 'espn_injuries' && last('proj').adjustments.some((l) => l.player_name === 'Grant Williams' && /status not an official designation/.test(l.text)));
+
+  /* ---- refused at the edge (2026-10-21: ESPN and the league's PDF host refused a crawler-style agent) ---- */
+  chk('sources: every outside request sends a browser agent, not a crawler-style one', AGENTS.length > 0 && AGENTS.every((a) => /^Mozilla\/5\.0 /.test(a) && !/\+https?:/.test(a)), [...new Set(AGENTS)]);
+  resetDb(); W.pdfStatus = 403;
+  o = await run();
+  const refused = DB.alerts.find((a) => a.code === 'official_unavailable');
+  chk('sources: a refused PDF says how it was refused (the HTTP status), not just that it failed', refused && /would not download: HTTP 403/.test(refused.message), DB.alerts);
+  W.pdfStatus = 0;
 
   /* ---- the forced failure ---- */
   resetDb();
