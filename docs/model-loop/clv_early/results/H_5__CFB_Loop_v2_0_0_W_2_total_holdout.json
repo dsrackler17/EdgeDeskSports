@@ -1,0 +1,178 @@
+{
+ "exp": "H-5",
+ "label": "CFB Loop v2.0.0 W-2 total (holdout)",
+ "sport": "cfb",
+ "market": "total",
+ "at": "2026-10-21T14:18:43Z",
+ "primary": {
+  "label": "CFB Loop v2.0.0 W-2 total (holdout)",
+  "market": "total",
+  "threshold": 3.0,
+  "n_rows": 1022,
+  "seasons": [
+   2025,
+   2026
+  ],
+  "n": 426,
+  "clv_pts": 0.41784037558685444,
+  "clv_prob": 0.010200197818445191,
+  "hit_rate": 0.572972972972973,
+  "share_moved_toward": 0.49765258215962443,
+  "share_moved_away": 0.37089201877934275,
+  "share_unmoved": 0.13145539906103287,
+  "roi_at_bet_price": -0.025981440528422783,
+  "clv_pts_ci95": [
+   0.13519515564958345,
+   0.6581747742703156
+  ],
+  "clv_prob_ci95": [
+   0.0032851861307258293,
+   0.01606903196547341
+  ],
+  "hit_rate_ci95": [
+   0.5155034763845601,
+   0.6231004566907485
+  ],
+  "roi_ci95": [
+   -0.039182826477705206,
+   -0.014777302611368918
+  ],
+  "permutation": {
+   "p_value": 0.0004997501249375312,
+   "null_mean_pts": -0.23895774647887322,
+   "null_sd_pts": 0.09915479158876797,
+   "n_perm": 2000
+  },
+  "buckets": [
+   {
+    "bucket": "0-1",
+    "n": 213,
+    "clv_pts": -0.13849765258215962,
+    "clv_prob": -0.0032994402255741074,
+    "hit_rate": 0.44565217391304346,
+    "share_moved_toward": 0.38497652582159625,
+    "share_moved_away": 0.4788732394366197,
+    "share_unmoved": 0.13615023474178403,
+    "clv_pts_ci95": [
+     -0.3758935722867441,
+     0.14287687450670875
+    ]
+   },
+   {
+    "bucket": "1-2",
+    "n": 202,
+    "clv_pts": -0.07920792079207921,
+    "clv_prob": -0.0019761652173384456,
+    "hit_rate": 0.46285714285714286,
+    "share_moved_toward": 0.400990099009901,
+    "share_moved_away": 0.46534653465346537,
+    "share_unmoved": 0.13366336633663367,
+    "clv_pts_ci95": [
+     -0.3025735294117647,
+     0.15462637178520564
+    ]
+   },
+   {
+    "bucket": "2-3",
+    "n": 181,
+    "clv_pts": 0.08287292817679558,
+    "clv_prob": 0.0019428661414266019,
+    "hit_rate": 0.49032258064516127,
+    "share_moved_toward": 0.4198895027624309,
+    "share_moved_away": 0.43646408839779005,
+    "share_unmoved": 0.143646408839779,
+    "clv_pts_ci95": [
+     -0.20778841899564926,
+     0.33845426829268294
+    ]
+   },
+   {
+    "bucket": "3+",
+    "n": 426,
+    "clv_pts": 0.41784037558685444,
+    "clv_prob": 0.010200197818445191,
+    "hit_rate": 0.572972972972973,
+    "share_moved_toward": 0.49765258215962443,
+    "share_moved_away": 0.37089201877934275,
+    "share_unmoved": 0.13145539906103287,
+    "clv_pts_ci95": [
+     0.21182491208157347,
+     0.6159392834771714
+    ]
+   }
+  ],
+  "by_season": [
+   {
+    "season": 2025,
+    "n": 328,
+    "clv_pts": 0.3475609756097561,
+    "clv_prob": 0.008521100480611145,
+    "hit_rate": 0.5644599303135889,
+    "share_moved_toward": 0.49390243902439024,
+    "share_moved_away": 0.38109756097560976,
+    "share_unmoved": 0.125
+   },
+   {
+    "season": 2026,
+    "n": 98,
+    "clv_pts": 0.6530612244897959,
+    "clv_prob": 0.01582003380629792,
+    "hit_rate": 0.6024096385542169,
+    "share_moved_toward": 0.5102040816326531,
+    "share_moved_away": 0.336734693877551,
+    "share_unmoved": 0.15306122448979592
+   }
+  ],
+  "movement": {
+   "slope": 0.16966706658554875,
+   "intercept": -0.7889733417251258,
+   "corr": 0.25247320755418867,
+   "n": 1022
+  },
+  "diagnostics": {
+   "ats_win_rate_at_bet_line": 0.5138539042821159,
+   "ats_n": 397,
+   "model_mae_vs_result": 12.871303478554507,
+   "bet_line_mae_vs_result": 12.604037267080745,
+   "close_mae_vs_result": 12.452380952380953
+  },
+  "config": {
+   "threshold": 3.0,
+   "market": "total",
+   "n_boot": 4000,
+   "n_perm": 2000,
+   "seed": 20261021,
+   "buckets": [
+    "0.0",
+    "1.0",
+    "2.0",
+    "3.0",
+    "inf"
+   ],
+   "cluster": [
+    "season",
+    "week"
+   ],
+   "ci_level": 0.98,
+   "label": "CFB Loop v2.0.0 W-2 total (holdout)"
+  }
+ },
+ "sweep": [],
+ "extra": {
+  "pred": "pred_cfb_loop_lag1.parquet",
+  "seasons": [
+   2025,
+   2026
+  ],
+  "k": 5,
+  "alpha": 0.01,
+  "note": "clv_pts_ci95 holds the 98% two-sided interval: its lower end is the one-sided 99% bound"
+ },
+ "gate": {
+  "n_ok": true,
+  "lower_bound_ok": true,
+  "perm_ok": true,
+  "prob_ok": true,
+  "PASS": true
+ }
+}

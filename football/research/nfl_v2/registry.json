@@ -2053,6 +2053,16 @@
    "from": "edgedesk_nfl_v2.0.0",
    "to": "edgedesk_nfl_v2.1.0",
    "run": "round2"
+  },
+  {
+   "at": "2026-10-21T15:00:00.000Z",
+   "kind": "clv_live_tracking",
+   "status": "CANDIDATE (CLV live tracking)",
+   "model_version": "edgedesk_nfl_v2.1.0",
+   "rule": "NFL total: |v2.1.0 fair total (week-start ratings, previous-game starters, neutral weather) - early-week total| >= 2.0, bet toward the model; early-week = the line at the last kickoff of week W-1 + 5h, re-posted after week W-1 kicked off",
+   "evidence": "research/clv_early_week/EXPERIMENTS.md H-3: development 2020-24 +0.443 pts CLV; holdout 2025+2026 +0.504 pts (114 bets), one-sided 99% bound +0.234, permutation p 0.0015. Expected ROI at the offered price -2.1%: beats the close, not the vig.",
+   "serves": false,
+   "note": "Live tracking only. Does not change `current` or any served number."
   }
  ],
  "updated_at": "2026-10-21T03:58:51.972Z"
