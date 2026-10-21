@@ -3,9 +3,9 @@
 /* ===========================================================================
    EdgeDesk collegiate — one run of the collector, as collegiate/plan.json
    says: the school registry when it is missing or old (directory.js), every
-   weekly sport's current and previous season (rosters.js), any backfill not
-   yet done, then the portal ledger for every season with its previous one
-   (portal.js). collegiate-rosters.yml runs it weekly, and on a branch when
+   weekly sport's current and previous season (rosters.js), schedules and
+   results (schedules.js), any backfill not yet done, then the portal ledger
+   for every season with its previous one (portal.js). collegiate-rosters.yml runs it weekly, and on a branch when
    the plan changes.
 
      node collegiate/run.js [--today YYYY-MM-DD] [--skip-directory] [--only-backfill]
@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const DIR = require('./directory');
 const RO = require('./rosters');
+const SC = require('./schedules');
 const PO = require('./portal');
 const { createPolite } = require('./polite');
 
@@ -47,12 +48,21 @@ async function run(o) {
     console.error('[run] weekly ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
   }
 
-  /* 3. backfills not yet done */
+  /* 2b. schedules and results: each plan sport's current season */
+  if (!o.onlyBackfill && plan.schedules && (plan.schedules.sports || []).length) {
+    for (const sp of plan.schedules.sports) {
+      const r = await SC.collect({ polite, sports: [sp], seasons: [RO.currentSeason(sp, today) - 1, RO.currentSeason(sp, today)], today, division: plan.division, lanes, log: o.log });
+      summary.steps.push({ step: 'schedules', sport: sp, ok: r.ok, misses_by_reason: r.misses_by_reason });
+      console.error('[run] schedules ' + sp + ' ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
+    }
+  }
+
+  /* 3. backfills not yet done (rosters, or schedules with kind: "schedules") */
   const doneFile = path.join(DATA, 'backfill.json');
   const done = readJson(doneFile, {});
   for (const b of plan.backfill || []) {
     if (done[b.id] && done[b.id].complete) continue;
-    const r = await RO.collect({ polite, sports: [b.sport], seasons: range(b.seasons), today, division: plan.division, lanes, log: o.log });
+    const r = await (b.kind === 'schedules' ? SC : RO).collect({ polite, sports: [b.sport], seasons: range(b.seasons), today, division: plan.division, lanes, log: o.log });
     const hard = (r.misses_by_reason.HTTP || 0) + (r.misses_by_reason.SHRUNK || 0);
     done[b.id] = { sport: b.sport, seasons: b.seasons, at: today, ok: r.ok, misses_by_reason: r.misses_by_reason,
       /* complete once a run has nothing left it could still read: a page that errored is tried again next week */

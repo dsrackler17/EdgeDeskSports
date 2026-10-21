@@ -231,6 +231,15 @@ function polite(pages, hosts, extra) {
     const g0 = x.games[0];
     ok('schedule: a game names its site, its opponent\'s own website and its box score', g0.site === 'H' && g0.opponent === 'UC Davis' && g0.opponent_host === 'ucdavisaggies.com' && /boxscore\/\d+$/.test(g0.boxscore) && g0.us === 12 && g0.them === 2 && g0.innings === 7);
     ok('schedule: a ranking in the opponent\'s name is dropped; neutral sites and the postseason are marked', x.games.some((g) => g.opponent === 'Coastal Carolina' && g.site === 'N') && x.games.some((g) => g.postseason) && x.games.every((g) => !/^#/.test(g.opponent)));
+    {
+      const t = polite({ 'https://texassports.com/robots.txt': { body: FX('texassports.com/robots_txt') }, 'https://texassports.com/sports/baseball/schedule/2026': { body: FX('texassports.com/sports_baseball_schedule_2026') } }, ['texassports.com', 'gostanford.com']);
+      const dataDir = path.join(t.dir, 'data');
+      fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ texas: { platform: 'sidearm' }, stanford: { platform: 'wmt' } }));
+      const run = await SC.collect({ polite: t.c, schoolsList: [{ id: 'texas', host: 'texassports.com', division: 1 }, { id: 'stanford', host: 'gostanford.com', division: 1 }], sports: ['baseball'], seasons: [2026, 2025], today: '2026-10-21', dataDir, log: false });
+      const f = JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/texas.json'), 'utf8'));
+      ok('schedule: collected per school and season; a season the site does not answer and a platform not read yet are misses', run.ok === 1 && f.finals === 61 && f.games.length === 63 && run.misses_by_reason.HTTP === 1 && run.misses_by_reason.PLATFORM_NOT_READ === 1, run.misses_by_reason);
+    }
     ok('schedule: helpers', SC.innings('7 Inn.') === 7 && SC.innings('', '10 innings') === 10 && SC.innings('') === null && SC.hostOf('http://www.msuspartans.com/') === 'msuspartans.com' && SC.cleanOpp('No. 3 LSU') === 'LSU');
   }
 

@@ -10,7 +10,14 @@
    postseason, and the box score's address. A game the school lists as
    cancelled or postponed is kept with that status and no score.
    =========================================================================== */
+const fs = require('fs');
+const path = require('path');
 const { nuxtData } = require('./nuxt');
+const PL = require('./platforms');
+
+const DATA = path.join(__dirname, 'data');
+const DAY = 24 * 3600 * 1000;
+const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return d; } };
 
 const hostOf = (u) => { try { return new URL(/^https?:/.test(u) ? u : 'https://' + u).hostname.toLowerCase().replace(/^www\./, ''); } catch (_) { return null; } };
 const cleanOpp = (s) => String(s || '').replace(/^\s*(?:#|no\.\s*)\d+\s+/i, '').replace(/\s+/g, ' ').trim() || null;
@@ -50,4 +57,64 @@ function parseSchedule(html) {
   return sidearmSchedule(data);
 }
 
-module.exports = { parseSchedule, sidearmSchedule, hostOf, cleanOpp, innings };
+/* where a season's schedule lives on each platform */
+function schedulePath(platform, sport, label) {
+  if (platform === 'sidearm') return '/sports/' + sport + '/schedule/' + label;
+  if (platform === 'wmt') return '/sports/' + sport + '/schedule/season/' + label;
+  return null;
+}
+
+/* one school's season: the season's own page, parsed and written whole (a read listing under half the finals the last one did is refused) */
+async function collectOne(polite, school, sport, season, o) {
+  const plat = (o.platforms[school.id] || {}).platform;
+  const miss = (code, why, url) => ({ ok: false, school: school.id, sport, season, url: url || null, code, why });
+  if (plat !== 'sidearm') return miss('PLATFORM_NOT_READ', plat === 'wmt' ? 'WMT schedules are not read yet' : 'the site\'s platform is not known (the roster collector learns it)');
+  const label = (o.labels && o.labels[school.id + '|' + sport + '|' + season]) || PL.seasonLabel(sport, season);
+  const url = 'https://' + school.host + schedulePath(plat, sport, label);
+  const past = season < o.current(sport);
+  const r = await polite.get(url, { ttlMs: past ? 30 * DAY : 12 * 3600 * 1000, noStore: true });
+  if (!r.ok) return miss(r.refused ? 'REFUSED' : 'HTTP', (r.error && r.error.message) || 'no answer', url);
+  const x = parseSchedule(r.text());
+  if (!x) return miss('NO_SCHEDULE', 'the page carries no schedule data', url);
+  if (PL.seasonKey(x.season_label) !== season) return miss('SEASON_MISMATCH', 'the page is the ' + x.season_label + ' schedule', url);
+  if (x.sport && x.sport !== sport) return miss('SPORT_MISMATCH', 'the page is ' + x.sport, url);
+  if (!x.games.length) return miss('EMPTY_SCHEDULE', 'the schedule lists no games', url);
+  const file = path.join(o.dataDir, 'schedules', sport, String(season), school.id + '.json');
+  const prev = readJson(file, null);
+  const finals = x.games.filter((g) => g.status === 'final').length;
+  if (prev && prev.finals >= 10 && finals < prev.finals / 2) return miss('SHRUNK', 'this read lists ' + finals + ' finals, the last ' + prev.finals + ': not written', url);
+  const head = { schema: 'edgedesk_collegiate_schedule_v1', school: school.id, host: school.host, platform: plat, sport, season, season_label: x.season_label, url,
+    first_read: (prev && prev.first_read) || o.today, last_read: o.today, games_listed: x.games.length, finals };
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(head, null, 1).replace(/\n}$/, ',\n "games": [\n' + x.games.map((g) => '  ' + JSON.stringify(g)).join(',\n') + '\n ]\n}') + '\n');
+  return { ok: true, school: school.id, sport, season, url, games: x.games.length, finals };
+}
+
+async function collect(o) {
+  const RO = require('./rosters');
+  const today = o.today || new Date().toISOString().slice(0, 10);
+  const dataDir = o.dataDir || DATA;
+  const all = o.schoolsList || RO.loadSchools(dataDir);
+  const division = o.division == null ? 1 : o.division;
+  const schools = all.filter((s) => s.host && (o.schools ? o.schools.includes(s.id) : (division === 'all' || s.division === division)));
+  const polite = o.polite || require('./polite').createPolite({ hosts: [...new Set(schools.map((s) => s.host))], cacheDir: path.join(__dirname, '..', '.cache', 'collegiate'), log: (m) => console.error(m) });
+  const ctx = { today, dataDir, labels: readJson(path.join(dataDir, 'season_labels.json'), {}), platforms: readJson(path.join(dataDir, 'platforms.json'), {}), current: (sp) => RO.currentSeason(sp, today) };
+  const results = [];
+  const queue = schools.slice();
+  const lanes = Math.max(1, Math.min(o.lanes || 32, queue.length));
+  await Promise.all(Array.from({ length: lanes }, async () => {
+    for (let s = queue.shift(); s; s = queue.shift()) {
+      for (const sport of o.sports) for (const season of o.seasons.slice().sort((a, b) => b - a)) {
+        const res = await collectOne(polite, s, sport, season, ctx);
+        results.push(res);
+        if (o.log !== false) console.error((res.ok ? 'ok   ' : 'miss ') + s.id + ' ' + sport + ' schedule ' + season + (res.ok ? '  ' + res.finals + ' finals' : '  ' + res.code + ': ' + res.why));
+        if (!res.ok && (res.code === 'REFUSED' || res.code === 'PLATFORM_NOT_READ')) break;
+      }
+    }
+  }));
+  const byCode = {};
+  for (const r of results) if (!r.ok) byCode[r.code] = (byCode[r.code] || 0) + 1;
+  return { schools: schools.length, ok: results.filter((r) => r.ok).length, misses_by_reason: byCode, misses: results.filter((r) => !r.ok) };
+}
+
+module.exports = { parseSchedule, sidearmSchedule, schedulePath, collect, collectOne, hostOf, cleanOpp, innings };
