@@ -235,6 +235,10 @@ holdout on MAE **and** log loss. Changes accumulate step by step.
 | R2 | Q1 + S1 | 10.325 | 0.6272 | 10.068 | 0.6233 | passes |
 | R2 | Q2 + S1 | 10.312 | 0.6256 | 10.125 | 0.6253 | passes |
 | R2 | **Q1 + Q2 + S1** | **10.303** | **0.6246** | **10.076** | **0.6212** | **PROMOTED → edgedesk_nfl_v2.1.0** (the lowest 2010–24 MAE of the seven that pass) |
+| R3 | Q3 QB out gap | 10.304 | 0.6248 | | | rejected on validation |
+| R3 | Q1x QB prior past −0.16 (best −0.30 / k 6) | 10.301 | 0.6245 | | | rejected: better in 6 of 15 seasons (needs 9) |
+| R3 | S1x λ past 240 (best 480) | 10.304 | 0.6250 | | | rejected on validation |
+| R3 | T2r recency 0.95 on v2.1.0 | 10.301 | 0.6245 | 10.089 | 0.6229 | rejected by the gate (all three windows) |
 
 Holdout looks: 7 before round 2 (Step 1: 2, the old and fixed models; Step 2: 1; Step 3: 1;
 Step 4: 3) and 7 in round 2 (the three family picks and four combinations). Each is flagged in
@@ -357,18 +361,55 @@ QB value pulled toward −0.16 EPA/dropback instead of −0.04.
 **What round 2 did not settle.**
 * **Two picks sit on the edge of their grids:** Q1 at the lowest prior and the smallest shrinkage,
   S1 at the largest λ. The best setting may lie past the grid. Extending it is a new
-  preregistration.
+  preregistration. *Round 3 did, and found nothing past either edge.*
 * **The 2025 holdout has now gated 14 decisions.** The next round should lean on the weekly loop's
-  full-window gate and on 2026 once it is complete, not on 2025 alone.
+  full-window gate and on 2026 once it is complete, not on 2025 alone. *Round 3 added a
+  season-breadth rule for this.*
+
+## Round 3 — the QB out-gap, the grid edges, recency (nothing promoted)
+
+`preregistration.json` `round_3` (commit 6163fb5bea) was committed before any round-3 evaluation.
+The incumbent is v2.1.0.
+
+**The gate is stricter.** The 2025 holdout had already gated 14 decisions. So a finalist must also
+have the lower MAE in **at least 9 of the 15** validation seasons. Promotion needs the weekly loop's
+three-window gate (the full backtest, 2025, and 2010–2025). The holdout gates; it never ranks.
+
+`run_round3.js` → `results/round3.json`:
+
+| family | best setting (of n tried) | 2010–24 MAE | 2010–24 LL | seasons better (MAE) | gate windows | verdict |
+|---|---|---|---|---|---|---|
+| *incumbent v2.1.0* | | *10.3032* | *0.62458* | | 2025 10.076 / 0.6212 | |
+| Q3 QB out gap: the regular starter's value minus his replacement's, when OUT | on (1) | 10.3040 | 0.62477 | 7 / 15 | — | rejected on validation |
+| Q1x QB prior × shrinkage past round 2's edge | −0.30, k 6 (11) | 10.3005 | 0.62445 | 6 / 15 | — | beat validation by 0.003 MAE in only 6 seasons — rejected by the season rule |
+| S1x standardised ridge λ past 240 | 480 (3) | 10.3044 | 0.62495 | 7 / 15 | — | rejected on validation (worse as λ grows: 960 10.310, 1920 10.319) |
+| T2r in-season recency on v2.1.0 | 0.95 (3) | 10.3007 | 0.62453 | 9 / 15 | 2025 10.089 / 0.6229; 2010–26 10.276 / 0.6249; 2010–25 10.287 / 0.6244 | finalist; loses log loss on all three windows and 2025 MAE — rejected |
+
+**What it settles.**
+* **Round 2's grid edges were not hiding a better model.** Past the edge, the QB prior moves MAE
+  by at most 0.003, scattered across seasons. The ridge gets worse above λ 240. v2.1.0 sits at a
+  flat optimum on both knobs.
+* **Step 4's open recency candidate is closed.** On top of v2.1.0, recency is a narrow validation
+  edge that does not hold up on any gate window.
+* **Scaling the out term by who is missing does not help.** The `qb_adj_diff` term already carries
+  the regular starter's level through the team QB value. A separate gap term adds nothing the
+  2002–2024 history can fit.
+
+So the model prices Hurts' absence at about 3 points against the market's 8, and that is what this
+history supports with these features. The market may know things the features don't. Two
+examples are the backup's own quality beyond his few regular-season starts, and how long the
+injury will last. Neither is in the model, and neither was a preregistered candidate.
+
+**Holdout looks:** one this round (T2r), 15 in all. Variant rows: 447.
 
 ## Known limitations (stated, not fixed)
 
 * **Backup quarterbacks, narrowed by round 2, not closed.** DAL @ PHI is still 5.1 points off a
   market that prices Hurts' absence at about 8. The starter-out term is one learned average (1.78
   points) for every replacement, whether he replaces an elite starter or a poor one, and the QB
-  value of a starter with few games is still shrunk (now toward −0.16). Candidate next step: scale
-  the out term by the regular starter's own value. The regime layer's QB-out term (−3.06 here) is
-  still computed and not priced.
+  value of a starter with few games is still shrunk (now toward −0.16). Round 3 tested scaling the
+  out term by the regular starter's own value (Q3) and a lower prior still (Q1x); neither helped. The
+  regime layer's QB-out term (−3.06 here) is still computed and not priced.
 * **A starter coming back counts as "not the regular starter"** until he again has the most starts
   in his club's last 8 games, so the first weeks of a return are priced like a backup's. The ridge
   weight was fitted with these cases in the history, but they are a different thing from an
@@ -387,7 +428,7 @@ QB value pulled toward −0.16 EPA/dropback instead of −0.04.
 |---|---|
 | model | `football/nfl_model.js` (v2), `football/engine.js` (v1 + fixes, serving) |
 | served params | `football/nfl_params_v2.js` (`train.js`) |
-| backtest | `backtest.js`, `run_steps.js`, `run_round2.js`, `data.js`, `results/step1-4.json`, `results/round2.json`, `results/final.json`, `results/oos_v2.csv.gz` (now the v2.1.0 predictions) |
+| backtest | `backtest.js`, `run_steps.js`, `run_round2.js`, `run_round3.js`, `data.js`, `results/step1-4.json`, `results/round2.json`, `results/round3.json`, `results/final.json`, `results/oos_v2.csv.gz` (now the v2.1.0 predictions) |
 | parity | `football/parity.test.js`, `parity_dump.py`, `parity/` |
 | weekly loop | `weekly_loop.js`, `registry.json`, `versions/`, `results/weekly/`, `tools/record/nfl_weekly_eval.js`, `tools/record/nfl_weekly_report.js`, `tools/football/build_nfl_registry_sql.js` |
 | week cards | `week_cards_diff.js`, `results/week7_cards.json` |

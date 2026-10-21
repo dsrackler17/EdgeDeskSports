@@ -1,0 +1,317 @@
+{
+ "step": "round3",
+ "generated_at": "2026-10-21T03:58:35.113Z",
+ "preregistered_at": "2026-10-21T03:55:55Z",
+ "rules": {
+  "finalist": "beats the incumbent on 2010-2024 MAE AND log loss, AND has the lower MAE in at least 9 of the 15 validation seasons (new this round: the 2025 holdout has gated 14 earlier decisions, so a validation edge must be broad, not one or two seasons)",
+  "promotion": "a finalist is PROMOTED only if it beats the incumbent on MAE AND log loss on all three windows of the weekly loop gate (weekly_loop.js gate: the full backtest 2010 to the season being played, the 2025 holdout, 2010-2025). Among several that pass, the lowest 2010-2024 MAE, then log loss: the holdout gates, it never ranks. The promoted version is edgedesk_nfl_v2.2.0",
+  "min_season_wins": 9
+ },
+ "incumbent": {
+  "model_version": "edgedesk_nfl_v2.1.0",
+  "config_sha": "6c79095675f8a223",
+  "valid": {
+   "n": 4078,
+   "mae": 10.3032,
+   "rmse": 13.2803,
+   "brier": 0.21774,
+   "logloss": 0.62458,
+   "ece": 0.0251,
+   "cal_slope": 0.941,
+   "home_lean": 0.405,
+   "ats3": {
+    "n": 1010,
+    "win_pct": 0.501980198019802
+   },
+   "total_mae": 10.6887
+  },
+  "windows": {
+   "holdout": {
+    "n": 285,
+    "mae": 10.0764,
+    "rmse": 12.6812,
+    "brier": 0.21719,
+    "logloss": 0.62124,
+    "ece": 0.0655,
+    "cal_slope": 0.928,
+    "home_lean": 0.722,
+    "ats3": {
+     "n": 66,
+     "win_pct": 0.4696969696969697
+    },
+    "total_mae": 10.3798
+   },
+   "full": {
+    "n": 4456,
+    "mae": 10.2767,
+    "rmse": 13.2175,
+    "brier": 0.21794,
+    "logloss": 0.62484,
+    "ece": 0.0268,
+    "cal_slope": 0.94,
+    "home_lean": 0.436,
+    "ats3": {
+     "n": 1099,
+     "win_pct": 0.49772520473157417
+    },
+    "total_mae": 10.6803
+   },
+   "through_holdout": {
+    "n": 4363,
+    "mae": 10.2884,
+    "rmse": 13.242,
+    "brier": 0.21771,
+    "logloss": 0.62436,
+    "ece": 0.0258,
+    "cal_slope": 0.94,
+    "home_lean": 0.425,
+    "ats3": {
+     "n": 1076,
+     "win_pct": 0.5
+    },
+    "total_mae": 10.6685
+   }
+  }
+ },
+ "close": {
+  "full": {
+   "mae": 10.0386,
+   "logloss": 0.6107
+  },
+  "holdout": {
+   "mae": 9.6702,
+   "logloss": 0.607
+  }
+ },
+ "decisions": [
+  {
+   "family": "Q3_qb_out_gap",
+   "label": "QB out gap (qb_out_gap_diff)",
+   "variants_tried": 1,
+   "over": {
+    "features": {
+     "qb_out_gap": true
+    }
+   },
+   "cfg_sha": "844a9ceb8152854c",
+   "valid": {
+    "n": 4078,
+    "mae": 10.304,
+    "rmse": 13.2784,
+    "brier": 0.21784,
+    "logloss": 0.62477,
+    "ece": 0.0256,
+    "cal_slope": 0.933,
+    "home_lean": 0.406,
+    "ats3": {
+     "n": 997,
+     "win_pct": 0.5105315947843531
+    },
+    "total_mae": 10.6887
+   },
+   "season_wins_2010_2024": {
+    "seasons": 15,
+    "mae_better": 7,
+    "logloss_better": 8
+   },
+   "finalist": false,
+   "windows": null,
+   "gate": null,
+   "promotes": false,
+   "why": "did not beat the incumbent on 2010-2024 validation (MAE and log loss)"
+  },
+  {
+   "family": "Q1x_qb_prior",
+   "label": "QB prior -0.3 shrink 6",
+   "variants_tried": 11,
+   "over": {
+    "qb": {
+     "qb_prior": -0.3,
+     "qb_shrink": 6
+    }
+   },
+   "cfg_sha": "56a26efdf59db274",
+   "valid": {
+    "n": 4078,
+    "mae": 10.3005,
+    "rmse": 13.279,
+    "brier": 0.21767,
+    "logloss": 0.62445,
+    "ece": 0.0272,
+    "cal_slope": 0.94,
+    "home_lean": 0.402,
+    "ats3": {
+     "n": 1000,
+     "win_pct": 0.525
+    },
+    "total_mae": 10.6887
+   },
+   "season_wins_2010_2024": {
+    "seasons": 15,
+    "mae_better": 6,
+    "logloss_better": 7
+   },
+   "finalist": false,
+   "windows": null,
+   "gate": null,
+   "promotes": false,
+   "why": "beat 2010-2024 validation but had the lower MAE in only 6 of 15 seasons (needs 9)"
+  },
+  {
+   "family": "S1x_lambda",
+   "label": "standardised strength ridge lambda 480",
+   "variants_tried": 3,
+   "over": {
+    "ridge": {
+     "standardize": true,
+     "strength": 480
+    }
+   },
+   "cfg_sha": "d331435c979a1b47",
+   "valid": {
+    "n": 4078,
+    "mae": 10.3044,
+    "rmse": 13.2897,
+    "brier": 0.21794,
+    "logloss": 0.62495,
+    "ece": 0.0253,
+    "cal_slope": 0.962,
+    "home_lean": 0.398,
+    "ats3": {
+     "n": 967,
+     "win_pct": 0.5025853154084798
+    },
+    "total_mae": 10.6887
+   },
+   "season_wins_2010_2024": {
+    "seasons": 15,
+    "mae_better": 7,
+    "logloss_better": 5
+   },
+   "finalist": false,
+   "windows": null,
+   "gate": null,
+   "promotes": false,
+   "why": "did not beat the incumbent on 2010-2024 validation (MAE and log loss)"
+  },
+  {
+   "family": "T2r_recency",
+   "label": "in-season recency lambda 0.95",
+   "variants_tried": 3,
+   "over": {
+    "recency": 0.95
+   },
+   "cfg_sha": "e41a9077046de457",
+   "valid": {
+    "n": 4078,
+    "mae": 10.3007,
+    "rmse": 13.2763,
+    "brier": 0.21773,
+    "logloss": 0.62453,
+    "ece": 0.0253,
+    "cal_slope": 0.939,
+    "home_lean": 0.403,
+    "ats3": {
+     "n": 983,
+     "win_pct": 0.49949135300101727
+    },
+    "total_mae": 10.691
+   },
+   "season_wins_2010_2024": {
+    "seasons": 15,
+    "mae_better": 9,
+    "logloss_better": 9
+   },
+   "finalist": true,
+   "windows": {
+    "valid": {
+     "n": 4078,
+     "mae": 10.3007,
+     "rmse": 13.2763,
+     "brier": 0.21773,
+     "logloss": 0.62453,
+     "ece": 0.0253,
+     "cal_slope": 0.939,
+     "home_lean": 0.403,
+     "ats3": {
+      "n": 983,
+      "win_pct": 0.49949135300101727
+     },
+     "total_mae": 10.691
+    },
+    "holdout": {
+     "n": 285,
+     "mae": 10.0894,
+     "rmse": 12.684,
+     "brier": 0.21793,
+     "logloss": 0.62292,
+     "ece": 0.0661,
+     "cal_slope": 0.912,
+     "home_lean": 0.704,
+     "ats3": {
+      "n": 68,
+      "win_pct": 0.45588235294117646
+     },
+     "total_mae": 10.383
+    },
+    "full": {
+     "n": 4456,
+     "mae": 10.2758,
+     "rmse": 13.2144,
+     "brier": 0.21797,
+     "logloss": 0.6249,
+     "ece": 0.027,
+     "cal_slope": 0.937,
+     "home_lean": 0.433,
+     "ats3": {
+      "n": 1072,
+      "win_pct": 0.49533582089552236
+     },
+     "total_mae": 10.6827
+    },
+    "through_holdout": {
+     "n": 4363,
+     "mae": 10.2869,
+     "rmse": 13.2384,
+     "brier": 0.21774,
+     "logloss": 0.62442,
+     "ece": 0.0261,
+     "cal_slope": 0.938,
+     "home_lean": 0.422,
+     "ats3": {
+      "n": 1051,
+      "win_pct": 0.4966698382492864
+     },
+     "total_mae": 10.6709
+    },
+    "live": {
+     "n": 93,
+     "mae": 9.7533,
+     "rmse": 12.0336,
+     "brier": 0.22891,
+     "logloss": 0.64738,
+     "ece": 0.1329,
+     "cal_slope": 0.961,
+     "home_lean": 0.978,
+     "ats3": {
+      "n": 21,
+      "win_pct": 0.42857142857142855
+     },
+     "total_mae": 11.2368
+    }
+   },
+   "gate": {
+    "full": false,
+    "holdout_2025": false,
+    "without_current_season": false
+   },
+   "promotes": false,
+   "why": "does not beat the served model on margin MAE and log loss on: full, holdout_2025, without_current_season"
+  }
+ ],
+ "combinations": [],
+ "promoted": null,
+ "promoted_version": null,
+ "promoted_cfg": null,
+ "not_chosen": []
+}

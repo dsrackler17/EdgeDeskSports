@@ -137,6 +137,14 @@ chk('hyperbolic prior weight is k/(k+n)', Math.abs(M.priorWeight(cfgH, 'pass_epa
   chk('… and -1 with the sides swapped', F2.spread.qb_out_diff === -1, F2.spread.qb_out_diff);
   chk('qb_out_diff is a strength feature only when the configuration turns it on',
     M.featureNames(cfgQ).spread.indexOf('qb_out_diff') >= 0 && M.featureNames(M.config()).spread.indexOf('qb_out_diff') < 0);
+  const cfgG = M.config({ features: { qb_out: true, qb_out_gap: true } });
+  const sg = M.fromSeeds(cfgG, { starts: { A: ['r', 'r', 'r'], B: ['p', 'p'] }, qb: { r: { v: 0.2, n: 30 }, b: { v: 0, n: 1 }, p: { v: 0.05, n: 20 } } });
+  const gap = M.qbEff(sg, 'r') - M.qbEff(sg, 'b');
+  chk('Q3: the out gap is the regular starter\'s QB value minus his replacement\'s', Math.abs(M.qbOutGap(sg, 'A', 'b') - gap) < 1e-15 && Math.abs(gap - 0.16835) < 1e-4, gap);
+  chk('… and 0 when the regular starter plays or no starter is named', M.qbOutGap(sg, 'A', 'r') === 0 && M.qbOutGap(sg, 'A', null) === 0);
+  const Fg = M.features(sg, { season: 2027, week: 1, home: 'A', away: 'B', home_qb_id: 'b', away_qb_id: 'p', home_rest: 7, away_rest: 7, neutral: false });
+  chk('qb_out_gap_diff = home gap - away gap, and a feature only when turned on', Math.abs(Fg.spread.qb_out_gap_diff - gap) < 1e-15 &&
+    M.featureNames(cfgG).spread.indexOf('qb_out_gap_diff') >= 0 && M.featureNames(cfgQ).spread.indexOf('qb_out_gap_diff') < 0, Fg.spread.qb_out_gap_diff);
   const st2 = M.fromSeeds(cfgQ, { starts: { A: ['x', 'x', 'y'] } });
   st2.starts.A.push('y');
   chk('the trained seeds carry the window, copied (the params are never written through)', M.regularStarter(M.fromSeeds(cfgQ, { starts: { A: ['x', 'x', 'y'] } }), 'A') === 'x' && st2.starts.A.length === 4);
