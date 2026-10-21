@@ -1,0 +1,239 @@
+{
+ "schema": "edgedesk_model_loop_versions_v1",
+ "sport": "CFB",
+ "current": "2.0.0",
+ "versions": [
+  {
+   "version": "2.0.0",
+   "parent": "edgedesk_cfb_p4_v1.0.1 (football/cfb_p4/engine.js)",
+   "config": {
+    "rating": {
+     "garbage_floor": 0.25,
+     "hl_week": null,
+     "lam": {
+      "pass_off": 50,
+      "pass_def": 50,
+      "rush_off": 50,
+      "rush_def": 150,
+      "qb": 150,
+      "mu": 100.0,
+      "home": 3000.0,
+      "lower": 200,
+      "group": 50.0
+     },
+     "carry": {
+      "off": 0.6,
+      "def": 0.8,
+      "qb": 0.6,
+      "qb_gap": 0.8,
+      "lower": 0.9
+     },
+     "conf_w": 0.5,
+     "talent": {
+      "off": 0.06,
+      "def": 0.0
+     },
+     "retprod": 0.0,
+     "qb_layer": true,
+     "fcs_teams": true,
+     "market": {
+      "on": true,
+      "hl_week": null,
+      "lam": 0.25,
+      "carry": 1.0,
+      "lam_hfa": 20.0,
+      "lam_group": 3.0
+     },
+     "totals_market": {
+      "on": true,
+      "hl_week": 8.0,
+      "lam": 0.5,
+      "carry": 0.9,
+      "lam_group": 3.0
+     }
+    },
+    "model": {
+     "components": {
+      "qb": true,
+      "market": true,
+      "rest": true,
+      "division": true,
+      "covid": true,
+      "pass_split": true,
+      "rush": true
+     },
+     "hl_season": null,
+     "ridge_lam": 8,
+     "hfa_prior_games": 0,
+     "first_train": 2010,
+     "min_train_seasons": 2,
+     "calibration": "none",
+     "total_market": true
+    }
+   },
+   "config_sha256": "af284333f16a8116f7d63dec5d59c0225c421fc283c31f96bb03412f163e75df",
+   "status": "SERVED",
+   "promoted_by": "preregistered-rule",
+   "promoted_at": "2026-10-21T03:02:31Z",
+   "reason": "Cleared the preregistered rule: v2 beats the cfb_p4 replay on MAE and log loss on the 2014-2025 backtest and on the 2025 holdout. Served by the model loop as a challenger (football/cfb/model_loop); the board still prices from football/cfb_p4. Full 2014-2025 backtest, all games: v2 MAE 12.7853 vs cfb_p4 13.2703 vs close 12.3168; log loss 0.47891 vs 0.49449. 2025 holdout: MAE 12.1215 vs 12.4794; log loss 0.4731 vs 0.47651. Beats cfb_p4 on the full backtest: yes; on the holdout: yes. Neither model beats the closing line over all games (close MAE 12.3168 on the backtest, 11.8969 on the holdout).",
+   "evidence": {
+    "backtest_2014_2025": {
+     "n": 9698,
+     "margin_mae": 12.7853,
+     "close_margin_mae": 12.3168,
+     "logloss": 0.47891,
+     "close_logloss": 0.4729,
+     "logloss_same_games": 0.47891,
+     "brier": 0.15917,
+     "close_brier": 0.15641,
+     "mean_abs_vs_close": 3.5865,
+     "share_3plus_from_close": 0.4736,
+     "total_mae": 13.1972,
+     "close_total_mae": 12.8494
+    },
+    "holdout_2025": {
+     "n": 934,
+     "margin_mae": 12.1215,
+     "close_margin_mae": 11.8969,
+     "logloss": 0.4731,
+     "close_logloss": 0.47257,
+     "logloss_same_games": 0.4731,
+     "brier": 0.15828,
+     "close_brier": 0.15797,
+     "mean_abs_vs_close": 3.3389,
+     "share_3plus_from_close": 0.4486,
+     "total_mae": 12.67,
+     "close_total_mae": 12.4178
+    },
+    "live_2026": {
+     "n": 410,
+     "margin_mae": 11.8563,
+     "close_margin_mae": 11.139,
+     "logloss": 0.44645,
+     "close_logloss": 0.41824,
+     "logloss_same_games": 0.44645,
+     "brier": 0.14881,
+     "close_brier": 0.13772,
+     "mean_abs_vs_close": 3.5991,
+     "share_3plus_from_close": 0.4902,
+     "total_mae": 12.214,
+     "close_total_mae": 12.0976
+    },
+    "fbs_only": {
+     "backtest_2014_2025": {
+      "n": 8527,
+      "margin_mae": 12.6445,
+      "close_margin_mae": 12.2956,
+      "logloss": 0.51839,
+      "close_logloss": 0.51355,
+      "logloss_same_games": 0.51839,
+      "brier": 0.17367,
+      "close_brier": 0.17113,
+      "mean_abs_vs_close": 3.2251,
+      "share_3plus_from_close": 0.4415,
+      "total_mae": 13.2153,
+      "close_total_mae": 12.8868
+     },
+     "holdout_2025": {
+      "n": 808,
+      "margin_mae": 12.1233,
+      "close_margin_mae": 11.8224,
+      "logloss": 0.52561,
+      "close_logloss": 0.52502,
+      "logloss_same_games": 0.52561,
+      "brier": 0.17773,
+      "close_brier": 0.17713,
+      "mean_abs_vs_close": 3.028,
+      "share_3plus_from_close": 0.4196,
+      "total_mae": 12.7774,
+      "close_total_mae": 12.5396
+     }
+    },
+    "fbs_vs_fcs": {
+     "backtest_2014_2025": {
+      "n": 1171,
+      "margin_mae": 13.8106,
+      "close_margin_mae": 12.471,
+      "logloss": 0.1914,
+      "close_logloss": 0.17686,
+      "logloss_same_games": 0.1914,
+      "brier": 0.05363,
+      "close_brier": 0.0492,
+      "mean_abs_vs_close": 6.218,
+      "share_3plus_from_close": 0.7071,
+      "total_mae": 13.0643,
+      "close_total_mae": 12.5747
+     },
+     "holdout_2025": {
+      "n": 126,
+      "margin_mae": 12.1101,
+      "close_margin_mae": 12.375,
+      "logloss": 0.13639,
+      "close_logloss": 0.13625,
+      "logloss_same_games": 0.13639,
+      "brier": 0.03355,
+      "close_brier": 0.03508,
+      "mean_abs_vs_close": 5.3322,
+      "share_3plus_from_close": 0.6349,
+      "total_mae": 11.9813,
+      "close_total_mae": 11.6369
+     }
+    },
+    "cfb_p4_backtest": {
+     "n": 9683,
+     "margin_mae": 13.2703,
+     "close_margin_mae": 12.3131,
+     "logloss": 0.49449,
+     "close_logloss": 0.47306,
+     "logloss_same_games": 0.49449,
+     "brier": 0.16516,
+     "close_brier": 0.15646,
+     "mean_abs_vs_close": 4.3934,
+     "share_3plus_from_close": 0.5437,
+     "total_mae": 13.3159,
+     "close_total_mae": 12.8922
+    },
+    "cfb_p4_holdout": {
+     "n": 932,
+     "margin_mae": 12.4794,
+     "close_margin_mae": 11.8839,
+     "logloss": 0.47651,
+     "close_logloss": 0.47353,
+     "logloss_same_games": 0.47651,
+     "brier": 0.15931,
+     "close_brier": 0.1583,
+     "mean_abs_vs_close": 4.1008,
+     "share_3plus_from_close": 0.529,
+     "total_mae": 12.877,
+     "close_total_mae": 12.5355
+    },
+    "cfb_p4_live_2026": {
+     "n": 410,
+     "margin_mae": 12.7848,
+     "close_margin_mae": 11.139,
+     "logloss": 0.47052,
+     "close_logloss": 0.41824,
+     "logloss_same_games": 0.47052,
+     "brier": 0.15692,
+     "close_brier": 0.13772,
+     "mean_abs_vs_close": 4.9561,
+     "share_3plus_from_close": 0.5805,
+     "total_mae": 12.6818,
+     "close_total_mae": 12.23
+    },
+    "preregistered_decision": {
+     "against": {
+      "cfb_p4": {
+       "promote": true,
+       "reasons": [
+        "clears every condition"
+       ]
+      }
+     },
+     "ship": true
+    },
+    "report": "docs/model-loop/cfb/BACKTEST.md"
+   }
+  }
+ ]
+}

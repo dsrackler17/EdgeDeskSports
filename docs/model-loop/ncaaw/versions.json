@@ -1,0 +1,106 @@
+{
+ "schema": "edgedesk_model_loop_versions_v1",
+ "sport": "Women's college basketball",
+ "league": "ncaaw",
+ "current": "1.1.0",
+ "versions": [
+  {
+   "version": "1.0.0",
+   "parent": null,
+   "config": {
+    "half_life_days": 365,
+    "prior_games": 2,
+    "carry": 0.8,
+    "sweeps": 3,
+    "k_mu": 40,
+    "k_h": 150
+   },
+   "config_sha256": "b6ae88ba540b6968420ab50ff764e9235715385ba27d8fbe0e080d2c37ea6270",
+   "status": "RETIRED (rollback target)",
+   "promoted_by": "selection-window tuning",
+   "promoted_at": "2026-10-21T01:55:22Z",
+   "reason": "The configuration basketball/walkforward.js served when the loop started: basketball/params/ncaaw_tuning.json `chosen`.",
+   "evidence": {
+    "full": {
+     "n": 83023,
+     "logloss": 0.464321,
+     "brier": 0.153616,
+     "margin_mae": 10.1841,
+     "total_mae": 13.1317
+    },
+    "recent_season": {
+     "season": 2026,
+     "n": 6029,
+     "logloss": 0.444986,
+     "brier": 0.147478,
+     "margin_mae": 10.7899,
+     "total_mae": 12.8687
+    }
+   }
+  },
+  {
+   "version": "1.1.0",
+   "parent": "1.0.0",
+   "config": {
+    "half_life_days": 365,
+    "prior_games": 1,
+    "carry": 0.8,
+    "sweeps": 3,
+    "k_mu": 40,
+    "k_h": 150
+   },
+   "config_sha256": "319dc19076c1a4dc1ba9c5b1ca24bc09809012292e1b14e73ff3f0546412dc9c",
+   "status": "SERVED",
+   "promoted_by": "weekly-loop",
+   "promoted_at": "2026-10-21T01:58:16Z",
+   "reason": "weekly loop 2026-10-21: candidate prior_weaker (prior_games [\"mul\",0.5]) cleared the full-window rule",
+   "evidence": {
+    "full": {
+     "n": 83023,
+     "logloss": 0.463767,
+     "brier": 0.15335,
+     "margin_mae": 10.1361,
+     "total_mae": 13.2041
+    },
+    "recent_season": {
+     "season": 2026,
+     "n": 6029,
+     "logloss": 0.44136,
+     "brier": 0.145888,
+     "margin_mae": 10.6503,
+     "total_mae": 12.9339
+    },
+    "delta": {
+     "full_logloss": -0.000554,
+     "full_mae": -0.048,
+     "full_total_mae": 0.0724,
+     "recent_logloss": -0.003626,
+     "recent_mae": -0.1396,
+     "recent_total_mae": 0.0652
+    },
+    "ci95": [
+     -0.000988,
+     -0.000138
+    ],
+    "ci_of": "log loss change",
+    "previous": {
+     "full": {
+      "n": 83023,
+      "logloss": 0.464321,
+      "brier": 0.153616,
+      "margin_mae": 10.1841,
+      "total_mae": 13.1317
+     },
+     "recent_season": {
+      "season": 2026,
+      "n": 6029,
+      "logloss": 0.444986,
+      "brier": 0.147478,
+      "margin_mae": 10.7899,
+      "total_mae": 12.8687
+     }
+    }
+   }
+  }
+ ]
+}

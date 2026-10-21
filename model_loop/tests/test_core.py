@@ -45,6 +45,22 @@ class TestPenalizedFit(unittest.TestCase):
         self.assertAlmostEqual(shares[0], 1.0)
         self.assertTrue(all(a > b for a, b in zip(shares, shares[1:])))
 
+    def test_sparse_normal_equations_match_dense(self):
+        rng = np.random.default_rng(2)
+        n_obs, n_par = 80, 15
+        rows = np.r_[np.repeat(np.arange(n_obs), 3), [0]]          # one repeated (row, col) entry
+        cols = np.r_[rng.integers(0, n_par, 3 * n_obs), [0]]
+        cols[-1] = cols[0]
+        vals = rng.normal(size=len(rows))
+        y, w = rng.normal(size=n_obs), rng.uniform(1, 9, n_obs)
+        m, lam = rng.normal(size=n_par), rng.uniform(1, 30, n_par)
+        X = np.zeros((n_obs, n_par))
+        np.add.at(X, (rows, cols), vals)
+        A = (X * w[:, None]).T @ X + np.diag(lam)
+        dense = np.linalg.solve(A, lam * m + (X * w[:, None]).T @ y)
+        theta, fp, fd, _ = penalized_wls(rows, cols, vals, y, w, n_par, m, lam)
+        self.assertTrue(np.allclose(theta, dense, atol=1e-10))
+
     def test_recency(self):
         self.assertTrue(np.allclose(recency_weights([0, 6, 12], 6.0), [1, 0.5, 0.25]))
         self.assertTrue(np.allclose(recency_weights([0, 6], None), [1, 1]))
@@ -68,6 +84,12 @@ class TestDistribution(unittest.TestCase):
         for mu in (-14.2, -6.72, -2.5, 0.0, 2.9, 6.72, 13.3):
             p = self.d.pmf(mu)[0]
             self.assertAlmostEqual(float((p * self.d.k).sum()), mu, places=6)
+
+    def test_mean_is_projection_near_the_support_edge(self):
+        d = KeyNumberMargin(sigma=17.0)
+        for mu in (-52.0, 47.5, 58.0):
+            p = d.pmf(mu)[0]
+            self.assertAlmostEqual(float((p * d.k).sum()), mu, places=6)
 
     def test_range_is_centred_and_holds_its_mass(self):
         for mu in (-6.72, 0.4, 6.72, 11.8):

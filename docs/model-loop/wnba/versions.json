@@ -1,0 +1,42 @@
+{
+ "schema": "edgedesk_model_loop_versions_v1",
+ "sport": "WNBA",
+ "league": "wnba",
+ "current": "1.0.0",
+ "versions": [
+  {
+   "version": "1.0.0",
+   "parent": null,
+   "config": {
+    "half_life_days": 365,
+    "prior_games": 4,
+    "carry": 0.8,
+    "sweeps": 3,
+    "k_mu": 40,
+    "k_h": 150
+   },
+   "config_sha256": "70119f05511e1946410cdd80f1b9d06a01b58623199c40f234b7848c9d455271",
+   "status": "SERVED",
+   "promoted_by": "selection-window tuning",
+   "promoted_at": "2026-10-21T01:51:18Z",
+   "reason": "The configuration basketball/walkforward.js served when the loop started: basketball/params/wnba_tuning.json `chosen`.",
+   "evidence": {
+    "full": {
+     "n": 3996,
+     "logloss": 0.612008,
+     "brier": 0.211929,
+     "margin_mae": 9.8408,
+     "total_mae": 13.3213
+    },
+    "recent_season": {
+     "season": 2026,
+     "n": 349,
+     "logloss": 0.602394,
+     "brier": 0.206794,
+     "margin_mae": 10.2023,
+     "total_mae": 15.2234
+    }
+   }
+  }
+ ]
+}

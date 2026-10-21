@@ -41,9 +41,19 @@ class KeyNumberMargin:
         """mu' such that the reweighted distribution's mean equals mu."""
         mu = np.atleast_1d(np.asarray(mu, dtype=float))
         shift = mu.copy()
-        for _ in range(6):                       # mean(shift) is ~linear in shift
-            mean = (self._raw(shift) * self.k[None, :]).sum(axis=1)
-            shift = shift + (mu - mean)
+        # Newton on the location: for this family d mean / d shift = Var / sigma^2
+        # (1 in the middle of the support, below 1 where a 45-point college
+        # favourite's tail is cut at +/- kmax), so it converges in a few steps
+        # everywhere; iterate to a fixed tolerance
+        s2 = self.sigma * self.sigma
+        for _ in range(50):
+            p = self._raw(shift)
+            mean = (p * self.k[None, :]).sum(axis=1)
+            var = (p * (self.k[None, :] - mean[:, None]) ** 2).sum(axis=1)
+            err = mu - mean
+            shift = shift + err * s2 / np.maximum(var, 1e-6 * s2)
+            if np.max(np.abs(err)) < 1e-10:
+                break
         return shift
 
     def pmf(self, mu):
@@ -73,19 +83,17 @@ class KeyNumberMargin:
     def central_halfwidth(self, mu, mass=0.80):
         """Smallest h with P(|M - mu| <= h) >= mass, whole margins spread
         evenly over [k - 1/2, k + 1/2)."""
-        out = []
-        for m_, row in zip(np.atleast_1d(mu), self.pmf(mu)):
-            lo, hi = 0.0, float(self.kmax)
-            for _ in range(50):
-                h = 0.5 * (lo + hi)
-                a, b = m_ - h, m_ + h
-                cov = np.clip(np.minimum(self.k + 0.5, b) - np.maximum(self.k - 0.5, a), 0, 1)
-                if (row * cov).sum() >= mass:
-                    hi = h
-                else:
-                    lo = h
-            out.append(hi)
-        return np.array(out)
+        m_ = np.atleast_1d(np.asarray(mu, dtype=float))
+        P = self.pmf(m_)
+        lo, hi = np.zeros(len(m_)), np.full(len(m_), float(self.kmax))
+        for _ in range(50):                      # the same bisection, every row at once
+            h = 0.5 * (lo + hi)
+            a, b = (m_ - h)[:, None], (m_ + h)[:, None]
+            cov = np.clip(np.minimum(self.k[None, :] + 0.5, b) - np.maximum(self.k[None, :] - 0.5, a), 0, 1)
+            ok = (P * cov).sum(axis=1) >= mass
+            hi = np.where(ok, h, hi)
+            lo = np.where(ok, lo, h)
+        return hi
 
     def loglik(self, mu, result):
         p = self.pmf(mu)
@@ -94,26 +102,31 @@ class KeyNumberMargin:
 
     # ----------------------------------------------------------------- fit
     @classmethod
-    def fit(cls, mu, result, sigmas=None, kfit=24, iters=25, pseudo=5.0):
+    def fit(cls, mu, result, sigmas=None, kfit=24, iters=25, pseudo=5.0, kmax=KMAX):
         """Maximum likelihood over a sigma grid; for each sigma the
         multipliers for |k| <= kfit are fitted by iterative proportional
-        fitting (observed / expected counts of |margin| = k)."""
+        fitting (observed / expected counts of |margin| = k). `kmax` widens
+        the support for sports with bigger margins (college football)."""
         mu = np.asarray(mu, dtype=float)
         result = np.round(np.asarray(result, dtype=float)).astype(int)
-        ok = np.isfinite(mu) & (np.abs(result) <= KMAX)
+        ok = np.isfinite(mu) & (np.abs(result) <= kmax)
         mu, result = mu[ok], result[ok]
         sigmas = np.arange(11.0, 16.01, 0.25) if sigmas is None else sigmas
-        obs = np.bincount(np.abs(result), minlength=KMAX + 1)[: KMAX + 1].astype(float)
+        obs = np.bincount(np.abs(result), minlength=kmax + 1)[: kmax + 1].astype(float)
         best = None
         for s in sigmas:
-            d = cls(sigma=s)
+            d = cls(sigma=s, kmax=kmax)
+            z = (d.k[None, :] - mu[:, None]) / d.sigma
+            phi = np.exp(-0.5 * z * z)                           # fixed for this sigma: only mult moves
+            absk = np.abs(d.k)
             for _ in range(iters):
-                p = d._raw(mu)                                   # centring is a no-op on the fit
-                exp_abs = np.zeros(KMAX + 1)
+                p = phi * d.mult[absk][None, :]                  # = d._raw(mu); centring is a no-op on the fit
+                p = p / p.sum(axis=1, keepdims=True)
+                exp_abs = np.zeros(kmax + 1)
                 np.add.at(exp_abs, np.abs(d.k), p.sum(axis=0))
                 r = (obs[: kfit + 1] + pseudo) / (exp_abs[: kfit + 1] + pseudo)
                 d.mult[: kfit + 1] *= r
-                d.mult /= d.mult[kfit + 1:].mean() if kfit + 1 <= KMAX else 1.0
+                d.mult /= d.mult[kfit + 1:].mean() if kfit + 1 <= kmax else 1.0
             ll = d.loglik(mu, result).sum()
             if best is None or ll > best[0]:
                 best = (ll, d)

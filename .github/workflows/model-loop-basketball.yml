@@ -1,0 +1,73 @@
+# EdgeDesk model loop, basketball (NBA, WNBA, men's and women's college):
+# the weekly learning step (basketball/loop.js, docs/model-loop/README.md).
+#
+#   Monday   for every league: where the misses concentrate, candidate changes
+#            from a fixed catalogue, each walked forward over every scored
+#            season exactly as production prices; a candidate replaces the
+#            served configuration only if it improves the full window by the
+#            noise floor (log loss with its 95% interval below zero, and margin
+#            MAE) and is no worse on the most recent full season. Every
+#            candidate is logged; the report is docs/model-loop/<league>/
+#            weekly_model_report.md.
+#   Daily    unchanged: lab-build.yml re-fits the ratings with the served
+#            configuration (same formula) and re-prices the slates.
+#
+# A promotion re-runs that league's walk-forward at once, so the live ratings
+# and the slate carry the new version the same morning.
+name: Model loop basketball (weekly)
+
+on:
+  schedule:
+    - cron: '23 10 * * 1'   # Monday 10:23 UTC
+  workflow_dispatch:
+    inputs:
+      leagues:
+        description: 'comma-separated leagues (nba,wnba,ncaam,ncaaw) or all'
+        required: false
+        default: 'all'
+
+permissions:
+  contents: read
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    concurrency:
+      group: lab-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: The seasons in progress (completed seasons are committed and unchanged)
+        run: node basketball/ingest.js --league all --season current
+      - name: Research and report
+        id: loop
+        run: |
+          lg="${{ inputs.leagues }}"; [ -z "$lg" ] && lg=all
+          node --max-old-space-size=6144 basketball/loop.js all --league "$lg" | tee /tmp/loop.json
+          echo "promoted=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/loop.json','utf8').trim().split('\n').pop()).promoted.join(','))")" >> "$GITHUB_OUTPUT"
+      - name: A promoted version is served at once (walk-forward re-run, slate re-priced)
+        if: steps.loop.outputs.promoted != ''
+        run: |
+          node --max-old-space-size=6144 basketball/walkforward.js --league "${{ steps.loop.outputs.promoted }}"
+          node basketball/build_slate.js
+      - name: The suites pass before anything is written
+        run: node tools/lab/lab.test.js && node basketball/walkforward.js --check && node basketball/build_slate.js --check
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "model loop: basketball weekly research${{ steps.loop.outputs.promoted != '' && format(' — promoted {0}', steps.loop.outputs.promoted) || '' }}" -- \
+            docs/model-loop/nba docs/model-loop/wnba docs/model-loop/ncaam docs/model-loop/ncaaw \
+            basketball/params basketball/validation basketball/slate.json basketball/data

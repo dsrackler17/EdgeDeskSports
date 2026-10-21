@@ -5,6 +5,7 @@ One framework, per-sport adapters, for building, measuring and improving EdgeDes
 - **Audit of every model:** [`audit_report.md`](audit_report.md). It is the reason this exists.
 - **NFL backtest (Phase 1):** [`nfl/BACKTEST.md`](nfl/BACKTEST.md).
 - **NFL this week:** [`nfl/weekly_model_report.md`](nfl/weekly_model_report.md), the version history [`nfl/versions.json`](nfl/versions.json), every candidate ever tried [`nfl/candidates.jsonl`](nfl/candidates.jsonl).
+- **CFB backtest and weekly loop:** [`cfb/BACKTEST.md`](cfb/BACKTEST.md); version history [`cfb/versions.json`](cfb/versions.json).
 
 ## Layout
 
@@ -27,11 +28,16 @@ model_loop/
                              ratings (unit ratings + QB + priors + market rating), model (walk-forward
                              margin and total, attribution), cards, backtest, report,
                              weekly (refresh / score / research / report: the loop)
+    cfb/                     ingest (sportsdataverse pbp, schedules, talent, returning production; the
+                             cfbfastR line archive via cfb_p4's build_market.py), ratings (unit ratings for
+                             every FBS and FCS team around fitted division means + QB + priors + market
+                             rating), model, cards, backtest (vs a cold replay of football/cfb_p4), report,
+                             weekly (Sunday-night loop)
   ledger/nfl/                append-only: cards_<season>.jsonl (every pregame publication),
                              site_<season>.jsonl (the board's number, for the head to head),
-                             <season>.jsonl (rating snapshots)
+                             <season>.jsonl (rating snapshots); ledger/cfb/ the same for CFB
   tests/                     core guarantees and the loop's rules (run: python3 -m unittest discover -s model_loop/tests -t .)
-football/nfl/model_loop/     current.json (this week's numbers from the served version), record_<season>.json
+football/{nfl,cfb}/model_loop/  current.json (this week's numbers from the served version), record_<season>.json
 supabase/model_loop.sql      append-only snapshot table, RLS, service-role ingest
 supabase/model_loop_nfl_registry.sql   generated: NFL-CORE v1.0.0 and the v2 candidate, with results
 docs/model-loop/             this folder: audit, preregistration, tuning log, backtest, cards
@@ -58,10 +64,11 @@ An adapter supplies five things:
 | Sport | Cadence (weekly refresh) | Status |
 |---|---|---|
 | NFL | Tuesday (full cycle); refresh daily | **Loop on** (`.github/workflows/model-loop-nfl.yml`). v2.0.0 served by the loop as a challenger to the board's number, graded head to head |
-| CFB | Sunday night | Not started. Audit §CFB lists what the adapter must fix (personnel prior, FCS, QB) |
+| CFB | Sunday night (full cycle, `.github/workflows/model-loop-cfb.yml`); refresh daily Aug–Jan | **Loop on.** v2.0.0 cleared the preregistered rule against a cold replay of the board's engine (cfb_p4 v1.0.1): better MAE and log loss over 2014–2025 and on the 2025 holdout (all games); FBS and FCS teams rated team by team. Served by the loop as a challenger; the board still prices from cfb_p4. Does not beat the close. [`cfb/BACKTEST.md`](cfb/BACKTEST.md) |
 | MLB | daily in season | Not started. No closing archive owned: the loop can only grade against outcomes until closes are captured |
-| WNBA | daily in season | Not started. No market data captured at all |
-| CBB | daily in season | Ratings now refreshed daily (`lab-build.yml`, same formula). The D1 fix is built behind `d1_fix` and evaluated (`basketball/eval_d1_fix.js`, `basketball/validation/ncaa?_d1_fix*.json`); off until a decision |
+| WNBA | daily refresh; weekly research | **Loop on** (`basketball/loop.js`, `.github/workflows/model-loop-basketball.yml`). Outcome-graded only: no market data captured |
+| CBB (men's, women's) | daily refresh; weekly research | **Loop on**, same as WNBA. The D1 fix is built behind `d1_fix` and evaluated (`basketball/eval_d1_fix.js`, `basketball/validation/ncaa?_d1_fix*.json`); off until a decision |
+| NBA | daily refresh; weekly research | **Loop on**, same as WNBA (not in the original brief; the same engine) |
 | UFC | per event | No model exists. Experimental; no real backtest possible (566 bouts, 0 closes) |
 | Tennis | per event | Retired. Experimental; no closes owned |
 
@@ -97,6 +104,22 @@ The weekly update has **two separate jobs**, so a rating refresh can never quiet
 python3 -m model_loop.adapters.nfl.weekly all            # what Tuesday runs
 python3 -m model_loop.adapters.nfl.weekly refresh        # what the other days run
 python3 -m model_loop.adapters.nfl.weekly research --only hfa_recent_era,division_on
+```
+
+### Basketball, as switched on
+
+- `basketball/loop.js` keeps the NFL contract for the NBA, WNBA and men's and women's college.
+- **Refresh (daily, `lab-build.yml`):** `basketball/walkforward.js` re-fits the ratings with the served version. Before the loop's first run that is the tuned configuration; from then on it is `docs/model-loop/<league>/versions.json` `current`.
+- **Research (Monday, `model-loop-basketball.yml`):** candidates from a fixed catalogue, each walked forward over every scored season exactly as production prices.
+- **Promotion rule:** over the full window (selection start to date), both conditions hold, and the candidate is no worse on the most recent full season:
+  - moneyline log loss falls by ≥ 0.0002, with its paired 95% interval below zero;
+  - margin MAE falls by ≥ 0.005.
+- **Scoring-level changes** (`k_mu`) cancel in every margin, so they are judged on total MAE instead, and moneyline and margin must not get worse.
+- **Outcome-graded only:** no closing prices are archived for basketball, so every version stays EXPERIMENTAL.
+
+```
+node basketball/loop.js all --league nba,wnba,ncaam,ncaaw
+node basketball/loop.js research --league ncaam --only home_edge_tighter
 ```
 
 The frozen CLV ranking protocol is not touched by any of this.

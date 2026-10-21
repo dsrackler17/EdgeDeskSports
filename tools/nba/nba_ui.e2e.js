@@ -34,6 +34,9 @@ const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'nba', 'slate.json'), '
 const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
 /* a started game, frozen before tip, not on the slate: what nba/recent.json holds after tip */
 const STARTED = Object.assign(JSON.parse(JSON.stringify(SLATE.games[0])), { game_id: '990000001', start_utc: new Date(Date.parse(NOW) - 2 * 36e5).toISOString().replace(/\.000Z$/, 'Z'), frozen_at: new Date(Date.parse(NOW) - 5 * 36e5).toISOString() });
+/* the clock is pinned one minute after the slate was built, and a slate built on a game night still
+   lists the games under way: those draw as started, so the upcoming list is the games after NOW */
+const UPCOMING = SLATE.games.filter((g) => Date.parse(g.start_utc) > Date.parse(NOW));
 const RECENT = { schema: 'edgedesk_nba_recent_v1', sport: 'NBA', generated_at: NOW, window_hours: 96, games: [STARTED] };
 
 (async function main() {
@@ -107,12 +110,12 @@ const RECENT = { schema: 'edgedesk_nba_recent_v1', sport: 'NBA', generated_at: N
       await page.waitForSelector('#nbaHost .xe-game', { timeout: 25000 });
       chk(label + ': #research/nba opens the NBA panel inside Research', await page.evaluate(() => !document.getElementById('v-nba').classList.contains('hide') && !document.getElementById('v-research').classList.contains('hide')));
       chk(label + ': the Other seat names NBA while it is open', await page.evaluate(() => document.getElementById('rsOtherLbl').textContent === 'NBA' && document.querySelector('#rsOther button[data-sub="nba"]').classList.contains('on')));
-      chk(label + ': every slate game is listed', (await page.$$eval('#nbaHost .xe-game:not(.xe-started)', (x) => x.length)) === SLATE.games.length);
+      chk(label + ': every slate game not yet started is listed as upcoming', (await page.$$eval('#nbaHost .xe-game:not(.xe-started)', (x) => x.length)) === UPCOMING.length);
       chk(label + ': readiness says value claims are disabled and availability is projected', await page.evaluate(() => { const t = document.querySelector('#nbaHost .xe-ready').textContent; return /Value claims/.test(t) && /disabled/i.test(t) && /projected/.test(t); }));
       chk(label + ': each card shows a win bar, moneyline, spread and total', await page.evaluate(() => Array.from(document.querySelectorAll('#nbaHost .xe-game')).every((c) => c.querySelector('.nb-win') && /ML/.test(c.textContent) && /Spread/.test(c.textContent) && /Total/.test(c.textContent))));
       chk(label + ': no horizontal scroll on the NBA list', await noHScroll(page), await overflowers(page));
       await shot(page, label + '_nba_list');
-      const g = SLATE.games[0];
+      const g = UPCOMING[0] || SLATE.games[0];
       await page.click('#nbaHost .xe-game[data-game="' + g.game_id + '"]');
       await page.waitForSelector('#nbaHost .xe-detail');
       chk(label + ': opening a game writes its URL', await page.evaluate(() => location.hash) === '#research/nba/' + g.game_id, await page.evaluate(() => location.hash));
@@ -145,7 +148,7 @@ const RECENT = { schema: 'edgedesk_nba_recent_v1', sport: 'NBA', generated_at: N
       await page.waitForSelector('#nbaHost .xe-game');
       await page.waitForSelector('#nbaHost .xe-sechd', { timeout: 15000 });
       await page.waitForFunction(() => /Started/.test((document.querySelector('#nbaHost') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => null);
-      chk(label + ': Back returns to the list', (await page.$$eval('#nbaHost .xe-game:not(.xe-started)', (x) => x.length)) === SLATE.games.length);
+      chk(label + ': Back returns to the list', (await page.$$eval('#nbaHost .xe-game:not(.xe-started)', (x) => x.length)) === UPCOMING.length);
       chk(label + ': a started game is listed under its own heading', await page.evaluate(() => /Started · research frozen before tip/.test(document.querySelector('#nbaHost').textContent) && !!document.querySelector('#nbaHost .xe-game.xe-started[data-game="990000001"]')));
       await page.click('#nbaHost .xe-game[data-game="990000001"]');
       await page.waitForSelector('#nbaHost .xe-detail');

@@ -45,9 +45,18 @@ ok('a quoted moneyline, spread and total are read', JSON.stringify(D.classify('L
   && JSON.stringify(D.classify('Denver -6.5 -110 nba').quote) === JSON.stringify({ market: 'spread', line: -6.5, american: -110 })
   && D.classify('over 228.5 -105 Warriors').quote.market === 'total' && D.classify('over 228.5 -105 Warriors').quote.line === 228.5 && D.classify('over 228.5 -105 Warriors').quote.american === -105);
 
-/* 2. the game, a price, the slate */
-if (SLATE.games.length) {
-  const g = SLATE.games[0];
+/* 2. the game, a price, the slate. The desk prices only games that have not started (desk.js: start
+   after now), and a slate built on a game night lists games already under way, so the game asked about
+   is the first one still upcoming at the test's clock; a game under way is asked about separately */
+const begun = SLATE.games.find((x) => Date.parse(x.start_utc) <= now);
+if (begun) {
+  const rb = D.answer(nick(String(begun.away.id)) + ' at ' + nick(String(begun.home.id)) + ' price', SLATE, null, now);
+  const again = SLATE.games.some((x) => x !== begun && Date.parse(x.start_utc) > now && String(x.home.id) === String(begun.home.id) && String(x.away.id) === String(begun.away.id));
+  ok('a game already under way is never given a pregame price', again || (rb && rb.block.game_id == null && /no upcoming game between/.test(rb.text)), rb && rb.block);
+}
+const upcoming = SLATE.games.filter((x) => Date.parse(x.start_utc) > now);
+if (upcoming.length) {
+  const g = upcoming[0];
   const r2 = D.answer(nick(String(g.away.id)) + ' at ' + nick(String(g.home.id)) + ' price', SLATE, null, now);
   ok('two teams place their game', r2 && r2.block.game_id === g.game_id && r2.block.resolved_via === 'both teams', r2 && r2.block);
   const fav = g.price.moneyline.home >= 0.5 ? 'home' : 'away';

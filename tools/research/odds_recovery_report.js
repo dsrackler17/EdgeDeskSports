@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /* ===========================================================================
    ODDS RECOVERY REPORT — the numbers behind docs/research-engine/ODDS_RECOVERY.md.
-   Simulates game-line capture schedules on the committed NFL and FBS slates
-   (real kickoffs), plus a SYNTHETIC MLB regular-season week (labelled: no MLB
+   Simulates game-line capture schedules on the NFL and FBS kickoffs of the
+   week of 13-19 Oct 2026 (real, frozen in fixtures/ from the slates committed
+   on 12 Oct), plus a SYNTHETIC MLB regular-season week (labelled: no MLB
    schedule is committed), with lib/edgedesk_odds_recovery.js. Buys nothing.
 
    Run: node tools/research/odds_recovery_report.js            (markdown)
@@ -19,10 +20,12 @@ const REFRESH = { enabled: true, within_hours: 6, min_gap_min: 5, daily_credit_c
 /* the incident's expected monthly use under the gateway (all paths, in season), and its ceilings */
 const BUDGET = { planned: 35000, operational: 60000, breaker_latch: 57000 };
 
+/* the week's real kickoffs, frozen from the slates as they were committed when this report was
+   written: the live slates roll forward daily, and read live they leave this fixed week empty */
+const KICKOFFS = path.join(__dirname, 'fixtures', 'odds_recovery_kickoffs_2026-10-12.json');
 function football() {
-  const nfl = require(path.join(ROOT, 'football', 'nfl', 'slate.json')).games.map((g) => g.kickoff).filter(Boolean);
-  const fbs = require(path.join(ROOT, 'football', 'fbs', 'slate.json')).games.map((g) => g.kickoff || g.start_time).filter(Boolean);
-  return { americanfootball_nfl: nfl, americanfootball_ncaaf: fbs };
+  const k = require(KICKOFFS);
+  return { americanfootball_nfl: k.americanfootball_nfl, americanfootball_ncaaf: k.americanfootball_ncaaf };
 }
 /* SYNTHETIC: a typical regular-season MLB day (15 games: 1:05, 1:10, 4:05, 4:10, 6:40, 6:45, 7:05×3, 7:10×2, 7:40, 8:10, 9:40, 10:10 ET) for seven days */
 function mlbSynthetic() {

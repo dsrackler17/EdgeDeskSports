@@ -206,12 +206,25 @@ function tune(league) {
   return out;
 }
 
+/** the configuration served: the weekly loop's current version (docs/model-loop/<league>/versions.json,
+    basketball/loop.js) once the loop has run; before that the tuned values with any structural switch
+    enabled for the league (config.js `model`) on top */
+function servedParams(league) {
+  const vp = path.join(__dirname, '..', 'docs', 'model-loop', league, 'versions.json');
+  if (fs.existsSync(vp)) {
+    const doc = JSON.parse(fs.readFileSync(vp, 'utf8'));
+    const v = doc.versions.find((x) => x.version === doc.current);
+    if (v) return Object.assign({}, v.config);
+  }
+  const tuning = JSON.parse(fs.readFileSync(C.PATHS.tuning(league), 'utf8'));
+  return Object.assign({}, tuning.chosen, C.LEAGUES[league].model || {});
+}
+
 function main(league) {
   const W = windowsFor(league); const L = C.LEAGUES[league];
   if (!fs.existsSync(C.PATHS.tuning(league))) tune(league);
   const tuning = JSON.parse(fs.readFileSync(C.PATHS.tuning(league), 'utf8'));
-  /* structural switches enabled for this league (config.js `model`) sit on top of the tuned values */
-  const params = Object.assign({}, tuning.chosen, L.model || {});
+  const params = servedParams(league);
   const { games, seasons } = load(league);
   const { rows, ratings, elo } = pass(games, params, tuning.elo);
   const { scored, cal } = score(rows);
@@ -269,7 +282,7 @@ function main(league) {
     data: { source: 'basketball/data/' + league + ' (sportsdataverse, from ESPN)', license: C.LICENSE, seasons: [seasons[0], seasons[seasons.length - 1]], games: games.length, games_scored: evalRows.length,
       temporal: { point_in_time: 'RETROSPECTIVE', known_at: 'blank (first publication unknown; never backdated)', assumed_available_at: 'start + 4 h' } },
     leakage: Object.assign({ basis: 'inputs dated by assumed_available_at (start + 4 h)' }, leak),
-    tuning: { chosen: tuning.chosen, elo: tuning.elo, rule: tuning.rule, model_overrides: L.model || null },
+    tuning: { chosen: tuning.chosen, elo: tuning.elo, rule: tuning.rule, served: params, served_by: fs.existsSync(path.join(__dirname, '..', 'docs', 'model-loop', league, 'versions.json')) ? 'docs/model-loop/' + league + '/versions.json' : 'tuning' },
     selection: { rule: 'lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= ' + P.RULES.challenger_margin, ll: selLL, chosen },
     comparisons, best_baseline: bestBase, markets, windows,
     by_season: Object.fromEntries([...new Set(evalRows.map((r) => r.season))].map((s) => { const sub = evalRows.filter((r) => r.season === s); return [s, { n: sub.length, ml_log_loss: { [chosen]: V.r(sub.reduce((a, r) => a + V.logLoss(r.p[chosen], r.y.hw), 0) / sub.length, 5), elo: V.r(sub.reduce((a, r) => a + V.logLoss(r.p.elo, r.y.hw), 0) / sub.length, 5) } }]; })),
@@ -302,7 +315,7 @@ function check(league) {
   console.log('[bb walkforward --check] ' + league + ' ok: ' + r.data.games_scored + ' games, moneyline ' + r.markets.moneyline.status);
 }
 
-module.exports = { pass, calibrate, applyCal, score, windowsFor, load, interceptOn, CAL_VERSION };
+module.exports = { pass, calibrate, applyCal, score, windowsFor, load, interceptOn, servedParams, CAL_VERSION };
 
 if (require.main === module) {
   const lg = arg('league', 'all'); const leagues = lg === 'all' ? Object.keys(C.LEAGUES) : lg.split(',');

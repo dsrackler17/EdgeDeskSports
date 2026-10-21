@@ -45,6 +45,7 @@ def registry_sql(sport):
         served = v["version"] == doc["current"]
         ev = v.get("evidence") or {}
         weekly = v.get("promoted_by") == "weekly-loop"
+        prereg = v.get("promoted_by") == "preregistered-rule"
         versions.append({
             "version": v["version"], "training": {"seasons": "walk-forward, every season before the one priced"},
             "training_text": "walk-forward: every coefficient fitted only on earlier seasons",
@@ -53,8 +54,9 @@ def registry_sql(sport):
             "spec": {"config": v["config"], "config_sha256": v["config_sha256"], "parent": v.get("parent"),
                      "promoted_by": v.get("promoted_by"), "promoted_at": v.get("promoted_at"), "served_now": served},
             "notes": (("SERVED. " if served else "") + v.get("reason", ""))[:2000],
-            "result": {"passed": bool(weekly), "note": ("cleared the weekly loop's full-backtest rule" if weekly else
-                                                        "served by owner decision; did not clear the preregistered holdout rule"),
+            "result": {"passed": bool(weekly or prereg), "note": ("cleared the weekly loop's full-backtest rule" if weekly else
+                                                                  "cleared the preregistered rule against the incumbent" if prereg else
+                                                                  "served by owner decision; did not clear the preregistered holdout rule"),
                        "evidence": ev, "holdout": ev.get("recent_season") or ev.get("holdout_2025") or {}}})
     payload = {"model_key": f"{doc['sport']}-CORE", "title": f"{doc['sport']} core projection (model loop)", "sport": doc["sport"],
                "objective": "Lower margin error and log loss than the served version, measured against the closing line, every week.",
