@@ -172,6 +172,11 @@
     var r = regularStarter(st, t);
     return typeof id === 'string' && id && r && id !== r ? 1 : 0;
   }
+  /* round 3 (Q3): the out term scaled by who is missing — when a side is
+     OUT, its regular starter's QB value minus the starter's (both qbEff) */
+  function qbOutGap(st, t, id) {
+    return qbOut(st, t, id) ? qbEff(st, regularStarter(st, t)) - qbEff(st, id) : 0;
+  }
   /* pairs: engine.js nfl.gamePairs output (each club's row with its mirrored
      defence, in the feed's order); qbStarts: engine.js nfl.qbStarts output */
   function absorbGame(st, pairs, qbStarts) {
@@ -315,6 +320,7 @@
     else s.push('net_epa', 'net_pass', 'net_rush');
     s.push('qb_adj_diff', 'rest_diff', 'div_game');
     if (cfg.features.qb_out) s.push('qb_out_diff');
+    if (cfg.features.qb_out_gap) s.push('qb_out_gap_diff');
     if (cfg.personnel.on) s.push('pers_rb', 'pers_wr', 'pers_ol');
     if (cfg.market.on) s.push('mkt_diff');
     var c = ['rest_diff', 'home_short', 'away_short', 'home_off_bye', 'away_off_bye', 'div_game', 'week_frac'];
@@ -325,7 +331,7 @@
     return { spread: s, ctx: c, total: t };
   }
   /* the strength features from two rating snapshots (rh, ra) */
-  function strengthFrom(rh, ra, qbd, restd, div, pers, mkt, qbo) {
+  function strengthFrom(rh, ra, qbd, restd, div, pers, mkt, qbo, qbg) {
     return {
       net_pts: (rh.pts_for + rh.pts_against) - (ra.pts_for + ra.pts_against),
       net_pts_fix: (rh.pts_for - rh.pts_against) - (ra.pts_for - ra.pts_against),
@@ -335,7 +341,7 @@
       pass_off: rh.pass_epa_db - ra.pass_epa_db, pass_def: ra.def_pass_epa_db - rh.def_pass_epa_db,
       net_rush: (rh.rush_epa_att - rh.def_rush_epa_att) - (ra.rush_epa_att - ra.def_rush_epa_att),
       rush_off: rh.rush_epa_att - ra.rush_epa_att, rush_def: ra.def_rush_epa_att - rh.def_rush_epa_att,
-      qb_adj_diff: qbd, rest_diff: restd, div_game: div, qb_out_diff: qbo || 0,
+      qb_adj_diff: qbd, rest_diff: restd, div_game: div, qb_out_diff: qbo || 0, qb_out_gap_diff: qbg || 0,
       pers_rb: pers ? pers.rb : 0, pers_wr: pers ? pers.wr : 0, pers_ol: pers ? pers.ol : 0,
       mkt_diff: mkt
     };
@@ -361,7 +367,8 @@
     }
     var mkt = cfg.market.on ? (st.mr[h] || 0) - (st.mr[a] || 0) : 0;
     var qbo = cfg.features.qb_out ? qbOut(st, h, game.home_qb_id) - qbOut(st, a, game.away_qb_id) : 0;
-    var sp = strengthFrom(rh, ra, qbd, (restH - restA) / 7, div, pers, mkt, qbo);
+    var qbg = cfg.features.qb_out_gap ? qbOutGap(st, h, game.home_qb_id) - qbOutGap(st, a, game.away_qb_id) : 0;
+    var sp = strengthFrom(rh, ra, qbd, (restH - restA) / 7, div, pers, mkt, qbo, qbg);
     var tv = game.travel || null;
     var ctx = {
       rest_diff: (restH - restA) / 7, home_short: restH <= 5 ? 1 : 0, away_short: restA <= 5 ? 1 : 0,
@@ -433,7 +440,7 @@
     { key: 'base_strength', label: 'Base team strength', terms: ['spread:net_pts', 'spread:net_pts_fix', 'spread:net_epa', 'spread:off_epa', 'spread:def_epa', 'spread:pers_rb', 'spread:pers_wr', 'spread:pers_ol', 'spread:mkt_diff'] },
     { key: 'passing', label: 'Passing', terms: ['spread:net_pass', 'spread:pass_off', 'spread:pass_def'] },
     { key: 'rushing', label: 'Rushing', terms: ['spread:net_rush', 'spread:rush_off', 'spread:rush_def'] },
-    { key: 'quarterback', label: 'Quarterback', terms: ['spread:qb_adj_diff', 'spread:qb_out_diff'] },
+    { key: 'quarterback', label: 'Quarterback', terms: ['spread:qb_adj_diff', 'spread:qb_out_diff', 'spread:qb_out_gap_diff'] },
     { key: 'home_field', label: 'Home field', terms: ['spread:baseline', 'ctx:baseline', 'ctx:week_frac', 'hfa:hfa'] },
     { key: 'context', label: 'Context (venue, division)', terms: ['spread:div_game', 'ctx:div_game', 'ctx:is_dome', 'ctx:grass'] },
     { key: 'rest_travel', label: 'Rest / travel', terms: ['spread:rest_diff', 'ctx:rest_diff', 'ctx:home_short', 'ctx:away_short', 'ctx:home_off_bye', 'ctx:away_off_bye', 'ctx:travel_diff', 'ctx:tz_diff', 'ctx:west_early'] }
@@ -529,7 +536,7 @@
     config: config, priorWeight: priorWeight, newState: newState, fromSeeds: fromSeeds, team: team,
     rating: rating, priorPart: priorPart, snapshot: snapshot, seasonBreak: seasonBreak,
     absorbGame: absorbGame, absorbCompleted: absorbCompleted, afterGame: afterGame,
-    qbEff: qbEff, qbAdjust: qbAdjust, regularStarter: regularStarter, qbOut: qbOut, hfaEstimate: hfaEstimate,
+    qbEff: qbEff, qbAdjust: qbAdjust, regularStarter: regularStarter, qbOut: qbOut, qbOutGap: qbOutGap, hfaEstimate: hfaEstimate,
     indexStadiums: indexStadiums, travelFor: travelFor, homeOf: homeOf, km: km, utcOffset: utcOffset,
     featureNames: featureNames, features: features, predict: predict, engineTerms: engineTerms,
     calibrate: calibrate, fitIsotonic: fitIsotonic, ridge: ridge
