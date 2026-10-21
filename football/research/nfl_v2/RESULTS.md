@@ -368,7 +368,7 @@ QB value pulled toward −0.16 EPA/dropback instead of −0.04.
 
 ## Round 3 — the QB out-gap, the grid edges, recency (nothing promoted)
 
-`preregistration.json` `round_3` (commit 6163fb5bea) was committed before any round-3 evaluation.
+`preregistration.json` `round_3` (commit ed7b1b10ea) was committed before any round-3 evaluation.
 The incumbent is v2.1.0.
 
 **The gate is stricter.** The 2025 holdout had already gated 14 decisions. So a finalist must also
