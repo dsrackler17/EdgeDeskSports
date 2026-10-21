@@ -17,9 +17,11 @@
    neutral, its runs, the opponent's runs). The school is our team through
    the registry (collegiate/data/schools.json: baseball_team_id); the
    opponent through its website where the school lists one (SIDEARM: an
-   exact join), else through its name against our NCAA names for that
-   season. A contest is (date, the two teams); a doubleheader's games are
-   paired in the order the schools list them.
+   exact join), else through a name the schools themselves tie to a website
+   (a SIDEARM page lists "Miami" beside miamihurricanes.com; a name two
+   schools tie to different teams is never used), else through our NCAA
+   names for that season. A contest is (date, the two teams); a
+   doubleheader's games are paired in the order the schools list them.
 
    THE RULE. audit: for contests our record already has, how often the
    schools' score agrees with ours (the source earns its use there first).
@@ -61,15 +63,28 @@ function schoolRows(season, o) {
   const sdir = path.join(dir, 'schedules', 'baseball', String(season));
   const rows = []; const unmatched = {}; const read = new Set();
   if (!fs.existsSync(sdir)) return { rows, unmatched, read };
-  for (const f of fs.readdirSync(sdir).filter((x) => x.endsWith('.json'))) {
-    const doc = readJson(path.join(sdir, f), null);
-    const team = doc && teamOf.get(doc.school);
+  const docs = fs.readdirSync(sdir).filter((x) => x.endsWith('.json')).map((f) => readJson(path.join(sdir, f), null)).filter(Boolean);
+  /* names the schools themselves use: a SIDEARM page names each opponent next to its website, so "Miami" listed with
+     miamihurricanes.com is that school. A name is learnt only when every school that uses it points to one team. */
+  const seen = new Map();
+  for (const doc of docs) for (const g of doc.games || []) {
+    const t = g.opponent_host && byHost.get(g.opponent_host);
+    if (!t || !g.opponent) continue;
+    const k = keyName(g.opponent);
+    if (!seen.has(k)) seen.set(k, new Set());
+    seen.get(k).add(t);
+  }
+  const learnt = new Map([...seen].filter(([, ts]) => ts.size === 1).map(([k, ts]) => [k, [...ts][0]]));
+  const ambiguous = new Set([...seen].filter(([, ts]) => ts.size > 1).map(([k]) => k));
+  for (const doc of docs) {
+    const team = teamOf.get(doc.school);
     if (!team) continue;
     read.add(team);
     let seq = 0;
     for (const g of doc.games || []) {
       seq++;
-      const opp = (g.opponent_host && byHost.get(g.opponent_host)) || byName.get(keyName(g.opponent)) || null;
+      const k = keyName(g.opponent);
+      const opp = (g.opponent_host && byHost.get(g.opponent_host)) || (ambiguous.has(k) ? null : learnt.get(k) || byName.get(k)) || null;
       if (!opp) { unmatched[g.opponent] = (unmatched[g.opponent] || 0) + 1; continue; }
       rows.push({ team, opp, date: g.date, site: g.site, status: g.status, us: g.us, them: g.them, innings: g.innings, seq, school: doc.school, time: g.time || '' });
     }
