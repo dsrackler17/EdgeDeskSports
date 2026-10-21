@@ -94,6 +94,22 @@ Run in that order (`.github/workflows/deploy-nba-injury.yml` does it, tests firs
 
 Tested against a real PostgreSQL by `tools/nba/nba_injury_sql.test.js`.
 
+### `kalshi_market_data.sql` + `kalshi_market_data_cron.sql` — Kalshi prediction-market prices beside the book
+
+Run in that order (`.github/workflows/deploy-kalshi.yml` does it, tests first). A new data source, not a model change: nothing here touches a projection, ranking, threshold, EV flag, score, grade or the CLV record, and it writes nothing to `signals` or `signal_ticks`. The README's §Kalshi market data is the narrative.
+
+- **`kalshi_market_data.sql`** (needs the capture tables and `close_v7_parity.sql`'s `signals.closing_at_observed`; mirrored in `migrations/20261021230000_kalshi_market_data.sql`) adds:
+  - `kalshi_series` (Kalshi's Sports series; `tracked` is the operator's switch and discover never writes it), `kalshi_link_series` (the NFL / CFB game-winner series, seeded `KXNFLGAME` and `KXNCAAFGAME`), `kalshi_markets`;
+  - `kalshi_price_snapshots` (T0, provider Kalshi; append-only: one row per market per 5-minute run), `kalshi_sync_runs` and `kalshi_alerts` (append-only);
+  - `kalshi_game_links` (append-only; the one later write is filling a missing `game_id`, once): a game-winner market linked to EXACTLY ONE book event (`signals.event_id`, the h2h `sig_key` of the same team) on both teams and the date, and to the card's own id (`game_research_state.game_id`). An event that does not match is not stored;
+  - views: `kalshi_snapshot_mid` (no mid when one-sided or the spread is over 0.06), `kalshi_closing_snapshot` (a linked game closes at KICKOFF — Kalshi game markets trade in-game and their `close_time` is ~48 h after kickoff), `kalshi_close_capture_health` (a market with no snapshot near its close is a counted miss), `kalshi_book_comparison` and `kalshi_book_closing_comparison` (T2: Kalshi mid − de-vigged book fair, nearest capture pass, flagged over 10 minutes apart, spread > 0.06 excluded), `kalshi_card_current` (the card's display rule, applied once), `kalshi_readiness` (the KPIs) and `kalshi_meta` (the pipeline ledger);
+  - the rules in `kalshi_rule()` (0.06, 10 minutes, …), a function rather than a config row, so changing one is a reviewed code change.
+  RLS on every table; anon and authenticated may read Kalshi's (public) tables, only service_role writes. **Every view runs as the reader** (`security_invoker`): `signals` is gated by RLS on `has_active_sub()`, so the comparison, the close and the card's gap answer only a reader who may read the book fair. Report rows should say ok; row 8 says pending until a series is tracked.
+- **`kalshi_market_data_cron.sql`** pokes `kalshi_sync` through `kalshi_poke(mode)` and the Vault secret `kalshi_cron_secret`: discover daily at 09:17 UTC, snapshot every 5 minutes. A missing secret is recorded as a failed run and a FAILURE alert.
+- **`kalshi_market_data_rollback.sql`** removes all of it (destructive: the snapshot history goes with its table).
+
+Tested against a real PostgreSQL by `tools/kalshi/kalshi_sql.test.js`.
+
 ### `desk_articles.sql` + `desk_articles_cron.sql` — data-first articles with a required take
 
 Run after `site_articles.sql` (the guard says so). `funnel.sql` and `growth.sql` are read by Article Performance when present.

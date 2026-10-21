@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-21 — Kalshi prices beside the book on NFL and CFB game cards
+
+- **A new data source, not a model change.** No projection, ranking, threshold, EV flag, score, grade or CLV record reads it.
+- **What is captured.** `supabase/functions/kalshi_sync` reads Kalshi's public market data (no key) every 5 minutes into `kalshi_price_snapshots`. Rows are append-only: never updated, never deleted.
+- **What is compared.** Each NFL and CFB game-winner market is set against EdgeDesk's de-vigged book fair for the same team.
+  - **Kalshi prices are Observed (T0, provider Kalshi).** The comparison is **Computed (T2)**.
+- **Linking a market to a game.** A market is linked only when both teams and the date match exactly one book event in `public.signals` (`kalshi_game_links`, with a stored confidence).
+  - Team names resolve through `lib/football_identity.js`.
+  - The card's own id comes from `public.game_research_state`.
+  - An event that does not match is left unmapped, with its reason.
+- **The comparison views** (`kalshi_book_comparison`, `kalshi_book_closing_comparison`):
+  - pair each snapshot with the nearest capture pass;
+  - flag pairs more than 10 minutes apart;
+  - exclude any market whose YES spread is wider than 0.06;
+  - take the Kalshi close as the last snapshot before kickoff. Kalshi game markets trade in-game and their `close_time` sits about 48 h after kickoff.
+- **On the card.** A **Kalshi** section sits beside Market Structure. It shows each team's YES mid, spread, volume and last snapshot time, plus the gap against the book fair labelled as derived. A game with no match, or a wide, one-sided or stale market, reads as visibly inactive. The Known limitations are on every surface.
+- **In System health.** `kalshi_readiness` adds the sync state, the last successful snapshot, close capture over 7 days and unmatched game markets. Failures and degradation are alerted as they are for the NBA injury sync.
+- **Access.** Every view runs as the reader, so the book fair stays behind `signals`' own subscription rule.
+- **Deploying it.**
+  - Run **Deploy Kalshi market data** (`.github/workflows/deploy-kalshi.yml`), or paste `supabase/kalshi_market_data.sql` then `supabase/kalshi_market_data_cron.sql`.
+  - Set `KALSHI_CRON_SECRET` and the Vault secret `kalshi_cron_secret`.
+  - Discover once, then set `tracked = true` on `KXNFLGAME` and `KXNCAAFGAME`.
+
+Tests: `node tools/kalshi/kalshi_sync.test.js` (45), `KALSHI_SQL_REQUIRED=1 node tools/kalshi/kalshi_sql.test.js` (66), `node tools/kalshi/kalshi_ui.test.js` (34).
+
 ## 2026-10-20 — Model Collective: a removed member leaves the public Collective
 
 - **A member removed from the admin page no longer shows in the model directory.** Removal stamps `removed_at` on the creator row and keeps the row and their model, and the directory (`model_wall`) never checked either, so JadedBettor(Murse2.0) stayed listed as "MEMBER, first submission pending" after being removed. `collective_public` now leaves removed members out of the wall and directory, their profile and model pages (now a 404), the rankings, the activity feed and the creator and model counts. When a removed member ranked ahead of others, each model below moves up one place per removed model ahead of it in the same league, and ties stay ties. Their stored submissions and grades are kept, as the removal promises. Clearing `removed_at` (`supabase/collective_restore_access.sql`) brings them back.
