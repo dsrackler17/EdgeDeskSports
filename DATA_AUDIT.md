@@ -261,3 +261,37 @@ Same as WNBA: only the holdout season has openers, so Phase 6 is a single holdou
 | WNBA | **infeasible** | **infeasible** | **infeasible** | 2026: 349 (single run) |
 | NCAAM | **infeasible** | **infeasible** | **infeasible** | 2026: 4,756 (single run) |
 | NCAAW, UFC, CBase, tennis | infeasible | infeasible | infeasible | none |
+
+---
+
+## Addendum (2026-10-21, found while preparing MLB; before any MLB CLV number)
+
+### SBR MLB pairing defect: repaired
+The low MLB overround pass rate is a scraper pairing defect, not bad prices.
+- **What is wrong.** Each SBR MLB record holds the home side of one game and the away side of another. Matched to Retrosheet by exact date, team and runs scored, no game has both sides in one record. In 98.5% of games the home side is in the record after the away side's.
+- **The repair.** Split every record into its two team rows, match each row to its game by exact date, team and runs, and take each side's prices from its own row.
+- **Validation.** Repaired pairs pass the overround check 99.85% of the time (median 1.038, SD 0.008); unrepaired pairs pass about 55%.
+- **Coverage.** 20,803 games 2012–2021 (2,200–2,235 per full season, 780 in 2020). 231 ambiguous and 1,699 unmatched games are dropped.
+- **Totals.** These cannot be attributed: at the best alignment the closing total correlates 0.155 with runs scored. **MLB totals are infeasible** and are not used.
+
+NFL, NBA and NHL from the same scraper join on both teams and the final score within a single record (2,946, about 14,000 and 11,529 games). Their pairing is intact.
+
+### Player props (added 2026-10-21, before the props runs)
+
+**Data:**
+
+| League | Events | Games covered | Prices |
+|---|---|---|---|
+| NFL | 31 | 2026-10-02 to 10-14 | per player × book, timestamped main-line ticks and alternate-ladder open/close (`football/props/nfl/2026/closes.jsonl`, The Odds API) |
+| CFB | 119 | same window | same (`football/props/cfb/2026/closes.jsonl`) |
+
+- The model's timestamped evaluations are in `football/props/{nfl,cfb}/2026/evaluations.jsonl` (`edgedesk_props_model_v1`).
+- No props prices exist before 2026, or after the 2026-10-10 credit stop.
+- NBA and NHL props models exist (`nba/props`, `hockey/props`), but no props prices were ever captured for them.
+
+**Feasibility:**
+- NFL and CFB props: a single holdout run each.
+- NBA and NHL props: infeasible.
+
+### Puck lines and run lines
+SBR keeps only a CLOSING puck line (NHL) and run line (MLB), with its price. No opener exists in any source here, so NHL puck-line and MLB run-line CLV is **infeasible**. Each sport is tested on its moneyline instead.

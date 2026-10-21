@@ -1,0 +1,39 @@
+{
+ "qa": {
+  "games": 660,
+  "fetch_errors": 0,
+  "with_book": 349,
+  "spread_abs_line_dropped": 0,
+  "spread_move_dropped": 0,
+  "open_total_range_dropped": 0,
+  "close_total_range_dropped": 0,
+  "total_move_dropped": 0,
+  "open_ml_dropped": 0,
+  "close_ml_dropped": 0
+ },
+ "games_with_spread": 349,
+ "WNBA-H1": {
+  "result": "n=198; CLV +0.232 pts [-0.062, +0.529]; CLV +0.61 pp [-0.37, +1.59], p=0.11; alpha/3 LB -0.43 pp; toward 0.503",
+  "verdict": {
+   "pass": false,
+   "why": "mean clv_prob +0.0061, alpha/3 one-sided lower bound -0.0043"
+  },
+  "clv_ev": -0.03374
+ },
+ "WNBA-H2": {
+  "result": "n=231; CLV +0.861 pts [+0.472, +1.246]; CLV +2.19 pp [+1.21, +3.17], p=0; alpha/3 LB +1.15 pp; toward 0.612",
+  "verdict": {
+   "pass": true,
+   "why": "mean clv_prob +0.0219, alpha/3 one-sided lower bound +0.0115"
+  },
+  "clv_ev": -0.00359
+ },
+ "WNBA-H3": {
+  "result": "n=271; CLV +0.55 pp [-0.11, +1.17], p=0.0474; alpha/3 LB -0.17 pp; toward 0.525",
+  "verdict": {
+   "pass": false,
+   "why": "mean clv_prob +0.0055, alpha/3 one-sided lower bound -0.0017"
+  },
+  "clv_ev": -0.0295
+ }
+}

@@ -1,0 +1,126 @@
+{
+ "label": "intercept-only drift, spread, pre",
+ "kind": "points",
+ "market": "spread",
+ "primary_threshold": 0.25,
+ "coverage": {
+  "rows": 7289,
+  "usable": 7289,
+  "mean_abs_move": 1.617,
+  "share_moved": 0.8724,
+  "model_minus_open_sd": 0.055
+ },
+ "thresholds": [
+  {
+   "n_bets": 0,
+   "threshold": 0.25
+  },
+  {
+   "n_bets": 0,
+   "threshold": 0.5
+  },
+  {
+   "n_bets": 0,
+   "threshold": 1.0
+  }
+ ],
+ "primary": {
+  "n_bets": 0,
+  "threshold": 0.25
+ },
+ "buckets": [
+  {
+   "n_bets": 7289,
+   "n_clusters": 136,
+   "clv_pts": {
+    "n": 7289,
+    "mean": -0.0487,
+    "se": 0.03256,
+    "ci95": [
+     -0.11155,
+     0.01501
+    ],
+    "p_one_sided": 0.93262
+   },
+   "clv_prob": {
+    "n": 7289,
+    "mean": -0.00125,
+    "se": 0.00083,
+    "ci95": [
+     -0.00284,
+     0.00036
+    ],
+    "p_one_sided": 0.93542
+   },
+   "clv_ev": {
+    "n": 7289,
+    "mean": -0.04726,
+    "se": 0.00156,
+    "ci95": [
+     -0.05026,
+     -0.04422
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 3068,
+   "moved_against": 3291,
+   "no_move": 930,
+   "direction_hit_rate": {
+    "n": 6359,
+    "mean": 0.48247,
+    "se": 0.00729,
+    "ci95": [
+     0.46835,
+     0.49651
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.08069,
+   "results": {
+    "n": 7289,
+    "wins": 3509,
+    "losses": 3655,
+    "pushes": 125,
+    "win_pct": 0.4898,
+    "roi_at_open": {
+     "n": 7289,
+     "mean": -0.06379,
+     "se": 0.01105,
+     "ci95": [
+      -0.0861,
+      -0.04253
+     ],
+     "p_one_sided": 1.0
+    }
+   },
+   "bucket": "[0, 0.25)"
+  },
+  {
+   "n_bets": 0,
+   "bucket": "[0.25, 0.5)"
+  },
+  {
+   "n_bets": 0,
+   "bucket": "[0.5, 1)"
+  },
+  {
+   "n_bets": 0,
+   "bucket": "[1, inf)"
+  }
+ ],
+ "by_season": [],
+ "exp_id": "CFB-D2",
+ "sport": "cfb",
+ "holdout": false,
+ "seasons": [
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2021,
+  2022,
+  2023,
+  2024
+ ]
+}

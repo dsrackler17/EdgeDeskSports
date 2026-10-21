@@ -81,7 +81,7 @@
     },
     "ci95": [
      -0.000525,
-     -0.000073
+     -7.3e-05
     ],
     "previous": {
      "full": {
@@ -100,6 +100,61 @@
       "total_mae": 3.5974
      }
     }
+   }
+  },
+  {
+   "version": "1.0.0+clv.mlb-h2",
+   "parent": "1.0.0",
+   "config": {
+    "clv_candidate": {
+     "market": "moneyline",
+     "kind": "price",
+     "rule": "residual",
+     "threshold": 0.005,
+     "features": {
+      "d_proj": "p_proj",
+      "d_tp": "p_team_park"
+     },
+     "coef": {
+      "d_proj": 0.028635,
+      "d_tp": 0.070378,
+      "fav": 0.052872,
+      "d_early": 0.036322,
+      "rotation_unknown": -0.000503
+     },
+     "intercept": -0.000633,
+     "lambda": 100.0
+    }
+   },
+   "config_sha256": "3000cdec59efd12905a7bface7e9062eccef3366e681b2534228ef17c389be84",
+   "status": "CANDIDATE (CLV live tracking)",
+   "promoted_by": "clv-programme",
+   "promoted_at": "2026-10-21T14:04:13Z",
+   "reason": "MLB-R2 moneyline market-residual: passed its pre-registered CLV holdout gate (MLB-H2, EXPERIMENTS.md). Tracked live against the opener by research/clv/live.py; never served, and `current` is unchanged.",
+   "evidence": {
+    "holdout": {
+     "n_bets": 1451,
+     "clv_prob": {
+      "n": 1451,
+      "mean": 0.00902,
+      "se": 0.00125,
+      "ci95": [
+       0.00679,
+       0.01172
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 8,
+      "lb_adjusted": 0.00634,
+      "p_adjusted": 0.0
+     },
+     "clv_pts": null,
+     "clv_ev": -0.01814,
+     "seasons": [
+      2020,
+      2021
+     ]
+    },
+    "registry": "research/clv/live/registry.json"
    }
   }
  ]

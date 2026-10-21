@@ -234,6 +234,153 @@
     },
     "report": "docs/model-loop/cfb/BACKTEST.md"
    }
+  },
+  {
+   "version": "2.0.0+clv.cfb-h3",
+   "parent": "2.0.0",
+   "config": {
+    "clv_candidate": {
+     "market": "spread",
+     "kind": "points",
+     "rule": "residual",
+     "threshold": 0.25,
+     "features": {
+      "d_p4": "p4",
+      "d_v2": "v2",
+      "open_lvl": "open_lvl"
+     },
+     "interactions": {
+      "d_early": [
+       "d_p4",
+       "early"
+      ],
+      "d_nonpower": [
+       "d_p4",
+       "nonpower"
+      ],
+      "d_fcs": [
+       "d_p4",
+       "fcs"
+      ]
+     },
+     "coef": {
+      "d_p4": 0.09885,
+      "d_v2": 0.1014,
+      "open_lvl": 0.02141,
+      "d_early": -0.06864,
+      "d_nonpower": 0.00333,
+      "d_fcs": -0.02903
+     },
+     "intercept": -0.13279,
+     "lambda": 10.0
+    }
+   },
+   "config_sha256": "af0b65574ecb566d99cb1d99f7ddab5fae26fc2619cdc4a524a2dd97aa2e63af",
+   "status": "CANDIDATE (CLV live tracking)",
+   "promoted_by": "clv-programme",
+   "promoted_at": "2026-10-21T14:04:13Z",
+   "reason": "CFB-R2 market-residual (p4 + loop v2 disagreement, information block): passed its pre-registered CLV holdout gate (CFB-H3, EXPERIMENTS.md). Tracked live against the opener by research/clv/live.py; never served, and `current` is unchanged.",
+   "evidence": {
+    "holdout": {
+     "n_bets": 751,
+     "clv_prob": {
+      "n": 751,
+      "mean": 0.01912,
+      "se": 0.00261,
+      "ci95": [
+       0.01386,
+       0.02403
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 13,
+      "lb_adjusted": 0.01192,
+      "p_adjusted": 0.0
+     },
+     "clv_pts": {
+      "n": 751,
+      "mean": 0.76099,
+      "se": 0.10134,
+      "ci95": [
+       0.55825,
+       0.95256
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 13,
+      "lb_adjusted": 0.48436,
+      "p_adjusted": 0.0
+     },
+     "clv_ev": -0.00889,
+     "seasons": [
+      2025,
+      2026
+     ]
+    },
+    "registry": "research/clv/live/registry.json"
+   }
+  },
+  {
+   "version": "2.0.0+clv.cfb-h4",
+   "parent": "2.0.0",
+   "config": {
+    "clv_candidate": {
+     "market": "total",
+     "kind": "points",
+     "rule": "residual",
+     "threshold": 0.25,
+     "features": {
+      "d_p4_total": "p4_total",
+      "d_v2_total": "v2_total"
+     },
+     "coef": {
+      "d_p4_total": -0.06474,
+      "d_v2_total": 0.24797
+     },
+     "intercept": -0.60626,
+     "lambda": 0.1
+    }
+   },
+   "config_sha256": "ca166dcab92a565d8ee26a3fdadcdf445b7b91a24e67833c3cda1091b322092f",
+   "status": "CANDIDATE (CLV live tracking)",
+   "promoted_by": "clv-programme",
+   "promoted_at": "2026-10-21T14:04:13Z",
+   "reason": "CFB-W3 totals market-residual (p4 + loop v2): passed its pre-registered CLV holdout gate (CFB-H4, EXPERIMENTS.md). Tracked live against the opener by research/clv/live.py; never served, and `current` is unchanged.",
+   "evidence": {
+    "holdout": {
+     "n_bets": 757,
+     "clv_prob": {
+      "n": 757,
+      "mean": 0.01477,
+      "se": 0.00219,
+      "ci95": [
+       0.01033,
+       0.01887
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 13,
+      "lb_adjusted": 0.00881,
+      "p_adjusted": 0.0
+     },
+     "clv_pts": {
+      "n": 757,
+      "mean": 0.61592,
+      "se": 0.0902,
+      "ci95": [
+       0.43224,
+       0.78294
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 13,
+      "lb_adjusted": 0.36733,
+      "p_adjusted": 0.0
+     },
+     "clv_ev": -0.01722,
+     "seasons": [
+      2025,
+      2026
+     ]
+    },
+    "registry": "research/clv/live/registry.json"
+   }
   }
  ]
 }
