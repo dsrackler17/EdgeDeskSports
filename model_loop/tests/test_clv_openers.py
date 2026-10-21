@@ -132,7 +132,7 @@ class TestMarkets(unittest.TestCase):
 
     def test_unnamed_consensus_and_misoriented_books_are_refused(self):
         ev, _ = ev_of(board())
-        for name in ("", "consensus", "Opening Line"):
+        for name in ("", "consensus", "Opening Line", "teamrankings", "numberfire"):
             o = dict(NHL_ODDS, provider={"name": name})
             self.assertIsNotNone(C.quote(o, ev, "nhl", T0)[1])
         o = copy.deepcopy(NHL_ODDS)
@@ -258,6 +258,32 @@ class TestUfc(Base):
         self.assertNotIn("spread", r[1])
         self.assertFalse(any("summary" in u for u in f.calls))                      # UFC is not settled here
 
+    def order_ev(self):
+        """A bout as ESPN lists it: no homeAway, the sides come from the listing order."""
+        c = self.card([])
+        for b in c["events"][0]["competitions"]:
+            for x in b["competitors"]:
+                x.pop("homeAway")
+        return C.competitions(c, "ufc")[0][0]
+
+    def test_unlabelled_sides_must_be_verified(self):
+        ev = self.order_ev()
+        self.assertEqual(ev["side_source"], "order")
+        self.assertEqual(ev["home"]["name"], "Fighter 11")
+        o = {"provider": {"name": "DraftKings"}, "details": "Fighter 11 -250",
+             "homeAthleteOdds": {"favorite": True, "moneyLine": -250}, "awayAthleteOdds": {"favorite": False, "moneyLine": 200}}
+        self.assertIsNone(C.quote(o, ev, "ufc", T0)[1])                              # details names the home favourite
+        o["details"] = "Fighter 12 -250"
+        self.assertEqual(C.quote(o, ev, "ufc", T0)[1], "odds name the other side as home")
+        o["details"] = "EVEN"
+        self.assertEqual(C.quote(o, ev, "ufc", T0)[1], "sides not verifiable")
+        o["homeAthleteOdds"]["athlete"] = {"$ref": "http://sports.core.api.espn.pvt/v2/sports/mma/athletes/11?lang=en"}
+        self.assertIsNone(C.quote(o, ev, "ufc", T0)[1])                              # the odds' own id settles it
+        o["homeAthleteOdds"]["athlete"] = {"$ref": "http://sports.core.api.espn.pvt/v2/sports/mma/athletes/12?lang=en"}
+        self.assertEqual(C.quote(o, ev, "ufc", T0)[1], "odds name the other side as home")
+        o["homeAthleteOdds"]["athlete"] = {"$ref": "http://sports.core.api.espn.pvt/v2/sports/mma/athletes/99?lang=en"}
+        self.assertEqual(C.quote(o, ev, "ufc", T0)[1], "sides not verifiable")    # an id that is neither fighter
+
     def test_core_api_when_the_card_has_no_odds(self):
         core_item = {"provider": {"name": "DraftKings"},
                      "homeAthleteOdds": {"current": {"moneyLine": {"american": "-140"}}, "open": {"moneyLine": {"american": "-120"}}},
@@ -278,6 +304,45 @@ class TestUfc(Base):
         self.assertEqual(rep["core_requests"], 0)
 
 
+class TestArchive(Base):
+    def day(self, *games):
+        return {"events": [g for b in games for g in b["events"]]}
+
+    def test_backfill_reads_finished_games_and_resumes(self):
+        final = lambda cid: board(cid=cid, state="post", status="STATUS_FINAL", start="2026-01-15T00:00Z", season=2026)
+        f = Fake({"scoreboard?dates=20260114": self.day(final("501"), final("502"), board(cid="503", start="2026-01-15T00:00Z")),
+                  "scoreboard?dates=20260115": self.day(final("504")),
+                  "summary?event=502": summary(pick=False), "summary?event=": summary()})
+        rep = C.backfill("nhl", "20260114", "20260115", f, max_requests=4, now=T0, pause=0)
+        self.assertEqual((rep["games"], rep["with_open_and_close"], rep["to"], rep["done"]), (2, 1, "20260114", False))
+        rows = self.rows()
+        self.assertEqual([r["cid"] for r in rows], ["501", "502"])                  # the scheduled game is not archived
+        self.assertEqual(rows[0]["kind"], "archive")
+        self.assertEqual(rows[0]["books"][0]["open"]["ml"], {"home": -190, "away": 160})
+        self.assertEqual(rows[0]["books"][0]["close"]["ml"], {"home": -205, "away": 170})
+        self.assertEqual((rows[0]["home_score"], rows[0]["season"]), (4.0, 2026))
+        self.assertTrue(os.path.exists(os.path.join(self.dir, "nhl", "backfill_2026.jsonl")))
+        rep = C.backfill("nhl", "20260114", "20260115", f, now=T0, pause=0)
+        self.assertEqual((rep["games"], rep["skipped_have"], rep["done"]), (1, 2, True))
+        s = C.summarise("nhl")["seasons"]["2026"]
+        self.assertEqual((s["archive_games"], s["archive_with_open_and_close"], s["testable"], s["listed"]), (3, 2, 2, 0))
+
+    def test_the_hourly_state_never_reads_the_archive(self):
+        os.makedirs(os.path.join(self.dir, "nhl"))
+        with open(os.path.join(self.dir, "nhl", "backfill_2027.jsonl"), "w") as fh:
+            fh.write(json.dumps({"kind": "quote", "cid": "401", "book": "DraftKings", "observed_at": "2026-10-21T16:00:00Z",
+                                 "ml": NHL_QUOTE_ML, "spread": None, "total": None}) + "\n")
+        f = Fake({"hockey/nhl/scoreboard?dates=20261022": board()})
+        self.assertEqual(C.capture_sport("nhl", T0, f, pause=0)["rows"]["quote"], 1)
+
+    def test_card_sports_have_no_archive(self):
+        with self.assertRaises(ValueError):
+            C.backfill("ufc", "20261001", "20261002", Fake({}), pause=0)
+
+
+NHL_QUOTE_ML = {"home": -205, "away": 170}
+
+
 class TestSummary(Base):
     def test_counts_per_season(self):
         f = Fake({"hockey/nhl/scoreboard?dates=20261022": {"events": board()["events"] + board(cid="402", odds=[])["events"]},
@@ -287,6 +352,7 @@ class TestSummary(Base):
         C.capture_sport("nhl", dt.datetime(2026, 10, 23, 4, 0, tzinfo=dt.timezone.utc), f, pause=0)
         s = C.write_summary()["sports"]["nhl"]
         self.assertEqual(s["seasons"]["2027"], {"listed": 2, "priced": 1, "with_espn_open": 1, "settled_with_close": 1,
+                                                "testable_live": 1, "archive_games": 0, "archive_with_open_and_close": 0,
                                                 "testable": 1, "priced_share": 0.5,
                                                 "first_quote_hours_before_start_median": 30.0})
         self.assertEqual(s["through"], "2026-10-23T04:00:00Z")
