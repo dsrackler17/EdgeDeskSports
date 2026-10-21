@@ -6,14 +6,13 @@
 # a time per host, 2 s apart, refusals recorded and respected. The answers are
 # committed gzipped to the branch that ran it (collegiate/probe/fixtures/,
 # index.json), so the roster, schedule and box-score readers are written and
-# tested against real pages. Runs when the target list changes, or by hand.
+# tested against real pages. Runs by hand, on the branch that asks for it.
 name: Collegiate probe
 
 on:
-  push:
-    branches-ignore: [main]       # probed on the branch that changed the targets; a re-probe on merge only rewrites the fixtures
-    paths:
-      - 'collegiate/probe/targets.json'
+  # by hand only, on the branch that changed the targets (Actions -> Collegiate probe -> Run workflow, or the
+  # API's workflow dispatch with that branch as the ref). A push trigger fired on every branch that merged main
+  # in after a targets change, and the run committed its answers to that branch: someone else's work.
   workflow_dispatch:
 
 permissions:
