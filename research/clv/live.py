@@ -17,7 +17,8 @@ Sources per sport (all committed files; the run needs no cache):
   cfb   models: the CFB Lab's OPEN checkpoint (football/cfb_lab/ledger/2026/predictions,
         prediction_ts at the open); lines: the Lab's OPEN (observed) and CLOSE
   nfl   models: football/nfl/slate.json (production) and football/nfl/model_loop/current.json
-        (loop), first sighting; lines: football/pricing/openers_nfl.json open / close
+        (loop), first sighting; lines: record/football/quotes/nfl_2026.jsonl (DraftKings, timestamped):
+        the line showing at the first sighting, and the last pregame quote
   nhl   models: hockey/slate.json challengers (production and projected goalie), first sighting;
         lines: the quote log (first DraftKings sighting / last before the start)
   nba, ncaam  models: nba/slate.json and basketball/slate.json, first sighting; lines: the quote log
@@ -248,20 +249,48 @@ def cfb_conferences():
 
 
 def nfl_frame():
+    """NFL: the bet is placed against the DraftKings line showing when the
+    model's number was first captured (record/football/quotes/nfl_2026.jsonl,
+    timestamped, with prices); if no quote had been seen yet, against the
+    first one after it. The close is the last pregame quote. (The first-seen
+    consensus opener in football/pricing/openers_nfl.json is often posted
+    eleven days before the week's slate prices the game, so it cannot be the
+    line a slate number is bet against.)"""
     m = first_models("nfl")
-    op = (_read("football/pricing/openers_nfl.json") or {}).get("games") or {}
-    rows = []
-    for gid, g in op.items():
-        o, c = g.get("open") or {}, g.get("close") or {}
-        rows.append({"game_id": gid, "week": g.get("week"), "open_seen": o.get("seen_at"), "closed": bool(g.get("closed")),
-                     "open_line": -o["home_line"] if o.get("home_line") is not None else np.nan,
-                     "close_line": -c["home_line"] if c.get("home_line") is not None else np.nan,
-                     "open_total": o.get("total"), "close_total": c.get("total")})
-    ln = pd.DataFrame(rows)
-    if m.empty or ln.empty:
+    q = pd.DataFrame(_jsonl(os.path.join(ROOT, "record", "football", "quotes", "nfl_2026.jsonl")))
+    if m.empty or q.empty:
         return pd.DataFrame()
-    d = ln.merge(m, on="game_id", how="inner", suffixes=("", "_m"))
-    d["late"] = (_ts(d.captured_at) - _ts(d.open_seen)).dt.total_seconds() / 3600 > LAG_H
+    q = q[q.is_pregame.astype(bool)].copy()
+    q["t"] = _ts(q.observed_at)
+    q = q[(q.t < _ts(q.kickoff_ts)) & (_ts(q.kickoff_ts) <= pd.Timestamp.now(tz="UTC"))].sort_values("t")   # final closes only
+    rows = []
+    for r in m.itertuples(index=False):
+        g = q[q.game_id == r.game_id]
+        if g.empty:
+            continue
+        cap = _ts(r.captured_at)
+        rec = {"game_id": r.game_id, "week": r.week, "v21": r.v21, "v21_total": r.v21_total, "loop": r.loop,
+               "loop_total": r.loop_total, "captured_at": r.captured_at}
+        for mk, cols in (("spread", ("home_line", "price_home", "price_away")), ("total", ("total_points", "price_over", "price_under"))):
+            x = g[g.market_type == mk]
+            if x.empty:
+                continue
+            before = x[x.t <= cap]
+            o = before.iloc[-1] if len(before) else x.iloc[0]
+            c = x.iloc[-1]
+            if mk == "spread":
+                rec.update({"open_line": -o.home_line, "close_line": -c.home_line, "open_price_a": o.price_home,
+                            "open_price_b": o.price_away, "close_price_a": c.price_home, "close_price_b": c.price_away,
+                            "open_seen": o.observed_at})
+            else:
+                rec.update({"open_total": o.total_points, "close_total": c.total_points, "open_total_price_a": o.price_over,
+                            "open_total_price_b": o.price_under, "close_total_price_a": c.price_over,
+                            "close_total_price_b": c.price_under})
+        rows.append(rec)
+    d = pd.DataFrame(rows)
+    if d.empty:
+        return d
+    d["late"] = False
     d["season"] = 2026
     d["cluster"] = "2026-" + d.week.astype(str)
     return d
@@ -295,7 +324,7 @@ def quote_frame(sport, model_sport):
         return pd.DataFrame()
     d = ln.merge(m, on="game_id", how="inner", suffixes=("", "_m"))
     d["late"] = (_ts(d.captured_at) - _ts(d.open_seen)).dt.total_seconds() / 3600 > LAG_H
-    d = d[d.has_close]
+    d = d[d.has_close & (_ts(d.start_utc) <= pd.Timestamp.now(tz="UTC"))]          # final closes only
     if sport == "nhl":
         b = b2b_flags("nhl")
         if not b.empty:
@@ -330,6 +359,8 @@ def candidate_frame(c, frames):
     if c["kind"] == "points":
         if c["market"] == "total":
             x["open_line"], x["close_line"] = x.open_total, x.close_total
+            for k in ("open_price_a", "open_price_b", "close_price_a", "close_price_b"):
+                x[k] = x[k.replace("_price", "_total_price")] if k.replace("_price", "_total_price") in x else np.nan
         x = x[x.open_line.notna() & x.close_line.notna()]
         if c["rule"] == "base":
             x["model_line"] = x[c["input"]]

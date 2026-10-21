@@ -1,0 +1,1009 @@
+{
+ "schema": "edgedesk_clv_live_registry_v1",
+ "generated_at": "2026-10-21T14:04:13Z",
+ "rule": "Every candidate here passed its pre-registered holdout CLV gate (EXPERIMENTS.md). It is tracked live against the opener and graded at the last pregame line. Nothing here is served or priced on the board.",
+ "candidates": [
+  {
+   "id": "CFB-H1",
+   "sport": "cfb",
+   "market": "spread",
+   "kind": "points",
+   "rule": "base",
+   "input": "p4",
+   "threshold": 2.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 15.5605
+   },
+   "frame": "cfb",
+   "label": "production cfb_p4 v1.0.1 vs the opener",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 795,
+    "clv_prob": {
+     "n": 795,
+     "mean": 0.01186,
+     "se": 0.0027,
+     "ci95": [
+      0.00664,
+      0.01732
+     ],
+     "p_one_sided": 1e-05,
+     "k_tests": 13,
+     "lb_adjusted": 0.0053,
+     "p_adjusted": 7e-05
+    },
+    "clv_pts": {
+     "n": 795,
+     "mean": 0.47453,
+     "se": 0.10593,
+     "ci95": [
+      0.2714,
+      0.68842
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 13,
+     "lb_adjusted": 0.21587,
+     "p_adjusted": 5e-05
+    },
+    "clv_ev": -0.02268,
+    "seasons": [
+     2025,
+     2026
+    ]
+   }
+  },
+  {
+   "id": "CFB-H2",
+   "sport": "cfb",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "p4_total",
+   "threshold": 2.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 16.406
+   },
+   "frame": "cfb",
+   "label": "production cfb_p4 v1.0.1 total vs the opener",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 590,
+    "clv_prob": {
+     "n": 590,
+     "mean": 0.00991,
+     "se": 0.00258,
+     "ci95": [
+      0.00495,
+      0.01504
+     ],
+     "p_one_sided": 6e-05,
+     "k_tests": 13,
+     "lb_adjusted": 0.0023,
+     "p_adjusted": 0.00078
+    },
+    "clv_pts": {
+     "n": 590,
+     "mean": 0.41483,
+     "se": 0.10997,
+     "ci95": [
+      0.2015,
+      0.63243
+     ],
+     "p_one_sided": 8e-05,
+     "k_tests": 13,
+     "lb_adjusted": 0.0926,
+     "p_adjusted": 0.00105
+    },
+    "clv_ev": -0.02634,
+    "seasons": [
+     2025,
+     2026
+    ]
+   }
+  },
+  {
+   "id": "CFB-H3",
+   "sport": "cfb",
+   "market": "spread",
+   "kind": "points",
+   "rule": "residual",
+   "threshold": 0.25,
+   "dist": {
+    "type": "normal",
+    "sigma": 15.5605
+   },
+   "frame": "cfb",
+   "label": "CFB-R2 market-residual (p4 + loop v2 disagreement, information block)",
+   "features": {
+    "d_p4": "p4",
+    "d_v2": "v2",
+    "open_lvl": "open_lvl"
+   },
+   "interactions": {
+    "d_early": [
+     "d_p4",
+     "early"
+    ],
+    "d_nonpower": [
+     "d_p4",
+     "nonpower"
+    ],
+    "d_fcs": [
+     "d_p4",
+     "fcs"
+    ]
+   },
+   "challenger": true,
+   "parent_loop": "cfb",
+   "lambda": 10.0,
+   "n_train": 9520,
+   "coef": {
+    "d_p4": 0.09885,
+    "d_v2": 0.1014,
+    "open_lvl": 0.02141,
+    "d_early": -0.06864,
+    "d_nonpower": 0.00333,
+    "d_fcs": -0.02903
+   },
+   "intercept": -0.13279,
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 751,
+    "clv_prob": {
+     "n": 751,
+     "mean": 0.01912,
+     "se": 0.00261,
+     "ci95": [
+      0.01386,
+      0.02403
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 13,
+     "lb_adjusted": 0.01192,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 751,
+     "mean": 0.76099,
+     "se": 0.10134,
+     "ci95": [
+      0.55825,
+      0.95256
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 13,
+     "lb_adjusted": 0.48436,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": -0.00889,
+    "seasons": [
+     2025,
+     2026
+    ]
+   }
+  },
+  {
+   "id": "CFB-H4",
+   "sport": "cfb",
+   "market": "total",
+   "kind": "points",
+   "rule": "residual",
+   "threshold": 0.25,
+   "dist": {
+    "type": "normal",
+    "sigma": 16.406
+   },
+   "frame": "cfb",
+   "label": "CFB-W3 totals market-residual (p4 + loop v2)",
+   "features": {
+    "d_p4_total": "p4_total",
+    "d_v2_total": "v2_total"
+   },
+   "challenger": true,
+   "parent_loop": "cfb",
+   "lambda": 0.1,
+   "n_train": 8586,
+   "coef": {
+    "d_p4_total": -0.06474,
+    "d_v2_total": 0.24797
+   },
+   "intercept": -0.60626,
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 757,
+    "clv_prob": {
+     "n": 757,
+     "mean": 0.01477,
+     "se": 0.00219,
+     "ci95": [
+      0.01033,
+      0.01887
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 13,
+     "lb_adjusted": 0.00881,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 757,
+     "mean": 0.61592,
+     "se": 0.0902,
+     "ci95": [
+      0.43224,
+      0.78294
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 13,
+     "lb_adjusted": 0.36733,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": -0.01722,
+    "seasons": [
+     2025,
+     2026
+    ]
+   }
+  },
+  {
+   "id": "NFL-H1",
+   "sport": "nfl",
+   "market": "spread",
+   "kind": "points",
+   "rule": "base",
+   "input": "v21",
+   "threshold": 1.0,
+   "dist": {
+    "type": "keynumber",
+    "json": {
+     "sigma": 13.75,
+     "mult": [
+      0.09015,
+      0.72771,
+      0.74757,
+      2.74686,
+      0.9796,
+      0.67111,
+      1.24989,
+      1.95857,
+      0.78153,
+      0.34571,
+      1.26046,
+      0.59115,
+      0.3959,
+      0.74193,
+      1.4429,
+      0.47134,
+      0.73846,
+      1.0914,
+      0.90534,
+      0.4358,
+      0.99552,
+      1.48901,
+      0.5399,
+      0.61067,
+      1.49053,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "kmax": 70
+    }
+   },
+   "frame": "nfl",
+   "label": "production edgedesk_nfl_v2.1.0 vs the opener",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 384,
+    "clv_prob": {
+     "n": 384,
+     "mean": 0.01794,
+     "se": 0.00505,
+     "ci95": [
+      0.00807,
+      0.02797
+     ],
+     "p_one_sided": 0.00019,
+     "k_tests": 12,
+     "lb_adjusted": 0.00479,
+     "p_adjusted": 0.00228
+    },
+    "clv_pts": {
+     "n": 384,
+     "mean": 0.57812,
+     "se": 0.15816,
+     "ci95": [
+      0.27248,
+      0.9
+     ],
+     "p_one_sided": 0.00013,
+     "k_tests": 12,
+     "lb_adjusted": 0.18056,
+     "p_adjusted": 0.00154
+    },
+    "clv_ev": -0.01133,
+    "seasons": [
+     2020,
+     2021
+    ]
+   }
+  },
+  {
+   "id": "NFL-H2",
+   "sport": "nfl",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "v21_total",
+   "threshold": 1.5,
+   "dist": {
+    "type": "normal",
+    "sigma": 13.2805
+   },
+   "frame": "nfl",
+   "label": "production edgedesk_nfl_v2.1.0 total vs the opener",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 422,
+    "clv_prob": {
+     "n": 422,
+     "mean": 0.02975,
+     "se": 0.00392,
+     "ci95": [
+      0.02226,
+      0.03775
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.01979,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 422,
+     "mean": 0.99526,
+     "se": 0.13211,
+     "ci95": [
+      0.7457,
+      1.26552
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.65974,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": 0.01127,
+    "seasons": [
+     2020,
+     2021
+    ]
+   }
+  },
+  {
+   "id": "NFL-H3",
+   "sport": "nfl",
+   "market": "spread",
+   "kind": "points",
+   "rule": "residual",
+   "threshold": 0.25,
+   "dist": {
+    "type": "keynumber",
+    "json": {
+     "sigma": 13.75,
+     "mult": [
+      0.09015,
+      0.72771,
+      0.74757,
+      2.74686,
+      0.9796,
+      0.67111,
+      1.24989,
+      1.95857,
+      0.78153,
+      0.34571,
+      1.26046,
+      0.59115,
+      0.3959,
+      0.74193,
+      1.4429,
+      0.47134,
+      0.73846,
+      1.0914,
+      0.90534,
+      0.4358,
+      0.99552,
+      1.48901,
+      0.5399,
+      0.61067,
+      1.49053,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "kmax": 70
+    }
+   },
+   "frame": "nfl",
+   "label": "NFL-R1 market-residual (v2.1.0 + loop disagreement)",
+   "features": {
+    "d_v21": "v21",
+    "d_loop": "loop"
+   },
+   "challenger": true,
+   "parent_loop": "nfl",
+   "lambda": 0.1,
+   "n_train": 2393,
+   "coef": {
+    "d_v21": 0.13548,
+    "d_loop": 0.02389
+   },
+   "intercept": -0.12466,
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 290,
+    "clv_prob": {
+     "n": 290,
+     "mean": 0.02943,
+     "se": 0.00536,
+     "ci95": [
+      0.01922,
+      0.04016
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.01527,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 290,
+     "mean": 0.89828,
+     "se": 0.17228,
+     "ci95": [
+      0.5707,
+      1.25097
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.46471,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": 0.01014,
+    "seasons": [
+     2020,
+     2021
+    ]
+   }
+  },
+  {
+   "id": "NFL-H4",
+   "sport": "nfl",
+   "market": "total",
+   "kind": "points",
+   "rule": "residual",
+   "threshold": 0.25,
+   "dist": {
+    "type": "normal",
+    "sigma": 13.2805
+   },
+   "frame": "nfl",
+   "label": "NFL-W2 totals market-residual (v2.1.0 + loop)",
+   "features": {
+    "d_v21_total": "v21_total",
+    "d_loop_total": "loop_total"
+   },
+   "challenger": true,
+   "parent_loop": "nfl",
+   "lambda": 0.1,
+   "n_train": 2391,
+   "coef": {
+    "d_v21_total": 0.1416,
+    "d_loop_total": 0.20142
+   },
+   "intercept": -0.0526,
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 448,
+    "clv_prob": {
+     "n": 448,
+     "mean": 0.03479,
+     "se": 0.00392,
+     "ci95": [
+      0.02739,
+      0.04297
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.0248,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 448,
+     "mean": 1.16183,
+     "se": 0.13257,
+     "ci95": [
+      0.91101,
+      1.43901
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.82636,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": 0.02069,
+    "seasons": [
+     2020,
+     2021
+    ]
+   }
+  },
+  {
+   "id": "NHL-H1",
+   "sport": "nhl",
+   "market": "moneyline",
+   "kind": "price",
+   "rule": "base",
+   "input": "p_core",
+   "threshold": 0.02,
+   "frame": "nhl",
+   "label": "production edgedesk_nhl_v1 (xg_core) moneyline vs the earliest DraftKings line",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 1475,
+    "clv_prob": {
+     "n": 1475,
+     "mean": 0.00765,
+     "se": 0.00101,
+     "ci95": [
+      0.00571,
+      0.00969
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.00506,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": null,
+    "clv_ev": -0.01964,
+    "seasons": [
+     2021,
+     2022
+    ]
+   }
+  },
+  {
+   "id": "NHL-H3",
+   "sport": "nhl",
+   "market": "moneyline",
+   "kind": "price",
+   "rule": "residual",
+   "threshold": 0.005,
+   "frame": "nhl",
+   "label": "NHL-W2: moneyline market-residual (production + projected goalie) on one-team back-to-backs",
+   "features": {
+    "d_p_core": "p_core",
+    "d_p_gproj": "p_gproj"
+   },
+   "filter": "b2b_one",
+   "challenger": true,
+   "lambda": 10.0,
+   "n_train": 9194,
+   "coef": {
+    "d_p_core": 0.043796,
+    "d_p_gproj": 0.207713
+   },
+   "intercept": -0.000461,
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 272,
+    "clv_prob": {
+     "n": 272,
+     "mean": 0.02241,
+     "se": 0.00275,
+     "ci95": [
+      0.01704,
+      0.02771
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.01561,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": null,
+    "clv_ev": 0.01629,
+    "seasons": [
+     2021,
+     2022
+    ]
+   }
+  },
+  {
+   "id": "NHL-H2",
+   "sport": "nhl",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "t_core",
+   "threshold": 0.3,
+   "dist": {
+    "type": "normal",
+    "sigma": 2.3
+   },
+   "frame": null,
+   "label": "production xg_core total (line only)",
+   "challenger": false,
+   "live_note": "not tracked live: low-confidence line-only test, and the slate carries no per-model total to capture",
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 951,
+    "clv_prob": {
+     "n": 951,
+     "mean": 0.03248,
+     "se": 0.00194,
+     "ci95": [
+      0.02881,
+      0.03633
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.02756,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 951,
+     "mean": 0.17035,
+     "se": 0.0101,
+     "ci95": [
+      0.15119,
+      0.19028
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.14457,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": 0.01406,
+    "seasons": [
+     2021,
+     2022
+    ]
+   }
+  },
+  {
+   "id": "NHL-H4",
+   "sport": "nhl",
+   "market": "total",
+   "kind": "points",
+   "rule": "residual",
+   "threshold": 0.05,
+   "dist": {
+    "type": "normal",
+    "sigma": 2.3
+   },
+   "frame": null,
+   "label": "NHL-W3 totals market-residual (line only)",
+   "challenger": true,
+   "coef": {},
+   "intercept": 0.0,
+   "live_note": "not tracked live: low-confidence line-only test",
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 1452,
+    "clv_prob": {
+     "n": 1452,
+     "mean": 0.02633,
+     "se": 0.00147,
+     "ci95": [
+      0.02348,
+      0.0292
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.02235,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 1452,
+     "mean": 0.13602,
+     "se": 0.00757,
+     "ci95": [
+      0.12146,
+      0.15071
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.11598,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": 0.00284,
+    "seasons": [
+     2021,
+     2022
+    ]
+   }
+  },
+  {
+   "id": "MLB-H1",
+   "sport": "mlb",
+   "market": "moneyline",
+   "kind": "price",
+   "rule": "base",
+   "input": "p_proj",
+   "threshold": 0.02,
+   "frame": null,
+   "label": "MLB lab model (projected starter) moneyline",
+   "challenger": false,
+   "live_note": "the 2026 season is over; tracking starts with the 2027 season (the lab model prices no live game yet)",
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 2117,
+    "clv_prob": {
+     "n": 2117,
+     "mean": 0.00692,
+     "se": 0.00097,
+     "ci95": [
+      0.00519,
+      0.00889
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 8,
+     "lb_adjusted": 0.00482,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": null,
+    "clv_ev": -0.02214,
+    "seasons": [
+     2020,
+     2021
+    ]
+   }
+  },
+  {
+   "id": "MLB-H2",
+   "sport": "mlb",
+   "market": "moneyline",
+   "kind": "price",
+   "rule": "residual",
+   "threshold": 0.005,
+   "frame": null,
+   "label": "MLB-R2 moneyline market-residual",
+   "challenger": true,
+   "parent_loop": "mlb",
+   "base_version": "1.0.0",
+   "features": {
+    "d_proj": "p_proj",
+    "d_tp": "p_team_park"
+   },
+   "live_note": "the 2026 season is over; its evidence was built on the lab loop's 1.0.0 inputs, and the loop has since served 1.1.0, so re-derive it on 1.1.0 before tracking the 2027 season",
+   "lambda": 100.0,
+   "n_train": 17824,
+   "coef": {
+    "d_proj": 0.028635,
+    "d_tp": 0.070378,
+    "fav": 0.052872,
+    "d_early": 0.036322,
+    "rotation_unknown": -0.000503
+   },
+   "intercept": -0.000633,
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 1451,
+    "clv_prob": {
+     "n": 1451,
+     "mean": 0.00902,
+     "se": 0.00125,
+     "ci95": [
+      0.00679,
+      0.01172
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 8,
+     "lb_adjusted": 0.00634,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": null,
+    "clv_ev": -0.01814,
+    "seasons": [
+     2020,
+     2021
+    ]
+   }
+  },
+  {
+   "id": "NCAAM-H1",
+   "sport": "ncaam",
+   "market": "spread",
+   "kind": "points",
+   "rule": "base",
+   "input": "lab",
+   "threshold": 1.5,
+   "dist": {
+    "type": "normal",
+    "sigma": 10.5
+   },
+   "frame": "ncaam",
+   "label": "production bb_points (NCAAM 1.1.0) spread",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 2862,
+    "clv_prob": {
+     "n": 2862,
+     "mean": 0.01035,
+     "se": 0.00149,
+     "ci95": [
+      0.00755,
+      0.01344
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 3,
+     "lb_adjusted": 0.00734,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 2862,
+     "mean": 0.33613,
+     "se": 0.04292,
+     "ci95": [
+      0.25798,
+      0.42448
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 3,
+     "lb_adjusted": 0.25215,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": -0.02537,
+    "seasons": [
+     2026
+    ]
+   }
+  },
+  {
+   "id": "NCAAM-H2",
+   "sport": "ncaam",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "lab_total",
+   "threshold": 2.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 15.5
+   },
+   "frame": "ncaam",
+   "label": "production bb_points (NCAAM 1.1.0) total",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 2552,
+    "clv_prob": {
+     "n": 2552,
+     "mean": 0.01578,
+     "se": 0.0016,
+     "ci95": [
+      0.01265,
+      0.01894
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 3,
+     "lb_adjusted": 0.0124,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": {
+     "n": 2552,
+     "mean": 0.66144,
+     "se": 0.06221,
+     "ci95": [
+      0.53983,
+      0.78357
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 3,
+     "lb_adjusted": 0.5291,
+     "p_adjusted": 0.0
+    },
+    "clv_ev": -0.01512,
+    "seasons": [
+     2026
+    ]
+   }
+  },
+  {
+   "id": "NCAAM-H3",
+   "sport": "ncaam",
+   "market": "moneyline",
+   "kind": "price",
+   "rule": "base",
+   "input": "lab_p",
+   "threshold": 0.02,
+   "frame": "ncaam",
+   "label": "production bb_points (NCAAM 1.1.0) moneyline",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 3363,
+    "clv_prob": {
+     "n": 3363,
+     "mean": 0.00766,
+     "se": 0.00067,
+     "ci95": [
+      0.00643,
+      0.00905
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 3,
+     "lb_adjusted": 0.00632,
+     "p_adjusted": 0.0
+    },
+    "clv_pts": null,
+    "clv_ev": -0.02539,
+    "seasons": [
+     2026
+    ]
+   }
+  },
+  {
+   "id": "WNBA-H2",
+   "sport": "wnba",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "lab_total",
+   "threshold": 2.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 15.0
+   },
+   "frame": null,
+   "label": "production bb_points (WNBA 1.0.0) total",
+   "challenger": false,
+   "live_note": "the WNBA Finals end by 2026-11-01; tracking resumes with the 2027 season",
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 231,
+    "clv_prob": {
+     "n": 231,
+     "mean": 0.02192,
+     "se": 0.00493,
+     "ci95": [
+      0.01209,
+      0.03171
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 3,
+     "lb_adjusted": 0.01148,
+     "p_adjusted": 1e-05
+    },
+    "clv_pts": {
+     "n": 231,
+     "mean": 0.86147,
+     "se": 0.19569,
+     "ci95": [
+      0.47221,
+      1.24564
+     ],
+     "p_one_sided": 1e-05,
+     "k_tests": 3,
+     "lb_adjusted": 0.44154,
+     "p_adjusted": 2e-05
+    },
+    "clv_ev": -0.00359,
+    "seasons": [
+     2025,
+     2026
+    ]
+   }
+  }
+ ]
+}

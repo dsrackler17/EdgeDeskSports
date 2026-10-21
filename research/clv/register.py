@@ -88,8 +88,10 @@ def candidates(sig, nba_cands=None):
          "live_note": "the 2026 season is over; tracking starts with the 2027 season (the lab model prices no live game yet)"},
         dict({"id": "MLB-H2", "sport": "mlb", "market": "moneyline", "kind": "price", "rule": "residual", "threshold": 0.005,
               "frame": None, "label": "MLB-R2 moneyline market-residual", "challenger": True, "parent_loop": "mlb",
+              "base_version": "1.0.0",
               "features": {"d_proj": "p_proj", "d_tp": "p_team_park"},
-              "live_note": "the 2026 season is over; tracking starts with the 2027 season"}, **fit("mlb", "MLB-H2")),
+              "live_note": ("the 2026 season is over; its evidence was built on the lab loop's 1.0.0 inputs, and the loop "
+                            "has since served 1.1.0, so re-derive it on 1.1.0 before tracking the 2027 season")}, **fit("mlb", "MLB-H2")),
         {"id": "NCAAM-H1", "sport": "ncaam", "market": "spread", "kind": "points", "rule": "base", "input": "lab", "threshold": 1.5,
          "dist": pts(10.5), "frame": "ncaam", "label": "production bb_points (NCAAM 1.1.0) spread", "challenger": False},
         {"id": "NCAAM-H2", "sport": "ncaam", "market": "total", "kind": "points", "rule": "base", "input": "lab_total", "threshold": 2.0,
@@ -118,13 +120,14 @@ def register_versions(C):
             continue
         raw = open(path).read()
         doc = json.loads(raw)
-        label = f"{doc['current']}+clv.{c['id'].lower()}"
+        base = c.get("base_version", doc["current"])
+        label = f"{base}+clv.{c['id'].lower()}"
         if any(v["version"] == label for v in doc["versions"]):
             continue
         cfg = {k: c[k] for k in ("market", "kind", "rule", "threshold", "features", "interactions", "coef", "intercept", "lambda", "filter")
                if k in c}
         doc["versions"].append({
-            "version": label, "parent": doc["current"], "config": {"clv_candidate": cfg},
+            "version": label, "parent": base, "config": {"clv_candidate": cfg},
             "config_sha256": content_hash({"clv_candidate": cfg}), "status": "CANDIDATE (CLV live tracking)",
             "promoted_by": "clv-programme", "promoted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "reason": (f"{c['label']}: passed its pre-registered CLV holdout gate ({c['id']}, EXPERIMENTS.md). "

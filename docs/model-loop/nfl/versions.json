@@ -124,6 +124,134 @@
      "close_total_mae": 10.4228
     }
    }
+  },
+  {
+   "version": "2.0.0+clv.nfl-h3",
+   "parent": "2.0.0",
+   "config": {
+    "clv_candidate": {
+     "market": "spread",
+     "kind": "points",
+     "rule": "residual",
+     "threshold": 0.25,
+     "features": {
+      "d_v21": "v21",
+      "d_loop": "loop"
+     },
+     "coef": {
+      "d_v21": 0.13548,
+      "d_loop": 0.02389
+     },
+     "intercept": -0.12466,
+     "lambda": 0.1
+    }
+   },
+   "config_sha256": "b83248e19e244b89f7b483b4556ff6ddaf64361cc30618313a85b27337948fb1",
+   "status": "CANDIDATE (CLV live tracking)",
+   "promoted_by": "clv-programme",
+   "promoted_at": "2026-10-21T14:04:13Z",
+   "reason": "NFL-R1 market-residual (v2.1.0 + loop disagreement): passed its pre-registered CLV holdout gate (NFL-H3, EXPERIMENTS.md). Tracked live against the opener by research/clv/live.py; never served, and `current` is unchanged.",
+   "evidence": {
+    "holdout": {
+     "n_bets": 290,
+     "clv_prob": {
+      "n": 290,
+      "mean": 0.02943,
+      "se": 0.00536,
+      "ci95": [
+       0.01922,
+       0.04016
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 12,
+      "lb_adjusted": 0.01527,
+      "p_adjusted": 0.0
+     },
+     "clv_pts": {
+      "n": 290,
+      "mean": 0.89828,
+      "se": 0.17228,
+      "ci95": [
+       0.5707,
+       1.25097
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 12,
+      "lb_adjusted": 0.46471,
+      "p_adjusted": 0.0
+     },
+     "clv_ev": 0.01014,
+     "seasons": [
+      2020,
+      2021
+     ]
+    },
+    "registry": "research/clv/live/registry.json"
+   }
+  },
+  {
+   "version": "2.0.0+clv.nfl-h4",
+   "parent": "2.0.0",
+   "config": {
+    "clv_candidate": {
+     "market": "total",
+     "kind": "points",
+     "rule": "residual",
+     "threshold": 0.25,
+     "features": {
+      "d_v21_total": "v21_total",
+      "d_loop_total": "loop_total"
+     },
+     "coef": {
+      "d_v21_total": 0.1416,
+      "d_loop_total": 0.20142
+     },
+     "intercept": -0.0526,
+     "lambda": 0.1
+    }
+   },
+   "config_sha256": "dd5d2de7afcd0a79c2fd162d039e7cbef449f96070735ee189ed13df9a000445",
+   "status": "CANDIDATE (CLV live tracking)",
+   "promoted_by": "clv-programme",
+   "promoted_at": "2026-10-21T14:04:13Z",
+   "reason": "NFL-W2 totals market-residual (v2.1.0 + loop): passed its pre-registered CLV holdout gate (NFL-H4, EXPERIMENTS.md). Tracked live against the opener by research/clv/live.py; never served, and `current` is unchanged.",
+   "evidence": {
+    "holdout": {
+     "n_bets": 448,
+     "clv_prob": {
+      "n": 448,
+      "mean": 0.03479,
+      "se": 0.00392,
+      "ci95": [
+       0.02739,
+       0.04297
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 12,
+      "lb_adjusted": 0.0248,
+      "p_adjusted": 0.0
+     },
+     "clv_pts": {
+      "n": 448,
+      "mean": 1.16183,
+      "se": 0.13257,
+      "ci95": [
+       0.91101,
+       1.43901
+      ],
+      "p_one_sided": 0.0,
+      "k_tests": 12,
+      "lb_adjusted": 0.82636,
+      "p_adjusted": 0.0
+     },
+     "clv_ev": 0.02069,
+     "seasons": [
+      2020,
+      2021
+     ]
+    },
+    "registry": "research/clv/live/registry.json"
+   }
   }
  ]
 }
