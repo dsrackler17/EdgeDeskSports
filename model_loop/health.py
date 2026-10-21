@@ -55,6 +55,10 @@ LOOPS = [
      "workflow": ".github/workflows/model-loop-ufc.yml"},
     # the two preregistered engines: their own protocols choose their numbers; the
     # loop grades them weekly and watches their builds (model_loop/adapters/engines)
+    # the MLB lab brain prices no live game; its loop learns on the 2012-to-date record for
+    # the 2027 engine choice, so it is NOT_SERVED unless its weekly research stops
+    {"id": "mlb", "label": "MLB (lab brain)", "months": set(range(1, 13)), "kind": "lab_research",
+     "workflow": ".github/workflows/model-loop-mlb.yml"},
     {"id": "nhl", "label": "NHL engine", "months": {10, 11, 12, 1, 2, 3, 4, 5, 6}, "kind": "engine",
      "workflow": ".github/workflows/model-loop-engines.yml"},
     {"id": "nba_engine", "label": "NBA engine", "months": {10, 11, 12, 1, 2, 3, 4, 5, 6}, "kind": "engine",
@@ -165,10 +169,36 @@ def engine_health(L, now):
             "workflow": L["workflow"]}
 
 
+def research_health(L, now):
+    """A loop whose model prices no live game: what matters is that its research keeps running."""
+    lid = L["id"]
+    vers = _read(f"docs/model-loop/{lid}/versions.json")
+    cur = next((v for v in (vers or {}).get("versions") or [] if v.get("version") == (vers or {}).get("current")), None)
+    research = _latest_research(lid)
+    reasons = []
+    if vers and cur is None:
+        reasons.append(("DEGRADED", f"the served version {vers.get('current')} is not in docs/model-loop/{lid}/versions.json"))
+    r_at = _ts(research and research.get("at"))
+    if r_at is not None and (now - r_at).days > RESEARCH_MAX_D:
+        reasons.append(("STALE", f"last weekly research {(now - r_at).days} days ago (expected weekly)"))
+    elif r_at is None and vers:
+        reasons.append(("STALE", "the weekly research has never run"))
+    status = reasons[0][0] if reasons else "NOT_SERVED"
+    if not reasons:
+        reasons = [("NOT_SERVED", "the lab brain prices no live game (the card uses mlb/engine.js); its loop learns on the "
+                                  "2012-to-date record so the 2027 engine can be chosen on evidence")]
+    return {"id": lid, "label": L["label"], "status": status, "in_season": False, "reasons": [r for _, r in reasons],
+            "served": {"version": cur["version"], "since": cur.get("promoted_at"), "promoted_by": cur.get("promoted_by"),
+                       "versions": len(vers.get("versions") or [])} if cur else None,
+            "refreshed_at": None, "refreshed_age_h": None, "research": research, "data": None, "workflow": L["workflow"]}
+
+
 def loop_health(L, now):
     lid = L["id"]
     if L["kind"] == "engine":
         return engine_health(L, now)
+    if L["kind"] == "lab_research":
+        return research_health(L, now)
     reasons = []
     vers = _read(f"docs/model-loop/{lid}/versions.json")
     served = None

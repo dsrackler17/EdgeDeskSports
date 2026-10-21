@@ -74,6 +74,46 @@ function fitSeason(prior) {
   return { r: best ? best.r : 8, xi, n: prior.length, extra_inning_games: xg.length };
 }
 
+/* season S's distribution and recalibration, fitted on the three earlier seasons' out-of-sample means (rule 3) */
+function calibrationFor(prior) {
+  const f = fitSeason(prior);
+  const ps = prior.map((x) => game(x.lh, x.la, f.r, f.xi).p_home);
+  const lg = S.logistic(ps.map((p) => [1, Math.log(p / (1 - p))]), prior.map((x) => (x.hs > x.as ? 1 : 0)), { l2: 1e-6 });
+  return Object.assign(f, { recal: lg.beta });
+}
+const sig = (z) => 1 / (1 + Math.exp(-z));
+/** one game's calibrated prices from its raw means and its season's calibration */
+function priced(raw, k) {
+  const G = game(raw.lh, raw.la, k.r, k.xi);
+  const z = Math.log(G.p_home / (1 - G.p_home));
+  return { p: sig(k.recal[0] + k.recal[1] * z), mk: { rl_home: G.home_rl, o75: over(G.totals, 7.5), o85: over(G.totals, 8.5), o95: over(G.totals, 9.5), exp_total: G.exp_total } };
+}
+
+/** one configuration of one candidate, priced exactly as the record prices it, every game from the
+    selection window's first season on (mlb/history/loop.js walks its candidates through this) */
+function scoreCandidate(games, params, use) {
+  const { raw } = pass(games, params, use || CANDS.team_park_sp);
+  const rows = games.map((g) => ({ id: g.game_id, season: g.season, date: g.date, hs: g.hs, as: g.as, outs: Number(g.outs) || null,
+    sp_known: !!(g.sp_home && g.sp_away), raw: raw.get(g.game_id), y: { hw: g.hs > g.as ? 1 : 0, total: g.hs + g.as, margin: g.hs - g.as } }));
+  const bySeason = new Map(); for (const r of rows) { if (!bySeason.has(r.season)) bySeason.set(r.season, []); bySeason.get(r.season).push(r); }
+  const last = Math.max(...bySeason.keys()); const out = [];
+  for (let s = W.selection[0]; s <= last; s++) {
+    const prior = rows.filter((r) => r.season >= s - 3 && r.season < s).map((r) => ({ lh: r.raw.lh, la: r.raw.la, hs: r.hs, as: r.as, outs: r.outs }));
+    const k = calibrationFor(prior);
+    for (const r of bySeason.get(s) || []) { const x = priced(r.raw, k); r.p = x.p; r.mk = x.mk; out.push(r); }
+  }
+  return out;
+}
+
+/* the configuration the record is built with: the weekly loop's served version
+   (docs/model-loop/mlb/versions.json) once it exists, else the selection-window tuning */
+const VERSIONS = path.join(DIR, '..', '..', 'docs', 'model-loop', 'mlb', 'versions.json');
+function servedParams(tuning) {
+  try { const d = JSON.parse(fs.readFileSync(VERSIONS, 'utf8')); const v = d.versions.find((x) => x.version === d.current); if (v && v.config) return { params: v.config, version: v.version }; } catch (_) { /* no loop yet */ }
+  const t = tuning || JSON.parse(fs.readFileSync(TUNING, 'utf8'));
+  return { params: t.chosen, version: null };
+}
+
 function tune(games) {
   const sel = games.filter((g) => g.season <= W.selection[1]);
   let best = null; const grid = [];
@@ -102,7 +142,8 @@ function tune(games) {
 function main() {
   const games = load();
   const tuning = fs.existsSync(TUNING) && !flag('tune') ? JSON.parse(fs.readFileSync(TUNING, 'utf8')) : tune(games);
-  const passes = {}; for (const c of ORDER) passes[c] = pass(games, tuning.chosen, CANDS[c]);
+  const served = servedParams(tuning);
+  const passes = {}; for (const c of ORDER) passes[c] = pass(games, served.params, CANDS[c]);
   const elo = new Elo(tuning.elo); const eloP = new Map();
   for (const g of games) { elo.start(g.season); eloP.set(g.game_id, elo.prob(g.home, g.away)); elo.absorb(g); }
 
@@ -114,24 +155,13 @@ function main() {
   for (let s = W.selection[0]; s <= W.confirmation[1]; s++) {
     const prior = rows.filter((r) => r.season >= s - 3 && r.season < s);
     cal[s] = {};
-    for (const c of ORDER) {
-      const pr = prior.map((r) => ({ lh: r.raw[c].lh, la: r.raw[c].la, hs: r.hs, as: r.as, outs: r.outs }));
-      const f = fitSeason(pr);
-      const ps = pr.map((x) => game(x.lh, x.la, f.r, f.xi).p_home);
-      const lg = S.logistic(ps.map((p) => [1, Math.log(p / (1 - p))]), pr.map((x) => (x.hs > x.as ? 1 : 0)), { l2: 1e-6 });
-      cal[s][c] = Object.assign(f, { recal: lg.beta });
-    }
+    for (const c of ORDER) cal[s][c] = calibrationFor(prior.map((r) => ({ lh: r.raw[c].lh, la: r.raw[c].la, hs: r.hs, as: r.as, outs: r.outs })));
     const nn = prior.length; cal[s].home_rate = nn ? prior.reduce((a, r) => a + r.y.hw, 0) / nn : 0.54;
   }
-  const sig = (z) => 1 / (1 + Math.exp(-z));
   const evalRows = rows.filter((r) => r.season >= W.selection[0]);
   for (const r of evalRows) {
     r.p = { elo: r.elo, const_home: cal[r.season].home_rate }; r.mk = {};
-    for (const c of ORDER) {
-      const k = cal[r.season][c]; const G = game(r.raw[c].lh, r.raw[c].la, k.r, k.xi);
-      const z = Math.log(G.p_home / (1 - G.p_home)); r.p[c] = sig(k.recal[0] + k.recal[1] * z);
-      r.mk[c] = { rl_home: G.home_rl, o75: over(G.totals, 7.5), o85: over(G.totals, 8.5), o95: over(G.totals, 9.5), exp_total: G.exp_total };
-    }
+    for (const c of ORDER) { const x = priced(r.raw[c], cal[r.season][c]); r.p[c] = x.p; r.mk[c] = x.mk; }
   }
   const leak = V.leakageAudit(evalRows.map((r) => ({ id: r.id, predicted_at: r.predicted_at, event_start: r.event_start, inputs_known_at: r.inputs_known_at })));
   const ALL = ORDER.concat(['elo', 'const_home']);
@@ -164,14 +194,15 @@ function main() {
   };
   const fin = passes[chosen].model;
   fs.mkdirSync(path.dirname(LIVE), { recursive: true });
-  fs.writeFileSync(LIVE, JSON.stringify({ schema: 'edgedesk_mlb_live_v1', generated_at: new Date().toISOString(), model: chosen, params: tuning.chosen, fit: fin.dump(), calibration: cal[W.confirmation[1]][chosen], last_game_date: games[games.length - 1].date, note: 'the 2026 season is not in the sources; these are end-of-2025 ratings' }) + '\n');
+  fs.writeFileSync(LIVE, JSON.stringify({ schema: 'edgedesk_mlb_live_v1', generated_at: new Date().toISOString(), model: chosen, params: served.params, served_version: served.version, fit: fin.dump(), calibration: cal[W.confirmation[1]][chosen], last_game_date: games[games.length - 1].date, note: 'the 2026 season is not in the sources; these are end-of-2025 ratings' }) + '\n');
   const report = {
     schema: 'edgedesk_lab_walkforward_v1', sport: 'mlb', label: 'MLB', generated_at: new Date().toISOString(),
     protocol: { windows: W, rules: P.RULES, prediction_time: '09:00 UTC on the game date; inputs: games of earlier dates (ended by 08:00 UTC)', candidates: ORDER, baselines: { elo: 'Elo with a log-margin multiplier, tuned on the selection window ' + JSON.stringify(tuning.elo), const_home: 'home win rate of the three seasons before' } },
     data: { source: 'mlb/history/data (Retrosheet game logs; 2024 from the data pack\'s StatsAPI table)', license: I.LICENSE, seasons: [I.FIRST, I.LAST], games: games.length, games_scored: evalRows.length, starters_missing: games.filter((g) => !(g.sp_home && g.sp_away)).length,
       temporal: { point_in_time: 'RETROSPECTIVE', known_at: 'blank (never backdated)', assumed_available_at: '08:00 UTC the day after' } },
     leakage: Object.assign({ basis: 'inputs dated by assumed_available_at (08:00 UTC the next day); predictions at 09:00 UTC on the game date' }, leak),
-    tuning: { chosen: tuning.chosen, elo: tuning.elo, rule: tuning.rule },
+    tuning: { chosen: served.params, elo: tuning.elo, rule: tuning.rule, selection_tuned: tuning.chosen,
+      served_version: served.version, served_rule: served.version ? 'the weekly loop\'s served version (docs/model-loop/mlb/versions.json): a change replaces it only when the full 2012-to-date window improves (mlb/history/loop.js)' : null },
     selection: { rule: 'lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= ' + P.RULES.challenger_margin, ll: selLL, chosen },
     comparisons, best_baseline: bestBase, markets, windows,
     calibration_by_season: Object.fromEntries(Object.entries(cal).map(([s, v]) => [s, { nb_size: v[chosen].r, extra_inning_home: V.r(v[chosen].xi), recal: v[chosen].recal.map((x) => V.r(x, 4)) }])),
@@ -200,4 +231,4 @@ function check() {
 }
 
 if (require.main === module) { if (flag('check')) check(); else main(); }
-module.exports = { pass, W };
+module.exports = { pass, W, CANDS, Elo, load, scoreCandidate, servedParams, calibrationFor, priced };

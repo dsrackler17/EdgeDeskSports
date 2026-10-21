@@ -135,6 +135,46 @@ ok('mlb: the negative binomial sums to 1 with the right mean', near(nbp.reduce((
 const gg = MM.game(5, 4, 8, 0.52);
 ok('mlb: the stronger side is favoured and the run line is below the moneyline', gg.p_home > 0.5 && gg.home_rl < gg.p_home);
 
+/* 4b. the MLB learning loop (mlb/history/loop.js), on a small synthetic history */
+{
+  const WF = R('mlb/history/walkforward.js'); const ML = R('mlb/history/loop.js');
+  let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const pois = (l) => { let k = 0, p = Math.exp(-l), s = p; const u = rnd(); while (u > s && k < 30) { k++; p *= l / k; s += p; } return k; };
+  const str = [0.25, 0.15, 0.08, 0, 0, -0.08, -0.15, -0.25];
+  const syn = [];
+  for (let S = 2009; S <= 2013; S++) for (let d = 0; d < 100; d++) {
+    const date = new Date(Date.UTC(S, 3, 1 + d)).toISOString().slice(0, 10);
+    const order = [0, 1, 2, 3, 4, 5, 6, 7].sort(() => rnd() - 0.5);
+    for (let i = 0; i < 8; i += 2) {
+      const h = order[i], a = order[i + 1];
+      const hs = pois(4.4 * Math.exp(str[h] - str[a] + 0.03)), as = pois(4.4 * Math.exp(str[a] - str[h]));
+      if (hs === as) continue;
+      syn.push({ game_id: 'T' + h + date.replace(/-/g, '') + i, season: S, date, home: 'T' + h, away: 'T' + a, hs, as, outs: 54, park: 'P' + h,
+        sp_home: 'p' + h + '_' + (d % 5), sp_away: 'p' + a + '_' + (d % 5), assumed_available_at: date + 'T23:59:00Z' });
+    }
+  }
+  syn.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : x.game_id < y.game_id ? -1 : 1));
+  const tuningS = { chosen: { half_life_days: 365, window_days: 800, prior_games: 40, prior_starts: 64, prior_park_games: 120, carry: 0.7, sweeps: 3 }, elo: { k: 3, hfa: 24, revert: 0.67 }, rule: 'synthetic' };
+  const scored = WF.scoreCandidate(syn, tuningS.chosen, WF.CANDS.team_park_sp);
+  ok('mlb loop: a configuration is priced from the selection window on, every game', scored.length > 0 && scored.every((r) => r.season >= 2012 && r.p > 0 && r.p < 1 && r.mk.rl_home < 1 && r.mk.exp_total > 0));
+  ok('mlb loop: a change that changes nothing is skipped; mul and add move one parameter', ML.applyChange({ carry: 0.7 }, 'carry', ['add', 0]) === null && ML.applyChange({ prior_starts: 64 }, 'prior_starts', ['mul', 2]).prior_starts === 128 && ML.applyChange({ carry: 0.9 }, 'carry', ['add', 0.15]).carry === 1);
+  const rk = ML.rankCandidates([{ pattern: 'total', t: 1.2 }, { pattern: 'favourites', t: -3.1 }, { pattern: 'early_season', t: 2.2 }], 0, 8);
+  ok('mlb loop: the strongest pattern\'s candidates go first, the rest rotate into the remaining slots', rk[0] === 'starters_looser' && rk[1] === 'starters_tighter' && rk.length === 8 && new Set(rk).size === 8, rk);
+  ok('mlb loop: the binomial z is (wins - priced) / sqrt(sum p(1 - p))', near(ML.binomialZ([0.7, 0.7, 0.7, 0.7], [1, 1, 1, 1]), 1.2 / Math.sqrt(0.84), 1e-9));
+  const os = require('os'); const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mlbloop-'));
+  const wk = ML.research({ games: syn, tuning: tuningS, docs: tmp, only: ['starters_tighter', 'carry_higher'], today: '2026-10-21' });
+  const vdoc = JSON.parse(fs.readFileSync(path.join(tmp, 'versions.json'), 'utf8'));
+  ok('mlb loop: the first version is the selection-window tuning, and every candidate is logged with its decision', vdoc.versions[0].version === '1.0.0' && JSON.stringify(vdoc.versions[0].config) === JSON.stringify(tuningS.chosen)
+    && fs.readFileSync(path.join(tmp, 'candidates.jsonl'), 'utf8').trim().split('\n').length === 2 && wk.candidates.every((c) => (c.decision === 'PASS') === (c.reason === 'clears every condition')));
+  ok('mlb loop: a pass is promoted only with the full-window gain, its interval below zero and nothing worse', wk.candidates.filter((c) => c.decision === 'PASS').every((c) => c.delta.full_logloss <= -ML.MIN_GAIN.logloss && c.ci95[1] < 0 && c.delta.full_run_line <= 0 && c.delta.full_brier <= 0 && c.delta.recent_logloss <= 0)
+    && (wk.promoted ? vdoc.current === wk.promoted && vdoc.versions.filter((v) => String(v.status).startsWith('SERVED')).length === 1 : vdoc.current === '1.0.0'));
+  ok('mlb loop: the week reports Elo beside the brain, and the report is written', wk.elo.full_logloss > 0 && /Elo/.test(ML.report({ docs: tmp })) && fs.existsSync(path.join(tmp, 'weekly_model_report.md')));
+  const sp = WF.servedParams(tuningS); const vreal = path.join(ROOT, 'docs/model-loop/mlb/versions.json');
+  const vr = fs.existsSync(vreal) ? JSON.parse(fs.readFileSync(vreal, 'utf8')) : null;
+  ok('mlb loop: the weekly record is built with the served version, or the tuning before the loop exists', vr ? sp.version === vr.current && JSON.stringify(sp.params) === JSON.stringify(vr.versions.find((v) => v.version === vr.current).config) : sp.version === null);
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
 /* 5. the board */
 const XB = R('lib/edgedesk_xboard.js');
 const now = Date.parse('2026-10-13T12:00:00Z');

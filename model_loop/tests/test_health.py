@@ -135,6 +135,18 @@ class HealthTest(unittest.TestCase):
         self.assertIn("(the first on 2026-10-26)", " | ".join(late["reasons"]))
         self.assertEqual(H.loop_health(L, datetime(2026, 11, 20, tzinfo=timezone.utc))["status"], "OFF_SEASON")
 
+    def test_a_research_only_loop_is_not_served_until_its_research_stops(self):
+        L = next(L for L in H.LOOPS if L["id"] == "mlb")
+        now = datetime(2026, 11, 20, tzinfo=timezone.utc)
+        self.assertEqual(H.loop_health(L, now)["status"], "NOT_SERVED")           # no loop yet
+        self.versions("mlb")
+        self.assertEqual(H.loop_health(L, now)["status"], "STALE")                # a loop that never researched
+        self.put("docs/model-loop/mlb/weekly/2026-11-17.json", {"at": "2026-11-17T12:30:00Z"})
+        x = H.loop_health(L, now)
+        self.assertEqual(x["status"], "NOT_SERVED", x["reasons"])
+        self.assertIn("prices no live game", x["reasons"][0])
+        self.assertEqual(H.loop_health(L, datetime(2026, 12, 2, tzinfo=timezone.utc))["status"], "STALE")
+
     def test_a_missing_history_is_degraded_even_out_of_season(self):
         x = H.loop_health(H.LOOPS[0], datetime(2026, 6, 1, tzinfo=timezone.utc))
         self.assertEqual(x["status"], "DEGRADED")
