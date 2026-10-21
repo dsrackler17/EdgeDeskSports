@@ -14,8 +14,8 @@ Served version **1.1.0** (SERVED (RESEARCH: prices no live game); weekly-loop, 2
 
 | Window | n | Moneyline log loss | Elo | Brier | Run line log loss | Total MAE |
 |---|---|---|---|---|---|---|
-| Full 2012–2025 | 32487 | 0.679372 | 0.679263 | 0.243184 | 0.64555 | 3.4743 |
-| 2025 | 2430 | 0.678302 | 0.678438 | 0.242703 | 0.642228 | 3.5974 |
+| Full 2012–2025 | 32487 | 0.679071 | 0.679263 | 0.243038 | 0.644937 | 3.4737 |
+| 2025 | 2430 | 0.677796 | 0.678438 | 0.242467 | 0.641548 | 3.5973 |
 
 Elo is the baseline the brain has to beat; while its moneyline log loss is above Elo's, the brain's moneyline cannot be validated (engine/lab/protocol.js).
 
@@ -25,12 +25,12 @@ Moneyline: wins minus priced, z = (wins − Σp) / √Σp(1−p). Totals: runs m
 
 | Pattern | Market | n | Bias | z / t | What it covers |
 |---|---|---|---|---|---|
-| home | moneyline | 4862 | +0.0089 | 1.26 z | every game: home wins minus the priced home win |
-| early_season | moneyline | 910 | +0.0241 | 1.47 z | March and April (ratings carried over the winter) |
-| late_season | moneyline | 759 | +0.0018 | 0.1 z | September and later |
-| favourites | moneyline | 915 | +0.0199 | 1.25 z | priced 60%+ either way, read from the favourite |
-| starter_known | moneyline | 2430 | +0.0198 | 1.98 z | both starters on file |
-| total | total | 4862 | -0.051 | -0.8 t | total runs: result minus expected |
+| home | moneyline | 4862 | +0.0094 | 1.33 z | every game: home wins minus the priced home win |
+| early_season | moneyline | 910 | +0.0244 | 1.49 z | March and April (ratings carried over the winter) |
+| late_season | moneyline | 759 | +0.0023 | 0.13 z | September and later |
+| favourites | moneyline | 985 | +0.0083 | 0.54 z | priced 60%+ either way, read from the favourite |
+| starter_known | moneyline | 2430 | +0.02 | 2 z | both starters on file |
+| total | total | 4862 | -0.063 | -0.98 t | total runs: result minus expected |
 
 ## Every candidate tried this week
 
@@ -47,5 +47,13 @@ Moneyline: wins minus priced, z = (wins − Σp) / √Σp(1−p). Totals: runs m
 | starters_tighter | `prior_starts` ["mul",2] | -0.000301 | [-0.000525,-0.000073] | -0.000146 | -0.000613 | -0.0006 | -0.000506 | PASS: clears every condition |
 | recency_faster | `half_life_days` ["mul",0.5] | -0.00022 | [-0.000579,0.00012] | -0.0001 | -0.000259 | 0.0002 | 0.00003 | FAIL: log loss 95% interval [-0.000579,0.00012] is not below zero; worse on 2025 (0.00003) |
 | recency_slower | `half_life_days` ["mul",2] | 0.000471 | [0.000273,0.000686] | 0.000228 | 0.000573 | 0.0033 | 0.000321 | FAIL: full log loss change 0.000471 does not clear -0.0002; log loss 95% interval [0.000273,0.000686] is not below zero; Brier worse (0.000228); run line log loss worse (0.000573); worse on 2025 (0.000321) |
+| starters_looser | `prior_starts` ["mul",0.5] | 0.000301 | [0.000073,0.000525] | 0.000146 | 0.000613 | 0.0006 | 0.000506 | FAIL: full log loss change 0.000301 does not clear -0.0002; log loss 95% interval [0.000073,0.000525] is not below zero; Brier worse (0.000146); run line log loss worse (0.000613); worse on 2025 (0.000506) |
+| starters_tighter | `prior_starts` ["mul",2] | 0.000148 | [-0.000047,0.000352] | 0.000073 | -0.000033 | 0.0023 | 0.000062 | FAIL: full log loss change 0.000148 does not clear -0.0002; log loss 95% interval [-0.000047,0.000352] is not below zero; Brier worse (0.000073); worse on 2025 (0.000062) |
+| teams_prior_weaker | `prior_games` ["mul",0.5] | 0.000049 | [0.000019,0.000077] | 0.000023 | 0.000063 | 0.0009 | -0.000014 | FAIL: full log loss change 0.000049 does not clear -0.0002; log loss 95% interval [0.000019,0.000077] is not below zero; Brier worse (0.000023); run line log loss worse (0.000063) |
+| teams_prior_stronger | `prior_games` ["mul",2] | -0.000056 | [-0.000101,-0.000011] | -0.000027 | -0.000074 | -0.0014 | 0.000032 | FAIL: full log loss change -0.000056 does not clear -0.0002; worse on 2025 (0.000032) |
+| carry_lower | `carry` ["add",-0.15] | 0 | [-0.000001,0.000001] | 0 | 0.000001 | 0 | 0.000001 | FAIL: full log loss change 0 does not clear -0.0002; log loss 95% interval [-0.000001,0.000001] is not below zero; run line log loss worse (0.000001); worse on 2025 (0.000001) |
+| carry_higher | `carry` ["add",0.15] | 0 | [-0.000001,0.000001] | 0 | 0 | 0 | -0.000004 | FAIL: full log loss change 0 does not clear -0.0002; log loss 95% interval [-0.000001,0.000001] is not below zero |
+| park_prior_weaker | `prior_park_games` ["mul",0.5] | 0.000003 | [-0.000002,0.000008] | 0.000001 | 0.000032 | 0.001 | 0.000003 | FAIL: full log loss change 0.000003 does not clear -0.0002; log loss 95% interval [-0.000002,0.000008] is not below zero; Brier worse (0.000001); run line log loss worse (0.000032); worse on 2025 (0.000003) |
+| park_prior_stronger | `prior_park_games` ["mul",2] | -0.000004 | [-0.000011,0.000003] | -0.000002 | -0.000042 | 0 | -0.000004 | FAIL: full log loss change -0.000004 does not clear -0.0002; log loss 95% interval [-0.000011,0.000003] is not below zero |
 
 Every candidate ever tried: `docs/model-loop/mlb/candidates.jsonl`. Versions: `docs/model-loop/mlb/versions.json`. The weekly record (`mlb/history/walkforward.js`, lab-validate.yml) is built with the served version.
