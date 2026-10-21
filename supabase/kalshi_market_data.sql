@@ -522,6 +522,12 @@ with any_run   as (select * from public.kalshi_sync_runs order by finished_at de
               join public.kalshi_series sr on sr.ticker = m.series_ticker and sr.tracked
               left join public.kalshi_game_links l on l.market_ticker = m.ticker
              where m.status in ('open', 'active') and coalesce(m.expected_expiration_time, m.close_time, now()) > now()),
+     /* unmatched game events settling soon, as the sync classified them: only
+        those a book prices count (an FCS game no book carries is not a fault).
+        A run from before that classification falls back to every unlinked market. */
+     us as (select coalesce((select (details ->> 'unmapped_soon_actionable')::int from snap_good), (select unmapped_soon from gm)::int) as n,
+                   (select (details ->> 'unmapped_soon_unpriced')::int from snap_good) as unpriced,
+                   (select details -> 'unmapped_counts' from snap_good) as counts),
      cap as (select coalesce(sum(markets_closed), 0) as closed, coalesce(sum(captured_within_10m), 0) as captured, coalesce(sum(usable_within_10m), 0) as usable
                from public.kalshi_close_capture_health
               where close_basis = 'kickoff' and close_day > (now() at time zone 'America/New_York')::date - 7)
@@ -538,7 +544,7 @@ select
   (select n from tracked)::int as tracked_series, (select listed from tracked)::int as listed_series,
   (select rows from s24)::int as snapshot_rows_24h,
   (select linked from gm)::int as open_game_markets_linked, (select unmapped from gm)::int as open_game_markets_unmapped,
-  (select unmapped_soon from gm)::int as unmapped_settling_soon,
+  (select n from us) as unmapped_settling_soon,
   (select closed from cap)::int as closes_7d, (select captured from cap)::int as closes_captured_7d, (select usable from cap)::int as closes_usable_7d,
   case when (select closed from cap) > 0 then round(100.0 * (select captured from cap) / (select closed from cap), 1) end as close_capture_pct_7d,
   (select n from streak)::int                                                         as consecutive_failures,
@@ -556,7 +562,7 @@ select
       or now() - (select finished_at from snap_good) > make_interval(mins => public.kalshi_rule('stale_snapshot_minutes')::int)
       or (select finished_at from disc_good) is null
       or now() - (select finished_at from disc_good) > make_interval(hours => public.kalshi_rule('discover_max_age_hours')::int)
-      or (select unmapped_soon from gm) > 0
+      or (select n from us) > 0
       or ((select closed from cap) > 0 and 100.0 * (select captured from cap) / (select closed from cap) < public.kalshi_rule('close_capture_target_pct')) then 'warn'
     else 'ok'
   end as state,
@@ -569,11 +575,13 @@ select
     when (select n from tracked) = 0 then 'no series is tracked: set kalshi_series.tracked = true on the game series'
     when (select finished_at from disc_good) is null then 'discover has not succeeded yet'
     when now() - (select finished_at from disc_good) > make_interval(hours => public.kalshi_rule('discover_max_age_hours')::int) then 'discover has not succeeded in over ' || public.kalshi_rule('discover_max_age_hours')::int || ' hours'
-    when (select unmapped_soon from gm) > 0 then (select unmapped_soon from gm) || ' game market(s) settling soon could not be matched to a game'
+    when (select n from us) > 0 then (select n from us) || ' game event(s) settling soon that a book prices could not be matched to its game (see kalshi_sync_runs.details -> ''unmapped'')'
     when (select closed from cap) > 0 and 100.0 * (select captured from cap) / (select closed from cap) < public.kalshi_rule('close_capture_target_pct')
       then 'close capture ' || round(100.0 * (select captured from cap) / (select closed from cap), 1) || '% over 7 days (target ' || public.kalshi_rule('close_capture_target_pct')::int || '%)'
     else null
-  end as state_reason
+  end as state_reason,
+  coalesce((select unpriced from us), 0)                                               as unmapped_unpriced_soon,
+  (select counts from us)                                                             as unmapped_counts
 ;
 
 -- the research module's pipeline ledger reads {job}_last_run / {job}_last_status / row_count_{job}

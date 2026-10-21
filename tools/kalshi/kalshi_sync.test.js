@@ -64,6 +64,7 @@ const CFB_MARKETS = [
   mkt('KXNCAAFGAME-26OCT31TEXOSU', 'TEX', 'Texas', 5 * 24 + 1), mkt('KXNCAAFGAME-26OCT31TEXOSU', 'OSU', 'Ohio St.', 5 * 24 + 1),
   mkt('KXNCAAFGAME-26OCT31USCUCLA', 'USC', 'USC', 5 * 24 + 6), mkt('KXNCAAFGAME-26OCT31USCUCLA', 'UCLA', 'UCLA', 5 * 24 + 6),
   mkt('KXNCAAFGAME-26OCT31ALBYIOWA', 'ALBY', 'University at Albany', 5 * 24 + 2), mkt('KXNCAAFGAME-26OCT31ALBYIOWA', 'IOWA', 'Iowa', 5 * 24 + 2, null),
+  mkt('KXNCAAFGAME-26OCT31MSSTUGA', 'MSST', 'Miss. St.', 5 * 24 + 7), mkt('KXNCAAFGAME-26OCT31MSSTUGA', 'UGA', 'Georgia', 5 * 24 + 7),
 ];
 const SIGNALS = [];
 const book = (id, sk, home, away, kickH) => { for (const s of [home, away]) SIGNALS.push({ sig_key: id + '|h2h|' + s, event_id: id, sport_key: sk, market: 'h2h', selection: s, home_team: home, away_team: away, commence_time: at(kickH) }); };
@@ -75,6 +76,7 @@ book('ev-texosu', 'americanfootball_ncaaf', 'Ohio State Buckeyes', 'Texas Longho
 book('ev-decoy', 'americanfootball_ncaaf', 'Ohio Bobcats', 'Texas Tech Red Raiders', 5 * 24 - 2);
 book('ev-usc-1', 'americanfootball_ncaaf', 'UCLA Bruins', 'USC Trojans', 5 * 24 + 3);
 book('ev-usc-2', 'americanfootball_ncaaf', 'UCLA Bruins', 'USC Trojans', 5 * 24 + 3);
+book('ev-msuga', 'americanfootball_ncaaf', 'Georgia Bulldogs', 'Mississippi State Bulldogs', 5 * 24 + 4);
 const RESEARCH0 = [
   { game_key: 'nfl|2026_08_DAL_PHI', sport: 'nfl', game_id: '2026_08_DAL_PHI', home: 'Philadelphia Eagles', away: 'Dallas Cowboys', kickoff_at: at(6.25) },
   { game_key: 'cfb|401778123', sport: 'cfb', game_id: '401778123', home: 'Ohio State', away: 'Texas', kickoff_at: at(5 * 24 - 2) },
@@ -223,14 +225,14 @@ globalThis.fetch = async (u, init) => {
   resetDb(); resetKalshi();
   o = await run({ mode: 'snapshot' });
   const r1 = lastRun();
-  chk('snapshot: every page of both tracked series read (7 a page)', W.calls.filter((c) => /series_ticker=KXNFLGAME&/.test(c)).length === 2 && r1.markets_seen === 18, [W.calls, r1]);
+  chk('snapshot: every page of both tracked series read (7 a page)', W.calls.filter((c) => /series_ticker=KXNFLGAME&/.test(c)).length === 2 && r1.markets_seen === 20, [W.calls, r1]);
   chk('snapshot: one row per market inside the 8-day horizon; the Thanksgiving game and the price-less market are not snapshotted',
-    r1.markets_snapshotted === 15 && r1.markets_beyond_horizon === 2 && DB.kalshi_price_snapshots.length === 15 && !DB.kalshi_price_snapshots.some((s) => /DETGB|ALBYIOWA-IOWA/.test(s.ticker)), r1);
-  chk('snapshot: every market’s metadata is kept, the far ones too', DB.kalshi_markets.length === 18 && DB.kalshi_markets.some((m) => m.ticker === 'KXNFLGAME-26NOV26DETGB-DET'));
+    r1.markets_snapshotted === 17 && r1.markets_beyond_horizon === 2 && DB.kalshi_price_snapshots.length === 17 && !DB.kalshi_price_snapshots.some((s) => /DETGB|ALBYIOWA-IOWA/.test(s.ticker)), r1);
+  chk('snapshot: every market’s metadata is kept, the far ones too', DB.kalshi_markets.length === 20 && DB.kalshi_markets.some((m) => m.ticker === 'KXNFLGAME-26NOV26DETGB-DET'));
   const s = DB.kalshi_price_snapshots.find((x) => x.ticker === 'KXNFLGAME-26OCT26DALPHI-PHI');
   chk('snapshot: Kalshi’s strings stored as numbers, stamped with the run', s.yes_bid === 0.61 && s.yes_ask === 0.63 && s.no_bid === 0.37 && s.volume === 15234 && s.open_interest === 9100 && s.yes_ask_size === 80.5
     && Date.parse(s.captured_at) === Date.parse(NOW) && s.run_id === r1.run_id && s.minutes_to_close === (9.25 + 45) * 60, s);
-  chk('snapshot: a market without dollar prices is DRIFT, named', o.alerts.some((a) => a.code === 'market_shape' && a.severity === 'DRIFT' && /KXNCAAFGAME \(1 of 6\)/.test(a.message)));
+  chk('snapshot: a market without dollar prices is DRIFT, named', o.alerts.some((a) => a.code === 'market_shape' && a.severity === 'DRIFT' && /KXNCAAFGAME \(1 of 8\)/.test(a.message)));
   chk('snapshot: the run is warn (drift), not an error', o.ok && r1.status === 'warn', r1);
 
   let l = linkOf('KXNFLGAME-26OCT26DALPHI-PHI');
@@ -252,16 +254,24 @@ globalThis.fetch = async (u, init) => {
   chk('unmapped: a game on no book, a code/name conflict, two book events for one game and a one-market event are left unmapped with their reasons',
     um['KXNFLGAME-26OCT26ARILV'] === 'no_book_event' && um['KXNFLGAME-26OCT26SFSEA'] === 'team_conflict' && um['KXNCAAFGAME-26OCT31USCUCLA'] === 'ambiguous_book_event'
     && um['KXNCAAFGAME-26OCT31ALBYIOWA'] === 'no_book_event' && !linkOf('KXNFLGAME-26OCT26ARILV-ARI') && !linkOf('KXNCAAFGAME-26OCT31USCUCLA-USC'), um);
-  chk('unmapped: the run counts the unmapped markets and the new links', r1.links_new === 8 && r1.unmapped_markets === 8 && DB.kalshi_game_links.length === 8, r1);
+  const ms = (r1.details.unmapped || []).find((u) => u.event_ticker === 'KXNCAAFGAME-26OCT31MSSTUGA');
+  chk('unmapped: a game the book carries with one name unresolved ("Miss. St.") is one_team_matched, naming the book\u2019s game — not "no book"',
+    ms && ms.reason === 'one_team_matched' && /Mississippi State Bulldogs @ Georgia Bulldogs/.test(JSON.stringify(ms.detail)) && !linkOf('KXNCAAFGAME-26OCT31MSSTUGA-UGA'), ms);
+  const uc = r1.details.unmapped_counts || {};
+  chk('unmapped: every reason counted, the ones to look at listed first', uc.no_book_event === 2 && uc.team_conflict === 1 && uc.ambiguous_book_event === 1 && uc.one_team_matched === 1
+    && r1.details.unmapped.slice(0, 3).every((u) => u.reason !== 'no_book_event'), uc);
+  chk('unmapped: the run counts the unmapped markets and the new links', r1.links_new === 8 && r1.unmapped_markets === 10 && DB.kalshi_game_links.length === 8, r1);
   const ua = o.alerts.find((a) => a.code === 'unmapped_markets');
-  chk('unmapped: games settling within 30 hours are a WARNING naming them (the far Thanksgiving game is not counted)', ua && ua.severity === 'WARNING' && /KXNFLGAME-26OCT26ARILV/.test(ua.message) && /KXNFLGAME-26OCT26SFSEA/.test(ua.message) && !/DETGB/.test(ua.message), ua);
+  chk('unmapped: a priced game settling within 30 hours that could not be matched is a WARNING naming it; a game no book prices is not (the far Thanksgiving game neither)',
+    ua && ua.severity === 'WARNING' && /KXNFLGAME-26OCT26SFSEA/.test(ua.message) && !/ARILV/.test(ua.message) && !/DETGB/.test(ua.message)
+    && r1.details.unmapped_soon_actionable === 1 && r1.details.unmapped_soon_unpriced === 1, [ua, r1.details.unmapped_soon_actionable, r1.details.unmapped_soon_unpriced]);
 
   /* ---- the second run: appends, never rewrites; fills a game id; warns at most hourly ---- */
   DB.game_research_state.push({ game_key: 'nfl|2026_08_NYG_NYJ', sport: 'nfl', game_id: '2026_08_NYG_NYJ', home: 'New York Jets', away: 'New York Giants', kickoff_at: at(-1) });
   DB.kalshi_alerts.forEach((a) => { a.created_at = new Date(Date.parse(NOW) - 600e3).toISOString(); });
   const before = JSON.stringify(DB.kalshi_game_links.filter((x) => x.game_id));
   o = await run({ mode: 'snapshot', now: at(5 / 60) });
-  chk('second run: the snapshots are appended (30 rows), none rewritten', DB.kalshi_price_snapshots.length === 30 && DB.kalshi_price_snapshots.filter((x) => Date.parse(x.captured_at) === Date.parse(NOW)).length === 15);
+  chk('second run: the snapshots are appended (34 rows), none rewritten', DB.kalshi_price_snapshots.length === 34 && DB.kalshi_price_snapshots.filter((x) => Date.parse(x.captured_at) === Date.parse(NOW)).length === 17);
   chk('second run: no link is written twice', DB.kalshi_game_links.length === 8 && lastRun().links_new === 0 && DB.calls.filter((c) => c === 'POST kalshi_game_links').length === 1);
   chk('second run: the Giants-Jets game id is filled, once, and the other links are untouched', linkOf('KXNFLGAME-26OCT26NYGNYJ-NYG').game_id === '2026_08_NYG_NYJ' && linkOf('KXNFLGAME-26OCT26NYGNYJ-NYJ').game_id === '2026_08_NYG_NYJ'
     && lastRun().game_ids_filled === 2 && JSON.stringify(DB.kalshi_game_links.filter((x) => x.game_id && !/NYGNYJ/.test(x.market_ticker))) === before);
@@ -281,12 +291,12 @@ globalThis.fetch = async (u, init) => {
   chk('Kalshi unreachable on both hosts at discover: a FAILURE and an error run', !o.ok && lastRun().status === 'error' && codes(o) === 'FAILURE:discover_error' && /could not be reached/.test(lastRun().message), codes(o));
   resetDb(); resetKalshi({ externalStatus: 403 });
   o = await run({ mode: 'snapshot' });
-  chk('the external host refuses (403): the shared host serves, and the run says which', o.ok && lastRun().details.host === 'api.elections.kalshi.com' && DB.kalshi_price_snapshots.length === 15
+  chk('the external host refuses (403): the shared host serves, and the run says which', o.ok && lastRun().details.host === 'api.elections.kalshi.com' && DB.kalshi_price_snapshots.length === 17
     && W.calls.some((c) => /^shared \/markets/.test(c)), lastRun().details);
   resetDb({ down: { signals: 404 } }); resetKalshi();
   o = await run({ mode: 'snapshot' });
   chk('the book unreadable: DEGRADED, the snapshots kept, nothing linked, every event unmapped with the reason', lastRun().status === 'warn' && o.alerts.some((a) => a.code === 'book_events_unreadable' && a.severity === 'DEGRADED')
-    && DB.kalshi_price_snapshots.length === 15 && DB.kalshi_game_links.length === 0 && (lastRun().details.unmapped || []).every((u) => u.reason === 'book_events_unreadable'), codes(o));
+    && DB.kalshi_price_snapshots.length === 17 && DB.kalshi_game_links.length === 0 && (lastRun().details.unmapped || []).every((u) => u.reason === 'book_events_unreadable'), codes(o));
   resetDb({ down: { game_research_state: 404 } }); resetKalshi();
   o = await run({ mode: 'snapshot' });
   chk('the research state unreadable: a WARNING; links made without the card’s id', o.alerts.some((a) => a.code === 'research_state_unreadable' && a.severity === 'WARNING')
@@ -301,7 +311,7 @@ globalThis.fetch = async (u, init) => {
   /* ---- dry ---- */
   resetDb(); resetKalshi();
   o = await run({ mode: 'snapshot', dry: true });
-  chk('dry: reads and computes (links proposed, unmapped named), writes nothing', o.ok && o.dry && o.links.length === 8 && o.unmapped.length === 4 && o.sample.length > 0
+  chk('dry: reads and computes (links proposed, unmapped named), writes nothing', o.ok && o.dry && o.links.length === 8 && o.unmapped.length === 5 && o.sample.length > 0
     && DB.kalshi_price_snapshots.length === 0 && DB.kalshi_markets.length === 0 && DB.kalshi_game_links.length === 0 && DB.kalshi_sync_runs.length === 0 && !DB.calls.some((c) => /^(POST|PATCH)/.test(c)), o);
 
   console.log((fail ? 'FAILED' : 'ALL GREEN') + ' kalshi sync: ' + pass + ' passed, ' + fail + ' failed');
