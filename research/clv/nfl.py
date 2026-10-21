@@ -92,8 +92,29 @@ def games():
     g["home"] = g.home_team.map(lambda t: FRANCHISE.get(t, t))
     g["away"] = g.away_team.map(lambda t: FRANCHISE.get(t, t))
     g["date"] = pd.to_datetime(g.gameday)
+    g = g.sort_values(["date", "game_id"]).reset_index(drop=True)
+    # backup flag, knowable at the opener: a side's previous-game starter is not
+    # its regular starter (most starts in that franchise's previous 8 games)
+    hist, prev, flags = {}, {}, {"home_backup": [], "away_backup": []}
+    for r in g.itertuples(index=False):
+        for side, team, q in (("home", r.home, r.home_qb_id), ("away", r.away, r.away_qb_id)):
+            h = hist.get(team, [])
+            last = prev.get(team)
+            if last is None or len(h) < 3:
+                flags[f"{side}_backup"].append(np.nan)
+            else:
+                window = h[-8:]
+                regular = max(set(window), key=window.count)
+                flags[f"{side}_backup"].append(float(last != regular))
+        for team, q in ((r.home, r.home_qb_id), (r.away, r.away_qb_id)):
+            if isinstance(q, str) and q:
+                hist.setdefault(team, []).append(q)
+                prev[team] = q
+    g["home_backup"], g["away_backup"] = flags["home_backup"], flags["away_backup"]
+    g["rest_diff"] = g.home_rest - g.away_rest
     return g[["game_id", "season", "week", "game_type", "date", "home", "away", "home_score", "away_score",
-              "spread_line", "total_line", "home_qb_id", "away_qb_id", "home_qb_name", "away_qb_name", "div_game"]]
+              "spread_line", "total_line", "home_qb_id", "away_qb_id", "home_qb_name", "away_qb_name", "div_game",
+              "home_backup", "away_backup", "rest_diff"]]
 
 
 def sbr_lines():
@@ -136,11 +157,120 @@ def load():
     return m, qa, leg
 
 
+# ----------------------------------------------------------- experiments
+def dists(m):
+    g = games()
+    tr = g[(g.season >= 2006) & (g.season <= 2019) & g.home_score.notna() & g.spread_line.notna()]
+    km = H.KeyNumberMargin.fit(tr.spread_line.values, (tr.home_score - tr.away_score).values)
+    x = m[m.season.isin(PRE)]
+    st = float((x.total_pts - x.close_total).std())
+    return km, H.IntegerNormal(st)
+
+
+def cfg(m, market, thr, kind="base"):
+    km, tn = DISTS if DISTS else dists(m)
+    th = (thr, 0.5, 1.0, 2.0, 3.0) if kind == "base" else (thr, 0.5, 1.0)
+    bk = (0, 0.5, 1, 2, 3, 5, H.INF) if kind == "base" else (0, 0.25, 0.5, 1, H.INF)
+    return H.HarnessConfig(kind="points", market=market, thresholds=tuple(dict.fromkeys(th)), primary=thr,
+                           dist=km if market == "spread" else tn, buckets=bk)
+
+
+DISTS = None
+
+
+def frame(m, col, market="spread"):
+    x = m.copy()
+    if market == "total":
+        x["open_line"], x["close_line"], x["result"] = x.open_total, x.close_total, x.total_pts
+    x["model_line"] = x[col]
+    x["backup_any"] = ((x.home_backup == 1) | (x.away_backup == 1)).astype(float)
+    x["backup_diff"] = x.home_backup.fillna(0) - x.away_backup.fillna(0)
+    x["early"] = ((x.week <= 4) & x.game_type.eq("REG")).astype(float)
+    return x
+
+
+def residual(m, base_cols, extra, market, seasons, frozen_train=None):
+    x = frame(m, base_cols[0], market)
+    feats = []
+    for c in base_cols:
+        x[f"d_{c}"] = x[c] - x.open_line
+        feats.append(f"d_{c}")
+    if extra:
+        x["open_lvl"] = x.open_line
+        x["d_early"] = x[f"d_{base_cols[0]}"] * x.early
+        feats += ["open_lvl", "d_early", "rest_diff", "backup_diff"]
+    x["move"] = x.close_line - x.open_line
+    x = x[x[feats].notna().all(axis=1) & x.move.notna()]
+    if frozen_train is None:
+        x = x[x.season.isin(seasons)]
+        pred, log = R.walk_forward(x, feats, "move", seasons, min_train_seasons=3)
+        x = x.assign(pred_move=pred)
+    else:
+        tr = residual_train(frozen_train, base_cols, extra, market)
+        lam = R.choose_lambda(tr, feats, "move", [0.1, 1.0, 10.0, 100.0])
+        mod = R.ridge_fit(tr[feats], tr.move, lam)
+        x = x[x.season.isin(seasons)].copy()
+        x["pred_move"] = R.ridge_predict(mod, x[feats])
+        log = {"lambda": lam, "n_train": int(len(tr)), "coef": {f: round(float(c), 5) for f, c in zip(feats, mod["coef_raw"])},
+               "intercept": round(float(mod["intercept_raw"]), 5)}
+    x = x[x.pred_move.notna()].copy()
+    x["model_line"] = x.open_line + x.pred_move
+    return x, log, H.movement_calibration(x.pred_move, x.move)
+
+
+def residual_train(m, base_cols, extra, market):
+    x, _, _ = residual(m, base_cols, extra, market, PRE)        # rows only; refit below on all PRE rows
+    return x
+
+
+def pre():
+    global DISTS
+    m, qa, _ = load()
+    m = m[m.season.isin(PRE)].copy()
+    DISTS = dists(m)
+    out = {"qa": qa}
+    for eid, col, mk, thr, label in (("NFL-B1", "v21", "spread", 1.0, "production v2.1.0 (opener inputs) spread"),
+                                     ("NFL-B2", "v21_total", "total", 1.5, "production v2.1.0 (opener inputs) total"),
+                                     ("NFL-B3", "loop", "spread", 1.0, "model_loop 2.0.0 (opener inputs) spread"),
+                                     ("NFL-B4", "loop_total", "total", 1.5, "model_loop 2.0.0 (opener inputs) total")):
+        rep = runner.run(SPORT, eid, frame(m, col, mk), cfg(m, mk, thr), label)
+        out[eid] = runner.fmt(rep)
+        print(eid, out[eid])
+    res = {}
+    for eid, extra, label in (("NFL-R1", False, "residual ridge on d_v21, d_loop (spread)"),
+                              ("NFL-R2", True, "R1 + information block (spread)")):
+        x, log, cal = residual(m, ["v21", "loop"], extra, "spread", PRE)
+        rep = runner.run(SPORT, eid, x, cfg(m, "spread", 0.25, "resid"), label, extra={"fit_log": log, "movement_calibration": cal})
+        res[eid] = x
+        out[eid] = runner.fmt(rep) + f"; move slope {cal.get('slope')}"
+        print(eid, out[eid])
+    common = set(res["NFL-R1"].game_id) & set(res["NFL-R2"].game_id)
+    c = cfg(m, "spread", 0.25, "resid")
+    b1 = H.bet_table(res["NFL-R1"][res["NFL-R1"].game_id.isin(common)], c, 0.25)
+    b2 = H.bet_table(res["NFL-R2"][res["NFL-R2"].game_id.isin(common)], c, 0.25)
+    out["R2_vs_R1_same_games"] = {"pool": len(common), "r1": [len(b1), round(100 * b1.clv_prob.mean(), 3)],
+                                  "r2": [len(b2), round(100 * b2.clv_prob.mean(), 3)]}
+    print("R2 vs R1", out["R2_vs_R1_same_games"])
+    x = frame(m, "v21", "spread")
+    x = x[x.backup_any == 1]
+    rep = runner.run(SPORT, "NFL-W1", x, cfg(m, "spread", 1.0), "B1 restricted to backup-QB games")
+    out["NFL-W1"] = runner.fmt(rep)
+    print("NFL-W1", out["NFL-W1"])
+    x, log, cal = residual(m, ["v21_total", "loop_total"], False, "total", PRE)
+    rep = runner.run(SPORT, "NFL-W2", x, cfg(m, "total", 0.25, "resid"), "totals residual ridge on dt_v21, dt_loop",
+                     extra={"fit_log": log, "movement_calibration": cal})
+    out["NFL-W2"] = runner.fmt(rep) + f"; move slope {cal.get('slope')}"
+    print("NFL-W2", out["NFL-W2"])
+    return out
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "bases":
         v21_opener()
         loop_opener()
+    elif cmd == "pre":
+        print(json.dumps(pre(), indent=1, default=str))
     elif cmd == "check":
         m, qa, _ = load()
         print(json.dumps(qa, indent=1, default=str))

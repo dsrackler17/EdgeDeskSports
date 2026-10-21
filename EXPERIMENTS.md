@@ -338,3 +338,48 @@ Run 2026-10-21 on 2012–2019 and 2021–2024 by `python3 -m research.clv.cfb pr
 - The constant drift is -0.14 pts for totals and +0.08 for spreads pre-holdout, and -0.21 / +0.01 on the frozen holdout.
 - Both are below the 0.25 bet threshold, so 0 bets.
 - **The residual models' CLV is not a constant "bet the under / the away side early" effect.**
+
+### NFL pre-holdout results
+
+Run 2026-10-21 on SBR 2011–2019 (2,393 games) by `python3 -m research.clv.nfl pre`. Reports are in `research/clv/results/nfl/`.
+
+**Line quality check.** SBR closes agree with the nflverse consensus close within 1 point on 96.6% of 2,946 joined games (mean |diff| 0.30).
+
+**Opener-time replays:**
+- **v2.1.0:** the replay with actual inputs reproduces the committed `oos_v2.csv.gz` exactly (5,524 games, max |diff| 0.0). With opener-time inputs it moves a mean of 0.76 pts; 1,381 rows have a different QB input.
+- **Loop:** opener inputs move it a mean of 0.64 pts.
+
+| ID | Rule | Bets | CLV pts | CLV prob (pp) | p | Toward | `clv_ev` at -110 | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| NFL-B1 | production v2.1.0, spread, ≥1.0 | 1,640 | +0.414 [+0.324, +0.506] | +1.39 [+1.07, +1.70] | <1e-4 | 0.645 | -1.8% | PASS |
+| NFL-B2 | production v2.1.0, total, ≥1.5 | 1,533 | +0.687 [+0.587, +0.788] | +2.08 [+1.77, +2.38] | <1e-4 | 0.669 | -0.6% | PASS |
+| NFL-B3 | loop 2.0.0, spread, ≥1.0 | 1,649 | +0.247 [+0.163, +0.331] | +0.78 [+0.50, +1.06] | <1e-4 | 0.586 | -3.0% | PASS |
+| NFL-B4 | loop 2.0.0, total, ≥1.5 | 1,282 | +0.746 [+0.637, +0.851] | +2.26 [+1.93, +2.57] | <1e-4 | 0.678 | -0.2% | PASS |
+| NFL-R1 | residual (d_v21, d_loop), spread, ≥0.25 | 746 | +0.556 [+0.413, +0.692] | +1.96 [+1.46, +2.43] | <1e-4 | 0.677 | -0.8% | PASS (move slope 1.22) |
+| NFL-R2 | R1 + information block | 761 | +0.498 [+0.353, +0.640] | +1.74 [+1.25, +2.22] | <1e-4 | 0.663 | -1.2% | **FAIL**: on the same 1,595 games R2 bets +1.74 pp vs R1 +1.96 pp. The block does not help |
+| NFL-W1 | B1 on backup-QB games only | 509 | +0.419 [+0.281, +0.563] | +1.54 [+1.06, +2.04] | <1e-4 | 0.645 | -1.6% | PASS. Slightly above B1 overall (+1.39), so weak support for the hypothesis |
+| NFL-W2 | totals residual (dt_v21, dt_loop), ≥0.25 | 1,100 | +0.840 [+0.724, +0.948] | +2.54 [+2.19, +2.87] | <1e-4 | 0.698 | **+0.3%** | PASS (move slope 1.01) |
+
+**Every season of 2011–2019 is positive for every rule.**
+
+**Caveat.** v2.1.0's round-2 choices were selected on the 2010–2024 validation window (`football/research/nfl_v2/RESULTS.md`), and the loop's tuning used 2011–2019. Both selected on final scores, not line moves. So the base models carry in-sample hyperparameter choices over these seasons and over the proxy holdout. 2026 is the only fully out-of-sample season.
+
+**NFL pre-holdout attempt count: 8.** W3 (first half) was not run.
+
+### NFL-H: Phase 6 selection (written before the holdout was read)
+
+**Candidates (G8):**
+
+| ID | Candidate | Bet rule |
+|---|---|---|
+| NFL-H1 | production v2.1.0, spread (reference) | ≥1.0 |
+| NFL-H2 | production v2.1.0, total (reference) | ≥1.5 |
+| NFL-H3 | spread challenger = **NFL-R1** (+1.96 pp; R2 failed its pre-registered comparison) | ≥0.25 |
+| NFL-H4 | total challenger = **NFL-W2** (+2.54 pp) | ≥0.25 |
+
+**Residual fits:** frozen on SBR 2011–2019, λ by the inner walk-forward, applied unchanged.
+
+**Gate.**
+- The gate data is the **proxy holdout, SBR 2020–2021**.
+- 2026 (`football/pricing/openers_nfl.json`: first-seen consensus open, consensus close) is reported beside it and does not gate. It is the only fully out-of-sample NFL data, so it is printed with every verdict.
+- **k = 12** (8 + 4). PASS per G7.
