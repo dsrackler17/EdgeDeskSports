@@ -33,7 +33,7 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 | 4 | NCAAM | production lab model, total | +1.58 [+1.26, +1.89], n = 2,552 | +1.24 | -1.5% | 3 | Medium. One holdout season of DraftKings; no tuning was possible | **PASS**; does not clear the vig |
 | 5 | MLB | R2 moneyline market-residual | +0.90 [+0.68, +1.17], n = 1,451 | +0.59 | -1.8% | 8 | Low. SBR MLB needed a pairing repair | **PASS**; far below the vig |
 | 6 | WNBA | production lab model, total | +2.19 [+1.21, +3.17], n = 231 | +1.14 | -0.4% | 3 | Low. One season, 231 bets; spread and moneyline FAIL | **PASS on totals only** |
-| — | NBA | (see NBA section) | | | | | | |
+| 7 | NBA | lab model total (and its totals residual) | +1.40 [+0.86, +1.98], n = 644 | +0.64 | -1.9% | 12 | Medium. SBR 2012–22 walk-forward; holdout is one DraftKings season. The production `nba/` engine could not be reproduced, so it was not tested | **PASS on totals only**; spread and moneyline FAIL after the penalty |
 | — | NCAAW, UFC, college baseball, tennis | — | — | — | — | 0 | No opener data exists | **UNTESTED** |
 
 **Player props (NFL and CFB, 2026 only):** the production props model beats the props opener (+0.58 / +0.55 pp) but sits about 5% below the props vig.
@@ -52,6 +52,7 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
    - CFB non-Power games: no more CLV than other games.
    - NHL projected-goalie filter: no clear gain.
    - MLB rotation disruption: no CLV (FAIL).
+   - NBA spreads and moneylines: positive, but they FAIL after the penalty.
    - NFL backup-QB games: only marginally more CLV.
    - The information blocks helped in CFB, NHL and MLB and hurt in NFL.
 
@@ -65,7 +66,7 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 
 **Passing candidates go to live tracking only:**
 - Every one is recorded in `research/clv/live/registry.json`.
-- Every challenger is also an entry in its sport's existing version history (`docs/model-loop/{cfb,nfl,mlb}/versions.json`, status `CANDIDATE (CLV live tracking)`, `current` unchanged). That history is mirrored to Supabase `research_model_versions` by the existing `db_sync`, which now labels these entries correctly.
+- Every challenger is also an entry in its sport's existing version history (`docs/model-loop/{cfb,nfl,mlb,nba}/versions.json`, status `CANDIDATE (CLV live tracking)`, `current` unchanged). That history is mirrored to Supabase `research_model_versions` by the existing `db_sync`, which now labels these entries correctly.
 - `research/clv/live.py`, run every two hours by `.github/workflows/clv-live.yml`, captures each candidate's opener-time inputs from the numbers EdgeDesk already publishes and grades them against the close into `research/clv/live/summary.json`.
 - Promotion to the board stays with the existing promotion systems and their owner.
 
@@ -246,6 +247,54 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 **Verdict.** The production model beats DraftKings openers on every market in a large sample, but by less than the vig.
 - No market-residual model could be trained: there are no earlier openers.
 - **Next:** capture this season's openers. 2026-27 starts 2026-11-02 and the live tracker logs the DraftKings line from Today's Games. With a second season, a residual model becomes possible.
+
+## NBA
+
+**Data:**
+- SBR spread and total open and close, repo 2012–2022 (13,883 games; the archive has no moneyline opener).
+- Holdout: ESPN DraftKings open and close with prices for 2025-26 (1,068 games).
+
+**Models.** The production `nba/` engine (`G_stack_P`) was replayed through its exported walk-forward. It **failed its pre-registered reproduction check**:
+- selection log loss 0.58910 vs the committed 0.59239;
+- its non-ML member reproduces exactly; the stacked ML members do not.
+
+Per the fallback written before any result:
+- the production engine has no CLV verdict;
+- every experiment used the model loop's served lab model, `edgedesk_bb_points_v1` / `points_rest`, predicted at 09:00 UTC on game day.
+
+**Tried (12 attempts):**
+- Lab spread and total.
+- R1 and R2 market-residual models.
+- One-team back-to-backs (W2), totals residual (W3), early season (W4).
+- Five holdout runs.
+- **Not testable:** late scratches (no injury timestamps exist) and the production engine's star-absence filter (W1).
+
+**What worked (pre-holdout):**
+- Totals: +1.55 pp, every season positive.
+- Residual spreads: +2.10 pp, on few bets.
+- Back-to-backs: +3.02 pp on 97 bets.
+
+**What failed:**
+- R2: the information block lowered per-bet CLV, although its back-to-back term (-0.5 pts toward the rested side) is real market structure.
+- The lab spread is barely positive: +0.33 pp.
+
+**Holdout:**
+
+| ID | Bets | CLV pts | CLV prob (pp) | α/12 LB | `clv_ev` | Verdict |
+|---|---|---|---|---|---|---|
+| H1 lab spread | 806 | +0.190 [+0.044, +0.333] | +0.57 [+0.13, +0.99] | -0.01 | -3.5% | FAIL |
+| H2 lab total | 644 | +0.657 [+0.402, +0.935] | +1.40 [+0.86, +1.98] | +0.64 | -1.9% | PASS |
+| H3 lab moneyline | 846 | – | +0.52 [+0.13, +0.95] | -0.03 | -2.9% | FAIL |
+| H4 R1 residual spread | 88 | +0.273 [-0.198, +0.810] | +0.74 [-0.76, +2.39] | -1.35 | -3.1% | FAIL |
+| H5 W3 residual total | 740 | +0.584 [+0.345, +0.833] | +1.24 [+0.72, +1.77] | +0.52 | -2.2% | PASS |
+
+**Verdict.**
+- NBA totals beat the DraftKings opener; no NBA rule clears the vig.
+- Spreads and moneylines show positive CLV that does not survive the multiple-testing penalty.
+
+**Next:**
+- Make the production engine's ML stage reproducible (seeded GBDT, or the run's tuning recorded), then test `G_stack_P`.
+- Pre-register the back-to-back rule on a second DraftKings season.
 
 ## NCAAW, UFC, college baseball, tennis
 

@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_clv_live_registry_v1",
- "generated_at": "2026-10-21T14:04:13Z",
+ "generated_at": "2026-10-21T15:09:23Z",
  "rule": "Every candidate here passed its pre-registered holdout CLV gate (EXPERIMENTS.md). It is tracked live against the opener and graded at the last pregame line. Nothing here is served or priced on the board.",
  "candidates": [
   {
@@ -1001,6 +1001,115 @@
     "clv_ev": -0.00359,
     "seasons": [
      2025,
+     2026
+    ]
+   }
+  },
+  {
+   "id": "NBA-H2",
+   "sport": "nba",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "lab_total",
+   "threshold": 2.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 17.7552
+   },
+   "frame": "nba",
+   "label": "loop-served NBA lab model (bb_points 1.0.0) total",
+   "challenger": false,
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 644,
+    "clv_prob": {
+     "n": 644,
+     "mean": 0.01396,
+     "se": 0.00288,
+     "ci95": [
+      0.00856,
+      0.01985
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.00684,
+     "p_adjusted": 1e-05
+    },
+    "clv_pts": {
+     "n": 644,
+     "mean": 0.65683,
+     "se": 0.13503,
+     "ci95": [
+      0.40189,
+      0.93477
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.32393,
+     "p_adjusted": 1e-05
+    },
+    "clv_ev": -0.01875,
+    "seasons": [
+     2026
+    ]
+   }
+  },
+  {
+   "id": "NBA-H5",
+   "sport": "nba",
+   "market": "total",
+   "kind": "points",
+   "rule": "residual",
+   "threshold": 0.25,
+   "dist": {
+    "type": "normal",
+    "sigma": 17.7552
+   },
+   "frame": "nba",
+   "label": "NBA-W3 totals market-residual (lab model)",
+   "features": {
+    "d_lab_total": "lab_total"
+   },
+   "challenger": true,
+   "parent_loop": "nba",
+   "lambda": 0.1,
+   "n_train": 13867,
+   "coef": {
+    "d_lab_total": 0.16643
+   },
+   "intercept": -0.02731,
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 740,
+    "clv_prob": {
+     "n": 740,
+     "mean": 0.01238,
+     "se": 0.00273,
+     "ci95": [
+      0.00722,
+      0.01774
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.00559,
+     "p_adjusted": 3e-05
+    },
+    "clv_pts": {
+     "n": 740,
+     "mean": 0.58378,
+     "se": 0.12802,
+     "ci95": [
+      0.34522,
+      0.83333
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.26003,
+     "p_adjusted": 3e-05
+    },
+    "clv_ev": -0.02177,
+    "seasons": [
      2026
     ]
    }

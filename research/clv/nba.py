@@ -87,7 +87,8 @@ def sbr_lines(g):
 
 
 def models(m):
-    lab = pd.read_csv(LAB)[["game_id", "model_margin", "model_total"]].rename(columns={"model_margin": "lab", "model_total": "lab_total"})
+    lab = pd.read_csv(LAB)[["game_id", "model_margin", "model_total", "p_home"]].rename(
+        columns={"model_margin": "lab", "model_total": "lab_total", "p_home": "lab_p"})
     m = m.merge(lab, on="game_id", how="left")
     if os.path.exists(PROD) and prod_reproduced():
         p = pd.read_csv(PROD)[["game_id", "model_margin", "model_total", "p_home", "adj_proj"]].rename(
@@ -287,3 +288,9 @@ if __name__ == "__main__":
               "corr(lab, close)", round(float(np.corrcoef(x.lab[ok & x.lab.notna()], x.close_line[ok & x.lab.notna()])[0, 1]), 3))
     elif cmd == "pre":
         print(json.dumps(pre(), indent=1, default=str))
+    elif cmd == "holdout":
+        holdout([("NBA-H1", "points", "spread", "lab", 1.0, "lab points_rest spread (holdout)"),
+                 ("NBA-H2", "points", "total", "lab_total", 2.0, "lab points_rest total (holdout)"),
+                 ("NBA-H3", "price", "moneyline", "lab_p", 0.02, "lab points_rest moneyline (holdout)"),
+                 ("NBA-H4", "points", "spread", (["lab"], False), 0.25, "NBA-R1 frozen (holdout)"),
+                 ("NBA-H5", "points", "total", (["lab_total"], False), 0.25, "NBA-W3 frozen (holdout)")])

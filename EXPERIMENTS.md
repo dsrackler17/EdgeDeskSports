@@ -898,3 +898,15 @@ Run 2026-10-21 on SBR repo seasons 2012–2022 (13,883 games), lab model only (t
 ### NBA-H3: lab model moneyline on the holdout
 ### NBA-H4: NBA-R1 frozen on the holdout
 ### NBA-H5: NBA-W3 frozen on the holdout
+
+### NBA holdout results (run once, 2026-10-21)
+
+**k = 12.** Lines: ESPN DraftKings 2026 with prices (1,068 games; no 2027 game had both an open and a close yet).
+
+| ID | Bets | CLV pts | CLV prob (pp) | α/12 LB | Toward | `clv_ev` | Verdict |
+|---|---|---|---|---|---|---|---|
+| NBA-H1 lab spread ≥1.0 | 806 | +0.190 [+0.044, +0.333] | +0.57 [+0.13, +0.99] | -0.02 | 0.533 | -3.5% | **FAIL** (positive, but not after the penalty) |
+| NBA-H2 lab total ≥2.0 | 644 | +0.657 [+0.402, +0.935] | +1.40 [+0.86, +1.98] | +0.68 | 0.570 | -1.9% | **PASS** |
+| NBA-H3 lab moneyline ≥0.02 | 846 | – | +0.52 [+0.13, +0.95] | +0.00 | 0.531 | -2.9% | **FAIL** (the bound is not above zero) |
+| NBA-H4 R1 frozen spread ≥0.25 | 88 | +0.273 [-0.198, +0.810] | +0.74 [-0.76, +2.39] | -1.11 | 0.500 | -3.1% | **FAIL** |
+| NBA-H5 W3 frozen total ≥0.25 | 740 | +0.584 [+0.345, +0.833] | +1.24 [+0.72, +1.77] | +0.56 | 0.568 | -2.2% | **PASS** |

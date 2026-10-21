@@ -1609,6 +1609,564 @@
    }
   ]
  },
+ "nba": {
+  "k": 12,
+  "holdout": [
+   {
+    "id": "NBA-H1",
+    "label": "lab points_rest spread (holdout)",
+    "market": "spread",
+    "n_bets": 806,
+    "clv_prob": {
+     "n": 806,
+     "mean": 0.00569,
+     "se": 0.00221,
+     "ci95": [
+      0.00131,
+      0.00994
+     ],
+     "p_one_sided": 0.00505,
+     "k_tests": 12,
+     "lb_adjusted": -0.00016,
+     "p_adjusted": 0.06056
+    },
+    "clv_pts": {
+     "n": 806,
+     "mean": 0.18983,
+     "se": 0.07372,
+     "ci95": [
+      0.04368,
+      0.33294
+     ],
+     "p_one_sided": 0.00501,
+     "k_tests": 12,
+     "lb_adjusted": -0.01057,
+     "p_adjusted": 0.06017
+    },
+    "clv_ev": {
+     "n": 806,
+     "mean": -0.03458,
+     "se": 0.00422,
+     "ci95": [
+      -0.04296,
+      -0.02647
+     ],
+     "p_one_sided": 1.0
+    },
+    "k_final": 12,
+    "lb_final_normal": -0.00014054857438362042,
+    "lb_at_run_percentile": -0.00016,
+    "lb_at_run_normal": -0.00014054857438362042,
+    "verdict_final": "FAIL",
+    "by_season": [
+     {
+      "n_bets": 806,
+      "n_clusters": 173,
+      "clv_pts": {
+       "n": 806,
+       "mean": 0.18983,
+       "se": 0.07372,
+       "ci95": [
+        0.04368,
+        0.33294
+       ],
+       "p_one_sided": 0.00501
+      },
+      "clv_prob": {
+       "n": 806,
+       "mean": 0.00569,
+       "se": 0.00221,
+       "ci95": [
+        0.00131,
+        0.00994
+       ],
+       "p_one_sided": 0.00505
+      },
+      "clv_ev": {
+       "n": 806,
+       "mean": -0.03458,
+       "se": 0.00422,
+       "ci95": [
+        -0.04296,
+        -0.02647
+       ],
+       "p_one_sided": 1.0
+      },
+      "moved_toward": 327,
+      "moved_against": 287,
+      "no_move": 192,
+      "direction_hit_rate": {
+       "n": 614,
+       "mean": 0.53257,
+       "se": 0.02139,
+       "ci95": [
+        0.48989,
+        0.57496
+       ],
+       "p_one_sided": 0.0
+      },
+      "mean_abs_edge": 3.32183,
+      "results": {
+       "n": 806,
+       "wins": 402,
+       "losses": 404,
+       "pushes": 0,
+       "win_pct": 0.4988,
+       "roi_at_open": {
+        "n": 806,
+        "mean": -0.04864,
+        "se": 0.03574,
+        "ci95": [
+         -0.1193,
+         0.02224
+        ],
+        "p_one_sided": 0.91325
+       }
+      },
+      "season": 2026
+     }
+    ]
+   },
+   {
+    "id": "NBA-H2",
+    "label": "lab points_rest total (holdout)",
+    "market": "total",
+    "n_bets": 644,
+    "clv_prob": {
+     "n": 644,
+     "mean": 0.01396,
+     "se": 0.00288,
+     "ci95": [
+      0.00856,
+      0.01985
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.00684,
+     "p_adjusted": 1e-05
+    },
+    "clv_pts": {
+     "n": 644,
+     "mean": 0.65683,
+     "se": 0.13503,
+     "ci95": [
+      0.40189,
+      0.93477
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.32393,
+     "p_adjusted": 1e-05
+    },
+    "clv_ev": {
+     "n": 644,
+     "mean": -0.01875,
+     "se": 0.00548,
+     "ci95": [
+      -0.02899,
+      -0.00762
+     ],
+     "p_one_sided": 0.99969
+    },
+    "k_final": 12,
+    "lb_final_normal": 0.006361819052386957,
+    "lb_at_run_percentile": 0.00684,
+    "lb_at_run_normal": 0.006361819052386957,
+    "verdict_final": "PASS",
+    "by_season": [
+     {
+      "n_bets": 644,
+      "n_clusters": 176,
+      "clv_pts": {
+       "n": 644,
+       "mean": 0.65683,
+       "se": 0.13503,
+       "ci95": [
+        0.40189,
+        0.93477
+       ],
+       "p_one_sided": 0.0
+      },
+      "clv_prob": {
+       "n": 644,
+       "mean": 0.01396,
+       "se": 0.00288,
+       "ci95": [
+        0.00856,
+        0.01985
+       ],
+       "p_one_sided": 0.0
+      },
+      "clv_ev": {
+       "n": 644,
+       "mean": -0.01875,
+       "se": 0.00548,
+       "ci95": [
+        -0.02899,
+        -0.00762
+       ],
+       "p_one_sided": 0.99969
+      },
+      "moved_toward": 321,
+      "moved_against": 242,
+      "no_move": 81,
+      "direction_hit_rate": {
+       "n": 563,
+       "mean": 0.57016,
+       "se": 0.02013,
+       "ci95": [
+        0.5302,
+        0.60886
+       ],
+       "p_one_sided": 0.0
+      },
+      "mean_abs_edge": 5.21001,
+      "results": {
+       "n": 644,
+       "wins": 347,
+       "losses": 297,
+       "pushes": 0,
+       "win_pct": 0.5388,
+       "roi_at_open": {
+        "n": 644,
+        "mean": 0.02842,
+        "se": 0.04179,
+        "ci95": [
+         -0.05492,
+         0.11305
+        ],
+        "p_one_sided": 0.24819
+       }
+      },
+      "season": 2026
+     }
+    ]
+   },
+   {
+    "id": "NBA-H3",
+    "label": "lab points_rest moneyline (holdout)",
+    "market": "moneyline",
+    "n_bets": 846,
+    "clv_prob": {
+     "n": 846,
+     "mean": 0.00524,
+     "se": 0.00211,
+     "ci95": [
+      0.00133,
+      0.0095
+     ],
+     "p_one_sided": 0.00653,
+     "k_tests": 12,
+     "lb_adjusted": 0.0,
+     "p_adjusted": 0.07832
+    },
+    "clv_pts": null,
+    "clv_ev": {
+     "n": 846,
+     "mean": -0.02926,
+     "se": 0.00573,
+     "ci95": [
+      -0.03996,
+      -0.01766
+     ],
+     "p_one_sided": 1.0
+    },
+    "k_final": 12,
+    "lb_final_normal": -0.00032672284703594463,
+    "lb_at_run_percentile": 0.0,
+    "lb_at_run_normal": -0.00032672284703594463,
+    "verdict_final": "FAIL",
+    "by_season": [
+     {
+      "n_bets": 846,
+      "n_clusters": 172,
+      "clv_prob": {
+       "n": 846,
+       "mean": 0.00524,
+       "se": 0.00211,
+       "ci95": [
+        0.00133,
+        0.0095
+       ],
+       "p_one_sided": 0.00653
+      },
+      "clv_ev": {
+       "n": 846,
+       "mean": -0.02926,
+       "se": 0.00573,
+       "ci95": [
+        -0.03996,
+        -0.01766
+       ],
+       "p_one_sided": 1.0
+      },
+      "moved_toward": 422,
+      "moved_against": 373,
+      "no_move": 51,
+      "direction_hit_rate": {
+       "n": 795,
+       "mean": 0.53082,
+       "se": 0.01899,
+       "ci95": [
+        0.49265,
+        0.56743
+       ],
+       "p_one_sided": 0.0
+      },
+      "mean_abs_edge": 0.08152,
+      "results": {
+       "n": 846,
+       "wins": 339,
+       "losses": 507,
+       "pushes": 0,
+       "win_pct": 0.4007,
+       "roi_at_open": {
+        "n": 846,
+        "mean": -0.09916,
+        "se": 0.04778,
+        "ci95": [
+         -0.19066,
+         -0.00359
+        ],
+        "p_one_sided": 0.98103
+       }
+      },
+      "season": 2026
+     }
+    ]
+   },
+   {
+    "id": "NBA-H4",
+    "label": "NBA-R1 frozen (holdout)",
+    "market": "spread",
+    "n_bets": 88,
+    "clv_prob": {
+     "n": 88,
+     "mean": 0.00739,
+     "se": 0.00791,
+     "ci95": [
+      -0.00756,
+      0.02387
+     ],
+     "p_one_sided": 0.17512,
+     "k_tests": 12,
+     "lb_adjusted": -0.01115,
+     "p_adjusted": 1.0
+    },
+    "clv_pts": {
+     "n": 88,
+     "mean": 0.27273,
+     "se": 0.25284,
+     "ci95": [
+      -0.19786,
+      0.80952
+     ],
+     "p_one_sided": 0.14037,
+     "k_tests": 12,
+     "lb_adjusted": -0.32572,
+     "p_adjusted": 1.0
+    },
+    "clv_ev": {
+     "n": 88,
+     "mean": -0.03114,
+     "se": 0.01511,
+     "ci95": [
+      -0.05971,
+      0.00029
+     ],
+     "p_one_sided": 0.98032
+    },
+    "k_final": 12,
+    "lb_final_normal": -0.013478615033201101,
+    "lb_at_run_percentile": -0.01115,
+    "lb_at_run_normal": -0.013478615033201101,
+    "verdict_final": "FAIL",
+    "by_season": [
+     {
+      "n_bets": 88,
+      "n_clusters": 59,
+      "clv_pts": {
+       "n": 88,
+       "mean": 0.27273,
+       "se": 0.25284,
+       "ci95": [
+        -0.19786,
+        0.80952
+       ],
+       "p_one_sided": 0.14037
+      },
+      "clv_prob": {
+       "n": 88,
+       "mean": 0.00739,
+       "se": 0.00791,
+       "ci95": [
+        -0.00756,
+        0.02387
+       ],
+       "p_one_sided": 0.17512
+      },
+      "clv_ev": {
+       "n": 88,
+       "mean": -0.03114,
+       "se": 0.01511,
+       "ci95": [
+        -0.05971,
+        0.00029
+       ],
+       "p_one_sided": 0.98032
+      },
+      "moved_toward": 34,
+      "moved_against": 34,
+      "no_move": 20,
+      "direction_hit_rate": {
+       "n": 68,
+       "mean": 0.5,
+       "se": 0.06017,
+       "ci95": [
+        0.38095,
+        0.61538
+       ],
+       "p_one_sided": 0.0
+      },
+      "mean_abs_edge": 0.33687,
+      "results": {
+       "n": 88,
+       "wins": 44,
+       "losses": 44,
+       "pushes": 0,
+       "win_pct": 0.5,
+       "roi_at_open": {
+        "n": 88,
+        "mean": -0.04423,
+        "se": 0.09767,
+        "ci95": [
+         -0.23001,
+         0.15114
+        ],
+        "p_one_sided": 0.67468
+       }
+      },
+      "season": 2026
+     }
+    ]
+   },
+   {
+    "id": "NBA-H5",
+    "label": "NBA-W3 frozen (holdout)",
+    "market": "total",
+    "n_bets": 740,
+    "clv_prob": {
+     "n": 740,
+     "mean": 0.01238,
+     "se": 0.00273,
+     "ci95": [
+      0.00722,
+      0.01774
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.00559,
+     "p_adjusted": 3e-05
+    },
+    "clv_pts": {
+     "n": 740,
+     "mean": 0.58378,
+     "se": 0.12802,
+     "ci95": [
+      0.34522,
+      0.83333
+     ],
+     "p_one_sided": 0.0,
+     "k_tests": 12,
+     "lb_adjusted": 0.26003,
+     "p_adjusted": 3e-05
+    },
+    "clv_ev": {
+     "n": 740,
+     "mean": -0.02177,
+     "se": 0.0052,
+     "ci95": [
+      -0.03161,
+      -0.01156
+     ],
+     "p_one_sided": 0.99999
+    },
+    "k_final": 12,
+    "lb_final_normal": 0.005177557643408471,
+    "lb_at_run_percentile": 0.00559,
+    "lb_at_run_normal": 0.005177557643408471,
+    "verdict_final": "PASS",
+    "by_season": [
+     {
+      "n_bets": 740,
+      "n_clusters": 177,
+      "clv_pts": {
+       "n": 740,
+       "mean": 0.58378,
+       "se": 0.12802,
+       "ci95": [
+        0.34522,
+        0.83333
+       ],
+       "p_one_sided": 0.0
+      },
+      "clv_prob": {
+       "n": 740,
+       "mean": 0.01238,
+       "se": 0.00273,
+       "ci95": [
+        0.00722,
+        0.01774
+       ],
+       "p_one_sided": 0.0
+      },
+      "clv_ev": {
+       "n": 740,
+       "mean": -0.02177,
+       "se": 0.0052,
+       "ci95": [
+        -0.03161,
+        -0.01156
+       ],
+       "p_one_sided": 0.99999
+      },
+      "moved_toward": 372,
+      "moved_against": 283,
+      "no_move": 85,
+      "direction_hit_rate": {
+       "n": 655,
+       "mean": 0.56794,
+       "se": 0.0187,
+       "ci95": [
+        0.53052,
+        0.60384
+       ],
+       "p_one_sided": 0.0
+      },
+      "mean_abs_edge": 0.7855,
+      "results": {
+       "n": 740,
+       "wins": 399,
+       "losses": 341,
+       "pushes": 0,
+       "win_pct": 0.5392,
+       "roi_at_open": {
+        "n": 740,
+        "mean": 0.02917,
+        "se": 0.03822,
+        "ci95": [
+         -0.04322,
+         0.10501
+        ],
+        "p_one_sided": 0.22265
+       }
+      },
+      "season": 2026
+     }
+    ]
+   }
+  ]
+ },
  "nhl": {
   "k": 12,
   "holdout": [
