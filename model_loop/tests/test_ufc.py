@@ -117,6 +117,23 @@ class PipelineTest(unittest.TestCase):
         L.cmd_score()
         L.cmd_report()
         self.assertTrue(os.path.exists(os.path.join(L.DOCS, "weekly_model_report.md")))
+        ev = L.cmd_evidence()
+        m = ev["markets"]["moneyline"]
+        self.assertEqual(json.load(open(os.path.join(L.PUB, "validation.json")))["schema"], "edgedesk_lab_walkforward_v1")
+        self.assertEqual(m["n"], bt["evaluation"]["validation"]["all"]["n"])
+        self.assertEqual(m["status"] == "OUTCOME_VALIDATED", not m["failed"])
+        self.assertEqual(m["market_status"], "NOT_TESTED")
+        c = ev["result"]["confirmation"]
+        self.assertLess(c["vs_coin_flip"]["ci95"][1], 0)                     # real skill beats the coin flip, card-blocked
+        self.assertGreater(c["vs_coin_flip"]["blocks"], 10)
+
+    def test_calibration_is_read_the_same_whichever_fighter_is_listed_first(self):
+        p = np.array([0.3, 0.55, 0.62, 0.71, 0.45, 0.8])
+        y = np.array([0, 1, 1, 0, 1, 1.0])
+        self.assertAlmostEqual(U.fit_slope(p, y), U.fit_slope(1 - p, 1 - y), places=9)
+        pf, yf = L._favourite_side(p, y)
+        self.assertTrue((pf >= 0.5).all())
+        self.assertTrue(np.allclose(pf - yf, np.where(p < 0.5, (1 - p) - (1 - y), p - y)))
 
     def test_a_coin_flip_history_is_not_served(self):
         d = pd.read_csv(L.DATA, dtype=str)

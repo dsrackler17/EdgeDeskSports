@@ -172,7 +172,14 @@ const reg2 = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'registry.json
 ok('registry: all 11 sports carry the computed ladder, and soccer is not one', reg2.sports.length === 11 && !reg2.sports.some((s) => s.id === 'soccer') && reg2.sports.every((s) => s.readiness.ladder && ['data_loaded', 'model_trained', 'validation_passed', 'market_tested'].every((k) => typeof s.readiness.ladder[k].done === 'boolean')));
 ok('registry: no value claim is on anywhere (nothing beat a close)', reg2.value_claims_enabled.length === 0 && reg2.sports.every((s) => !s.readiness.value_claims_any));
 ok('registry: a validated headline names the markets it covers', reg2.sports.filter((s) => s.readiness.state === 'OUTCOME_VALIDATED').every((s) => s.readiness.scope.length > 0 && s.readiness.label.indexOf(s.readiness.scope[0]) > 0));
-ok('registry: a sport without a model is never validated (UFC)', ['mma'].every((id) => reg2.sports.find((s) => s.id === id).readiness.state === 'RESEARCH_ONLY'));
+{
+  /* UFC's brain is the model loop's preregistered Elo: validated only if its own confirmation record says so, never a value claim */
+  const mma = reg2.sports.find((s) => s.id === 'mma'); const f = path.join(ROOT, 'model_loop/published/ufc/validation.json');
+  const rec = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;
+  const held = rec && rec.markets.moneyline.status === 'OUTCOME_VALIDATED';
+  ok('registry: UFC is validated only by its own preregistered record, and never claims value', (held || mma.readiness.state !== 'OUTCOME_VALIDATED') && !mma.readiness.value_claims_any, mma.readiness.state);
+  ok('registry: without the loop record UFC falls back to the one-year measurement (research only)', rec || mma.readiness.state === 'RESEARCH_ONLY');
+}
 {
   /* college baseball has a brain (college_baseball/); it is validated only if its own holdout record says so */
   const cb = reg2.sports.find((s) => s.id === 'college_baseball'); const wfCb = fs.existsSync(path.join(ROOT, 'college_baseball/validation/walkforward.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT, 'college_baseball/validation/walkforward.json'), 'utf8')) : null;
