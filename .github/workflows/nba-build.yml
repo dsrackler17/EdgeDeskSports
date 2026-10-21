@@ -2,6 +2,8 @@
 # Its own workflow, split from nba.yml (which keeps the tests), so a pull
 # request or a push never lists this scheduled job as Skipped. The job is
 # unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+# GitHub starts scheduled runs late under load (the 09:23 UTC run started at
+# 12:02) and sometimes skips one; Run workflow is the way to rebuild now.
 name: NBA engine build
 run-name: NBA engine build · ${{ github.event_name }}
 
