@@ -1,25 +1,38 @@
 {
  "schema": "edgedesk_nba_grades_v1",
  "season": 2027,
- "generated_at": "2026-10-21T05:10:39.221Z",
- "sheets": 91,
- "games_graded": 0,
+ "generated_at": "2026-10-21T17:39:58.813Z",
+ "sheets": 116,
+ "games_graded": 3,
  "sample_state": "TOO_EARLY",
  "moneyline": {
-  "n": 0,
-  "sample_state": "TOO_EARLY"
+  "n": 3,
+  "sample_state": "TOO_EARLY",
+  "log_loss": 0.95941,
+  "brier": 0.36742,
+  "climatology": {
+   "rate": 0.3333,
+   "log_loss": 0.63651,
+   "brier": 0.22222
+  },
+  "brier_skill": -0.6534,
+  "mean_p": 0.6192,
+  "mean_y": 0.3333,
+  "calibration_in_the_large": 0.2858,
+  "calibration_slope": null,
+  "calibration_intercept": null
  },
  "fair_spread": {
-  "n": 0,
-  "home_cover_rate": null,
+  "n": 3,
+  "home_cover_rate": 0.3333,
   "note": "should sit near 50% when the fair line is unbiased"
  },
  "fair_total": {
-  "n": 0,
-  "over_rate": null
+  "n": 3,
+  "over_rate": 0.3333
  },
- "margin_mae": null,
- "total_mae": null,
+ "margin_mae": 12.0067,
+ "total_mae": 12.38,
  "clv": {
   "status": "NOT_AVAILABLE",
   "reason": "no captured closing prices"
