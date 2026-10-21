@@ -2,7 +2,7 @@
  "schema": "edgedesk_model_loop_nfl_current_v1",
  "model_version": "2.0.0",
  "status": "EXPERIMENTAL",
- "generated_at": "2026-10-21T01:29:31Z",
+ "generated_at": "2026-10-21T03:43:58Z",
  "season": 2026,
  "config_sha256": "2ae53dbf05e0871616ba35159c4914c5a9073a99252c02e8212349ff6216ef35",
  "distribution": {
@@ -43,20 +43,20 @@
   "kmax": 70
  },
  "coefficients": {
-  "home_field": 2.1453189213728234,
-  "covid_2020": -2.091364559954999,
-  "pass_off": 8.372516228013074,
-  "pass_def": 8.372516228013074,
-  "qb": 14.935191535470246,
-  "rush_off": 22.225023378358063,
-  "rush_def": 22.225023378358063,
-  "market": 0.7996581351021794,
-  "rest": 1.804044767865308,
-  "bye": -0.5827369364955395,
-  "short": 0.6175317238458208,
-  "travel": 0.5652495282261775,
-  "timezone": -0.7830695756660219,
-  "body_clock": 0.7049064519286571
+  "home_field": 2.1453189213727892,
+  "covid_2020": -2.0913645599549753,
+  "pass_off": 8.372516228013012,
+  "pass_def": 8.372516228013012,
+  "qb": 14.935191535470278,
+  "rush_off": 22.225023378358152,
+  "rush_def": 22.225023378358152,
+  "market": 0.7996581351021803,
+  "rest": 1.8040447678653204,
+  "bye": -0.5827369364955529,
+  "short": 0.6175317238458145,
+  "travel": 0.5652495282262434,
+  "timezone": -0.783069575666076,
+  "body_clock": 0.7049064519287099
  },
  "thresholds": {
   "flag_points": 3.0,
@@ -224,7 +224,7 @@
    "disagreement": {
     "level": "QB UNRESOLVED",
     "text": "Model disagrees with market by 3.1 with the schedule feed's starter; the starter is contested (see scenarios)",
-    "gap_points": -3.0827625711546958,
+    "gap_points": -3.0827625711547175,
     "direction": "away",
     "drivers": [
      {
@@ -390,7 +390,7 @@
    "reconciliation": {
     "components_sum": -2.771052,
     "fair_home_margin": -2.771052,
-    "unattributed": -0.0
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": 1.5,
@@ -541,7 +541,7 @@
    "reconciliation": {
     "components_sum": -2.125907,
     "fair_home_margin": -2.125907,
-    "unattributed": 0.0
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": 4.5,
@@ -551,7 +551,7 @@
    "disagreement": {
     "level": "WATCH",
     "text": "Model disagrees with market by 2.4",
-    "gap_points": 2.374093178590876,
+    "gap_points": 2.3740931785908432,
     "direction": "home",
     "drivers": [
      {
@@ -872,7 +872,7 @@
    "disagreement": {
     "level": "WATCH",
     "text": "Model disagrees with market by 2.8",
-    "gap_points": 2.769860841197459,
+    "gap_points": 2.769860841197385,
     "direction": "home",
     "drivers": [
      {
@@ -1186,14 +1186,14 @@
     "unattributed": -0.0
    },
    "market_reference": {
-    "home_line": -3.0,
+    "home_line": -2.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
    "disagreement": {
-    "level": "FLAG",
-    "text": "Model disagrees with market by 3.3",
-    "gap_points": -3.3210193601406552,
+    "level": "WATCH",
+    "text": "Model disagrees with market by 2.8",
+    "gap_points": -2.821019360140726,
     "direction": "away",
     "drivers": [
      {
@@ -1359,7 +1359,7 @@
    "reconciliation": {
     "components_sum": -5.936666,
     "fair_home_margin": -5.936666,
-    "unattributed": -0.0
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": 4.5,
@@ -1661,7 +1661,7 @@
    "reconciliation": {
     "components_sum": 1.91708,
     "fair_home_margin": 1.91708,
-    "unattributed": -0.0
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -3.0,
@@ -2283,7 +2283,7 @@
    "disagreement": {
     "level": "QB UNRESOLVED",
     "text": "Model disagrees with market by 4.1 with the schedule feed's starter; the starter is contested (see scenarios)",
-    "gap_points": 4.120680421587163,
+    "gap_points": 4.120680421587152,
     "direction": "home",
     "drivers": [
      {
@@ -2322,18 +2322,18 @@
    "fair_home_margin": 7.28,
    "fair_home_line": -7.28,
    "fair_total": 50.22,
-   "home_win_prob": 0.7056,
+   "home_win_prob": 0.7058,
    "fair_home_ml": -240,
    "fair_away_ml": 240,
    "range80": {
-    "lo": -9.65,
+    "lo": -9.64,
     "hi": 24.2,
     "centre": 7.28,
     "half_width": 16.92
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 5.5102,
+    "Base strength": 5.5152,
     "Rest & travel": -0.3801
    },
    "components": [
@@ -2398,9 +2398,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 4.9884,
+     "points": 4.9934,
      "from_prior": 0.3296,
-     "from_this_season": 4.6588,
+     "from_this_season": 4.6638,
      "prior_share": 0.066
     },
     {
@@ -2441,8 +2441,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 7.275317,
-    "fair_home_margin": 7.275317,
+    "components_sum": 7.280315,
+    "fair_home_margin": 7.280315,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2472,8 +2472,8 @@
    },
    "fair_home_margin": 0.67,
    "fair_home_line": -0.67,
-   "fair_total": 42.4,
-   "home_win_prob": 0.52,
+   "fair_total": 42.47,
+   "home_win_prob": 0.5201,
    "fair_home_ml": -108,
    "fair_away_ml": 108,
    "range80": {
@@ -2484,7 +2484,7 @@
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -1.8754,
+    "Base strength": -1.8746,
     "Rest & travel": 0.3986
    },
    "components": [
@@ -2549,10 +2549,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.5954,
+     "points": -0.5946,
      "from_prior": 0.3186,
-     "from_this_season": -0.914,
-     "prior_share": 0.258
+     "from_this_season": -0.9132,
+     "prior_share": 0.259
     },
     {
      "key": "rest",
@@ -2592,8 +2592,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.668404,
-    "fair_home_margin": 0.668404,
+    "components_sum": 0.669263,
+    "fair_home_margin": 0.669263,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2621,8 +2621,8 @@
      "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     }
    },
-   "fair_home_margin": 4.29,
-   "fair_home_line": -4.29,
+   "fair_home_margin": 4.3,
+   "fair_home_line": -4.3,
    "fair_total": 53.87,
    "home_win_prob": 0.6261,
    "fair_home_ml": -167,
@@ -2630,12 +2630,12 @@
    "range80": {
     "lo": -12.61,
     "hi": 21.2,
-    "centre": 4.29,
+    "centre": 4.3,
     "half_width": 16.91
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.6126,
+    "Base strength": 0.6148,
     "Rest & travel": 1.5361
    },
    "components": [
@@ -2700,9 +2700,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.9685,
+     "points": 0.9707,
      "from_prior": 0.3094,
-     "from_this_season": 0.6591,
+     "from_this_season": 0.6613,
      "prior_share": 0.319
     },
     {
@@ -2743,9 +2743,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.293945,
-    "fair_home_margin": 4.293945,
-    "unattributed": -0.0
+    "components_sum": 4.296218,
+    "fair_home_margin": 4.296218,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -2.5,
@@ -2774,7 +2774,7 @@
    },
    "fair_home_margin": 2.61,
    "fair_home_line": -2.61,
-   "fair_total": 48.27,
+   "fair_total": 48.26,
    "home_win_prob": 0.5776,
    "fair_home_ml": -137,
    "fair_away_ml": 137,
@@ -2786,7 +2786,7 @@
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.6602,
+    "Base strength": 0.659,
     "Rest & travel": -0.1976
    },
    "components": [
@@ -2851,10 +2851,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.3221,
+     "points": 0.3209,
      "from_prior": 0.402,
-     "from_this_season": -0.0799,
-     "prior_share": 0.834
+     "from_this_season": -0.0811,
+     "prior_share": 0.832
     },
     {
      "key": "rest",
@@ -2894,9 +2894,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 2.607991,
-    "fair_home_margin": 2.607991,
-    "unattributed": 0.0
+    "components_sum": 2.606845,
+    "fair_home_margin": 2.606845,
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": -3.0,
@@ -2923,21 +2923,21 @@
      "basis": "most recent starter"
     }
    },
-   "fair_home_margin": 0.89,
-   "fair_home_line": -0.89,
-   "fair_total": 44.3,
-   "home_win_prob": 0.5266,
-   "fair_home_ml": -111,
-   "fair_away_ml": 111,
+   "fair_home_margin": 0.81,
+   "fair_home_line": -0.81,
+   "fair_total": 44.29,
+   "home_win_prob": 0.5243,
+   "fair_home_ml": -110,
+   "fair_away_ml": 110,
    "range80": {
-    "lo": -15.83,
-    "hi": 17.61,
-    "centre": 0.89,
+    "lo": -15.91,
+    "hi": 17.53,
+    "centre": 0.81,
     "half_width": 16.72
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -0.0618,
+    "Base strength": -0.1401,
     "Rest & travel": -1.1951
    },
    "components": [
@@ -3002,10 +3002,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 2.1549,
+     "points": 2.0766,
      "from_prior": 0.5659,
-     "from_this_season": 1.589,
-     "prior_share": 0.263
+     "from_this_season": 1.5107,
+     "prior_share": 0.273
     },
     {
      "key": "rest",
@@ -3045,8 +3045,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.888368,
-    "fair_home_margin": 0.888368,
+    "components_sum": 0.810049,
+    "fair_home_margin": 0.810049,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3056,8 +3056,8 @@
    "qb_scenarios": [],
    "disagreement": {
     "level": "WATCH",
-    "text": "Model disagrees with market by 2.1",
-    "gap_points": -2.111632070387034,
+    "text": "Model disagrees with market by 2.2",
+    "gap_points": -2.1899507064436836,
     "direction": "away",
     "drivers": [
      {
@@ -3227,8 +3227,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 5.303736,
-    "fair_home_margin": 5.303736,
+    "components_sum": 5.303783,
+    "fair_home_margin": 5.303783,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3256,21 +3256,21 @@
      "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     }
    },
-   "fair_home_margin": 11.0,
-   "fair_home_line": -11.0,
-   "fair_total": 46.54,
-   "home_win_prob": 0.7906,
+   "fair_home_margin": 10.99,
+   "fair_home_line": -10.99,
+   "fair_total": 46.55,
+   "home_win_prob": 0.7905,
    "fair_home_ml": -377,
    "fair_away_ml": 377,
    "range80": {
-    "lo": -6.27,
+    "lo": -6.28,
     "hi": 28.26,
-    "centre": 11.0,
+    "centre": 10.99,
     "half_width": 17.27
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 7.0684,
+    "Base strength": 7.0644,
     "Rest & travel": 1.7812
    },
    "components": [
@@ -3335,9 +3335,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 2.9705,
+     "points": 2.9665,
      "from_prior": 0.4102,
-     "from_this_season": 2.5603,
+     "from_this_season": 2.5563,
      "prior_share": 0.138
     },
     {
@@ -3378,8 +3378,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 10.995018,
-    "fair_home_margin": 10.995018,
+    "components_sum": 10.99094,
+    "fair_home_margin": 10.99094,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3390,7 +3390,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.5",
-    "gap_points": 3.4950178376183647,
+    "gap_points": 3.4909404411957805,
     "direction": "home",
     "drivers": [
      {
@@ -3438,21 +3438,21 @@
      "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     }
    },
-   "fair_home_margin": -2.25,
-   "fair_home_line": 2.25,
+   "fair_home_margin": -2.36,
+   "fair_home_line": 2.36,
    "fair_total": 44.09,
-   "home_win_prob": 0.4328,
-   "fair_home_ml": 131,
-   "fair_away_ml": -131,
+   "home_win_prob": 0.4297,
+   "fair_home_ml": 133,
+   "fair_away_ml": -133,
    "range80": {
-    "lo": -18.89,
-    "hi": 14.38,
-    "centre": -2.25,
-    "half_width": 16.63
+    "lo": -19.05,
+    "hi": 14.34,
+    "centre": -2.36,
+    "half_width": 16.7
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -4.0998,
+    "Base strength": -4.2043,
     "Rest & travel": -0.3
    },
    "components": [
@@ -3517,10 +3517,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.7356,
+     "points": -0.8401,
      "from_prior": 0.1653,
-     "from_this_season": -0.9009,
-     "prior_share": 0.155
+     "from_this_season": -1.0054,
+     "prior_share": 0.141
     },
     {
      "key": "rest",
@@ -3560,8 +3560,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -2.254569,
-    "fair_home_margin": -2.254569,
+    "components_sum": -2.359092,
+    "fair_home_margin": -2.359092,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3589,21 +3589,21 @@
      "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     }
    },
-   "fair_home_margin": 11.09,
-   "fair_home_line": -11.09,
+   "fair_home_margin": 11.08,
+   "fair_home_line": -11.08,
    "fair_total": 45.39,
-   "home_win_prob": 0.7925,
-   "fair_home_ml": -382,
-   "fair_away_ml": 382,
+   "home_win_prob": 0.7923,
+   "fair_home_ml": -381,
+   "fair_away_ml": 381,
    "range80": {
     "lo": -6.2,
-    "hi": 28.37,
-    "centre": 11.09,
+    "hi": 28.36,
+    "centre": 11.08,
     "half_width": 17.28
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 9.9996,
+    "Base strength": 9.9903,
     "Rest & travel": -1.0572
    },
    "components": [
@@ -3668,9 +3668,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 4.1442,
+     "points": 4.1349,
      "from_prior": 0.1472,
-     "from_this_season": 3.997,
+     "from_this_season": 3.9877,
      "prior_share": 0.036
     },
     {
@@ -3711,9 +3711,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 11.08774,
-    "fair_home_margin": 11.08774,
-    "unattributed": -0.0
+    "components_sum": 11.078448,
+    "fair_home_margin": 11.078448,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -7.5,
@@ -3723,7 +3723,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.6",
-    "gap_points": 3.587740297233763,
+    "gap_points": 3.578447958788015,
     "direction": "home",
     "drivers": [
      {
@@ -3771,21 +3771,21 @@
      "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     }
    },
-   "fair_home_margin": 0.6,
-   "fair_home_line": -0.6,
+   "fair_home_margin": 0.59,
+   "fair_home_line": -0.59,
    "fair_total": 44.69,
-   "home_win_prob": 0.518,
+   "home_win_prob": 0.5178,
    "fair_home_ml": -107,
    "fair_away_ml": 107,
    "range80": {
-    "lo": -16.16,
-    "hi": 17.37,
-    "centre": 0.6,
+    "lo": -16.18,
+    "hi": 17.36,
+    "centre": 0.59,
     "half_width": 16.77
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -1.3231,
+    "Base strength": -1.3318,
     "Rest & travel": -0.221
    },
    "components": [
@@ -3850,10 +3850,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.0567,
+     "points": 0.048,
      "from_prior": -0.1759,
-     "from_this_season": 0.2326,
-     "prior_share": 0.431
+     "from_this_season": 0.2239,
+     "prior_share": 0.44
     },
     {
      "key": "rest",
@@ -3893,8 +3893,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.601119,
-    "fair_home_margin": 0.601119,
+    "components_sum": 0.592391,
+    "fair_home_margin": 0.592391,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3922,21 +3922,21 @@
      "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     }
    },
-   "fair_home_margin": 4.02,
-   "fair_home_line": -4.02,
+   "fair_home_margin": 4.01,
+   "fair_home_line": -4.01,
    "fair_total": 49.05,
-   "home_win_prob": 0.6182,
+   "home_win_prob": 0.6181,
    "fair_home_ml": -162,
    "fair_away_ml": 162,
    "range80": {
-    "lo": -12.96,
+    "lo": -12.97,
     "hi": 20.99,
-    "centre": 4.02,
+    "centre": 4.01,
     "half_width": 16.98
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 2.1837,
+    "Base strength": 2.1809,
     "Rest & travel": -0.3129
    },
    "components": [
@@ -4001,10 +4001,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.2347,
+     "points": 0.2319,
      "from_prior": 0.2434,
-     "from_this_season": -0.0087,
-     "prior_share": 0.966
+     "from_this_season": -0.0115,
+     "prior_share": 0.955
     },
     {
      "key": "rest",
@@ -4044,9 +4044,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.016191,
-    "fair_home_margin": 4.016191,
-    "unattributed": -0.0
+    "components_sum": 4.013415,
+    "fair_home_margin": 4.013415,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -2.5,
@@ -4073,21 +4073,21 @@
      "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     }
    },
-   "fair_home_margin": -6.34,
-   "fair_home_line": 6.34,
+   "fair_home_margin": -6.33,
+   "fair_home_line": 6.33,
    "fair_total": 45.43,
-   "home_win_prob": 0.3184,
+   "home_win_prob": 0.3185,
    "fair_home_ml": 214,
    "fair_away_ml": -214,
    "range80": {
-    "lo": -23.18,
+    "lo": -23.17,
     "hi": 10.5,
-    "centre": -6.34,
+    "centre": -6.33,
     "half_width": 16.84
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -8.568,
+    "Base strength": -8.5613,
     "Rest & travel": 0.0837
    },
    "components": [
@@ -4152,10 +4152,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -4.4558,
+     "points": -4.4491,
      "from_prior": -0.3226,
-     "from_this_season": -4.1332,
-     "prior_share": 0.072
+     "from_this_season": -4.1265,
+     "prior_share": 0.073
     },
     {
      "key": "rest",
@@ -4195,9 +4195,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -6.339076,
-    "fair_home_margin": -6.339076,
-    "unattributed": 0.0
+    "components_sum": -6.332381,
+    "fair_home_margin": -6.332381,
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": 7.5,
@@ -4216,29 +4216,29 @@
     "home": {
      "id": "00-0039910",
      "name": "Jayden Daniels",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     },
     "away": {
      "id": "00-0038400",
      "name": "Tanner McKee",
-     "basis": "most recent starter"
+     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
     }
    },
-   "fair_home_margin": 4.49,
-   "fair_home_line": -4.49,
+   "fair_home_margin": 4.48,
+   "fair_home_line": -4.48,
    "fair_total": 41.93,
-   "home_win_prob": 0.6317,
+   "home_win_prob": 0.6314,
    "fair_home_ml": -171,
    "fair_away_ml": 171,
    "range80": {
-    "lo": -12.35,
+    "lo": -12.36,
     "hi": 21.33,
-    "centre": 4.49,
+    "centre": 4.48,
     "half_width": 16.84
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.8988,
+    "Base strength": 0.8879,
     "Rest & travel": 1.4497
    },
    "components": [
@@ -4303,10 +4303,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.8772,
+     "points": -0.8881,
      "from_prior": -0.1161,
-     "from_this_season": -0.7611,
-     "prior_share": 0.132
+     "from_this_season": -0.772,
+     "prior_share": 0.131
     },
     {
      "key": "rest",
@@ -4346,8 +4346,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.493744,
-    "fair_home_margin": 4.493744,
+    "components_sum": 4.482865,
+    "fair_home_margin": 4.482865,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -4377,19 +4377,19 @@
    },
    "fair_home_margin": 13.15,
    "fair_home_line": -13.15,
-   "fair_total": 44.83,
-   "home_win_prob": 0.8318,
+   "fair_total": 44.84,
+   "home_win_prob": 0.8317,
    "fair_home_ml": -494,
    "fair_away_ml": 494,
    "range80": {
     "lo": -4.22,
-    "hi": 30.53,
+    "hi": 30.52,
     "centre": 13.15,
     "half_width": 17.37
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 11.4942,
+    "Base strength": 11.4918,
     "Rest & travel": -0.485
    },
    "components": [
@@ -4454,9 +4454,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 5.4278,
+     "points": 5.4254,
      "from_prior": 0.8309,
-     "from_this_season": 4.5969,
+     "from_this_season": 4.5945,
      "prior_share": 0.153
     },
     {
@@ -4497,8 +4497,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 13.154482,
-    "fair_home_margin": 13.154482,
+    "components_sum": 13.152007,
+    "fair_home_margin": 13.152007,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -4509,7 +4509,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.2",
-    "gap_points": 3.154481714555189,
+    "gap_points": 3.152006513214797,
     "direction": "home",
     "drivers": [
      {
