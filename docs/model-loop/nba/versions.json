@@ -1,0 +1,42 @@
+{
+ "schema": "edgedesk_model_loop_versions_v1",
+ "sport": "NBA",
+ "league": "nba",
+ "current": "1.0.0",
+ "versions": [
+  {
+   "version": "1.0.0",
+   "parent": null,
+   "config": {
+    "half_life_days": 60,
+    "prior_games": 8,
+    "carry": 0.8,
+    "sweeps": 3,
+    "k_mu": 40,
+    "k_h": 150
+   },
+   "config_sha256": "8221992b5508bcfa3f906339043d0cf5e9af181f8aa5c56d63ae7172d170a325",
+   "status": "SERVED",
+   "promoted_by": "selection-window tuning",
+   "promoted_at": "2026-10-21T01:51:05Z",
+   "reason": "The configuration basketball/walkforward.js served when the loop started: basketball/params/nba_tuning.json `chosen`.",
+   "evidence": {
+    "full": {
+     "n": 21812,
+     "logloss": 0.611864,
+     "brier": 0.212005,
+     "margin_mae": 10.1665,
+     "total_mae": 14.428
+    },
+    "recent_season": {
+     "season": 2026,
+     "n": 1322,
+     "logloss": 0.59945,
+     "brier": 0.205796,
+     "margin_mae": 11.4703,
+     "total_mae": 15.0533
+    }
+   }
+  }
+ ]
+}

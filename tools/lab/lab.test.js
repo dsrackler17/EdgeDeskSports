@@ -49,6 +49,41 @@ pr.startSeason(2025);
 const gm = []; for (let d = 0; d < 20; d++) gm.push({ home_id: 'S', away_id: d % 2 ? 'W' : 'M', hs: 110, as: 95, neutral: 0 }, { home_id: d % 2 ? 'M' : 'W', away_id: 'S', hs: 98, as: 108, neutral: 0 });
 for (let d = 0; d < 20; d++) pr.absorbDay(d, gm.slice(d * 2, d * 2 + 2));
 ok('basketball: a team that beats everyone is favoured home and away', pr.expect('S', 'W', 0).margin > 5 && pr.expect('W', 'S', 0).margin < 0 && pr.expect('S', 'W', 1).margin < pr.expect('S', 'W', 0).margin);
+{
+  /* the D1 fix: eight D1 teams whose home side always wins by 3, and a non-D1 visitor beaten by 40 at four of them */
+  const d1 = (fix) => {
+    const p = new BM.PointsRatings({ half_life_days: 365, prior_games: 2, carry: 0.8, k_h: 1, k_mu: 1, d1_fix: fix }); p.startSeason(2025);
+    const T = 'ABCDEFGH'.split(''); const g = [];
+    for (const h of T) for (const a of T) if (h !== a) g.push({ home_id: h, away_id: a, hs: 73, as: 70, neutral: 0 });
+    for (const h of 'ABCD') g.push({ home_id: h, away_id: 'X', hs: 85, as: 45, neutral: 0 });
+    for (let d = 0; d < g.length; d += 4) p.absorbDay(d / 4, g.slice(d, d + 4));
+    return p;
+  };
+  const off = d1(false), on = d1(true);
+  ok('basketball D1 fix: off by default, so every league computes what it did', BM.DEFAULTS.d1_fix === false && new BM.PointsRatings({}).p.d1_fix === false);
+  ok('basketball D1 fix: non-D1 blowouts no longer inflate the home edge (3.0 with the fix, inflated without)', near(on.h, 3, 0.05) && off.h > on.h + 0.5, [on.h, off.h]);
+  ok('basketball D1 fix: membership is point-in-time (8 D1 teams, the visitor is not)', on.isD1(on.team.get('A')) && !on.isD1(on.team.get('X')));
+  ok('basketball D1 fix: the non-D1 prior starts below average at both ends (d is points prevented)', on.p.nd1_init.o < 0 && on.p.nd1_init.d < 0);
+}
+{
+  /* the weekly learning loop (basketball/loop.js): the same contract as the NFL loop */
+  const BL = R('basketball/loop.js');
+  const cfg = { half_life_days: 365, prior_games: 2, carry: 0.8, k_mu: 40, k_h: 150 };
+  ok('basketball loop: a candidate changes one parameter and never the served config', BL.applyChange(cfg, 'k_h', ['mul', 2]).k_h === 300 && cfg.k_h === 150 && BL.applyChange(cfg, 'carry', ['add', 0.3]).carry === 1 && BL.applyChange(cfg, 'carry', ['set', 0.8]) === null);
+  const order = BL.rankCandidates([{ pattern: 'home', t: -4.1 }, { pattern: 'early_season', t: 2.5 }, { pattern: 'total', t: 0.3 }], 2900);
+  ok('basketball loop: the strongest pattern is tested first, every slot filled, no repeats', order.length === 8 && new Set(order).size === 8 && order[0].indexOf('home_edge') === 0, order);
+  ok('basketball loop: every catalogue id is unique and changes a real parameter', new Set(BL.CATALOGUE.map((c) => c[0])).size === BL.CATALOGUE.length && BL.CATALOGUE.every((c) => c[1] in BM.DEFAULTS));
+  const rows = [].concat(...[[2024, 1200], [2025, 1230], [2026, 40]].map(([s, n]) => Array.from({ length: n }, () => ({ season: s }))));
+  ok('basketball loop: a season just started is not the recent full season', BL.recentFullSeason(rows) === 2025);
+  ok('basketball loop: the config hash does not depend on key order', BL.configHash({ a: 1, b: { c: 2, d: 3 } }) === BL.configHash({ b: { d: 3, c: 2 }, a: 1 }));
+  for (const lg of ['nba', 'wnba', 'ncaam', 'ncaaw']) {
+    const vp = path.join(ROOT, 'docs', 'model-loop', lg, 'versions.json');
+    if (!fs.existsSync(vp)) continue;
+    const doc = JSON.parse(fs.readFileSync(vp, 'utf8')); const cur = doc.versions.find((v) => v.version === doc.current);
+    ok('basketball loop: ' + lg + ' serves exactly its current version, and exactly one version is SERVED',
+      JSON.stringify(R('basketball/walkforward.js').servedParams(lg)) === JSON.stringify(cur.config) && doc.versions.filter((v) => v.status === 'SERVED').length === 1 && cur.status === 'SERVED');
+  }
+}
 const W = R('basketball/walkforward.js');
 const syn = []; let t0 = Date.parse('2024-11-01T23:00:00Z');
 for (let i = 0; i < 60; i++) { const s = new Date(t0 + i * 6 * 3600e3).toISOString().replace('.000Z', 'Z'); syn.push({ game_id: 'g' + i, season: 2025, type: 'R', date: new Date(Date.parse(s) - 10 * 3600e3).toISOString().slice(0, 10), start_utc: s, neutral: 0, home_id: 'T' + (i % 4), away_id: 'T' + ((i + 1) % 4), hs: 100 + (i % 7), as: 98, assumed_available_at: new Date(Date.parse(s) + 4 * 3600e3).toISOString() }); }

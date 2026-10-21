@@ -60,8 +60,9 @@ An adapter supplies five things:
 | NFL | Tuesday (full cycle); refresh daily | **Loop on** (`.github/workflows/model-loop-nfl.yml`). v2.0.0 served by the loop as a challenger to the board's number, graded head to head |
 | CFB | Sunday night | Not started. Audit §CFB lists what the adapter must fix (personnel prior, FCS, QB) |
 | MLB | daily in season | Not started. No closing archive owned: the loop can only grade against outcomes until closes are captured |
-| WNBA | daily in season | Not started. No market data captured at all |
-| CBB | daily in season | Ratings now refreshed daily (`lab-build.yml`, same formula). The D1 fix is built behind `d1_fix` and evaluated (`basketball/eval_d1_fix.js`, `basketball/validation/ncaa?_d1_fix*.json`); off until a decision |
+| WNBA | daily refresh; weekly research | **Loop on** (`basketball/loop.js`, `.github/workflows/model-loop-basketball.yml`). Outcome-graded only: no market data captured |
+| CBB (men's, women's) | daily refresh; weekly research | **Loop on**, same as WNBA. The D1 fix is built behind `d1_fix` and evaluated (`basketball/eval_d1_fix.js`, `basketball/validation/ncaa?_d1_fix*.json`); off until a decision |
+| NBA | daily refresh; weekly research | **Loop on**, same as WNBA (not in the original brief; the same engine) |
 | UFC | per event | No model exists. Experimental; no real backtest possible (566 bouts, 0 closes) |
 | Tennis | per event | Retired. Experimental; no closes owned |
 
@@ -97,6 +98,22 @@ The weekly update has **two separate jobs**, so a rating refresh can never quiet
 python3 -m model_loop.adapters.nfl.weekly all            # what Tuesday runs
 python3 -m model_loop.adapters.nfl.weekly refresh        # what the other days run
 python3 -m model_loop.adapters.nfl.weekly research --only hfa_recent_era,division_on
+```
+
+### Basketball, as switched on
+
+- `basketball/loop.js` keeps the NFL contract for the NBA, WNBA and men's and women's college.
+- **Refresh (daily, `lab-build.yml`):** `basketball/walkforward.js` re-fits the ratings with the served version. Before the loop's first run that is the tuned configuration; from then on it is `docs/model-loop/<league>/versions.json` `current`.
+- **Research (Monday, `model-loop-basketball.yml`):** candidates from a fixed catalogue, each walked forward over every scored season exactly as production prices.
+- **Promotion rule:** over the full window (selection start to date), both conditions hold, and the candidate is no worse on the most recent full season:
+  - moneyline log loss falls by ≥ 0.0002, with its paired 95% interval below zero;
+  - margin MAE falls by ≥ 0.005.
+- **Scoring-level changes** (`k_mu`) cancel in every margin, so they are judged on total MAE instead, and moneyline and margin must not get worse.
+- **Outcome-graded only:** no closing prices are archived for basketball, so every version stays EXPERIMENTAL.
+
+```
+node basketball/loop.js all --league nba,wnba,ncaam,ncaaw
+node basketball/loop.js research --league ncaam --only home_edge_tighter
 ```
 
 The frozen CLV ranking protocol is not touched by any of this.

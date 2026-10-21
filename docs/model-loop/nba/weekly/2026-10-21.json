@@ -1,0 +1,477 @@
+{
+ "schema": "edgedesk_bb_loop_week_v1",
+ "at": "2026-10-21T01:51:18Z",
+ "league": "nba",
+ "label": "NBA",
+ "date": "2026-10-21",
+ "served_before": "1.0.0",
+ "served_after": "1.0.0",
+ "runs": 1,
+ "promoted": null,
+ "window": {
+  "full": [
+   2010,
+   2026
+  ],
+  "recent_full_season": 2026
+ },
+ "baseline": {
+  "full": {
+   "n": 21812,
+   "logloss": 0.611864,
+   "brier": 0.212005,
+   "margin_mae": 10.1665,
+   "total_mae": 14.428
+  },
+  "recent_season": {
+   "season": 2026,
+   "n": 1322,
+   "logloss": 0.59945,
+   "brier": 0.205796,
+   "margin_mae": 11.4703,
+   "total_mae": 15.0533
+  },
+  "this_season": {
+   "n": 0
+  }
+ },
+ "patterns": [
+  {
+   "pattern": "home",
+   "n": 1316,
+   "note": "home games: result minus model, home side",
+   "outcome_bias": -0.186,
+   "t": -0.46
+  },
+  {
+   "pattern": "home_early",
+   "n": 94,
+   "note": "home games before either side has 6 games",
+   "outcome_bias": -0.165,
+   "t": -0.11
+  },
+  {
+   "pattern": "early_season",
+   "n": 95,
+   "note": "either side has played fewer than 6 games",
+   "outcome_bias": -0.098,
+   "t": -0.07
+  },
+  {
+   "pattern": "late_season",
+   "n": 1013,
+   "note": "both sides have played 20+",
+   "outcome_bias": -0.15,
+   "t": -0.32
+  },
+  {
+   "pattern": "big_favourites",
+   "n": 228,
+   "note": "projected margin 10+ either way (sign: toward the favourite)",
+   "outcome_bias": 0.205,
+   "t": 0.21
+  },
+  {
+   "pattern": "back_to_back",
+   "n": 298,
+   "note": "one side on a back-to-back",
+   "outcome_bias": -0.974,
+   "t": -1.06
+  },
+  {
+   "pattern": "total",
+   "n": 1322,
+   "note": "total points: result minus model",
+   "outcome_bias": -0.534,
+   "t": -1.02
+  },
+  {
+   "pattern": "total_early",
+   "n": 95,
+   "note": "total points, either side under 6 games",
+   "outcome_bias": 3.798,
+   "t": 1.82
+  }
+ ],
+ "candidates": [
+  {
+   "at": "2026-10-21T01:51:05Z",
+   "league": "nba",
+   "served_version": "1.0.0",
+   "candidate": "prior_stronger",
+   "change": {
+    "param": "prior_games",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "early_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 21812,
+    "logloss": 0.613037,
+    "brier": 0.212512,
+    "margin_mae": 10.186,
+    "total_mae": 14.4728
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 1322,
+    "logloss": 0.604249,
+    "brier": 0.207891,
+    "margin_mae": 11.5243,
+    "total_mae": 15.086
+   },
+   "ci95": [
+    0.000593,
+    0.001771
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.001173,
+    "full_mae": 0.0195,
+    "full_total_mae": 0.0448,
+    "recent_logloss": 0.004799,
+    "recent_mae": 0.054,
+    "recent_total_mae": 0.0327
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.001173 does not clear -0.0002; log loss 95% interval [0.000593,0.001771] is not below zero; full margin MAE change 0.0195 does not clear -0.005; worse on 2026 log loss (0.004799); worse on 2026 margin MAE (0.0540)"
+  },
+  {
+   "at": "2026-10-21T01:51:07Z",
+   "league": "nba",
+   "served_version": "1.0.0",
+   "candidate": "carry_lower",
+   "change": {
+    "param": "carry",
+    "how": [
+     "add",
+     -0.1
+    ]
+   },
+   "answers_patterns": [
+    "early_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 21812,
+    "logloss": 0.611871,
+    "brier": 0.212011,
+    "margin_mae": 10.1659,
+    "total_mae": 14.4263
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 1322,
+    "logloss": 0.598531,
+    "brier": 0.205408,
+    "margin_mae": 11.4556,
+    "total_mae": 15.051
+   },
+   "ci95": [
+    -0.000169,
+    0.000176
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.000007,
+    "full_mae": -0.0006,
+    "full_total_mae": -0.0017,
+    "recent_logloss": -0.000919,
+    "recent_mae": -0.0147,
+    "recent_total_mae": -0.0023
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.000007 does not clear -0.0002; log loss 95% interval [-0.000169,0.000176] is not below zero; full margin MAE change -0.0006 does not clear -0.005"
+  },
+  {
+   "at": "2026-10-21T01:51:08Z",
+   "league": "nba",
+   "served_version": "1.0.0",
+   "candidate": "carry_higher",
+   "change": {
+    "param": "carry",
+    "how": [
+     "add",
+     0.1
+    ]
+   },
+   "answers_patterns": [
+    "early_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 21812,
+    "logloss": 0.612049,
+    "brier": 0.212082,
+    "margin_mae": 10.1706,
+    "total_mae": 14.4335
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 1322,
+    "logloss": 0.600611,
+    "brier": 0.206287,
+    "margin_mae": 11.4904,
+    "total_mae": 15.0551
+   },
+   "ci95": [
+    0.000011,
+    0.000374
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.000185,
+    "full_mae": 0.0041,
+    "full_total_mae": 0.0055,
+    "recent_logloss": 0.001161,
+    "recent_mae": 0.0201,
+    "recent_total_mae": 0.0018
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.000185 does not clear -0.0002; log loss 95% interval [0.000011,0.000374] is not below zero; full margin MAE change 0.0041 does not clear -0.005; worse on 2026 log loss (0.001161); worse on 2026 margin MAE (0.0201)"
+  },
+  {
+   "at": "2026-10-21T01:51:10Z",
+   "league": "nba",
+   "served_version": "1.0.0",
+   "candidate": "home_edge_looser",
+   "change": {
+    "param": "k_h",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "home_early"
+   ],
+   "target": "side",
+   "full": {
+    "n": 21812,
+    "logloss": 0.612046,
+    "brier": 0.212084,
+    "margin_mae": 10.1693,
+    "total_mae": 14.428
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 1322,
+    "logloss": 0.599762,
+    "brier": 0.205956,
+    "margin_mae": 11.4762,
+    "total_mae": 15.0533
+   },
+   "ci95": [
+    0.000075,
+    0.000287
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.000182,
+    "full_mae": 0.0028,
+    "full_total_mae": 0,
+    "recent_logloss": 0.000312,
+    "recent_mae": 0.0059,
+    "recent_total_mae": 0
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.000182 does not clear -0.0002; log loss 95% interval [0.000075,0.000287] is not below zero; full margin MAE change 0.0028 does not clear -0.005; worse on 2026 log loss (0.000312); worse on 2026 margin MAE (0.0059)"
+  },
+  {
+   "at": "2026-10-21T01:51:11Z",
+   "league": "nba",
+   "served_version": "1.0.0",
+   "candidate": "home_edge_tighter",
+   "change": {
+    "param": "k_h",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "home"
+   ],
+   "target": "side",
+   "full": {
+    "n": 21812,
+    "logloss": 0.611718,
+    "brier": 0.211942,
+    "margin_mae": 10.1648,
+    "total_mae": 14.428
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 1322,
+    "logloss": 0.599158,
+    "brier": 0.205642,
+    "margin_mae": 11.4643,
+    "total_mae": 15.0533
+   },
+   "ci95": [
+    -0.000265,
+    -0.000016
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": -0.000146,
+    "full_mae": -0.0017,
+    "full_total_mae": 0,
+    "recent_logloss": -0.000292,
+    "recent_mae": -0.006,
+    "recent_total_mae": 0
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change -0.000146 does not clear -0.0002; full margin MAE change -0.0017 does not clear -0.005"
+  },
+  {
+   "at": "2026-10-21T01:51:13Z",
+   "league": "nba",
+   "served_version": "1.0.0",
+   "candidate": "scoring_level_looser",
+   "change": {
+    "param": "k_mu",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "total",
+    "total_early"
+   ],
+   "target": "total",
+   "full": {
+    "n": 21812,
+    "logloss": 0.611864,
+    "brier": 0.212005,
+    "margin_mae": 10.1665,
+    "total_mae": 14.4262
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 1322,
+    "logloss": 0.59945,
+    "brier": 0.205796,
+    "margin_mae": 11.4703,
+    "total_mae": 15.0478
+   },
+   "ci95": [
+    -0.004643,
+    0.00105
+   ],
+   "ci_of": "total MAE change",
+   "delta": {
+    "full_logloss": 0,
+    "full_mae": 0,
+    "full_total_mae": -0.0018,
+    "recent_logloss": 0,
+    "recent_mae": 0,
+    "recent_total_mae": -0.0055
+   },
+   "decision": "FAIL",
+   "reason": "full total MAE change -0.0018 does not clear -0.005; total MAE 95% interval [-0.004643,0.00105] is not below zero"
+  },
+  {
+   "at": "2026-10-21T01:51:15Z",
+   "league": "nba",
+   "served_version": "1.0.0",
+   "candidate": "scoring_level_tighter",
+   "change": {
+    "param": "k_mu",
+    "how": [
+     "mul",
+     2
+    ]
+   },
+   "answers_patterns": [
+    "total"
+   ],
+   "target": "total",
+   "full": {
+    "n": 21812,
+    "logloss": 0.611864,
+    "brier": 0.212005,
+    "margin_mae": 10.1665,
+    "total_mae": 14.4308
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 1322,
+    "logloss": 0.59945,
+    "brier": 0.205796,
+    "margin_mae": 11.4703,
+    "total_mae": 15.0626
+   },
+   "ci95": [
+    -0.000196,
+    0.005813
+   ],
+   "ci_of": "total MAE change",
+   "delta": {
+    "full_logloss": 0,
+    "full_mae": 0,
+    "full_total_mae": 0.0028,
+    "recent_logloss": 0,
+    "recent_mae": 0,
+    "recent_total_mae": 0.0093
+   },
+   "decision": "FAIL",
+   "reason": "full total MAE change 0.0028 does not clear -0.005; total MAE 95% interval [-0.000196,0.005813] is not below zero; worse on 2026 total MAE (0.0093)"
+  },
+  {
+   "at": "2026-10-21T01:51:16Z",
+   "league": "nba",
+   "served_version": "1.0.0",
+   "candidate": "recency_faster",
+   "change": {
+    "param": "half_life_days",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "late_season"
+   ],
+   "target": "side",
+   "full": {
+    "n": 21812,
+    "logloss": 0.613258,
+    "brier": 0.212615,
+    "margin_mae": 10.1878,
+    "total_mae": 14.3856
+   },
+   "recent_season": {
+    "season": 2026,
+    "n": 1322,
+    "logloss": 0.59936,
+    "brier": 0.205848,
+    "margin_mae": 11.4722,
+    "total_mae": 15.0385
+   },
+   "ci95": [
+    0.000732,
+    0.002094
+   ],
+   "ci_of": "log loss change",
+   "delta": {
+    "full_logloss": 0.001394,
+    "full_mae": 0.0213,
+    "full_total_mae": -0.0424,
+    "recent_logloss": -0.00009,
+    "recent_mae": 0.0019,
+    "recent_total_mae": -0.0148
+   },
+   "decision": "FAIL",
+   "reason": "full log loss change 0.001394 does not clear -0.0002; log loss 95% interval [0.000732,0.002094] is not below zero; full margin MAE change 0.0213 does not clear -0.005; worse on 2026 margin MAE (0.0019)"
+  }
+ ]
+}
