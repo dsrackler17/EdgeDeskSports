@@ -232,14 +232,19 @@ function polite(pages, hosts, extra) {
     ok('schedule: a game names its site, its opponent\'s own website and its box score', g0.site === 'H' && g0.opponent === 'UC Davis' && g0.opponent_host === 'ucdavisaggies.com' && /boxscore\/\d+$/.test(g0.boxscore) && g0.us === 12 && g0.them === 2 && g0.innings === 7);
     ok('schedule: a ranking in the opponent\'s name is dropped; neutral sites and the postseason are marked', x.games.some((g) => g.opponent === 'Coastal Carolina' && g.site === 'N') && x.games.some((g) => g.postseason) && x.games.every((g) => !/^#/.test(g.opponent)));
     {
-      const t = polite({ 'https://texassports.com/robots.txt': { body: FX('texassports.com/robots_txt') }, 'https://texassports.com/sports/baseball/schedule/2026': { body: FX('texassports.com/sports_baseball_schedule_2026') } }, ['texassports.com', 'gostanford.com']);
+      const t = polite({ 'https://texassports.com/robots.txt': { body: FX('texassports.com/robots_txt') }, 'https://texassports.com/sports/baseball/schedule/2026': { body: FX('texassports.com/sports_baseball_schedule_2026') },
+        'https://gostanford.com/robots.txt': { body: FX('gostanford.com/robots_txt') }, 'https://gostanford.com/sports/baseball/schedule/season/2026': { body: FX('gostanford.com/sports_baseball_schedule_season_2026') } }, ['texassports.com', 'gostanford.com', 'plain.edu']);
       const dataDir = path.join(t.dir, 'data');
       fs.mkdirSync(dataDir, { recursive: true });
-      fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ texas: { platform: 'sidearm' }, stanford: { platform: 'wmt' } }));
-      const run = await SC.collect({ polite: t.c, schoolsList: [{ id: 'texas', host: 'texassports.com', division: 1 }, { id: 'stanford', host: 'gostanford.com', division: 1 }], sports: ['baseball'], seasons: [2026, 2025], today: '2026-10-21', dataDir, log: false });
+      fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ texas: { platform: 'sidearm' }, stanford: { platform: 'wmt' }, plain: { platform: 'unread' } }));
+      const run = await SC.collect({ polite: t.c, schoolsList: [{ id: 'texas', host: 'texassports.com', division: 1 }, { id: 'stanford', host: 'gostanford.com', division: 1 }, { id: 'plain', host: 'plain.edu', division: 1 }], sports: ['baseball'], seasons: [2026, 2025], today: '2026-10-21', dataDir, log: false });
       const f = JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/texas.json'), 'utf8'));
-      ok('schedule: collected per school and season; a season the site does not answer and a platform not read yet are misses', run.ok === 1 && f.finals === 61 && f.games.length === 63 && run.misses_by_reason.HTTP === 1 && run.misses_by_reason.PLATFORM_NOT_READ === 1, run.misses_by_reason);
+      const w = JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/stanford.json'), 'utf8'));
+      ok('schedule: collected per school and season on both platforms; a season the site does not answer and a platform not read are misses', run.ok === 2 && f.finals === 61 && f.games.length === 63 && w.platform === 'wmt' && w.finals === 55 && run.misses_by_reason.HTTP === 2 && run.misses_by_reason.PLATFORM_NOT_READ === 1, run.misses_by_reason);
     }
+    const wm = SC.parseSchedule(FX('gostanford.com/sports_baseball_schedule_season_2026'));
+    const fsu = wm.games.find((g) => g.boxscore === '/boxscore/26576');
+    ok('schedule (WMT): games read from the page, the school\'s runs first, extra innings from the note', wm.platform === 'wmt' && wm.season_label === '2026' && wm.games.length === 56 && fsu.us === 8 && fsu.them === 7 && fsu.innings === 11 && fsu.site === 'H' && fsu.boxscore === '/boxscore/26576' && wm.games.filter((g) => g.site === 'N').length === 6);
     ok('schedule: helpers', SC.innings('7 Inn.') === 7 && SC.innings('', '10 innings') === 10 && SC.innings('') === null && SC.hostOf('http://www.msuspartans.com/') === 'msuspartans.com' && SC.cleanOpp('No. 3 LSU') === 'LSU');
   }
 
