@@ -222,6 +222,18 @@ function polite(pages, hosts, extra) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 
+  /* 9. a season's schedule and results (SIDEARM) */
+  const SC = R('collegiate/schedules.js');
+  {
+    const x = SC.parseSchedule(FX('texassports.com/sports_baseball_schedule_2026'));
+    const byStatus = x.games.reduce((a, g) => (a[g.status] = (a[g.status] || 0) + 1, a), {});
+    ok('schedule: every game of the season, finals with scores, cancellations kept without one', x.sport === 'baseball' && x.games.length === 63 && byStatus.final === 61 && byStatus.cancelled === 2 && x.games.filter((g) => g.status === 'cancelled').every((g) => g.us === null && g.note));
+    const g0 = x.games[0];
+    ok('schedule: a game names its site, its opponent\'s own website and its box score', g0.site === 'H' && g0.opponent === 'UC Davis' && g0.opponent_host === 'ucdavisaggies.com' && /boxscore\/\d+$/.test(g0.boxscore) && g0.us === 12 && g0.them === 2 && g0.innings === 7);
+    ok('schedule: a ranking in the opponent\'s name is dropped; neutral sites and the postseason are marked', x.games.some((g) => g.opponent === 'Coastal Carolina' && g.site === 'N') && x.games.some((g) => g.postseason) && x.games.every((g) => !/^#/.test(g.opponent)));
+    ok('schedule: helpers', SC.innings('7 Inn.') === 7 && SC.innings('', '10 innings') === 10 && SC.innings('') === null && SC.hostOf('http://www.msuspartans.com/') === 'msuspartans.com' && SC.cleanOpp('No. 3 LSU') === 'LSU');
+  }
+
   console.log((fail === 0 ? 'ALL GREEN' : 'FAILED') + ' collegiate — ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail === 0 ? 0 : 1);
 })();
