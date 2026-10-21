@@ -4,6 +4,7 @@ One framework, per-sport adapters, for building, measuring and improving EdgeDes
 
 - **Audit of every model:** [`audit_report.md`](audit_report.md). It is the reason this exists.
 - **NFL backtest (Phase 1):** [`nfl/BACKTEST.md`](nfl/BACKTEST.md).
+- **NFL this week:** [`nfl/weekly_model_report.md`](nfl/weekly_model_report.md), the version history [`nfl/versions.json`](nfl/versions.json), every candidate ever tried [`nfl/candidates.jsonl`](nfl/candidates.jsonl).
 
 ## Layout
 
@@ -19,11 +20,18 @@ model_loop/
     walkforward.py           windows, evaluate() vs the close, compare(), the promotion rule
     snapshots.py             append-only rating snapshot ledger (-> public.model_rating_snapshots)
     registry_sql.py          research_model_versions / research_model_results SQL, schema-introspecting
+    versions.py              a sport's version history: immutable versions, promote, rollback
+    db_sync.py               SQL that mirrors the ledgers and versions.json into Supabase (idempotent)
   adapters/
     nfl/                     ingest (nflverse pbp, schedule, rosters, snaps), geo (travel, time zones),
                              ratings (unit ratings + QB + priors + market rating), model (walk-forward
-                             margin and total, attribution), cards, backtest, report
-  tests/                     core guarantees (run: python3 -m unittest discover -s model_loop/tests -t .)
+                             margin and total, attribution), cards, backtest, report,
+                             weekly (refresh / score / research / report: the loop)
+  ledger/nfl/                append-only: cards_<season>.jsonl (every pregame publication),
+                             site_<season>.jsonl (the board's number, for the head to head),
+                             <season>.jsonl (rating snapshots)
+  tests/                     core guarantees and the loop's rules (run: python3 -m unittest discover -s model_loop/tests -t .)
+football/nfl/model_loop/     current.json (this week's numbers from the served version), record_<season>.json
 supabase/model_loop.sql      append-only snapshot table, RLS, service-role ingest
 supabase/model_loop_nfl_registry.sql   generated: NFL-CORE v1.0.0 and the v2 candidate, with results
 docs/model-loop/             this folder: audit, preregistration, tuning log, backtest, cards
@@ -49,15 +57,15 @@ An adapter supplies five things:
 
 | Sport | Cadence (weekly refresh) | Status |
 |---|---|---|
-| NFL | Tuesday | **Phase 1 built and backtested.** Weekly loop not yet switched on |
+| NFL | Tuesday (full cycle); refresh daily | **Loop on** (`.github/workflows/model-loop-nfl.yml`). v2.0.0 served by the loop as a challenger to the board's number, graded head to head |
 | CFB | Sunday night | Not started. Audit §CFB lists what the adapter must fix (personnel prior, FCS, QB) |
 | MLB | daily in season | Not started. No closing archive owned: the loop can only grade against outcomes until closes are captured |
 | WNBA | daily in season | Not started. No market data captured at all |
-| CBB | daily in season | Not started. Home-court refit and non-D1 opponents fixed first |
+| CBB | daily in season | Ratings now refreshed daily (`lab-build.yml`, same formula). The D1 fix is built behind `d1_fix` and evaluated (`basketball/eval_d1_fix.js`, `basketball/validation/ncaa?_d1_fix*.json`); off until a decision |
 | UFC | per event | No model exists. Experimental; no real backtest possible (566 bouts, 0 closes) |
 | Tennis | per event | Retired. Experimental; no closes owned |
 
-## The weekly loop (Phase 2): designed, not switched on
+## The weekly loop (Phase 2)
 
 The weekly update has **two separate jobs**, so a rating refresh can never quietly change the model.
 
@@ -74,7 +82,24 @@ The weekly update has **two separate jobs**, so a rating refresh can never quiet
 
    A candidate is **promoted only if it lowers both margin MAE and log loss on the full backtest AND is no worse on the untouched holdout** (`core/walkforward.py promotion_decision`). Sports with thin history need a larger margin. A promoted change is a new version in `research_model_versions` with its result in `research_model_results`, and the previous version stays registered for rollback. One week's games never decide anything.
 
-**Nothing in Phase 2 runs on a schedule until the NFL Phase 1 backtest has been reviewed.** The frozen CLV ranking protocol is not touched by any of this.
+### NFL, as switched on
+
+- **v2.0.0 is served by owner decision** (2026-10-21). It did not clear the preregistered holdout rule against v1 as trained: 2025 log loss was 0.6390 vs 0.6362, and the interval spans zero. It beats v1 on the full 2011–2025 backtest. `versions.json` records this.
+- **The rule from here on is fixed.** A candidate is promoted only if both conditions hold:
+  - over the full walk-forward backtest (2011 through the current season to date), it lowers margin MAE by at least 0.003 **and** log loss by at least 0.0002;
+  - it is no worse on the most recent full season.
+- **Candidates** come from a fixed catalogue (`weekly.py CATALOGUE`). The strongest significant pattern in this season's and last season's misses (|t| ≥ 2) gets the first two candidates that answer it, then the next pattern; the rest of the catalogue rotates through the remaining slots.
+- **Every candidate is logged.** A second run in the same week (`research --only ...`) adds to that week's record rather than replacing it.
+- **Roll back** by pointing `current` in `versions.json` at an earlier version (`Versions.rollback`). The next refresh serves it.
+- **Head to head.** Each refresh also records the board's own pregame number (`football/nfl/slate.json`, read only) so the report grades the two on the same games. One season is not enough to rank them; the full backtest decides promotions.
+
+```
+python3 -m model_loop.adapters.nfl.weekly all            # what Tuesday runs
+python3 -m model_loop.adapters.nfl.weekly refresh        # what the other days run
+python3 -m model_loop.adapters.nfl.weekly research --only hfa_recent_era,division_on
+```
+
+The frozen CLV ranking protocol is not touched by any of this.
 
 ## Reproduce the NFL Phase 1 numbers
 

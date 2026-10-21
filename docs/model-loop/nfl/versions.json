@@ -1,0 +1,129 @@
+{
+ "schema": "edgedesk_model_loop_versions_v1",
+ "sport": "NFL",
+ "current": "2.0.0",
+ "versions": [
+  {
+   "version": "2.0.0",
+   "parent": "edgedesk_football_v1.0.0 (football/engine.js)",
+   "config": {
+    "rating": {
+     "garbage_floor": 0.25,
+     "hl_week": 12,
+     "lam": {
+      "pass_off": 600,
+      "pass_def": 300,
+      "rush_off": 600,
+      "rush_def": 300,
+      "qb": 100,
+      "mu": 100.0,
+      "home": 3000.0
+     },
+     "carry": {
+      "off": 0.8,
+      "def": 0.4,
+      "qb": 1.0,
+      "qb_gap": 0.8
+     },
+     "qb_layer": true,
+     "personnel": {
+      "skill": 0.0,
+      "skill_shrink": 50.0,
+      "ol": 0.05
+     },
+     "market": {
+      "on": true,
+      "hl_week": 2,
+      "lam": 1,
+      "carry": 0.4,
+      "lam_hfa": 20.0
+     },
+     "totals_market": {
+      "on": true,
+      "hl_week": 4.0,
+      "lam": 3.0,
+      "carry": 0.6
+     }
+    },
+    "model": {
+     "components": {
+      "qb": true,
+      "market": true,
+      "rest": true,
+      "travel": true,
+      "division": false,
+      "covid": true,
+      "pass_split": false,
+      "rush": true
+     },
+     "hl_season": 6.0,
+     "ridge_lam": 8,
+     "hfa_prior_games": 0,
+     "first_train": 2007,
+     "min_train_seasons": 2,
+     "calibration": "none",
+     "total_market": true
+    }
+   },
+   "config_sha256": "d7cd238a313123ee3cfc95d98769548cd841e27122836f93bfab10e5b3eb1d49",
+   "status": "SERVED",
+   "promoted_by": "owner",
+   "promoted_at": "2026-10-21T01:28:58Z",
+   "reason": "Owner decision 2026-10-21 ('ship it all ... grow every single week'). Overrides the preregistered rule, which v2 did not clear against v1-as-trained on 2025 holdout log loss (0.6390 vs 0.6362, CI spans zero); v2 beats v1 as trained on the full 2011-2025 backtest (MAE -0.135, log loss -0.0094) and v1 as shipped everywhere.",
+   "evidence": {
+    "backtest_2011_2025": {
+     "n": 4096,
+     "margin_mae": 10.2118,
+     "close_margin_mae": 10.0085,
+     "logloss": 0.62222,
+     "close_logloss": 0.60808,
+     "brier": 0.21663,
+     "close_brier": 0.21042,
+     "mean_abs_vs_close": 2.1199,
+     "share_3plus_from_close": 0.2444,
+     "total_mae": 10.5776,
+     "close_total_mae": 10.4392
+    },
+    "holdout_2025": {
+     "n": 285,
+     "margin_mae": 10.0584,
+     "close_margin_mae": 9.6702,
+     "logloss": 0.63899,
+     "close_logloss": 0.60699,
+     "brier": 0.22381,
+     "close_brier": 0.21091,
+     "mean_abs_vs_close": 2.1838,
+     "share_3plus_from_close": 0.2491,
+     "total_mae": 10.4953,
+     "close_total_mae": 10.4228
+    },
+    "v1_trained_backtest": {
+     "n": 4096,
+     "margin_mae": 10.3466,
+     "close_margin_mae": 10.0085,
+     "logloss": 0.63159,
+     "close_logloss": 0.60808,
+     "brier": 0.22094,
+     "close_brier": 0.21042,
+     "mean_abs_vs_close": 2.4222,
+     "share_3plus_from_close": 0.3147,
+     "total_mae": 10.6655,
+     "close_total_mae": 10.4392
+    },
+    "v1_trained_holdout": {
+     "n": 285,
+     "margin_mae": 10.1659,
+     "close_margin_mae": 9.6702,
+     "logloss": 0.6362,
+     "close_logloss": 0.60699,
+     "brier": 0.22338,
+     "close_brier": 0.21091,
+     "mean_abs_vs_close": 2.3248,
+     "share_3plus_from_close": 0.2947,
+     "total_mae": 10.3947,
+     "close_total_mae": 10.4228
+    }
+   }
+  }
+ ]
+}

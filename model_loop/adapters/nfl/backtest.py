@@ -34,7 +34,8 @@ DATA = os.path.join(ROOT, ".cache", "model_loop", "nfl")
 DOCS = os.path.join(ROOT, "docs", "model-loop", "nfl")
 BASELINES = os.path.join(os.path.dirname(__file__), "baselines", "legacy_v1_predictions.csv")
 RECORD = os.path.join(ROOT, "record", "football", "nfl_2026.json")
-SEASONS = list(range(2006, 2027))
+FIRST_SEASON = 2006
+SEASONS = list(range(FIRST_SEASON, 2027))     # the Phase 1 study's frozen range; the weekly loop uses all_seasons()
 
 PREREG = {
     "study": "NFL v2 core rebuild (Phase 1)",
@@ -91,14 +92,18 @@ def _set(d, path, v):
 
 
 class Runner:
-    def __init__(self, data=DATA):
+    def __init__(self, data=DATA, seasons=None):
         self.T = Tables(os.path.join(data, "build"))
+        self.seasons = seasons or SEASONS
         self.cache = {}
+
+    def all_seasons(self):
+        return list(range(FIRST_SEASON, int(self.T.games.season.max()) + 1))
 
     def rows(self, rcfg):
         key = WF.content_hash(rcfg)
         if key not in self.cache:
-            r, _ = NflRatingPass(self.T, rcfg).run(SEASONS)
+            r, _ = NflRatingPass(self.T, rcfg).run(self.seasons)
             self.cache[key] = NM.add_geo(r)
             if len(self.cache) > 12:
                 self.cache.pop(next(iter(self.cache)))
