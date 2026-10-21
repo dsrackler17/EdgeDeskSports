@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-21T21:07:53.151Z",
- "board_generated_at": "2026-10-21T21:07:45.442Z",
+ "generated_at": "2026-10-21T22:08:12.909Z",
+ "board_generated_at": "2026-10-21T22:08:06.262Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -59,8 +59,8 @@
     },
     {
      "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: South Carolina: availability sources checked, nothing filed · PASS: Tennessee: availability sources checked, nothing filed"
+     "result": "FAIL",
+     "detail": "FAIL: South Carolina: availability feed fetch failed — abnormal missing data · FAIL: Tennessee: availability feed fetch failed — abnormal missing data"
     },
     {
      "requirement": "component adjustments within historical bounds",
@@ -79,7 +79,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail."
   },
   {
    "game_id": "401862808",
