@@ -9918,9 +9918,9 @@
  "served": {
   "version": "2.0.0",
   "status": "SERVED",
-  "promoted_by": "owner",
+  "promoted_by": "preregistered-rule",
   "promoted_at": "2026-10-21T03:02:31Z",
-  "reason": "Owner decision 2026-10-21: ship every sport's model loop and let it learn weekly. The preregistered rule is also cleared: v2 beats the cfb_p4 replay on MAE and log loss on the 2014-2025 backtest and on the 2025 holdout. Full 2014-2025 backtest, all games: v2 MAE 12.7853 vs cfb_p4 13.2703 vs close 12.3168; log loss 0.47891 vs 0.49449. 2025 holdout: MAE 12.1215 vs 12.4794; log loss 0.4731 vs 0.47651. Beats cfb_p4 on the full backtest: yes; on the holdout: yes. Neither model beats the closing line over all games (close MAE 12.3168 on the backtest, 11.8969 on the holdout)."
+  "reason": "Cleared the preregistered rule: v2 beats the cfb_p4 replay on MAE and log loss on the 2014-2025 backtest and on the 2025 holdout. Served by the model loop as a challenger (football/cfb/model_loop); the board still prices from football/cfb_p4. Full 2014-2025 backtest, all games: v2 MAE 12.7853 vs cfb_p4 13.2703 vs close 12.3168; log loss 0.47891 vs 0.49449. 2025 holdout: MAE 12.1215 vs 12.4794; log loss 0.4731 vs 0.47651. Beats cfb_p4 on the full backtest: yes; on the holdout: yes. Neither model beats the closing line over all games (close MAE 12.3168 on the backtest, 11.8969 on the holdout)."
  },
  "contract": "Per game: fair_home_margin (+ = home), fair_home_line (book convention), home_win_prob (no ties in college football: P(home wins) = P(M>0)/(P(M>0)+P(M<0)); tie_prob is the distribution's mass at 0, settled in overtime), fair moneylines, range80 (centred on the margin), components that sum exactly to fair_home_margin (grouped as base strength / environment / rest), the quarterback priced and the basis for it, games played, disagreement vs the reference line (flag 8 pts; 10 while either side has played <=3 games; 7 from 6 games; 14+ presumed a model or data fault; FBS-vs-FCS never flagged). distribution (sigma + key-number multipliers by |margin|, support +/-kmax) prices any spread: P(M=k) proportional to exp(-((k-mu')/sigma)^2/2) * mult[|k|], mu' solved so the mean is the margin."
 }

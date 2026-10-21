@@ -143,5 +143,26 @@ class TestCfb(unittest.TestCase):
         self.assertEqual(list(lower_side(df)), [1.0, -1.0, 0.0])
 
 
+class WeeklyRankingTest(unittest.TestCase):
+    """The weekly loop tests what the misses point at first (the NFL loop's rule)."""
+
+    def test_strongest_pattern_first_and_every_slot_filled(self):
+        from model_loop.adapters.cfb import weekly as W
+        pats = [{"pattern": "home_dogs", "line_t": 5.1, "outcome_t": -0.4}, {"pattern": "fcs", "line_t": 2.4, "outcome_t": 0.0},
+                {"pattern": "early_season", "line_t": 0.9, "outcome_t": 0.3}]
+        order = W.rank_candidates(pats, 202608)
+        answers = {c[0]: c[3] for c in W.CATALOGUE}
+        self.assertEqual(len(order), W.MAX_CANDIDATES)
+        self.assertEqual(len(set(order)), len(order))
+        self.assertTrue(all("home_dogs" in answers[c] for c in order[:2]), order[:2])
+        self.assertTrue(all("fcs" in answers[c] for c in order[2:4]), order[2:4])
+
+    def test_every_pattern_the_analysis_reports_can_be_answered_or_rotates(self):
+        from model_loop.adapters.cfb import weekly as W
+        ids = [c[0] for c in W.CATALOGUE]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertNotEqual(W.rank_candidates([], 202608), W.rank_candidates([], 202609))
+
+
 if __name__ == "__main__":
     unittest.main()

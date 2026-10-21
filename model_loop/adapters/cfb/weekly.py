@@ -107,12 +107,14 @@ def versions():
         v2["backtest_2014_2025"]["logloss"] < p4["backtest_2014_2025"]["logloss"]
     beat_hold = v2["holdout"]["margin_mae"] < p4["holdout"]["margin_mae"] and v2["holdout"]["logloss"] < p4["holdout"]["logloss"]
     first = {"version": "2.0.0", "parent": "edgedesk_cfb_p4_v1.0.1 (football/cfb_p4/engine.js)", "config": bt["final_config"],
-             "config_sha256": WF.content_hash(bt["final_config"]), "status": "SERVED", "promoted_by": "owner",
+             "config_sha256": WF.content_hash(bt["final_config"]), "status": "SERVED",
+             "promoted_by": "preregistered-rule" if bt["decision"]["ship"] else "owner",
              "promoted_at": now_iso(),
-             "reason": OWNER_REASON + ". " + (
-                 "The preregistered rule is also cleared: v2 beats the cfb_p4 replay on MAE and log loss on the 2014-2025 "
-                 "backtest and on the 2025 holdout." if bt["decision"]["ship"] else
-                 "This overrides the preregistered rule, which v2 did not clear: " + "; ".join(bt["decision"]["against"]["cfb_p4"]["reasons"]) + ".")
+             "reason": ("Cleared the preregistered rule: v2 beats the cfb_p4 replay on MAE and log loss on the 2014-2025 "
+                        "backtest and on the 2025 holdout. Served by the model loop as a challenger (football/cfb/model_loop); "
+                        "the board still prices from football/cfb_p4." if bt["decision"]["ship"] else
+                        OWNER_REASON + ". This overrides the preregistered rule, which v2 did not clear: "
+                        + "; ".join(bt["decision"]["against"]["cfb_p4"]["reasons"]) + ".")
              + f" Full 2014-2025 backtest, all games: v2 MAE {v2['backtest_2014_2025']['margin_mae']} vs cfb_p4 "
                f"{p4['backtest_2014_2025']['margin_mae']} vs close {v2['backtest_2014_2025']['close_margin_mae']}; log loss "
                f"{v2['backtest_2014_2025']['logloss']} vs {p4['backtest_2014_2025']['logloss']}. 2025 holdout: MAE "
@@ -296,9 +298,9 @@ CATALOGUE = [
     ("market_carry_lower", "rating.market.carry", ("add", -0.1), {"market", "early_season"}),
     ("garbage_heavier", "rating.garbage_floor", ("set", 0.1), {"big_favourites"}),
     ("garbage_lighter", "rating.garbage_floor", ("set", 0.5), {"big_favourites"}),
-    ("era_shorter", "model.hl_season", ("set", 3.0), {"home", "recent_era"}),
+    ("era_shorter", "model.hl_season", ("set", 3.0), {"home", "home_dogs", "recent_era"}),
     ("era_longer", "model.hl_season", ("set", 10.0), {"home"}),
-    ("hfa_shrink_on", "model.hfa_prior_games", ("set", 300.0), {"home"}),
+    ("hfa_shrink_on", "model.hfa_prior_games", ("set", 300.0), {"home", "home_dogs"}),
     ("ridge_looser", "model.ridge_lam", ("mul", 0.5), {"big_favourites"}),
     ("ridge_tighter", "model.ridge_lam", ("mul", 2.0), {"big_favourites", "noise"}),
     ("split_od_on", "model.components.pass_split", ("set", True), {"defence"}),
@@ -310,7 +312,10 @@ CATALOGUE = [
 def _apply(cfg, path, how):
     c = copy.deepcopy(cfg)
     scope, sub = path.split(".", 1)
-    cur = BT._get(c[scope], sub)
+    try:
+        cur = BT._get(c[scope], sub)
+    except KeyError:
+        cur = None          # a key the served config leaves at its default
     kind, v = how
     if kind == "mul":
         if cur is None:
@@ -389,23 +394,22 @@ def error_analysis(p, T, season):
     return out, misses
 
 
-def rank_candidates(patterns, week_index):
-    """Patterns that are significant pull their catalogue entries forward;
-    the rest rotate in so every candidate is tried within a few weeks."""
-    strength = {}
-    for pt in patterns:
-        strength[pt["pattern"]] = max(abs(pt.get("line_t") or 0), abs(pt.get("outcome_t") or 0))
-    always = {"prior", "recency", "market", "noise", "defence", "recent_era"}
-    scored = []
-    for i, (cid, path, how, answers) in enumerate(CATALOGUE):
-        s = max([strength.get(a, 0.0) for a in answers] + [0.0])
-        s += 0.5 if answers & always else 0.0
-        scored.append((s, i, cid))
-    scored.sort(key=lambda x: (-x[0], x[1]))
-    top = [c for s, i, c in scored if s >= 2.0][: MAX_CANDIDATES - 3]
-    rest = [c for s, i, c in scored if c not in top]
+def rank_candidates(patterns, week_index, n=MAX_CANDIDATES):
+    """The strongest significant pattern (|t| >= 2) gets the first two
+    candidates that answer it, then the next pattern, and so on, for up to
+    n - 3 slots; the rest of the catalogue rotates through the remaining
+    slots so every candidate is tried within a few weeks (the NFL loop's rule:
+    a generic candidate never crowds out the one that answers the miss)."""
+    sig = sorted(((max(abs(pt.get("line_t") or 0), abs(pt.get("outcome_t") or 0)), pt["pattern"]) for pt in patterns), reverse=True)
+    top = []
+    for t, name in sig:
+        if t < 2.0 or len(top) >= n - 3:
+            break
+        top += [cid for cid, _, _, answers in CATALOGUE if name in answers and cid not in top][:2]
+    top = top[: n - 3]
+    rest = [cid for cid, *_ in CATALOGUE if cid not in top]
     k = week_index % max(1, len(rest))
-    rotate = (rest[k:] + rest[:k])[: MAX_CANDIDATES - len(top)]
+    rotate = (rest[k:] + rest[:k])[: n - len(top)]
     return top + rotate
 
 
