@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-10-20T14:27:00.516Z",
+  "generated_at": "2026-10-21T01:08:15.428Z",
   "ok": true,
-  "last_ok_at": "2026-10-20T14:27:00.516Z",
+  "last_ok_at": "2026-10-21T01:08:15.428Z",
   "run": {
-    "trigger": "schedule",
+    "trigger": "push",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -36,23 +36,10 @@
   },
   "lines": {
     "nfl": {
-      "compared": 14,
-      "median_gap": 3.27,
-      "max_gap": 8.16,
-      "outliers": [
-        {
-          "game": "PIT @ NO",
-          "gap": 8.16,
-          "model": 4.66,
-          "market": -3.5
-        },
-        {
-          "game": "MIA @ NYJ",
-          "gap": 7.04,
-          "model": -2.54,
-          "market": 4.5
-        }
-      ],
+      "compared": 15,
+      "median_gap": 2.08,
+      "max_gap": 5.75,
+      "outliers": [],
       "orientation_faults": []
     },
     "p4": {
@@ -68,7 +55,7 @@
       "id": "engine_tests_nfl",
       "label": "engine test suite football/tests.js (incl. python-parity goldens)",
       "status": "pass",
-      "detail": "ALL GREEN 80 passed, 0 failed"
+      "detail": "ALL GREEN 101 passed, 0 failed"
     },
     {
       "id": "engine_tests_p4",
@@ -104,19 +91,19 @@
       "id": "nfl_lines_market",
       "label": "NFL: market lines plausible",
       "status": "pass",
-      "detail": "14 lines inside plausible bounds"
+      "detail": "15 lines inside plausible bounds"
     },
     {
       "id": "nfl_lines_orientation",
       "label": "NFL: market lines point the right way",
       "status": "pass",
-      "detail": "14 joined line(s), none reconciled by negation"
+      "detail": "15 joined line(s), none reconciled by negation"
     },
     {
       "id": "nfl_lines",
       "label": "NFL: model vs market line guard",
-      "status": "warn",
-      "detail": "median gap 3.27 pts over 14 games; 2 game(s) beyond 7 pts"
+      "status": "pass",
+      "detail": "median gap 2.08 pts over 15 games, max 5.75"
     },
     {
       "id": "p4_season_window",
@@ -158,7 +145,7 @@
       "id": "p4_universe",
       "label": "CFB: the FBS universe resolves from this season’s own feed",
       "status": "pass",
-      "detail": "138 active FBS programs across 11 conferences · 62 game(s) on the slate, 60 sampled"
+      "detail": "138 active FBS programs across 11 conferences · 64 game(s) on the slate, 60 sampled"
     },
     {
       "id": "p4_lines_src",
@@ -198,21 +185,21 @@
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-10-20T14:27:00.516Z",
+    "daily_check_last_run": "2026-10-21T01:08:15.428Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-10-20T14:27:00.516Z",
+    "engine_tests_last_run": "2026-10-21T01:08:15.428Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-10-20T14:27:00.516Z",
+    "nfl_ingest_last_run": "2026-10-21T01:08:15.428Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 93,
-    "p4_ingest_last_run": "2026-10-20T14:27:00.516Z",
+    "p4_ingest_last_run": "2026-10-21T01:08:15.428Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 510,
-    "projection_guard_last_run": "2026-10-20T14:27:00.516Z",
+    "projection_guard_last_run": "2026-10-21T01:08:15.428Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-10-20T14:27:00.516Z",
+    "line_guard_last_run": "2026-10-21T01:08:15.428Z",
     "line_guard_last_status": "ok",
-    "row_count_line_guard": 14
+    "row_count_line_guard": 15
   },
   "scope": {
     "what_ok_means": "the pipeline ran: the engine suites pass, every feed answered, completed games absorbed into the ratings, every upcoming game projects inside bounds and no joined market line points the wrong way.",
