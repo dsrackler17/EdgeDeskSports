@@ -591,3 +591,20 @@ Run 2026-10-21 on repo 2014–2020 (9,195 games with moneyline open and close) b
 ### NHL-H2: production xg_core total on the proxy holdout
 ### NHL-H3: NHL-W2 (R1 frozen, back-to-backs) on the proxy holdout
 ### NHL-H4: NHL-W3 frozen on the proxy holdout
+
+### NHL holdout results (run once, 2026-10-21)
+
+**k = 12.** Gate data: the proxy holdout, repo 2021–2022.
+
+| ID | Bets | CLV prob (pp) | α/12 LB | 2021 / 2022 | `clv_ev` | Verdict |
+|---|---|---|---|---|---|---|
+| NHL-H1 production xg_core ML ≥0.02 | 1,475 | +0.77 [+0.57, +0.97] | +0.51 | +0.27 / +1.12 | -2.0% [-2.7, -1.1] | **PASS** |
+| NHL-H2 production total line ≥0.30 | 951 | +3.25 [+2.88, +3.63]; +0.170 goals | +2.76 | +1.85 / +4.21 | +1.4% | **PASS, low confidence** (line only, no juice; toward 0.994) |
+| NHL-H3 W2: R1 frozen, back-to-backs ≥0.005 | 272 | +2.24 [+1.70, +2.77] | +1.56 | +1.74 / +2.36 | **+1.6%** [-0.3, +4.2] | **PASS** |
+| NHL-H4 W3 frozen totals ≥0.05 | 1,452 | +2.63 [+2.35, +2.92]; +0.136 goals | +2.23 | +1.46 / +3.52 | +0.3% | **PASS, low confidence** (as H2) |
+
+**Frozen fits:**
+- ML residual: move = -0.0005 + 0.044·d_core + 0.208·d_gproj. The line moves about a fifth of the projected-goalie model's disagreement and little of the goalie-blind production model's. The goalie projection is where the NHL information is, even though the W1 filter alone did not show it.
+- Totals: move = -0.018 − 0.006·dt_core + 0.296·dt_gproj.
+
+**Results diagnostic** (win rate at the opening price): H1 45.7%, H3 55.2% (ROI +10.6%, n = 272; noisy).

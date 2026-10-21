@@ -216,6 +216,31 @@ def pre():
     return out
 
 
+def holdout():
+    m, qa = load()
+    pre_m = m[m.season.isin(PRE)].copy()
+    proxy = m[m.season.isin(PROXY)].copy()
+    SIG["total"] = float((pre_m.total_pts - pre_m.close_total).std())
+    k = 12
+    out = {}
+    both = pd.concat([pre_m, proxy], ignore_index=True)
+    x2, log2, cal2 = residual(both, lambda mm: _features_ml(mm, ["p_core", "p_gproj"], False), PROXY, frozen_train=pre_m)
+    x4, log4, cal4 = residual(both, lambda mm: _features_tot(mm, ["t_core", "t_gproj"]), PROXY, frozen_train=pre_m, market="total")
+    specs = [("NHL-H1", price_frame(proxy, "p_core"), cfg_price(0.02), "production xg_core ML (proxy)", {}),
+             ("NHL-H2", total_frame(proxy, "t_core"), cfg_total(0.30), "production xg_core total line (proxy)", {}),
+             ("NHL-H3", x2[x2.b2b_one == 1], cfg_price(0.005, "resid"), "NHL-W2: R1 frozen on back-to-backs (proxy)",
+              {"fit": log2, "movement_calibration": cal2}),
+             ("NHL-H4", x4, cfg_total(0.05, "resid"), "NHL-W3 frozen totals (proxy)", {"fit": log4, "movement_calibration": cal4})]
+    for eid, x, c, label, extra in specs:
+        rep = runner.run(SPORT, eid, x, c, label, holdout=True, k_tests=k, extra=extra)
+        out[eid] = {"proxy": runner.fmt(rep), "verdict": H.verdict(rep["primary"], k),
+                    "clv_ev": rep["primary"].get("clv_ev", {}).get("mean"),
+                    "by_season": {s["season"]: f"n={s['n_bets']} {100 * s['clv_prob']['mean']:+.2f} pp" for s in rep["by_season"]}}
+        print(eid, json.dumps(out[eid], default=str))
+    with open(os.path.join(runner.RESULTS, SPORT, "holdout_summary.json"), "w") as f:
+        json.dump(out, f, indent=1, default=float)
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "check":
@@ -226,3 +251,5 @@ if __name__ == "__main__":
         print("ml open+close", int(ok.sum()), "corr(p_core, p_close)", round(float(np.corrcoef(m.p_core[ok], m.p_close[ok])[0, 1]), 3))
     elif cmd == "pre":
         print(json.dumps(pre(), indent=1, default=str))
+    elif cmd == "holdout":
+        holdout()
