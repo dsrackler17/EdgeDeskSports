@@ -21,8 +21,8 @@
   "game_time": "2026-10-22T00:00:00.000Z",
   "game_when_label": "2026-10-22 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-21T10:02:29.815Z",
-  "generated_at": "2026-10-21T10:02:29.815Z",
+  "updated_at": "2026-10-21T10:10:54.247Z",
+  "generated_at": "2026-10-21T10:10:54.247Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1921,89 +1921,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-21. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1ijy66noca565",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can New Mexico State win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.1 points.",
-    "gap": {
-      "points": 1.1,
-      "toward": "New Mexico State",
-      "other": "Sam Houston"
-    },
-    "supporting": [
-      "When Sam Houston has the ball (big plays on the ground): Sam Houston’s offense turns 3.3% of its runs into explosive gains, and New Mexico State’s defense gives up explosive gains on 7.0% of opponent runs (FBS average 6.6%).",
-      "When Sam Houston has the ball (the line of scrimmage on running plays): Sam Houston’s offense is stopped at or behind the line on 25.1% of its runs, and New Mexico State’s defense stops 21.8% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When New Mexico State has the ball (big plays on the ground): New Mexico State’s offense turns 7.4% of its runs into explosive gains, and Sam Houston’s defense gives up explosive gains on 10.4% of opponent runs (FBS average 6.6%).",
-      "When Sam Houston has the ball (pass protection against the pass rush): Sam Houston’s offense has allowed a sack on 6.6% of its dropbacks, and New Mexico State’s defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.6%)."
-    ],
-    "contradicting": [
-      "When New Mexico State has the ball (the passing game against the pass defense): New Mexico State’s offense averages 6.5 yards per pass attempt, and Sam Houston’s defense allows 5.4 yards per pass attempt (FBS average 7.4).",
-      "In his last two games (New Mexico and Florida International), Hedden averaged 4.6 yards per attempt, against 8.2 in his three games before that.",
-      "In his last two games (Western Kentucky and Florida International), Damante averaged 5.2 yards per attempt, against 9.9 in his two games before that.",
-      "When New Mexico State has the ball (the red zone): New Mexico State’s offense succeeds on 21.6% of its red-zone plays, and Sam Houston’s defense allows success on 43.4% of opponent red-zone plays (FBS average 43.6%)."
-    ],
-    "quarterbacks": [
-      "Landyn Locke has completed 129 of 208 passes (62.0%) for 1,418 yards, 6.8 yards per attempt, 11 touchdowns and 4 interceptions in six games for Sam Houston, and has been sacked on 15 of 223 dropbacks.",
-      "Trey Hedden has completed 65 of 125 passes (52.0%) for 933 yards, 7.5 yards per attempt, 5 touchdowns and 6 interceptions in five games for New Mexico State, and has been sacked on 7 of 132 dropbacks.",
-      "Adam Damante has completed 44 of 71 passes (62.0%) for 477 yards, 6.7 yards per attempt, 4 touchdowns and 2 interceptions in four games for New Mexico State, and has been sacked on 4 of 75 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "New Mexico State’s defense has to come out ahead at the line of scrimmage: it stops 21.8% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 25.1% of its runs.",
-        "New Mexico State’s offense has to hold its own through the air against a defense that allows 5.4 yards per pass attempt.",
-        "New Mexico State’s offense has to hold its own on third down against a defense that allows opponents to convert 32.2% of their third downs.",
-        "New Mexico State’s offense has to keep winning on long runs: it turns 7.4% of its runs into explosive gains, and Sam Houston’s defense gives up explosive gains on 10.4% of opponent runs."
-      ],
-      "market": [
-        "Sam Houston’s defense has to come out ahead through the air: it allows 5.4 yards per pass attempt, against an offense that averages 6.5 yards per pass attempt.",
-        "Sam Houston’s defense has to come out ahead on third down: it allows opponents to convert 32.2% of their third downs, against an offense that converts 36.0% of its third downs.",
-        "Sam Houston’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 25.1% of its runs, and New Mexico State’s defense stops 21.8% of opponent runs at or behind the line."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed for Sam Houston.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Sam Houston); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 4.3 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-21T04:53:30.048Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-21T10:02:29.815Z"
-  },
   "snapshot_id": "snap_d8930db88239ce10",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-22T00:00:00.000Z",
+    "minutes_before_kickoff": 829,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-21T10:10:54.247Z"
+  },
   "featured": {
     "editorial_priority": 39,
     "status": "featured",
@@ -2265,20 +2192,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-21T10:02:29.815Z"
-  },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-22T00:00:00.000Z",
-    "minutes_before_kickoff": 838,
-    "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-21T10:02:29.815Z"
+    "at": "2026-10-21T10:10:54.247Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-21T10:02:29.815Z",
+    "at": "2026-10-21T10:10:54.247Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2288,5 +2206,87 @@
     ],
     "warnings": [],
     "hold_reason": "my_take"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "yql07j14jqpf1",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can New Mexico State win at the line of scrimmage?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.1 points.",
+    "gap": {
+      "points": 1.1,
+      "toward": "New Mexico State",
+      "other": "Sam Houston"
+    },
+    "supporting": [
+      "When Sam Houston has the ball (big plays on the ground): Sam Houston’s offense turns 3.3% of its runs into explosive gains, and New Mexico State’s defense gives up explosive gains on 7.0% of opponent runs (FBS average 6.6%).",
+      "When Sam Houston has the ball (the line of scrimmage on running plays): Sam Houston’s offense is stopped at or behind the line on 25.1% of its runs, and New Mexico State’s defense stops 21.8% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When New Mexico State has the ball (big plays on the ground): New Mexico State’s offense turns 7.4% of its runs into explosive gains, and Sam Houston’s defense gives up explosive gains on 10.4% of opponent runs (FBS average 6.6%).",
+      "When Sam Houston has the ball (pass protection against the pass rush): Sam Houston’s offense has allowed a sack on 6.6% of its dropbacks, and New Mexico State’s defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.6%)."
+    ],
+    "contradicting": [
+      "When New Mexico State has the ball (the passing game against the pass defense): New Mexico State’s offense averages 6.5 yards per pass attempt, and Sam Houston’s defense allows 5.4 yards per pass attempt (FBS average 7.4).",
+      "In his last two games (New Mexico and Florida International), Hedden averaged 4.6 yards per attempt, against 8.2 in his three games before that.",
+      "In his last two games (Western Kentucky and Florida International), Damante averaged 5.2 yards per attempt, against 9.9 in his two games before that.",
+      "When New Mexico State has the ball (the red zone): New Mexico State’s offense succeeds on 21.6% of its red-zone plays, and Sam Houston’s defense allows success on 43.4% of opponent red-zone plays (FBS average 43.6%)."
+    ],
+    "quarterbacks": [
+      "Landyn Locke has completed 129 of 208 passes (62.0%) for 1,418 yards, 6.8 yards per attempt, 11 touchdowns and 4 interceptions in six games for Sam Houston, and has been sacked on 15 of 223 dropbacks.",
+      "Trey Hedden has completed 65 of 125 passes (52.0%) for 933 yards, 7.5 yards per attempt, 5 touchdowns and 6 interceptions in five games for New Mexico State, and has been sacked on 7 of 132 dropbacks.",
+      "Adam Damante has completed 44 of 71 passes (62.0%) for 477 yards, 6.7 yards per attempt, 4 touchdowns and 2 interceptions in four games for New Mexico State, and has been sacked on 4 of 75 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "New Mexico State’s defense has to come out ahead at the line of scrimmage: it stops 21.8% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 25.1% of its runs.",
+        "New Mexico State’s offense has to hold its own through the air against a defense that allows 5.4 yards per pass attempt.",
+        "New Mexico State’s offense has to hold its own on third down against a defense that allows opponents to convert 32.2% of their third downs.",
+        "New Mexico State’s offense has to keep winning on long runs: it turns 7.4% of its runs into explosive gains, and Sam Houston’s defense gives up explosive gains on 10.4% of opponent runs."
+      ],
+      "market": [
+        "Sam Houston’s defense has to come out ahead through the air: it allows 5.4 yards per pass attempt, against an offense that averages 6.5 yards per pass attempt.",
+        "Sam Houston’s defense has to come out ahead on third down: it allows opponents to convert 32.2% of their third downs, against an offense that converts 36.0% of its third downs.",
+        "Sam Houston’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 25.1% of its runs, and New Mexico State’s defense stops 21.8% of opponent runs at or behind the line."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed for Sam Houston.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Sam Houston); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "medium",
+        "text": "EdgeDesk’s published number sits 4.3 points from the middle of its own other models."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-21T04:53:30.048Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-21T10:10:54.247Z"
   }
 }
