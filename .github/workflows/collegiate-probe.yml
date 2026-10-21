@@ -1,0 +1,47 @@
+# EdgeDesk collegiate — the probe (collegiate/probe.js).
+#
+# Reads the pages listed in collegiate/probe/targets.json once, on a runner
+# (the development sandbox cannot reach school athletics sites), through
+# collegiate/polite.js: robots.txt first, EdgeDeskBot by name, one request at
+# a time per host, 2 s apart, refusals recorded and respected. The answers are
+# committed gzipped to the branch that ran it (collegiate/probe/fixtures/,
+# index.json), so the roster, schedule and box-score readers are written and
+# tested against real pages. Runs when the target list changes, or by hand.
+name: Collegiate probe
+
+on:
+  push:
+    branches-ignore: [main]       # probed on the branch that changed the targets; a re-probe on merge only rewrites the fixtures
+    paths:
+      - 'collegiate/probe/targets.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collegiate-probe-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The collector's own rules first
+        run: node tools/collegiate/collegiate.test.js
+      - name: Probe
+        run: node collegiate/probe.js
+      - name: Publish the answers to this branch (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          paths="collegiate/probe/index.json collegiate/probe/fixtures"
+          [ -f collegiate/data/refusals.jsonl ] && paths="$paths collegiate/data/refusals.jsonl"
+          bash tools/ci/push_generated.sh "${{ github.ref_name }}" "collegiate: probe answers" -- $paths

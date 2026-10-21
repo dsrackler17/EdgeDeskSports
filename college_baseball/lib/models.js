@@ -31,7 +31,9 @@ const RUN_MODELS = ['poisson_flat', 'hier'];
 function meta() {
   const by = new Map();
   for (const t of W.teamSeasons()) by.set(t.season + ':' + t.team_id, t);
+  let cont = null;   /* roster continuity (lib/continuity.js), read only when a model asks for it */
   return {
+    continuity: (s, id) => { if (!cont) cont = require('./continuity').load(); return cont.centred(s, id); },
     conf: (s, id) => { const t = by.get(s + ':' + id); return t ? t.conference || null : null; },
     div: (s, id) => { const t = by.get(s + ':' + id); return t ? t.division : null; },
     name: (s, id) => { const t = by.get(s + ':' + id); return t ? t.name : null; },

@@ -2,7 +2,7 @@
  "schema": "edgedesk_model_loop_versions_v1",
  "sport": "MLB",
  "league": "mlb",
- "current": "1.0.0",
+ "current": "1.1.0",
  "versions": [
   {
    "version": "1.0.0",
@@ -17,7 +17,7 @@
     "sweeps": 3
    },
    "config_sha256": "fb40bd84c8ea3b5adca3ea8a4bec45013ed7ea7ae34e6807ec74ac023d70aa93",
-   "status": "SERVED (RESEARCH: prices no live game)",
+   "status": "RETIRED (rollback target)",
    "promoted_by": "selection-window tuning",
    "promoted_at": "2026-10-21T12:01:15Z",
    "reason": "The configuration mlb/history/walkforward.js used when the loop started: mlb/history/params/mlb_tuning.json `chosen` (chosen by SELECTION-window (2012-2017) moneyline log loss of team_park_sp; no later season is read).",
@@ -36,6 +36,69 @@
      "brier": 0.242703,
      "run_line_logloss": 0.642228,
      "total_mae": 3.5974
+    }
+   }
+  },
+  {
+   "version": "1.1.0",
+   "parent": "1.0.0",
+   "config": {
+    "half_life_days": 365,
+    "window_days": 800,
+    "prior_games": 40,
+    "prior_starts": 128,
+    "prior_park_games": 120,
+    "carry": 0.7,
+    "sweeps": 3
+   },
+   "config_sha256": "cb577719f58a849f80a6b2d9778805e914fb645e15ac30a0171b039f424a4286",
+   "status": "SERVED (RESEARCH: prices no live game)",
+   "promoted_by": "weekly-loop",
+   "promoted_at": "2026-10-21T12:18:04Z",
+   "reason": "weekly loop 2026-10-21: candidate starters_tighter (prior_starts [\"mul\",2]) cleared the full-window rule",
+   "evidence": {
+    "full": {
+     "n": 32487,
+     "logloss": 0.679071,
+     "brier": 0.243038,
+     "run_line_logloss": 0.644937,
+     "total_mae": 3.4737
+    },
+    "recent_season": {
+     "season": 2025,
+     "n": 2430,
+     "logloss": 0.677796,
+     "brier": 0.242467,
+     "run_line_logloss": 0.641548,
+     "total_mae": 3.5973
+    },
+    "delta": {
+     "full_logloss": -0.000301,
+     "full_brier": -0.000146,
+     "full_run_line": -0.000613,
+     "full_total_mae": -0.0006,
+     "recent_logloss": -0.000506
+    },
+    "ci95": [
+     -0.000525,
+     -0.000073
+    ],
+    "previous": {
+     "full": {
+      "n": 32487,
+      "logloss": 0.679372,
+      "brier": 0.243184,
+      "run_line_logloss": 0.64555,
+      "total_mae": 3.4743
+     },
+     "recent_season": {
+      "season": 2025,
+      "n": 2430,
+      "logloss": 0.678302,
+      "brier": 0.242703,
+      "run_line_logloss": 0.642228,
+      "total_mae": 3.5974
+     }
     }
    }
   }

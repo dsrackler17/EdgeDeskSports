@@ -1,0 +1,114 @@
+{
+ "schema": "edgedesk_collegiate_probe_v1",
+ "generated_at": "2026-10-21T13:31:22.375Z",
+ "user_agent": "EdgeDeskBot/1.0 (+https://edgedesksports.com)",
+ "summary": {
+  "reads": 5,
+  "ok": 5,
+  "refused": 0,
+  "platforms": {
+   "nuxt": 2,
+   "wmt": 2
+  }
+ },
+ "refusals": [
+  {
+   "host": "stats.ncaa.org",
+   "url": "https://stats.ncaa.org/robots.txt",
+   "code": "ROBOTS_FORBIDDEN",
+   "why": "robots.txt itself is refused to robots",
+   "at": "2026-10-21T12:36:59.230Z"
+  },
+  {
+   "host": "site.api.espn.com",
+   "url": "https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams?limit=1000",
+   "code": "ROBOTS_FORBIDDEN",
+   "why": "robots.txt itself is refused to robots",
+   "at": "2026-10-21T12:36:59.399Z"
+  },
+  {
+   "host": "query.wikidata.org",
+   "url": "https://query.wikidata.org/sparql?format=json&query=SELECT%20%3Fitem%20%3Fp%20%3Fo%20%3FoLabel%20WHERE%20%7B%20VALUES%20%3Flab%20%7B%20%22Stanford%20Cardinal%22%40en%20%22LSU%20Tigers%22%40en%20%22Texas%20Longhorns%22%40en%20%7D%20%3Fitem%20rdfs%3Alabel%20%3Flab%20.%20%3Fitem%20%3Fp%20%3Fo%20.%20FILTER(STRSTARTS(STR(%3Fp)%2C%20%22http%3A%2F%2Fwww.wikidata.org%2Fprop%2Fdirect%2F%22))%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%22.%20%7D%20%7D%20LIMIT%20400",
+   "code": "ROBOTS_DISALLOW",
+   "why": "robots.txt disallows it",
+   "at": "2026-10-21T12:37:01.427Z"
+  }
+ ],
+ "reads": [
+  {
+   "kind": "page",
+   "name": "wmt_games_robots",
+   "host": "wmt.games",
+   "url": "https://wmt.games/robots.txt",
+   "ok": true,
+   "status": 200,
+   "refused": false,
+   "error": null,
+   "bytes": 4215,
+   "truncated": false,
+   "sha256": "97d5c15c1a0612be1a90d16d11c873187ed6aacfa6b3d3526fa35947df3c3be1",
+   "fixture": "collegiate/probe/fixtures/wmt.games/robots_txt.gz",
+   "platform": "nuxt"
+  },
+  {
+   "kind": "page",
+   "name": "arkansas_wp_json",
+   "host": "arkansasrazorbacks.com",
+   "url": "https://arkansasrazorbacks.com/wp-json/",
+   "ok": true,
+   "status": 200,
+   "refused": false,
+   "error": null,
+   "bytes": 198509,
+   "truncated": false,
+   "sha256": "bb1944b4d75e61c741737fa27cdda4aaab403bf5513a632847d1f1a6d7b438e9",
+   "fixture": "collegiate/probe/fixtures/arkansasrazorbacks.com/wp_json.gz",
+   "platform": "wmt"
+  },
+  {
+   "kind": "page",
+   "name": "statbroadcast_robots",
+   "host": "stats.statbroadcast.com",
+   "url": "https://stats.statbroadcast.com/robots.txt",
+   "ok": true,
+   "status": 200,
+   "refused": false,
+   "error": null,
+   "bytes": 0,
+   "truncated": false,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "fixture": "collegiate/probe/fixtures/stats.statbroadcast.com/robots_txt.gz",
+   "platform": null
+  },
+  {
+   "kind": "page",
+   "name": "wmt_games_box",
+   "host": "wmt.games",
+   "url": "https://wmt.games/stanford/stats/match/full/6581643",
+   "ok": true,
+   "status": 200,
+   "refused": false,
+   "error": null,
+   "bytes": 4215,
+   "truncated": false,
+   "sha256": "97d5c15c1a0612be1a90d16d11c873187ed6aacfa6b3d3526fa35947df3c3be1",
+   "fixture": "collegiate/probe/fixtures/wmt.games/stanford_stats_match_full_6581643.gz",
+   "platform": "nuxt"
+  },
+  {
+   "kind": "page",
+   "name": "arkansas_baseball_roster_page",
+   "host": "arkansasrazorbacks.com",
+   "url": "https://arkansasrazorbacks.com/sport/m-basebl/roster/",
+   "ok": true,
+   "status": 200,
+   "refused": false,
+   "error": null,
+   "bytes": 183864,
+   "truncated": false,
+   "sha256": "b9401a56ba9679cd7eae2b6bb2a000fc695f0ab0b2a14fdd80c439e863a55340",
+   "fixture": "collegiate/probe/fixtures/arkansasrazorbacks.com/sport_m_basebl_roster.gz",
+   "platform": "wmt"
+  }
+ ]
+}

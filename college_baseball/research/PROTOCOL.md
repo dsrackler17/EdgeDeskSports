@@ -92,3 +92,43 @@ an unchanged model is not a new look.
 
 A model that does not beat baseline 3 on log loss with a 95% interval below
 zero is not promoted, however complex it is.
+
+## Amendment 2026-10-21: a weekly learning loop (`college_baseball/loop.js`)
+
+Added at the owner's direction that every model learn from its misses every
+week, written so the windows above keep their meaning. Every result produced
+before it keeps its label.
+
+- **What it may read.** SELECTION + VALIDATION (2014–2024): the seasons §2
+  allows for tuning and promotion evidence. It never loads the HOLDOUT
+  (`walkforward.js runAll` is called with `until` = the last VALIDATION
+  season).
+- **What it tries.** Changes from a fixed catalogue to the served run model's
+  configuration: its five tuned parameters, the five hierarchy parameters that
+  were never tuned (`sigma_div`, `sigma_park`, `carry_conf`, `carry_div`,
+  `carry_park`), and the run distribution's dispersion. Patterns in the
+  VALIDATION misses (binomial z ≥ 2) choose which go first; the rest rotate.
+- **The rule.** A change is kept only if, over SELECTION + VALIDATION, its log
+  loss is lower by ≥ 0.0002 with a date-block bootstrap 95% interval wholly
+  below zero, its Brier score is no worse, and it is no worse on VALIDATION.
+  Every candidate is logged (`docs/model-loop/college_baseball/
+  candidates.jsonl`).
+- **Staged, not served.** A kept change becomes a STAGED version. It is served
+  only when the owner runs `node college_baseball/loop.js release`, which
+  takes that version's one HOLDOUT look (§5) and records what it said. A
+  version is a model version for §5's count; staging many changes and
+  releasing rarely keeps the looks few.
+- **One look per configuration.** A holdout look is stored by the
+  configuration it measured (`validation/holdout_looks.json`, keyed by
+  `config_sha256`) and carried forward only to a report of that exact
+  configuration. A rollback finds its own look and spends none.
+- **Features from data we did not hold (added 2026-10-21).** The catalogue may
+  carry a change that needs an input the record does not have yet; the first
+  is roster continuity (`tq.cont_k`, `lib/continuity.js`): the share of last
+  season's roster that came back, from the rosters each school publishes
+  (`collegiate/`), moving how much of last season's strength a team carries.
+  Such a change is **inactive** — never tried, never ranked, and named in the
+  weekly report with its coverage — until the input covers at least 80% of
+  D-I team-seasons in SELECTION + VALIDATION. Once active it is tried under
+  the same rule as every other change. A team-season the input does not
+  cover is priced exactly as before; nothing stands in for missing data.

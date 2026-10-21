@@ -59,6 +59,9 @@ LOOPS = [
     # the 2027 engine choice, so it is NOT_SERVED unless its weekly research stops
     {"id": "mlb", "label": "MLB (lab brain)", "months": set(range(1, 13)), "kind": "lab_research",
      "workflow": ".github/workflows/model-loop-mlb.yml"},
+    # college baseball's board prices from the served version; the loop stages changes, the owner releases
+    {"id": "college_baseball", "label": "College baseball", "months": set(range(1, 13)), "kind": "lab_research",
+     "served_ok": True, "workflow": ".github/workflows/model-loop-college-baseball.yml"},
     {"id": "nhl", "label": "NHL engine", "months": {10, 11, 12, 1, 2, 3, 4, 5, 6}, "kind": "engine",
      "workflow": ".github/workflows/model-loop-engines.yml"},
     {"id": "nba_engine", "label": "NBA engine", "months": {10, 11, 12, 1, 2, 3, 4, 5, 6}, "kind": "engine",
@@ -183,10 +186,16 @@ def research_health(L, now):
         reasons.append(("STALE", f"last weekly research {(now - r_at).days} days ago (expected weekly)"))
     elif r_at is None and vers:
         reasons.append(("STALE", "the weekly research has never run"))
-    status = reasons[0][0] if reasons else "NOT_SERVED"
-    if not reasons:
-        reasons = [("NOT_SERVED", "the lab brain prices no live game (the card uses mlb/engine.js); its loop learns on the "
-                                  "2012-to-date record so the 2027 engine can be chosen on evidence")]
+    if L.get("served_ok"):
+        status = reasons[0][0] if reasons else "OK"
+        staged = (vers or {}).get("staged")
+        if staged and not reasons:
+            reasons = [("OK", f"version {staged} is staged, awaiting its holdout look (node college_baseball/loop.js release)")]
+    else:
+        status = reasons[0][0] if reasons else "NOT_SERVED"
+        if not reasons:
+            reasons = [("NOT_SERVED", "the lab brain prices no live game (the card uses mlb/engine.js); its loop learns on the "
+                                      "2012-to-date record so the 2027 engine can be chosen on evidence")]
     return {"id": lid, "label": L["label"], "status": status, "in_season": False, "reasons": [r for _, r in reasons],
             "served": {"version": cur["version"], "since": cur.get("promoted_at"), "promoted_by": cur.get("promoted_by"),
                        "versions": len(vers.get("versions") or [])} if cur else None,
@@ -301,6 +310,38 @@ def loop_health(L, now):
             "workflow": L["workflow"]}
 
 
+def collegiate_health(now):
+    """The collegiate collector (collegiate/run.js): the data feed behind the college baseball model's new inputs
+    and the portal ledger. STALE when its weekly run is over 8 days old; the backfill's progress and every host
+    that refused automated reads are named."""
+    last = _read("collegiate/data/last_run.json")
+    reg = _read("collegiate/data/schools.json")
+    back = _read("collegiate/data/backfill.json") or {}
+    refusals = 0
+    try:
+        with open(os.path.join(ROOT, "collegiate", "data", "refusals.jsonl")) as f:
+            refusals = sum(1 for line in f if line.strip())
+    except OSError:
+        pass
+    if not last:
+        return {"id": "collegiate", "label": "Collegiate collector", "status": "NOT_STARTED",
+                "reasons": ["the collector has not published a run (collegiate-rosters.yml)"], "last_run": None}
+    at = _ts(last.get("today"))
+    reasons = []
+    status = "OK"
+    if at is None or (now - at).days > RESEARCH_MAX_D:
+        status = "STALE"
+        reasons.append(f"last collector run {last.get('today')} (expected weekly)")
+    for bid, b in sorted(back.items()):
+        if not b.get("complete"):
+            reasons.append(f"backfill {bid}: in progress ({b.get('ok', b.get('read_this_run', 0))} read on {b.get('at')}"
+                           + (f", {b['left']} left" if b.get("left") is not None else "") + ")")
+    if refusals:
+        reasons.append(f"{refusals} host(s) refused automated reads and are left alone (collegiate/data/refusals.jsonl)")
+    return {"id": "collegiate", "label": "Collegiate collector", "status": status, "reasons": reasons, "last_run": last.get("today"),
+            "schools": (reg or {}).get("counts"), "steps": last.get("steps"), "workflow": "collegiate-rosters.yml"}
+
+
 def build(now=None):
     now = now or datetime.now(timezone.utc)
     loops = [loop_health(L, now) for L in LOOPS]
@@ -311,7 +352,7 @@ def build(now=None):
             "rules": {"refresh_max_hours": REFRESH_MAX_H, "research_max_days": RESEARCH_MAX_D, "results_max_days": RESULTS_MAX_D},
             "note": "Each learning loop's served version, when it last re-fitted and researched, and whether its data "
                     "is complete. A DEGRADED loop's cards say why; nothing here changes a number.",
-            "loops": loops}
+            "loops": loops, "feeds": [collegiate_health(now)]}
 
 
 def main(argv=None):

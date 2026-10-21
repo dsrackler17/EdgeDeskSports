@@ -1,0 +1,19 @@
+{
+ "note": "What the collegiate collector reads (collegiate/run.js, collegiate-rosters.yml). weekly: every listed sport's current season and the one before, at every school of the division, every week. backfill: past seasons read once (a backfill item is done when collegiate/data/backfill.json records it). Changing this file on a branch runs the collector on that branch. Started small (baseball only, no backfill) to check the collector at full scale before widening.",
+ "division": 1,
+ "directory_max_age_days": 30,
+ "lanes": 64,
+ "weekly": {
+  "sports": [
+   "baseball"
+  ]
+ },
+ "backfill_next": [
+  {
+   "id": "baseball-2013-2026",
+   "sport": "baseball",
+   "seasons": "2013-2026",
+   "why": "roster continuity, transfers and handedness for the college baseball model's walk-forward (SELECTION starts 2014)"
+  }
+ ]
+}
