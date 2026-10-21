@@ -459,6 +459,36 @@ Edge buckets (CLV pts for |edge| 0–1 / 1–2 / 2–3 / 3+):
 **Wiring** of H-3, H-4 and H-5 as live-tracking candidates, as pre-registered: see FINAL_REPORT.md
 §Wiring.
 
+---
+
+## Phase 7 — Reconciling with the independent study on `main` (pre-registered 2026-10-21, before any cross-score)
+
+**Why.** A second CLV study (root `FINAL_REPORT.md`, `model_loop/clv/`, `research/clv/`) reached two
+different conclusions: (a) NFL totals beat the vig (its NFL-H4, +2.1% `clv_ev` on SBR 2020–21);
+(b) the market-residual model is the best design everywhere. Its NFL lines are the SBR archive's
+"open" (no timestamp), and its CFB residual reads week W−1 information against untimestamped
+openers.
+
+**Line-timing audit (data only, run before this entry; no model was scored).** On 2020–21, where
+both sources exist, the SBR NFL opener equals this study's τ line in **0.2%** of games. It equals
+the nflverse lookahead value (the line standing before week W−1 kicked off) in 33% (spreads) and
+40% (totals), while lookahead and τ agree only 17% / 11% of the time. Mean |τ − SBR open| =
+1.58 spread points. A large share of SBR "opens" were therefore posted **before week W−1 was
+played**, and both studies' models price with week W−1 results.
+
+Every test below uses the other study's own code and fitted rules where it applies them, and
+this study's harness. 2025–26 is re-read here (this study's holdout). These are cross-checks of
+rules already chosen, not new selections.
+
+| id | test | decision rule (fixed now) |
+|---|---|---|
+| X-1 | Harness parity: both harnesses on one identical frame (the other study's NFL-H2 proxy frame) | mean CLV pts must agree to 1e-9. Probability CLV may differ by the distribution used (reported) |
+| X-2 | Line source: the same v2.1.0 early-week predictions, plain rules (spread ≥ 2, total ≥ 2), scored against SBR opens and against τ lines on the same 2020–21 games; and against SBR 2011–2019 | descriptive |
+| X-3 | **SBR timing**: v2.1.0 with week W−1 inputs vs week W−2 inputs (state at the start of W−1, starter from the last game ≤ W−2), plain rules, against SBR opens 2011–2021 and against τ lines 2020–2024 | SBR CLV is **timing-confounded** if the W−2 version keeps < ½ of its W−1 CLV (pts) against SBR **and** ≥ ½ against τ |
+| X-4 | **Do NFL totals beat the vig on timestamped lines?** The other study's NFL-H4 (totals residual frozen on SBR 2011–19, its own base predictions) and NFL-H2 (v2.1.0 total, ≥ 1.5) on τ lines 2025–26 (R-1), at the prices offered | "beats the vig" only if ROI at the offered price has a one-sided lower bound (α = 0.05/2, week-cluster bootstrap) above 0 for either rule |
+| X-5 | **Does the residual design help?** NFL-H4 vs NFL-H2 and vs this study's H-3, matched volume, same games, τ 2021–2026 (R-1) | "helps" only if the paired matched-volume CI of the CLV difference lies above 0 |
+| X-6 | **CFB residual timing**: the other study's CFB-R2 rebuilt with its own residual code (inner-walk-forward λ, ≥ 3 training seasons, same features) on this study's CFB lines, with base inputs from week W−1 (its p4 replay + its v2 previous-QB loop) vs week W−2 (this study's p4 and Loop W−2), walk-forward 2015–19, 2021–24 | its CFB edge is **timing-robust** only if the W−2 version passes this study's edge rule at θ = 0.25 **and** keeps ≥ ½ of the W−1 CLV (pts) |
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on

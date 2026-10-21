@@ -31,11 +31,32 @@ const OUT = process.argv[2] || path.join(ROOT, '.cache', 'clv', 'pred_nfl_v21.cs
 /* 'climate' (EXPERIMENTS.md E-203): non-dome weather = the stadium's mean in the same calendar
    month over seasons before the one being priced (league monthly mean under 3 such games) */
 const WEATHER = process.argv[3] || 'neutral';
+/* 'lag1' (EXPERIMENTS.md X-3): week W is priced from the state at the start of week W-1 (ratings through
+   W-2) with each team's starter from its last game at week <= W-2: nothing from week W-1 */
+const LAG = process.argv[4] === 'lag1' ? 1 : 0;
 const cfg = JSON.parse(JSON.stringify(P.cfg));
 
 function vec(obj, names) { const v = new Array(names.length); for (let i = 0; i < names.length; i++) { const x = obj[names[i]]; v[i] = Number.isFinite(x) ? x : 0; } return v; }
 
 /* each team's previous-game starter, same season, in kickoff order */
+/* each team's starter in its last game played at week <= W-2, same season (LAG mode) */
+function laggedStarters2(games) {
+  const byTeam = {}, out = {};
+  for (const g of games) {
+    for (const [side, t] of [['home', g.home], ['away', g.away]]) {
+      const k = g.season + '|' + t, list = byTeam[k] || [];
+      let q = null;
+      for (let i = list.length - 1; i >= 0; i--) if (list[i].week <= g.week - 2) { q = list[i].qb; break; }
+      (out[g.id] = out[g.id] || {})[side] = q;
+    }
+    if (g.done) {
+      (byTeam[g.season + '|' + g.home] = byTeam[g.season + '|' + g.home] || []).push({ week: g.week, qb: g.home_qb_id || null });
+      (byTeam[g.season + '|' + g.away] = byTeam[g.season + '|' + g.away] || []).push({ week: g.week, qb: g.away_qb_id || null });
+    }
+  }
+  return out;
+}
+
 function laggedStarters(games) {
   const last = {}, out = {};
   for (const g of games) {
@@ -75,7 +96,8 @@ function main() {
   const st = M.newState(cfg);
   const rows = D.teamRows(cfg.source), qb = D.qbRows();
   const games = D.games();
-  const lag = laggedStarters(games);
+  const lag = LAG ? laggedStarters2(games) : laggedStarters(games);
+  let prevSnap = null, prevSeason = null;
   const clim = WEATHER === 'climate' ? climatology(games) : null;
   const byWeek = {};
   for (const g of games) (byWeek[g.season + '|' + g.week] = byWeek[g.season + '|' + g.week] || []).push(g);
@@ -87,12 +109,15 @@ function main() {
     const wk = g.season + '|' + g.week;
     if (!opened[wk] && g.season >= B.FIRST_TRAIN) {
       opened[wk] = true;
+      const nowSnap = LAG ? JSON.stringify(st) : null;
+      const use = LAG && prevSnap && prevSeason === g.season ? JSON.parse(prevSnap) : (LAG ? JSON.parse(nowSnap) : st);
+      if (LAG) { use.cfg = st.cfg; prevSnap = nowSnap; prevSeason = g.season; }
       for (const h of byWeek[wk]) {
         const go = B.gameObj(h);
         go.home_qb_id = lag[h.id].home; go.away_qb_id = lag[h.id].away;
         go.temp = null; go.wind = null;
         if (clim && !isDome(h)) { const c = clim(h); if (c) { go.temp = c.temp; go.wind = c.wind; } }
-        const F = M.features(st, go);
+        const F = M.features(use, go);
         early[h.id] = { g: h, s: vec(F.spread, names.spread), c: vec(F.ctx, names.ctx), t: vec(F.total, names.total), hfa: F.hfa };
       }
     }
