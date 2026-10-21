@@ -684,3 +684,39 @@ The starter input is replaced with what is knowable at the opener:
 - **MLB-B3 and MLB-W3 (totals) are withdrawn as INFEASIBLE** and not counted. SBR MLB totals cannot be attributed to games (`DATA_AUDIT.md` addendum).
 - **Moneylines** use the repaired pairing.
 - Nothing else changes.
+
+### MLB pre-holdout results
+
+Run 2026-10-21 on 2012–2019 with the repaired SBR moneylines (17,824 games).
+
+| ID | Rule | Bets | CLV prob (pp) | p | Toward | `clv_ev` | Verdict |
+|---|---|---|---|---|---|---|---|
+| MLB-B1 | lab model, projected starter, ≥0.02 | 12,099 | +0.19 [+0.13, +0.25] | <1e-4 | 0.514 | -3.3% | PASS (2017 and 2019 slightly negative) |
+| MLB-B2 | lab team_park (no starter), ≥0.02 | 12,368 | +0.23 [+0.18, +0.29] | <1e-4 | 0.517 | -3.2% | PASS |
+| MLB-R1 | residual (d_proj, d_tp), ≥0.005 | 767 | +0.39 [+0.13, +0.68] | 0.003 | 0.507 | -2.3% | PASS (move slope 0.68; the market moves about 2% of the disagreement) |
+| MLB-R2 | R1 + block (favourite drift, early × d, rotation_unknown) | 2,117 | +0.70 [+0.56, +0.84] | <1e-4 | 0.598 | -2.3% | PASS. Beats R1 on the same 11,133 games (+0.70 vs +0.39) |
+| MLB-W1 | R1 where the rotation is disrupted | 187 | +0.17 [-0.28, +0.62] | 0.23 | 0.533 | -3.2% | **FAIL** |
+
+**MLB pre-holdout attempt count: 5.** B3 and W3 were withdrawn as infeasible; W2 and the browser engine are infeasible.
+
+### MLB-D1: diagnostic. Favourite drift alone (registered after R2's result; counted, never a candidate)
+
+**Why added.** R2's last fit puts 0.045 on `p_open − 0.5`: MLB favourites are bet up after the open. D1 measures that market-structure effect alone.
+
+**Rule.** A ridge on `fav` only, walk-forward like R2, betting ≥0.005.
+
+### MLB-H: Phase 6 selection (written before the holdout was read)
+
+**Gate data:** proxy holdout SBR 2020–2021 (repaired).
+
+**Candidates (G8):**
+
+| ID | Candidate |
+|---|---|
+| MLB-H1 | the lab model with the projected starter, ML ≥0.02 (reference). This is the loop-served model's admissible form. The live browser engine cannot be tested |
+| MLB-H2 | ML challenger = **MLB-R2** frozen on 2012–2019 (+0.70 pp, the highest eligible) |
+
+**k = 8** (5 + D1 + 2 holdout runs). PASS per G7.
+
+### MLB-H1: lab model (projected starter) moneyline on the proxy holdout
+### MLB-H2: MLB-R2 frozen on the proxy holdout

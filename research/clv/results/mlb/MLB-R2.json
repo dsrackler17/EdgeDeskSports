@@ -1,0 +1,868 @@
+{
+ "label": "ML residual + block",
+ "kind": "price",
+ "market": "moneyline",
+ "primary_threshold": 0.005,
+ "coverage": {
+  "rows": 11133,
+  "usable": 11133,
+  "mean_abs_move_prob": 0.02548
+ },
+ "thresholds": [
+  {
+   "n_bets": 2117,
+   "n_clusters": 705,
+   "clv_prob": {
+    "n": 2117,
+    "mean": 0.00696,
+    "se": 0.00073,
+    "ci95": [
+     0.00556,
+     0.00842
+    ],
+    "p_one_sided": 0.0
+   },
+   "clv_ev": {
+    "n": 2117,
+    "mean": -0.02272,
+    "se": 0.00198,
+    "ci95": [
+     -0.02636,
+     -0.01853
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 1256,
+   "moved_against": 846,
+   "no_move": 15,
+   "direction_hit_rate": {
+    "n": 2102,
+    "mean": 0.59753,
+    "se": 0.01096,
+    "ci95": [
+     0.57599,
+     0.6191
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.00752,
+   "results": {
+    "n": 2117,
+    "wins": 1150,
+    "losses": 967,
+    "pushes": 0,
+    "win_pct": 0.5432,
+    "roi_at_open": {
+     "n": 2117,
+     "mean": -0.00373,
+     "se": 0.02237,
+     "ci95": [
+      -0.04742,
+      0.03875
+     ],
+     "p_one_sided": 0.56621
+    }
+   },
+   "threshold": 0.005
+  },
+  {
+   "n_bets": 276,
+   "n_clusters": 171,
+   "clv_prob": {
+    "n": 276,
+    "mean": 0.00995,
+    "se": 0.00243,
+    "ci95": [
+     0.00546,
+     0.01518
+    ],
+    "p_one_sided": 2e-05
+   },
+   "clv_ev": {
+    "n": 276,
+    "mean": -0.00735,
+    "se": 0.01185,
+    "ci95": [
+     -0.02526,
+     0.01975
+    ],
+    "p_one_sided": 0.73242
+   },
+   "moved_toward": 168,
+   "moved_against": 107,
+   "no_move": 1,
+   "direction_hit_rate": {
+    "n": 275,
+    "mean": 0.61091,
+    "se": 0.02994,
+    "ci95": [
+     0.5539,
+     0.67066
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.0125,
+   "results": {
+    "n": 276,
+    "wins": 128,
+    "losses": 148,
+    "pushes": 0,
+    "win_pct": 0.4638,
+    "roi_at_open": {
+     "n": 276,
+     "mean": -0.11671,
+     "se": 0.06111,
+     "ci95": [
+      -0.23652,
+      0.00221
+     ],
+     "p_one_sided": 0.97192
+    }
+   },
+   "threshold": 0.01
+  },
+  {
+   "n_bets": 8,
+   "n_clusters": 8,
+   "clv_prob": {
+    "n": 8,
+    "mean": 0.03604,
+    "se": 0.03703,
+    "ci95": [
+     -0.01358,
+     0.1163
+    ],
+    "p_one_sided": 0.16519
+   },
+   "clv_ev": {
+    "n": 8,
+    "mean": 0.0629,
+    "se": 0.09937,
+    "ci95": [
+     -0.06796,
+     0.27868
+    ],
+    "p_one_sided": 0.26338
+   },
+   "moved_toward": 2,
+   "moved_against": 5,
+   "no_move": 1,
+   "direction_hit_rate": {
+    "n": 7,
+    "mean": 0.28571,
+    "se": 0.17102,
+    "ci95": [
+     0.0,
+     0.57143
+    ],
+    "p_one_sided": 0.04739
+   },
+   "mean_abs_edge": 0.02176,
+   "results": {
+    "n": 8,
+    "wins": 2,
+    "losses": 6,
+    "pushes": 0,
+    "win_pct": 0.25,
+    "roi_at_open": {
+     "n": 8,
+     "mean": -0.44375,
+     "se": 0.34214,
+     "ci95": [
+      -1.0,
+      0.28125
+     ],
+     "p_one_sided": 0.90268
+    }
+   },
+   "threshold": 0.02
+  }
+ ],
+ "primary": {
+  "n_bets": 2117,
+  "n_clusters": 705,
+  "clv_prob": {
+   "n": 2117,
+   "mean": 0.00696,
+   "se": 0.00073,
+   "ci95": [
+    0.00556,
+    0.00842
+   ],
+   "p_one_sided": 0.0
+  },
+  "clv_ev": {
+   "n": 2117,
+   "mean": -0.02272,
+   "se": 0.00198,
+   "ci95": [
+    -0.02636,
+    -0.01853
+   ],
+   "p_one_sided": 1.0
+  },
+  "moved_toward": 1256,
+  "moved_against": 846,
+  "no_move": 15,
+  "direction_hit_rate": {
+   "n": 2102,
+   "mean": 0.59753,
+   "se": 0.01096,
+   "ci95": [
+    0.57599,
+    0.6191
+   ],
+   "p_one_sided": 0.0
+  },
+  "mean_abs_edge": 0.00752,
+  "results": {
+   "n": 2117,
+   "wins": 1150,
+   "losses": 967,
+   "pushes": 0,
+   "win_pct": 0.5432,
+   "roi_at_open": {
+    "n": 2117,
+    "mean": -0.00373,
+    "se": 0.02237,
+    "ci95": [
+     -0.04742,
+     0.03875
+    ],
+    "p_one_sided": 0.56621
+   }
+  },
+  "threshold": 0.005
+ },
+ "buckets": [
+  {
+   "n_bets": 9016,
+   "n_clusters": 900,
+   "clv_prob": {
+    "n": 9016,
+    "mean": 0.00247,
+    "se": 0.00035,
+    "ci95": [
+     0.00177,
+     0.00314
+    ],
+    "p_one_sided": 0.0
+   },
+   "clv_ev": {
+    "n": 9016,
+    "mean": -0.03253,
+    "se": 0.00069,
+    "ci95": [
+     -0.03395,
+     -0.03119
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 4778,
+   "moved_against": 4129,
+   "no_move": 109,
+   "direction_hit_rate": {
+    "n": 8907,
+    "mean": 0.53643,
+    "se": 0.00529,
+    "ci95": [
+     0.52608,
+     0.54665
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.0021,
+   "results": {
+    "n": 9016,
+    "wins": 4651,
+    "losses": 4365,
+    "pushes": 0,
+    "win_pct": 0.5159,
+    "roi_at_open": {
+     "n": 9016,
+     "mean": -0.02544,
+     "se": 0.01006,
+     "ci95": [
+      -0.04551,
+      -0.00611
+     ],
+     "p_one_sided": 0.99427
+    }
+   },
+   "bucket": "[0, 0.005)"
+  },
+  {
+   "n_bets": 1841,
+   "n_clusters": 697,
+   "clv_prob": {
+    "n": 1841,
+    "mean": 0.00652,
+    "se": 0.00077,
+    "ci95": [
+     0.00501,
+     0.008
+    ],
+    "p_one_sided": 0.0
+   },
+   "clv_ev": {
+    "n": 1841,
+    "mean": -0.02503,
+    "se": 0.00149,
+    "ci95": [
+     -0.02796,
+     -0.02215
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 1088,
+   "moved_against": 739,
+   "no_move": 14,
+   "direction_hit_rate": {
+    "n": 1827,
+    "mean": 0.59551,
+    "se": 0.0118,
+    "ci95": [
+     0.57256,
+     0.61868
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.00677,
+   "results": {
+    "n": 1841,
+    "wins": 1022,
+    "losses": 819,
+    "pushes": 0,
+    "win_pct": 0.5551,
+    "roi_at_open": {
+     "n": 1841,
+     "mean": 0.01321,
+     "se": 0.02304,
+     "ci95": [
+      -0.03359,
+      0.05644
+     ],
+     "p_one_sided": 0.28325
+    }
+   },
+   "bucket": "[0.005, 0.01)"
+  },
+  {
+   "n_bets": 268,
+   "n_clusters": 169,
+   "clv_prob": {
+    "n": 268,
+    "mean": 0.00917,
+    "se": 0.00223,
+    "ci95": [
+     0.00499,
+     0.01377
+    ],
+    "p_one_sided": 2e-05
+   },
+   "clv_ev": {
+    "n": 268,
+    "mean": -0.00945,
+    "se": 0.01193,
+    "ci95": [
+     -0.02654,
+     0.01826
+    ],
+    "p_one_sided": 0.78569
+   },
+   "moved_toward": 166,
+   "moved_against": 102,
+   "no_move": 0,
+   "direction_hit_rate": {
+    "n": 268,
+    "mean": 0.6194,
+    "se": 0.03064,
+    "ci95": [
+     0.55719,
+     0.67897
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.01222,
+   "results": {
+    "n": 268,
+    "wins": 126,
+    "losses": 142,
+    "pushes": 0,
+    "win_pct": 0.4701,
+    "roi_at_open": {
+     "n": 268,
+     "mean": -0.10695,
+     "se": 0.06103,
+     "ci95": [
+      -0.22858,
+      0.01262
+     ],
+     "p_one_sided": 0.96015
+    }
+   },
+   "bucket": "[0.01, 0.02)"
+  },
+  {
+   "n_bets": 8,
+   "n_clusters": 8,
+   "clv_prob": {
+    "n": 8,
+    "mean": 0.03604,
+    "se": 0.03703,
+    "ci95": [
+     -0.01358,
+     0.1163
+    ],
+    "p_one_sided": 0.16519
+   },
+   "clv_ev": {
+    "n": 8,
+    "mean": 0.0629,
+    "se": 0.09937,
+    "ci95": [
+     -0.06796,
+     0.27868
+    ],
+    "p_one_sided": 0.26338
+   },
+   "moved_toward": 2,
+   "moved_against": 5,
+   "no_move": 1,
+   "direction_hit_rate": {
+    "n": 7,
+    "mean": 0.28571,
+    "se": 0.17102,
+    "ci95": [
+     0.0,
+     0.57143
+    ],
+    "p_one_sided": 0.04739
+   },
+   "mean_abs_edge": 0.02176,
+   "results": {
+    "n": 8,
+    "wins": 2,
+    "losses": 6,
+    "pushes": 0,
+    "win_pct": 0.25,
+    "roi_at_open": {
+     "n": 8,
+     "mean": -0.44375,
+     "se": 0.34214,
+     "ci95": [
+      -1.0,
+      0.28125
+     ],
+     "p_one_sided": 0.90268
+    }
+   },
+   "bucket": "[0.02, 1)"
+  }
+ ],
+ "by_season": [
+  {
+   "n_bets": 454,
+   "n_clusters": 163,
+   "clv_prob": {
+    "n": 454,
+    "mean": 0.00419,
+    "se": 0.00148,
+    "ci95": [
+     0.0013,
+     0.00711
+    ],
+    "p_one_sided": 0.00226
+   },
+   "clv_ev": {
+    "n": 454,
+    "mean": -0.02757,
+    "se": 0.00306,
+    "ci95": [
+     -0.03351,
+     -0.02139
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 249,
+   "moved_against": 201,
+   "no_move": 4,
+   "direction_hit_rate": {
+    "n": 450,
+    "mean": 0.55333,
+    "se": 0.02247,
+    "ci95": [
+     0.50819,
+     0.59657
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.00753,
+   "results": {
+    "n": 454,
+    "wins": 239,
+    "losses": 215,
+    "pushes": 0,
+    "win_pct": 0.5264,
+    "roi_at_open": {
+     "n": 454,
+     "mean": 0.03752,
+     "se": 0.04797,
+     "ci95": [
+      -0.05442,
+      0.13347
+     ],
+     "p_one_sided": 0.21704
+    }
+   },
+   "season": 2015
+  },
+  {
+   "n_bets": 203,
+   "n_clusters": 97,
+   "clv_prob": {
+    "n": 203,
+    "mean": 0.01227,
+    "se": 0.00237,
+    "ci95": [
+     0.00779,
+     0.01713
+    ],
+    "p_one_sided": 0.0
+   },
+   "clv_ev": {
+    "n": 203,
+    "mean": -0.00916,
+    "se": 0.00543,
+    "ci95": [
+     -0.01967,
+     0.00188
+    ],
+    "p_one_sided": 0.9542
+   },
+   "moved_toward": 134,
+   "moved_against": 69,
+   "no_move": 0,
+   "direction_hit_rate": {
+    "n": 203,
+    "mean": 0.6601,
+    "se": 0.03229,
+    "ci95": [
+     0.59776,
+     0.72414
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.00756,
+   "results": {
+    "n": 203,
+    "wins": 80,
+    "losses": 123,
+    "pushes": 0,
+    "win_pct": 0.3941,
+    "roi_at_open": {
+     "n": 203,
+     "mean": -0.14366,
+     "se": 0.08044,
+     "ci95": [
+      -0.29933,
+      0.01852
+     ],
+     "p_one_sided": 0.96295
+    }
+   },
+   "season": 2016
+  },
+  {
+   "n_bets": 284,
+   "n_clusters": 125,
+   "clv_prob": {
+    "n": 284,
+    "mean": 0.00269,
+    "se": 0.00188,
+    "ci95": [
+     -0.0011,
+     0.00648
+    ],
+    "p_one_sided": 0.07627
+   },
+   "clv_ev": {
+    "n": 284,
+    "mean": -0.0325,
+    "se": 0.00404,
+    "ci95": [
+     -0.04047,
+     -0.02462
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 147,
+   "moved_against": 134,
+   "no_move": 3,
+   "direction_hit_rate": {
+    "n": 281,
+    "mean": 0.52313,
+    "se": 0.02938,
+    "ci95": [
+     0.46642,
+     0.58164
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.0071,
+   "results": {
+    "n": 284,
+    "wins": 135,
+    "losses": 149,
+    "pushes": 0,
+    "win_pct": 0.4754,
+    "roi_at_open": {
+     "n": 284,
+     "mean": -0.04778,
+     "se": 0.06166,
+     "ci95": [
+      -0.16843,
+      0.07649
+     ],
+     "p_one_sided": 0.78077
+    }
+   },
+   "season": 2017
+  },
+  {
+   "n_bets": 328,
+   "n_clusters": 139,
+   "clv_prob": {
+    "n": 328,
+    "mean": 0.00641,
+    "se": 0.00177,
+    "ci95": [
+     0.00297,
+     0.00988
+    ],
+    "p_one_sided": 0.00014
+   },
+   "clv_ev": {
+    "n": 328,
+    "mean": -0.02248,
+    "se": 0.00363,
+    "ci95": [
+     -0.02918,
+     -0.01529
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 194,
+   "moved_against": 128,
+   "no_move": 6,
+   "direction_hit_rate": {
+    "n": 322,
+    "mean": 0.60248,
+    "se": 0.02764,
+    "ci95": [
+     0.54882,
+     0.65528
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.00702,
+   "results": {
+    "n": 328,
+    "wins": 174,
+    "losses": 154,
+    "pushes": 0,
+    "win_pct": 0.5305,
+    "roi_at_open": {
+     "n": 328,
+     "mean": -0.0562,
+     "se": 0.05298,
+     "ci95": [
+      -0.15962,
+      0.04698
+     ],
+     "p_one_sided": 0.85559
+    }
+   },
+   "season": 2018
+  },
+  {
+   "n_bets": 848,
+   "n_clusters": 181,
+   "clv_prob": {
+    "n": 848,
+    "mean": 0.00882,
+    "se": 0.00115,
+    "ci95": [
+     0.00662,
+     0.0111
+    ],
+    "p_one_sided": 0.0
+   },
+   "clv_ev": {
+    "n": 848,
+    "mean": -0.02019,
+    "se": 0.00397,
+    "ci95": [
+     -0.02669,
+     -0.01137
+    ],
+    "p_one_sided": 1.0
+   },
+   "moved_toward": 532,
+   "moved_against": 314,
+   "no_move": 2,
+   "direction_hit_rate": {
+    "n": 846,
+    "mean": 0.62884,
+    "se": 0.01814,
+    "ci95": [
+     0.59148,
+     0.66237
+    ],
+    "p_one_sided": 0.0
+   },
+   "mean_abs_edge": 0.00784,
+   "results": {
+    "n": 848,
+    "wins": 522,
+    "losses": 326,
+    "pushes": 0,
+    "win_pct": 0.6156,
+    "roi_at_open": {
+     "n": 848,
+     "mean": 0.04273,
+     "se": 0.03178,
+     "ci95": [
+      -0.01938,
+      0.10418
+     ],
+     "p_one_sided": 0.08941
+    }
+   },
+   "season": 2019
+  }
+ ],
+ "exp_id": "MLB-R2",
+ "sport": "mlb",
+ "holdout": false,
+ "seasons": [
+  2015,
+  2016,
+  2017,
+  2018,
+  2019
+ ],
+ "extra": {
+  "fit_log": [
+   {
+    "season": 2012,
+    "skipped": "not enough earlier seasons"
+   },
+   {
+    "season": 2013,
+    "skipped": "not enough earlier seasons"
+   },
+   {
+    "season": 2014,
+    "skipped": "not enough earlier seasons"
+   },
+   {
+    "season": 2015,
+    "n_train": 6691,
+    "lambda": 100.0,
+    "coef": {
+     "d_proj": 0.03775,
+     "d_tp": 0.05437,
+     "fav": 0.04086,
+     "d_early": 0.08254,
+     "rotation_unknown": -0.00092
+    },
+    "intercept": -0.00026
+   },
+   {
+    "season": 2016,
+    "n_train": 8917,
+    "lambda": 100.0,
+    "coef": {
+     "d_proj": 0.02626,
+     "d_tp": 0.04973,
+     "fav": 0.02925,
+     "d_early": 0.07635,
+     "rotation_unknown": -0.00058
+    },
+    "intercept": -0.00061
+   },
+   {
+    "season": 2017,
+    "n_train": 11150,
+    "lambda": 100.0,
+    "coef": {
+     "d_proj": 0.03707,
+     "d_tp": 0.05442,
+     "fav": 0.03961,
+     "d_early": 0.07905,
+     "rotation_unknown": -0.00069
+    },
+    "intercept": -0.00092
+   },
+   {
+    "season": 2018,
+    "n_train": 13375,
+    "lambda": 100.0,
+    "coef": {
+     "d_proj": 0.03251,
+     "d_tp": 0.05258,
+     "fav": 0.04371,
+     "d_early": 0.06936,
+     "rotation_unknown": -0.00124
+    },
+    "intercept": -0.00045
+   },
+   {
+    "season": 2019,
+    "n_train": 15606,
+    "lambda": 100.0,
+    "coef": {
+     "d_proj": 0.03092,
+     "d_tp": 0.06082,
+     "fav": 0.04451,
+     "d_early": 0.0557,
+     "rotation_unknown": -0.00095
+    },
+    "intercept": -0.00045
+   }
+  ],
+  "movement_calibration": {
+   "n": 11133,
+   "slope": 0.9387,
+   "corr": 0.1125,
+   "bins": [
+    {
+     "n": 2227,
+     "pred": -0.0047,
+     "actual": -0.0043
+    },
+    {
+     "n": 2226,
+     "pred": -0.0011,
+     "actual": -0.0006
+    },
+    {
+     "n": 2227,
+     "pred": 0.0009,
+     "actual": 0.0017
+    },
+    {
+     "n": 2226,
+     "pred": 0.0027,
+     "actual": 0.004
+    },
+    {
+     "n": 2227,
+     "pred": 0.0063,
+     "actual": 0.0059
+    }
+   ]
+  }
+ }
+}

@@ -189,6 +189,42 @@ def pre():
     return out
 
 
+def _feat_fav(m):
+    x = price_frame(m, "p_proj")
+    x["fav"] = x.p_open - 0.5
+    x["move"] = x.p_close - x.p_open
+    ok = x.fav.notna() & x.move.notna()
+    return x[ok], ["fav"]
+
+
+def drift():
+    m, _ = load()
+    m = m[m.season.isin(PRE)].copy()
+    x, log, cal = residual(m, _feat_fav, PRE)
+    rep = runner.run(SPORT, "MLB-D1", x, cfg_price(0.005, "resid"), "favourite drift only (diagnostic)",
+                     extra={"fit_log": log, "movement_calibration": cal})
+    print("MLB-D1", runner.fmt(rep), log[-1])
+
+
+def holdout():
+    m, _ = load()
+    pre_m = m[m.season.isin(PRE)].copy()
+    proxy = m[m.season.isin(PROXY)].copy()
+    k = 8
+    both = pd.concat([pre_m, proxy], ignore_index=True)
+    x2, log2, cal2 = residual(both, lambda mm: _feat_ml(mm, True), PROXY, frozen_train=pre_m)
+    out = {}
+    for eid, x, c, label, extra in (("MLB-H1", price_frame(proxy, "p_proj"), cfg_price(0.02), "lab projected starter ML (proxy)", {}),
+                                    ("MLB-H2", x2, cfg_price(0.005, "resid"), "MLB-R2 frozen (proxy)", {"fit": log2, "movement_calibration": cal2})):
+        rep = runner.run(SPORT, eid, x, c, label, holdout=True, k_tests=k, extra=extra)
+        out[eid] = {"proxy": runner.fmt(rep), "verdict": H.verdict(rep["primary"], k),
+                    "clv_ev": rep["primary"].get("clv_ev", {}).get("mean"),
+                    "by_season": {s["season"]: f"n={s['n_bets']} {100 * s['clv_prob']['mean']:+.2f} pp" for s in rep["by_season"]}}
+        print(eid, json.dumps(out[eid], default=str))
+    with open(os.path.join(runner.RESULTS, SPORT, "holdout_summary.json"), "w") as f:
+        json.dump(out, f, indent=1, default=float)
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "check":
@@ -200,3 +236,7 @@ if __name__ == "__main__":
               "corr(p_proj, p_close)", round(float(np.corrcoef(m.p_proj[ok], m.p_close[ok])[0, 1]), 3))
     elif cmd == "pre":
         print(json.dumps(pre(), indent=1, default=str))
+    elif cmd == "drift":
+        drift()
+    elif cmd == "holdout":
+        holdout()
