@@ -131,6 +131,7 @@ chk('the edge function carries the core verbatim (node tools/football/inline_cir
 {
   const fn = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'circa_ownership_sync', 'index.ts'), 'utf8');
   chk('the function pins its PDF library to an exact version', /npm:unpdf@\d+\.\d+\.\d+"/.test(fn));
+  chk('the PDF library is imported by a literal specifier, so the deploy bundles it (a variable left it out)', /import\("npm:unpdf@\d+\.\d+\.\d+"\)/.test(fn) && !/import\(\s*[A-Za-z_$][\w$]*\s*\)/.test(fn));
   chk('the function checks x-cron-secret and refuses when its secret is unset', /x-cron-secret/.test(fn) && /CIRCA_CRON_SECRET is not set/.test(fn));
   chk('the function never writes a failed run as rows (failed → contest_ownership_fail)', /v\.status === "failed"[\s\S]{0,80}fail\(/.test(fn));
   ['contest_ownership.sql', 'contest_ownership_cron.sql'].forEach((f) => {
