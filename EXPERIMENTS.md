@@ -383,3 +383,8 @@ Run 2026-10-21 on SBR 2011–2019 (2,393 games) by `python3 -m research.clv.nfl 
 - The gate data is the **proxy holdout, SBR 2020–2021**.
 - 2026 (`football/pricing/openers_nfl.json`: first-seen consensus open, consensus close) is reported beside it and does not gate. It is the only fully out-of-sample NFL data, so it is printed with every verdict.
 - **k = 12** (8 + 4). PASS per G7.
+
+### NFL-H1: production v2.1.0 spread on the proxy holdout (as selected above)
+### NFL-H2: production v2.1.0 total on the proxy holdout (as selected above)
+### NFL-H3: NFL-R1 frozen, spread, on the proxy holdout (as selected above)
+### NFL-H4: NFL-W2 frozen, total, on the proxy holdout (as selected above)

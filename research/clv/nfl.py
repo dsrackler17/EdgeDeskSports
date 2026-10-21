@@ -189,7 +189,7 @@ def frame(m, col, market="spread"):
     return x
 
 
-def residual(m, base_cols, extra, market, seasons, frozen_train=None):
+def _features(m, base_cols, extra, market):
     x = frame(m, base_cols[0], market)
     feats = []
     for c in base_cols:
@@ -200,13 +200,18 @@ def residual(m, base_cols, extra, market, seasons, frozen_train=None):
         x["d_early"] = x[f"d_{base_cols[0]}"] * x.early
         feats += ["open_lvl", "d_early", "rest_diff", "backup_diff"]
     x["move"] = x.close_line - x.open_line
-    x = x[x[feats].notna().all(axis=1) & x.move.notna()]
+    return x[x[feats].notna().all(axis=1) & x.move.notna()], feats
+
+
+def residual(m, base_cols, extra, market, seasons, frozen_train=None):
+    x, feats = _features(m, base_cols, extra, market)
     if frozen_train is None:
         x = x[x.season.isin(seasons)]
         pred, log = R.walk_forward(x, feats, "move", seasons, min_train_seasons=3)
         x = x.assign(pred_move=pred)
     else:
-        tr = residual_train(frozen_train, base_cols, extra, market)
+        tr, _ = _features(frozen_train, base_cols, extra, market)
+        tr = tr[tr.season.isin(PRE)]
         lam = R.choose_lambda(tr, feats, "move", [0.1, 1.0, 10.0, 100.0])
         mod = R.ridge_fit(tr[feats], tr.move, lam)
         x = x[x.season.isin(seasons)].copy()
@@ -216,11 +221,6 @@ def residual(m, base_cols, extra, market, seasons, frozen_train=None):
     x = x[x.pred_move.notna()].copy()
     x["model_line"] = x.open_line + x.pred_move
     return x, log, H.movement_calibration(x.pred_move, x.move)
-
-
-def residual_train(m, base_cols, extra, market):
-    x, _, _ = residual(m, base_cols, extra, market, PRE)        # rows only; refit below on all PRE rows
-    return x
 
 
 def pre():
@@ -264,6 +264,77 @@ def pre():
     return out
 
 
+# ------------------------------------------------------------- Phase 6
+def lines_2026():
+    d = json.load(open(os.path.join(S.ROOT, "football", "pricing", "openers_nfl.json")))["games"]
+    rows = []
+    for gid, g in d.items():
+        o, c = g.get("open") or {}, g.get("close") or {}
+        if not g.get("closed"):
+            continue
+        rows.append({"game_id": gid, "open_line": -o["home_line"] if o.get("home_line") is not None else np.nan,
+                     "close_line": -c["home_line"] if c.get("home_line") is not None else np.nan,
+                     "open_total": o.get("total"), "close_total": c.get("total"), "open_seen_at": o.get("seen_at")})
+    return pd.DataFrame(rows)
+
+
+def holdout_frames():
+    m, _, _ = load()
+    pre_m = m[m.season.isin(PRE)].copy()
+    proxy = m[m.season.isin(PROXY)].copy()
+    g = games()
+    l26 = lines_2026()
+    x = g[g.season == 2026].merge(l26, on="game_id", how="inner")
+    x = x[x.home_score.notna()].copy()
+    x["margin"] = x.home_score - x.away_score
+    x["total_pts"] = x.home_score + x.away_score
+    x["result"] = x.margin
+    for path, cols in ((LOOP_CACHE, {"pred_margin": "loop", "pred_total": "loop_total"}),
+                       (V21_CACHE, {"model_margin": "v21", "model_total": "v21_total"})):
+        p = pd.read_csv(path)
+        x = x.merge(p[["game_id"] + list(cols)].rename(columns=cols), on="game_id", how="left")
+    x["cluster"] = x.season.astype(str) + "-" + x.week.astype(str)
+    return pre_m, proxy, x
+
+
+def holdout():
+    global DISTS
+    pre_m, proxy, live = holdout_frames()
+    DISTS = dists(pre_m)
+    k = 12
+    out = {}
+    specs = [("NFL-H1", "spread", "v21", None, 1.0, "production v2.1.0 spread"),
+             ("NFL-H2", "total", "v21_total", None, 1.5, "production v2.1.0 total"),
+             ("NFL-H3", "spread", None, (["v21", "loop"], False), 0.25, "NFL-R1 frozen, spread"),
+             ("NFL-H4", "total", None, (["v21_total", "loop_total"], False), 0.25, "NFL-W2 frozen, total")]
+    for eid, mk, col, resid, thr, label in specs:
+        c = cfg(pre_m, mk, thr, "base" if resid is None else "resid")
+        res = {}
+        for part, src in (("proxy", proxy), ("2026", live)):
+            if resid is None:
+                x = frame(src, col, mk)
+                extra = {}
+            else:
+                both = pd.concat([pre_m, src], ignore_index=True)
+                x, log, cal = residual(both, resid[0], resid[1], mk, sorted(src.season.unique()), frozen_train=pre_m)
+                extra = {"fit": log, "movement_calibration": cal}
+            if part == "proxy":
+                rep = runner.run(SPORT, eid, x, c, label + " (proxy holdout 2020-21)", holdout=True, k_tests=k, extra=extra)
+                res["proxy"] = runner.fmt(rep)
+                res["verdict"] = H.verdict(rep["primary"], k)
+                res["clv_ev"] = rep["primary"].get("clv_ev", {}).get("mean")
+                res["by_season"] = {s["season"]: f"n={s['n_bets']} {100 * s['clv_prob']['mean']:+.2f} pp" for s in rep["by_season"]}
+            else:
+                rep = H.evaluate(x, c, k_tests=k, label=label + " (2026, reported)")
+                with open(os.path.join(runner.RESULTS, SPORT, f"{eid}_2026.json"), "w") as f:
+                    json.dump(rep, f, indent=1, default=float)
+                res["2026"] = runner.fmt(rep) if rep["primary"].get("n_bets") else "0 bets"
+        out[eid] = res
+        print(eid, json.dumps(res, default=str))
+    with open(os.path.join(runner.RESULTS, SPORT, "holdout_summary.json"), "w") as f:
+        json.dump(out, f, indent=1, default=float)
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "bases":
@@ -271,6 +342,8 @@ if __name__ == "__main__":
         loop_opener()
     elif cmd == "pre":
         print(json.dumps(pre(), indent=1, default=str))
+    elif cmd == "holdout":
+        holdout()
     elif cmd == "check":
         m, qa, _ = load()
         print(json.dumps(qa, indent=1, default=str))
