@@ -1052,6 +1052,16 @@ current report.
     statuses as you stated them**, laid out as the league's PDF. The live
     report could not be fetched from the build environment, whose network
     policy blocks the league and ESPN.
+13. **The sync sends a browser's request headers.** On the first live runs
+    (2026-10-21) the crawler-style agent `EdgeDesk research (+https://…)` was
+    refused. ESPN answered 403 Access Denied for the injuries feed and all 30
+    rosters, and the league's PDF host never answered. A pg_net probe from the
+    database sent the same requests three ways: the browser headers and pg_net's
+    plain default got 200 (206 for the PDF), and only the crawler-style agent
+    was refused. The repo's other ESPN readers already send a browser agent
+    (`tools/cbb/espn_clubs.js`). A refused PDF now records how it was refused
+    (an HTTP status, a timeout, or not a PDF) in the `official_unavailable`
+    alert.
 
 ### Acceptance
 

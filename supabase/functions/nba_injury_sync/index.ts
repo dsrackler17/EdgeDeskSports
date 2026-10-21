@@ -55,11 +55,20 @@
 //      NBA_INPUTS_URL (default https://edgedesksports.com/nba/roster_inputs.json)
 // ============================================================
 
-export const BUILD = "nba_injury_sync@2026-10-21.1";
+export const BUILD = "nba_injury_sync@2026-10-21.2";
 const UNPDF = "npm:unpdf@1.8.1";
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 const INPUTS_URL = "https://edgedesksports.com/nba/roster_inputs.json";
-const UA = { "user-agent": "EdgeDesk research (+https://edgedesksports.com)" };
+// A browser's headers. The crawler-style "EdgeDesk research (+https://...)" agent
+// was refused at the edge: ESPN answered 403 Access Denied and the league's PDF
+// host never answered, while the same requests with these headers got 200/206
+// (a pg_net probe from the database, 2026-10-21). The repo's other ESPN readers
+// send a browser agent too (tools/cbb/espn_clubs.js).
+const UA = {
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+  "accept": "*/*",
+  "accept-language": "en-US,en;q=0.9",
+};
 const PARSER_VERSION = "nba-official-lines-1";
 
 // ── BEGIN NBA DIST ─────────────────────────────────────────────────────
@@ -947,17 +956,22 @@ export const hooks: Any = {
     return out;
   },
 };
-async function getPdf(url: string): Promise<Uint8Array | null> {
-  const r = await getResp(url, 25000);
-  if (!r.ok) return null;
-  const b = new Uint8Array(await r.arrayBuffer());
-  return b.length > 4 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46 ? b : null; // %PDF
+/** the PDF's bytes, or null and why not (an HTTP status, a timeout, not a PDF) */
+async function getPdf(url: string): Promise<{ bytes: Uint8Array | null; why: string }> {
+  try {
+    const r = await getResp(url, 25000);
+    if (!r.ok) return { bytes: null, why: "HTTP " + r.status };
+    const b = new Uint8Array(await r.arrayBuffer());
+    return b.length > 4 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46 ? { bytes: b, why: "" } : { bytes: null, why: "not a PDF" }; // %PDF
+  } catch (e) {
+    return { bytes: null, why: /timeout|abort/i.test(String((e as Error)?.name ?? e)) ? "timed out" : String((e as Error)?.message ?? e).slice(0, 80) };
+  }
 }
 
 /* ---------------------------------------------------------------- the sources */
 /** the league's newest readable report: the season page's links, then the file-name pattern */
 export async function readOfficial(nowMs: number) {
-  const tried: string[] = [];
+  const tried: string[] = [], why: string[] = [];
   let links: Any[] = [];
   try {
     const page = nbaSeasonPageUrl(nowMs);
@@ -967,16 +981,15 @@ export async function readOfficial(nowMs: number) {
   const cands = links.length ? links.slice(0, 3) : nbaReportCandidates(nowMs, 8).slice(0, 40);
   for (const c of cands) {
     tried.push(c.url);
-    let bytes: Uint8Array | null = null;
-    try { bytes = await getPdf(c.url); } catch (_) { bytes = null; }
-    if (!bytes) continue;
+    const { bytes, why: w } = await getPdf(c.url);
+    if (!bytes) { if (!why.includes(w)) why.push(w); continue; }
     let lines: string[];
     try { lines = await hooks.pdfLines(bytes); } catch (e) { return { ok: false, error: "the report PDF would not read: " + String((e as Error)?.message ?? e).slice(0, 200), url: c.url, tried }; }
     const parsed = nbaParseOfficialLines(lines, { url: c.url });
     if (!parsed.header_seen && !parsed.matchups.length) return { ok: false, error: "the report PDF read, but not as the league's table (layout drift)", url: c.url, tried, parsed, drift: true };
     return { ok: true, url: c.url, published_ms: parsed.published_ms ?? c.published_ms, parsed, pdf_sha256: await sha256hex(bytes), tried, via: links.length ? "season_page" : "file_pattern" };
   }
-  return { ok: false, error: links.length ? "the newest reports linked from the season page would not download" : "no report found (season page unreadable and no file at the published pattern in the last 8 hours)", tried };
+  return { ok: false, error: (links.length ? "the newest reports linked from the season page would not download" : "no report found (season page unreadable and no file at the published pattern in the last 8 hours)") + (why.length ? ": " + why.join(", ") : ""), tried };
 }
 export async function readEspnInjuries() {
   try {
