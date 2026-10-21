@@ -70,7 +70,9 @@ do $g$ begin
   end if;
 end $g$;
 
-select cron.unschedule(jobid) from cron.job where jobname in ('kalshi_sync_discover', 'kalshi_sync_snapshot');
+-- also the starter's two jobs (kalshi_schema.sql's commented block), if they were
+-- ever scheduled: they carried the service-role key in their command
+select cron.unschedule(jobid) from cron.job where jobname in ('kalshi_sync_discover', 'kalshi_sync_snapshot', 'kalshi_discover_daily', 'kalshi_snapshot_5m');
 select cron.schedule('kalshi_sync_discover', '17 9 * * *', $job$ select public.kalshi_poke('discover'); $job$);
 select cron.schedule('kalshi_sync_snapshot', '*/5 * * * *', $job$ select public.kalshi_poke('snapshot'); $job$);
 
@@ -78,6 +80,7 @@ select cron.schedule('kalshi_sync_snapshot', '*/5 * * * *', $job$ select public.
 select piece, state from (
   select '1 the daily discover is scheduled' as piece, case when exists (select 1 from cron.job where jobname = 'kalshi_sync_discover' and active) then 'ok' else 'CHECK THIS' end as state
   union all select '2 the 5-minute snapshot is scheduled', case when exists (select 1 from cron.job where jobname = 'kalshi_sync_snapshot' and schedule = '*/5 * * * *' and active) then 'ok' else 'CHECK THIS' end
+  union all select '4 no starter job is left (none carries the service-role key)', case when not exists (select 1 from cron.job where jobname in ('kalshi_discover_daily', 'kalshi_snapshot_5m')) then 'ok' else 'CHECK THIS' end
   union all select '3 Vault kalshi_cron_secret is set', case when exists (select 1 from vault.decrypted_secrets where name = 'kalshi_cron_secret' and nullif(decrypted_secret, '') is not null) then 'ok'
     else 'CHECK THIS: select vault.create_secret(''<KALSHI_CRON_SECRET>'', ''kalshi_cron_secret'');' end
 ) r order by 1;

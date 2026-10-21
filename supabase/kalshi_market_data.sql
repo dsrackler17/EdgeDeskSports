@@ -75,6 +75,11 @@
 -- REQUIRES public.signals and public.signal_ticks (capture) and
 -- signals.closing_at_observed (supabase/close_v7_parity.sql).
 --
+-- OVER THE STARTER. Safe on a database where the starter kalshi_schema.sql
+-- ran: its tables and rows are kept and given this layer's columns, and its
+-- three views (no data) are replaced. kalshi_market_data_cron.sql removes the
+-- starter's cron jobs if they were scheduled.
+--
 -- CONVENTION (supabase/README.md): idempotent, additive, pasted into the SQL
 -- editor, no psql meta-commands, ends in a report. Safe to run again.
 -- Mirrored in supabase/migrations/20261021230000_kalshi_market_data.sql.
@@ -162,6 +167,17 @@ create index if not exists kalshi_markets_event_idx on public.kalshi_markets (ev
 create index if not exists kalshi_markets_series_idx on public.kalshi_markets (series_ticker, status);
 create index if not exists kalshi_markets_close_idx on public.kalshi_markets (close_time);
 
+-- THE STARTER SCHEMA, UPGRADED IN PLACE. kalshi_schema.sql (the starter this
+-- layer replaced) created kalshi_series, kalshi_markets and
+-- kalshi_price_snapshots with fewer columns. On a database where it ran, the
+-- tables above already exist and `create table if not exists` leaves them as
+-- they are: their rows are kept, and they get the columns this layer and
+-- kalshi_sync write. (kalshi_price_snapshots.run_id is added after that table.)
+alter table public.kalshi_series add column if not exists first_seen_at timestamptz not null default now();
+alter table public.kalshi_series alter column categories set default '{}';
+alter table public.kalshi_series alter column tags set default '{}';
+alter table public.kalshi_markets add column if not exists title text;
+
 -- ---------------------------------------------------------------- runs and alerts
 create table if not exists public.kalshi_sync_runs (
   run_id                 uuid primary key default gen_random_uuid(),
@@ -220,6 +236,7 @@ create table if not exists public.kalshi_price_snapshots (
 );
 create index if not exists kalshi_snap_ticker_time_idx on public.kalshi_price_snapshots (ticker, captured_at desc);
 create index if not exists kalshi_snap_captured_idx on public.kalshi_price_snapshots (captured_at desc);
+alter table public.kalshi_price_snapshots add column if not exists run_id uuid;   -- the starter's table had no run id
 
 -- ---------------------------------------------------------------- game links (append-only; one game-id fill allowed)
 create table if not exists public.kalshi_game_links (
@@ -285,6 +302,25 @@ comment on table public.kalshi_price_snapshots is 'T0 Observed, provider Kalshi:
 comment on table public.kalshi_game_links is 'Kalshi game-winner market -> EdgeDesk game: matched on both teams (lib/football_identity.js) and the game date against public.signals, then public.game_research_state for the card id. Unmatched events are not stored.';
 
 -- ---------------------------------------------------------------- views
+-- The starter's three views (kalshi_snapshot_mid, kalshi_closing_snapshot,
+-- kalshi_close_capture_health) have other columns, and `create or replace
+-- view` cannot rename a column. They hold no data: a view still in the
+-- starter's shape is dropped here and created below in this layer's.
+do $sv$ begin
+  if to_regclass('public.kalshi_close_capture_health') is not null and not exists (select 1 from information_schema.columns
+       where table_schema = 'public' and table_name = 'kalshi_close_capture_health' and column_name = 'close_basis') then
+    drop view public.kalshi_close_capture_health;
+  end if;
+  if to_regclass('public.kalshi_closing_snapshot') is not null and not exists (select 1 from information_schema.columns
+       where table_schema = 'public' and table_name = 'kalshi_closing_snapshot' and column_name = 'close_basis') then
+    drop view public.kalshi_closing_snapshot;
+  end if;
+  if to_regclass('public.kalshi_snapshot_mid') is not null and not exists (select 1 from information_schema.columns
+       where table_schema = 'public' and table_name = 'kalshi_snapshot_mid' and column_name = 'mid_excluded_reason') then
+    drop view public.kalshi_snapshot_mid;
+  end if;
+end $sv$;
+
 -- every snapshot with its spread and mid. Two-sided means a real bid (> 0)
 -- and a real ask (< 1); the mid is NULL when the quote is not two-sided or
 -- the spread is over kalshi_rule('max_spread').
@@ -603,6 +639,11 @@ select piece, state from (
   union all select '8 a series is tracked',
          case when exists (select 1 from public.kalshi_series where tracked) then 'ok'
               else 'pending: run kalshi_sync discover, then update public.kalshi_series set tracked = true where ticker in (select series_ticker from public.kalshi_link_series);' end
+  union all select '10 the tables carry every column kalshi_sync writes (a starter schema is upgraded in place)',
+         case when (select count(*) from information_schema.columns where table_schema = 'public' and (table_name, column_name) in
+              (('kalshi_series', 'first_seen_at'), ('kalshi_markets', 'title'), ('kalshi_price_snapshots', 'run_id'))) = 3
+               and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'kalshi_snapshot_mid' and column_name = 'mid_excluded_reason')
+              then 'ok' else 'CHECK THIS' end
   union all select '9 the capture tick index the comparison reads through',
          case when exists (select 1 from pg_indexes where schemaname = 'public' and tablename = 'signal_ticks' and indexdef like '%(sig_key, created_at%') then 'ok'
               else 'CHECK THIS (apply capture_v9_qualification.sql: without it every comparison scans signal_ticks)' end
