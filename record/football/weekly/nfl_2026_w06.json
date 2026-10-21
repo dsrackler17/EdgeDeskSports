@@ -1,0 +1,3531 @@
+{
+ "schema": "edgedesk_nfl_weekly_eval_v1",
+ "version": 1,
+ "season": 2026,
+ "week": 6,
+ "generated_at": "2026-10-21T01:23:43.730Z",
+ "served_model": "edgedesk_nfl_v2.0.0",
+ "published_versions": [
+  "edgedesk_football_v1.0.0"
+ ],
+ "conventions": {
+  "home_margin": "home points minus away points; positive = home favoured / home won",
+  "clv_pts": "points the market moved toward the side the number leaned; positive = the market came to the model",
+  "flag": "|model home margin - closing home margin| >= 3",
+  "replayed": "the number the model served at evaluation time gives the game from its pregame state (corrected pipeline); never a published number"
+ },
+ "week_summary": {
+  "published": {
+   "n": 14,
+   "mae": 8.1021,
+   "brier": 0.2792,
+   "logloss": 0.7563,
+   "prob_n": 14,
+   "clv": {
+    "basis": "the recorded quote at publication to the close (the model record)",
+    "n": 14,
+    "mean_pts": 0,
+    "positive": 5,
+    "negative": 2
+   },
+   "ats_vs_close": {
+    "n": 14,
+    "wins": 4
+   },
+   "closer_than_close": 4
+  },
+  "replayed": {
+   "n": 14,
+   "mae": 8.4729,
+   "brier": 0.2935,
+   "logloss": 0.7932,
+   "prob_n": 14,
+   "clv": {
+    "basis": "the opener to the close (replayed number; it did not exist at the open)",
+    "n": 14,
+    "mean_pts": -0.25,
+    "positive": 3,
+    "negative": 1
+   },
+   "ats_vs_close": {
+    "n": 14,
+    "wins": 4
+   },
+   "closer_than_close": 4
+  },
+  "close": {
+   "n": 14,
+   "mae": 6.6429,
+   "brier": 0.2585,
+   "logloss": 0.721,
+   "prob_n": 14
+  },
+  "paired": {
+   "n": 14,
+   "published": {
+    "n": 14,
+    "mae": 8.1021,
+    "brier": 0.2792,
+    "logloss": 0.7563,
+    "prob_n": 14,
+    "clv": {
+     "basis": "the recorded quote at publication to the close (the model record)",
+     "n": 14,
+     "mean_pts": 0,
+     "positive": 5,
+     "negative": 2
+    },
+    "ats_vs_close": {
+     "n": 14,
+     "wins": 4
+    },
+    "closer_than_close": 4
+   },
+   "replayed": {
+    "n": 14,
+    "mae": 8.4729,
+    "brier": 0.2935,
+    "logloss": 0.7932,
+    "prob_n": 14,
+    "clv": {
+     "basis": "the opener to the close (replayed number; it did not exist at the open)",
+     "n": 14,
+     "mean_pts": -0.25,
+     "positive": 3,
+     "negative": 1
+    },
+    "ats_vs_close": {
+     "n": 14,
+     "wins": 4
+    },
+    "closer_than_close": 4
+   },
+   "close": {
+    "n": 14,
+    "mae": 6.6429,
+    "brier": 0.2585,
+    "logloss": 0.721,
+    "prob_n": 14
+   }
+  }
+ },
+ "season_to_date": {
+  "published": {
+   "n": 77,
+   "mae": 9.1358,
+   "brier": 0.2384,
+   "logloss": 0.6658,
+   "prob_n": 76,
+   "clv": {
+    "basis": "the recorded quote at publication to the close (the model record)",
+    "n": 77,
+    "mean_pts": 0.1494,
+    "positive": 29,
+    "negative": 13
+   },
+   "ats_vs_close": {
+    "n": 72,
+    "wins": 38
+   },
+   "closer_than_close": 37
+  },
+  "replayed": {
+   "n": 93,
+   "mae": 9.7894,
+   "brier": 0.2291,
+   "logloss": 0.6472,
+   "prob_n": 92,
+   "clv": {
+    "basis": "the opener to the close (replayed number; it did not exist at the open)",
+    "n": 77,
+    "mean_pts": 0.4935,
+    "positive": 34,
+    "negative": 17
+   },
+   "ats_vs_close": {
+    "n": 87,
+    "wins": 40
+   },
+   "closer_than_close": 39
+  },
+  "close": {
+   "n": 93,
+   "mae": 9.3065,
+   "brier": 0.2334,
+   "logloss": 0.6614,
+   "prob_n": 92
+  },
+  "paired": {
+   "n": 77,
+   "published": {
+    "n": 77,
+    "mae": 9.1358,
+    "brier": 0.2384,
+    "logloss": 0.6658,
+    "prob_n": 76,
+    "clv": {
+     "basis": "the recorded quote at publication to the close (the model record)",
+     "n": 77,
+     "mean_pts": 0.1494,
+     "positive": 29,
+     "negative": 13
+    },
+    "ats_vs_close": {
+     "n": 72,
+     "wins": 38
+    },
+    "closer_than_close": 37
+   },
+   "replayed": {
+    "n": 77,
+    "mae": 9.2517,
+    "brier": 0.2314,
+    "logloss": 0.6523,
+    "prob_n": 76,
+    "clv": {
+     "basis": "the opener to the close (replayed number; it did not exist at the open)",
+     "n": 77,
+     "mean_pts": 0.4935,
+     "positive": 34,
+     "negative": 17
+    },
+    "ats_vs_close": {
+     "n": 72,
+     "wins": 33
+    },
+    "closer_than_close": 32
+   },
+   "close": {
+    "n": 77,
+    "mae": 8.8961,
+    "brier": 0.2376,
+    "logloss": 0.67,
+    "prob_n": 76
+   }
+  },
+  "weeks": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "calibration": {
+   "published": {
+    "n": 76,
+    "ece": 0.1375,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 6,
+      "predicted": 0.2713,
+      "observed": 0.1667
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 6,
+      "predicted": 0.3612,
+      "observed": 0.5
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 14,
+      "predicted": 0.4579,
+      "observed": 0.2857
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 15,
+      "predicted": 0.5534,
+      "observed": 0.6
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 15,
+      "predicted": 0.6543,
+      "observed": 0.4667
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 12,
+      "predicted": 0.7417,
+      "observed": 0.5
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 6,
+      "predicted": 0.8348,
+      "observed": 0.8333
+     },
+     {
+      "lo": 0.9,
+      "hi": 1,
+      "n": 2,
+      "predicted": 0.9198,
+      "observed": 1
+     }
+    ]
+   },
+   "replayed": {
+    "n": 92,
+    "ece": 0.1472,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 1,
+      "predicted": 0.1848,
+      "observed": 0
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4,
+      "predicted": 0.2468,
+      "observed": 0.25
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 8,
+      "predicted": 0.3353,
+      "observed": 0.125
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 20,
+      "predicted": 0.4699,
+      "observed": 0.6
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 14,
+      "predicted": 0.5382,
+      "observed": 0.4286
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 22,
+      "predicted": 0.66,
+      "observed": 0.3636
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 12,
+      "predicted": 0.7725,
+      "observed": 0.75
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 11,
+      "predicted": 0.842,
+      "observed": 0.9091
+     },
+     {
+      "lo": 0.9,
+      "hi": 1,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+     }
+    ]
+   },
+   "close": {
+    "n": 92,
+    "ece": 0.0471,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 1,
+      "predicted": 0.1777,
+      "observed": 0
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4,
+      "predicted": 0.2553,
+      "observed": 0.25
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 13,
+      "predicted": 0.3557,
+      "observed": 0.3077
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 18,
+      "predicted": 0.4423,
+      "observed": 0.4444
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 18,
+      "predicted": 0.5596,
+      "observed": 0.5556
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 15,
+      "predicted": 0.6477,
+      "observed": 0.6
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 18,
+      "predicted": 0.7506,
+      "observed": 0.6667
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 5,
+      "predicted": 0.8344,
+      "observed": 0.6
+     },
+     {
+      "lo": 0.9,
+      "hi": 1,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+     }
+    ]
+   }
+  },
+  "rows": [
+   {
+    "game_id": "2026_01_NE_SEA",
+    "week": 1,
+    "neutral": false,
+    "residual": -4.32,
+    "model": 7.32,
+    "close": 3,
+    "card": {
+     "base_strength": 3.4500617795260693,
+     "passing": 0.0791583313818874,
+     "rushing": 0.00770466376162822,
+     "quarterback": 0.9465982535260031,
+     "home_field": 2.8340359477777777,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 3.4501,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_SF_LA",
+    "week": 1,
+    "neutral": true,
+    "residual": -23.28,
+    "model": 3.28,
+    "close": 3.5,
+    "card": {
+     "base_strength": 3.60232673197179,
+     "passing": 0.10147892281652449,
+     "rushing": 0.14083402416877938,
+     "quarterback": 0.9517058637945573,
+     "home_field": 0.23718889777777777,
+     "context": -1.7559246099999999,
+     "rest_travel": 0
+    },
+    "base_prior": 3.6023,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_ARI_LAC",
+    "week": 1,
+    "neutral": false,
+    "residual": -19.44,
+    "model": 7.44,
+    "close": 8.5,
+    "card": {
+     "base_strength": 4.696566403626665,
+     "passing": 0.13734041502955105,
+     "rushing": 0.16358258739319892,
+     "quarterback": -0.0789726663928381,
+     "home_field": 2.8340359477777777,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": 4.6966,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_ATL_PIT",
+    "week": 1,
+    "neutral": false,
+    "residual": 3.02,
+    "model": 3.98,
+    "close": 6.5,
+    "card": {
+     "base_strength": 1.7268867469984104,
+     "passing": -0.0565885856168496,
+     "rushing": 0.12042972840251866,
+     "quarterback": 0.036499244569960225,
+     "home_field": 2.8340359477777777,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": 1.7269,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_BAL_IND",
+    "week": 1,
+    "neutral": false,
+    "residual": -17.18,
+    "model": -0.82,
+    "close": -3,
+    "card": {
+     "base_strength": -3.2560862917247606,
+     "passing": -0.035904722055235205,
+     "rushing": -0.2306127224285671,
+     "quarterback": 0.17857618250522,
+     "home_field": 2.8340359477777777,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": -3.2561,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_BUF_HOU",
+    "week": 1,
+    "neutral": false,
+    "residual": -6.53,
+    "model": 1.53,
+    "close": -1.5,
+    "card": {
+     "base_strength": -0.8142539330428432,
+     "passing": -0.08097080293530143,
+     "rushing": 0.0008182749605963952,
+     "quarterback": -0.09577750644962661,
+     "home_field": 2.8340359477777777,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": -0.8143,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_CHI_CAR",
+    "week": 1,
+    "neutral": false,
+    "residual": -18.9,
+    "model": -3.1,
+    "close": -3,
+    "card": {
+     "base_strength": -4.467963678432453,
+     "passing": -0.15749957155500288,
+     "rushing": -0.1406956196613055,
+     "quarterback": -0.48544066348961046,
+     "home_field": 2.8340359477777777,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -4.468,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_CLE_JAX",
+    "week": 1,
+    "neutral": false,
+    "residual": 13.53,
+    "model": 10.47,
+    "close": 8.5,
+    "card": {
+     "base_strength": 6.659507749717049,
+     "passing": 0.23881068615750917,
+     "rushing": -0.023523099914080723,
+     "quarterback": 1.434768190435385,
+     "home_field": 2.8340359477777777,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": 6.6595,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_DAL_NYG",
+    "week": 1,
+    "neutral": false,
+    "residual": 6.72,
+    "model": 1.28,
+    "close": -3,
+    "card": {
+     "base_strength": -0.20299703719392861,
+     "passing": 0.06198293488846753,
+     "rushing": 0.054078667529852305,
+     "quarterback": -0.7028137721889848,
+     "home_field": 2.8340359477777777,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": -0.203,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_GB_MIN",
+    "week": 1,
+    "neutral": false,
+    "residual": 15.15,
+    "model": 1.85,
+    "close": 1.5,
+    "card": {
+     "base_strength": 0.2604023906981847,
+     "passing": 0.013204757652039371,
+     "rushing": 0.03657396523689601,
+     "quarterback": -0.21282681074171403,
+     "home_field": 2.8340359477777777,
+     "context": -1.07830327,
+     "rest_travel": 0
+    },
+    "base_prior": 0.2604,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_MIA_LV",
+    "week": 1,
+    "neutral": false,
+    "residual": 15.07,
+    "model": -1.07,
+    "close": 3,
+    "card": {
+     "base_strength": -3.4519509037302507,
+     "passing": -0.09103756454368417,
+     "rushing": -0.09237976360840827,
+     "quarterback": 0.7208504815558436,
+     "home_field": 2.8340359477777777,
+     "context": -0.98834825,
+     "rest_travel": 0
+    },
+    "base_prior": -3.452,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_NO_DET",
+    "week": 1,
+    "neutral": false,
+    "residual": -7.52,
+    "model": 8.52,
+    "close": 7,
+    "card": {
+     "base_strength": 6.2244620516754905,
+     "passing": 0.12735384241891395,
+     "rushing": -0.05804283205301409,
+     "quarterback": -0.2935184871412731,
+     "home_field": 2.8340359477777777,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": 6.2245,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_NYJ_TEN",
+    "week": 1,
+    "neutral": false,
+    "residual": -17.11,
+    "model": 4.11,
+    "close": 1.5,
+    "card": {
+     "base_strength": 0.9764700206028166,
+     "passing": 0.12403444692159647,
+     "rushing": 0.052338322883384795,
+     "quarterback": 0.7967006223055898,
+     "home_field": 2.8340359477777777,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": 0.9765,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_TB_CIN",
+    "week": 1,
+    "neutral": false,
+    "residual": 2.34,
+    "model": 3.66,
+    "close": 3.5,
+    "card": {
+     "base_strength": 0.0627787603176154,
+     "passing": 0.049318986423542405,
+     "rushing": -0.0960371832129796,
+     "quarterback": 0.8056871219000893,
+     "home_field": 2.8340359477777777,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 0.0628,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_WAS_PHI",
+    "week": 1,
+    "neutral": false,
+    "residual": -5.62,
+    "model": 7.62,
+    "close": 6,
+    "card": {
+     "base_strength": 5.275176686727557,
+     "passing": 0.21586690144016932,
+     "rushing": 0.09692816295112,
+     "quarterback": 0.6431251817952325,
+     "home_field": 2.8340359477777777,
+     "context": -1.4451977,
+     "rest_travel": 0
+    },
+    "base_prior": 5.2752,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_01_DEN_KC",
+    "week": 1,
+    "neutral": false,
+    "residual": 22.3,
+    "model": -1.3,
+    "close": 2.5,
+    "card": {
+     "base_strength": -2.292636934430176,
+     "passing": -0.21777858140586343,
+     "rushing": 0.13750652268808544,
+     "quarterback": -0.31152199735614966,
+     "home_field": 2.8340359477777777,
+     "context": -1.4451977,
+     "rest_travel": 0
+    },
+    "base_prior": -2.2926,
+    "base_current": 0
+   },
+   {
+    "game_id": "2026_02_DET_BUF",
+    "week": 2,
+    "neutral": false,
+    "residual": 6.64,
+    "model": 3.36,
+    "close": 5.5,
+    "card": {
+     "base_strength": 1.1924974978530982,
+     "passing": 0.09916800258255566,
+     "rushing": 0.07555497923211583,
+     "quarterback": 0.3918053683579867,
+     "home_field": 2.8718419755555558,
+     "context": -0.67762134,
+     "rest_travel": -0.5974769799999999
+    },
+    "base_prior": 0.6179,
+    "base_current": 0.5746
+   },
+   {
+    "game_id": "2026_02_CAR_ATL",
+    "week": 2,
+    "neutral": false,
+    "residual": -34.74,
+    "model": 3.74,
+    "close": -2.5,
+    "card": {
+     "base_strength": 1.8550010961492367,
+     "passing": 0.08101672111428264,
+     "rushing": 0.10708124814326843,
+     "quarterback": -0.09591960509466728,
+     "home_field": 2.8718419755555558,
+     "context": -1.07830327,
+     "rest_travel": 0
+    },
+    "base_prior": 1.1805,
+    "base_current": 0.6745
+   },
+   {
+    "game_id": "2026_02_CIN_HOU",
+    "week": 2,
+    "neutral": false,
+    "residual": -19.71,
+    "model": 5.71,
+    "close": 3,
+    "card": {
+     "base_strength": 3.4448200519840873,
+     "passing": 0.13583551754960432,
+     "rushing": 0.04886353260611938,
+     "quarterback": -0.47714097970832053,
+     "home_field": 2.8718419755555558,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": 3.7268,
+    "base_current": -0.2819
+   },
+   {
+    "game_id": "2026_02_CLE_TB",
+    "week": 2,
+    "neutral": false,
+    "residual": -10.03,
+    "model": 6.03,
+    "close": 8.5,
+    "card": {
+     "base_strength": 3.3377744714675384,
+     "passing": 0.053957403144212296,
+     "rushing": 0.11695018560185212,
+     "quarterback": 0.32684949294905685,
+     "home_field": 2.8718419755555558,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": 2.6408,
+    "base_current": 0.697
+   },
+   {
+    "game_id": "2026_02_GB_NYJ",
+    "week": 2,
+    "neutral": false,
+    "residual": 2.04,
+    "model": -5.04,
+    "close": -3.5,
+    "card": {
+     "base_strength": -6.983628413818782,
+     "passing": -0.3436680547572443,
+     "rushing": -0.10074429965357821,
+     "quarterback": -0.48664698053823646,
+     "home_field": 2.8718419755555558,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": -8.0479,
+    "base_current": 1.0642
+   },
+   {
+    "game_id": "2026_02_IND_KC",
+    "week": 2,
+    "neutral": false,
+    "residual": -2.17,
+    "model": 5.17,
+    "close": 6,
+    "card": {
+     "base_strength": 3.119803432889419,
+     "passing": 0.09441172932894569,
+     "rushing": 0.05313396193552541,
+     "quarterback": -0.10418027449414188,
+     "home_field": 2.8718419755555558,
+     "context": -0.67762134,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": 1.0365,
+    "base_current": 2.0833
+   },
+   {
+    "game_id": "2026_02_JAX_DEN",
+    "week": 2,
+    "neutral": false,
+    "residual": 8.96,
+    "model": -1.96,
+    "close": 2.5,
+    "card": {
+     "base_strength": -2.1189703670793687,
+     "passing": -0.10782054524174518,
+     "rushing": -0.010657997977937385,
+     "quarterback": -1.7340873971113566,
+     "home_field": 2.8718419755555558,
+     "context": -0.67762134,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": -0.0208,
+    "base_current": -2.0981
+   },
+   {
+    "game_id": "2026_02_LV_LAC",
+    "week": 2,
+    "neutral": false,
+    "residual": -17.81,
+    "model": 5.81,
+    "close": 6.5,
+    "card": {
+     "base_strength": 4.697584838702602,
+     "passing": 0.13948882207355529,
+     "rushing": 0.22882195501659514,
+     "quarterback": -1.0532475677812398,
+     "home_field": 2.8718419755555558,
+     "context": -1.07830327,
+     "rest_travel": 0
+    },
+    "base_prior": 6.1519,
+    "base_current": -1.4544
+   },
+   {
+    "game_id": "2026_02_MIA_SF",
+    "week": 2,
+    "neutral": false,
+    "residual": 13.27,
+    "model": 8.73,
+    "close": 12.5,
+    "card": {
+     "base_strength": 5.715159712084665,
+     "passing": 0.2099801767067734,
+     "rushing": 0.09616815920547647,
+     "quarterback": -0.03439871341648514,
+     "home_field": 2.8718419755555558,
+     "context": -0.67762134,
+     "rest_travel": 0.5494555371428571
+    },
+    "base_prior": 3.2886,
+    "base_current": 2.4266
+   },
+   {
+    "game_id": "2026_02_MIN_CHI",
+    "week": 2,
+    "neutral": false,
+    "residual": -7.92,
+    "model": 1.92,
+    "close": 4.5,
+    "card": {
+     "base_strength": -0.287599076507145,
+     "passing": -0.01581879430153882,
+     "rushing": -0.06703500738122631,
+     "quarterback": 0.8647579527064545,
+     "home_field": 2.8718419755555558,
+     "context": -1.4451977,
+     "rest_travel": 0
+    },
+    "base_prior": -0.2749,
+    "base_current": -0.0127
+   },
+   {
+    "game_id": "2026_02_NO_BAL",
+    "week": 2,
+    "neutral": false,
+    "residual": -15.87,
+    "model": 8.87,
+    "close": 8.5,
+    "card": {
+     "base_strength": 6.15368837113615,
+     "passing": 0.053165747917082354,
+     "rushing": 0.30840405937591814,
+     "quarterback": 0.15646653165340674,
+     "home_field": 2.8718419755555558,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": 5.3802,
+    "base_current": 0.7735
+   },
+   {
+    "game_id": "2026_02_PHI_TEN",
+    "week": 2,
+    "neutral": false,
+    "residual": 4.19,
+    "model": -8.19,
+    "close": -7,
+    "card": {
+     "base_strength": -9.8163022836379,
+     "passing": -0.4208957475293962,
+     "rushing": -0.030056459875929253,
+     "quarterback": -0.12129943727714645,
+     "home_field": 2.8718419755555558,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -8.7219,
+    "base_current": -1.0944
+   },
+   {
+    "game_id": "2026_02_PIT_NE",
+    "week": 2,
+    "neutral": false,
+    "residual": 9.43,
+    "model": 7.57,
+    "close": 4.5,
+    "card": {
+     "base_strength": 3.706053288776566,
+     "passing": 0.1704814356326664,
+     "rushing": 0.05572205497230546,
+     "quarterback": 0.03750127926650994,
+     "home_field": 2.8718419755555558,
+     "context": 0,
+     "rest_travel": 0.7326073828571429
+    },
+    "base_prior": 3.6844,
+    "base_current": 0.0217
+   },
+   {
+    "game_id": "2026_02_SEA_ARI",
+    "week": 2,
+    "neutral": false,
+    "residual": -14.08,
+    "model": -9.92,
+    "close": -3.5,
+    "card": {
+     "base_strength": -10.440047921948254,
+     "passing": -0.3381490539621175,
+     "rushing": -0.07731015540423898,
+     "quarterback": 0.5487251395472323,
+     "home_field": 2.8718419755555558,
+     "context": -1.7559246099999999,
+     "rest_travel": -0.7326073828571429
+    },
+    "base_prior": -10.7064,
+    "base_current": 0.2663
+   },
+   {
+    "game_id": "2026_02_WAS_DAL",
+    "week": 2,
+    "neutral": false,
+    "residual": 14.3,
+    "model": 2.7,
+    "close": 3.5,
+    "card": {
+     "base_strength": -0.21351563021231162,
+     "passing": -0.07265163141742931,
+     "rushing": -0.03922584775019334,
+     "quarterback": 1.2302539444607135,
+     "home_field": 2.8718419755555558,
+     "context": -1.07830327,
+     "rest_travel": 0
+    },
+    "base_prior": 0.4007,
+    "base_current": -0.6142
+   },
+   {
+    "game_id": "2026_02_NYG_LA",
+    "week": 2,
+    "neutral": false,
+    "residual": 14.16,
+    "model": 7.84,
+    "close": 6.5,
+    "card": {
+     "base_strength": 4.838646781427105,
+     "passing": 0.10681974147577643,
+     "rushing": 0.09663925700579268,
+     "quarterback": -0.3136583419860176,
+     "home_field": 2.8718419755555558,
+     "context": -0.31072691,
+     "rest_travel": 0.5494555371428571
+    },
+    "base_prior": 6.126,
+    "base_current": -1.2874
+   },
+   {
+    "game_id": "2026_03_ATL_GB",
+    "week": 3,
+    "neutral": false,
+    "residual": -26.36,
+    "model": 5.36,
+    "close": 4.5,
+    "card": {
+     "base_strength": 4.07812054388632,
+     "passing": 0.12232986679619685,
+     "rushing": 0.023655740341808444,
+     "quarterback": -0.49808146784903323,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": -0.5974769799999999
+    },
+    "base_prior": 2.8593,
+    "base_current": 1.2188
+   },
+   {
+    "game_id": "2026_03_ARI_SF",
+    "week": 3,
+    "neutral": false,
+    "residual": -3.67,
+    "model": 9.67,
+    "close": 7.5,
+    "card": {
+     "base_strength": 6.887771768830009,
+     "passing": 0.24747082352824462,
+     "rushing": 0.011762507093886472,
+     "quarterback": 1.054453121184407,
+     "home_field": 2.9096480033333334,
+     "context": -1.4451977,
+     "rest_travel": 0
+    },
+    "base_prior": 4.5006,
+    "base_current": 2.3872
+   },
+   {
+    "game_id": "2026_03_BAL_DAL",
+    "week": 3,
+    "neutral": true,
+    "residual": 1.63,
+    "model": -4.63,
+    "close": -3,
+    "card": {
+     "base_strength": -4.3903972372122215,
+     "passing": -0.1397279941643843,
+     "rushing": -0.4140672635402999,
+     "quarterback": 0.682440112316273,
+     "home_field": 0.3128009533333333,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -4.2586,
+    "base_current": -0.1317
+   },
+   {
+    "game_id": "2026_03_CAR_CLE",
+    "week": 3,
+    "neutral": false,
+    "residual": 3.13,
+    "model": -0.13,
+    "close": -2.5,
+    "card": {
+     "base_strength": -1.6493716657425976,
+     "passing": -0.06033490684988413,
+     "rushing": 0.01267650091340586,
+     "quarterback": -0.6615780383143475,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -0.2876,
+    "base_current": -1.3618
+   },
+   {
+    "game_id": "2026_03_CIN_PIT",
+    "week": 3,
+    "neutral": false,
+    "residual": 4.14,
+    "model": -1.14,
+    "close": -3.5,
+    "card": {
+     "base_strength": -1.2096388228726407,
+     "passing": -0.028868257210585214,
+     "rushing": -0.07640452866541583,
+     "quarterback": -1.2938243307885746,
+     "home_field": 2.9096480033333334,
+     "context": -1.4451977,
+     "rest_travel": 0
+    },
+    "base_prior": 0.3863,
+    "base_current": -1.5959
+   },
+   {
+    "game_id": "2026_03_HOU_IND",
+    "week": 3,
+    "neutral": false,
+    "residual": 2.93,
+    "model": -0.93,
+    "close": -1.5,
+    "card": {
+     "base_strength": -3.1650572267551236,
+     "passing": -0.15609975345211013,
+     "rushing": 0.0499161528521754,
+     "quarterback": 0.19954451575961113,
+     "home_field": 2.9096480033333334,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": -3.1747,
+    "base_current": 0.0096
+   },
+   {
+    "game_id": "2026_03_KC_MIA",
+    "week": 3,
+    "neutral": false,
+    "residual": -9.35,
+    "model": -4.65,
+    "close": -10,
+    "card": {
+     "base_strength": -6.422790793322454,
+     "passing": -0.19878381048094954,
+     "rushing": -0.23159800384615567,
+     "quarterback": -0.03210855542553349,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -3.0537,
+    "base_current": -3.3691
+   },
+   {
+    "game_id": "2026_03_LA_DEN",
+    "week": 3,
+    "neutral": false,
+    "residual": 4.05,
+    "model": -0.05,
+    "close": 1.5,
+    "card": {
+     "base_strength": -1.7041626802262242,
+     "passing": -0.02230725588164649,
+     "rushing": -0.11133243445769074,
+     "quarterback": -0.6291404593569079,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": 0.18315184571428572
+    },
+    "base_prior": -1.1907,
+    "base_current": -0.5134
+   },
+   {
+    "game_id": "2026_03_LAC_BUF",
+    "week": 3,
+    "neutral": false,
+    "residual": -2.23,
+    "model": 10.23,
+    "close": 7,
+    "card": {
+     "base_strength": 6.163968698270893,
+     "passing": 0.29903693209398075,
+     "rushing": 0.040821625051654147,
+     "quarterback": 0.9411838677068316,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": 0.5494555371428571
+    },
+    "base_prior": 3.2397,
+    "base_current": 2.9243
+   },
+   {
+    "game_id": "2026_03_LV_NO",
+    "week": 3,
+    "neutral": false,
+    "residual": -12.96,
+    "model": 4.96,
+    "close": 3.5,
+    "card": {
+     "base_strength": 2.555774015498205,
+     "passing": 0.17399807466404188,
+     "rushing": 0.1167124234983729,
+     "quarterback": -0.4820398045423031,
+     "home_field": 2.9096480033333334,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": 2.9416,
+    "base_current": -0.3858
+   },
+   {
+    "game_id": "2026_03_MIN_TB",
+    "week": 3,
+    "neutral": false,
+    "residual": -3.84,
+    "model": -3.16,
+    "close": -1.5,
+    "card": {
+     "base_strength": -4.17018083517321,
+     "passing": -0.23308280725986225,
+     "rushing": 0.02452863900709313,
+     "quarterback": -1.0145912814287992,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -2.0039,
+    "base_current": -2.1663
+   },
+   {
+    "game_id": "2026_03_NE_JAX",
+    "week": 3,
+    "neutral": false,
+    "residual": 26.36,
+    "model": 2.64,
+    "close": 3,
+    "card": {
+     "base_strength": -0.9144132092046973,
+     "passing": -0.0016733883643439413,
+     "rushing": -0.12566749597730256,
+     "quarterback": 1.4478311975431752,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -0.5065,
+    "base_current": -0.408
+   },
+   {
+    "game_id": "2026_03_NYJ_DET",
+    "week": 3,
+    "neutral": false,
+    "residual": -5.81,
+    "model": 12.81,
+    "close": 7,
+    "card": {
+     "base_strength": 8.958257363613074,
+     "passing": 0.40604257845893205,
+     "rushing": -0.050626093137085215,
+     "quarterback": 0.34361117915809086,
+     "home_field": 2.9096480033333334,
+     "context": -0.31072691,
+     "rest_travel": 0.5494555371428571
+    },
+    "base_prior": 9.4744,
+    "base_current": -0.5161
+   },
+   {
+    "game_id": "2026_03_SEA_WAS",
+    "week": 3,
+    "neutral": false,
+    "residual": 11.51,
+    "model": -9.51,
+    "close": -8.5,
+    "card": {
+     "base_strength": -10.717801707502217,
+     "passing": -0.40933369628082944,
+     "rushing": -0.16115956683488888,
+     "quarterback": -0.4521044586364306,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -8.3278,
+    "base_current": -2.39
+   },
+   {
+    "game_id": "2026_03_TEN_NYG",
+    "week": 3,
+    "neutral": false,
+    "residual": -1.34,
+    "model": 6.34,
+    "close": 2.5,
+    "card": {
+     "base_strength": 4.12670042889135,
+     "passing": 0.1982606202162769,
+     "rushing": -0.14000991817908134,
+     "quarterback": -0.5739484383891148,
+     "home_field": 2.9096480033333334,
+     "context": 0,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": 3.7335,
+    "base_current": 0.3932
+   },
+   {
+    "game_id": "2026_03_PHI_CHI",
+    "week": 3,
+    "neutral": false,
+    "residual": 19.07,
+    "model": 0.93,
+    "close": -3.5,
+    "card": {
+     "base_strength": -0.5161042714340371,
+     "passing": -0.04354891393669245,
+     "rushing": 0.10910398320093373,
+     "quarterback": -0.8469497276019146,
+     "home_field": 2.9096480033333334,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -1.5209,
+    "base_current": 1.0048
+   },
+   {
+    "game_id": "2026_04_PIT_CLE",
+    "week": 4,
+    "neutral": false,
+    "residual": 4.9,
+    "model": -1.9,
+    "close": -2.5,
+    "card": {
+     "base_strength": -3.2691400016420995,
+     "passing": -0.008187508241970157,
+     "rushing": -0.10899938800940522,
+     "quarterback": 0.5811691458080254,
+     "home_field": 2.947454031111111,
+     "context": -1.4451977,
+     "rest_travel": -0.5974769799999999
+    },
+    "base_prior": -2.7441,
+    "base_current": -0.5251
+   },
+   {
+    "game_id": "2026_04_ARI_NYG",
+    "week": 4,
+    "neutral": false,
+    "residual": 8.53,
+    "model": 3.47,
+    "close": -2.5,
+    "card": {
+     "base_strength": 1.3227965514853717,
+     "passing": 0.019910940274257116,
+     "rushing": -0.06722901844794886,
+     "quarterback": -0.7523036587764338,
+     "home_field": 2.947454031111111,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 1.805,
+    "base_current": -0.4822
+   },
+   {
+    "game_id": "2026_04_DAL_HOU",
+    "week": 4,
+    "neutral": false,
+    "residual": -8.88,
+    "model": 4.88,
+    "close": 3,
+    "card": {
+     "base_strength": 3.146320781013524,
+     "passing": 0.1716209547685338,
+     "rushing": 0.11384409159893717,
+     "quarterback": -1.185370201453435,
+     "home_field": 2.947454031111111,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": 4.282,
+    "base_current": -1.1357
+   },
+   {
+    "game_id": "2026_04_DEN_SF",
+    "week": 4,
+    "neutral": false,
+    "residual": 5.95,
+    "model": 4.05,
+    "close": 3,
+    "card": {
+     "base_strength": 0.2006051354779496,
+     "passing": 0.009852811205282225,
+     "rushing": 0.09105126833827278,
+     "quarterback": 1.482496737038587,
+     "home_field": 2.947454031111111,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -1.8622,
+    "base_current": 2.0628
+   },
+   {
+    "game_id": "2026_04_DET_CAR",
+    "week": 4,
+    "neutral": false,
+    "residual": 9.1,
+    "model": -3.1,
+    "close": -4.5,
+    "card": {
+     "base_strength": -5.074964524548195,
+     "passing": -0.16189254835909173,
+     "rushing": -0.02276761571629505,
+     "quarterback": -0.11296367937036672,
+     "home_field": 2.947454031111111,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -5.5275,
+    "base_current": 0.4526
+   },
+   {
+    "game_id": "2026_04_GB_TB",
+    "week": 4,
+    "neutral": false,
+    "residual": -4.52,
+    "model": 1.52,
+    "close": -3,
+    "card": {
+     "base_strength": -0.35344472190880616,
+     "passing": -0.0725403596174305,
+     "rushing": 0.2402013319297919,
+     "quarterback": -0.015635822529082414,
+     "home_field": 2.947454031111111,
+     "context": -0.67762134,
+     "rest_travel": -0.5494555371428571
+    },
+    "base_prior": -1.6636,
+    "base_current": 1.3102
+   },
+   {
+    "game_id": "2026_04_IND_WAS",
+    "week": 4,
+    "neutral": true,
+    "residual": -15.44,
+    "model": -1.56,
+    "close": -4.5,
+    "card": {
+     "base_strength": -1.4893441199684188,
+     "passing": 0.023894230953180565,
+     "rushing": -0.08260697500659911,
+     "quarterback": 0.3184461293892575,
+     "home_field": 0.3506069811111111,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": -1.6548,
+    "base_current": 0.1654
+   },
+   {
+    "game_id": "2026_04_JAX_CIN",
+    "week": 4,
+    "neutral": false,
+    "residual": -2.8,
+    "model": -2.2,
+    "close": 2.5,
+    "card": {
+     "base_strength": -4.691136049290736,
+     "passing": -0.23516669296635276,
+     "rushing": 0.05964307747615413,
+     "quarterback": -0.27878385337571643,
+     "home_field": 2.947454031111111,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": -3.135,
+    "base_current": -1.5562
+   },
+   {
+    "game_id": "2026_04_KC_LV",
+    "week": 4,
+    "neutral": false,
+    "residual": 1.92,
+    "model": -4.92,
+    "close": -4.5,
+    "card": {
+     "base_strength": -6.075021542942535,
+     "passing": -0.13720893652125105,
+     "rushing": -0.268327155436373,
+     "quarterback": 0.3737895287732678,
+     "home_field": 2.947454031111111,
+     "context": -1.7559246099999999,
+     "rest_travel": 0
+    },
+    "base_prior": -5.7285,
+    "base_current": -0.3465
+   },
+   {
+    "game_id": "2026_04_LA_PHI",
+    "week": 4,
+    "neutral": false,
+    "residual": -2.86,
+    "model": -1.14,
+    "close": -3.5,
+    "card": {
+     "base_strength": -2.4742095968627984,
+     "passing": -0.1823212995946643,
+     "rushing": 0.05844233137662846,
+     "quarterback": -0.6243385936862492,
+     "home_field": 2.947454031111111,
+     "context": -0.67762134,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": -1.2176,
+    "base_current": -1.2566
+   },
+   {
+    "game_id": "2026_04_LAC_SEA",
+    "week": 4,
+    "neutral": false,
+    "residual": -5.25,
+    "model": 12.25,
+    "close": 7,
+    "card": {
+     "base_strength": 8.42950902868193,
+     "passing": 0.3261083360768824,
+     "rushing": 0.05367385456834717,
+     "quarterback": 0.4921374827955591,
+     "home_field": 2.947454031111111,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 5.5531,
+    "base_current": 2.8764
+   },
+   {
+    "game_id": "2026_04_MIA_MIN",
+    "week": 4,
+    "neutral": false,
+    "residual": -5.67,
+    "model": 10.67,
+    "close": 10,
+    "card": {
+     "base_strength": 7.548317432216571,
+     "passing": 0.2691078796804669,
+     "rushing": 0.2363636755854902,
+     "quarterback": -0.023755738745550287,
+     "home_field": 2.947454031111111,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": 3.479,
+    "base_current": 4.0693
+   },
+   {
+    "game_id": "2026_04_NE_BUF",
+    "week": 4,
+    "neutral": false,
+    "residual": -7.91,
+    "model": 4.91,
+    "close": 7,
+    "card": {
+     "base_strength": 1.9949519577430905,
+     "passing": 0.10053885128361972,
+     "rushing": 0.02294414839060794,
+     "quarterback": 1.2909722448703655,
+     "home_field": 2.947454031111111,
+     "context": -1.4451977,
+     "rest_travel": 0
+    },
+    "base_prior": 0.3499,
+    "base_current": 1.6451
+   },
+   {
+    "game_id": "2026_04_NYJ_CHI",
+    "week": 4,
+    "neutral": false,
+    "residual": 0.15,
+    "model": 10.85,
+    "close": 3.5,
+    "card": {
+     "base_strength": 8.984428414684878,
+     "passing": 0.3355411525549265,
+     "rushing": 0.12646373975793776,
+     "quarterback": -0.6851186402811604,
+     "home_field": 2.947454031111111,
+     "context": -0.67762134,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": 7.0685,
+    "base_current": 1.9159
+   },
+   {
+    "game_id": "2026_04_TEN_BAL",
+    "week": 4,
+    "neutral": false,
+    "residual": -7.15,
+    "model": 13.15,
+    "close": 11.5,
+    "card": {
+     "base_strength": 9.522791364295866,
+     "passing": 0.3232389612215429,
+     "rushing": 0.19225632555154148,
+     "quarterback": 0.8403715188715842,
+     "home_field": 2.947454031111111,
+     "context": -0.67762134,
+     "rest_travel": 0
+    },
+    "base_prior": 7.6779,
+    "base_current": 1.8449
+   },
+   {
+    "game_id": "2026_04_ATL_NO",
+    "week": 4,
+    "neutral": false,
+    "residual": -22.17,
+    "model": 1.17,
+    "close": 1.5,
+    "card": {
+     "base_strength": 0.30944822999187405,
+     "passing": 0.08390072051804705,
+     "rushing": -0.06898710837546218,
+     "quarterback": -0.4772592473667625,
+     "home_field": 2.947454031111111,
+     "context": -1.07830327,
+     "rest_travel": -0.5494555371428571
+    },
+    "base_prior": -0.6759,
+    "base_current": 0.9853
+   },
+   {
+    "game_id": "2026_05_TB_DAL",
+    "week": 5,
+    "neutral": false,
+    "residual": -11.49,
+    "model": 3.49,
+    "close": 9.5,
+    "card": {
+     "base_strength": 0.7870044884029956,
+     "passing": 0.04050258661345845,
+     "rushing": -0.22220872019797142,
+     "quarterback": 0.809835847149688,
+     "home_field": 2.985260058888889,
+     "context": -0.31072691,
+     "rest_travel": -0.5974769799999999
+    },
+    "base_prior": -0.8887,
+    "base_current": 1.6757
+   },
+   {
+    "game_id": "2026_05_BAL_ATL",
+    "week": 5,
+    "neutral": false,
+    "residual": -6.99,
+    "model": -0.01,
+    "close": 3.5,
+    "card": {
+     "base_strength": -4.0767892080595045,
+     "passing": -0.0972017535670758,
+     "rushing": -0.05945217437508828,
+     "quarterback": 1.4181617327579645,
+     "home_field": 2.985260058888889,
+     "context": 0,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": -3.8274,
+    "base_current": -0.2494
+   },
+   {
+    "game_id": "2026_05_CHI_GB",
+    "week": 5,
+    "neutral": false,
+    "residual": 25.65,
+    "model": -1.65,
+    "close": -1.5,
+    "card": {
+     "base_strength": -3.992863887385986,
+     "passing": -0.15285790346192968,
+     "rushing": -0.08668505281041572,
+     "quarterback": 0.3670006149911772,
+     "home_field": 2.985260058888889,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": 0.0238,
+    "base_current": -4.0167
+   },
+   {
+    "game_id": "2026_05_CIN_MIA",
+    "week": 5,
+    "neutral": false,
+    "residual": -3.95,
+    "model": -3.05,
+    "close": -7,
+    "card": {
+     "base_strength": -4.914376109515744,
+     "passing": -0.26631328322329917,
+     "rushing": 0.0006495300859030055,
+     "quarterback": -0.8576776993778106,
+     "home_field": 2.985260058888889,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": -1.5469,
+    "base_current": -3.3675
+   },
+   {
+    "game_id": "2026_05_CLE_NYJ",
+    "week": 5,
+    "neutral": false,
+    "residual": 5.91,
+    "model": -0.91,
+    "close": 2.5,
+    "card": {
+     "base_strength": -2.7709170313042613,
+     "passing": -0.19621643860207902,
+     "rushing": 0.04415140816266301,
+     "quarterback": -0.42616379417798145,
+     "home_field": 2.985260058888889,
+     "context": 0,
+     "rest_travel": -0.5494555371428571
+    },
+    "base_prior": -2.9092,
+    "base_current": 0.1383
+   },
+   {
+    "game_id": "2026_05_DEN_LAC",
+    "week": 5,
+    "neutral": false,
+    "residual": -3.97,
+    "model": -2.03,
+    "close": -3.5,
+    "card": {
+     "base_strength": -3.4309981559906886,
+     "passing": -0.1701691040157454,
+     "rushing": 0.15730672663206172,
+     "quarterback": -0.49636725388514785,
+     "home_field": 2.985260058888889,
+     "context": -1.07830327,
+     "rest_travel": 0
+    },
+    "base_prior": -2.0652,
+    "base_current": -1.3658
+   },
+   {
+    "game_id": "2026_05_DET_ARI",
+    "week": 5,
+    "neutral": false,
+    "residual": -19.4,
+    "model": -4.6,
+    "close": -5.5,
+    "card": {
+     "base_strength": -6.276280693955688,
+     "passing": -0.27874095761129297,
+     "rushing": 0.14133629719998209,
+     "quarterback": -0.8614635174323971,
+     "home_field": 2.985260058888889,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": -6.0048,
+    "base_current": -0.2715
+   },
+   {
+    "game_id": "2026_05_HOU_TEN",
+    "week": 5,
+    "neutral": false,
+    "residual": -16.82,
+    "model": -6.18,
+    "close": -6.5,
+    "card": {
+     "base_strength": -7.8782453986094225,
+     "passing": -0.3419755563492395,
+     "rushing": 0.04879845624604639,
+     "quarterback": -0.22326906199715696,
+     "home_field": 2.985260058888889,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": -7.4768,
+    "base_current": -0.4014
+   },
+   {
+    "game_id": "2026_05_IND_PIT",
+    "week": 5,
+    "neutral": false,
+    "residual": 9.04,
+    "model": 2.96,
+    "close": 3,
+    "card": {
+     "base_strength": -0.8268259575226022,
+     "passing": 0.014163722803050857,
+     "rushing": -0.10767923831439101,
+     "quarterback": 0.3502888742847796,
+     "home_field": 2.985260058888889,
+     "context": 0,
+     "rest_travel": 0.5494555371428571
+    },
+    "base_prior": 0.0557,
+    "base_current": -0.8826
+   },
+   {
+    "game_id": "2026_05_LV_NE",
+    "week": 5,
+    "neutral": false,
+    "residual": 19.44,
+    "model": 8.56,
+    "close": 3.5,
+    "card": {
+     "base_strength": 6.588663741194644,
+     "passing": 0.20726870956772403,
+     "rushing": 0.25046409235299727,
+     "quarterback": -1.473743384780532,
+     "home_field": 2.985260058888889,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 7.6232,
+    "base_current": -1.0345
+   },
+   {
+    "game_id": "2026_05_MIN_NO",
+    "week": 5,
+    "neutral": false,
+    "residual": -6.36,
+    "model": -3.64,
+    "close": -2.5,
+    "card": {
+     "base_strength": -6.0429391450029195,
+     "passing": -0.1350727686809046,
+     "rushing": -0.15096495122437217,
+     "quarterback": 0.19368570171452468,
+     "home_field": 2.985260058888889,
+     "context": -0.31072691,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": -3.3634,
+    "base_current": -2.6795
+   },
+   {
+    "game_id": "2026_05_NYG_WAS",
+    "week": 5,
+    "neutral": false,
+    "residual": -1.3,
+    "model": 1.3,
+    "close": 3.5,
+    "card": {
+     "base_strength": -1.0359951841011685,
+     "passing": 0.029500780077061344,
+     "rushing": 0.04193377950877043,
+     "quarterback": 0.049617542248570456,
+     "home_field": 2.985260058888889,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": -0.1684,
+    "base_current": -0.8676
+   },
+   {
+    "game_id": "2026_05_PHI_JAX",
+    "week": 5,
+    "neutral": true,
+    "residual": -4.03,
+    "model": 6.03,
+    "close": 7.5,
+    "card": {
+     "base_strength": 3.827706652028616,
+     "passing": 0.2364623325752482,
+     "rushing": 0.06526149514119062,
+     "quarterback": 1.5110957331074888,
+     "home_field": 0.38841300888888886,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 0.1103,
+    "base_current": 3.7175
+   },
+   {
+    "game_id": "2026_05_SF_SEA",
+    "week": 5,
+    "neutral": false,
+    "residual": -7.82,
+    "model": 4.82,
+    "close": 3,
+    "card": {
+     "base_strength": 3.4740342406690434,
+     "passing": 0.057719210652713994,
+     "rushing": 0.08987135750779493,
+     "quarterback": -1.021612521073432,
+     "home_field": 2.985260058888889,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": 4.8984,
+    "base_current": -1.4244
+   },
+   {
+    "game_id": "2026_05_BUF_LA",
+    "week": 5,
+    "neutral": false,
+    "residual": -4.69,
+    "model": 1.69,
+    "close": 3.5,
+    "card": {
+     "base_strength": -0.7025432868533379,
+     "passing": -0.0025683390352273985,
+     "rushing": -0.014006088333629471,
+     "quarterback": -0.2632284939169921,
+     "home_field": 2.985260058888889,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": 0.2589,
+    "base_current": -0.9614
+   },
+   {
+    "game_id": "2026_06_SEA_DEN",
+    "week": 6,
+    "neutral": false,
+    "residual": 5.36,
+    "model": -2.36,
+    "close": -2.5,
+    "card": {
+     "base_strength": -4.1843019769492855,
+     "passing": -0.07070024115720304,
+     "rushing": -0.07860122096850104,
+     "quarterback": -0.45444866269255524,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": -0.5974769799999999
+    },
+    "base_prior": -2.9595,
+    "base_current": -1.2248
+   },
+   {
+    "game_id": "2026_06_ARI_LA",
+    "week": 6,
+    "neutral": false,
+    "residual": -13.56,
+    "model": 11.56,
+    "close": 12.5,
+    "card": {
+     "base_strength": 8.95719684146215,
+     "passing": 0.3887953144384648,
+     "rushing": 0.03519793932201087,
+     "quarterback": 0.4191697932013469,
+     "home_field": 3.0230660866666668,
+     "context": -1.07830327,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": 6.3615,
+    "base_current": 2.5957
+   },
+   {
+    "game_id": "2026_06_BAL_CLE",
+    "week": 6,
+    "neutral": false,
+    "residual": 7.28,
+    "model": -4.28,
+    "close": -3,
+    "card": {
+     "base_strength": -6.4953604037857255,
+     "passing": -0.09065648686979695,
+     "rushing": -0.43358141606267425,
+     "quarterback": 0.48495070516937855,
+     "home_field": 3.0230660866666668,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": -4.7495,
+    "base_current": -1.7458
+   },
+   {
+    "game_id": "2026_06_BUF_LV",
+    "week": 6,
+    "neutral": false,
+    "residual": 3.32,
+    "model": -6.32,
+    "close": -5.5,
+    "card": {
+     "base_strength": -9.176291020828156,
+     "passing": -0.29836958063229196,
+     "rushing": -0.3302965970876187,
+     "quarterback": 0.5877044220212162,
+     "home_field": 3.0230660866666668,
+     "context": -0.31072691,
+     "rest_travel": 0.18315184571428572
+    },
+    "base_prior": -7.4684,
+    "base_current": -1.7079
+   },
+   {
+    "game_id": "2026_06_CAR_PHI",
+    "week": 6,
+    "neutral": false,
+    "residual": -14.61,
+    "model": 3.61,
+    "close": -3,
+    "card": {
+     "base_strength": 3.262763469790209,
+     "passing": -0.00036432220494262557,
+     "rushing": 0.07844111288933776,
+     "quarterback": -1.0179328343484357,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": -1.73675599
+    },
+    "base_prior": 4.6723,
+    "base_current": -1.4095
+   },
+   {
+    "game_id": "2026_06_CHI_ATL",
+    "week": 6,
+    "neutral": false,
+    "residual": -7.78,
+    "model": -0.22,
+    "close": -1.5,
+    "card": {
+     "base_strength": -3.031225873004065,
+     "passing": -0.05503572769835746,
+     "rushing": 0.09477956550231482,
+     "quarterback": 0.06128484428902407,
+     "home_field": 3.0230660866666668,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": -2.3475,
+    "base_current": -0.6837
+   },
+   {
+    "game_id": "2026_06_DAL_GB",
+    "week": 6,
+    "neutral": false,
+    "residual": 5.51,
+    "model": 4.49,
+    "close": -1.5,
+    "card": {
+     "base_strength": 1.8200267924999722,
+     "passing": 0.2129932822973563,
+     "rushing": -0.08379057142501024,
+     "quarterback": 0.06805562923689491,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": -0.5494555371428571
+    },
+    "base_prior": 2.2996,
+    "base_current": -0.4796
+   },
+   {
+    "game_id": "2026_06_HOU_JAX",
+    "week": 6,
+    "neutral": true,
+    "residual": -5.94,
+    "model": 2.94,
+    "close": 2.5,
+    "card": {
+     "base_strength": 2.7361143404238226,
+     "passing": 0.1324966771569805,
+     "rushing": 0.11066273172924028,
+     "quarterback": 0.30384763729555125,
+     "home_field": 0.4262190366666666,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": -0.1332,
+    "base_current": 2.8693
+   },
+   {
+    "game_id": "2026_06_LAC_KC",
+    "week": 6,
+    "neutral": false,
+    "residual": 8.06,
+    "model": 7.94,
+    "close": 7.5,
+    "card": {
+     "base_strength": 3.524782236333612,
+     "passing": 0.03456832205553491,
+     "rushing": 0.07586188965070809,
+     "quarterback": 1.1130334499013947,
+     "home_field": 3.0230660866666668,
+     "context": -0.76757636,
+     "rest_travel": 0.93145587
+    },
+    "base_prior": 0.3097,
+    "base_current": 3.2151
+   },
+   {
+    "game_id": "2026_06_NO_NYG",
+    "week": 6,
+    "neutral": false,
+    "residual": -11.74,
+    "model": 4.74,
+    "close": -1.5,
+    "card": {
+     "base_strength": 1.566240761229234,
+     "passing": 0.07602856659387691,
+     "rushing": -0.11036982612401784,
+     "quarterback": 0.18961875242064916,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 0.5122,
+    "base_current": 1.054
+   },
+   {
+    "game_id": "2026_06_NYJ_NE",
+    "week": 6,
+    "neutral": false,
+    "residual": -6.2,
+    "model": 13.2,
+    "close": 7.5,
+    "card": {
+     "base_strength": 9.836079675539699,
+     "passing": 0.3902860737942877,
+     "rushing": 0.09159869067185271,
+     "quarterback": 0.6284515015997992,
+     "home_field": 3.0230660866666668,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": 8.0146,
+    "base_current": 1.8215
+   },
+   {
+    "game_id": "2026_06_PIT_TB",
+    "week": 6,
+    "neutral": false,
+    "residual": -9.43,
+    "model": 2.43,
+    "close": -2.5,
+    "card": {
+     "base_strength": -1.127591800607844,
+     "passing": -0.06477338379335967,
+     "rushing": 0.06701781803774143,
+     "quarterback": -0.018278545116834674,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": 0.5494555371428571
+    },
+    "base_prior": -0.3633,
+    "base_current": -0.7643
+   },
+   {
+    "game_id": "2026_06_TEN_IND",
+    "week": 6,
+    "neutral": false,
+    "residual": -14.84,
+    "model": 8.84,
+    "close": 6.5,
+    "card": {
+     "base_strength": 6.53759416678887,
+     "passing": 0.20979858825051356,
+     "rushing": 0.07894201660397308,
+     "quarterback": -0.24117816018358393,
+     "home_field": 3.0230660866666668,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": 4.3921,
+    "base_current": 2.1455
+   },
+   {
+    "game_id": "2026_06_WAS_SF",
+    "week": 6,
+    "neutral": false,
+    "residual": -4.99,
+    "model": 10.99,
+    "close": 7.5,
+    "card": {
+     "base_strength": 6.7054724821715945,
+     "passing": 0.28901470305128185,
+     "rushing": 0.030886250970266566,
+     "quarterback": 0.9390103985448941,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 2.2977,
+    "base_current": 4.4077
+   }
+  ]
+ },
+ "flags": [
+  {
+   "game_id": "2026_06_ARI_LA",
+   "matchup": "ARI @ LA",
+   "published_gap": -4.1,
+   "replayed_gap": -0.94,
+   "final_home_margin": -2,
+   "close_home_margin": 12.5,
+   "published_closer": "model",
+   "replayed_closer": "model",
+   "replayed_ats": "win",
+   "drivers": [
+    {
+     "key": "base_strength",
+     "points": 8.96
+    },
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "context",
+     "points": -1.08
+    },
+    {
+     "key": "quarterback",
+     "points": 0.42
+    }
+   ],
+   "text": "published number 4.1 pts off the close"
+  },
+  {
+   "game_id": "2026_06_CAR_PHI",
+   "matchup": "CAR @ PHI",
+   "published_gap": 3.72,
+   "replayed_gap": 6.61,
+   "final_home_margin": -11,
+   "close_home_margin": -3,
+   "published_closer": "market",
+   "replayed_closer": "market",
+   "replayed_ats": "loss",
+   "drivers": [
+    {
+     "key": "base_strength",
+     "points": 3.26
+    },
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "rest_travel",
+     "points": -1.74
+    },
+    {
+     "key": "quarterback",
+     "points": -1.02
+    }
+   ],
+   "text": "published number 3.7 pts off the close; replayed number 6.6 pts off the close"
+  },
+  {
+   "game_id": "2026_06_CHI_ATL",
+   "matchup": "CHI @ ATL",
+   "published_gap": 3.64,
+   "replayed_gap": 1.28,
+   "final_home_margin": -8,
+   "close_home_margin": -1.5,
+   "published_closer": "market",
+   "replayed_closer": "market",
+   "replayed_ats": "loss",
+   "drivers": [
+    {
+     "key": "base_strength",
+     "points": -3.03
+    },
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "context",
+     "points": -0.31
+    },
+    {
+     "key": "rushing",
+     "points": 0.09
+    }
+   ],
+   "text": "published number 3.6 pts off the close"
+  },
+  {
+   "game_id": "2026_06_DAL_GB",
+   "matchup": "DAL @ GB",
+   "published_gap": 3.7,
+   "replayed_gap": 5.99,
+   "final_home_margin": 10,
+   "close_home_margin": -1.5,
+   "published_closer": "model",
+   "replayed_closer": "model",
+   "replayed_ats": "win",
+   "drivers": [
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "base_strength",
+     "points": 1.82
+    },
+    {
+     "key": "rest_travel",
+     "points": -0.55
+    },
+    {
+     "key": "passing",
+     "points": 0.21
+    }
+   ],
+   "text": "published number 3.7 pts off the close; replayed number 6.0 pts off the close"
+  },
+  {
+   "game_id": "2026_06_NO_NYG",
+   "matchup": "NO @ NYG",
+   "published_gap": 1.68,
+   "replayed_gap": 6.24,
+   "final_home_margin": -7,
+   "close_home_margin": -1.5,
+   "published_closer": "market",
+   "replayed_closer": "market",
+   "replayed_ats": "loss",
+   "drivers": [
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "base_strength",
+     "points": 1.57
+    },
+    {
+     "key": "quarterback",
+     "points": 0.19
+    },
+    {
+     "key": "rushing",
+     "points": -0.11
+    }
+   ],
+   "text": "replayed number 6.2 pts off the close"
+  },
+  {
+   "game_id": "2026_06_NYJ_NE",
+   "matchup": "NYJ @ NE",
+   "published_gap": 7.32,
+   "replayed_gap": 5.7,
+   "final_home_margin": 7,
+   "close_home_margin": 7.5,
+   "published_closer": "market",
+   "replayed_closer": "market",
+   "replayed_ats": "loss",
+   "drivers": [
+    {
+     "key": "base_strength",
+     "points": 9.84
+    },
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "context",
+     "points": -0.77
+    },
+    {
+     "key": "quarterback",
+     "points": 0.63
+    }
+   ],
+   "text": "published number 7.3 pts off the close; replayed number 5.7 pts off the close"
+  },
+  {
+   "game_id": "2026_06_PIT_TB",
+   "matchup": "PIT @ TB",
+   "published_gap": 3.88,
+   "replayed_gap": 4.93,
+   "final_home_margin": -7,
+   "close_home_margin": -2.5,
+   "published_closer": "market",
+   "replayed_closer": "market",
+   "replayed_ats": "loss",
+   "drivers": [
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "base_strength",
+     "points": -1.13
+    },
+    {
+     "key": "rest_travel",
+     "points": 0.55
+    },
+    {
+     "key": "rushing",
+     "points": 0.07
+    }
+   ],
+   "text": "published number 3.9 pts off the close; replayed number 4.9 pts off the close"
+  },
+  {
+   "game_id": "2026_06_WAS_SF",
+   "matchup": "WAS @ SF",
+   "published_gap": 0.25,
+   "replayed_gap": 3.49,
+   "final_home_margin": 6,
+   "close_home_margin": 7.5,
+   "published_closer": "market",
+   "replayed_closer": "market",
+   "replayed_ats": "loss",
+   "drivers": [
+    {
+     "key": "base_strength",
+     "points": 6.71
+    },
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "quarterback",
+     "points": 0.94
+    },
+    {
+     "key": "passing",
+     "points": 0.29
+    }
+   ],
+   "text": "replayed number 3.5 pts off the close"
+  }
+ ],
+ "misses": [
+  {
+   "game_id": "2026_06_TEN_IND",
+   "week": 6,
+   "matchup": "TEN @ IND",
+   "model_home_margin": 8.84,
+   "final_home_margin": -6,
+   "close_home_margin": 6.5,
+   "residual": -14.84,
+   "market_saw_it": true,
+   "pushed_wrong_way": [
+    {
+     "key": "base_strength",
+     "points": 6.54
+    },
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "passing",
+     "points": 0.21
+    },
+    {
+     "key": "rushing",
+     "points": 0.08
+    }
+   ],
+   "base_strength_split": {
+    "prior": 4.3921,
+    "current": 2.1455
+   },
+   "note": "Attribution is a reading of the card, not a causal claim: it lists the components whose points pointed away from the final margin, largest first."
+  },
+  {
+   "game_id": "2026_06_CAR_PHI",
+   "week": 6,
+   "matchup": "CAR @ PHI",
+   "model_home_margin": 3.61,
+   "final_home_margin": -11,
+   "close_home_margin": -3,
+   "residual": -14.61,
+   "market_saw_it": true,
+   "pushed_wrong_way": [
+    {
+     "key": "base_strength",
+     "points": 3.26
+    },
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "rushing",
+     "points": 0.08
+    }
+   ],
+   "base_strength_split": {
+    "prior": 4.6723,
+    "current": -1.4095
+   },
+   "note": "Attribution is a reading of the card, not a causal claim: it lists the components whose points pointed away from the final margin, largest first."
+  },
+  {
+   "game_id": "2026_06_ARI_LA",
+   "week": 6,
+   "matchup": "ARI @ LA",
+   "model_home_margin": 11.56,
+   "final_home_margin": -2,
+   "close_home_margin": 12.5,
+   "residual": -13.56,
+   "market_saw_it": false,
+   "pushed_wrong_way": [
+    {
+     "key": "base_strength",
+     "points": 8.96
+    },
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "quarterback",
+     "points": 0.42
+    },
+    {
+     "key": "passing",
+     "points": 0.39
+    },
+    {
+     "key": "rushing",
+     "points": 0.04
+    }
+   ],
+   "base_strength_split": {
+    "prior": 6.3615,
+    "current": 2.5957
+   },
+   "note": "Attribution is a reading of the card, not a causal claim: it lists the components whose points pointed away from the final margin, largest first."
+  },
+  {
+   "game_id": "2026_06_NO_NYG",
+   "week": 6,
+   "matchup": "NO @ NYG",
+   "model_home_margin": 4.74,
+   "final_home_margin": -7,
+   "close_home_margin": -1.5,
+   "residual": -11.74,
+   "market_saw_it": true,
+   "pushed_wrong_way": [
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "base_strength",
+     "points": 1.57
+    },
+    {
+     "key": "quarterback",
+     "points": 0.19
+    },
+    {
+     "key": "passing",
+     "points": 0.08
+    }
+   ],
+   "base_strength_split": {
+    "prior": 0.5122,
+    "current": 1.054
+   },
+   "note": "Attribution is a reading of the card, not a causal claim: it lists the components whose points pointed away from the final margin, largest first."
+  },
+  {
+   "game_id": "2026_06_PIT_TB",
+   "week": 6,
+   "matchup": "PIT @ TB",
+   "model_home_margin": 2.43,
+   "final_home_margin": -7,
+   "close_home_margin": -2.5,
+   "residual": -9.43,
+   "market_saw_it": true,
+   "pushed_wrong_way": [
+    {
+     "key": "home_field",
+     "points": 3.02
+    },
+    {
+     "key": "rest_travel",
+     "points": 0.55
+    },
+    {
+     "key": "rushing",
+     "points": 0.07
+    }
+   ],
+   "base_strength_split": {
+    "prior": -0.3633,
+    "current": -0.7643
+   },
+   "note": "Attribution is a reading of the card, not a causal claim: it lists the components whose points pointed away from the final margin, largest first."
+  }
+ ],
+ "games": [
+  {
+   "game_id": "2026_06_SEA_DEN",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-15",
+   "home": "DEN",
+   "away": "SEA",
+   "neutral": false,
+   "final": {
+    "home_score": 17,
+    "away_score": 14,
+    "home_margin": 3
+   },
+   "close": {
+    "home_margin": -2.5,
+    "home_win_prob": 0.417,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": -2.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": -1.01,
+    "home_win_prob": 0.4623,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-15T15:58:10.737Z",
+    "error": 4.01,
+    "brier": 0.2891,
+    "logloss": 0.7715,
+    "clv_pts": 0,
+    "gap_to_close": 1.49,
+    "closer": "model",
+    "ats": "win"
+   },
+   "replayed": {
+    "home_margin": -2.36,
+    "home_win_prob": 0.4579,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 5.36,
+    "brier": 0.2939,
+    "logloss": 0.7812,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 0.14,
+    "closer": "model",
+    "ats": "win",
+    "card": {
+     "base_strength": -4.1843019769492855,
+     "passing": -0.07070024115720304,
+     "rushing": -0.07860122096850104,
+     "quarterback": -0.45444866269255524,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": -0.5974769799999999
+    },
+    "base_prior": -2.9595,
+    "base_current": -1.2248
+   },
+   "close_scores": {
+    "error": 5.5,
+    "brier": 0.3399,
+    "logloss": 0.8747
+   },
+   "y": 1
+  },
+  {
+   "game_id": "2026_06_ARI_LA",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "LA",
+   "away": "ARI",
+   "neutral": false,
+   "final": {
+    "home_score": 16,
+    "away_score": 18,
+    "home_margin": -2
+   },
+   "close": {
+    "home_margin": 12.5,
+    "home_win_prob": 0.84,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": 12.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 8.4,
+    "home_win_prob": 0.7837,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-13T19:53:23.706Z",
+    "error": 10.4,
+    "brier": 0.6142,
+    "logloss": 1.5311,
+    "clv_pts": 0,
+    "gap_to_close": -4.1,
+    "closer": "model",
+    "ats": "win"
+   },
+   "replayed": {
+    "home_margin": 11.56,
+    "home_win_prob": 0.8437,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 13.56,
+    "brier": 0.7119,
+    "logloss": 1.8561,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": -0.94,
+    "closer": "model",
+    "ats": "win",
+    "card": {
+     "base_strength": 8.95719684146215,
+     "passing": 0.3887953144384648,
+     "rushing": 0.03519793932201087,
+     "quarterback": 0.4191697932013469,
+     "home_field": 3.0230660866666668,
+     "context": -1.07830327,
+     "rest_travel": -0.18315184571428572
+    },
+    "base_prior": 6.3615,
+    "base_current": 2.5957
+   },
+   "close_scores": {
+    "error": 14.5,
+    "brier": 0.7056,
+    "logloss": 1.8326
+   },
+   "y": 0
+  },
+  {
+   "game_id": "2026_06_BAL_CLE",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "CLE",
+   "away": "BAL",
+   "neutral": false,
+   "final": {
+    "home_score": 13,
+    "away_score": 10,
+    "home_margin": 3
+   },
+   "close": {
+    "home_margin": -3,
+    "home_win_prob": 0.3962,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": -2.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": -4.71,
+    "home_win_prob": 0.3298,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-17T16:31:39.120Z",
+    "error": 7.71,
+    "brier": 0.4492,
+    "logloss": 1.1093,
+    "clv_pts": 0,
+    "gap_to_close": -1.71,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": -4.28,
+    "home_win_prob": 0.3338,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 7.28,
+    "brier": 0.4438,
+    "logloss": 1.0971,
+    "clv_pts_open_to_close": 0.5,
+    "gap_to_close": -1.28,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": -6.4953604037857255,
+     "passing": -0.09065648686979695,
+     "rushing": -0.43358141606267425,
+     "quarterback": 0.48495070516937855,
+     "home_field": 3.0230660866666668,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": -4.7495,
+    "base_current": -1.7458
+   },
+   "close_scores": {
+    "error": 6,
+    "brier": 0.3645,
+    "logloss": 0.9257
+   },
+   "y": 1
+  },
+  {
+   "game_id": "2026_06_BUF_LV",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "LV",
+   "away": "BUF",
+   "neutral": false,
+   "final": {
+    "home_score": 30,
+    "away_score": 33,
+    "home_margin": -3
+   },
+   "close": {
+    "home_margin": -5.5,
+    "home_win_prob": 0.325,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": -4.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": -7.9,
+    "home_win_prob": 0.2302,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-13T19:53:23.706Z",
+    "error": 4.9,
+    "brier": 0.053,
+    "logloss": 0.2616,
+    "clv_pts": 1,
+    "gap_to_close": -2.4,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": -6.32,
+    "home_win_prob": 0.2827,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 3.32,
+    "brier": 0.0799,
+    "logloss": 0.3322,
+    "clv_pts_open_to_close": 1,
+    "gap_to_close": -0.82,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": -9.176291020828156,
+     "passing": -0.29836958063229196,
+     "rushing": -0.3302965970876187,
+     "quarterback": 0.5877044220212162,
+     "home_field": 3.0230660866666668,
+     "context": -0.31072691,
+     "rest_travel": 0.18315184571428572
+    },
+    "base_prior": -7.4684,
+    "base_current": -1.7079
+   },
+   "close_scores": {
+    "error": 2.5,
+    "brier": 0.1056,
+    "logloss": 0.393
+   },
+   "y": 0
+  },
+  {
+   "game_id": "2026_06_CAR_PHI",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "PHI",
+   "away": "CAR",
+   "neutral": false,
+   "final": {
+    "home_score": 14,
+    "away_score": 25,
+    "home_margin": -11
+   },
+   "close": {
+    "home_margin": -3,
+    "home_win_prob": 0.4066,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": 2.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 0.72,
+    "home_win_prob": 0.5268,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-18T12:06:49.085Z",
+    "error": 11.72,
+    "brier": 0.2775,
+    "logloss": 0.7482,
+    "clv_pts": 0,
+    "gap_to_close": 3.72,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": 3.61,
+    "home_win_prob": 0.6388,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 14.61,
+    "brier": 0.4081,
+    "logloss": 1.0185,
+    "clv_pts_open_to_close": -5.5,
+    "gap_to_close": 6.61,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": 3.262763469790209,
+     "passing": -0.00036432220494262557,
+     "rushing": 0.07844111288933776,
+     "quarterback": -1.0179328343484357,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": -1.73675599
+    },
+    "base_prior": 4.6723,
+    "base_current": -1.4095
+   },
+   "close_scores": {
+    "error": 8,
+    "brier": 0.1653,
+    "logloss": 0.5219
+   },
+   "y": 0
+  },
+  {
+   "game_id": "2026_06_CHI_ATL",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "ATL",
+   "away": "CHI",
+   "neutral": false,
+   "final": {
+    "home_score": 23,
+    "away_score": 31,
+    "home_margin": -8
+   },
+   "close": {
+    "home_margin": -1.5,
+    "home_win_prob": 0.4826,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": -1.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 2.14,
+    "home_win_prob": 0.5794,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-17T23:13:31.790Z",
+    "error": 10.14,
+    "brier": 0.3357,
+    "logloss": 0.8661,
+    "clv_pts": 0,
+    "gap_to_close": 3.64,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": -0.22,
+    "home_win_prob": 0.4996,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 7.78,
+    "brier": 0.2496,
+    "logloss": 0.6924,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 1.28,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": -3.031225873004065,
+     "passing": -0.05503572769835746,
+     "rushing": 0.09477956550231482,
+     "quarterback": 0.06128484428902407,
+     "home_field": 3.0230660866666668,
+     "context": -0.31072691,
+     "rest_travel": 0
+    },
+    "base_prior": -2.3475,
+    "base_current": -0.6837
+   },
+   "close_scores": {
+    "error": 6.5,
+    "brier": 0.2329,
+    "logloss": 0.659
+   },
+   "y": 0
+  },
+  {
+   "game_id": "2026_06_DAL_GB",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "GB",
+   "away": "DAL",
+   "neutral": false,
+   "final": {
+    "home_score": 23,
+    "away_score": 13,
+    "home_margin": 10
+   },
+   "close": {
+    "home_margin": -1.5,
+    "home_win_prob": 0.4892,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": -1.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 2.2,
+    "home_win_prob": 0.5813,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-12T16:48:50.642Z",
+    "error": 7.8,
+    "brier": 0.1753,
+    "logloss": 0.5425,
+    "clv_pts": -3,
+    "gap_to_close": 3.7,
+    "closer": "model",
+    "ats": "win"
+   },
+   "replayed": {
+    "home_margin": 4.49,
+    "home_win_prob": 0.6612,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 5.51,
+    "brier": 0.1148,
+    "logloss": 0.4137,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 5.99,
+    "closer": "model",
+    "ats": "win",
+    "card": {
+     "base_strength": 1.8200267924999722,
+     "passing": 0.2129932822973563,
+     "rushing": -0.08379057142501024,
+     "quarterback": 0.06805562923689491,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": -0.5494555371428571
+    },
+    "base_prior": 2.2996,
+    "base_current": -0.4796
+   },
+   "close_scores": {
+    "error": 11.5,
+    "brier": 0.261,
+    "logloss": 0.7151
+   },
+   "y": 1
+  },
+  {
+   "game_id": "2026_06_HOU_JAX",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "JAX",
+   "away": "HOU",
+   "neutral": true,
+   "final": {
+    "home_score": 31,
+    "away_score": 34,
+    "home_margin": -3
+   },
+   "close": {
+    "home_margin": 2.5,
+    "home_win_prob": 0.5635,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": 2.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 2.23,
+    "home_win_prob": 0.5824,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-12T16:48:50.642Z",
+    "error": 5.23,
+    "brier": 0.3392,
+    "logloss": 0.8732,
+    "clv_pts": 0.5,
+    "gap_to_close": -0.27,
+    "closer": "model",
+    "ats": "win"
+   },
+   "replayed": {
+    "home_margin": 2.94,
+    "home_win_prob": 0.5873,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 5.94,
+    "brier": 0.3449,
+    "logloss": 0.8851,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 0.44,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": 2.7361143404238226,
+     "passing": 0.1324966771569805,
+     "rushing": 0.11066273172924028,
+     "quarterback": 0.30384763729555125,
+     "home_field": 0.4262190366666666,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": -0.1332,
+    "base_current": 2.8693
+   },
+   "close_scores": {
+    "error": 5.5,
+    "brier": 0.3175,
+    "logloss": 0.8289
+   },
+   "y": 0
+  },
+  {
+   "game_id": "2026_06_LAC_KC",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "KC",
+   "away": "LAC",
+   "neutral": false,
+   "final": {
+    "home_score": 22,
+    "away_score": 6,
+    "home_margin": 16
+   },
+   "close": {
+    "home_margin": 7.5,
+    "home_win_prob": 0.7867,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": 7.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 4.72,
+    "home_win_prob": 0.6705,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-12T16:48:50.642Z",
+    "error": 11.28,
+    "brier": 0.1086,
+    "logloss": 0.3997,
+    "clv_pts": 1,
+    "gap_to_close": -2.78,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": 7.94,
+    "home_win_prob": 0.7764,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 8.06,
+    "brier": 0.05,
+    "logloss": 0.2531,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 0.44,
+    "closer": "model",
+    "ats": "win",
+    "card": {
+     "base_strength": 3.524782236333612,
+     "passing": 0.03456832205553491,
+     "rushing": 0.07586188965070809,
+     "quarterback": 1.1130334499013947,
+     "home_field": 3.0230660866666668,
+     "context": -0.76757636,
+     "rest_travel": 0.93145587
+    },
+    "base_prior": 0.3097,
+    "base_current": 3.2151
+   },
+   "close_scores": {
+    "error": 8.5,
+    "brier": 0.0455,
+    "logloss": 0.2399
+   },
+   "y": 1
+  },
+  {
+   "game_id": "2026_06_NO_NYG",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "NYG",
+   "away": "NO",
+   "neutral": false,
+   "final": {
+    "home_score": 27,
+    "away_score": 34,
+    "home_margin": -7
+   },
+   "close": {
+    "home_margin": -1.5,
+    "home_win_prob": 0.5043,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": -1.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 0.18,
+    "home_win_prob": 0.5065,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-12T16:48:50.642Z",
+    "error": 7.18,
+    "brier": 0.2565,
+    "logloss": 0.7062,
+    "clv_pts": 0,
+    "gap_to_close": 1.68,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": 4.74,
+    "home_win_prob": 0.6664,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 11.74,
+    "brier": 0.4441,
+    "logloss": 1.0978,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 6.24,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": 1.566240761229234,
+     "passing": 0.07602856659387691,
+     "rushing": -0.11036982612401784,
+     "quarterback": 0.18961875242064916,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 0.5122,
+    "base_current": 1.054
+   },
+   "close_scores": {
+    "error": 5.5,
+    "brier": 0.2543,
+    "logloss": 0.7018
+   },
+   "y": 0
+  },
+  {
+   "game_id": "2026_06_NYJ_NE",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "NE",
+   "away": "NYJ",
+   "neutral": false,
+   "final": {
+    "home_score": 26,
+    "away_score": 19,
+    "home_margin": 7
+   },
+   "close": {
+    "home_margin": 7.5,
+    "home_win_prob": 0.7441,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": 7,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 14.82,
+    "home_win_prob": 0.917,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-12T16:48:50.642Z",
+    "error": 7.82,
+    "brier": 0.0069,
+    "logloss": 0.0866,
+    "clv_pts": 0.5,
+    "gap_to_close": 7.32,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": 13.2,
+    "home_win_prob": 0.8663,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 6.2,
+    "brier": 0.0179,
+    "logloss": 0.1435,
+    "clv_pts_open_to_close": 0.5,
+    "gap_to_close": 5.7,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": 9.836079675539699,
+     "passing": 0.3902860737942877,
+     "rushing": 0.09159869067185271,
+     "quarterback": 0.6284515015997992,
+     "home_field": 3.0230660866666668,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": 8.0146,
+    "base_current": 1.8215
+   },
+   "close_scores": {
+    "error": 0.5,
+    "brier": 0.0655,
+    "logloss": 0.2956
+   },
+   "y": 1
+  },
+  {
+   "game_id": "2026_06_PIT_TB",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "TB",
+   "away": "PIT",
+   "neutral": false,
+   "final": {
+    "home_score": 19,
+    "away_score": 26,
+    "home_margin": -7
+   },
+   "close": {
+    "home_margin": -2.5,
+    "home_win_prob": 0.4365,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": -2.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 1.38,
+    "home_win_prob": 0.5514,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-12T16:48:50.642Z",
+    "error": 8.38,
+    "brier": 0.304,
+    "logloss": 0.8016,
+    "clv_pts": 0.5,
+    "gap_to_close": 3.88,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": 2.43,
+    "home_win_prob": 0.545,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 9.43,
+    "brier": 0.297,
+    "logloss": 0.7874,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 4.93,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": -1.127591800607844,
+     "passing": -0.06477338379335967,
+     "rushing": 0.06701781803774143,
+     "quarterback": -0.018278545116834674,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": 0.5494555371428571
+    },
+    "base_prior": -0.3633,
+    "base_current": -0.7643
+   },
+   "close_scores": {
+    "error": 4.5,
+    "brier": 0.1905,
+    "logloss": 0.5736
+   },
+   "y": 0
+  },
+  {
+   "game_id": "2026_06_TEN_IND",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-18",
+   "home": "IND",
+   "away": "TEN",
+   "neutral": false,
+   "final": {
+    "home_score": 20,
+    "away_score": 26,
+    "home_margin": -6
+   },
+   "close": {
+    "home_margin": 6.5,
+    "home_win_prob": 0.718,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": 6.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 9.11,
+    "home_win_prob": 0.8028,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-12T16:48:50.642Z",
+    "error": 15.11,
+    "brier": 0.6445,
+    "logloss": 1.6235,
+    "clv_pts": -0.5,
+    "gap_to_close": 2.61,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": 8.84,
+    "home_win_prob": 0.7918,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 14.84,
+    "brier": 0.627,
+    "logloss": 1.5693,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 2.34,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": 6.53759416678887,
+     "passing": 0.20979858825051356,
+     "rushing": 0.07894201660397308,
+     "quarterback": -0.24117816018358393,
+     "home_field": 3.0230660866666668,
+     "context": -0.76757636,
+     "rest_travel": 0
+    },
+    "base_prior": 4.3921,
+    "base_current": 2.1455
+   },
+   "close_scores": {
+    "error": 12.5,
+    "brier": 0.5155,
+    "logloss": 1.2657
+   },
+   "y": 0
+  },
+  {
+   "game_id": "2026_06_WAS_SF",
+   "week": 6,
+   "season": 2026,
+   "kickoff": "2026-10-19",
+   "home": "SF",
+   "away": "WAS",
+   "neutral": false,
+   "final": {
+    "home_score": 23,
+    "away_score": 17,
+    "home_margin": 6
+   },
+   "close": {
+    "home_margin": 7.5,
+    "home_win_prob": 0.7659,
+    "source": "nflverse games.csv consensus close"
+   },
+   "open": {
+    "home_margin": 7.5,
+    "source": "football/pricing/openers_nfl.json"
+   },
+   "published": {
+    "home_margin": 7.75,
+    "home_win_prob": 0.7657,
+    "model_version": "edgedesk_football_v1.0.0",
+    "at": "2026-10-12T16:48:50.642Z",
+    "error": 1.75,
+    "brier": 0.0549,
+    "logloss": 0.267,
+    "clv_pts": 0,
+    "gap_to_close": 0.25,
+    "closer": "market",
+    "ats": "loss"
+   },
+   "replayed": {
+    "home_margin": 10.99,
+    "home_win_prob": 0.8378,
+    "model_version": "edgedesk_nfl_v2.0.0",
+    "error": 4.99,
+    "brier": 0.0263,
+    "logloss": 0.177,
+    "clv_pts_open_to_close": 0,
+    "gap_to_close": 3.49,
+    "closer": "market",
+    "ats": "loss",
+    "card": {
+     "base_strength": 6.7054724821715945,
+     "passing": 0.28901470305128185,
+     "rushing": 0.030886250970266566,
+     "quarterback": 0.9390103985448941,
+     "home_field": 3.0230660866666668,
+     "context": 0,
+     "rest_travel": 0
+    },
+    "base_prior": 2.2977,
+    "base_current": 4.4077
+   },
+   "close_scores": {
+    "error": 1.5,
+    "brier": 0.0548,
+    "logloss": 0.2667
+   },
+   "y": 1
+  }
+ ]
+}

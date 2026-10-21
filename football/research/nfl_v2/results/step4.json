@@ -1,0 +1,369 @@
+{
+ "step": 4,
+ "generated_at": "2026-10-21T01:05:33.025Z",
+ "base_valid": {
+  "n": 4078,
+  "mae": 10.397,
+  "rmse": 13.4728,
+  "brier": 0.22243,
+  "logloss": 0.6349,
+  "ece": 0.0226,
+  "cal_slope": 1.092,
+  "home_lean": 0.357,
+  "ats3": {
+   "n": 1267,
+   "win_pct": 0.5090765588003157
+  },
+  "total_mae": 10.6887
+ },
+ "base_holdout": {
+  "n": 285,
+  "mae": 10.1944,
+  "rmse": 12.9447,
+  "brier": 0.22292,
+  "logloss": 0.63513,
+  "ece": 0.0451,
+  "cal_slope": 0.977,
+  "home_lean": 0.72,
+  "ats3": {
+   "n": 84,
+   "win_pct": 0.5238095238095238
+  },
+  "total_mae": 10.3798
+ },
+ "decisions": [
+  {
+   "family": "T1_split_od",
+   "label": "split pass/rush/overall offence and defence",
+   "valid": {
+    "n": 4078,
+    "mae": 10.4288,
+    "rmse": 13.5262,
+    "brier": 0.22287,
+    "logloss": 0.63584,
+    "ece": 0.0292,
+    "cal_slope": 1.251,
+    "home_lean": 0.348,
+    "ats3": {
+     "n": 1460,
+     "win_pct": 0.5178082191780822
+    },
+    "total_mae": 10.6887
+   },
+   "holdout": null,
+   "finalist": false,
+   "control": null,
+   "promoted_alone": false,
+   "why": "did not beat the incumbent on 2010-2024 validation"
+  },
+  {
+   "family": "T2_recency",
+   "label": "in-season recency lambda 0.95",
+   "valid": {
+    "n": 4078,
+    "mae": 10.392,
+    "rmse": 13.4642,
+    "brier": 0.22211,
+    "logloss": 0.63422,
+    "ece": 0.0235,
+    "cal_slope": 1.104,
+    "home_lean": 0.358,
+    "ats3": {
+     "n": 1224,
+     "win_pct": 0.5065359477124183
+    },
+    "total_mae": 10.691
+   },
+   "holdout": {
+    "n": 285,
+    "mae": 10.2196,
+    "rmse": 12.9599,
+    "brier": 0.22417,
+    "logloss": 0.63826,
+    "ece": 0.068,
+    "cal_slope": 0.937,
+    "home_lean": 0.678,
+    "ats3": {
+     "n": 81,
+     "win_pct": 0.4691358024691358
+    },
+    "total_mae": 10.383
+   },
+   "finalist": true,
+   "control": null,
+   "promoted_alone": false,
+   "why": "beat validation, not the 2025 holdout"
+  },
+  {
+   "family": "T3_garbage_time",
+   "label": "play-by-play, garbage time removed (G1)",
+   "valid": {
+    "n": 4078,
+    "mae": 10.3934,
+    "rmse": 13.4846,
+    "brier": 0.22261,
+    "logloss": 0.63536,
+    "ece": 0.028,
+    "cal_slope": 1.018,
+    "home_lean": 0.398,
+    "ats3": {
+     "n": 1305,
+     "win_pct": 0.5172413793103449
+    },
+    "total_mae": 10.6939
+   },
+   "holdout": null,
+   "finalist": false,
+   "control": {
+    "label": "play-by-play source, unfiltered (control G0)",
+    "valid": {
+     "n": 4078,
+     "mae": 10.3741,
+     "rmse": 13.4427,
+     "brier": 0.22192,
+     "logloss": 0.63376,
+     "ece": 0.023,
+     "cal_slope": 1.083,
+     "home_lean": 0.362,
+     "ats3": {
+      "n": 1249,
+      "win_pct": 0.510808646917534
+     },
+     "total_mae": 10.6898
+    }
+   },
+   "promoted_alone": false,
+   "why": "did not beat the incumbent on 2010-2024 validation"
+  },
+  {
+   "family": "T4_isotonic",
+   "label": "isotonic win-probability calibration",
+   "valid": {
+    "n": 4078,
+    "mae": 10.397,
+    "rmse": 13.4728,
+    "brier": 0.222,
+    "logloss": 0.63809,
+    "ece": 0.0211,
+    "cal_slope": 0.772,
+    "home_lean": 0.357,
+    "ats3": {
+     "n": 1267,
+     "win_pct": 0.5090765588003157
+    },
+    "total_mae": 10.6887
+   },
+   "holdout": null,
+   "finalist": false,
+   "control": null,
+   "promoted_alone": false,
+   "why": "did not beat the incumbent on 2010-2024 validation"
+  },
+  {
+   "family": "T5_net_pts_fix",
+   "label": "net_pts = (for - against) home minus away",
+   "valid": {
+    "n": 4078,
+    "mae": 10.3632,
+    "rmse": 13.3666,
+    "brier": 0.22033,
+    "logloss": 0.63072,
+    "ece": 0.0265,
+    "cal_slope": 0.89,
+    "home_lean": 0.433,
+    "ats3": {
+     "n": 1221,
+     "win_pct": 0.5176085176085176
+    },
+    "total_mae": 10.6887
+   },
+   "holdout": {
+    "n": 285,
+    "mae": 10.1679,
+    "rmse": 12.8293,
+    "brier": 0.2221,
+    "logloss": 0.63386,
+    "ece": 0.068,
+    "cal_slope": 0.881,
+    "home_lean": 0.742,
+    "ats3": {
+     "n": 67,
+     "win_pct": 0.5074626865671642
+    },
+    "total_mae": 10.3798
+   },
+   "finalist": true,
+   "control": null,
+   "promoted_alone": true,
+   "why": "beats the incumbent on validation and on the 2025 holdout"
+  }
+ ],
+ "combinations": [
+  {
+   "label": "combination: T2_recency + T5_net_pts_fix",
+   "parts": [
+    "T2_recency",
+    "T5_net_pts_fix"
+   ],
+   "cfg": {
+    "carry": 0.8,
+    "prior": {
+     "kind": "geometric",
+     "alpha": 0.1,
+     "alpha_pts": 0.06,
+     "k": null,
+     "k_pts": null
+    },
+    "recency": 0.95,
+    "alpha_league": 0.02,
+    "qb": {
+     "alpha_qb": 0.18,
+     "qb_shrink": 12,
+     "qb_prior": -0.04,
+     "alpha_team": 0.1
+    },
+    "features": {
+     "net_pts_fix": true,
+     "split_od": false
+    },
+    "hfa": {
+     "kind": "intercept",
+     "rho": null,
+     "m": null
+    },
+    "ctx": {
+     "travel": false,
+     "venue": true
+    },
+    "market": {
+     "on": false,
+     "beta": null,
+     "carry_m": null
+    },
+    "personnel": {
+     "on": false
+    },
+    "source": "stw",
+    "calibration": {
+     "kind": "none"
+    },
+    "ridge": {
+     "strength": 60,
+     "context": 200,
+     "total": 60
+    }
+   },
+   "valid": {
+    "n": 4078,
+    "mae": 10.3621,
+    "rmse": 13.365,
+    "brier": 0.22023,
+    "logloss": 0.6305,
+    "ece": 0.0275,
+    "cal_slope": 0.893,
+    "home_lean": 0.431,
+    "ats3": {
+     "n": 1209,
+     "win_pct": 0.5210918114143921
+    },
+    "total_mae": 10.691
+   },
+   "holdout": {
+    "n": 285,
+    "mae": 10.1759,
+    "rmse": 12.8337,
+    "brier": 0.22256,
+    "logloss": 0.63488,
+    "ece": 0.0688,
+    "cal_slope": 0.872,
+    "home_lean": 0.729,
+    "ats3": {
+     "n": 69,
+     "win_pct": 0.4782608695652174
+    },
+    "total_mae": 10.383
+   },
+   "finalist": true,
+   "promotes": true
+  }
+ ],
+ "promoted": "net_pts = (for - against) home minus away",
+ "promoted_cfg": {
+  "carry": 0.8,
+  "prior": {
+   "kind": "geometric",
+   "alpha": 0.1,
+   "alpha_pts": 0.06,
+   "k": null,
+   "k_pts": null
+  },
+  "recency": null,
+  "alpha_league": 0.02,
+  "qb": {
+   "alpha_qb": 0.18,
+   "qb_shrink": 12,
+   "qb_prior": -0.04,
+   "alpha_team": 0.1
+  },
+  "features": {
+   "net_pts_fix": true,
+   "split_od": false
+  },
+  "hfa": {
+   "kind": "intercept",
+   "rho": null,
+   "m": null
+  },
+  "ctx": {
+   "travel": false,
+   "venue": true
+  },
+  "market": {
+   "on": false,
+   "beta": null,
+   "carry_m": null
+  },
+  "personnel": {
+   "on": false
+  },
+  "source": "stw",
+  "calibration": {
+   "kind": "none"
+  },
+  "ridge": {
+   "strength": 60,
+   "context": 200,
+   "total": 60
+  }
+ },
+ "incumbent_valid": {
+  "n": 4078,
+  "mae": 10.3632,
+  "rmse": 13.3666,
+  "brier": 0.22033,
+  "logloss": 0.63072,
+  "ece": 0.0265,
+  "cal_slope": 0.89,
+  "home_lean": 0.433,
+  "ats3": {
+   "n": 1221,
+   "win_pct": 0.5176085176085176
+  },
+  "total_mae": 10.6887
+ },
+ "incumbent_holdout": {
+  "n": 285,
+  "mae": 10.1679,
+  "rmse": 12.8293,
+  "brier": 0.2221,
+  "logloss": 0.63386,
+  "ece": 0.068,
+  "cal_slope": 0.881,
+  "home_lean": 0.742,
+  "ats3": {
+   "n": 67,
+   "win_pct": 0.5074626865671642
+  },
+  "total_mae": 10.3798
+ }
+}

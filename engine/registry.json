@@ -281,9 +281,11 @@
    "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
-    "label": "Validated vs outcomes — spread",
+    "label": "Validated vs outcomes — spread, moneyline, team_total",
     "scope": [
-     "spread"
+     "spread",
+     "moneyline",
+     "team_total"
     ],
     "primary": "spread",
     "primary_state": "OUTCOME_VALIDATED",
@@ -292,41 +294,41 @@
      "spread": {
       "state": "OUTCOME_VALIDATED",
       "value_claims": false,
-      "reason": "tested against the close: break-even, not ahead",
+      "reason": "tested against the close: behind it",
       "outcome": "VALIDATED",
-      "market": "TESTED_EVEN",
-      "n": 2658,
-      "headline": "outcomes: CALIBRATED; vs close: LEAN",
+      "market": "TESTED_BEHIND",
+      "n": 2761,
+      "headline": "outcomes: CALIBRATED; vs close: RESEARCH",
       "file": "football/validation/linemaker_nfl.json + football/validation/pricing_nfl.json"
      },
      "moneyline": {
-      "state": "EXPERIMENTAL",
+      "state": "OUTCOME_VALIDATED",
       "value_claims": false,
       "reason": "tested against the close: behind it",
-      "outcome": "PROVISIONAL",
+      "outcome": "VALIDATED",
       "market": "TESTED_BEHIND",
-      "n": 2647,
-      "headline": "outcomes: PROVISIONAL (mean probability off the observed rate by 0.0343 (limit 0.02)); vs close: RESEARCH",
+      "n": 2750,
+      "headline": "outcomes: CALIBRATED; vs close: RESEARCH",
       "file": "football/validation/linemaker_nfl.json + football/validation/pricing_nfl.json"
      },
      "total": {
       "state": "EXPERIMENTAL",
       "value_claims": false,
-      "reason": "tested against the close: behind it",
+      "reason": "tested against the close: break-even, not ahead",
       "outcome": "PROVISIONAL",
-      "market": "TESTED_BEHIND",
-      "n": 2658,
-      "headline": "outcomes: PROVISIONAL (mean probability off the observed rate by 0.0351 (limit 0.02)); vs close: RESEARCH",
+      "market": "TESTED_EVEN",
+      "n": 2761,
+      "headline": "outcomes: PROVISIONAL (mean probability off the observed rate by 0.0406 (limit 0.02)); vs close: LEAN",
       "file": "football/validation/linemaker_nfl.json + football/validation/pricing_nfl.json"
      },
      "team_total": {
-      "state": "EXPERIMENTAL",
+      "state": "OUTCOME_VALIDATED",
       "value_claims": false,
       "reason": "never tested against the closing market",
-      "outcome": "PROVISIONAL",
+      "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": null,
-      "headline": "outcomes: PROVISIONAL (1 probability bin(s) off by more than 0.05 (0.15–0.2)); vs close: not tested",
+      "headline": "outcomes: CALIBRATED; vs close: not tested",
       "file": "football/validation/linemaker_nfl.json + football/validation/pricing_nfl.json"
      }
     },
@@ -343,7 +345,7 @@
      "validation_passed": {
       "done": true,
       "partial": false,
-      "detail": "1 of 4 markets validated vs outcomes; primary market (spread): outcome validated"
+      "detail": "3 of 4 markets validated vs outcomes; primary market (spread): outcome validated"
      },
      "market_tested": {
       "done": true,
@@ -358,7 +360,7 @@
     "football/validation/nfl_pack_crosscheck.json",
     "football/validation/nfl_pack_research.json"
    ],
-   "evidence_generated_at": "2026-10-20T14:20:08.540Z",
+   "evidence_generated_at": "2026-10-20T19:19:48.601Z",
    "data": [
     {
      "source": "nflverse (GitHub)",
@@ -1690,5 +1692,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-20T21:51:39.407Z"
+ "generated_at": "2026-10-21T01:35:50.340Z"
 }

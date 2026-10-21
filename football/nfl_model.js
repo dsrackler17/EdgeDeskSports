@@ -364,7 +364,10 @@
     var prior = strengthFrom(ph2, pa2, 0, 0, 0, pers, mkt);
     return { spread: sp, ctx: ctx, total: total, prior: prior,
       hfa: cfg.hfa.kind === 'season' && !game.neutral ? hfaEstimate(st) : 0,
-      season_games: { home: st.games[h] || 0, away: st.games[a] || 0 } };
+      season_games: { home: st.games[h] || 0, away: st.games[a] || 0 },
+      /* the same contract engine.js gameFeatures publishes */
+      known: Math.min(st.ngames[h] || 0, st.ngames[a] || 0),
+      qb_known: { home: !!game.home_qb_id, away: !!game.away_qb_id } };
   }
 
   /* ------------------------------------------------------------ predict */

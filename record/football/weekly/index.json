@@ -1,0 +1,64 @@
+{
+ "schema": "edgedesk_nfl_weekly_eval_index_v1",
+ "weeks": [
+  {
+   "season": 2026,
+   "week": 6,
+   "file": "nfl_2026_w06.json",
+   "generated_at": "2026-10-21T01:23:43.730Z",
+   "served_model": "edgedesk_nfl_v2.0.0",
+   "published": {
+    "n": 14,
+    "mae": 8.1021,
+    "brier": 0.2792,
+    "logloss": 0.7563,
+    "prob_n": 14,
+    "clv": {
+     "basis": "the recorded quote at publication to the close (the model record)",
+     "n": 14,
+     "mean_pts": 0,
+     "positive": 5,
+     "negative": 2
+    },
+    "ats_vs_close": {
+     "n": 14,
+     "wins": 4
+    },
+    "closer_than_close": 4
+   },
+   "replayed": {
+    "n": 14,
+    "mae": 8.4729,
+    "brier": 0.2935,
+    "logloss": 0.7932,
+    "prob_n": 14,
+    "clv": {
+     "basis": "the opener to the close (replayed number; it did not exist at the open)",
+     "n": 14,
+     "mean_pts": -0.25,
+     "positive": 3,
+     "negative": 1
+    },
+    "ats_vs_close": {
+     "n": 14,
+     "wins": 4
+    },
+    "closer_than_close": 4
+   },
+   "close": {
+    "n": 14,
+    "mae": 6.6429,
+    "brier": 0.2585,
+    "logloss": 0.721,
+    "prob_n": 14
+   },
+   "flags": 8
+  }
+ ],
+ "latest": {
+  "season": 2026,
+  "week": 6,
+  "file": "nfl_2026_w06.json"
+ },
+ "updated_at": "2026-10-21T01:23:43.730Z"
+}

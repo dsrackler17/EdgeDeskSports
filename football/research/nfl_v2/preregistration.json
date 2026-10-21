@@ -63,5 +63,26 @@
   "seen_before_registration": [
     "2025 descriptive statistics during the audit: mean home margin 2.18 and mean closing home spread 1.58 (non-neutral regular season); 2010-2025 closing home favourites of 6-7.5 finished p10/p50/p90 -9/7/26",
     "the corrected v1 (the incumbent) replayed by tools/football/validate_pricing.js over 2016-2025, 2025 included: pooled spread MAE 10.187 vs close 9.777 (football/validation/pricing_nfl.json). No candidate has been evaluated on any season."
-  ]
+  ],
+  "weekly_loop": {
+    "registered_at": "2026-10-21T01:30:00Z",
+    "registered_before": "the weekly loop's first evaluation of any candidate (its first run, 2026 week 6, found no repeat pattern and evaluated none)",
+    "what": "football/research/nfl_v2/weekly_loop.js, run every Tuesday by .github/workflows/nfl-weekly-loop.yml",
+    "pattern_rule": "a pattern in the served model's season-to-date replayed residuals REPEATS when |t| >= 2 on at least 30 games AND its weekly readings point the same way in at least 60% of the weeks it can be read in. Patterns: home lean (mean residual at home sites); each card component's slope (base strength, passing, rushing, quarterback, rest/travel, context); the base strength's current and prior parts' slopes; the slope on (close - model); the slope on the model margin",
+    "candidate_families": {
+      "home_lean": "H1_season_hfa at (rho 0.7, m 250) and (rho 0.85, m 500)",
+      "prior:current / prior:prior": "P0: alpha and alpha_pts x1.4 (prior too sticky) or /1.4 (too loose); carry -/+0.05 within [0.30, 0.95]. P1 (if the served prior is hyperbolic): k and k_pts x0.67 or x1.5",
+      "component:base_strength / scale": "ridge_strength: the strength model's ridge lambda x2 (over-weighted) or x0.5 (under-weighted)",
+      "component:passing / component:rushing": "T1_split_od on",
+      "component:quarterback": "qb_layer: qb_shrink x1.5 (over-weighted) or x0.67 (under-weighted)",
+      "component:rest_travel": "H2_travel_tz on",
+      "component:context": "H3_venue_terms: drop the dome and grass terms",
+      "market_gap": "P3_market at beta 0.2, carry_m 0.8"
+    },
+    "cap": "at most 6 candidates per run, in the order above",
+    "evaluation": "the backtest of Steps 2-4 unchanged (backtest.js), on every season: 2010 through the season being played (full), the 2025 holdout, and 2010-2025 (without the season being played)",
+    "promotion_rule": "PROMOTED only if it beats the served model on margin MAE AND log loss on all three of: the full window, the 2025 holdout, 2010-2025. Among several that pass, the lowest full-window MAE. The served model is never changed by anything that only helps the season being played, or one game.",
+    "versioning": "a promotion bumps the minor version (edgedesk_nfl_v2.N.0), trains through the last completed season (train.js writeParams), archives the params under versions/ and records the version, every candidate's result and the event in registry.json; supabase/nfl_model_registry.sql is regenerated from it. Rollback restores an archived version (weekly_loop.js --rollback).",
+    "disclosure": "every weekly evaluation, the served model's included, is appended to results/variants.jsonl with holdout_looked = true: each run is a look at 2025, and the count of looks is on the record"
+  }
 }

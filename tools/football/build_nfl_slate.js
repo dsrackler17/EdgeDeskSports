@@ -165,7 +165,12 @@ function starterOf(g, side) {
     qc && qc.status === 'CONFLICT' ? { conflict: { depth_chart: qc.depth_chart, last_game_starter: qc.last_game_starter, why: qc.why } } : {}) : null;
 }
 
-async function build(opts) {
+/* THE BOARD, LOADED: the football module out of app.html run against the
+   feeds, every completed game absorbed through the shared path, and S.weekPreds
+   (each completed game's pregame number, frozen before that game was absorbed).
+   The slate builder and the weekly evaluation (tools/record/nfl_weekly_eval.js)
+   both read the board through this one function. */
+async function loadBoard(opts) {
   opts = opts || {};
   const B = M.boot({ probe: ['fbLoadNfl', 'fbNflGameReq', 'fbNflRefMarket', 'fbPredict', 'FB_CODE_NAMES', 'fbNflRanks', 'FB_LOOKAHEAD_D'] });
   if (B.error) throw new Error('the football module would not run: ' + (B.error.message || B.error));
@@ -193,7 +198,12 @@ async function build(opts) {
   win.sbGet = () => Promise.resolve([]);
   win.renderFootball = () => {};
   await T.fbLoadNfl(null);
-  const S = win.FB.nfl;
+  return { win, T, S: win.FB.nfl, fetched };
+}
+
+async function build(opts) {
+  opts = opts || {};
+  const { win, T, S, fetched } = await loadBoard(opts);
   const season = S.curSeason;
   const meta = win.EDFootball.meta();
   const names = T.FB_CODE_NAMES || {};
@@ -444,6 +454,10 @@ async function build(opts) {
       config: coaching.config || null,
       basis: 'Measured and ranked from leak-free pregame residuals. Missing historical staff inputs remain unavailable. The NFL holdout currently keeps the applied projection adjustment at exactly 0.'
     },
+    /* THE MODEL THAT PRICED THIS SLATE: the served v2 model when its params are
+       active (football/nfl_params_v2.js), else the v1 engine */
+    served_model: (() => { const PV = win.EDNflParamsV2; return PV && PV.active ? { model_version: PV.model_version, config_sha: PV.config_sha, trained_through: PV.trained_through_season,
+      built_at: PV.built_at, config: PV.cfg, validation: PV.validation, source: 'football/nfl_model.js + football/nfl_params_v2.js' } : { model_version: meta.model_version, source: 'football/engine.js + football/params.js' }; })(),
     engine: { model_version: meta.model_version, feature_version: meta.nfl && meta.nfl.feature_version, trained_through: meta.nfl && meta.nfl.trained_through, built_at: meta.built_at,
       /* THE MARGIN DISTRIBUTION, so the desk can read a nearby line under the
          model's own residuals: sigma, the pooled residual pmf and the mass on
@@ -534,5 +548,5 @@ async function main() {
   fs.writeFileSync(OUT, text);
   console.log('wrote ' + path.relative(ROOT, OUT));
 }
-module.exports = { build, pricingBlock, nflForecastWanted, fetchNflForecasts, SCHEMA, OUT, etToIso, reconcileQb };
+module.exports = { build, loadBoard, pricingBlock, nflForecastWanted, fetchNflForecasts, SCHEMA, OUT, etToIso, reconcileQb };
 if (require.main === module) main();

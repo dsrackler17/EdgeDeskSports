@@ -235,11 +235,13 @@ section('6. a price never moves a probability or the pure projection');
   /* NFL: the PMF is keyed by EdgeDesk's own fair spread — the market is not an input at all */
   const nfl = (t) => EF.dist.coverProbSpread('nfl', 3, t);
   chk('NFL cover depends only on the fair spread and the line', JSON.stringify(nfl(-2.5)) === JSON.stringify(EF.dist.coverProbSpread('nfl', 3, -2.5)));
-  /* past the table's range the pooled residual is read on whole margins: a fractional fair
-     (NYJ @ NE, fair 14.82 against -7, 12 Oct 2026) once left a whole line with no push, and the
-     decision layer refused the game as corrupted odds */
+  /* past the table's range: a fractional fair (NYJ @ NE, fair 14.82 against -7, 12 Oct 2026)
+     once left a whole line with no push, and the decision layer refused the game as corrupted
+     odds. Since the one-distribution fix (audit_report.md §0.5) the learned spread-keyed PMF
+     prices every fair value — its extreme key shifted, never a second, pooled distribution —
+     and the property this guards is unchanged: whole lines push, half lines do not */
   const far = (t) => EF.dist.coverProbSpread('nfl', 14.82, t), f7 = far(7), f65 = far(6.5), f75 = far(7.5);
-  chk('NFL past the table range: a whole line keeps its push, a half line has none', f7.basis === 'pooled_residual' && f7.push > 0.01 && f65.push === 0 && f75.push === 0, [f7, f65, f75]);
+  chk('NFL past the table range: a whole line keeps its push, a half line has none', f7.basis === 'margin_pmf_by_spread' && f7.push > 0.01 && f65.push === 0 && f75.push === 0, [f7, f65, f75]);
   chk('…and the whole line agrees with its neighbours (win at 7 = win at 7.5, loss at 7 = loss at 6.5)', Math.abs(f7.win - f75.win) < 1e-12 && Math.abs(f7.lose - f65.lose) < 1e-12, [f7, f65, f75]);
   const whole = EF.dist.coverProbSpread('nfl', 20, 7);
   chk('…and a whole-number fair reads exactly as a fair plus a residual', whole.push > 0 && Math.abs(whole.win + whole.push + whole.lose - 1) < 1e-12, whole);

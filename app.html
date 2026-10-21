@@ -2925,7 +2925,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
 <link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261020nba1">
-<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261020nhl1">
+<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021nba2">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -4080,8 +4080,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_nhl_market.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_nhl_compare.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_games.js?v=20261015sc1"></script>
-<script src="/lib/edgedesk_grade_ui.js?v=20261020nhl1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261020nhl1"></script>
+<script src="/lib/edgedesk_grade_ui.js?v=20261021nba2"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261021nba2"></script>
 <script>
 /* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
    football boards price on it whenever the paid capture is not current, and
@@ -5936,7 +5936,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261020nhl1';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261021nba2';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
@@ -5950,7 +5950,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261020nba1';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261021nba2';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
@@ -10844,6 +10844,9 @@ function rfbRender(){
     });
     h+='</tbody></table></div>';
   }
+  /* NFL: the weekly model evaluation (record/football/weekly/, written each
+     Tuesday by .github/workflows/nfl-weekly-loop.yml), loaded on its own */
+  if(sp==='nfl')h+='<div id="rfbWeekly"></div>';
   h+='<h3 style="margin:16px 0 8px">Every game</h3>'
     +'<div class="stseg" id="rfbView" style="max-width:420px"><button data-rfv="graded" class="'+(RFB.view==='graded'?'on':'')+'">Finished</button><button data-rfv="upcoming" class="'+(RFB.view==='upcoming'?'on':'')+'">Upcoming</button><button data-rfv="all" class="'+(RFB.view==='all'?'on':'')+'">All</button></div>'
     +'<div id="rfbGames"><div class="rskel" style="height:120px"></div></div>';
@@ -10852,6 +10855,43 @@ function rfbRender(){
   if(s.rules&&s.rules.length)h+='<ul style="margin:6px 0 0;padding-left:18px;font-size:11px;color:var(--dim);line-height:1.55">'+s.rules.map(function(t){return '<li>'+recEsc(t)+'</li>';}).join('')+'</ul>';
   host.innerHTML=h;
   rfbLedger(sp).then(function(L){if(RFB.sport===sp&&RFB.sum===s)rfbRenderGames(L);});
+  if(sp==='nfl')rfbWeeklyLoad().then(function(d){var w=$('rfbWeekly');if(w&&RFB.sport==='nfl')w.innerHTML=rfbWeeklyHTML(d);});
+}
+
+/* THE NFL WEEKLY MODEL EVALUATION, read from record/football/weekly/ — the
+   settled week scored three ways, never mixed: PUBLISHED (the number the site
+   showed, from this record), REPLAYED (the model served now on the same
+   pregame state, through the corrected pipeline) and the CLOSE. Nothing is
+   recomputed here. */
+var RFBW={doc:null,p:null,at:0};
+function rfbWeeklyLoad(){
+  if(RFBW.doc&&Date.now()-RFBW.at<RFB_TTL)return Promise.resolve(RFBW.doc);
+  if(RFBW.p)return RFBW.p;
+  RFBW.p=rfbFetch('record/football/weekly/index.json').then(function(ix){
+    if(!ix||!ix.latest||!/^nfl_\d{4}_w\d{2}\.json$/.test(ix.latest.file))return null;
+    return rfbFetch('record/football/weekly/'+ix.latest.file);
+  }).then(function(d){RFBW.doc=d;RFBW.at=Date.now();RFBW.p=null;return d;}).catch(function(){RFBW.p=null;return null;});
+  return RFBW.p;
+}
+function rfbWeeklyHTML(d){
+  if(!d||!d.week_summary)return '';
+  function f(v,n){return v==null?'—':Number(v).toFixed(n);}
+  function row(name,x,clvKey){x=x||{};var c=x.clv;
+    return '<tr><td style="text-align:left">'+name+'</td><td>'+(x.n||0)+'</td><td>'+f(x.mae,2)+'</td><td>'+f(x.brier,3)+'</td><td>'+f(x.logloss,3)+'</td><td class="'+rfbCls(c&&c.mean_pts)+'">'+(c&&c.n?rfbPts(c.mean_pts)+' <span class="muted">n='+c.n+'</span>':'—')+'</td></tr>';}
+  function tbl(b){return '<div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Number</th><th>Games</th><th>Margin MAE</th><th>Brier</th><th>Log loss</th><th>CLV</th></tr></thead><tbody>'
+    +row('Published',b.published)+row('Replayed · '+recEsc(d.served_model||''),b.replayed)+row('Closing line',b.close)+'</tbody></table></div>'
+    +(b.paired&&b.paired.n?'<div class="muted" style="font-size:11px;margin-top:4px">Same '+b.paired.n+' games for all three: MAE '+f(b.paired.published.mae,2)+' / '+f(b.paired.replayed.mae,2)+' / '+f(b.paired.close.mae,2)+'; log loss '+f(b.paired.published.logloss,3)+' / '+f(b.paired.replayed.logloss,3)+' / '+f(b.paired.close.logloss,3)+'.</div>':'');}
+  var h='<h3 style="margin:16px 0 8px">Weekly model evaluation · week '+recEsc(String(d.week))+'</h3>'
+    +'<div class="rec-note"><b>Three numbers, never mixed.</b> <b>Published</b> is what this record holds. <b>Replayed</b> is what the model served now ('+recEsc(d.served_model||'')+') gives the same game from its pregame state through the corrected pipeline — it was not published. <b>Close</b> is the closing consensus. CLV for the replayed number runs from the opener, since it did not exist then.</div>'
+    +tbl(d.week_summary)
+    +'<h4 style="margin:12px 0 6px">Season to date</h4>'+tbl(d.season_to_date);
+  var F=d.flags||[];
+  if(F.length){
+    h+='<h4 style="margin:12px 0 6px">Disagreed with the close by 3+ points</h4><div class="tblwrap"><table class="tbl"><thead><tr><th style="text-align:left">Game</th><th>Published − close</th><th>Replayed − close</th><th>Final</th><th>Nearer the final</th></tr></thead><tbody>';
+    F.forEach(function(x){h+='<tr><td style="text-align:left">'+recEsc(x.matchup)+'</td><td>'+rfbPts(x.published_gap,1)+'</td><td>'+rfbPts(x.replayed_gap,1)+'</td><td>'+rfbPts(x.final_home_margin,0)+'</td><td>'+recEsc((x.published_closer||'—')+' / '+(x.replayed_closer||'—'))+'</td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  return h;
 }
 
 function rfbRenderGames(L){
@@ -49902,6 +49942,9 @@ function fbEnsureEngine(){
   if(window.EDFootball&&window.EDFootballParams)return Promise.resolve();
   return fbScript('football/params.js').then(function(){return fbScript('football/engine.js');})
     .then(function(){ if(!window.EDFootball||!window.EDFootballParams)throw new Error('engine loaded but globals missing'); })
+    /* the served NFL model v2 and its trained parameters: optional, never gate the
+       board (without them the v1 engine prices, as before) */
+    .then(function(){return fbScript('football/nfl_model.js').then(function(){return fbScript('football/nfl_params_v2.js');}).catch(function(){});})
     /* quote-level EV: optional, never gates the board */
     .then(function(){return fbScript('lib/edgedesk_quote_ev.js?v=20261002a').catch(function(){});})
     /* the NFL regime signal's fitted adjustment: display only while it is not
@@ -50150,7 +50193,10 @@ function fbNflSiteNote(g){
   return 'SITE: the schedule feed marks this game '+(g.location||'unmarked')+', but '+g.stadium+' is an international venue with no home team; priced as a neutral site (no home-field advantage).';
 }
 function fbNflGameReq(g){
-  return {home:g.home_team,away:g.away_team,week:fbNum(g.week),
+  var V2=window.EDNflModel,six=window.FB&&FB.nfl?FB.nfl.stadIndex:null;
+  return {home:g.home_team,away:g.away_team,week:fbNum(g.week),season:fbNum(g.season),
+    /* the served v2 model's travel inputs (distance, time zones, body clock), from the verified stadium table */
+    travel:(V2&&six)?V2.travelFor(six,{season:fbNum(g.season),gameday:g.gameday,gametime:g.gametime,home:g.home_team,away:g.away_team,neutral:fbNflNeutral(g),stadium:g.stadium}):null,
     home_rest:fbNum(g.home_rest),away_rest:fbNum(g.away_rest),roof:g.roof,surface:g.surface,
     div_game:fbNum(g.div_game),temp:fbNum(g.temp),wind:fbNum(g.wind),
     home_qb_id:g.home_qb_id||null,away_qb_id:g.away_qb_id||null,
@@ -50609,6 +50655,8 @@ function fbLoadNfl(signal){
   var venueP=fbFetchText('/football/venues/nfl_stadiums.json',signal).then(function(t){
     var j=JSON.parse(t),m={};
     ((j&&j.stadiums)||[]).forEach(function(s){if(s&&s.international===true)[s.name].concat(s.aliases||[]).forEach(function(n){if(n)m[String(n).toLowerCase()]=1;});});
+    /* every stadium's coordinates and time zone: the served model's travel inputs (football/nfl_model.js travelFor) */
+    S.stadIndex=window.EDNflModel?window.EDNflModel.indexStadiums(j):null;
     S.intlVenues=m;return m;
   }).catch(function(e){if(e&&e.name==='AbortError')throw e;S.intlVenues=null;return null;});
   var coachingP=fbFetchText(FB_URL_NFL_COACHING,signal).then(function(txt){
@@ -50640,9 +50688,19 @@ function fbLoadNfl(signal){
     /* the QB roster request runs beside the team-week fetches; it resolves to
        the floor on any failure and never fails the module */
     var qbP=fbLoadQbs(maxSeason,signal).catch(function(e){if(e&&e.name==='AbortError')throw e;return S;});
-    var st=E.nfl.newState();
+    /* THE SERVED NFL MODEL (football/nfl_model.js with football/nfl_params_v2.js,
+       when those params are marked active): the configuration the walk-forward
+       backtest promoted (football/research/nfl_v2/RESULTS.md), started from its
+       own trained seeds. Without them the board runs the v1 engine as before. */
+    var V2=window.EDNflModel,PV=window.EDNflParamsV2,useV2=!!(V2&&PV&&PV.active&&PV.seeds&&PV.cfg&&PV.cfg.source==='stw');
+    S.servedModel=useV2?PV.model_version:(E.version&&E.version())||null;
+    var st=useV2?V2.fromSeeds(V2.config(PV.cfg),PV.seeds):E.nfl.newState();
     var y;
-    for(y=st.seededThrough;y<maxSeason;y++)E.nfl.seasonBreak(st);
+    if(useV2){st.seededThrough=PV.seeds.season;for(y=PV.seeds.season;y<maxSeason;y++)V2.seasonBreak(st,y+1);}
+    else for(y=st.seededThrough;y<maxSeason;y++)E.nfl.seasonBreak(st);
+    /* the served model's offseason personnel deltas, when its configuration reads them */
+    var persP=(useV2&&PV.cfg.personnel&&PV.cfg.personnel.on)?fbFetchText('/football/nfl/personnel_'+maxSeason+'.json',signal).then(function(t){var j=JSON.parse(t);st.personnel[maxSeason]=(j&&j.teams)||{};return j;})
+      .catch(function(e){if(e&&e.name==='AbortError')throw e;S.notes.push('The NFL personnel prior could not be read, so this session prices every club with no offseason personnel change.');return null;}):Promise.resolve(null);
     /* absorb completed games of seasons after the seeds, in kickoff order */
     var toAbsorb=[];
     for(i=0;i<rows.length;i++){
@@ -50681,8 +50739,9 @@ function fbLoadNfl(signal){
     /* the pregame snapshots below read the site (fbNflGameReq -> fbNflNeutral),
        so the venue table settles first: the same game is never graded with a
        home field on one load and without it on the next */
-    return Promise.all([stwP,venueP,qbP2]).then(function(pp){
+    return Promise.all([stwP,venueP,qbP2,persP]).then(function(pp){
       var byGame=pp[0],qbByGame=pp[2]||{},absorbed=0;
+      var stateOf=function(){return useV2?{v2:st,seededThrough:st.seededThrough}:st;};
       toAbsorb.sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));});
       S.weekPreds={};
       toAbsorb.forEach(function(g){
@@ -50692,7 +50751,7 @@ function fbLoadNfl(signal){
            the grading views grade — never a hindsight number. Market inputs
            are the nflverse closing consensus for that game. */
         if(fbNum(g.season)===maxSeason){
-          try{S.weekPreds[g.game_id]=window.EDFootball.predictGame({sport:'nfl',state:st,season:maxSeason,
+          try{S.weekPreds[g.game_id]=window.EDFootball.predictGame({sport:'nfl',state:stateOf(),season:maxSeason,
             game:fbNflGameReq(g),market:fbNflRefMarket(g)});}catch(_){}
         }
         /* THE ONE ABSORB PATH (engine.js nfl.absorbCompleted; audit_report.md §0.2):
@@ -50700,9 +50759,16 @@ function fbLoadNfl(signal){
            row exactly as training builds it, teams in the feed's row order, then the
            quarterback training credits. football/parity.test.js holds this to the
            python training pass within 1e-9 over 2025 and 2026. */
-        if(E.nfl.absorbCompleted(st,g,byGame[g.game_id]||[],qbByGame[g.game_id]||[]))absorbed++;
+        if(useV2){
+          if(V2.absorbCompleted(st,g,byGame[g.game_id]||[],qbByGame[g.game_id]||[]))absorbed++;
+          /* the market rating and the home-field tally learn from the game's closing number and score */
+          V2.afterGame(st,{home:E.nfl.franchise(g.home_team),away:E.nfl.franchise(g.away_team),neutral:fbNflNeutral(g),
+            close_home_margin:fbNum(g.spread_line),home_score:fbNum(g.home_score),away_score:fbNum(g.away_score)});
+        }else if(E.nfl.absorbCompleted(st,g,byGame[g.game_id]||[],qbByGame[g.game_id]||[]))absorbed++;
       });
-      S.state=st;S.absorbed=absorbed;
+      /* the board reads ratings as team -> feature -> number: the v2 state's view carries
+         them, with the live v2 state attached for predictGame (football/nfl_model.js view) */
+      S.state=useV2?V2.view(st,st.seededThrough):st;S.absorbed=absorbed;
       /* full current-season slate, for week scans / grading / CSV export */
       S.games=[];
       for(i=0;i<rows.length;i++){

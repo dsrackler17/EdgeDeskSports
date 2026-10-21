@@ -1,0 +1,154 @@
+# EdgeDesk NFL — the weekly improvement loop (Tuesdays, after the week settles).
+#
+# 1  Re-absorb the completed week through the corrected pipeline: the board's
+#    feeds (stats_team_week, the QB game log) are refreshed and every game is
+#    absorbed through nfl.absorbCompleted, the path football/parity.test.js
+#    proves identical to training.
+# 2  Score last week against the close: margin error, Brier, log loss,
+#    calibration, CLV (tools/record/nfl_weekly_eval.js ->
+#    record/football/weekly/, the public record's weekly evaluation).
+# 3  Find the biggest misses, attribute them to the card's components, and
+#    look for repeat patterns season to date (football/research/nfl_v2/weekly_loop.js).
+# 4  Turn each repeat pattern into candidate fixes from the preregistered
+#    families and walk-forward backtest every one across every season plus
+#    the season to date.
+# 5  Promote a candidate only if it beats the served model on margin MAE AND
+#    log loss on the full backtest, the 2025 holdout and 2010-2025. The new
+#    version is trained into football/nfl_params_v2.js, archived for
+#    rollback, and recorded in registry.json -> supabase/nfl_model_registry.sql
+#    (research_model_versions / research_model_results), applied with psql
+#    when SB_DB_URL is set.
+# 6  Rebuild next week's slate and cards and write weekly_model_report.md.
+#
+# Rollback: run this workflow by hand with `rollback` set to a version in
+# football/research/nfl_v2/registry.json.
+#
+# Nothing here touches the frozen CLV ranking protocol: the loop changes the
+# model's number, never how an edge is scored or ranked.
+name: NFL weekly loop
+
+on:
+  schedule:
+    - cron: '17 14 * 9-12,1,2 2'      # Tuesdays 14:17 UTC, September through February (after Monday night settles)
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Evaluate this week instead of the latest settled one'
+        required: false
+        default: ''
+      dry:
+        description: 'Evaluate and report, promote nothing'
+        type: boolean
+        required: false
+        default: false
+      rollback:
+        description: 'Roll the served model back to this version (e.g. edgedesk_nfl_v2.0.0) and rebuild'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nfl-weekly-loop
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Which season
+        id: season
+        run: echo "season=$(node -e 'const d=new Date();console.log(d.getUTCMonth()<=1?d.getUTCFullYear()-1:d.getUTCFullYear())')" >> "$GITHUB_OUTPUT"
+
+      # Finished seasons never change; the cache holds them, and the season
+      # being played is re-downloaded every run (REFRESH_SEASON).
+      - name: Cache the nflverse history the backtest reads
+        uses: actions/cache@v4
+        with:
+          path: football/research/nfl_v2/.cache/raw
+          key: nfl-v2-raw-${{ steps.season.outputs.season }}-${{ github.run_id }}
+          restore-keys: |
+            nfl-v2-raw-${{ steps.season.outputs.season }}-
+            nfl-v2-raw-
+
+      - name: The rules must pass before anything is allowed to write
+        run: |
+          node football/nfl_model.test.js
+          node football/parity.test.js
+          node football/research/nfl_v2/weekly_loop.test.js
+          node tools/record/nfl_weekly_eval.test.js
+          node tools/football/nfl_model_registry_sql.test.js
+
+      - name: Roll back (by hand only)
+        if: ${{ inputs.rollback != '' }}
+        run: node football/research/nfl_v2/weekly_loop.js --rollback "${{ inputs.rollback }}"
+
+      - name: Fetch the nflverse history (core feeds; this season refreshed)
+        if: ${{ inputs.rollback == '' }}
+        env:
+          CORE: '1'
+          REFRESH_SEASON: ${{ steps.season.outputs.season }}
+        run: bash football/research/nfl_v2/fetch_history.sh "${{ steps.season.outputs.season }}"
+
+      - name: Refresh the board's feeds (team-week and the QB game log)
+        run: |
+          node football/nfl/build_team_week.js
+          node football/nfl/build_qb_games.js
+
+      - name: Score the settled week (published / replayed / close)
+        if: ${{ inputs.rollback == '' }}
+        run: node tools/record/nfl_weekly_eval.js --write ${{ inputs.week != '' && format('--week {0}', inputs.week) || '' }}
+
+      - name: Patterns, candidates, the backtest and the promotion gate
+        if: ${{ inputs.rollback == '' }}
+        run: node football/research/nfl_v2/weekly_loop.js --latest ${{ inputs.dry && '--dry' || '' }}
+
+      - name: The registry SQL
+        run: node tools/football/build_nfl_registry_sql.js
+
+      - name: Apply the registry to the research registry (when SB_DB_URL is set)
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then
+            echo "::notice::SB_DB_URL is not set: supabase/nfl_model_registry.sql is committed for the SQL editor and not applied here."
+            exit 0
+          fi
+          psql "$PGURL" -X -v ON_ERROR_STOP=1 -f supabase/nfl_model_registry.sql
+
+      - name: Rebuild next week's slate and cards on the served model
+        run: |
+          node tools/football/build_nfl_slate.js
+          node tools/football/build_game_research.js
+
+      - name: The weekly report
+        if: ${{ inputs.rollback == '' }}
+        run: node tools/record/nfl_weekly_report.js
+
+      - name: Prove what this run wrote still holds its rules
+        run: |
+          node football/parity.test.js
+          node football/nfl_model.test.js
+          node tools/football/nfl_slate.test.js
+          node tools/football/game_research.test.js
+          node tools/football/nfl_model_registry_sql.test.js
+
+      - name: Publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main \
+            'nfl weekly loop: the week scored, candidates judged, cards rebuilt' -- \
+            record/football/weekly/ weekly_model_report.md football/nfl_params_v2.js \
+            football/research/nfl_v2/registry.json football/research/nfl_v2/versions/ football/research/nfl_v2/results/ \
+            supabase/nfl_model_registry.sql football/nfl/ football/game_research/ football/venues/forecasts.json

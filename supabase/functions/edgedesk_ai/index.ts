@@ -10982,7 +10982,7 @@ export function deriveState(
       var drows = (Array.isArray(r.drivers.rows) ? r.drivers.rows : []).map(function (d) {
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t, favours: txt(d.favours) } : null;
-      }).filter(Boolean).slice(0, 6);
+      }).filter(Boolean).slice(0, 8); /* the NFL card is seven rows that must all show to add up */
       var trows = (Array.isArray(r.drivers.total_rows) ? r.drivers.total_rows : []).map(function (d) {
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t } : null;
@@ -37219,7 +37219,7 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
       out.push(base(sp, {
         event_id: g.game_id, event_key: g.event_key, start_utc: g.start_utc, neutral: !!g.neutral,
         home: team(g.home, null, g.home_id), away: team(g.away, null, g.away_id),
-        model: { id: 'edgedesk_bb_points_v1:' + str(L.model), version: L.model || null, artifact: 'basketball/slate.json', artifact_generated_at: iso(s.generated_at), predicted_at: iso(s.generated_at), params_generated_at: iso(L.params_generated_at), inputs_known_at: L.latest_result || null },
+        model: { id: 'edgedesk_bb_points_v1:' + str(L.model), version: L.model || null, artifact: 'basketball/slate.json', artifact_generated_at: iso(s.generated_at), predicted_at: iso(s.generated_at), params_generated_at: iso(L.params_generated_at), inputs_known_at: L.ratings_through || L.latest_result || null },
         outcome: { p_home: num(ml.home), p_away: num(ml.away), p_draw: null, settles: ml.settles || 'including overtime' },
         fair: { moneyline: { home: num(ml.fair_home), away: num(ml.fair_away) }, spread: { home_line: num(pr.spread && pr.spread.fair_home_line) }, total: { line: num(pr.total && pr.total.fair_line), expected: pt } },
         projected_score: pm != null && pt != null ? { home: r2((pt + pm) / 2), away: r2((pt - pm) / 2), margin: pm, total: pt, basis: 'projected margin and total (edgedesk_bb_points_v1)' } : null,

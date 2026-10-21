@@ -232,9 +232,23 @@ async function build(o) {
       const sc = reprice(row, featFor(cur(row.home, H), cur(row.away, A)));
       if (sc) rosterScenario = Object.assign({ label: 'Roster-adjusted (current ESPN roster; not validated)', note: 'Prices each team with its 2026-27 roster as published by ESPN (via hoopR) — players who left are removed, arrivals with NBA minutes added at their usual minutes. Shown beside the validated price, never instead of it.' }, sc, { delta_p_home: r4(sc.p_home - base.p_home) });
     }
-    /* explanation: the ridge margin model's largest contributions */
-    const contrib = ML.contributions(mlLive.models.P, f).filter((x) => Math.abs(x.contribution) >= 0.15).sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution)).slice(0, 8)
-      .map((x) => ({ feature: x.feature, label: FEATURE_LABEL[x.feature] || x.feature, value: r4(x.value), points_toward_home: r2(x.contribution) }));
+    /* explanation: the ridge margin model's largest contributions, then the
+       three rows that reconcile them to the PUBLISHED margin (audit_report.md
+       §8.3 N2): the rest of the linear model's inputs, its value at an average
+       matchup, and everything the chosen blend and its calibration add. The
+       rows used to stop at the ridge's top eight, which missed the published
+       margin by 2.5 points on average and pointed the other way in 9 of 22
+       games. */
+    const allC = ML.contributions(mlLive.models.P, f);
+    const topC = allC.filter((x) => Math.abs(x.contribution) >= 0.15).sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution)).slice(0, 8);
+    const contrib = topC.map((x) => ({ feature: x.feature, label: FEATURE_LABEL[x.feature] || x.feature, value: r4(x.value), points_toward_home: r2(x.contribution) }));
+    const sumAll = allC.reduce((a, x) => a + x.contribution, 0), sumTop = topC.reduce((a, x) => a + x.contribution, 0);
+    const published = price && price.expected ? price.expected.margin : null;
+    if (published != null && Number.isFinite(f.mlP_ridge_m)) {
+      contrib.push({ feature: '_other_inputs', kind: 'reconciliation', label: 'the linear model\'s other inputs', value: null, points_toward_home: r2(sumAll - sumTop) });
+      contrib.push({ feature: '_linear_baseline', kind: 'reconciliation', label: 'the linear model at an average matchup', value: null, points_toward_home: r2(f.mlP_ridge_m - sumAll) });
+      contrib.push({ feature: '_blend_and_calibration', kind: 'reconciliation', label: 'the other models in the blend and the calibration', value: null, points_toward_home: r2(published - f.mlP_ridge_m) });
+    }
     const lgEff = st.A.eff.L; const lgPace = st.A.pace.L;
     const matchup = {
       pace: r2(f.pace), league_pace: r2(lgPace),
@@ -258,7 +272,7 @@ async function build(o) {
       game_id: row.id, start_utc: new Date(row.start).toISOString().replace(/\.000Z$/, 'Z'), date: row.date, type: row.type, neutral: !!row.neutral,
       home: { id: row.home, name: teams[row.home] || row.home, abbr: abbr[row.home] || null }, away: { id: row.away, name: teams[row.away] || row.away, abbr: abbr[row.away] || null },
       model: chosen, price, models, disagreement: { sd_p_home: r4(sdP), range_p_home: ps.length ? [r4(Math.min(...ps)), r4(Math.max(...ps))] : null },
-      matchup, availability: { home: strip(H), away: strip(A) }, scenarios, roster_scenario: rosterScenario, explanation: contrib, uncertainty, reasons_to_pass: reasons,
+      matchup, availability: { home: strip(H), away: strip(A) }, scenarios, roster_scenario: rosterScenario, explanation: contrib, explanation_sums_to: published != null ? r2(published) : null, uncertainty, reasons_to_pass: reasons,
       market: mkt,
       decision: gatesFor({ market: mkt, outcomeValidated: recStatus.validated, sampleOk: recStatus.sampleOk }),
       inputs_known_at: row.inputs_known_at ? new Date(row.inputs_known_at).toISOString() : null, predicted_at: new Date(now).toISOString(),
