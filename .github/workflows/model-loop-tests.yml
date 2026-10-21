@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Python deps (pinned)
         run: pip install --quiet -r model_loop/requirements.txt
       - name: Core guarantees

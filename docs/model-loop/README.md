@@ -79,7 +79,7 @@ The weekly update has **two separate jobs**, so a rating refresh can never quiet
 ## Reproduce the NFL Phase 1 numbers
 
 ```
-pip install pandas numpy pyarrow
+pip install -r model_loop/requirements.txt          # Python >= 3.12
 python3 -m model_loop.adapters.nfl.ingest --fetch            # nflverse 2006-2026 -> .cache/model_loop/nfl (gitignored)
 python3 -m model_loop.adapters.nfl.backtest prereg           # (already committed; hash checked by report)
 python3 -m model_loop.adapters.nfl.backtest tune             # 2011-2019 only; appends docs/model-loop/nfl/tuning_log.jsonl
