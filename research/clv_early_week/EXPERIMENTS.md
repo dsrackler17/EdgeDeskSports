@@ -636,6 +636,41 @@ assumes all three could be bet.
 | a **−103/−104** venue (reduced-juice book, exchange at about 2% commission) | CFB spreads (−103) and CFB totals (−104) break even, and anything better is profit |
 | only standard −110 at one book, Tuesday or later | none of the rules makes money; they remain useful as information (the board's lean) only |
 
+---
+
+## Step 4 — Timestamped CFB re-test and big-edge variants (pre-registered 2026-10-21, before any of it was scored)
+
+**Why.**
+* With last week's information the CFB Loop showed about twice the CLV (+0.55 vs +0.25 pts on
+  spreads), but untimestamped openers could not rule out a lookahead artefact (R-2). EdgeDesk's own
+  2026 DraftKings captures carry timestamps, so the W−1 rule can now be tested where its timing is
+  provable.
+* Separately, CLV rose with edge size in every passing rule (step 3 / Phase 6 buckets), so the
+  largest-edge thresholds are worth tracking.
+
+**Forward gate (the only pass/fail here).** It covers games that kick off after this entry's
+commit and is graded by the shared live tracker (`research/clv/live/summary.json`, same frozen
+rules, same harness). Each variant is judged when it reaches **100 graded bets**, or else at the
+end of the 2026 season. With **k = 5** variants:
+* PASS = mean CLV pts > 0 **and** the probability-CLV one-sided p ≤ 0.05/5 **and** n ≥ 100;
+* fewer than 100 bets by season's end = INCONCLUSIVE.
+
+| live id | variant | model number | line |
+|---|---|---|---|
+| EDGE-L1 | CFB Loop v2.0.0 spread, edge ≥ 3, **week W−1 inputs at open time** | the Loop number the CFB Lab recorded at its OPEN checkpoint (computed when the line opened) | the Lab's observed OPEN → CLOSE (timestamped) |
+| EDGE-L2 | the same, totals | as EDGE-L1 | as EDGE-L1 |
+| EDGE-B1 | H-5 at **edge ≥ 5** (CFB totals, W−2 number) | as EDGE-H5 | as EDGE-H5 |
+| EDGE-B2 | H-4 at **edge ≥ 5** (CFB spreads, W−2 number) | as EDGE-H4 | as EDGE-H4 |
+| EDGE-B3 | H-3 at **edge ≥ 3** (NFL totals) | as EDGE-H3 | as EDGE-H3 |
+
+**First look (reported, never gating).** This uses already-captured 2026 weeks 5–8, which Phase 6
+read for the W−2 rules.
+* The W−1 rule (this study's `pred_cfb_loop`, previous-game starter) is scored against the
+  earliest DraftKings capture **only for games whose early quote was observed after both teams'
+  week W−1 games had kicked off + 4 h**, so W−1 information was public when that line stood.
+* It sits beside the W−2 rule on the same games.
+* The big-edge thresholds are also reported on the 2025–26 holdout bets already scored.
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on
