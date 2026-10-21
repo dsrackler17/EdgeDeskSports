@@ -1,12 +1,13 @@
 {
  "schema": "edgedesk_model_loop_health_v1",
- "generated_at": "2026-10-21T03:40:58Z",
- "status": "STALE",
+ "generated_at": "2026-10-21T09:18:46Z",
+ "status": "OK",
  "summary": {
-  "OK": 2,
-  "STALE": 2,
+  "OK": 5,
+  "STALE": 0,
   "DEGRADED": 0,
-  "OFF_SEASON": 2
+  "OFF_SEASON": 2,
+  "NOT_SERVED": 0
  },
  "rules": {
   "refresh_max_hours": 36,
@@ -27,8 +28,8 @@
     "promoted_by": "owner",
     "versions": 1
    },
-   "refreshed_at": "2026-10-21T01:29:31Z",
-   "refreshed_age_h": 2.2,
+   "refreshed_at": "2026-10-21T03:54:21Z",
+   "refreshed_age_h": 5.4,
    "research": {
     "file": "docs/model-loop/nfl/weekly/2026-w06.json",
     "at": "2026-10-21T01:44:52Z",
@@ -37,7 +38,13 @@
    },
    "data": {
     "games_published": 28,
-    "data_status": null,
+    "data_status": {
+     "status": "OK",
+     "reasons": [],
+     "games_flagged": 2,
+     "missing_results": [],
+     "checked_at": "2026-10-21T03:54:21Z"
+    },
     "graded_games": 0
    },
    "workflow": ".github/workflows/model-loop-nfl.yml"
@@ -54,8 +61,8 @@
     "promoted_by": "preregistered-rule",
     "versions": 1
    },
-   "refreshed_at": "2026-10-21T03:04:20Z",
-   "refreshed_age_h": 0.6,
+   "refreshed_at": "2026-10-21T03:37:28Z",
+   "refreshed_age_h": 5.7,
    "research": null,
    "data": {
     "games_published": 65,
@@ -67,20 +74,17 @@
   {
    "id": "nba",
    "label": "NBA",
-   "status": "STALE",
+   "status": "OK",
    "in_season": true,
-   "reasons": [
-    "last refresh 52 h ago (expected daily)",
-    "the newest result in the ratings is from 2026-06-13, 130 days ago"
-   ],
+   "reasons": [],
    "served": {
     "version": "1.0.0",
     "since": "2026-10-21T01:51:05Z",
     "promoted_by": "selection-window tuning",
     "versions": 1
    },
-   "refreshed_at": "2026-10-19T00:12:41Z",
-   "refreshed_age_h": 51.5,
+   "refreshed_at": "2026-10-21T04:05:34Z",
+   "refreshed_age_h": 5.2,
    "research": {
     "file": "docs/model-loop/nba/weekly/2026-10-21.json",
     "at": "2026-10-21T01:51:18Z",
@@ -96,19 +100,17 @@
   {
    "id": "wnba",
    "label": "WNBA",
-   "status": "STALE",
+   "status": "OK",
    "in_season": true,
-   "reasons": [
-    "last refresh 52 h ago (expected daily)"
-   ],
+   "reasons": [],
    "served": {
     "version": "1.0.0",
     "since": "2026-10-21T01:51:18Z",
     "promoted_by": "selection-window tuning",
     "versions": 1
    },
-   "refreshed_at": "2026-10-19T00:12:41Z",
-   "refreshed_age_h": 51.5,
+   "refreshed_at": "2026-10-21T04:05:34Z",
+   "refreshed_age_h": 5.2,
    "research": {
     "file": "docs/model-loop/wnba/weekly/2026-10-21.json",
     "at": "2026-10-21T01:51:19Z",
@@ -116,7 +118,7 @@
     "candidates": 8
    },
    "data": {
-    "last_game_date": "2026-10-17",
+    "last_game_date": "2026-10-19",
     "for_season": 2026
    },
    "workflow": ".github/workflows/model-loop-basketball.yml"
@@ -133,8 +135,8 @@
     "promoted_by": "weekly-loop",
     "versions": 2
    },
-   "refreshed_at": "2026-10-19T00:13:06Z",
-   "refreshed_age_h": 51.5,
+   "refreshed_at": "2026-10-21T04:05:47Z",
+   "refreshed_age_h": 5.2,
    "research": {
     "file": "docs/model-loop/ncaam/weekly/2026-10-21.json",
     "at": "2026-10-21T01:55:00Z",
@@ -159,8 +161,8 @@
     "promoted_by": "weekly-loop",
     "versions": 2
    },
-   "refreshed_at": "2026-10-19T00:13:28Z",
-   "refreshed_age_h": 51.5,
+   "refreshed_at": "2026-10-21T04:05:58Z",
+   "refreshed_age_h": 5.2,
    "research": {
     "file": "docs/model-loop/ncaaw/weekly/2026-10-21.json",
     "at": "2026-10-21T01:58:16Z",
@@ -172,6 +174,41 @@
     "for_season": 2027
    },
    "workflow": ".github/workflows/model-loop-basketball.yml"
+  },
+  {
+   "id": "ufc",
+   "label": "UFC",
+   "status": "OK",
+   "in_season": true,
+   "reasons": [],
+   "served": {
+    "version": "1.1.0",
+    "since": "2026-10-21T04:09:13Z",
+    "promoted_by": "weekly-loop",
+    "versions": 2
+   },
+   "refreshed_at": "2026-10-21T04:09:13Z",
+   "refreshed_age_h": 5.2,
+   "research": {
+    "file": "docs/model-loop/ufc/weekly/2026-10-21.json",
+    "at": "2026-10-21T04:09:13Z",
+    "promoted": "1.1.0",
+    "candidates": 7
+   },
+   "data": {
+    "bouts_published": 25,
+    "data_status": {
+     "status": "OK",
+     "reasons": [],
+     "missing_results": []
+    },
+    "served": {
+     "version": "1.1.0",
+     "promoted_at": "2026-10-21T04:09:13Z",
+     "reason": "weekly loop: candidate new_faster cleared the full-window rule"
+    }
+   },
+   "workflow": ".github/workflows/model-loop-ufc.yml"
   }
  ]
 }
