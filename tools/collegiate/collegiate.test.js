@@ -210,6 +210,46 @@ function polite(pages, hosts, extra) {
     ok('polite: a robots.txt that does not answer gets a second try before the host is skipped', plats.slow && plats.slow.platform === 'sidearm' && run.ok === 2, run);
   }
 
+  /* 7b2. SIDEARM's older sites (no Nuxt data; one li.sidearm-roster-player per player) */
+  {
+    const leg = FX('daytonflyers.com/sports_baseball_roster');
+    const x = PL.parseRoster(leg, 'baseball');
+    const jw = x.players.find((p) => p.pid === 'slug:jon-whiteside');
+    ok('sidearm (older): a season\'s roster from the page\'s markup, the season from its title', x.platform === 'sidearm_legacy' && x.season_label === '2027' && x.season === 2027 && x.players.length === 39);
+    ok('sidearm (older): every field the newer platform gives, bats/throws included', jw && jw.jersey === '3' && jw.pos === 'RHP' && jw.class === 'JR' && jw.height_in === 76 && jw.weight === 200 && jw.hometown === 'Troy, Mich.' && jw.high_school === 'Troy' && jw.previous_school === 'Lansing CC' && jw.bats === 'R' && jw.throws === 'R', jw);
+    ok('sidearm (older): a player is the site\'s name slug, not the per-season id', x.players.every((p) => /^slug:[a-z0-9-]+$/.test(p.pid)) && new Set(x.players.map((p) => p.pid)).size === x.players.length);
+    ok('platforms: SIDEARM\'s older sites are told by their markup; a WordPress site is still not guessed', PL.detectPlatformHtml(leg) === 'sidearm_legacy' && PL.detectPlatformHtml(FX('ukathletics.com/sports_baseball_roster')) === null && PL.detectPlatformHtml(FX('12thman.com/home')) === 'wmt');
+    const t = polite({ 'https://old.edu/robots.txt': { body: '' }, 'https://old.edu/sports/baseball/roster': { body: leg } }, ['old.edu']);
+    const dataDir = path.join(t.dir, 'data'); fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ dayton: { platform: 'unread', by: 'structure', checked: '2026-10-21' } }));
+    const run = await RO.collect({ polite: t.c, schoolsList: [{ id: 'dayton', host: 'old.edu', division: 1 }], sports: ['baseball'], seasons: [2027], today: '2026-10-22', dataDir, log: false });
+    ok('rosters: a site judged unread before older SIDEARM was read is retried, and read', run.ok === 1 && JSON.parse(fs.readFileSync(path.join(dataDir, 'platforms.json'), 'utf8')).dayton.platform === 'sidearm_legacy', run.misses);
+  }
+
+  /* 7c. a registry host gone dead is replaced by the site the school's opponents name for it */
+  {
+    const H = R('collegiate/hosts.js');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hosts-'));
+    const put = (rel, o) => { const f = path.join(dir, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, JSON.stringify(o)); };
+    const schools = [{ id: 'alpha', name: 'Alpha', host: 'alpha-old.com' }, { id: 'beta', name: 'Beta', host: 'beta.com' }, { id: 'gamma', name: 'Gamma', host: 'gamma.com' },
+      { id: 'delta', name: 'Delta', host: 'delta.com' }, { id: 'eps', name: 'Eps', host: 'eps-old.com' }, { id: 'zeta', name: 'Zeta', host: 'zeta-old.com' }];
+    const g = (opp, host) => ({ opponent: opp, opponent_host: host, status: 'final' });
+    put('schedules/baseball/2026/beta.json', { school: 'beta', games: [g('Alpha', 'alpha.com'), g('Eps', 'eps-new.com'), g('Zeta', 'zeta-new.com')] });
+    put('schedules/baseball/2026/gamma.json', { school: 'gamma', games: [g('Alpha', 'alpha.com'), g('Eps', 'eps-new.com'), g('Zeta', 'zeta-new.com')] });
+    put('schedules/baseball/2026/delta.json', { school: 'delta', games: [g('Alpha', 'alpha.com'), g('Eps', 'eps-old.com'), g('Zeta', 'zeta-new.com')] });
+    const dead = (s) => ({ school: s, code: 'REFUSED', why: 'robots.txt did not answer twice (NETWORK; staying out this run)' });
+    put('runs/2026-10-21.json', { misses: [dead('alpha'), dead('alpha'), dead('eps')], read_schools: ['beta', 'gamma', 'delta', 'zeta'] });
+    const c = H.corrections(dir, schools);
+    ok('hosts: a host that gave nothing, named otherwise by three schools and by none as the registry has it, is replaced', c.alpha && c.alpha.host === 'alpha.com' && c.alpha.registry_host === 'alpha-old.com' && c.alpha.named_by === 3, c);
+    ok('hosts: one school still naming the registry\'s host keeps it; a host that works is never replaced', !c.eps && !c.zeta);
+    H.update(dir, schools);
+    fs.writeFileSync(path.join(dir, 'schools.json'), JSON.stringify({ schools }));
+    const loaded = RO.loadSchools(dir).find((s) => s.id === 'alpha');
+    ok('hosts: the collectors read the corrected host, and the registry\'s is kept beside it', loaded.host === 'alpha.com' && loaded.registry_host === 'alpha-old.com' && loaded.host_source === 'opponents_schedules');
+    ok('directory: a website that reads as no real host ("https://https//x.com") is no host', D.parseSchool('<div class="school-links"><a href="https://https//x.com"><span class="icon-web"></span></a></div>').host === null);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
   /* 8. the portal ledger */
   const PO = R('collegiate/portal.js');
   {
