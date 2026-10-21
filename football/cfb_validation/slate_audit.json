@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-21T02:07:56.219Z",
- "board_generated_at": "2026-10-21T02:07:51.972Z",
+ "generated_at": "2026-10-21T04:07:54.160Z",
+ "board_generated_at": "2026-10-21T04:07:49.312Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -278,6 +278,72 @@
    ],
    "consistent": true,
    "verdict": "DATA FAULT is correct: fresh multi-book consensus fail; submodel support fail."
+  },
+  {
+   "game_id": "401858280",
+   "game": "Clemson @ Florida State",
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "named": false,
+   "edgedesk": "Florida State −6.5",
+   "market": "Clemson −1.5",
+   "books": 0,
+   "gap": 8.2,
+   "gap_class": "MAJOR",
+   "favorite_flip": true,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   }
  ],
  "inconsistent": [],
