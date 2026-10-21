@@ -1,0 +1,62 @@
+{
+ "tune_mae": 10.31714,
+ "cfg": {
+  "rating": {
+   "garbage_floor": 0.25,
+   "hl_week": 12,
+   "lam": {
+    "pass_off": 600,
+    "pass_def": 300,
+    "rush_off": 600,
+    "rush_def": 300,
+    "qb": 100,
+    "mu": 100.0,
+    "home": 3000.0
+   },
+   "carry": {
+    "off": 0.8,
+    "def": 0.4,
+    "qb": 1.0,
+    "qb_gap": 0.8
+   },
+   "qb_layer": true,
+   "personnel": {
+    "skill": 0.0,
+    "skill_shrink": 50.0,
+    "ol": 0.05
+   },
+   "market": {
+    "on": true,
+    "hl_week": 2,
+    "lam": 1,
+    "carry": 0.4,
+    "lam_hfa": 20.0
+   },
+   "totals_market": {
+    "on": true,
+    "hl_week": 4.0,
+    "lam": 3.0,
+    "carry": 0.6
+   }
+  },
+  "model": {
+   "components": {
+    "qb": true,
+    "market": true,
+    "rest": true,
+    "travel": true,
+    "division": true,
+    "covid": true,
+    "pass_split": true,
+    "rush": true
+   },
+   "hl_season": 6.0,
+   "ridge_lam": 8,
+   "hfa_prior_games": 0,
+   "first_train": 2007,
+   "min_train_seasons": 2,
+   "calibration": "none",
+   "total_market": true
+  }
+ }
+}
