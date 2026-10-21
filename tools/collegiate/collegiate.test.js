@@ -257,6 +257,25 @@ function polite(pages, hosts, extra) {
     ok('box score: the starting nine with spots and bats', x.home.lineup.length === 9 && x.away.lineup.map((l) => l.bats).join('') === 'RLRRRRRRL' && x.home.lineup[1].bats === 'S');
     ok('box score: weather as written, split only where it reads plainly', x.weather.temp_f === 69 && x.weather.sky === 'Mostly Cloudy' && x.weather.wind_dir === 'N' && x.weather.wind_mph === 24 && BX.weather('0').raw === null && BX.weather('Dome').temp_f === null && x.attendance === 7397 && x.scheduled_innings === 9);
     ok('box score: innings pitched are thirds, and an impossible value is not a number', BX.outsOf('4.1') === 13 && BX.outsOf('0.2') === 2 && BX.outsOf('5.3') === null && BX.outsOf('') === null);
+
+    /* collecting: each game once, from the home school; what is held is not read again */
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'box-'));
+    const sched = SC.parseSchedule(FX('texassports.com/sports_baseball_schedule_2026'));
+    const putS = (school, games) => { const f = path.join(dir, 'schedules/baseball/2026', school + '.json'); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, JSON.stringify({ school, games })); };
+    putS('texas', sched.games);
+    putS('msu', [{ date: '2026-02-21', site: 'A', opponent: 'Texas', opponent_host: 'texassports.com', status: 'final', us: 1, them: 3, boxscore: '/sports/baseball/stats/2026/texas/boxscore/999', game_key: '999' },
+      { date: '2026-03-01', site: 'H', opponent: 'Oakland', opponent_host: 'goldengrizzlies.com', status: 'final', us: 5, them: 1, boxscore: '/sports/baseball/stats/2026/oakland/boxscore/1000', game_key: '1000' }]);
+    fs.writeFileSync(path.join(dir, 'platforms.json'), JSON.stringify({ texas: { platform: 'sidearm' }, msu: { platform: 'sidearm' } }));
+    const schoolsList = [{ id: 'texas', host: 'texassports.com', division: 1 }, { id: 'msu', host: 'msuspartans.com', division: 1 }];
+    const pl = BX.plan(dir, 'baseball', [2026], schoolsList, { texas: { platform: 'sidearm' }, msu: { platform: 'sidearm' } });
+    ok('box scores: a game between two schools we hold is read once, from the home school', pl.filter((x) => x.school === 'msu').map((x) => x.game_key).join() === '1000' && pl.filter((x) => x.school === 'texas').length === 61);
+    const t = polite({ 'https://texassports.com/robots.txt': { body: FX('texassports.com/robots_txt') }, 'https://texassports.com/sports/baseball/stats/2026/michigan-state/boxscore/17827': { body: FX('texassports.com/sports_baseball_stats_2026_michigan_state_boxscore_17827') } }, ['texassports.com', 'msuspartans.com']);
+    const r1 = await BX.collect({ polite: t.c, dataDir: dir, schoolsList, seasons: [2026], today: '2026-10-21', perHost: 100 });
+    const held = BX.readLines(path.join(dir, 'boxscores/baseball/2026/texas.jsonl.gz'));
+    ok('box scores: a read is kept compact, with each starter and the line', r1.ok === 1 && held.length === 1 && held[0].game_key === '17827' && held[0].home.starter[0] === 'Luke Harrison' && held[0].home.starter[1] === 'L' && held[0].away.code === '416' && held[0].weather.temp_f === 69, r1);
+    const r2 = await BX.collect({ polite: t.c, dataDir: dir, schoolsList, seasons: [2026], today: '2026-10-22', perHost: 5 });
+    ok('box scores: what is held is not read again, and a run stops at its per-host cap', r2.pending === r1.pending - 1 && r2.ok + (r2.misses_by_reason.HTTP || 0) <= 5 + 1, r2);
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 
   console.log((fail === 0 ? 'ALL GREEN' : 'FAILED') + ' collegiate — ' + pass + ' passed, ' + fail + ' failed');

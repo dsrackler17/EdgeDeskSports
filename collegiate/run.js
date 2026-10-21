@@ -4,17 +4,22 @@
    EdgeDesk collegiate — one run of the collector, as collegiate/plan.json
    says: the school registry when it is missing or old (directory.js), every
    weekly sport's current and previous season (rosters.js), schedules and
-   results (schedules.js), any backfill not yet done, then the portal ledger
-   for every season with its previous one (portal.js). collegiate-rosters.yml runs it weekly, and on a branch when
+   results (schedules.js), any backfill not yet done, a slice of the box
+   scores the held schedules link (boxscores.js), then the portal ledger for
+   every season with its previous one (portal.js). collegiate-rosters.yml runs it weekly, and on a branch when
    the plan changes.
 
-     node collegiate/run.js [--today YYYY-MM-DD] [--skip-directory] [--only-backfill]
+     node collegiate/run.js [--today YYYY-MM-DD] [--skip-directory] [--only-backfill] [--force]
+
+   --force reads the weekly sports even when they were read in the last six
+   days (a plan change on its own does not re-read them).
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
 const DIR = require('./directory');
 const RO = require('./rosters');
 const SC = require('./schedules');
+const BX = require('./boxscores');
 const PO = require('./portal');
 const { createPolite } = require('./polite');
 
@@ -42,15 +47,22 @@ async function run(o) {
   const lanes = plan.lanes || 32;
   const schools = RO.loadSchools(DATA).filter((s) => s.host && (plan.division === 'all' || s.division === plan.division));
   const polite = o.polite || createPolite({ hosts: [...new Set(schools.map((s) => s.host))], cacheDir: path.join(__dirname, '..', '.cache', 'collegiate'), log: (m) => console.error(m) });
-  if (!o.onlyBackfill && plan.weekly && plan.weekly.sports && plan.weekly.sports.length) {
-    const r = await RO.collect({ polite, sports: plan.weekly.sports, today, division: plan.division, lanes, log: o.log });
-    summary.steps.push({ step: 'weekly', schools: r.schools, ok: r.ok, misses_by_reason: r.misses_by_reason, platforms: r.platforms });
+  /* a sport read in the last 6 days is not read again because the plan changed (the weekly run reads it) */
+  const lastRun = readJson(path.join(DATA, 'last_run.json'), {});
+  const readAt = Object.assign({}, lastRun.weekly_read_at || {});
+  const fresh = (key) => !o.force && readAt[key] && (Date.parse(today) - Date.parse(readAt[key])) / 86400000 < 6;
+  const weeklySports = ((plan.weekly && plan.weekly.sports) || []).filter((sp) => !fresh('rosters:' + sp));
+  if (!o.onlyBackfill && weeklySports.length) {
+    const r = await RO.collect({ polite, sports: weeklySports, today, division: plan.division, lanes, log: o.log });
+    for (const sp of weeklySports) readAt['rosters:' + sp] = today;
+    summary.steps.push({ step: 'weekly', sports: weeklySports, schools: r.schools, ok: r.ok, misses_by_reason: r.misses_by_reason, platforms: r.platforms });
     console.error('[run] weekly ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
   }
 
   /* 2b. schedules and results: each plan sport's current season */
   if (!o.onlyBackfill && plan.schedules && (plan.schedules.sports || []).length) {
-    for (const sp of plan.schedules.sports) {
+    for (const sp of plan.schedules.sports.filter((x) => !fresh('schedules:' + x))) {
+      readAt['schedules:' + sp] = today;
       const r = await SC.collect({ polite, sports: [sp], seasons: [RO.currentSeason(sp, today) - 1, RO.currentSeason(sp, today)], today, division: plan.division, lanes, log: o.log });
       summary.steps.push({ step: 'schedules', sport: sp, ok: r.ok, misses_by_reason: r.misses_by_reason });
       console.error('[run] schedules ' + sp + ' ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
@@ -72,6 +84,17 @@ async function run(o) {
     console.error('[run] backfill ' + b.id + ' ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
   }
 
+  /* 3b. box scores for the schedules held: each item is read a per-host slice a run until nothing is left */
+  for (const b of plan.boxscores || []) {
+    if (done[b.id] && done[b.id].complete) continue;
+    const r = await BX.collect({ polite, sport: b.sport, seasons: range(b.seasons), today, division: plan.division, lanes, perHost: b.per_host || 100 });
+    done[b.id] = { sport: b.sport, seasons: b.seasons, at: today, read_this_run: r.ok, left: r.left, misses_by_reason: r.misses_by_reason,
+      complete: r.planned > 0 && r.left === 0 };
+    writeJson(doneFile, done);
+    summary.steps.push({ step: 'boxscores', id: b.id, planned: r.planned, ok: r.ok, left: r.left, misses_by_reason: r.misses_by_reason });
+    console.error('[run] box scores ' + b.id + ': ' + r.ok + ' read, ' + r.left + ' left of ' + r.planned + ', misses ' + JSON.stringify(r.misses_by_reason));
+  }
+
   /* 4. the ledger, for every season we hold with its previous one */
   const root = path.join(DATA, 'rosters');
   const built = [];
@@ -83,6 +106,7 @@ async function run(o) {
   }
   summary.steps.push({ step: 'portal', built });
   console.error('[run] portal ' + built.length + ' sport-seasons');
+  summary.weekly_read_at = readAt;
   writeJson(path.join(DATA, 'last_run.json'), summary);
   return summary;
 }
@@ -90,7 +114,7 @@ async function run(o) {
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const val = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
-  run({ today: val('--today'), skipDirectory: argv.includes('--skip-directory'), onlyBackfill: argv.includes('--only-backfill') })
+  run({ today: val('--today'), skipDirectory: argv.includes('--skip-directory'), onlyBackfill: argv.includes('--only-backfill'), force: argv.includes('--force') })
     .catch((e) => { console.error(e.stack || e); process.exit(1); });
 }
 module.exports = { run, range };

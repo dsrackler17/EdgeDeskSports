@@ -15,7 +15,13 @@
    it reads plainly ("69, Mostly Cloudy, N 24 MPH" -> 69 F, Mostly Cloudy,
    wind N 24); anything else stays as written, never guessed.
    =========================================================================== */
+const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
 const { nuxtData } = require('./nuxt');
+
+const DATA = path.join(__dirname, 'data');
+const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return d; } };
 
 const num = (v) => { if (v === '' || v == null) return null; const n = +v; return Number.isFinite(n) ? n : null; };
 /* innings pitched "4.1" = 4 innings and 1 out = 13 outs; a ".3" or worse is not an innings value */
@@ -74,4 +80,99 @@ function parseBoxscore(html) {
   return sidearmBoxscore(data);
 }
 
-module.exports = { parseBoxscore, sidearmBoxscore, outsOf, weather };
+
+/* ===========================================================================
+   Collecting box scores: every final game with a box score in the schedules
+   the collector holds (collegiate/data/schedules/<sport>/<season>/), read
+   ONCE: from the home school's site when both schools' schedules are held
+   (on a neutral site, the school whose id sorts first), else from the one
+   school that lists it. Each read is kept compact (what a model uses), one
+   line per game in collegiate/data/boxscores/<sport>/<season>/<school>.jsonl.gz.
+   A per-host cap per run keeps a backfill to a few reads a minute per
+   school; later runs continue where this one stopped.
+   =========================================================================== */
+
+function compact(x) {
+  const pit = (p) => [p.name, p.throws, p.outs, p.bf, p.k, p.bb, p.h, p.er, p.pitches];
+  const side = (t) => ({ code: t.code, name: t.name, runs: t.runs, hits: t.hits, errors: t.errors, line: t.line,
+    starter: t.starter ? pit(t.starter) : null, pitchers: t.pitchers.map(pit), lineup: t.lineup.map((l) => [l.spot, l.name, l.pos, l.bats]) });
+  return { date: x.date, neutral: x.neutral, conference: x.conference, scheduled_innings: x.scheduled_innings, doubleheader_game: x.doubleheader_game,
+    attendance: x.attendance, weather: x.weather, home: side(x.home), away: side(x.away) };
+}
+const readLines = (f) => { try { return zlib.gunzipSync(fs.readFileSync(f)).toString('utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch (_) { return []; } };
+const writeLines = (f, rows) => { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, zlib.gzipSync(rows.map((r) => JSON.stringify(r)).join('\n') + '\n')); };
+
+/* which games to read, and from which school: [{ school, host, season, game_key, url }] */
+function plan(dataDir, sport, seasons, schools, platforms) {
+  const byId = new Map(schools.map((s) => [s.id, s]));
+  const byHost = new Map(schools.map((s) => [s.host, s.id]));
+  const out = [];
+  for (const season of seasons) {
+    const dir = path.join(dataDir, 'schedules', sport, String(season));
+    if (!fs.existsSync(dir)) continue;
+    const held = new Map();
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.json'))) { const d = readJson(path.join(dir, f), null); if (d && byId.has(d.school)) held.set(d.school, d); }
+    for (const [sid, d] of held) {
+      if ((platforms[sid] || {}).platform !== 'sidearm') continue;
+      for (const g of d.games || []) {
+        if (g.status !== 'final' || !g.boxscore) continue;
+        const opp = g.opponent_host ? byHost.get(g.opponent_host) : null;
+        const oppReads = opp && held.has(opp) && (platforms[opp] || {}).platform === 'sidearm';
+        /* the other school reads it when it is home, or (neutral) sorts first */
+        if (oppReads && (g.site === 'A' || (g.site === 'N' && opp < sid))) continue;
+        out.push({ school: sid, host: byId.get(sid).host, season, game_key: g.game_key, url: 'https://' + byId.get(sid).host + g.boxscore });
+      }
+    }
+  }
+  return out;
+}
+
+async function collect(o) {
+  const RO = require('./rosters');
+  const today = o.today || new Date().toISOString().slice(0, 10);
+  const dataDir = o.dataDir || DATA;
+  const sport = o.sport || 'baseball';
+  const all = o.schoolsList || RO.loadSchools(dataDir);
+  const division = o.division == null ? 1 : o.division;
+  const schools = all.filter((s) => s.host && (division === 'all' || s.division === division));
+  const platforms = readJson(path.join(dataDir, 'platforms.json'), {});
+  const todo = plan(dataDir, sport, o.seasons, schools, platforms);
+  /* what is already held */
+  const heldKeys = new Map();
+  const fileOf = (season, school) => path.join(dataDir, 'boxscores', sport, String(season), school + '.jsonl.gz');
+  const keysOf = (season, school) => { const k = season + '|' + school; if (!heldKeys.has(k)) heldKeys.set(k, new Set(readLines(fileOf(season, school)).map((r) => r.game_key))); return heldKeys.get(k); };
+  const pending = todo.filter((t) => !keysOf(t.season, t.school).has(t.game_key));
+  const polite = o.polite || require('./polite').createPolite({ hosts: [...new Set(schools.map((s) => s.host))], cacheDir: path.join(__dirname, '..', '.cache', 'collegiate'), log: (m) => console.error(m) });
+  const perHost = o.perHost || 100;
+  const byHost = new Map();
+  for (const t of pending) { if (!byHost.has(t.host)) byHost.set(t.host, []); byHost.get(t.host).push(t); }
+  const results = [];
+  const queue = [...byHost.values()];
+  const lanes = Math.max(1, Math.min(o.lanes || 64, queue.length));
+  await Promise.all(Array.from({ length: lanes }, async () => {
+    for (let list = queue.shift(); list; list = queue.shift()) {
+      const bySeason = new Map();
+      for (const t of list.slice(0, perHost)) {
+        const r = await polite.get(t.url, { ttlMs: 30 * 24 * 3600 * 1000, noStore: true });
+        if (!r.ok) { results.push({ ok: false, code: r.refused ? 'REFUSED' : 'HTTP', t }); if (r.refused) break; continue; }
+        const x = parseBoxscore(r.text());
+        if (!x || !x.home.code || !x.away.code) { results.push({ ok: false, code: 'NO_BOXSCORE', t }); continue; }
+        const k = t.season + '|' + t.school;
+        if (!bySeason.has(k)) bySeason.set(k, []);
+        bySeason.get(k).push(Object.assign({ game_key: t.game_key, school: t.school, url: t.url, read_at: today }, compact(x)));
+        results.push({ ok: true, t });
+      }
+      /* write what this host gave, whatever happens to the others */
+      for (const [k, rows] of bySeason) {
+        const [season, school] = k.split('|');
+        const f = fileOf(season, school);
+        writeLines(f, readLines(f).concat(rows));
+      }
+    }
+  }));
+  const byCode = {};
+  for (const r of results) if (!r.ok) byCode[r.code] = (byCode[r.code] || 0) + 1;
+  return { planned: todo.length, pending: pending.length, ok: results.filter((r) => r.ok).length, left: pending.length - results.filter((r) => r.ok).length, misses_by_reason: byCode };
+}
+
+module.exports = { parseBoxscore, sidearmBoxscore, outsOf, weather, compact, plan, collect, readLines };
