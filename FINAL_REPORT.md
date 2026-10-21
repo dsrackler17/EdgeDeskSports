@@ -299,3 +299,5 @@ Per the fallback written before any result:
 ## NCAAW, UFC, college baseball, tennis
 
 No opener with a matching close exists for any of them, so every phase after the audit was infeasible: 0 attempts, **UNTESTED**. `EXPERIMENTS.md` lists what would unlock each one.
+
+Opening-line collection for NCAAW, UFC and college baseball, and for NHL 2026-27 and MLB, started on 2026-10-21. It writes to `research/clv/openers/`, and `research/clv/openers/summary.json` counts how many games each sport can be tested on so far.

@@ -46,6 +46,7 @@
 | `football/props/{nfl,cfb}/2026/closes.jsonl` | NFL and CFB player props | 2026-10-02 to 10-14 | first tick per player × book | last pregame tick | named (DraftKings, William Hill, ...) | yes (The Odds API) | committed |
 | `football/pricing/openers_nfl.json` | NFL | 2026 wk 2-8 | first-seen nflverse consensus | yes | consensus | `seen_at` | committed |
 | `football/cfb_lab/ledger/2026/`, `record/football/quotes/*_2026.jsonl`, `performance/ledger/quotes/*-2026.jsonl` | CFB, NFL, NBA, NHL 2026 | 2026 | observed first quote | last pregame quote | DraftKings (ESPN), CFBD consensus | `observed_at` | committed |
+| `research/clv/openers/<sport>/*.jsonl` (`research/clv/collect_openers.py`, hourly from 2026-10-21) | NHL, MLB, NCAAW, UFC, college baseball | from 2026-10-21 | first-seen quote, and the book's own open when ESPN shows it | every change, then ESPN's post-game close | named (DraftKings via ESPN) | `observed_at` | committed |
 
 **What each sport's evaluation reads:**
 - CFB: `docs/model-loop/cfb/predictions.csv.gz` and the cfb_p4 replay.
