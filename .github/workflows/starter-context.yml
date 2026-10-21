@@ -61,6 +61,9 @@ on:
       - 'football/nfl/build_qb_games.js'
       - 'tools/football/build_nfl_slate.js'
       - 'tools/football/patch_nfl_live_paths.js'
+      # a promoted NFL model re-prices the slate the moment it lands
+      - 'football/nfl_model.js'
+      - 'football/nfl_params_v2.js'
       - '.github/workflows/starter-context.yml'
   schedule:
     - cron: '20 7,19 * * 0,1'    # Sunday and Monday, after the weekend's games settle
