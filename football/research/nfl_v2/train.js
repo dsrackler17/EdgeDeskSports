@@ -13,7 +13,7 @@
 
    Usage
      node football/research/nfl_v2/train.js --config <file.json|step4> [--through 2025]
-          [--version nfl_v2.0.0] [--out football/nfl_params_v2.js] [--active]
+          [--version nfl_v2.0.0] [--out football/nfl_params_v2.js] [--active] [--parent <version>]
    --config takes a results/step<N>.json (its promoted_cfg) or a JSON config.
    --active marks the params the ones the board serves (else shadow).
    ========================================================================== */
@@ -78,19 +78,18 @@ function train(cfg, through, opts) {
   };
 }
 
-function main() {
-  const a = process.argv.slice(2), v = (k, d) => { const i = a.indexOf(k); return i >= 0 && a[i + 1] ? a[i + 1] : d; };
-  const { cfg, source } = readCfg(v('--config', 'step4'));
-  const through = +v('--through', '2025');
-  const version = v('--version', 'nfl_v2.0.0');
-  const out = path.resolve(v('--out', path.join(ROOT, 'football', 'nfl_params_v2.js')));
+/* the params file the board serves, written for a configuration: trained
+   through `through`, stamped with its walk-forward record. Returns the doc. */
+function writeParams(o) {
+  const cfg = o.cfg, through = o.through, version = o.version;
+  const out = path.resolve(o.out || path.join(ROOT, 'football', 'nfl_params_v2.js'));
   const P = train(cfg, through);
   /* the walk-forward record this configuration earned (2010-2024, the 2025 holdout) */
-  const ev = B.evaluate(cfg);
+  const ev = o.evaluation || B.evaluate(cfg);
   const cfgHash = crypto.createHash('sha256').update(JSON.stringify(cfg)).digest('hex').slice(0, 16);
   const doc = Object.assign({
-    schema: 'edgedesk_nfl_params_v2', model_version: version, config_sha: cfgHash, built_at: new Date().toISOString(),
-    active: a.includes('--active'), config_source: source,
+    schema: 'edgedesk_nfl_params_v2', model_version: version, config_sha: cfgHash, built_at: o.builtAt || new Date().toISOString(),
+    active: !!o.active, config_source: o.source || null, parent_version: o.parent || null,
     validation: {
       method: 'walk-forward (football/research/nfl_v2/backtest.js): weights, PMF and calibration fitted on earlier seasons only',
       valid_2010_2024: B.slim(ev.valid), holdout_2025: B.slim(ev.holdout),
@@ -108,7 +107,16 @@ function main() {
     + 'window.EDNflParamsV2 = ' + JSON.stringify(doc) + ';\n'
     + "if(typeof module!=='undefined'&&module.exports)module.exports=window.EDNflParamsV2;\n";
   fs.writeFileSync(out, js);
-  console.log(`wrote ${path.relative(ROOT, out)}: ${version} (${cfgHash}), trained through ${through}, active ${doc.active}; 2025 holdout MAE ${doc.validation.holdout_2025.mae} vs close ${doc.validation.close_holdout.mae}`);
+  return { doc, out, js };
+}
+
+function main() {
+  const a = process.argv.slice(2), v = (k, d) => { const i = a.indexOf(k); return i >= 0 && a[i + 1] ? a[i + 1] : d; };
+  const { cfg, source } = readCfg(v('--config', 'step4'));
+  const through = +v('--through', '2025');
+  const version = v('--version', 'nfl_v2.0.0');
+  const { doc, out } = writeParams({ cfg, source, through, version, out: v('--out', null), active: a.includes('--active'), parent: v('--parent', null) });
+  console.log(`wrote ${path.relative(ROOT, out)}: ${version} (${doc.config_sha}), trained through ${through}, active ${doc.active}; 2025 holdout MAE ${doc.validation.holdout_2025.mae} vs close ${doc.validation.close_holdout.mae}`);
 }
 if (require.main === module) main();
-module.exports = { train };
+module.exports = { train, writeParams, readCfg };

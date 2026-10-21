@@ -86,18 +86,21 @@ const W = BT.win, T = W.__FBTEST, E = W.EDFootball;
   require('vm').runInContext(BT.app.slice(at, BT.app.indexOf('\n', at)), W);
 })();
 const P = W.EDFootballParams.nfl;
-const H = P.w_spread[P.w_spread.length - 1];
+/* the home field the SERVED model fits: the v2 model's intercept when its params are active (football/nfl_params_v2.js), else v1's */
+const PV2 = (() => { try { return require(path.join(ROOT, 'football', 'nfl_params_v2.js')); } catch (_) { return null; } })();
+const H_V1 = P.w_spread[P.w_spread.length - 1];   /* v1's intercept: what the neutral-site research report removed */
+const H = PV2 && PV2.active ? PV2.spread.b : H_V1;
 
 section('2. the engine');
 {
   const st = E.nfl.newState();
   const game = { home: 'WAS', away: 'IND', week: 4, home_rest: 7, away_rest: 7, roof: 'outdoors', surface: 'grass', div_game: 0, home_qb_id: '00-0032268', away_qb_id: '00-0035710' };
   const a = E.nfl.predict(st, game), b = E.nfl.predict(st, Object.assign({}, game, { neutral: true }));
-  chk('a neutral site removes exactly the fitted home-field intercept (w_spread\'s last weight) from the spread', near(a.koerner_spread - b.koerner_spread, H, 1e-12), [a.koerner_spread, b.koerner_spread, H]);
+  chk('a neutral site removes exactly the fitted home-field intercept (w_spread\'s last weight) from the spread', near(a.koerner_spread - b.koerner_spread, H_V1, 1e-12), [a.koerner_spread, b.koerner_spread, H_V1]);
   chk('…and nothing else: the context adjustment and the total are unchanged', a.ctx_adj === b.ctx_adj && a.sharp_total === b.sharp_total);
   const base = (p) => p.terms.spread.find((t) => t.key === 'baseline');
   chk('the baseline term says what was applied: the intercept at home, 0 at a neutral site (its fitted weight still shown)',
-    base(a).points === H && base(b).points === 0 && base(b).weight === H);
+    base(a).points === H_V1 && base(b).points === 0 && base(b).weight === H_V1);
   const sum = (p) => p.terms.spread.reduce((s, t) => s + t.points, 0);
   chk('the terms still reconcile to the spread, home and neutral', near(sum(a), a.koerner_spread, 1e-9) && near(sum(b), b.koerner_spread, 1e-9));
   chk('a game not marked neutral keeps the home field (neutral must be exactly true)', E.nfl.predict(st, Object.assign({}, game, { neutral: 'yes' })).koerner_spread === a.koerner_spread);
@@ -280,7 +283,7 @@ const buildOpts = (inj) => ({ now: NOW, lookahead: 12, offline: true, fetchText:
     /home_starter: starterOf\(g, 'home'\)/.test(BS) && /away_starter: starterOf\(g, 'away'\)/.test(BS) && /regime: g\._regime \|\| null/.test(BS));
 
   chk('the neutral-site report: the feed\'s own Neutral games, walk-forward predictions, the intercept it removes is the shipped one',
-    NS.data.sites === 'nflverse games.csv location = Neutral' && NS.data.games >= 60 && near(NS.intercept_removed_pts, Math.round(H * 1000) / 1000, 1e-9), NS.data);
+    NS.data.sites === 'nflverse games.csv location = Neutral' && NS.data.games >= 60 && near(NS.intercept_removed_pts, Math.round(H_V1 * 1000) / 1000, 1e-9), NS.data);
   chk('…the nominal home side finished under the number there (a misapplied home field)', NS.mean_residual_at_neutral_sites < 0 && NS.mean_residual_ci95[1] < 0, NS.mean_residual_ci95);
   chk('…and the MAE gain is NOT significant, said plainly', NS.mae.significant === false && NS.mae.delta_ci95[0] < 0 && NS.mae.delta_ci95[1] > 0 && /^NOT significant/.test(NS.decision), NS.mae);
   const ENG = read('football/engine.js');

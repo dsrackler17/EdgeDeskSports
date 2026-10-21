@@ -1,0 +1,90 @@
+# EdgeDesk NFL model — the suites that keep training and serving one model.
+#
+# The parity test replays 2025-2026 through the shared absorb path against the
+# python training pass's own recorded state; the v2 model's tests prove its v1
+# configuration reproduces the v1 engine exactly; the slate, regime and card
+# suites prove what the board and the game pages publish; the weekly loop,
+# its evaluation and its registry SQL (on a throwaway PostgreSQL) prove the
+# Tuesday loop's rules. No credentials; nothing is written anywhere.
+name: NFL model suites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'football/engine.js'
+      - 'football/params.js'
+      - 'football/nfl_model.js'
+      - 'football/nfl_params_v2.js'
+      - 'football/*.test.js'
+      - 'football/tests.js'
+      - 'football/nfl/**'
+      - 'football/research/nfl_v2/**'
+      - 'tools/football/build_nfl_slate.js'
+      - 'tools/football/build_nfl_registry_sql.js'
+      - 'tools/football/nfl_*.test.js'
+      - 'tools/record/nfl_weekly_*.js'
+      - 'record/football/weekly/**'
+      - 'supabase/nfl_model_registry.sql'
+      - 'lib/edgedesk_game_snapshot.js'
+      - 'lib/edgedesk_game_view.js'
+      - '.github/workflows/nfl-model-tests.yml'
+      - '.github/workflows/nfl-weekly-loop.yml'
+  pull_request:
+    paths:
+      - 'app.html'
+      - 'football/engine.js'
+      - 'football/params.js'
+      - 'football/nfl_model.js'
+      - 'football/nfl_params_v2.js'
+      - 'football/*.test.js'
+      - 'football/tests.js'
+      - 'football/nfl/**'
+      - 'football/research/nfl_v2/**'
+      - 'tools/football/build_nfl_slate.js'
+      - 'tools/football/build_nfl_registry_sql.js'
+      - 'tools/football/nfl_*.test.js'
+      - 'tools/record/nfl_weekly_*.js'
+      - 'record/football/weekly/**'
+      - 'supabase/nfl_model_registry.sql'
+      - 'lib/edgedesk_game_snapshot.js'
+      - 'lib/edgedesk_game_view.js'
+      - '.github/workflows/nfl-model-tests.yml'
+      - '.github/workflows/nfl-weekly-loop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Training / serving parity (2025-2026, python reference)
+        run: node football/parity.test.js
+
+      - name: The v2 model (its v1 configuration is the v1 engine)
+        run: node football/nfl_model.test.js
+
+      - name: The football engine suite
+        run: node football/tests.js
+
+      - name: The slate, the regime layer and the game cards
+        run: |
+          node tools/football/nfl_slate.test.js
+          node tools/football/nfl_regime.test.js
+          node tools/football/game_research.test.js
+
+      - name: The weekly loop, its evaluation and its registry SQL
+        run: |
+          node football/research/nfl_v2/weekly_loop.test.js
+          node tools/record/nfl_weekly_eval.test.js
+          node tools/football/nfl_model_registry_sql.test.js
+          node tools/football/build_nfl_registry_sql.js --check

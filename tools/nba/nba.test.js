@@ -79,6 +79,26 @@ ok('all three linescore layouts parse', JSON.stringify(SEA.linescore("[{'value':
   && JSON.stringify(SEA.linescore("[{'displayValue': '23', 'period': 1, 'value': 23.0}  {'displayValue': '19', 'period': 2, 'value': 19.0}]")) === JSON.stringify([{ p: 1, v: 23 }, { p: 2, v: 19 }])
   && JSON.stringify(SEA.linescore("[{'value': 25.0, 'displayValue': '25', 'period': 1.0}]")) === JSON.stringify([{ p: 1, v: 25 }]));
 ok('the possessions estimator is symmetric and in range', (() => { const t = { fga: 88, fta: 22, oreb: 10, dreb: 34, fgm: 41, tov: 13 }, o = { fga: 85, fta: 20, oreb: 9, dreb: 35, fgm: 40, tov: 14 }; const p = SEA.possEst(t, o); return near(p, SEA.possEst(o, t)) && p > 90 && p < 105; })());
+/* audit_report.md §8.3 N2: a slate built with the reconciling rows adds up to its published margin */
+{
+  let SL = null; try { SL = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'nba', 'slate.json'), 'utf8')); } catch (_) { SL = null; }
+  const built = SL && (SL.games || []).filter((g) => (g.explanation || []).some((x) => x.kind === 'reconciliation'));
+  if (built && built.length) ok('explanation: on every game the rows sum to the published expected margin (to rounding)', built.every((g) => Math.abs(g.explanation.reduce((a, x) => a + (x.points_toward_home || 0), 0) - g.price.expected.margin) <= 0.02 * g.explanation.length && g.explanation_sums_to === Math.round(g.price.expected.margin * 100) / 100),
+    built.map((g) => [g.game_id, g.explanation.reduce((a, x) => a + x.points_toward_home, 0), g.price.expected.margin]).slice(0, 4));
+  else console.log('NOTE | the committed nba/slate.json predates the reconciling rows; the next build carries them');
+}
+/* audit_report.md §8.3 N1: the second leg of a back-to-back whose first leg is not yet played is a back-to-back */
+{
+  const G = (id, t, h, a, st) => [id, { game_id: id, season: 2027, type: 'R', date: t.slice(0, 10), start_utc: t, neutral: 0, home_id: h, away_id: a, hs: st === 'FINAL' ? 100 : '', as: st === 'FINAL' ? 99 : '', ot: st === 'FINAL' ? 0 : '',
+    status: st, city: 'Boston', venue: '', state: '', attendance: '', ref_line_home: '', pbp: 0, src: 'S', known_at: '', assumed_available_at: '', pit: 'RETRO', scope: 'regular_season' }];
+  const games = new Map([G('1', '2027-01-10T00:00:00Z', '2', '1', 'FINAL'), G('2', '2027-01-12T00:00:00Z', '1', '3', 'SCHEDULED'), G('3', '2027-01-13T00:30:00Z', '4', '1', 'SCHEDULED'), G('4', '2027-01-11T00:00:00Z', '1', '6', 'SCHEDULED')]);
+  const r = SEA.finish(2027, games, [], [], [], [], {}, {}, { counts: {}, integrity: {} }, { dryRun: true, now: '2027-01-11T12:00:00Z' }, null, {});
+  const row = (gid) => r.teamGames.find((x) => x.game_id === gid && x.team_id === '1');
+  ok('schedule context: a back-to-back whose first leg is still scheduled is served as one (rest 1, b2b, 2 games in 7 days, a road streak of 1)',
+    row('3').rest_days === 1 && row('3').b2b === 1 && row('3').games_7d === 2 && row('3').road_streak === 1);
+  ok('schedule context: a past-dated game that never went final (postponed) never counts as the previous game', row('2').rest_days === 2 && row('2').games_7d === 1);
+  ok('schedule context: box-score fields stay final-only', row('3').pts === undefined && row('1').pts === 99);
+}
 
 /* ---------------------------------------------------------------- 2. the committed data */
 const D = R('nba/lib/data.js');

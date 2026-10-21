@@ -92,6 +92,11 @@ ok('basketball: the pass is causal — no input known at or after its prediction
 const BS = R('basketball/build_slate.js');
 const ou = BS.overUnder(220.2, 18, 220);
 ok('basketball: a whole-number line has a push; the three outcomes sum to 1', ou.push > 0.01 && near(ou.over + ou.push + ou.under, 1, 1e-9) && BS.overUnder(220.2, 18, 220.5).push === 0);
+/* audit_report.md §8.2 B2: a basketball final margin includes overtime and is never 0 */
+const pk = BS.marginOverUnder(0.3, 12, 0), m3 = BS.marginOverUnder(0.3, 12, -3);
+ok('basketball: a pick\'em spread never pushes; the regulation-tie mass is split between the sides', pk.push === 0 && near(pk.over + pk.under, 1, 1e-12)
+  && near(pk.over, BS.overUnder(0.3, 12, 0).over + BS.overUnder(0.3, 12, 0).push / 2, 1e-12), pk);
+ok('basketball: a whole non-zero spread line still pushes on its own margin', m3.push > 0.01 && near(m3.over + m3.push + m3.under, 1, 1e-12), m3);
 {
   /* calibration v2: the fitted intercept is a HOME-game correction; a neutral site gets none */
   const prior = []; for (let i = 0; i < 400; i++) { const neutral = i % 5 === 0; const m = ((i * 37) % 21) - 10 + (neutral ? 0 : 3); const margin = m - (neutral ? 0 : 1.5) + ((i * 13) % 17) - 8; prior.push({ neutral, m, t: 140, x_rest: 0, y: { hw: margin > 0 ? 1 : 0, margin, total: 140 } }); }

@@ -30,6 +30,14 @@ function overUnder(mu, sd, L) {
   if (Math.abs(L - Math.round(L)) < 1e-9) { const over = 1 - P.Phi((L + 0.5 - mu) / sd), push = P.Phi((L + 0.5 - mu) / sd) - P.Phi((L - 0.5 - mu) / sd); return { over, push, under: 1 - over - push }; }
   const over = 1 - P.Phi((L - mu) / sd); return { over, push: 0, under: 1 - over };
 }
+/** the same for a final MARGIN, which includes overtime and so is never 0: at a
+    pick'em line the regulation-tie mass is split between the sides (overtime is
+    a coin flip to this model), never priced as a push (audit_report.md §8.2 B2) */
+function marginOverUnder(mu, sd, L) {
+  if (Math.abs(L) > 1e-9) return overUnder(mu, sd, L);
+  const o = overUnder(mu, sd, 0);
+  return { over: o.over + o.push / 2, push: 0, under: o.under + o.push / 2 };
+}
 
 function priceGame(g, live, lastStart) {
   const R = live.ratings; const cal = live.calibration;
@@ -50,7 +58,7 @@ function priceGame(g, live, lastStart) {
   const mu = cal.margin.a * on + cal.margin.b * m + (rest ? cal.rest_points * x : 0);
   const tmu = cal.total.a + cal.total.b * t;
   const fairSpread = -Math.round(mu * 2) / 2; /* the home line at which the home side is closest to even */
-  const spreadLines = {}; for (const L of [fairSpread - 1, fairSpread - 0.5, fairSpread, fairSpread + 0.5, fairSpread + 1]) { const o = overUnder(mu, cal.sd_margin, -L); spreadLines[L] = { home_cover: r4(o.over), push: r4(o.push), away_cover: r4(o.under), fair_home: fair(o.over, o.push), fair_away: fair(o.under, o.push) }; }
+  const spreadLines = {}; for (const L of [fairSpread - 1, fairSpread - 0.5, fairSpread, fairSpread + 0.5, fairSpread + 1]) { const o = marginOverUnder(mu, cal.sd_margin, -L); spreadLines[L] = { home_cover: r4(o.over), push: r4(o.push), away_cover: r4(o.under), fair_home: fair(o.over, o.push), fair_away: fair(o.under, o.push) }; }
   const fairTotal = Math.round(tmu * 2) / 2;
   const totalLines = {}; for (const L of [fairTotal - 2, fairTotal - 1, fairTotal, fairTotal + 1, fairTotal + 2]) { const o = overUnder(tmu, cal.sd_total, L); totalLines[L] = { over: r4(o.over), push: r4(o.push), under: r4(o.under), fair_over: fair(o.over, o.push), fair_under: fair(o.under, o.push) }; }
   return { p_home: pHome, margin: mu, total: tmu, fairSpread, spreadLines, fairTotal, totalLines, b2b: { home: b2b(g.home_id), away: b2b(g.away_id) }, history_games: { home: H.games, away: A.games } };
@@ -83,6 +91,9 @@ function build(o) {
       params_generated_at: live.generated_at, for_season: live.for_season,
       validation: status, value_claims: 'DISABLED', value_reason: 'never compared with closing prices, and no book price is captured for basketball',
       latest_result: lastFinal ? lastFinal.date : null, next_game: next ? next.start_utc : null,
+      /* the last game the RATINGS absorbed (the live params), which is what the
+         price knows — not the last final in the data, which it may not */
+      ratings_through: live.last_game_date || null,
       note: upcoming.length ? null : (next ? 'no game in the next ' + hours + ' h; the next is ' + next.start_utc : 'no scheduled game on file for the ' + cur + ' season'),
       early_season: live.ratings && Object.values(live.ratings.teams).every((t) => t.games === 0),
       games: upcoming.map((g) => {
@@ -113,7 +124,7 @@ function check() {
   console.log('[bb slate --check] ok: ' + Object.entries(s.leagues).map(([k, L]) => k + ' ' + (L.games || []).length).join(', '));
 }
 
-module.exports = { build, priceGame, overUnder };
+module.exports = { marginOverUnder, build, priceGame, overUnder };
 if (require.main === module) {
   if (process.argv.includes('--check')) check();
   else { const s = build({ now: Date.now(), hours: Number(arg('hours', 72)) }); fs.writeFileSync(C.PATHS.slate, JSON.stringify(s, null, 1) + '\n'); console.log('[bb slate] ' + Object.entries(s.leagues).map(([k, L]) => k + ': ' + L.games.length + ' games' + (L.note ? ' (' + L.note + ')' : '')).join(' | ')); }

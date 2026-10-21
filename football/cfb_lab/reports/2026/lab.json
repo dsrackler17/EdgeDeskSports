@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-21T01:09:29.000Z",
+ "generated_at": "2026-10-21T02:07:42.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,10 +46,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1483,
-    "latest_snapshot_at": "2026-10-21T01:09:29.000Z",
-    "upcoming_games": 59,
-    "avg_confidence_upcoming": 76.9
+    "snapshots": 1485,
+    "latest_snapshot_at": "2026-10-21T02:07:42.000Z",
+    "upcoming_games": 61,
+    "avg_confidence_upcoming": 76.7
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
@@ -71,15 +71,15 @@
    }
   ],
   "data_quality": {
-   "games": 59,
+   "games": 61,
    "counts": {
     "GREEN": 9,
-    "YELLOW": 50,
+    "YELLOW": 52,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 50,
+     "YELLOW": 52,
      "RED": 0
     }
    },
@@ -733,11 +733,37 @@
      ],
      "kickoff": "2026-10-29T23:30:00.000Z",
      "matchup": "Troy @ James Madison"
+    },
+    {
+     "game_id": "401862813",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-30T23:00:00.000Z",
+     "matchup": "Tulane @ Charlotte"
+    },
+    {
+     "game_id": "401856844",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-30T23:30:00.000Z",
+     "matchup": "Baylor @ UCF"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-21T01:09:29.000Z",
-    "quotes_total": 21306,
+    "last_quote_at": "2026-10-21T02:07:42.000Z",
+    "quotes_total": 21309,
     "last_result_at": "2026-10-18T07:07:34.000Z"
    }
   },
@@ -771,9 +797,9 @@
    }
   ],
   "ledger": {
-   "predictions": 5679,
-   "live_predictions": 5169,
-   "quotes": 21306,
+   "predictions": 5681,
+   "live_predictions": 5171,
+   "quotes": 21309,
    "lines": 3559,
    "results": 461,
    "evaluations": 5267,
