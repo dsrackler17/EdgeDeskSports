@@ -15,6 +15,10 @@
 # And once, on the Supabase side (the function and pg_cron share one secret):
 #   supabase secrets set NBA_INJURY_CRON_SECRET=<a long random value>
 #   select vault.create_secret('<the same value>', 'nba_injury_cron_secret');
+# REGISTRATION: GitHub lists a workflow once it has processed a push that
+# touches the file. The merge that added this one (#655) was followed 18 s
+# later by another merge, and GitHub never processed its push (no workflow ran
+# on that commit), so this file stayed off the Actions list until this edit.
 name: Deploy NBA injury layer
 
 on:
