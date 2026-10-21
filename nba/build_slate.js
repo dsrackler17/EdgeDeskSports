@@ -37,6 +37,17 @@
    with its current roster (ESPN's preseason roster via hoopR) instead of last
    season's closing rotation; it is shown beside, never instead of, the
    validated price, because its timing cannot be reproduced historically.
+
+   ROSTER INPUTS (nba/roster_inputs.json, schema edgedesk_nba_roster_inputs_v1).
+   Beside the slate, never inside it: what the Roster-Adjusted Projection
+   (nba/injury/core.js, research model NBA-ROSTER-ADJ, EXPERIMENTAL) needs to
+   re-price a game when the injury report or a roster changes — each game's
+   baseline means, the same means with the availability features reset to the
+   team's full rotation, each team's reference rotation, the chosen model's
+   distribution parameters, and every recent player's impact (RAPM, T2) and
+   expected minutes (with the preseason prior, nba/data/preseason). Written
+   after the slate from the same pass; nothing in the slate is computed from
+   it, so the published baseline is unchanged byte for byte.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -85,7 +96,9 @@ async function currentRosters(season, offline) {
   if (!src.ok) return { ok: false, by: new Map(), source: { url: C.SOURCES.rosters(season), error: src.not_found ? 'NOT_PUBLISHED' : String(src.error) } };
   const { rows } = await io.parquetAll(src.file, ['team_id', 'athlete_id', 'display_name', 'position_abbreviation', 'status_name']);
   const by = new Map(); for (const r of rows) { const t = String(r.team_id); if (!by.has(t)) by.set(t, []); by.get(t).push(String(r.athlete_id)); }
-  return { ok: true, by, source: { url: src.url, sha256: src.sha256, fetched_at: src.fetched_at } };
+  /* names and positions for the roster inputs' fallback roster (the scenario reads only `by`) */
+  const named = new Map(); for (const r of rows) { const t = String(r.team_id); if (!named.has(t)) named.set(t, []); named.get(t).push({ id: String(r.athlete_id), name: r.display_name || null, pos: r.position_abbreviation || null }); }
+  return { ok: true, by, named, source: { url: src.url, sha256: src.sha256, fetched_at: src.fetched_at } };
 }
 
 /* ------------------------------------------------------------ the market beside the model (never inside it) */
@@ -181,6 +194,7 @@ async function build(o) {
   const newLedger = [];
 
   const games = [];
+  const rosterGames = [];
   for (const row of upcoming) {
     const f = row.f; attachMl(f);
     const lr = labRaw(f, row.home, row.away, row.neutral); if (lr) { f.lab_m = lr.m; f.lab_t = lr.t; }
@@ -279,6 +293,21 @@ async function build(o) {
       context: { pace: r4(f.pace), kal_m: r4(f.kal_m), kal_t: r4(f.kal_t), b2b_h: f.b2b_h || 0, b2b_a: f.b2b_a || 0 },
     };
     games.push(gameOut);
+    /* the roster inputs: the same chosen model with the availability features
+       reset to each team's full rotation (adj_proj 0), and the rotation the
+       reset stands for. A copy of the row is priced; the game above is not touched. */
+    if (pc) {
+      const nr = { ...row, f: Object.assign({}, row.f, featFor(H.regs, A.regs)) }; attachMl(nr.f);
+      const pn = paramsOf(chosenCand, nr);
+      const ref = (S) => S.regs.map((pid) => ({ id: pid, name: (players[pid] || {}).name || pid, minutes: r4(pm.expMinutes(pid)) }));
+      if (pn) rosterGames.push({ game_id: row.id, start_utc: gameOut.start_utc, date: row.date, neutral_site: !!row.neutral,
+        home: { id: String(row.home), abbr: gameOut.home.abbr, name: gameOut.home.name }, away: { id: String(row.away), abbr: gameOut.away.abbr, name: gameOut.away.name },
+        pace: r4(f.pace), rotation_stale: !!f.proj_stale,
+        baseline: { mu_m: pc.mu_m, mu_t: pc.mu_t, p_home: price.moneyline.home, fair_spread_home: price.spread.fair_line_home, fair_total: price.total.fair_line, expected: price.expected },
+        neutral: { mu_m: pn.mu_m, mu_t: pn.mu_t },
+        projected: { home: H.proj.slice(), away: A.proj.slice() },
+        reference: { home: ref(H), away: ref(A) } });
+    }
     /* ledger: append when the sheet changed, only before tip */
     if (price && now < row.start) {
       const sheet = { p_home: price.moneyline.home, fair_spread_home: price.spread.fair_line_home, fair_total: price.total.fair_line, exp_margin: price.expected.margin, exp_total: price.expected.total };
@@ -300,7 +329,45 @@ async function build(o) {
     rosters: rosters.source, ledger_appended: newLedger.length, games,
   };
   if (!o.dryRun) fs.writeFileSync(C.PATHS.slate, JSON.stringify(out) + '\n');
+  const ri = rosterInputs({ now, season, pm, players, live, chosen, rosterGames, rosters, generatedAt: out.generated_at });
+  if (typeof o.onRosterInputs === 'function') o.onRosterInputs(ri);
+  if (!o.dryRun) fs.writeFileSync(C.PATHS.rosterInputs, JSON.stringify(ri) + '\n');
   return out;
+}
+
+/* ---------- the roster inputs (nba/injury/core.js reads them; see the header) ---------- */
+function rosterInputs(x) {
+  const cal = x.live.calibration[x.chosen];
+  const cutoff = x.now / 864e5 - 730;
+  const seasonGames = new Map();
+  for (const r of D.playerGames(x.season)) if (r.pl) seasonGames.set(r.p, (seasonGames.get(r.p) || 0) + 1);
+  const pre = readJson(path.join(C.PATHS.preseason, x.season + '.json'), null);
+  const out = {};
+  /* every player with an NBA game in the last two years: RAPM impact (T2) and expected minutes, by ESPN id */
+  for (const [pid, s] of x.pm.pl) {
+    if (s.last_day == null || s.last_day < cutoff) continue;
+    const v = x.pm.value(pid), info = x.players[pid] || {};
+    out[pid] = { name: info.name || pid, pos: info.pos || null, team_id: s.team != null ? String(s.team) : null, o: v.known ? r4(v.o) : null, d: v.known ? r4(v.d) : null, known: !!v.known,
+      ewm_minutes: r4(x.pm.expMinutes(pid)), games: s.games, season_games: seasonGames.get(pid) || 0, start_rate: r2(x.pm.startRate(pid)), preseason_minutes: null, preseason_games: 0 };
+  }
+  /* the preseason prior (ESPN box scores, nba/tools/preseason.js): a rookie or a newcomer with no NBA game appears here first */
+  if (pre && pre.players) for (const pid of Object.keys(pre.players)) {
+    const p = pre.players[pid];
+    const t = out[pid] || (out[pid] = { name: p.name || pid, pos: null, team_id: p.team_id || null, o: null, d: null, known: false, ewm_minutes: null, games: 0, season_games: 0, start_rate: null, preseason_minutes: null, preseason_games: 0 });
+    t.preseason_minutes = r4(p.minutes_mean); t.preseason_games = p.games;
+  }
+  const fallback = {};
+  if (x.rosters.ok && x.rosters.named) for (const [t, list] of x.rosters.named) fallback[t] = list;
+  return {
+    schema: C.SCHEMA.roster_inputs, generated_at: x.generatedAt, season: x.season, slate: 'nba/slate.json', slate_generated_at: x.generatedAt,
+    model: { chosen: x.chosen, live_params_generated_at: x.live.generated_at, spec_hash: x.live.record_spec_hash },
+    impact: { measure: 'edgedesk_rapm_v1', tier: 'T2', formula: 'nba/model/players.js: ridge-regularised adjusted plus-minus on reconstructed lineup stints, y = 100 * points / possessions = L_season + h * home + sum(O_offence) - sum(D_defence); weights possessions x exp(-ln2 * age / half_life); prior mean o = d = -0.5; parameters in nba/params/live.json tuning.pass', params: x.live.tuning && x.live.tuning.pass ? x.live.tuning.pass.players || null : null },
+    minutes: { measure: 'ewm_minutes (half-life 8 games, carried across trades) with the preseason prior (nba/injury/core.js nbaExpectedMinutes)', preseason_source: pre ? pre.source || null : null, preseason_games: pre && pre.games ? pre.games.length : 0 },
+    /* the chosen model's distribution: paramsFor() with these and a game's means is the published price */
+    shape: { sd_rule: cal.sd_m, sd_t: cal.sd_t, gamma: cal.gamma, theta: x.live.shape.theta, ot: x.live.ot, half: cal.half, quarter: cal.quarter },
+    rosters_fallback: x.rosters.ok ? { source: 'sportsdataverse/hoopR rosters (ESPN)', url: x.rosters.source.url, sha256: x.rosters.source.sha256, fetched_at: x.rosters.source.fetched_at, teams: fallback } : null,
+    games: x.rosterGames, players: out,
+  };
 }
 
 /* ---------- started games: the research frozen before tip ---------- */
@@ -362,6 +429,19 @@ function check() {
   if (rec) {
     if (rec.schema !== C.SCHEMA.recent || !Array.isArray(rec.games)) fails.push('recent.json is not ' + C.SCHEMA.recent);
     else rec.games.forEach((g) => { if (!(Date.parse(g.frozen_at) < Date.parse(g.start_utc))) fails.push('recent ' + g.game_id + ' frozen at or after its start'); if (!g.price) fails.push('recent ' + g.game_id + ' has no price'); });
+  }
+  /* the roster inputs reprice every baseline exactly: the experimental model starts from the published price, not a copy of it */
+  const ri = readJson(C.PATHS.rosterInputs, null);
+  if (ri && s && s.schema === C.SCHEMA.slate) {
+    if (ri.schema !== C.SCHEMA.roster_inputs) fails.push('roster_inputs.json is not ' + C.SCHEMA.roster_inputs);
+    else if (ri.slate_generated_at !== s.generated_at) fails.push('roster_inputs.json was built with a different slate (' + ri.slate_generated_at + ' vs ' + s.generated_at + ')');
+    else for (const gi of ri.games) {
+      const g = s.games.find((x) => String(x.game_id) === String(gi.game_id));
+      if (!g || !g.price) { fails.push('roster input ' + gi.game_id + ' is not a priced slate game'); continue; }
+      const sh = ri.shape, p = DIST.price({ mu_m: gi.baseline.mu_m, sd_m: DF.sdOf(sh.sd_rule, gi.baseline.mu_m), mu_t: gi.baseline.mu_t, sd_t: sh.sd_t, theta: sh.theta, gamma: sh.gamma, ot: sh.ot, half: sh.half, quarter: sh.quarter }, { joint: false });
+      if (p.moneyline.home !== g.price.moneyline.home || p.spread.fair_line_home !== g.price.spread.fair_line_home || p.total.fair_line !== g.price.total.fair_line || p.expected.margin !== g.price.expected.margin || p.expected.total !== g.price.expected.total)
+        fails.push('roster input ' + gi.game_id + ' does not reprice the published baseline');
+    }
   }
   if (fails.length) { console.error('[nba slate --check] FAILED: ' + fails.join('; ')); process.exit(1); }
   console.log('[nba slate --check] ok: ' + s.games.length + ' games, ' + s.horizon);

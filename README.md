@@ -787,6 +787,310 @@ without a login, and no page in this repository can read a subscriber address.
 
 See [`tools/newsletter/README.md`](tools/newsletter/README.md).
 
+## NBA roster and injury layer — who is actually playing, and the Roster-Adjusted Projection
+
+The NBA game card used to price last season's final-game rotations and say "no
+injury report is in the price". Hornets at Nets on 2026-10-21 shows why that
+fails. The model had Charlotte −9.5 at 78%, the market had Brooklyn −1.5, and the
+model still thought LaMelo Ball and Miles Bridges were Hornets. This layer adds
+three things:
+- the truth about who is playing (T0);
+- a deterministic minutes and impact transform (T2);
+- a new research model that runs **beside** the baseline, labelled
+  Experimental, until it passes its own registered validation (T3).
+
+The baseline, its ranking and its grade are untouched. The slate build was run
+twice at the same instant, before and after the change, and `nba/slate.json`
+came out byte-identical apart from the roster file's download timestamp.
+`node nba/build_slate.js --check` now also proves the exported inputs re-price
+every published baseline exactly.
+
+### Sources, and why
+
+| What | Primary | Fallback | Tier, producer |
+|---|---|---|---|
+| Injury statuses (Out, Doubtful, Questionable, Probable, Available) | **The NBA's official injury report**: the timestamped PDFs linked from `official.nba.com/nba-injury-report-<season>-season/`. The newest link is used, or the file-name pattern `ak-static.cms.nba.com/referee/injury/Injury-Report_YYYY-MM-DD_HH[_MM]AM\|PM.pdf` when the page cannot be read. Text is read with pdf.js (`npm:unpdf@1.8.1`, as `circa_ownership_sync` does). | **ESPN's league injuries JSON** (`site.api.espn.com/.../nba/injuries`), used only when the league's report cannot be read, and labelled on every card. | T0, league-produced (fallback: third party) |
+| Rosters, trades, signings, waivers | **ESPN team roster JSON** (`.../nba/teams/<id>/roster`), all 30 teams. It uses the same athlete ids as the engine's play-by-play, so rosters need no name matching. | The **hoopR copy of ESPN's rosters** the slate build already reads, carried in `nba/roster_inputs.json`. It is used only for a team with no capture in the last 24 hours. | T0, third party |
+| Preseason minutes (the prior for this season's roles) | **ESPN preseason box scores**: the scoreboard with `seasontype=1`, then each game's summary. Collected by `nba/tools/preseason.js` into `nba/data/preseason/<season>.json`, because hoopR publishes no preseason games. | none: without it, expected minutes carry last season's roles, and the card says so | T0, third party |
+| Projected / confirmed starting lineups | **Not used.** There is no reliable, permissible structured source: ESPN lists starters only at or after tip, and NBA.com's lineup pages are under NBA.com's terms. Nothing is displayed for lineups, and the card says "no lineup confirmation until tip". | — | — |
+
+`stats.nba.com` / `cdn.nba.com` remain unused, per the engine's licence note
+(`nba/config.js` LICENSE). The official report is a public league publication.
+EdgeDesk stores its rows as attributed facts and links each report. As with the
+rest of the NBA output, the owner should review the league's and ESPN's terms
+before this is sold in a paid tier.
+
+### What runs, and when
+
+**`supabase/functions/nba_injury_sync`** is one self-contained `index.ts`, like
+every function here. `nba/injury/core.js` and `nba/model/distribution.js` are
+copied in verbatim by `node tools/nba/inline_injury_core.js`, and a test fails if
+either copy drifts. Each run:
+1. reads `nba/roster_inputs.json` from the site;
+2. captures every roster that changed;
+3. reads the league's report, falling back to ESPN;
+4. matches names to rostered players and rows to slate games;
+5. stores the report unless it is identical to the last one;
+6. prices the Roster-Adjusted Projection for every upcoming game on the report;
+7. writes one run row and its alerts.
+
+**Cron** follows the repo's convention (`research_cron`): `supabase/nba_injury_cron.sql`
+schedules `nba_injury_sync` at minutes 7 and 37, from 13:00 to 04:59 UTC, through
+`nba_injury_poke()` with the Vault secret `nba_injury_cron_secret`. pg_cron cannot
+know the schedule, so **the function decides**:
+- **On a game day:** every poke from 9:00 AM Eastern until 30 minutes after the
+  last tip, so every 30 minutes, morning through the last tip.
+- **On any other day:** the first poke after 9:00 AM Eastern only (once daily).
+
+A declined poke is recorded as a `skipped` run. A quiet day therefore never looks
+like a dead scheduler, and no run of any kind for 90 minutes is a failure.
+
+**`nba/build_slate.js`** (the existing 3-hourly NBA build) also writes
+`nba/roster_inputs.json`. It contains:
+- each game's baseline means;
+- the same means with the availability features reset;
+- each team's reference rotation;
+- the chosen model's distribution parameters;
+- every recent player's impact and minutes.
+
+Nothing in the slate is computed from it.
+
+### Tables (`supabase/nba_injury_layer.sql`; mirrored in `supabase/migrations/20261021140000_nba_injury_layer.sql`)
+
+Every table is **append-only**: an update, delete or truncate is refused by a
+trigger, for service_role too. RLS is on. anon and authenticated may select, and
+only service_role inserts.
+
+| Table / view | One row per | Key columns |
+|---|---|---|
+| `nba_roster_captures` | team per changed roster | team_id, team_abbr, source (`espn_roster` / `hoopr_rosters`), source_url, captured_at, content_hash, player_count |
+| `nba_roster_snapshots` | player per capture | capture_id, team_id, team_abbr, player_id (ESPN), player_name, position, jersey, roster_status (`ACTIVE` / `TWO_WAY` / `INACTIVE` / `SUSPENDED` / `OTHER`), source_status, source, captured_at |
+| `nba_injury_reports` | distinct report | source (`nba_official` / `espn_injuries`), source_url, report_published_at (required for the league's), captured_at, content_hash, parser_version, rows_count, unmatched, unread_lines, matchups (the games it covers), not_submitted, unread (every line that did not read), pdf_sha256 |
+| `nba_injury_report_snapshots` | player per report | report_id, game_id, game_date, game_start_utc, matchup, team_id, team_abbr, player_id (null when unmatched), player_name, player_raw, match_method, team_mismatch, status (`OUT` / `DOUBTFUL` / `QUESTIONABLE` / `PROBABLE` / `AVAILABLE` / `UNKNOWN`), source_status, reason, report_published_at, captured_at, source |
+| `nba_player_impact_snapshots` | distinct impact table | measure, tier (T2), formula, inputs_generated_at, content_hash, players (jsonb: o, d, minutes, preseason) |
+| `nba_adjusted_projection_snapshots` | projection | game_id, game_start_utc, **model_key, model_version, model_version_ref** (refused unless it is the registered version), **injury_report_id** (not null), report_source, home/away_roster_capture_id, impact_snapshot_id, slate_generated_at, status (`OK` / `WITHHELD`), reasons, baseline, adjusted, delta, adjustments (each line with its evidence), roster_changes, minutes, inputs_hash, core_version, computed_at (must be before tip) |
+| `nba_injury_sync_runs` | run (ok / warn / error / skipped) | started/finished, game_day, report_id, report_source, report_changed, report_published_at, official_ok, fallback_used, rosters_checked/changed, roster_failures, rows_read, unmatched, unread_lines, teams_playing, teams_missing, teams_not_submitted, projections_written/withheld/unchanged, simulated, message |
+| `nba_injury_alerts` | alert | run_id, severity (`FAILURE` / `DEGRADED` / `DRIFT` / `WARNING`), code, message, detail |
+| `nba_injury_config` | setting | the registered model version the trigger enforces; freshness thresholds |
+| view `nba_player_status_current` | player per upcoming game | the latest status from the latest report that **covers** the game (a newer report with no row for a player clears him) |
+| views `nba_roster_current`, `nba_roster_changes` | — | the latest capture per team; who joined or left between captures |
+| view `nba_adjusted_projection_current` | upcoming game | the latest projection |
+| view `nba_injury_readiness` | — (one row) | the KPIs below |
+| view `nba_injury_meta` | — | `{job}_last_run` / `_last_status` rows for the research module's pipeline ledger |
+| function `nba_injury_card(game, home, away, start)` | — | what one card shows, with the freshness rule applied in one place |
+
+**The card's freshness rule** is enforced in the database, not the page:
+- `AVAILABLE`: the league's report covers the game, and the newest check
+  succeeded within 75 minutes, or within 26 hours when only skipped runs
+  followed it.
+- `FALLBACK`: the same, from ESPN, labelled.
+- `NOT_ON_REPORT`: the game is not on the latest report yet.
+- `UNAVAILABLE`: there is no report, the last check failed, or no recent
+  check. The card then reads "Injury report not yet available" with the last
+  check time, shows no statuses and withholds the adjusted number.
+- `PREGAME`: after tip, the last report captured before tip.
+
+**Readiness KPIs** come from `nba_injury_readiness`:
+- report freshness: minutes since the last official report;
+- unmatched player names;
+- teams playing today missing from the report;
+- unread report lines and rosters on file;
+- failures, degraded runs and drift alerts in 24 hours;
+- consecutive failures, and a silent scheduler.
+
+They appear in **System health** (app.html: three rows, "NBA injury sync",
+"NBA injury report freshness" and "NBA injury data quality"; a failing sync
+turns the header pill red). They also appear in the NBA panel's status fold and
+in the NBA module's pipeline ledger.
+
+### The Roster-Adjusted Projection (research model `NBA-ROSTER-ADJ`, v0.1, EXPERIMENTAL)
+
+The model is registered in `research_models` / `research_model_versions` by
+`supabase/nba_roster_adjusted_registry.sql`. That file is generated from
+`nba/research/roster_adjusted/registration.json`, before any holdout evaluation,
+and writes no result row. The specification below lives in `nba/injury/core.js`
+`NBA_ROSTER_MODEL`. A test fails if it differs from the registration.
+
+**Player impact (T2, EdgeDesk's own).** The engine's regularised adjusted
+plus-minus (`nba/model/players.js`), fitted on play-by-play lineup stints:
+- the target is `100·points/possessions = L_season + h·home + ΣO(offence) − ΣD(defence)`;
+- weights are possessions × exp(−ln2·age/half-life);
+- the ridge prior is o = d = −0.5, so a player with no NBA minutes is assumed
+  slightly below average;
+- the parameters are in `nba/params/live.json`, and the formula is published
+  with every impact snapshot.
+
+A player who changed teams carries his impact to the new team. No third-party
+metric is used.
+
+**Expected minutes (T2).** A player's EWM minutes (half-life 8 games, carried
+across trades) are blended with his preseason minutes. The EWM counts as 4
+games; the preseason counts for at most 4 games, fading to nothing over the
+first 10 regular-season games. A player with neither gets 10 minutes.
+
+**Status → probability he plays (registered; never tuned):**
+
+| OUT | DOUBTFUL | QUESTIONABLE | PROBABLE | AVAILABLE / not listed | UNKNOWN (ESPN "Day-To-Day", fallback only) |
+|---|---|---|---|---|---|
+| 0 | 0.25 | 0.50 | 0.90 | 1 | 0.50 |
+
+**Minutes redistribution (T2, deterministic).** The depth chart is the
+available roster sorted by expected minutes. The rotation is the shortest top
+of it that covers 240 minutes, scaled to 240 with a 40-minute cap
+(`PlayerModel.strength`'s own loop, tested equal to the hundredth of a minute).
+An absent player opens his minutes to the next man down. Expected minutes are
+the **exact** expectation over every availability scenario of the listed
+players (at most 12 uncertain players per team).
+
+**Ratings and price.** The baseline's chosen model is re-priced with its
+availability features reset to each team's full rotation (`adj_proj` = 0), so
+nothing is counted twice. Two shifts are then added:
+- **Margin:** `Σ(A−R)/48·(o+d)·pace/100` per team, home minus away.
+- **Total:** `Σ(A−R)/48·(o−d)·pace/100`.
+
+In both, R is the reference rotation (the engine's own full-strength
+reference) and A is tonight's expected minutes; coefficient 1. The result is
+priced by **the baseline's own distribution code**, copied whole into the edge
+function, with its own standard-deviation rule. Every line on the card's
+"Adjustments applied" list names a player (or the reset), a size in points of
+margin, and the roster capture or report row it came from, and the lines add up
+exactly to the change.
+
+**Withheld, never guessed.** A game shows no adjusted number when:
+- the report is missing or does not cover the game;
+- a team has NOT YET SUBMITTED;
+- a listed player cannot be matched to a rostered player;
+- the report and the roster disagree on a player's team;
+- a team has no roster;
+- the shift exceeds the registered sanity bound (25 points of margin or 30 of
+  total).
+
+**Primary objective and promotion criteria (registered 2026-10-21).** The
+holdout is the 2026-27 regular season, from 2026-10-22 to the end of the regular
+season (2026-10-21 is excluded because its Hornets–Nets game was examined at
+registration), evaluated once at the end, with at least 600 paired games.
+`passed` only if **all** of these hold:
+- **C1:** expected-margin MAE, adjusted < baseline, with the date-blocked
+  bootstrap's 95% upper bound below 0.
+- **C2:** the same for the total.
+- **C3:** detection-time edge against the market correlates with positive CLV
+  at least as well as the baseline's (Spearman; difference ≥ 0, lower bound
+  > −0.05; at least 300 games with captured prices).
+- **C4:** win-probability log loss is not worse by more than 0.005.
+- **C5:** the model publishes for at least 80% of holdout games.
+
+A criterion that cannot be evaluated is not met. **NBA prices are not captured
+today (NBA_PRICES off), so C3 is not evaluable and the model cannot be promoted
+until they are.**
+
+**Forking paths:** exactly one candidate was tried (the numbers above), and
+none was evaluated against outcomes. The alternatives considered and not tried
+are listed in the registration. `node nba/research/roster_adjusted/evaluate.js`
+writes the validation report (`report.json`). It is DESCRIPTIVE until the
+holdout ends with the sample, and it writes no registry result: a person
+records it and promotes, or does not.
+
+### The card
+
+**Who is playing** (Research → Other → NBA → a game) replaces the static
+sentence. It shows:
+- each team's OUT players, with uncertain statuses flagged;
+- players no longer on the roster, and where they went;
+- the report's source, publication time, read time, last check and link.
+
+**Baseline vs Roster-Adjusted** shows the baseline's fair spread, total,
+projected score and win probability exactly as before. Beside them are the
+adjusted values, the delta, the registry's T3 badge (Experimental until a
+validation report says otherwise) and the snapshot ids.
+
+The card then shows **Adjustments applied** and **Known limitations**. The
+shareable graphic's "WHO IS PLAYING" line reads the same report, or says that
+there is none.
+
+**Research grade.** The A–F kernel is frozen and unchanged. Every NBA game is
+already capped at C by "availability unknown". The card states the injury
+data's completeness beside the grade, and never shows a grade above C without a
+current report.
+
+### Decisions made without asking
+
+1. **The league's PDF is primary, and ESPN is the labelled fallback.** ESPN's
+   "Day-To-Day" is stored as `UNKNOWN`, with its own word. It is never
+   relabelled Questionable, and it carries its own registered 0.50.
+2. **No lineup source.** No reliable, permissible one was found, so nothing is
+   shown for lineups.
+3. **The adjusted projection is computed in the edge function, not the 3-hourly
+   build**, so it updates with every report. It prices with the baseline's own
+   distribution code, copied verbatim rather than ported.
+4. **The model resets the baseline's availability features before applying the
+   full-weight shift**, to avoid counting an absence twice. The reset is its
+   own traceable line.
+5. **The "Research Readiness Dashboard" does not exist under that name.** The
+   KPIs go into a new view (`nba_injury_readiness`) and an append-only alert
+   table, shown in System health, the NBA status fold and the module's pipeline
+   ledger. A failure is a `FAILURE` alert and a red health pill.
+6. **Strict freshness.** A failed latest check makes every card read
+   "Injury report not yet available" immediately, rather than showing a report
+   EdgeDesk can no longer confirm.
+7. **Identical consecutive reports, rosters, impact tables and projections are
+   stored once.** The run still records that it checked, and when the league
+   last published.
+8. **Names are matched exactly, by surname and initial on the team, or exactly
+   league-wide** (reported as a team mismatch), through a small alias table.
+   There is no fuzzy matching: an unmatched name withholds that game.
+9. **The registry DDL lives only in the database**, so the registration reads
+   the live columns, as the NFL studies do. The projection table links to the
+   version row by its id (as text), enforced by a trigger.
+10. **The grade kernel is not changed** (see above). Raising a grade from the
+    report would credit a baseline price that does not use it.
+11. **Generated artifacts are not committed by this change.** These are
+    `nba/roster_inputs.json` and `nba/data/preseason/`. The scheduled NBA
+    build writes them on main. Until it runs, the function records
+    `inputs_unavailable` and syncs statuses and rosters only.
+12. **The Hornets–Nets acceptance check uses the real roster inputs** (the
+    build at 2026-10-21T14:00Z) and the real hoopR/ESPN rosters, with **the
+    statuses as you stated them**, laid out as the league's PDF. The live
+    report could not be fetched from the build environment, whose network
+    policy blocks the league and ESPN.
+
+### Acceptance
+
+| Check | Result |
+|---|---|
+| Hornets at Nets: Ball and Bridges gone, White / Knueppel / Williams OUT, the spread moves toward Brooklyn | Ball (now MIN) and Bridges (now PHX) are listed as departed. The three are OUT, each a traced line. **Charlotte −9.5 (BKN 22%) → Brooklyn −2.5 (BKN 54%)**, total 219.5 → 217.5 (`tools/nba/nba_injury_core.test.js`, `nba_injury_sync.test.js`, `nba_ui.e2e.js`). |
+| Baseline unchanged byte for byte | The slate built before and after the change at the same instant is identical. `--check` re-prices every baseline from the inputs exactly. |
+| Killing the source shows the unavailable message | `simulate_outage: ["official","espn"]` gives an error run, a FAILURE alert and no new report. The card reads "Injury report not yet available … last check … (failed)" with no statuses and no adjusted number (SQL test and Chromium). |
+| Every projection links to a model version and a report | `model_version_ref` is not null and checked against the registry by a trigger. `injury_report_id` is not null with a foreign key. |
+| Cron runs in the KPIs; a forced failure is an alert | Every run, skipped runs included, is in `nba_injury_sync_runs`. The poke with no secret records a failed run and a FAILURE alert. System health shows "NBA injury sync · failing". |
+
+Tests:
+- `node tools/nba/nba_injury_core.test.js` (70)
+- `node tools/nba/nba_injury_sync.test.js` (37)
+- `NBA_SQL_REQUIRED=1 node tools/nba/nba_injury_sql.test.js` (60)
+- `node tools/nba/nba_ui.e2e.js` (100, Chromium, desktop and 390 px)
+
+All are in `.github/workflows/nba.yml`.
+
+### Deploy
+
+1. Merge, then let **NBA engine build** run once on main. It writes
+   `nba/roster_inputs.json` and the preseason file.
+2. Set the function's secret and the matching Vault secret once:
+   `supabase secrets set NBA_INJURY_CRON_SECRET=<value>`, then
+   `select vault.create_secret('<value>', 'nba_injury_cron_secret');`.
+3. Run **Deploy NBA injury layer** (`.github/workflows/deploy-nba-injury.yml`)
+   with `deploy_function` and `apply_sql`. Or paste, in order,
+   `nba_injury_layer.sql`, `nba_roster_adjusted_registry.sql` and
+   `nba_injury_cron.sql`; each ends in a report whose rows should say ok.
+4. Verify:
+   - `GET` the function: it returns the build and the model version.
+   - `POST {"dry":true,"force":true}` with the secret: it reads everything and
+     writes nothing.
+   - `POST {"simulate_outage":["official","espn"],"force":true}` should show a
+     FAILURE in System health.
+
+Rollback: `supabase/nba_injury_layer_rollback.sql`.
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means

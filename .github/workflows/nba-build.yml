@@ -53,6 +53,14 @@ jobs:
           EDGD_SB_URL: ${{ vars.NBA_PRICES == 'on' && secrets.SB_URL || '' }}
           EDGD_SB_SERVICE: ${{ vars.NBA_PRICES == 'on' && secrets.SB_SERVICE_ROLE || '' }}
         run: node nba/market/fetch_quotes.js
+      # The Roster-Adjusted Projection's minutes prior (README §NBA roster and injury
+      # layer): ESPN's preseason box scores, read once per game and kept. A failure
+      # here never stops the baseline: the inputs then say no preseason is on file.
+      - name: Preseason minutes (ESPN box scores; the roster-adjusted model's prior)
+        run: node nba/tools/preseason.js || echo "::warning::preseason minutes could not be read; the roster inputs carry none"
+      # build_slate.js also writes nba/roster_inputs.json (the inputs the
+      # nba_injury_sync edge function re-prices from); --check proves they
+      # reprice every published baseline exactly
       - name: Price the slate and the props, grade the ledger
         run: node --max-old-space-size=12000 nba/build_slate.js && node --max-old-space-size=12000 nba/props/build_props.js && node nba/grade_ledger.js
       - name: The checks pass before anything is written
@@ -68,4 +76,4 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main "nba: slate, props, ledger and grades" -- \
-            nba/data nba/slate.json nba/recent.json nba/props_slate.json nba/ledger nba/market/quotes.json
+            nba/data nba/slate.json nba/recent.json nba/props_slate.json nba/ledger nba/market/quotes.json nba/roster_inputs.json

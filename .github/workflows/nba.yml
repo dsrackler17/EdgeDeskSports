@@ -4,7 +4,8 @@
 #             engine offline (ingest parser, lineups, distribution, markets,
 #             learners, ledger, quotes, desk, loader; the NBA Data Pack's
 #             verification and reconciliation reproduce, a tampered copy
-#             fails), the committed record and
+#             fails), the roster and injury layer (its core, the deployed
+#             edge function, its SQL on PostgreSQL), the committed record and
 #             slate checks, the warehouse contract and the odds row on a
 #             throwaway PostgreSQL, the navigation and sports list, the no-bypass
 #             guard, and the panel in Chromium (desktop + 390 px).
@@ -39,6 +40,13 @@ on:
       - 'tools/slate/research.js'
       - 'supabase/nba_engine.sql'
       - 'supabase/nba_odds_sport.sql'
+      - 'supabase/nba_injury_layer.sql'
+      - 'supabase/nba_injury_cron.sql'
+      - 'supabase/nba_injury_layer_rollback.sql'
+      - 'supabase/nba_roster_adjusted_registry.sql'
+      - 'supabase/migrations/20261021140000_nba_injury_layer.sql'
+      - 'supabase/functions/nba_injury_sync/**'
+      - '.github/workflows/deploy-nba-injury.yml'
       - 'supabase/functions/edgedesk_ai/index.ts'
       - 'app.html'
       - 'datapack/nba_v1/**'
@@ -84,6 +92,15 @@ jobs:
       - name: The warehouse contract and the NBA odds row on a real PostgreSQL (disabled until authorised)
         env: { NBA_SQL_REQUIRED: '1' }
         run: node tools/nba/nba_sql.test.js
+      - name: The roster and injury layer (core, the deployed edge function against a mocked network, the copies in sync)
+        run: |
+          node tools/nba/inline_injury_core.js --check
+          node tools/nba/build_roster_adjusted_registry_sql.js --check
+          node tools/nba/nba_injury_core.test.js
+          node tools/nba/nba_injury_sync.test.js
+      - name: The roster and injury layer on a real PostgreSQL (append-only, roles, the registered version, the card's freshness rule, the KPIs, the cron poke)
+        env: { NBA_SQL_REQUIRED: '1' }
+        run: node tools/nba/nba_injury_sql.test.js
       - name: No path around the odds gateway; the navigation and the sports list name the NBA
         run: node tools/odds/no_bypass.test.js && node tools/app/navigation.test.js && node tools/app/sports_config.test.js && node tools/presentation/presentation_sync.test.js
       - name: Install Chromium for the panel
