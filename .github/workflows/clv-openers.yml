@@ -1,0 +1,81 @@
+# CLV opening lines: the record the untestable sports never had.
+#
+# FINAL_REPORT.md left NCAAW, UFC and college baseball UNTESTED, and the MLB
+# (after 2021) and NHL 2026-27 holdouts without openers: no opening line with
+# a matching close exists for them, and one only exists if it is recorded
+# before the game. This records it.
+#
+# Every hour it reads ESPN's public scoreboard (today and the next six ET days;
+# UFC this month and next), appends each named book's pregame line on first
+# sighting and on every change, settles finished games with ESPN's own open
+# and close, and rewrites research/clv/openers/summary.json. No odds API
+# credit is spent (docs/odds-api-incident-2026-10/INCIDENT.md), and nothing
+# here is served or priced (research/clv/collect_openers.py).
+#
+# On a pull request that touches the collector it runs the tests and a
+# read-only probe of what ESPN carries right now, so the parsing is checked
+# against live payloads before it records anything. A pull request commits
+# nothing. Run it by hand with mode=probe for the same report.
+name: CLV opening lines
+
+on:
+  schedule:
+    - cron: '47 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'run (capture, settle, publish) or probe (read-only report, writes nothing)'
+        required: false
+        default: 'run'
+  pull_request:
+    paths:
+      - 'research/clv/collect_openers.py'
+      - 'model_loop/tests/test_clv_openers.py'
+      - '.github/workflows/clv-openers.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode != 'probe')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    concurrency:
+      group: clv-openers
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The collector's rules hold before anything is recorded
+        run: python3 -m unittest model_loop.tests.test_clv_openers
+      - name: Capture, settle, summarise
+        run: python3 -m research.clv.collect_openers
+      - name: Publish (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "clv: opening lines" -- research/clv/openers
+
+  check:
+    if: github.event_name == 'pull_request' || inputs.mode == 'probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: clv-openers-check-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The collector's rules
+        run: python3 -m unittest model_loop.tests.test_clv_openers -v
+      - name: What ESPN carries now (read-only)
+        run: python3 -m research.clv.collect_openers probe
