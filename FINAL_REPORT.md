@@ -31,9 +31,9 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 | 2 | CFB | R2 spread market-residual | +1.91 [+1.39, +2.40], n = 751 | +1.20 | -0.9% [-1.9, +0.0] | 16 | High. Multi-book archive; mandated holdout 2025 + 2026 | **PASS**; does not clear the vig |
 | 3 | NHL | W2 moneyline market-residual on back-to-backs | +2.24 [+1.70, +2.77], n = 272 | +1.52 | +1.6% [-0.3, +4.2] | 12 | Medium. SBR moneylines, proxy holdout | **PASS**; borderline vig |
 | 4 | NCAAM | production lab model, total | +1.58 [+1.26, +1.89], n = 2,552 | +1.24 | -1.5% | 3 | Medium. One holdout season of DraftKings; no tuning was possible | **PASS**; does not clear the vig |
-| 5 | MLB | R2 moneyline market-residual | +0.90 [+0.68, +1.17], n = 1,451 | +0.59 | -1.8% | 8 | Low. SBR MLB needed a pairing repair | **PASS**; far below the vig |
+| 5 | NBA | lab model total (and its totals residual) | +1.40 [+0.86, +1.98], n = 644 | +0.64 | -1.9% | 12 | Medium. SBR 2012–22 walk-forward; holdout is one DraftKings season. The production `nba/` engine could not be reproduced, so it was not tested | **PASS on totals only**; spread and moneyline FAIL after the penalty |
 | 6 | WNBA | production lab model, total | +2.19 [+1.21, +3.17], n = 231 | +1.14 | -0.4% | 3 | Low. One season, 231 bets; spread and moneyline FAIL | **PASS on totals only** |
-| 7 | NBA | lab model total (and its totals residual) | +1.40 [+0.86, +1.98], n = 644 | +0.64 | -1.9% | 12 | Medium. SBR 2012–22 walk-forward; holdout is one DraftKings season. The production `nba/` engine could not be reproduced, so it was not tested | **PASS on totals only**; spread and moneyline FAIL after the penalty |
+| 7 | MLB | R2 moneyline market-residual | +0.90 [+0.68, +1.17], n = 1,451 | +0.59 | -1.8% | 8 | Low. SBR MLB needed a pairing repair | **PASS**; far below the vig |
 | — | NCAAW, UFC, college baseball, tennis | — | — | — | — | 0 | No opener data exists | **UNTESTED** |
 
 **Player props (NFL and CFB, 2026 only):** the production props model beats the props opener (+0.58 / +0.55 pp) but sits about 5% below the props vig.
