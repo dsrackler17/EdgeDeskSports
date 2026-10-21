@@ -43,7 +43,24 @@ The Model Lab tracks every challenger live: V1 (champion), V2.1, candidate 001 a
 - the 95th-percentile miss is no worse;
 - it wins at least 60% of weeks.
 
-When `promotion.json` shows **ELIGIBLE**, a person runs:
+**Promotion is automatic** (the owner's instruction, 2026-10-21). Every lab hour,
+`football/cfb_production/auto_promote.js` (rule `cfb_auto_promotion_v1`) reads the evaluation the
+last run published and, when a challenger is **ELIGIBLE** against the current champion, promotes it
+exactly as a person would, behind the same promotion guard (tests included). The job then opens a
+GitHub issue saying what changed and how to undo it. Each run:
+1. **Returns to V1** when the champion is a loop version the loop no longer serves. The board has
+   already fallen back to V1 for every game by then, so governance says so too, and the new version
+   is measured against V1.
+2. **Registers** a loop version the Lab has never seen as challenger, with its experiment, so its
+   live evidence counts from its first capture.
+3. **Promotes** the eligible challenger with the largest MAE improvement. If the guard refuses it,
+   the next one is tried. At most one promotion per run, and none in a run that returned to V1.
+   V1 itself, eligible against a worse champion, comes back the same way (`--rollback`).
+
+Nothing changes without the evidence. `football/cfb_production/reports/auto_promotion.json` records
+what each run did and considered, and why. The switch is `auto_promotion.enabled` in
+`football/cfb_lab/config.json`; its first reading and every change of it are RULE_CHANGED rows on the
+audit log. A person can still promote by hand at any time:
 
 ```
 node football/cfb_lab/governance.js promote --model <version> --reason "<why>" --actor <name> --evidence football/cfb_lab/reports/2026/promotion.json
@@ -73,6 +90,12 @@ price from it.
   - the champion's own cover and interval;
   - the counterfactual opt-out and every fallback.
 - `football/cfb_lab/tests.js` covers the loop adapter and the shared distribution.
+- `football/cfb_production/auto_promote.test.js` covers automatic promotion:
+  - only on an ELIGIBLE evaluation against the current champion, behind the guard;
+  - refused with no live capture, another config, failing tests or an unreadable loop;
+  - the best first, one per run;
+  - the return to V1 and registration of a new loop version;
+  - V1 coming back by evidence, the dry run, and the switch.
 
 Rebuilding the slate with V1 as champion gave identical numbers on 99 of 99 games. With a simulated
 loop champion, 62 games were priced by it exactly, with V1 kept in `v1`, and 37 fell back to V1.
