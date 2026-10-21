@@ -53,6 +53,12 @@ LOOPS = [
     # cards most weekends all year; refreshed Thursday to Sunday, so up to four days apart
     {"id": "ufc", "label": "UFC", "months": set(range(1, 13)), "kind": "ufc", "refresh_max_h": 108,
      "workflow": ".github/workflows/model-loop-ufc.yml"},
+    # the two preregistered engines: their own protocols choose their numbers; the
+    # loop grades them weekly and watches their builds (model_loop/adapters/engines)
+    {"id": "nhl", "label": "NHL engine", "months": {10, 11, 12, 1, 2, 3, 4, 5, 6}, "kind": "engine",
+     "workflow": ".github/workflows/model-loop-engines.yml"},
+    {"id": "nba_engine", "label": "NBA engine", "months": {10, 11, 12, 1, 2, 3, 4, 5, 6}, "kind": "engine",
+     "workflow": ".github/workflows/model-loop-engines.yml"},
 ]
 REFRESH_MAX_H = 36
 RESEARCH_MAX_D = 8
@@ -106,8 +112,63 @@ def _season_games(lid, season):
         return None
 
 
+def engine_health(L, now):
+    """An engine with its own protocol: no version history here (the engine's validation file
+    and slate say what is served), so it is judged on its build, its weekly validation, the
+    weekly report and whether its results arrive."""
+    from .adapters.engines import weekly as EW
+    lid, eng = L["id"], EW.ENGINES[L["id"]]
+    reasons = []
+    slate = _read(eng["slate"]) or {}
+    val = _read(eng["validation"]) or {}
+    model = slate.get("model")
+    version = (model.get("id") or model.get("chosen")) if isinstance(model, dict) else model
+    refreshed, validated = _ts(slate.get("generated_at")), _ts(val.get("generated_at"))
+    if not slate:
+        reasons.append(("DEGRADED", f"no slate ({eng['slate']})"))
+    if not val:
+        reasons.append(("DEGRADED", f"no validation record ({eng['validation']})"))
+    dc = EW.data_check(lid, now)
+    near = [g for g in dc.get("starts") or [] if -14 <= (g - now).days <= RESULTS_MAX_D]
+    in_season = now.month in L["months"] or bool(near)
+    research = _latest_research(lid)
+    if in_season:
+        a = _age_h(refreshed, now)
+        if a is None or a > REFRESH_MAX_H:
+            reasons.append(("STALE", "no slate build on record" if a is None else
+                            f"last slate build {a:.0f} h ago (expected within {REFRESH_MAX_H} h)"))
+        if validated is not None and (now - validated).days > RESEARCH_MAX_D:
+            reasons.append(("STALE", f"last weekly validation {(now - validated).days} days ago (expected weekly)"))
+        r_at = _ts(research and research.get("at"))
+        if r_at is not None and (now - r_at).days > RESEARCH_MAX_D:
+            reasons.append(("STALE", f"last weekly report {(now - r_at).days} days ago (expected weekly)"))
+        if dc["missing_results"]:
+            m = dc["missing_results"]
+            reasons.append(("STALE", f"{len(m)} game(s) the engine priced started more than {EW.RESULT_GRACE_H} h ago "
+                                     f"and have no result (the first: {m[0]['game_id']} at {m[0]['start_utc']})"))
+    order = {"DEGRADED": 0, "STALE": 1}
+    if any(k == "DEGRADED" for k, _ in reasons):
+        status = "DEGRADED"
+    elif not in_season:
+        status = "OFF_SEASON"
+    else:
+        status = min((k for k, _ in reasons), key=lambda k: order[k]) if reasons else "OK"
+    return {"id": lid, "label": L["label"], "status": status, "in_season": in_season,
+            "reasons": [r for _, r in reasons],
+            "served": {"version": version, "since": val.get("generated_at"),
+                       "promoted_by": f"its own protocol ({eng['protocol']})"} if version else None,
+            "refreshed_at": refreshed.strftime("%Y-%m-%dT%H:%M:%SZ") if refreshed else None,
+            "refreshed_age_h": _age_h(refreshed, now), "research": research,
+            "data": {"graded": dc.get("graded"), "games_priced": dc.get("games_priced"),
+                     "missing_results": len(dc["missing_results"]), "unpriced": len(dc["unpriced"]),
+                     "validated_at": val.get("generated_at")},
+            "workflow": L["workflow"]}
+
+
 def loop_health(L, now):
     lid = L["id"]
+    if L["kind"] == "engine":
+        return engine_health(L, now)
     reasons = []
     vers = _read(f"docs/model-loop/{lid}/versions.json")
     served = None
