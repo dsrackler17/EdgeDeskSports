@@ -109,6 +109,14 @@ class TestCfb(unittest.TestCase):
             mean = float((d.pmf(card["fair_home_margin"])[0] * d.k).sum())
             self.assertAlmostEqual(mean, card["fair_home_margin"], places=5)
 
+    def test_a_game_already_under_way_gets_no_card(self):
+        from model_loop.adapters.cfb import cards as CARDS
+        now = pd.Timestamp("2026-10-24T20:00:00")
+        g = pd.DataFrame({"game_id": [1, 2, 3, 4], "result": [np.nan, np.nan, np.nan, 7.0],
+                          "kick_utc": [now - pd.Timedelta(hours=1), now + pd.Timedelta(hours=1),
+                                       now + pd.Timedelta(days=11), now + pd.Timedelta(hours=2)]})
+        self.assertEqual(list(CARDS.upcoming(g, now, 10).game_id), [2])
+
     def test_fcs_teams_rated_individually_around_a_fitted_mean(self):
         snap = self.snaps[max(k for k in self.snaps if k[0] == 2021)]
         t = snap["teams"]
