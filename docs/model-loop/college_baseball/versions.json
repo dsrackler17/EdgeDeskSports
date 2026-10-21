@@ -1,0 +1,43 @@
+{
+ "schema": "edgedesk_model_loop_versions_v1",
+ "sport": "College baseball",
+ "league": "college_baseball",
+ "current": "1.0.0",
+ "staged": null,
+ "versions": [
+  {
+   "version": "1.0.0",
+   "parent": null,
+   "config": {
+    "tq": {
+     "sigma_team": 0.12,
+     "sigma_conf": 0.05,
+     "carry_team": 1,
+     "phi": 1.25,
+     "halflife_days": 180
+    },
+    "dist": {
+     "family": "nb",
+     "r": 3.256
+    }
+   },
+   "config_sha256": "3252f395a9f8a7b7f80ea4f34237fdebe5a16b4dd0467e8bddb2354a441be615",
+   "status": "SERVED",
+   "promoted_by": "selection-window tuning",
+   "promoted_at": "2026-10-21T12:49:00Z",
+   "reason": "The configuration college_baseball/walkforward.js served when the loop started: params/team_tuning.json (hier cfg and dist), chosen on SELECTION 2014-2022.",
+   "evidence": {
+    "selection_plus_validation": {
+     "n": 78660,
+     "logloss": 0.606867,
+     "brier": 0.210418
+    },
+    "validation": {
+     "n": 11950,
+     "logloss": 0.593754,
+     "brier": 0.204712
+    }
+   }
+  }
+ ]
+}

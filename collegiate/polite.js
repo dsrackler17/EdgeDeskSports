@@ -126,6 +126,7 @@ function createPolite(o) {
     return parsed;
   }
 
+  const lastPage = new Map();
   async function get(url, opts) {
     let u;
     try { u = new URL(url); } catch (_) { return refuse('?', url, 'BAD_URL', 'not a URL', false); }
@@ -136,10 +137,14 @@ function createPolite(o) {
     if (rb === false) return refuse(host, url, 'ROBOTS_FORBIDDEN', 'robots.txt itself is refused to robots', true);
     if (rb === null) return refuse(host, url, 'ROBOTS_UNREACHABLE', 'robots.txt did not answer (staying out)', false);
     if (!rb.allows(u.pathname + u.search)) return refuse(host, url, 'ROBOTS_DISALLOW', 'robots.txt disallows it', true);
+    /* the same page asked for twice in a row (a collector re-reading after it learnt the platform) is not a second visit */
+    const again = lastPage.get(host);
+    if (again && again.url === url && !(opts && opts.ttlMs === 0)) return again.r;
     const gap = rb.crawlDelayMs - (now() - (lastAt.get(host) || 0));
     if (gap > 0) await sleep(gap);
     lastAt.set(host, now());
     const r = await client.get(url, Object.assign({}, opts || {}, { headers: Object.assign({ 'user-agent': UA }, (opts && opts.headers) || {}) }));
+    if (r.ok) lastPage.set(host, { url, r }); else lastPage.delete(host);
     const st = httpStatus(r);
     if (!r.ok && (st === 401 || st === 403)) return refuse(host, url, 'HTTP_' + st, 'the site answered ' + st + ': it does not want automated reads', true);
     if (!r.ok && st === 429) return refuse(host, url, 'HTTP_429', 'the site kept answering 429 (too many requests)', true);

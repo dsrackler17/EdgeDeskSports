@@ -122,3 +122,13 @@ before it keeps its label.
   configuration it measured (`validation/holdout_looks.json`, keyed by
   `config_sha256`) and carried forward only to a report of that exact
   configuration. A rollback finds its own look and spends none.
+- **Features from data we did not hold (added 2026-10-21).** The catalogue may
+  carry a change that needs an input the record does not have yet; the first
+  is roster continuity (`tq.cont_k`, `lib/continuity.js`): the share of last
+  season's roster that came back, from the rosters each school publishes
+  (`collegiate/`), moving how much of last season's strength a team carries.
+  Such a change is **inactive** — never tried, never ranked, and named in the
+  weekly report with its coverage — until the input covers at least 80% of
+  D-I team-seasons in SELECTION + VALIDATION. Once active it is tried under
+  the same rule as every other change. A team-season the input does not
+  cover is priced exactly as before; nothing stands in for missing data.

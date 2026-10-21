@@ -1,41 +1,36 @@
 {
- "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 2: whole pages (round 1 cut them at 800 KB, before the roster data), past seasons' rosters on both platforms, a schedule and stats page, and a directory candidate (ncaa.com).",
- "sources": [
-  { "name": "ncaa_com_robots", "url": "https://www.ncaa.com/robots.txt" },
-  { "name": "ncaa_com_schools_index", "url": "https://www.ncaa.com/schools-index" },
-  { "name": "ncaa_com_school_texas", "url": "https://www.ncaa.com/schools/texas" }
- ],
- "schools": [
-  { "name": "Stanford", "host": "gostanford.com" },
-  { "name": "LSU", "host": "lsusports.net" },
-  { "name": "Texas", "host": "texassports.com" },
-  { "name": "Florida", "host": "floridagators.com" },
-  { "name": "Texas A&M", "host": "12thman.com" },
-  { "name": "Arkansas", "host": "arkansasrazorbacks.com" },
-  { "name": "Vanderbilt", "host": "vucommodores.com" },
-  { "name": "Wake Forest", "host": "godeacs.com" }
- ],
- "paths": [
-  "/robots.txt"
- ],
+ "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 3: box scores (starting pitchers, lineups, line scores) and older schedules on both platforms, for the college baseball model's starters and the 2023 results gap.",
+ "sources": [],
+ "schools": [],
+ "paths": [],
  "pages": [
-  { "name": "sidearm_baseball_roster_2026", "url": "https://texassports.com/sports/baseball/roster/2026" },
-  { "name": "sidearm_baseball_roster_2025", "url": "https://texassports.com/sports/baseball/roster/2025" },
-  { "name": "sidearm_wbb_roster_2025_26", "url": "https://texassports.com/sports/womens-basketball/roster/2025-26" },
-  { "name": "sidearm_football_roster_2025", "url": "https://texassports.com/sports/football/roster/2025" },
-  { "name": "sidearm_baseball_schedule_2026", "url": "https://texassports.com/sports/baseball/schedule/2026" },
-  { "name": "sidearm_baseball_stats_2026", "url": "https://texassports.com/sports/baseball/stats/2026" },
-  { "name": "sidearm_baseball_roster_2026_b", "url": "https://floridagators.com/sports/baseball/roster/2026" },
-  { "name": "sidearm_baseball_roster_2025_b", "url": "https://floridagators.com/sports/baseball/roster/2025" },
-  { "name": "sidearm_baseball_roster_2026_c", "url": "https://godeacs.com/sports/baseball/roster/2026" },
-  { "name": "wmt_baseball_roster_2026", "url": "https://gostanford.com/sports/baseball/roster/season/2026" },
-  { "name": "wmt_baseball_roster_2025", "url": "https://gostanford.com/sports/baseball/roster/season/2025" },
-  { "name": "wmt_wbb_roster_2025_26", "url": "https://gostanford.com/sports/womens-basketball/roster/season/2025-26" },
-  { "name": "wmt_baseball_schedule_2026", "url": "https://gostanford.com/sports/baseball/schedule/season/2026" },
-  { "name": "wmt_baseball_roster_2026_b", "url": "https://12thman.com/sports/baseball/roster/season/2026" },
-  { "name": "wmt_baseball_roster_2025_b", "url": "https://12thman.com/sports/baseball/roster/season/2025" },
-  { "name": "wmt_baseball_roster_2026_c", "url": "https://lsusports.net/sports/baseball/roster/season/2026" },
-  { "name": "wmt_baseball_roster_2026_d", "url": "https://vucommodores.com/sports/baseball/roster/season/2026" },
-  { "name": "arkansas_baseball_roster", "url": "https://arkansasrazorbacks.com/sport/m-basebl/roster/" }
+  {
+   "name": "sidearm_boxscore_2026",
+   "url": "https://texassports.com/sports/baseball/stats/2026/michigan-state/boxscore/17827"
+  },
+  {
+   "name": "sidearm_schedule_2023",
+   "url": "https://texassports.com/sports/baseball/schedule/2023"
+  },
+  {
+   "name": "sidearm_schedule_2016",
+   "url": "https://texassports.com/sports/baseball/schedule/2016"
+  },
+  {
+   "name": "sidearm_schedule_2023_b",
+   "url": "https://godeacs.com/sports/baseball/schedule/2023"
+  },
+  {
+   "name": "wmt_boxscore_2026",
+   "url": "https://gostanford.com/boxscore/27512"
+  },
+  {
+   "name": "wmt_schedule_2023",
+   "url": "https://gostanford.com/sports/baseball/schedule/season/2023"
+  },
+  {
+   "name": "wmt_schedule_2016",
+   "url": "https://gostanford.com/sports/baseball/schedule/season/2016"
+  }
  ]
 }
