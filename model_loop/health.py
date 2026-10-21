@@ -59,6 +59,9 @@ LOOPS = [
     # the 2027 engine choice, so it is NOT_SERVED unless its weekly research stops
     {"id": "mlb", "label": "MLB (lab brain)", "months": set(range(1, 13)), "kind": "lab_research",
      "workflow": ".github/workflows/model-loop-mlb.yml"},
+    # college baseball's board prices from the served version; the loop stages changes, the owner releases
+    {"id": "college_baseball", "label": "College baseball", "months": set(range(1, 13)), "kind": "lab_research",
+     "served_ok": True, "workflow": ".github/workflows/model-loop-college-baseball.yml"},
     {"id": "nhl", "label": "NHL engine", "months": {10, 11, 12, 1, 2, 3, 4, 5, 6}, "kind": "engine",
      "workflow": ".github/workflows/model-loop-engines.yml"},
     {"id": "nba_engine", "label": "NBA engine", "months": {10, 11, 12, 1, 2, 3, 4, 5, 6}, "kind": "engine",
@@ -183,10 +186,16 @@ def research_health(L, now):
         reasons.append(("STALE", f"last weekly research {(now - r_at).days} days ago (expected weekly)"))
     elif r_at is None and vers:
         reasons.append(("STALE", "the weekly research has never run"))
-    status = reasons[0][0] if reasons else "NOT_SERVED"
-    if not reasons:
-        reasons = [("NOT_SERVED", "the lab brain prices no live game (the card uses mlb/engine.js); its loop learns on the "
-                                  "2012-to-date record so the 2027 engine can be chosen on evidence")]
+    if L.get("served_ok"):
+        status = reasons[0][0] if reasons else "OK"
+        staged = (vers or {}).get("staged")
+        if staged and not reasons:
+            reasons = [("OK", f"version {staged} is staged, awaiting its holdout look (node college_baseball/loop.js release)")]
+    else:
+        status = reasons[0][0] if reasons else "NOT_SERVED"
+        if not reasons:
+            reasons = [("NOT_SERVED", "the lab brain prices no live game (the card uses mlb/engine.js); its loop learns on the "
+                                      "2012-to-date record so the 2027 engine can be chosen on evidence")]
     return {"id": lid, "label": L["label"], "status": status, "in_season": False, "reasons": [r for _, r in reasons],
             "served": {"version": cur["version"], "since": cur.get("promoted_at"), "promoted_by": cur.get("promoted_by"),
                        "versions": len(vers.get("versions") or [])} if cur else None,

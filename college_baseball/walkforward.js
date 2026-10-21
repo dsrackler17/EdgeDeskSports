@@ -25,6 +25,7 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const crypto = require('crypto');
 const C = require('./config');
 const W = require('./lib/warehouse');
 const M = require('./lib/models');
@@ -166,8 +167,9 @@ function runAll(names, cfgs, o) {
     }
   }
   /* the ensemble (Model 8): weights fitted on SELECTION rows only, applied unchanged everywhere */
-  const ensModel = ENS.fit(rows.filter((x) => x.window === 'SELECTION'));
-  for (const x of rows) { const pe = ENS.predict(ensModel, x.p); if (pe != null) x.p.ens = pe; }
+  /* (the learning loop scores one model at a time and asks for no ensemble: college_baseball/loop.js) */
+  const ensModel = o.noEnsemble ? null : ENS.fit(rows.filter((x) => x.window === 'SELECTION'));
+  if (ensModel) for (const x of rows) { const pe = ENS.predict(ensModel, x.p); if (pe != null) x.p.ens = pe; }
   return { rows, timing, p7, ctx, calMaps, ensModel };
 }
 
@@ -328,10 +330,26 @@ function tune(name) {
 }
 
 /* ---------------------------------------------------------------- main */
+/* the learning loop's served version (docs/model-loop/college_baseball/versions.json), when one has been
+   released through its holdout look (college_baseball/loop.js); a STAGED version is never served */
+const LOOP_VERSIONS = path.join(__dirname, '..', 'docs', 'model-loop', 'college_baseball', 'versions.json');
+function servedLoopVersion() {
+  try {
+    const d = JSON.parse(fs.readFileSync(LOOP_VERSIONS, 'utf8'));
+    const v = d.versions.find((x) => x.version === d.current);
+    return v && String(v.status).startsWith('SERVED') && v.config && v.config.tq ? v : null;
+  } catch (_) { return null; }
+}
+function stableJson(o) { return Array.isArray(o) ? '[' + o.map(stableJson).join(',') + ']' : o && typeof o === 'object' ? '{' + Object.keys(o).sort().map((k) => JSON.stringify(k) + ':' + stableJson(o[k])).join(',') + '}' : JSON.stringify(o); }
+/** the identity of the served run model's configuration: a holdout look belongs to exactly one */
+function configHash(c) { return crypto.createHash('sha256').update(stableJson({ tq: (c && c.tq) || {}, dist: (c && c.dist) || null })).digest('hex'); }
+
 function cfgsFromTuning() {
   const t = tuning(); const out = {};
   for (const n of M.CANDIDATES) { const c = t.models[n] && t.models[n].cfg; if (!c) continue; out[n] = M.RUN_MODELS.includes(n) ? { tq: c } : c; }
   const dist = t.dist; if (dist) for (const n of M.RUN_MODELS) out[n] = Object.assign(out[n] || { tq: {} }, { dist });
+  const lv = servedLoopVersion();
+  if (lv) out.hier = { tq: Object.assign({}, lv.config.tq), dist: lv.config.dist || dist, loop_version: lv.version };
   /* the home-rate baseline uses the burn-in + selection home win rate */
   let hw = 0; let hn = 0; for (const g of W.results(C.SEASONS.first, WIN.selection[1])) if (!g.neutral) { hn++; if (g.home_runs > g.away_runs) hw++; }
   out.home_rate = { rate: hw / hn };
@@ -366,6 +384,29 @@ function check() {
    The registered look for THIS model version and THIS pricing model is carried forward unchanged and
    labelled; it is a restatement, not a new look (nothing is chosen from it). Any other change — a new
    version, a different pricing model — leaves the holdout withheld until --holdout is run. */
+/* every holdout look, kept by the configuration it measured (validation/holdout_looks.json): a look is
+   carried forward only to a report of that same configuration, so a changed configuration never wears an
+   old look, and a rollback finds its own look again without spending a new one */
+const LOOKS_FILE = path.join(C.PATHS.validation, 'holdout_looks.json');
+function loadLooks() { try { return JSON.parse(fs.readFileSync(LOOKS_FILE, 'utf8')); } catch (_) { return { schema: 'edgedesk_cbase_holdout_looks_v1', looks: {} }; } }
+function lookOf(rep) {
+  return { model_version: rep.model_version, pricing: rep.pricing, status: rep.status, holdout_evaluated_at: rep.holdout_evaluated_at || rep.generated_at,
+    windows_report: { HOLDOUT: rep.windows_report.HOLDOUT }, comparisons: { HOLDOUT: rep.comparisons.HOLDOUT }, markets: rep.markets, config_sha256: rep.config_sha256 };
+}
+function saveLook(rep) {
+  const L = loadLooks(); L.looks[rep.config_sha256] = lookOf(rep);
+  K.writeJson(LOOKS_FILE, L);
+}
+/** the look this report may carry: its configuration's stored look, else (before looks were stored) the
+    previous report's, when that report was made with the same configuration */
+function lookFor(rep, prev, looks) {
+  const stored = looks && looks.looks && looks.looks[rep.config_sha256];
+  if (stored) return stored;
+  if (!prev) return null;
+  if (prev.config_sha256) return prev.config_sha256 === rep.config_sha256 ? prev : null;
+  return rep.legacy_config ? prev : null;
+}
+
 function carryHoldout(rep, prev) {
   const h = prev && prev.windows_report && prev.windows_report.HOLDOUT;
   if (!h || h.withheld || !prev.status || prev.model_version !== rep.model_version || !prev.pricing || prev.pricing.model !== rep.pricing.model) return false;
@@ -382,10 +423,20 @@ function main() {
   if (flag('check')) return check();
   if (flag('tune')) { const n = arg('tune', 'hier'); const best = tune(n); console.log(n, JSON.stringify(best)); return; }
   const names = M.CANDIDATES;
-  const run = runAll(names, cfgsFromTuning(), {});
+  const cfgs = cfgsFromTuning();
+  const run = runAll(names, cfgs, {});
   const rep = report(run, names, { holdout: flag('holdout'), now: new Date().toISOString() });
-  if (flag('holdout')) rep.holdout_evaluated_at = rep.generated_at;
-  else { let prev = null; try { prev = JSON.parse(fs.readFileSync(C.PATHS.walkforward, 'utf8')); } catch (_) { /* first run */ } carryHoldout(rep, prev); }
+  rep.config_sha256 = configHash(cfgs.hier);
+  rep.loop_version = (cfgs.hier && cfgs.hier.loop_version) || null;
+  /* the configuration team_tuning.json names (reports made before config_sha256 existed were made with it) */
+  const t0 = tuning(); rep.legacy_config = !rep.loop_version && configHash({ tq: t0.models.hier && t0.models.hier.cfg, dist: t0.dist }) === rep.config_sha256;
+  if (flag('holdout')) { rep.holdout_evaluated_at = rep.generated_at; saveLook(rep); }
+  else {
+    let prev = null; try { prev = JSON.parse(fs.readFileSync(C.PATHS.walkforward, 'utf8')); } catch (_) { /* first run */ }
+    const look = lookFor(rep, prev, loadLooks());
+    if (carryHoldout(rep, look) && !(loadLooks().looks[rep.config_sha256])) saveLook(rep);
+  }
+  delete rep.legacy_config;
   writeOutputs(rep, run);
   const v = rep.windows_report.VALIDATION.models; const s = rep.windows_report.SELECTION.models;
   console.log('model'.padEnd(18) + 'SELECTION ll'.padStart(14) + 'VALIDATION ll'.padStart(15) + '  citl   slope');
@@ -417,4 +468,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { CAL, runAll, report, carryHoldout, selectionOrder, metrics, slices, compare, constants, p7Context, cfgsFromTuning, tuning, GRIDS, windowOf, fitCalibration, applyCalibration, ROWS_FILE };
+module.exports = { CAL, runAll, report, carryHoldout, lookFor, loadLooks, configHash, servedLoopVersion, LOOP_VERSIONS, selectionOrder, metrics, slices, compare, constants, p7Context, cfgsFromTuning, tuning, GRIDS, windowOf, fitCalibration, applyCalibration, ROWS_FILE, WIN };

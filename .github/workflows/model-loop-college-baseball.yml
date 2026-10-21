@@ -1,0 +1,60 @@
+# EdgeDesk model loop, college baseball: the weekly learning loop for the
+# served run model (college_baseball/loop.js; research/PROTOCOL.md, amendment
+# 2026-10-21). All year: the off-season is when the record has the most to
+# teach before February.
+#
+#   research (Thursday)  catalogue changes walked forward over SELECTION +
+#                        VALIDATION (2014-2024); one that lowers log loss by
+#                        >= 0.0002 with its 95% interval below zero, Brier and
+#                        VALIDATION no worse, is STAGED. The HOLDOUT is never
+#                        read.
+#   release (by hand)    the owner serves the staged version: walkforward.js
+#                        --holdout takes its one look (kept by configuration in
+#                        validation/holdout_looks.json) and the record says
+#                        what the holdout said.
+name: Model loop college baseball (weekly)
+
+on:
+  schedule:
+    - cron: '13 13 * * 4'        # Thursday 13:13 UTC
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'research (stage a change) or release (serve the staged version after its holdout look)'
+        required: false
+        default: 'research'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-loop-college-baseball
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The engine's and the loop's checks first
+        run: node tools/college_baseball/college_baseball.test.js && node tools/college_baseball/loop.test.js
+      - name: Research (stage) or release (serve after the holdout look)
+        run: |
+          if [ "${{ inputs.mode }}" = "release" ]; then
+            node --max-old-space-size=6000 college_baseball/loop.js release
+          else
+            node --max-old-space-size=6000 college_baseball/loop.js all
+          fi
+      - name: Publish (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          paths="docs/model-loop/college_baseball"
+          if [ "${{ inputs.mode }}" = "release" ]; then paths="$paths college_baseball/validation college_baseball/research/experiments.jsonl"; fi
+          bash tools/ci/push_generated.sh main "model loop: college baseball ${{ inputs.mode || 'research' }}" -- $paths
