@@ -779,3 +779,26 @@ So Phases 3–5 are infeasible. The only candidate is the production model, the 
 | NCAAM-H1 spread ≥1.5 (2025-26) | 2,862 | +0.336 [+0.258, +0.424] | +1.03 [+0.76, +1.34] | +0.73 | 0.592 | -2.5% | **PASS** |
 | NCAAM-H2 total ≥2.0 | 2,552 | +0.661 [+0.540, +0.784] | +1.58 [+1.26, +1.89] | +1.24 | 0.623 | -1.5% | **PASS** |
 | NCAAM-H3 moneyline ≥0.02 | 3,363 | – | +0.77 [+0.64, +0.91] | +0.63 | 0.597 | -2.5% | **PASS** |
+
+---
+
+## NCAAW, UFC, college baseball, tennis: no experiments possible
+
+These sports were audited in Phase 1 (`DATA_AUDIT.md`). None has a single opening line with a matching close anywhere in the repo or in a reachable archive, so:
+- **Phase 3 baseline:** infeasible. No opener exists to bet against.
+- **Phase 4 residual model:** infeasible. No move exists to model.
+- **Phase 5 weak spots:** infeasible.
+  - For UFC the largest information-timing factor would be short-notice replacements and weigh-in misses. No timestamped line history exists to test it.
+  - For college baseball it would be the weekend rotation (Friday / Saturday / Sunday starter). No lines exist.
+- **Phase 6 holdout:** infeasible.
+
+**Attempts counted: 0 each. Verdict: UNTESTED, which is not a failure of the model.**
+
+**What would unlock each sport:**
+
+| Sport | What would unlock it |
+|---|---|
+| NCAAW | Any opener archive. `wehoop-wbb-raw` game files carry no pickcenter |
+| UFC | Exporting `ufc.market_captures` (first PRE capture vs last PRE capture per bout). It is DB-only, and capture has been paused since 2026-10-10 |
+| College baseball | Adding `baseball_ncaa` to the odds gateway |
+| Tennis | Retired; nothing to unlock |
