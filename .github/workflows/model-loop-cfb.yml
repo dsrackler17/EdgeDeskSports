@@ -9,6 +9,9 @@
 #             the last full season, then re-publish and write the weekly report.
 #   Other days  refresh only (same formula): midweek results, new starters and
 #             the current lines reach the cards; nothing about the model changes.
+#   Game days  refreshes before the kickoff windows (Saturday 15:37, 18:37 and
+#             22:37 UTC; Tuesday to Friday 22:37), so a starter the board
+#             announces late reaches the number before kickoff.
 #
 # Publishes football/cfb/model_loop/current.json (the served numbers), the
 # record, the append-only ledgers and the version history, by commit.
@@ -20,6 +23,8 @@ on:
   schedule:
     - cron: '37 23 * 8-12,1 0'          # Sunday 23:37 UTC, after Saturday's games and the sportsdataverse refresh
     - cron: '37 13 * 8-12,1 1-6'        # every other day in season: refresh only
+    - cron: '37 15,18,22 * 8-12,1 6'    # Saturday, before the noon, afternoon and night windows (ET)
+    - cron: '37 22 * 8-12,1 2-5'        # Tuesday to Friday, before the night games
   workflow_dispatch:
     inputs:
       mode:

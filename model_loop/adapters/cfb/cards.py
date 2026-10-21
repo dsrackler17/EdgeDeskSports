@@ -99,12 +99,19 @@ def drivers(card, ref_margin):
                          "prior_share": c.get("prior_share")} for c in same[:4]]}
 
 
+def upcoming(games, now, days):
+    """Games with no result that kick off after `now` and within `days`. A card is a pregame
+    number, so a game already under way is not published (the record grades only numbers
+    published before kickoff either way)."""
+    up = games[games.result.isna()]
+    return up[(up.kick_utc > pd.Timestamp(now)) & (up.kick_utc <= pd.Timestamp(now) + pd.Timedelta(days=days))]
+
+
 def build(cfg, days=10, now=None):
     now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     T = Tables(os.path.join(DATA, "build"))
     v1, names = starters_from_v1()
-    up = T.games[T.games.result.isna()]
-    up = up[(up.kick_utc >= pd.Timestamp(now) - pd.Timedelta(hours=6)) & (up.kick_utc <= pd.Timestamp(now) + pd.Timedelta(days=days))]
+    up = upcoming(T.games, now, days)
     # the season being carded: the upcoming games' (week 0 of a new season has no result yet)
     season = int(up.season.max()) if len(up) else int(T.games[T.games.result.notna()].season.max())
     up = up[up.season == season]

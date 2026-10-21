@@ -1,0 +1,49 @@
+# EdgeDesk model loop, the preregistered engines: the weekly accountability
+# report for the NHL engine (hockey/) and the NBA engine (nba/).
+#
+# READ ONLY. Both engines choose their models and hyperparameters under their
+# own written protocols (hockey/model/walkforward.js; nba/model/walkforward.js
+# and its sealed test window), so this loop changes no number. Each Monday it
+# grades the last record each engine published before every game, says whether
+# the season matches the engine's own out-of-sample record and whether it beats
+# a constant home-win rate, tests the patterns the other loops rank (flagging
+# n >= 30 with |z| or |t| >= 2 as a research question for the engine's next
+# protocol amendment), and names games with no result. The health job
+# (model-loop-health.yml) reads the weekly file every three hours.
+name: Model loop engines (weekly report)
+
+on:
+  schedule:
+    - cron: '43 11 * * 1'        # Monday 11:43 UTC, after the weekend's games are final
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-loop-engines
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python deps (pinned)
+        run: pip install --quiet -r model_loop/requirements.txt
+      - name: Core guarantees before anything is written
+        run: python3 -m unittest discover -s model_loop/tests -t .
+      - name: The weekly report, both engines
+        run: python3 -m model_loop.adapters.engines.weekly report --engine all
+      - name: Publish (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "model loop: engines weekly report — NHL and NBA" -- \
+            docs/model-loop/nhl docs/model-loop/nba_engine

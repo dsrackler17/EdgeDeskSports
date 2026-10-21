@@ -1,0 +1,195 @@
+{
+ "schema": "edgedesk_engine_week_v1",
+ "engine": "nhl",
+ "label": "NHL engine",
+ "at": "2026-10-21T09:22:03Z",
+ "season": 2027,
+ "served_model": "edgedesk_nhl_v1:xg_core",
+ "protocol": "hockey/model/walkforward.js",
+ "validation_generated_at": "2026-10-20T15:19:46.910Z",
+ "slate_generated_at": "2026-10-21T05:16:24.331Z",
+ "expectation": {
+  "window": "confirmation 2021-2026",
+  "model": "xg_core",
+  "n": 7945,
+  "moneyline_log_loss": 0.66286,
+  "moneyline_brier": 0.23534,
+  "home_rate": 0.5363,
+  "home_rate_log_loss": 0.69051,
+  "total_bias": 0.054
+ },
+ "week": {
+  "from": "2026-10-14",
+  "to": "2026-10-21",
+  "n": 35,
+  "log_loss": 0.63945,
+  "brier": 0.22378,
+  "accuracy": 0.6286,
+  "mean_p": 0.5344,
+  "mean_y": 0.7143,
+  "total_mae": 1.705,
+  "total_bias": -0.147
+ },
+ "season_to_date": {
+  "n": 51,
+  "log_loss": 0.65472,
+  "brier": 0.23124,
+  "accuracy": 0.6078,
+  "mean_p": 0.5324,
+  "mean_y": 0.6275,
+  "total_mae": 1.67,
+  "total_bias": 0.142
+ },
+ "vs_its_record": {
+  "verdict": "AS_EXPECTED",
+  "n": 51,
+  "season_log_loss": 0.65472,
+  "expected": 0.66286,
+  "expected_window": "confirmation 2021-2026",
+  "t": -0.39
+ },
+ "vs_home_rate": {
+  "n": 51,
+  "mean_diff": -0.02253,
+  "t": -1.14,
+  "ci95": [
+   -0.05997,
+   0.01551
+  ],
+  "home_rate": 0.5363,
+  "beats_it": false
+ },
+ "patterns": [
+  {
+   "pattern": "all games",
+   "market": "moneyline",
+   "n": 51,
+   "mean_p": 0.5324,
+   "mean_y": 0.6275,
+   "residual": 0.0951,
+   "stat": 1.38,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "all games",
+   "market": "total",
+   "n": 51,
+   "residual": 0.142,
+   "stat": 0.5,
+   "stat_kind": "t",
+   "flag": false
+  },
+  {
+   "pattern": "home favourite (p >= 0.60)",
+   "market": "moneyline",
+   "n": 10,
+   "mean_p": 0.6308,
+   "mean_y": 1.0,
+   "residual": 0.3692,
+   "stat": 2.42,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "home underdog (p <= 0.40)",
+   "market": "moneyline",
+   "n": 4,
+   "mean_p": 0.3879,
+   "mean_y": 0.75,
+   "residual": 0.3621,
+   "stat": 1.49,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "near a coin flip (0.40 < p < 0.60)",
+   "market": "moneyline",
+   "n": 37,
+   "mean_p": 0.5214,
+   "mean_y": 0.5135,
+   "residual": -0.0079,
+   "stat": -0.1,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "home side on a back-to-back",
+   "market": "moneyline",
+   "n": 3,
+   "mean_p": 0.5517,
+   "mean_y": 0.3333,
+   "residual": -0.2184,
+   "stat": -0.76,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "home side on a back-to-back",
+   "market": "total",
+   "n": 3,
+   "residual": 1.47,
+   "stat": 1.1,
+   "stat_kind": "t",
+   "flag": false
+  },
+  {
+   "pattern": "away side on a back-to-back",
+   "market": "moneyline",
+   "n": 11,
+   "mean_p": 0.5507,
+   "mean_y": 0.5455,
+   "residual": -0.0053,
+   "stat": -0.04,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "away side on a back-to-back",
+   "market": "total",
+   "n": 11,
+   "residual": 0.595,
+   "stat": 0.93,
+   "stat_kind": "t",
+   "flag": false
+  },
+  {
+   "pattern": "goalie the price assumed: PROJECTED_LIKELY",
+   "market": "moneyline",
+   "n": 1,
+   "mean_p": 0.4992,
+   "mean_y": 0.0,
+   "residual": -0.4992,
+   "stat": -1.0,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "goalie the price assumed: PROJECTED_UNCERTAIN",
+   "market": "moneyline",
+   "n": 50,
+   "mean_p": 0.533,
+   "mean_y": 0.64,
+   "residual": 0.107,
+   "stat": 1.53,
+   "stat_kind": "z",
+   "flag": false
+  }
+ ],
+ "research_questions": [],
+ "data": {
+  "season": 2027,
+  "ledger_records": 120,
+  "games_priced": 95,
+  "graded": 51,
+  "missing_results": [],
+  "unpriced": []
+ },
+ "models_in_ledger": [
+  "edgedesk_nhl_v1:xg_core",
+  "edgedesk_nhl_v1:xg_no_goalie"
+ ],
+ "promoted": null,
+ "candidates": [],
+ "changes": "none: this report changes no number. NHL engine's models and hyperparameters are chosen by its own protocol (hockey/model/walkforward.js); a flagged pattern is a question for its next amendment."
+}

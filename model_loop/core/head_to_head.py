@@ -36,14 +36,19 @@ def capture(slate_path, ledger_path, season, captured_at):
     os.makedirs(os.path.dirname(ledger_path), exist_ok=True)
     with open(ledger_path, "a") as f:
         for g in sl.get("games") or []:
-            if g.get("model_status") != "PREDICTED" or g.get("season") != season or not built or built >= (g.get("kickoff") or ""):
+            # the board engine's OWN number: once a person promotes a loop version to the
+            # board, the top-level fields carry the champion's number and a per-game `v1`
+            # block keeps the board engine's (football/fbs/slate.json); without the block
+            # the top-level fields are the board engine's
+            v = g["v1"] if isinstance(g.get("v1"), dict) else g
+            if v.get("model_status") != "PREDICTED" or g.get("season") != season or not built or built >= (g.get("kickoff") or ""):
                 continue
-            m = g.get("model_home_margin_exact", g.get("model_home_margin"))
-            if m is None or g.get("model_home_win_prob") is None:
+            m = v.get("model_home_margin_exact", v.get("model_home_margin"))
+            if m is None or v.get("model_home_win_prob") is None:
                 continue
             gid = str(g["game_id"])
-            body = {"game_id": gid, "week": g.get("week"), "model_version": g.get("model_version"),
-                    "home_margin": round(float(m), 4), "home_win_prob": round(float(g["model_home_win_prob"]), 4)}
+            body = {"game_id": gid, "week": g.get("week"), "model_version": v.get("model_version"),
+                    "home_margin": round(float(m), 4), "home_win_prob": round(float(v["model_home_win_prob"]), 4)}
             sha = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
             if last.get(gid) == sha:
                 continue
