@@ -26,6 +26,7 @@ Out of season (by the calendar, unless results are still arriving) a loop is
 OFF_SEASON and nothing is expected of it.
 """
 import argparse
+import csv
 import glob
 import json
 import os
@@ -92,6 +93,19 @@ def _latest_research(lid):
             "candidates": len([c for c in d.get("candidates") or [] if c.get("decision") != "SKIPPED"])}
 
 
+def _season_games(lid, season):
+    """The date of every game in the lab's season file (basketball/data/<lid>/<season>.csv), or
+    None when there is no such file. Postponed games are not in it (basketball/ingest.js keeps FINAL
+    and SCHEDULED only), so a past-dated SCHEDULED row is a result that has not arrived."""
+    if not season:
+        return None
+    try:
+        with open(os.path.join(ROOT, "basketball", "data", lid, f"{season}.csv"), newline="") as f:
+            return [str(r.get("date") or "")[:10] for r in csv.DictReader(f) if r.get("date")]
+    except OSError:
+        return None
+
+
 def loop_health(L, now):
     lid = L["id"]
     reasons = []
@@ -110,7 +124,7 @@ def loop_health(L, now):
     else:
         reasons.append(("DEGRADED", f"no version history (docs/model-loop/{lid}/versions.json)"))
 
-    refreshed = newest = data = not_served = None
+    refreshed = newest = data = not_served = games = None
     if L["kind"] == "football":
         cur_json = _read(f"football/{lid}/model_loop/current.json")
         if cur_json:
@@ -143,13 +157,17 @@ def loop_health(L, now):
             refreshed = _ts(live.get("generated_at"))
             newest = _ts(live.get("last_game_date"))
             data = {"last_game_date": live.get("last_game_date"), "for_season": live.get("for_season")}
+            games = _season_games(lid, live.get("for_season"))
         else:
             reasons.append(("DEGRADED", f"no live ratings (basketball/params/{lid}_live.json)"))
 
     research = _latest_research(lid)
-    # in season by the calendar, or because games are still being played (a
-    # final that runs past the usual months)
-    in_season = now.month in L["months"] or (newest is not None and (now - newest).days <= RESULTS_MAX_D)
+    # in season by the calendar, or because the schedule has games from two weeks
+    # ago to RESULTS_MAX_D days ahead (a final that runs past the usual months; a
+    # final whose result never arrives stays flagged for ten days)
+    near = [d for d in games or [] if -14 <= (_ts(d) - now).days <= RESULTS_MAX_D] if games else []
+    in_season = (now.month in L["months"] or (newest is not None and (now - newest).days <= RESULTS_MAX_D)
+                 or bool(near))
     if in_season:
         a = _age_h(refreshed, now)
         lim = L.get("refresh_max_h", REFRESH_MAX_H)
@@ -162,7 +180,17 @@ def loop_health(L, now):
             reasons.append(("STALE", "the weekly research has never run"))
         elif r_at is not None and (now - r_at).days > RESEARCH_MAX_D:
             reasons.append(("STALE", f"last weekly research {(now - r_at).days} days ago (expected weekly)"))
-        if newest is not None and (now - newest).days > RESULTS_MAX_D:
+        if games is not None:
+            # against the season's own schedule: stale only when games played more than
+            # RESULTS_MAX_D days ago are not in the ratings (so not on opening night, when
+            # the newest result is still last season's)
+            cutoff = (now - timedelta(days=RESULTS_MAX_D)).date().isoformat()
+            last = newest.date().isoformat() if newest is not None else ""
+            due = sorted(d for d in games if last < d <= cutoff)
+            if due:
+                reasons.append(("STALE", f"{len(due)} game(s) played more than {RESULTS_MAX_D} days ago are not in the "
+                                         f"ratings (the first on {due[0]}); the newest result is from {last or 'no game'}"))
+        elif newest is not None and (now - newest).days > RESULTS_MAX_D:
             reasons.append(("STALE", f"the newest result in the ratings is from {newest.date()}, "
                                      f"{(now - newest).days} days ago"))
     order = {"DEGRADED": 0, "STALE": 1}
