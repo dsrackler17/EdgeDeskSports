@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-21T22:11:25.424Z",
+  "generated_at": "2026-10-21T22:21:08.057Z",
   "open": 16,
   "count": 16,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -168,6 +168,81 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:market:price market_gap",
+      "sport": "CFB",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-06T18:25:23.283Z",
+      "updated_at": "2026-10-21T22:21:08.057Z",
+      "evidence": [
+        {
+          "lesson_id": "401862792:contradicted:market",
+          "game_id": "401862792",
+          "season": 2026,
+          "week": 5,
+          "team": "South Florida",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at South Florida -14.9 with a fair total of 55.1, which makes South Florida the better team here by that margin on this field. EdgeDesk makes it South Florida -14.9 where the market has South Florida -6.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet — a 8.4 points disagreement.",
+          "result": "South Florida Bulls lost by 4 where EdgeDesk projected a 14.9-point edge. South Florida Bulls lost by 4.",
+          "severity": "high",
+          "at": "2026-10-06T18:25:23.283Z"
+        },
+        {
+          "lesson_id": "401856715:contradicted:market",
+          "game_id": "401856715",
+          "season": 2026,
+          "week": 6,
+          "team": "LSU",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Kentucky +5.3 with a fair total of 53.5, which makes LSU the better team here by that margin on this field. EdgeDesk makes it Kentucky +5.3 where the market has Kentucky +8.5 at captured consensus (stale) · 1 book · best at DraftKings — a 3.2 points disagreement.",
+          "result": "LSU Tigers lost by 1 where EdgeDesk projected a 5.3-point edge. LSU Tigers lost by 1.",
+          "severity": "high",
+          "at": "2026-10-11T03:00:32.232Z"
+        },
+        {
+          "lesson_id": "401856712:contradicted:market",
+          "game_id": "401856712",
+          "season": 2026,
+          "week": 6,
+          "team": "Alabama",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Alabama -5.3 with a fair total of 57.1, which makes Alabama the better team here by that margin on this field. EdgeDesk makes it Alabama -5.3 where the market has Alabama -2.0 at captured consensus (stale) · 1 book · best at BetMGM — a 3.3 points disagreement.",
+          "result": "Alabama Crimson Tide lost by 3 where EdgeDesk projected a 5.3-point edge. Alabama Crimson Tide lost by 3.",
+          "severity": "high",
+          "at": "2026-10-15T21:21:08.590Z"
+        },
+        {
+          "lesson_id": "401858485:contradicted:market",
+          "game_id": "401858485",
+          "season": 2026,
+          "week": 6,
+          "team": "Penn State",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Penn State -5.2 with a fair total of 54.2, which makes Penn State the better team here by that margin on this field. EdgeDesk makes it Penn State -5.2 where the market has Penn State -1.0 at captured consensus (stale) · 1 book · best at Pinnacle — a 4.2 points disagreement.",
+          "result": "Penn State Nittany Lions lost by 8 where EdgeDesk projected a 5.2-point edge. Penn State Nittany Lions lost by 8.",
+          "severity": "high",
+          "at": "2026-10-20T19:31:09.422Z"
+        },
+        {
+          "lesson_id": "401856723:contradicted:market",
+          "game_id": "401856723",
+          "season": 2026,
+          "week": 7,
+          "team": "Alabama",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Tennessee +7.0 with a fair total of 55.0, which makes Alabama the better team here by that margin on this field. EdgeDesk makes it Tennessee +7.0 where the market has Tennessee +5.5 at captured consensus (stale) · 1 book · best at FanDuel — a 1.3 points disagreement.",
+          "result": "Alabama Crimson Tide lost by 16 where EdgeDesk projected a 6.8-point edge. Alabama Crimson Tide lost by 16.",
+          "severity": "high",
+          "at": "2026-10-21T22:21:08.057Z"
+        }
+      ],
+      "occurrences": 5,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 5 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "NFL:variance:general",
       "sport": "NFL",
       "category": "variance",
@@ -219,70 +294,6 @@
           "result": "It graded a win. The reasoning behind it did not hold: 8 of 10 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
           "severity": "high",
           "at": "2026-10-16T21:00:03.749Z"
-        }
-      ],
-      "occurrences": 4,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
-      "recurring": true,
-      "note": "Seen 4 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "CFB:market:price market_gap",
-      "sport": "CFB",
-      "category": "market",
-      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-06T18:25:23.283Z",
-      "updated_at": "2026-10-20T19:31:09.422Z",
-      "evidence": [
-        {
-          "lesson_id": "401862792:contradicted:market",
-          "game_id": "401862792",
-          "season": 2026,
-          "week": 5,
-          "team": "South Florida",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at South Florida -14.9 with a fair total of 55.1, which makes South Florida the better team here by that margin on this field. EdgeDesk makes it South Florida -14.9 where the market has South Florida -6.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet — a 8.4 points disagreement.",
-          "result": "South Florida Bulls lost by 4 where EdgeDesk projected a 14.9-point edge. South Florida Bulls lost by 4.",
-          "severity": "high",
-          "at": "2026-10-06T18:25:23.283Z"
-        },
-        {
-          "lesson_id": "401856715:contradicted:market",
-          "game_id": "401856715",
-          "season": 2026,
-          "week": 6,
-          "team": "LSU",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Kentucky +5.3 with a fair total of 53.5, which makes LSU the better team here by that margin on this field. EdgeDesk makes it Kentucky +5.3 where the market has Kentucky +8.5 at captured consensus (stale) · 1 book · best at DraftKings — a 3.2 points disagreement.",
-          "result": "LSU Tigers lost by 1 where EdgeDesk projected a 5.3-point edge. LSU Tigers lost by 1.",
-          "severity": "high",
-          "at": "2026-10-11T03:00:32.232Z"
-        },
-        {
-          "lesson_id": "401856712:contradicted:market",
-          "game_id": "401856712",
-          "season": 2026,
-          "week": 6,
-          "team": "Alabama",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Alabama -5.3 with a fair total of 57.1, which makes Alabama the better team here by that margin on this field. EdgeDesk makes it Alabama -5.3 where the market has Alabama -2.0 at captured consensus (stale) · 1 book · best at BetMGM — a 3.3 points disagreement.",
-          "result": "Alabama Crimson Tide lost by 3 where EdgeDesk projected a 5.3-point edge. Alabama Crimson Tide lost by 3.",
-          "severity": "high",
-          "at": "2026-10-15T21:21:08.590Z"
-        },
-        {
-          "lesson_id": "401858485:contradicted:market",
-          "game_id": "401858485",
-          "season": 2026,
-          "week": 6,
-          "team": "Penn State",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Penn State -5.2 with a fair total of 54.2, which makes Penn State the better team here by that margin on this field. EdgeDesk makes it Penn State -5.2 where the market has Penn State -1.0 at captured consensus (stale) · 1 book · best at Pinnacle — a 4.2 points disagreement.",
-          "result": "Penn State Nittany Lions lost by 8 where EdgeDesk projected a 5.2-point edge. Penn State Nittany Lions lost by 8.",
-          "severity": "high",
-          "at": "2026-10-20T19:31:09.422Z"
         }
       ],
       "occurrences": 4,
@@ -561,6 +572,59 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:QB:advantage",
+      "sport": "CFB",
+      "category": "QB",
+      "question": "Does EdgeDesk’s QB handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-18T02:50:38.414Z",
+      "updated_at": "2026-10-21T22:21:08.057Z",
+      "evidence": [
+        {
+          "lesson_id": "401858494:contradicted:QB",
+          "game_id": "401858494",
+          "season": 2026,
+          "week": 7,
+          "team": "Wisconsin",
+          "expectation": "Wisconsin holds the largest measured edge in this matchup: Wisconsin 61.1 (#24 of 138) vs UCLA 51.5 (#134 of 138) — 110 places on the national board.",
+          "result": "Wisconsin Badgers 4.13 yards per pass attempt against UCLA Bruins 7.77.",
+          "severity": "high",
+          "at": "2026-10-18T02:50:38.414Z"
+        },
+        {
+          "lesson_id": "401856833:contradicted:QB",
+          "game_id": "401856833",
+          "season": 2026,
+          "week": 7,
+          "team": "Utah",
+          "expectation": "Utah holds the largest measured edge in this matchup: Utah 63.1 (#9 of 138) vs Colorado 53.7 (#121 of 138) — 112 places on the national board.",
+          "result": "Utah Utes 6.78 yards per pass attempt against Colorado Buffaloes 8.26.",
+          "severity": "high",
+          "at": "2026-10-18T06:20:40.651Z"
+        },
+        {
+          "lesson_id": "401856723:contradicted:QB",
+          "game_id": "401856723",
+          "season": 2026,
+          "week": 7,
+          "team": "Alabama",
+          "expectation": "Alabama holds the largest measured edge in this matchup: Alabama 60.5 (#28 of 138) vs Tennessee 54.6 (#113 of 138) — 85 places on the national board.",
+          "result": "Alabama Crimson Tide 5.07 yards per pass attempt against Tennessee Volunteers 6.36.",
+          "severity": "high",
+          "at": "2026-10-21T22:21:08.057Z"
+        }
+      ],
+      "occurrences": 3,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "NFL:market:market_gap price",
       "sport": "NFL",
       "category": "market",
@@ -630,46 +694,6 @@
           "result": "New England Patriots 3.19 yards per carry against Jacksonville Jaguars 4.57; New England Patriots 83 rushing yards against Jacksonville Jaguars 137. New England Patriots 3.19 yards per carry against Jacksonville Jaguars 4.57; New England Patriots 83 rushing yards against Jacksonville Jaguars 137. New England Patriots 3.19 yards per carry against Jacksonville Jaguars 4.57; New England Patriots 83 rushing yards against Jacksonville Jaguars 137. New England Patriots 3.19 yards per carry against Jacksonville Jaguars 4.57; New England Patriots 83 rushing yards against Jacksonville Jaguars 137.",
           "severity": "high",
           "at": "2026-10-16T21:00:03.749Z"
-        }
-      ],
-      "occurrences": 2,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "CFB:QB:advantage",
-      "sport": "CFB",
-      "category": "QB",
-      "question": "Does EdgeDesk’s QB handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-18T02:50:38.414Z",
-      "updated_at": "2026-10-18T06:20:40.651Z",
-      "evidence": [
-        {
-          "lesson_id": "401858494:contradicted:QB",
-          "game_id": "401858494",
-          "season": 2026,
-          "week": 7,
-          "team": "Wisconsin",
-          "expectation": "Wisconsin holds the largest measured edge in this matchup: Wisconsin 61.1 (#24 of 138) vs UCLA 51.5 (#134 of 138) — 110 places on the national board.",
-          "result": "Wisconsin Badgers 4.13 yards per pass attempt against UCLA Bruins 7.77.",
-          "severity": "high",
-          "at": "2026-10-18T02:50:38.414Z"
-        },
-        {
-          "lesson_id": "401856833:contradicted:QB",
-          "game_id": "401856833",
-          "season": 2026,
-          "week": 7,
-          "team": "Utah",
-          "expectation": "Utah holds the largest measured edge in this matchup: Utah 63.1 (#9 of 138) vs Colorado 53.7 (#121 of 138) — 112 places on the national board.",
-          "result": "Utah Utes 6.78 yards per pass attempt against Colorado Buffaloes 8.26.",
-          "severity": "high",
-          "at": "2026-10-18T06:20:40.651Z"
         }
       ],
       "occurrences": 2,
