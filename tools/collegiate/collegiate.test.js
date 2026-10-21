@@ -203,7 +203,7 @@ function polite(pages, hosts, extra) {
     put('beta', 2026, [p('b1', 'Ron', 'Hale', 'SR'), p('b7', 'Jacob', 'Miller', 'JR', { hometown: 'Austin, TX', high_school: 'Westlake HS' }),
       p('b8', 'Ty', 'Brown', 'SR', { previous_school: 'Alpha State' }), p('b9', 'Cal', 'Reed', 'JR', { previous_school: 'McLennan CC' }), p('b11', 'Abe', 'Ross', 'SO', { previous_school: 'San Jacinto College' }),
       p('b10', 'Jake', 'Brown', 'JR', { hometown: 'Elsewhere, Ohio' })]);
-    const out = PO.build({ dataDir: dir, sport: 'baseball', season: 2026, schoolsList: [{ id: 'alpha', name: 'Alpha', aliases: ['Alpha State'] }, { id: 'beta', name: 'Beta' }], write: false });
+    const out = PO.build({ dataDir: dir, sport: 'baseball', season: 2026, schoolsList: [{ id: 'alpha', name: 'Alpha', aliases: ['Alpha State'], conference: 'East' }, { id: 'beta', name: 'Beta', conference: 'East' }], write: false });
     const L = (fn) => out.ledger.filter(fn);
     const ty = L((r) => r.kind === 'transfer' && r.player === 'Ty Brown')[0];
     ok('portal: a listed previous school and a roster match make a transfer seen at both ends', ty && ty.from === 'alpha' && ty.to === 'beta' && ty.from_pid === 'a3' && ty.evidence.includes('previous_school'), ty);
@@ -218,6 +218,12 @@ function polite(pages, hosts, extra) {
     ok('portal: a player taken off this season\'s roster is a departure dated to the read', mid && mid.in_season && mid.left_seen === '2026-04-20');
     const ta = out.teams.find((t) => t.school === 'alpha');
     ok('portal: a team\'s continuity counts who came back and who left with eligibility', ta.roster_before === 5 && ta.roster_now === 2 && ta.returning === 2 && ta.returning_share === 0.4 && ta.transfers_out === 2 && ta.departures_eligibility_done === 2 && ta.newcomers === 1, ta);
+    ok('portal: a move inside a conference is marked on the ledger and the team', ty.from_conference === 'East' && ty.to_conference === 'East' && out.teams.find((t) => t.school === 'beta').transfers_in_same_conference === 2);
+    {
+      /* by default the ledger reads the registry the directory writes (collegiate/data/schools.json) */
+      const src = fs.readFileSync(path.join(ROOT, 'collegiate/portal.js'), 'utf8');
+      ok('portal: the registry is read from where the directory writes it', /const SCHOOLS = path\.join\(DATA, 'schools\.json'\)/.test(src) && /const OUT = path\.join\(__dirname, 'data', 'schools\.json'\)/.test(fs.readFileSync(path.join(ROOT, 'collegiate/directory.js'), 'utf8')));
+    }
     ok('portal: states in AP style and postal codes compare equal', PO.normPlace('Austin, Texas') === PO.normPlace('Austin, TX') && PO.normPlace('Phoenix, Ariz.') === PO.normPlace('Phoenix, AZ') && PO.normPlace('Phoenix, Ariz.') !== PO.normPlace('Phoenix, Md.'));
     fs.rmSync(dir, { recursive: true, force: true });
   }
