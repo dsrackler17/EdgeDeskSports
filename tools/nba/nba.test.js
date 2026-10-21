@@ -319,12 +319,15 @@ if (fs.existsSync(path.join(ROOT, 'nba', 'slate.json'))) {
 /* a build never prices with a season's work tables missing (a cold CI cache once priced the slate on 2025-26 alone) */
 {
   const D = R('nba/lib/data.js'); const os = require('os'); const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nba-work-'));
+  /* an unplayed season: the one after the newest on file, which can have no final game. A literal year
+     (2027) stopped being unplayed when its first games went final, and the build's fresh data failed this. */
+  const UNPLAYED = Math.max.apply(null, fs.readdirSync(path.join(ROOT, 'nba', 'data', 'games')).map((f) => Number(f.slice(0, 4))).filter(Number.isFinite)) + 1;
   try {
-    ok('with no work tables, every completed season is missing and the unplayed one is not', JSON.stringify(D.missingWork([2025, 2026, 2027], tmp)) === '[2025,2026]', D.missingWork([2025, 2026, 2027], tmp));
+    ok('with no work tables, every completed season is missing and the unplayed one is not', JSON.stringify(D.missingWork([2025, 2026, UNPLAYED], tmp)) === '[2025,2026]', D.missingWork([2025, 2026, UNPLAYED], tmp));
     fs.writeFileSync(path.join(tmp, 'player_games_2026.json.gz'), ''); fs.writeFileSync(path.join(tmp, 'stints_2025.json.gz'), '');
     ok('a season needs both its player-game and its stint table', JSON.stringify(D.missingWork([2025, 2026], tmp)) === '[2025,2026]');
     fs.writeFileSync(path.join(tmp, 'stints_2026.json.gz'), '');
-    let msg = ''; try { D.requireWork([2025, 2026, 2027], 'nba slate', tmp); } catch (e) { msg = String(e.message); }
+    let msg = ''; try { D.requireWork([2025, 2026, UNPLAYED], 'nba slate', tmp); } catch (e) { msg = String(e.message); }
     ok('the builders refuse, naming the missing season', /nba slate: the work tables are missing for season\(s\) 2025;/.test(msg) && !/2026/.test(msg), msg);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
