@@ -72,7 +72,7 @@ An adapter supplies five things:
 | WNBA | daily refresh; weekly research | **Loop on** (`basketball/loop.js`, `.github/workflows/model-loop-basketball.yml`). Outcome-graded only: no market data captured |
 | CBB (men's, women's) | daily refresh; weekly research | **Loop on**, same as WNBA. The D1 fix is built behind `d1_fix` and evaluated (`basketball/eval_d1_fix.js`, `basketball/validation/ncaa?_d1_fix*.json`); off until a decision |
 | NBA | daily refresh; weekly research | **Loop on**, same as WNBA (not in the original brief; the same engine) |
-| UFC | per event | No model exists. Experimental; no real backtest possible (566 bouts, 0 closes) |
+| UFC | per event: full cycle Sunday, refresh Thursday–Saturday (`.github/workflows/model-loop-ufc.yml`) | **Loop on, EXPERIMENTAL, nothing served yet.** Multi-year bouts from ESPN's scoreboard (`adapters/ufc/ingest.py`; the parser reproduces the data pack's 2024 bouts exactly). Walk-forward Elo, symmetric in the feed's fighter order. Preregistered (`docs/model-loop/ufc/prereg.json`, written before the multi-year data existed): served only if 2021–2024 beats the coin flip with its 95% interval below zero and 2025 is below it too. Outcome-graded only: no closes |
 | Tennis | per event | Retired. Experimental; no closes owned |
 
 ## The weekly loop (Phase 2)

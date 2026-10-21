@@ -7,7 +7,8 @@ Read only: it looks at what each loop committed (versions, the published
 numbers, the weekly research, the live ratings) and never runs a model.
 
 Per loop:
-  status      OK | STALE | DEGRADED | OFF_SEASON
+  status      OK | STALE | DEGRADED | OFF_SEASON | NOT_SERVED (no version has
+              cleared its preregistered rule, so the loop publishes nothing)
   reasons     every rule that fired, in words
   served      the version in use and since when
   refreshed   when the served version last re-fitted on new results
@@ -48,6 +49,9 @@ LOOPS = [
      "workflow": ".github/workflows/model-loop-basketball.yml"},
     {"id": "ncaaw", "label": "Women's college basketball", "months": {11, 12, 1, 2, 3, 4}, "kind": "basketball",
      "workflow": ".github/workflows/model-loop-basketball.yml"},
+    # cards most weekends all year; refreshed Thursday to Sunday, so up to four days apart
+    {"id": "ufc", "label": "UFC", "months": set(range(1, 13)), "kind": "ufc", "refresh_max_h": 108,
+     "workflow": ".github/workflows/model-loop-ufc.yml"},
 ]
 REFRESH_MAX_H = 36
 RESEARCH_MAX_D = 8
@@ -93,9 +97,12 @@ def loop_health(L, now):
     reasons = []
     vers = _read(f"docs/model-loop/{lid}/versions.json")
     served = None
-    if vers:
+    if vers or L["kind"] == "ufc":
+        vers = vers or {"versions": [], "current": None}
         cur = next((v for v in vers.get("versions") or [] if v.get("version") == vers.get("current")), None)
-        if cur is None:
+        if cur is None and L["kind"] == "ufc":
+            pass                                          # no version until the preregistered backtest has run
+        elif cur is None:
             reasons.append(("DEGRADED", f"the served version {vers.get('current')} is not in docs/model-loop/{lid}/versions.json"))
         else:
             served = {"version": cur["version"], "since": cur.get("promoted_at"), "promoted_by": cur.get("promoted_by"),
@@ -103,7 +110,7 @@ def loop_health(L, now):
     else:
         reasons.append(("DEGRADED", f"no version history (docs/model-loop/{lid}/versions.json)"))
 
-    refreshed = newest = data = None
+    refreshed = newest = data = not_served = None
     if L["kind"] == "football":
         cur_json = _read(f"football/{lid}/model_loop/current.json")
         if cur_json:
@@ -117,6 +124,19 @@ def loop_health(L, now):
             data["graded_games"] = len(graded)
         else:
             reasons.append(("DEGRADED", f"no published numbers (football/{lid}/model_loop/current.json)"))
+    elif L["kind"] == "ufc":
+        cur_json = _read("model_loop/published/ufc/current.json")
+        if cur_json:
+            refreshed = _ts(cur_json.get("generated_at"))
+            ds = cur_json.get("data_status")
+            data = {"bouts_published": len(cur_json.get("bouts") or []), "data_status": ds, "served": cur_json.get("served")}
+            if ds and ds.get("status") == "DEGRADED":
+                reasons += [("DEGRADED", r) for r in ds.get("reasons") or []]
+            if not cur_json.get("served"):
+                served = None
+                not_served = cur_json.get("reason") or "no version is served"
+        else:
+            reasons.append(("DEGRADED", "no published file (model_loop/published/ufc/current.json)"))
     else:
         live = _read(f"basketball/params/{lid}_live.json")
         if live:
@@ -132,8 +152,10 @@ def loop_health(L, now):
     in_season = now.month in L["months"] or (newest is not None and (now - newest).days <= RESULTS_MAX_D)
     if in_season:
         a = _age_h(refreshed, now)
-        if a is None or a > REFRESH_MAX_H:
-            reasons.append(("STALE", "no refresh on record" if a is None else f"last refresh {a:.0f} h ago (expected daily)"))
+        lim = L.get("refresh_max_h", REFRESH_MAX_H)
+        if a is None or a > lim:
+            reasons.append(("STALE", "no refresh on record" if a is None else
+                            f"last refresh {a:.0f} h ago (expected within {lim} h)"))
         loop_age_d = (now - _ts(served["since"])).days if served and _ts(served.get("since")) else 0
         r_at = _ts(research and research.get("at"))
         if r_at is None and loop_age_d >= RESEARCH_MAX_D:
@@ -144,7 +166,10 @@ def loop_health(L, now):
             reasons.append(("STALE", f"the newest result in the ratings is from {newest.date()}, "
                                      f"{(now - newest).days} days ago"))
     order = {"DEGRADED": 0, "STALE": 1}
-    if not in_season and not any(k == "DEGRADED" for k, _ in reasons):
+    if not_served and not any(k == "DEGRADED" for k, _ in reasons):
+        status = "NOT_SERVED"
+        reasons = [("NOT_SERVED", not_served)]
+    elif not in_season and not any(k == "DEGRADED" for k, _ in reasons):
         status = "OFF_SEASON"
     elif reasons:
         status = min((k for k, _ in reasons), key=lambda k: order[k])
@@ -160,7 +185,7 @@ def loop_health(L, now):
 def build(now=None):
     now = now or datetime.now(timezone.utc)
     loops = [loop_health(L, now) for L in LOOPS]
-    summary = {k: sum(1 for x in loops if x["status"] == k) for k in ("OK", "STALE", "DEGRADED", "OFF_SEASON")}
+    summary = {k: sum(1 for x in loops if x["status"] == k) for k in ("OK", "STALE", "DEGRADED", "OFF_SEASON", "NOT_SERVED")}
     worst = "DEGRADED" if summary["DEGRADED"] else "STALE" if summary["STALE"] else "OK"
     return {"schema": "edgedesk_model_loop_health_v1", "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "status": worst, "summary": summary,

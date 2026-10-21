@@ -90,14 +90,34 @@ function section(s) { console.log('· ' + s); }
      planner says it is today; the past weeks below never change */
   const REAL_NOW = new Date().toISOString();
   const ahead = GEN.plan(S, REAL_NOW).filter(j => j.type === 'disagreement')[0];
+  /* the week ahead on today's slate: the article builds, or it is refused for
+     the one honest reason, that no upcoming game has a row where my number
+     clears the price (every edge at or below zero) */
+  if (ahead) {
+    const upcoming = new Set(S.nfl_slate.doc.games.filter(g => g.week === ahead.o.week && Date.parse(g.kickoff) > Date.parse(REAL_NOW)).map(g => g.game_id));
+    const live = S.nfl_slate.doc.pricing.rows.filter(r => upcoming.has(r.game_id) && r.edge_pp > 0 && r.gap_points != null);
+    let refused = null;
+    try { G.generate('disagreement', S, ahead.o); } catch (e) { refused = e; }
+    chk('disagreement on today\'s slate: built, or refused only when no upcoming row clears the price',
+      live.length ? !refused : !!(refused && refused.notReady && /no upcoming game has a model-vs-market row/.test(refused.message)),
+      refused ? refused.message : live.length + ' row(s)');
+  }
+  /* the article itself is built from a pinned commit on main whose slate had
+     week 7 rows with a positive edge (CI checks out full history), so its
+     every check runs whatever this week's prices say */
+  const PIN = '121e247c8ce4881457163d25a4549f5ab80b7442';
+  const SP = SRC.git(['cat-file', '-e', PIN + '^{commit}']) !== null ? SRC.loader({ commit: PIN }) : null;
+  chk('the pinned slate commit is in this clone (needs full history)', !!SP, PIN);
   const jobs = [
     ['weekly_clv', { sport: 'nfl', week: 5 }], ['weekly_clv', { sport: 'cfb', week: 7 }],
-    ['disagreement', ahead ? ahead.o : { sport: 'nfl', week: 7, now: NOW }], ['line_movement', { sport: 'nfl', week: 5 }],
+    ['disagreement', { sport: 'nfl', week: 7, now: NOW }, SP], ['line_movement', { sport: 'nfl', week: 5 }],
     ['got_wrong', { month: '2026-09' }], ['research_notes', { study: 'EXP-001' }]];
   const made = {};
-  for (const [t, o] of jobs) {
+  for (const [t, o, pinned] of jobs) {
     let d;
-    try { d = G.generate(t, S, o); } catch (e) { chk(t + ' builds', false, e.message); continue; }
+    const src = pinned === undefined ? S : pinned;
+    if (!src) continue;
+    try { d = G.generate(t, src, o); } catch (e) { chk(t + ' builds', false, e.message); continue; }
     made[t + ':' + (o.sport || o.month || o.study)] = d;
     chk(t + ' ' + JSON.stringify(o) + ': voice', d.voice.ok, d.voice.issues);
     chk(t + ' ' + JSON.stringify(o) + ': every number re-derives', d.verify.ok && d.verify.checked > 10, d.verify.problems);
@@ -106,7 +126,7 @@ function section(s) { console.log('· ' + s); }
     chk(t + ': no em dash anywhere', !/[—–]/.test([d.title, d.lead, d.body_md].join(' ')));
     chk(t + ': cites the public record, never the signed-in terminal', /edgedesksports\.com\/record(\.html|\/football\/)/.test(d.body_md) && !/app\.html#/.test(d.body_md));
     chk(t + ': slug fits the tracker', /^[a-z0-9-]{3,70}$/.test(d.slug), d.slug);
-    const row = GEN.packageDraft(d, S, NOW);
+    const row = GEN.packageDraft(d, src, NOW);
     /* a clean checkout (CI, the drafting job) re-reads every file at its
        commit; a working tree with uncommitted data records no commit for
        those files, and is verified against the files as they stand */
@@ -163,6 +183,10 @@ function section(s) { console.log('· ' + s); }
   const wkJob = plan.filter(j => j.type === 'weekly_clv' && j.o.sport === 'nfl')[0];
   const wkRow = wkJob && recWeeks.filter(x => x.week === wkJob.o.week)[0];
   chk('the weekly report waits for a complete week', wkRow && wkRow.graded === wkRow.recorded && wkRow.graded > 0, wkRow);
+  const ni = (m) => GEN.notInstalledError(new Error(m));
+  chk('a database without the desk is told apart from a failed store',
+    ni('desk_draft_put HTTP 404: {"code":"PGRST202","message":"Could not find the function public.desk_draft_put(p) in the schema cache"}')
+    && !ni('desk_draft_put HTTP 404: {"code":"PGRST116"}') && !ni('desk_draft_put HTTP 500: {"code":"PGRST202"}') && !ni('fetch failed'));
 
   /* ── pages ───────────────────────────────────────────────────────── */
   section('pages');

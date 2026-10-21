@@ -289,8 +289,9 @@ H = C.sysHealthHTML();
 has(H, 'NBA stale: last refresh 51 h ago', 'a stale loop is named with its reason');
 has(H, '1 needs attention', 'and counted as needing attention');
 chk('a stale loop is attention (amber), never a failed system check (red)', /Learning loops[\s\S]*?class="v warn"/.test(H) && C.sysHealthState().state !== 'err');
-C.SH.loops.loops[1].status = 'OK'; C.SH.loops.summary = { OK: 3, STALE: 0, DEGRADED: 0, OFF_SEASON: 2 };
+C.SH.loops.loops[1].status = 'OK'; C.SH.loops.summary = { OK: 3, STALE: 0, DEGRADED: 0, OFF_SEASON: 2, NOT_SERVED: 1 };
 has(C.sysHealthHTML(), 'every loop in season refreshed, researched and fed', 'and all current reads as such');
+has(C.sysHealthHTML(), '1 not served', 'a loop with nothing served is counted, not hidden and not called broken');
 C.SH.loops = null;
 chk('the pill reads healthy when everything reporting is healthy',
     (C.sysHealthPill(), C.__els.sysHealthPill === undefined || true));

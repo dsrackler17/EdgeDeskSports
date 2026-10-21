@@ -1,0 +1,58 @@
+{
+ "schema": "edgedesk_model_loop_ufc_prereg_v1",
+ "model": "walk-forward Elo (model_loop/adapters/ufc/model.py)",
+ "data": "ESPN public scoreboard, month by month from 2014 (model_loop/adapters/ufc/ingest.py); a bout is scored when it ended with a winner; draws update ratings at 0.5 and are not scored",
+ "windows": {
+  "burn_in": [
+   2014,
+   2015
+  ],
+  "tune": [
+   2016,
+   2020
+  ],
+  "validation": [
+   2021,
+   2024
+  ],
+  "holdout": [
+   2025,
+   2025
+  ],
+  "live": [
+   2026,
+   2099
+  ]
+ },
+ "grid": {
+  "k": [
+   16,
+   24,
+   32,
+   48,
+   64
+  ],
+  "k_new_mult": [
+   1.0,
+   1.5,
+   2.0
+  ],
+  "layoff_regress": [
+   0.0,
+   0.25
+  ],
+  "calibration": [
+   "none",
+   "slope"
+  ]
+ },
+ "selection": "lowest tune-window log loss over every decided bout",
+ "serve_rule": {
+  "validation": "n >= 1000 and log loss below the coin flip with the paired 95% interval below zero",
+  "holdout": "2025 log loss below the coin flip (read once)"
+ },
+ "weekly_rule": "full 2016-to-date log loss falls by >= 0.0005 with its paired 95% interval below zero, Brier no worse, and the most recent full season no worse on either",
+ "symmetry": "no feature depends on which fighter the feed lists first",
+ "disclosure": "Before this file was written, only the data pack's 2024 bouts were in the repository; the Elo was run on them (engine/lab/ufc_elo.json; and once here to check the code). Nothing from 2014-2023 or 2025-2026 had been read.",
+ "sha256": "59f6ebf4b1c82be50c2f8ae893e951434c606cbd2d1b1bf1f559c6e5a4a91610"
+}

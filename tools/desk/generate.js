@@ -103,6 +103,12 @@ function packageDraft(d, S, nowIso) {
 }
 
 /* ------------------------------------------------------------------ push */
+/** PostgREST's answer when the function does not exist: PGRST202 naming desk_draft_put */
+function notInstalledError(e) {
+  const m = String(e && e.message || '');
+  return /desk_draft_put HTTP 404/.test(m) && /PGRST202/.test(m);
+}
+
 async function push(row) {
   const url = process.env.SB_URL, key = process.env.SB_SERVICE_ROLE;
   if (!url || !key) throw new Error('--push needs SB_URL and SB_SERVICE_ROLE');
@@ -135,7 +141,7 @@ async function main() {
     if (arg('partial', false)) o.allowPartial = true;
     jobs = [{ type, o }];
   }
-  let failed = 0, made = 0, skipped = 0;
+  let failed = 0, made = 0, skipped = 0, notInstalled = null;
   for (const j of jobs) {
     let d;
     try { d = G.generate(j.type, S, j.o); }
@@ -165,14 +171,26 @@ async function main() {
       fs.writeFileSync(base + '.json', JSON.stringify(row, null, 1) + '\n');
       fs.writeFileSync(base + '.md', '# ' + row.title + '\n\n' + row.generated_body);
     }
-    if (doPush) {
+    if (doPush && !notInstalled) {
       try { const res = await push(row); log('        stored: ' + JSON.stringify(res)); }
-      catch (e) { failed++; console.error('  PUSH FAILED ' + row.article_key + ': ' + e.message); }
+      catch (e) {
+        /* the desk is not installed in this database (supabase/desk_articles.sql has not been run): a
+           setting to report, not a failure of this job. The drafts were still generated and checked;
+           nothing more is attempted, and the run says so instead of failing once per draft */
+        if (notInstalledError(e)) { notInstalled = e.message; continue; }
+        failed++; console.error('  PUSH FAILED ' + row.article_key + ': ' + e.message);
+      }
     }
   }
   log('\n' + made + ' draft(s), ' + skipped + ' not due, ' + failed + ' failure(s)');
+  if (notInstalled) {
+    const msg = 'The desk is not installed in this database (run supabase/desk_articles.sql, after site_articles.sql): '
+      + made + ' draft(s) generated and checked, none stored.';
+    console.log((process.env.GITHUB_ACTIONS ? '::warning::' : '') + msg);
+    if (process.env.GITHUB_STEP_SUMMARY) { try { fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '**Desk drafts:** ' + msg + '\n'); } catch (_) { /* summary is optional */ } }
+  }
   process.exit(failed ? 1 : 0);
 }
 
 if (require.main === module) main().catch(e => { console.error(e.stack || e); process.exit(1); });
-module.exports = { plan, packageDraft, bodyHash };
+module.exports = { plan, packageDraft, bodyHash, notInstalledError };
