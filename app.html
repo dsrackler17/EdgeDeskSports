@@ -20800,7 +20800,7 @@ function sysHealthHTML(){
   if(LH&&LH.loops&&LH.summary){
     var lbad=LH.loops.filter(function(x){return x.status==='STALE'||x.status==='DEGRADED';});
     out+=shRow('Learning loops',lbad.length?lbad.map(function(x){return x.label+' '+String(x.status).toLowerCase()+(x.reasons&&x.reasons[0]?': '+x.reasons[0]:'');}).join(' \u00b7 '):'every loop in season refreshed, researched and fed',
-      (LH.summary.OK||0)+' ok'+(lbad.length?' \u00b7 '+lbad.length+' need'+(lbad.length===1?'s':'')+' attention':'')+(LH.summary.OFF_SEASON?' \u00b7 '+LH.summary.OFF_SEASON+' off season':''),
+      (LH.summary.OK||0)+' ok'+(lbad.length?' \u00b7 '+lbad.length+' need'+(lbad.length===1?'s':'')+' attention':'')+(LH.summary.OFF_SEASON?' \u00b7 '+LH.summary.OFF_SEASON+' off season':'')+(LH.summary.NOT_SERVED?' \u00b7 '+LH.summary.NOT_SERVED+' not served':''),
       lbad.length?'warn':'ok');
   } else out+=shRow('Learning loops',SH.loopsErr?('model_loop/health.json '+SH.loopsErr):'the learning-loop record has not loaded','not loaded','mut');
 

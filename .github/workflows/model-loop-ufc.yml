@@ -1,0 +1,83 @@
+# EdgeDesk model loop, UFC: multi-year ingestion and a per-event learning loop
+# (model_loop/adapters/ufc/loop.py). EXPERIMENTAL and outcome-graded only: no
+# UFC closing prices are archived, so nothing here claims value.
+#
+#   Sunday     the full cycle, after Saturday's card: fetch ESPN's scoreboard
+#              month by month (finished months are cached), rebuild the bouts,
+#              run the preregistered backtest once (docs/model-loop/ufc/
+#              prereg.json, committed before the multi-year data existed),
+#              refresh, grade every published pregame number, research the
+#              candidates, write the report.
+#   Thu-Sat    refresh only: the card's late changes reach the published file.
+#
+# Nothing is published until the tuned Elo clears the preregistered rule
+# (validation 2021-2024 beats the coin flip with its 95% interval below zero,
+# and the 2025 holdout is below it too). ESPN answers GitHub's runners (the
+# UFC sync job already reads it every six hours); nothing logs in or pays.
+name: Model loop UFC (per event)
+
+on:
+  schedule:
+    - cron: '53 14 * * 0'        # Sunday 14:53 UTC, after Saturday's card
+    - cron: '53 15 * * 4,5,6'    # Thursday to Saturday: refresh only
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'all (fetch, backtest once, refresh, score, research, report) or refresh'
+        required: false
+        default: 'all'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-loop-ufc
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python deps (pinned)
+        run: pip install --quiet -r model_loop/requirements.txt
+      - name: Core guarantees before anything is published
+        run: python3 -m unittest discover -s model_loop/tests -t .
+      # finished months never change: cache them; the month in progress is always refetched
+      - uses: actions/cache@v4
+        with:
+          path: .cache/model_loop/ufc/raw
+          key: model-loop-ufc-raw-${{ github.run_id }}
+          restore-keys: model-loop-ufc-raw-
+      - name: Mode
+        id: mode
+        run: |
+          m="${{ inputs.mode }}"
+          if [ -z "$m" ]; then
+            if [ "$(date -u +%u)" = "7" ]; then m=all; else m=refresh; fi
+          fi
+          echo "mode=$m" >> "$GITHUB_OUTPUT"
+          echo "mode: $m"
+      - name: Run the loop
+        run: python3 -m model_loop.adapters.ufc.loop ${{ steps.mode.outputs.mode }}
+      - name: The published file is symmetric and complete
+        run: |
+          python3 - <<'EOF'
+          import json, sys
+          c = json.load(open('model_loop/published/ufc/current.json'))
+          bad = [b['bout_id'] for b in c.get('bouts', []) if abs(b['p_a'] + b['p_b'] - 1) > 1e-9 or not 0 < b['p_a'] < 1]
+          print(len(c.get('bouts', [])), 'bouts; served:', (c.get('served') or {}).get('version'), '; bad:', bad)
+          sys.exit(1 if bad else 0)
+          EOF
+      - name: Publish (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "model loop: UFC ${{ steps.mode.outputs.mode }} — bouts, record and ledgers" -- \
+            model_loop/data/ufc model_loop/published/ufc model_loop/ledger/ufc docs/model-loop/ufc
