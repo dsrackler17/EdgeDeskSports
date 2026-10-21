@@ -4,7 +4,7 @@
 //  TYPE:    Edge Function — NBA injury report and rosters (T0), and the
 //           Roster-Adjusted Projection (T3, EXPERIMENTAL)
 //  DEPLOY:  supabase functions deploy nba_injury_sync --no-verify-jwt
-//           (npm:unpdf is fetched and bundled at deploy, as circa_ownership_sync bundles it)
+//           (npm:unpdf is bundled at deploy because its import names it literally)
 //           .github/workflows/deploy-nba-injury.yml does it, tests first
 //  CRON:    supabase/nba_injury_cron.sql — pokes at :07 and :37, 13:00-04:59 UTC;
 //           THIS function decides: every poke on a game day from 9:00 AM
@@ -55,8 +55,7 @@
 //      NBA_INPUTS_URL (default https://edgedesksports.com/nba/roster_inputs.json)
 // ============================================================
 
-export const BUILD = "nba_injury_sync@2026-10-21.2";
-const UNPDF = "npm:unpdf@1.8.1";
+export const BUILD = "nba_injury_sync@2026-10-21.3";
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 const INPUTS_URL = "https://edgedesksports.com/nba/roster_inputs.json";
 // A browser's headers. The crawler-style "EdgeDesk research (+https://...)" agent
@@ -945,7 +944,11 @@ async function getJson(url: string, ms = 20000) {
 /* ---------------------------------------------------------------- the PDF (a hook, so Node tests can stand in for pdf.js) */
 export const hooks: Any = {
   async pdfLines(bytes: Uint8Array): Promise<string[]> {
-    const { getDocumentProxy } = await import(UNPDF);
+    // The specifier must be a literal. The deploy bundles only the npm packages
+    // its graph can see: a specifier held in a constant left unpdf out, and the live function
+    // failed with "Could not find constraint 'unpdf@1.8.1' in the list of
+    // packages" (2026-10-21). Node never runs this line; the tests replace the hook.
+    const { getDocumentProxy } = await import("npm:unpdf@1.8.1");
     const pdf = await getDocumentProxy(bytes);
     const out: string[] = [];
     for (let i = 1; i <= pdf.numPages; i++) {

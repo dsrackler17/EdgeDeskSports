@@ -226,6 +226,8 @@ globalThis.fetch = async (u, init) => {
   chk('the deploy workflow tests first, deploys with JWT verification off, and applies the SQL in order', /nba_injury_core\.test\.js/.test(WF) && /nba_injury_sync\.test\.js/.test(WF) && /--no-verify-jwt/.test(WF)
     && WF.indexOf('nba_injury_layer.sql') < WF.indexOf('nba_roster_adjusted_registry.sql') && WF.indexOf('nba_roster_adjusted_registry.sql') < WF.indexOf('nba_injury_cron.sql'));
 
+  const SRC = fs.readFileSync(FN, 'utf8');
+  chk('the PDF library is imported by a literal specifier, so the deploy bundles it (a variable left it out)', /import\("npm:unpdf@\d+\.\d+\.\d+"\)/.test(SRC) && !/import\(\s*[A-Za-z_$][\w$]*\s*\)/.test(SRC));
   const commitsSlateOnly = fs.readdirSync(path.join(ROOT, '.github', 'workflows')).filter((f) => {
     const y = fs.readFileSync(path.join(ROOT, '.github', 'workflows', f), 'utf8');
     return y.split('push_generated.sh').slice(1).some((c) => { const cmd = c.split(/\n\s*- /)[0]; return /nba\/slate\.json/.test(cmd) && !/nba\/roster_inputs\.json/.test(cmd); });
