@@ -2,51 +2,135 @@
  "schema": "edgedesk_engine_week_v1",
  "engine": "nba_engine",
  "label": "NBA engine",
- "at": "2026-10-21T09:22:03Z",
+ "at": "2026-10-21T23:31:51Z",
  "season": 2027,
- "served_model": "G_stack_P",
+ "served_model": "E_ridge_P",
  "protocol": "nba/model/walkforward.js",
- "validation_generated_at": "2026-10-14T17:52:25.049Z",
- "slate_generated_at": "2026-10-21T05:04:19.377Z",
+ "validation_generated_at": "2026-10-21T18:14:51.980Z",
+ "slate_generated_at": "2026-10-21T21:53:43.915Z",
  "expectation": {
   "window": "test 2018-2026",
-  "model": "G_stack_P",
+  "model": "E_ridge_P",
   "n": 11543,
-  "moneyline_log_loss": 0.61779,
-  "moneyline_brier": 0.21455,
+  "moneyline_log_loss": 0.61681,
+  "moneyline_brier": 0.21415,
   "home_rate": 0.5612,
   "home_rate_log_loss": 0.6866,
-  "margin_mae": 10.6391,
-  "total_mae": 14.8931,
-  "margin_bias": 0.2295,
-  "total_bias": 0.0564
+  "margin_mae": 10.6297,
+  "total_mae": 14.878,
+  "margin_bias": 0.0719,
+  "total_bias": 0.0353
  },
  "week": {
   "from": "2026-10-14",
   "to": "2026-10-21",
-  "n": 0
+  "n": 3,
+  "log_loss": 0.95941,
+  "brier": 0.36742,
+  "accuracy": 0.3333,
+  "mean_p": 0.6192,
+  "mean_y": 0.3333,
+  "total_mae": 12.38,
+  "total_bias": -2.213,
+  "margin_mae": 12.007,
+  "margin_bias": -7.56
  },
  "season_to_date": {
-  "n": 0
+  "n": 3,
+  "log_loss": 0.95941,
+  "brier": 0.36742,
+  "accuracy": 0.3333,
+  "mean_p": 0.6192,
+  "mean_y": 0.3333,
+  "total_mae": 12.38,
+  "total_bias": -2.213,
+  "margin_mae": 12.007,
+  "margin_bias": -7.56
  },
  "vs_its_record": {
   "verdict": "TOO_EARLY",
-  "n": 0,
-  "expected": 0.61779,
+  "n": 3,
+  "expected": 0.61681,
   "note": "fewer than 30 graded games"
  },
- "vs_home_rate": null,
- "patterns": [],
+ "vs_home_rate": {
+  "n": 3,
+  "mean_diff": 0.21771,
+  "t": 0.984,
+  "ci95": [
+   -0.04027,
+   0.65789
+  ],
+  "home_rate": 0.5612,
+  "beats_it": false
+ },
+ "patterns": [
+  {
+   "pattern": "all games",
+   "market": "moneyline",
+   "n": 3,
+   "mean_p": 0.6192,
+   "mean_y": 0.3333,
+   "residual": -0.2858,
+   "stat": -1.05,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "all games",
+   "market": "total",
+   "n": 3,
+   "residual": -2.213,
+   "stat": -0.24,
+   "stat_kind": "t",
+   "flag": false
+  },
+  {
+   "pattern": "home favourite (p >= 0.60)",
+   "market": "moneyline",
+   "n": 1,
+   "mean_p": 0.7727,
+   "mean_y": 0.0,
+   "residual": -0.7727,
+   "stat": -1.84,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "near a coin flip (0.40 < p < 0.60)",
+   "market": "moneyline",
+   "n": 2,
+   "mean_p": 0.5424,
+   "mean_y": 0.5,
+   "residual": -0.0424,
+   "stat": -0.12,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "rotation stale: True",
+   "market": "moneyline",
+   "n": 3,
+   "mean_p": 0.6192,
+   "mean_y": 0.3333,
+   "residual": -0.2858,
+   "stat": -1.05,
+   "stat_kind": "z",
+   "flag": false
+  }
+ ],
  "research_questions": [],
  "data": {
   "season": 2027,
-  "ledger_records": 91,
+  "ledger_records": 141,
   "games_priced": 28,
-  "graded": 0,
+  "graded": 3,
   "missing_results": [],
   "unpriced": []
  },
- "models_in_ledger": [],
+ "models_in_ledger": [
+  "edgedesk_nba_v1:G_stack_P"
+ ],
  "promoted": null,
  "candidates": [],
  "changes": "none: this report changes no number. NBA engine's models and hyperparameters are chosen by its own protocol (nba/model/walkforward.js); a flagged pattern is a question for its next amendment."
