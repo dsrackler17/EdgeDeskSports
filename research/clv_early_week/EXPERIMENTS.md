@@ -419,11 +419,52 @@ Reported but never gating: each season separately, ROI at the bet price, edge bu
 
 **If none passes:** stated plainly, with the most promising next direction from the evidence.
 
+### Phase 6 results — the holdout, read once (2026-10-21; `docs/model-loop/clv_early/results/H_*.json`)
+
+Pooled 2025 + 2026-to-date. The bound is the one-sided 99% lower bound of mean CLV in points
+(α = 0.05/5).
+
+| id | candidate | bets | CLV pts | 99% lower bound | CLV prob [98% CI] | perm p (≤ 0.01) | dir-hit | ROI at bet price | **gate** |
+|---|---|---|---|---|---|---|---|---|---|
+| H-1 | NFL v2.1.0 spread | 138 | +0.319 | +0.086 ✓ | +0.56% [−0.26, +1.46] | 0.016 ✗ | 0.679 | −3.38% | **FAIL** |
+| H-2 | NFL Loop v2.0.0 spread | 142 | +0.229 | −0.155 ✗ | +0.30% [−0.80, +1.32] | 0.028 ✗ | 0.583 | −3.93% | **FAIL** |
+| H-3 | NFL v2.1.0 total | 114 | **+0.504** | **+0.234** ✓ | +1.24% [+0.48, +2.08] | 0.0015 ✓ | 0.697 | −2.14% | **PASS** |
+| H-4 | CFB Loop v2.0.0 (W−2) spread | 460 | **+0.259** | **+0.068** ✓ | +0.64% [+0.19, +1.11] | 0.0045 ✓ | 0.537 | −3.33% | **PASS** |
+| H-5 | CFB Loop v2.0.0 (W−2) total | 426 | **+0.418** | **+0.135** ✓ | +1.02% [+0.33, +1.61] | 0.0005 ✓ | 0.573 | −2.60% | **PASS** |
+
+Per season (bets, CLV pts):
+* H-1: 2025 112, +0.366; 2026 26, +0.115
+* H-2: 2025 115, +0.335; 2026 27, −0.222
+* H-3: 2025 96, +0.589; 2026 18, +0.056
+* H-4: 2025 359, +0.258 (Bovada); 2026 101, +0.262 (DraftKings captures)
+* H-5: 2025 328, +0.348; 2026 98, +0.653
+
+Edge buckets (CLV pts for |edge| 0–1 / 1–2 / 2–3 / 3+):
+* H-3: +0.07 / −0.20 / +0.34 / +0.63
+* H-4: +0.09 / +0.06 / +0.12 / +0.26
+* H-5: −0.14 / −0.08 / +0.08 / +0.42
+
+**Reading it.**
+* **Three of five pass.** NFL totals (v2.1.0), CFB spreads and CFB totals (Loop v2.0.0 priced from
+  week W−2) move toward the model by the close on seasons they never saw. They do so by about as
+  much as in development: +0.50 vs +0.44, +0.26 vs +0.25, +0.42 vs +0.71.
+* **CFB totals shrank** from +0.71 in development to +0.42, continuing the decline seen season by
+  season since 2015.
+* **NFL spreads fail.** Both point estimates are positive and v2.1.0 clears the bound, but neither
+  clears the Bonferroni permutation bar on ~140 bets. Its probability interval spans zero.
+* **No candidate beats the vig at the price offered.** Expected ROI with the close as truth is
+  −2.1% to −3.9%. The CLV is about +0.6–1.2% of probability per bet, while a −110 bet needs about
+  +2.4%. The holdout prices carry more juice than development's (2025 NFL feed).
+
+**Wiring** of H-3, H-4 and H-5 as live-tracking candidates, as pre-registered: see FINAL_REPORT.md
+§Wiring.
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on
 every scoring run (failures included). One row per unique (experiment, label, threshold); "runs"
-counts re-scorings of the identical configuration (e.g. re-run after the ROI column was added or a
+counts re-scorings of the identical configuration. Rows H-1..H-5 are the holdout (2025 + 2026),
+whose "rule" column applies the development 95% rule; the holdout gate itself is the Phase 6 table (e.g. re-run after the ROI column was added or a
 diagnostics bug was fixed — CLV unchanged). "CLV>0" = the protocol's edge rule on that row.
 
 | # | exp | label | market | thr | role | bets | CLV pts | rule | runs |
@@ -524,3 +565,8 @@ diagnostics bug was fixed — CLV unchanged). "CLV>0" = the protocol's edge rule
 | 94 | E-201 | NFL Loop backup-QB games, Friday starters, Friday line | spread | 2 | primary | 35 | +0.214 | no | 1 |
 | 95 | E-201 | NFL Loop backup-QB games, Friday starters, Friday line | spread | 1 | sweep | 52 | +0.019 | no | 1 |
 | 96 | E-201 | NFL Loop backup-QB games, Friday starters, Friday line | spread | 3 | sweep | 25 | +0.100 | no | 1 |
+| 97 | H-1 | NFL v2.1.0 spread (holdout) | spread | 2 | primary | 138 | +0.319 | CLV>0 | 1 |
+| 98 | H-2 | NFL Loop v2.0.0 spread (holdout) | spread | 2 | primary | 142 | +0.229 | no | 1 |
+| 99 | H-3 | NFL v2.1.0 total (holdout) | total | 2 | primary | 114 | +0.504 | CLV>0 | 1 |
+| 100 | H-4 | CFB Loop v2.0.0 W-2 spread (holdout) | spread | 3 | primary | 460 | +0.259 | CLV>0 | 1 |
+| 101 | H-5 | CFB Loop v2.0.0 W-2 total (holdout) | total | 3 | primary | 426 | +0.418 | CLV>0 | 1 |
