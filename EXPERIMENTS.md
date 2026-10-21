@@ -860,3 +860,41 @@ The cause was not established.
 - NBA-B1, NBA-B2 and NBA-W1 are **INFEASIBLE** and are not counted.
 - NBA-R1, R2 and W3 use the lab model's disagreement only.
 - The production NBA model has no CLV verdict.
+
+### NBA pre-holdout results
+
+Run 2026-10-21 on SBR repo seasons 2012–2022 (13,883 games), lab model only (the fallback above).
+
+| ID | Rule | Bets | CLV pts | CLV prob (pp) | p | Toward | `clv_ev` | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| NBA-B3 | lab points_rest, spread, ≥1.0 | 9,521 | +0.104 [+0.073, +0.134] | +0.33 [+0.23, +0.43] | <1e-4 | 0.530 | -3.8% | PASS (2020 flat, the rest positive) |
+| NBA-B4 | lab, total, ≥2.0 | 7,419 | +0.691 [+0.623, +0.761] | +1.55 [+1.40, +1.70] | <1e-4 | 0.605 | -1.6% | PASS (every season +1.06 to +2.51) |
+| NBA-R1 | residual on d_lab, ≥0.25 | 301 | +0.661 [+0.385, +0.935] | +2.10 [+1.23, +2.95] | <1e-4 | 0.610 | -0.5% | PASS (λ = 100: the move is about 4% of the disagreement, so few bets) |
+| NBA-R2 | R1 + block (open level, back-to-back diff, early × d) | 3,306 | +0.520 [+0.462, +0.576] | +1.68 [+1.49, +1.86] | <1e-4 | 0.665 | -1.3% | **FAIL** on its pre-registered comparison: +1.68 vs R1 +2.10 pp per bet on the same 10,183 games. The block's back-to-back term (-0.50 pts) is large |
+| NBA-W2 | R1 on one-team back-to-backs | 97 | +0.959 [+0.490, +1.478] | +3.02 [+1.53, +4.67] | <1e-4 | 0.644 | +1.2% | PASS on its rule (n ≥ 50); too few bets for G8 eligibility |
+| NBA-W3 | totals residual on dt_lab, ≥0.25 | 6,152 | +0.692 [+0.613, +0.771] | +1.55 [+1.37, +1.72] | <1e-4 | 0.596 | -1.6% | PASS |
+| NBA-W4 | B3 on early-season games | 1,864 | +0.148 [+0.091, +0.206] | +0.48 [+0.30, +0.67] | <1e-4 | 0.573 | -3.6% | PASS (slightly above B3 overall) |
+
+**NBA pre-holdout attempt count: 7.** B1, B2 and W1 are infeasible.
+
+### NBA-H: Phase 6 selection (written before the holdout was read)
+
+**Reference.** The production NBA engine cannot be tested (reproduction check). The reference is the model loop's served NBA model, `edgedesk_bb_points_v1` (`points_rest`), on every market the holdout prices.
+
+**Gate data:** ESPN DraftKings open/close with prices, repo 2026 (1,068 games) plus 2027 to date. The fits are frozen on SBR 2012–2022.
+
+| ID | Candidate | Bet rule |
+|---|---|---|
+| NBA-H1 | lab model, spread (reference) | ≥1.0 |
+| NBA-H2 | lab model, total (reference) | ≥2.0 |
+| NBA-H3 | lab model, moneyline (reference) | ≥0.02. No pre-holdout moneyline opener exists |
+| NBA-H4 | spread challenger = **NBA-R1** (+2.10 pp; R2 failed its comparison; W2 has n < 100) | ≥0.25 |
+| NBA-H5 | total challenger = **NBA-W3** (+1.55 pp) | ≥0.25 |
+
+**k = 12** (7 + 5). PASS per G7.
+
+### NBA-H1: lab model spread on the holdout
+### NBA-H2: lab model total on the holdout
+### NBA-H3: lab model moneyline on the holdout
+### NBA-H4: NBA-R1 frozen on the holdout
+### NBA-H5: NBA-W3 frozen on the holdout
