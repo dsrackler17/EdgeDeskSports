@@ -18,7 +18,7 @@ const B = require('./build_nfl_slate.js');
 let pass = 0, fail = 0; const failures = [];
 function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; failures.push({ name, detail }); }
 function done() {
-  failures.forEach((f) => console.log('FAIL | ' + f.name + '  ' + JSON.stringify(f.detail).slice(0, 300)));
+  failures.forEach((f) => console.log('FAIL | ' + f.name + '  ' + (f.detail === undefined ? '' : JSON.stringify(f.detail).slice(0, 300))));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
   process.exit(fail === 0 ? 0 : 1);
 }
@@ -78,7 +78,9 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
   const d = art.games.find((x) => x.game_id === '2026_02_SF_LA');
   chk('a dome game reads dome', d && d.roof === 'dome');
   chk('a division game is flagged', d && d.div_game === true);
-  chk('the engine version is stamped', /edgedesk_football/.test(art.engine.model_version) && /edgedesk_football/.test(g.model_version));
+  /* each game is stamped with the model that priced it: the served v2 model when its params are active, else the v1 engine */
+  chk('the engine version is stamped, and each game names the model that served it', /edgedesk_football/.test(art.engine.model_version)
+    && art.served_model && g.model_version === art.served_model.model_version && /^edgedesk_(football|nfl_v2)/.test(g.model_version), [art.engine.model_version, art.served_model && art.served_model.model_version, g.model_version]);
   chk('clubs carry ratings and ranks', art.teams.SF && typeof art.teams.SF.ratings.net_epa === 'number' || (art.teams.SF && Object.keys(art.teams.SF.ratings).length > 3), art.teams.SF && Object.keys(art.teams.SF.ratings).slice(0, 5));
   chk('the engine\u2019s validation record rides with the artifact and forbids a probability', art.engine.validation && art.engine.validation.tier === 'RESEARCH' && art.engine.validation.may_produce_probability === false && /does not beat the close/.test(art.engine.validation.record));
 

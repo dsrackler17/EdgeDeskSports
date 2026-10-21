@@ -1,0 +1,197 @@
+{
+ "schema": "edgedesk_nfl_weekly_loop_v1",
+ "run": "2026_w06",
+ "season": 2026,
+ "week": 6,
+ "generated_at": "2026-10-21T01:27:28.639Z",
+ "served": {
+  "model_version": "edgedesk_nfl_v2.0.0",
+  "config_sha": "b2dac1c5eeacbfad"
+ },
+ "pattern_rule": {
+  "t": 2,
+  "min_n": 30,
+  "min_week_share": 0.6
+ },
+ "patterns": [
+  {
+   "id": "home_lean",
+   "what": "mean residual (final - model home margin) at home sites",
+   "n": 88,
+   "estimate": -1.9913,
+   "se": 1.2641,
+   "t": -1.5753,
+   "weeks": {
+    "weeks": 6,
+    "same": 5,
+    "share": 0.8333333333333334
+   },
+   "repeat": false,
+   "direction": -1,
+   "meaning": "home sides fell short of the model: home field over-rated"
+  },
+  {
+   "id": "component:base_strength",
+   "what": "slope of the residual on the card's base_strength points",
+   "n": 93,
+   "estimate": -0.3805,
+   "se": 0.2505,
+   "t": -1.5191,
+   "weeks": {
+    "weeks": 6,
+    "same": 5,
+    "share": 0.8333333333333334
+   },
+   "repeat": false,
+   "direction": -1,
+   "meaning": "base_strength over-weighted: the bigger its points, the more the result fell short of them"
+  },
+  {
+   "id": "component:passing",
+   "what": "slope of the residual on the card's passing points",
+   "n": 93,
+   "estimate": -10.1197,
+   "se": 6.5463,
+   "t": -1.5459,
+   "weeks": {
+    "weeks": 6,
+    "same": 5,
+    "share": 0.8333333333333334
+   },
+   "repeat": false,
+   "direction": -1,
+   "meaning": "passing over-weighted: the bigger its points, the more the result fell short of them"
+  },
+  {
+   "id": "component:rushing",
+   "what": "slope of the residual on the card's rushing points",
+   "n": 93,
+   "estimate": -14.5748,
+   "se": 9.1325,
+   "t": -1.5959,
+   "weeks": {
+    "weeks": 6,
+    "same": 4,
+    "share": 0.6666666666666666
+   },
+   "repeat": false,
+   "direction": -1,
+   "meaning": "rushing over-weighted: the bigger its points, the more the result fell short of them"
+  },
+  {
+   "id": "component:quarterback",
+   "what": "slope of the residual on the card's quarterback points",
+   "n": 93,
+   "estimate": 0.7973,
+   "se": 1.7137,
+   "t": 0.4653,
+   "weeks": {
+    "weeks": 6,
+    "same": 4,
+    "share": 0.6666666666666666
+   },
+   "repeat": false,
+   "direction": 1,
+   "meaning": "quarterback under-weighted: results went further than its points"
+  },
+  {
+   "id": "component:rest_travel",
+   "what": "slope of the residual on the card's rest_travel points",
+   "n": 29,
+   "estimate": 8.4697,
+   "se": 2.9715,
+   "t": 2.8503,
+   "weeks": {
+    "weeks": 5,
+    "same": 5,
+    "share": 1
+   },
+   "repeat": false,
+   "direction": 1,
+   "meaning": "rest_travel under-weighted: results went further than its points"
+  },
+  {
+   "id": "component:context",
+   "what": "slope of the residual on the card's context points",
+   "n": 73,
+   "estimate": -1.573,
+   "se": 3.9226,
+   "t": -0.401,
+   "weeks": {
+    "weeks": 6,
+    "same": 4,
+    "share": 0.6666666666666666
+   },
+   "repeat": false,
+   "direction": -1,
+   "meaning": "context over-weighted: the bigger its points, the more the result fell short of them"
+  },
+  {
+   "id": "prior:current",
+   "what": "slope of the residual on the base strength's in-season (current) part",
+   "n": 93,
+   "estimate": -1.308,
+   "se": 0.7595,
+   "t": -1.7223,
+   "weeks": {
+    "weeks": 5,
+    "same": 5,
+    "share": 1
+   },
+   "repeat": false,
+   "direction": -1,
+   "meaning": "this season's evidence over-weighted: the prior lets go too fast"
+  },
+  {
+   "id": "prior:prior",
+   "what": "slope of the residual on the base strength's prior part",
+   "n": 93,
+   "estimate": -0.3277,
+   "se": 0.2949,
+   "t": -1.1113,
+   "weeks": {
+    "weeks": 6,
+    "same": 5,
+    "share": 0.8333333333333334
+   },
+   "repeat": false,
+   "direction": -1,
+   "meaning": "the prior over-weighted: last season carried too far"
+  },
+  {
+   "id": "market_gap",
+   "what": "slope of the residual on (close - model)",
+   "n": 93,
+   "estimate": 0.5402,
+   "se": 0.4081,
+   "t": 1.3238,
+   "weeks": {
+    "weeks": 6,
+    "same": 4,
+    "share": 0.6666666666666666
+   },
+   "repeat": false,
+   "direction": 1,
+   "meaning": "the closing line saw what the model missed: information in prices the model lacks"
+  },
+  {
+   "id": "scale",
+   "what": "slope of the residual on the model home margin",
+   "n": 93,
+   "estimate": -0.2506,
+   "se": 0.2287,
+   "t": -1.0958,
+   "weeks": {
+    "weeks": 6,
+    "same": 5,
+    "share": 0.8333333333333334
+   },
+   "repeat": false,
+   "direction": -1,
+   "meaning": "margins too extreme: the model over-states its edges"
+  }
+ ],
+ "candidates": [],
+ "promoted": null,
+ "dry": false
+}
