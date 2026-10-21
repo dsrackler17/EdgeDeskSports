@@ -1,36 +1,28 @@
 {
- "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 3: box scores (starting pitchers, lineups, line scores) and older schedules on both platforms, for the college baseball model's starters and the 2023 results gap.",
+ "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 4: where WMT keeps its box scores (wmt.games), StatBroadcast's robots.txt, and Arkansas's WordPress site (not SIDEARM or WMT).",
  "sources": [],
  "schools": [],
  "paths": [],
  "pages": [
   {
-   "name": "sidearm_boxscore_2026",
-   "url": "https://texassports.com/sports/baseball/stats/2026/michigan-state/boxscore/17827"
+   "name": "wmt_games_robots",
+   "url": "https://wmt.games/robots.txt"
   },
   {
-   "name": "sidearm_schedule_2023",
-   "url": "https://texassports.com/sports/baseball/schedule/2023"
+   "name": "wmt_games_box",
+   "url": "https://wmt.games/stanford/stats/match/full/6581643"
   },
   {
-   "name": "sidearm_schedule_2016",
-   "url": "https://texassports.com/sports/baseball/schedule/2016"
+   "name": "statbroadcast_robots",
+   "url": "https://stats.statbroadcast.com/robots.txt"
   },
   {
-   "name": "sidearm_schedule_2023_b",
-   "url": "https://godeacs.com/sports/baseball/schedule/2023"
+   "name": "arkansas_wp_json",
+   "url": "https://arkansasrazorbacks.com/wp-json/"
   },
   {
-   "name": "wmt_boxscore_2026",
-   "url": "https://gostanford.com/boxscore/27512"
-  },
-  {
-   "name": "wmt_schedule_2023",
-   "url": "https://gostanford.com/sports/baseball/schedule/season/2023"
-  },
-  {
-   "name": "wmt_schedule_2016",
-   "url": "https://gostanford.com/sports/baseball/schedule/season/2016"
+   "name": "arkansas_baseball_roster_page",
+   "url": "https://arkansasrazorbacks.com/sport/m-basebl/roster/"
   }
  ]
 }
