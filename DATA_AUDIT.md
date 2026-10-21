@@ -292,3 +292,6 @@ NFL, NBA and NHL from the same scraper join on both teams and the final score wi
 **Feasibility:**
 - NFL and CFB props: a single holdout run each.
 - NBA and NHL props: infeasible.
+
+### Puck lines and run lines
+SBR keeps only a CLOSING puck line (NHL) and run line (MLB), with its price. No opener exists in any source here, so NHL puck-line and MLB run-line CLV is **infeasible**. Each sport is tested on its moneyline instead.
