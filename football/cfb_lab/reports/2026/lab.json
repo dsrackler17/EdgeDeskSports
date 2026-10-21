@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-21T17:08:10.000Z",
+ "generated_at": "2026-10-21T18:07:47.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -53,8 +53,8 @@
     "model_version": "edgedesk_cfb_loop_v2.0.0",
     "label": "Loop v2.0.0",
     "role": "challenger",
-    "snapshots": 74,
-    "latest_snapshot_at": "2026-10-21T17:08:10.000Z",
+    "snapshots": 75,
+    "latest_snapshot_at": "2026-10-21T18:07:47.000Z",
     "upcoming_games": 62,
     "avg_confidence_upcoming": null
    },
@@ -62,17 +62,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1537,
-    "latest_snapshot_at": "2026-10-21T17:08:10.000Z",
-    "upcoming_games": 99,
+    "snapshots": 1540,
+    "latest_snapshot_at": "2026-10-21T18:07:47.000Z",
+    "upcoming_games": 101,
     "avg_confidence_upcoming": 77.2
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1897,
-    "latest_snapshot_at": "2026-10-21T17:08:10.000Z",
+    "snapshots": 1898,
+    "latest_snapshot_at": "2026-10-21T18:07:47.000Z",
     "upcoming_games": 99,
     "avg_confidence_upcoming": 75.6
    },
@@ -80,22 +80,22 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1897,
-    "latest_snapshot_at": "2026-10-21T17:08:10.000Z",
+    "snapshots": 1898,
+    "latest_snapshot_at": "2026-10-21T18:07:47.000Z",
     "upcoming_games": 99,
     "avg_confidence_upcoming": 75.2
    }
   ],
   "data_quality": {
-   "games": 99,
+   "games": 101,
    "counts": {
     "GREEN": 22,
-    "YELLOW": 77,
+    "YELLOW": 79,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 77,
+     "YELLOW": 79,
      "RED": 0
     }
    },
@@ -1100,11 +1100,37 @@
      ],
      "kickoff": "2026-10-31T04:00:00.000Z",
      "matchup": "Louisiana Tech @ South Alabama"
+    },
+    {
+     "game_id": "401859185",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-31T16:00:00.000Z",
+     "matchup": "Notre Dame @ Navy"
+    },
+    {
+     "game_id": "401866452",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-31T16:00:00.000Z",
+     "matchup": "Bowling Green @ Western Michigan"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-21T17:08:10.000Z",
-    "quotes_total": 21728,
+    "last_quote_at": "2026-10-21T18:07:47.000Z",
+    "quotes_total": 21746,
     "last_result_at": "2026-10-21T04:07:39.000Z"
    }
   },
@@ -1138,9 +1164,9 @@
    }
   ],
   "ledger": {
-   "predictions": 5915,
-   "live_predictions": 5405,
-   "quotes": 21728,
+   "predictions": 5921,
+   "live_predictions": 5411,
+   "quotes": 21746,
    "lines": 3601,
    "results": 464,
    "evaluations": 5357,
@@ -1155,10 +1181,10 @@
    "home": "Sam Houston",
    "away": "New Mexico State",
    "market": {
-    "current": 2.5,
+    "current": 3,
     "open": 2.5,
     "books": 1,
-    "as_of": "2026-10-21T10:07:46.000Z",
+    "as_of": "2026-10-21T17:08:10.000Z",
     "sources": [
      "espn"
     ],
@@ -1167,10 +1193,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-21T12:07:45.000Z",
+     "prediction_ts": "2026-10-21T18:07:47.000Z",
      "margin": -3.6,
      "fair": "New Mexico State -3.5",
      "p_home": 0.4027,
@@ -1180,28 +1206,28 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -1.1,
-     "line": -2.5,
+     "gap": -0.6,
+     "line": -3,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-21T12:07:45.000Z",
+     "prediction_ts": "2026-10-21T18:07:47.000Z",
      "margin": 2.33,
      "fair": "Sam Houston -2.5",
      "p_home": 0.5597,
      "sigma": 15.619,
      "conf": 75,
      "dq": "GREEN",
-     "decision": "LEAN",
-     "status": "LEAN",
+     "decision": "PASS",
+     "status": "PASS",
      "side": "HOME",
-     "gap": 4.83,
-     "line": 2.5,
+     "gap": 5.33,
+     "line": 3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1211,10 +1237,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-21T12:07:45.000Z",
+     "prediction_ts": "2026-10-21T18:07:47.000Z",
      "margin": 2.07,
      "fair": "Sam Houston -2.0",
      "p_home": 0.5523,
@@ -1224,8 +1250,8 @@
      "decision": "LEAN",
      "status": "LEAN",
      "side": "HOME",
-     "gap": 4.57,
-     "line": 2.5,
+     "gap": 5.07,
+     "line": 3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1235,10 +1261,10 @@
     },
     "edgedesk_cfb_loop_v2.0.0": {
      "label": "Loop v2.0.0",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-21T12:07:45.000Z",
+     "prediction_ts": "2026-10-21T18:07:47.000Z",
      "margin": -2.74,
      "fair": "New Mexico State -2.5",
      "p_home": 0.4333,
@@ -1247,9 +1273,9 @@
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": "AWAY",
-     "gap": -0.24,
-     "line": -2.5,
+     "side": "HOME",
+     "gap": 0.26,
+     "line": 3,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     }
@@ -12891,7 +12917,7 @@
   "data_fault": 0,
   "market_fault": 26,
   "verification_not_run": 0,
-  "average_raw_gap": 3.703,
+  "average_raw_gap": 3.701,
   "average_raw_gap_7plus": 10.07,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
