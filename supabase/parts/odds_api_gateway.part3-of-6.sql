@@ -151,7 +151,11 @@ begin
       if v_endpoint = 'event_odds' and coalesce(snap.markets_returned, 0) = 0 then
         v_eff_age := greatest(v_eff_age, c.empty_market_recheck_minutes * 60);
       end if;
-      if v_now - snap.last_success_at < make_interval(secs => v_eff_age::double precision) then
+      -- Two minutes of slack for scheduler drift: an hourly job fires a few
+      -- seconds short of the hour since it last bought, so without it a
+      -- 60-minute band would read 59m58s, serve the cache, and buy only every
+      -- other hour (capture's prop poller uses the same allowance).
+      if v_now - snap.last_success_at < make_interval(secs => greatest(v_eff_age - 120, 0)::double precision) then
         v_decision := 'cache_hit'; v_reason := 'stored snapshot is inside the cadence window'; exit decide;
       end if;
     end if;

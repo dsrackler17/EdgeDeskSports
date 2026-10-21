@@ -1072,13 +1072,12 @@ function ev(bookmakers, over) {
       bogus.cadence.tier === null && bogus.cadence.max_days_to_start === 14, bogus.cadence);
 
     /* --- a run is honest about the rung it cannot keep -------------------- */
-    /* 2026-10-10: near pokes every 20 minutes, the gateway's tightest main-market
-       interval, so the 5- and 15-minute rungs are honestly reported as aging. */
-    chk('a twenty-minute cadence admits it cannot keep the five- and fifteen-minute rungs',
-      near.cadence.reader_rungs.not_served.includes('imminent') && near.cadence.reader_rungs.not_served.includes('close'), near.cadence.reader_rungs);
+    /* 2026-10-21: near pokes hourly (nothing runs or buys more often than
+       hourly), so the 5-, 15- and 45-minute rungs are honestly reported as aging. */
+    chk('an hourly cadence admits it cannot keep the five-, fifteen- and forty-five-minute rungs',
+      ['imminent', 'close', 'soon'].every((r) => near.cadence.reader_rungs.not_served.includes(r)), near.cadence.reader_rungs);
     chk('and names the rungs it does keep',
-      near.cadence.reader_rungs.served.includes('soon')
-      && near.cadence.reader_rungs.served.includes('day'), near.cadence.reader_rungs);
+      ['day', 'far', 'deep'].every((r) => near.cadence.reader_rungs.served.includes(r)), near.cadence.reader_rungs);
     chk('and says so in words, with the cost of closing it',
       /five-minute|imminent/.test(near.cadence.reader_rungs.note)
       && /quota/.test(near.cadence.reader_rungs.note), near.cadence.reader_rungs.note);

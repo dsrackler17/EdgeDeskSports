@@ -2,6 +2,8 @@
 
 **Status: a proposal.** Nothing in this branch enables, schedules or buys market data.
 
+**2026-10-21: the operator set an hourly floor.** Nothing runs or buys more often than once an hour (`supabase/odds_api_hourly_limits.sql`; the constraint `odds_api_cadence_hourly_floor` refuses any band under 60 minutes). Option B (5 / 15 / 45-minute bands inside 6 h) and option C's 5-minute refresh are not available unless the operator lifts that floor. The planner's schedule A is now 60 / 120 / 360 min; the tables below were computed against the earlier 20-minute plan and are kept as the record of that comparison.
+
 The Odds API capture stays paused under `supabase/odds_api_emergency_stop.sql` until an operator follows the incident runbook:
 
 - `docs/odds-api-incident-2026-10/INCIDENT.md` §9;

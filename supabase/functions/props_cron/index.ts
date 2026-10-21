@@ -2,7 +2,7 @@
 //  FILE:    supabase/functions/props_cron/index.ts
 //  TYPE:    Edge Function (deployed) — the Player Props price pipeline's
 //           PRIMARY scheduler, and the page's "refresh prices now".
-//  CRON:    every 5 minutes (supabase/player_props_cron.sql)
+//  CRON:    hourly at :38 (supabase/player_props_cron.sql)
 // ============================================================
 // WHY THIS EXISTS. On 2026-09-29 the Props page sat on "Sportsbook prices:
 // STALE" for hours. The hourly Player props workflow had been fired by
@@ -18,7 +18,7 @@
 // .github/workflows/player-props.yml; a second capture here would be a second
 // pipeline that disagrees with the first. It POKES that one pipeline:
 //
-//   pg_cron (15 min) ─► THIS ──► workflow_dispatch ──► player-props.yml
+//   pg_cron (hourly) ─► THIS ──► workflow_dispatch ──► player-props.yml
 //   the page's Refresh ─► THIS ──► workflow_dispatch (NOT forced, this request)
 //   github schedule ─────────────────────────────────► (backup)
 //

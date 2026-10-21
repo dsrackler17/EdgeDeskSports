@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-21 — Odds API: nothing runs or buys more often than hourly
+
+- **The rule.** No paid Odds API path runs, and no stored snapshot is refreshed, more often than once an hour. October's 100,000 credits went in 9.5 days on jobs that fired every 5, 10 and 20 minutes.
+- **`supabase/odds_api_hourly_limits.sql` (new; paste it, or Deploy odds gateway applies it).**
+  - Purchases: every gateway cadence band under 60 minutes becomes 60. The main markets inside 3 h of kickoff were 20. The constraint `odds_api_cadence_hourly_floor` refuses any band under an hour.
+  - Schedules: capture near hourly at :12 (was every 20 min), day every 2 h at :04 (was hourly), board every 6 h; `player_props_dispatch` hourly at :38 (was every 15 min). Any other pg_cron job that can reach a paid path (`close` included) is slowed to at most hourly. Commands, and whether a job is paused, are never changed.
+  - `select public.odds_api_schedule_audit();` lists every paid job and any that still fires more than hourly.
+  - It does not turn the breaker on or off or change the budget, and it cannot slow a function that calls the provider itself. Only the gateway versions of `capture`, `close`, `collective_odds_ingest` and `props_cron` ask the gateway.
+- **The gateway (`supabase/odds_api_gateway.sql`).** It seeds the same floor and carries the constraint. A snapshot within 2 minutes of its interval counts as due, so an hourly scheduler's drift does not halve the cadence. Report row 7 now reads hourly, and a new row 10 checks the floor.
+- **The job files agree,** so re-applying them cannot bring a faster schedule back: `supabase/capture_cron.sql`, `supabase/player_props_cron.sql`, capture's `CADENCE_TIERS` (near 60 min, day 120), the props workflow's GitHub backup (every 2 h, was 30 min), and the recovery planner's schedule A.
+- **The cost of the rule.** Within 6 h of kickoff a price can be up to an hour old, past the 45, 15 and 5-minute readiness limits, so capture reports those windows as aging, and the readiness state does not call such a price verified. Closing lines are the latest board, up to an hour before kickoff.
+
+Tests: `ODDS_SQL_REQUIRED=1 node tools/odds/hourly_limits_sql.test.js` (36), `node tools/odds/gateway_sql.test.js` (74), `node tools/capture/capture.test.js`, `node tools/props/props_pipeline_sql.test.js`, `node tools/intelligence/odds_recovery.test.js`, `node tools/sql/split_sql.test.js`.
+
 ## 2026-10-21 — Kalshi: the layer applies over the starter schema
 
 - **`supabase/kalshi_market_data.sql` now upgrades the starter `kalshi_schema.sql` in place.** On a database where the starter ran, it used to stop with an error. The starter's three views have other columns, and `create or replace view` cannot rename one. The starter's tables also lacked `kalshi_markets.title` and `kalshi_price_snapshots.run_id`, which `kalshi_sync` writes.
