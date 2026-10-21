@@ -1,0 +1,52 @@
+# EdgeDesk model loop health: is every learning loop alive, current and fed?
+#
+# Every three hours this reads what each loop committed (versions, published
+# numbers, weekly research, live ratings) and writes model_loop/health.json,
+# which the app's System health panel reads ("Learning loops"). It never runs
+# a model. One writer for the file, so the loop workflows never race for it.
+#
+# A loop in season that is STALE or DEGRADED turns this run red so the owner
+# is told, but the file is still committed: the app must be able to SHOW the
+# problem, never hide it. Rules: model_loop/health.py.
+name: Model loop health
+
+on:
+  schedule:
+    - cron: '7 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-loop-health
+  cancel-in-progress: false
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Every loop's health
+        id: health
+        run: |
+          set +e
+          python3 -m model_loop.health --check
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Publish (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "model loop: health" -- model_loop/health.json
+      - name: Red when a loop in season is not OK
+        if: steps.health.outputs.exit != '0'
+        run: |
+          python3 -c "import json;h=json.load(open('model_loop/health.json'));[print('::warning::'+x['label']+' '+x['status']+': '+'; '.join(x['reasons'])) for x in h['loops'] if x['status'] in ('STALE','DEGRADED')]"
+          exit 1

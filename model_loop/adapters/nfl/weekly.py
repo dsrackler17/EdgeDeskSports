@@ -49,6 +49,8 @@ import pandas as pd
 from ...core import metrics as M
 from ...core import walkforward as WF
 from ...core import snapshots
+from ...core import data_status
+from ...core import head_to_head as H2H
 from ...core.versions import Versions
 from . import backtest as BT
 from . import cards as CARDS
@@ -125,6 +127,7 @@ def cmd_refresh(fetch=True):
     out["served"] = {"version": cur["version"], "status": cur["status"], "promoted_by": cur["promoted_by"],
                      "promoted_at": cur["promoted_at"], "reason": cur["reason"]}
     out["schema"] = "edgedesk_model_loop_nfl_current_v1"
+    data_status.stamp(out, _missing_results(out["season"]), now_iso())
     out["contract"] = ("Per game: fair_home_margin (+ = home), fair_home_line (book convention), home_win_prob, tie_prob, "
                        "fair moneylines, range80 (centred on the margin), components that sum exactly to fair_home_margin, "
                        "the starter priced, qb_scenarios for a contested starter, disagreement vs the reference line. "
@@ -167,55 +170,23 @@ def cmd_refresh(fetch=True):
 
 def capture_site(season):
     """The board's own number (football/nfl/slate.json, built by football/engine.js)
-    for every upcoming game, appended whenever it changes, stamped with the time
-    the board built it. Read only: this loop never writes the board's files.
-    Grading both from pregame ledgers is what makes the comparison fair."""
+    for every upcoming game, appended whenever it changes (core/head_to_head.py)."""
+    return H2H.capture(SITE_SLATE, os.path.join(LEDGER, f"site_{season}.jsonl"), season, now_iso())
+
+
+_pregame = H2H.pregame
+
+
+def _missing_results(season):
+    """Games of the season that kicked off more than 12 hours ago and have no
+    result in the data: the ratings are behind by exactly these."""
     try:
-        sl = json.load(open(SITE_SLATE))
+        g = BT.Tables(os.path.join(DATA, "build")).games
     except Exception:
-        return 0
-    built = sl.get("generated_at")
-    path = os.path.join(LEDGER, f"site_{season}.jsonl")
-    last = {}
-    if os.path.exists(path):
-        for line in open(path):
-            if line.strip():
-                r = json.loads(line)
-                last[r["game_id"]] = r["content_sha256"]
-    n = 0
-    os.makedirs(LEDGER, exist_ok=True)
-    with open(path, "a") as f:
-        for g in sl.get("games") or []:
-            if g.get("model_status") != "PREDICTED" or g.get("season") != season or not built or built >= g.get("kickoff", ""):
-                continue
-            m = g.get("model_home_margin_exact", g.get("model_home_margin"))
-            if m is None or g.get("model_home_win_prob") is None:
-                continue
-            body = {"game_id": g["game_id"], "week": g.get("week"), "model_version": g.get("model_version"),
-                    "home_margin": round(float(m), 4), "home_win_prob": round(float(g["model_home_win_prob"]), 4)}
-            sha = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
-            if last.get(g["game_id"]) == sha:
-                continue
-            f.write(json.dumps(dict(body, published_at=built, captured_at=now_iso(), content_sha256=sha), sort_keys=True) + "\n")
-            n += 1
-    return n
-
-
-def _pregame(path, game_id_to_kick):
-    """{game_id: the last row published before kickoff} from an append-only ledger."""
-    out = {}
-    if not os.path.exists(path):
-        return out
-    for line in open(path):
-        if not line.strip():
-            continue
-        r = json.loads(line)
-        ko = game_id_to_kick.get(r["game_id"])
-        if ko is None or pd.Timestamp(r["published_at"]) >= ko:
-            continue
-        if r["game_id"] not in out or r["published_at"] >= out[r["game_id"]]["published_at"]:
-            out[r["game_id"]] = r
-    return out
+        return []
+    cut = pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=12)
+    g = g[(g.season == season) & g.result.isna()]
+    return [str(x.game_id) for x in g.itertuples() if _kickoff_utc(x.kick_et) < cut]
 
 
 # --------------------------------------------------------------------- score
@@ -283,13 +254,7 @@ def cmd_score():
     # head to head: the board's own pregame number on the same games
     done = games[(games.season == season) & games.result.notna()]
     site = _pregame(os.path.join(LEDGER, f"site_{season}.jsonl"), {g.game_id: _kickoff_utc(g.kick_et) for g in done.itertuples()})
-    for r in rows:
-        b = site.get(r["game_id"])
-        if b:
-            y = None if r["result"] == 0 else (1.0 if r["result"] > 0 else 0.0)
-            r["board"] = {"version": b["model_version"], "published_at": b["published_at"], "home_margin": b["home_margin"],
-                          "home_win_prob": b["home_win_prob"], "abs_err": abs(r["result"] - b["home_margin"]),
-                          "brier": (b["home_win_prob"] - y) ** 2 if y is not None else None}
+    H2H.attach(rows, site)
     df = pd.DataFrame(rows)
     out = {"schema": "edgedesk_model_loop_nfl_record_v1", "season": season, "generated_at": now_iso(),
            "rules": "Pregame only: each game is graded on the last number published before kickoff (model_loop/ledger/nfl/cards_<season>.jsonl). "
@@ -312,34 +277,15 @@ def cmd_score():
         out["season_to_date"] = summ(df)
         last_week = int(df.week.max())
         out["last_week"] = dict(summ(df[df.week == last_week]), week=last_week)
-        both = [r for r in rows if r.get("board")]
-        if both:
-            out["head_to_head"] = {"rule": "same games, each side's last number published before kickoff; the board's number is "
-                                           "captured from football/nfl/slate.json at each daily refresh",
-                                   "season_to_date": head_to_head(both),
-                                   "last_week": dict(head_to_head([r for r in both if r["week"] == last_week]), week=last_week)
-                                   if any(r["week"] == last_week for r in both) else None}
+        hh = H2H.section(rows, last_week, "football/nfl/slate.json")
+        if hh:
+            out["head_to_head"] = hh
     dump(os.path.join(PUB, f"record_{season}.json"), out)
     print(f"score: {len(rows)} published pregame numbers graded", file=sys.stderr)
     return out
 
 
-def head_to_head(rs):
-    """The model loop and the board on the same settled games: margin MAE,
-    win-probability Brier and log loss, distance from the close."""
-    pr = [r for r in rs if r["brier"] is not None and r["board"]["brier"] is not None]
-    yv = [1.0 if r["result"] > 0 else 0.0 for r in pr]
-    cl = [r for r in rs if r["close_home_margin"] is not None]
-    return {"n": len(rs),
-            "model_loop": {"version": sorted({r["version"] for r in rs}), "mae": round(float(np.mean([r["model_abs_err"] for r in rs])), 3),
-                           "brier": round(float(np.mean([r["brier"] for r in pr])), 4) if pr else None,
-                           "logloss": round(M.logloss(pd.Series([r["home_win_prob"] for r in pr]), pd.Series(yv)), 4) if pr else None,
-                           "mean_abs_vs_close": round(float(np.mean([abs(r["gap_vs_close"]) for r in cl])), 3) if cl else None},
-            "board": {"version": sorted({r["board"]["version"] or "?" for r in rs}), "mae": round(float(np.mean([r["board"]["abs_err"] for r in rs])), 3),
-                      "brier": round(float(np.mean([r["board"]["brier"] for r in pr])), 4) if pr else None,
-                      "logloss": round(M.logloss(pd.Series([r["board"]["home_win_prob"] for r in pr]), pd.Series(yv)), 4) if pr else None,
-                      "mean_abs_vs_close": round(float(np.mean([abs(r["board"]["home_margin"] - r["close_home_margin"]) for r in cl])), 3) if cl else None},
-            "close_mae": round(float(np.mean([abs(r["result"] - r["close_home_margin"]) for r in cl])), 3) if cl else None}
+head_to_head = H2H.summary
 
 
 # ------------------------------------------------------------------ research
@@ -633,15 +579,7 @@ def cmd_report():
                           f"{g['result']:+.0f} | " + "; ".join(f"{d['key']} {d['points']:+.2f}" for d in g["drivers"]) + " |")
     else:
         md.append("\n*The published record starts with the first week this version served; nothing it published has settled yet.*\n")
-    hh = (rec or {}).get("head_to_head")
-    if hh:
-        md.append("\n## Head to head with the board's number (same games, pregame)\n")
-        md.append("| Window | n | Model loop MAE | Board MAE | Close MAE | Model loop log loss | Board log loss | Model loop Brier | Board Brier |\n|---|---|---|---|---|---|---|---|---|")
-        for lab, x in (("Last week", hh.get("last_week")), ("Season to date", hh["season_to_date"])):
-            if x:
-                a, b = x["model_loop"], x["board"]
-                md.append(f"| {lab} | {x['n']} | {a['mae']} | {b['mae']} | {x['close_mae']} | {a['logloss']} | {b['logloss']} | {a['brier']} | {b['brier']} |")
-        md.append("\nOne season of NFL games is not enough to rank two models; this table is the running record, and the full backtest decides promotions.\n")
+    md += H2H.report_md((rec or {}).get("head_to_head"))
     md.append("\n## Where the misses concentrate (this season and last, walk-forward)\n")
     md.append("Line bias = model minus close (home side); outcome bias = result minus model. |t| ≥ 2 pulls the matching candidates forward.\n")
     md.append("| Pattern | n | Line bias | t | Outcome bias | t | Close beats model by (pts) |\n|---|---|---|---|---|---|---|")

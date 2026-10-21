@@ -47,6 +47,8 @@ import pandas as pd
 from ...core import metrics as M
 from ...core import walkforward as WF
 from ...core import snapshots
+from ...core import data_status
+from ...core import head_to_head as H2H
 from ...core.versions import Versions
 from . import backtest as BT
 from . import cards as CARDS
@@ -57,6 +59,7 @@ DATA = BT.DATA
 DOCS = BT.DOCS
 PUB = os.path.join(ROOT, "football", "cfb", "model_loop")
 LEDGER = os.path.join(ROOT, "model_loop", "ledger", "cfb")
+SITE_SLATE = os.path.join(ROOT, "football", "fbs", "slate.json")  # the number the board serves today (cfb_p4; read only)
 VERSIONS = os.path.join(DOCS, "versions.json")
 CANDIDATES = os.path.join(DOCS, "candidates.jsonl")
 WEEKLY = os.path.join(DOCS, "weekly")
@@ -152,6 +155,7 @@ def cmd_refresh(fetch=True):
                      "promoted_at": cur["promoted_at"], "reason": cur["reason"]}
     out["schema"] = "edgedesk_model_loop_cfb_current_v1"
     out["contract"] = CONTRACT
+    data_status.stamp(out, _missing_results(out["season"]), now_iso())
     out["note"] = ("CFB model loop: the served version's numbers for the next 10 days of games with an FBS side. "
                    "Version history and evidence: docs/model-loop/cfb/versions.json and BACKTEST.md.")
     dump(os.path.join(PUB, "current.json"), out)
@@ -184,8 +188,23 @@ def cmd_refresh(fetch=True):
         if w <= last_week:
             rows += CARDS.rows_from_snapshot(snap, s, w, "CFB-CORE", cur["version"], out["config_sha256"], out["generated_at"])
     n_snap = snapshots.append(os.path.join(LEDGER, f"{season}.jsonl"), rows) if rows else 0
-    print(f"refresh: {len(out['games'])} games published by v{cur['version']}; {added} ledger rows, {n_snap} snapshot rows", file=sys.stderr)
+    # head to head: the board's own number (cfb_p4) on the same games, graded the same way
+    n_site = H2H.capture(SITE_SLATE, os.path.join(LEDGER, f"site_{season}.jsonl"), season, now_iso())
+    print(f"refresh: {len(out['games'])} games published by v{cur['version']}; {added} ledger rows, {n_snap} snapshot rows, "
+          f"{n_site} board rows", file=sys.stderr)
     return out
+
+
+def _missing_results(season):
+    """Games of the season that kicked off more than 12 hours ago and have no
+    result in the data: the ratings are behind by exactly these."""
+    try:
+        g = BT.Tables(os.path.join(DATA, "build")).games
+    except Exception:
+        return []
+    cut = pd.Timestamp.now(tz="UTC").tz_convert(None) - pd.Timedelta(hours=12)
+    g = g[(g.season == season) & g.result.isna() & g.kick_utc.notna()]
+    return [str(x) for x in g.loc[g.kick_utc < cut, "game_id"]]
 
 
 # --------------------------------------------------------------------- score
@@ -238,6 +257,9 @@ def cmd_score():
                      "home_win_prob": p, "brier": (p - y) ** 2 if y is not None else None,
                      "flag": bool(gap is not None and fbs_game and abs(gap) >= CARDS.FLAG),
                      "drivers": [{"key": k, "points": v} for k, v in drivers[:4] if gap is not None and np.sign(v) == np.sign(gap)]})
+    done = games[(games.season == season) & games.result.notna() & games.kick_utc.notna()]
+    H2H.attach(rows, H2H.pregame(os.path.join(LEDGER, f"site_{season}.jsonl"),
+                                 {str(g.game_id): pd.Timestamp(g.kick_utc).tz_localize("UTC") for g in done.itertuples()}))
     df = pd.DataFrame(rows)
     out = {"schema": "edgedesk_model_loop_cfb_record_v1", "season": season, "generated_at": now_iso(),
            "rules": "Pregame only: each game is graded on the last number published before kickoff (model_loop/ledger/cfb/cards_<season>.jsonl). "
@@ -262,6 +284,9 @@ def cmd_score():
         out["season_to_date_fbs_vs_fbs"] = summ(df[df.fbs_vs_fbs]) if df.fbs_vs_fbs.any() else None
         last_week = int(df.week.max())
         out["last_week"] = dict(summ(df[df.week == last_week]), week=last_week)
+        hh = H2H.section(rows, last_week, "football/fbs/slate.json")
+        if hh:
+            out["head_to_head"] = hh
     dump(os.path.join(PUB, f"record_{season}.json"), out)
     print(f"score: {len(rows)} published pregame numbers graded", file=sys.stderr)
     return out
@@ -562,6 +587,7 @@ def cmd_report():
                           f"{g['result']:+.0f} | " + "; ".join(f"{d['key']} {d['points']:+.2f}" for d in g["drivers"]) + " |")
     else:
         md.append("\n*The published record starts with the first week this version served; nothing it published has settled yet.*\n")
+    md += H2H.report_md((rec or {}).get("head_to_head"))
     md.append("\n## Where the misses concentrate (this season and last, walk-forward)\n")
     md.append("Line bias = model minus close (home side); outcome bias = result minus model. |t| ≥ 2 pulls the matching candidates forward.\n")
     md.append("| Pattern | n | Line bias | t | Outcome bias | t | Close beats model by (pts) |\n|---|---|---|---|---|---|---|")

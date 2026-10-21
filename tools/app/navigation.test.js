@@ -279,6 +279,19 @@ H = C.sysHealthHTML();
  'Last successful sync', 'Last self-check', 'Build freshness', 'View all faults']
   .forEach(s => has(H, s, 'the panel carries "' + s + '"'));
 has(H, 'Nothing here is a bet signal', 'and says what a fault is not');
+
+/* -- the learning loops (model_loop/health.json) ------------------------- */
+has(H, 'Learning loops', 'the panel carries the learning loops');
+has(H, 'the learning-loop record has not loaded', 'and an unloaded loop record says so, never a clean tick');
+C.SH.loops = { schema: 'edgedesk_model_loop_health_v1', summary: { OK: 2, STALE: 1, DEGRADED: 0, OFF_SEASON: 2 },
+  loops: [{ label: 'NFL', status: 'OK', reasons: [] }, { label: 'NBA', status: 'STALE', reasons: ['last refresh 51 h ago (expected daily)'] }] };
+H = C.sysHealthHTML();
+has(H, 'NBA stale: last refresh 51 h ago', 'a stale loop is named with its reason');
+has(H, '1 needs attention', 'and counted as needing attention');
+chk('a stale loop is attention (amber), never a failed system check (red)', /Learning loops[\s\S]*?class="v warn"/.test(H) && C.sysHealthState().state !== 'err');
+C.SH.loops.loops[1].status = 'OK'; C.SH.loops.summary = { OK: 3, STALE: 0, DEGRADED: 0, OFF_SEASON: 2 };
+has(C.sysHealthHTML(), 'every loop in season refreshed, researched and fed', 'and all current reads as such');
+C.SH.loops = null;
 chk('the pill reads healthy when everything reporting is healthy',
     (C.sysHealthPill(), C.__els.sysHealthPill === undefined || true));
 

@@ -24,6 +24,29 @@ class PregameTest(unittest.TestCase):
         self.assertEqual(W._pregame(os.path.join(d, "none.jsonl"), {"g": pd.Timestamp("2026-10-23")}), {})
 
 
+class CaptureTest(unittest.TestCase):
+    def test_only_pregame_numbers_and_only_when_they_change(self):
+        from model_loop.core import head_to_head as H2H
+        d = tempfile.mkdtemp()
+        slate, led = os.path.join(d, "slate.json"), os.path.join(d, "site.jsonl")
+        games = [{"game_id": 1, "season": 2026, "week": 8, "kickoff": "2026-10-24T17:00:00.000Z", "model_status": "PREDICTED",
+                  "model_home_margin": 3.5, "model_home_win_prob": 0.6, "model_version": "b1"},
+                 {"game_id": 2, "season": 2026, "week": 8, "kickoff": "2026-10-20T23:00:00.000Z", "model_status": "PREDICTED",
+                  "model_home_margin": 1.0, "model_home_win_prob": 0.52, "model_version": "b1"},
+                 {"game_id": 3, "season": 2026, "week": 8, "kickoff": "2026-10-24T20:00:00.000Z", "model_status": "NO_MODEL"}]
+        with open(slate, "w") as f:
+            json.dump({"generated_at": "2026-10-21T02:44:52.694Z", "games": games}, f)
+        self.assertEqual(H2H.capture(slate, led, 2026, "t"), 1)        # started and unpriced games are skipped
+        self.assertEqual(H2H.capture(slate, led, 2026, "t"), 0)        # an unchanged number is not appended again
+        games[0]["model_home_margin"] = 4.0
+        with open(slate, "w") as f:
+            json.dump({"generated_at": "2026-10-21T08:00:00.000Z", "games": games}, f)
+        self.assertEqual(H2H.capture(slate, led, 2026, "t"), 1)
+        got = H2H.pregame(led, {"1": pd.Timestamp("2026-10-24T17:00:00Z")})
+        self.assertEqual(got["1"]["home_margin"], 4.0)
+        self.assertEqual(H2H.capture(os.path.join(d, "none.json"), led, 2026, "t"), 0)
+
+
 class HeadToHeadTest(unittest.TestCase):
     def row(self, result, model, board, close, p_model, p_board):
         y = 1.0 if result > 0 else 0.0
