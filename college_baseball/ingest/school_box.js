@@ -22,6 +22,12 @@
      source (the box's address).
    audit: for 2024-2026, where our record has its own box scores, how often
    the schools' starter is ours (by name) and their outs agree.
+
+   HANDS. A newer SIDEARM box gives each player's throwing hand and bats. An
+   older SIDEARM box gives none, but links the school's own players to its
+   roster page; the roster (collegiate/data/rosters) lists bats/throws, and
+   the link's name slug is the roster player's id there, an exact join. The
+   opponent's players carry no link and keep no hand from it.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -33,6 +39,7 @@ const BOX = path.join(ROOT, 'collegiate', 'data', 'boxscores', 'baseball');
 const GAMES = path.join(__dirname, '..', 'data', 'games');
 const OUT = path.join(__dirname, '..', 'data', 'school_box');
 const OURS = path.join(__dirname, '..', 'data', 'box');
+const ROSTERS = path.join(ROOT, 'collegiate', 'data', 'rosters', 'baseball');
 
 const HEADER = ['game_id', 'season', 'date', 'team_id', 'side', 'starter', 'starter_throws', 'starter_outs', 'starter_bf', 'starter_k', 'starter_bb', 'starter_pitches',
   'opp_lineup_bats', 'opp_lefty_bats', 'temp_f', 'wind_dir', 'wind_mph', 'attendance', 'source'];
@@ -57,6 +64,21 @@ function boxes(season, o) {
   return out;
 }
 
+/* an older SIDEARM box's school-side hands from the school's roster, by the roster slug the box links (the last
+   element of a pitcher [.., slug] and a lineup [.., slug] row) */
+function rosterHands(b, season, o) {
+  if (b.platform !== 'sidearm_legacy' || !b.school) return b;
+  const f = path.join((o && o.rostersDir) || ROSTERS, String(season), b.school + '.json');
+  let roster = null; try { roster = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return b; }
+  const bySlug = new Map((roster.players || []).filter((p) => /^slug:/.test(p.pid)).map((p) => [p.pid.slice(5), p]));
+  const fill = (t) => {
+    const pit = (r) => { const p = r && r[9] && bySlug.get(r[9]); return p && !r[1] && p.throws ? Object.assign([], r, { 1: p.throws }) : r; };
+    return Object.assign({}, t, { starter: pit(t.starter), pitchers: (t.pitchers || []).map(pit),
+      lineup: (t.lineup || []).map((l) => { const p = l[4] && bySlug.get(l[4]); return p && !l[3] && p.bats ? Object.assign([], l, { 3: p.bats }) : l; }) });
+  };
+  return Object.assign({}, b, { home: fill(b.home), away: fill(b.away) });
+}
+
 function sideRow(c, team, opp, side, b) {
   const st = team.starter || null;   /* [name, throws, outs, bf, k, bb, h, er, pitches] */
   const bats = (opp.lineup || []).slice().sort((x, y) => x[0] - y[0]).map((l) => l[3] || '?').join('');
@@ -74,7 +96,7 @@ function build(season, o) {
   for (const g of games) { const k = pairKey(g.date, g.home_id, g.away_id); if (!ours.has(k)) ours.set(k, []); ours.get(k).push(g); }
   for (const list of ours.values()) list.sort((a, b) => (a.start_time_local || '').localeCompare(b.start_time_local || '') || a.game_id.localeCompare(b.game_id));
   const byPair = new Map();
-  for (const b of boxes(season, o)) { const k = pairKey(b.date, b.home.code, b.away.code); if (!byPair.has(k)) byPair.set(k, []); byPair.get(k).push(b); }
+  for (const raw of boxes(season, o)) { const b = rosterHands(raw, season, o); const k = pairKey(b.date, b.home.code, b.away.code); if (!byPair.has(k)) byPair.set(k, []); byPair.get(k).push(b); }
   const rows = []; const counts = { boxes: 0, joined: 0, no_contest: 0, score_differs: 0 };
   for (const [k, bs] of byPair) {
     counts.boxes += bs.length;
@@ -122,4 +144,4 @@ if (require.main === module) {
   delete r.rows;
   console.error('[school box] ' + a[0] + ' ' + season + ': ' + JSON.stringify(r));
 }
-module.exports = { build, audit, boxes, HEADER };
+module.exports = { build, audit, boxes, rosterHands, HEADER };

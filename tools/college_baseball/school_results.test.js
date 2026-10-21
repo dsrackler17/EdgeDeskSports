@@ -60,6 +60,17 @@ ok('the report says what was filled and from whom', out.changed === 5 && out.fil
 const au = SR.run('audit', 2023, { collegiate: coll, gamesFile, teamSeasons, write: false });
 ok('audit: a held final the schools read the same counts as agreement', au.counts.audit_agree >= 1 && au.agreement === 1, au.counts);
 
+ok('a doubleheader our record cannot order (no result, no start times) is filled in the schools\' order and marked so', out.filled.filter((f) => /^g2_/.test(f.game_id)).every((f) => f.dh_order === 'unverified') && out.counts.filled_dh_order_unverified === 2 && !out.filled.find((f) => f.game_id === 'g1').dh_order);
+
+/* a doubleheader our record holds in the other order (the 2026 audit: 58 of 60 disagreements), and an exhibition */
+put('schedules/baseball/2024/alpha.json', { school: 'alpha', games: [g('2024-04-02', 'H', 'Beta St.', 2, 1, { time: '12:00' }), g('2024-04-02', 'H', 'Beta St.', 0, 4, { time: '16:00' }),
+  g('2024-04-03', 'H', 'Beta St.', 9, 9, { exhibition: true })] });
+const g24 = path.join(tmp, '2024.csv');
+fs.writeFileSync(g24, [H, row('d_1', '2024-04-02', 1, 2, 'FINAL', 0, 4), row('d_2', '2024-04-02', 1, 2, 'FINAL', 2, 1), row('x', '2024-04-03', 1, 2, 'FINAL', 3, 1)].join('\n') + '\n');
+const au24 = SR.run('audit', 2024, { collegiate: coll, gamesFile: g24, teamSeasons: teamSeasons.map((t) => Object.assign({}, t, { season: 2024 })), write: false });
+ok('audit: a doubleheader held in the other order pairs by score and is counted apart; agreement in our order does not take it', au24.counts.audit_agree_dh_reordered === 2 && !au24.counts.audit_differ && au24.score_agreement === 1 && au24.agreement === 0, au24.counts);
+ok('an exhibition is no contest of ours', !au24.counts.audit_agree && au24.counts.final_not_read === 1, au24.counts);
+
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log((fail === 0 ? 'ALL GREEN' : 'FAILED') + ' school results — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);
