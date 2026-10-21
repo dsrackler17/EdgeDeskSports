@@ -1,0 +1,147 @@
+{
+ "study": "NFL v2 core rebuild (Phase 1)",
+ "version": "nfl_v2.0.0-candidate",
+ "registered_at": "2026-10-20",
+ "objective": "Lower margin error and win-probability log loss than the current NFL model (edgedesk_football_v1.0.0) out of sample, measured against the closing line as the baseline.",
+ "windows": {
+  "tune": [
+   2011,
+   2019
+  ],
+  "validation": [
+   2020,
+   2024
+  ],
+  "holdout": [
+   2025,
+   2025
+  ],
+  "live": [
+   2026,
+   2026
+  ]
+ },
+ "unit": "every NFL game (regular season and postseason) with a final score and a consensus closing spread",
+ "metrics": [
+  "margin MAE vs result (primary)",
+  "win-probability log loss (primary)",
+  "margin RMSE",
+  "Brier",
+  "mean |model - close|",
+  "share of games 3+ points from the close",
+  "ATS vs close at 1/2/3 pt gaps",
+  "calibration table (10 bins) and ECE",
+  "total MAE vs close total",
+  "CLV in points vs EdgeDesk's own opener capture (2026 only; no historical openers exist)"
+ ],
+ "tuning": {
+  "objective": "margin MAE on the tune window",
+  "method": "coordinate descent, two passes, over the grid below; garbage-time weight fixed at 0.25 (not tuned) and tested only as an ablation",
+  "grid": {
+   "rating.hl_week": [
+    3,
+    6,
+    12,
+    null
+   ],
+   "rating.lam.pass_off": [
+    150,
+    300,
+    600,
+    1200
+   ],
+   "rating.lam.pass_def": [
+    300,
+    600,
+    1200,
+    2400
+   ],
+   "rating.lam.rush_off": [
+    150,
+    300,
+    600,
+    1200
+   ],
+   "rating.lam.rush_def": [
+    300,
+    600,
+    1200,
+    2400
+   ],
+   "rating.lam.qb": [
+    100,
+    250,
+    500,
+    1000
+   ],
+   "rating.carry.off": [
+    0.4,
+    0.6,
+    0.8
+   ],
+   "rating.carry.def": [
+    0.2,
+    0.4,
+    0.6
+   ],
+   "rating.carry.qb": [
+    0.6,
+    0.8,
+    1.0
+   ],
+   "rating.market.hl_week": [
+    2,
+    4,
+    8
+   ],
+   "rating.market.lam": [
+    1,
+    3,
+    10
+   ],
+   "rating.market.carry": [
+    0.4,
+    0.6,
+    0.8
+   ],
+   "rating.personnel.skill": [
+    0.0,
+    0.5,
+    1.0
+   ],
+   "rating.personnel.ol": [
+    0.0,
+    0.05,
+    0.1
+   ],
+   "model.hl_season": [
+    3,
+    6,
+    null
+   ],
+   "model.hfa_prior_games": [
+    0,
+    300,
+    1000
+   ],
+   "model.ridge_lam": [
+    0.5,
+    2,
+    8
+   ]
+  }
+ },
+ "incremental_value_bar": "On the VALIDATION window only, each component is removed from the tuned model. A component stays active only if removing it raises validation margin MAE or validation log loss; otherwise it is marked inactive and the model is refitted without it. The holdout is not consulted.",
+ "decision_rule": "v2 may replace v1 on the card only if, on the 2025 holdout, it has lower margin MAE AND lower log loss than v1 as trained (walk-forward) AND v1 as shipped, AND it is not worse on the full 2011-2025 backtest. Otherwise v1 stays and v2 remains EXPERIMENTAL. Beating the close is reported, not required.",
+ "inactive_by_data": [
+  "preseason win totals (not owned)",
+  "historical openers (EdgeDesk capture starts 2026-09-16)",
+  "book-level closes before 2026",
+  "OL grades / tracking data (not owned)"
+ ],
+ "forking_paths": {
+  "disclosed_before_tuning": "During development a single smoke test of the UNTUNED default configuration was scored on every window including the 2025 holdout (v2 MAE 10.18 vs v1-trained 10.17, log loss 0.644 vs 0.636). No setting was changed in response to the holdout; the grid above was fixed before it.",
+  "structural_choices": "no intercept (neutral = 0); offense and defense separate coefficients; QB as its own rating parameter; travel rows centred on a typical trip so home field means home field with a typical trip; per-week snapshots (a Thursday game is not absorbed before that week's Sunday games)."
+ },
+ "content_sha256": "bfc174dec9fd449bc923db783ad769432da41d37ce6ce0b6ec0d0fb21782a8c3"
+}

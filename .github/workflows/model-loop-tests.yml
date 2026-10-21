@@ -1,0 +1,43 @@
+# EdgeDesk model loop: the core guarantees, on every change to the framework.
+#
+# Offline and synthetic: no play-by-play download. It checks that the prior /
+# data split of every rating adds back exactly, that the margin distribution's
+# mean is the projection and its range is centred on it, that win and cover
+# probabilities come from one table, that calibration and metrics behave, that
+# the promotion rule needs every condition, and that an NFL card's components
+# sum exactly to its fair line.
+name: Model loop tests
+
+on:
+  pull_request:
+    paths:
+      - 'model_loop/**'
+      - 'supabase/model_loop.sql'
+      - '.github/workflows/model-loop-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'model_loop/**'
+      - '.github/workflows/model-loop-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-loop-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Python deps (pinned)
+        run: pip install --quiet -r model_loop/requirements.txt
+      - name: Core guarantees
+        run: python3 -m unittest discover -s model_loop/tests -t . -v
