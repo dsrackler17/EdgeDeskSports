@@ -31,7 +31,7 @@ def main():
             continue
         rows = []
         for fn in sorted(os.listdir(d)):
-            if not fn.endswith(".json") or "-H" not in fn or fn.endswith("_2026.json") or "summary" in fn:
+            if not fn.endswith(".json") or not ("-H" in fn or "-P" in fn) or fn.endswith("_2026.json") or "summary" in fn:
                 continue
             rep = json.load(open(os.path.join(d, fn)))
             p = rep["primary"]

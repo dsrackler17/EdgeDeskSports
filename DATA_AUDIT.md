@@ -275,3 +275,20 @@ The low MLB overround pass rate is a scraper pairing defect, not bad prices.
 - **Totals.** These cannot be attributed: at the best alignment the closing total correlates 0.155 with runs scored. **MLB totals are infeasible** and are not used.
 
 NFL, NBA and NHL from the same scraper join on both teams and the final score within a single record (2,946, about 14,000 and 11,529 games). Their pairing is intact.
+
+### Player props (added 2026-10-21, before the props runs)
+
+**Data:**
+
+| League | Events | Games covered | Prices |
+|---|---|---|---|
+| NFL | 31 | 2026-10-02 to 10-14 | per player × book, timestamped main-line ticks and alternate-ladder open/close (`football/props/nfl/2026/closes.jsonl`, The Odds API) |
+| CFB | 119 | same window | same (`football/props/cfb/2026/closes.jsonl`) |
+
+- The model's timestamped evaluations are in `football/props/{nfl,cfb}/2026/evaluations.jsonl` (`edgedesk_props_model_v1`).
+- No props prices exist before 2026, or after the 2026-10-10 credit stop.
+- NBA and NHL props models exist (`nba/props`, `hockey/props`), but no props prices were ever captured for them.
+
+**Feasibility:**
+- NFL and CFB props: a single holdout run each.
+- NBA and NHL props: infeasible.

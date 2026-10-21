@@ -27,14 +27,16 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 
 | Rank | Sport | Best holdout candidate | Holdout CLV (pp) | α/k lower bound | `clv_ev` | k | Data confidence | Verdict |
 |---|---|---|---|---|---|---|---|---|
-| 1 | NFL | W2 totals market-residual | +3.48 [+2.74, +4.30], n = 448 | +2.44 | **+2.1%** [+0.7, +3.6] | 12 | Medium. SBR lines; the proxy holdout sits inside the base models' tuning windows. 2026 out of sample: +2.91 pp, n = 54 | **PASS**; beats the vig on totals |
-| 2 | CFB | R2 spread market-residual | +1.91 [+1.39, +2.40], n = 751 | +1.20 | -0.9% [-1.9, +0.0] | 15 | High. Multi-book archive; mandated holdout 2025 + 2026 | **PASS**; does not clear the vig |
+| 1 | NFL | W2 totals market-residual | +3.48 [+2.74, +4.30], n = 448 | +2.43 | **+2.1%** [+0.7, +3.6] | 13 | Medium. SBR lines; the proxy holdout sits inside the base models' tuning windows. 2026 out of sample: +2.91 pp, n = 54 | **PASS**; beats the vig on totals |
+| 2 | CFB | R2 spread market-residual | +1.91 [+1.39, +2.40], n = 751 | +1.20 | -0.9% [-1.9, +0.0] | 16 | High. Multi-book archive; mandated holdout 2025 + 2026 | **PASS**; does not clear the vig |
 | 3 | NHL | W2 moneyline market-residual on back-to-backs | +2.24 [+1.70, +2.77], n = 272 | +1.52 | +1.6% [-0.3, +4.2] | 12 | Medium. SBR moneylines, proxy holdout | **PASS**; borderline vig |
 | 4 | NCAAM | production lab model, total | +1.58 [+1.26, +1.89], n = 2,552 | +1.24 | -1.5% | 3 | Medium. One holdout season of DraftKings; no tuning was possible | **PASS**; does not clear the vig |
 | 5 | MLB | R2 moneyline market-residual | +0.90 [+0.68, +1.17], n = 1,451 | +0.59 | -1.8% | 8 | Low. SBR MLB needed a pairing repair | **PASS**; far below the vig |
 | 6 | WNBA | production lab model, total | +2.19 [+1.21, +3.17], n = 231 | +1.14 | -0.4% | 3 | Low. One season, 231 bets; spread and moneyline FAIL | **PASS on totals only** |
 | — | NBA | (see NBA section) | | | | | | |
 | — | NCAAW, UFC, college baseball, tennis | — | — | — | — | 0 | No opener data exists | **UNTESTED** |
+
+**Player props (NFL and CFB, 2026 only):** the production props model beats the props opener (+0.58 / +0.55 pp) but sits about 5% below the props vig.
 
 **Not counted as edge:** NHL totals (H2 / H4) pass at +3.25 / +2.63 pp. They are graded on the line alone, and SBR keeps no totals juice, so they are overstated by construction (`EXPERIMENTS.md`, NHL).
 
@@ -79,13 +81,14 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 - Walk-forward: 2012–19 and 2021–24 (about 9,500 games).
 - Holdout: 2025 (938 games) + 2026 (251 games, the CFB Lab's DraftKings first-seen open → close).
 
-**Tried (15 attempts):**
+**Tried (16 attempts):**
 - Production cfb_p4 v1.0.1, spread and total.
 - Loop v2.0.0, re-run with the previous game's QB because its backtest priced the actual starter.
 - Shadow cfb_v2 candidate 001.
 - Market-residual models R1 and R2 (R2 adds an information block).
 - Non-Power filter (W1) and totals residual (W3).
 - Two drift diagnostics.
+- One player-props holdout run (CFB-P1).
 
 **What worked (pre-holdout):**
 - Every spread model: +0.72 (production) to +1.44 pp (R2). Positive in every season, roughly halved in the US-retail opener era.
@@ -99,12 +102,13 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 
 **Holdout:**
 
-| ID | Bets | CLV pts | CLV prob (pp) | α/15 LB | 2025 / 2026 | `clv_ev` | Verdict |
+| ID | Bets | CLV pts | CLV prob (pp) | α/16 LB | 2025 / 2026 | `clv_ev` | Verdict |
 |---|---|---|---|---|---|---|---|
 | H1 production spread | 795 | +0.475 [+0.271, +0.688] | +1.19 [+0.66, +1.73] | +0.45 | +1.21 / +1.07 | -2.3% | PASS |
 | H2 production total | 590 | +0.415 [+0.202, +0.632] | +0.99 [+0.50, +1.50] | +0.29 | +1.02 / +0.87 | -2.6% | PASS |
 | H3 R2 residual spread | 751 | +0.761 [+0.558, +0.953] | +1.91 [+1.39, +2.40] | +1.20 | +2.10 / +1.13 | -0.9% [-1.9, +0.0] | PASS |
 | H4 W3 residual total | 757 | +0.616 [+0.432, +0.783] | +1.48 [+1.03, +1.89] | +0.88 | +1.50 / +1.41 | -1.7% | PASS |
+| P1 production props model, player props (2026, same-line bets) | 537 | – | +0.55 [+0.35, +0.78] | +0.28 | – / +0.55 | -5.0% | PASS on CLV. Where the line moved, it moved toward the model 61.9% of the time (596 bets) |
 
 **Verdict.** CFB models find real early-line value.
 - The best form is R2: open + 0.10 × each model's disagreement, adjusted early in the season.
@@ -119,11 +123,12 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 - The mandated 2025 holdout has no openers, so the gate is a **proxy holdout, SBR 2020–21**, locked before any result.
 - Line check: SBR closes agree with the nflverse close within 1 point on 96.6% of games.
 
-**Tried (12 attempts):**
+**Tried (13 attempts):**
 - Production v2.1.0 and loop v2.0.0, spread and total. Both replayed with the previous starter and no game-day weather; the committed backtests use the actual starter and the observed weather.
 - R1 and R2 market-residual models.
 - Backup-QB games (W1) and totals residual (W2).
 - First-half: no 1H lines exist, so it was not run.
+- One player-props holdout run (NFL-P1).
 
 **What worked (pre-holdout, 2011–19):**
 - Every rule was positive in every season: production spread +1.39, production total +2.08, R1 +1.96, W2 +2.54 pp.
@@ -134,12 +139,13 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 
 **Holdout:**
 
-| ID | Proxy bets | CLV pts | CLV prob (pp) | α/12 LB | 2020 / 2021 | `clv_ev` | 2026 (out of sample) | Verdict |
+| ID | Proxy bets | CLV pts | CLV prob (pp) | α/13 LB | 2020 / 2021 | `clv_ev` | 2026 (out of sample) | Verdict |
 |---|---|---|---|---|---|---|---|---|
-| H1 production spread | 384 | +0.578 [+0.272, +0.900] | +1.79 [+0.81, +2.80] | +0.46 | +1.24 / +2.35 | -1.1% | +2.16 pp, n = 52 | PASS |
-| H2 production total | 422 | +0.995 [+0.746, +1.266] | +2.97 [+2.23, +3.77] | +1.94 | +2.67 / +3.31 | +1.1% | +2.83 pp, n = 48 | PASS |
-| H3 R1 residual spread | 290 | +0.898 [+0.571, +1.251] | +2.94 [+1.92, +4.02] | +1.53 | +2.67 / +3.20 | +1.0% | +3.44 pp, n = 37 | PASS |
-| H4 W2 residual total | 448 | +1.162 [+0.911, +1.439] | +3.48 [+2.74, +4.30] | +2.44 | +3.43 / +3.52 | **+2.1%** [+0.7, +3.6] | +2.91 pp, n = 54 | PASS |
+| H1 production spread | 384 | +0.578 [+0.272, +0.900] | +1.79 [+0.81, +2.80] | +0.45 | +1.24 / +2.35 | -1.1% | +2.16 pp, n = 52 | PASS |
+| H2 production total | 422 | +0.995 [+0.746, +1.266] | +2.97 [+2.23, +3.77] | +1.93 | +2.67 / +3.31 | +1.1% | +2.83 pp, n = 48 | PASS |
+| H3 R1 residual spread | 290 | +0.898 [+0.571, +1.251] | +2.94 [+1.92, +4.02] | +1.51 | +2.67 / +3.20 | +1.0% | +3.44 pp, n = 37 | PASS |
+| H4 W2 residual total | 448 | +1.162 [+0.911, +1.439] | +3.48 [+2.74, +4.30] | +2.43 | +3.43 / +3.52 | **+2.1%** [+0.7, +3.6] | +2.91 pp, n = 54 | PASS |
+| P1 production props model, player props (2026, same-line bets) | 773 | – | +0.58 [+0.46, +0.70] | +0.43 | – | -4.9% | (2026 only) | PASS on CLV. Where the line moved, it moved toward the model 53.7% of the time (497 bets) |
 
 **Verdict.** NFL shows the strongest edge in the programme, and the only rule whose interval clears the vig: W2 totals.
 - The NFL market moved about 14% of production's disagreement and about 20% of the loop's total disagreement toward them.
