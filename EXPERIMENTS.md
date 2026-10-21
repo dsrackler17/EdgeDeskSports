@@ -215,3 +215,80 @@ Pre-registered 2026-10-21, before any NFL CLV number was computed.
 ### NFL-W3: first half: not run
 - No first-half line exists in any archive here.
 - Not counted as an attempt.
+
+### CFB pre-holdout results
+
+Run 2026-10-21 on 2012–2019 and 2021–2024 by `python3 -m research.clv.cfb pre`. Full reports are in `research/clv/results/cfb/`.
+
+**Reading the columns:**
+- CLV figures are means with cluster-bootstrap 95% intervals (clusters = season-week).
+- pp = percentage points of no-vig probability.
+- "toward" = the share of moved lines that moved toward the bet.
+- `clv_ev` = the expected return of the opening bet at -110, priced at the closing no-vig probability.
+
+**Model notes:**
+- The loop model (B3, B4, and the d_v2 input) is v2.0.0 re-run with each team's previous-game QB.
+  - 5,945 of 16,181 games had a starter different from the previous game's.
+  - The same pipeline, run without the substitution, reproduces the committed `docs/model-loop/cfb/predictions.csv.gz` to a mean of 0.001 points.
+- The production replay (B1, B2) and the loop's hyperparameters were fitted on final scores of seasons inside this window (`DATA_AUDIT.md`). They are not fitted on line moves.
+
+| ID | Model | Bets | CLV pts | CLV prob (pp) | p | Toward | `clv_ev` at -110 | Verdict (pre-holdout rule) |
+|---|---|---|---|---|---|---|---|---|
+| CFB-B1 | production cfb_p4, spread, ≥2.0 | 6,363 | +0.286 [+0.222, +0.348] | +0.72 [+0.56, +0.88] | <1e-4 | 0.541 | -3.1% | PASS |
+| CFB-B2 | production cfb_p4, total, ≥2.0 | 5,250 | +0.038 [-0.069, +0.148] | +0.07 [-0.19, +0.33] | 0.30 | 0.492 | -4.4% | **FAIL** |
+| CFB-B3 | loop v2 (prev QB), spread, ≥2.0 | 5,852 | +0.477 [+0.397, +0.560] | +1.20 [+1.00, +1.41] | <1e-4 | 0.585 | -2.2% | PASS |
+| CFB-B4 | loop v2 (prev QB), total, ≥2.0 | 5,983 | +0.704 [+0.598, +0.819] | +1.69 [+1.44, +1.97] | <1e-4 | 0.624 | -1.3% | PASS |
+| CFB-B5 | shadow cfb_v2 cand. 001, spread, ≥2.0 | 4,701 | +0.469 [+0.377, +0.563] | +1.19 [+0.96, +1.42] | <1e-4 | 0.585 | -2.3% | PASS |
+| CFB-R1 | residual (d_p4, d_v2), spread, ≥0.25 | 4,024 | +0.503 [+0.408, +0.599] | +1.27 [+1.03, +1.51] | <1e-4 | 0.589 | -2.1% | PASS (move slope 0.88) |
+| CFB-R2 | R1 + information block, spread, ≥0.25 | 4,810 | +0.569 [+0.484, +0.653] | +1.44 [+1.23, +1.65] | <1e-4 | 0.612 | -1.8% | PASS. Beats R1 on the same 7,237 games: per-bet +1.44 vs +1.27 pp; per-game +0.25 pp (move slope 0.93) |
+| CFB-W1 | R1 on non-Power games only | 1,742 | +0.450 [+0.322, +0.578] | +1.13 [+0.81, +1.46] | <1e-4 | 0.577 | – | PASS on its rule. The hypothesis (MORE CLV on non-Power games) is **not supported**: +1.13 pp vs R1's +1.27 overall |
+| CFB-W3 | totals residual (dt_p4, dt_v2), ≥0.25 | 5,203 | +0.856 [+0.742, +0.975] | +2.07 [+1.80, +2.36] | <1e-4 | 0.656 | -0.6% | PASS (move slope 0.90) |
+
+**Every season, for the spread models B3, B5, R1 and R2:**
+- The mean CLV is positive in every season.
+- It is smaller in the US-retail opener era (2021–24, Bovada / DraftKings / ESPN Bet) than in the 5Dimes era (2012–19). For example, R2 averages +1.85 pp in 2015–19 and +0.94 pp in 2021–24.
+
+**The production total (B2) has no CLV:**
+- 2012–17 is positive.
+- 2018–23 is negative.
+
+**Honest reading on the vig.** Every pre-registered rule beats the close, but none at its primary threshold beats the close by more than the -110 vig (2.4 pp), so `clv_ev` < 0.
+- Only the largest-edge buckets reach `clv_ev` > 0: R1/R2 |move| ≥ 1.0 (+1.0% / +0.8%), W3 ≥ 1.0 (+1.6%), B4 ≥ 8 (+2.6%).
+- Those buckets are descriptive. They were not pre-registered and are not selected on.
+
+**CFB pre-holdout attempt count: 9** (B1–B5, R1, R2, W1, W3). W2 was not run.
+
+### CFB-H: Phase 6 selection (written before the holdout was read)
+
+**Candidates (G8):**
+
+| ID | Candidate | Bet rule |
+|---|---|---|
+| CFB-H1 | production cfb_p4, spread (reference) | ≥2.0 |
+| CFB-H2 | production cfb_p4, total (reference) | ≥2.0 |
+| CFB-H3 | spread challenger = **CFB-R2**, the highest eligible pre-holdout mean `clv_prob` (+1.44 pp vs R1 +1.27, B3 +1.20, B5 +1.19) | ≥0.25 |
+| CFB-H4 | total challenger = **CFB-W3** (+2.07 pp vs B4 +1.69) | ≥0.25 |
+
+**Residual-model fit:** frozen on every pre-holdout season (2012–2019, 2021–2024), with λ by the inner walk-forward on those seasons. One fit, applied unchanged to every holdout game. Nothing is refitted on 2025.
+
+**Holdout lines:**
+- **2025:** cfbfastR, the opener books' (Bovada, DraftKings, ESPN Bet) median open and same-book close.
+- **2026:** `football/cfb_lab/ledger/2026/lines.jsonl`.
+  - OPEN = first DraftKings quote observed (quality OBSERVED).
+  - CLOSE = quality OBSERVED or PROVIDER_DECLARED.
+  - Graded at -110, like every CFB line.
+- Pooled for the gate; reported per season.
+
+**k_sport for the verdict = 13** (9 pre-holdout + 4 holdout runs). PASS (G7) requires all three:
+- the one-sided lower bound of mean `clv_prob` at α = 0.05/13 above 0;
+- mean `clv_pts` > 0;
+- n ≥ 50.
+
+`clv_ev` is reported but does not gate.
+
+**Run once:** `python3 -m research.clv.cfb holdout`.
+
+### CFB-H1: production cfb_p4 spread on the holdout
+### CFB-H2: production cfb_p4 total on the holdout
+### CFB-H3: CFB-R2 (frozen fit) spread on the holdout
+### CFB-H4: CFB-W3 (frozen fit) total on the holdout
