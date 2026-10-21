@@ -2,32 +2,43 @@
  "today": "2026-10-21",
  "steps": [
   {
-   "step": "directory",
-   "counts": {
-    "listed": 1170,
-    "schools": 1103,
-    "with_host": 1086,
-    "with_division": 1061,
-    "d1": 358,
-    "misses": 67
+   "step": "weekly",
+   "sports": [
+    "baseball",
+    "softball",
+    "football",
+    "mens-basketball",
+    "womens-basketball",
+    "womens-volleyball",
+    "mens-soccer",
+    "womens-soccer"
+   ],
+   "schools": 358,
+   "ok": 2197,
+   "misses_by_reason": {
+    "PLATFORM_NOT_READ": 1274,
+    "REFUSED": 104,
+    "HTTP": 401,
+    "SEASON_MISMATCH": 8,
+    "EMPTY_ROSTER": 7,
+    "NO_ROSTER": 359
+   },
+   "platforms": {
+    "unread": 164,
+    "sidearm": 145,
+    "wmt": 26
    }
   },
   {
-   "step": "weekly",
-   "schools": 358,
-   "ok": 260,
+   "step": "schedules",
+   "sport": "baseball",
+   "ok": 188,
    "misses_by_reason": {
-    "PLATFORM_NOT_READ": 160,
-    "REFUSED": 13,
-    "EMPTY_ROSTER": 5,
-    "HTTP": 82,
-    "NO_ROSTER": 22,
-    "SPORT_MISMATCH": 1
-   },
-   "platforms": {
-    "unread": 160,
-    "sidearm": 123,
-    "wmt": 26
+    "PLATFORM_NOT_READ": 187,
+    "HTTP": 27,
+    "SEASON_MISMATCH": 58,
+    "EMPTY_SCHEDULE": 15,
+    "NO_SCHEDULE": 54
    }
   },
   {
@@ -38,9 +49,69 @@
      "season": 2027,
      "schools_both": 114,
      "transfers": 1319,
-     "matched_both_ends": 285
+     "matched_both_ends": 297
+    },
+    {
+     "sport": "football",
+     "season": 2026,
+     "schools_both": 130,
+     "transfers": 3203,
+     "matched_both_ends": 1541
+    },
+    {
+     "sport": "mens-basketball",
+     "season": 2027,
+     "schools_both": 158,
+     "transfers": 954,
+     "matched_both_ends": 405
+    },
+    {
+     "sport": "mens-soccer",
+     "season": 2026,
+     "schools_both": 88,
+     "transfers": 528,
+     "matched_both_ends": 153
+    },
+    {
+     "sport": "softball",
+     "season": 2027,
+     "schools_both": 126,
+     "transfers": 350,
+     "matched_both_ends": 160
+    },
+    {
+     "sport": "womens-basketball",
+     "season": 2027,
+     "schools_both": 158,
+     "transfers": 637,
+     "matched_both_ends": 275
+    },
+    {
+     "sport": "womens-soccer",
+     "season": 2026,
+     "schools_both": 153,
+     "transfers": 675,
+     "matched_both_ends": 322
+    },
+    {
+     "sport": "womens-volleyball",
+     "season": 2026,
+     "schools_both": 144,
+     "transfers": 383,
+     "matched_both_ends": 155
     }
    ]
   }
- ]
+ ],
+ "weekly_read_at": {
+  "rosters:baseball": "2026-10-21",
+  "rosters:softball": "2026-10-21",
+  "rosters:football": "2026-10-21",
+  "rosters:mens-basketball": "2026-10-21",
+  "rosters:womens-basketball": "2026-10-21",
+  "rosters:womens-volleyball": "2026-10-21",
+  "rosters:mens-soccer": "2026-10-21",
+  "rosters:womens-soccer": "2026-10-21",
+  "schedules:baseball": "2026-10-21"
+ }
 }
