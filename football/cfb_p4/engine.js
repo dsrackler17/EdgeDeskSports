@@ -2926,7 +2926,32 @@
       }
     }
 
-    var pHome = dist.winProb(fairSpread, sigma);
+    /* THE GOVERNANCE CHAMPION (lib/cfb_champion.js; the table is written by
+       football/cfb_production/champion.js). When governance has promoted
+       another model, its STORED pregame number prices this game: margin,
+       width, win probability, total and interval are the champion's, and the
+       cover is read off the distribution it publishes. V1 is computed exactly
+       as above and kept beside it (model.champion.v1); one last contribution
+       row, the champion's number less V1's, keeps the rows summing to the
+       published margin, so every reader of V1's own rows still reads them.
+       No entry (V1 is the champion, the game is not in the champion's table,
+       the number is stale or post-kickoff, or a counterfactual run asks for
+       V1 with req.no_champion) leaves every number V1's. */
+    var CH = root.EDCfbChampion, champE = null, champOut = null;
+    if (CH && typeof CH.entryFor === 'function' && !req.no_champion && g.game_id != null) {
+      champE = CH.entryFor(String(g.game_id), isNum(req.now_ms) ? req.now_ms : undefined);
+    }
+    if (champE) {
+      champOut = { model_version: champE.model_version, label: champE.label || champE.model_version, source: champE.source || null,
+        as_of: champE.as_of || null, interval_80: champE.intervals && champE.intervals[80] ? champE.intervals[80] : null,
+        v1: { margin: fairSpread, sigma: sigma, total: fairTotal, win_prob: dist.winProb(fairSpread, sigma), model_version: modelVersion } };
+      fairSpread = champE.margin;
+      if (isNum(champE.sigma) && champE.sigma > 0) sigma = champE.sigma;
+      if (isNum(champE.total)) fairTotal = champE.total;
+      modelVersion = champE.model_version;
+    }
+
+    var pHome = champE ? champE.p_home : dist.winProb(fairSpread, sigma);
     var marginDist = dist.marginDistribution(fairSpread, sigma);
 
     /* ---------- market ---------- */
@@ -2935,7 +2960,8 @@
     var gapT = market.gap(fairTotal, mkt.total_line);
     var consensus = mkt.quotes_h2h ? market.consensus(mkt.quotes_h2h) : null;
     var cover = isNum(mkt.spread_line)
-      ? dist.coverProbSpread(fairSpread, mkt.spread_line, sigma, sigmaBase) : null;
+      ? ((champE && typeof CH.coverMargin === 'function' && CH.coverMargin(champE, mkt.spread_line))
+        || dist.coverProbSpread(fairSpread, mkt.spread_line, sigma, sigmaBase)) : null;
     var over = (isNum(mkt.total_line) && isNum(fairTotal))
       ? dist.coverProbTotal(fairTotal, mkt.total_line, 'over') : null;
     var confPct = avail(confMeasure) ? confMeasure.value : null;
@@ -2974,9 +3000,11 @@
         /* the live calibration's number (shadow unless promoted): margin,
            sigma and P(home) from one equation, the total untouched */
         live_calibration: liveCalOut,
-        median_margin: marginDist ? dist.quantile(marginDist, 0.5) : null,
-        p10_margin: marginDist ? dist.quantile(marginDist, 0.10) : null,
-        p90_margin: marginDist ? dist.quantile(marginDist, 0.90) : null,
+        median_margin: champOut && champOut.interval_80 ? fairSpread : (marginDist ? dist.quantile(marginDist, 0.5) : null),
+        p10_margin: champOut && champOut.interval_80 ? champOut.interval_80[0] : (marginDist ? dist.quantile(marginDist, 0.10) : null),
+        p90_margin: champOut && champOut.interval_80 ? champOut.interval_80[1] : (marginDist ? dist.quantile(marginDist, 0.90) : null),
+        /* the model that priced this game when it is not V1 (null: V1 did) */
+        champion: champOut,
         blend_spread: market.blend(fairSpread, mkt.spread_line, 'spread'),
         blend_total: market.blend(fairTotal, mkt.total_line, 'total'),
         /* DISPLAY ONLY, same home-margin convention as fair_spread. Nothing in
@@ -3062,11 +3090,15 @@
         return { key: t.key, label: t.label, points: pts(t.m),
           available: avail(t.m), confidence: t.m.confidence,
           source: t.m.source, basis: t.m.basis, reason: t.m.reason };
-      }),
+      }).concat(champOut ? [{ key: 'champion', label: 'priced by ' + champOut.label + ' (its number less V1\'s)',
+        points: fairSpread - champOut.v1.margin, available: true, confidence: null, source: champOut.source,
+        basis: 'the governance champion\'s stored pregame number less V1\'s (lib/cfb_champion.js)', reason: null }] : []),
       total_contributions: totalTerms.map(function (t) {
         return { key: t.key, label: t.label, points: pts(t.m), available: avail(t.m),
           source: t.m.source, reason: t.m.reason };
-      }),
+      }).concat(champOut && isNum(fairTotal) && isNum(champOut.v1.total) && fairTotal !== champOut.v1.total
+        ? [{ key: 'champion', label: 'priced by ' + champOut.label + ' (its total less V1\'s)', points: fairTotal - champOut.v1.total,
+          available: true, source: champOut.source, reason: null }] : []),
       market: {
         spread_line: isNum(mkt.spread_line) ? mkt.spread_line : null,
         total_line: isNum(mkt.total_line) ? mkt.total_line : null,

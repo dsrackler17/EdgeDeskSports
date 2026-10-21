@@ -1084,7 +1084,10 @@
     return {
       season: g.season, week: g.week, state: o.state,
       game: { home: g.home_team, away: g.away_team, neutral_site: !!g.neutral_site,
-        venue_id: g.venue_id, kickoff: g.start_date, home_fbs: A.home_fbs, away_fbs: A.away_fbs },
+        venue_id: g.venue_id, kickoff: g.start_date, home_fbs: A.home_fbs, away_fbs: A.away_fbs,
+        /* the game's id: a promoted champion's stored number is keyed by it
+           (lib/cfb_champion.js); the board and the build name it the same way */
+        game_id: g.game_id != null ? String(g.game_id) : null },
       teams: {
         home: { conference: g.home_conference, roster: A.rosters.home, qb: null,
           qb_context: qbCtx(A.starters.home, 'home'),

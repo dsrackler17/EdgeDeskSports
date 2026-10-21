@@ -263,7 +263,7 @@ function run(opts) {
   const season = opts.season || new Date(U.ms(now)).getUTCFullYear();
   const store = new G.Store(season, opts.storeOpts);
   const roles = GOV.currentRoles(store.gov('model_roles'));
-  const models = opts.models || M.loadModels(opts.which || ['v1', 'v2.1', 'c001'], opts.modelOpts);
+  const models = opts.models || M.loadModels(opts.which || ['v1', 'v2.1', 'c001', 'loop'], opts.modelOpts);
   const existing = store.predictions();
   const have = new Map();
   /* only LIVE rows occupy LIVE checkpoint windows: reconstructed or replayed

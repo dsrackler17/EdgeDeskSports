@@ -71,7 +71,7 @@ async function run(opts) {
   });
   await step('freeze_import', () => CP.importFreezes({ season, storeOpts: opts.storeOpts }));
   let models = null;
-  await step('checkpoints', () => { models = M.loadModels(['v1', 'v2.1', 'c001'], opts.modelOpts); return CP.run({ now, season, models, storeOpts: opts.storeOpts, schedule }); });
+  await step('checkpoints', () => { models = M.loadModels(['v1', 'v2.1', 'c001', 'loop'], opts.modelOpts); return CP.run({ now, season, models, storeOpts: opts.storeOpts, schedule }); });
   await step('audit', () => ({ events: models ? GOV.detectChanges(store, models, now).length : 0 }));
   await step('settle', async () => {
     const r = await ST.run({ now, season, offline: opts.offline, storeOpts: opts.storeOpts, espnPayloads: opts.espnPayloads, cfbfastrCsv: opts.cfbfastrCsv,

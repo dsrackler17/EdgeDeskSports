@@ -386,11 +386,17 @@ function buildGame(ctx, row) {
     if (row.model_status === 'PREDICTED' && num(row.model_home_margin) != null) {
       const sg = v1Sigma(row, latestChamp, ctx.slate.generated_at);
       const conf = row.confidence_ledger && row.confidence_ledger.reconciles ? row.confidence_ledger.reconciles.displayed_confidence_pct : null;
-      model = { model_version: G.champion, label: G.champion_label || 'V1', role: 'champion', home_margin: row.model_home_margin,
+      /* the slate row is the champion's own number when V1 is the champion or
+         a promoted champion priced it (priced_by); otherwise the game fell
+         back to V1 and is labelled as that, never with the champion's name */
+      const v1Champ = /^edgedesk_cfb_p4_/.test(String(G.champion)), pb = row.priced_by && row.priced_by.model_version ? row.priced_by : null;
+      model = { model_version: v1Champ ? G.champion : (pb ? pb.model_version : ((row.v1 && row.v1.model_version) || row.model_version)),
+        label: v1Champ ? (G.champion_label || 'V1') : (pb ? pb.label : 'V1 (fallback: the champion has no number for this game)'),
+        role: v1Champ || pb ? 'champion' : 'fallback', home_margin: row.model_home_margin,
         fair_total: row.model_fair_total, home_win_prob: row.model_home_win_prob, sigma: sg.sigma, sigma_basis: sg.basis,
         home_points: latestChamp ? latestChamp.projected_home_points : null, away_points: latestChamp ? latestChamp.projected_away_points : null,
         football_confidence: num(conf) != null ? Math.round(conf) : (latestChamp ? latestChamp.football_confidence : null),
-        prediction_ts: ctx.slate.generated_at, source: 'football/fbs/slate.json',
+        prediction_ts: pb && pb.as_of ? pb.as_of : ctx.slate.generated_at, source: pb ? pb.source + ' (via football/fbs/slate.json)' : 'football/fbs/slate.json',
         /* the engine's regime-change state per side, as the slate published it */
         regime: row.regime || null };
       /* the engine's team points are (total ± margin) / 2 exactly */

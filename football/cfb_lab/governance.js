@@ -15,6 +15,10 @@
      node football/cfb_lab/governance.js promote --model <version> --reason "<why>" --actor <name> [--evidence <report>] [--rollback]
             (runs the promotion guard first: football/cfb_production/promotion.js)
      node football/cfb_lab/governance.js retire  --model <version> --reason "<why>" --actor <name>
+     node football/cfb_lab/governance.js register --model <version> --label "<label>" --role challenger|candidate
+            --adapter <models.js key> --reason "<why>" --actor <name> [--evidence <report>]
+            (a NEW model enters as challenger or candidate, never champion: only
+             promote makes a champion, behind its guard)
      node football/cfb_lab/governance.js experiment --id EXP-003 --name ... --baseline <v> --challenger <v>
             --hypothesis "..." --change "<one change>" --scope SINGLE_CHANGE --window "<weeks>" --metrics mae,brier
      node football/cfb_lab/governance.js experiment-status --id EXP-003 --status RUNNING --actor <name>
@@ -95,6 +99,24 @@ function retire(store, model, reason, actor, opts) {
   const au = auditEvent('MODEL_RETIRED', model, { role: roles[model].role }, { role: 'retired' }, reason, actor, at);
   store.append('model_roles', [ev], 'event_id'); store.append('audit_log', [au], 'event_id');
   return { role: ev, audit: au };
+}
+
+/* A model the lab has never tracked enters as challenger or candidate, on the
+   record (a role event and a ROLE_CHANGED audit), with the config.json adapter
+   it is read through noted as a RULE_CHANGED audit (config changes are
+   governed acts). It never enters as champion and never re-enters. */
+function register(store, model, label, role, adapter, reason, actor, opts) {
+  opts = opts || {};
+  if (!model || !label || !adapter) throw new Error('register needs --model, --label and --adapter');
+  if (role !== 'challenger' && role !== 'candidate') throw new Error('a new model enters as challenger or candidate; only promote makes a champion');
+  if (!reason || !actor) throw new Error('registering a model needs --reason and --actor (on the record)');
+  if (currentRoles(store.gov('model_roles'))[model]) throw new Error(model + ' is already registered');
+  const at = opts.at || new Date();
+  const ev = roleEvent(model, label, role, reason, actor, at, opts.evidence || null);
+  store.append('model_roles', [ev], 'event_id');
+  store.append('audit_log', [auditEvent('ROLE_CHANGED', model, null, { role }, reason, actor, at),
+    auditEvent('RULE_CHANGED', 'config.models.' + model, null, { label, adapter }, 'tracked through football/cfb_lab/models.js adapter "' + adapter + '"', actor, at)], 'event_id');
+  return ev;
 }
 
 /* ---------------------------------------------------------- experiments */
@@ -225,7 +247,7 @@ function seed(store) {
 }
 
 module.exports = { ROLES, SCOPES, currentRoles, champion, roleEvent, auditEvent, promote, retire, experimentCreate, experimentStatus, experiments,
-  releasePartition, governedFacts, detectChanges, seed, eventId, withId };
+  releasePartition, governedFacts, detectChanges, seed, eventId, withId, register };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
@@ -241,6 +263,7 @@ if (require.main === module) {
       console.log(JSON.stringify(promote(store, arg('--model'), arg('--reason'), arg('--actor'), { evidence: arg('--evidence', null), guard }), null, 1));
     }
     else if (a[0] === 'retire') console.log(JSON.stringify(retire(store, arg('--model'), arg('--reason'), arg('--actor')), null, 1));
+    else if (a[0] === 'register') console.log(JSON.stringify(register(store, arg('--model'), arg('--label'), arg('--role'), arg('--adapter'), arg('--reason'), arg('--actor'), { evidence: arg('--evidence', null) }), null, 1));
     else if (a[0] === 'experiment') console.log(JSON.stringify(experimentCreate(store, { id: arg('--id'), name: arg('--name'), baseline: arg('--baseline'), challenger: arg('--challenger'),
       hypothesis: arg('--hypothesis'), change: arg('--change'), scope: arg('--scope', 'SINGLE_CHANGE'), window: arg('--window', null), metrics: (arg('--metrics', '') || '').split(',').filter(Boolean) }, arg('--actor', null)), null, 1));
     else if (a[0] === 'experiment-status') console.log(JSON.stringify(experimentStatus(store, arg('--id'), arg('--status'), arg('--actor', null)), null, 1));
