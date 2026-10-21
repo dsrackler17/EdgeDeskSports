@@ -62,6 +62,7 @@ MODEL_DEFAULTS = {
     "total_market": True,
 }
 SIGMAS = np.arange(13.0, 20.01, 0.5)
+KMAX = 100                         # college margins run past 70 (FBS vs FCS)
 
 
 def merge(base, over):
@@ -229,10 +230,10 @@ def add_probabilities(rows, cfg=None):
     for S in seasons:
         prior = rows[(rows.season < S) & rows.pred_margin.notna() & rows.result.notna()]
         if prior.season.nunique() >= 2:
-            d = KeyNumberMargin.fit(prior.pred_margin.values, prior.result.values, sigmas=SIGMAS)
+            d = KeyNumberMargin.fit(prior.pred_margin.values, prior.result.values, sigmas=SIGMAS, kmax=KMAX)
         else:
             hist = rows[(rows.season < S) & rows.close_margin.notna() & rows.result.notna()]
-            d = KeyNumberMargin.fit(hist.close_margin.values, hist.result.values, sigmas=SIGMAS)
+            d = KeyNumberMargin.fit(hist.close_margin.values, hist.result.values, sigmas=SIGMAS, kmax=KMAX)
         dists[int(S)] = d
         te = (rows.season == S) & rows.pred_margin.notna()
         mu = rows.loc[te, "pred_margin"].values

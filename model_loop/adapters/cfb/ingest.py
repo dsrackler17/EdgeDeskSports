@@ -238,11 +238,14 @@ def build_games(raw, seasons, market_csv):
     # reference for games not yet closed; the market rating falls back to it for a
     # finished game the record has no close for. Never used as a graded close.
     g["ref_margin"] = np.nan
+    g["ref_open_margin"] = np.nan
     newest = int(g.season.max())
     mp = os.path.join(raw, f"mline_{newest}.parquet")
     if os.path.exists(mp):
-        ml = pd.read_parquet(mp, columns=["game_id", "spread"]).dropna().drop_duplicates("game_id")
-        g["ref_margin"] = g.game_id.map(dict(zip(ml.game_id.astype("int64"), -ml.spread.astype(float))))
+        ml = pd.read_parquet(mp, columns=["game_id", "spread", "spread_open"]).drop_duplicates("game_id")
+        ids = ml.game_id.astype("int64")
+        g["ref_margin"] = g.game_id.map(dict(zip(ids, -pd.to_numeric(ml.spread, errors="coerce")))).astype(float)
+        g["ref_open_margin"] = g.game_id.map(dict(zip(ids, -pd.to_numeric(ml.spread_open, errors="coerce")))).astype(float)
     g["mkt_margin"] = g.close_margin.where(g.close_margin.notna(), np.where(g.result.notna(), g.ref_margin, np.nan))
     return g.sort_values(["kick_utc", "game_id"]).reset_index(drop=True)
 

@@ -542,8 +542,13 @@ def cmd_report(out=DOCS, cfg=None, reuse_ablations=False, workers=3):
     ev = {"v2": windows_eval(p, "v2"),
           "cfb_p4": windows_eval(p, "cfb_p4", "p4_margin", "p4_win_prob", "p4_total"),
           "v2_normal_distribution": windows_eval(p, "v2_normal", "pred_margin", "win_prob_normal", "pred_total")}
-    ev["cfb_p4_published_2026"] = {sl: {"live": WF.evaluate(p[(p.season == 2026) & slice_mask(p, sl)], "record_margin",
-                                                             "record_win_prob", "record_total", "cfb_p4_published")}
+    def safe_eval(d, pred, prob, total, label):
+        try:
+            return WF.evaluate(d, pred, prob, total, label)
+        except TypeError:            # a slice with no published probability at all
+            return WF.evaluate(d, pred, "__no_prob__", total, label)
+    ev["cfb_p4_published_2026"] = {sl: {"live": safe_eval(p[(p.season == 2026) & slice_mask(p, sl)], "record_margin",
+                                                          "record_win_prob", "record_total", "cfb_p4_published")}
                                    for sl in ("all", "fbs", "fcs")}
     res["evaluation"] = ev
     pairs = {}

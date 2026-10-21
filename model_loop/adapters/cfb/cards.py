@@ -44,26 +44,27 @@ GROUP_LABEL = {"base_strength": "Base strength", "environment": "Environment", "
 
 
 def starters_from_v1():
-    """{game_id: ((home_id, basis), (away_id, basis))} from the current board's
-    starter resolution."""
-    out = {}
+    """({game_id: ((home_id, basis), (away_id, basis))}, {player_id: name})
+    from the current board's starter resolution."""
+    out, names = {}, {}
     try:
         s = json.load(open(V1_SLATE))
     except Exception:
-        return out
+        return out, names
     for g in s.get("games", []):
         sides = []
         for side in ("home", "away"):
             st = g.get(side + "_starter") or {}
             if st.get("player_id"):
                 sides.append((str(st["player_id"]), "board starter: " + str(st.get("label") or st.get("status"))))
+                names[str(st["player_id"])] = st.get("player_name")
             else:
                 sides.append((None, None))
         try:
             out[int(g["game_id"])] = tuple(sides)
         except (KeyError, ValueError):
             continue
-    return out
+    return out, names
 
 
 def last_starter(T, team, season):
@@ -102,7 +103,7 @@ def build(cfg, days=10, now=None):
     now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     T = Tables(os.path.join(DATA, "build"))
     season = int(T.games[T.games.result.notna()].season.max())
-    v1 = starters_from_v1()
+    v1, names = starters_from_v1()
     up = T.games[(T.games.season == season) & T.games.result.isna()]
     up = up[(up.kick_utc >= pd.Timestamp(now) - pd.Timedelta(hours=6)) & (up.kick_utc <= pd.Timestamp(now) + pd.Timedelta(days=days))]
     overrides, basis = {}, {}
@@ -165,10 +166,13 @@ def build(cfg, days=10, now=None):
         cards.append({
             "game_id": str(r.game_id), "week": int(r.week), "home": r.home_name, "away": r.away_name,
             "home_id": int(r.home), "away_id": int(r.away), "home_division": r.home_div, "away_division": r.away_div,
-            "home_conference": r.home_conf, "away_conference": r.away_conf, "neutral_site": bool(r.neutral),
+            "home_conference": r.home_conf if isinstance(r.home_conf, str) else None,
+            "away_conference": r.away_conf if isinstance(r.away_conf, str) else None, "neutral_site": bool(r.neutral),
             "kickoff_utc": pd.Timestamp(r.kick_utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "starters": {"home": {"id": overrides[r.game_id][0], "name": r.home_qb_name, "basis": basis[r.game_id][0]},
-                         "away": {"id": overrides[r.game_id][1], "name": r.away_qb_name, "basis": basis[r.game_id][1]}},
+            "starters": {"home": {"id": overrides[r.game_id][0], "name": r.home_qb_name or names.get(overrides[r.game_id][0]),
+                                  "basis": basis[r.game_id][0]},
+                         "away": {"id": overrides[r.game_id][1], "name": r.away_qb_name or names.get(overrides[r.game_id][1]),
+                                  "basis": basis[r.game_id][1]}},
             "fair_home_margin": round(c["fair_home_margin"], 2), "fair_home_line": round(-c["fair_home_margin"], 2),
             "fair_total": round(float(r.pred_total), 2) if np.isfinite(r.pred_total) else None,
             "home_win_prob": round(c["home_win_prob"], 4), "tie_prob": round(c["tie_prob"], 4),

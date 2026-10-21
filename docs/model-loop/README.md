@@ -4,6 +4,7 @@ One framework, per-sport adapters, for building, measuring and improving EdgeDes
 
 - **Audit of every model:** [`audit_report.md`](audit_report.md). It is the reason this exists.
 - **NFL backtest (Phase 1):** [`nfl/BACKTEST.md`](nfl/BACKTEST.md).
+- **CFB backtest and weekly loop:** [`cfb/BACKTEST.md`](cfb/BACKTEST.md); version history [`cfb/versions.json`](cfb/versions.json).
 
 ## Layout
 
@@ -23,6 +24,11 @@ model_loop/
     nfl/                     ingest (nflverse pbp, schedule, rosters, snaps), geo (travel, time zones),
                              ratings (unit ratings + QB + priors + market rating), model (walk-forward
                              margin and total, attribution), cards, backtest, report
+    cfb/                     ingest (sportsdataverse pbp, schedules, talent, returning production; the
+                             cfbfastR line archive via cfb_p4's build_market.py), ratings (unit ratings for
+                             every FBS and FCS team around fitted division means + QB + priors + market
+                             rating), model, cards, backtest (vs a cold replay of football/cfb_p4), report,
+                             weekly (Sunday-night loop)
   tests/                     core guarantees (run: python3 -m unittest discover -s model_loop/tests -t .)
 supabase/model_loop.sql      append-only snapshot table, RLS, service-role ingest
 supabase/model_loop_nfl_registry.sql   generated: NFL-CORE v1.0.0 and the v2 candidate, with results
@@ -50,7 +56,7 @@ An adapter supplies five things:
 | Sport | Cadence (weekly refresh) | Status |
 |---|---|---|
 | NFL | Tuesday | **Phase 1 built and backtested.** Weekly loop not yet switched on |
-| CFB | Sunday night | Not started. Audit §CFB lists what the adapter must fix (personnel prior, FCS, QB) |
+| CFB | Sunday night (`.github/workflows/model-loop-cfb.yml`; refresh daily Aug–Jan) | **Built, backtested, v2.0.0 served by owner decision 2026-10-21.** Beats a cold replay of cfb_p4 v1.0.1 on MAE and log loss over 2014–2025 and on the 2025 holdout (all games); FBS-vs-FCS priced team by team. Does not beat the close. [`cfb/BACKTEST.md`](cfb/BACKTEST.md) |
 | MLB | daily in season | Not started. No closing archive owned: the loop can only grade against outcomes until closes are captured |
 | WNBA | daily in season | Not started. No market data captured at all |
 | CBB | daily in season | Not started. Home-court refit and non-D1 opponents fixed first |
