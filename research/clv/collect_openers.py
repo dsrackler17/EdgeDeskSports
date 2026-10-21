@@ -325,11 +325,19 @@ def market(o, when, sport, home_abbr=None, away_abbr=None):
     return m if any(v is not None for v in m.values()) else None
 
 
+# ESPN spells one book more than one way ("DraftKings" on the scoreboard, "Draft
+# Kings" in a game summary); a quote and its settle must name the same book
+BOOK_NAMES = {"draftkings": "DraftKings", "espnbet": "ESPN BET", "caesars": "Caesars", "williamhill": "William Hill",
+              "fanduel": "FanDuel", "betmgm": "BetMGM", "bet365": "bet365", "pointsbet": "PointsBet"}
+
+
 def book_of(o):
-    """The named book, or None for a nameless, consensus or 'opening' entry."""
+    """The named book (one spelling per book), or None for a nameless, consensus or 'opening' entry."""
     p = o.get("provider") if isinstance(o, dict) else None
-    name = str((p or {}).get("name") or "").strip()
-    return None if not name or REFUSED_BOOK.search(name) else name
+    name = re.sub(r"\s+", " ", str((p or {}).get("name") or "")).strip()
+    if not name or REFUSED_BOOK.search(name.replace(" ", "")):
+        return None
+    return BOOK_NAMES.get(re.sub(r"[^a-z0-9]", "", name.lower()), name)
 
 
 def _odds_side_id(s):

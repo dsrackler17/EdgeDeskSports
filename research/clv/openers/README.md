@@ -137,6 +137,7 @@ So NHL 2025-26 and 2026-27 to date, NCAAW 2025-26 and part of college baseball 2
 
 - **Pregame only.** A quote is read only while ESPN says the game is `pre`, it is not postponed, cancelled, suspended or delayed, and its start has not passed. A game whose time is TBD counts until its day ends, Eastern. In-play prices are never read.
 - **Named books only.** A nameless entry and any book named consensus, average or opening are refused, and so are TeamRankings and numberFire, stats sites whose lines older summaries quote.
+- **One spelling per book.** ESPN writes "DraftKings" on the scoreboard and "Draft Kings" in game summaries. Both are stored as `DraftKings`, so a quote and its settle name the same book.
 - **Orientation is checked, never assumed.**
   - An odds block whose side ids name the other team as home is refused.
   - A spread is taken from ESPN's side-labelled block first. Its flat fields must agree with it about who is favoured, or the spread is dropped.
