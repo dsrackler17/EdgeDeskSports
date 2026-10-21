@@ -53722,10 +53722,12 @@ function fbP4Request(u,opts){
     var ctx=fbP4InputCtx();
     req=C.request(A,ctx,{game:u._asm.game,state:FB.p4.state,market:mkt,
       odds_as_of:noMkt?null:((mkt||{}).as_of||null)},fbP4InputDeps());
-  }else req=fbP4RequestBare(u,mkt,noMkt);
-  /* the game's id, so a promoted champion's stored number can price it
-     (lib/cfb_champion.js; the slate build names its games the same way) */
-  if(req&&req.game&&u&&u.g&&u.g.game_id!=null)req.game=Object.assign({},req.game,{game_id:String(u.g.game_id)});
+  }else{
+    req=fbP4RequestBare(u,mkt,noMkt);
+    /* the shared assembly names the game (football/matchup/contract.js); the
+       fallback names it here, so a promoted champion's number can price it */
+    if(req&&req.game&&u&&u.g&&u.g.game_id!=null)req.game=Object.assign({},req.game,{game_id:String(u.g.game_id)});
+  }
   return req;
 }
 /* the regime-change record for one team, through the shared contract's own
