@@ -2,7 +2,7 @@
  "schema": "edgedesk_model_loop_nfl_current_v1",
  "model_version": "2.0.0",
  "status": "EXPERIMENTAL",
- "generated_at": "2026-10-21T03:43:58Z",
+ "generated_at": "2026-10-21T03:54:21Z",
  "season": 2026,
  "config_sha256": "2ae53dbf05e0871616ba35159c4914c5a9073a99252c02e8212349ff6216ef35",
  "distribution": {
@@ -43,20 +43,20 @@
   "kmax": 70
  },
  "coefficients": {
-  "home_field": 2.1453189213727892,
-  "covid_2020": -2.0913645599549753,
-  "pass_off": 8.372516228013012,
-  "pass_def": 8.372516228013012,
-  "qb": 14.935191535470278,
-  "rush_off": 22.225023378358152,
-  "rush_def": 22.225023378358152,
-  "market": 0.7996581351021803,
-  "rest": 1.8040447678653204,
-  "bye": -0.5827369364955529,
-  "short": 0.6175317238458145,
-  "travel": 0.5652495282262434,
-  "timezone": -0.783069575666076,
-  "body_clock": 0.7049064519287099
+  "home_field": 2.1453189213728234,
+  "covid_2020": -2.091364559954999,
+  "pass_off": 8.372516228013028,
+  "pass_def": 8.372516228013028,
+  "qb": 14.935191535470247,
+  "rush_off": 22.225023378358063,
+  "rush_def": 22.225023378358063,
+  "market": 0.7996581351021801,
+  "rest": 1.8040447678653064,
+  "bye": -0.5827369364955376,
+  "short": 0.6175317238458223,
+  "travel": 0.5652495282261776,
+  "timezone": -0.7830695756660216,
+  "body_clock": 0.7049064519286565
  },
  "thresholds": {
   "flag_points": 3.0,
@@ -206,7 +206,7 @@
    "reconciliation": {
     "components_sum": -0.082763,
     "fair_home_margin": -0.082763,
-    "unattributed": 0.0
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": -3.0,
@@ -224,7 +224,7 @@
    "disagreement": {
     "level": "QB UNRESOLVED",
     "text": "Model disagrees with market by 3.1 with the schedule feed's starter; the starter is contested (see scenarios)",
-    "gap_points": -3.0827625711547175,
+    "gap_points": -3.082762571154697,
     "direction": "away",
     "drivers": [
      {
@@ -245,6 +245,12 @@
       "points": -0.3,
       "prior_share": null
      }
+    ]
+   },
+   "data_status": {
+    "status": "DEGRADED",
+    "reasons": [
+     "home starter unresolved: schedule feed names Tyler Huntley, depth chart names Lamar Jackson"
     ]
    }
   },
@@ -390,14 +396,18 @@
    "reconciliation": {
     "components_sum": -2.771052,
     "fair_home_margin": -2.771052,
-    "unattributed": 0.0
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": 1.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_DAL_PHI",
@@ -541,7 +551,7 @@
    "reconciliation": {
     "components_sum": -2.125907,
     "fair_home_margin": -2.125907,
-    "unattributed": -0.0
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": 4.5,
@@ -551,7 +561,7 @@
    "disagreement": {
     "level": "WATCH",
     "text": "Model disagrees with market by 2.4",
-    "gap_points": 2.3740931785908432,
+    "gap_points": 2.374093178590871,
     "direction": "home",
     "drivers": [
      {
@@ -567,6 +577,10 @@
       "prior_share": 0.875
      }
     ]
+   },
+   "data_status": {
+    "status": "OK",
+    "reasons": []
    }
   },
   {
@@ -718,7 +732,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_GB_DET",
@@ -872,7 +890,7 @@
    "disagreement": {
     "level": "WATCH",
     "text": "Model disagrees with market by 2.8",
-    "gap_points": 2.769860841197385,
+    "gap_points": 2.7698608411974632,
     "direction": "home",
     "drivers": [
      {
@@ -888,6 +906,10 @@
       "prior_share": 0.094
      }
     ]
+   },
+   "data_status": {
+    "status": "OK",
+    "reasons": []
    }
   },
   {
@@ -1039,7 +1061,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_KC_SEA",
@@ -1183,7 +1209,7 @@
    "reconciliation": {
     "components_sum": -0.321019,
     "fair_home_margin": -0.321019,
-    "unattributed": -0.0
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -2.5,
@@ -1193,7 +1219,7 @@
    "disagreement": {
     "level": "WATCH",
     "text": "Model disagrees with market by 2.8",
-    "gap_points": -2.821019360140726,
+    "gap_points": -2.8210193601406592,
     "direction": "away",
     "drivers": [
      {
@@ -1215,6 +1241,10 @@
       "prior_share": null
      }
     ]
+   },
+   "data_status": {
+    "status": "OK",
+    "reasons": []
    }
   },
   {
@@ -1359,14 +1389,18 @@
    "reconciliation": {
     "components_sum": -5.936666,
     "fair_home_margin": -5.936666,
-    "unattributed": 0.0
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": 4.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_MIA_NYJ",
@@ -1517,7 +1551,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_NE_CHI",
@@ -1668,7 +1706,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_NYG_HOU",
@@ -1819,7 +1861,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_PIT_NO",
@@ -1970,7 +2016,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_SF_ATL",
@@ -2121,7 +2171,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_07_TB_CAR",
@@ -2283,7 +2337,7 @@
    "disagreement": {
     "level": "QB UNRESOLVED",
     "text": "Model disagrees with market by 4.1 with the schedule feed's starter; the starter is contested (see scenarios)",
-    "gap_points": 4.120680421587152,
+    "gap_points": 4.120680421587164,
     "direction": "home",
     "drivers": [
      {
@@ -2298,6 +2352,12 @@
       "points": 0.76,
       "prior_share": null
      }
+    ]
+   },
+   "data_status": {
+    "status": "DEGRADED",
+    "reasons": [
+     "away starter unresolved: schedule feed names Jalon Daniels, depth chart names Baker Mayfield"
     ]
    }
   },
@@ -2450,7 +2510,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_ATL_TB",
@@ -2594,14 +2658,18 @@
    "reconciliation": {
     "components_sum": 0.669263,
     "fair_home_margin": 0.669263,
-    "unattributed": 0.0
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": -1.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_BAL_BUF",
@@ -2752,7 +2820,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_CAR_GB",
@@ -2896,14 +2968,18 @@
    "reconciliation": {
     "components_sum": 2.606845,
     "fair_home_margin": 2.606845,
-    "unattributed": -0.0
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_CHI_SEA",
@@ -3057,7 +3133,7 @@
    "disagreement": {
     "level": "WATCH",
     "text": "Model disagrees with market by 2.2",
-    "gap_points": -2.1899507064436836,
+    "gap_points": -2.189950706443631,
     "direction": "away",
     "drivers": [
      {
@@ -3085,6 +3161,10 @@
       "prior_share": null
      }
     ]
+   },
+   "data_status": {
+    "status": "OK",
+    "reasons": []
    }
   },
   {
@@ -3236,7 +3316,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_IND_JAX",
@@ -3390,7 +3474,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.5",
-    "gap_points": 3.4909404411957805,
+    "gap_points": 3.490940441195777,
     "direction": "home",
     "drivers": [
      {
@@ -3418,6 +3502,10 @@
       "prior_share": null
      }
     ]
+   },
+   "data_status": {
+    "status": "OK",
+    "reasons": []
    }
   },
   {
@@ -3569,7 +3657,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_LAC_LA",
@@ -3713,7 +3805,7 @@
    "reconciliation": {
     "components_sum": 11.078448,
     "fair_home_margin": 11.078448,
-    "unattributed": 0.0
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": -7.5,
@@ -3723,7 +3815,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.6",
-    "gap_points": 3.578447958788015,
+    "gap_points": 3.5784479587880433,
     "direction": "home",
     "drivers": [
      {
@@ -3751,6 +3843,10 @@
       "prior_share": null
      }
     ]
+   },
+   "data_status": {
+    "status": "OK",
+    "reasons": []
    }
   },
   {
@@ -3902,7 +3998,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_MIN_DET",
@@ -4046,14 +4146,18 @@
    "reconciliation": {
     "components_sum": 4.013415,
     "fair_home_margin": 4.013415,
-    "unattributed": 0.0
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": -2.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_NE_MIA",
@@ -4204,7 +4308,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_PHI_WAS",
@@ -4355,7 +4463,11 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
   },
   {
    "game_id": "2026_08_TEN_CIN",
@@ -4509,7 +4621,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.2",
-    "gap_points": 3.152006513214797,
+    "gap_points": 3.152006513214875,
     "direction": "home",
     "drivers": [
      {
@@ -4537,6 +4649,10 @@
       "prior_share": 0.097
      }
     ]
+   },
+   "data_status": {
+    "status": "OK",
+    "reasons": []
    }
   }
  ],
@@ -4546,6 +4662,13 @@
   "promoted_by": "owner",
   "promoted_at": "2026-10-21T01:28:58Z",
   "reason": "Owner decision 2026-10-21 ('ship it all ... grow every single week'). Overrides the preregistered rule, which v2 did not clear against v1-as-trained on 2025 holdout log loss (0.6390 vs 0.6362, CI spans zero); v2 beats v1 as trained on the full 2011-2025 backtest (MAE -0.135, log loss -0.0094) and v1 as shipped everywhere."
+ },
+ "data_status": {
+  "status": "OK",
+  "reasons": [],
+  "games_flagged": 2,
+  "missing_results": [],
+  "checked_at": "2026-10-21T03:54:21Z"
  },
  "contract": "Per game: fair_home_margin (+ = home), fair_home_line (book convention), home_win_prob, tie_prob, fair moneylines, range80 (centred on the margin), components that sum exactly to fair_home_margin, the starter priced, qb_scenarios for a contested starter, disagreement vs the reference line. distribution (sigma + key-number multipliers by |margin|) prices any spread: P(M=k) proportional to exp(-((k-mu')/sigma)^2/2) * mult[|k|], mu' solved so the mean is the margin."
 }
