@@ -1,0 +1,77 @@
+# EdgeDesk Football — Circa Sports Million contest ownership, read and recorded.
+#
+# Runs supabase/functions/circa_ownership_sync/index.ts, the edge function's
+# own file, under Deno on this runner (tools/football/circa_ownership_run.ts).
+# The deployed function cannot finish a real week: the selections PDF (every
+# entry's five picks, thousands of entries) needs more compute than an edge
+# worker has, and Supabase answers 546 WORKER_RESOURCE_LIMIT (2026-10-21,
+# Week 6 of Million VIII). The pg_cron pokes are retired by
+# supabase/contest_ownership_cron.sql. It writes through
+# contest_ownership_ingest() / contest_ownership_fail() with the service role.
+#
+# WHEN. Circa posts the selections on Saturday, before the Sunday games: every
+# two hours from 10:00 to 18:00 Eastern, then Sunday at 08:00, 10:00 and 12:00
+# Eastern (UTC below, written for daylight time; under standard time each lands
+# an hour earlier Eastern, still inside the window). A week already complete,
+# or a PDF unchanged since the last good run, returns at once. No PDF yet is a
+# WARNING until Sunday 13:00 Eastern and a FAILURE after (contest_ownership_fail);
+# this job shows it as a warning annotation either way.
+#
+# BY HAND (Actions -> Circa ownership sync -> Run workflow): leave week empty for
+# the current contest week; tick dry to read and report without writing.
+#
+# SECRETS: SB_URL, SB_SERVICE_ROLE (the ones nfl-market-structure.yml uses).
+name: Circa ownership sync
+
+on:
+  schedule:
+    - cron: '7 14,16,18,20,22 * * 6'   # Saturday, 10:07-18:07 Eastern
+    - cron: '7 12,14,16 * * 0'         # Sunday, 08:07 / 10:07 / 12:07 Eastern
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Contest week (empty = the current week)'
+        required: false
+        default: ''
+      dry:
+        description: 'Dry run: read the PDF and report, write nothing'
+        type: boolean
+        default: false
+      force:
+        description: 'Re-read a week that already has a complete run'
+        type: boolean
+        default: false
+      url:
+        description: 'A selections PDF URL to read instead of finding it (optional)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: circa-ownership
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.5.4
+
+      - name: Read the week's Circa Million selections and record them
+        env:
+          SUPABASE_URL: ${{ secrets.SB_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SB_SERVICE_ROLE }}
+          CIRCA_WEEK: ${{ inputs.week }}
+          CIRCA_DRY: ${{ inputs.dry }}
+          CIRCA_FORCE: ${{ inputs.force }}
+          CIRCA_URL: ${{ inputs.url }}
+        # --node-modules-dir=none: the repo's package.json would otherwise make Deno
+        # look for npm:unpdf in node_modules instead of its own cache
+        run: deno run --node-modules-dir=none --allow-net --allow-env --allow-read --allow-write tools/football/circa_ownership_run.ts

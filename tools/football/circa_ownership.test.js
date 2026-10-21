@@ -23,6 +23,11 @@
               against a stub Supabase and the fixture PDF; what it sends to
               contest_ownership_ingest is then written to the real database.
               Announced and skipped without Deno.
+     RUNNER   tools/football/circa_ownership_run.ts, which
+              .github/workflows/circa-ownership.yml runs because the deployed
+              function hits the edge worker's compute limit on a real week: the
+              same function file, called once in-process, against the same stub
+              (recorded, a dry run, no PDF yet, missing credentials).
 
    No real Circa document is used anywhere: this environment cannot reach
    circasports.com. docs/market-structure/README.md says what to check on the
@@ -134,6 +139,14 @@ chk('the edge function carries the core verbatim (node tools/football/inline_cir
   chk('the PDF library is imported by a literal specifier, so the deploy bundles it (a variable left it out)', /import\("npm:unpdf@\d+\.\d+\.\d+"\)/.test(fn) && !/import\(\s*[A-Za-z_$][\w$]*\s*\)/.test(fn));
   chk('the function checks x-cron-secret and refuses when its secret is unset', /x-cron-secret/.test(fn) && /CIRCA_CRON_SECRET is not set/.test(fn));
   chk('the function never writes a failed run as rows (failed → contest_ownership_fail)', /v\.status === "failed"[\s\S]{0,80}fail\(/.test(fn));
+  const cronSql = fs.readFileSync(path.join(ROOT, 'supabase', 'contest_ownership_cron.sql'), 'utf8');
+  chk('contest_ownership_cron.sql schedules nothing: the sync runs in GitHub Actions (the edge worker runs out of compute on a real week)', !/cron\.schedule\s*\(/.test(cronSql) && /cron\.unschedule/.test(cronSql) && /drop function if exists public\.circa_ownership_poke\(\)/.test(cronSql));
+  const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'circa-ownership.yml'), 'utf8');
+  chk('the workflow keeps the Saturday / Sunday schedule and can be run by hand', /cron: '7 14,16,18,20,22 \* \* 6'/.test(wf) && /cron: '7 12,14,16 \* \* 0'/.test(wf) && /workflow_dispatch:/.test(wf));
+  chk('the workflow runs the runner under Deno with the service role from SB_URL / SB_SERVICE_ROLE', /deno run --node-modules-dir=none [^\n]*tools\/football\/circa_ownership_run\.ts/.test(wf)
+    && /SUPABASE_URL: \$\{\{ secrets\.SB_URL \}\}/.test(wf) && /SUPABASE_SERVICE_ROLE_KEY: \$\{\{ secrets\.SB_SERVICE_ROLE \}\}/.test(wf));
+  const runner = fs.readFileSync(path.join(ROOT, 'tools', 'football', 'circa_ownership_run.ts'), 'utf8');
+  chk('the runner imports the deployed function file itself, not a copy', /new URL\("\.\.\/\.\.\/supabase\/functions\/circa_ownership_sync\/index\.ts", import\.meta\.url\)/.test(runner));
   ['contest_ownership.sql', 'contest_ownership_cron.sql'].forEach((f) => {
     const s = fs.readFileSync(path.join(ROOT, 'supabase', f), 'utf8');
     chk(f + ': no psql meta-command, ends in a report', !/^\s*\\/m.test(s) && /THE REPORT[\s\S]*select piece, state/.test(s));
@@ -218,20 +231,23 @@ create or replace function cron.unschedule(p_id bigint) returns boolean language
       create or replace function net.http_post(url text, body jsonb, params jsonb default '{}'::jsonb, headers jsonb default '{}'::jsonb, timeout_milliseconds integer default 5000)
         returns bigint language sql as $f$ insert into net.sent (url, body, headers) values (url, body, headers) returning id $f$;`);
     {
+      /* without pg_cron there is nothing to unschedule: the file still applies and reads ok */
+      one(`drop schema if exists cron cascade;`);
       const cr = pg.stage(path.join(ROOT, 'supabase', 'contest_ownership_cron.sql'));
+      const c0 = pg.psql('-d co -X -A -t -v ON_ERROR_STOP=1 -f ' + cr);
+      chk('DB: the contest cron file applies where pg_cron is absent, and reads ok', c0.status === 0 && c0.out.split('\n').filter((l) => /\|/.test(l)).every((l) => /\|ok$/.test(l)), c0.out.slice(-600));
+      /* the jobs and the poke an earlier version created, and a job that is not Circa's */
+      one(`create schema if not exists cron;
+create table if not exists cron.job (jobid bigserial primary key, jobname text unique, schedule text, command text, active boolean default true);
+create or replace function cron.unschedule(p_id bigint) returns boolean language sql as $f$ delete from cron.job where jobid = p_id returning true $f$;
+insert into cron.job (jobname, schedule, command) values ('circa_ownership_saturday', '7 14,16,18,20,22 * * 6', 'select public.circa_ownership_poke();'),
+  ('circa_ownership_sunday', '7 12,14,16 * * 0', 'select public.circa_ownership_poke();'), ('nfl_line_snapshot', '*/15 16-23 * * 4', 'select public.nfl_line_snapshot_take();');
+create or replace function public.circa_ownership_poke() returns jsonb language sql as $f$ select '{}'::jsonb $f$;`);
       const c1 = pg.psql('-d co -X -A -t -v ON_ERROR_STOP=1 -f ' + cr), c2 = pg.psql('-d co -X -A -t -v ON_ERROR_STOP=1 -f ' + cr);
-      chk('DB: the contest cron applies, and again', c1.status === 0 && c2.status === 0, (c1.out + c2.out).slice(-600));
-      chk('DB: Saturday every two hours and Sunday morning, both poking the sync', one(`select string_agg(jobname || '=' || schedule, ',' order by jobname) from cron.job where command like '%circa_ownership_poke%'`)
-        === 'circa_ownership_saturday=7 14,16,18,20,22 * * 6,circa_ownership_sunday=7 12,14,16 * * 0');
-      chk('DB: the report says when the Vault secret is missing', /3 Vault circa_cron_secret is set\|CHECK THIS/.test(c2.out), c2.out.slice(-300));
-      const miss = json(`select public.circa_ownership_poke();`);
-      chk('DB: no secret: nothing is sent, and a FAILURE alert survives (recorded, not rolled back)', miss && miss.queued === false && one('select count(*) from net.sent') === '0'
-        && one(`select count(*) from public.market_structure_alerts where code = 'no_cron_secret' and severity = 'FAILURE'`) === '1', miss);
-      one(`insert into vault.decrypted_secrets values ('circa_cron_secret', 's3cret');`);
-      const sent = json(`select public.circa_ownership_poke();`);
-      chk('DB: with the secret: one POST to the function carrying x-cron-secret', sent && sent.queued === true
-        && one(`select url || ' ' || (headers ->> 'x-cron-secret') from net.sent`) === 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/circa_ownership_sync s3cret');
-      chk('DB: anon cannot poke', q(`set role anon; select public.circa_ownership_poke();`).status !== 0);
+      chk('DB: the contest cron file applies over the old jobs, and again', c1.status === 0 && c2.status === 0, (c1.out + c2.out).slice(-600));
+      chk('DB: the Saturday and Sunday pokes are unscheduled; another job is left alone', one(`select string_agg(jobname, ',' order by jobname) from cron.job`) === 'nfl_line_snapshot');
+      chk('DB: the poke function is gone', one(`select coalesce(to_regprocedure('public.circa_ownership_poke()')::text, 'gone')`) === 'gone');
+      chk('DB: the report reads ok', c2.out.split('\n').filter((l) => /\|/.test(l)).length === 2 && c2.out.split('\n').filter((l) => /\|/.test(l)).every((l) => /\|ok$/.test(l)), c2.out.slice(-400));
     }
     const P = fromPdf ? fromPdf.P : C.circaParse(['1 A 1. BENGALS +3 4. TITANS +1.5 6. EAGLES +4.5 10. LIONS -3 13. CHIEFS +2.5', '2 B 1. BENGALS +3 4. TITANS +1.5 6. EAGLES +4.5 10. LIONS -3 99. SPACE CADETS +3']);
     const A = fromPdf ? fromPdf.A : C.circaAggregate(P, (c) => EV[c] || null);
@@ -322,7 +338,35 @@ create or replace function cron.unschedule(p_id bigint) returns boolean language
         chk('E2E → DB: what the function sends is accepted by the real database', w && w.status === 'partial' && w.quarantined_picks === 3, w);
       }
     }
-    proc.kill('SIGTERM'); stub.close(); try { fs.unlinkSync(shim); } catch (_) {}
+    proc.kill('SIGTERM');
+    /* the runner the workflow uses: the same file, called once in-process */
+    {
+      const RUNNER = path.join(ROOT, 'tools', 'football', 'circa_ownership_run.ts');
+      const sumFile = path.join(os.tmpdir(), 'circa_summary_' + process.pid + '.md');
+      const runIt = (extra) => new Promise((resolve) => {
+        const e = Object.assign({}, env, { CIRCA_CRON_SECRET: '', GITHUB_STEP_SUMMARY: sumFile }, extra);
+        Object.keys(e).forEach((k) => { if (e[k] === undefined) delete e[k]; });
+        const p = cp.spawn(DENO, ['run', '--node-modules-dir=none', '--allow-net', '--allow-env', '--allow-read', '--allow-write', '--no-check', RUNNER], { env: e, stdio: ['ignore', 'pipe', 'pipe'] });
+        let o = ''; p.stdout.on('data', (d) => (o += d)); p.stderr.on('data', (d) => (o += d));
+        const t = setTimeout(() => p.kill('SIGKILL'), 180000);
+        p.on('exit', (code) => { clearTimeout(t); resolve({ code, out: o }); });
+      });
+      const ingests = () => calls.filter((x) => x.rpc === 'contest_ownership_ingest').length, fails = () => calls.filter((x) => x.rpc === 'contest_ownership_fail').length;
+      let i0 = ingests();
+      const rec = await runIt({ CIRCA_WEEK: '7', CIRCA_URL: 'http://127.0.0.1:' + sport + '/w7.pdf', CIRCA_FORCE: 'true' });
+      chk('RUNNER: a week is read and recorded through contest_ownership_ingest; exit 0', rec.code === 0 && ingests() === i0 + 1 && /OK \| Circa Million week 7 \| recorded partial: 40 entries/.test(rec.out), rec.out.slice(-700));
+      chk('RUNNER: it writes a step summary row', fs.existsSync(sumFile) && /\| 7 \| recorded partial/.test(fs.readFileSync(sumFile, 'utf8')));
+      i0 = ingests();
+      const dry = await runIt({ CIRCA_WEEK: '7', CIRCA_URL: 'http://127.0.0.1:' + sport + '/w7.pdf', CIRCA_DRY: 'true' });
+      chk('RUNNER: a dry run reads and writes nothing; exit 0', dry.code === 0 && ingests() === i0 && /dry run read 40 entries/.test(dry.out), dry.out.slice(-500));
+      const f0 = fails();
+      const none = await runIt({ CIRCA_WEEK: '7', CIRCA_URL: 'http://127.0.0.1:' + sport + '/missing.pdf' });
+      chk('RUNNER: no PDF yet is recorded by contest_ownership_fail and annotated as a warning; exit 0', none.code === 0 && fails() === f0 + 1 && /::warning::Circa Million week 7/.test(none.out), none.out.slice(-500));
+      const nocred = await runIt({ SUPABASE_URL: undefined, SUPABASE_SERVICE_ROLE_KEY: undefined });
+      chk('RUNNER: without SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY it runs nothing and fails', nocred.code === 1 && /::error::SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY not set/.test(nocred.out), nocred.out.slice(-300));
+      try { fs.unlinkSync(sumFile); } catch (_) {}
+    }
+    stub.close(); try { fs.unlinkSync(shim); } catch (_) {}
   }
 
   failures.forEach((x) => console.log('FAIL | ' + x.name + (x.detail !== undefined ? '  ' + JSON.stringify(x.detail).slice(0, 700) : '')));
