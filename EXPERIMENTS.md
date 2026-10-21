@@ -550,3 +550,44 @@ Pre-registered 2026-10-21, before any NHL CLV number was computed.
 - **Model:** ridge of the total line move on `dt_core` and `dt_gproj`.
 - **Bet rule:** |predicted move| ≥ 0.05 goals.
 - **Pass:** as B1.
+
+### NHL pre-holdout results
+
+Run 2026-10-21 on repo 2014–2020 (9,195 games with moneyline open and close) by `python3 -m research.clv.nhl pre`.
+
+**Join.**
+- SBR to the walk-forward schedule: 11,529 games from 2014–2022, after the documented wrong-year SBR dates were handled one-to-one.
+- p_core vs the no-vig close: correlation 0.906.
+
+| ID | Rule | Bets | CLV prob (pp) | p | Toward | `clv_ev` | Verdict |
+|---|---|---|---|---|---|---|---|
+| NHL-B1 | production xg_core, ML, ≥0.02 | 5,108 | +0.83 [+0.74, +0.92] | <1e-4 | 0.613 | -1.7% | PASS (every season positive: +0.50 to +1.17) |
+| NHL-B2 | production xg_core, total (line only), ≥0.30 | 2,333 | +2.23 [+2.05, +2.42]; +0.111 goals | <1e-4 | 0.975 | -0.3% | PASS, **low confidence**. The bets fall on totals opened at 5.0, 6.0 or 6.5 that revert toward 5.5. SBR keeps no juice, so a half-goal move that a juice shift partly offsets is counted in full. Overstated by construction |
+| NHL-B3 | xg_goalie_projected, ML, ≥0.02 | 5,106 | +0.84 [+0.75, +0.93] | <1e-4 | 0.612 | -1.7% | PASS |
+| NHL-R1 | ML residual (d_core, d_gproj), ≥0.005 | 3,013 | +0.81 [+0.70, +0.93] | <1e-4 | 0.599 | -1.6% | PASS (move slope 0.98) |
+| NHL-R2 | R1 + information block | 3,059 | +0.94 [+0.83, +1.05] | <1e-4 | 0.628 | -1.4% | PASS. Beats R1 on the same 5,235 games (+0.94 vs +0.81) |
+| NHL-W1 | B3 where the projected goalie moves the price ≥0.02 | 143 | +0.91 [+0.53, +1.29] | <1e-4 | 0.672 | -1.9% | PASS. Barely above B3 overall (+0.84). The projected-goalie hypothesis is **not clearly supported** |
+| NHL-W2 | R1 on one-team back-to-backs | 701 | +1.12 [+0.89, +1.34] | <1e-4 | 0.647 | -1.1% | PASS (above R1 overall, +0.81) |
+| NHL-W3 | totals residual (line only), ≥0.05 | 3,008 | +1.55 [+1.41, +1.71]; +0.079 goals | <1e-4 | 0.914 | -1.5% | PASS, low confidence (as B2) |
+
+**NHL pre-holdout attempt count: 8.**
+
+### NHL-H: Phase 6 selection (written before the holdout was read)
+
+**Gate data:** proxy holdout, repo 2021–2022 (SBR 2020–2021). The mandated 2026–2027 holdout has no openers with closes, so it reports nothing.
+
+**Candidates (G8):**
+
+| ID | Candidate |
+|---|---|
+| NHL-H1 | production xg_core, ML ≥0.02 (reference) |
+| NHL-H2 | production xg_core, total line ≥0.30 (reference) |
+| NHL-H3 | ML challenger = **NHL-W2**: R1 frozen on 2014–2020, betting one-team back-to-backs at ≥0.005. Highest eligible pre-holdout mean (+1.12 pp vs R2 +0.94, W1 +0.91, B3 +0.84) |
+| NHL-H4 | total challenger = **NHL-W3** frozen (+1.55 pp, the best non-production totals rule) |
+
+**k = 12** (8 + 4). PASS per G7.
+
+### NHL-H1: production xg_core moneyline on the proxy holdout
+### NHL-H2: production xg_core total on the proxy holdout
+### NHL-H3: NHL-W2 (R1 frozen, back-to-backs) on the proxy holdout
+### NHL-H4: NHL-W3 frozen on the proxy holdout

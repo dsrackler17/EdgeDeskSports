@@ -73,8 +73,14 @@ def sbr_lines(g):
                              "open_line": r.open_line, "close_line": r.close_line, "open_total": r.open_total,
                              "close_total": r.close_total})
     x = pd.DataFrame(rows)
+    # the scraper files some games under the wrong year (the 2020 bubble under
+    # 2019, January-March 2021 under 2020): every row is also tried one year on;
+    # teams, date (+-1 day) and the final score must all agree
+    x["sbr_row"] = np.arange(len(x))
+    x = pd.concat([x.assign(shifted=0), x.assign(date_sbr=x.date_sbr + pd.DateOffset(years=1), shifted=1)], ignore_index=True)
     m = g.merge(x, on=["home_id", "away_id", "hs", "as"], how="inner")
-    m = m[(m.date - m.date_sbr).abs() <= pd.Timedelta(days=1)].drop_duplicates("game_id")
+    m = m[(m.date - m.date_sbr).abs() <= pd.Timedelta(days=1)]
+    m = m[m.season <= 2022].sort_values("shifted").drop_duplicates("sbr_row").drop_duplicates("game_id")
     qa["joined"] = int(len(m))
     qa["unmapped"] = sorted({str(t) for t in set(d.home_team) | set(d.away_team) if str(t) not in SBR})
     return m, qa
