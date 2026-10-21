@@ -1091,6 +1091,215 @@ All are in `.github/workflows/nba.yml`.
 
 Rollback: `supabase/nba_injury_layer_rollback.sql`.
 
+## Kalshi market data — the prediction market beside the book (NFL and CFB)
+
+Kalshi's public order book for NFL and college football game-winner markets,
+captured every five minutes and shown on the game cards beside EdgeDesk's own
+de-vigged book fair. **A new data source, not a model change**: no projection,
+ranking, threshold, EV flag, score, grade or CLV record reads it, and it writes
+nothing to `signals` or `signal_ticks`.
+
+- **Kalshi's prices are Observed (T0), provider Kalshi.** YES bid, ask, mid,
+  spread, volume, open interest and the snapshot time, exactly as Kalshi's
+  public REST API (`/series`, `/markets`) answered. No Kalshi key exists or is
+  needed.
+- **Kalshi mid − book fair is Computed (T2).** A deterministic difference in
+  percentage points between the Kalshi YES mid and the book's de-vigged fair
+  probability for the same team (`signal_ticks.sharp_fair`). A difference
+  between two markets, not an edge.
+
+### What runs, and when
+
+`supabase/functions/kalshi_sync`, poked by pg_cron (`supabase/kalshi_market_data_cron.sql`)
+with the Vault secret `kalshi_cron_secret`:
+
+| mode | when | what |
+|---|---|---|
+| `discover` | daily, 09:17 UTC | Kalshi's Sports series into `kalshi_series` (never touching `tracked`); the status and result of tracked markets whose game has ended |
+| `snapshot` | every 5 minutes | every open market of every **tracked** series: metadata upserted, one append-only `kalshi_price_snapshots` row per market settling within 8 days (`KALSHI_SNAPSHOT_HORIZON_HOURS`); then the game links |
+
+Every run is a row in `kalshi_sync_runs`; every failure, degradation, drift and
+warning is a row in `kalshi_alerts`. Both are append-only, as the snapshots are.
+
+### Matching a Kalshi event to a game
+
+A Kalshi game-winner event (`KXNFLGAME-26OCT26DALPHI`) has two markets, one per
+team (`…-DAL`, `…-PHI`; YES pays if that team wins). An event is linked only
+when **all** of this holds; otherwise it is left unmapped, with its reason in the
+run's details, and nothing is guessed:
+
+1. **Both teams resolve.** Names go through `lib/football_identity.js` (copied
+   into the function verbatim), the same resolver the Collective's grading uses.
+   An NFL club is read twice, from the market ticker's code (`LA`/`LAR`, `JAC`,
+   `WAS` included) and from `yes_sub_title` (`"New York G"` is read by city and
+   initial). The two must agree. A CFB school must resolve against the book's
+   names with the mascot stripped (`"Ohio St."` = `"Ohio State Buckeyes"`, never
+   `"Ohio Bobcats"`).
+2. **Exactly one book event carries both teams**, matched against
+   **`public.signals`** on the `h2h` rows: `event_id`, `sport_key`
+   (`americanfootball_nfl` / `americanfootball_ncaaf`), `home_team`,
+   `away_team`, `commence_time` and `selection`. The YES side is compared with
+   the h2h `sig_key` of the same team.
+3. **The date agrees** on at least one of two signals:
+   - the event ticker's Eastern date (Kalshi does not update it when a game
+     moves);
+   - the markets' `expected_expiration_time` (about kickoff + 3 h).
+4. **The card's own game id** comes from **`public.game_research_state`**, on
+   the columns `sport`, `game_id`, `game_key`, `home`, `away` and `kickoff_at`.
+   - The game id is the nflverse id for NFL and the CFBD id for CFB.
+   - The match needs both teams, and a kickoff within 36 h of the book's (the
+     board's own tolerance).
+   - If the research state does not have the game yet, the link is made without
+     the id, and a later run fills it in, once.
+
+**Confidence** is stored on every link (`kalshi_game_links.match_confidence`,
+with `match_method` and `match_detail`):
+- **high**: every team resolved by name or alias (an NFL club by code and name
+  together) and both date signals agree.
+- **medium**: one NFL reading, or one date signal (a rescheduled game, for
+  example).
+
+Unmapped reasons are `no_book_event`, `date_mismatch`, `team_conflict`,
+`team_unresolved`, `ambiguous_book_event`, `no_book_moneyline` and
+`not_two_teams`.
+
+### The comparison and the close
+
+- **`kalshi_book_comparison`** pairs every pregame snapshot whose mid is trusted
+  with the book's fair at the nearest capture pass, before or after. A tie goes
+  to the earlier pass. Each row carries:
+  - the Kalshi mid and spread;
+  - the book fair and when it was captured;
+  - the gap in percentage points and the time difference;
+  - `time_gap_flag` when the two are more than 10 minutes apart.
+
+  Rows with a spread over 0.06 are excluded. In-game prices are never compared.
+- **`kalshi_book_closing_comparison`** pairs the **Kalshi close** with the
+  **book close**.
+  - The Kalshi close is the last snapshot taken before kickoff. Kalshi game
+    markets trade in-game and their `close_time` sits about 48 h after kickoff,
+    so `close_time` is not a pregame close.
+  - The book close is the record's own `signals.closing_sharp_fair`, observed
+    at `closing_at_observed`.
+  - A wide Kalshi close is left out, never replaced by an earlier snapshot.
+  - An unknown observation time is flagged.
+
+  The view keeps every row for the study of which market moves toward the other.
+
+### The card
+
+Every NFL and CFB game card carries a **Kalshi** section beside Market Structure
+(`window.fbKalshiHTML`, one guarded hook per card). It shows:
+- **Observed (T0) Kalshi:** YES mid, spread, volume and the last snapshot time
+  for each team;
+- **Computed (T2):** the gap against the book fair, with both numbers and the
+  capture timing;
+- the **Known limitations**.
+
+The display rule is applied once, in `kalshi_card_current`:
+- a mid only when the latest snapshot is fresh and its spread is at most 0.06.
+  Fresh means no older than 15 minutes before kickoff; for the close, taken
+  within 10 minutes of kickoff;
+- a gap only from a comparison captured within 10 minutes;
+- after kickoff, the close.
+
+A game with no matched market shows a visibly inactive line. A wide, one-sided
+or stale market shows its state and no mid.
+
+The section reads with the reader's own token, because every view runs as the
+reader. A reader who cannot read the book fair sees Kalshi's prices and no gap.
+
+**Known limitations** (on the card, in System health, and in the football
+module's limitations):
+- prices are 5-minute snapshots, not live;
+- wide-spread markets are excluded from the mid;
+- Kalshi's trading fees are not reflected in the raw gap.
+
+### Readiness
+
+There is no "Research Readiness Dashboard" under that name; as with the NBA
+layer, the KPIs live in **`public.kalshi_readiness`** and **System health**. The
+rows are:
+- **Kalshi snapshot sync:** state, failures, degraded and drift in 24 h, and
+  consecutive failures;
+- **Kalshi last successful snapshot;**
+- **Kalshi close capture:** game closes with a snapshot within 10 minutes of
+  kickoff over 7 days, target 90%;
+- **Kalshi game links:** matched, and unmatched settling within 30 h.
+
+**Error**, which turns the System pill red:
+- the sync has never run;
+- the last snapshot failed;
+- no snapshot run in 20 minutes (the scheduler stopped calling).
+
+**Warn**:
+- a failure, degradation or drift in 24 h;
+- no successful snapshot in 15 minutes;
+- nothing tracked;
+- discover older than 30 h;
+- unmatched games settling soon;
+- close capture under 90%.
+
+### Decisions made without asking
+
+1. **The sync follows `nba_injury_sync`, not `mlb_sync` / `weather_sync` /
+   `bullpen_sync`.** Those three are deployed-only and are not in this
+   repository. `nba_injury_sync` is the in-repo sync with the same shape:
+   - zero imports;
+   - PostgREST over `fetch`;
+   - an `x-cron-secret` from Vault;
+   - run and alert tables;
+   - a readiness view.
+
+   The starter's `npm:@supabase/supabase-js` import and its service-role key
+   pasted into `cron.schedule` were not kept.
+2. **Close = kickoff** for linked game markets (see above). The starter's
+   "last snapshot before `close_time`" would have been an in-game price.
+3. **A snapshot horizon of 8 days.** Kalshi lists game markets far ahead, so
+   markets settling later keep their metadata current but are not snapshotted.
+4. **The card's gap is the latest comparison within 10 minutes**, not the
+   latest snapshot against whatever pass is nearest. Far from kickoff, capture
+   passes are hours apart, and a gap against a stale fair would be a conclusion
+   EdgeDesk does not own.
+5. **The Kalshi host falls back** from `external-api.kalshi.com` to the shared
+   `api.elections.kalshi.com` (both documented production hosts) when the first
+   refuses or cannot be reached. The run records which host answered.
+6. **Rules are a function** (`kalshi_rule()`), not a config row, so changing the
+   0.06 or the 10 minutes is a reviewed change.
+
+### Tests
+
+- `node tools/kalshi/kalshi_sync.test.js` — the deployed function, mocked Kalshi
+  and PostgREST
+- `KALSHI_SQL_REQUIRED=1 node tools/kalshi/kalshi_sql.test.js` — the layer on a
+  real PostgreSQL
+- `node tools/kalshi/kalshi_ui.test.js` — the card section and System health rows
+- `node tools/kalshi/inline_identity.js --check`
+
+All run in `.github/workflows/kalshi.yml`.
+
+### Deploy
+
+1. Set the function's secret and the matching Vault secret once:
+   - `supabase secrets set KALSHI_CRON_SECRET=<value>`
+   - `select vault.create_secret('<value>', 'kalshi_cron_secret');`
+2. Run **Deploy Kalshi market data** (`.github/workflows/deploy-kalshi.yml`)
+   with `deploy_function` and `apply_sql`. Or paste, in order,
+   `kalshi_market_data.sql` and `kalshi_market_data_cron.sql`.
+3. Discover once, then track the game series:
+   - `select public.kalshi_poke('discover');`
+   - `update public.kalshi_series set tracked = true where ticker in ('KXNFLGAME', 'KXNCAAFGAME');`
+4. Verify:
+   - **GET** the function: it returns the build.
+   - **POST** `{"mode":"snapshot","dry":true}` with the secret: it reads, links
+     and writes nothing.
+   - Then check, in order:
+     - `select * from public.kalshi_readiness;`
+     - `select * from public.kalshi_game_links order by linked_at desc;`
+     - `select * from public.kalshi_book_comparison order by captured_at desc limit 20;`
+
+Rollback: `supabase/kalshi_market_data_rollback.sql`.
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means

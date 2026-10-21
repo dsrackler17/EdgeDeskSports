@@ -1,0 +1,61 @@
+# EdgeDesk — Kalshi market data (README §Kalshi market data).
+#
+#   tests  on every pull request and push that touches this work: the inlined
+#          team identity has not drifted from lib/football_identity.js; the
+#          deployed edge function against a mocked Kalshi and an in-memory
+#          PostgREST (discover, snapshot, the game links and every refusal,
+#          failure and degradation path); the layer on a real PostgreSQL
+#          (append-only history, roles, the 0.06 spread rule, the comparison
+#          and the close, the card's display rule, the readiness KPIs, the
+#          cron poke, the rollback); the card section and its System health
+#          rows as app.html ships them.
+# Deploying is .github/workflows/deploy-kalshi.yml (manual), which runs the
+# same tests first.
+name: Kalshi market data
+run-name: Kalshi market data · ${{ github.event_name }}
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/kalshi_market_data.sql'
+      - 'supabase/kalshi_market_data_cron.sql'
+      - 'supabase/kalshi_market_data_rollback.sql'
+      - 'supabase/migrations/20261021230000_kalshi_market_data.sql'
+      - 'supabase/functions/kalshi_sync/**'
+      - 'lib/football_identity.js'
+      - 'tools/kalshi/**'
+      - 'tools/personal/_pg.js'
+      - 'app.html'
+      - '.github/workflows/kalshi.yml'
+      - '.github/workflows/deploy-kalshi.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/kalshi_market_data*.sql'
+      - 'supabase/functions/kalshi_sync/**'
+      - 'lib/football_identity.js'
+      - 'tools/kalshi/**'
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The inlined team identity is lib/football_identity.js, byte for byte
+        run: node tools/kalshi/inline_identity.js --check
+      - name: The deployed edge function against a mocked Kalshi and PostgREST
+        run: node tools/kalshi/kalshi_sync.test.js
+      - name: The layer on a real PostgreSQL (append-only, roles, the spread rule, the comparison, the close, the card, the KPIs, the cron poke, the rollback)
+        env: { KALSHI_SQL_REQUIRED: '1' }
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/kalshi/kalshi_sql.test.js
+      - name: The card section and its System health rows, as app.html ships them
+        run: node tools/kalshi/kalshi_ui.test.js
