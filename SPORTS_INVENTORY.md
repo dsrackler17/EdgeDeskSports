@@ -43,6 +43,7 @@
 | `flancast90/sportsbookreview-scraper` `data/{nfl,nba,nhl,mlb}_archive_10Y.json` (SBR "scores and odds archives", 2011-2021) | NFL, NBA, NHL, MLB | 2011-2021 (start-year labels) | NFL/NBA spread and total; NHL/MLB moneyline and total | yes | **not named** (SBR's reference book) | none | fetched by this programme into `.cache/clv/raw/` (gitignored), first used 2026-10-21 |
 | nflverse `nfldata/data/games.csv` | NFL | 1999-2026 | **no** | consensus close | none | none | fetched; `football/pricing/lines_nfl.json` committed |
 | ESPN game JSON via `sportsdataverse/hoopR-nba-raw`, `hoopR-mbb-raw`, `wehoop-wnba-raw` (`pickcenter`) | NBA 2026, NCAAM 2026, WNBA 2026 | as listed | DraftKings open | DraftKings close | DraftKings | none | fetched on demand |
+| `football/props/{nfl,cfb}/2026/closes.jsonl` | NFL and CFB player props | 2026-10-02 to 10-14 | first tick per player × book | last pregame tick | named (DraftKings, William Hill, ...) | yes (The Odds API) | committed |
 | `football/pricing/openers_nfl.json` | NFL | 2026 wk 2-8 | first-seen nflverse consensus | yes | consensus | `seen_at` | committed |
 | `football/cfb_lab/ledger/2026/`, `record/football/quotes/*_2026.jsonl`, `performance/ledger/quotes/*-2026.jsonl` | CFB, NFL, NBA, NHL 2026 | 2026 | observed first quote | last pregame quote | DraftKings (ESPN), CFBD consensus | `observed_at` | committed |
 

@@ -42,9 +42,9 @@ Ranked by the strongest holdout CLV that is also out of sample and on trustworth
 
 **Five things hold across sports:**
 
-1. **The models carry information the opener does not.** Every production model with an archive beats the opener on at least one market, out of sample: CFB, NFL, NHL, MLB and NCAAM. The market moves 10–20% of a good model's disagreement toward it by the close. Fitted market-residual slopes: CFB 0.10 per model, NFL 0.14, NHL 0.21 on the projected-goalie model.
+1. **The models carry information the opener does not.** Every served model that could be tested beats the opener on at least one market, out of sample: CFB, NFL, NHL, MLB (the loop's lab model) and NCAAM. The market moves 10–20% of a good model's disagreement toward it by the close. Fitted market-residual slopes: CFB 0.10 per model, NFL 0.14, NHL 0.21 on the projected-goalie model.
 
-2. **The market-residual model is the best design everywhere it could be built.** "Opener as the prior, model disagreement as the evidence" beat its base models in CFB, NFL, NHL and MLB on the same games. In CFB the holdout went from +1.19 to +1.91 pp.
+2. **The market-residual model is the best design everywhere it could be built.** "Opener as the prior, model disagreement as the evidence" earned more CLV per bet than its base models in CFB, NFL, NHL and MLB, both before the holdout and on it. In CFB the holdout went from +1.19 to +1.91 pp.
 
 3. **Beating the close is not the same as beating the vig.** Only NFL totals (and, at the margin, NFL spreads and NHL back-to-backs) clear -110 on average at the pre-registered thresholds. Elsewhere the opening bet earns CLV of 0.7–1.9 pp against a 2.4 pp vig. In the descriptive buckets, the largest-disagreement bets clear the vig in CFB and NFL. Those buckets were not pre-registered, so they are the next experiment, not a result.
 
