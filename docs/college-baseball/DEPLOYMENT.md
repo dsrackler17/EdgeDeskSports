@@ -37,7 +37,23 @@ Owner actions that unblock gates:
 | Gate | Action |
 |---|---|
 | G1 | Review the NCAA terms for the stats behind baseballr-data; record the decision in `college_baseball/research/authorizations.json` as `{ "baseballr_data": { "commercial_use": true, "signed_by": "<name>", "date": "<YYYY-MM-DD>" } }` |
-| G12 | Authorise `baseball_ncaa` in `public.odds_api_sports` (with a quota), capture a season of closes, verify each book's college-baseball settlement rules, and mark the matching profile in `college_baseball/lib/pricing.js` VERIFIED |
+| G12 | Capture prices (below), verify each book's college-baseball settlement rules, and mark the matching profile in `college_baseball/lib/pricing.js` VERIFIED |
+
+**Prices, from the first game of the season.** The model can only be market-validated on prices captured after it was frozen (EXPERIMENTS.md, CBASE-H1), so capture has to start before the first pitch of 2027. Three owner actions, in order:
+
+1. Apply `supabase/cbase_odds_sport.sql` (also `supabase/migrations/20261021200000_cbase_odds_sport_row.sql`). It registers `baseball_ncaa` DISABLED, at priority 5, so it is shed first.
+2. Enable it in the gateway: `select public.odds_api_set_sport('baseball_ncaa', true);`.
+3. Set the repository variable `CBASE_PRICES` to `on`. `.github/workflows/college-baseball-prices.yml` then runs every 20 minutes from 14:00 to 04:59 UTC, February to June.
+   - Each run is one `featured` request: about 3 credits when bought, and nothing inside the gateway's cadence window. The worst case is about 100 credits a game day.
+   - It keeps prices under `college_baseball/data/market/`.
+
+Withdraw with `select public.odds_api_set_sport('baseball_ncaa', false);` or by unsetting `CBASE_PRICES`.
+
+Each run's `college_baseball/data/market/quotes.json` names any provider team name it could not join (`unmatched_names`) and the names it joined by our team name (`matched_by_name_prefix`).
+- Add a name that is one of our teams to `college_baseball/market/aliases.json`, with its team id.
+- Correct one there if a prefix match is wrong.
+
+`python3 -m research.clv.cbase` counts the forward test's games and bets. It reads the holdout once, at 500 bets or from 2027-06-30 (the price workflow runs it after each capture). Its verdict goes to `college_baseball/validation/market_clv.json`, and the board's value claims follow `college_baseball/lib/market_gate.js`.
 
 ## Rollback
 

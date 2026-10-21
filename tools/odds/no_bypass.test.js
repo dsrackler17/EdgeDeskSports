@@ -167,6 +167,13 @@ chk('7 · the prop capture asks for the core markets only by default', JSON.stri
   chk('10 · the engine fetch client registers no odds host', !/odds/i.test((read('engine/http.js').split('const DEFAULT_PROVIDERS')[1] || '').split('};')[0]));
   chk('10 · the data-pack fetcher registers only the free github.com host', /PROVIDERS = \{\s*github_release: \{ host: \/\^github\\\.com\$\/, paid: false/.test(read('tools/datapack/fetch_external.js')));
   chk('10 · the NHL sport row is created disabled', /values \('icehockey_nhl', 'nhl', false,/.test(read('supabase/nhl_odds_sport.sql')));
+  /* college baseball's price archive (college_baseball/market/fetch_quotes.js): the same pattern as the NHL's. The model,
+     slate and gates listed above stay free of any odds call; only this job asks, and only when CBASE_PRICES is on */
+  const CQ = read('college_baseball/market/fetch_quotes.js');
+  chk('10 · the college baseball price job asks the gateway through the shared client', /tools\/lib\/odds_gateway\.js/.test(CQ) && /category: 'featured'/.test(CQ) && /SPORT_KEY = 'baseball_ncaa'/.test(CQ) && /sport_key: SPORT_KEY/.test(CQ));
+  chk('10 · and only behind CBASE_PRICES=on', /CBASE_PRICES/.test(CQ) && CQ.indexOf("!== 'on'") > 0 && CQ.indexOf("!== 'on'") < CQ.indexOf('client.request('));
+  chk('10 · the college baseball sport row is created disabled', /values \('baseball_ncaa', 'cbase', false,/.test(read('supabase/cbase_odds_sport.sql')));
+  chk('10 · the college baseball price workflow starts only when CBASE_PRICES is on', /if: vars\.CBASE_PRICES == 'on'/.test(read('.github/workflows/college-baseball-prices.yml')));
 }
 
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));

@@ -805,6 +805,28 @@ These sports were audited in Phase 1 (`DATA_AUDIT.md`). None has a single openin
 
 ---
 
+## College baseball: a forward holdout (pre-registered 2026-10-21, before any college baseball price was captured)
+
+The entry above stands: no college baseball opener exists anywhere, so no pre-holdout phase is possible. Its unlock is now built: `baseball_ncaa` is registered with the odds gateway, DISABLED (`supabase/cbase_odds_sport.sql`), and `college_baseball/market/fetch_quotes.js` keeps every price once an operator enables it. The only test the data allows is a single forward holdout on the 2027 season, written here before its first price exists. Like WNBA and NCAAM, it has no pre-holdout phase; the global protocol (G1-G9) is unchanged and applies as written.
+
+| Step | Rule |
+|---|---|
+| Model | The production model, frozen: the configuration (`config_sha256`) carried by the first model number taken with a price. Its numbers are taken from the live board (`point_in_time` PREGAME, never a replay) the first time a game is seen with a price (`models.jsonl`). A configuration served later is a new experiment, registered here before its first price |
+| Bet | Bet the side the model prefers when \|model − open no-vig\| ≥ 0.02 (G6, moneyline, base model) |
+| Open | The reference book's moneyline in force when the model's number was taken (its last observed price at or before `captured_at`): the price a bettor could have had once the number was known, never earlier |
+| Close | The same book's last price seen before the first pitch (`lines.jsonl`), seen at most 60 minutes before it; an older close excludes the game |
+| Book | The first of DraftKings, FanDuel, BetMGM, Caesars, BetRivers, ESPN BET, Fanatics, Bovada with both an open and a close |
+| Contest | Our record's game, FINAL, on the board's date; a price on a game not played is no bet |
+| Read | ONCE, the first run of `research/clv/cbase.py` on which the frozen model has 500 bets, or the first run from 2027-06-30 00:00 UTC on (after the season's last game). Before then only the counts of games and bets are reported, never their CLV |
+| Verdict | G7 at k_sport, cluster = game date (US Eastern). `MARKET_VALIDATED` needs PASS and at least 500 bets (`lib/edgedesk_sport_brains.js`). PASS on 50-499 bets is reported, and makes no value claim. Fewer than 50 is INCONCLUSIVE |
+| Totals | Prices are captured, but no totals experiment is registered: G3 needs a σ fitted on pre-holdout closes, and none exist |
+
+Until `college_baseball/validation/market_clv.json` says `MARKET_VALIDATED` for the served configuration, and the release gates pass, the board makes no value claim (`college_baseball/lib/market_gate.js`).
+
+### CBASE-H1: production college baseball model (frozen), moneyline ≥ 0.02, 2027 forward holdout
+
+---
+
 ## Player props (NFL, CFB): single holdout runs
 
 Pre-registered 2026-10-21, before any props CLV number was computed.

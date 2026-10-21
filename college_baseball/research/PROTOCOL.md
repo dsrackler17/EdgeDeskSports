@@ -132,3 +132,17 @@ before it keeps its label.
   D-I team-seasons in SELECTION + VALIDATION. Once active it is tried under
   the same rule as every other change. A team-season the input does not
   cover is priced exactly as before; nothing stands in for missing data.
+
+## Amendment 2026-10-21 (b): the market, tested forward on prices captured after the model was frozen
+
+Added before any college baseball price existed. Everything above keeps its meaning; §4's market rule ("`NOT_TESTED` until a licensed archive of timestamped prices is on file") is now answered as follows.
+
+- **The archive.** `college_baseball/market/fetch_quotes.js` keeps every college baseball price the odds gateway serves. It runs only when both the repository variable `CBASE_PRICES` and the gateway's `baseball_ncaa` row are on (`supabase/cbase_odds_sport.sql` creates the row disabled). It keeps every changed price, each game's first price and its last pregame price per book, and the model's number the first time the game is seen with a price. Each price is stamped with the snapshot's own time. A price at or after the first pitch is never a pregame price.
+- **The test.** EXPERIMENTS.md "College baseball: a forward holdout", CBASE-H1, written before the first price, under the global CLV protocol (G1-G9) unchanged:
+  - the frozen model against the close, moneyline at |model − open| ≥ 0.02;
+  - the open is the price in force when the model's number was taken;
+  - read ONCE, at 500 bets or from 2027-06-30;
+  - until then, counts only.
+- **Market status.** `MARKET_VALIDATED` is the G7 PASS on at least 500 bets, for the configuration that was served when the prices were captured. A version released later starts its own forward test.
+- **The board.** It makes a value claim only when `college_baseball/lib/market_gate.js` allows it: `MARKET_VALIDATED` for the served configuration, the release gates passing (G12, the books' settlement rules, among them), and a live board. Until then it shows probabilities only, with the model's outcome status, and no value claim.
+- **No backtest stands in for it.** The walk-forward's own market status stays `NOT_TESTED`: it is a retrospective reconstruction with no prices. The only market evidence is the forward test.
