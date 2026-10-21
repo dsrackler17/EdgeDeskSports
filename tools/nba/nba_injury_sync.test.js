@@ -226,6 +226,12 @@ globalThis.fetch = async (u, init) => {
   chk('the deploy workflow tests first, deploys with JWT verification off, and applies the SQL in order', /nba_injury_core\.test\.js/.test(WF) && /nba_injury_sync\.test\.js/.test(WF) && /--no-verify-jwt/.test(WF)
     && WF.indexOf('nba_injury_layer.sql') < WF.indexOf('nba_roster_adjusted_registry.sql') && WF.indexOf('nba_roster_adjusted_registry.sql') < WF.indexOf('nba_injury_cron.sql'));
 
+  const commitsSlateOnly = fs.readdirSync(path.join(ROOT, '.github', 'workflows')).filter((f) => {
+    const y = fs.readFileSync(path.join(ROOT, '.github', 'workflows', f), 'utf8');
+    return y.split('push_generated.sh').slice(1).some((c) => { const cmd = c.split(/\n\s*- /)[0]; return /nba\/slate\.json/.test(cmd) && !/nba\/roster_inputs\.json/.test(cmd); });
+  });
+  chk('every workflow that commits nba/slate.json also commits nba/roster_inputs.json (build_slate.js writes both)', commitsSlateOnly.length === 0, commitsSlateOnly);
+
   console.log('nba injury sync: ' + pass + ' passed, ' + fail + ' failed');
   for (const f of failures) console.log('FAIL ' + f.name + (f.detail !== undefined ? '\n     ' + JSON.stringify(f.detail).slice(0, 700) : ''));
   process.exit(fail ? 1 : 0);
