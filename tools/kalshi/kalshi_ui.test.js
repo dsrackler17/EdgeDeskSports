@@ -96,7 +96,7 @@ const html = (sport, g, ev, opts) => vm.runInContext('window.fbKalshiHTML', win)
   chk('read: the board repaints once the read answers', REPAINTS === 1);
   h = html('nfl', G);
   chk('read: a render inside a minute does not read again', CALLS.length === 1);
-  chk('section: a collapsed details with the home side’s mid and gap in its summary', /<details class="ms-wrap ks-wrap"/.test(h) && /Philadelphia 65\.0%/.test(h) && /gap \+2\.0 pp/.test(h));
+  chk('section: its own wrapper (never .ms-wrap, Market Structure\u2019s one-per-card section), a collapsed details with the home side’s mid and gap in its summary', /<details class="ks-wrap"/.test(h) && !/ms-wrap/.test(h) && /Philadelphia 65\.0%/.test(h) && /gap \+2\.0 pp/.test(h));
   chk('observed: labelled T0 Observed, provider Kalshi', /rs-badge rs-t0[^>]*title="T0: observed — provider Kalshi"/.test(h));
   chk('observed: OK shows the mid, spread, volume and snapshot time', /Philadelphia Eagles <span class="ms-m">YES<\/span>[\s\S]*?65\.0%[\s\S]*?spread 2¢[\s\S]*?vol 25,000[\s\S]*?ET/.test(h));
   const dalRow = (h.match(/Dallas Cowboys <span class="ms-m">YES<\/span><\/span><span class="v">([\s\S]*?)<\/span><\/div>/) || [])[1] || '';

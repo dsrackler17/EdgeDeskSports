@@ -65919,8 +65919,17 @@ try{
      changes NO projection, ranking, threshold, EV flag, score or grade: the
      football module calls window.fbKalshiHTML() from guarded one-line hooks and
      appends what it returns; nothing here is read back by the module. It reuses
-     the Market Structure section's classes, so the two read as one terminal. -->
+     the Market Structure section's inner classes (its own wrapper, .ks-wrap,
+     keeps .ms-wrap Market Structure's alone), so the two read as one terminal. -->
 <style id="ks-styles">
+/* its own wrapper (.ms-wrap is Market Structure's: one per NFL card), drawn the same */
+.ks-wrap{margin:8px 12px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface,rgba(255,255,255,.015))}
+.ks-wrap>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;font-size:11px;color:var(--dim)}
+.ks-wrap>summary::-webkit-details-marker{display:none}
+.ks-wrap>summary>b{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--text);margin-right:2px}
+.ks-wrap>summary .ms-chev{margin-left:auto;color:var(--faint);transition:transform .15s}
+.ks-wrap[open]>summary .ms-chev{transform:rotate(90deg)}
+@media(max-width:560px){.ks-wrap{margin:8px 8px 10px}}
 .ks-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;font-size:11px;color:var(--dim)}
 .ks-head>b{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--text);margin-right:2px}
 .ks-off{opacity:.62}
@@ -66035,10 +66044,10 @@ try{
       var note=S.st==='not_deployed'?'<span class="ms-soon">Not deployed</span> <span class="ms-m">supabase/kalshi_market_data.sql is not applied yet</span>'
         :S.st==='error'?chip('unavailable','warn')+' <span class="ms-m">Kalshi prices could not be read ('+esc(S.err&&S.err.message||'error')+') — nothing is shown in their place</span>'
         :'<span class="ms-m">loading…</span>';
-      return '<div class="ms-wrap ks-wrap ks-off"><div class="ks-head"><b>Kalshi</b>'+note+'</div></div>';
+      return '<div class="ks-wrap ks-off"><div class="ks-head"><b>Kalshi</b>'+note+'</div></div>';
     }
     var rows=rowsFor(sport,g,ev);
-    if(!rows)return '<div class="ms-wrap ks-wrap ks-off"><div class="ks-head"><b>Kalshi</b><span class="ms-m">no Kalshi market matched to this game on both teams and the date — nothing is shown in its place</span></div></div>';
+    if(!rows)return '<div class="ks-wrap ks-off"><div class="ks-head"><b>Kalshi</b><span class="ms-m">no Kalshi market matched to this game on both teams and the date — nothing is shown in its place</span></div></div>';
     /* away side first, as the card reads "away @ home" */
     rows=rows.slice().sort(function(a,b){return (a.yes_team===a.home_team?1:0)-(b.yes_team===b.home_team?1:0);});
     var pre=rows[0].pregame===true,home=rows.filter(function(r){return r.yes_team===r.home_team;})[0]||rows[rows.length-1];
@@ -66057,7 +66066,7 @@ try{
     var conf=rows.map(function(r){return r.match_confidence;}).indexOf('medium')>=0?'medium':'high';
     body+='<div class="ms-note">Matched to this game on both teams and the date · confidence '+esc(conf)+' · <span class="mono">'+esc(rows[0].event_ticker)+'</span></div>';
     var key=sport+'|'+g.game_id;
-    return '<details class="ms-wrap ks-wrap" data-ks="'+esc(key)+'"'+(OPEN[key]?' open':'')+' ontoggle="window.fbKalshiToggle&&fbKalshiToggle(this)"><summary>'+sum+'</summary><div class="ms-body">'+body+'<div class="ms-lim">'+LIMITS+'</div></div></details>';
+    return '<details class="ks-wrap" data-ks="'+esc(key)+'"'+(OPEN[key]?' open':'')+' ontoggle="window.fbKalshiToggle&&fbKalshiToggle(this)"><summary>'+sum+'</summary><div class="ms-body">'+body+'<div class="ms-lim">'+LIMITS+'</div></div></details>';
   }
   /* an open section stays open across the repaints its own loads cause */
   window.fbKalshiToggle=function(el){try{OPEN[el.getAttribute('data-ks')]=el.open;}catch(_){}};
