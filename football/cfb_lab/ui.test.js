@@ -273,9 +273,15 @@ if (require.main === module) {
       const ssOf = (sec) => (sec.match(/<span class="ss">([^<]*)<\/span>/g) || []).map((x) => x.replace(/<[^>]+>/g, ''));
       const want = Array.from(new Set(Object.keys(S.lab.performance || {}).map((m) => L.util.sampleLabel(((S.lab.performance[m].official || {}).errors || {}).n || 0)).filter(Boolean)));
       const okWords = (ls) => ls.every((l) => l === 'small sample' || l === 'provisional');
+      /* the comparison section by ITS OWN samples (the common set and the
+         submodel rows): a model with no settled game yet (Loop v2.0.0 from
+         2026-10-21) earns "small sample" in performance but is not in the
+         common set, which keeps its own, larger n */
+      const cmp = (S.lab.comparison || {}), wantCmp = Array.from(new Set([((cmp.common || {}).n_common)].concat(((cmp.submodels || {}).rows || []).map((r) => r.n))
+        .filter((n) => typeof n === 'number').map((n) => L.util.sampleLabel(n)).filter(Boolean)));
       chk(S.name + ': sample-size labels print beside the metrics, as each sample earns them', want.every((l) => ssOf(perf).indexOf(l) >= 0) && okWords(ssOf(perf))
-        && (!want.length || ssOf(sectionOf(h, 'comparison')).length > 0) && okWords(ssOf(sectionOf(h, 'comparison'))),
-        { want, performance: ssOf(perf), comparison: ssOf(sectionOf(h, 'comparison')) });
+        && wantCmp.every((l) => ssOf(sectionOf(h, 'comparison')).indexOf(l) >= 0) && okWords(ssOf(sectionOf(h, 'comparison'))),
+        { want, wantCmp, performance: ssOf(perf), comparison: ssOf(sectionOf(h, 'comparison')) });
       /* each evaluation's own decision (lab_core promotionEval). This asserted
          INSUFFICIENT SAMPLE outright, which expired when the common official
          set passed its 150 games (173 by 2026-10-18) and the real lab

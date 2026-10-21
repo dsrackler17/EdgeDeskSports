@@ -40,6 +40,8 @@ on:
 
 permissions:
   contents: write
+  # the issue the job opens when automatic promotion changes the champion
+  issues: write
 
 concurrency:
   group: cfb-lab
@@ -79,6 +81,21 @@ jobs:
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
         run: node football/cfb_production/gate.js start --job cfb_lab_hourly --key auto
+
+      # Automatic promotion (football/cfb_production/auto_promote.js, rule
+      # cfb_auto_promotion_v1; the owner's instruction, 2026-10-21). On the
+      # evaluation the last run published (reports/<season>/lab.json), on a
+      # clean checkout: promote the best challenger the Model Lab calls
+      # ELIGIBLE against the current champion, behind the full promotion guard
+      # (tests included); register a new model loop version as challenger;
+      # return to V1 when the champion's source no longer serves it. Before
+      # the run, so this hour's reports and champion table already follow the
+      # new champion. Off switch: football/cfb_lab/config.json
+      # auto_promotion.enabled. A failure warns and changes nothing.
+      - name: Automatic promotion (governance, behind the promotion guard)
+        id: auto
+        if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
+        run: node football/cfb_production/auto_promote.js --write || echo "::warning::automatic promotion did not run; the champion is unchanged"
 
       - name: Run
         id: run
@@ -126,7 +143,7 @@ jobs:
         run: node football/cfb_production/projections.js --write || echo "::warning::the canonical projections could not be built"
 
       # The governance champion's table (lib/cfb_champion.js): empty while V1
-      # is the champion; once a person promotes another model, its stored
+      # is the champion; once another model is promoted, its stored
       # pregame numbers per game, which the board and the slate build price
       # from (every other game falls back to V1). A failure warns; the
       # previous table stays, and its entries age out on their own (30 h).
@@ -249,9 +266,19 @@ jobs:
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json football/cfb_production/reports/champion.json \
+            football/cfb_production/reports/auto_promotion.json \
             football/cfb_production/reports/traces.json football/cfb_terminal football/game_research football/cfb_validation football/markets \
             football/validation/model_health.json football/broadcasts/current.json football/content/packets.json football/evidence/packets.json \
             articles sitemap-articles.xml sitemap.xml
+
+      # Only after the publish, so the issue never announces a change that did
+      # not reach main (an unpublished promotion is simply redone next hour).
+      - name: Tell the owner (an issue, when automatic promotion changed something)
+        if: ${{ success() && steps.auto.outputs.changed == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ steps.auto.outputs.title }}
+        run: gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file "$RUNNER_TEMP/auto_promotion.md" || echo "::warning::could not open the automatic-promotion issue; the record is in football/cfb_production/reports/auto_promotion.json"
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
