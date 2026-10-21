@@ -9,8 +9,7 @@
 #              sites ask 30 s between reads; we wait it), EdgeDeskBot by name,
 #              every refusal recorded and respected. Snapshots keep when we
 #              first and last saw each player listed.
-#   backfill   past seasons the plan names, read once (baseball 2013-2026 for
-#              the college baseball model)
+#   backfill   past seasons and box scores: collegiate-backfill.yml, daily
 #   portal     transfers, departures and newcomers per sport and season, and
 #              each team's continuity (collegiate/portal.js)
 #
@@ -50,9 +49,9 @@ jobs:
           node-version: '22'
       - name: The collector's own rules first
         run: node tools/collegiate/collegiate.test.js
-      - name: Registry, rosters, backfill, portal
+      - name: Registry, rosters, schedules, portal (the backfill is the daily job's)
         timeout-minutes: 320
-        run: node --max-old-space-size=6000 collegiate/run.js
+        run: node --max-old-space-size=6000 collegiate/run.js --skip-backfill
       - name: Publish what was read (tools/ci/push_generated.sh)
         if: always()
         run: |
