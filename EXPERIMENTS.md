@@ -608,3 +608,74 @@ Run 2026-10-21 on repo 2014–2020 (9,195 games with moneyline open and close) b
 - Totals: move = -0.018 − 0.006·dt_core + 0.296·dt_gproj.
 
 **Results diagnostic** (win rate at the opening price): H1 45.7%, H3 55.2% (ROI +10.6%, n = 272; noisy).
+
+---
+
+## MLB
+
+Pre-registered 2026-10-21, before any MLB CLV number was computed.
+
+**Base models.** The `mlb/history` lab model (the loop's served 1.0.0, `team_park_sp`) is replayed by `research/clv/mlb_predict.js`, which imports the unmodified walk-forward.
+- Each game is predicted at 09:00 UTC on its date from earlier dates.
+- Results are absorbed with the actual starters, exactly as the record does.
+- **Reproduction:** with the actual starter, confirmation log loss 0.67727, equal to the committed record.
+
+The starter input is replaced with what is knowable at the opener:
+
+| Variant | Starter input | Used for opener bets? |
+|---|---|---|
+| `sp_proj` | the team's 5th-previous starter, if he has not started in the last 4 days (the projected rotation spot); otherwise none. Matches the actual starter for 66.2% of team-games | yes |
+| `team_park` | no starter term | yes |
+| `sp_actual` | the actual starter | no: reproduction only |
+
+**Not tested: the live browser engine (`mlb/engine.js`).** It reads season-level pitcher and batter tables (`mlb/pitchers/dataset`, `mlb/batters/dataset`, 2016–2025). Those are whole-season numbers and cannot be made point-in-time for the SBR seasons. INFEASIBLE, not counted.
+
+**Lines:**
+- SBR moneyline open and close, 2012–2021. **Only pairs passing the [0.98, 1.20] overround check count**, about 55% of games (`DATA_AUDIT.md`: about 30% of pairs imply both sides better than fair). Low-confidence source.
+- Totals: line only (one price per row), σ from 2012–2019.
+
+**Seasons:**
+- Walk-forward: 2012–2019. First evaluable residual season: 2015.
+- Proxy holdout: 2020–2021.
+- Mandated holdout: 2025–2026. No openers, so nothing is reported.
+
+**Clusters:** game date.
+
+### MLB-B1: lab model with the projected starter, moneyline (Phase 3)
+- **Bet rule:** |p − p_open| ≥ 0.02.
+- **Pass:** mean `clv_prob` > 0, one-sided p < 0.05, n ≥ 100.
+
+### MLB-B2: lab team_park (no starter), moneyline (Phase 3)
+- At ≥0.02. Pass as B1.
+
+### MLB-B3: lab model (projected starter), total, line only (Phase 3)
+- **Bet rule:** |expected total − open total| ≥ 0.5 runs.
+- **Pass:** as B1.
+
+### MLB-R1: moneyline market-residual model (Phase 4)
+- **Model:** ridge of the no-vig home move on `d_proj` and `d_tp`.
+- **Bet rule:** ≥0.005.
+- **Pass:** as B1.
+
+### MLB-R2: R1 plus an information block (Phase 4, one change)
+- **Change:** add, as one block:
+  - `p_open − 0.5`;
+  - `d_proj × early` (either team under 20 games);
+  - `rotation_unknown` (number of sides with no projected starter).
+- **Pass:** as B1, AND a higher mean than R1 on the same games.
+
+### MLB-W1: starting-pitcher uncertainty (Phase 5)
+- **Hypothesis:** where the rotation is disrupted (either side has no projected starter), the opener moves more after the probable is confirmed. R1 earns positive CLV there.
+- **Change:** R1's bets restricted to those games.
+- **Pass:** mean `clv_prob` > 0, one-sided p < 0.05, n ≥ 50.
+- **Not testable:** true probable-to-actual changes. No probables were archived.
+
+### MLB-W2: bullpen fatigue: not run
+- Retrosheet game logs name only starters and decision pitchers.
+- INFEASIBLE, not counted.
+
+### MLB-W3: totals residual (Phase 5)
+- **Model:** ridge of the total line move on `dt_proj` and `dt_tp`.
+- **Bet rule:** ≥0.05 runs.
+- **Pass:** as B1.
+- **Not testable:** weather. No archive exists.
