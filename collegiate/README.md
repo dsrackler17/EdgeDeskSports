@@ -59,7 +59,7 @@ The schools' and ncaa.com's terms of use have not been reviewed. robots.txt allo
 - `collegiate-rosters.yml`: weekly on main, and on main when `plan.json` changes. Never on a branch: the data lives on main, and a branch run would read every school a second time.
 - `collegiate-backfill.yml`: daily slices on main.
 - Both publish `collegiate/data` and share one repository-wide concurrency group, so two collector runs never read the same schools at once.
-- `collegiate-probe.yml` runs on the branch that changed `probe/targets.json`, never again on main.
+- `collegiate-probe.yml` runs by hand only (workflow dispatch, with the branch that changed `probe/targets.json` as the ref). It used to run on any push that changed the targets; a branch that merged main in afterwards got a probe run and a commit it never asked for.
 
 ## Into the college baseball model
 
