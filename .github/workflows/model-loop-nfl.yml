@@ -71,8 +71,11 @@ jobs:
           python3 - <<'EOF'
           import json, sys
           c = json.load(open('football/nfl/model_loop/current.json'))
+          # the range is centred on the margin exactly (centre); lo and hi are printed to the
+          # hundredth, so their midpoint can sit 0.005 from it by rounding alone
           bad = [g['game_id'] for g in c['games'] if abs(g['reconciliation']['unattributed']) > 1e-6
-                 or abs((g['range80']['lo'] + g['range80']['hi']) / 2 - g['fair_home_margin']) > 1e-6]
+                 or g['range80']['centre'] != g['fair_home_margin']
+                 or abs((g['range80']['lo'] + g['range80']['hi']) / 2 - g['range80']['centre']) > 0.005 + 1e-9]
           print(len(c['games']), 'games;', 'bad:', bad)
           sys.exit(1 if bad else 0)
           EOF
