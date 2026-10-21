@@ -159,6 +159,21 @@ class HealthTest(unittest.TestCase):
         self.assertIn("1.1.0 is staged", x["reasons"][0])
         self.assertEqual(H.loop_health(L, datetime(2026, 12, 2, tzinfo=timezone.utc))["status"], "STALE")
 
+    def test_the_collegiate_feed_is_named_with_its_backfill_and_refusals(self):
+        now = datetime(2026, 10, 21, tzinfo=timezone.utc)
+        self.assertEqual(H.collegiate_health(now)["status"], "NOT_STARTED")
+        self.put("collegiate/data/last_run.json", {"today": "2026-10-20", "steps": []})
+        self.put("collegiate/data/backfill.json", {"baseball-rosters": {"complete": False, "ok": 120, "at": "2026-10-20"}})
+        os.makedirs(os.path.join(self.root, "collegiate", "data"), exist_ok=True)
+        with open(os.path.join(self.root, "collegiate", "data", "refusals.jsonl"), "w") as f:
+            f.write('{"host":"x"}\n')
+        x = H.collegiate_health(now)
+        self.assertEqual(x["status"], "OK", x["reasons"])
+        text = " | ".join(x["reasons"])
+        self.assertIn("backfill baseball-rosters: in progress", text)
+        self.assertIn("1 host(s) refused", text)
+        self.assertEqual(H.collegiate_health(datetime(2026, 11, 5, tzinfo=timezone.utc))["status"], "STALE")
+
     def test_a_missing_history_is_degraded_even_out_of_season(self):
         x = H.loop_health(H.LOOPS[0], datetime(2026, 6, 1, tzinfo=timezone.utc))
         self.assertEqual(x["status"], "DEGRADED")
