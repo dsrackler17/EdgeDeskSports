@@ -84,5 +84,52 @@
     "promotion_rule": "PROMOTED only if it beats the served model on margin MAE AND log loss on all three of: the full window, the 2025 holdout, 2010-2025. Among several that pass, the lowest full-window MAE. The served model is never changed by anything that only helps the season being played, or one game.",
     "versioning": "a promotion bumps the minor version (edgedesk_nfl_v2.N.0), trains through the last completed season (train.js writeParams), archives the params under versions/ and records the version, every candidate's result and the event in registry.json; supabase/nfl_model_registry.sql is regenerated from it. Rollback restores an archived version (weekly_loop.js --rollback).",
     "disclosure": "every weekly evaluation, the served model's included, is appended to results/variants.jsonl with holdout_looked = true: each run is a look at 2025, and the count of looks is on the record"
+  },
+  "round_2": {
+    "registered_at": "2026-10-21T03:30:45Z",
+    "registered_before": "any round-2 candidate was evaluated on any season",
+    "incumbent": {
+      "id": "edgedesk_nfl_v2.0.0",
+      "config_sha": "b2dac1c5eeacbfad",
+      "definition": "the served model: v1 with the Step 1 fixes and the net_pts sign fix (T5)"
+    },
+    "why": "RESULTS.md 'Known limitations': a starter with little history is shrunk to a league-average QB prior (-0.04 EPA/dropback), so an injury to an elite starter barely moves the number (2026 week 7 DAL @ PHI, Hurts out: QB row -0.21 against a ~8-point market move); and the raw-scale ridge shrinks the EPA terms once net_pts is corrected",
+    "candidates": {
+      "Q1_qb_prior": {
+        "what": "the QB layer's prior and shrinkage (football/nfl_model.js qbEff: value x n/(n+k) + prior x k/(n+k)) — a starter with few games is pulled toward a lower prior",
+        "qb_prior": [
+          -0.04,
+          -0.08,
+          -0.12,
+          -0.16
+        ],
+        "qb_shrink": [
+          6,
+          12,
+          24
+        ],
+        "note": "the incumbent pair (-0.04, 12) is not a candidate"
+      },
+      "Q2_qb_out": {
+        "what": "a strength-model feature qb_out_diff = home_out - away_out, where a side is OUT when its starter is not its regular starter: the QB with the most starts in the club's last 8 games (ties to the most recent). Its weight is fitted by the ridge like every other term"
+      },
+      "S1_standardize": {
+        "what": "the strength model's features scaled to unit standard deviation on each fit's training rows before the ridge (weights mapped back to raw scale, so serving is unchanged)",
+        "ridge_strength_lambda": [
+          15,
+          30,
+          60,
+          120,
+          240
+        ]
+      },
+      "combinations": "every family whose selected setting is a finalist, then their combinations; each combination's holdout result disclosed"
+    },
+    "selection_rule": "as Steps 2-4: within a family the lowest 2010-2024 walk-forward MAE (ties by log loss); a FINALIST beats the incumbent on 2010-2024 MAE AND log loss",
+    "promotion_rule": "as Steps 2-4: PROMOTED only if it also beats the incumbent on the 2025 holdout on MAE AND log loss; the promoted version is edgedesk_nfl_v2.1.0",
+    "seen_before_registration": [
+      "the 2026 week 7 cards (DAL @ PHI) and every Steps 1-4 result in results/step1-4.json and RESULTS.md, 2025 holdout included: these candidates are motivated by those results, which is why each must still win on 2010-2024 first and the 2025 holdout second",
+      "no round-2 candidate has been evaluated on any season"
+    ]
   }
 }
