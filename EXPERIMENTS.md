@@ -146,3 +146,72 @@ Base-model predictions:
 ### CFB-W3: totals residual (Phase 5)
 - **Hypothesis:** a ridge model of the same-book total move on `dt_p4 = p4_total − open_total` and `dt_v2 = v2_total − open_total` earns positive CLV at |predicted move| ≥ 0.25.
 - **Pass:** as B1.
+
+---
+
+## NFL
+
+Pre-registered 2026-10-21, before any NFL CLV number was computed.
+
+**Base models, re-run with opener-time inputs (`DATA_AUDIT.md`).** Every committed NFL backtest prices the QB who actually started and the game-day temperature and wind. These replays change only those inputs, in training and prediction alike:
+- each side's QB = that franchise's previous-game starter;
+- temperature and wind = the model's own missing-value defaults.
+
+| Model | Replay |
+|---|---|
+| production `edgedesk_nfl_v2.1.0` | `research/clv/nfl_v2_opener.js`. It reads the unmodified `football/research/nfl_v2/backtest.js` and `football/nfl_model.js`. A reproduction run with actual inputs is checked against the committed `results/oos_v2.csv.gz` first |
+| model_loop NFL `2.0.0` | `research/clv/nfl.py loop_opener` |
+
+**Not tested: legacy v1 (`edgedesk_football_v1.0.0`).** It was superseded on the board on 2026-10-21, and its committed replay uses actual starters. Testing it would add a variant to the family without informing any decision.
+
+**Lines:** SBR open and close, joined to nflverse games by franchise and date (±3 days) with the final score required to match. Graded at -110.
+
+**Seasons:**
+- Walk-forward: 2011–2019.
+- Proxy holdout: 2020–2021.
+- Mandated holdout: 2025–2026. Only 2026 has openers (`football/pricing/openers_nfl.json`), reported only.
+
+**Points-to-probability:**
+- Spread: `KeyNumberMargin.fit` on nflverse closing spreads vs margins, 2006–2019.
+- Totals: IntegerNormal(σ = SD(total − close total), 2011–2019).
+
+### NFL-B1: production v2.1.0 (opener inputs), spread (Phase 3)
+- **Hypothesis:** at |model − open| ≥ 1.0, positive mean CLV.
+- **Pass (G8 eligibility):** mean `clv_prob` > 0, one-sided p < 0.05, n ≥ 100.
+
+### NFL-B2: production v2.1.0 (opener inputs), total (Phase 3)
+- At |model − open total| ≥ 1.5. Pass as B1.
+
+### NFL-B3: model_loop NFL 2.0.0 (opener inputs), spread (Phase 3)
+- At 1.0. Pass as B1.
+
+### NFL-B4: model_loop NFL 2.0.0 (opener inputs), total (Phase 3)
+- At 1.5. Pass as B1.
+
+### NFL-R1: market-residual model, spread (Phase 4)
+- **Model:** ridge of the SBR move (close − open) on `d_v21 = v21 − open` and `d_loop = loop − open`, walk-forward (G5).
+- **Window:** the first evaluable season is 2014.
+- **Bet rule:** |predicted move| ≥ 0.25.
+- **Pass:** as B1. The movement-calibration slope is reported.
+
+### NFL-R2: R1 plus an information block, spread (Phase 4, one change)
+- **Change:** add, as one block:
+  - `open_line`;
+  - `d_v21 × early` (week ≤ 4);
+  - `rest_diff` (home rest − away rest, days, from the schedule);
+  - `backup_diff`. A side's backup flag is 1 when its previous-game starter is not its regular starter (the QB with the most starts in the franchise's previous 8 games). `backup_diff` = home flag − away flag.
+- **Pass:** as B1, AND a higher mean `clv_prob` than R1 on the same games.
+
+### NFL-W1: backup-QB games (Phase 5)
+- **Hypothesis:** the opener mis-prices games where a backup is the expected starter (backup flag, as in R2, on either side). The production model, which carries a starter-out feature, earns positive CLV there.
+- **Change:** B1's bets restricted to backup games.
+- **Pass:** mean `clv_prob` > 0, one-sided p < 0.05, n ≥ 50 (backup games are rare).
+
+### NFL-W2: totals residual (Phase 5)
+- **Model:** ridge of the total move on `dt_v21` and `dt_loop`.
+- **Bet rule:** |predicted move| ≥ 0.25.
+- **Pass:** as B1.
+
+### NFL-W3: first half: not run
+- No first-half line exists in any archive here.
+- Not counted as an attempt.
