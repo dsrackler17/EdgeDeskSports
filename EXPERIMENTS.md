@@ -802,3 +802,29 @@ These sports were audited in Phase 1 (`DATA_AUDIT.md`). None has a single openin
 | UFC | Exporting `ufc.market_captures` (first PRE capture vs last PRE capture per bout). It is DB-only, and capture has been paused since 2026-10-10 |
 | College baseball | Adding `baseball_ncaa` to the odds gateway |
 | Tennis | Retired; nothing to unlock |
+
+---
+
+## Player props (NFL, CFB): single holdout runs
+
+Pre-registered 2026-10-21, before any props CLV number was computed.
+
+**Data:**
+- Prop price histories exist only for 2026 games of 2026-10-02 to 10-14 (`football/props/{nfl,cfb}/2026/closes.jsonl`, The Odds API ticks per player × book, before the 2026-10-10 credit stop). That is inside the mandated holdout.
+- So there is one pre-registered run of the production props model (`edgedesk_props_model_v1`) per sport. Each counts as **one attempt in that sport's family** (NFL k → 13, CFB k → 16).
+
+**The rule:**
+
+| Step | Rule |
+|---|---|
+| Bet | For every two-sided over/under prop, the model's FIRST qualified evaluation (`football/props/{nfl,cfb}/2026/evaluations.jsonl`: `evaluated_at`, side, line, book, `p_side`) is the bet. The opener is that book's main line and both prices, filled forward, as of `evaluated_at`. Bet when `p_side` − the opener's no-vig probability of that side ≥ 0.02 |
+| Close | That book's last main-line tick before kickoff |
+| Headline | Mean `clv_prob` on bets whose book line was the same at open and close (price-only moves) |
+| Also reported, not gating | The line-direction hit rate on bets whose line moved |
+
+**Gate:**
+- PASS per G7 at the sport's final k, on the same-line bets.
+- Clusters: game.
+
+### NFL-P1: production props model, NFL player props (2026 holdout)
+### CFB-P1: production props model, CFB player props (2026 holdout)
