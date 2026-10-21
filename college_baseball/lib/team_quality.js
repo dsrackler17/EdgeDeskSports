@@ -43,6 +43,7 @@ const DEFAULTS = {
   sigma_team: 0.18, sigma_conf: 0.10, sigma_div: 0.30, sigma_park: 0.08,
   carry_team: 0.60, carry_conf: 0.85, carry_div: 0.95, carry_park: 1.0,
   phi: 1.8, halflife_days: 0, max_sweeps: 30, tol: 2e-4, hier: true, parks: true,
+  cont_k: 0,                          // roster continuity: 0 = off (see startSeason)
 };
 
 class Index {
@@ -115,11 +116,18 @@ class TeamQuality {
       this.teamConf[i] = this.Cf.get(g.c); this.teamDiv[i] = this.Dv.get(g.d);
     }
     grow(pr.oC, this.Cf.size); grow(pr.dC, this.Cf.size); grow(pr.oD, this.Dv.size); grow(pr.dD, this.Dv.size);
+    /* ROSTER CONTINUITY (cont_k > 0): a team that kept more of last season's roster than is usual carries more
+       of last season's strength, one that turned over more carries less. meta.continuity gives the share
+       returning, centred on the usual share (college_baseball/lib/continuity.js); a team-season without
+       rosters is carried as before. */
+    const cont = o.cont_k && this.meta && this.meta.continuity ? this.meta.continuity : null;
     for (let i = 0; i < this.T.size; i++) {
       const base = [pr.oD[this.teamDiv[i]] + pr.oC[this.teamConf[i]], pr.dD[this.teamDiv[i]] + pr.dC[this.teamConf[i]]];
       const t = prevTotals[i];
-      pr.oT[i] = t ? o.carry_team * (t[0] - base[0]) : 0;
-      pr.dT[i] = t ? o.carry_team * (t[1] - base[1]) : 0;
+      let carry = o.carry_team;
+      if (cont && t) { const c = cont(season, this.T.keys[i]); if (c != null) carry = Math.max(0, Math.min(1.5, o.carry_team * (1 + o.cont_k * c))); }
+      pr.oT[i] = t ? carry * (t[0] - base[0]) : 0;
+      pr.dT[i] = t ? carry * (t[1] - base[1]) : 0;
     }
     /* parameters start at their priors */
     this.oT = pr.oT.slice(); this.dT = pr.dT.slice(); this.oC = pr.oC.slice(); this.dC = pr.dC.slice(); this.oD = pr.oD.slice(); this.dD = pr.dD.slice(); this.pk = pr.pk.slice();

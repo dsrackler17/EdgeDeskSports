@@ -51,8 +51,8 @@ const MIN_GAIN = { logloss: 0.0002 };
 const MAX_CANDIDATES = 8;
 const MODEL = 'hier_cal';
 
-/* [id, 'tq.<param>' | 'dist.r', [kind, value], patterns it answers]. sigma_div, sigma_park, carry_conf,
-   carry_div and carry_park have never been tuned (lib/team_quality.js DEFAULTS) */
+/* [id, 'tq.<param>' | 'dist.r', [kind, value], patterns it answers, data it needs]. sigma_div, sigma_park,
+   carry_conf, carry_div and carry_park have never been tuned (lib/team_quality.js DEFAULTS) */
 const CATALOGUE = [
   ['team_spread_tighter', 'tq.sigma_team', ['mul', 0.75], ['first_3_weeks', 'favourites']],
   ['team_spread_looser', 'tq.sigma_team', ['mul', 1.33], ['first_3_weeks', 'favourites']],
@@ -72,7 +72,25 @@ const CATALOGUE = [
   ['recency_slower', 'tq.halflife_days', ['mul', 1.5], ['later']],
   ['runs_tails_heavier', 'dist.r', ['mul', 0.8], ['favourites']],
   ['runs_tails_lighter', 'dist.r', ['mul', 1.25], ['favourites']],
+  /* roster continuity (lib/continuity.js, from the collegiate collector): inactive until the rosters cover Division I */
+  ['roster_continuity_carry', 'tq.cont_k', ['set', 0.5], ['first_3_weeks'], 'continuity'],
+  ['roster_continuity_stronger', 'tq.cont_k', ['mul', 1.6], ['first_3_weeks'], 'continuity'],
+  ['roster_continuity_weaker', 'tq.cont_k', ['mul', 0.6], ['first_3_weeks'], 'continuity'],
 ];
+/* what a data-dependent candidate needs before it is tried: the share of D-I team-seasons it can see */
+const MIN_COVERAGE = 0.8;
+function inactiveCandidates() {
+  const off = new Map();
+  const needs = new Set(CATALOGUE.filter((c) => c[4]).map((c) => c[4]));
+  if (needs.has('continuity')) {
+    const W = require('./lib/warehouse');
+    const C = require('./lib/continuity').load();
+    const ts = W.teamSeasons().filter((t) => +t.division === 1 && +t.season >= WF.WIN.selection[0] && +t.season <= WF.WIN.validation[1]).map((t) => [t.season, t.team_id]);
+    const cov = C.coverage(ts);
+    if (cov < MIN_COVERAGE) for (const c of CATALOGUE.filter((x) => x[4] === 'continuity')) off.set(c[0], 'INACTIVE: roster continuity covers ' + (100 * cov).toFixed(1) + '% of D-I team-seasons ' + WF.WIN.selection[0] + '-' + WF.WIN.validation[1] + ' (needs ' + 100 * MIN_COVERAGE + '%); the collegiate roster backfill (collegiate/plan.json) fills it');
+  }
+  return off;
+}
 
 function arg(n, d) { const i = process.argv.indexOf('--' + n); return i >= 0 ? process.argv[i + 1] : d; }
 const nowIso = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
@@ -166,16 +184,17 @@ function errorAnalysis(rows) {
   return out;
 }
 
-function rankCandidates(patterns, weekIndex, n) {
+function rankCandidates(patterns, weekIndex, n, exclude) {
   n = n || MAX_CANDIDATES;
+  const CAT = CATALOGUE.filter((c) => !(exclude && exclude.has(c[0])));
   const sig = patterns.map((p) => [Math.abs(p.t || 0), p.pattern]).sort((a, b) => b[0] - a[0]);
   let top = [];
   for (const [t, name] of sig) {
     if (t < 2 || top.length >= n - 2) break;
-    top = top.concat(CATALOGUE.filter((c) => c[3].includes(name) && !top.includes(c[0])).map((c) => c[0]).slice(0, 2));
+    top = top.concat(CAT.filter((c) => c[3].includes(name) && !top.includes(c[0])).map((c) => c[0]).slice(0, 2));
   }
   top = top.slice(0, n - 2);
-  const rest = CATALOGUE.map((c) => c[0]).filter((c) => !top.includes(c));
+  const rest = CAT.map((c) => c[0]).filter((c) => !top.includes(c));
   const k = weekIndex % Math.max(1, rest.length);
   return top.concat(rest.slice(k).concat(rest.slice(0, k)).slice(0, n - top.length));
 }
@@ -195,12 +214,14 @@ function research(opts) {
   const patterns = errorAnalysis(rows0);
   const today = (opts.today || nowIso()).slice(0, 10);
   const weekIndex = Math.floor(Date.parse(today) / (7 * 864e5));
-  const order = opts.only ? opts.only.filter((c) => CATALOGUE.some((x) => x[0] === c)) : rankCandidates(patterns, weekIndex, opts.max);
+  const off = opts.inactive || inactiveCandidates();
+  const order = opts.only ? opts.only.filter((c) => CATALOGUE.some((x) => x[0] === c)) : rankCandidates(patterns, weekIndex, opts.max, off);
   const byId = new Map(rows0.map((x) => [x.game_id, x]));
   const results = [];
   for (const cid of order) {
     const [, key, how, answers] = CATALOGUE.find((c) => c[0] === cid);
     const rec = { at: nowIso(), from_version: from.version, candidate: cid, change: { param: key, how }, answers_patterns: answers };
+    if (off.has(cid)) { results.push(Object.assign(rec, { decision: 'SKIPPED', reason: off.get(cid) })); continue; }
     const cfg = applyChange(from.config, key, how);
     if (!cfg) { results.push(Object.assign(rec, { decision: 'SKIPPED', reason: 'no change from the configuration' })); continue; }
     const rows = score(cfg).filter((x) => byId.has(x.game_id));
@@ -233,7 +254,8 @@ function research(opts) {
     promoted: staged ? staged.version : (earlier && earlier.promoted) || null,
     window: { learns_on: [WF.WIN.selection[0], WF.WIN.validation[1]], validation: WF.WIN.validation, holdout_untouched: WF.WIN.holdout },
     baseline: { from_version: from.version, selection_plus_validation: sel0, validation: val0 },
-    patterns, candidates: (earlier ? earlier.candidates : []).concat(results.map((r) => { const o = Object.assign({}, r); delete o.config; return o; })) };
+    patterns, inactive: [...off].map(([candidate, reason]) => ({ candidate, reason })),
+    candidates: (earlier ? earlier.candidates : []).concat(results.map((r) => { const o = Object.assign({}, r); delete o.config; return o; })) };
   fs.mkdirSync(path.dirname(wpath), { recursive: true });
   fs.writeFileSync(wpath, JSON.stringify(summary, null, 1) + '\n');
   return summary;
@@ -297,6 +319,11 @@ function report(opts) {
   md.push('| Candidate | Change | Δlog loss | 95% interval | ΔBrier | VALIDATION Δlog loss | Decision |\n|---|---|---|---|---|---|---|');
   const f = (v) => (v == null ? '—' : v);
   for (const c of s.candidates) { const d = c.delta || {}; md.push('| ' + c.candidate + ' | `' + c.change.param + '` ' + JSON.stringify(c.change.how) + ' | ' + f(d.logloss) + ' | ' + (c.ci95 ? JSON.stringify(c.ci95) : '—') + ' | ' + f(d.brier) + ' | ' + f(d.validation_logloss) + ' | ' + c.decision + ': ' + c.reason + ' |'); }
+  if ((s.inactive || []).length) {
+    md.push('\n## Waiting on data we do not hold yet\n');
+    md.push('These changes need inputs the record does not cover yet; they are not tried, and nothing stands in for the missing data.\n');
+    for (const c of s.inactive) md.push('- **' + c.candidate + '**: ' + c.reason.replace(/^INACTIVE: /, ''));
+  }
   md.push('\nEvery candidate ever tried: `docs/model-loop/college_baseball/candidates.jsonl`. Versions: `docs/model-loop/college_baseball/versions.json`.');
   const text = md.join('\n') + '\n';
   fs.writeFileSync(path.join(docs, 'weekly_model_report.md'), text);
@@ -305,7 +332,7 @@ function report(opts) {
   return text;
 }
 
-module.exports = { CATALOGUE, MIN_GAIN, applyChange, rankCandidates, errorAnalysis, binomialZ, metrics, research, release, report, scoreConfig };
+module.exports = { CATALOGUE, MIN_GAIN, MIN_COVERAGE, inactiveCandidates, applyChange, rankCandidates, errorAnalysis, binomialZ, metrics, research, release, report, scoreConfig };
 
 if (require.main === module) {
   const cmd = process.argv[2];
