@@ -28,6 +28,29 @@ def recency_weights(age, half_life):
     return np.power(0.5, age / float(half_life))
 
 
+def _normal_equations(rows, cols, vals, y, w, n_params):
+    """X'WX and X'Wy straight from the sparse design, without forming the
+    dense n_obs x n_params X (the same sums, so the same solution; a design
+    with hundreds of teams and quarterbacks stays fast). Repeated
+    (row, col) entries add, exactly as they would in a dense X."""
+    rows = np.asarray(rows, dtype=np.int64)
+    cols = np.asarray(cols, dtype=np.int64)
+    vals = np.asarray(vals, dtype=float)
+    b = np.bincount(cols, weights=vals * w[rows] * y[rows], minlength=n_params)
+    order = np.argsort(rows, kind="stable")
+    r, c, v = rows[order], cols[order], vals[order]
+    starts = np.flatnonzero(np.r_[True, r[1:] != r[:-1]])
+    sizes = np.diff(np.r_[starts, len(r)])
+    grp = np.repeat(np.arange(len(starts)), sizes)
+    per = sizes[grp]                                   # entries sharing each entry's row
+    left = np.repeat(np.arange(len(r)), per)
+    first = np.repeat(np.cumsum(np.r_[0, per[:-1]]), per)
+    right = starts[grp[left]] + (np.arange(len(left)) - first)
+    A = np.bincount(c[left] * n_params + c[right], weights=w[r[left]] * v[left] * v[right],
+                    minlength=n_params * n_params).reshape(n_params, n_params)
+    return A, b
+
+
 def penalized_wls(rows, cols, vals, y, w, n_params, prior_mean, prior_prec):
     """rows/cols/vals: sparse design (observation i has value vals[k] on
     parameter cols[k] when rows[k] == i). Returns (theta, from_prior,
@@ -35,24 +58,23 @@ def penalized_wls(rows, cols, vals, y, w, n_params, prior_mean, prior_prec):
     y = np.asarray(y, dtype=float)
     w = np.asarray(w, dtype=float)
     n_obs = len(y)
-    X = np.zeros((n_obs, n_params))
-    if n_obs:
-        np.add.at(X, (np.asarray(rows), np.asarray(cols)), np.asarray(vals, dtype=float))
     lam = np.asarray(prior_prec, dtype=float)
     m = np.asarray(prior_mean, dtype=float)
-    Xw = X * w[:, None] if n_obs else X
-    A = Xw.T @ X + np.diag(lam)
+    if n_obs and len(np.asarray(rows)):
+        A, b_data = _normal_equations(rows, cols, vals, y, w, n_params)
+    else:
+        A, b_data = np.zeros((n_params, n_params)), np.zeros(n_params)
+    A = A + np.diag(lam)
     # a parameter with neither data nor prior is pinned at zero rather than left singular
     dead = np.where(np.diag(A) <= 0)[0]
     if len(dead):
         A[dead, dead] = 1.0
     b_prior = lam * m
-    b_data = Xw.T @ y if n_obs else np.zeros(n_params)
-    L = np.linalg.cholesky(A)
-    def solve(b):
-        return np.linalg.solve(L.T, np.linalg.solve(L, b))
-    from_prior = solve(b_prior)
-    from_data = solve(b_data)
+    # one factorisation for both right-hand sides (A = X'WX + diag(lam) is
+    # positive definite once dead parameters are pinned); the split stays
+    # exact because the solution is linear in b
+    sol = np.linalg.solve(A, np.column_stack([b_prior, b_data]))
+    from_prior, from_data = sol[:, 0], sol[:, 1]
     return from_prior + from_data, from_prior, from_data, np.diag(A).copy()
 
 

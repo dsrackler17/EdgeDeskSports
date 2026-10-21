@@ -1,0 +1,252 @@
+{
+ "study": "CFB v2 core rebuild (model loop)",
+ "version": "cfb_v2.0.0-candidate",
+ "registered_at": "2026-10-21",
+ "objective": "Lower margin error and win-probability log loss than the current CFB card engine (football/cfb_p4/engine.js projectGame, edgedesk_cfb_p4_v1.0.1) out of sample, measured against the closing line as the baseline, on FBS-vs-FBS and FBS-vs-FCS games separately and together.",
+ "windows": {
+  "tune": [
+   2014,
+   2020
+  ],
+  "validation": [
+   2021,
+   2024
+  ],
+  "holdout": [
+   2025,
+   2025
+  ],
+  "live": [
+   2026,
+   2026
+  ]
+ },
+ "unit": "every game with at least one FBS side (regular season and postseason) with a final score and a closing spread (cfbfastR line archive median across books 2006-2025 via football/cfb_p4/research/build_market.py; 2026: record/football/cfb_2026.json, DraftKings via ESPN, frozen at kickoff)",
+ "slices": {
+  "all": "every game with an FBS side",
+  "fbs": "FBS vs FBS",
+  "fcs": "FBS vs FCS or a lower division"
+ },
+ "metrics": [
+  "margin MAE vs result (primary)",
+  "win-probability log loss (primary)",
+  "margin RMSE",
+  "Brier",
+  "mean |model - close|",
+  "share of games 3+ points from the close",
+  "ATS vs close at 1/2/3 pt gaps",
+  "calibration table (10 bins) and ECE",
+  "total MAE vs close total",
+  "line movement toward the model (opener to close, archive openers 2014-2025)"
+ ],
+ "tuning": {
+  "objective": "margin MAE on the tune window, every game with an FBS side and a close (FBS and FCS together)",
+  "method": "coordinate descent, two passes, over the grid below, starting from the defaults in model_loop/adapters/cfb/ratings.py DEFAULTS and model.py MODEL_DEFAULTS as committed with this file; garbage-time weight fixed at 0.25 (not tuned) and tested only as an ablation",
+  "grid": {
+   "rating.market.hl_week": [
+    4,
+    8,
+    16,
+    null
+   ],
+   "rating.market.lam": [
+    0.1,
+    0.25,
+    0.5,
+    1
+   ],
+   "rating.market.carry": [
+    0.8,
+    0.9,
+    1.0
+   ],
+   "rating.hl_week": [
+    3,
+    6,
+    12,
+    null
+   ],
+   "rating.lam.pass_off": [
+    50,
+    150,
+    400,
+    1000
+   ],
+   "rating.lam.pass_def": [
+    50,
+    150,
+    400,
+    1000
+   ],
+   "rating.lam.rush_off": [
+    50,
+    150,
+    400,
+    1000
+   ],
+   "rating.lam.rush_def": [
+    50,
+    150,
+    400,
+    1000
+   ],
+   "rating.lam.qb": [
+    50,
+    150,
+    400,
+    1000
+   ],
+   "rating.lam.lower": [
+    200,
+    600,
+    1500,
+    4000
+   ],
+   "rating.carry.off": [
+    0.6,
+    0.8,
+    1.0
+   ],
+   "rating.carry.def": [
+    0.4,
+    0.6,
+    0.8,
+    1.0
+   ],
+   "rating.carry.qb": [
+    0.6,
+    0.8,
+    1.0
+   ],
+   "rating.carry.lower": [
+    0.3,
+    0.6,
+    0.9
+   ],
+   "rating.conf_w": [
+    0.0,
+    0.25,
+    0.5
+   ],
+   "rating.talent.off": [
+    0.0,
+    0.015,
+    0.03,
+    0.06
+   ],
+   "rating.talent.def": [
+    0.0,
+    0.015,
+    0.03,
+    0.06
+   ],
+   "rating.retprod": [
+    0.0,
+    0.5,
+    1.0,
+    1.5
+   ],
+   "model.hl_season": [
+    3,
+    6,
+    null
+   ],
+   "model.hfa_prior_games": [
+    0,
+    300,
+    1000
+   ],
+   "model.ridge_lam": [
+    0.5,
+    2,
+    8
+   ]
+  }
+ },
+ "incremental_value_bar": "On the VALIDATION window only (all games), each component is removed from the tuned model. A component stays active only if removing it raises validation margin MAE or validation log loss; otherwise it is marked inactive and the model is refitted without it. The holdout is not consulted.",
+ "decision_rule": "v2 may replace cfb_p4 v1.0.1 on the card only if, on the 2025 holdout (all games), it has lower margin MAE AND lower log loss than the cfb_p4 replay on the same games, AND it is not worse on the full 2014-2025 backtest. Otherwise cfb_p4 stays and v2 remains EXPERIMENTAL. Beating the close is reported, not required.",
+ "baseline": "football/cfb_p4/engine.js v1.0.1 (home field 2.8 via home_field.js) replayed cold from 2006, every game projected before it is absorbed (model_loop/adapters/cfb/baselines/replay_cfb_p4.js). Its trained coefficients were fitted on 2001-2025 in layers, so before 2026 the replay has an in-sample advantage. No team-game efficiency feed is supplied, so its matchup term is 0 (it reproduces the published 2022-2025 FBS MAE within 0.06). 2026 is also compared with what the record actually published.",
+ "inactive_by_data": [
+  "coaching change / tenure (the feed's coaching series starts 2015 and carries no publication date; not built)",
+  "historical QB starter announcements (the backtest prices the QB who took the most dropbacks)",
+  "historical injury / availability",
+  "historical weather",
+  "Pinnacle closes after 2019 (the benchmark is the median across books)",
+  "travel distance / time zones (venue geography not ingested in this round)"
+ ],
+ "data_caveats": [
+  "Talent (247 composite) and returning production come from sportsdataverse-data releases that carry no publication timestamp; for past seasons they are reconstructions from that season's roster, so their contribution is measured by ablation, not assumed point-in-time clean.",
+  "The 2013 play-by-play feed files almost no sacks (53 vs ~3,500 a season), so 2013 pass ratings are rosier; 2013 is a burn-in season for the tune window's priors only.",
+  "Garbage time uses the provider's NAIVE win probability (game state only); its wp_before reads the pregame spread and is not used."
+ ],
+ "forking_paths": {
+  "disclosed_before_tuning": "During development one smoke test of a first, untuned configuration (market prior 3 games of evidence, half-life 4, carry 0.6; unit priors 300/600 plays) was scored on every window including the 2025 holdout (all games: v2 MAE 13.12 vs close 11.90; FBS 12.99 vs 11.82). A diagnostic of that market rating's compression (close regressed on the market rating, by week) was run on 2014-2024, which includes the validation window: the market rating was shrunk ~1.5x. Four market settings and then the full model with the defaults committed here were scored on the TUNE window only (2014-2020: all games MAE 13.21 vs close 12.47; FBS 13.02 vs 12.45), and the defaults and the market grid were set from those. No setting was changed in response to the holdout. The cfb_p4 replay was scored on 2014-2025 to check it reproduces the published numbers.",
+  "structural_choices": "no intercept (neutral = 0); offense and defense separate coefficients; QB as its own rating parameter carried with the player through transfers; every FCS / lower-division team in the play-by-play rated, around a fitted division mean; per-slate snapshots (a midweek game is not absorbed before that week's Saturday games); the postseason in weekly slates."
+ },
+ "content_sha256": "203ef60b30188e4ce860b87224cf0f73e0e1d06241f8a2b479d8d6811dbe9e73",
+ "defaults_at_registration": {
+  "rating": {
+   "garbage_floor": 0.25,
+   "hl_week": 6.0,
+   "lam": {
+    "pass_off": 150.0,
+    "pass_def": 150.0,
+    "rush_off": 150.0,
+    "rush_def": 150.0,
+    "qb": 150.0,
+    "mu": 100.0,
+    "home": 3000.0,
+    "lower": 600.0,
+    "group": 50.0
+   },
+   "carry": {
+    "off": 0.8,
+    "def": 0.6,
+    "qb": 0.8,
+    "qb_gap": 0.8,
+    "lower": 0.6
+   },
+   "conf_w": 0.0,
+   "talent": {
+    "off": 0.0,
+    "def": 0.0
+   },
+   "retprod": 0.0,
+   "qb_layer": true,
+   "fcs_teams": true,
+   "market": {
+    "on": true,
+    "hl_week": 8.0,
+    "lam": 0.5,
+    "carry": 0.9,
+    "lam_hfa": 20.0,
+    "lam_group": 3.0
+   },
+   "totals_market": {
+    "on": true,
+    "hl_week": 8.0,
+    "lam": 0.5,
+    "carry": 0.9,
+    "lam_group": 3.0
+   }
+  },
+  "model": {
+   "components": {
+    "qb": true,
+    "market": true,
+    "rest": true,
+    "division": true,
+    "covid": true,
+    "pass_split": true,
+    "rush": true
+   },
+   "hl_season": 6.0,
+   "ridge_lam": 2.0,
+   "hfa_prior_games": 300.0,
+   "first_train": 2010,
+   "min_train_seasons": 2,
+   "calibration": "none",
+   "total_market": true
+  }
+ }
+}
