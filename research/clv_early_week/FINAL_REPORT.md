@@ -136,3 +136,56 @@ Pass rule, fixed before unlocking:
    the board model) is close to development (+0.30). Another season of CLV would settle it.
 5. **Don't build more market-residual models on this data.** Phase 4's failure says the
    disagreement itself is the signal. Re-weighting it on 1–4 seasons of movement data adds noise.
+
+---
+
+## Follow-up (2026-10-21): reconciliation, live tracking, prices, timestamped CFB
+
+All four steps are recorded in [EXPERIMENTS.md](EXPERIMENTS.md) (Phase 7, Live tracking, Step 3,
+Step 4); every test was pre-registered before it was scored.
+
+**1. The two studies agree once you hold the line fixed.** The independent study on `main`
+(root `FINAL_REPORT.md`) found bigger NFL edges than this one.
+* Its harness and this one score the same bets identically.
+* The difference is the line. Its NFL opener (SBR) is an earlier number: about 33–40% of the time
+  it is the line that stood before the previous week was played. Against it, the same model earns
+  about twice the CLV it earns against the Tuesday line.
+* That gap is **not** a timing leak: with inputs frozen a week earlier it keeps 53–83% of its CLV.
+* **NFL totals beat −110 only against that first number** (+0.46% over 2011–21, break-even −111).
+* On timestamped 2025–26 Tuesday lines, no NFL totals rule from either study beats the vig
+  (−1.9% to −3.3%).
+* The market-residual design is not reliably better on NFL. In CFB it is timing-robust and
+  nominally, but not significantly, better than this study's plain rule.
+
+**2. Live tracking now records and grades every passing rule.** H-3, H-4 and H-5 (as EDGE-H3/H4/H5)
+were added to the shared tracker (`research/clv/live.py`, every two hours) instead of building a
+second one. CFB rules read the Loop's number as first published before either team's previous
+game, with the time it was computed. Nothing is served.
+
+**3. What price is needed** (holdout break-evens; the decision about book access is yours):
+
+| rule | break-even (one book, early-week) | with three-book CFB shopping | at the first-posted NFL opener |
+|---|---|---|---|
+| NFL totals ≥ 2 | −106 | — | **−111** (beats −110) |
+| CFB spreads ≥ 3 | −103 | −108 | — |
+| CFB totals ≥ 3 | −104 | −105 | — |
+
+**4. CFB with last week's information looks real on timestamped lines.**
+* On 200 2026 games whose DraftKings line was posted after both teams' previous games, the Loop
+  with W−1 inputs earned +0.81 pts on spreads (61 bets) vs +0.31 with W−2. Totals: +0.93 vs +0.75.
+* This first look is never gating. Five forward variants are live-tracked from 2026-10-21T17:18:50Z
+  and judged at 100 bets or season's end (k = 5):
+  * EDGE-L1/L2: the W−1 Loop at the Lab's timestamped opener;
+  * EDGE-B1/B2/B3: edge ≥ 5 CFB, edge ≥ 3 NFL totals.
+* On the holdout, bigger edges lose less at −110 (CFB totals ≥ 5: −1.3% vs −2.6%), but none is
+  positive at −110.
+
+**Verdict, updated.** The models carry real information the early line lacks. That is now
+confirmed independently and reconciled across two studies. At standard −110 prices on a Tuesday
+line it still does not pay. It pays where the price is better:
+* the first-posted NFL total;
+* CFB with three-book shopping at about −108;
+* any market at about −103.
+
+The forward tests decide whether the CFB rule built on last week's information (the larger edge)
+holds up.

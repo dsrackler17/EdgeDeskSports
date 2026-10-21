@@ -1113,6 +1113,235 @@
      2026
     ]
    }
+  },
+  {
+   "id": "EDGE-H3",
+   "sport": "nfl",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "v21_total",
+   "threshold": 2.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 13.2805
+   },
+   "frame": "nfl",
+   "challenger": false,
+   "study_id": "H-3",
+   "label": "early-week study H-3: production edgedesk_nfl_v2.1.0 total, edge >= 2",
+   "status": "PRODUCTION (CLV live tracking)",
+   "holdout": {
+    "n_bets": 114,
+    "clv_prob": {
+     "n": 114,
+     "mean": 0.0124,
+     "ci98": [
+      0.00483986644718059,
+      0.020800622955662817
+     ]
+    },
+    "clv_pts": {
+     "n": 114,
+     "mean": 0.50439,
+     "ci98": [
+      0.23360382513661204,
+      0.787631709536018
+     ]
+    },
+    "clv_ev": -0.02141,
+    "seasons": [
+     2025,
+     2026
+    ],
+    "source": "docs/model-loop/clv_early/results/H_3__NFL_v2_1_0_total_holdout.json"
+   }
+  },
+  {
+   "id": "EDGE-H4",
+   "sport": "cfb",
+   "market": "spread",
+   "kind": "points",
+   "rule": "base",
+   "input": "v2_w2",
+   "threshold": 3.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 15.5605
+   },
+   "frame": "cfb",
+   "challenger": true,
+   "study_id": "H-4",
+   "label": "early-week study H-4: CFB loop v2.0.0 as published before week W-1, edge >= 3 vs the opener",
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 460,
+    "clv_prob": {
+     "n": 460,
+     "mean": 0.00638,
+     "ci98": [
+      0.0018736649739235275,
+      0.011085591804211394
+     ]
+    },
+    "clv_pts": {
+     "n": 460,
+     "mean": 0.2587,
+     "ci98": [
+      0.0683898399288573,
+      0.456109124225957
+     ]
+    },
+    "clv_ev": -0.03327,
+    "seasons": [
+     2025,
+     2026
+    ],
+    "source": "docs/model-loop/clv_early/results/H_4__CFB_Loop_v2_0_0_W_2_spread_holdout.json"
+   }
+  },
+  {
+   "id": "EDGE-H5",
+   "sport": "cfb",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "v2_w2_total",
+   "threshold": 3.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 16.406
+   },
+   "frame": "cfb",
+   "challenger": true,
+   "study_id": "H-5",
+   "label": "early-week study H-5: CFB loop v2.0.0 total as published before week W-1, edge >= 3 vs the opener",
+   "status": "CANDIDATE (CLV live tracking)",
+   "holdout": {
+    "n_bets": 426,
+    "clv_prob": {
+     "n": 426,
+     "mean": 0.0102,
+     "ci98": [
+      0.0032851861307258293,
+      0.01606903196547341
+     ]
+    },
+    "clv_pts": {
+     "n": 426,
+     "mean": 0.41784,
+     "ci98": [
+      0.13519515564958345,
+      0.6581747742703156
+     ]
+    },
+    "clv_ev": -0.02598,
+    "seasons": [
+     2025,
+     2026
+    ],
+    "source": "docs/model-loop/clv_early/results/H_5__CFB_Loop_v2_0_0_W_2_total_holdout.json"
+   }
+  },
+  {
+   "id": "EDGE-L1",
+   "sport": "cfb",
+   "market": "spread",
+   "kind": "points",
+   "rule": "base",
+   "input": "v2",
+   "threshold": 3.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 15.5605
+   },
+   "frame": "cfb",
+   "label": "step 4 L1: CFB loop v2.0.0 at the Lab's OPEN checkpoint (week W-1 inputs), edge >= 3, timestamped opener",
+   "challenger": true,
+   "status": "CANDIDATE (CLV live tracking, forward test)",
+   "track_from": "2026-10-21T17:18:50Z",
+   "gate": "forward gate (research/clv_early_week/EXPERIMENTS.md, step 4): at 100 graded bets or season's end, PASS = mean clv_pts > 0, clv_prob one-sided p <= 0.01 (0.05/5), n >= 100",
+   "holdout": null
+  },
+  {
+   "id": "EDGE-L2",
+   "sport": "cfb",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "v2_total",
+   "threshold": 3.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 16.406
+   },
+   "frame": "cfb",
+   "label": "step 4 L2: CFB loop v2.0.0 total at the Lab's OPEN checkpoint, edge >= 3, timestamped opener",
+   "challenger": true,
+   "status": "CANDIDATE (CLV live tracking, forward test)",
+   "track_from": "2026-10-21T17:18:50Z",
+   "gate": "forward gate (research/clv_early_week/EXPERIMENTS.md, step 4): at 100 graded bets or season's end, PASS = mean clv_pts > 0, clv_prob one-sided p <= 0.01 (0.05/5), n >= 100",
+   "holdout": null
+  },
+  {
+   "id": "EDGE-B1",
+   "sport": "cfb",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "v2_w2_total",
+   "threshold": 5.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 16.406
+   },
+   "frame": "cfb",
+   "label": "step 4 B1: H-5 (CFB loop W-2 total) at edge >= 5",
+   "challenger": true,
+   "status": "CANDIDATE (CLV live tracking, forward test)",
+   "track_from": "2026-10-21T17:18:50Z",
+   "gate": "forward gate (research/clv_early_week/EXPERIMENTS.md, step 4): at 100 graded bets or season's end, PASS = mean clv_pts > 0, clv_prob one-sided p <= 0.01 (0.05/5), n >= 100",
+   "holdout": null
+  },
+  {
+   "id": "EDGE-B2",
+   "sport": "cfb",
+   "market": "spread",
+   "kind": "points",
+   "rule": "base",
+   "input": "v2_w2",
+   "threshold": 5.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 15.5605
+   },
+   "frame": "cfb",
+   "label": "step 4 B2: H-4 (CFB loop W-2 spread) at edge >= 5",
+   "challenger": true,
+   "status": "CANDIDATE (CLV live tracking, forward test)",
+   "track_from": "2026-10-21T17:18:50Z",
+   "gate": "forward gate (research/clv_early_week/EXPERIMENTS.md, step 4): at 100 graded bets or season's end, PASS = mean clv_pts > 0, clv_prob one-sided p <= 0.01 (0.05/5), n >= 100",
+   "holdout": null
+  },
+  {
+   "id": "EDGE-B3",
+   "sport": "nfl",
+   "market": "total",
+   "kind": "points",
+   "rule": "base",
+   "input": "v21_total",
+   "threshold": 3.0,
+   "dist": {
+    "type": "normal",
+    "sigma": 13.2805
+   },
+   "frame": "nfl",
+   "label": "step 4 B3: H-3 (NFL v2.1.0 total) at edge >= 3",
+   "challenger": true,
+   "status": "CANDIDATE (CLV live tracking, forward test)",
+   "track_from": "2026-10-21T17:18:50Z",
+   "gate": "forward gate (research/clv_early_week/EXPERIMENTS.md, step 4): at 100 graded bets or season's end, PASS = mean clv_pts > 0, clv_prob one-sided p <= 0.01 (0.05/5), n >= 100",
+   "holdout": null
   }
  ]
 }

@@ -106,6 +106,71 @@ def candidates(sig, nba_cands=None):
     for c in C:
         c["status"] = "CANDIDATE (CLV live tracking)" if c["challenger"] else "PRODUCTION (CLV live tracking)"
         c["holdout"] = holdout(c["sport"], c["id"])
+    return C + edge_candidates(sig)
+
+
+EDGE_RESULTS = os.path.join(ROOT, "docs", "model-loop", "clv_early", "results")
+
+
+def edge_holdout(hid):
+    """The early-week study's holdout record (research/clv_early_week/EXPERIMENTS.md, Phase 6)."""
+    import glob
+    f = sorted(glob.glob(os.path.join(EDGE_RESULTS, f"{hid.replace('-', '_')}__*.json")))[0]
+    p = json.load(open(f))["primary"]
+    return {"n_bets": p["n"], "clv_prob": {"n": p["n"], "mean": round(p["clv_prob"], 5), "ci98": p["clv_prob_ci95"]},
+            "clv_pts": {"n": p["n"], "mean": round(p["clv_pts"], 5), "ci98": p["clv_pts_ci95"]},
+            "clv_ev": round(p["roi_at_bet_price"], 5), "seasons": [2025, 2026],
+            "source": os.path.relpath(f, ROOT)}
+
+
+def edge_candidates(sig):
+    """The three rules that passed the early-week study's own holdout gate. They
+    are graded by the same frozen-rule machinery; the CFB pair reads the loop's
+    number as published before week W-1 kicked off (live.py loop_w2)."""
+    pts = lambda s: {"type": "normal", "sigma": round(float(s), 4)}
+    C = [
+        {"id": "EDGE-H3", "sport": "nfl", "market": "total", "kind": "points", "rule": "base", "input": "v21_total",
+         "threshold": 2.0, "dist": pts(sig["nfl_total"]), "frame": "nfl", "challenger": False, "study_id": "H-3",
+         "label": "early-week study H-3: production edgedesk_nfl_v2.1.0 total, edge >= 2"},
+        {"id": "EDGE-H4", "sport": "cfb", "market": "spread", "kind": "points", "rule": "base", "input": "v2_w2",
+         "threshold": 3.0, "dist": pts(sig["cfb_spread"]), "frame": "cfb", "challenger": True, "study_id": "H-4",
+         "label": "early-week study H-4: CFB loop v2.0.0 as published before week W-1, edge >= 3 vs the opener"},
+        {"id": "EDGE-H5", "sport": "cfb", "market": "total", "kind": "points", "rule": "base", "input": "v2_w2_total",
+         "threshold": 3.0, "dist": pts(sig["cfb_total"]), "frame": "cfb", "challenger": True, "study_id": "H-5",
+         "label": "early-week study H-5: CFB loop v2.0.0 total as published before week W-1, edge >= 3 vs the opener"},
+    ]
+    for c in C:
+        c["status"] = "CANDIDATE (CLV live tracking)" if c["challenger"] else "PRODUCTION (CLV live tracking)"
+        c["holdout"] = edge_holdout(c["study_id"])
+    return C + edge_forward(sig)
+
+
+EDGE_FORWARD_FROM = "2026-10-21T17:18:50Z"     # the step-4 preregistration commit (research/clv_early_week/EXPERIMENTS.md)
+
+
+def edge_forward(sig):
+    """Step 4's forward variants: graded only on games that kick off after their
+    preregistration; judged at 100 bets or the end of the 2026 season (k = 5)."""
+    pts = lambda s: {"type": "normal", "sigma": round(float(s), 4)}
+    gate = ("forward gate (research/clv_early_week/EXPERIMENTS.md, step 4): at 100 graded bets or season's end, "
+            "PASS = mean clv_pts > 0, clv_prob one-sided p <= 0.01 (0.05/5), n >= 100")
+    C = [
+        {"id": "EDGE-L1", "sport": "cfb", "market": "spread", "kind": "points", "rule": "base", "input": "v2", "threshold": 3.0,
+         "dist": pts(sig["cfb_spread"]), "frame": "cfb",
+         "label": "step 4 L1: CFB loop v2.0.0 at the Lab's OPEN checkpoint (week W-1 inputs), edge >= 3, timestamped opener"},
+        {"id": "EDGE-L2", "sport": "cfb", "market": "total", "kind": "points", "rule": "base", "input": "v2_total", "threshold": 3.0,
+         "dist": pts(sig["cfb_total"]), "frame": "cfb",
+         "label": "step 4 L2: CFB loop v2.0.0 total at the Lab's OPEN checkpoint, edge >= 3, timestamped opener"},
+        {"id": "EDGE-B1", "sport": "cfb", "market": "total", "kind": "points", "rule": "base", "input": "v2_w2_total", "threshold": 5.0,
+         "dist": pts(sig["cfb_total"]), "frame": "cfb", "label": "step 4 B1: H-5 (CFB loop W-2 total) at edge >= 5"},
+        {"id": "EDGE-B2", "sport": "cfb", "market": "spread", "kind": "points", "rule": "base", "input": "v2_w2", "threshold": 5.0,
+         "dist": pts(sig["cfb_spread"]), "frame": "cfb", "label": "step 4 B2: H-4 (CFB loop W-2 spread) at edge >= 5"},
+        {"id": "EDGE-B3", "sport": "nfl", "market": "total", "kind": "points", "rule": "base", "input": "v21_total", "threshold": 3.0,
+         "dist": pts(sig["nfl_total"]), "frame": "nfl", "label": "step 4 B3: H-3 (NFL v2.1.0 total) at edge >= 3"},
+    ]
+    for c in C:
+        c.update({"challenger": True, "status": "CANDIDATE (CLV live tracking, forward test)", "track_from": EDGE_FORWARD_FROM,
+                  "gate": gate, "holdout": None})
     return C
 
 
