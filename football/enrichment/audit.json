@@ -1,28 +1,28 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-20T21:47:19.517Z",
+ "generated_at": "2026-10-21T02:44:52.694Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-20T21:47:19.517Z",
-  "reliability_generated_at": "2026-10-20T21:47:19.517Z",
-  "enrichment_generated_at": "2026-10-20T21:46:50.352Z",
+  "at": "2026-10-21T02:44:52.694Z",
+  "reliability_generated_at": "2026-10-21T02:44:52.694Z",
+  "enrichment_generated_at": "2026-10-21T02:44:45.500Z",
   "counts": {
-   "games": 62,
+   "games": 65,
    "mean": 86.6,
    "median": 89,
    "by_band": {
-    "STRONG": 51,
-    "ADEQUATE": 10,
+    "STRONG": 53,
+    "ADEQUATE": 11,
     "CAUTION": 1
    },
-   "missing_qb_status": 124,
+   "missing_qb_status": 130,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 16,
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 0,
-   "games_under_two_market_sources": 62,
-   "stale_evidence_records": 81,
+   "games_under_two_market_sources": 65,
+   "stale_evidence_records": 79,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -374,6 +374,27 @@
     "fam": {
      "availability": 4.6,
      "qb_status": 2,
+     "qb_identity": 0.8,
+     "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
+   "401856844": {
+    "game": "Baylor @ UCF",
+    "score": 89,
+    "grade": "STRONG",
+    "fam": {
+     "availability": 4.6,
+     "qb_status": 2,
+     "favorite_flips": 0.7,
+     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
@@ -852,6 +873,26 @@
      "away": "NOT_DUE_YET"
     }
    },
+   "401862813": {
+    "game": "Tulane @ Charlotte",
+    "score": 79,
+    "grade": "ADEQUATE",
+    "fam": {
+     "availability": 4.6,
+     "qb_conflict": 1.9,
+     "qb_identity": 2.2,
+     "qb_status": 2,
+     "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
    "401864525": {
     "game": "Air Force @ Wyoming",
     "score": 89,
@@ -1018,6 +1059,25 @@
      "qb_status": 2,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
+   "401866451": {
+    "game": "Kent State @ Sacramento State",
+    "score": 89,
+    "grade": "STRONG",
+    "fam": {
+     "availability": 4.6,
+     "qb_status": 2,
+     "prior_missing": 1,
+     "qb_identity": 1.1
     },
     "qb": {
      "home": "EXPECTED",
@@ -1347,7 +1407,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-20T17:24:58.718Z",
+  "at": "2026-10-20T21:47:19.517Z",
   "counts": {
    "games": 62,
    "mean": 86.6,
@@ -1364,41 +1424,23 @@
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 0,
    "games_under_two_market_sources": 62,
-   "stale_evidence_records": 83,
+   "stale_evidence_records": 81,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "-2 stale evidence records (83 → 81)"
+  "-2 stale evidence records (81 → 79)"
  ],
- "what_degraded": [],
- "why": [],
+ "what_degraded": [
+  "+6 QB statuses missing (124 → 130)",
+  "+3 games under two market sources (62 → 65)"
+ ],
+ "why": [
+  "the slate itself changed: 3 games entered the window, 0 left it (kicked off or rolled out)"
+ ],
  "history": [
-  {
-   "at": "2026-10-14T08:38:29.879Z",
-   "counts": {
-    "games": 108,
-    "mean": 85.9,
-    "median": 89,
-    "by_band": {
-     "STRONG": 87,
-     "LOW": 3,
-     "ADEQUATE": 18
-    },
-    "missing_qb_status": 214,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 19,
-    "unrated_meaningful_absences": 33,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 108,
-    "stale_evidence_records": 74,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-14T12:12:55.934Z",
    "counts": {
@@ -2811,6 +2853,29 @@
     "fcs_games_thin_data": 0,
     "games_under_two_market_sources": 62,
     "stale_evidence_records": 81,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-21T02:44:52.694Z",
+   "counts": {
+    "games": 65,
+    "mean": 86.6,
+    "median": 89,
+    "by_band": {
+     "STRONG": 53,
+     "ADEQUATE": 11,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 130,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 16,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 0,
+    "games_under_two_market_sources": 65,
+    "stale_evidence_records": 79,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
