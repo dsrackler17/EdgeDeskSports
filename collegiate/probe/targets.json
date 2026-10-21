@@ -1,0 +1,29 @@
+{
+ "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every school host is read through collegiate/polite.js (robots.txt first, one request at a time, 2 s apart). Hosts are candidates to verify, not facts: one that does not answer is recorded as such.",
+ "sources": [
+  { "name": "ncaa_directory_robots", "url": "https://web1.ncaa.org/robots.txt" },
+  { "name": "ncaa_directory_d1_baseball", "url": "https://web1.ncaa.org/directory/memberList?type=12&division=I&sportCode=MBA" },
+  { "name": "stats_ncaa_robots", "url": "https://stats.ncaa.org/robots.txt" },
+  { "name": "espn_college_baseball_teams", "url": "https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams?limit=1000" },
+  { "name": "wikidata_robots", "url": "https://query.wikidata.org/robots.txt" },
+  { "name": "wikidata_program_shape", "url": "https://query.wikidata.org/sparql?format=json&query=SELECT%20%3Fitem%20%3Fp%20%3Fo%20%3FoLabel%20WHERE%20%7B%20VALUES%20%3Flab%20%7B%20%22Stanford%20Cardinal%22%40en%20%22LSU%20Tigers%22%40en%20%22Texas%20Longhorns%22%40en%20%7D%20%3Fitem%20rdfs%3Alabel%20%3Flab%20.%20%3Fitem%20%3Fp%20%3Fo%20.%20FILTER(STRSTARTS(STR(%3Fp)%2C%20%22http%3A%2F%2Fwww.wikidata.org%2Fprop%2Fdirect%2F%22))%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%22.%20%7D%20%7D%20LIMIT%20400" }
+ ],
+ "schools": [
+  { "name": "Stanford", "host": "gostanford.com" },
+  { "name": "LSU", "host": "lsusports.net" },
+  { "name": "Texas", "host": "texassports.com" },
+  { "name": "Florida", "host": "floridagators.com" },
+  { "name": "Texas A&M", "host": "12thman.com" },
+  { "name": "Arkansas", "host": "arkansasrazorbacks.com" },
+  { "name": "Vanderbilt", "host": "vucommodores.com" },
+  { "name": "Wake Forest", "host": "godeacs.com" }
+ ],
+ "paths": [
+  "/",
+  "/sports/baseball/roster",
+  "/sports/baseball/schedule",
+  "/sports/baseball/stats",
+  "/sports/football/roster",
+  "/sports/womens-basketball/roster"
+ ]
+}
