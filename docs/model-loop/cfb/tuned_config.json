@@ -1,0 +1,68 @@
+{
+ "tune_mae": 12.94762,
+ "cfg": {
+  "rating": {
+   "garbage_floor": 0.25,
+   "hl_week": null,
+   "lam": {
+    "pass_off": 50,
+    "pass_def": 50,
+    "rush_off": 50,
+    "rush_def": 150,
+    "qb": 150,
+    "mu": 100.0,
+    "home": 3000.0,
+    "lower": 200,
+    "group": 50.0
+   },
+   "carry": {
+    "off": 0.6,
+    "def": 0.8,
+    "qb": 0.6,
+    "qb_gap": 0.8,
+    "lower": 0.9
+   },
+   "conf_w": 0.5,
+   "talent": {
+    "off": 0.06,
+    "def": 0.0
+   },
+   "retprod": 0.0,
+   "qb_layer": true,
+   "fcs_teams": true,
+   "market": {
+    "on": true,
+    "hl_week": null,
+    "lam": 0.25,
+    "carry": 1.0,
+    "lam_hfa": 20.0,
+    "lam_group": 3.0
+   },
+   "totals_market": {
+    "on": true,
+    "hl_week": 8.0,
+    "lam": 0.5,
+    "carry": 0.9,
+    "lam_group": 3.0
+   }
+  },
+  "model": {
+   "components": {
+    "qb": true,
+    "market": true,
+    "rest": true,
+    "division": true,
+    "covid": true,
+    "pass_split": true,
+    "rush": true
+   },
+   "hl_season": null,
+   "ridge_lam": 8,
+   "hfa_prior_games": 0,
+   "first_train": 2010,
+   "min_train_seasons": 2,
+   "calibration": "none",
+   "total_market": true
+  }
+ }
+}
