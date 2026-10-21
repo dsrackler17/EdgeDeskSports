@@ -11,6 +11,9 @@ One row per (game, market) in, the bets and their scorecard out:
               (from the bet-time prices); 0.5 when the prices are unknown
   close_p     optional: no-vig probability of the HOME / OVER side at the close
   result      optional: final home margin / total points (diagnostics only)
+  bet_odds_over / bet_odds_under   optional: American prices of the HOME/OVER
+              and AWAY/UNDER sides at bet time (-110 assumed where missing),
+              for the expected return at the price actually offered
 
 The rule. edge = model - bet_line. A bet is placed when |edge| >= threshold, on
 the side the edge points to (home / over when edge > 0). Then
@@ -150,6 +153,14 @@ def place_bets(df, cfg, dist):
     p_close_side = np.where(side > 0, p_over_at_bet, 1.0 - p_over_at_bet)
     p_bet_side = np.where(side > 0, bet_p, 1.0 - bet_p)
     d["clv_prob"] = np.where(side != 0, p_close_side - p_bet_side, 0.0)
+    # expected return of the bet at the price actually offered, if the close is
+    # the truth (pushes excluded); -110 where the data has no price
+    o_over = d["bet_odds_over"].astype(float).values if "bet_odds_over" in d else np.full(len(d), np.nan)
+    o_under = d["bet_odds_under"].astype(float).values if "bet_odds_under" in d else np.full(len(d), np.nan)
+    o_side = np.where(side > 0, o_over, o_under)
+    o_side = np.where(np.isfinite(o_side), o_side, -110.0)
+    dec = np.where(o_side > 0, 1.0 + o_side / 100.0, 1.0 + 100.0 / np.abs(o_side))
+    d["roi"] = np.where(side != 0, p_close_side * dec - 1.0, 0.0)
     if "result" in d:
         r = d.result.astype(float) - d.bet_line.astype(float)
         d["ats"] = np.where(np.isfinite(r) & (r != 0), (np.sign(r) == d.side).astype(float), np.nan)
@@ -239,12 +250,13 @@ def evaluate(df, cfg=None, dist=None):
     s = _stats(b.clv_pts.values, b.clv_prob.values)
     out.update(s)
     cl = _clusters(b, cfg.cluster)
+    out["roi_at_bet_price"] = float(b.roi.mean()) if len(b) else float("nan")
     if len(b):
         hit = np.where(b.clv_pts.values != 0, (b.clv_pts.values > 0).astype(float), np.nan)
-        ci = cluster_bootstrap(np.column_stack([b.clv_pts.values, b.clv_prob.values, hit]), cl, cfg.n_boot, rng)
-        out["clv_pts_ci95"], out["clv_prob_ci95"], out["hit_rate_ci95"] = ci
+        ci = cluster_bootstrap(np.column_stack([b.clv_pts.values, b.clv_prob.values, hit, b.roi.values]), cl, cfg.n_boot, rng)
+        out["clv_pts_ci95"], out["clv_prob_ci95"], out["hit_rate_ci95"], out["roi_ci95"] = ci
     else:
-        out["clv_pts_ci95"] = out["clv_prob_ci95"] = out["hit_rate_ci95"] = [float("nan"), float("nan")]
+        out["clv_pts_ci95"] = out["clv_prob_ci95"] = out["hit_rate_ci95"] = out["roi_ci95"] = [float("nan"), float("nan")]
     out["permutation"] = permutation_null(d, cfg, rng)
     # edge buckets over every row with a non-zero edge
     bk = []
@@ -313,4 +325,4 @@ def summary_line(r):
     plo, phi = r["clv_prob_ci95"]
     return (f"{r['label']:<34} thr {r['threshold']:>4.1f}  bets {r['n']:>5}  CLV {r['clv_pts']:+.3f} pts "
             f"[{lo:+.3f},{hi:+.3f}]  {100 * r['clv_prob']:+.2f}% [{100 * plo:+.2f},{100 * phi:+.2f}]  "
-            f"dir-hit {r['hit_rate']:.3f}  perm-p {r['permutation']['p_value']:.3f}")
+            f"dir-hit {r['hit_rate']:.3f}  perm-p {r['permutation']['p_value']:.3f}  ROI {100 * r.get('roi_at_bet_price', float('nan')):+.2f}%")

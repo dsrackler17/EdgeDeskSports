@@ -122,9 +122,156 @@ number of variants tried on development data.
 
 _(added after each run; nothing above is edited after a result exists)_
 
+### Phase 3 results (run 2026-10-21; scorecards `docs/model-loop/clv/results/E_00*.json`)
+
+**Reproduction checks first.** The training side of each replay reproduces the published
+walk-forward exactly: NFL v2.1.0 margin MAE 2010–2024 = 10.3032 on 4,078 games (published
+10.3032); NFL Loop and CFB Loop `prod` predictions equal `docs/model-loop/*/predictions.csv.gz`
+to 0.0000 for every season 2009/2012–2025 (2026 differs only by games added since). The CFB V1
+week-start replay equals the existing sequential cold replay on 98.6% of games (the rest are
+games whose week contained an earlier Thu/Fri game).
+
+Columns: bets, mean CLV in points [95% week-cluster CI], mean CLV in no-vig probability [CI],
+line-direction hit rate, permutation p, and expected ROI at the price offered at bet time with
+the close as the truth (reporting-only, see addendum A-1 below; −110 where no price exists).
+
+| exp | model · market | thr | bets | CLV pts | CLV prob | dir-hit | perm p | ROI at bet price | edge called? |
+|---|---|---|---|---|---|---|---|---|---|
+| E-001 | NFL v2.1.0 · spread | 2 | 582 | **+0.372** [+0.22, +0.52] | +0.87% [+0.41, +1.33] | 0.618 | 0.001 | −1.91% | **yes** |
+| E-002 | NFL Loop v2.0.0 · spread | 2 | 563 | **+0.400** [+0.24, +0.57] | +0.96% [+0.46, +1.44] | 0.624 | 0.001 | −1.75% | **yes** |
+| E-003 | CFB V1 (cfb_p4) · spread | 3 | 2,982 | +0.238 [+0.15, +0.32] | +0.57% [+0.35, +0.80] | 0.536 | 0.001 | −3.47% | **no — fails E-006** |
+| E-004 | CFB Loop v2.0.0 · spread | 3 | 2,771 | **+0.548** [+0.45, +0.65] | +1.38% [+1.11, +1.64] | 0.616 | 0.001 | −1.94% | **yes** (survives E-006) |
+| E-005 | NFL v2.1.0 · total | 2 | 631 | **+0.446** [+0.31, +0.58] | +1.33% [+0.92, +1.75] | 0.646 | 0.001 | −0.90% | **yes** |
+| E-005 | NFL Loop v2.0.0 · total | 2 | 506 | **+0.423** [+0.25, +0.58] | +1.36% [+0.84, +1.88] | 0.667 | 0.001 | −0.97% | **yes** |
+| E-005 | CFB V1 · total | 3 | 2,734 | −0.117 [−0.26, +0.04] | −0.29% [−0.65, +0.07] | 0.476 | 0.724 | −5.11% | no |
+| E-005 | CFB Loop v2.0.0 · total | 3 | 2,900 | **+0.900** [+0.75, +1.05] | +2.19% [+1.83, +2.54] | 0.664 | 0.001 | −0.42% | **yes** (survives E-006) |
+| E-006 | CFB V1 · spread, ratings W−2 | 3 | 3,336 | +0.007 [−0.06, +0.07] | −0.01% | 0.498 | 0.476 | −4.59% | — (sensitivity) |
+| E-006 | CFB V1 · total, ratings W−2 | 3 | 3,029 | −0.047 [−0.19, +0.09] | −0.13% | 0.489 | 0.498 | −4.79% | — |
+| E-006 | CFB Loop · spread, ratings + QB W−2 | 3 | 3,230 | +0.250 [+0.16, +0.34] | +0.60% [+0.37, +0.83] | 0.551 | 0.001 | −3.42% | passes |
+| E-006 | CFB Loop · total, ratings + QB W−2 | 3 | 3,204 | +0.713 [+0.57, +0.86] | +1.72% [+1.38, +2.07] | 0.630 | 0.001 | −1.30% | passes |
+
+Secondary (pre-registered): CLV against the across-book median close instead of the bet book's
+close — CFB V1 +0.244, CFB Loop +0.519: the same conclusion.
+
+Threshold sweeps (descriptive; CLV pts at thresholds): NFL v2.1.0 spread 1/3/4: +0.27/+0.41/+0.48;
+NFL Loop spread 1/3/4: +0.37/+0.45/+0.46; CFB Loop spread 2/4/5/6: +0.45/+0.61/+0.67/+0.77;
+CFB Loop total 2/5: +0.78/+1.17 (ROI +0.77% at 5); NFL totals 4: +0.68 (v2.1.0), +0.61 (Loop).
+CLV rises with the size of the edge in every called model (bucket tables in the JSON): e.g.
+NFL v2.1.0 spread buckets 0–1/1–2/2–3/3+: −0.18/+0.09/+0.30/+0.41 pts.
+
+Per season (CLV pts at the primary threshold): NFL v2.1.0 spread 2020–24: +0.43, +0.19, +0.36,
++0.52, +0.35 — positive every season. NFL Loop spread: +0.47, +0.55, +0.19, +0.57, +0.25. CFB
+Loop spread 2015–19, 2021–24: +0.53, +0.89, +0.95, +0.52, +0.35, +0.40, +0.22, +0.74, +0.33. CFB
+Loop total: +1.94, +1.39, +1.11, +1.01, +0.31, +1.00, +0.62, +0.28, +0.24 — **shrinking over time**
+(W−2 version: 2023 +0.07, 2024 +0.14).
+
+**What the baselines say.**
+
+1. **Both NFL models find early-week CLV**, every season, rising with edge size; the NFL timing is
+   proven by timestamps. The model's disagreement explains ~10% of the τ→close move (movement
+   slope +0.08 to +0.10).
+2. **CFB V1's spread CLV is entirely last week's information.** Priced from ratings one week
+   older it is exactly zero (+0.007). Because CFB openers carry no timestamp, that CLV cannot be
+   told apart from a lookahead-line artefact, so — as pre-registered — it is not called.
+3. **CFB Loop v2.0.0 keeps CLV with nothing from week W−1** (spreads +0.25, totals +0.71), so
+   part of its edge is information the opener under-weights rather than timing.
+4. **None of it beats the vig at the price offered.** Expected ROI at the bet-time price is
+   negative for every called baseline at its primary threshold (−0.4% to −1.9%); only CFB Loop
+   totals at threshold 5 reach +0.77%. CLV of ~1–2% probability is real but smaller than a −110
+   price's ~2.4% per side.
+
+**Robustness diagnostic (not pre-registered; disclosed).** 12% of NFL τ lines were last changed
+*before* week W−1 kicked off (a lookahead value the feed kept). Those games show outsized CLV
+(+1.06 pts, 55 bets) and may not have been bettable at τ. On the 88% re-posted after the weekend:
+NFL v2.1.0 spread +0.301 [+0.16, +0.43], NFL Loop spread +0.307 [+0.15, +0.47], NFL v2.1.0 total
++0.443, NFL Loop total +0.401 — still called. From Phase 4 on this is an instrument rule (R-1).
+
+**The bar every later experiment must beat** (development, primary thresholds):
+
+| sport · market | best baseline | CLV pts | under R-1 / W−2 |
+|---|---|---|---|
+| NFL spread | NFL Loop v2.0.0 (thr 2) | +0.400 | +0.307 (R-1, fresh lines) |
+| NFL total | NFL v2.1.0 (thr 2) | +0.446 | +0.443 (R-1) |
+| CFB spread | CFB Loop v2.0.0 (thr 3) | +0.548 | +0.250 (W−2) |
+| CFB total | CFB Loop v2.0.0 (thr 3) | +0.900 | +0.713 (W−2) |
+
+### Protocol addenda (written after Phase 3, before Phase 4; apply to every later experiment)
+
+* **A-1 (reporting only).** Every scorecard also reports the expected ROI of the bets at the price
+  actually offered at bet time, taking the close as the truth (pushes excluded; −110 where the data
+  has no price). It is never a pass criterion; it answers "does the CLV beat the vig?".
+* **R-1 (NFL instrument rule).** NFL early lines count only if the value at τ was (re)posted after
+  the first kickoff of week W−1. Applies to every NFL experiment from Phase 4; NFL comparators are
+  re-scored under it on the same games.
+* **R-2 (CFB timing rule).** Every CFB experiment from Phase 4 uses inputs from week W−2 or earlier
+  only (the E-006 state). Its comparator is the CFB Loop W−2 baseline (+0.250 spreads, +0.713 totals).
+
 ---
 
 ## Variant ledger
 
-| # | experiment | model | market | threshold | checkpoint | window | result |
-|---|---|---|---|---|---|---|---|
+Generated from `docs/model-loop/clv/results/ledger.jsonl`, which `model_loop/clv/run.py` appends on
+every scoring run (failures included). One row per unique (experiment, label, threshold); "runs"
+counts re-scorings of the identical configuration (e.g. re-run after the ROI column was added or a
+diagnostics bug was fixed — CLV unchanged). "CLV>0" = the protocol's edge rule on that row.
+
+| # | exp | label | market | thr | role | bets | CLV pts | rule | runs |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | E-001 | NFL v2.1.0 spread | spread | 2 | primary | 582 | +0.372 | CLV>0 | 3 |
+| 2 | E-001 | NFL v2.1.0 spread | spread | 1 | sweep | 888 | +0.274 | CLV>0 | 3 |
+| 3 | E-001 | NFL v2.1.0 spread | spread | 3 | sweep | 374 | +0.413 | CLV>0 | 3 |
+| 4 | E-001 | NFL v2.1.0 spread | spread | 4 | sweep | 226 | +0.478 | CLV>0 | 3 |
+| 5 | E-003 | CFB V1 spread | spread | 3 | primary | 2982 | +0.238 | CLV>0 | 2 |
+| 6 | E-003 | CFB V1 spread | spread | 2 | sweep | 3941 | +0.222 | CLV>0 | 2 |
+| 7 | E-003 | CFB V1 spread | spread | 4 | sweep | 2178 | +0.257 | CLV>0 | 2 |
+| 8 | E-003 | CFB V1 spread | spread | 5 | sweep | 1545 | +0.252 | CLV>0 | 2 |
+| 9 | E-003 | CFB V1 spread | spread | 6 | sweep | 1092 | +0.284 | CLV>0 | 2 |
+| 10 | E-006 | CFB V1 spread ratings W-2 | spread | 3 | primary | 3336 | +0.007 | no | 2 |
+| 11 | E-006 | CFB V1 spread ratings W-2 | spread | 2 | sweep | 4219 | -0.003 | no | 2 |
+| 12 | E-006 | CFB V1 spread ratings W-2 | spread | 4 | sweep | 2503 | +0.024 | no | 2 |
+| 13 | E-006 | CFB V1 spread ratings W-2 | spread | 5 | sweep | 1881 | +0.005 | no | 2 |
+| 14 | E-006 | CFB V1 spread ratings W-2 | spread | 6 | sweep | 1390 | +0.003 | no | 2 |
+| 15 | E-005 | NFL v2.1.0 total | total | 2 | primary | 631 | +0.446 | CLV>0 | 3 |
+| 16 | E-005 | NFL v2.1.0 total | total | 1 | sweep | 906 | +0.367 | CLV>0 | 3 |
+| 17 | E-005 | NFL v2.1.0 total | total | 3 | sweep | 439 | +0.538 | CLV>0 | 3 |
+| 18 | E-005 | NFL v2.1.0 total | total | 4 | sweep | 270 | +0.683 | CLV>0 | 3 |
+| 19 | E-005 | CFB V1 total | total | 3 | primary | 2734 | -0.117 | no | 2 |
+| 20 | E-005 | CFB V1 total | total | 2 | sweep | 3743 | -0.128 | no | 2 |
+| 21 | E-005 | CFB V1 total | total | 4 | sweep | 1895 | -0.099 | no | 2 |
+| 22 | E-005 | CFB V1 total | total | 5 | sweep | 1261 | -0.051 | no | 2 |
+| 23 | E-005 | CFB V1 total | total | 6 | sweep | 786 | +0.108 | no | 2 |
+| 24 | E-002 | NFL Loop v2.0.0 spread | spread | 2 | primary | 563 | +0.400 | CLV>0 | 3 |
+| 25 | E-002 | NFL Loop v2.0.0 spread | spread | 1 | sweep | 870 | +0.370 | CLV>0 | 3 |
+| 26 | E-002 | NFL Loop v2.0.0 spread | spread | 3 | sweep | 296 | +0.453 | CLV>0 | 3 |
+| 27 | E-002 | NFL Loop v2.0.0 spread | spread | 4 | sweep | 167 | +0.461 | CLV>0 | 3 |
+| 28 | E-005 | NFL Loop v2.0.0 total | total | 2 | primary | 506 | +0.423 | CLV>0 | 3 |
+| 29 | E-005 | NFL Loop v2.0.0 total | total | 1 | sweep | 868 | +0.355 | CLV>0 | 3 |
+| 30 | E-005 | NFL Loop v2.0.0 total | total | 3 | sweep | 283 | +0.509 | CLV>0 | 3 |
+| 31 | E-005 | NFL Loop v2.0.0 total | total | 4 | sweep | 127 | +0.610 | CLV>0 | 3 |
+| 32 | E-001-fresh | NFL v2.1.0 spread fresh-only | spread | 2 | primary | 527 | +0.301 | CLV>0 | 1 |
+| 33 | E-002-fresh | NFL Loop v2.0.0 spread fresh-only | spread | 2 | primary | 512 | +0.307 | CLV>0 | 1 |
+| 34 | E-005-fresh | NFL v2.1.0 total fresh-only | total | 2 | primary | 581 | +0.443 | CLV>0 | 1 |
+| 35 | E-005-fresh | NFL Loop v2.0.0 total fresh-only | total | 2 | primary | 476 | +0.401 | CLV>0 | 1 |
+| 36 | E-003 | CFB V1 spread vs consensus close | spread | 3 | primary | 2982 | +0.244 | CLV>0 | 1 |
+| 37 | E-006 | CFB V1 total ratings W-2 | total | 3 | primary | 3029 | -0.047 | no | 1 |
+| 38 | E-004 | CFB Loop v2.0.0 spread | spread | 3 | primary | 2771 | +0.548 | CLV>0 | 1 |
+| 39 | E-004 | CFB Loop v2.0.0 spread | spread | 2 | sweep | 3837 | +0.447 | CLV>0 | 1 |
+| 40 | E-004 | CFB Loop v2.0.0 spread | spread | 4 | sweep | 1892 | +0.606 | CLV>0 | 1 |
+| 41 | E-004 | CFB Loop v2.0.0 spread | spread | 5 | sweep | 1223 | +0.666 | CLV>0 | 1 |
+| 42 | E-004 | CFB Loop v2.0.0 spread | spread | 6 | sweep | 765 | +0.772 | CLV>0 | 1 |
+| 43 | E-004 | CFB Loop v2.0.0 spread vs consensus close | spread | 3 | primary | 2647 | +0.519 | CLV>0 | 1 |
+| 44 | E-005 | CFB Loop v2.0.0 total | total | 3 | primary | 2900 | +0.900 | CLV>0 | 1 |
+| 45 | E-005 | CFB Loop v2.0.0 total | total | 2 | sweep | 3962 | +0.780 | CLV>0 | 1 |
+| 46 | E-005 | CFB Loop v2.0.0 total | total | 4 | sweep | 2053 | +1.064 | CLV>0 | 1 |
+| 47 | E-005 | CFB Loop v2.0.0 total | total | 5 | sweep | 1390 | +1.169 | CLV>0 | 1 |
+| 48 | E-005 | CFB Loop v2.0.0 total | total | 6 | sweep | 871 | +1.204 | CLV>0 | 1 |
+| 49 | E-006 | CFB Loop v2.0.0 spread ratings W-2 | spread | 3 | primary | 3230 | +0.250 | CLV>0 | 1 |
+| 50 | E-006 | CFB Loop v2.0.0 spread ratings W-2 | spread | 2 | sweep | 4195 | +0.208 | CLV>0 | 1 |
+| 51 | E-006 | CFB Loop v2.0.0 spread ratings W-2 | spread | 4 | sweep | 2420 | +0.276 | CLV>0 | 1 |
+| 52 | E-006 | CFB Loop v2.0.0 spread ratings W-2 | spread | 5 | sweep | 1720 | +0.307 | CLV>0 | 1 |
+| 53 | E-006 | CFB Loop v2.0.0 spread ratings W-2 | spread | 6 | sweep | 1184 | +0.291 | CLV>0 | 1 |
+| 54 | E-006 | CFB Loop v2.0.0 total ratings W-2 | total | 3 | primary | 3204 | +0.713 | CLV>0 | 1 |
+| 55 | E-006 | CFB Loop v2.0.0 total ratings W-2 | total | 2 | sweep | 4198 | +0.645 | CLV>0 | 1 |
+| 56 | E-006 | CFB Loop v2.0.0 total ratings W-2 | total | 4 | sweep | 2334 | +0.790 | CLV>0 | 1 |
+| 57 | E-006 | CFB Loop v2.0.0 total ratings W-2 | total | 5 | sweep | 1642 | +0.848 | CLV>0 | 1 |
+| 58 | E-006 | CFB Loop v2.0.0 total ratings W-2 | total | 6 | sweep | 1130 | +0.936 | CLV>0 | 1 |

@@ -126,6 +126,19 @@ class TestProbability(unittest.TestCase):
         self.assertAlmostEqual(d.loc["h", "clv_prob"], pc - 0.5, places=4)
         self.assertAlmostEqual(d.loc["a", "clv_prob"], 0.5 - pc, places=4)
 
+    def test_roi_at_bet_price(self):
+        # no move, no prices: the close says 50/50, a -110 bet returns 0.5 * 1.909 - 1
+        df = frame([("h", 2020, 1, 9.0, 3.5, 3.5)])
+        d = H.place_bets(df, quick(1.0), self.dist).set_index("game_id")
+        self.assertAlmostEqual(d.loc["h", "roi"], 0.5 * (1 + 100 / 110) - 1, places=6)
+        # the same bet at +100 breaks even, and a line that moved our way pays more
+        df = frame([("h", 2020, 1, 9.0, 3.5, 3.5), ("m", 2020, 1, 9.0, 3.5, 5.5)])
+        df["bet_odds_over"] = 100.0
+        df["bet_odds_under"] = -120.0
+        d = H.place_bets(df, quick(1.0), self.dist).set_index("game_id")
+        self.assertAlmostEqual(d.loc["h", "roi"], 0.0, places=6)
+        self.assertGreater(d.loc["m", "roi"], 0.0)
+
     def test_implied_mu_inverts(self):
         lines = np.array([-7.0, -3.0, 0.5, 3.0, 6.5, 14.0])
         ps = np.array([0.45, 0.5, 0.55, 0.52, 0.48, 0.5])
@@ -208,3 +221,14 @@ class TestInference(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestHoldoutLock(unittest.TestCase):
+    def test_holdout_refused_without_unlock(self):
+        from model_loop.clv import run as R
+        R.guard([2020, 2024], False)
+        with self.assertRaises(R.HoldoutLocked):
+            R.guard([2024, 2025], False)
+        with self.assertRaises(R.HoldoutLocked):
+            R.guard([2026], False)
+        R.guard([2025, 2026], True)

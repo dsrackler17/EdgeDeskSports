@@ -45,6 +45,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CACHE = os.path.join(ROOT, ".cache", "clv")
 NFL_CHANGES = os.path.join(CACHE, "nfl_line_changes.csv.gz")
 NFL_COMMITS = os.path.join(CACHE, "nfl_commit_times.txt")
+NFL_GAMES_NOW = os.path.join(CACHE, "raw", "nfl_games.csv")
 CFB_BUILD = os.path.join(ROOT, ".cache", "model_loop", "cfb", "build")
 CFB_RAW_ODDS = os.path.join(CACHE, "raw", "cfb_line_odds.csv.gz")
 
@@ -118,25 +119,35 @@ def nfl_lines(changes=NFL_CHANGES, commits=NFL_COMMITS):
                 if not ok or not len(s):
                     out[f"{name}_{mk}"] = np.nan
                     out[f"{name}_{mk}_p"] = np.nan
+                    out[f"{name}_{mk}_odds_over"] = out[f"{name}_{mk}_odds_under"] = np.nan
                     continue
                 tl = list(s.seen_at)
                 i = bisect.bisect_right(tl, t) - 1
                 if i < 0:
                     out[f"{name}_{mk}"] = np.nan
                     out[f"{name}_{mk}_p"] = np.nan
+                    out[f"{name}_{mk}_odds_over"] = out[f"{name}_{mk}_odds_under"] = np.nan
                     continue
                 row = s.iloc[i]
                 out[f"{name}_{mk}"] = float(row[col])
                 out[f"{name}_{mk}_p"] = _novig(row[po], row[pu]) if pd.notna(row[po]) and pd.notna(row[pu]) else np.nan
+                out[f"{name}_{mk}_odds_over"] = float(row[po]) if pd.notna(row[po]) else np.nan
+                out[f"{name}_{mk}_odds_under"] = float(row[pu]) if pd.notna(row[pu]) else np.nan
                 if name == "early":
                     out[f"early_{mk}_posted_at"] = row.seen_at
         rows.append(out)
     L = pd.DataFrame(rows)
+    # finals from the current games.csv (a score rarely lands in the same commit
+    # as a market change, so the history's last row usually has no score)
+    fin = pd.read_csv(NFL_GAMES_NOW, usecols=["game_id", "home_score", "away_score"]).set_index("game_id")
+    hs, as_ = L.game_id.map(fin.home_score), L.game_id.map(fin.away_score)
+    L["result"] = hs - as_
+    L["total_pts"] = hs + as_
     # the data-quality rule
     for mk in ("spread", "total"):
         bad = (L[f"close_{mk}"] - L[f"early_{mk}"]).abs() > MAX_MOVE[mk]
         L[f"{mk}_qa_dropped"] = bad
-        L.loc[bad, [f"early_{mk}", f"early_{mk}_p"]] = np.nan
+        L.loc[bad, [f"early_{mk}", f"early_{mk}_p", f"early_{mk}_odds_over", f"early_{mk}_odds_under"]] = np.nan
     return L
 
 
@@ -173,33 +184,36 @@ def cfb_lines(build=CFB_BUILD, raw=CFB_RAW_ODDS):
         p_open, p_close = {}, {}
         for (gid, book), grp in pr[pr.book.isin(set(CFB_BET_BOOK.values()))].groupby(["game_id", "book"]):
             p_open[(gid, book)] = grp
-        def side_prob(r, which):
+        def side_odds(r, which):
             grp = p_open.get((r.game_id, r.book))
             if grp is None:
-                return np.nan
+                return (np.nan, np.nan)
             line = r[f"{which}_{mk}"]
             if not np.isfinite(line):
-                return np.nan
+                return (np.nan, np.nan)
             lc, oc = ("opening_lines", "opening_odds") if which == "early" else ("lines", "odds")
             if mk == "spread":
                 if line == 0:
-                    return np.nan
+                    return (np.nan, np.nan)
                 h = grp[np.isclose(grp[lc], -line)]
                 a_ = grp[np.isclose(grp[lc], line)]
             else:
                 h = grp[(grp.abbr.str.lower() == "over") & np.isclose(grp[lc], line)]
                 a_ = grp[(grp.abbr.str.lower() == "under") & np.isclose(grp[lc], line)]
             if len(h) != 1 or len(a_) != 1 or not np.isfinite(h[oc].iloc[0]) or not np.isfinite(a_[oc].iloc[0]):
-                return np.nan
-            return _novig(float(h[oc].iloc[0]), float(a_[oc].iloc[0]))
-        q[f"early_{mk}_p"] = [side_prob(r, "early") for _, r in q.iterrows()]
-        q[f"close_{mk}_p"] = [side_prob(r, "close") for _, r in q.iterrows()]
+                return (np.nan, np.nan)
+            return (float(h[oc].iloc[0]), float(a_[oc].iloc[0]))
+        for which in ("early", "close"):
+            od = [side_odds(r, which) for _, r in q.iterrows()]
+            q[f"{which}_{mk}_odds_over"] = [o[0] for o in od]
+            q[f"{which}_{mk}_odds_under"] = [o[1] for o in od]
+            q[f"{which}_{mk}_p"] = [_novig(o[0], o[1]) if np.isfinite(o[0]) and np.isfinite(o[1]) else np.nan for o in od]
         bad = ((q[f"close_{mk}"] - q[f"early_{mk}"]).abs() > MAX_MOVE[mk]) | \
               ((q[f"close_{mk}"] - q[f"cons_close_{mk}"]).abs() > MAX_BOOK_VS_CONSENSUS)
         q[f"{mk}_qa_dropped"] = bad
-        q.loc[bad, [f"early_{mk}", f"early_{mk}_p"]] = np.nan
+        q.loc[bad, [f"early_{mk}", f"early_{mk}_p", f"early_{mk}_odds_over", f"early_{mk}_odds_under"]] = np.nan
         rows.append(q[["game_id", "book", f"early_{mk}", f"close_{mk}", f"cons_close_{mk}", f"early_{mk}_p",
-                       f"close_{mk}_p", f"{mk}_qa_dropped"]].rename(columns={"book": f"{mk}_book"}))
+                       f"close_{mk}_p", f"early_{mk}_odds_over", f"early_{mk}_odds_under", f"{mk}_qa_dropped"]].rename(columns={"book": f"{mk}_book"}))
     L = g.merge(rows[0], on="game_id", how="left").merge(rows[1], on="game_id", how="left")
     return L
 
