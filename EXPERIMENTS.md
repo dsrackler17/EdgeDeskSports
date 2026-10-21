@@ -482,3 +482,71 @@ Pre-registered 2026-10-21, before any NBA CLV number was computed.
 - **Hypothesis:** before ratings stabilise (either team under 15 games), the lab model's disagreement still earns positive CLV.
 - **Change:** B3's bets restricted to early games.
 - **Pass:** as W1.
+
+---
+
+## NHL
+
+Pre-registered 2026-10-21, before any NHL CLV number was computed.
+
+**Base models.** Per-game walk-forward predictions come from `hockey/model/walkforward.js`, run unmodified in a scratch git worktree so that none of its writes touch this tree. That includes `hockey/model/params/live.json`, which it rewrites.
+- **Reproduction:** `xg_core` confirmation log loss 0.66286, equal to the committed record.
+- **Timing:** every game on date D is predicted from games before D only.
+
+| Model | Role | Admissible at the opener? |
+|---|---|---|
+| `xg_core` | production (`hockey/model/params/live.json`); no goalie term | yes |
+| `xg_goalie_projected` | candidate: projected starter from recent usage and the back-to-back rule | yes |
+| `xg_goalie_confirmed` | candidate: the goalie who actually started | **no**: post-game. Never used for an opener bet |
+
+**Lines:**
+- SBR moneyline open and close (two-way, overtime included), repo seasons 2014–2020. Joined on teams, date (±1 day) and final score.
+- SBR totals keep one price per row and their line rarely moves (2–30% of games), so totals are graded on the line alone, with a discretised normal σ from 2014–2020. That is a weak test, and it is reported as such.
+
+**Holdout:**
+- Proxy, locked: repo 2021–2022.
+- Mandated: 2026–2027. It has no opener with a close, so nothing is reported for it.
+
+**Settings:**
+- Clusters: game date.
+- De-vig: multiplicative.
+- First evaluable residual season: 2017.
+
+### NHL-B1: production xg_core, moneyline (Phase 3)
+- **Bet rule:** |p_model − p_open (no-vig)| ≥ 0.02.
+- **Pass:** mean `clv_prob` > 0, one-sided p < 0.05, n ≥ 100.
+
+### NHL-B2: production xg_core, total (line only) (Phase 3)
+- **Bet rule:** |exp_total − open total| ≥ 0.30 goals.
+- **Pass:** as B1.
+
+### NHL-B3: xg_goalie_projected, moneyline (Phase 3, existing candidate)
+- At ≥0.02. Pass as B1.
+
+### NHL-R1: moneyline market-residual model (Phase 4)
+- **Model:** ridge of (close − open) home no-vig probability on `d_core = p_core − p_open` and `d_gproj = p_gproj − p_open`.
+- **Bet rule:** |predicted move| ≥ 0.005.
+- **Pass:** as B1.
+
+### NHL-R2: R1 plus an information block (Phase 4, one change)
+- **Change:** add, as one block:
+  - `p_open − 0.5` (favourite drift);
+  - `b2b_diff` (home on a back-to-back − away);
+  - `d_core × early` (either team under 10 games).
+- **Pass:** as B1, AND a higher mean `clv_prob` than R1 on the same games.
+
+### NHL-W1: projected-goalie games (Phase 5)
+- **Hypothesis.** When the projected starter moves the price (|p_gproj − p_core| ≥ 0.02), the opener has not fully priced the likely goalie. Confirmation news later moves the line toward the projected-goalie model.
+- **Change:** B3's bets restricted to those games.
+- **Pass:** mean `clv_prob` > 0, one-sided p < 0.05, n ≥ 50.
+- **Not testable:** confirmation timing itself. No confirmation timestamps exist.
+
+### NHL-W2: back-to-backs (Phase 5)
+- **Hypothesis:** R1 earns positive CLV on games with exactly one team on a back-to-back, where a backup goalie is likely.
+- **Change:** R1's bets restricted to those games.
+- **Pass:** as W1.
+
+### NHL-W3: totals residual (Phase 5)
+- **Model:** ridge of the total line move on `dt_core` and `dt_gproj`.
+- **Bet rule:** |predicted move| ≥ 0.05 goals.
+- **Pass:** as B1.
