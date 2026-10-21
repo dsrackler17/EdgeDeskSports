@@ -131,5 +131,66 @@
       "the 2026 week 7 cards (DAL @ PHI) and every Steps 1-4 result in results/step1-4.json and RESULTS.md, 2025 holdout included: these candidates are motivated by those results, which is why each must still win on 2010-2024 first and the 2025 holdout second",
       "no round-2 candidate has been evaluated on any season"
     ]
+  },
+  "round_3": {
+    "registered_at": "2026-10-21T03:55:55Z",
+    "registered_before": "any round-3 candidate was evaluated on any season",
+    "incumbent": {
+      "id": "edgedesk_nfl_v2.1.0",
+      "config_sha": "6c79095675f8a223",
+      "definition": "the served model: v2.0.0 + round 2 (QB prior -0.16 / shrink 6, qb_out_diff, standardised strength ridge lambda 240)"
+    },
+    "why": [
+      "the backup-QB gap is narrowed, not closed: 2026 week 7 DAL @ PHI (Hurts out) is still 5.1 points off a market that prices the absence at about 8; the round-2 out term is one average for every replacement, whoever he replaces",
+      "two round-2 picks sit on the edge of their grids (QB prior -0.16 and shrink 6; lambda 240)",
+      "Step 4 chose T5 over T2 + T5 by 2025 MAE, which the holdout rule forbids; in-season recency is an open candidate (RESULTS.md, round 2)"
+    ],
+    "candidates": {
+      "Q3_qb_out_gap": {
+        "what": "a strength-model feature qb_out_gap_diff = home gap - away gap, where a side's gap is (the regular starter's QB value - the starter's QB value) when the side is OUT (round 2's definition), else 0; QB values are qbEff under the configuration's prior and shrinkage. Its weight is fitted by the ridge like every other term; qb_out_diff stays",
+        "setting": "on"
+      },
+      "Q1x_qb_prior": {
+        "what": "the round-2 grid extended past its edge",
+        "qb_prior": [
+          -0.16,
+          -0.2,
+          -0.24,
+          -0.3
+        ],
+        "qb_shrink": [
+          2,
+          4,
+          6
+        ],
+        "note": "the incumbent pair (-0.16, 6) is not a candidate"
+      },
+      "S1x_lambda": {
+        "what": "the standardised strength ridge past its edge",
+        "ridge_strength_lambda": [
+          480,
+          960,
+          1920
+        ]
+      },
+      "T2r_recency": {
+        "what": "in-season recency lambda (Step 4 T2) on the round-2 incumbent",
+        "recency": [
+          0.85,
+          0.9,
+          0.95
+        ]
+      },
+      "combinations": "every family whose selected setting is a finalist, then their combinations (each family at its selected setting)"
+    },
+    "selection_rule": "within a family the lowest 2010-2024 walk-forward MAE (ties by log loss)",
+    "finalist_rule": "beats the incumbent on 2010-2024 MAE AND log loss, AND has the lower MAE in at least 9 of the 15 validation seasons (new this round: the 2025 holdout has gated 14 earlier decisions, so a validation edge must be broad, not one or two seasons)",
+    "promotion_rule": "a finalist is PROMOTED only if it beats the incumbent on MAE AND log loss on all three windows of the weekly loop gate (weekly_loop.js gate: the full backtest 2010 to the season being played, the 2025 holdout, 2010-2025). Among several that pass, the lowest 2010-2024 MAE, then log loss: the holdout gates, it never ranks. The promoted version is edgedesk_nfl_v2.2.0",
+    "seen_before_registration": [
+      "every round-2 result (results/round2.json), including all its 2025 holdout numbers and that the Q1 and S1 picks sit on their grid edges",
+      "Step 4 T2 recency on the Step 3 base: lambda 0.95 was its best (2010-2024 10.392 / 0.6342; 2025 10.220 / 0.6383) and T2 + T5 beat T5 on 2010-2024 by 0.0009 MAE",
+      "the 2026 week 7 cards under v2.1.0",
+      "no round-3 candidate has been evaluated on any season"
+    ]
   }
 }
