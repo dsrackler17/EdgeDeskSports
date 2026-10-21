@@ -564,6 +564,34 @@ ROI at −110 is −2.5% to −3.1%.
 4. **Nothing changes the bottom line at standard prices.** CLV is real in both sports. Beating the
    vig needs either the opener itself or better-than-−110 prices (step 3).
 
+---
+
+## Live tracking (2026-10-21)
+
+The three rules that passed Phase 6 are tracked by the shared live tracker that already runs for
+the other study (`research/clv/live.py`, every two hours via `.github/workflows/clv-live.yml`;
+results in `research/clv/live/summary.json`). Nothing is served. This avoids a second tracker,
+and X-1 showed the two harnesses score identically.
+
+| live id | rule | model number | bet line → close |
+|---|---|---|---|
+| EDGE-H3 | H-3: NFL v2.1.0 total, edge ≥ 2 | the board's v2.1.0 total, first sighting (`football/nfl/slate.json`) | DraftKings line showing at that sighting → last pregame quote (`record/football/quotes/nfl_2026.jsonl`) |
+| EDGE-H4 | H-4: CFB Loop v2.0.0 spread, edge ≥ 3 | the Loop's number **as first published before either team's week W−1 game kicked off** | the CFB Lab's observed OPEN → CLOSE |
+| EDGE-H5 | H-5: same, totals | as EDGE-H4 | as EDGE-H4 |
+
+**What was added to the tracker** (additive; no existing candidate's grading changes):
+* a first-sighting capture of `football/cfb/model_loop/current.json`, with the time each number
+  was computed (`generated_at`);
+* the `v2_w2` columns in its CFB frame (`loop_w2`);
+* the three registry entries, which `register.py` re-creates;
+* two unit tests (`model_loop/tests/test_clv_live.py`).
+
+**The live W−2 rule is team-specific.** In the backtest it meant the state at the start of week
+W−1. Live, the Loop publishes only ten days ahead, and from November midweek games make "before
+week W−1's first kickoff" exclude almost every Saturday game. So the live rule requires the number
+to predate both teams' own week W−1 games (a bye adds no constraint). The residual exposure is
+other teams' midweek results moving the opponent adjustment: stated here, and judged second-order.
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on

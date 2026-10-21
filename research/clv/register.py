@@ -106,6 +106,42 @@ def candidates(sig, nba_cands=None):
     for c in C:
         c["status"] = "CANDIDATE (CLV live tracking)" if c["challenger"] else "PRODUCTION (CLV live tracking)"
         c["holdout"] = holdout(c["sport"], c["id"])
+    return C + edge_candidates(sig)
+
+
+EDGE_RESULTS = os.path.join(ROOT, "docs", "model-loop", "clv_early", "results")
+
+
+def edge_holdout(hid):
+    """The early-week study's holdout record (research/clv_early_week/EXPERIMENTS.md, Phase 6)."""
+    import glob
+    f = sorted(glob.glob(os.path.join(EDGE_RESULTS, f"{hid.replace('-', '_')}__*.json")))[0]
+    p = json.load(open(f))["primary"]
+    return {"n_bets": p["n"], "clv_prob": {"n": p["n"], "mean": round(p["clv_prob"], 5), "ci98": p["clv_prob_ci95"]},
+            "clv_pts": {"n": p["n"], "mean": round(p["clv_pts"], 5), "ci98": p["clv_pts_ci95"]},
+            "clv_ev": round(p["roi_at_bet_price"], 5), "seasons": [2025, 2026],
+            "source": os.path.relpath(f, ROOT)}
+
+
+def edge_candidates(sig):
+    """The three rules that passed the early-week study's own holdout gate. They
+    are graded by the same frozen-rule machinery; the CFB pair reads the loop's
+    number as published before week W-1 kicked off (live.py loop_w2)."""
+    pts = lambda s: {"type": "normal", "sigma": round(float(s), 4)}
+    C = [
+        {"id": "EDGE-H3", "sport": "nfl", "market": "total", "kind": "points", "rule": "base", "input": "v21_total",
+         "threshold": 2.0, "dist": pts(sig["nfl_total"]), "frame": "nfl", "challenger": False, "study_id": "H-3",
+         "label": "early-week study H-3: production edgedesk_nfl_v2.1.0 total, edge >= 2"},
+        {"id": "EDGE-H4", "sport": "cfb", "market": "spread", "kind": "points", "rule": "base", "input": "v2_w2",
+         "threshold": 3.0, "dist": pts(sig["cfb_spread"]), "frame": "cfb", "challenger": True, "study_id": "H-4",
+         "label": "early-week study H-4: CFB loop v2.0.0 as published before week W-1, edge >= 3 vs the opener"},
+        {"id": "EDGE-H5", "sport": "cfb", "market": "total", "kind": "points", "rule": "base", "input": "v2_w2_total",
+         "threshold": 3.0, "dist": pts(sig["cfb_total"]), "frame": "cfb", "challenger": True, "study_id": "H-5",
+         "label": "early-week study H-5: CFB loop v2.0.0 total as published before week W-1, edge >= 3 vs the opener"},
+    ]
+    for c in C:
+        c["status"] = "CANDIDATE (CLV live tracking)" if c["challenger"] else "PRODUCTION (CLV live tracking)"
+        c["holdout"] = edge_holdout(c["study_id"])
     return C
 
 

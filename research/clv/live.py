@@ -117,6 +117,17 @@ def capture_models(now=None):
                         "lab": (p.get("spread") or {}).get("projected_margin"),
                         "lab_total": (p.get("total") or {}).get("projected_total"),
                         "lab_p": (p.get("moneyline") or {}).get("home")})
+    # the CFB model loop's published numbers, first sighting, with the time they were computed: the
+    # early-week study's CFB rules (EDGE-H4/H5, research/clv_early_week) need the number the loop
+    # published BEFORE week W-1 was played (cfb_frame: v2_w2)
+    cl = _read("football/cfb/model_loop/current.json") or {}
+    for g in cl.get("games") or []:
+        gid = str(g.get("game_id"))
+        if ("cfb_loop", gid) in have or g.get("fair_home_margin") is None:
+            continue
+        new.append({"sport": "cfb_loop", "game_id": gid, "captured_at": now, "generated_at": cl.get("generated_at"),
+                    "start_utc": g.get("kickoff_utc"), "week": g.get("week"), "loop": g.get("fair_home_margin"),
+                    "loop_total": g.get("fair_total"), "model": cl.get("model_version")})
     os.makedirs(LIVE, exist_ok=True)
     with open(MODELS, "a") as f:
         for r in new:
@@ -196,7 +207,8 @@ def cfb_frame():
                     continue
                 rows.append({"game_id": str(r["game_id"]), "model": r["model_version"], "week": r["week"],
                              "season_type": r["season_type"], "margin": r["pure_home_margin"], "total": r["projected_total"],
-                             "prediction_ts": r["prediction_ts"], "home": r["home_team"], "away": r["away_team"]})
+                             "prediction_ts": r["prediction_ts"], "home": r["home_team"], "away": r["away_team"],
+                             "kickoff_ts": r.get("kickoff_ts")})
     p = pd.DataFrame(rows)
     if p.empty:
         return p
@@ -225,7 +237,49 @@ def cfb_frame():
     d["early"] = ((d.week <= 4) & d.season_type.eq("regular")).astype(float)
     d["season"] = 2026
     d["cluster"] = "2026-" + d.season_type.astype(str) + "-" + d.week.astype(str)
+    w2 = loop_w2(p)
+    d["v2_w2"] = w2.loop.reindex(d.index.astype(str)).to_numpy() if len(w2) else np.nan
+    d["v2_w2_total"] = w2.loop_total.reindex(d.index.astype(str)).to_numpy() if len(w2) else np.nan
     return d.reset_index()
+
+
+def loop_w2(preds):
+    """The CFB loop's number for each game as first published BEFORE either
+    team's week W-1 game kicked off: nothing from the two teams' own last games
+    (ratings and starters through week W-2 for them), with a provable time. A
+    team on a bye in week W-1 adds no constraint; if neither team played in
+    week W-1 the number must predate that week's first kickoff. (A strict
+    'before any week W-1 kickoff' rule would exclude almost every Saturday game
+    once midweek games start in November, because the loop publishes ten days
+    ahead; the residual exposure is other teams' midweek results moving the
+    opponent adjustment.) Games without such a number are not graded by the W-2
+    rules."""
+    m = first_models("cfb_loop")
+    if m.empty or preds.empty:
+        return pd.DataFrame()
+    k = preds[preds.season_type.eq("regular")].drop_duplicates("game_id").copy()
+    k["kick"] = _ts(k.kickoff_ts)
+    first_kick = k.groupby("week").kick.min()
+    team_kick = {}
+    for r in k.itertuples(index=False):
+        for t in (r.home, r.away):
+            team_kick[(t, r.week)] = r.kick
+    teams = k.set_index("game_id")[["home", "away"]]
+    m = m.copy()
+    m["known_at"] = _ts(m.generated_at.fillna(m.captured_at)) if "generated_at" in m else _ts(m.captured_at)
+    limits = []
+    for r in m.itertuples(index=False):
+        w = r.week
+        if pd.isna(w) or r.game_id not in teams.index:
+            limits.append(pd.NaT)
+            continue
+        h, a = teams.loc[r.game_id, "home"], teams.loc[r.game_id, "away"]
+        ks = [team_kick.get((t, w - 1)) for t in (h, a)]
+        ks = [x for x in ks if x is not None and pd.notna(x)]
+        limits.append(min(ks) if ks else first_kick.get(w - 1, pd.NaT))
+    m["limit"] = pd.to_datetime(pd.Series(limits, index=m.index), utc=True)
+    ok = m.limit.notna() & (m.known_at < m.limit)
+    return m[ok].set_index("game_id")[["loop", "loop_total", "known_at"]]
 
 
 def _norm(s):
