@@ -489,6 +489,81 @@ rules already chosen, not new selections.
 | X-5 | **Does the residual design help?** NFL-H4 vs NFL-H2 and vs this study's H-3, matched volume, same games, τ 2021–2026 (R-1) | "helps" only if the paired matched-volume CI of the CLV difference lies above 0 |
 | X-6 | **CFB residual timing**: the other study's CFB-R2 rebuilt with its own residual code (inner-walk-forward λ, ≥ 3 training seasons, same features) on this study's CFB lines, with base inputs from week W−1 (its p4 replay + its v2 previous-QB loop) vs week W−2 (this study's p4 and Loop W−2), walk-forward 2015–19, 2021–24 | its CFB edge is **timing-robust** only if the W−2 version passes this study's edge rule at θ = 0.25 **and** keeps ≥ ½ of the W−1 CLV (pts) |
 
+### Phase 7 results (2026-10-21; `docs/model-loop/clv_early/results/cross/`)
+
+**X-1, harness parity — PASS.** On the other study's NFL-H2 proxy frame both harnesses place the
+same 422 bets with identical mean CLV (+0.99526 pts). Probability CLV differs by 0.01 pp
+(2.975% vs 2.964%; different outcome distributions). The studies disagree because of their
+lines, not their scoring.
+
+**X-2, line source.** The same v2.1.0 early-week predictions, plain rules, same 2020–21 games:
+
+| market | vs SBR open | vs τ line (same games) | vs SBR 2011–19 (new to this study) |
+|---|---|---|---|
+| spread ≥ 2 | +0.811 pts, 273 bets, ROI@−110 +0.68% | +0.143 pts, 189 bets | +0.565 pts, 1,002 bets, ROI −0.86% |
+| total ≥ 2 | **+1.117 pts**, 351 bets, ROI@−110 **+1.80%** | +0.593 pts, 269 bets, ROI +0.67% | **+0.794 pts**, 1,063 bets, ROI **+0.02%** |
+
+Against SBR's (earlier) opener the same model earns about 2× the CLV it earns against the Tuesday
+line. Over SBR 2011–21, NFL totals at ≥ 2 return +0.46% at −110.
+
+**X-3, SBR timing.** With week W−2 inputs, CLV kept relative to W−1:
+
+| market | vs SBR 2011–21 | vs τ 2020–24 | verdict |
+|---|---|---|---|
+| spread | 0.53 (+0.618 → +0.327) | 0.72 (+0.301 → +0.215) | not confounded (borderline) |
+| total | 0.83 (+0.874 → +0.723) | 0.78 (+0.443 → +0.348) | not confounded |
+
+The SBR opener is earlier, and its extra CLV is mostly not week W−1 information. It is a softer
+number.
+
+**X-4, NFL totals vs the vig on timestamped lines — NOT SHOWN.** Results on τ 2025–26 at the prices
+offered:
+
+| rule | bets | CLV | ROI [95% CI] |
+|---|---|---|---|
+| NFL-H4 (the other study's totals residual, frozen on SBR 2011–19) | 222 | +0.243 pts | **−3.29%** [−4.31, −2.25] |
+| NFL-H2 (v2.1.0 total ≥ 1.5) | 162 | +0.417 pts | **−2.21%** [−3.27, −1.04] |
+| This study's H-3 | 114 | +0.504 pts | −1.92% |
+
+At −110 the same picture holds. Over 2021–26 every rule sits between −1.6% and −2.6%.
+
+**X-5, does the residual design help (NFL totals, τ 2021–26, matched volume)? — MIXED.**
+* NFL-H4 vs NFL-H2: +0.421 vs +0.423 (diff −0.002 [−0.07, +0.07]). No help.
+* NFL-H4 vs this study's H-3: +0.503 vs +0.419 (diff **+0.084 [+0.001, +0.170]**). This clears the
+  rule by a hair.
+* Against the other study's own plain rule it adds nothing. The pre-registered rule is met on one
+  of its two comparisons, so the honest reading is no reliable gain.
+
+**X-6, CFB residual timing — TIMING-ROBUST.** CFB-R2, rebuilt with the other study's residual
+code on this study's CFB lines:
+* W−1 inputs: +0.533 pts (4,051 bets, dev), +0.534 frozen on 2025.
+* W−2 inputs: +0.309 pts (2,450 bets, dev; edge rule passes), +0.449 on 2025.
+* Kept 0.58 of its CLV, so the CFB residual is not a timing artefact.
+
+Descriptive (not pre-registered): CFB-R2 at W−2 against this study's H-4 at matched volume is
++0.280 vs +0.212 (diff +0.068 [−0.013, +0.144]). It is better but not significantly. Its expected
+ROI at −110 is −2.5% to −3.1%.
+
+**Reconciled conclusions.**
+1. **Both studies measure the same thing, and the line decides the size.**
+   * Against the earliest opener (SBR, often posted before the previous week is played) NFL CLV is
+     about twice what it is against the Tuesday line.
+   * That is not a timing leak (X-3).
+2. **NFL totals clear −110 only against the true opener.**
+   * Against SBR 2011–21: +0.46% (+1.8% in 2020–21).
+   * Against a timestamped Tuesday line: no rule from either study beats the vig (−1.9% to −3.3%
+     in 2025–26).
+   * The other study's "+2.1% on NFL totals" is real against SBR's open. It is a statement about
+     betting the number when it first appears, at whatever limits that book allows.
+3. **The market-residual design is not reliably better than the plain rule** on timestamped NFL
+   lines. In CFB, built properly (inner-walk-forward λ, two base models, at least 3 training
+   seasons), it is timing-robust and nominally better than this study's rule, but not
+   significantly.
+   * This study's Phase 4 failure partly reflects its own choices: a fixed λ and 1–4 NFL training
+     seasons.
+4. **Nothing changes the bottom line at standard prices.** CLV is real in both sports. Beating the
+   vig needs either the opener itself or better-than-−110 prices (step 3).
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on
