@@ -223,6 +223,26 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class TestCompareMatched(unittest.TestCase):
+    def test_better_model_beats_and_identical_does_not(self):
+        rng = np.random.default_rng(8)
+        n = 3000
+        o = np.round(rng.normal(0, 7, n) * 2) / 2
+        move = np.round(rng.normal(0, 1.5, n) * 2) / 2
+        base = pd.DataFrame({"game_id": np.arange(n), "season": 2016 + np.arange(n) % 6, "week": np.arange(n) % 17,
+                             "bet_line": o, "close_line": o + move})
+        noisy = base.assign(model=o + move + rng.normal(0, 6, n))          # weak signal
+        sharp = base.assign(model=o + move + rng.normal(0, 1, n))          # strong signal
+        dist = H.LineDistribution.spread()
+        r = H.compare_matched(sharp, noisy, 2.0, dist, n_boot=500)
+        self.assertEqual(r["n_cand"], r["n_comp"])
+        self.assertTrue(r["beats"])
+        self.assertGreater(r["diff_ci95"][0], 0)
+        same = H.compare_matched(noisy, noisy, 2.0, dist, n_boot=500)
+        self.assertFalse(same["beats"])
+        self.assertLessEqual(same["diff_ci95"][0], 0)
+
+
 class TestHoldoutLock(unittest.TestCase):
     def test_holdout_refused_without_unlock(self):
         from model_loop.clv import run as R

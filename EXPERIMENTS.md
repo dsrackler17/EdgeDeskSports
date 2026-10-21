@@ -253,6 +253,42 @@ not exist for CFB under R-2 (no week W−1 information; no intermediate snapshot
 both rules: the same ridge plus pairwise interactions of `d` with each other feature of that model,
 λ = 25, compared against that best simple model by the same matched-volume rule.
 
+### Phase 4 results (run 2026-10-21; scorecards `docs/model-loop/clv/results/E_1*.json`)
+
+θ = 0.25 pts of predicted movement; "matched" = candidate top-k by |m̂| vs the comparator's own
+bets, same games, paired week-cluster bootstrap.
+
+| exp | model | bets at θ | CLV pts at θ [CI] | perm p | edge rule | matched: cand vs comp (diff [CI]) | result |
+|---|---|---|---|---|---|---|---|
+| E-101 | NFL base | 256 | −0.145 [−0.39, +0.13] | 0.800 | fail | +0.107 vs +0.375 (−0.268 [−0.49, −0.08]) | **FAIL** |
+| E-102 | NFL base+qb | 308 | −0.175 [−0.43, +0.09] | 0.935 | fail | −0.273 vs −0.145 (−0.129 [−0.27, +0.01]) | **FAIL** |
+| E-103 | NFL base+rest+travel | 341 | +0.015 [−0.19, +0.23] | 0.248 | fail | −0.047 vs −0.145 (+0.098 [−0.09, +0.31]) | **FAIL** |
+| E-104 | NFL base+drift | 281 | −0.021 [−0.24, +0.22] | 0.267 | fail | −0.021 vs −0.145 (+0.123 [+0.01, +0.25]) | **FAIL** (edge rule) |
+| E-105 | NFL base+market | 294 | +0.036 [−0.18, +0.27] | 0.217 | fail | −0.012 vs −0.145 (+0.133 [−0.04, +0.30]) | **FAIL** |
+| E-106 | NFL combination | — | — | — | — | no group passed | **not run** (as registered) |
+| E-111 | CFB base (W−2) | 1,897 | +0.238 [+0.12, +0.35] | 0.001 | pass | +0.202 vs +0.250 (−0.048 [−0.11, +0.00]) | **FAIL** |
+| E-112 | CFB base+rest | 2,355 | +0.289 [+0.19, +0.39] | 0.001 | pass | +0.335 vs +0.238 (+0.098 [+0.02, +0.18]) | **PASS** (vs E-111) |
+| E-113 | CFB base+market | 2,240 | +0.282 [+0.17, +0.40] | 0.001 | pass | +0.286 vs +0.238 (+0.048 [−0.04, +0.13]) | **FAIL** |
+| E-114 | CFB combination | — | — | — | — | only "rest" passed, so E-114 ≡ E-112 | not a new model |
+| E-120 | CFB base+rest + d×rest interactions | 2,367 | +0.280 [+0.19, +0.38] | 0.001 | pass | +0.272 vs +0.289 (−0.017 [−0.05, +0.01]) | **FAIL** (complexity adds nothing) |
+
+**Against the Phase 3 bar** (computed after E-112 passed, using the bar table written before Phase 4):
+E-112's top 3,230 by |m̂| vs the CFB Loop W−2 baseline's 3,230 bets: +0.263 vs +0.250, difference
+**+0.013 [−0.057, +0.080]** — it does **not** beat the baseline.
+
+**What Phase 4 says.**
+* **NFL: the market-residual model is worse than simply betting the base model's disagreement.**
+  Fitting the move (`close − early`) on the disagreement adds an intercept and shrinks the slope to
+  ≈0.08, and with 1–4 training seasons of ~230 games that intercept is noise that moves the bets
+  onto the wrong side of small edges (E-101 top-420 +0.107 vs the plain rule's +0.375). No added
+  group (QB flags, rest/travel, drift, market structure) rescued it at θ = 0.25.
+* **CFB: rest is the one input the opener under-prices** (rest-difference coefficient ≈ +0.27 pts
+  of move per week of rest advantage, short-week +0.50, stable across seasons): E-112 beats E-111.
+  But the gain only repairs what the residual framing lost; at matched volume it ties the plain
+  CFB Loop W−2 rule. Interactions add nothing (E-120).
+* **Phase 4 verdict: no market-residual model beats its sport's baseline.** The baseline
+  disagreement rules remain the candidates.
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv/results/ledger.jsonl`, which `model_loop/clv/run.py` appends on
@@ -320,3 +356,30 @@ diagnostics bug was fixed — CLV unchanged). "CLV>0" = the protocol's edge rule
 | 56 | E-006 | CFB Loop v2.0.0 total ratings W-2 | total | 4 | sweep | 2334 | +0.790 | CLV>0 | 1 |
 | 57 | E-006 | CFB Loop v2.0.0 total ratings W-2 | total | 5 | sweep | 1642 | +0.848 | CLV>0 | 1 |
 | 58 | E-006 | CFB Loop v2.0.0 total ratings W-2 | total | 6 | sweep | 1130 | +0.936 | CLV>0 | 1 |
+| 59 | E-101 | NFL residual base spread | spread | 0.25 | primary | 256 | -0.145 | no | 1 |
+| 60 | E-101 | NFL residual base spread | spread | 0.5 | sweep | 17 | +0.235 | no | 1 |
+| 61 | E-101 | NFL residual base spread | spread | 0.75 | sweep | 5 | +1.300 | no | 1 |
+| 62 | E-111 | CFB residual base spread | spread | 0.25 | primary | 1897 | +0.238 | CLV>0 | 1 |
+| 63 | E-111 | CFB residual base spread | spread | 0.5 | sweep | 246 | +0.268 | no | 1 |
+| 64 | E-111 | CFB residual base spread | spread | 0.75 | sweep | 27 | +0.556 | no | 1 |
+| 65 | E-102 | NFL residual base+qb spread | spread | 0.25 | primary | 308 | -0.175 | no | 1 |
+| 66 | E-102 | NFL residual base+qb spread | spread | 0.5 | sweep | 29 | +0.138 | no | 1 |
+| 67 | E-102 | NFL residual base+qb spread | spread | 0.75 | sweep | 13 | +0.038 | no | 1 |
+| 68 | E-103 | NFL residual base+rest+travel spread | spread | 0.25 | primary | 341 | +0.015 | no | 1 |
+| 69 | E-103 | NFL residual base+rest+travel spread | spread | 0.5 | sweep | 94 | -0.223 | no | 1 |
+| 70 | E-103 | NFL residual base+rest+travel spread | spread | 0.75 | sweep | 16 | +0.281 | no | 1 |
+| 71 | E-104 | NFL residual base+drift spread | spread | 0.25 | primary | 281 | -0.021 | no | 1 |
+| 72 | E-104 | NFL residual base+drift spread | spread | 0.5 | sweep | 23 | +0.196 | no | 1 |
+| 73 | E-104 | NFL residual base+drift spread | spread | 0.75 | sweep | 5 | +0.200 | no | 1 |
+| 74 | E-105 | NFL residual base+market spread | spread | 0.25 | primary | 294 | +0.036 | no | 1 |
+| 75 | E-105 | NFL residual base+market spread | spread | 0.5 | sweep | 29 | -0.017 | no | 1 |
+| 76 | E-105 | NFL residual base+market spread | spread | 0.75 | sweep | 7 | +0.000 | no | 1 |
+| 77 | E-112 | CFB residual base+rest spread | spread | 0.25 | primary | 2355 | +0.289 | CLV>0 | 1 |
+| 78 | E-112 | CFB residual base+rest spread | spread | 0.5 | sweep | 637 | +0.454 | CLV>0 | 1 |
+| 79 | E-112 | CFB residual base+rest spread | spread | 0.75 | sweep | 125 | +0.480 | CLV>0 | 1 |
+| 80 | E-113 | CFB residual base+market spread | spread | 0.25 | primary | 2240 | +0.282 | CLV>0 | 1 |
+| 81 | E-113 | CFB residual base+market spread | spread | 0.5 | sweep | 458 | +0.305 | CLV>0 | 1 |
+| 82 | E-113 | CFB residual base+market spread | spread | 0.75 | sweep | 71 | +0.169 | no | 1 |
+| 83 | E-120 | CFB residual base+rest x d spread | spread | 0.25 | primary | 2367 | +0.280 | CLV>0 | 1 |
+| 84 | E-120 | CFB residual base+rest x d spread | spread | 0.5 | sweep | 677 | +0.453 | CLV>0 | 1 |
+| 85 | E-120 | CFB residual base+rest x d spread | spread | 0.75 | sweep | 161 | +0.615 | CLV>0 | 1 |

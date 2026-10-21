@@ -1,0 +1,545 @@
+{
+ "exp": "E-104",
+ "label": "NFL residual base+drift spread",
+ "sport": "nfl",
+ "market": "spread",
+ "at": "2026-10-21T13:53:10Z",
+ "primary": {
+  "label": "NFL residual base+drift spread",
+  "market": "spread",
+  "threshold": 0.25,
+  "n_rows": 959,
+  "seasons": [
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "n": 281,
+  "clv_pts": -0.021352313167259787,
+  "clv_prob": -0.0019026383594906763,
+  "hit_rate": 0.52,
+  "share_moved_toward": 0.41637010676156583,
+  "share_moved_away": 0.38434163701067614,
+  "share_unmoved": 0.199288256227758,
+  "roi_at_bet_price": -0.03805597752603089,
+  "clv_pts_ci95": [
+   -0.23606612501093518,
+   0.22040401939148352
+  ],
+  "clv_prob_ci95": [
+   -0.008156405852791445,
+   0.005138041904540849
+  ],
+  "hit_rate_ci95": [
+   0.4423076923076923,
+   0.6063360450563203
+  ],
+  "roi_ci95": [
+   -0.04993917710243852,
+   -0.024704671508140326
+  ],
+  "permutation": {
+   "p_value": 0.26673326673326675,
+   "null_mean_pts": -0.07024555160142348,
+   "null_sd_pts": 0.08117576411420674,
+   "n_perm": 1000
+  },
+  "buckets": [
+   {
+    "bucket": "0-1",
+    "n": 958,
+    "clv_pts": 0.12212943632567849,
+    "clv_prob": 0.0024254434895924146,
+    "hit_rate": 0.5613079019073569,
+    "share_moved_toward": 0.430062630480167,
+    "share_moved_away": 0.33611691022964507,
+    "share_unmoved": 0.23382045929018788,
+    "clv_pts_ci95": [
+     0.01782478165938865,
+     0.2364799164843905
+    ]
+   },
+   {
+    "bucket": "1-2",
+    "n": 1,
+    "clv_pts": 0.0,
+    "clv_prob": 0.01736412571627166,
+    "hit_rate": NaN,
+    "share_moved_toward": 0.0,
+    "share_moved_away": 0.0,
+    "share_unmoved": 1.0,
+    "clv_pts_ci95": [
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "bucket": "2-3",
+    "n": 0,
+    "clv_pts": NaN,
+    "clv_prob": NaN,
+    "hit_rate": NaN,
+    "share_moved_toward": NaN,
+    "share_moved_away": NaN,
+    "share_unmoved": NaN
+   },
+   {
+    "bucket": "3+",
+    "n": 0,
+    "clv_pts": NaN,
+    "clv_prob": NaN,
+    "hit_rate": NaN,
+    "share_moved_toward": NaN,
+    "share_moved_away": NaN,
+    "share_unmoved": NaN
+   }
+  ],
+  "by_season": [
+   {
+    "season": 2021,
+    "n": 132,
+    "clv_pts": -0.42045454545454547,
+    "clv_prob": -0.011647968096244306,
+    "hit_rate": 0.4056603773584906,
+    "share_moved_toward": 0.32575757575757575,
+    "share_moved_away": 0.4772727272727273,
+    "share_unmoved": 0.19696969696969696
+   },
+   {
+    "season": 2022,
+    "n": 52,
+    "clv_pts": 0.375,
+    "clv_prob": 0.01129682023791048,
+    "hit_rate": 0.6904761904761905,
+    "share_moved_toward": 0.5576923076923077,
+    "share_moved_away": 0.25,
+    "share_unmoved": 0.19230769230769232
+   },
+   {
+    "season": 2023,
+    "n": 43,
+    "clv_pts": 0.4883720930232558,
+    "clv_prob": 0.009923221175347389,
+    "hit_rate": 0.5588235294117647,
+    "share_moved_toward": 0.4418604651162791,
+    "share_moved_away": 0.3488372093023256,
+    "share_unmoved": 0.20930232558139536
+   },
+   {
+    "season": 2024,
+    "n": 54,
+    "clv_pts": 0.16666666666666666,
+    "clv_prob": -0.00020819913377619534,
+    "hit_rate": 0.6046511627906976,
+    "share_moved_toward": 0.48148148148148145,
+    "share_moved_away": 0.3148148148148148,
+    "share_unmoved": 0.2037037037037037
+   }
+  ],
+  "movement": {
+   "slope": 0.5946942462555314,
+   "intercept": 0.14760833592302125,
+   "corr": 0.08271682315759214,
+   "n": 959
+  },
+  "diagnostics": {
+   "ats_win_rate_at_bet_line": 0.48375451263537905,
+   "ats_n": 277,
+   "model_mae_vs_result": 9.90221034464802,
+   "bet_line_mae_vs_result": 9.895203336809177,
+   "close_mae_vs_result": 9.752346193952034
+  },
+  "config": {
+   "threshold": 0.25,
+   "market": "spread",
+   "n_boot": 2000,
+   "n_perm": 1000,
+   "seed": 20261021,
+   "buckets": [
+    "0.0",
+    "1.0",
+    "2.0",
+    "3.0",
+    "inf"
+   ],
+   "cluster": [
+    "season",
+    "week"
+   ],
+   "label": "NFL residual base+drift spread"
+  }
+ },
+ "sweep": [
+  {
+   "label": "NFL residual base+drift spread",
+   "market": "spread",
+   "threshold": 0.5,
+   "n_rows": 959,
+   "seasons": [
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "n": 23,
+   "clv_pts": 0.1956521739130435,
+   "clv_prob": -0.0011684889145206635,
+   "hit_rate": 0.5882352941176471,
+   "share_moved_toward": 0.43478260869565216,
+   "share_moved_away": 0.30434782608695654,
+   "share_unmoved": 0.2608695652173913,
+   "roi_at_bet_price": -0.042637177469803854,
+   "clv_pts_ci95": [
+    -0.6073051948051947,
+    1.3237745098039202
+   ],
+   "clv_prob_ci95": [
+    -0.021979246873792435,
+    0.02732315388152765
+   ],
+   "hit_rate_ci95": [
+    0.4,
+    0.8888888888888888
+   ],
+   "roi_ci95": [
+    -0.0844124342493467,
+    0.013551627883790676
+   ],
+   "permutation": {
+    "p_value": 0.32917705735660846,
+    "null_mean_pts": 0.03760869565217391,
+    "null_sd_pts": 0.320386477982611,
+    "n_perm": 400
+   },
+   "buckets": [
+    {
+     "bucket": "0-1",
+     "n": 958,
+     "clv_pts": 0.12212943632567849,
+     "clv_prob": 0.0024254434895924146,
+     "hit_rate": 0.5613079019073569,
+     "share_moved_toward": 0.430062630480167,
+     "share_moved_away": 0.33611691022964507,
+     "share_unmoved": 0.23382045929018788,
+     "clv_pts_ci95": [
+      0.02013533382542026,
+      0.22504471371109408
+     ]
+    },
+    {
+     "bucket": "1-2",
+     "n": 1,
+     "clv_pts": 0.0,
+     "clv_prob": 0.01736412571627166,
+     "hit_rate": NaN,
+     "share_moved_toward": 0.0,
+     "share_moved_away": 0.0,
+     "share_unmoved": 1.0,
+     "clv_pts_ci95": [
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "bucket": "2-3",
+     "n": 0,
+     "clv_pts": NaN,
+     "clv_prob": NaN,
+     "hit_rate": NaN,
+     "share_moved_toward": NaN,
+     "share_moved_away": NaN,
+     "share_unmoved": NaN
+    },
+    {
+     "bucket": "3+",
+     "n": 0,
+     "clv_pts": NaN,
+     "clv_prob": NaN,
+     "hit_rate": NaN,
+     "share_moved_toward": NaN,
+     "share_moved_away": NaN,
+     "share_unmoved": NaN
+    }
+   ],
+   "by_season": [
+    {
+     "season": 2022,
+     "n": 9,
+     "clv_pts": 0.4444444444444444,
+     "clv_prob": 0.00011016479042157906,
+     "hit_rate": 0.75,
+     "share_moved_toward": 0.6666666666666666,
+     "share_moved_away": 0.2222222222222222,
+     "share_unmoved": 0.1111111111111111
+    },
+    {
+     "season": 2023,
+     "n": 6,
+     "clv_pts": -0.6666666666666666,
+     "clv_prob": -0.011732028985155463,
+     "hit_rate": 0.25,
+     "share_moved_toward": 0.16666666666666666,
+     "share_moved_away": 0.5,
+     "share_unmoved": 0.3333333333333333
+    },
+    {
+     "season": 2024,
+     "n": 8,
+     "clv_pts": 0.5625,
+     "clv_prob": 0.005315680720395413,
+     "hit_rate": 0.6,
+     "share_moved_toward": 0.375,
+     "share_moved_away": 0.25,
+     "share_unmoved": 0.375
+    }
+   ],
+   "movement": {
+    "slope": 0.5946942462555314,
+    "intercept": 0.14760833592302125,
+    "corr": 0.08271682315759214,
+    "n": 959
+   },
+   "diagnostics": {
+    "ats_win_rate_at_bet_line": 0.391304347826087,
+    "ats_n": 23,
+    "model_mae_vs_result": 9.90221034464802,
+    "bet_line_mae_vs_result": 9.895203336809177,
+    "close_mae_vs_result": 9.752346193952034
+   },
+   "config": {
+    "threshold": 0.5,
+    "market": "spread",
+    "n_boot": 2000,
+    "n_perm": 400,
+    "seed": 20261021,
+    "buckets": [
+     "0.0",
+     "1.0",
+     "2.0",
+     "3.0",
+     "inf"
+    ],
+    "cluster": [
+     "season",
+     "week"
+    ],
+    "label": "NFL residual base+drift spread"
+   }
+  },
+  {
+   "label": "NFL residual base+drift spread",
+   "market": "spread",
+   "threshold": 0.75,
+   "n_rows": 959,
+   "seasons": [
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "n": 5,
+   "clv_pts": 0.2,
+   "clv_prob": 0.010363484672203428,
+   "hit_rate": 0.5,
+   "share_moved_toward": 0.4,
+   "share_moved_away": 0.4,
+   "share_unmoved": 0.2,
+   "roi_at_bet_price": -0.021602901381428154,
+   "clv_pts_ci95": [
+    -2.5,
+    3.5
+   ],
+   "clv_prob_ci95": [
+    -0.0967550548680064,
+    0.11157800101259896
+   ],
+   "hit_rate_ci95": [
+    0.0,
+    1.0
+   ],
+   "roi_ci95": [
+    -0.23016874111164853,
+    0.1858357496263643
+   ],
+   "permutation": {
+    "p_value": 0.32418952618453867,
+    "null_mean_pts": -0.28775,
+    "null_sd_pts": 0.8978446065439164,
+    "n_perm": 400
+   },
+   "buckets": [
+    {
+     "bucket": "0-1",
+     "n": 958,
+     "clv_pts": 0.12212943632567849,
+     "clv_prob": 0.0024254434895924146,
+     "hit_rate": 0.5613079019073569,
+     "share_moved_toward": 0.430062630480167,
+     "share_moved_away": 0.33611691022964507,
+     "share_unmoved": 0.23382045929018788,
+     "clv_pts_ci95": [
+      0.02760603684542217,
+      0.22306180184909724
+     ]
+    },
+    {
+     "bucket": "1-2",
+     "n": 1,
+     "clv_pts": 0.0,
+     "clv_prob": 0.01736412571627166,
+     "hit_rate": NaN,
+     "share_moved_toward": 0.0,
+     "share_moved_away": 0.0,
+     "share_unmoved": 1.0,
+     "clv_pts_ci95": [
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "bucket": "2-3",
+     "n": 0,
+     "clv_pts": NaN,
+     "clv_prob": NaN,
+     "hit_rate": NaN,
+     "share_moved_toward": NaN,
+     "share_moved_away": NaN,
+     "share_unmoved": NaN
+    },
+    {
+     "bucket": "3+",
+     "n": 0,
+     "clv_pts": NaN,
+     "clv_prob": NaN,
+     "hit_rate": NaN,
+     "share_moved_toward": NaN,
+     "share_moved_away": NaN,
+     "share_unmoved": NaN
+    }
+   ],
+   "by_season": [
+    {
+     "season": 2022,
+     "n": 1,
+     "clv_pts": 3.5,
+     "clv_prob": 0.11157800101259896,
+     "hit_rate": 1.0,
+     "share_moved_toward": 1.0,
+     "share_moved_away": 0.0,
+     "share_unmoved": 0.0
+    },
+    {
+     "season": 2023,
+     "n": 1,
+     "clv_pts": -2.5,
+     "clv_prob": -0.0967550548680064,
+     "hit_rate": 0.0,
+     "share_moved_toward": 0.0,
+     "share_moved_away": 1.0,
+     "share_unmoved": 0.0
+    },
+    {
+     "season": 2024,
+     "n": 3,
+     "clv_pts": 0.0,
+     "clv_prob": 0.012331492405474856,
+     "hit_rate": 0.5,
+     "share_moved_toward": 0.3333333333333333,
+     "share_moved_away": 0.3333333333333333,
+     "share_unmoved": 0.3333333333333333
+    }
+   ],
+   "movement": {
+    "slope": 0.5946942462555314,
+    "intercept": 0.14760833592302125,
+    "corr": 0.08271682315759214,
+    "n": 959
+   },
+   "diagnostics": {
+    "ats_win_rate_at_bet_line": 0.4,
+    "ats_n": 5,
+    "model_mae_vs_result": 9.90221034464802,
+    "bet_line_mae_vs_result": 9.895203336809177,
+    "close_mae_vs_result": 9.752346193952034
+   },
+   "config": {
+    "threshold": 0.75,
+    "market": "spread",
+    "n_boot": 2000,
+    "n_perm": 400,
+    "seed": 20261021,
+    "buckets": [
+     "0.0",
+     "1.0",
+     "2.0",
+     "3.0",
+     "inf"
+    ],
+    "cluster": [
+     "season",
+     "week"
+    ],
+    "label": "NFL residual base+drift spread"
+   }
+  }
+ ],
+ "extra": {
+  "features": [
+   "d_base",
+   "drift",
+   "has_look"
+  ],
+  "lambda": 25.0,
+  "theta": 0.25,
+  "coefficients_by_season": {
+   "2021": {
+    "intercept": -0.25510204081632654,
+    "d_base": -0.01902888415979287,
+    "drift": -0.011937154552376478,
+    "has_look": -0.019086965151791785
+   },
+   "2022": {
+    "intercept": -0.046511627906976744,
+    "d_base": 0.08308999520575142,
+    "drift": 0.0263716254201094,
+    "has_look": 0.02982407865738763
+   },
+   "2023": {
+    "intercept": 0.008875739644970414,
+    "d_base": 0.07841571445663688,
+    "drift": 0.03064368134803837,
+    "has_look": -0.022537800060616755
+   },
+   "2024": {
+    "intercept": 0.04682454251883746,
+    "d_base": 0.08726731541710571,
+    "drift": 0.025137557628041873,
+    "has_look": -0.09247141797279376
+   }
+  },
+  "comparator": {
+   "spec": [
+    "residual",
+    "['base']",
+    "False"
+   ],
+   "threshold": 0.25
+  },
+  "matched": {
+   "n_cand": 256,
+   "n_comp": 256,
+   "cand_clv_pts": -0.021484375,
+   "comp_clv_pts": -0.14453125,
+   "cand_clv_prob": -0.0015817409009533873,
+   "comp_clv_prob": -0.0043695467931375125,
+   "diff": 0.123046875,
+   "diff_ci95": [
+    0.00987033787542945,
+    0.24460558278546687
+   ],
+   "overlap": 218,
+   "beats": true
+  }
+ }
+}

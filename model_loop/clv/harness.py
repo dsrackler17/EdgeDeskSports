@@ -326,3 +326,37 @@ def summary_line(r):
     return (f"{r['label']:<34} thr {r['threshold']:>4.1f}  bets {r['n']:>5}  CLV {r['clv_pts']:+.3f} pts "
             f"[{lo:+.3f},{hi:+.3f}]  {100 * r['clv_prob']:+.2f}% [{100 * plo:+.2f},{100 * phi:+.2f}]  "
             f"dir-hit {r['hit_rate']:.3f}  perm-p {r['permutation']['p_value']:.3f}  ROI {100 * r.get('roi_at_bet_price', float('nan')):+.2f}%")
+
+
+# ------------------------------------------------- candidate vs comparator
+def compare_matched(cand_df, comp_df, comp_threshold, dist, cluster=("season", "week"), n_boot=2000, seed=20261021):
+    """Matched-volume comparison: in each season the candidate's top-k games by
+    |edge| (k = the comparator's bet count that season at comp_threshold)
+    against the comparator's own bets. Returns both means and the paired
+    week-cluster bootstrap 95% interval of (candidate - comparator) mean CLV."""
+    rng = np.random.default_rng(seed)
+    c = place_bets(cand_df, Config(threshold=0.0), dist)
+    m = place_bets(comp_df, Config(threshold=comp_threshold), dist)
+    mb = m[m.bet]
+    k = mb.groupby("season").size().to_dict()
+    c = c[c.side != 0].assign(_a=lambda x: x.edge.abs())
+    cb = pd.concat([q.nlargest(int(k.get(S, 0)), "_a") for S, q in c.groupby("season")] or [c.iloc[:0]])
+    if not len(cb) or not len(mb):
+        return {"n_cand": int(len(cb)), "n_comp": int(len(mb)), "diff": float("nan"), "diff_ci95": [float("nan")] * 2}
+    kc, km = _clusters(cb, cluster), _clusters(mb, cluster)
+    u = np.unique(np.concatenate([kc, km]))
+    ix = {x: i for i, x in enumerate(u)}
+    S = np.zeros((len(u), 4))
+    np.add.at(S, (np.array([ix[x] for x in kc]), 0), cb.clv_pts.values)
+    np.add.at(S, (np.array([ix[x] for x in kc]), 1), 1.0)
+    np.add.at(S, (np.array([ix[x] for x in km]), 2), mb.clv_pts.values)
+    np.add.at(S, (np.array([ix[x] for x in km]), 3), 1.0)
+    draws = rng.integers(0, len(u), size=(n_boot, len(u)))
+    T = S[draws].sum(axis=1)
+    diff = T[:, 0] / np.maximum(T[:, 1], 1e-12) - T[:, 2] / np.maximum(T[:, 3], 1e-12)
+    lo, hi = np.percentile(diff, [2.5, 97.5])
+    d = float(cb.clv_pts.mean() - mb.clv_pts.mean())
+    return {"n_cand": int(len(cb)), "n_comp": int(len(mb)), "cand_clv_pts": float(cb.clv_pts.mean()),
+            "comp_clv_pts": float(mb.clv_pts.mean()), "cand_clv_prob": float(cb.clv_prob.mean()),
+            "comp_clv_prob": float(mb.clv_prob.mean()), "diff": d, "diff_ci95": [float(lo), float(hi)],
+            "overlap": int(len(set(cb.game_id) & set(mb.game_id))), "beats": bool(lo > 0)}
