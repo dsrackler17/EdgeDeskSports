@@ -1,0 +1,44 @@
+# CLV live tracking: every candidate that passed its pre-registered holdout
+# gate (EXPERIMENTS.md, research/clv/live/registry.json) is graded live
+# against the earliest line EdgeDesk saw and the last pregame line.
+#
+# Every two hours it appends (first sighting only) the opener-time model
+# numbers each candidate needs and a log of the DraftKings line ESPN shows,
+# then re-grades every candidate with the shared harness
+# (model_loop/clv/harness.py) into research/clv/live/summary.json. It reads
+# only committed files and changes no published number: nothing tracked here
+# is served (research/clv/live.py).
+name: CLV live tracking
+
+on:
+  schedule:
+    - cron: '23 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: clv-live
+  cancel-in-progress: false
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python deps (pinned)
+        run: pip install --quiet -r model_loop/requirements.txt
+      - name: Capture and grade
+        run: python3 -m research.clv.live
+      - name: Publish (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "clv: live tracking" -- research/clv/live
