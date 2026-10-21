@@ -56,6 +56,8 @@ const r = (v, k) => (v == null || !isFinite(v) ? null : Math.round(v * Math.pow(
 function arg(n, d) { const i = process.argv.indexOf('--' + n); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith('--') ? process.argv[i + 1] : d; }
 function flag(n) { return process.argv.includes('--' + n); }
 function readJson(f) { return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; }
+/* value claims, their reason and the forward market test's state, as the one rule (lib/market_gate.js) says */
+function valueGate(mode) { const g = require('./lib/market_gate').load(mode); return { value_claims: g.value_claims, value_reason: g.value_reason, market_test: g.market_test }; }
 
 function oosByGame() {
   const f = path.join(C.PATHS.validation, 'oos_team_predictions.csv.gz'); const m = new Map();
@@ -320,7 +322,9 @@ function check() {
   const idx = readJson(path.join(BOARD, 'index.json')); const errs = [];
   if (!idx) errs.push('no board index');
   else {
-    if (idx.value_claims !== 'DISABLED') errs.push('value claims must be DISABLED');
+    /* a value claim only as lib/market_gate.js allows it: beaten the close out of sample, served, gates passed, live */
+    const vg = require('./lib/market_gate').load(idx.mode);
+    if (idx.value_claims !== 'DISABLED' && idx.value_claims !== vg.value_claims) errs.push('value claims are ' + idx.value_claims + ' but lib/market_gate.js says ' + vg.value_claims + ': ' + vg.value_reason);
     for (const d of idx.dates.slice(-5)) {
       const day = readJson(path.join(BOARD, String(idx.season), d.date + '.json'));
       const df = path.join(BOARD, String(idx.season), 'detail', d.date + '.json.gz');
@@ -350,7 +354,7 @@ function main() {
   const res = build(season, { mode, sims: Number(arg('sims', 4000)) });
   const idx = { schema: 'edgedesk_cbase_board_index_v1', generated_at: now.toISOString(), mode, season, point_in_time: mode === 'LIVE' ? 'PREGAME' : 'RETROSPECTIVE',
     mode_note: mode === 'LIVE' ? 'Upcoming games priced before first pitch.' : `No upcoming Division I games are published by the source (the ${cur} schedule is not out). This is a RETROSPECTIVE replay of ${season}: each price is what the model would have said before the game, from final data; results are shown as postgame information.`,
-    model_version: C.MODEL_VERSION, value_claims: 'DISABLED', value_reason: 'no authorised college-baseball market feed; release gates not passed',
+    model_version: C.MODEL_VERSION, ...valueGate(mode),
     counts: res.counts, failures: res.failures, coherence_failures: res.coherence_failures, sims: Number(arg('sims', 4000)), pricing_engine: { full_game: 'closed form', first_five: 'simulator', construction: res.construction }, latency_ms: res.latency_ms, dates: res.dates,
     freshness: { warehouse_built: (W.report(season) || {}).built_at || null, source: C.SOURCE.name } };
   K.writeJson(path.join(BOARD, 'index.json'), idx);

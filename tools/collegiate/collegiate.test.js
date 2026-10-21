@@ -188,7 +188,7 @@ function polite(pages, hosts, extra) {
     const r2 = await RO.collect({ polite: t2.c, schoolsList: [schoolsList[1]], sports: ['baseball'], seasons: [2026], today: '2026-05-08', dataDir: path.join(t2.dir, 'd'), log: false });
     PL.parseRoster = PLs;
     ok('rosters: a read listing under half the last one is refused, and the snapshot is untouched', r2.misses.length === 1 && r2.misses[0].code === 'SHRUNK' && fs.readFileSync(path.join(t2.dir, 'd/rosters/baseball/2026/stanford.json'), 'utf8') === before, r2.misses);
-    ok('rosters: the current season comes first from the plain page; a past season from its own', RO.candidates({ id: 'x' }, 'wmt', 'baseball', 2026, { today: '2026-05-01' }).join() === '/sports/baseball/roster,/sports/baseball/roster/season/2026' && RO.candidates({ id: 'x' }, 'sidearm', 'baseball', 2019, { today: '2026-05-01' }).join() === '/sports/baseball/roster/2019');
+    ok('rosters: the current season comes first from the plain page; a past season from its own (on WMT, under each way WMT sites label it)', RO.candidates({ id: 'x' }, 'wmt', 'baseball', 2026, { today: '2026-05-01' }).join() === '/sports/baseball/roster,/sports/baseball/roster/season/2026,/sports/baseball/roster/season/2025-26,/sports/baseball/roster/season/2025-2026' && RO.candidates({ id: 'x' }, 'sidearm', 'baseball', 2019, { today: '2026-05-01' }).join() === '/sports/baseball/roster/2019');
     ok('rosters: seasons roll over in August for spring and split-year sports', RO.currentSeason('baseball', '2026-10-21') === 2027 && RO.currentSeason('football', '2026-10-21') === 2026 && RO.currentSeason('mens-basketball', '2026-10-21') === 2027 && RO.currentSeason('baseball', '2026-05-01') === 2026);
   }
 
@@ -305,7 +305,7 @@ function polite(pages, hosts, extra) {
       const run = await SC.collect({ polite: t.c, schoolsList: [{ id: 'texas', host: 'texassports.com', division: 1 }, { id: 'stanford', host: 'gostanford.com', division: 1 }, { id: 'plain', host: 'plain.edu', division: 1 }], sports: ['baseball'], seasons: [2026, 2025], today: '2026-10-21', dataDir, log: false });
       const f = JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/texas.json'), 'utf8'));
       const w = JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/stanford.json'), 'utf8'));
-      ok('schedule: collected per school and season on both platforms; a season the site does not answer and a platform not read are misses', run.ok === 2 && f.finals === 61 && f.games.length === 63 && w.platform === 'wmt' && w.finals === 55 && run.misses_by_reason.HTTP === 2 && run.misses_by_reason.PLATFORM_NOT_READ === 1, run.misses_by_reason);
+      ok('schedule: collected per school and season on both platforms; a season the site does not answer and a platform not read are misses', run.ok === 2 && f.finals === 61 && f.games.length === 63 && w.platform === 'wmt' && w.finals === 53 && w.games.filter((g) => g.exhibition).length === 2 && run.misses_by_reason.HTTP === 2 && run.misses_by_reason.PLATFORM_NOT_READ === 1, run.misses_by_reason);
     }
     const wm = SC.parseSchedule(FX('gostanford.com/sports_baseball_schedule_season_2026'));
     const fsu = wm.games.find((g) => g.boxscore === '/boxscore/26576');
@@ -340,6 +340,127 @@ function polite(pages, hosts, extra) {
     ok('box scores: a read is kept compact, with each starter and the line', r1.ok === 1 && held.length === 1 && held[0].game_key === '17827' && held[0].home.starter[0] === 'Luke Harrison' && held[0].home.starter[1] === 'L' && held[0].away.code === '416' && held[0].weather.temp_f === 69, r1);
     const r2 = await BX.collect({ polite: t.c, dataDir: dir, schoolsList, seasons: [2026], today: '2026-10-22', perHost: 5 });
     ok('box scores: what is held is not read again, and a run stops at its per-host cap', r2.pending === r1.pending - 1 && r2.ok + (r2.misses_by_reason.HTTP || 0) <= 5 + 1, r2);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  /* 11. WMT's season labels (probe round 7): a spring season labelled by academic year, a fall sport's "2026-27",
+     a four-digit split label, a site's own code for the sport */
+  {
+    ok('seasons: an academic-year label is a fall sport\'s first year, a spring or split-year sport\'s second', PL.seasonKey('2026-27', 'football') === 2026 && PL.seasonKey('2026-27', 'baseball') === 2027 && PL.seasonKey('2025-26', 'mens-basketball') === 2026 && PL.seasonKey('2025-2026', 'womens-soccer') === 2025 && PL.seasonKey('2026', 'football') === 2026 && PL.seasonKey('2025-26') === 2026);
+    ok('seasons: every way a site labels a season, the usual first', PL.seasonLabels('baseball', 2026).join() === '2026,2025-26,2025-2026' && PL.seasonLabels('football', 2025).join() === '2025,2025-26,2025-2026' && PL.seasonLabels('mens-basketball', 2026).join() === '2025-26,2025-2026');
+    const va = PL.parseRoster(FX('virginiasports.com/sports_baseball_roster_season_2025_26'), 'baseball');
+    const ia = PL.parseRoster(FX('hawkeyesports.com/sports_football_roster'), 'football');
+    const byu = PL.parseRoster(FX('byucougars.com/sports_mens_basketball_roster_season_2025_2026'), 'mens-basketball');
+    const psu = PL.parseRoster(FX('gopsusports.com/sports_baseball_roster_season_2025_26'), 'baseball');
+    ok('wmt: Virginia\'s 2026 baseball roster lives at /season/2025-26 (its /season/2026 is a 404)', va.season === 2026 && va.season_label === '2025-26' && va.players.length === 41);
+    ok('wmt: a fall sport labelled "2026-27" is its 2026 season (Iowa football, 111 players)', ia.season_label === '2026-27' && PL.seasonKey(ia.season_label, 'football') === 2026 && ia.players.length === 111);
+    ok('wmt: four-digit split labels ("2025-2026") and Penn State\'s full 2026 roster at /season/2025-26 (39; /season/2026 lists 12)', byu.season === 2026 && byu.players.length === 17 && psu.season === 2026 && psu.players.length === 39);
+    const lsu = PL.parseRoster(FX('lsusports.net/sports_baseball_roster'), 'baseball');
+    ok('wmt: a site\'s own code for a sport is that sport (LSU calls baseball "bsb"); another sport\'s name is not', lsu.sport === 'bsb' && lsu.season === 2027 && lsu.players.length === 39 && PL.sportMatches('baseball', lsu.sport, lsu.sport_name) && !PL.sportMatches('baseball', 'softball', 'Softball') && PL.sportMatches('womens-volleyball', null, 'Volleyball') && PL.sportMatches('mens-basketball', null, 'Men’s Basketball'));
+    /* collecting: the season's label learnt from the page that answered, and LSU read at all */
+    const t = polite({ 'https://virginiasports.com/robots.txt': { body: '' }, 'https://virginiasports.com/sports/baseball/roster/season/2025-26': { body: FX('virginiasports.com/sports_baseball_roster_season_2025_26') },
+      'https://lsusports.net/robots.txt': { body: FX('lsusports.net/robots_txt') }, 'https://lsusports.net/sports/baseball/roster': { body: FX('lsusports.net/sports_baseball_roster') } }, ['virginiasports.com', 'lsusports.net']);
+    const dataDir = path.join(t.dir, 'data'); fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ virginia: { platform: 'wmt' }, lsu: { platform: 'wmt' } }));
+    fs.writeFileSync(path.join(dataDir, 'season_labels.json'), JSON.stringify({ 'virginia|baseball|2027': '2026-27' }));
+    const run = await RO.collect({ polite: t.c, schoolsList: [{ id: 'virginia', host: 'virginiasports.com', division: 1 }, { id: 'lsu', host: 'lsusports.net', division: 1 }], sports: ['baseball'], seasons: [2026, 2027], today: '2026-10-21', dataDir, log: false });
+    const labels = JSON.parse(fs.readFileSync(path.join(dataDir, 'season_labels.json'), 'utf8'));
+    const vaSeen = t.w.seen.filter((x) => /virginiasports\.com\/sports\/baseball\/roster\/season/.test(x.url)).map((x) => x.url.split('/').pop());
+    ok('rosters (WMT): a season is found under the school\'s own label form, tried first, and the label kept', fs.existsSync(path.join(dataDir, 'rosters/baseball/2026/virginia.json')) && vaSeen.includes('2025-26') && !vaSeen.includes('2026') && labels['virginia|baseball|2026'] === '2025-26', { vaSeen, misses: run.misses });
+    ok('rosters (WMT): LSU\'s current roster is read (its "bsb" page is baseball)', fs.existsSync(path.join(dataDir, 'rosters/baseball/2027/lsu.json')), run.misses);
+  }
+
+  /* 12. schedules on every WMT theme and on SIDEARM's older sites (probe rounds 6 and 7) */
+  {
+    const S = (f, host) => SC.parseSchedule(FX(f), 'baseball', host);
+    const fin = (x) => x.games.filter((g) => g.status === 'final' && !g.exhibition);
+    const au = S('auburntigers.com/sports_baseball_schedule_season_2026');
+    ok('schedule (WMT, Auburn\'s theme): 64 finals, 42-22 as the page\'s own record says, every box score; "(10)" is ten innings', fin(au).length === 64 && fin(au).filter((g) => g.outcome === 'W').length === 42 && au.games.filter((g) => g.boxscore).length === 64 && au.games.find((g) => g.game_key === '30628').innings === 10 && au.games.every((g) => g.site));
+    const va = S('virginiasports.com/sports_baseball_schedule_season_2025_26');
+    ok('schedule (WMT, a theme with no datetime): the date from month, day and weekday in the season; venue from its line', va.season_label === '2025-26' && PL.seasonKey(va.season_label, 'baseball') === 2026 && fin(va).length === 60 && va.undated === 0 && va.games[0].date === '2026-02-13' && va.games[0].site === 'H' && va.games[0].opponent === 'Wagner');
+    const uc = S('uclabruins.com/sports_baseball_schedule_season_2026');
+    ok('schedule (WMT, UCLA\'s theme): each game once (not again from the table view), exhibitions flagged', uc.games.length === 61 && fin(uc).length === 59 && uc.games.filter((g) => g.exhibition).length === 2 && uc.games.find((g) => g.opponent === 'Alumni Game').exhibition === true);
+    const ls = S('lsusports.net/sports_baseball_schedule');
+    ok('schedule (WMT): the page names every season the site keeps, by the label its pages use', ls.seasons.length > 20 && ls.seasons[0].label === '2027' && va.seasons.some((x) => x.label === '2015-16'));
+    ok('schedule (WMT, LSU\'s theme): "at" is a road game; "vs." is home or neutral, so left unknown; an autumn game is the year before', ls.games.filter((g) => g.site === 'A').length === 17 && ls.games.filter((g) => g.site === null).length === 46 && ls.games[0].date === '2026-10-31');
+    const dy = S('daytonflyers.com/sports_baseball_schedule_2026', 'daytonflyers.com');
+    const dh = dy.games.filter((g) => g.doubleheader);
+    ok('schedule (SIDEARM, older sites): every game, the school\'s runs first, the opponent\'s website, the box score', dy.platform === 'sidearm_legacy' && dy.season_label === '2026' && dy.games.length === 57 && fin(dy).length === 54 && fin(dy).filter((g) => g.outcome === 'W').length === 31
+      && dy.games[0].date === '2026-02-13' && dy.games[0].site === 'A' && dy.games[0].opponent === 'Lipscomb' && dy.games[0].opponent_host === 'lipscombsports.com' && dy.games[0].us === 6 && dy.games[0].them === 11 && dy.games[0].boxscore === '/sports/baseball/stats/2026/lipscomb/boxscore/17441');
+    ok('schedule (SIDEARM, older sites): doubleheaders, shortened and extra innings, cancellations, conference games', dh.length === 8 && dh[0].opponent === 'Eastern Kentucky' && dh[0].innings === 8 && dy.games.filter((g) => g.status === 'cancelled').length === 3 && dy.games.filter((g) => g.conference).length === 30 && dy.seasons.length > 20);
+    const ws = S('goshockers.com/sports_baseball_schedule_2016', 'goshockers.com');
+    const ap = S('appstatesports.com/sports_baseball_schedule_2026', 'appstatesports.com');
+    ok('schedule (SIDEARM, older sites): 2016 reads as 2026 does', ws.season_label === '2016' && fin(ws).length === 58 && ws.games.every((g) => g.date && g.date.startsWith('2016-')) && ap.games.find((g) => g.game_key === '9710').innings === 12);
+    ok('schedule: a listed weekday that disagrees with the date leaves the game undated, never moved', SC.monthDay('Feb 13', 'Fri', 2026, 'baseball') === '2026-02-13' && SC.monthDay('Feb 13', 'Sat', 2026, 'baseball') === null && SC.monthDay('Oct 31', 'Sat', 2027, 'baseball') === '2026-10-31' && SC.monthDay('Jan 1', null, 2025, 'football') === '2026-01-01');
+    /* collecting: an older SIDEARM site, and a WMT season found under the label the site's own page names */
+    const t = polite({ 'https://daytonflyers.com/robots.txt': { body: '' }, 'https://daytonflyers.com/sports/baseball/schedule/2023': { body: FX('daytonflyers.com/sports_baseball_schedule_2023') },
+      'https://virginiasports.com/robots.txt': { body: '' }, 'https://virginiasports.com/sports/baseball/schedule/season/2026': { body: FX('virginiasports.com/sports_baseball_schedule_season_2025_26').replace(/sport-baseball-schedule-by-slug-2025-26/, 'x') },
+      'https://virginiasports.com/sports/baseball/schedule/season/2025-26': { body: FX('virginiasports.com/sports_baseball_schedule_season_2025_26') } }, ['daytonflyers.com', 'virginiasports.com']);
+    const dataDir = path.join(t.dir, 'data'); fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ dayton: { platform: 'sidearm_legacy' }, virginia: { platform: 'wmt' } }));
+    const r1 = await SC.collect({ polite: t.c, schoolsList: [{ id: 'dayton', host: 'daytonflyers.com', division: 1 }], sports: ['baseball'], seasons: [2023], today: '2026-10-21', dataDir, log: false });
+    const r2 = await SC.collect({ polite: t.c, schoolsList: [{ id: 'virginia', host: 'virginiasports.com', division: 1 }], sports: ['baseball'], seasons: [2026], today: '2026-10-21', dataDir, log: false });
+    const labels = JSON.parse(fs.readFileSync(path.join(dataDir, 'season_labels.json'), 'utf8'));
+    const d23 = JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2023/dayton.json'), 'utf8'));
+    ok('schedules: an older SIDEARM site is collected, and the seasons its page names are learnt', r1.ok === 1 && d23.platform === 'sidearm_legacy' && d23.finals === 60 && labels['dayton|baseball|2016'] === '2016', r1.misses);
+    ok('schedules (WMT): a page of another season names the site\'s labels, and the season is then read under its own', r2.ok === 1 && labels['virginia|baseball|2026'] === '2025-26' && JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/virginia.json'), 'utf8')).finals === 60, r2.misses);
+  }
+
+  /* 13. box scores on SIDEARM's older sites: the scorer's tables, the teams by the schedule's exact join */
+  {
+    const B = (f) => BX.parseBoxscore(FX(f));
+    const x = B('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441');
+    ok('box score (older SIDEARM): the line, visitor first, and which side is the school (its players link to its roster)', x.platform === 'sidearm_legacy' && x.date === '2026-02-13' && x.own_side === 'away' && x.away.name === 'Dayton' && x.away.runs === 6 && x.home.runs === 11 && x.home.hits === 12 && x.home.line.length === 9 && x.home.line[8] === null && x.away.errors === 4);
+    ok('box score (older SIDEARM): each starter with outs, batters faced, strikeouts, walks and pitches; the school\'s keep their roster slug', x.away.starter.name === 'Sawyer Jensen' && x.away.starter.outs === 13 && x.away.starter.bf === 22 && x.away.starter.k === 1 && x.away.starter.pitches === 70 && x.away.starter.slug === 'sawyer-jensen' && x.home.starter.name === 'Alexander Llinas' && x.home.starter.outs === 11 && x.away.pitchers.length === 6);
+    ok('box score (older SIDEARM): the starting nine in order, a substitute never one of them; names without the repeated position', x.away.lineup.length === 9 && x.away.lineup[0].name === 'Jason Bello' && x.away.lineup[0].pos === '3B' && x.home.lineup.length === 9 && x.home.lineup[0].name === 'Hutson Miles' && !x.away.lineup.some((l) => l.name === 'Martin Howell'));
+    ok('box score (older SIDEARM): the game\'s details; weather read in its other forms', x.attendance === 547 && x.weather.temp_f === 61 && x.weather.sky === 'Sunny' && x.weather.wind_dir === 'ENE' && x.weather.wind_mph === 3 && BX.weather('70; sunny; NW at 11 mph').wind_mph === 11 && BX.weather('Overcast, 53 deg.').temp_f === 53 && BX.weather('Nice day for baseball').sky === null);
+    const x12 = B('appstatesports.com/sports_baseball_stats_2026_gardner_webb_boxscore_9710'); const x7 = B('appstatesports.com/sports_baseball_stats_2026_canisius_boxscore_9703'); const x16 = B('goshockers.com/sports_baseball_stats_2016_northern_colorado_boxscore_3511');
+    ok('box score (older SIDEARM): twelve innings, seven, and 2016 read the same', x12.home.line.length === 12 && x12.own_side === 'away' && x7.home.line.length === 7 && x7.own_side === 'home' && x16.date === '2016-02-19' && x16.home.starter.name === 'Sam Tewes' && x16.home.starter.outs === 18);
+    /* the codes from the schedule's join; a box whose opponent joins to no registry school is a miss */
+    const byId = new Map([['dayton', { id: 'dayton', baseball_team_id: '175' }], ['lipscomb', { id: 'lipscomb', baseball_team_id: '362' }]]);
+    const j = BX.legacyCodes(B('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441'), { school: 'dayton', opponent: 'lipscomb', site: 'A', conference: false, dh_n: 0 }, byId);
+    ok('box score (older SIDEARM): the teams take our ids from the registry and the opponent\'s website; the opponent keeps no slug', j.away.code === '175' && j.home.code === '362' && j.neutral === false && j.home.pitchers.every((p) => !p.slug) && BX.legacyCodes(B('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441'), { school: 'dayton', opponent: null }, byId) === null);
+    const c = BX.compact(j);
+    ok('box score (older SIDEARM): kept compact as the newer platform\'s, with the roster slug, runs and hit batters (no home runs listed)', c.platform === 'sidearm_legacy' && c.away.starter[0] === 'Sawyer Jensen' && c.away.starter[2] === 13 && c.away.starter[9] === 'sawyer-jensen' && c.away.starter[10] === 5 && c.away.starter[11] === null && c.away.starter[12] === 2 && c.away.lineup[0][4] === 'jason-bello' && c.home.starter[9] === null);
+    const nc = BX.compact(BX.parseBoxscore(FX('texassports.com/sports_baseball_stats_2026_michigan_state_boxscore_17827')));
+    ok('box score (SIDEARM): the school\'s own players keep their roster slug; runs, home runs and hit batters ride along', nc.home.starter[9] === 'luke-harrison' && nc.away.starter[9] === null && nc.home.starter.length === 13 && Number.isInteger(nc.home.starter[10]) && Number.isInteger(nc.home.starter[11]) && Number.isInteger(nc.home.starter[12]) && nc.home.lineup.every((l) => l[4]));
+    /* collecting: planned from the older site's schedule, a doubleheader numbered, read once */
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'box-legacy-'));
+    const sched = SC.parseSchedule(FX('daytonflyers.com/sports_baseball_schedule_2026'), 'baseball', 'daytonflyers.com');
+    const f = path.join(dir, 'schedules/baseball/2026/dayton.json'); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, JSON.stringify({ school: 'dayton', games: sched.games }));
+    fs.writeFileSync(path.join(dir, 'platforms.json'), JSON.stringify({ dayton: { platform: 'sidearm_legacy' } }));
+    const schoolsList = [{ id: 'dayton', host: 'daytonflyers.com', division: 1, baseball_team_id: '175' }, { id: 'lipscomb', host: 'lipscombsports.com', division: 1, baseball_team_id: '362' }];
+    const pl = BX.plan(dir, 'baseball', [2026], schoolsList, { dayton: { platform: 'sidearm_legacy' } });
+    const ek = pl.filter((p) => p.date === '2026-02-20');
+    ok('box scores: an older SIDEARM site\'s games are planned, a doubleheader\'s numbered in order', pl.length === 54 && ek.length === 2 && ek[0].dh_n === 1 && ek[1].dh_n === 2 && pl.find((p) => p.game_key === '17441').dh_n === 0 && pl.find((p) => p.game_key === '17441').opponent === 'lipscomb');
+    const t = polite({ 'https://daytonflyers.com/robots.txt': { body: '' }, 'https://daytonflyers.com/sports/baseball/stats/2026/lipscomb/boxscore/17441': { body: FX('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441') },
+      'https://daytonflyers.com/sports/baseball/stats/2026/eastern-kentucky/boxscore/17444': { body: FX('daytonflyers.com/sports_baseball_stats_2026_eastern_kentucky_boxscore_17444') } }, ['daytonflyers.com', 'lipscombsports.com']);
+    const r = await BX.collect({ polite: t.c, dataDir: dir, schoolsList, seasons: [2026], today: '2026-10-21', perHost: 100 });
+    const held = BX.readLines(path.join(dir, 'boxscores/baseball/2026/dayton.jsonl.gz'));
+    ok('box scores: an older SIDEARM box is kept with our team ids; one whose opponent joins to no school with a baseball id is a miss', r.ok === 1 && held.length === 1 && held[0].game_key === '17441' && held[0].away.code === '175' && held[0].home.code === '362' && r.misses_by_reason.NO_TEAM_CODE === 1, r);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  /* 14. the run: a backfill reopened when its collector reads more, reading only what is not held */
+  {
+    const RUN = R('collegiate/run.js');
+    ok('run: a season range may run to the current season', RUN.range('2013-current', 'baseball', '2026-10-21').length === 15 && RUN.range('2013-2026').length === 14 && RUN.range('2019,2021').join() === '2019,2021');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'run-'));
+    const dataDir = path.join(dir, 'data'); fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'schools.json'), JSON.stringify({ built_at: '2026-10-20T00:00:00Z', schools: [{ id: 'dayton', host: 'daytonflyers.com', division: 1, baseball_team_id: '175' }] }));
+    fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ dayton: { platform: 'sidearm_legacy' } }));
+    /* 2016 already held; the backfill was marked complete before older SIDEARM schedules were read */
+    const held16 = path.join(dataDir, 'schedules/baseball/2016/dayton.json'); fs.mkdirSync(path.dirname(held16), { recursive: true }); fs.writeFileSync(held16, JSON.stringify({ school: 'dayton', games: [], finals: 0 }));
+    fs.writeFileSync(path.join(dataDir, 'backfill.json'), JSON.stringify({ sched: { complete: true, ok: 0 } }));
+    const planFile = path.join(dir, 'plan.json');
+    fs.writeFileSync(planFile, JSON.stringify({ division: 1, weekly: { sports: [] }, backfill: [{ id: 'sched', kind: 'schedules', sport: 'baseball', seasons: '2016,2023' }], boxscores: [] }));
+    const t = polite({ 'https://daytonflyers.com/robots.txt': { body: '' }, 'https://daytonflyers.com/sports/baseball/schedule/2023': { body: FX('daytonflyers.com/sports_baseball_schedule_2023') } }, ['daytonflyers.com']);
+    const s1 = await RUN.run({ today: '2026-10-21', planFile, dataDir, polite: t.c, skipDirectory: true, log: false });
+    const done = JSON.parse(fs.readFileSync(path.join(dataDir, 'backfill.json'), 'utf8'));
+    ok('run: a backfill completed with fewer readers is opened again, and a season held is not read again', s1.steps.some((x) => x.step === 'backfill' && x.ok === 1) && done.sched.readers === SC.READERS && done.sched.complete === true && !t.w.seen.some((x) => /schedule\/2016/.test(x.url)) && fs.existsSync(path.join(dataDir, 'schedules/baseball/2023/dayton.json')), { steps: s1.steps, seen: t.w.seen.map((x) => x.url) });
+    const n = t.w.seen.length;
+    await RUN.run({ today: '2026-10-22', planFile, dataDir, polite: t.c, skipDirectory: true, log: false });
+    ok('run: a backfill complete under the current readers is not read again', t.w.seen.length === n);
     fs.rmSync(dir, { recursive: true, force: true });
   }
 

@@ -27,13 +27,23 @@ const BX = require('./boxscores');
 const PO = require('./portal');
 const { createPolite } = require('./polite');
 
-const DATA = path.join(__dirname, 'data');
+const DATA_DIR = path.join(__dirname, 'data');
 const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return d; } };
 const writeJson = (p, o) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, JSON.stringify(o, null, 1) + '\n'); };
-const range = (spec) => { const m = String(spec).match(/^(\d{4})-(\d{4})$/); return m ? Array.from({ length: +m[2] - +m[1] + 1 }, (_, i) => +m[1] + i) : String(spec).split(',').map(Number); };
+/* "2013-2026", "2013-current" (to the sport's current season on the run's date), or "2019,2021" */
+const range = (spec, sport, today) => {
+  const m = String(spec).match(/^(\d{4})-(\d{4}|current)$/);
+  if (!m) return String(spec).split(',').map(Number);
+  const end = m[2] === 'current' ? RO.currentSeason(sport || 'baseball', today || new Date().toISOString().slice(0, 10)) : +m[2];
+  return Array.from({ length: Math.max(0, end - +m[1] + 1) }, (_, i) => +m[1] + i);
+};
+/* what each collector can read. A backfill marked complete when its collector read less is opened again: only the
+   seasons not held are read (a past season does not change; the weekly run reads the current one and the last) */
+const READERS = { rosters: RO.READERS, schedules: SC.READERS };
 
 async function run(o) {
   const today = o.today || new Date().toISOString().slice(0, 10);
+  const DATA = o.dataDir || DATA_DIR;
   const plan = readJson(o.planFile || path.join(__dirname, 'plan.json'), null);
   if (!plan) throw new Error('collegiate/plan.json is missing');
   const summary = { today, steps: [] };
@@ -61,7 +71,7 @@ async function run(o) {
   const fresh = (key) => !o.force && readAt[key] && (Date.parse(today) - Date.parse(readAt[key])) / 86400000 < 6;
   const weeklySports = ((plan.weekly && plan.weekly.sports) || []).filter((sp) => !fresh('rosters:' + sp));
   if (!o.onlyBackfill && weeklySports.length) {
-    const r = await RO.collect({ polite, sports: weeklySports, today, division: plan.division, lanes, log: o.log });
+    const r = await RO.collect({ polite, sports: weeklySports, today, division: plan.division, lanes, log: o.log, dataDir: DATA });
     for (const sp of weeklySports) readAt['rosters:' + sp] = today;
     summary.steps.push({ step: 'weekly', sports: weeklySports, schools: r.schools, ok: r.ok, misses_by_reason: r.misses_by_reason, platforms: r.platforms });
     console.error('[run] weekly ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
@@ -71,7 +81,7 @@ async function run(o) {
   if (!o.onlyBackfill && plan.schedules && (plan.schedules.sports || []).length) {
     for (const sp of plan.schedules.sports.filter((x) => !fresh('schedules:' + x))) {
       readAt['schedules:' + sp] = today;
-      const r = await SC.collect({ polite, sports: [sp], seasons: [RO.currentSeason(sp, today) - 1, RO.currentSeason(sp, today)], today, division: plan.division, lanes, log: o.log });
+      const r = await SC.collect({ polite, sports: [sp], seasons: [RO.currentSeason(sp, today) - 1, RO.currentSeason(sp, today)], today, division: plan.division, lanes, log: o.log, dataDir: DATA });
       summary.steps.push({ step: 'schedules', sport: sp, ok: r.ok, misses_by_reason: r.misses_by_reason });
       console.error('[run] schedules ' + sp + ' ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
     }
@@ -81,23 +91,28 @@ async function run(o) {
   const doneFile = path.join(DATA, 'backfill.json');
   const done = readJson(doneFile, {});
   for (const b of o.skipBackfill ? [] : plan.backfill || []) {
-    if (done[b.id] && done[b.id].complete) continue;
-    const r = await (b.kind === 'schedules' ? SC : RO).collect({ polite, sports: [b.sport], seasons: range(b.seasons), today, division: plan.division, lanes, log: o.log });
+    const kind = b.kind === 'schedules' ? 'schedules' : 'rosters';
+    const prev = done[b.id];
+    if (prev && prev.complete && prev.readers === READERS[kind]) continue;
+    const seasons = range(b.seasons, b.sport, today);
+    const held = (school, sport, season) => season < RO.currentSeason(sport, today) && fs.existsSync(path.join(DATA, kind, sport, String(season), school + '.json'));
+    const r = await (kind === 'schedules' ? SC : RO).collect({ polite, sports: [b.sport], seasons, today, division: plan.division, lanes, log: o.log, skip: held, dataDir: DATA });
     const hard = (r.misses_by_reason.HTTP || 0) + (r.misses_by_reason.SHRUNK || 0);
-    done[b.id] = { sport: b.sport, seasons: b.seasons, at: today, ok: r.ok, misses_by_reason: r.misses_by_reason,
-      /* complete once a run has nothing left it could still read: a page that errored is tried again next week */
-      complete: hard === 0 || (done[b.id] && done[b.id].ok === r.ok) };
+    done[b.id] = { sport: b.sport, seasons: b.seasons, kind, readers: READERS[kind], at: today, read_this_run: r.ok, misses_by_reason: r.misses_by_reason,
+      /* complete once nothing errored, or once two runs in a row read nothing new (what errors then keeps erroring: a
+         school that does not play the sport, a season its site does not keep) */
+      complete: hard === 0 || (r.ok === 0 && !!prev && prev.readers === READERS[kind] && prev.read_this_run === 0) };
     writeJson(doneFile, done);
     summary.steps.push({ step: 'backfill', id: b.id, ok: r.ok, misses_by_reason: r.misses_by_reason });
     console.error('[run] backfill ' + b.id + ' ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
   }
 
-  /* 3b. box scores for the schedules held: each item is read a per-host slice a run until nothing is left */
+  /* 3b. box scores for the schedules held: a per-host slice a run. The plan is made again each run from the schedules
+     held (new seasons, newly read schools, the current season's games), so nothing is ever marked done for good */
   for (const b of o.skipBackfill ? [] : plan.boxscores || []) {
-    if (done[b.id] && done[b.id].complete) continue;
-    const r = await BX.collect({ polite, sport: b.sport, seasons: range(b.seasons), today, division: plan.division, lanes, perHost: b.per_host || 100 });
-    done[b.id] = { sport: b.sport, seasons: b.seasons, at: today, read_this_run: r.ok, left: r.left, misses_by_reason: r.misses_by_reason,
-      complete: r.planned > 0 && r.left === 0 };
+    const r = await BX.collect({ polite, sport: b.sport, seasons: range(b.seasons, b.sport, today), today, division: plan.division, lanes, perHost: b.per_host || 100, dataDir: DATA });
+    done[b.id] = { sport: b.sport, seasons: b.seasons, kind: 'boxscores', readers: [...BX.READ].sort().join(','), at: today, planned: r.planned, read_this_run: r.ok, left: r.left,
+      misses_by_reason: r.misses_by_reason, complete: r.planned > 0 && r.left === 0 };
     writeJson(doneFile, done);
     summary.steps.push({ step: 'boxscores', id: b.id, planned: r.planned, ok: r.ok, left: r.left, misses_by_reason: r.misses_by_reason });
     console.error('[run] box scores ' + b.id + ': ' + r.ok + ' read, ' + r.left + ' left of ' + r.planned + ', misses ' + JSON.stringify(r.misses_by_reason));
@@ -108,7 +123,7 @@ async function run(o) {
   const built = [];
   for (const sport of fs.existsSync(root) ? fs.readdirSync(root) : []) {
     for (const season of fs.readdirSync(path.join(root, sport)).map(Number).filter((s) => fs.existsSync(path.join(root, sport, String(s - 1)))).sort()) {
-      const p = PO.build({ sport, season });
+      const p = PO.build({ sport, season, dataDir: DATA });
       built.push({ sport, season, schools_both: p.coverage.schools_both, transfers: p.counts.transfers, matched_both_ends: p.counts.transfers_matched_both_ends });
     }
   }
@@ -125,4 +140,4 @@ if (require.main === module) {
   run({ today: val('--today'), skipDirectory: argv.includes('--skip-directory'), onlyBackfill: argv.includes('--only-backfill'), skipBackfill: argv.includes('--skip-backfill'), force: argv.includes('--force') })
     .catch((e) => { console.error(e.stack || e); process.exit(1); });
 }
-module.exports = { run, range };
+module.exports = { run, range, READERS };

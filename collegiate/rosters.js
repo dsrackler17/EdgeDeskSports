@@ -33,6 +33,8 @@ const path = require('path');
 const { createPolite } = require('./polite');
 const PL = require('./platforms');
 
+/* the platforms read and how (a backfill completed with fewer is opened again: collegiate/run.js) */
+const READERS = 'sidearm,sidearm_legacy,wmt+season_labels';
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(__dirname, 'data');
 const DAY = 24 * 3600 * 1000;
@@ -47,10 +49,13 @@ function writeSnapshot(p, snap) {
   fs.writeFileSync(p, body + '\n');
 }
 
-/* the registry, with any dead host replaced by the site the school's opponents name for it (hosts.js) */
+/* the registry, with any dead host replaced by the site the school's opponents name for it (hosts.js); a host the
+   registry read from a website with its scheme written twice is read again from the website (directory.hostOf) */
 function loadSchools(dataDir) {
   const d = dataDir || DATA;
-  const schools = (readJson(path.join(d, 'schools.json'), { schools: [] }).schools) || [];
+  const { hostOf } = require('./directory');
+  const schools = ((readJson(path.join(d, 'schools.json'), { schools: [] }).schools) || [])
+    .map((s) => (s.website && hostOf(s.website) !== (s.host || null) ? Object.assign({}, s, { host: hostOf(s.website) }) : s));
   return require('./hosts').apply(schools, readJson(path.join(d, 'host_corrections.json'), {}));
 }
 
@@ -85,15 +90,33 @@ function mergeSnapshot(prev, parsed, meta, today) {
     reads: ((prev && prev.reads) || 0) + 1, listed: now.size, players };
 }
 
+/* the labels to try for a season's own page, in order. SIDEARM names every season it keeps (season_labels.json);
+   a WMT site names none, and WMT sites label a season differently ("2026", "2025-26", "2025-2026"): every form is
+   tried, the one the school used for its nearest season read first. A page of another season is refused whichever
+   label reached it. */
+function seasonLabelsFor(school, platform, sport, season, o) {
+  const known = o.labels && o.labels[school.id + '|' + sport + '|' + season];
+  if (platform !== 'wmt') return [known || PL.seasonLabel(sport, season)];
+  const pre = school.id + '|' + sport + '|';
+  let near = null;
+  for (const [k, v] of Object.entries(o.labels || {})) {
+    if (!k.startsWith(pre) || !PL.labelStyle(v)) continue;
+    const d = Math.abs(+k.slice(pre.length) - season);
+    if (!near || d < near.d) near = { d, style: PL.labelStyle(v) };
+  }
+  const all = PL.seasonLabels(sport, season);
+  const ordered = near ? all.filter((l) => PL.labelStyle(l) === near.style).concat(all.filter((l) => PL.labelStyle(l) !== near.style)) : all;
+  return [...new Set([known].concat(ordered).filter(Boolean))];
+}
+
 /* the pages to try for a season, in order: the current season's plain roster page answers on every platform */
 function candidates(school, platform, sport, season, o) {
-  const label = (o.labels && o.labels[school.id + '|' + sport + '|' + season]) || PL.seasonLabel(sport, season);
   const plain = '/sports/' + sport + '/roster';
   const out = [];
   if (!platform) return [plain];                                     /* learn the platform from the plain page first */
   if (season >= currentSeason(sport, o.today) - 1) out.push(plain);
-  out.push(PL.rosterPath(platform, sport, label));
-  return out;
+  for (const label of seasonLabelsFor(school, platform, sport, season, o)) out.push(PL.rosterPath(platform, sport, label));
+  return [...new Set(out)];
 }
 
 async function collectOne(polite, school, sport, season, o) {
@@ -124,18 +147,23 @@ async function collectOne(polite, school, sport, season, o) {
     }
     if (!known) o.platforms[school.id] = { platform: parsed.platform, by: 'markup', checked: o.today, url };
     for (const s of parsed.seasons || []) if (s.season) o.labels[school.id + '|' + sport + '|' + s.season] = s.label;
+    /* the season the page is, keyed with the sport asked for (a fall sport's "2026-27" is its 2026 season) */
+    parsed.season = PL.seasonKey(parsed.season_label, sport);
     if (parsed.season !== season) {
       last = miss('SEASON_MISMATCH', 'the page is the ' + parsed.season_label + ' roster', url);
       if (!known) return collectOne(polite, school, sport, season, o);   /* now that we know the platform, try the season's own page */
       continue;
     }
-    if (parsed.sport && parsed.sport !== sport) { last = miss('SPORT_MISMATCH', 'the page is ' + parsed.sport, url); continue; }
+    if ((parsed.sport || parsed.sport_name) && !PL.sportMatches(sport, parsed.sport, parsed.sport_name)) { last = miss('SPORT_MISMATCH', 'the page is ' + (parsed.sport_name || parsed.sport), url); continue; }
     if (!parsed.players.length) { last = miss('EMPTY_ROSTER', 'the ' + parsed.season_label + ' roster lists nobody yet', url); continue; }
     const file = path.join(o.dataDir, 'rosters', sport, String(season), school.id + '.json');
     const prev = readJson(file, null);
     if (prev && prev.listed >= 8 && parsed.players.length < prev.listed / 2) return miss('SHRUNK', 'this read lists ' + parsed.players.length + ' players, the last ' + prev.listed + ': not merged', url);
     const snap = mergeSnapshot(prev, parsed, { school: school.id, host: school.host, sport, season, url }, o.today);
     writeSnapshot(file, snap);
+    /* the label that reached the season (a WMT site names no list of its seasons) */
+    const used = p.match(/\/season\/([^/]+)$/);
+    if (parsed.platform === 'wmt') o.labels[school.id + '|' + sport + '|' + season] = used ? decodeURIComponent(used[1]) : parsed.season_label;
     return { ok: true, school: school.id, sport, season, url, platform: parsed.platform, listed: snap.listed, removed: snap.players.filter((x) => x.removed_at).length };
   }
   return last || miss('NO_PAGE', 'no page to try');
@@ -161,6 +189,7 @@ async function collect(o) {
   await Promise.all(Array.from({ length: lanes }, async () => {
     for (let s = queue.shift(); s; s = queue.shift()) {
       for (const sport of o.sports) for (const season of seasonsOf(sport).slice().sort((a, b) => b - a)) {
+        if (o.skip && o.skip(s.id, sport, season)) continue;
         const res = await collectOne(polite, s, sport, season, ctx);
         results.push(res);
         if (o.log !== false) console.error((res.ok ? 'ok   ' : 'miss ') + s.id + ' ' + sport + ' ' + season + (res.ok ? '  ' + res.listed + ' listed' : '  ' + res.code + ': ' + res.why));
@@ -202,4 +231,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error(e.stack || e); process.exit(1); });
-module.exports = { collect, collectOne, mergeSnapshot, currentSeason, loadSchools, candidates, writeSnapshot };
+module.exports = { collect, collectOne, mergeSnapshot, currentSeason, loadSchools, candidates, seasonLabelsFor, writeSnapshot, READERS };

@@ -45,8 +45,8 @@ The schools' and ncaa.com's terms of use have not been reviewed. robots.txt allo
 | `directory.js` | The registry (`data/schools.json`), built from ncaa.com: every member school, its conference and its athletics site. Division comes from our own baseball record or from a single-division conference; otherwise it is left empty. |
 | `rosters.js` | Snapshots in `data/rosters/<sport>/<season>/<school>.json`. Each player carries `first_seen`, `last_seen` and `removed_at`. These are observation dates, not portal dates; the NCAA portal database is not public. |
 | `portal.js` | The ledger in `data/portal/<sport>/<season>.json`, with the rules below. |
-| `schedules.js` | Season schedules and results in `data/schedules/...`. Each game has its site, its score, extra or shortened innings, and its box-score link. SIDEARM names each opponent's website, which gives an exact join. |
-| `boxscores.js` | Box scores in `data/boxscores/...jsonl.gz`. Each game is read once, from the home school, in daily per-host slices. Teams are named by their NCAA codes, which are our team ids. |
+| `schedules.js` | Season schedules and results in `data/schedules/...`. Each game has its site, its score, extra or shortened innings, and its box-score link; an exhibition is kept and flagged, never a final. Both SIDEARM generations name each opponent's website, which gives an exact join; WMT's opponents join by name. WMT renders its games in one of four themes, all read. Where a page lists "Feb 13 (Fri)" without the year, the year is the season's and the weekday must agree, or the game is left undated. |
+| `boxscores.js` | Box scores in `data/boxscores/...jsonl.gz`. Each game is read once, from the home school, in daily per-host slices. Newer SIDEARM boxes name teams by their NCAA codes (our team ids) and give every hand. SIDEARM's older boxes name neither: the teams come from the schedule row that links the box (the school's registry id, the opponent's website), and the school's own players keep their roster slug, from which `college_baseball/ingest/school_box.js` takes their hands. |
 | `run.js`, `plan.json` | One run as the plan says: registry, weekly rosters, schedules, backfills, box-score slices, ledger. |
 
 **Portal ledger rules:**
@@ -54,6 +54,15 @@ The schools' and ncaa.com's terms of use have not been reviewed. robots.txt allo
 - A senior who leaves is recorded as "eligibility likely done".
 - A junior-college transfer is kept as the roster writes it.
 - Each team gets its continuity figures: returning share, transfers in and out, newcomers.
+
+**Season labels.** SIDEARM lists every season it keeps, and so do WMT's schedule pages and SIDEARM's older ones; those labels are learnt (`data/season_labels.json`). Elsewhere a WMT season is tried under each way WMT sites label one ("2026", "2025-26", "2025-2026"), the school's own form first; a page of another season is refused whichever label reached it. A fall sport's academic-year label ("2026-27") is its first year's season, a spring sport's its second. A site's own code for a sport (LSU's "bsb") is that sport.
+
+**Backfills.** A past season already held is never read again. A backfill is complete once a run has nothing left it could read, and it reopens by itself when its collector learns to read more (each collector names its readers in `backfill.json`). Box scores are planned afresh each run from the schedules held, through the current season.
+
+**Not read yet** (D-I baseball schools whose `/sports/baseball/roster` answers 404 on every season):
+- WMT's older WordPress generation (`/sport/m-basebl/`): Arkansas, Georgia Tech.
+- WordPress: Kentucky.
+- Miami (OH) and Pepperdine: SIDEARM sites with a `/sports/baseball` page, so their roster path needs its own probe.
 
 **Workflows:**
 - `collegiate-rosters.yml`: weekly on main, and on main when `plan.json` changes. Never on a branch: the data lives on main, and a branch run would read every school a second time.
@@ -66,8 +75,8 @@ The schools' and ncaa.com's terms of use have not been reviewed. robots.txt allo
 | Input | Where | State |
 |---|---|---|
 | **Roster continuity** | `college_baseball/lib/continuity.js` → `tq.cont_k` (how much of last season's strength a team carries) | A learning-loop candidate. It stays inactive until it covers 80% of D-I team-seasons in 2014–2024; the weekly report names it until then. |
-| **Results** | `college_baseball/ingest/school_results.js` | `audit` compares with the results we hold. `fill` scores a `NO_RESULT` contest when both schools agree, or when one lists it and the other is unread or silent. Not applied yet. |
-| **Starters, lineups, weather** | `college_baseball/ingest/school_box.js` | Writes `data/school_box/<season>.csv`. `audit` checks it against our own 2024–2026 box scores. |
+| **Results** | `college_baseball/ingest/school_results.js` | `audit` compares with the results we hold; a doubleheader's games pair with ours by score where we hold one (counted apart: the order never inflates agreement). On 2026, 109 schools: 99.93% of scores agree (4,463 of 4,466). `fill` scores a `NO_RESULT` contest when both schools agree, or when one lists it and the other is unread or silent; a doubleheader our record cannot order is marked `dh_order: unverified`. Not applied yet. |
+| **Starters, lineups, weather** | `college_baseball/ingest/school_box.js` | Writes `data/school_box/<season>.csv`. `audit` checks it against our own 2024–2026 box scores. On an older SIDEARM box the school's own starter and nine take their hands from its roster, by the slug the box links. |
 
 Two limits on these inputs:
 - **Starters.** A pregame model can use a *projected* starter only. In college that means the weekend rotation inferred from earlier box scores; the actual starter and lineup are oracle inputs.

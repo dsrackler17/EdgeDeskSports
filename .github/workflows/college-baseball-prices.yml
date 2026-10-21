@@ -1,0 +1,70 @@
+# EdgeDesk college baseball — sportsbook prices through the odds gateway, kept so
+# the model can be graded against the closing line (college_baseball/market/,
+# EXPERIMENTS.md "College baseball"). Without archived prices the model can never
+# be market-validated, and the board makes no value claim.
+#
+# Spends nothing unless BOTH switches are on:
+#   1. the repository variable CBASE_PRICES = on (this job does not even start otherwise), and
+#   2. the gateway's sport row odds_api_sports.baseball_ncaa enabled
+#      (supabase/cbase_odds_sport.sql creates it DISABLED; an operator enables it with
+#      select public.odds_api_set_sport('baseball_ncaa', true);).
+# The job never reads the provider key: it asks supabase/functions/odds_gateway through
+# tools/lib/odds_gateway.js, one `featured` request (h2h, spreads, totals) a run, about
+# 3 credits when the gateway buys it and nothing inside the gateway's cadence window.
+#
+# Every 20 minutes from 14:00 to 04:59 UTC, February to June: a game's last pregame
+# price is the close, so the job runs often enough near first pitches (East Coast
+# afternoons through West Coast nights).
+name: College baseball prices
+
+on:
+  schedule:
+    - cron: '*/20 14-23 * 2-6 *'
+    - cron: '*/20 0-4 * 2-6 *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cbase-prices
+  cancel-in-progress: false
+
+jobs:
+  prices:
+    if: vars.CBASE_PRICES == 'on'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The price job's own rules first
+        run: node tools/college_baseball/market.test.js
+      - name: Ask the gateway, fold the snapshot, close started games, take the model's numbers
+        env:
+          CBASE_PRICES: ${{ vars.CBASE_PRICES }}
+          EDGD_SB_URL: ${{ vars.CBASE_PRICES == 'on' && secrets.SB_URL || '' }}
+          EDGD_SB_SERVICE: ${{ vars.CBASE_PRICES == 'on' && secrets.SB_SERVICE_ROLE || '' }}
+        run: node college_baseball/market/fetch_quotes.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The forward test against the closing line (counts; reads CBASE-H1 once, at its pre-registered read point)
+        run: |
+          pip install --quiet -r model_loop/requirements.txt
+          python3 -m research.clv.cbase
+      - name: Publish what was kept (tools/ci/push_generated.sh)
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          [ -d college_baseball/data/market ] || exit 0
+          paths="college_baseball/data/market"
+          [ -f college_baseball/validation/market_clv.json ] && paths="$paths college_baseball/validation/market_clv.json"
+          # the shared attempts log only on the run that read the holdout (never our older copy over another study's line)
+          if [ -n "$(git status --porcelain -- research/clv/results)" ]; then paths="$paths research/clv/results/cbase research/clv/results/attempts.jsonl"; fi
+          bash tools/ci/push_generated.sh main "college baseball: prices" -- $paths

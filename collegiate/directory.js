@@ -51,10 +51,22 @@ function parseSchool(html) {
     const m = re.exec(h);
     if (m) website = m[1];
   }
-  let host = null;
-  if (website) { try { host = new URL(website).hostname.toLowerCase().replace(/^www\./, ''); } catch (_) { host = null; } }
-  if (host && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) host = null;     /* "https://https//x.com" reads as host "https": not a site */
-  return { conference: dd('Conference'), nickname: dd('Nickname'), website, host };
+  return { conference: dd('Conference'), nickname: dd('Nickname'), website, host: hostOf(website) };
+}
+
+/* the host a website names. A scheme written twice ("https://https://x.com/") still names x.com exactly; anything
+   that reads as no real host ("https://https//x.com" reads as host "https") is no host, never a guess */
+function hostOf(website) {
+  if (!website) return null;
+  const tries = [String(website).trim()];
+  const twice = tries[0].match(/^https?:\/\/(https?:\/\/.+)$/i);
+  if (twice) tries.unshift(twice[1]);
+  for (const w of tries) {
+    let host = null;
+    try { host = new URL(w).hostname.toLowerCase().replace(/^www\./, ''); } catch (_) { host = null; }
+    if (host && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) return host;
+  }
+  return null;
 }
 
 /* our own NCAA-named record: name -> { division, baseball_team_id } (the latest season) */
@@ -136,4 +148,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error(e.stack || e); process.exit(1); });
-module.exports = { build, parseIndex, parseSchool, ncaaRecord, keyName };
+module.exports = { build, parseIndex, parseSchool, hostOf, ncaaRecord, keyName };

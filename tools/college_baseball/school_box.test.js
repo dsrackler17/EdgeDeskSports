@@ -38,6 +38,26 @@ ok('a box with no contest of ours, or another score, is left out and counted', b
 const au = SB.audit(2026, { boxDir: dir });
 ok('audit: the schools\' starters are our record\'s, with the same outs', au.compared === 2 && au.starter_agreement === 1 && au.outs_agreement === 1, au);
 
+/* an older SIDEARM site's box (Dayton at Lipscomb, 2026-02-13): the teams by the schedule's join, the hands by the roster slug */
+{
+  const lx = B.legacyCodes(B.parseBoxscore(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, 'collegiate/probe/fixtures/daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441.gz'))).toString('utf8')),
+    { school: 'dayton', opponent: 'lipscomb', site: 'A', conference: false, dh_n: 0 }, new Map([['dayton', { baseball_team_id: '175' }], ['lipscomb', { baseball_team_id: '28600' }]]));
+  const row = Object.assign({ game_key: '17441', school: 'dayton', url: 'https://daytonflyers.com/sports/baseball/stats/2026/lipscomb/boxscore/17441' }, B.compact(lx));
+  const d2 = fs.mkdtempSync(path.join(os.tmpdir(), 'schoolbox-legacy-'));
+  fs.mkdirSync(path.join(d2, 'box', '2026'), { recursive: true });
+  fs.writeFileSync(path.join(d2, 'box', '2026', 'dayton.jsonl.gz'), zlib.gzipSync(JSON.stringify(row) + '\n'));
+  fs.mkdirSync(path.join(d2, 'rosters', '2026'), { recursive: true });
+  fs.writeFileSync(path.join(d2, 'rosters', '2026', 'dayton.json'), JSON.stringify({ players: [{ pid: 'slug:sawyer-jensen', name: 'Sawyer Jensen', throws: 'R', bats: 'R' }, { pid: 'slug:jason-bello', name: 'Jason Bello', bats: 'L', throws: 'R' }] }));
+  const lb = SB.build(2026, { boxDir: path.join(d2, 'box'), rostersDir: path.join(d2, 'rosters'), write: false });
+  const DA = lb.rows.find((r) => r.team_id === '175'); const LH = lb.rows.find((r) => r.team_id === '28600');
+  ok('older SIDEARM: the box joins our contest by the codes the schedule gave it, and the score is ours', lb.counts.joined === 1 && DA && DA.game_id === 'ncaa_6503550' && DA.side === 'A' && LH.side === 'H', lb.counts);
+  ok('older SIDEARM: the school\'s starter takes his hand from the school\'s roster by slug; the opponent\'s none', DA.starter === 'Sawyer Jensen' && DA.starter_throws === 'R' && DA.starter_outs === 13 && DA.starter_bf === 22 && LH.starter === 'Alexander Llinas' && LH.starter_throws === '');
+  ok('older SIDEARM: the school\'s nine take their bats from the roster where it lists them, the rest unknown ("?")', LH.opp_lineup_bats === 'L????????' && LH.opp_lefty_bats === 1 && DA.opp_lineup_bats === '?????????');
+  const au2 = SB.audit(2026, { boxDir: path.join(d2, 'box'), rostersDir: path.join(d2, 'rosters') });
+  ok('older SIDEARM audit: both starters are our record\'s, with the same outs', au2.compared === 2 && au2.starter_agreement === 1 && au2.outs_agreement === 1, au2);
+  fs.rmSync(d2, { recursive: true, force: true });
+}
+
 fs.rmSync(dir, { recursive: true, force: true });
 console.log((fail === 0 ? 'ALL GREEN' : 'FAILED') + ' school box scores — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

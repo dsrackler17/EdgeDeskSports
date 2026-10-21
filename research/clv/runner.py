@@ -27,6 +27,7 @@ LOCKED = {
     "mlb": {2020, 2021, 2025, 2026},
     "wnba": {2025, 2026},
     "ncaam": {2026, 2027},
+    "cbase": {2027},                       # college baseball's forward holdout (EXPERIMENTS.md, CBASE-H1)
 }
 
 

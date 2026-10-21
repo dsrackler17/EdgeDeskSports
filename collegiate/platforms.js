@@ -20,11 +20,19 @@ const { nuxtData } = require('./nuxt');
 const SPLIT = new Set(['mens-basketball', 'womens-basketball', 'mens-ice-hockey', 'womens-ice-hockey', 'wrestling', 'mens-swimming-and-diving',
   'womens-swimming-and-diving', 'swimming-and-diving', 'womens-gymnastics', 'mens-gymnastics', 'rifle', 'fencing', 'bowling', 'womens-bowling']);
 
-/* "2025-26" -> 2026, "1999-2000" -> 2000, "2026" -> 2026 */
-function seasonKey(label) {
+/* fall sports: a site that labels its seasons by academic year ("2026-27") means the fall of the first year */
+const FALL = new Set(['football', 'womens-volleyball', 'mens-soccer', 'womens-soccer', 'field-hockey', 'mens-water-polo', 'mens-cross-country', 'womens-cross-country']);
+
+/* "2025-26" -> 2026, "1999-2000" -> 2000, "2026" -> 2026; for a fall sport an academic-year label keys by its
+   first year ("2026-27" football is the 2026 season), for every other sport by its end year (a spring season, or a
+   split-year sport's) */
+function seasonKey(label, sport) {
   const s = String(label || '').trim();
   let m = s.match(/^(\d{4})\s*[-/]\s*(\d{2}|\d{4})$/);
-  if (m) { const a = +m[1]; const b = m[2].length === 4 ? +m[2] : Math.floor(a / 100) * 100 + +m[2]; return b < a ? b + 100 : b; }
+  if (m) {
+    const a = +m[1]; let b = m[2].length === 4 ? +m[2] : Math.floor(a / 100) * 100 + +m[2]; if (b < a) b += 100;
+    return FALL.has(sport) && b === a + 1 ? a : b;
+  }
   m = s.match(/^(\d{4})$/) || s.match(/\b(\d{4})\b/);
   return m ? +m[1] : null;
 }
@@ -32,6 +40,35 @@ function seasonKey(label) {
 function seasonLabel(sport, season) {
   return SPLIT.has(sport) ? (season - 1) + '-' + String(season).slice(2) : String(season);
 }
+/* every way a site labels that season, the usual first: WMT sites differ (Stanford's baseball 2026 is "2026",
+   Virginia's "2025-26", BYU's basketball "2025-2026"), and each one answers the others with a 404 or another season */
+function seasonLabels(sport, season) {
+  const two = (a) => a + '-' + String(a + 1).slice(2);
+  const four = (a) => a + '-' + (a + 1);
+  if (SPLIT.has(sport)) return [two(season - 1), four(season - 1)];
+  if (FALL.has(sport)) return [String(season), two(season), four(season)];
+  return [String(season), two(season - 1), four(season - 1)];
+}
+/* a page's sport against the one asked for. Sites name a sport by their own code (LSU's WMT site calls baseball
+   "bsb") or by its name ("Baseball", "Men's Basketball"); a page is that sport when its code or its name is one of
+   the sport's known names. Any other name is another sport's page, never assumed to be this one. */
+const SPORT_NAMES = {
+  baseball: ['bsb', 'm-basebl', 'mbase', 'base'],
+  softball: ['sb', 'sball', 'w-softbl', 'wsoft', 'soft'],
+  football: ['fb', 'm-footbl', 'foot'],
+  'mens-basketball': ['mbb', 'm-baskbl', 'mbkb', 'mens-basketball', 'basketball-men'],
+  'womens-basketball': ['wbb', 'w-baskbl', 'wbkb', 'womens-basketball', 'basketball-women'],
+  'womens-volleyball': ['wvb', 'vb', 'w-volley', 'wvball', 'volleyball', 'womens-volleyball'],
+  'mens-soccer': ['msoc', 'm-soccer', 'mens-soccer', 'soccer-men'],
+  'womens-soccer': ['wsoc', 'w-soccer', 'womens-soccer', 'soccer-women'],
+};
+const sportSlug = (x) => String(x || '').toLowerCase().replace(/[’']/g, '').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+function sportMatches(sport, code, name) {
+  const ok = new Set([sport].concat(SPORT_NAMES[sport] || []));
+  return [code, name].filter(Boolean).some((x) => ok.has(sportSlug(x)));
+}
+/* how a label is written: "2026" year, "2025-26" split2, "2025-2026" split4 */
+const labelStyle = (label) => (/^\d{4}$/.test(String(label)) ? 'year' : /^\d{4}-\d{2}$/.test(String(label)) ? 'split2' : /^\d{4}-\d{4}$/.test(String(label)) ? 'split4' : null);
 
 /* class: FR SO JR SR GR, and whether it says redshirt */
 function normClass(short, long, number) {
@@ -88,8 +125,8 @@ function sidearmRoster(data) {
       cls: normClass(p.academicYearShort, p.academicYearLong, p.academicYearNumber), height_in: inches(p.heightFeet, p.heightInches), weight: p.weight,
       hometown: p.hometown, high_school: p.highSchool, previous_school: p.previousSchool, extra });
   });
-  const seasons = ((store.seasons && sport && store.seasons[sport]) || []).map((s) => ({ label: s.seasonTitle, season: seasonKey(s.seasonTitle), roster_id: s.rosterId }));
-  return { platform: 'sidearm', sport, season_label: label, season: seasonKey(label), roster_id: r.id, players, seasons };
+  const seasons = ((store.seasons && sport && store.seasons[sport]) || []).map((s) => ({ label: s.seasonTitle, season: seasonKey(s.seasonTitle, sport), roster_id: s.rosterId }));
+  return { platform: 'sidearm', sport, season_label: label, season: seasonKey(label, sport), roster_id: r.id, players, seasons };
 }
 
 /* -------------------------------------------------------------------- WMT */
@@ -124,11 +161,12 @@ function wmtRoster(data) {
   const seen = new Set();
   const walk = (o, depth) => {
     if (!o || typeof o !== 'object' || depth > 4) return;
-    if (Array.isArray(o)) { if (o.length > 1 && o.every((s) => s && typeof s === 'object' && /^\d{4}(-\d{2,4})?$/.test(String(s.name || '')) && s.id != null)) for (const s of o) if (!seen.has(s.name)) { seen.add(s.name); seasons.push({ label: s.name, season: seasonKey(s.name), season_id: s.id }); } else for (const x of o) walk(x, depth + 1); return; }
+    if (Array.isArray(o)) { if (o.length > 1 && o.every((s) => s && typeof s === 'object' && /^\d{4}(-\d{2,4})?$/.test(String(s.name || '')) && s.id != null)) for (const s of o) if (!seen.has(s.name)) { seen.add(s.name); seasons.push({ label: s.name, season: seasonKey(s.name, sport), season_id: s.id }); } else for (const x of o) walk(x, depth + 1); return; }
     for (const v of Object.values(o)) walk(v, depth + 1);
   };
   walk(d, 0);
-  return { platform: 'wmt', sport, season_label: label, season: seasonKey(label), roster_id: meta.id || null, players, seasons };
+  const sportName = (sportView && sportView[1].name) || (first && first.sport && first.sport.name) || null;
+  return { platform: 'wmt', sport, sport_name: sportName, season_label: label, season: seasonKey(label, sport), roster_id: meta.id || null, players, seasons };
 }
 
 /* which platform built a page, from the shape of its data alone (so a page with no roster on it, a sport the
@@ -185,7 +223,7 @@ function sidearmLegacyRoster(html, sportHint) {
   });
   const seen = new Set();
   const unique = players.filter((p) => (seen.has(p.pid) ? false : (seen.add(p.pid), true)));
-  return { platform: 'sidearm_legacy', sport: null, season_label: label, season: seasonKey(label), roster_id: null, players: unique, seasons: [] };
+  return { platform: 'sidearm_legacy', sport: null, season_label: label, season: seasonKey(label, sportHint), roster_id: null, players: unique, seasons: [] };
 }
 
 /* the platform behind any page: the Nuxt platforms by the shape of their data, SIDEARM's older sites by their markup */
@@ -211,4 +249,4 @@ function rosterPath(platform, sport, label) {
   return null;
 }
 
-module.exports = { parseRoster, detectPlatform, detectPlatformHtml, sidearmRoster, sidearmLegacyRoster, wmtRoster, rosterPath, seasonKey, seasonLabel, normClass, batsThrows, SPLIT };
+module.exports = { parseRoster, detectPlatform, detectPlatformHtml, sidearmRoster, sidearmLegacyRoster, wmtRoster, rosterPath, seasonKey, seasonLabel, seasonLabels, labelStyle, sportMatches, normClass, batsThrows, SPLIT, FALL };

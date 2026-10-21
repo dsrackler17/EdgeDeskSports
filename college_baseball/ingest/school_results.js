@@ -30,7 +30,16 @@
      - one school lists it and the other's page was read and does not
        contradict it, or was not read (SCHOOL_SITE_ONE),
    with the home side as our record has it. Schools that disagree leave the
-   contest without a result, with both readings in the report. --apply
+   contest without a result, with both readings in the report.
+
+   DOUBLEHEADERS. Our record's order of a doubleheader's games (start time,
+   else contest id) is not always the order the schools played them: the
+   2026 audit found 58 of 60 disagreements to be the two games' scores
+   swapped. Where our record holds a score for a game of the pair, the
+   schools' games are paired with ours by that score (counted apart, as
+   audit_agree_dh_reordered, so the order never inflates agreement); a fill
+   whose pair our record cannot order (two or more games of it without a
+   result and no start times) is marked dh_order: "unverified". --apply
    writes the filled rows into data/games/<season>.csv, sources +=
    "school_sites", and the report to data/reports/school_results_<season>.json.
    Nothing else in the row changes.
@@ -83,6 +92,7 @@ function schoolRows(season, o) {
     let seq = 0;
     for (const g of doc.games || []) {
       seq++;
+      if (g.exhibition) continue;                      /* an exhibition (an alumni game, a foreign club) is no contest of ours */
       const k = keyName(g.opponent);
       const opp = (g.opponent_host && byHost.get(g.opponent_host)) || (ambiguous.has(k) ? null : learnt.get(k) || byName.get(k)) || null;
       if (!opp) { unmatched[g.opponent] = (unmatched[g.opponent] || 0) + 1; continue; }
@@ -114,6 +124,25 @@ function assign(contests, readings) {
   for (const r of readings) { if (!bySchool.has(r.team)) bySchool.set(r.team, []); bySchool.get(r.team).push(r); }
   for (const list of bySchool.values()) list.sort((a, b) => (a.time || '').localeCompare(b.time || '') || a.seq - b.seq);
   return contests.map((c, i) => [...bySchool.entries()].map(([team, list]) => ({ team, r: list[i] || null })).filter((x) => x.r));
+}
+
+const perms = (n) => (n <= 1 ? [[0]] : perms(n - 1).flatMap((p) => Array.from({ length: n }, (_, i) => p.slice(0, i).concat([n - 1], p.slice(i)))));
+/* a doubleheader's games in the order that agrees with the scores our record holds for them (the listed order on a
+   tie, so a pair our record cannot order keeps the order listed): { order: contests reordered, moved, pinned } */
+function orderPair(contests, readings, read) {
+  if (contests.length < 2 || contests.length > 4) return { order: contests, moved: false, pinned: true };
+  const base = assign(contests, readings);
+  let best = null;
+  for (const p of perms(contests.length)) {
+    const cs = p.map((i) => contests[i]);
+    let hits = 0;
+    cs.forEach((c, i) => { if (c.status !== 'FINAL') return; const j = judge(c, base[i] || [], read); if (j.home_runs === +c.home_runs && j.away_runs === +c.away_runs) hits++; });
+    const identity = p.every((x, i) => x === i);
+    if (!best || hits > best.hits || (hits === best.hits && identity)) best = { hits, cs, identity };
+  }
+  const unknown = contests.filter((c) => c.status !== 'FINAL').length;
+  const timed = contests.every((c) => c.start_time_local);
+  return { order: best.cs, moved: !best.identity, pinned: timed || unknown <= 1 };
 }
 
 function judge(c, readings, read) {
@@ -151,14 +180,15 @@ function run(mode, season, o) {
   for (const [k, contests] of ours) {
     const rs = by.get(k);
     if (!rs) { for (const c of contests) count(c.status === 'FINAL' ? 'final_not_read' : 'no_result_not_read'); continue; }
+    const op = orderPair(contests, rs, read);
     const per = assign(contests, rs);
-    contests.forEach((c, i) => {
-      const j = judge(c, per[i], read);
+    op.order.forEach((c, i) => {
+      const j = judge(c, per[i] || [], read);
       if (mode === 'audit') {
         if (c.status !== 'FINAL') return;
         if (j.decision === 'SCHOOL_SITES_BOTH' || j.decision === 'SCHOOL_SITE_ONE') {
           const same = +c.home_runs === j.home_runs && +c.away_runs === j.away_runs;
-          count(same ? 'audit_agree' : 'audit_differ');
+          count(same ? (op.moved ? 'audit_agree_dh_reordered' : 'audit_agree') : 'audit_differ');
           if (!same && out.disagreements.length < 60) out.disagreements.push({ game_id: c.game_id, date: c.date, ours: [c.home_runs, c.away_runs], schools: j.scores });
         } else count('audit_' + j.decision.toLowerCase());
         return;
@@ -166,7 +196,9 @@ function run(mode, season, o) {
       if (c.status !== 'NO_RESULT') return;
       count(j.decision.toLowerCase());
       if (j.decision === 'SCHOOL_SITES_BOTH' || j.decision === 'SCHOOL_SITE_ONE') {
-        out.filled.push({ game_id: c.game_id, date: c.date, home_id: c.home_id, away_id: c.away_id, home_runs: j.home_runs, away_runs: j.away_runs, innings: j.innings, quality: j.decision, from: j.scores.map((s) => s.from) });
+        out.filled.push(Object.assign({ game_id: c.game_id, date: c.date, home_id: c.home_id, away_id: c.away_id, home_runs: j.home_runs, away_runs: j.away_runs, innings: j.innings, quality: j.decision, from: j.scores.map((s) => s.from) },
+          op.pinned ? {} : { dh_order: 'unverified' }));
+        if (!op.pinned) count('filled_dh_order_unverified');
         if (o.apply) {
           c.status = 'FINAL'; c.home_runs = String(j.home_runs); c.away_runs = String(j.away_runs);
           if (j.innings) c.innings_played = String(j.innings);
@@ -177,7 +209,12 @@ function run(mode, season, o) {
       } else if (j.decision === 'SCHOOLS_DISAGREE' && out.disagreements.length < 200) out.disagreements.push({ game_id: c.game_id, date: c.date, schools: j.scores });
     });
   }
-  if (mode === 'audit') { const a = out.counts.audit_agree || 0, d = out.counts.audit_differ || 0; out.agreement = a + d ? +(a / (a + d)).toFixed(4) : null; }
+  if (mode === 'audit') {
+    const a = out.counts.audit_agree || 0, r = out.counts.audit_agree_dh_reordered || 0, d = out.counts.audit_differ || 0;
+    /* agreement on the games as our record orders them; and on scores, a doubleheader's games paired by their scores */
+    out.agreement = a + r + d ? +(a / (a + r + d)).toFixed(4) : null;
+    out.score_agreement = a + r + d ? +((a + r) / (a + r + d)).toFixed(4) : null;
+  }
   if (o.apply && changed) {
     fs.writeFileSync(file, toCsv(header, games));
   }
@@ -191,6 +228,6 @@ if (require.main === module) {
   const mode = a[0]; const season = +(a[a.indexOf('--season') + 1]);
   if (!['audit', 'fill'].includes(mode) || !season) { console.error('usage: school_results.js audit|fill --season YYYY [--apply]'); process.exit(2); }
   const out = run(mode, season, { apply: a.includes('--apply') });
-  console.error('[school results] ' + mode + ' ' + season + ': ' + out.schools_read + ' schools read, ' + JSON.stringify(out.counts) + (out.agreement != null ? ', agreement ' + out.agreement : '') + (out.changed ? ', ' + out.changed + ' rows filled' : ''));
+  console.error('[school results] ' + mode + ' ' + season + ': ' + out.schools_read + ' schools read, ' + JSON.stringify(out.counts) + (out.agreement != null ? ', agreement ' + out.agreement + ' (scores, doubleheaders paired by score: ' + out.score_agreement + ')' : '') + (out.changed ? ', ' + out.changed + ' rows filled' : ''));
 }
-module.exports = { run, schoolRows, judge, assign, keyName, pairKey };
+module.exports = { run, schoolRows, judge, assign, orderPair, keyName, pairKey };
