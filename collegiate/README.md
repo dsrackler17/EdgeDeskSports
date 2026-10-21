@@ -56,9 +56,10 @@ The schools' and ncaa.com's terms of use have not been reviewed. robots.txt allo
 - Each team gets its continuity figures: returning share, transfers in and out, newcomers.
 
 **Workflows:**
-- `collegiate-rosters.yml`: weekly on main, and on a branch whenever `plan.json` changes.
+- `collegiate-rosters.yml`: weekly on main, and on main when `plan.json` changes. Never on a branch: the data lives on main, and a branch run would read every school a second time.
 - `collegiate-backfill.yml`: daily slices on main.
-- Both publish `collegiate/data` and share one concurrency group.
+- Both publish `collegiate/data` and share one repository-wide concurrency group, so two collector runs never read the same schools at once.
+- `collegiate-probe.yml` runs on the branch that changed `probe/targets.json`, never again on main.
 
 ## Into the college baseball model
 

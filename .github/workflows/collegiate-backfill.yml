@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: collegiate-data-${{ github.ref_name }}
+  group: collegiate-data          # shared with the weekly run, repository-wide
   cancel-in-progress: false
 
 jobs:

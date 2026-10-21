@@ -11,6 +11,7 @@ name: Collegiate probe
 
 on:
   push:
+    branches-ignore: [main]       # probed on the branch that changed the targets; a re-probe on merge only rewrites the fixtures
     paths:
       - 'collegiate/probe/targets.json'
   workflow_dispatch:
