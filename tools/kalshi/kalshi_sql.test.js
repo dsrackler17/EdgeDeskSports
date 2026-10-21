@@ -34,6 +34,9 @@
      cron         the poke without its secret records a failed run and a
                   FAILURE alert; with it, both modes queue with the header
      rollback     removes the layer and its jobs
+     starter      over the starter kalshi_schema.sql (tools/kalshi/fixtures):
+                  its tables and rows kept and upgraded, its views replaced,
+                  its cron jobs removed
    =========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -79,7 +82,7 @@ try {
   db.sql('alter table public.signals add column closing_at_observed timestamptz, add column closing_source text;');
 
   let out = db.applyFile(F('kalshi_market_data.sql'));
-  T.chk('the layer applies; every report row is ok or the tracked series is pending', !/CHECK THIS/.test(out) && (out.match(/\|ok/g) || []).length === 8 && /8 a series is tracked\|pending/.test(out), out);
+  T.chk('the layer applies; every report row is ok or the tracked series is pending', !/CHECK THIS/.test(out) && (out.match(/\|ok/g) || []).length === 9 && /8 a series is tracked\|pending/.test(out), out);
   out = db.applyFile(F('kalshi_market_data.sql'));
   T.chk('applying it twice is harmless (idempotent)', !/CHECK THIS/.test(out), out.slice(0, 400));
 
@@ -292,6 +295,30 @@ try {
   db.sql("update public.kalshi_series set tracked = false;");
   r = rd();
   T.chk('readiness: running with nothing tracked is a warning that says what to do', r.state === 'warn' && /tracked = true/.test(r.state_reason), r);
+
+  /* ---- over the starter schema (kalshi_schema.sql, as it was handed over) ---- */
+  db.applyFile(F('kalshi_market_data_rollback.sql'));
+  db.applyFile(path.join(__dirname, 'fixtures', 'kalshi_schema_starter.sql'));
+  db.sql(`insert into public.kalshi_series (ticker, tracked) values ('KXNFLGAME', true);
+    insert into public.kalshi_markets (ticker, event_ticker, series_ticker, yes_sub_title, close_time) values ('KXNFLGAME-S-PHI', 'KXNFLGAME-S', 'KXNFLGAME', 'Philadelphia', now() + interval '2 days');
+    insert into public.kalshi_price_snapshots (ticker, captured_at, yes_bid, yes_ask, volume) values ('KXNFLGAME-S-PHI', now() - interval '1 hour', 0.60, 0.62, 100);
+    select cron.schedule('kalshi_snapshot_5m', '*/5 * * * *', 'select 1'); select cron.schedule('kalshi_discover_daily', '7 9 * * *', 'select 1');`);
+  T.chk('starter: in place before the upgrade (its own mid view, no run id)', db.sql("select count(*) from information_schema.columns where table_name = 'kalshi_snapshot_mid' and column_name = 'mid_excluded_reason'") === '0'
+    && db.sql("select count(*) from information_schema.columns where table_name = 'kalshi_price_snapshots' and column_name = 'run_id'") === '0');
+  out = db.applyFile(F('kalshi_market_data.sql'));
+  T.chk('over the starter: the layer applies; every report row is ok, the upgrade row included', !/CHECK THIS/.test(out) && /10 the tables carry every column[^\n]*\|ok/.test(out) && (out.match(/\|ok/g) || []).length === 10, out);
+  const kept = one("select ticker, yes_mid, spread, mid_excluded_reason, run_id from public.kalshi_snapshot_mid where ticker = 'KXNFLGAME-S-PHI'", db.anon);
+  T.chk('over the starter: its rows are kept and read through this layer’s views', kept && kept.yes_mid === 0.61 && kept.spread === 0.02 && kept.run_id === null
+    && db.sql("select tracked from public.kalshi_series where ticker = 'KXNFLGAME'") === 't' && db.sql("select count(*) from public.kalshi_markets") === '1', kept);
+  T.chk('over the starter: what kalshi_sync writes now lands (a market title, a snapshot run id)', !fails(() => db.service(`update public.kalshi_markets set title = 'Philadelphia wins' where ticker = 'KXNFLGAME-S-PHI';
+    insert into public.kalshi_price_snapshots (ticker, yes_bid, yes_ask, run_id) values ('KXNFLGAME-S-PHI', 0.61, 0.63, gen_random_uuid());`)));
+  T.chk('over the starter: its snapshots are append-only now', fails(() => db.service("update public.kalshi_price_snapshots set yes_bid = 0.5 where ticker = 'KXNFLGAME-S-PHI';")) && fails(() => db.sql('delete from public.kalshi_price_snapshots;')));
+  T.chk('over the starter: anon reads it now (the starter had row level security with no policy)', db.anon('select count(*) from public.kalshi_price_snapshots;') === '2');
+  out = db.applyFile(F('kalshi_market_data.sql'));
+  T.chk('over the starter: applying it again is harmless', !/CHECK THIS/.test(out), out);
+  out = db.applyFile(F('kalshi_market_data_cron.sql'));
+  T.chk('over the starter: the cron file removes the starter’s jobs (they carried the service-role key)', /4 no starter job is left[^\n]*\|ok/.test(out)
+    && db.sql("select string_agg(jobname, ',' order by jobname) from cron.job where jobname like 'kalshi%'") === 'kalshi_sync_discover,kalshi_sync_snapshot', out);
 } catch (e) { T.chk('the run completed', false, String(e.message).slice(0, 1200)); }
 finally { db.stop(); }
 process.exit(T.done());

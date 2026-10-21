@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — Kalshi: the layer applies over the starter schema
+
+- **`supabase/kalshi_market_data.sql` now upgrades the starter `kalshi_schema.sql` in place.** On a database where the starter ran, it used to stop with an error. The starter's three views have other columns, and `create or replace view` cannot rename one. The starter's tables also lacked `kalshi_markets.title` and `kalshi_price_snapshots.run_id`, which `kalshi_sync` writes.
+- **What the file does now.** It keeps the starter's tables and rows, adds those columns, and replaces the starter-shaped views, which hold no data. A new report row (10) checks it.
+- **The cron file.** `supabase/kalshi_market_data_cron.sql` removes the starter's `kalshi_discover_daily` / `kalshi_snapshot_5m` jobs if they were scheduled; they carried the service-role key. Report row 4 checks it.
+
+Tests: `KALSHI_SQL_REQUIRED=1 node tools/kalshi/kalshi_sql.test.js` (74, with the starter schema applied first as a fixture).
+
 ## 2026-10-21 — Kalshi prices beside the book on NFL and CFB game cards
 
 - **A new data source, not a model change.** No projection, ranking, threshold, EV flag, score, grade or CLV record reads it.
