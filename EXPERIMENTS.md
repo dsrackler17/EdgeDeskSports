@@ -208,6 +208,51 @@ NFL v2.1.0 spread +0.301 [+0.16, +0.43], NFL Loop spread +0.307 [+0.15, +0.47], 
 
 ---
 
+---
+
+## Phase 4 — Market-residual model (pre-registered 2026-10-21, before any residual model was fitted)
+
+**What it is.** A model of line **movement**: `y = close − early line`, fitted on inputs knowable
+at the early line, with the early line as the prior (predicted close = early + m̂). Code:
+`model_loop/clv/residual.py`. Ridge regression on standardised features with an intercept,
+**penalty λ = 25 fixed**, refitted walk-forward (every earlier development season predicts the
+next). A bet is placed when **|m̂| ≥ θ = 0.25 points**, on the side the predicted move points to,
+and is scored by the same harness.
+
+**Pass rule for every Phase 4 experiment.** Both must hold on its evaluation window:
+1. the protocol's edge rule at θ = 0.25 (CI of mean CLV above 0, permutation p ≤ 0.05, prob CLV > 0);
+2. it **beats its comparator at matched volume**: in each season the candidate's top-k games by
+   |m̂| (k = the comparator's bet count that season) against the comparator's own bets; the paired
+   week-cluster bootstrap 95% CI of (candidate mean CLV − comparator mean CLV) lies above 0.
+
+**NFL** (R-1 fresh lines; rows = eligible 2020–2024 games; evaluation **2021–2024**, since a season
+needs an earlier season with early lines to train on; base model = NFL Loop v2.0.0, the best NFL
+spread baseline):
+
+| exp | features (groups from `residual.py`) | comparator |
+|---|---|---|
+| E-101 | base (d = Loop − early) | E-002 rule (Loop, threshold 2) on the same games |
+| E-102 | base + qb (previous starter left early; previous starter not the regular) | E-101 |
+| E-103 | base + rest + travel | E-101 |
+| E-104 | base + drift (early − lookahead line; lookahead existed) | E-101 |
+| E-105 | base + market (favourite side, \|early\|, on 3, on 7) | E-101 |
+| E-106 | base + every group that passed E-102..E-105 (not run if none passed) | E-101 |
+
+**CFB** (R-2: base model = CFB Loop with ratings and QB from week W−2; rows = eligible games with
+an opener 2012–2019, 2021–2024; evaluation **2015–2019, 2021–2024**). The qb and drift groups do
+not exist for CFB under R-2 (no week W−1 information; no intermediate snapshots):
+
+| exp | features | comparator |
+|---|---|---|
+| E-111 | base (d = Loop W−2 − opener) | E-006 Loop W−2 rule (threshold 3) on the same games |
+| E-112 | base + rest | E-111 |
+| E-113 | base + market | E-111 |
+| E-114 | base + every group that passed E-112..E-113 (not run if none passed) | E-111 |
+
+**Going more complex (E-120).** Only if the best simple model (E-101..E-106 / E-111..E-114) passes
+both rules: the same ridge plus pairwise interactions of `d` with each other feature of that model,
+λ = 25, compared against that best simple model by the same matched-volume rule.
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv/results/ledger.jsonl`, which `model_loop/clv/run.py` appends on
