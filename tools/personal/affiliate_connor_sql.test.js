@@ -166,6 +166,11 @@ try {
   /* ── customer A: the full deal on a simulated test clock ───────────────── */
   const START = Math.floor(Date.UTC(2026, 9, 20, 15, 0, 0) / 1000);   // 2026-10-20 15:00 UTC, trial starts
   const TRIAL_END = START + 7 * DAY;                                   // 2026-10-27, first paid period
+  /* the seed starts Connor's terms at the moment it runs, but this clock is
+     fixed: on it the seed ran the day before the first sale, so the terms are
+     in force for every sale played below whatever day the suite runs (only
+     ever moved earlier, never later) */
+  one(`update public.affiliate_campaigns set starts_at = least(starts_at, to_timestamp(${START - DAY})) where upper(code) = 'CONNOR10';`);
   const CUS_A = 'cus_TQx8Kd1aZ9';
   one(`insert into public.subscriptions (user_id, status, stripe_customer_id, stripe_subscription_id, price_id)
        values ('${U.a}','trialing','${CUS_A}','sub_A','price_monthly');`);
