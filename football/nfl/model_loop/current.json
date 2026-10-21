@@ -2,7 +2,7 @@
  "schema": "edgedesk_model_loop_nfl_current_v1",
  "model_version": "2.0.0",
  "status": "EXPERIMENTAL",
- "generated_at": "2026-10-21T03:54:21Z",
+ "generated_at": "2026-10-21T18:17:32Z",
  "season": 2026,
  "config_sha256": "2ae53dbf05e0871616ba35159c4914c5a9073a99252c02e8212349ff6216ef35",
  "distribution": {
@@ -209,7 +209,7 @@
     "unattributed": -0.0
    },
    "market_reference": {
-    "home_line": -3.0,
+    "home_line": -1.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [
@@ -218,35 +218,10 @@
      "qb_id": "00-0034796",
      "fair_home_line": -3.8,
      "home_win_prob": 0.6121,
-     "gap_vs_market": 0.8
+     "gap_vs_market": 2.3
     }
    ],
-   "disagreement": {
-    "level": "QB UNRESOLVED",
-    "text": "Model disagrees with market by 3.1 with the schedule feed's starter; the starter is contested (see scenarios)",
-    "gap_points": -3.082762571154697,
-    "direction": "away",
-    "drivers": [
-     {
-      "key": "qb",
-      "label": "Quarterback",
-      "points": -2.39,
-      "prior_share": 0.424
-     },
-     {
-      "key": "rest",
-      "label": "Rest days",
-      "points": -1.8,
-      "prior_share": null
-     },
-     {
-      "key": "travel",
-      "label": "Travel distance",
-      "points": -0.3,
-      "prior_share": null
-     }
-    ]
-   },
+   "disagreement": null,
    "data_status": {
     "status": "DEGRADED",
     "reasons": [
@@ -1727,7 +1702,7 @@
     "away": {
      "id": "00-0031503",
      "name": "Jameis Winston",
-     "basis": "reconciled starter (SCHEDULE_FEED)"
+     "basis": "reconciled starter (DEPTH_CHART_RECONCILED)"
     }
    },
    "fair_home_margin": 10.24,
@@ -2371,29 +2346,29 @@
     "home": {
      "id": "00-0033077",
      "name": "Dak Prescott",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0033119",
      "name": "Jacoby Brissett",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 7.28,
-   "fair_home_line": -7.28,
-   "fair_total": 50.22,
-   "home_win_prob": 0.7058,
-   "fair_home_ml": -240,
-   "fair_away_ml": 240,
+   "fair_home_margin": 7.26,
+   "fair_home_line": -7.26,
+   "fair_total": 50.23,
+   "home_win_prob": 0.7053,
+   "fair_home_ml": -239,
+   "fair_away_ml": 239,
    "range80": {
-    "lo": -9.64,
-    "hi": 24.2,
-    "centre": 7.28,
+    "lo": -9.66,
+    "hi": 24.19,
+    "centre": 7.26,
     "half_width": 16.92
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 5.5152,
+    "Base strength": 5.4983,
     "Rest & travel": -0.3801
    },
    "components": [
@@ -2458,9 +2433,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 4.9934,
+     "points": 4.9765,
      "from_prior": 0.3296,
-     "from_this_season": 4.6638,
+     "from_this_season": 4.6469,
      "prior_share": 0.066
     },
     {
@@ -2501,8 +2476,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 7.280315,
-    "fair_home_margin": 7.280315,
+    "components_sum": 7.263384,
+    "fair_home_margin": 7.263384,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2524,31 +2499,31 @@
    "kickoff_et": "2026-11-01 13:00:00",
    "starters": {
     "home": {
-     "id": "00-0034855",
-     "name": "Baker Mayfield",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "id": "00-0041251",
+     "name": "Jalon Daniels",
+     "basis": "UNRESOLVED: schedule feed names Jalon Daniels, depth chart names Baker Mayfield"
     },
     "away": {
      "id": "00-0039917",
      "name": "Michael Penix Jr.",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 0.67,
-   "fair_home_line": -0.67,
-   "fair_total": 42.47,
-   "home_win_prob": 0.5201,
-   "fair_home_ml": -108,
-   "fair_away_ml": 108,
+   "fair_home_margin": -0.01,
+   "fair_home_line": 0.01,
+   "fair_total": 41.91,
+   "home_win_prob": 0.4996,
+   "fair_home_ml": 100,
+   "fair_away_ml": -100,
    "range80": {
-    "lo": -16.08,
-    "hi": 17.42,
-    "centre": 0.67,
-    "half_width": 16.75
+    "lo": -16.84,
+    "hi": 16.82,
+    "centre": -0.01,
+    "half_width": 16.83
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -1.8746,
+    "Base strength": -2.5584,
     "Rest & travel": 0.3986
    },
    "components": [
@@ -2577,10 +2552,10 @@
      "key": "qb",
      "label": "Quarterback",
      "group": "base_strength",
-     "points": -1.5125,
-     "from_prior": 0.5561,
-     "from_this_season": -2.0686,
-     "prior_share": 0.212
+     "points": -2.2284,
+     "from_prior": -1.3494,
+     "from_this_season": -0.879,
+     "prior_share": 0.606
     },
     {
      "key": "pass_def",
@@ -2613,10 +2588,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.5946,
+     "points": -0.5625,
      "from_prior": 0.3186,
-     "from_this_season": -0.9132,
-     "prior_share": 0.259
+     "from_this_season": -0.8811,
+     "prior_share": 0.266
     },
     {
      "key": "rest",
@@ -2656,19 +2631,29 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.669263,
-    "fair_home_margin": 0.669263,
-    "unattributed": -0.0
+    "components_sum": -0.014484,
+    "fair_home_margin": -0.014484,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -1.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
-   "qb_scenarios": [],
+   "qb_scenarios": [
+    {
+     "if": "home starter is Baker Mayfield",
+     "qb_id": "00-0034855",
+     "fair_home_line": -0.7,
+     "home_win_prob": 0.521,
+     "gap_vs_market": -0.8
+    }
+   ],
    "disagreement": null,
    "data_status": {
-    "status": "OK",
-    "reasons": []
+    "status": "DEGRADED",
+    "reasons": [
+     "home starter unresolved: schedule feed names Jalon Daniels, depth chart names Baker Mayfield"
+    ]
    }
   },
   {
@@ -2681,29 +2666,29 @@
     "home": {
      "id": "00-0034857",
      "name": "Josh Allen",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
-     "id": "00-0034796",
-     "name": "Lamar Jackson",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "id": "00-0035993",
+     "name": "Tyler Huntley",
+     "basis": "UNRESOLVED: schedule feed names Tyler Huntley, depth chart names Lamar Jackson"
     }
    },
-   "fair_home_margin": 4.3,
-   "fair_home_line": -4.3,
-   "fair_total": 53.87,
-   "home_win_prob": 0.6261,
-   "fair_home_ml": -167,
-   "fair_away_ml": 167,
+   "fair_home_margin": 8.38,
+   "fair_home_line": -8.38,
+   "fair_total": 50.52,
+   "home_win_prob": 0.7327,
+   "fair_home_ml": -274,
+   "fair_away_ml": 274,
    "range80": {
-    "lo": -12.61,
-    "hi": 21.2,
-    "centre": 4.3,
-    "half_width": 16.91
+    "lo": -8.26,
+    "hi": 25.03,
+    "centre": 8.38,
+    "half_width": 16.65
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.6148,
+    "Base strength": 4.7001,
     "Rest & travel": 1.5361
    },
    "components": [
@@ -2732,10 +2717,10 @@
      "key": "qb",
      "label": "Quarterback",
      "group": "base_strength",
-     "points": 0.0886,
-     "from_prior": 0.119,
-     "from_this_season": -0.0304,
-     "prior_share": 0.796
+     "points": 3.9374,
+     "from_prior": 1.4194,
+     "from_this_season": 2.518,
+     "prior_share": 0.36
     },
     {
      "key": "pass_def",
@@ -2768,10 +2753,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.9707,
+     "points": 1.2072,
      "from_prior": 0.3094,
-     "from_this_season": 0.6613,
-     "prior_share": 0.319
+     "from_this_season": 0.8978,
+     "prior_share": 0.256
     },
     {
      "key": "rest",
@@ -2811,19 +2796,60 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.296218,
-    "fair_home_margin": 4.296218,
+    "components_sum": 8.381487,
+    "fair_home_margin": 8.381487,
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -2.5,
+    "home_line": -3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
-   "qb_scenarios": [],
-   "disagreement": null,
+   "qb_scenarios": [
+    {
+     "if": "away starter is Lamar Jackson",
+     "qb_id": "00-0034796",
+     "fair_home_line": -4.53,
+     "home_win_prob": 0.6327,
+     "gap_vs_market": 1.53
+    }
+   ],
+   "disagreement": {
+    "level": "QB UNRESOLVED",
+    "text": "Model disagrees with market by 5.4 with the schedule feed's starter; the starter is contested (see scenarios)",
+    "gap_points": 5.381487284270584,
+    "direction": "home",
+    "drivers": [
+     {
+      "key": "qb",
+      "label": "Quarterback",
+      "points": 3.94,
+      "prior_share": 0.36
+     },
+     {
+      "key": "rest",
+      "label": "Rest days",
+      "points": 1.8,
+      "prior_share": null
+     },
+     {
+      "key": "timezone",
+      "label": "Time zones crossed",
+      "points": 0.76,
+      "prior_share": null
+     },
+     {
+      "key": "rush_off",
+      "label": "Rush offense",
+      "points": 0.5,
+      "prior_share": 0.557
+     }
+    ]
+   },
    "data_status": {
-    "status": "OK",
-    "reasons": []
+    "status": "DEGRADED",
+    "reasons": [
+     "away starter unresolved: schedule feed names Tyler Huntley, depth chart names Lamar Jackson"
+    ]
    }
   },
   {
@@ -2836,29 +2862,29 @@
     "home": {
      "id": "00-0036264",
      "name": "Jordan Love",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0039150",
      "name": "Bryce Young",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 2.61,
-   "fair_home_line": -2.61,
-   "fair_total": 48.26,
-   "home_win_prob": 0.5776,
+   "fair_home_margin": 2.6,
+   "fair_home_line": -2.6,
+   "fair_total": 48.25,
+   "home_win_prob": 0.5775,
    "fair_home_ml": -137,
    "fair_away_ml": 137,
    "range80": {
     "lo": -14.23,
-    "hi": 19.45,
-    "centre": 2.61,
+    "hi": 19.44,
+    "centre": 2.6,
     "half_width": 16.84
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.659,
+    "Base strength": 0.6557,
     "Rest & travel": -0.1976
    },
    "components": [
@@ -2923,10 +2949,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.3209,
+     "points": 0.3176,
      "from_prior": 0.402,
-     "from_this_season": -0.0811,
-     "prior_share": 0.832
+     "from_this_season": -0.0844,
+     "prior_share": 0.826
     },
     {
      "key": "rest",
@@ -2966,8 +2992,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 2.606845,
-    "fair_home_margin": 2.606845,
+    "components_sum": 2.603523,
+    "fair_home_margin": 2.603523,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2989,31 +3015,31 @@
    "kickoff_et": "2026-11-02 20:15:00",
    "starters": {
     "home": {
-     "id": "00-0034869",
-     "name": "Sam Darnold",
-     "basis": "most recent starter"
+     "id": "00-0035704",
+     "name": "Drew Lock",
+     "basis": "schedule feed"
     },
     "away": {
      "id": "00-0039918",
      "name": "Caleb Williams",
-     "basis": "most recent starter"
+     "basis": "schedule feed"
     }
    },
-   "fair_home_margin": 0.81,
-   "fair_home_line": -0.81,
-   "fair_total": 44.29,
-   "home_win_prob": 0.5243,
-   "fair_home_ml": -110,
-   "fair_away_ml": 110,
+   "fair_home_margin": 2.38,
+   "fair_home_line": -2.38,
+   "fair_total": 45.57,
+   "home_win_prob": 0.5709,
+   "fair_home_ml": -133,
+   "fair_away_ml": 133,
    "range80": {
-    "lo": -15.91,
-    "hi": 17.53,
-    "centre": 0.81,
-    "half_width": 16.72
+    "lo": -14.33,
+    "hi": 19.09,
+    "centre": 2.38,
+    "half_width": 16.71
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -0.1401,
+    "Base strength": 1.4305,
     "Rest & travel": -1.1951
    },
    "components": [
@@ -3042,10 +3068,10 @@
      "key": "qb",
      "label": "Quarterback",
      "group": "base_strength",
-     "points": -3.2062,
-     "from_prior": 0.3025,
-     "from_this_season": -3.5087,
-     "prior_share": 0.079
+     "points": -1.6399,
+     "from_prior": -1.3574,
+     "from_this_season": -0.2825,
+     "prior_share": 0.828
     },
     {
      "key": "pass_def",
@@ -3078,10 +3104,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 2.0766,
+     "points": 2.0809,
      "from_prior": 0.5659,
-     "from_this_season": 1.5107,
-     "prior_share": 0.273
+     "from_this_season": 1.515,
+     "prior_share": 0.272
     },
     {
      "key": "rest",
@@ -3121,47 +3147,16 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.810049,
-    "fair_home_margin": 0.810049,
-    "unattributed": 0.0
+    "components_sum": 2.380709,
+    "fair_home_margin": 2.380709,
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": -3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": {
-    "level": "WATCH",
-    "text": "Model disagrees with market by 2.2",
-    "gap_points": -2.189950706443631,
-    "direction": "away",
-    "drivers": [
-     {
-      "key": "qb",
-      "label": "Quarterback",
-      "points": -3.21,
-      "prior_share": 0.079
-     },
-     {
-      "key": "rush_off",
-      "label": "Rush offense",
-      "points": -1.01,
-      "prior_share": 0.159
-     },
-     {
-      "key": "timezone",
-      "label": "Time zones crossed",
-      "points": -0.81,
-      "prior_share": null
-     },
-     {
-      "key": "rest",
-      "label": "Rest days",
-      "points": -0.77,
-      "prior_share": null
-     }
-    ]
-   },
+   "disagreement": null,
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -3177,29 +3172,29 @@
     "home": {
      "id": "00-0023459",
      "name": "Aaron Rodgers",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0033537",
      "name": "Deshaun Watson",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 5.3,
-   "fair_home_line": -5.3,
-   "fair_total": 38.76,
-   "home_win_prob": 0.654,
-   "fair_home_ml": -189,
-   "fair_away_ml": 189,
+   "fair_home_margin": 5.36,
+   "fair_home_line": -5.36,
+   "fair_total": 38.79,
+   "home_win_prob": 0.6555,
+   "fair_home_ml": -190,
+   "fair_away_ml": 190,
    "range80": {
-    "lo": -11.47,
-    "hi": 22.08,
-    "centre": 5.3,
-    "half_width": 16.77
+    "lo": -11.42,
+    "hi": 22.14,
+    "centre": 5.36,
+    "half_width": 16.78
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 2.9297,
+    "Base strength": 2.9856,
     "Rest & travel": 0.2287
    },
    "components": [
@@ -3264,10 +3259,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 2.7197,
+     "points": 2.7756,
      "from_prior": 0.2476,
-     "from_this_season": 2.4721,
-     "prior_share": 0.091
+     "from_this_season": 2.528,
+     "prior_share": 0.089
     },
     {
      "key": "rest",
@@ -3307,8 +3302,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 5.303783,
-    "fair_home_margin": 5.303783,
+    "components_sum": 5.359652,
+    "fair_home_margin": 5.359652,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3332,29 +3327,29 @@
     "home": {
      "id": "00-0036971",
      "name": "Trevor Lawrence",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0035710",
      "name": "Daniel Jones",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 10.99,
-   "fair_home_line": -10.99,
-   "fair_total": 46.55,
-   "home_win_prob": 0.7905,
-   "fair_home_ml": -377,
-   "fair_away_ml": 377,
+   "fair_home_margin": 11.04,
+   "fair_home_line": -11.04,
+   "fair_total": 46.57,
+   "home_win_prob": 0.7914,
+   "fair_home_ml": -379,
+   "fair_away_ml": 379,
    "range80": {
-    "lo": -6.28,
-    "hi": 28.26,
-    "centre": 10.99,
+    "lo": -6.24,
+    "hi": 28.31,
+    "centre": 11.04,
     "half_width": 17.27
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 7.0644,
+    "Base strength": 7.1109,
     "Rest & travel": 1.7812
    },
    "components": [
@@ -3419,10 +3414,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 2.9665,
+     "points": 3.013,
      "from_prior": 0.4102,
-     "from_this_season": 2.5563,
-     "prior_share": 0.138
+     "from_this_season": 2.6028,
+     "prior_share": 0.136
     },
     {
      "key": "rest",
@@ -3462,8 +3457,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 10.99094,
-    "fair_home_margin": 10.99094,
+    "components_sum": 11.037438,
+    "fair_home_margin": 11.037438,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3474,7 +3469,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.5",
-    "gap_points": 3.490940441195777,
+    "gap_points": 3.537437988121164,
     "direction": "home",
     "drivers": [
      {
@@ -3518,29 +3513,29 @@
     "home": {
      "id": "00-0039732",
      "name": "Bo Nix",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0033873",
      "name": "Patrick Mahomes",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
    "fair_home_margin": -2.36,
    "fair_home_line": 2.36,
-   "fair_total": 44.09,
-   "home_win_prob": 0.4297,
+   "fair_total": 44.08,
+   "home_win_prob": 0.4296,
    "fair_home_ml": 133,
    "fair_away_ml": -133,
    "range80": {
-    "lo": -19.05,
+    "lo": -19.06,
     "hi": 14.34,
     "centre": -2.36,
     "half_width": 16.7
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -4.2043,
+    "Base strength": -4.2064,
     "Rest & travel": -0.3
    },
    "components": [
@@ -3605,9 +3600,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.8401,
+     "points": -0.8422,
      "from_prior": 0.1653,
-     "from_this_season": -1.0054,
+     "from_this_season": -1.0075,
      "prior_share": 0.141
     },
     {
@@ -3648,8 +3643,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -2.359092,
-    "fair_home_margin": -2.359092,
+    "components_sum": -2.361168,
+    "fair_home_margin": -2.361168,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3673,12 +3668,12 @@
     "home": {
      "id": "00-0026498",
      "name": "Matthew Stafford",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0036355",
      "name": "Justin Herbert",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
    "fair_home_margin": 11.08,
@@ -3695,7 +3690,7 @@
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 9.9903,
+    "Base strength": 9.9922,
     "Rest & travel": -1.0572
    },
    "components": [
@@ -3760,9 +3755,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 4.1349,
+     "points": 4.1368,
      "from_prior": 0.1472,
-     "from_this_season": 3.9877,
+     "from_this_season": 3.9896,
      "prior_share": 0.036
     },
     {
@@ -3803,9 +3798,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 11.078448,
-    "fair_home_margin": 11.078448,
-    "unattributed": -0.0
+    "components_sum": 11.080274,
+    "fair_home_margin": 11.080274,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -7.5,
@@ -3815,7 +3810,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.6",
-    "gap_points": 3.5784479587880433,
+    "gap_points": 3.580274139752447,
     "direction": "home",
     "drivers": [
      {
@@ -3859,18 +3854,18 @@
     "home": {
      "id": "00-0030565",
      "name": "Geno Smith",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0029604",
      "name": "Kirk Cousins",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
    "fair_home_margin": 0.59,
    "fair_home_line": -0.59,
-   "fair_total": 44.69,
-   "home_win_prob": 0.5178,
+   "fair_total": 44.75,
+   "home_win_prob": 0.5177,
    "fair_home_ml": -107,
    "fair_away_ml": 107,
    "range80": {
@@ -3881,7 +3876,7 @@
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -1.3318,
+    "Base strength": -1.3325,
     "Rest & travel": -0.221
    },
    "components": [
@@ -3946,10 +3941,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.048,
+     "points": 0.0473,
      "from_prior": -0.1759,
-     "from_this_season": 0.2239,
-     "prior_share": 0.44
+     "from_this_season": 0.2232,
+     "prior_share": 0.441
     },
     {
      "key": "rest",
@@ -3989,8 +3984,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.592391,
-    "fair_home_margin": 0.592391,
+    "components_sum": 0.591718,
+    "fair_home_margin": 0.591718,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -4014,17 +4009,17 @@
     "home": {
      "id": "00-0033106",
      "name": "Jared Goff",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0035228",
      "name": "Kyler Murray",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
    "fair_home_margin": 4.01,
    "fair_home_line": -4.01,
-   "fair_total": 49.05,
+   "fair_total": 49.04,
    "home_win_prob": 0.6181,
    "fair_home_ml": -162,
    "fair_away_ml": 162,
@@ -4036,7 +4031,7 @@
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 2.1809,
+    "Base strength": 2.1793,
     "Rest & travel": -0.3129
    },
    "components": [
@@ -4101,10 +4096,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.2319,
+     "points": 0.2303,
      "from_prior": 0.2434,
-     "from_this_season": -0.0115,
-     "prior_share": 0.955
+     "from_this_season": -0.0131,
+     "prior_share": 0.949
     },
     {
      "key": "rest",
@@ -4144,9 +4139,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.013415,
-    "fair_home_margin": 4.013415,
-    "unattributed": -0.0
+    "components_sum": 4.011789,
+    "fair_home_margin": 4.011789,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": -2.5,
@@ -4169,29 +4164,29 @@
     "home": {
      "id": "00-0038128",
      "name": "Malik Willis",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0039851",
      "name": "Drake Maye",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": -6.33,
-   "fair_home_line": 6.33,
-   "fair_total": 45.43,
-   "home_win_prob": 0.3185,
-   "fair_home_ml": 214,
-   "fair_away_ml": -214,
+   "fair_home_margin": -6.29,
+   "fair_home_line": 6.29,
+   "fair_total": 45.52,
+   "home_win_prob": 0.3195,
+   "fair_home_ml": 213,
+   "fair_away_ml": -213,
    "range80": {
-    "lo": -23.17,
-    "hi": 10.5,
-    "centre": -6.33,
+    "lo": -23.13,
+    "hi": 10.54,
+    "centre": -6.29,
     "half_width": 16.84
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -8.5613,
+    "Base strength": -8.5227,
     "Rest & travel": 0.0837
    },
    "components": [
@@ -4256,9 +4251,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -4.4491,
+     "points": -4.4105,
      "from_prior": -0.3226,
-     "from_this_season": -4.1265,
+     "from_this_season": -4.0879,
      "prior_share": 0.073
     },
     {
@@ -4299,9 +4294,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -6.332381,
-    "fair_home_margin": -6.332381,
-    "unattributed": -0.0
+    "components_sum": -6.293772,
+    "fair_home_margin": -6.293772,
+    "unattributed": 0.0
    },
    "market_reference": {
     "home_line": 7.5,
@@ -4324,29 +4319,29 @@
     "home": {
      "id": "00-0039910",
      "name": "Jayden Daniels",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0038400",
      "name": "Tanner McKee",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (INJURY_REPORT_REPLACEMENT_PENDING)"
     }
    },
    "fair_home_margin": 4.48,
    "fair_home_line": -4.48,
-   "fair_total": 41.93,
-   "home_win_prob": 0.6314,
+   "fair_total": 41.92,
+   "home_win_prob": 0.6311,
    "fair_home_ml": -171,
    "fair_away_ml": 171,
    "range80": {
-    "lo": -12.36,
-    "hi": 21.33,
+    "lo": -12.37,
+    "hi": 21.32,
     "centre": 4.48,
-    "half_width": 16.84
+    "half_width": 16.85
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.8879,
+    "Base strength": 0.8803,
     "Rest & travel": 1.4497
    },
    "components": [
@@ -4411,10 +4406,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.8881,
+     "points": -0.8957,
      "from_prior": -0.1161,
-     "from_this_season": -0.772,
-     "prior_share": 0.131
+     "from_this_season": -0.7796,
+     "prior_share": 0.13
     },
     {
      "key": "rest",
@@ -4454,8 +4449,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.482865,
-    "fair_home_margin": 4.482865,
+    "components_sum": 4.475285,
+    "fair_home_margin": 4.475285,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -4479,29 +4474,29 @@
     "home": {
      "id": "00-0036442",
      "name": "Joe Burrow",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
      "id": "00-0040676",
      "name": "Cam Ward",
-     "basis": "depth chart QB1 (2026-10-20T12:41:41Z)"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 13.15,
-   "fair_home_line": -13.15,
-   "fair_total": 44.84,
-   "home_win_prob": 0.8317,
-   "fair_home_ml": -494,
-   "fair_away_ml": 494,
+   "fair_home_margin": 13.47,
+   "fair_home_line": -13.47,
+   "fair_total": 44.61,
+   "home_win_prob": 0.8373,
+   "fair_home_ml": -515,
+   "fair_away_ml": 515,
    "range80": {
-    "lo": -4.22,
-    "hi": 30.52,
-    "centre": 13.15,
-    "half_width": 17.37
+    "lo": -3.92,
+    "hi": 30.86,
+    "centre": 13.47,
+    "half_width": 17.39
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 11.4918,
+    "Base strength": 11.8115,
     "Rest & travel": -0.485
    },
    "components": [
@@ -4566,10 +4561,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 5.4254,
+     "points": 5.7451,
      "from_prior": 0.8309,
-     "from_this_season": 4.5945,
-     "prior_share": 0.153
+     "from_this_season": 4.9142,
+     "prior_share": 0.145
     },
     {
      "key": "rest",
@@ -4609,8 +4604,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 13.152007,
-    "fair_home_margin": 13.152007,
+    "components_sum": 13.47171,
+    "fair_home_margin": 13.47171,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -4620,8 +4615,8 @@
    "qb_scenarios": [],
    "disagreement": {
     "level": "FLAG",
-    "text": "Model disagrees with market by 3.2",
-    "gap_points": 3.152006513214875,
+    "text": "Model disagrees with market by 3.5",
+    "gap_points": 3.471709651647963,
     "direction": "home",
     "drivers": [
      {
@@ -4666,9 +4661,9 @@
  "data_status": {
   "status": "OK",
   "reasons": [],
-  "games_flagged": 2,
+  "games_flagged": 4,
   "missing_results": [],
-  "checked_at": "2026-10-21T03:54:21Z"
+  "checked_at": "2026-10-21T18:17:32Z"
  },
  "contract": "Per game: fair_home_margin (+ = home), fair_home_line (book convention), home_win_prob, tie_prob, fair moneylines, range80 (centred on the margin), components that sum exactly to fair_home_margin, the starter priced, qb_scenarios for a contested starter, disagreement vs the reference line. distribution (sigma + key-number multipliers by |margin|) prices any spread: P(M=k) proportional to exp(-((k-mu')/sigma)^2/2) * mult[|k|], mu' solved so the mean is the margin."
 }
