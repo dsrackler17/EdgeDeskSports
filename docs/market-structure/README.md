@@ -122,7 +122,10 @@ its n and a Wilson 95% interval. Pushes are shown and kept out of the rate.
    pattern `/wp-content/uploads/YYYY/MM/Circa-Sports-Million-<edition>-Week-<n>-Selections.pdf`.
    It tries the Saturday's month, the Thursday's, then the next.
 2. It reads the PDF with `npm:unpdf@1.8.1`, rebuilding lines from text
-   positions rather than trusting the PDF's own line breaks.
+   positions rather than trusting the PDF's own line breaks. The import names
+   the package literally (`import("npm:unpdf@1.8.1")`). A deployed function
+   bundles only the npm packages its module graph names, and until
+   2026-10-21 the specifier sat in a constant, so the bundle had no unpdf.
 3. It parses every entry's five picks (`16. EAGLES +1`).
 4. It resolves each club through `lib/football_identity.js`'s alias table
    (copied verbatim and drift-tested), and each club to the week's game

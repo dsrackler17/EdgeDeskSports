@@ -3,8 +3,8 @@
 //  FILE:    supabase/functions/circa_ownership_sync/index.ts
 //  TYPE:    Edge Function — Circa Sports Million contest ownership (T0)
 //  DEPLOY:  supabase functions deploy circa_ownership_sync --no-verify-jwt
-//           (npm:unpdf is fetched and bundled at deploy, as
-//           growth_outbound_research bundles npm:@anthropic-ai/sdk)
+//           (npm:unpdf is bundled at deploy because its import names it
+//           literally, as growth_outbound_research names npm:@anthropic-ai/sdk)
 //  CRON:    supabase/contest_ownership_cron.sql — Saturday 10:00-18:00 ET
 //           every two hours, Sunday 08:00 / 10:00 / 12:00 ET
 //  SQL:     supabase/contest_ownership.sql (and nfl_market_structure.sql)
@@ -37,8 +37,7 @@
 // ENV: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (provided), CIRCA_CRON_SECRET.
 // ============================================================
 
-const BUILD = "circa_ownership_sync@2026-10-19.1";
-const UNPDF = "npm:unpdf@1.8.1";
+const BUILD = "circa_ownership_sync@2026-10-21.1";
 const CONTEST = "circa_million";
 const SITE_PAGES = ["https://www.circasports.com/", "https://www.circasports.com/contests/"];
 
@@ -356,7 +355,11 @@ async function findPdf(edition: string, week: number, saturday: string, override
 }
 
 async function pdfLines(bytes: Uint8Array): Promise<string[]> {
-  const { getDocumentProxy } = await import(UNPDF);
+  // The specifier must be a literal. The deploy bundles only the npm packages its
+  // graph can see, and a specifier held in a constant leaves unpdf out ("Could not
+  // find constraint 'unpdf@1.8.1' in the list of packages", as nba_injury_sync
+  // found live on 2026-10-21).
+  const { getDocumentProxy } = await import("npm:unpdf@1.8.1");
   const pdf = await getDocumentProxy(bytes);
   const out: string[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
