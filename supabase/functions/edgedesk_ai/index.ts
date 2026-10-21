@@ -10982,7 +10982,7 @@ export function deriveState(
       var drows = (Array.isArray(r.drivers.rows) ? r.drivers.rows : []).map(function (d) {
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t, favours: txt(d.favours) } : null;
-      }).filter(Boolean).slice(0, 6);
+      }).filter(Boolean).slice(0, 8); /* the NFL card is seven rows that must all show to add up */
       var trows = (Array.isArray(r.drivers.total_rows) ? r.drivers.total_rows : []).map(function (d) {
         var t = txt(d && d.text);
         return t ? { points: txt(d.points), points_n: num(d.points_n), text: t } : null;
@@ -22202,6 +22202,19 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
     { id: 'R6_ORDER', text: 'Ranking score = edge (probability points) × quote-freshness weight × validation-tier weight × input completeness. This ordering is an UNVALIDATED heuristic: it orders what already qualified and cannot promote anything.' },
     { id: 'R7_ONE_PER_GAME', text: 'At most one qualified opportunity per game is emitted (the higher-ranked); the other is kept as a research candidate.' }
   ];
+  /* A model-priced PASS on the board says why in lines, not prices: the pricing kernel's own sentence
+     quotes the break-even and cover percentages and the price (an assumed standard one when nothing was
+     captured), and the board's rule text carries no calculation record for them. The full sentence stays
+     on the candidate (decision.why) for the card that shows the calculation beside it. */
+  function modelRuleWhy(c) {
+    var d = c.decision || {}, be = num(c.edge && c.edge.break_even), cov = num(c.fair && c.fair.probability);
+    if (d.decision !== 'PASS' || be == null || cov == null || cov >= be) return d.why || '';
+    var fl = c.fair.is_total ? function (v) { return v == null ? '' : String(v); } : fmtLine;
+    var betTo = c.threshold ? num(c.threshold.bet_to_line) : null;
+    return 'the disagreement clears the threshold, but at ' + fl(c.line) + ' the fair ' + (c.fair.is_total ? 'total' : 'line') + ' does not cover the price'
+      + (c.quote && c.quote.captured_at ? '' : ' (no captured price; a standard price was assumed)')
+      + (betTo != null ? '; it becomes a number at ' + fl(betTo) + ' or better' : '');
+  }
   function qualify(c, scope) {
     var rules = [];
     var wantMarkets = scope && scope.markets ? scope.markets : null;
@@ -22223,7 +22236,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
       if (s === 'PLAY' && freshOk) { rules.push('R4_MODEL: PLAY under a VALIDATED tier with a live quote'); return { status: 'QUALIFIED', rules: rules }; }
       if (s === 'LEAN_PLAY' && freshOk) { rules.push('R4_MODEL: LEAN_PLAY with a live quote — LEAN tier, break-even history, not a profit'); return { status: 'QUALIFIED', rules: rules, lean: true }; }
       if ((s === 'PLAY' || s === 'LEAN_PLAY') && !freshOk) { rules.push('R4_MODEL: ' + s + ' on ' + (c.quote.executable ? 'a ' + fresh + ' quote' : 'a reference line with no executable price') + '; watchlist with the bet-to line'); return { status: 'WATCH', rules: rules }; }
-      rules.push('R4_MODEL: ' + s + ' — ' + (c.decision.why || '')); return { status: 'RESEARCH', rules: rules };
+      rules.push('R4_MODEL: ' + s + ' — ' + modelRuleWhy(c)); return { status: 'RESEARCH', rules: rules };
     }
     return { status: 'RESEARCH', rules: ['no pricing method'] };
   }
