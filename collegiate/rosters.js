@@ -32,7 +32,6 @@ const fs = require('fs');
 const path = require('path');
 const { createPolite } = require('./polite');
 const PL = require('./platforms');
-const { nuxtData } = require('./nuxt');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(__dirname, 'data');
@@ -100,9 +99,10 @@ function candidates(school, platform, sport, season, o) {
 async function collectOne(polite, school, sport, season, o) {
   const plat = o.platforms[school.id] || {};
   const miss = (code, why, url) => ({ ok: false, school: school.id, sport, season, url: url || null, code, why });
-  /* a site judged unread by the page's structure is left a month; an older verdict (made from the roster alone) is retried */
-  if (plat.platform === 'unread' && plat.by === 'structure' && plat.checked && Date.parse(o.today) - Date.parse(plat.checked) < 30 * DAY) return miss('PLATFORM_NOT_READ', 'the site is not built on a platform we read (checked ' + plat.checked + ')');
-  const known = plat.platform === 'sidearm' || plat.platform === 'wmt' ? plat.platform : null;
+  /* a site judged unread by the page's markup (Nuxt data and SIDEARM's older pages both looked for) is left a month;
+     an older verdict, made before SIDEARM's older sites were read, is retried */
+  if (plat.platform === 'unread' && plat.by === 'markup' && plat.checked && Date.parse(o.today) - Date.parse(plat.checked) < 30 * DAY) return miss('PLATFORM_NOT_READ', 'the site is not built on a platform we read (checked ' + plat.checked + ')');
+  const known = ['sidearm', 'sidearm_legacy', 'wmt'].includes(plat.platform) ? plat.platform : null;
   const past = season < currentSeason(sport, o.today);
   let last = null;
   for (const p of candidates(school, known, sport, season, o)) {
@@ -111,18 +111,18 @@ async function collectOne(polite, school, sport, season, o) {
     const r = await polite.get(url, { ttlMs: past && p !== '/sports/' + sport + '/roster' ? 30 * DAY : 12 * 3600 * 1000, noStore: true });
     if (!r.ok) { last = miss(r.refused ? 'REFUSED' : 'HTTP', (r.error && r.error.message) || 'no answer', url); if (r.refused) return last; continue; }
     const html = r.text();
-    const parsed = PL.parseRoster(html);
+    const parsed = PL.parseRoster(html, sport);
     if (!parsed) {
       if (!known) {
         /* no roster on the page, but the page still says what built it: learn the platform and try the season's own page */
-        const plat = PL.detectPlatform(nuxtData(html));
-        if (!plat) { o.platforms[school.id] = { platform: 'unread', by: 'structure', checked: o.today, url }; return miss('PLATFORM_NOT_READ', 'the page is not built on a platform we read', url); }
-        o.platforms[school.id] = { platform: plat, by: 'structure', checked: o.today, url };
+        const plat = PL.detectPlatformHtml(html);
+        if (!plat) { o.platforms[school.id] = { platform: 'unread', by: 'markup', checked: o.today, url }; return miss('PLATFORM_NOT_READ', 'the page is not built on a platform we read', url); }
+        o.platforms[school.id] = { platform: plat, by: 'markup', checked: o.today, url };
         return collectOne(polite, school, sport, season, o);
       }
       last = miss('NO_ROSTER', 'the page carries no roster (the sport is not played here, or the season is not posted)', url); continue;
     }
-    if (!known) o.platforms[school.id] = { platform: parsed.platform, checked: o.today, url };
+    if (!known) o.platforms[school.id] = { platform: parsed.platform, by: 'markup', checked: o.today, url };
     for (const s of parsed.seasons || []) if (s.season) o.labels[school.id + '|' + sport + '|' + s.season] = s.label;
     if (parsed.season !== season) {
       last = miss('SEASON_MISMATCH', 'the page is the ' + parsed.season_label + ' roster', url);

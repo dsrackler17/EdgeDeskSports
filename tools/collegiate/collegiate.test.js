@@ -210,6 +210,22 @@ function polite(pages, hosts, extra) {
     ok('polite: a robots.txt that does not answer gets a second try before the host is skipped', plats.slow && plats.slow.platform === 'sidearm' && run.ok === 2, run);
   }
 
+  /* 7b2. SIDEARM's older sites (no Nuxt data; one li.sidearm-roster-player per player) */
+  {
+    const leg = FX('daytonflyers.com/sports_baseball_roster');
+    const x = PL.parseRoster(leg, 'baseball');
+    const jw = x.players.find((p) => p.pid === 'slug:jon-whiteside');
+    ok('sidearm (older): a season\'s roster from the page\'s markup, the season from its title', x.platform === 'sidearm_legacy' && x.season_label === '2027' && x.season === 2027 && x.players.length === 39);
+    ok('sidearm (older): every field the newer platform gives, bats/throws included', jw && jw.jersey === '3' && jw.pos === 'RHP' && jw.class === 'JR' && jw.height_in === 76 && jw.weight === 200 && jw.hometown === 'Troy, Mich.' && jw.high_school === 'Troy' && jw.previous_school === 'Lansing CC' && jw.bats === 'R' && jw.throws === 'R', jw);
+    ok('sidearm (older): a player is the site\'s name slug, not the per-season id', x.players.every((p) => /^slug:[a-z0-9-]+$/.test(p.pid)) && new Set(x.players.map((p) => p.pid)).size === x.players.length);
+    ok('platforms: SIDEARM\'s older sites are told by their markup; a WordPress site is still not guessed', PL.detectPlatformHtml(leg) === 'sidearm_legacy' && PL.detectPlatformHtml(FX('ukathletics.com/sports_baseball_roster')) === null && PL.detectPlatformHtml(FX('12thman.com/home')) === 'wmt');
+    const t = polite({ 'https://old.edu/robots.txt': { body: '' }, 'https://old.edu/sports/baseball/roster': { body: leg } }, ['old.edu']);
+    const dataDir = path.join(t.dir, 'data'); fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ dayton: { platform: 'unread', by: 'structure', checked: '2026-10-21' } }));
+    const run = await RO.collect({ polite: t.c, schoolsList: [{ id: 'dayton', host: 'old.edu', division: 1 }], sports: ['baseball'], seasons: [2027], today: '2026-10-22', dataDir, log: false });
+    ok('rosters: a site judged unread before older SIDEARM was read is retried, and read', run.ok === 1 && JSON.parse(fs.readFileSync(path.join(dataDir, 'platforms.json'), 'utf8')).dayton.platform === 'sidearm_legacy', run.misses);
+  }
+
   /* 7c. a registry host gone dead is replaced by the site the school's opponents name for it */
   {
     const H = R('collegiate/hosts.js');

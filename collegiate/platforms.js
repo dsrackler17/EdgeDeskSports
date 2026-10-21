@@ -142,18 +142,73 @@ function detectPlatform(data) {
   return null;
 }
 
+/* -------------------------------------------------------- SIDEARM (legacy) */
+/* SIDEARM's older sites render the roster server-side, one li.sidearm-roster-player per player, with a class
+   per field (position, height, weight, jersey number, academic year, hometown, high school, previous school,
+   custom columns) and the season in the page title ("2027 Baseball Roster - ..."). A player is identified by
+   the name slug of his bio link (/roster/<slug>/<id>): the trailing id may be re-issued each season, the slug
+   is the site's own name for the player and stays. */
+const decodeHtml = (s) => String(s == null ? '' : s).replace(/<[^>]+>/g, ' ').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;|&#8217;/g, "'").replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+function legacyField(seg, cls) {
+  const re = new RegExp('<span[^>]*class="[^"]*\\b' + cls + '\\b[^"]*"[^>]*>([\\s\\S]*?)</span>', 'g');
+  const out = []; for (let m; (m = re.exec(seg));) out.push(decodeHtml(m[1]));
+  return out.filter(Boolean);
+}
+function sidearmLegacyRoster(html, sportHint) {
+  const h = String(html || '');
+  const starts = []; const re = /<li[^>]*class="sidearm-roster-player[ "][^>]*>/g;
+  for (let m; (m = re.exec(h));) starts.push(m.index);
+  if (!starts.length) return null;
+  const title = decodeHtml((h.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '');
+  const t = title.match(/(\d{4}(?:\s*-\s*\d{2,4})?)\s+([^-]*?)\s*Roster/i);
+  const label = t ? t[1].replace(/\s+/g, '') : null;
+  const baseballLike = /baseball|softball/i.test((t && t[2]) || '') || /baseball|softball/.test(sportHint || '');
+  const players = [];
+  starts.forEach((st, i) => {
+    const seg = h.slice(st, i + 1 < starts.length ? starts[i + 1] : st + 20000);
+    const url = (seg.match(/data-player-url="([^"]+)"/) || seg.match(/href="(\/sports\/[^"]*\/roster\/[^"]+)"/) || [])[1] || '';
+    const slug = (url.match(/\/roster\/([^/]+)\/\d+\/?$/) || url.match(/\/roster\/([^/?#]+)/) || [])[1] || null;
+    const name = decodeHtml((seg.match(/sidearm-roster-player-name[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/) || [])[1] || '');
+    if (!slug || !name) return;
+    const pos = legacyField(seg, 'sidearm-roster-player-position-long-short');
+    const yr = legacyField(seg, 'sidearm-roster-player-academic-year');
+    const ht = (legacyField(seg, 'sidearm-roster-player-height')[0] || '').match(/(\d)\D+(\d{1,2})?/);
+    const wt = (legacyField(seg, 'sidearm-roster-player-weight')[0] || '').match(/(\d{2,3})/);
+    const extra = {};
+    /* a custom column whose value reads exactly as bats/throws, on a baseball or softball roster */
+    for (const k of ['custom1', 'custom2', 'custom3']) { const v = legacyField(seg, 'sidearm-roster-player-' + k)[0]; if (v && baseballLike && /^[LRSB]\s*\/\s*[LR]$/i.test(v)) extra['B/T'] = v; }
+    const parts = name.split(' ');
+    players.push(row({ pid: 'slug:' + slug, first: parts.slice(0, 1).join(' '), last: parts.slice(1).join(' '), jersey: (legacyField(seg, 'sidearm-roster-player-jersey-number')[0] || null),
+      pos: pos[pos.length - 1] || pos[0] || null, cls: normClass(yr[0] || null, yr[yr.length - 1] || null, null), height_in: ht ? inches(ht[1], ht[2]) : null, weight: wt ? +wt[1] : null,
+      hometown: legacyField(seg, 'sidearm-roster-player-hometown')[0], high_school: legacyField(seg, 'sidearm-roster-player-highschool')[0],
+      previous_school: legacyField(seg, 'sidearm-roster-player-previous-school')[0], extra }));
+  });
+  const seen = new Set();
+  const unique = players.filter((p) => (seen.has(p.pid) ? false : (seen.add(p.pid), true)));
+  return { platform: 'sidearm_legacy', sport: null, season_label: label, season: seasonKey(label), roster_id: null, players: unique, seasons: [] };
+}
+
+/* the platform behind any page: the Nuxt platforms by the shape of their data, SIDEARM's older sites by their markup */
+function detectPlatformHtml(html) {
+  const p = detectPlatform(nuxtData(html));
+  if (p) return p;
+  const h = String(html || '');
+  if (/class="sidearm-|sidearmsports\.com|sidearm_/.test(h.slice(0, 600000))) return 'sidearm_legacy';
+  return null;
+}
+
 /* a roster page, whichever platform built it; null when the page carries no roster */
-function parseRoster(html) {
+function parseRoster(html, sportHint) {
   const data = nuxtData(html);
-  if (!data) return null;
-  return sidearmRoster(data) || wmtRoster(data);
+  if (data) return sidearmRoster(data) || wmtRoster(data);
+  return sidearmLegacyRoster(html, sportHint);
 }
 
 /* where a season's roster lives on each platform */
 function rosterPath(platform, sport, label) {
-  if (platform === 'sidearm') return '/sports/' + sport + '/roster/' + label;
+  if (platform === 'sidearm' || platform === 'sidearm_legacy') return '/sports/' + sport + '/roster/' + label;
   if (platform === 'wmt') return '/sports/' + sport + '/roster/season/' + label;
   return null;
 }
 
-module.exports = { parseRoster, detectPlatform, sidearmRoster, wmtRoster, rosterPath, seasonKey, seasonLabel, normClass, batsThrows, SPLIT };
+module.exports = { parseRoster, detectPlatform, detectPlatformHtml, sidearmRoster, sidearmLegacyRoster, wmtRoster, rosterPath, seasonKey, seasonLabel, normClass, batsThrows, SPLIT };

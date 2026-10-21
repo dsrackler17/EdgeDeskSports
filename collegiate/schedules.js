@@ -104,6 +104,7 @@ function schedulePath(platform, sport, label) {
 async function collectOne(polite, school, sport, season, o) {
   const plat = (o.platforms[school.id] || {}).platform;
   const miss = (code, why, url) => ({ ok: false, school: school.id, sport, season, url: url || null, code, why });
+  if (plat === 'sidearm_legacy') return miss('PLATFORM_NOT_READ', 'schedules on SIDEARM\'s older sites are not read yet');
   if (plat !== 'sidearm' && plat !== 'wmt') return miss('PLATFORM_NOT_READ', 'the site\'s platform is not known or not read (the roster collector learns it)');
   const label = (o.labels && o.labels[school.id + '|' + sport + '|' + season]) || PL.seasonLabel(sport, season);
   const url = 'https://' + school.host + schedulePath(plat, sport, label);
