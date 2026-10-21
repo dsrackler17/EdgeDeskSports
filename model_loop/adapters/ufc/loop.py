@@ -27,6 +27,7 @@ import argparse
 import copy
 import hashlib
 import json
+import math
 import os
 import sys
 import time
@@ -392,6 +393,112 @@ def cmd_report():
     print(os.path.join(DOCS, "weekly_model_report.md"))
 
 
+# ---------------------------------------------------------------- evidence
+LAB_RULES = {"min_n": 1000, "min_seasons": 2, "max_citl": 0.02, "slope": [0.85, 1.15]}   # engine/lab/protocol.js
+
+
+def _favourite_side(p, y):
+    """Every bout read from its favourite's side. The model is symmetric in the feed's
+    order, and in that order the first-listed fighter (most likely the corner) wins 44.8%,
+    so mean p - mean y read in feed order would measure the corner, not the model."""
+    p, y = np.asarray(p, dtype=float), np.asarray(y, dtype=float)
+    flip = p < 0.5
+    return np.where(flip, 1 - p, p), np.where(flip, 1 - y, y)
+
+
+def _block_bootstrap(diff, blocks, n_boot=2000, seed=13):
+    """95% interval of the mean difference, resampling whole cards (bouts on one card share a night)."""
+    diff, blocks = np.asarray(diff, dtype=float), np.asarray(blocks)
+    ids = np.unique(blocks)
+    sums = np.array([diff[blocks == b].sum() for b in ids])
+    counts = np.array([(blocks == b).sum() for b in ids])
+    rng = np.random.default_rng(seed)
+    pick = rng.integers(0, len(ids), size=(n_boot, len(ids)))
+    means = sums[pick].sum(axis=1) / counts[pick].sum(axis=1)
+    return [round(float(np.percentile(means, 2.5)), 6), round(float(np.percentile(means, 97.5)), 6)], int(len(ids))
+
+
+def _window_record(rows, w):
+    s = rows[_in(rows, WINDOWS[w]) & rows.y.notna()]
+    if not len(s):
+        return {"n": 0}
+    p, y = s.p.values, s.y.values
+    pf, yf = _favourite_side(p, y)
+    # the slope of p' = sigmoid(b * logit p), fitted in any orientation alike: the lab's
+    # y ~ a + b*logit(p) needs a side that means something (home); here none does, and
+    # an intercept fitted on the favourite's side (logit p >= 0 only) trades off against
+    # the slope (1.35 there against 1.18 here on 2021-2024)
+    b = U.fit_slope(p, y)
+    ll = -(y * np.log(np.clip(p, 1e-6, 1)) + (1 - y) * np.log(np.clip(1 - p, 1e-6, 1)))
+    ci, nb = _block_bootstrap(ll - math.log(2), s.event_id.values)
+    return {"window": f"{w} {WINDOWS[w][0]}-{min(WINDOWS[w][1], int(s.season.max()))}",
+            "seasons": int(s.season.nunique()), "n": int(len(s)),
+            "log_loss": round(float(ll.mean()), 5), "brier": round(float(np.mean((p - y) ** 2)), 5),
+            "coin_flip_log_loss": round(math.log(2), 5),
+            "favourite_mean_p": round(float(pf.mean()), 4), "favourite_won": round(float(yf.mean()), 4),
+            "calibration_in_the_large": round(float(pf.mean() - yf.mean()), 4),
+            "calibration_slope": round(b, 3),
+            "calibration_slope_method": "slope-only recalibration p' = sigmoid(b logit p): a symmetric model has no side to fit an intercept for",
+            "vs_coin_flip": {"mean_diff": round(float((ll - math.log(2)).mean()), 6), "ci95": ci, "blocks": nb,
+                             "block": "a UFC card (event_id)"}}
+
+
+def cmd_evidence():
+    """The preregistered backtest as a lab walk-forward record (edgedesk_lab_walkforward_v1),
+    judged by engine/lab/protocol.js's rules on the confirmation window (2021-2024), for the
+    engine registry (engine/build_registry.js). The certified configuration is the one the
+    preregistered tune chose; the served version's later changes were chosen on the full
+    window, so their clean test is the live season, reported beside it."""
+    bt = _jload(os.path.join(DOCS, "backtest.json"))
+    if not bt["decision"]["serve"]:
+        return None
+    d = U.load(DATA)
+    rows, _, _ = run(d, bt["final_config"])
+    conf = _window_record(rows, "validation")
+    fails = []
+    if conf["n"] < LAB_RULES["min_n"]:
+        fails.append(f"n {conf['n']} < {LAB_RULES['min_n']}")
+    if conf["seasons"] < LAB_RULES["min_seasons"]:
+        fails.append(f"{conf['seasons']} confirmation season(s) < {LAB_RULES['min_seasons']}")
+    if abs(conf["calibration_in_the_large"]) > LAB_RULES["max_citl"]:
+        fails.append(f"mean p off by {conf['calibration_in_the_large']}")
+    if not LAB_RULES["slope"][0] <= conf["calibration_slope"] <= LAB_RULES["slope"][1]:
+        fails.append(f"calibration slope {conf['calibration_slope']}")
+    if conf["vs_coin_flip"]["ci95"][1] >= 0:
+        fails.append("does not beat the coin flip with a 95% interval below zero")
+    cur = served()
+    live = None
+    if cur:
+        srows, _, _ = run(d, cur["config"])
+        live = dict(_window_record(srows, "live"), version=cur["version"],
+                    note="the served version's changes after 1.0.0 were chosen on the full window by the weekly rule; "
+                         "this season is their clean test")
+    out = {"schema": "edgedesk_lab_walkforward_v1", "sport": "mma", "label": "UFC / MMA", "generated_at": now_iso(),
+           "data": {"source": "ESPN public scoreboard, month by month (model_loop/adapters/ufc/ingest.py)",
+                    "bouts": int(len(d)), "final": int(d.final.sum()), "scored": int(rows.y.notna().sum()),
+                    "seasons": [int(d.season.min()), int(d.season.max())],
+                    "temporal": {"point_in_time": "RETROSPECTIVE", "known_at": "each bout priced from ratings before its date"}},
+           "method": "walk-forward Elo, symmetric in the feed's order, tuned on 2016-2020 under a preregistered protocol "
+                     "(docs/model-loop/ufc/prereg.json)",
+           "selection": {"chosen": "Elo " + json.dumps(bt["final_config"], sort_keys=True), "prereg_sha256": bt["prereg_sha256"]},
+           "windows": {"confirmation": {"seasons": conf["seasons"], "range": WINDOWS["validation"]}},
+           "result": {"confirmation": conf, "holdout_2025": _window_record(rows, "holdout"), "live_served": live},
+           "markets": {"moneyline": {"market": "fight winner", "n": conf["n"], "log_loss": conf["log_loss"], "brier": conf["brier"],
+                                     "calibration_in_the_large": conf["calibration_in_the_large"],
+                                     "calibration_slope": conf["calibration_slope"], "orientation": "favourite's side",
+                                     "window": conf["window"],
+                                     "status": "PROVISIONAL" if fails else "OUTCOME_VALIDATED", "failed": fails,
+                                     "market_status": "NOT_TESTED",
+                                     "market_reason": "no archive of timestamped UFC closing prices is on file"}},
+           "unresolved": ["Round-level fight statistics (UFCStats refuses automated access; an authorised feed is needed) "
+                          "for the method and round markets.",
+                          "A closing-price archive: until one exists nothing here can be called an edge."]}
+    dump(os.path.join(PUB, "validation.json"), out)
+    print(f"ufc evidence: {out['markets']['moneyline']['status']} on {conf['window']} (n {conf['n']}); "
+          f"failed: {fails or 'none'}", file=sys.stderr)
+    return out
+
+
 def cmd_all(fetch=True):
     if fetch:
         ingest.fetch()
@@ -404,15 +511,17 @@ def cmd_all(fetch=True):
     if s and s.get("promoted"):
         cmd_refresh(fetch=False)
     cmd_report()
+    cmd_evidence()
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["prereg", "backtest", "refresh", "score", "research", "report", "all"])
+    ap.add_argument("cmd", choices=["prereg", "backtest", "refresh", "score", "research", "report", "evidence", "all"])
     ap.add_argument("--no-fetch", action="store_true")
     ap.add_argument("--only", default="")
     a = ap.parse_args(argv)
-    {"prereg": cmd_prereg, "backtest": cmd_backtest, "score": cmd_score, "report": cmd_report}.get(a.cmd, lambda: None)()
+    {"prereg": cmd_prereg, "backtest": cmd_backtest, "score": cmd_score, "report": cmd_report,
+     "evidence": cmd_evidence}.get(a.cmd, lambda: None)()
     if a.cmd == "refresh":
         cmd_refresh(fetch=not a.no_fetch)
     elif a.cmd == "research":

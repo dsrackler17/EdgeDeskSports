@@ -1,0 +1,43 @@
+{
+ "schema": "edgedesk_model_loop_versions_v1",
+ "sport": "MLB",
+ "league": "mlb",
+ "current": "1.0.0",
+ "versions": [
+  {
+   "version": "1.0.0",
+   "parent": null,
+   "config": {
+    "half_life_days": 365,
+    "window_days": 800,
+    "prior_games": 40,
+    "prior_starts": 64,
+    "prior_park_games": 120,
+    "carry": 0.7,
+    "sweeps": 3
+   },
+   "config_sha256": "fb40bd84c8ea3b5adca3ea8a4bec45013ed7ea7ae34e6807ec74ac023d70aa93",
+   "status": "SERVED (RESEARCH: prices no live game)",
+   "promoted_by": "selection-window tuning",
+   "promoted_at": "2026-10-21T12:01:15Z",
+   "reason": "The configuration mlb/history/walkforward.js used when the loop started: mlb/history/params/mlb_tuning.json `chosen` (chosen by SELECTION-window (2012-2017) moneyline log loss of team_park_sp; no later season is read).",
+   "evidence": {
+    "full": {
+     "n": 32487,
+     "logloss": 0.679372,
+     "brier": 0.243184,
+     "run_line_logloss": 0.64555,
+     "total_mae": 3.4743
+    },
+    "recent_season": {
+     "season": 2025,
+     "n": 2430,
+     "logloss": 0.678302,
+     "brier": 0.242703,
+     "run_line_logloss": 0.642228,
+     "total_mae": 3.5974
+    }
+   }
+  }
+ ]
+}
