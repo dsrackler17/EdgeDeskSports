@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-10-21T02:42:35.178Z",
+  "generated_at": "2026-10-21T03:55:29.316Z",
   "ok": true,
-  "last_ok_at": "2026-10-21T02:42:35.178Z",
+  "last_ok_at": "2026-10-21T03:55:29.316Z",
   "run": {
     "trigger": "push",
     "runner": "github-actions",
@@ -181,23 +181,23 @@
       "id": "p4_confidence_ledger",
       "label": "CFB P4: every published confidence ledger adds to 100",
       "status": "pass",
-      "detail": "64 games"
+      "detail": "65 games"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-10-21T02:42:35.178Z",
+    "daily_check_last_run": "2026-10-21T03:55:29.316Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-10-21T02:42:35.178Z",
+    "engine_tests_last_run": "2026-10-21T03:55:29.316Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-10-21T02:42:35.178Z",
+    "nfl_ingest_last_run": "2026-10-21T03:55:29.316Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 93,
-    "p4_ingest_last_run": "2026-10-21T02:42:35.178Z",
+    "p4_ingest_last_run": "2026-10-21T03:55:29.316Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 510,
-    "projection_guard_last_run": "2026-10-21T02:42:35.178Z",
+    "projection_guard_last_run": "2026-10-21T03:55:29.316Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-10-21T02:42:35.178Z",
+    "line_guard_last_run": "2026-10-21T03:55:29.316Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 15
   },
@@ -206,10 +206,10 @@
     "what_ok_does_not_mean": "it is NOT a statement about data coverage. A week where the conference availability reports are not due yet, no forecast provider was called and half the slate is non-conference is a perfectly healthy pipeline over thin inputs, and `coverage` below is where that shows."
   },
   "coverage": {
-    "games": 64,
+    "games": 65,
     "information_confidence": {
       "mean": 83.5,
-      "median": 85,
+      "median": 84.6,
       "lower_decile": 77.4,
       "at_90": 0,
       "at_95": 0
@@ -217,7 +217,7 @@
     "biggest_gaps": [
       {
         "field": "qb_availability",
-        "mean_points_lost": 7.66
+        "mean_points_lost": 7.65
       },
       {
         "field": "off_field",
@@ -225,22 +225,22 @@
       },
       {
         "field": "roster",
-        "mean_points_lost": 1.79
+        "mean_points_lost": 1.81
       },
       {
         "field": "roster_talent",
-        "mean_points_lost": 1.68
+        "mean_points_lost": 1.7
       },
       {
         "field": "qb_starter",
-        "mean_points_lost": 0.5
+        "mean_points_lost": 0.49
       },
       {
         "field": "availability",
         "mean_points_lost": 0.31
       }
     ],
-    "ledgers_reconciling": 64,
+    "ledgers_reconciling": 65,
     "source": "football/fbs/slate.json — read, not recomputed, so this cannot disagree with the board"
   }
 }
