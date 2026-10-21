@@ -592,6 +592,50 @@ week W−1's first kickoff" exclude almost every Saturday game. So the live rule
 to predate both teams' own week W−1 games (a bye adds no constraint). The residual exposure is
 other teams' midweek results moving the opponent adjustment: stated here, and judged second-order.
 
+---
+
+## Step 3 — What price does each rule need? (2026-10-21; descriptive, `docs/model-loop/clv_early/results/step3_prices.json`)
+
+Descriptive only: seasons already scored, nothing selected. Each bet's no-vig chance of winning at
+its own number comes from the closing market. It is priced at a grid of odds (pushes excluded).
+
+| rule | sample | n | −110 | −108 | −105 | −103 | −102 | +100 | break-even |
+|---|---|---|---|---|---|---|---|---|---|
+| H-3 NFL v2.1.0 total ≥ 2 (Tuesday line) | holdout 2025–26 | 114 | −1.91% | −1.04% | +0.32% | +1.27% | +1.75% | +2.76% | **−106** |
+| | development | 581 | −1.89% | −1.02% | +0.34% | +1.29% | +1.78% | +2.78% | −106 |
+| H-4 CFB Loop W−2 spread ≥ 3 (bet book) | holdout | 460 | −3.33% | −2.47% | −1.14% | −0.20% | +0.28% | +1.28% | **−103** |
+| | development | 3,230 | −3.39% | −2.54% | −1.20% | −0.26% | +0.22% | +1.21% | −102 |
+| H-5 CFB Loop W−2 total ≥ 3 (bet book) | holdout | 426 | −2.60% | −1.74% | −0.39% | +0.55% | +1.04% | +2.04% | **−104** |
+| | development | 3,204 | −1.26% | −0.39% | +0.98% | +1.94% | +2.43% | +3.44% | −107 |
+| H-1 NFL v2.1.0 spread ≥ 2 (failed the gate) | holdout | 138 | −3.27% | −2.42% | −1.08% | −0.14% | +0.34% | +1.33% | −103 |
+
+**Earlier entry (NFL totals ≥ 2, same model):**
+
+| line bet | n | −110 | −105 | break-even |
+|---|---|---|---|---|
+| SBR opener, 2011–21 | 1,414 | **+0.46%** | +2.74% | **−111** |
+| SBR opener, 2020–21 | 351 | +1.80% | +4.11% | −114 |
+| Tuesday line, the same 2020–21 games | 269 | −1.16% | +1.08% | −107 |
+
+**Line shopping (CFB 2023–25, the seasons with three books' openers: Bovada, DraftKings, ESPN
+Bet).** The best opening number for the rule's side, graded against the consensus close:
+* **spreads:** 1,037 games, +0.49 pts better number on average. CLV +0.24 → +0.73 pts; ROI at
+  −110 −3.3% → **−0.9%**; break-even −103 → **−108**.
+* **totals:** 819 games, +0.31 pts. CLV +0.22 → +0.53; ROI −3.5% → −2.1%; break-even −102 → −105.
+
+This is an upper bound: the books' openers carry no timestamps, so "the best of three openers"
+assumes all three could be bet.
+
+**The decision this leaves (yours: it is about book access, not models):**
+
+| if you can get… | then… |
+|---|---|
+| the **first NFL total** a book posts (often the lookahead, before the previous week is played) | NFL totals ≥ 2 are profitable at standard −110 (+0.5%, +1.8% in 2020–21). Openers carry low limits. |
+| **−106 or better** on NFL totals at the Tuesday line | H-3 breaks even at −106 and earns +1.3% at −103 |
+| **3+ CFB books to shop** plus reduced juice around −108 | CFB spreads break even (−108 with shopping) |
+| a **−103/−104** venue (reduced-juice book, exchange at about 2% commission) | CFB spreads (−103) and CFB totals (−104) break even, and anything better is profit |
+| only standard −110 at one book, Tuesday or later | none of the rules makes money; they remain useful as information (the board's lean) only |
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv_early/results/ledger.jsonl`, which `model_loop/clv_early/run.py` appends on
