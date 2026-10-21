@@ -196,20 +196,18 @@ required column has no mapping. It writes **no result row**.
    ```
 
 4. **`supabase/contest_ownership.sql`**.
-5. **Deploy the function:**
-
-   ```
-   supabase functions deploy circa_ownership_sync --no-verify-jwt
-   ```
-
-   Set `CIRCA_CRON_SECRET` on it, and the same value in Vault:
-
-   ```sql
-   select vault.create_secret('<secret>', 'circa_cron_secret');
-   ```
-
-6. **`supabase/contest_ownership_cron.sql`** — Saturday 10:00–18:00 ET every
-   two hours, and Sunday 08:00, 10:00 and 12:00 ET.
+5. **The Circa sync runs in GitHub Actions**, not as a deployed edge function.
+   `.github/workflows/circa-ownership.yml` runs Saturday 10:00–18:00 ET every
+   two hours, and Sunday at 08:00, 10:00 and 12:00 ET. It needs only the
+   `SB_URL` and `SB_SERVICE_ROLE` repository secrets. It runs
+   `supabase/functions/circa_ownership_sync/index.ts` itself under Deno, through
+   `tools/football/circa_ownership_run.ts`.
+   The deployed function cannot finish a real week: reading every entry's picks
+   needs more compute than an edge worker has, and Supabase answers 546
+   `WORKER_RESOURCE_LIMIT` (2026-10-21, Week 6 of Million VIII).
+6. **`supabase/contest_ownership_cron.sql`** — retires the pg_cron pokes that
+   earlier versions scheduled, and drops `circa_ownership_poke()`. It is safe
+   where they never existed.
 7. **`supabase/nfl_market_structure_studies.sql`** — the registration. Every
    report row should read ok.
 8. **Run the *NFL market structure* workflow once** (or
@@ -230,12 +228,9 @@ club that does not exist, a bye, an ambiguous city, and a layout whose cells
 wrap inside themselves, which it must refuse. The build environment could not
 reach circasports.com. Before trusting a live week:
 
-1. Run a dry read, which writes nothing:
-
-   ```
-   curl -X POST .../functions/v1/circa_ownership_sync \
-     -H 'x-cron-secret: …' -d '{"dry":true}'
-   ```
+1. Run a dry read, which writes nothing: Actions → **Circa ownership sync** →
+   Run workflow, with **dry** ticked. Give the week of a Saturday that has
+   passed, since the PDF appears on the Saturday.
 
 2. Check that `run.entries_parsed` equals the entry count the PDF states.
 3. Check that `run.picks_parsed` equals 5 × entries.

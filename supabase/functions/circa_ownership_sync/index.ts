@@ -5,8 +5,12 @@
 //  DEPLOY:  supabase functions deploy circa_ownership_sync --no-verify-jwt
 //           (npm:unpdf is bundled at deploy because its import names it
 //           literally, as growth_outbound_research names npm:@anthropic-ai/sdk)
-//  CRON:    supabase/contest_ownership_cron.sql — Saturday 10:00-18:00 ET
-//           every two hours, Sunday 08:00 / 10:00 / 12:00 ET
+//  RUNS:    in GitHub Actions, not on Supabase: .github/workflows/circa-ownership.yml
+//           runs this file under Deno (tools/football/circa_ownership_run.ts),
+//           Saturday 10:00-18:00 ET every two hours, Sunday 08:00 / 10:00 / 12:00 ET.
+//           Deployed, it runs out of edge-worker compute on a real week's PDF
+//           (546 WORKER_RESOURCE_LIMIT); supabase/contest_ownership_cron.sql
+//           retires the pg_cron pokes.
 //  SQL:     supabase/contest_ownership.sql (and nfl_market_structure.sql)
 // ============================================================
 // WHAT IT DOES. Finds the week's selections PDF on circasports.com (a link on
