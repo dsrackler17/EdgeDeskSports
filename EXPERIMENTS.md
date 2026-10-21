@@ -289,6 +289,49 @@ E-112's top 3,230 by |m̂| vs the CFB Loop W−2 baseline's 3,230 bets: +0.263 v
 * **Phase 4 verdict: no market-residual model beats its sport's baseline.** The baseline
   disagreement rules remain the candidates.
 
+---
+
+## Phase 5 — Targeted weak spots and softer markets (pre-registered 2026-10-21, before any run)
+
+### E-201 · NFL backup-QB games at the Friday line
+
+* **Hypothesis.** When a team's starter is ruled out, the NFL model (≈5 pts off the market in
+  backup games) priced with the *expected* backup finds Friday prices that move toward it.
+* **Games.** NFL 2020–2024, a live Friday line (Friday 17:00 ET of the game week; Thursday games
+  have none) and a close, eligible, and at least one team whose previous-game starter is listed
+  **Out or Doubtful** on that week's final injury report (`nflverse-data injuries_<season>.csv`,
+  `report_status`) with `date_modified` ≤ the Friday checkpoint.
+* **Model.** NFL Loop v2.0.0 (production training). Prediction rows priced with the Friday-expected
+  starter: for a team whose previous-game starter is Out/Doubtful, the team's QB with the most
+  dropbacks this season before week W other than him (no prior dropbacks → new-QB prior); otherwise
+  the previous-game starter. Weather neutral; week-start ratings.
+* **Bet / close.** Friday line → close, threshold **2.0**.
+* **Pass.** The protocol edge rule on these games. Reported beside it: the same games priced with the
+  previous-game starter (Tuesday inputs) at the Friday line, and the model-vs-Friday-line gap.
+
+### E-202 · CFB games with no power-conference team (softer market), at the opener
+
+* **Hypothesis.** The CFB opener is softer outside the power conferences, so the CFB Loop (R-2, W−2)
+  rule earns more CLV there.
+* **Games.** CFB development games where neither team is in a power conference: SEC, Big Ten,
+  Big 12, ACC, and Pac-12 through 2023, plus Notre Dame. (Pac-12 in 2024 is not power.)
+* **Rule.** CFB Loop W−2 baseline rule, threshold **3.0** (CFB openers are the early-week line).
+* **Pass.** The edge rule on the non-power subset **and** the week-cluster bootstrap 95% CI of
+  (non-power mean CLV − power-involved mean CLV) lies above 0.
+
+### E-203 · NFL totals with venue weather climatology instead of neutral weather
+
+* **Hypothesis.** The τ total is set before a forecast exists; climatology (knowable in advance)
+  is information the early total may under-use.
+* **Change (one).** NFL v2.1.0 total at τ (R-1), with temperature and wind on non-dome games set to
+  that stadium's mean in the same calendar month over seasons < S (league monthly mean if the
+  stadium has fewer than 3 such games), instead of neutral (68°F, 0 mph).
+* **Comparator.** E-005 NFL v2.1.0 total (neutral weather), R-1, same games, threshold 2.
+* **Pass.** The edge rule at threshold 2 **and** beats the comparator at matched volume (paired CI > 0).
+
+### E-204 · Team totals — skipped (no line data exists; DATA_AUDIT.md §1)
+### E-205 · First-half markets — skipped (no line data exists; DATA_AUDIT.md §1)
+
 ## Variant ledger
 
 Generated from `docs/model-loop/clv/results/ledger.jsonl`, which `model_loop/clv/run.py` appends on
