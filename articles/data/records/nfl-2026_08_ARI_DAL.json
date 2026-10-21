@@ -23,11 +23,11 @@
   "game_time": "2026-11-01T18:00:00.000Z",
   "game_when_label": "2026-11-01 18:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-21T04:33:17.069Z",
-  "generated_at": "2026-10-21T11:39:43.166Z",
+  "updated_at": "2026-10-21T17:05:55.346Z",
+  "generated_at": "2026-10-21T17:05:55.346Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Dallas Cowboys −5.0",
@@ -66,17 +66,17 @@
       "Dallas Cowboys carries the stronger EdgeDesk offensive profile (#9 in EPA per play), while Arizona Cardinals owns the more favourable defensive matchup (#27 in EPA allowed per play).",
       "EdgeDesk’s independent projection makes it Dallas Cowboys −5.0 with a fair total of 52.0 — inside a touchdown, before any sportsbook number is consulted.",
       "The widest measured matchup on the board is Dallas Cowboys pass offence vs Arizona Cardinals pass defence, which sits +0.222 from the league mean once the two ratings are combined the way the model combines them.",
-      "The largest uncertainty is quarterback information: Arizona Cardinals and Dallas Cowboys have no confirmed starter on file, which materially affects how much confidence the exact number deserves."
+      "The largest uncertainty is availability: NFL injury report — not loaded in this session."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 5.021781703947702,
+      "fair_spread": 5.131265411655418,
       "fair_spread_text": "Dallas Cowboys −5.0",
-      "fair_spread_raw_text": "Dallas Cowboys -5.0",
+      "fair_spread_raw_text": "Dallas Cowboys -5.1",
       "favourite": "Dallas Cowboys",
       "underdog": "Arizona Cardinals",
       "margin": "5.0",
-      "margin_raw": "5.0",
+      "margin_raw": "5.1",
       "total": "52.0",
       "total_raw": "51.9",
       "display_policy": "football_half_point_v1",
@@ -87,12 +87,12 @@
         },
         "home": {
           "team": "Dallas Cowboys",
-          "points": "28"
+          "points": "29"
         },
         "expected": {
-          "text": "Dallas Cowboys 28.45, Arizona Cardinals 23.43",
-          "home": 28.45,
-          "away": 23.43,
+          "text": "Dallas Cowboys 28.51, Arizona Cardinals 23.38",
+          "home": 28.51,
+          "away": 23.38,
           "note": "Projected scores are rounded to whole points on their own; the fair spread and total are rounded from the unrounded projection, so they can differ by a point."
         },
         "note": "Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
@@ -114,8 +114,8 @@
       "moneyline": {
         "home": "Dallas Cowboys",
         "away": "Arizona Cardinals",
-        "home_odds": "-205",
-        "away_odds": "+205",
+        "home_odds": "-207",
+        "away_odds": "+207",
         "note": "EdgeDesk’s own fair price, with no margin in it. It is not a quote and nobody offers it."
       },
       "outcome_range": {
@@ -131,7 +131,7 @@
       "sample_games": 93,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -156,10 +156,10 @@
           "favours": "Arizona Cardinals"
         },
         {
-          "points": "0.0",
-          "points_n": 0,
-          "text": "Quarterback — no lean",
-          "favours": null
+          "points": "+0.1",
+          "points_n": 0.1094837077077165,
+          "text": "Quarterback — Dallas Cowboys by 0.1 points",
+          "favours": "Dallas Cowboys"
         },
         {
           "points": "+3.1",
@@ -975,26 +975,26 @@
         "rows": [
           {
             "k": "Confirmation",
-            "a": "STARTER NOT CONFIRMED",
-            "h": "STARTER NOT CONFIRMED",
+            "a": "STARTER CONFIRMED",
+            "h": "STARTER CONFIRMED",
             "note": "from the schedule feed’s own starter id"
           },
           {
             "k": "Quarterback",
-            "a": "not named — nobody has confirmed a starter",
-            "h": "not named — nobody has confirmed a starter",
+            "a": "Jacoby Brissett",
+            "h": "Dak Prescott",
             "note": null
           },
           {
             "k": "Roster check",
-            "a": "nothing to check until a starter is named",
-            "h": "nothing to check until a starter is named",
+            "a": "on the active roster",
+            "h": "on the active roster",
             "note": null
           },
           {
             "k": "Learned sample",
-            "a": "no starter to look up",
-            "h": "no starter to look up",
+            "a": "72 learned starts",
+            "h": "150 learned starts",
             "note": "starts the QB layer has actually absorbed"
           },
           {
@@ -1011,9 +1011,8 @@
           }
         ],
         "reads": [
-          "The quarterback difference is worth 0.0 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
-          "Arizona Cardinals’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Arizona Cardinals contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Jacoby Brissett, Gardner Minshew, Carson Beck.",
-          "Dallas Cowboys’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Dallas Cowboys contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Dak Prescott, Sam Howell.",
+          "The quarterback difference is worth +0.1 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
+          "Both starters are confirmed by the schedule feed, so the quarterback term is priced from the learned value of the two players actually named.",
           "The learned QB layer is identity-keyed and value-only: it says how a quarterback has played, never how he is feeling, and it knows nothing about a start nobody has announced."
         ]
       },
@@ -1119,18 +1118,6 @@
       "items": [
         {
           "sev": "HIGH",
-          "label": "Arizona Cardinals — starting quarterback unknown",
-          "text": "No confirmed starter id for Arizona Cardinals. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
-          "label": "Dallas Cowboys — starting quarterback unknown",
-          "text": "No confirmed starter id for Dallas Cowboys. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
           "label": "availability not on file",
           "text": "NFL injury report — not loaded in this session.",
           "widening": null
@@ -1139,18 +1126,6 @@
           "sev": "HIGH",
           "label": "the model does not beat the closing line",
           "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "home QB starter unknown",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "away QB starter unknown",
           "widening": null
         },
         {
@@ -1191,10 +1166,10 @@
     "market": {
       "available": true,
       "model": "Dallas Cowboys −5.0",
-      "model_raw": "Dallas Cowboys -5.0",
+      "model_raw": "Dallas Cowboys -5.1",
       "market": "Dallas Cowboys −6.5",
-      "difference": "1.5 points",
-      "rounding_note": null,
+      "difference": "1.4 points",
+      "rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "key_number": null,
       "total_model": "52.0",
       "total_model_raw": "51.9",
@@ -1205,14 +1180,14 @@
       "capture_age": null,
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
       "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
-    "headline": "EdgeDesk projects Dallas Cowboys 28, Arizona Cardinals 23.",
+    "headline": "EdgeDesk projects Dallas Cowboys 29, Arizona Cardinals 23.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.5-point gap is context only and the game is excluded from research ranking.",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1222,12 +1197,12 @@
       },
       "home": {
         "team": "Dallas Cowboys",
-        "points": "28"
+        "points": "29"
       },
       "expected": {
-        "text": "Dallas Cowboys 28.45, Arizona Cardinals 23.43",
-        "home": 28.45,
-        "away": 23.43,
+        "text": "Dallas Cowboys 28.51, Arizona Cardinals 23.38",
+        "home": 28.51,
+        "away": 23.38,
         "note": "Projected scores are rounded to whole points on their own; the fair spread and total are rounded from the unrounded projection, so they can differ by a point."
       },
       "note": "Split from EdgeDesk’s own fair spread and fair total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
@@ -1354,6 +1329,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-21T11:39:43.166Z"
+    "at": "2026-10-21T17:05:55.346Z"
   }
 }
