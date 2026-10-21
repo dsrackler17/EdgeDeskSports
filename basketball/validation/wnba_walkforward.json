@@ -2,7 +2,7 @@
  "schema": "edgedesk_lab_walkforward_v1",
  "sport": "wnba",
  "label": "WNBA",
- "generated_at": "2026-10-19T00:12:41.584Z",
+ "generated_at": "2026-10-21T04:05:34.834Z",
  "protocol": {
   "windows": {
    "burn_in": [
@@ -55,8 +55,8 @@
    2008,
    2026
   ],
-  "games": 4496,
-  "games_scored": 3995,
+  "games": 4497,
+  "games_scored": 3996,
   "temporal": {
    "point_in_time": "RETROSPECTIVE",
    "known_at": "blank (first publication unknown; never backdated)",
@@ -65,7 +65,7 @@
  },
  "leakage": {
   "basis": "inputs dated by assumed_available_at (start + 4 h)",
-  "checked": 3995,
+  "checked": 3996,
   "violations": 0,
   "examples": [],
   "ok": true
@@ -85,7 +85,16 @@
    "revert": 0.5,
    "selection_ml_log_loss": 0.61667
   },
-  "rule": "chosen by SELECTION-window (2010-2017) moneyline log loss of `points`; no later season is read"
+  "rule": "chosen by SELECTION-window (2010-2017) moneyline log loss of `points`; no later season is read",
+  "served": {
+   "half_life_days": 365,
+   "prior_games": 4,
+   "carry": 0.8,
+   "sweeps": 3,
+   "k_mu": 40,
+   "k_h": 150
+  },
+  "served_by": "docs/model-loop/wnba/versions.json"
  },
  "selection": {
   "rule": "lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= 0.001",
@@ -451,122 +460,122 @@
     2026,
     2026
    ],
-   "n": 348,
+   "n": 349,
    "by_candidate": {
     "points": {
      "moneyline": {
-      "n": 348,
+      "n": 349,
       "sample_state": "DEVELOPING",
-      "log_loss": 0.60176,
-      "brier": 0.20648,
+      "log_loss": 0.60239,
+      "brier": 0.20679,
       "climatology": {
-       "rate": 0.5517,
-       "log_loss": 0.68779,
-       "brier": 0.24732
+       "rate": 0.5501,
+       "log_loss": 0.68811,
+       "brier": 0.24749
       },
-      "brier_skill": 0.1651,
+      "brier_skill": 0.1644,
       "mean_p": 0.5514,
-      "mean_y": 0.5517,
-      "calibration_in_the_large": -0.0003,
-      "calibration_slope": 1.083,
-      "calibration_intercept": -0.013
+      "mean_y": 0.5501,
+      "calibration_in_the_large": 0.0013,
+      "calibration_slope": 1.082,
+      "calibration_intercept": -0.021
      }
     },
     "points_rest": {
      "moneyline": {
-      "n": 348,
+      "n": 349,
       "sample_state": "DEVELOPING",
-      "log_loss": 0.60155,
-      "brier": 0.20639,
+      "log_loss": 0.60218,
+      "brier": 0.2067,
       "climatology": {
-       "rate": 0.5517,
-       "log_loss": 0.68779,
-       "brier": 0.24732
+       "rate": 0.5501,
+       "log_loss": 0.68811,
+       "brier": 0.24749
       },
-      "brier_skill": 0.1655,
+      "brier_skill": 0.1648,
       "mean_p": 0.5515,
-      "mean_y": 0.5517,
-      "calibration_in_the_large": -0.0003,
-      "calibration_slope": 1.085,
-      "calibration_intercept": -0.014
+      "mean_y": 0.5501,
+      "calibration_in_the_large": 0.0014,
+      "calibration_slope": 1.084,
+      "calibration_intercept": -0.022
      }
     },
     "elo": {
      "moneyline": {
-      "n": 348,
+      "n": 349,
       "sample_state": "DEVELOPING",
-      "log_loss": 0.59795,
-      "brier": 0.20528,
+      "log_loss": 0.59902,
+      "brier": 0.2058,
       "climatology": {
-       "rate": 0.5517,
-       "log_loss": 0.68779,
-       "brier": 0.24732
+       "rate": 0.5501,
+       "log_loss": 0.68811,
+       "brier": 0.24749
       },
-      "brier_skill": 0.17,
-      "mean_p": 0.5735,
-      "mean_y": 0.5517,
-      "calibration_in_the_large": 0.0218,
-      "calibration_slope": 1.226,
-      "calibration_intercept": -0.166
+      "brier_skill": 0.1684,
+      "mean_p": 0.5737,
+      "mean_y": 0.5501,
+      "calibration_in_the_large": 0.0235,
+      "calibration_slope": 1.222,
+      "calibration_intercept": -0.173
      }
     },
     "const_home": {
      "moneyline": {
-      "n": 348,
+      "n": 349,
       "sample_state": "DEVELOPING",
-      "log_loss": 0.68754,
-      "brier": 0.2472,
+      "log_loss": 0.68784,
+      "brier": 0.24735,
       "climatology": {
-       "rate": 0.5517,
-       "log_loss": 0.68779,
-       "brier": 0.24732
+       "rate": 0.5501,
+       "log_loss": 0.68811,
+       "brier": 0.24749
       },
       "brier_skill": 0.0005,
       "mean_p": 0.5473,
-      "mean_y": 0.5517,
-      "calibration_in_the_large": -0.0044,
-      "calibration_slope": 140.298,
-      "calibration_intercept": -26.477
+      "mean_y": 0.5501,
+      "calibration_in_the_large": -0.0029,
+      "calibration_slope": 140.135,
+      "calibration_intercept": -26.453
      }
     }
    },
    "margin": {
     "points": {
-     "n": 348,
-     "crps": 7.2974,
-     "mean_bias": 0.205,
-     "mean_outcome": 1.94,
-     "coverage_80": 0.7759
+     "n": 349,
+     "crps": 7.306,
+     "mean_bias": 0.251,
+     "mean_outcome": 1.89,
+     "coverage_80": 0.7736
     },
     "points_rest": {
-     "n": 348,
-     "crps": 7.2948,
-     "mean_bias": 0.211,
-     "mean_outcome": 1.94,
-     "coverage_80": 0.7759
+     "n": 349,
+     "crps": 7.3033,
+     "mean_bias": 0.257,
+     "mean_outcome": 1.89,
+     "coverage_80": 0.7736
     },
     "baseline": {
-     "n": 348,
-     "crps": 8.1421,
-     "mean_bias": 0.096,
-     "mean_outcome": 1.94,
-     "coverage_80": 0.8017
+     "n": 349,
+     "crps": 8.1471,
+     "mean_bias": 0.141,
+     "mean_outcome": 1.89,
+     "coverage_80": 0.8023
     }
    },
    "total": {
     "points": {
-     "n": 348,
-     "crps": 10.8713,
-     "mean_bias": -4.062,
-     "mean_outcome": 173.91,
-     "coverage_80": 0.7241
+     "n": 349,
+     "crps": 10.8674,
+     "mean_bias": -4.005,
+     "mean_outcome": 173.83,
+     "coverage_80": 0.7249
     },
     "baseline": {
-     "n": 348,
-     "crps": 12.8424,
-     "mean_bias": -9.928,
-     "mean_outcome": 173.91,
-     "coverage_80": 0.6983
+     "n": 349,
+     "crps": 12.841,
+     "mean_bias": -9.842,
+     "mean_outcome": 173.83,
+     "coverage_80": 0.6991
     }
    },
    "seasons": 1
@@ -686,10 +695,10 @@
    }
   },
   "2026": {
-   "n": 348,
+   "n": 349,
    "ml_log_loss": {
-    "points": 0.60176,
-    "elo": 0.59795
+    "points": 0.60239,
+    "elo": 0.59902
    }
   }
  },

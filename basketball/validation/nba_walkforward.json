@@ -2,7 +2,7 @@
  "schema": "edgedesk_lab_walkforward_v1",
  "sport": "nba",
  "label": "NBA",
- "generated_at": "2026-10-19T00:12:41.417Z",
+ "generated_at": "2026-10-21T04:05:34.736Z",
  "protocol": {
   "windows": {
    "burn_in": [
@@ -85,7 +85,16 @@
    "revert": 0.75,
    "selection_ml_log_loss": 0.59913
   },
-  "rule": "chosen by SELECTION-window (2010-2017) moneyline log loss of `points`; no later season is read"
+  "rule": "chosen by SELECTION-window (2010-2017) moneyline log loss of `points`; no later season is read",
+  "served": {
+   "half_life_days": 60,
+   "prior_games": 8,
+   "carry": 0.8,
+   "sweeps": 3,
+   "k_mu": 40,
+   "k_h": 150
+  },
+  "served_by": "docs/model-loop/nba/versions.json"
  },
  "selection": {
   "rule": "lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= 0.001",
