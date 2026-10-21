@@ -1,12 +1,12 @@
 {
  "schema": "edgedesk_cbase_loop_week_v1",
- "at": "2026-10-21T12:57:11Z",
+ "at": "2026-10-21T23:40:11Z",
  "label": "College baseball (hier_cal)",
  "date": "2026-10-21",
  "served": "1.0.0",
  "staged_before": null,
  "staged_after": null,
- "runs": 1,
+ "runs": 2,
  "promoted": null,
  "window": {
   "learns_on": [
@@ -99,6 +99,20 @@
    "outcome_bias": 0.0073,
    "t": 1.27,
    "stat": "z"
+  }
+ ],
+ "inactive": [
+  {
+   "candidate": "roster_continuity_carry",
+   "reason": "INACTIVE: roster continuity covers 76.7% of D-I team-seasons 2014-2024 (needs 80%); the collegiate roster backfill (collegiate/plan.json) fills it"
+  },
+  {
+   "candidate": "roster_continuity_stronger",
+   "reason": "INACTIVE: roster continuity covers 76.7% of D-I team-seasons 2014-2024 (needs 80%); the collegiate roster backfill (collegiate/plan.json) fills it"
+  },
+  {
+   "candidate": "roster_continuity_weaker",
+   "reason": "INACTIVE: roster continuity covers 76.7% of D-I team-seasons 2014-2024 (needs 80%); the collegiate roster backfill (collegiate/plan.json) fills it"
   }
  ],
  "candidates": [
@@ -357,6 +371,296 @@
   },
   {
    "at": "2026-10-21T12:56:12Z",
+   "from_version": "1.0.0",
+   "candidate": "team_spread_tighter",
+   "change": {
+    "param": "tq.sigma_team",
+    "how": [
+     "mul",
+     0.75
+    ]
+   },
+   "answers_patterns": [
+    "first_3_weeks",
+    "favourites"
+   ],
+   "selection_plus_validation": {
+    "n": 78660,
+    "logloss": 0.607309,
+    "brier": 0.210618
+   },
+   "validation": {
+    "n": 11950,
+    "logloss": 0.594331,
+    "brier": 0.204957
+   },
+   "ci95": [
+    0.000152,
+    0.000737
+   ],
+   "delta": {
+    "logloss": 0.000442,
+    "brier": 0.0002,
+    "validation_logloss": 0.000577
+   },
+   "decision": "FAIL",
+   "reason": "log loss change 0.000442 does not clear -0.0002; 95% interval [0.000152,0.000737] is not below zero; Brier worse (0.0002); worse on VALIDATION (0.000577)"
+  },
+  {
+   "at": "2026-10-21T23:32:14Z",
+   "from_version": "1.0.0",
+   "candidate": "team_carry_lower",
+   "change": {
+    "param": "tq.carry_team",
+    "how": [
+     "add",
+     -0.05
+    ]
+   },
+   "answers_patterns": [
+    "first_3_weeks"
+   ],
+   "selection_plus_validation": {
+    "n": 78660,
+    "logloss": 0.606816,
+    "brier": 0.210394
+   },
+   "validation": {
+    "n": 11950,
+    "logloss": 0.593611,
+    "brier": 0.204639
+   },
+   "ci95": [
+    -0.000116,
+    0.000016
+   ],
+   "delta": {
+    "logloss": -0.000051,
+    "brier": -0.000024,
+    "validation_logloss": -0.000143
+   },
+   "decision": "FAIL",
+   "reason": "log loss change -0.000051 does not clear -0.0002; 95% interval [-0.000116,0.000016] is not below zero"
+  },
+  {
+   "at": "2026-10-21T23:33:14Z",
+   "from_version": "1.0.0",
+   "candidate": "dispersion_lower",
+   "change": {
+    "param": "tq.phi",
+    "how": [
+     "mul",
+     0.85
+    ]
+   },
+   "answers_patterns": [
+    "favourites"
+   ],
+   "selection_plus_validation": {
+    "n": 78660,
+    "logloss": 0.607008,
+    "brier": 0.210475
+   },
+   "validation": {
+    "n": 11950,
+    "logloss": 0.593907,
+    "brier": 0.204777
+   },
+   "ci95": [
+    0.000056,
+    0.000223
+   ],
+   "delta": {
+    "logloss": 0.000141,
+    "brier": 0.000057,
+    "validation_logloss": 0.000153
+   },
+   "decision": "FAIL",
+   "reason": "log loss change 0.000141 does not clear -0.0002; 95% interval [0.000056,0.000223] is not below zero; Brier worse (0.000057); worse on VALIDATION (0.000153)"
+  },
+  {
+   "at": "2026-10-21T23:34:17Z",
+   "from_version": "1.0.0",
+   "candidate": "dispersion_higher",
+   "change": {
+    "param": "tq.phi",
+    "how": [
+     "mul",
+     1.2
+    ]
+   },
+   "answers_patterns": [
+    "favourites"
+   ],
+   "selection_plus_validation": {
+    "n": 78660,
+    "logloss": 0.606844,
+    "brier": 0.210411
+   },
+   "validation": {
+    "n": 11950,
+    "logloss": 0.593747,
+    "brier": 0.204711
+   },
+   "ci95": [
+    -0.00012,
+    0.000073
+   ],
+   "delta": {
+    "logloss": -0.000023,
+    "brier": -0.000007,
+    "validation_logloss": -0.000007
+   },
+   "decision": "FAIL",
+   "reason": "log loss change -0.000023 does not clear -0.0002; 95% interval [-0.00012,0.000073] is not below zero"
+  },
+  {
+   "at": "2026-10-21T23:35:13Z",
+   "from_version": "1.0.0",
+   "candidate": "recency_faster",
+   "change": {
+    "param": "tq.halflife_days",
+    "how": [
+     "mul",
+     0.67
+    ]
+   },
+   "answers_patterns": [
+    "later",
+    "midweek"
+   ],
+   "selection_plus_validation": {
+    "n": 78660,
+    "logloss": 0.60684,
+    "brier": 0.210406
+   },
+   "validation": {
+    "n": 11950,
+    "logloss": 0.593727,
+    "brier": 0.204707
+   },
+   "ci95": [
+    -0.000074,
+    0.000024
+   ],
+   "delta": {
+    "logloss": -0.000027,
+    "brier": -0.000012,
+    "validation_logloss": -0.000027
+   },
+   "decision": "FAIL",
+   "reason": "log loss change -0.000027 does not clear -0.0002; 95% interval [-0.000074,0.000024] is not below zero"
+  },
+  {
+   "at": "2026-10-21T23:36:13Z",
+   "from_version": "1.0.0",
+   "candidate": "recency_slower",
+   "change": {
+    "param": "tq.halflife_days",
+    "how": [
+     "mul",
+     1.5
+    ]
+   },
+   "answers_patterns": [
+    "later"
+   ],
+   "selection_plus_validation": {
+    "n": 78660,
+    "logloss": 0.606905,
+    "brier": 0.210434
+   },
+   "validation": {
+    "n": 11950,
+    "logloss": 0.593787,
+    "brier": 0.204721
+   },
+   "ci95": [
+    0.000003,
+    0.000068
+   ],
+   "delta": {
+    "logloss": 0.000038,
+    "brier": 0.000016,
+    "validation_logloss": 0.000033
+   },
+   "decision": "FAIL",
+   "reason": "log loss change 0.000038 does not clear -0.0002; 95% interval [0.000003,0.000068] is not below zero; Brier worse (0.000016); worse on VALIDATION (0.000033)"
+  },
+  {
+   "at": "2026-10-21T23:37:12Z",
+   "from_version": "1.0.0",
+   "candidate": "runs_tails_heavier",
+   "change": {
+    "param": "dist.r",
+    "how": [
+     "mul",
+     0.8
+    ]
+   },
+   "answers_patterns": [
+    "favourites"
+   ],
+   "selection_plus_validation": {
+    "n": 78660,
+    "logloss": 0.606963,
+    "brier": 0.210452
+   },
+   "validation": {
+    "n": 11950,
+    "logloss": 0.593773,
+    "brier": 0.204715
+   },
+   "ci95": [
+    0.000034,
+    0.000154
+   ],
+   "delta": {
+    "logloss": 0.000096,
+    "brier": 0.000034,
+    "validation_logloss": 0.000019
+   },
+   "decision": "FAIL",
+   "reason": "log loss change 0.000096 does not clear -0.0002; 95% interval [0.000034,0.000154] is not below zero; Brier worse (0.000034); worse on VALIDATION (0.000019)"
+  },
+  {
+   "at": "2026-10-21T23:38:14Z",
+   "from_version": "1.0.0",
+   "candidate": "runs_tails_lighter",
+   "change": {
+    "param": "dist.r",
+    "how": [
+     "mul",
+     1.25
+    ]
+   },
+   "answers_patterns": [
+    "favourites"
+   ],
+   "selection_plus_validation": {
+    "n": 78660,
+    "logloss": 0.606836,
+    "brier": 0.210407
+   },
+   "validation": {
+    "n": 11950,
+    "logloss": 0.593741,
+    "brier": 0.20471
+   },
+   "ci95": [
+    -0.000089,
+    0.000026
+   ],
+   "delta": {
+    "logloss": -0.000031,
+    "brier": -0.000011,
+    "validation_logloss": -0.000013
+   },
+   "decision": "FAIL",
+   "reason": "log loss change -0.000031 does not clear -0.0002; 95% interval [-0.000089,0.000026] is not below zero"
+  },
+  {
+   "at": "2026-10-21T23:39:15Z",
    "from_version": "1.0.0",
    "candidate": "team_spread_tighter",
    "change": {
