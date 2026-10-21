@@ -6,7 +6,16 @@
 - **What the file does now.** It keeps the starter's tables and rows, adds those columns, and replaces the starter-shaped views, which hold no data. A new report row (10) checks it.
 - **The cron file.** `supabase/kalshi_market_data_cron.sql` removes the starter's `kalshi_discover_daily` / `kalshi_snapshot_5m` jobs if they were scheduled; they carried the service-role key. Report row 4 checks it.
 
-Tests: `KALSHI_SQL_REQUIRED=1 node tools/kalshi/kalshi_sql.test.js` (74, with the starter schema applied first as a fixture).
+- **An unmatched game no book prices is no longer a warning.** Kalshi lists FCS matchups and weeks the odds capture has not reached. On the first live run, 440 of 508 game markets were unmatched, so readiness would have turned amber every college Saturday for games EdgeDesk never prices.
+  - The sync now tells two cases apart:
+    - `one_team_matched`: a book game on that date carries one of the two teams, so a name needs an alias.
+    - `no_book_event`: no book prices the game at all.
+  - It counts every reason (`details.unmapped_counts`).
+  - It warns, and `kalshi_readiness.unmapped_settling_soon` counts, only for games a book prices.
+  - Games no book prices are reported apart, as `unmapped_unpriced_soon`.
+  - The function is `kalshi_sync@2026-10-21.2`. Redeploy it, and re-run `kalshi_market_data.sql`; it appends two readiness columns.
+
+Tests: `KALSHI_SQL_REQUIRED=1 node tools/kalshi/kalshi_sql.test.js` (76, with the starter schema applied first as a fixture), `node tools/kalshi/kalshi_sync.test.js` (47).
 
 ## 2026-10-21 — Kalshi prices beside the book on NFL and CFB game cards
 

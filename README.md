@@ -1159,9 +1159,17 @@ with `match_method` and `match_detail`):
 - **medium**: one NFL reading, or one date signal (a rescheduled game, for
   example).
 
-Unmapped reasons are `no_book_event`, `date_mismatch`, `team_conflict`,
-`team_unresolved`, `ambiguous_book_event`, `no_book_moneyline` and
-`not_two_teams`.
+Unmapped reasons are `no_book_event`, `one_team_matched`, `date_mismatch`,
+`team_conflict`, `team_unresolved`, `ambiguous_book_event`, `no_book_moneyline`
+and `not_two_teams`.
+- `one_team_matched` means a book game around that date carries one of the two
+  teams: the other name did not resolve, and an alias pair fixes it.
+- `no_book_event` means no book prices the game at all: an FCS matchup, or a
+  week the odds capture has not reached. It stays unmapped by design and is
+  never a warning.
+
+Each run counts every reason in `kalshi_sync_runs.details -> 'unmapped_counts'`
+and lists the events in `details -> 'unmapped'`, the ones to look at first.
 
 ### The comparison and the close
 
@@ -1225,7 +1233,8 @@ rows are:
 - **Kalshi last successful snapshot;**
 - **Kalshi close capture:** game closes with a snapshot within 10 minutes of
   kickoff over 7 days, target 90%;
-- **Kalshi game links:** matched, and unmatched settling within 30 h.
+- **Kalshi game links:** matched, unmatched, and priced games that settle
+  within 30 h but could not be matched.
 
 **Error**, which turns the System pill red:
 - the sync has never run;
@@ -1237,7 +1246,8 @@ rows are:
 - no successful snapshot in 15 minutes;
 - nothing tracked;
 - discover older than 30 h;
-- unmatched games settling soon;
+- a game a book prices, settling within 30 h, that could not be matched (a game
+  no book prices is counted apart and never warns);
 - close capture under 90%.
 
 ### Decisions made without asking

@@ -20900,8 +20900,11 @@ function sysHealthHTML(){
       KS.last_successful_snapshot_at?shAgo(shStamp(KS.last_successful_snapshot_at)):'\u2014',KS.last_successful_snapshot_at?(ksAge!=null&&ksAge>15?'warn':'ok'):'mut');
     out+=shRow('Kalshi close capture',KS.closes_7d?((KS.closes_captured_7d||0)+' of '+KS.closes_7d+' game closes captured within 10 min of kickoff in 7 days ('+(KS.closes_usable_7d||0)+' with a trusted mid)'):'no matched game has kicked off in 7 days',
       KS.close_capture_pct_7d==null?'\u2014':KS.close_capture_pct_7d+'%',KS.close_capture_pct_7d==null?'mut':(KS.close_capture_pct_7d<90?'warn':'ok'));
-    out+=shRow('Kalshi game links',(KS.open_game_markets_linked||0)+' open game market'+(KS.open_game_markets_linked===1?'':'s')+' matched to a game \u00b7 '+(KS.open_game_markets_unmapped||0)+' unmatched'+(KS.unmapped_settling_soon?' ('+KS.unmapped_settling_soon+' settling within 30 h)':''),
-      KS.unmapped_settling_soon?(KS.unmapped_settling_soon+' unmatched'):'clean',KS.unmapped_settling_soon?'warn':'ok');
+    /* unmatched includes games no book prices (FCS, weeks capture has not reached): unmapped by design, never a
+       fault. Only a game a book prices that could not be matched within 30 h is attention (unmapped_settling_soon). */
+    out+=shRow('Kalshi game links',(KS.open_game_markets_linked||0)+' open game market'+(KS.open_game_markets_linked===1?'':'s')+' matched to a game \u00b7 '+(KS.open_game_markets_unmapped||0)+' unmatched (a game no book prices stays unmatched by design)'
+      +(KS.unmapped_settling_soon?' \u00b7 '+KS.unmapped_settling_soon+' priced game'+(KS.unmapped_settling_soon===1?'':'s')+' settling within 30 h could not be matched':''),
+      KS.unmapped_settling_soon?(KS.unmapped_settling_soon+' to check'):'clean',KS.unmapped_settling_soon?'warn':'ok');
     out+='<p class="hpn">Kalshi: 5-minute snapshots, not live; a market whose YES spread is wider than 6\u00a2 is excluded from the mid; Kalshi\u2019s trading fees are not reflected in the raw gap.</p>';
   } else out+=shRow('Kalshi snapshot sync',SH.ksErr?('public.kalshi_readiness '+SH.ksErr):'the Kalshi layer\u2019s readiness has not loaded','not loaded','mut');
 

@@ -52,8 +52,11 @@
 //   DRIFT     a market without the dollar price fields (not snapshotted: no
 //             price is stored in place of a missing one); a series list
 //             without `series`; a game-winner series missing from the list
-//   WARNING   nothing tracked; game markets settling soon left unmapped
-//             (at most hourly); the research state unreadable
+//   WARNING   nothing tracked; game markets settling soon that a book prices
+//             but that could not be matched (at most hourly); the research
+//             state unreadable. A game NO book prices (no_book_event: an FCS
+//             matchup, a week the capture has not reached) is counted in the
+//             run's details, never alerted
 //
 // AUTH. pg_cron sends the Vault secret kalshi_cron_secret as x-cron-secret; it
 // must equal KALSHI_CRON_SECRET. A GET is a public health probe (BUILD only).
@@ -72,7 +75,7 @@
 //      out keep their metadata current but are not snapshotted)
 // ============================================================
 
-export const BUILD = "kalshi_sync@2026-10-21.1";
+export const BUILD = "kalshi_sync@2026-10-21.2";
 export const LINKER_VERSION = "kalshi-link-1";
 const DEFAULT_BASE = "https://external-api.kalshi.com/trade-api/v2";
 const SHARED_BASE = "https://api.elections.kalshi.com/trade-api/v2";
@@ -864,6 +867,7 @@ export function matchEvent(sport: string, markets: Any[], books: Any[], research
   const endMs = ends.length ? Math.max(...ends) : null;
   /* each market's team, and how each book name reads against it */
   let sideOf: (book: Any) => Any;
+  let oneSide: (book: Any) => boolean;
   let teamMeta: Any;
   if (sport === "nfl") {
     const clubs = markets.map(nflClubOf);
@@ -876,6 +880,7 @@ export function matchEvent(sport: string, markets: Any[], books: Any[], research
       const i = teamMeta.clubs.indexOf(h.team_id), j = teamMeta.clubs.indexOf(a.team_id);
       return i >= 0 && j >= 0 && i !== j ? { home: i, away: j, methods: [h.method, a.method] } : null;
     };
+    oneSide = (b: Any) => teamMeta.clubs.includes(FI.resolveTeam(NFL_REG, b.home, []).team_id) || teamMeta.clubs.includes(FI.resolveTeam(NFL_REG, b.away, []).team_id);
   } else {
     const names = markets.map((m: Any) => String(m.yes_sub_title || "").trim());
     if (names.some((n: string) => !n)) return { reason: "team_unnamed" };
@@ -887,6 +892,7 @@ export function matchEvent(sport: string, markets: Any[], books: Any[], research
       const h = FI.resolveTeam(reg, b.home, uni), a = FI.resolveTeam(reg, b.away, uni);
       return h.team_id != null && a.team_id != null && h.team_id !== a.team_id ? { home: Number(h.team_id), away: Number(a.team_id), methods: [h.method, a.method] } : null;
     };
+    oneSide = (b: Any) => FI.resolveTeam(reg, b.home, [b.home, b.away]).team_id != null || FI.resolveTeam(reg, b.away, [b.home, b.away]).team_id != null;
   }
   const sameTeams: Any[] = [];
   for (const b of books) {
@@ -897,7 +903,17 @@ export function matchEvent(sport: string, markets: Any[], books: Any[], research
     sameTeams.push({ b, s, onDate, onEnd });
   }
   const cands = sameTeams.filter((c: Any) => c.onDate || c.onEnd);
-  if (!cands.length) return { reason: sameTeams.length ? "date_mismatch" : "no_book_event", detail: { ticker_date: tDate, expected_end: endMs == null ? null : iso(endMs), same_teams: sameTeams.map((c: Any) => ({ event_id: c.b.event_id, kickoff: iso(c.b.kickoff_ms) })) } };
+  if (!cands.length) {
+    const detail: Any = { ticker_date: tDate, expected_end: endMs == null ? null : iso(endMs), kalshi_names: markets.map((m: Any) => m.yes_sub_title) };
+    if (sameTeams.length) return { reason: "date_mismatch", detail: Object.assign(detail, { same_teams: sameTeams.map((c: Any) => ({ event_id: c.b.event_id, kickoff: iso(c.b.kickoff_ms) })) }) };
+    /* a book game around the same date that carries ONE of the two teams: the
+       other name did not resolve (a spelling to add), as distinct from a game
+       no book prices at all (an FCS matchup, a week capture has not reached) */
+    const anchor = endMs != null ? endMs - 3 * 3600e3 : (tDate ? Date.parse(tDate + "T16:00:00Z") : null);
+    const near = anchor == null ? [] : books.filter((b: Any) => Math.abs(b.kickoff_ms - anchor) <= 30 * 3600e3 && oneSide(b));
+    if (near.length) return { reason: "one_team_matched", detail: Object.assign(detail, { book_games: near.slice(0, 3).map((b: Any) => b.away + " @ " + b.home + " " + iso(b.kickoff_ms)) }) };
+    return { reason: "no_book_event", detail };
+  }
   if (cands.length > 1) return { reason: "ambiguous_book_event", detail: { events: cands.map((c: Any) => c.b.event_id) } };
   const { b, s, onDate, onEnd } = cands[0];
   /* market i's team is the book's home when s.home === i */
@@ -999,10 +1015,21 @@ async function link(ctx: Any) {
   }
   const unmappedMarkets = unmapped.reduce((n: number, u: Any) => n + (u.markets || 0), 0);
   Object.assign(ctx.run, { links_new: linksNew, game_ids_filled: filled, unmapped_markets: unmappedMarkets });
-  ctx.details.unmapped = unmapped.slice(0, 40).map((u: Any) => ({ event_ticker: u.event_ticker, reason: u.reason, detail: u.detail }));
+  /* every reason counted (events); the ones to look at listed first. A game no
+     book prices (no_book_event) is not a fault: Kalshi lists FCS matchups and
+     weeks the odds capture has not reached, and they stay unmapped by design */
+  const counts: Record<string, number> = {};
+  for (const u of unmapped) counts[u.reason] = (counts[u.reason] || 0) + 1;
+  const ordered = unmapped.filter((u: Any) => u.reason !== "no_book_event").concat(unmapped.filter((u: Any) => u.reason === "no_book_event"));
+  const soonAll = unmapped.filter((u: Any) => u.settles != null && u.settles - ctx.nowMs <= UNMAPPED_WINDOW_MS);
+  const soon = soonAll.filter((u: Any) => u.reason !== "no_book_event");
+  ctx.details.unmapped_counts = counts;
+  ctx.details.unmapped_soon_actionable = soon.length;
+  ctx.details.unmapped_soon_unpriced = soonAll.length - soon.length;
+  ctx.details.unmapped = ordered.slice(0, 40).map((u: Any) => ({ event_ticker: u.event_ticker, reason: u.reason, detail: u.detail }));
   ctx.out.unmapped = ctx.details.unmapped;
-  /* game markets settling soon that could not be matched: a warning, at most hourly */
-  const soon = unmapped.filter((u: Any) => u.settles != null && u.settles - ctx.nowMs <= UNMAPPED_WINDOW_MS);
+  ctx.out.unmapped_counts = counts;
+  /* game markets settling soon that a book prices but could not be matched: a warning, at most hourly */
   if (soon.length && !ctx.dry) {
     const recent = (await db("kalshi_alerts?select=id&code=eq.unmapped_markets&created_at=gt." + encodeURIComponent(iso(ctx.nowMs - 3600e3)) + "&limit=1")) || [];
     if (!recent.length) ctx.alert("WARNING", "unmapped_markets", soon.length + " Kalshi game event(s) settling within 30 hours could not be matched to one game: "

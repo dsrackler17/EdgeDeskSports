@@ -29,8 +29,9 @@
      card         OK, WIDE_SPREAD, STALE, NO_SNAPSHOT; after kickoff, the close
      capture      a market with no snapshot near its close is a miss, counted
      readiness    never run, discover only, a silent scheduler and a failed
-                  snapshot are errors; unmapped markets, close capture under
-                  90% and no tracked series are warnings
+                  snapshot are errors; a priced game left unmatched, close
+                  capture under 90% and no tracked series are warnings; a game
+                  no book prices is counted apart, never a warning
      cron         the poke without its secret records a failed run and a
                   FAILURE alert; with it, both modes queue with the header
      rollback     removes the layer and its jobs
@@ -228,8 +229,8 @@ try {
 
   /* ---- readiness ---- */
   const rd = () => J(db.anon('select row_to_json(r) from public.kalshi_readiness r;'));
-  const runRow = (mode, status, at, extra) => db.service(`insert into public.kalshi_sync_runs (trigger, mode, status, started_at, finished_at, markets_snapshotted, message)
-    values ('test', ${lit(mode)}, ${lit(status)}, ${at} - interval '20 seconds', ${at}, ${(extra && extra.n) || 0}, ${lit(extra && extra.message || null)}) returning run_id;`).split('\n').filter(Boolean).pop();
+  const runRow = (mode, status, at, extra) => db.service(`insert into public.kalshi_sync_runs (trigger, mode, status, started_at, finished_at, markets_snapshotted, message, details)
+    values ('test', ${lit(mode)}, ${lit(status)}, ${at} - interval '20 seconds', ${at}, ${(extra && extra.n) || 0}, ${lit(extra && extra.message || null)}, ${lit(JSON.stringify((extra && extra.details) || {}))}::jsonb) returning run_id;`).split('\n').filter(Boolean).pop();
   let r = rd();
   T.chk('readiness: discover alone (three days old) is an error: no snapshot run yet', r.state === 'error' && /no snapshot run/.test(r.state_reason), r);
   runRow('discover', 'ok', 'now()');
@@ -237,6 +238,14 @@ try {
   r = rd();
   T.chk('readiness: a fresh snapshot, but an unmapped game market settling in 10 hours, is a warning', r.state === 'warn' && r.unmapped_settling_soon === 1 && /could not be matched/.test(r.state_reason) && r.markets_last_snapshot === 4 && r.tracked_series === 2, r);
   T.chk('readiness: close capture over 7 days counts kickoff closes only (2 of 3: G5 had no snapshot)', r.closes_7d === 3 && r.closes_captured_7d === 2 && r.close_capture_pct_7d === 66.7, r);
+  runRow('snapshot', 'ok', 'now()', { n: 4, details: { unmapped_soon_actionable: 0, unmapped_soon_unpriced: 1, unmapped_counts: { no_book_event: 1 } } });
+  r = rd();
+  T.chk('readiness: the sync classified the unmatched game as one no book prices: not a warning; counted apart', r.unmapped_settling_soon === 0 && r.unmapped_unpriced_soon === 1
+    && r.unmapped_counts && r.unmapped_counts.no_book_event === 1 && !/could not be matched/.test(String(r.state_reason)) && /close capture/.test(String(r.state_reason)), r);
+  runRow('snapshot', 'ok', 'now()', { n: 4, details: { unmapped_soon_actionable: 2, unmapped_soon_unpriced: 0 } });
+  r = rd();
+  T.chk('readiness: a priced game that could not be matched is the warning, named with where to look', r.state === 'warn' && r.unmapped_settling_soon === 2 && /2 game event\(s\) settling soon that a book prices/.test(String(r.state_reason)), r);
+  runRow('snapshot', 'ok', 'now()', { n: 4, details: { unmapped_soon_actionable: 0, unmapped_soon_unpriced: 0 } });   // the next run, once the names are fixed
   db.sql("insert into public.signals (sig_key, event_id, sport_key, commence_time, home_team, away_team, market, selection) values ('ev9|h2h|KC', 'ev9', 'americanfootball_nfl', now() + interval '7 hours', 'Kansas City Chiefs', 'Buffalo Bills', 'h2h', 'Kansas City Chiefs');");
   link('KXNFLGAME-G9-KC', 'ev9', 'Kansas City Chiefs', 'Buffalo Bills', 'Kansas City Chiefs', 'Buffalo Bills', "now() + interval '7 hours'", 'ev9|h2h|KC');
   r = rd();
