@@ -828,3 +828,14 @@ Pre-registered 2026-10-21, before any props CLV number was computed.
 
 ### NFL-P1: production props model, NFL player props (2026 holdout)
 ### CFB-P1: production props model, CFB player props (2026 holdout)
+
+### Player-props results (run once, 2026-10-21)
+
+| ID | Same-line bets | CLV prob (pp) | α/k LB | Toward | `clv_ev` | Line-moved bets: moved toward the model | Verdict |
+|---|---|---|---|---|---|---|---|
+| NFL-P1 (k = 13) | 773 | +0.58 [+0.46, +0.70] | +0.43 | 0.638 | -4.9% | 497 bets, 53.7% | **PASS** on CLV; nowhere near the props vig |
+| CFB-P1 (k = 16) | 537 | +0.55 [+0.35, +0.78] | +0.28 | 0.563 | -5.0% | 596 bets, 61.9% | **PASS** on CLV; nowhere near the props vig |
+
+**Matching losses** (first evaluations not graded): NFL 456 of 1,726, CFB 302 of 1,436.
+- **NFL:** line mismatch 209, one-sided book 202, other 45.
+- **CFB:** no book quote 91, line mismatch 85, one-sided 76, other 50.

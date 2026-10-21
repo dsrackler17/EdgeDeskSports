@@ -65,7 +65,7 @@ def run(sport, exp_id, df, cfg, label, holdout=False, notes=None, k_tests=1, ext
     locked = seasons & LOCKED.get(sport, set())
     if locked and not holdout:
         raise SystemExit(f"{exp_id} would read locked holdout seasons {sorted(locked)}")
-    if holdout and not re.search(r"-H\d*$", exp_id):
+    if holdout and not re.search(r"-(H|P)\d*$", exp_id):
         raise SystemExit(f"holdout runs must use a registered Phase 6 ID (<SPORT>-H<n>), got {exp_id}")
     rep = H.evaluate(df, cfg, k_tests=k_tests, label=label)
     rep["exp_id"], rep["sport"], rep["holdout"] = exp_id, sport, holdout

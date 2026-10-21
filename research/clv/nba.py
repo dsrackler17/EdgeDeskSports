@@ -213,6 +213,56 @@ def pre():
     return out
 
 
+# ------------------------------------------------------------- Phase 6
+def holdout_frame():
+    """ESPN DraftKings open/close for the holdout seasons, with the schedule features."""
+    g = schedule()
+    lines, qa = S.espn_lines("nba", "nba")
+    h = g[g.season.isin([2026, 2027])].merge(lines.drop(columns=["start"], errors="ignore"), on="game_id", how="inner")
+    return models(h), qa
+
+
+def holdout(spec):
+    """spec: [(exp_id, kind, market, col_or_residual, threshold, label)] exactly as EXPERIMENTS.md NBA-H selects."""
+    m, _ = load()
+    pre_m = m[m.season.isin(PRE)].copy()
+    sigmas(pre_m)
+    h, qa = holdout_frame()
+    k = runner.k_sport(SPORT) + len(spec)
+    out = {"qa": qa, "k": k}
+    for eid, kind, mk, src, thr, label in spec:
+        extra = {}
+        if kind == "price":
+            x = h.rename(columns={"open_ml_home": "open_a", "open_ml_away": "open_b", "close_ml_home": "close_a",
+                                  "close_ml_away": "close_b"}).copy()
+            x["model_prob"] = x[src]
+            x["result"] = (x.margin > 0).astype(float)
+            c = H.HarnessConfig(kind="price", market="moneyline", thresholds=(thr, 0.01, 0.05), primary=thr,
+                                buckets=(0, 0.02, 0.04, 0.06, 0.1, 1))
+        elif isinstance(src, tuple):
+            base, extra_block = src
+            both = pd.concat([pre_m, h], ignore_index=True)
+            x, log, cal = residual(both, base, extra_block, mk, sorted(h.season.unique()), frozen_train=pre_m)
+            extra = {"fit": log, "movement_calibration": cal}
+            if mk == "total":
+                x["open_price_a"], x["open_price_b"] = x.open_over_odds, x.open_under_odds
+                x["close_price_a"], x["close_price_b"] = x.close_over_odds, x.close_under_odds
+            c = cfg(mk, thr, "resid")
+        else:
+            x = frame(h, src, mk)
+            if mk == "total":
+                x["open_price_a"], x["open_price_b"] = x.open_over_odds, x.open_under_odds
+                x["close_price_a"], x["close_price_b"] = x.close_over_odds, x.close_under_odds
+            c = cfg(mk, thr)
+        rep = runner.run(SPORT, eid, x, c, label, holdout=True, k_tests=k, extra=extra)
+        out[eid] = {"result": runner.fmt(rep), "verdict": H.verdict(rep["primary"], k),
+                    "clv_ev": rep["primary"].get("clv_ev", {}).get("mean"),
+                    "by_season": {s["season"]: f"n={s['n_bets']} {100 * s['clv_prob']['mean']:+.2f} pp" for s in rep["by_season"]}}
+        print(eid, json.dumps(out[eid], default=str))
+    with open(os.path.join(runner.RESULTS, SPORT, "holdout_summary.json"), "w") as f:
+        json.dump(out, f, indent=1, default=float)
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "check":
