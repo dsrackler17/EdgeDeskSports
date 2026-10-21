@@ -143,6 +143,34 @@ function section(s) { console.log('· ' + s); }
   chk('weekly: moneylines carry no computed CLV', wk && /Moneylines carry no CLV grade/.test(wk.body_md));
   const dg = made['disagreement:nfl'];
   chk('disagreement: components, what is not in it, and the tier', dg && /What is in my number/.test(dg.body_md) && /What is not in my number/.test(dg.body_md) && /Validation tier/.test(dg.body_md));
+  {
+    /* the article on a synthetic week, so each case is exercised whatever the
+       live prices say: a RESEARCH tier (no threshold), a LEAN tier, a card row
+       worth 0 points, and a research snapshot older than the slate's number */
+    const at = '2026-10-20T00:00:00.000Z', kick = '2026-10-25T17:00:00.000Z';
+    const row = (gid, side, sel, market, model, gap, edge) => ({ game_id: gid, side, selection: sel, home: 'Home ' + gid, away: 'Away ' + gid, kickoff: kick,
+      market_line: market, model_line: model, gap_points: gap, edge_pp: edge, tier: 'RESEARCH', market_source: 'reference consensus' });
+    const drv = (label, points, team) => ({ label, points, favors_team: team });
+    const research = (gid, margin, rows) => ({ league: 'nfl', game_id: gid, model: { home_margin: margin }, drivers: { reconciles: true, rows } });
+    const fake = (tier, g2margin) => Object.assign({}, S, {
+      nfl_slate: Object.assign({}, S.nfl_slate, { doc: Object.assign({}, S.nfl_slate.doc, {
+        games: [{ game_id: 'G1', week: 9, kickoff: kick, home_team: 'Home G1', model_home_margin: 0.6 }, { game_id: 'G2', week: 9, kickoff: kick, home_team: 'Home G2', model_home_margin: 4.4 }],
+        pricing: Object.assign({}, S.nfl_slate.doc.pricing, tier, { rows: [row('G1', 'home', 'Home G1', 4.5, -0.6, 5.1, 0.4), row('G1', 'away', 'Away G1', -4.5, 0.6, 5.1, -4.8),
+          row('G2', 'home', 'Home G2', -2.5, -4.4, 1.9, 0.2), row('G2', 'away', 'Away G2', 2.5, 4.4, 1.9, -4.6)] }) }) }),
+      game_research: Object.assign({}, S.game_research, { doc: { games: [
+        research('G1', 0.6, [drv('Base team strength', 2.4, 'Home G1'), drv('Quarterback', 3.0, 'Away G1'), drv('Home field', 1.2, 'Home G1'), drv('Rest / travel', 0, null)]),
+        research('G2', g2margin, [drv('Base team strength', 1.4, 'Home G2'), drv('Home field', 3.0, 'Home G2')])] } }) });
+    const gen = (tier, g2margin) => { try { return { d: G.generate('disagreement', fake(tier, g2margin), { sport: 'nfl', week: 9, now: at }) }; } catch (e) { return { err: e.message }; } };
+    const r1 = gen({ tier: 'RESEARCH', required_edge_points: null, tier_basis: 'no disagreement threshold cleared break-even' }, 4.4), d2 = r1.d;
+    chk('disagreement: a RESEARCH-tier week with a row that clears the price builds, biggest gap first', d2 && /My biggest NFL Week 9 disagreement is 5\.1 points: I have the Home G1 at/.test(d2.lead) && d2.verify.ok, r1.err || (d2 && d2.verify.problems));
+    chk('… a RESEARCH tier says why it has no threshold, and claims none', d2 && /RESEARCH tier: no disagreement threshold cleared break-even\. None of these gaps is a position/.test(d2.body_md) && !/at gaps of/.test(d2.body_md));
+    chk('… a card row worth 0 points (it favours no one) is left out of the table, the rest are listed', d2 && /\| Quarterback \| 3 \| Away G1 \|/.test(d2.body_md) && !/Rest \/ travel/.test(d2.body_md));
+    const lean = gen({ tier: 'LEAN', required_edge_points: 1.5 }, 4.4).d;
+    chk('… a LEAN tier names its threshold as break-even history', lean && /LEAN tier at gaps of 1\.5 points or more\. That is break-even history, not an edge/.test(lean.body_md));
+    const stale = gen({ tier: 'LEAN', required_edge_points: 1.5 }, 2.1).d;
+    chk('… a research snapshot built from an earlier number is not shown as the inside of this one', stale && /\| Base team strength \| 2\.4 \|/.test(stale.body_md) && !/\| Base team strength \| 1\.4 \|/.test(stale.body_md)
+      && /built from an earlier number than the one above/.test(stale.body_md) && stale.verify.ok, stale && stale.verify.problems);
+  }
   const gw = made['got_wrong:2026-09'];
   chk('got wrong: ranked by how far the close beat me', gw && /nearer the final than I did/.test(gw.lead));
   const rn = made['research_notes:EXP-001'];
