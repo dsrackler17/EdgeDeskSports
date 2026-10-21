@@ -25,7 +25,20 @@
 .nb-up{color:var(--pos,#2fbf71)}
 .nb-dn{color:var(--neg,#e5484d)}
 .nb-pass li{margin:3px 0}
+.nb-inj-teams{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.nb-inj-team{border:1px solid var(--xe-line);border-radius:10px;padding:8px 10px;background:var(--surface);min-width:0;font-size:12.5px;line-height:1.55;overflow-wrap:anywhere}
+.nb-inj-team .xe-k,.nb-inj-roster .xe-k{margin-right:6px}
+.nb-inj-h{margin-bottom:3px}
+.nb-inj-roster{font-size:12.5px;line-height:1.6;margin:4px 0 6px;overflow-wrap:anywhere}
+.nb-inj-grade{font-size:12px;margin:6px 0}
+.nb-cmp td:first-child{color:var(--dim)}
+.nb-adj{margin:6px 0;padding-left:18px;font-size:12.5px;line-height:1.55}
+.nb-adj li{margin:3px 0;overflow-wrap:anywhere}
+.nb-ev{font-size:11px}
+.nb-adjmore summary{cursor:pointer;color:var(--dim);font-size:12px;margin:2px 0 4px}
+.nb-lim li{margin:3px 0;font-size:12.5px}
 @media (max-width:760px){
   .nb-kpis{grid-template-columns:1fr 1fr}
   .nb-crow{grid-template-columns:1fr 1.4fr 48px}
+  .nb-inj-teams{grid-template-columns:1fr}
 }

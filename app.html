@@ -2916,7 +2916,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_linemaker.css?v=20261011lm1">
 <link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261020nhl1">
-<link rel="stylesheet" href="/lib/edgedesk_nba.css?v=20261014nb1">
+<link rel="stylesheet" href="/lib/edgedesk_nba.css?v=20261021inj1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
@@ -2925,7 +2925,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
 <link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261020nba1">
-<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021nba2">
+<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021inj1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3380,7 +3380,7 @@ body.focus .dk-focusnote{display:block}
          the matchup, availability with player impact, "if he sits" scenarios, the walk-forward record
          and the props. Research → Other → NBA, #research/nba[/<game>]. Value claims stay off until the
          model is tested against the close. docs/engine/NBA.md. -->
-    <div id="v-nba" class="rpanel hide"><div id="nbaHost"></div></div>
+    <div id="v-nba" class="rpanel hide"><div id="nbaHost"></div><div id="rsMeta-nba" class="rs-panelwrap"></div></div>
     <!-- ENGINE — the cross-sport opportunity board (or PASS, with why), every sport's readiness
          computed from its validation files, and the methods with their sources. Research → Other →
          Engine, #research/engine. docs/engine/README.md. -->
@@ -4080,8 +4080,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_nhl_market.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_nhl_compare.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_games.js?v=20261015sc1"></script>
-<script src="/lib/edgedesk_grade_ui.js?v=20261021nba2"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261021nba2"></script>
+<script src="/lib/edgedesk_grade_ui.js?v=20261021inj1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261021inj1"></script>
 <script>
 /* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
    football boards price on it whenever the paid capture is not current, and
@@ -5936,7 +5936,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261021nba2';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261021inj1';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
@@ -5950,18 +5950,38 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261021nba2';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261021inj1';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
-  load:function(force,signal){this._opened=true;var ent=(researchParseHash()||{}).entity||null;return nbReady().then(function(){if(force)return window.EDNbaUI.show($('nbaHost'),{}).then(function(){return window.EDNbaUI.refresh();});return window.EDNbaUI.show($('nbaHost'),{game:ent});}).catch(nbFail);},
+  load:function(force,signal){this._opened=true;var ent=(researchParseHash()||{}).entity||null;try{nbInjMetaLoad();}catch(_){}return nbReady().then(function(){if(force)return window.EDNbaUI.show($('nbaHost'),{}).then(function(){return window.EDNbaUI.refresh();});return window.EDNbaUI.show($('nbaHost'),{game:ent});}).catch(nbFail);},
   render:function(){},hasData:function(){return !!(window.EDNbaUI&&window.EDNbaUI.hasData());},search:function(q){return [];},
   openEntity:function(id){nbReady().then(function(){window.EDNbaUI.show($('nbaHost'),{game:id});}).catch(nbFail);},
   closeEntity:function(){if(window.EDNbaUI)window.EDNbaUI.closeGame();},
   entityOpen:function(){return !!(window.EDNbaUI&&window.EDNbaUI.entityOpen());},
   entityKey:function(){return window.EDNbaUI?window.EDNbaUI.entityKey():null;},
   freshness:function(){return window.EDNbaUI?window.EDNbaUI.freshness():{loadedAt:null,builtAt:null};},
-  availability:function(){return null;},limitations:function(){return ['NBA value claims are off: no captured NBA prices and no market test yet.','No injury report or confirmed lineup is in the published price.'];},provenance:{}});
+  availability:function(){return null;},
+  limitations:function(){return ['NBA value claims are off: no captured NBA prices and no market test yet.',
+    'The baseline price uses no injury report and no confirmed lineup: it prices each team\u2019s previous game (last season\u2019s closing game at a season\u2019s start). The league\u2019s injury report and current rosters are shown on every game and priced only by the Experimental Roster-Adjusted Projection.',
+    'The Roster-Adjusted Projection (NBA-ROSTER-ADJ v0.1) has not passed its registered holdout. Its play probabilities for doubtful, questionable and probable players are fixed estimates registered with it, and its early-season minutes come from last season\u2019s roles and the preseason; no lineup is confirmed until tip.',
+    'When the injury report is missing, failed or stale, a game says \u201cInjury report not yet available\u201d with the last check time and shows no statuses and no adjusted number.'];},
+  pipeline:function(){return (typeof NB_INJ_META!=='undefined'&&NB_INJ_META)?NB_INJ_META.rows:null;},
+  provenance:{}});
+/* the injury sync's run ledger, for the pipeline block (public.nba_injury_meta: {job}_last_run / _last_status / row_count_) */
+var NB_INJ_META={rows:null,at:0,p:null};
+/* The NBA injury layer's public views (supabase/nba_injury_layer.sql), read with the anon key and kept
+   apart from ED_DB: a view that is not deployed yet is this layer's own "not loaded", never a failed
+   database read that would turn every reader's health pill red. */
+function nbInjGet(q){
+  return fetch(SB_URL+'/rest/v1/'+q,{headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY}})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status+(r.status===404?' (the NBA injury layer is not deployed)':''));return r.json();});
+}
+function nbInjMetaLoad(){
+  if(NB_INJ_META.p||(NB_INJ_META.at&&Date.now()-NB_INJ_META.at<300000)||typeof SB_URL==='undefined')return;
+  NB_INJ_META.p=nbInjGet('nba_injury_meta?select=key,value').then(function(rows){var o={};(rows||[]).forEach(function(r){if(r&&r.key&&r.value!=null)o[r.key]=r.value;});NB_INJ_META.rows=Object.keys(o).length?o:null;},function(){NB_INJ_META.rows=null;})
+    .then(function(){NB_INJ_META.at=Date.now();NB_INJ_META.p=null;try{if($('rsMeta-nba'))rsMetaRender('nba');}catch(_){}});
+}
 /* NCAA ENGINE — the college baseball research terminal (college_baseball/,
    lib/edgedesk_cbase_ui.js), a segment of Research → Baseball. Loaded on first
    open; it reads committed board files only. A script that fails to load is an
@@ -6001,6 +6021,14 @@ var RS_TIER={
 /* Every research value class this section displays, with its tier, its factual
    data lineage, and (T3 only) the registry key of the model that produced it. */
 var RS_PROV={
+  nba:[
+    {nm:'Injury statuses (Out, Doubtful, Questionable, Probable, Available)',tier:'T0',src:'The NBA\u2019s official injury report (league-produced PDF on official.nba.com), read by supabase/functions/nba_injury_sync every 30 minutes on game days and once a day otherwise; ESPN\u2019s injuries feed only as a labelled fallback. public.nba_injury_report_snapshots, append-only, one row per player per report.'},
+    {nm:'Rosters and roster moves (trades, signings, waivers)',tier:'T0',src:'ESPN team rosters (site.api.espn.com), captured whenever a roster changes; the hoopR copy of ESPN\u2019s rosters as the fallback. public.nba_roster_snapshots and nba_roster_changes, append-only.'},
+    {nm:'Player impact (offence and defence per 100 possessions)',tier:'T2',src:'EdgeDesk\u2019s own regularised adjusted plus-minus on play-by-play lineup stints (nba/model/players.js), the formula and its parameters published with every snapshot (public.nba_player_impact_snapshots). A player who changed teams carries his impact.'},
+    {nm:'Expected minutes and the depth-chart redistribution',tier:'T2',src:'nba/injury/core.js: each player\u2019s EWM minutes beside his preseason minutes (ESPN preseason box scores), the rotation filled down the depth chart, the exact expectation over each listed player\u2019s registered play probability. Deterministic: the same inputs give the same minutes.'},
+    {nm:'Baseline fair lines, win probability and projected score',tier:'T3',model:'edgedesk_nba_v1',src:'nba/slate.json \u2014 the walk-forward\u2019s chosen model on projected availability; unchanged by the injury layer.'},
+    {nm:'Roster-Adjusted fair lines, win probability and projected score',tier:'T3',model:'NBA-ROSTER-ADJ',src:'public.nba_adjusted_projection_snapshots \u2014 the research model registered EXPERIMENTAL (v0.1) with its promotion criteria before any evaluation; every row names its model version and the injury report and roster captures it used.'}
+  ],
   baseball:[
     {nm:'Pitcher seasons, club splits, career and club summaries, league baselines',tier:'T0',src:'MLB Stats API (statsapi.mlb.com/api/v1), regular season, sport 1, game type R \u2014 imported into the mlbhist schema and reconciled player by player against MLB\u2019s own all-team totals across 14 counting fields'},
     {nm:'ERA, WHIP, K/9, BB/9, HR/9, K%, BB%, K-BB%',tier:'T0',src:'Recomputed from counting statistics and exact OUTS by lib/mlb_pitcher_history.js; the import refuses to publish when any of them disagrees with the packaged value'},
@@ -20607,7 +20635,7 @@ document.addEventListener('click',function(){var m=$('avMenu');if(m)m.classList.
    This panel INVENTS NOTHING. Every row is a number some existing part of the
    app already computed, or it says it does not know yet. A section whose
    source has not loaded reads "not loaded", never a reassuring tick. */
-var SH={open:false,health:null,healthErr:null,healthAt:0,pending:null,hb:0,hbReadAt:0,probe:null,probeAt:0,loops:null,loopsErr:null,loopsAt:0,loopsP:null};
+var SH={open:false,health:null,healthErr:null,healthAt:0,pending:null,hb:0,hbReadAt:0,probe:null,probeAt:0,loops:null,loopsErr:null,loopsAt:0,loopsP:null,nbaInj:null,nbaInjErr:null,nbaInjAt:0,nbaInjP:null};
 
 /* The single read of football/health.json. Both the football module and this
    control call it; whichever asks first does the fetch and the other joins the
@@ -20644,8 +20672,21 @@ function sysHealthLoopsLoad(force){
     .then(function(j){ SH.loopsP=null;try{sysHealthPaint();}catch(_){}return j; });
   return SH.loopsP;
 }
+/* public.nba_injury_readiness: the NBA injury sync's KPIs (supabase/nba_injury_layer.sql) — a failed
+   check, a silent scheduler, the fallback in use, layout drift, unmatched names, missing teams and how old
+   the league's report is. One row; a read that fails is "not loaded", never a reassuring tick. */
+function sysHealthNbaLoad(force){
+  if(SH.nbaInjP)return SH.nbaInjP;
+  if(SH.nbaInjAt&&!force&&(Date.now()-SH.nbaInjAt)<300000)return Promise.resolve(SH.nbaInj);
+  if(typeof nbInjGet!=='function')return Promise.resolve(null);
+  SH.nbaInjP=nbInjGet('nba_injury_readiness?select=*')
+    .then(function(rows){SH.nbaInj=(rows&&rows[0])||null;SH.nbaInjErr=SH.nbaInj?null:'no readiness row';},function(e){SH.nbaInj=null;SH.nbaInjErr=(e&&e.message)||'unreadable';})
+    .then(function(){SH.nbaInjAt=Date.now();SH.nbaInjP=null;try{sysHealthPaint();}catch(_){}return SH.nbaInj;});
+  return SH.nbaInjP;
+}
 function sysHealthLoad(force){
   try{sysHealthLoopsLoad(force);}catch(_){}
+  try{sysHealthNbaLoad(force);}catch(_){}
   if(window.FB&&FB.health&&!force){SH.health=FB.health;SH.healthErr=null;return Promise.resolve(SH.health);}
   if(SH.pending)return SH.pending;
   if(SH.health&&!force&&(Date.now()-SH.healthAt)<300000)return Promise.resolve(SH.health);
@@ -20683,6 +20724,8 @@ function sysHealthState(){
   var dbErr=pillErr&&!answered,dbWarn=pillErr&&answered,dbOk=pillOk||answered;
   var h=SH.health,fails=0,warns=0;
   if(h&&h.checks)h.checks.forEach(function(c){if(c.status==='fail')fails++;else if(c.status==='warn')warns++;});
+  /* the NBA injury sync: a failed check or a silent scheduler is a failed system check; degradation is attention */
+  var ni=SH.nbaInj;if(ni){if(ni.state==='error')fails++;else if(ni.state==='warn')warns++;}
   var faults=(window.FL&&FL.faults)?FL.faults.length:null;
   var st=dbErr||fails>0?'err':(warns>0||(faults!=null&&faults>0)||dbWarn||!dbOk?'warn':'ok');
   /* the count belongs to the state it is shown in: a red pill counts failed
@@ -20804,6 +20847,22 @@ function sysHealthHTML(){
       lbad.length?'warn':'ok');
   } else out+=shRow('Learning loops',SH.loopsErr?('model_loop/health.json '+SH.loopsErr):'the learning-loop record has not loaded','not loaded','mut');
 
+  /* 3c · NBA INJURY LAYER — public.nba_injury_readiness. The sync logs every run (skipped ones too), so
+     a silent scheduler, a failed check, the fallback in use and layout drift each show here. */
+  var NI=SH.nbaInj;
+  if(NI){
+    var niCls=NI.state==='error'?'err':(NI.state==='warn'?'warn':'ok');
+    out+=shRow('NBA injury sync',(NI.state_reason||(NI.last_check_at?'last check '+shAgo(shStamp(NI.last_check_at)):'no check yet'))
+      +' \u00b7 '+(NI.failures_24h||0)+' failure'+(NI.failures_24h===1?'':'s')+', '+(NI.degraded_24h||0)+' degraded, '+(NI.drift_24h||0)+' drift in 24 h'+(NI.consecutive_failures?' \u00b7 '+NI.consecutive_failures+' failed in a row':''),
+      NI.state==='error'?'failing':(NI.state==='warn'?'degraded':'healthy'),niCls);
+    var offMin=NI.minutes_since_official_report;
+    out+=shRow('NBA injury report freshness',NI.last_official_report_at?('league report published '+shAgo(shStamp(NI.last_official_report_at))+(NI.game_day?' (game day)':' (no game today)')+(NI.fallback_in_use?' \u00b7 ESPN fallback in use':'')):'no league report read yet',
+      offMin==null?'\u2014':offMin+' min',NI.fallback_in_use||(NI.game_day&&offMin!=null&&offMin>120)?'warn':(offMin==null?'mut':'ok'));
+    var dq=(NI.unmatched_players||0)+(NI.teams_missing_count||0)+(NI.unread_lines||0);
+    out+=shRow('NBA injury data quality',(NI.unmatched_players||0)+' unmatched name'+(NI.unmatched_players===1?'':'s')+' \u00b7 '+(NI.teams_missing_count||0)+' team'+(NI.teams_missing_count===1?'':'s')+' missing on a game day'+((NI.teams_missing||[]).length?' ('+NI.teams_missing.join(', ')+')':'')+' \u00b7 '+(NI.unread_lines||0)+' unread report line'+(NI.unread_lines===1?'':'s')+' \u00b7 rosters for '+(NI.teams_with_roster||0)+'/30 teams',
+      dq?(dq+' issue'+(dq===1?'':'s')):'clean',dq?'warn':'ok');
+  } else out+=shRow('NBA injury sync',SH.nbaInjErr?('public.nba_injury_readiness '+SH.nbaInjErr):'the NBA injury layer\u2019s readiness has not loaded','not loaded','mut');
+
   /* 4 · FAULTS — the Faultline scan. Not loaded is not zero. */
   var fl=(window.FL&&FL.faults)?FL.faults:null;
   out+=shRow('Faults / warnings',
@@ -20838,6 +20897,8 @@ function sysHealthOpen(){
   SH.open=true;pop.classList.add('on');if(btn)btn.setAttribute('aria-expanded','true');
   pop.innerHTML=sysHealthHTML();sysHealthPill();
   sysHealthLoad(false);
+  /* the NBA injury sync runs every 30 minutes on game days: a readiness older than a minute is re-read on open */
+  try{if(SH.nbaInjAt&&(Date.now()-SH.nbaInjAt)>60000)sysHealthNbaLoad(true);}catch(_){}
   /* opening the panel is asking "is it working NOW": answer from a fresh read
      whenever the database is in doubt or the heartbeat has not been read */
   var s=sysHealthState();

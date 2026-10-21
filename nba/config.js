@@ -78,6 +78,8 @@ const PATHS = {
   ledger: path.join(NBA, 'ledger'),
   market: path.join(NBA, 'market'),
   availability: path.join(NBA, 'data', 'availability.json'),
+  rosterInputs: path.join(NBA, 'roster_inputs.json'),   /* the Roster-Adjusted Projection's inputs (nba/build_slate.js) */
+  preseason: path.join(NBA, 'data', 'preseason'),       /* ESPN preseason minutes by season (nba/tools/preseason.js) */
 };
 
 const SCHEMA = {
@@ -92,6 +94,8 @@ const SCHEMA = {
   recent: 'edgedesk_nba_recent_v1',
   ledger: 'edgedesk_nba_ledger_v1',
   market: 'edgedesk_market_quotes_v1',
+  roster_inputs: 'edgedesk_nba_roster_inputs_v1',
+  preseason: 'edgedesk_nba_preseason_v1',
 };
 
 /* the columns each source file is read for (a missing one is recorded, never filled) */

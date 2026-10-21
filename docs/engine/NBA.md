@@ -436,6 +436,10 @@ The desk (`tools/nba/nba_desk.test.js`, 25/25) runs through the real edge-functi
 | Supabase | $0 until `NBA_SUPABASE=on`. Then about one season of rows (≈1,300 games, ≈28,000 player-games) per sync, well inside the free tier's storage |
 | AI desk | $0: NBA answers are deterministic from the slate, with no model call |
 
+## 11b. The roster and injury layer (2026-10-21)
+
+The baseline described in this card is unchanged. Beside it, the league's injury report and current rosters (T0) are synced by `supabase/functions/nba_injury_sync`, and a separate research model — the Roster-Adjusted Projection, NBA-ROSTER-ADJ v0.1, registered EXPERIMENTAL before any evaluation — re-prices each game from them. That model resets the baseline's availability features and shifts the means by the minutes-weighted RAPM change, priced by this engine's own distribution (`nba/injury/core.js`). It does not replace the baseline. See the README's §NBA roster and injury layer for the sources, the tables, the cron, the status mapping, the promotion criteria and the decisions made.
+
 ## 12. Missing data and limitations
 
 **Blocked.** Each of these needs a decision or a resource from the owner.
