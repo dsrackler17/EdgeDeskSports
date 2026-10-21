@@ -2,16 +2,16 @@
  "schema": "edgedesk_nfl_slate_v1",
  "version": 1,
  "season": 2026,
- "generated_at": "2026-10-20T19:19:55.604Z",
+ "generated_at": "2026-10-21T01:03:31.203Z",
  "source": "nflverse/nfldata games.csv + nflverse-data stats_team_week, through the football module in app.html",
  "forecasts": {
-  "requested": 23,
+  "requested": 26,
   "no_venue": 0,
   "answered": 0,
-  "dome": 0,
-  "failed": 0,
-  "written": false,
-  "error": "offline"
+  "dome": 10,
+  "failed": 16,
+  "written": true,
+  "error": null
  },
  "coaching_staff": {
   "schema": "edgedesk_nfl_coaching_staff_v1",
@@ -242,8 +242,8 @@
  ],
  "lookahead_days": 12,
  "window": {
-  "from": "2026-10-20T13:19:55.517Z",
-  "to": "2026-11-01T19:19:55.517Z"
+  "from": "2026-10-20T19:03:29.576Z",
+  "to": "2026-11-02T01:03:29.576Z"
  },
  "feeds": [
   {
@@ -252,11 +252,11 @@
   },
   {
    "url": "/football/nfl/slate.json",
-   "bytes": 844338
+   "bytes": 849450
   },
   {
    "url": "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",
-   "bytes": 2185724
+   "bytes": 2185721
   },
   {
    "url": "/football/injuries/nfl_2026.json",
@@ -276,9 +276,9 @@
   }
  ],
  "counts": {
-  "games": 23,
-  "predicted": 23,
-  "with_reference": 23,
+  "games": 26,
+  "predicted": 26,
+  "with_reference": 26,
   "teams": 32
  },
  "ranks_of": null,
@@ -1278,8 +1278,8 @@
     "home_line": -3,
     "home_margin": 3,
     "total": 50.5,
-    "home_ml": -148,
-    "away_ml": 124,
+    "home_ml": -155,
+    "away_ml": 130,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -2293,8 +2293,8 @@
     "home_line": 3.5,
     "home_margin": -3.5,
     "total": 44.5,
-    "home_ml": 150,
-    "away_ml": -180,
+    "home_ml": 154,
+    "away_ml": -185,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -2307,6 +2307,16 @@
     "roof": "dome",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -3303,9 +3313,9 @@
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": 3,
     "home_margin": -3,
-    "total": 50.5,
-    "home_ml": 142,
-    "away_ml": -170,
+    "total": 49.5,
+    "home_ml": 145,
+    "away_ml": -175,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -3318,6 +3328,16 @@
     "roof": "closed",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -6393,8 +6413,8 @@
     "home_line": -10,
     "home_margin": 10,
     "total": 42.5,
-    "home_ml": -520,
-    "away_ml": 390,
+    "home_ml": -535,
+    "away_ml": 400,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -6407,6 +6427,16 @@
     "roof": "closed",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -7404,8 +7434,8 @@
     "home_line": -6.5,
     "home_margin": 6.5,
     "total": 41.5,
-    "home_ml": -285,
-    "away_ml": 230,
+    "home_ml": -290,
+    "away_ml": 235,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -7418,6 +7448,16 @@
     "roof": "dome",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -8419,8 +8459,8 @@
     "home_line": -4.5,
     "home_margin": 4.5,
     "total": 38.5,
-    "home_ml": -238,
-    "away_ml": 195,
+    "home_ml": -225,
+    "away_ml": 185,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -9437,9 +9477,9 @@
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": 1.5,
     "home_margin": -1.5,
-    "total": 38.5,
-    "home_ml": 110,
-    "away_ml": -130,
+    "total": 37.5,
+    "home_ml": 105,
+    "away_ml": -125,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -10463,6 +10503,16 @@
     "roof": "closed",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -11474,6 +11524,16 @@
     "roof": "dome",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -12474,7 +12534,7 @@
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": 4.5,
     "home_margin": -4.5,
-    "total": 47.5,
+    "total": 48.5,
     "home_ml": 185,
     "away_ml": -225,
     "convention": "home_line: negative = home favoured (betting)"
@@ -12489,6 +12549,16 @@
     "roof": "dome",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -13498,11 +13568,11 @@
    "fingerprint": "fp_1r1rohs",
    "reference_market": {
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
-    "home_line": -2.5,
-    "home_margin": 2.5,
+    "home_line": -3,
+    "home_margin": 3,
     "total": 42.5,
-    "home_ml": -142,
-    "away_ml": 120,
+    "home_ml": -155,
+    "away_ml": 130,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -14516,8 +14586,8 @@
     "home_line": 4.5,
     "home_margin": -4.5,
     "total": 44.5,
-    "home_ml": 180,
-    "away_ml": -218,
+    "home_ml": 185,
+    "away_ml": -225,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -15505,9 +15575,9 @@
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": -3,
     "home_margin": 3,
-    "total": 45.5,
-    "home_ml": -158,
-    "away_ml": 134,
+    "total": 47.5,
+    "home_ml": -155,
+    "away_ml": 130,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -16499,9 +16569,9 @@
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": -2.5,
     "home_margin": 2.5,
-    "total": 53.5,
-    "home_ml": -146,
-    "away_ml": 124,
+    "total": 52.5,
+    "home_ml": -155,
+    "away_ml": 130,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -17491,11 +17561,11 @@
    "fingerprint": "fp_8vrcec",
    "reference_market": {
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
-    "home_line": -10.5,
-    "home_margin": 10.5,
-    "total": 45.5,
-    "home_ml": -620,
-    "away_ml": 460,
+    "home_line": -10,
+    "home_margin": 10,
+    "total": 46.5,
+    "home_ml": -575,
+    "away_ml": 425,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -18484,8 +18554,8 @@
     "home_line": -6.5,
     "home_margin": 6.5,
     "total": 51.5,
-    "home_ml": -310,
-    "away_ml": 250,
+    "home_ml": -305,
+    "away_ml": 245,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -18498,6 +18568,16 @@
     "roof": "closed",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -19471,11 +19551,11 @@
    "fingerprint": "fp_1c2dk8",
    "reference_market": {
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
-    "home_line": -3,
-    "home_margin": 3,
-    "total": 48.5,
-    "home_ml": -164,
-    "away_ml": 138,
+    "home_line": -2.5,
+    "home_margin": 2.5,
+    "total": 47.5,
+    "home_ml": -155,
+    "away_ml": 130,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -19488,6 +19568,16 @@
     "roof": "dome",
     "verification": "VERIFIED",
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
    }
   },
   {
@@ -20464,8 +20554,8 @@
     "home_line": -7.5,
     "home_margin": 7.5,
     "total": 47.5,
-    "home_ml": -390,
-    "away_ml": 310,
+    "home_ml": -375,
+    "away_ml": 295,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -21457,9 +21547,9 @@
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": -1.5,
     "home_margin": 1.5,
-    "total": 43.5,
-    "home_ml": -118,
-    "away_ml": 100,
+    "total": 42.5,
+    "home_ml": -112,
+    "away_ml": -108,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -22455,9 +22545,9 @@
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": -4.5,
     "home_margin": 4.5,
-    "total": 39.5,
-    "home_ml": -235,
-    "away_ml": 194,
+    "total": 38.5,
+    "home_ml": -205,
+    "away_ml": 170,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -23447,7 +23537,7 @@
     "home_margin": 1.5,
     "total": 44.5,
     "home_ml": -118,
-    "away_ml": 100,
+    "away_ml": -102,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -23456,6 +23546,2990 @@
     "name": "Raymond James Stadium",
     "lat": 27.9759,
     "lon": -82.5033,
+    "tz_name": "America/New_York",
+    "roof": "outdoors",
+    "verification": "VERIFIED",
+    "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   }
+  },
+  {
+   "game_id": "2026_08_LAC_LA",
+   "season": 2026,
+   "week": 8,
+   "game_type": "REG",
+   "kickoff": "2026-11-01T21:05:00.000Z",
+   "gameday": "2026-11-01",
+   "gametime_et": "16:05",
+   "home_code": "LA",
+   "away_code": "LAC",
+   "home_team": "Los Angeles Rams",
+   "away_team": "Los Angeles Chargers",
+   "home_team_id": "la",
+   "away_team_id": "lac",
+   "venue": "SoFi Stadium",
+   "roof": "dome",
+   "surface": "matrixturf",
+   "div_game": false,
+   "home_rest": 7,
+   "away_rest": 14,
+   "home_coach": "Sean McVay",
+   "away_coach": "Jim Harbaugh",
+   "coaching_staff": {
+    "validation_status": "CANDIDATE",
+    "affects_projection": false,
+    "tuned_candidate_cap": 1,
+    "validated_cap": 0,
+    "candidate_home_points": -0.29,
+    "candidate_away_points": -0.84,
+    "candidate_matchup_points": 0.55,
+    "adjustment_points": 0,
+    "home": {
+     "schema": "edgedesk_nfl_coaching_staff_v1",
+     "team": "LA",
+     "coach": "Sean McVay",
+     "coaching_staff_rating": 50,
+     "coaching_staff_raw_score": 50,
+     "coaching_staff_reliability": 0.697,
+     "coaching_staff_observed_weight": 0.9,
+     "coaching_staff_raw_residual_points": -0.411,
+     "coaching_staff_residual_points": -0.286,
+     "coaching_staff_available": true,
+     "coaching_staff_rank": 17,
+     "coaching_staff_affects_projection": false,
+     "coaching_staff_candidate_cap": 1,
+     "coaching_staff_validated_cap": 0,
+     "coaching_staff_adjustment_points": 0,
+     "coaching_staff_inputs": {
+      "current_residual_conversion": {
+       "id": "current_residual_conversion",
+       "label": "Current residual conversion",
+       "configured_weight": 0.45,
+       "value": 37.13276664536113,
+       "observations": 6,
+       "weighted_evidence": -2.215,
+       "reliability": 0.6,
+       "source": "EdgeDesk leak-free pregame NFL projection residuals",
+       "last_updated": "2026-10-18",
+       "available": true,
+       "reason": null
+      },
+      "multi_season_head_coach": {
+       "id": "multi_season_head_coach",
+       "label": "Multi-season head-coach residual",
+       "configured_weight": 0.3,
+       "value": 60.9,
+       "observations": 74,
+       "weighted_evidence": 1.393,
+       "reliability": 0.949,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "program_persistence": {
+       "id": "program_persistence",
+       "label": "Program persistence",
+       "configured_weight": 0.15,
+       "value": 66.9,
+       "observations": 74,
+       "weighted_evidence": 1.393,
+       "reliability": 0.949,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "efficiency_development": {
+       "id": "efficiency_development",
+       "label": "Efficiency development",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      },
+      "game_management": {
+       "id": "game_management",
+       "label": "Game management",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      }
+     },
+     "coaching_staff_warnings": [
+      {
+       "id": "efficiency_development_unavailable",
+       "detail": "Efficiency development: no measured evidence is available"
+      },
+      {
+       "id": "game_management_unavailable",
+       "detail": "Game management: no measured evidence is available"
+      }
+     ],
+     "provenance": {
+      "source": "EdgeDesk NFL pregame residual ledger + explicitly supplied historical staff seeds",
+      "last_updated": "2026-10-18",
+      "observations": 6,
+      "reliability": 0.697,
+      "affects_projection": false,
+      "limitations": "HC identity is observable from nflverse games.csv. OC/DC history, private locker-room dynamics, scheme-install quality, trust and ownership/front-office context are not inferred."
+     }
+    },
+    "away": {
+     "schema": "edgedesk_nfl_coaching_staff_v1",
+     "team": "LAC",
+     "coach": "Jim Harbaugh",
+     "coaching_staff_rating": 45.7,
+     "coaching_staff_raw_score": 43.1,
+     "coaching_staff_reliability": 0.615,
+     "coaching_staff_observed_weight": 0.9,
+     "coaching_staff_raw_residual_points": -1.366,
+     "coaching_staff_residual_points": -0.839,
+     "coaching_staff_available": true,
+     "coaching_staff_rank": 27,
+     "coaching_staff_affects_projection": false,
+     "coaching_staff_candidate_cap": 1,
+     "coaching_staff_validated_cap": 0,
+     "coaching_staff_adjustment_points": 0,
+     "coaching_staff_inputs": {
+      "current_residual_conversion": {
+       "id": "current_residual_conversion",
+       "label": "Current residual conversion",
+       "configured_weight": 0.45,
+       "value": 30.43814622357106,
+       "observations": 6,
+       "weighted_evidence": -3.39,
+       "reliability": 0.6,
+       "source": "EdgeDesk leak-free pregame NFL projection residuals",
+       "last_updated": "2026-10-18",
+       "available": true,
+       "reason": null
+      },
+      "multi_season_head_coach": {
+       "id": "multi_season_head_coach",
+       "label": "Multi-season head-coach residual",
+       "configured_weight": 0.3,
+       "value": 56.2,
+       "observations": 36,
+       "weighted_evidence": 0.821,
+       "reliability": 0.675,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "program_persistence": {
+       "id": "program_persistence",
+       "label": "Program persistence",
+       "configured_weight": 0.15,
+       "value": 54.7,
+       "observations": 71,
+       "weighted_evidence": 0.333,
+       "reliability": 0.947,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "efficiency_development": {
+       "id": "efficiency_development",
+       "label": "Efficiency development",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      },
+      "game_management": {
+       "id": "game_management",
+       "label": "Game management",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      }
+     },
+     "coaching_staff_warnings": [
+      {
+       "id": "efficiency_development_unavailable",
+       "detail": "Efficiency development: no measured evidence is available"
+      },
+      {
+       "id": "game_management_unavailable",
+       "detail": "Game management: no measured evidence is available"
+      }
+     ],
+     "provenance": {
+      "source": "EdgeDesk NFL pregame residual ledger + explicitly supplied historical staff seeds",
+      "last_updated": "2026-10-18",
+      "observations": 6,
+      "reliability": 0.615,
+      "affects_projection": false,
+      "limitations": "HC identity is observable from nflverse games.csv. OC/DC history, private locker-room dynamics, scheme-install quality, trust and ownership/front-office context are not inferred."
+     }
+    },
+    "basis": "research-only Coaching / Staff residual points. The candidate matchup shift is shown for audit; the applied NFL projection adjustment is exactly 0."
+   },
+   "home_starter": null,
+   "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Matthew Stafford",
+      "id": "00-0026498",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-20T12:41:41Z",
+      "week": 7
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Justin Herbert",
+      "id": "00-0036355",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-20T12:41:41Z",
+      "week": 7
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
+   "regime": {
+    "home": {
+     "team": "LA",
+     "hc_new": false,
+     "qb_new": null,
+     "qb_out": null,
+     "active": false,
+     "regular_starter": "Matthew Stafford",
+     "regular_tied": false,
+     "last_season_starter": "Matthew Stafford",
+     "adjustment_pts": 0
+    },
+    "away": {
+     "team": "LAC",
+     "hc_new": false,
+     "qb_new": null,
+     "qb_out": null,
+     "active": false,
+     "regular_starter": "Justin Herbert",
+     "regular_tied": false,
+     "last_season_starter": "Justin Herbert",
+     "adjustment_pts": 0
+    },
+    "promoted": false,
+    "version": "nfl_regime_v1"
+   },
+   "model_status": "PREDICTED",
+   "model_reason": null,
+   "model_home_margin": 5.71,
+   "model_home_line": -5.71,
+   "model_fair_total": 45.62,
+   "model_home_win_prob": 0.6867,
+   "model_fair_home_ml": -219,
+   "model_fair_away_ml": 219,
+   "outcome_range": {
+    "p10": -10,
+    "p50": 6,
+    "p90": 24,
+    "sigma": 10.7,
+    "basis": "margin_pmf_by_spread",
+    "unit": "home margin, points"
+   },
+   "model_home_margin_exact": 5.708473,
+   "contributions": {
+    "spread": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 2.48
+     },
+     {
+      "key": "net_pts",
+      "value": 6.7538,
+      "points": 1.13,
+      "prior": 0.9,
+      "current": 0.23
+     },
+     {
+      "key": "net_epa",
+      "value": 0.1347,
+      "points": 1.36,
+      "prior": 0.49,
+      "current": 0.87
+     },
+     {
+      "key": "net_pass",
+      "value": 0.2073,
+      "points": 2.59,
+      "prior": 0.88,
+      "current": 1.71
+     },
+     {
+      "key": "net_rush",
+      "value": -0.0138,
+      "points": -0.1,
+      "prior": -0.12,
+      "current": 0.03
+     },
+     {
+      "key": "qb_adj_diff",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "rest_diff",
+      "value": -1,
+      "points": -1.37
+     },
+     {
+      "key": "div_game",
+      "value": 0,
+      "points": 0
+     }
+    ],
+    "ctx": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 0.59
+     },
+     {
+      "key": "rest_diff",
+      "value": -1,
+      "points": -0.09
+     },
+     {
+      "key": "home_short",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "away_short",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "home_off_bye",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "away_off_bye",
+      "value": 1,
+      "points": -0.3
+     },
+     {
+      "key": "div_game",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "week_frac",
+      "value": 0.4444,
+      "points": 0.27
+     },
+     {
+      "key": "is_dome",
+      "value": 1,
+      "points": -0.87
+     },
+     {
+      "key": "grass",
+      "value": 0,
+      "points": 0
+     }
+    ],
+    "total": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 45.01
+     },
+     {
+      "key": "off_epa_sum",
+      "value": -0.0338,
+      "points": -0.13
+     },
+     {
+      "key": "def_epa_sum",
+      "value": -0.1022,
+      "points": 0.01
+     },
+     {
+      "key": "pass_matchup",
+      "value": -0.1676,
+      "points": -0.62
+     },
+     {
+      "key": "rush_matchup",
+      "value": -0.0617,
+      "points": -0.12
+     },
+     {
+      "key": "expl_sum",
+      "value": -0.0065,
+      "points": 0
+     },
+     {
+      "key": "sack_env",
+      "value": 0.0134,
+      "points": -0.02
+     },
+     {
+      "key": "pace_sum",
+      "value": 5.4319,
+      "points": 0.46
+     },
+     {
+      "key": "pts_env",
+      "value": -1.7634,
+      "points": -0.82
+     },
+     {
+      "key": "is_dome",
+      "value": 1,
+      "points": 1.68
+     },
+     {
+      "key": "temp_c",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "wind_o",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "div_game",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "week_frac",
+      "value": 0.4444,
+      "points": 0.17
+     }
+    ]
+   },
+   "card": {
+    "rows": [
+     {
+      "key": "base_strength",
+      "label": "Base team strength",
+      "points": 2.493683,
+      "prior": 1.391937,
+      "current": 1.101747,
+      "terms": [
+       {
+        "term": "spread:net_pts",
+        "points": 1.133293,
+        "prior": 0.90461,
+        "current": 0.228683
+       },
+       {
+        "term": "spread:net_epa",
+        "points": 1.360391,
+        "prior": 0.487327,
+        "current": 0.873064
+       }
+      ]
+     },
+     {
+      "key": "passing",
+      "label": "Passing",
+      "points": 2.591297,
+      "prior": 0.879292,
+      "current": 1.712005,
+      "terms": [
+       {
+        "term": "spread:net_pass",
+        "points": 2.591297,
+        "prior": 0.879292,
+        "current": 1.712005
+       }
+      ]
+     },
+     {
+      "key": "rushing",
+      "label": "Rushing",
+      "points": -0.097541,
+      "prior": -0.123827,
+      "current": 0.026286,
+      "terms": [
+       {
+        "term": "spread:net_rush",
+        "points": -0.097541,
+        "prior": -0.123827,
+        "current": 0.026286
+       }
+      ]
+     },
+     {
+      "key": "quarterback",
+      "label": "Quarterback",
+      "points": 0,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:qb_adj_diff",
+        "points": 0,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "home_field",
+      "label": "Home field",
+      "points": 3.348773,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:baseline",
+        "points": 2.48073,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:baseline",
+        "points": 0.59499,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:week_frac",
+        "points": 0.273053,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "context",
+      "label": "Context (venue, division)",
+      "points": -0.86683,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:div_game",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:div_game",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:is_dome",
+        "points": -0.86683,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:grass",
+        "points": 0,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "rest_travel",
+      "label": "Rest / travel",
+      "points": -1.76091,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:rest_diff",
+        "points": -1.36856,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:rest_diff",
+        "points": -0.09385,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:home_short",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:away_short",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:home_off_bye",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:away_off_bye",
+        "points": -0.2985,
+        "prior": null,
+        "current": null
+       }
+      ]
+     }
+    ],
+    "total": 5.708473,
+    "model_margin": 5.708473,
+    "reconciles": true,
+    "season_games": {
+     "home": 6,
+     "away": 6
+    },
+    "basis": "every term of the strength and context models, each in exactly one row; rows sum to the fair margin (football/engine.js nfl.card)"
+   },
+   "features": {
+    "spread": {
+     "net_pts": 6.753830381883255,
+     "net_epa": 0.13469334122496682,
+     "net_pass": 0.20731088606618073,
+     "net_rush": -0.013844857613476058,
+     "qb_adj_diff": 0,
+     "rest_diff": -1,
+     "div_game": 0
+    },
+    "total": {
+     "off_epa_sum": -0.033808482668694656,
+     "def_epa_sum": -0.1021711682050438,
+     "pass_matchup": -0.16762492283281824,
+     "rush_matchup": -0.06170600160519508,
+     "expl_sum": -0.006474603232592752,
+     "sack_env": 0.013401680913149801,
+     "pace_sum": 5.431885503302302,
+     "pts_env": -1.7633640849673813,
+     "is_dome": 1,
+     "temp_c": 0,
+     "wind_o": 0,
+     "div_game": 0,
+     "week_frac": 0.4444444444444444
+    },
+    "ctx": {
+     "rest_diff": -1,
+     "home_short": 0,
+     "away_short": 0,
+     "home_off_bye": 0,
+     "away_off_bye": 1,
+     "div_game": 0,
+     "week_frac": 0.4444444444444444,
+     "is_dome": 1,
+     "grass": 0
+    },
+    "known": 105,
+    "qb_known": {
+     "home": false,
+     "away": false
+    }
+   },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -4.78,
+     "delta_home_line": 0.92,
+     "total": 45.62,
+     "home_win_prob": 0.6654,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -7.68,
+     "delta_home_line": -1.97,
+     "total": 45.62,
+     "home_win_prob": 0.7715,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -5.71,
+     "delta_home_line": 0,
+     "total": 45.62,
+     "home_win_prob": 0.6867,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -6.58,
+     "delta_home_line": -0.87,
+     "total": 39.98,
+     "home_win_prob": 0.7175,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 1.5,
+     "win": 0.7068,
+     "push": 0,
+     "lose": 0.2932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.6876,
+     "push": 0.0191,
+     "lose": 0.2932,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.6876,
+     "push": 0,
+     "lose": 0.3124,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.6857,
+     "push": 0.0019,
+     "lose": 0.3124,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.6857,
+     "push": 0,
+     "lose": 0.3143,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.6616,
+     "push": 0.0241,
+     "lose": 0.3143,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.6616,
+     "push": 0,
+     "lose": 0.3384,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.6404,
+     "push": 0.0212,
+     "lose": 0.3384,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.6404,
+     "push": 0,
+     "lose": 0.3596,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.5583,
+     "push": 0.0821,
+     "lose": 0.3596,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.5583,
+     "push": 0,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.5303,
+     "push": 0.028,
+     "lose": 0.4417,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.5303,
+     "push": 0,
+     "lose": 0.4697,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.5082,
+     "push": 0.0221,
+     "lose": 0.4697,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.5082,
+     "push": 0,
+     "lose": 0.4918,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.4689,
+     "push": 0.0393,
+     "lose": 0.4918,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.4689,
+     "push": 0,
+     "lose": 0.5311,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.4111,
+     "push": 0.0577,
+     "lose": 0.5311,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.4111,
+     "push": 0,
+     "lose": 0.5889,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.3843,
+     "push": 0.0268,
+     "lose": 0.5889,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.3843,
+     "push": 0,
+     "lose": 0.6157,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.3758,
+     "push": 0.0085,
+     "lose": 0.6157,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9.5,
+     "win": 0.3758,
+     "push": 0,
+     "lose": 0.6242,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10,
+     "win": 0.3378,
+     "push": 0.038,
+     "lose": 0.6242,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -10.5,
+     "win": 0.3378,
+     "push": 0,
+     "lose": 0.6622,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11,
+     "win": 0.3208,
+     "push": 0.017,
+     "lose": 0.6622,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -11.5,
+     "win": 0.3208,
+     "push": 0,
+     "lose": 0.6792,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12,
+     "win": 0.3081,
+     "push": 0.0127,
+     "lose": 0.6792,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -12.5,
+     "win": 0.3081,
+     "push": 0,
+     "lose": 0.6919,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
+   "data_quality": {
+    "status": "OK",
+    "missing": [],
+    "warnings": [
+     "home QB starter unknown",
+     "away QB starter unknown"
+    ]
+   },
+   "qb_known": {
+    "home": false,
+    "away": false
+   },
+   "model_version": "edgedesk_football_v1.0.0",
+   "feature_version": "nfl_fv1",
+   "fingerprint": "fp_xx3as4",
+   "reference_market": {
+    "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "home_line": -7.5,
+    "home_margin": 7.5,
+    "total": 46.5,
+    "home_ml": -355,
+    "away_ml": 280,
+    "convention": "home_line: negative = home favoured (betting)"
+   },
+   "market_status": "NOT JOINED IN THIS BUILD",
+   "market_note": "Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.",
+   "venue_geography": {
+    "name": "SoFi Stadium",
+    "lat": 33.9535,
+    "lon": -118.3392,
+    "tz_name": "America/Los_Angeles",
+    "roof": "dome",
+    "verification": "VERIFIED",
+    "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "dome": true,
+    "temp_f": null,
+    "wind_mph": null,
+    "precip_in": null,
+    "roof": true,
+    "hours": [],
+    "source": "trained venue table — indoor venue, no request made",
+    "as_of": "2026-10-21T01:03:29.937Z"
+   }
+  },
+  {
+   "game_id": "2026_08_KC_DEN",
+   "season": 2026,
+   "week": 8,
+   "game_type": "REG",
+   "kickoff": "2026-11-01T21:25:00.000Z",
+   "gameday": "2026-11-01",
+   "gametime_et": "16:25",
+   "home_code": "DEN",
+   "away_code": "KC",
+   "home_team": "Denver Broncos",
+   "away_team": "Kansas City Chiefs",
+   "home_team_id": "den",
+   "away_team_id": "kc",
+   "venue": "Empower Field at Mile High",
+   "roof": "outdoors",
+   "surface": "grass",
+   "div_game": true,
+   "home_rest": 7,
+   "away_rest": 7,
+   "home_coach": "Sean Payton",
+   "away_coach": "Andy Reid",
+   "coaching_staff": {
+    "validation_status": "CANDIDATE",
+    "affects_projection": false,
+    "tuned_candidate_cap": 1,
+    "validated_cap": 0,
+    "candidate_home_points": 0.2,
+    "candidate_away_points": 1,
+    "candidate_matchup_points": -0.8,
+    "adjustment_points": 0,
+    "home": {
+     "schema": "edgedesk_nfl_coaching_staff_v1",
+     "team": "DEN",
+     "coach": "Sean Payton",
+     "coaching_staff_rating": 52.3,
+     "coaching_staff_raw_score": 53.4,
+     "coaching_staff_reliability": 0.669,
+     "coaching_staff_observed_weight": 0.9,
+     "coaching_staff_raw_residual_points": 0.291,
+     "coaching_staff_residual_points": 0.195,
+     "coaching_staff_available": true,
+     "coaching_staff_rank": 14,
+     "coaching_staff_affects_projection": false,
+     "coaching_staff_candidate_cap": 1,
+     "coaching_staff_validated_cap": 0,
+     "coaching_staff_adjustment_points": 0,
+     "coaching_staff_inputs": {
+      "current_residual_conversion": {
+       "id": "current_residual_conversion",
+       "label": "Current residual conversion",
+       "configured_weight": 0.45,
+       "value": 46.8038145841613,
+       "observations": 6,
+       "weighted_evidence": -0.519,
+       "reliability": 0.6,
+       "source": "EdgeDesk leak-free pregame NFL projection residuals",
+       "last_updated": "2026-10-15",
+       "available": true,
+       "reason": null
+      },
+      "multi_season_head_coach": {
+       "id": "multi_season_head_coach",
+       "label": "Multi-season head-coach residual",
+       "configured_weight": 0.3,
+       "value": 58.9,
+       "observations": 54,
+       "weighted_evidence": 1.151,
+       "reliability": 0.857,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "program_persistence": {
+       "id": "program_persistence",
+       "label": "Program persistence",
+       "configured_weight": 0.15,
+       "value": 62.4,
+       "observations": 71,
+       "weighted_evidence": 1.002,
+       "reliability": 0.947,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "efficiency_development": {
+       "id": "efficiency_development",
+       "label": "Efficiency development",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      },
+      "game_management": {
+       "id": "game_management",
+       "label": "Game management",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      }
+     },
+     "coaching_staff_warnings": [
+      {
+       "id": "efficiency_development_unavailable",
+       "detail": "Efficiency development: no measured evidence is available"
+      },
+      {
+       "id": "game_management_unavailable",
+       "detail": "Game management: no measured evidence is available"
+      }
+     ],
+     "provenance": {
+      "source": "EdgeDesk NFL pregame residual ledger + explicitly supplied historical staff seeds",
+      "last_updated": "2026-10-15",
+      "observations": 6,
+      "reliability": 0.669,
+      "affects_projection": false,
+      "limitations": "HC identity is observable from nflverse games.csv. OC/DC history, private locker-room dynamics, scheme-install quality, trust and ownership/front-office context are not inferred."
+     }
+    },
+    "away": {
+     "schema": "edgedesk_nfl_coaching_staff_v1",
+     "team": "KC",
+     "coach": "Andy Reid",
+     "coaching_staff_rating": 59.8,
+     "coaching_staff_raw_score": 64.5,
+     "coaching_staff_reliability": 0.678,
+     "coaching_staff_observed_weight": 0.9,
+     "coaching_staff_raw_residual_points": 2.424,
+     "coaching_staff_residual_points": 1.643,
+     "coaching_staff_available": true,
+     "coaching_staff_rank": 2,
+     "coaching_staff_affects_projection": false,
+     "coaching_staff_candidate_cap": 1,
+     "coaching_staff_validated_cap": 0,
+     "coaching_staff_adjustment_points": 0,
+     "coaching_staff_inputs": {
+      "current_residual_conversion": {
+       "id": "current_residual_conversion",
+       "label": "Current residual conversion",
+       "configured_weight": 0.45,
+       "value": 74.8083456250782,
+       "observations": 5,
+       "weighted_evidence": 4.395,
+       "reliability": 0.5555555555555556,
+       "source": "EdgeDesk leak-free pregame NFL projection residuals",
+       "last_updated": "2026-10-18",
+       "available": true,
+       "reason": null
+      },
+      "multi_season_head_coach": {
+       "id": "multi_season_head_coach",
+       "label": "Multi-season head-coach residual",
+       "configured_weight": 0.3,
+       "value": 53.2,
+       "observations": 78,
+       "weighted_evidence": 0.452,
+       "reliability": 0.951,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "program_persistence": {
+       "id": "program_persistence",
+       "label": "Program persistence",
+       "configured_weight": 0.15,
+       "value": 56.1,
+       "observations": 78,
+       "weighted_evidence": 0.452,
+       "reliability": 0.951,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "efficiency_development": {
+       "id": "efficiency_development",
+       "label": "Efficiency development",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      },
+      "game_management": {
+       "id": "game_management",
+       "label": "Game management",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      }
+     },
+     "coaching_staff_warnings": [
+      {
+       "id": "efficiency_development_unavailable",
+       "detail": "Efficiency development: no measured evidence is available"
+      },
+      {
+       "id": "game_management_unavailable",
+       "detail": "Game management: no measured evidence is available"
+      }
+     ],
+     "provenance": {
+      "source": "EdgeDesk NFL pregame residual ledger + explicitly supplied historical staff seeds",
+      "last_updated": "2026-10-18",
+      "observations": 5,
+      "reliability": 0.678,
+      "affects_projection": false,
+      "limitations": "HC identity is observable from nflverse games.csv. OC/DC history, private locker-room dynamics, scheme-install quality, trust and ownership/front-office context are not inferred."
+     }
+    },
+    "basis": "research-only Coaching / Staff residual points. The candidate matchup shift is shown for audit; the applied NFL projection adjustment is exactly 0."
+   },
+   "home_starter": null,
+   "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Bo Nix",
+      "id": "00-0039732",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-20T12:41:41Z",
+      "week": 7
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Patrick Mahomes",
+      "id": "00-0033873",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-20T12:41:41Z",
+      "week": 7
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
+   "regime": {
+    "home": {
+     "team": "DEN",
+     "hc_new": false,
+     "qb_new": null,
+     "qb_out": null,
+     "active": false,
+     "regular_starter": "Bo Nix",
+     "regular_tied": false,
+     "last_season_starter": "Bo Nix",
+     "adjustment_pts": 0
+    },
+    "away": {
+     "team": "KC",
+     "hc_new": false,
+     "qb_new": null,
+     "qb_out": null,
+     "active": false,
+     "regular_starter": "Patrick Mahomes",
+     "regular_tied": false,
+     "last_season_starter": "Patrick Mahomes",
+     "adjustment_pts": 0
+    },
+    "promoted": false,
+    "version": "nfl_regime_v1"
+   },
+   "model_status": "PREDICTED",
+   "model_reason": null,
+   "model_home_margin": 1.35,
+   "model_home_line": -1.35,
+   "model_fair_total": 39.55,
+   "model_home_win_prob": 0.5204,
+   "model_fair_home_ml": -109,
+   "model_fair_away_ml": 109,
+   "outcome_range": {
+    "p10": -16,
+    "p50": 1,
+    "p90": 18,
+    "sigma": 10.7,
+    "basis": "margin_pmf_by_spread",
+    "unit": "home margin, points"
+   },
+   "model_home_margin_exact": 1.350137,
+   "contributions": {
+    "spread": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 2.48
+     },
+     {
+      "key": "net_pts",
+      "value": -0.33,
+      "points": -0.06,
+      "prior": 0.24,
+      "current": -0.3
+     },
+     {
+      "key": "net_epa",
+      "value": -0.0213,
+      "points": -0.22,
+      "prior": 0.53,
+      "current": -0.75
+     },
+     {
+      "key": "net_pass",
+      "value": 0.0981,
+      "points": 1.23,
+      "prior": 1.66,
+      "current": -0.43
+     },
+     {
+      "key": "net_rush",
+      "value": -0.1649,
+      "points": -1.16,
+      "prior": -0.38,
+      "current": -0.78
+     },
+     {
+      "key": "qb_adj_diff",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "rest_diff",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "div_game",
+      "value": 1,
+      "points": -0.66
+     }
+    ],
+    "ctx": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 0.59
+     },
+     {
+      "key": "rest_diff",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "home_short",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "away_short",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "home_off_bye",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "away_off_bye",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "div_game",
+      "value": 1,
+      "points": -0.04
+     },
+     {
+      "key": "week_frac",
+      "value": 0.4444,
+      "points": 0.27
+     },
+     {
+      "key": "is_dome",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "grass",
+      "value": 1,
+      "points": -1.09
+     }
+    ],
+    "total": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 45.01
+     },
+     {
+      "key": "off_epa_sum",
+      "value": 0.0223,
+      "points": 0.08
+     },
+     {
+      "key": "def_epa_sum",
+      "value": -0.1199,
+      "points": 0.01
+     },
+     {
+      "key": "pass_matchup",
+      "value": -0.2579,
+      "points": -0.96
+     },
+     {
+      "key": "rush_matchup",
+      "value": 0.0935,
+      "points": 0.18
+     },
+     {
+      "key": "expl_sum",
+      "value": -0.0546,
+      "points": -0.04
+     },
+     {
+      "key": "sack_env",
+      "value": -0.0365,
+      "points": 0.04
+     },
+     {
+      "key": "pace_sum",
+      "value": -2.2862,
+      "points": -0.19
+     },
+     {
+      "key": "pts_env",
+      "value": -7.3956,
+      "points": -3.43
+     },
+     {
+      "key": "is_dome",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "temp_c",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "wind_o",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "div_game",
+      "value": 1,
+      "points": -1.32
+     },
+     {
+      "key": "week_frac",
+      "value": 0.4444,
+      "points": 0.17
+     }
+    ]
+   },
+   "card": {
+    "rows": [
+     {
+      "key": "base_strength",
+      "label": "Base team strength",
+      "points": -0.270876,
+      "prior": 0.772195,
+      "current": -1.043071,
+      "terms": [
+       {
+        "term": "spread:net_pts",
+        "points": -0.055373,
+        "prior": 0.241184,
+        "current": -0.296557
+       },
+       {
+        "term": "spread:net_epa",
+        "points": -0.215503,
+        "prior": 0.531011,
+        "current": -0.746514
+       }
+      ]
+     },
+     {
+      "key": "passing",
+      "label": "Passing",
+      "points": 1.226448,
+      "prior": 1.657242,
+      "current": -0.430794,
+      "terms": [
+       {
+        "term": "spread:net_pass",
+        "points": 1.226448,
+        "prior": 1.657242,
+        "current": -0.430794
+       }
+      ]
+     },
+     {
+      "key": "rushing",
+      "label": "Rushing",
+      "points": -1.161449,
+      "prior": -0.382377,
+      "current": -0.779072,
+      "terms": [
+       {
+        "term": "spread:net_rush",
+        "points": -1.161449,
+        "prior": -0.382377,
+        "current": -0.779072
+       }
+      ]
+     },
+     {
+      "key": "quarterback",
+      "label": "Quarterback",
+      "points": 0,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:qb_adj_diff",
+        "points": 0,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "home_field",
+      "label": "Home field",
+      "points": 3.348773,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:baseline",
+        "points": 2.48073,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:baseline",
+        "points": 0.59499,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:week_frac",
+        "points": 0.273053,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "context",
+      "label": "Context (venue, division)",
+      "points": -1.79276,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:div_game",
+        "points": -0.65617,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:div_game",
+        "points": -0.04433,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:is_dome",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:grass",
+        "points": -1.09226,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "rest_travel",
+      "label": "Rest / travel",
+      "points": 0,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:rest_diff",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:rest_diff",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:home_short",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:away_short",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:home_off_bye",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:away_off_bye",
+        "points": 0,
+        "prior": null,
+        "current": null
+       }
+      ]
+     }
+    ],
+    "total": 1.350137,
+    "model_margin": 1.350137,
+    "reconciles": true,
+    "season_games": {
+     "home": 6,
+     "away": 5
+    },
+    "basis": "every term of the strength and context models, each in exactly one row; rows sum to the fair margin (football/engine.js nfl.card)"
+   },
+   "features": {
+    "spread": {
+     "net_pts": -0.3299942819830295,
+     "net_epa": -0.021337117524288546,
+     "net_pass": 0.09811922375212988,
+     "net_rush": -0.1648546575950264,
+     "qb_adj_diff": 0,
+     "rest_diff": 0,
+     "div_game": 1
+    },
+    "total": {
+     "off_epa_sum": 0.02226985247344833,
+     "def_epa_sum": -0.11993422533626615,
+     "pass_matchup": -0.25792912608684876,
+     "rush_matchup": 0.09347036230810488,
+     "expl_sum": -0.05463449711874195,
+     "sack_env": -0.03646774129376866,
+     "pace_sum": -2.2862027110564274,
+     "pts_env": -7.395619190794148,
+     "is_dome": 0,
+     "temp_c": 0,
+     "wind_o": 0,
+     "div_game": 1,
+     "week_frac": 0.4444444444444444
+    },
+    "ctx": {
+     "rest_diff": 0,
+     "home_short": 0,
+     "away_short": 0,
+     "home_off_bye": 0,
+     "away_off_bye": 0,
+     "div_game": 1,
+     "week_frac": 0.4444444444444444,
+     "is_dome": 0,
+     "grass": 1
+    },
+    "known": 104,
+    "qb_known": {
+     "home": false,
+     "away": false
+    }
+   },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -0.43,
+     "delta_home_line": 0.92,
+     "total": 39.55,
+     "home_win_prob": 0.5008,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -1.56,
+     "delta_home_line": -0.21,
+     "total": 39.55,
+     "home_win_prob": 0.5252,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -0.48,
+     "delta_home_line": 0.87,
+     "total": 41.24,
+     "home_win_prob": 0.501,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -1.35,
+     "delta_home_line": 0,
+     "total": 35.6,
+     "home_win_prob": 0.5204,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 5.5,
+     "win": 0.6909,
+     "push": 0,
+     "lose": 0.3091,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.6705,
+     "push": 0.0204,
+     "lose": 0.3091,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6705,
+     "push": 0,
+     "lose": 0.3295,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.6396,
+     "push": 0.0309,
+     "lose": 0.3295,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.6396,
+     "push": 0,
+     "lose": 0.3604,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5661,
+     "push": 0.0735,
+     "lose": 0.3604,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5661,
+     "push": 0,
+     "lose": 0.4339,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.543,
+     "push": 0.0231,
+     "lose": 0.4339,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.543,
+     "push": 0,
+     "lose": 0.457,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.5214,
+     "push": 0.0217,
+     "lose": 0.457,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.5214,
+     "push": 0,
+     "lose": 0.4786,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.5195,
+     "push": 0.0019,
+     "lose": 0.4786,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.5195,
+     "push": 0,
+     "lose": 0.4805,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.4966,
+     "push": 0.0229,
+     "lose": 0.4805,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.4966,
+     "push": 0,
+     "lose": 0.5034,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4743,
+     "push": 0.0223,
+     "lose": 0.5034,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4743,
+     "push": 0,
+     "lose": 0.5257,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.3885,
+     "push": 0.0858,
+     "lose": 0.5257,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.3885,
+     "push": 0,
+     "lose": 0.6115,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3632,
+     "push": 0.0253,
+     "lose": 0.6115,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3632,
+     "push": 0,
+     "lose": 0.6368,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3432,
+     "push": 0.02,
+     "lose": 0.6368,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3432,
+     "push": 0,
+     "lose": 0.6568,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3076,
+     "push": 0.0356,
+     "lose": 0.6568,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3076,
+     "push": 0,
+     "lose": 0.6924,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.2625,
+     "push": 0.0452,
+     "lose": 0.6924,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.2625,
+     "push": 0,
+     "lose": 0.7375,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.2408,
+     "push": 0.0217,
+     "lose": 0.7375,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.2408,
+     "push": 0,
+     "lose": 0.7592,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
+   "data_quality": {
+    "status": "OK",
+    "missing": [],
+    "warnings": [
+     "home QB starter unknown",
+     "away QB starter unknown"
+    ]
+   },
+   "qb_known": {
+    "home": false,
+    "away": false
+   },
+   "model_version": "edgedesk_football_v1.0.0",
+   "feature_version": "nfl_fv1",
+   "fingerprint": "fp_1izrhzn",
+   "reference_market": {
+    "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "home_line": 1.5,
+    "home_margin": -1.5,
+    "total": 42.5,
+    "home_ml": 102,
+    "away_ml": -122,
+    "convention": "home_line: negative = home favoured (betting)"
+   },
+   "market_status": "NOT JOINED IN THIS BUILD",
+   "market_note": "Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.",
+   "venue_geography": {
+    "name": "Empower Field at Mile High",
+    "lat": 39.7439,
+    "lon": -105.0201,
+    "tz_name": "America/Denver",
+    "roof": "outdoors",
+    "verification": "VERIFIED",
+    "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   }
+  },
+  {
+   "game_id": "2026_08_NE_MIA",
+   "season": 2026,
+   "week": 8,
+   "game_type": "REG",
+   "kickoff": "2026-11-01T21:25:00.000Z",
+   "gameday": "2026-11-01",
+   "gametime_et": "16:25",
+   "home_code": "MIA",
+   "away_code": "NE",
+   "home_team": "Miami Dolphins",
+   "away_team": "New England Patriots",
+   "home_team_id": "mia",
+   "away_team_id": "ne",
+   "venue": "Hard Rock Stadium",
+   "roof": "outdoors",
+   "surface": "grass",
+   "div_game": true,
+   "home_rest": 7,
+   "away_rest": 10,
+   "home_coach": "Jeff Hafley",
+   "away_coach": "Mike Vrabel",
+   "coaching_staff": {
+    "validation_status": "CANDIDATE",
+    "affects_projection": false,
+    "tuned_candidate_cap": 1,
+    "validated_cap": 0,
+    "candidate_home_points": -1,
+    "candidate_away_points": 0.61,
+    "candidate_matchup_points": -1.61,
+    "adjustment_points": 0,
+    "home": {
+     "schema": "edgedesk_nfl_coaching_staff_v1",
+     "team": "MIA",
+     "coach": "Jeff Hafley",
+     "coaching_staff_rating": 42.5,
+     "coaching_staff_raw_score": 30.7,
+     "coaching_staff_reliability": 0.392,
+     "coaching_staff_observed_weight": 0.6,
+     "coaching_staff_raw_residual_points": -3.189,
+     "coaching_staff_residual_points": -1.25,
+     "coaching_staff_available": true,
+     "coaching_staff_rank": 32,
+     "coaching_staff_affects_projection": false,
+     "coaching_staff_candidate_cap": 1,
+     "coaching_staff_validated_cap": 0,
+     "coaching_staff_adjustment_points": 0,
+     "coaching_staff_inputs": {
+      "current_residual_conversion": {
+       "id": "current_residual_conversion",
+       "label": "Current residual conversion",
+       "configured_weight": 0.45,
+       "value": 26.999130891106706,
+       "observations": 5,
+       "weighted_evidence": -3.993,
+       "reliability": 0.5555555555555556,
+       "source": "EdgeDesk leak-free pregame NFL projection residuals",
+       "last_updated": "2026-10-11",
+       "available": true,
+       "reason": null
+      },
+      "multi_season_head_coach": {
+       "id": "multi_season_head_coach",
+       "label": "Multi-season head-coach residual",
+       "configured_weight": 0.3,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "historical head-coach evidence belongs to a different coach"
+      },
+      "program_persistence": {
+       "id": "program_persistence",
+       "label": "Program persistence",
+       "configured_weight": 0.15,
+       "value": 42,
+       "observations": 70,
+       "weighted_evidence": -0.775,
+       "reliability": 0.946,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "efficiency_development": {
+       "id": "efficiency_development",
+       "label": "Efficiency development",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      },
+      "game_management": {
+       "id": "game_management",
+       "label": "Game management",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      }
+     },
+     "coaching_staff_warnings": [
+      {
+       "id": "multi_season_head_coach_unavailable",
+       "detail": "Multi-season head-coach residual: historical head-coach evidence belongs to a different coach"
+      },
+      {
+       "id": "efficiency_development_unavailable",
+       "detail": "Efficiency development: no measured evidence is available"
+      },
+      {
+       "id": "game_management_unavailable",
+       "detail": "Game management: no measured evidence is available"
+      }
+     ],
+     "provenance": {
+      "source": "EdgeDesk NFL pregame residual ledger + explicitly supplied historical staff seeds",
+      "last_updated": "2026-10-11",
+      "observations": 5,
+      "reliability": 0.392,
+      "affects_projection": false,
+      "limitations": "HC identity is observable from nflverse games.csv. OC/DC history, private locker-room dynamics, scheme-install quality, trust and ownership/front-office context are not inferred."
+     }
+    },
+    "away": {
+     "schema": "edgedesk_nfl_coaching_staff_v1",
+     "team": "NE",
+     "coach": "Mike Vrabel",
+     "coaching_staff_rating": 54.3,
+     "coaching_staff_raw_score": 57.1,
+     "coaching_staff_reliability": 0.608,
+     "coaching_staff_observed_weight": 0.9,
+     "coaching_staff_raw_residual_points": 1.005,
+     "coaching_staff_residual_points": 0.611,
+     "coaching_staff_available": true,
+     "coaching_staff_rank": 6,
+     "coaching_staff_affects_projection": false,
+     "coaching_staff_candidate_cap": 1,
+     "coaching_staff_validated_cap": 0,
+     "coaching_staff_adjustment_points": 0,
+     "coaching_staff_inputs": {
+      "current_residual_conversion": {
+       "id": "current_residual_conversion",
+       "label": "Current residual conversion",
+       "configured_weight": 0.45,
+       "value": 54.77718120864948,
+       "observations": 6,
+       "weighted_evidence": 0.88,
+       "reliability": 0.6,
+       "source": "EdgeDesk leak-free pregame NFL projection residuals",
+       "last_updated": "2026-10-18",
+       "available": true,
+       "reason": null
+      },
+      "multi_season_head_coach": {
+       "id": "multi_season_head_coach",
+       "label": "Multi-season head-coach residual",
+       "configured_weight": 0.3,
+       "value": 62.3,
+       "observations": 55,
+       "weighted_evidence": 1.564,
+       "reliability": 0.653,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "program_persistence": {
+       "id": "program_persistence",
+       "label": "Program persistence",
+       "configured_weight": 0.15,
+       "value": 53.9,
+       "observations": 72,
+       "weighted_evidence": 0.263,
+       "reliability": 0.947,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "efficiency_development": {
+       "id": "efficiency_development",
+       "label": "Efficiency development",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      },
+      "game_management": {
+       "id": "game_management",
+       "label": "Game management",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      }
+     },
+     "coaching_staff_warnings": [
+      {
+       "id": "efficiency_development_unavailable",
+       "detail": "Efficiency development: no measured evidence is available"
+      },
+      {
+       "id": "game_management_unavailable",
+       "detail": "Game management: no measured evidence is available"
+      }
+     ],
+     "provenance": {
+      "source": "EdgeDesk NFL pregame residual ledger + explicitly supplied historical staff seeds",
+      "last_updated": "2026-10-18",
+      "observations": 6,
+      "reliability": 0.608,
+      "affects_projection": false,
+      "limitations": "HC identity is observable from nflverse games.csv. OC/DC history, private locker-room dynamics, scheme-install quality, trust and ownership/front-office context are not inferred."
+     }
+    },
+    "basis": "research-only Coaching / Staff residual points. The candidate matchup shift is shown for audit; the applied NFL projection adjustment is exactly 0."
+   },
+   "home_starter": null,
+   "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Malik Willis",
+      "id": "00-0038128",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-20T12:41:41Z",
+      "week": 7
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Drake Maye",
+      "id": "00-0039851",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-20T12:41:41Z",
+      "week": 7
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
+   "regime": {
+    "home": {
+     "team": "MIA",
+     "hc_new": true,
+     "qb_new": null,
+     "qb_out": null,
+     "active": false,
+     "regular_starter": "Malik Willis",
+     "regular_tied": false,
+     "last_season_starter": "Tua Tagovailoa",
+     "adjustment_pts": -0.9
+    },
+    "away": {
+     "team": "NE",
+     "hc_new": false,
+     "qb_new": null,
+     "qb_out": null,
+     "active": false,
+     "regular_starter": "Drake Maye",
+     "regular_tied": false,
+     "last_season_starter": "Drake Maye",
+     "adjustment_pts": 0
+    },
+    "promoted": false,
+    "version": "nfl_regime_v1"
+   },
+   "model_status": "PREDICTED",
+   "model_reason": null,
+   "model_home_margin": -7.87,
+   "model_home_line": 7.87,
+   "model_fair_total": 42.51,
+   "model_home_win_prob": 0.224,
+   "model_fair_home_ml": 346,
+   "model_fair_away_ml": -346,
+   "outcome_range": {
+    "p10": -27,
+    "p50": -8,
+    "p90": 7,
+    "sigma": 10.7,
+    "basis": "margin_pmf_by_spread",
+    "unit": "home margin, points"
+   },
+   "model_home_margin_exact": -7.869313,
+   "contributions": {
+    "spread": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 2.48
+     },
+     {
+      "key": "net_pts",
+      "value": 0.0747,
+      "points": 0.01,
+      "prior": 0.05,
+      "current": -0.04
+     },
+     {
+      "key": "net_epa",
+      "value": -0.2408,
+      "points": -2.43,
+      "prior": -1.19,
+      "current": -1.24
+     },
+     {
+      "key": "net_pass",
+      "value": -0.5171,
+      "points": -6.46,
+      "prior": -2.17,
+      "current": -4.29
+     },
+     {
+      "key": "net_rush",
+      "value": 0.012,
+      "points": 0.08,
+      "prior": -0.47,
+      "current": 0.56
+     },
+     {
+      "key": "qb_adj_diff",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "rest_diff",
+      "value": -0.4286,
+      "points": -0.59
+     },
+     {
+      "key": "div_game",
+      "value": 1,
+      "points": -0.66
+     }
+    ],
+    "ctx": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 0.59
+     },
+     {
+      "key": "rest_diff",
+      "value": -0.4286,
+      "points": -0.04
+     },
+     {
+      "key": "home_short",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "away_short",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "home_off_bye",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "away_off_bye",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "div_game",
+      "value": 1,
+      "points": -0.04
+     },
+     {
+      "key": "week_frac",
+      "value": 0.4444,
+      "points": 0.27
+     },
+     {
+      "key": "is_dome",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "grass",
+      "value": 1,
+      "points": -1.09
+     }
+    ],
+    "total": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 45.01
+     },
+     {
+      "key": "off_epa_sum",
+      "value": 0.0212,
+      "points": 0.08
+     },
+     {
+      "key": "def_epa_sum",
+      "value": 0.0631,
+      "points": 0
+     },
+     {
+      "key": "pass_matchup",
+      "value": 0.1749,
+      "points": 0.65
+     },
+     {
+      "key": "rush_matchup",
+      "value": 0.0088,
+      "points": 0.02
+     },
+     {
+      "key": "expl_sum",
+      "value": 0.0211,
+      "points": 0.01
+     },
+     {
+      "key": "sack_env",
+      "value": 0.0471,
+      "points": -0.05
+     },
+     {
+      "key": "pace_sum",
+      "value": -3.4174,
+      "points": -0.29
+     },
+     {
+      "key": "pts_env",
+      "value": -3.8158,
+      "points": -1.77
+     },
+     {
+      "key": "is_dome",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "temp_c",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "wind_o",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "div_game",
+      "value": 1,
+      "points": -1.32
+     },
+     {
+      "key": "week_frac",
+      "value": 0.4444,
+      "points": 0.17
+     }
+    ]
+   },
+   "card": {
+    "rows": [
+     {
+      "key": "base_strength",
+      "label": "Base team strength",
+      "points": -2.419739,
+      "prior": -1.136852,
+      "current": -1.282887,
+      "terms": [
+       {
+        "term": "spread:net_pts",
+        "points": 0.01253,
+        "prior": 0.052922,
+        "current": -0.040392
+       },
+       {
+        "term": "spread:net_epa",
+        "points": -2.432269,
+        "prior": -1.189773,
+        "current": -1.242496
+       }
+      ]
+     },
+     {
+      "key": "passing",
+      "label": "Passing",
+      "points": -6.463201,
+      "prior": -2.173678,
+      "current": -4.289522,
+      "terms": [
+       {
+        "term": "spread:net_pass",
+        "points": -6.463201,
+        "prior": -2.173678,
+        "current": -4.289522
+       }
+      ]
+     },
+     {
+      "key": "rushing",
+      "label": "Rushing",
+      "points": 0.084361,
+      "prior": -0.473328,
+      "current": 0.557688,
+      "terms": [
+       {
+        "term": "spread:net_rush",
+        "points": 0.084361,
+        "prior": -0.473328,
+        "current": 0.557688
+       }
+      ]
+     },
+     {
+      "key": "quarterback",
+      "label": "Quarterback",
+      "points": 0,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:qb_adj_diff",
+        "points": 0,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "home_field",
+      "label": "Home field",
+      "points": 3.348773,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:baseline",
+        "points": 2.48073,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:baseline",
+        "points": 0.59499,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:week_frac",
+        "points": 0.273053,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "context",
+      "label": "Context (venue, division)",
+      "points": -1.79276,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:div_game",
+        "points": -0.65617,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:div_game",
+        "points": -0.04433,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:is_dome",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:grass",
+        "points": -1.09226,
+        "prior": null,
+        "current": null
+       }
+      ]
+     },
+     {
+      "key": "rest_travel",
+      "label": "Rest / travel",
+      "points": -0.626747,
+      "prior": null,
+      "current": null,
+      "terms": [
+       {
+        "term": "spread:rest_diff",
+        "points": -0.586526,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:rest_diff",
+        "points": -0.040221,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:home_short",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:away_short",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:home_off_bye",
+        "points": 0,
+        "prior": null,
+        "current": null
+       },
+       {
+        "term": "ctx:away_off_bye",
+        "points": 0,
+        "prior": null,
+        "current": null
+       }
+      ]
+     }
+    ],
+    "total": -7.869313,
+    "model_margin": -7.869313,
+    "reconciles": true,
+    "season_games": {
+     "home": 5,
+     "away": 6
+    },
+    "basis": "every term of the strength and context models, each in exactly one row; rows sum to the fair margin (football/engine.js nfl.card)"
+   },
+   "features": {
+    "spread": {
+     "net_pts": 0.0746732334062874,
+     "net_epa": -0.2408208786568865,
+     "net_pass": -0.5170738489233487,
+     "net_rush": 0.01197403109403327,
+     "qb_adj_diff": 0,
+     "rest_diff": -0.42857142857142855,
+     "div_game": 1
+    },
+    "total": {
+     "off_epa_sum": 0.021176493236269356,
+     "def_epa_sum": 0.06308051016328031,
+     "pass_matchup": 0.17488797829728078,
+     "rush_matchup": 0.008805056937934562,
+     "expl_sum": 0.021064291776679872,
+     "sack_env": 0.0471256341140378,
+     "pace_sum": -3.417447392230999,
+     "pts_env": -3.8158378493310794,
+     "is_dome": 0,
+     "temp_c": 0,
+     "wind_o": 0,
+     "div_game": 1,
+     "week_frac": 0.4444444444444444
+    },
+    "ctx": {
+     "rest_diff": -0.42857142857142855,
+     "home_short": 0,
+     "away_short": 0,
+     "home_off_bye": 0,
+     "away_off_bye": 0,
+     "div_game": 1,
+     "week_frac": 0.4444444444444444,
+     "is_dome": 0,
+     "grass": 1
+    },
+    "known": 104,
+    "qb_known": {
+     "home": false,
+     "away": false
+    }
+   },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": 8.79,
+     "delta_home_line": 0.92,
+     "total": 42.51,
+     "home_win_prob": 0.2062,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": 7.04,
+     "delta_home_line": -0.83,
+     "total": 42.51,
+     "home_win_prob": 0.2549,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": 8.74,
+     "delta_home_line": 0.87,
+     "total": 44.19,
+     "home_win_prob": 0.2069,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": 7.87,
+     "delta_home_line": 0,
+     "total": 38.55,
+     "home_win_prob": 0.224,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 15,
+     "win": 0.6707,
+     "push": 0.013,
+     "lose": 0.3163,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 14.5,
+     "win": 0.6707,
+     "push": 0,
+     "lose": 0.3293,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 14,
+     "win": 0.6226,
+     "push": 0.0481,
+     "lose": 0.3293,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 13.5,
+     "win": 0.6226,
+     "push": 0,
+     "lose": 0.3774,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 13,
+     "win": 0.6005,
+     "push": 0.0221,
+     "lose": 0.3774,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12.5,
+     "win": 0.6005,
+     "push": 0,
+     "lose": 0.3995,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 12,
+     "win": 0.5861,
+     "push": 0.0144,
+     "lose": 0.3995,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11.5,
+     "win": 0.5861,
+     "push": 0,
+     "lose": 0.4139,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 11,
+     "win": 0.5705,
+     "push": 0.0156,
+     "lose": 0.4139,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10.5,
+     "win": 0.5705,
+     "push": 0,
+     "lose": 0.4295,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 10,
+     "win": 0.5276,
+     "push": 0.0429,
+     "lose": 0.4295,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9.5,
+     "win": 0.5276,
+     "push": 0,
+     "lose": 0.4724,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 9,
+     "win": 0.5162,
+     "push": 0.0114,
+     "lose": 0.4724,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8.5,
+     "win": 0.5162,
+     "push": 0,
+     "lose": 0.4838,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 8,
+     "win": 0.4905,
+     "push": 0.0257,
+     "lose": 0.4838,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.4905,
+     "push": 0,
+     "lose": 0.5095,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7,
+     "win": 0.4285,
+     "push": 0.062,
+     "lose": 0.5095,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6.5,
+     "win": 0.4285,
+     "push": 0,
+     "lose": 0.5715,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 6,
+     "win": 0.391,
+     "push": 0.0375,
+     "lose": 0.5715,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5.5,
+     "win": 0.391,
+     "push": 0,
+     "lose": 0.609,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 5,
+     "win": 0.372,
+     "push": 0.019,
+     "lose": 0.609,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.372,
+     "push": 0,
+     "lose": 0.628,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.3438,
+     "push": 0.0281,
+     "lose": 0.628,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.3438,
+     "push": 0,
+     "lose": 0.6562,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.2681,
+     "push": 0.0757,
+     "lose": 0.6562,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.2681,
+     "push": 0,
+     "lose": 0.7319,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.2455,
+     "push": 0.0227,
+     "lose": 0.7319,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.2455,
+     "push": 0,
+     "lose": 0.7545,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.225,
+     "push": 0.0204,
+     "lose": 0.7545,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
+   "data_quality": {
+    "status": "OK",
+    "missing": [],
+    "warnings": [
+     "home QB starter unknown",
+     "away QB starter unknown"
+    ]
+   },
+   "qb_known": {
+    "home": false,
+    "away": false
+   },
+   "model_version": "edgedesk_football_v1.0.0",
+   "feature_version": "nfl_fv1",
+   "fingerprint": "fp_c08px5",
+   "reference_market": {
+    "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "home_line": 7.5,
+    "home_margin": -7.5,
+    "total": 44.5,
+    "home_ml": 330,
+    "away_ml": -425,
+    "convention": "home_line: negative = home favoured (betting)"
+   },
+   "market_status": "NOT JOINED IN THIS BUILD",
+   "market_note": "Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.",
+   "venue_geography": {
+    "name": "Hard Rock Stadium",
+    "lat": 25.958,
+    "lon": -80.2389,
     "tz_name": "America/New_York",
     "roof": "outdoors",
     "verification": "VERIFIED",
@@ -31744,8 +34818,8 @@
  "pricing": {
   "schema": "edgedesk_ranked_slate_v1",
   "sport": "americanfootball_nfl",
-  "built_at": "2026-10-20T19:19:55.610Z",
-  "games": 23,
+  "built_at": "2026-10-21T01:03:31.406Z",
+  "games": 26,
   "rows": [
    {
     "game_id": "2026_08_TEN_CIN",
@@ -31754,19 +34828,46 @@
     "kickoff": "2026-11-01T18:00:00.000Z",
     "side": "home",
     "selection": "Cincinnati Bengals",
-    "market_line": -10.5,
-    "fair_line": -10.87,
+    "market_line": -10,
+    "fair_line": -10.37,
     "model_line": -11.26,
-    "gap_points": 0.76,
-    "cover_at_market": 0.5116,
-    "break_even": 0.5238,
-    "edge_pp": -1.22,
+    "gap_points": 1.26,
+    "cover_at_market": 0.4959,
+    "break_even": 0.5074,
+    "edge_pp": -1.15,
     "bet_to_line": -10,
     "status": "CONDITIONAL",
     "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
     "tier": "RESEARCH",
     "completeness": 0.8,
-    "rank_score": -0.98,
+    "rank_score": -0.92,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
+    "game_id": "2026_08_NE_MIA",
+    "home": "Miami Dolphins",
+    "away": "New England Patriots",
+    "kickoff": "2026-11-01T21:25:00.000Z",
+    "side": "away",
+    "selection": "New England Patriots",
+    "market_line": -7.5,
+    "fair_line": -7.83,
+    "model_line": -7.87,
+    "gap_points": 0.37,
+    "cover_at_market": 0.5103,
+    "break_even": 0.5238,
+    "edge_pp": -1.35,
+    "bet_to_line": -7,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -1.08,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
@@ -31862,19 +34963,19 @@
     "kickoff": "2026-10-26T00:20:00.000Z",
     "side": "home",
     "selection": "Seattle Seahawks",
-    "market_line": -2.5,
-    "fair_line": -2.69,
+    "market_line": -3,
+    "fair_line": -3.19,
     "model_line": -5.69,
-    "gap_points": 3.19,
-    "cover_at_market": 0.5059,
-    "break_even": 0.5238,
-    "edge_pp": -1.79,
-    "bet_to_line": -2,
+    "gap_points": 2.69,
+    "cover_at_market": 0.4903,
+    "break_even": 0.5074,
+    "edge_pp": -1.71,
+    "bet_to_line": -3,
     "status": "CONDITIONAL",
     "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
     "tier": "RESEARCH",
     "completeness": 0.8,
-    "rank_score": -1.43,
+    "rank_score": -1.37,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
@@ -31902,33 +35003,6 @@
     "tier": "RESEARCH",
     "completeness": 0.8,
     "rank_score": -1.46,
-    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
-    "fair_status": "BLENDED",
-    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
-    "ev_available": false,
-    "expected_value_pct": null,
-    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
-   },
-   {
-    "game_id": "2026_08_MIN_DET",
-    "home": "Detroit Lions",
-    "away": "Minnesota Vikings",
-    "kickoff": "2026-11-01T18:00:00.000Z",
-    "side": "home",
-    "selection": "Detroit Lions",
-    "market_line": -3,
-    "fair_line": -3.08,
-    "model_line": -3.41,
-    "gap_points": 0.41,
-    "cover_at_market": 0.4869,
-    "break_even": 0.5074,
-    "edge_pp": -2.05,
-    "bet_to_line": -3,
-    "status": "CONDITIONAL",
-    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
-    "tier": "RESEARCH",
-    "completeness": 0.8,
-    "rank_score": -1.64,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
@@ -32045,6 +35119,33 @@
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
    },
    {
+    "game_id": "2026_08_MIN_DET",
+    "home": "Detroit Lions",
+    "away": "Minnesota Vikings",
+    "kickoff": "2026-11-01T18:00:00.000Z",
+    "side": "home",
+    "selection": "Detroit Lions",
+    "market_line": -2.5,
+    "fair_line": -2.59,
+    "model_line": -3.41,
+    "gap_points": 0.91,
+    "cover_at_market": 0.5028,
+    "break_even": 0.5238,
+    "edge_pp": -2.1,
+    "bet_to_line": -2,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -1.68,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
     "game_id": "2026_07_DAL_PHI",
     "home": "Philadelphia Eagles",
     "away": "Dallas Cowboys",
@@ -32091,6 +35192,33 @@
     "tier": "RESEARCH",
     "completeness": 0.8,
     "rank_score": -1.8,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
+    "game_id": "2026_08_KC_DEN",
+    "home": "Denver Broncos",
+    "away": "Kansas City Chiefs",
+    "kickoff": "2026-11-01T21:25:00.000Z",
+    "side": "home",
+    "selection": "Denver Broncos",
+    "market_line": 1.5,
+    "fair_line": 1.47,
+    "model_line": -1.35,
+    "gap_points": 2.85,
+    "cover_at_market": 0.5009,
+    "break_even": 0.5238,
+    "edge_pp": -2.29,
+    "bet_to_line": 2,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -1.83,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
@@ -32612,6 +35740,60 @@
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
    },
    {
+    "game_id": "2026_08_LAC_LA",
+    "home": "Los Angeles Rams",
+    "away": "Los Angeles Chargers",
+    "kickoff": "2026-11-01T21:05:00.000Z",
+    "side": "home",
+    "selection": "Los Angeles Rams",
+    "market_line": -7.5,
+    "fair_line": -7.5,
+    "model_line": -5.71,
+    "gap_points": 1.79,
+    "cover_at_market": 0.5,
+    "break_even": 0.5238,
+    "edge_pp": -2.38,
+    "bet_to_line": -6.5,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -1.9,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED_HELD",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market); held at the market line: the blend (-7.65) would have crossed it against the projection",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
+    "game_id": "2026_08_LAC_LA",
+    "home": "Los Angeles Rams",
+    "away": "Los Angeles Chargers",
+    "kickoff": "2026-11-01T21:05:00.000Z",
+    "side": "away",
+    "selection": "Los Angeles Chargers",
+    "market_line": 7.5,
+    "fair_line": 7.5,
+    "model_line": 5.71,
+    "gap_points": 1.79,
+    "cover_at_market": 0.5,
+    "break_even": 0.5238,
+    "edge_pp": -2.38,
+    "bet_to_line": 8.5,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -1.9,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED_HELD",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market); held at the market line: the blend (-7.65) would have crossed it against the projection",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
     "game_id": "2026_08_LV_NYJ",
     "home": "New York Jets",
     "away": "Las Vegas Raiders",
@@ -32631,6 +35813,33 @@
     "tier": "RESEARCH",
     "completeness": 0.8,
     "rank_score": -1.95,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
+    "game_id": "2026_08_KC_DEN",
+    "home": "Denver Broncos",
+    "away": "Kansas City Chiefs",
+    "kickoff": "2026-11-01T21:25:00.000Z",
+    "side": "away",
+    "selection": "Kansas City Chiefs",
+    "market_line": -1.5,
+    "fair_line": -1.47,
+    "model_line": 1.35,
+    "gap_points": 2.85,
+    "cover_at_market": 0.4991,
+    "break_even": 0.5238,
+    "edge_pp": -2.47,
+    "bet_to_line": -0.5,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -1.98,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
@@ -32720,33 +35929,6 @@
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
    },
    {
-    "game_id": "2026_08_MIN_DET",
-    "home": "Detroit Lions",
-    "away": "Minnesota Vikings",
-    "kickoff": "2026-11-01T18:00:00.000Z",
-    "side": "away",
-    "selection": "Minnesota Vikings",
-    "market_line": 3,
-    "fair_line": 3.08,
-    "model_line": 3.41,
-    "gap_points": 0.41,
-    "cover_at_market": 0.4819,
-    "break_even": 0.5074,
-    "edge_pp": -2.55,
-    "bet_to_line": 3.5,
-    "status": "CONDITIONAL",
-    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
-    "tier": "RESEARCH",
-    "completeness": 0.8,
-    "rank_score": -2.04,
-    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
-    "fair_status": "BLENDED",
-    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
-    "ev_available": false,
-    "expected_value_pct": null,
-    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
-   },
-   {
     "game_id": "2026_07_DAL_PHI",
     "home": "Philadelphia Eagles",
     "away": "Dallas Cowboys",
@@ -32788,6 +35970,33 @@
     "break_even": 0.5238,
     "edge_pp": -2.66,
     "bet_to_line": 4.5,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -2.13,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
+    "game_id": "2026_08_MIN_DET",
+    "home": "Detroit Lions",
+    "away": "Minnesota Vikings",
+    "kickoff": "2026-11-01T18:00:00.000Z",
+    "side": "away",
+    "selection": "Minnesota Vikings",
+    "market_line": 2.5,
+    "fair_line": 2.59,
+    "model_line": 3.41,
+    "gap_points": 0.91,
+    "cover_at_market": 0.4972,
+    "break_even": 0.5238,
+    "edge_pp": -2.66,
+    "bet_to_line": 3.5,
     "status": "CONDITIONAL",
     "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
     "tier": "RESEARCH",
@@ -32855,6 +36064,33 @@
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
    },
    {
+    "game_id": "2026_07_KC_SEA",
+    "home": "Seattle Seahawks",
+    "away": "Kansas City Chiefs",
+    "kickoff": "2026-10-26T00:20:00.000Z",
+    "side": "away",
+    "selection": "Kansas City Chiefs",
+    "market_line": 3,
+    "fair_line": 3.19,
+    "model_line": 5.69,
+    "gap_points": 2.69,
+    "cover_at_market": 0.4784,
+    "break_even": 0.5074,
+    "edge_pp": -2.9,
+    "bet_to_line": 3.5,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -2.32,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
     "game_id": "2026_07_IND_MIN",
     "home": "Minnesota Vikings",
     "away": "Indianapolis Colts",
@@ -32874,33 +36110,6 @@
     "tier": "RESEARCH",
     "completeness": 0.8,
     "rank_score": -2.35,
-    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
-    "fair_status": "BLENDED",
-    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
-    "ev_available": false,
-    "expected_value_pct": null,
-    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
-   },
-   {
-    "game_id": "2026_07_KC_SEA",
-    "home": "Seattle Seahawks",
-    "away": "Kansas City Chiefs",
-    "kickoff": "2026-10-26T00:20:00.000Z",
-    "side": "away",
-    "selection": "Kansas City Chiefs",
-    "market_line": 2.5,
-    "fair_line": 2.69,
-    "model_line": 5.69,
-    "gap_points": 3.19,
-    "cover_at_market": 0.4941,
-    "break_even": 0.5238,
-    "edge_pp": -2.97,
-    "bet_to_line": 3.5,
-    "status": "CONDITIONAL",
-    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
-    "tier": "RESEARCH",
-    "completeness": 0.8,
-    "rank_score": -2.38,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
@@ -32963,25 +36172,52 @@
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
    },
    {
+    "game_id": "2026_08_NE_MIA",
+    "home": "Miami Dolphins",
+    "away": "New England Patriots",
+    "kickoff": "2026-11-01T21:25:00.000Z",
+    "side": "home",
+    "selection": "Miami Dolphins",
+    "market_line": 7.5,
+    "fair_line": 7.83,
+    "model_line": 7.87,
+    "gap_points": 0.37,
+    "cover_at_market": 0.4897,
+    "break_even": 0.5238,
+    "edge_pp": -3.41,
+    "bet_to_line": 8.5,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -2.73,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
     "game_id": "2026_08_TEN_CIN",
     "home": "Cincinnati Bengals",
     "away": "Tennessee Titans",
     "kickoff": "2026-11-01T18:00:00.000Z",
     "side": "away",
     "selection": "Tennessee Titans",
-    "market_line": 10.5,
-    "fair_line": 10.87,
+    "market_line": 10,
+    "fair_line": 10.37,
     "model_line": 11.26,
-    "gap_points": 0.76,
-    "cover_at_market": 0.4884,
-    "break_even": 0.5238,
-    "edge_pp": -3.54,
-    "bet_to_line": 11.5,
+    "gap_points": 1.26,
+    "cover_at_market": 0.4728,
+    "break_even": 0.5074,
+    "edge_pp": -3.46,
+    "bet_to_line": 10.5,
     "status": "CONDITIONAL",
     "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
     "tier": "RESEARCH",
     "completeness": 0.8,
-    "rank_score": -2.83,
+    "rank_score": -2.77,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)",
@@ -32998,19 +36234,43 @@
     "kickoff": "2026-11-01T18:00:00.000Z",
     "side": "home",
     "selection": "Cincinnati Bengals",
-    "market_line": -10.5,
-    "fair_line": -10.87,
+    "market_line": -10,
+    "fair_line": -10.37,
     "model_line": -11.26,
-    "gap_points": 0.76,
-    "cover_at_market": 0.5116,
-    "break_even": 0.5238,
-    "edge_pp": -1.22,
+    "gap_points": 1.26,
+    "cover_at_market": 0.4959,
+    "break_even": 0.5074,
+    "edge_pp": -1.15,
     "bet_to_line": -10,
     "status": "CONDITIONAL",
     "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
     "tier": "RESEARCH",
     "completeness": 0.8,
-    "rank_score": -0.98,
+    "rank_score": -0.92,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)"
+   },
+   {
+    "game_id": "2026_08_NE_MIA",
+    "home": "Miami Dolphins",
+    "away": "New England Patriots",
+    "kickoff": "2026-11-01T21:25:00.000Z",
+    "side": "away",
+    "selection": "New England Patriots",
+    "market_line": -7.5,
+    "fair_line": -7.83,
+    "model_line": -7.87,
+    "gap_points": 0.37,
+    "cover_at_market": 0.5103,
+    "break_even": 0.5238,
+    "edge_pp": -1.35,
+    "bet_to_line": -7,
+    "status": "CONDITIONAL",
+    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
+    "tier": "RESEARCH",
+    "completeness": 0.8,
+    "rank_score": -1.08,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)"
@@ -33094,19 +36354,19 @@
     "kickoff": "2026-10-26T00:20:00.000Z",
     "side": "home",
     "selection": "Seattle Seahawks",
-    "market_line": -2.5,
-    "fair_line": -2.69,
+    "market_line": -3,
+    "fair_line": -3.19,
     "model_line": -5.69,
-    "gap_points": 3.19,
-    "cover_at_market": 0.5059,
-    "break_even": 0.5238,
-    "edge_pp": -1.79,
-    "bet_to_line": -2,
+    "gap_points": 2.69,
+    "cover_at_market": 0.4903,
+    "break_even": 0.5074,
+    "edge_pp": -1.71,
+    "bet_to_line": -3,
     "status": "CONDITIONAL",
     "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
     "tier": "RESEARCH",
     "completeness": 0.8,
-    "rank_score": -1.43,
+    "rank_score": -1.37,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)"
@@ -33131,30 +36391,6 @@
     "tier": "RESEARCH",
     "completeness": 0.8,
     "rank_score": -1.46,
-    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
-    "fair_status": "BLENDED",
-    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)"
-   },
-   {
-    "game_id": "2026_08_MIN_DET",
-    "home": "Detroit Lions",
-    "away": "Minnesota Vikings",
-    "kickoff": "2026-11-01T18:00:00.000Z",
-    "side": "home",
-    "selection": "Detroit Lions",
-    "market_line": -3,
-    "fair_line": -3.08,
-    "model_line": -3.41,
-    "gap_points": 0.41,
-    "cover_at_market": 0.4869,
-    "break_even": 0.5074,
-    "edge_pp": -2.05,
-    "bet_to_line": -3,
-    "status": "CONDITIONAL",
-    "why": "the NFL spread is RESEARCH tier: no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate. The numbers are arithmetic on the fair line; they are not a recommendation",
-    "tier": "RESEARCH",
-    "completeness": 0.8,
-    "rank_score": -1.64,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.04 + 1.04×market + 0.05×(projection − market)"
