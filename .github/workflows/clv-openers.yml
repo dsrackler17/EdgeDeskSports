@@ -16,6 +16,21 @@
 # read-only probe of what ESPN carries right now, so the parsing is checked
 # against live payloads before it records anything. A pull request commits
 # nothing. Run it by hand with mode=probe for the same report.
+#
+# mode=backfill reads ESPN's archive: finished games' summaries still carry
+# DraftKings' open and close (the probe of 2026-10-21 found them for NHL
+# 2025-26 and 2026-27, NCAAW 2025-26 and part of college baseball 2026; none
+# for MLB 2025). One run reads up to max_requests and stops at a day boundary;
+# running it again over the same range resumes (games already archived are
+# skipped). Suggested ranges:
+#   nhl               20251007 .. yesterday
+#   ncaaw             20251103 .. 20260406
+#   college_baseball  20260213 .. 20260623
+#
+# Each job publishes only the files it owns, so the two never overwrite each
+# other on a push race (tools/ci/push_generated.sh puts OUR copy of each named
+# path on the remote tip): the hourly job its month files and summary.json,
+# the backfill its backfill_<season>.jsonl files.
 name: CLV opening lines
 
 on:
@@ -24,9 +39,27 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'run (capture, settle, publish) or probe (read-only report, writes nothing)'
+        description: 'run (capture, settle, publish), probe (read-only report, writes nothing) or backfill (ESPN archive)'
+        type: choice
+        options: [run, probe, backfill]
         required: false
-        default: 'run'
+        default: run
+      sport:
+        description: 'backfill only: nhl, mlb, ncaaw or college_baseball'
+        required: false
+        default: 'nhl'
+      from:
+        description: 'backfill only: first ET day, YYYYMMDD'
+        required: false
+        default: '20251007'
+      to:
+        description: 'backfill only: last ET day, YYYYMMDD (blank = yesterday, Eastern)'
+        required: false
+        default: ''
+      max_requests:
+        description: 'backfill only: ESPN requests this run may make'
+        required: false
+        default: '3000'
   pull_request:
     paths:
       - 'research/clv/collect_openers.py'
@@ -38,7 +71,7 @@ permissions:
 
 jobs:
   collect:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode != 'probe')
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'run')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -61,7 +94,53 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          bash tools/ci/push_generated.sh main "clv: opening lines" -- research/clv/openers
+          shopt -s nullglob
+          bash tools/ci/push_generated.sh main "clv: opening lines" -- \
+            research/clv/openers/summary.json research/clv/openers/*/20[0-9][0-9]-[0-9][0-9].jsonl
+
+  backfill:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'backfill'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    concurrency:
+      group: clv-openers-backfill
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The collector's rules hold before anything is recorded
+        run: python3 -m unittest model_loop.tests.test_clv_openers
+      - name: Read ESPN's archive
+        env:
+          SPORT: ${{ inputs.sport }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+          MAX: ${{ inputs.max_requests }}
+        run: |
+          set -euo pipefail
+          case "$SPORT" in nhl|mlb|ncaaw|college_baseball) ;; *) echo "::error::sport must be nhl, mlb, ncaaw or college_baseball"; exit 1;; esac
+          [[ "$FROM" =~ ^[0-9]{8}$ ]] || { echo "::error::from must be YYYYMMDD"; exit 1; }
+          if [ -z "$TO" ]; then TO=$(TZ=America/New_York date -d yesterday +%Y%m%d); fi
+          [[ "$TO" =~ ^[0-9]{8}$ ]] || { echo "::error::to must be YYYYMMDD"; exit 1; }
+          [[ "$MAX" =~ ^[0-9]+$ ]] || { echo "::error::max_requests must be a number"; exit 1; }
+          python3 -m research.clv.collect_openers backfill "$SPORT" "$FROM" "$TO" "$MAX" | tee /tmp/backfill.json
+          python3 -c 'import json; r=json.load(open("/tmp/backfill.json")); print("::notice::%s %s..%s: %d games archived, %d with open and close; %s" % (r["sport"], r["from"], r["to"], r["games"], r["with_open_and_close"], "done" if r["done"] else "NOT done: run it again over the same range to resume"))'
+      - name: Publish (tools/ci/push_generated.sh)
+        env:
+          SPORT: ${{ inputs.sport }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          shopt -s nullglob
+          files=(research/clv/openers/"$SPORT"/backfill_*.jsonl)
+          if [ ${#files[@]} -eq 0 ]; then echo "nothing archived"; exit 0; fi
+          bash tools/ci/push_generated.sh main "clv: opening lines archive ($SPORT)" -- "${files[@]}"
 
   check:
     if: github.event_name == 'pull_request' || inputs.mode == 'probe'

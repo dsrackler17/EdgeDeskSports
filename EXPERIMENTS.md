@@ -803,6 +803,25 @@ These sports were audited in Phase 1 (`DATA_AUDIT.md`). None has a single openin
 | College baseball | Adding `baseball_ncaa` to the odds gateway |
 | Tennis | Retired; nothing to unlock |
 
+**Collection started 2026-10-21.** `research/clv/collect_openers.py` runs hourly via `.github/workflows/clv-openers.yml`. It records ESPN's pregame lines into `research/clv/openers/` (format: its `README.md`) for:
+- NCAAW, UFC and college baseball;
+- NHL 2026-27 and MLB, whose holdouts had no openers.
+
+For each game it keeps:
+- the first-seen line, stamped;
+- the book's own opener, when ESPN shows it;
+- every later change;
+- ESPN's own open and close after the game.
+
+ESPN also still holds DraftKings' open and close for finished games in:
+- NHL 2025-26 and 2026-27 to date;
+- NCAAW 2025-26;
+- part of college baseball 2026.
+
+None was found for MLB 2025. The backfill (`mode=backfill`) reads these back into `research/clv/openers/<sport>/backfill_<season>.jsonl`. Those games have the book's own opener but no first-seen timestamp.
+
+A sport becomes testable once enough priced games with closes have built up. `research/clv/openers/summary.json` counts them. Any experiment on this data is pre-registered here before it is run.
+
 ---
 
 ## Player props (NFL, CFB): single holdout runs

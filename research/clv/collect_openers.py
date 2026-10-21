@@ -8,6 +8,8 @@ record. It prices nothing, serves nothing and changes no published number.
   python3 -m research.clv.collect_openers            capture, settle, rewrite the summary
   python3 -m research.clv.collect_openers summary    rewrite the summary from the ledger only
   python3 -m research.clv.collect_openers probe      read-only: what ESPN carries now (CI evidence)
+  python3 -m research.clv.collect_openers backfill <sport> <YYYYMMDD> <YYYYMMDD> [max_requests]
+                                                     ESPN's archive of finished games' open and close
 
 SOURCE. ESPN's public, keyless scoreboard, read with the plain request the
 slate, the UFC ingest and the CFB lab already make from GitHub's runners (one
@@ -30,6 +32,14 @@ by the month a row was observed. Three kinds of row:
           summary, each book's open and close as ESPN kept them, so the close
           does not depend on when this job last ran. UFC is not settled
           here (its results come from model_loop/data/ufc/bouts.csv).
+
+THE ARCHIVE: research/clv/openers/<sport>/backfill_<season>.jsonl. ESPN's game
+summaries keep each book's open and close after the game: the probe of
+2026-10-21 found DraftKings' for NHL (2025-26 and 2026-27), NCAAW (2025-26)
+and part of college baseball (2026), and none for MLB 2025. `backfill` reads
+them back, one `archive` row per finished game (the event, the score and
+each book's open and close, with no first-seen quote: the opener there is
+the book's own, as ESPN kept it). It is resumable and writes only its files.
 
 THE RULES. A quote is read only while ESPN says the game is pre and before
 its start: in-play prices are never read. A moneyline needs both sides; a
@@ -73,12 +83,16 @@ SPORTS = {
 SETTLE_AFTER_H = 4        # a game's summary is first read this long after its start
 SETTLE_GIVE_UP_H = 72     # after this long it is recorded as it stands (postponed, suspended, no summary)
 SETTLE_PER_RUN = 60
-CORE_PER_RUN = 60         # UFC bouts whose odds are read from the core API when the scoreboard has none
+CORE_PER_RUN = 150        # UFC bouts whose odds are read from the core API when the scoreboard has none
 CORE_EVERY_H = 4          # ... on every run when the card is inside CORE_NEAR_H, else on hours divisible by this
 CORE_NEAR_H = 30
 LOOKBACK_MONTHS = 2       # state (last line per game and book) is read from this many earlier months
+LIVE_FILE = re.compile(r"^\d{4}-\d{2}\.jsonl$")
+ARCHIVE_FILE = re.compile(r"^backfill_.+\.jsonl$")
 PAUSE_S = 0.25            # between requests
-REFUSED_BOOK = re.compile(r"consensus|average|opening", re.I)
+# a consensus, an average or a stats site's line (ESPN quotes TeamRankings and
+# numberFire in older summaries) is a number, not a book's price
+REFUSED_BOOK = re.compile(r"consensus|average|opening|teamrankings|numberfire", re.I)
 NOT_PLAYING = re.compile(r"POSTPONED|CANCEL|SUSPENDED|FORFEIT|DELAYED", re.I)
 
 
@@ -319,11 +333,34 @@ def book_of(o):
 
 
 def _odds_side_id(s):
+    """The team or fighter an odds block is for: its id field, or the id in its $ref link."""
     for k in ("teamId", "athleteId"):
         if s.get(k) is not None:
             return str(s[k])
-    a = s.get("athlete")
-    return _str(a.get("id")) if isinstance(a, dict) else None
+    for k in ("team", "athlete"):
+        d = s.get(k)
+        if isinstance(d, dict):
+            if d.get("id") is not None:
+                return str(d["id"])
+            m = re.search(r"/(?:teams|athletes)/(\d+)", str(d.get("$ref") or ""))
+            if m:
+                return m.group(1)
+    return None
+
+
+def _details_agrees(o, ev):
+    """ESPN's `details` names the favourite ("I. Lucindo -380"). True when the
+    side it names is the side whose odds block is the favourite, False when it
+    names the other one, None when it cannot tell."""
+    m = re.fullmatch(r"(.+?)\s+[+-]?\d+(?:\.\d+)?", str(o.get("details") or "").strip())
+    if not m:
+        return None
+    name = m.group(1).strip().casefold()
+    named = [s for s in ("home", "away") if name in {str(ev[s].get(k) or "").casefold() for k in ("abbr", "name")}]
+    fav = [s for s in ("home", "away") if _side_odds(o, s).get("favorite") is True]
+    if len(named) != 1 or len(fav) != 1:
+        return None
+    return named[0] == fav[0]
 
 
 def oriented(o, home_id, away_id):
@@ -425,6 +462,18 @@ def quote(o, ev, sport, now):
         return None, "unnamed or consensus book"
     if not oriented(o, ev["home"]["id"], ev["away"]["id"]):
         return None, "odds name the other side as home"
+    if ev.get("side_source") == "order":
+        # ESPN did not label the sides: the odds must confirm them, by their own ids
+        # or, when they carry none, by the favourite their `details` names
+        ids = (_odds_side_id(_side_odds(o, "home")), _odds_side_id(_side_odds(o, "away")))
+        if any(ids):
+            agrees = all(i is None or i == ev[s]["id"] for i, s in zip(ids, ("home", "away")))
+        else:
+            agrees = _details_agrees(o, ev)
+            if agrees is False:
+                return None, "odds name the other side as home"
+        if not agrees:
+            return None, "sides not verifiable"
     m = market(o, "now", sport, ev["home"]["abbr"], ev["away"]["abbr"])
     if not m:
         return None, "no market with its sides"
@@ -439,8 +488,8 @@ def _month(t):
     return t.strftime("%Y-%m")
 
 
-def _files(sport, now=None, back=None):
-    fs = sorted(glob.glob(os.path.join(OUT, sport, "*.jsonl")))
+def _files(sport, now=None, back=None, kind=LIVE_FILE):
+    fs = sorted(f for f in glob.glob(os.path.join(OUT, sport, "*.jsonl")) if kind.match(os.path.basename(f)))
     if now is None or back is None:
         return fs
     y, m = now.year, now.month - back
@@ -573,7 +622,7 @@ def capture_sport(sport, now, fetch_fn=fetch, pause=PAUSE_S):
             seen[ev["cid"]] = (ev, odds)
     rows = []
     core_left = CORE_PER_RUN
-    for cid, (ev, odds) in seen.items():
+    for cid, (ev, odds) in sorted(seen.items(), key=lambda kv: kv[1][0].get("start_utc") or "~"):
         off = bool(NOT_PLAYING.search(ev.get("status") or ""))
         if ev.get("state") != "pre" and not off:
             continue                         # in play or over: its result comes from the settle
@@ -663,6 +712,70 @@ def settle_sport(sport, st, now, fetch_fn, rep, pause=PAUSE_S):
     return out
 
 
+# ------------------------------------------------------------------ archive
+def _archive_cids(sport):
+    return {r["cid"] for r in _rows(_files(sport, kind=ARCHIVE_FILE))}
+
+
+def backfill(sport, day_from, day_to, fetch_fn=fetch, max_requests=1500, now=None, pause=PAUSE_S):
+    """ESPN's archive for finished games, ET days day_from..day_to (YYYYMMDD):
+    one `archive` row per final game, filed by its season. Games already in
+    the archive are skipped, so a run that stops at max_requests resumes."""
+    cfg = SPORTS[sport]
+    if cfg.get("card"):
+        raise ValueError(f"{sport}: card sports have no game summary to read")
+    now = now or _now()
+    have = _archive_cids(sport)
+    d, last = dt.datetime.strptime(day_from, "%Y%m%d").date(), dt.datetime.strptime(day_to, "%Y%m%d").date()
+    rep = {"sport": sport, "from": day_from, "to": None, "requests": 0, "games": 0, "with_open_and_close": 0,
+           "skipped_have": 0, "errors": [], "files": []}
+    out = {}
+    q = "&limit=500" + (f"&groups={cfg['groups']}" if cfg.get("groups") else "")
+    while d <= last and rep["requests"] < max_requests:
+        url = f"{ESPN}/apis/site/v2/sports/{cfg['path']}/scoreboard?dates={d.strftime('%Y%m%d')}" + q
+        rep["requests"] += 1
+        try:
+            comps = competitions(fetch_fn(url), sport)
+        except Exception as ex:
+            rep["errors"].append(f"{d}: {str(ex)[:120]}")
+            comps = []
+        time.sleep(pause)
+        finals = [ev for ev, _ in comps if ev.get("status") == "STATUS_FINAL"]
+        if rep["to"] is not None and rep["requests"] + sum(ev["cid"] not in have for ev in finals) > max_requests:
+            break                            # a day is taken whole or not at all, so the resume point is a day
+        for ev in finals:
+            if ev["cid"] in have:
+                rep["skipped_have"] += 1
+                continue
+            rep["requests"] += 1
+            try:
+                j = fetch_fn(f"{ESPN}/apis/site/v2/sports/{cfg['path']}/summary?event={ev['cid']}")
+            except Exception as ex:
+                rep["errors"].append(f"summary {ev['cid']}: {str(ex)[:120]}")
+                continue                     # not written, so a later run asks again
+            finally:
+                time.sleep(pause)
+            st = settle_row(sport, j, ev, now)
+            row = {k: v for k, v in ev.items() if k not in ("kind", "state")}
+            row.update(kind="archive", observed_at=_iso(now), status=st["status"], completed=st["completed"],
+                       home_score=st["home_score"], away_score=st["away_score"], books=st["books"])
+            out.setdefault(str(ev.get("season")), []).append(row)
+            have.add(ev["cid"])
+            rep["games"] += 1
+            rep["with_open_and_close"] += any(b.get("open") and b.get("close") for b in st["books"])
+        rep["to"] = d.strftime("%Y%m%d")
+        d += dt.timedelta(days=1)
+    for season, rows in sorted(out.items()):
+        os.makedirs(os.path.join(OUT, sport), exist_ok=True)
+        fn = os.path.join(OUT, sport, f"backfill_{season}.jsonl")
+        with open(fn, "a") as f:
+            for r in rows:
+                f.write(json.dumps(r, separators=(",", ":")) + "\n")
+        rep["files"].append(os.path.relpath(fn, ROOT))
+    rep["done"] = d > last
+    return rep
+
+
 # ------------------------------------------------------------------ summary
 def summarise(sport):
     """Per season: games listed, priced, with ESPN's opener, settled with a close,
@@ -676,12 +789,13 @@ def summarise(sport):
             quotes.setdefault(r["cid"], []).append(r)
         elif k == "settle":
             settles[r["cid"]] = r
+    blank = lambda: {"listed": 0, "priced": 0, "with_espn_open": 0, "settled_with_close": 0, "testable_live": 0,
+                     "archive_games": 0, "archive_with_open_and_close": 0, "_lead": [], "_testable": set()}
     seasons = {}
     for cid, ev in events.items():
         if NOT_PLAYING.search(ev.get("status") or "") and cid not in quotes:
             continue
-        s = seasons.setdefault(str(ev.get("season")), {"listed": 0, "priced": 0, "with_espn_open": 0,
-                                                       "settled_with_close": 0, "testable": 0, "_lead": []})
+        s = seasons.setdefault(str(ev.get("season")), blank())
         s["listed"] += 1
         q = quotes.get(cid)
         if not q:
@@ -692,13 +806,23 @@ def summarise(sport):
         has_close = any(b.get("close") for b in se.get("books") or [])
         s["with_espn_open"] += has_open
         s["settled_with_close"] += has_close
-        s["testable"] += has_close or len(q) > 1
+        if has_close or len(q) > 1:
+            s["testable_live"] += 1
+            s["_testable"].add(cid)
         start = _parse_ts(ev.get("start_utc"))
         first = _parse_ts(q[0]["observed_at"])
         if start and first:
             s["_lead"].append(_hours(start, first))
+    archive = list(_rows(_files(sport, kind=ARCHIVE_FILE)))
+    for r in archive:
+        s = seasons.setdefault(str(r.get("season")), blank())
+        s["archive_games"] += 1
+        if any(b.get("open") and b.get("close") for b in r.get("books") or []):
+            s["archive_with_open_and_close"] += 1
+            s["_testable"].add(r["cid"])
     for s in seasons.values():
         lead = s.pop("_lead")
+        s["testable"] = len(s.pop("_testable"))
         s["priced_share"] = round(s["priced"] / s["listed"], 3) if s["listed"] else None
         s["first_quote_hours_before_start_median"] = round(statistics.median(lead), 1) if lead else None
     seen = list(events.values()) + list(settles.values()) + [x for q in quotes.values() for x in q]
@@ -708,8 +832,10 @@ def summarise(sport):
 
 def write_summary():
     out = {"schema": "edgedesk_openers_summary_v1",
-           "note": "Opening-line collection (research/clv/collect_openers.py). Counts per ESPN season label; "
-                   "testable = priced with a later close (ESPN's close at settle, or a second quote). Nothing here is served.",
+           "note": "Opening-line collection (research/clv/collect_openers.py). Counts per ESPN season label. "
+                   "listed .. testable_live: games seen pregame by the hourly capture (testable_live = priced with a later "
+                   "close: ESPN's close at settle, or a second quote). archive_*: finished games read back from ESPN's "
+                   "summaries (backfill), with the book's own open and close. testable: games with either. Nothing here is served.",
            "sports": {s: summarise(s) for s in SPORTS}}
     os.makedirs(OUT, exist_ok=True)
     with open(SUMMARY, "w") as f:
@@ -729,7 +855,7 @@ def _trim(o, depth=0):
     return o
 
 
-HISTORY = {"nhl": ["20261015", "20260115"], "mlb": ["20251001", "20250715", "20230715"],
+HISTORY = {"nhl": ["20261015", "20260115"], "mlb": ["20250610", "20240610", "20230715"],
            "ncaaw": ["20260115"], "college_baseball": ["20260411"]}
 
 
@@ -824,6 +950,14 @@ def main(argv):
         return 0
     if cmd == "probe":
         print(json.dumps(probe(), indent=1, default=str))
+        return 0
+    if cmd == "backfill":
+        if len(argv) < 5 or argv[2] not in SPORTS:
+            print("usage: backfill <sport> <YYYYMMDD> <YYYYMMDD> [max_requests]", file=sys.stderr)
+            return 64
+        rep = backfill(argv[2], argv[3], argv[4], max_requests=int(argv[5]) if len(argv) > 5 else 1500)
+        rep["summary"] = summarise(argv[2])    # summary.json is the hourly job's to write
+        print(json.dumps(rep, indent=1))
         return 0
     print(__doc__)
     return 64
