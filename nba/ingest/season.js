@@ -294,6 +294,15 @@ function finish(season, games, box, pgames, stints, shots, pteam, names, report,
   const last = {}; /* team → { t, city, home } */
   const recent = {}; /* team → [start ms] */
   const streak = {};
+  /* THE SCHEDULE CONTEXT ADVANCES OVER EVERY GAME THAT IS OR WILL BE PLAYED
+     (audit_report.md §8.3 N1). It used to advance over FINAL games only, so the
+     second leg of a back-to-back whose first leg was not yet played was served
+     rest 3, b2b 0, games_7d 0 and no travel — values no training row (all
+     final) ever had. A SCHEDULED game counts when it is still ahead (started
+     no more than 6 hours ago): a past-dated game that never went final was
+     postponed, and it never counts. Box-score fields stay FINAL-only. */
+  const nowMs = o && o.now != null ? Date.parse(o.now) : Date.now();
+  const playedOrAhead = (g, t) => g.status === 'FINAL' || (g.status === 'SCHEDULED' && isFinite(t) && t >= nowMs - 6 * 3600e3);
   for (const g of list) {
     const t = Date.parse(g.start_utc); const city = cityOf(g); const here = VEN.geo(city);
     for (const side of ['h', 'a']) {
@@ -319,6 +328,8 @@ function finish(season, games, box, pgames, stints, shots, pteam, names, report,
             poss: Math.round(possEst(b, ob) * 10) / 10 });
         } else boxMissing++;
         if (P) for (const k of ['rim_a', 'rim_m', 'paint_a', 'paint_m', 'mid_a', 'mid_m', 'c3_a', 'c3_m', 'ab3_a', 'ab3_m', 'tr_a', 'tr_pts', 'heave']) row[k] = P[k];
+      }
+      if (playedOrAhead(g, t)) {
         last[tid] = { t, city };
         (recent[tid] = recent[tid] || []).push(t);
         streak[tid] = { road: isRoad ? st.road + 1 : 0, home: isHome ? st.home + 1 : 0 };
@@ -385,7 +396,7 @@ function seasons(spec) {
   return String(spec).split(',').map(Number);
 }
 
-module.exports = { ingest, reasonCat, possEst, linescore, GAME_COLS, TG_COLS, seasons };
+module.exports = { ingest, finish, reasonCat, possEst, linescore, GAME_COLS, TG_COLS, seasons };
 
 if (require.main === module) {
   (async () => {

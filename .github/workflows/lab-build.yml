@@ -36,6 +36,12 @@ jobs:
       - name: The seasons in progress (completed seasons are cached and unchanged)
         run: |
           node basketball/ingest.js --league all --season current
+      # THE RATINGS ARE REFIT EVERY DAY (audit_report.md §8.2 B1): the same pass
+      # the weekly walk-forward runs, over every final through today, with the
+      # committed tuning and chosen model; only the live params are rewritten.
+      # Before this the slate priced from ratings up to a week old.
+      - name: Refit the live ratings through today
+        run: node basketball/walkforward.js --league all --live-only
       - name: Slates, missingness, registry and board
         run: node basketball/build_slate.js && node engine/lab/missingness.js && node engine/build_registry.js && node engine/build_board.js
       - name: The suites pass before anything is written
@@ -45,4 +51,4 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main "lab: current seasons, slates and the cross-sport board" -- \
-            basketball/data basketball/slate.json engine/missingness.json engine/registry.json engine/board.json
+            basketball/data basketball/params basketball/slate.json engine/missingness.json engine/registry.json engine/board.json

@@ -605,6 +605,18 @@
         return pr.efficiency_is_seed === false
           && /updated this season/.test(pr.efficiency.epa_per_play.source || '');
       })());
+    /* audit_report.md §8.1 C1: a feature the feed never supplies is still the seed, and says so */
+    chk('a feature the play-level feed never supplies stays labelled the trained seed; games are counted once',
+      (function () {
+        var st = E.strength.newState();
+        var f = Object.keys(E.strength.profile(st, 'alabama', true).efficiency).filter(function (k) { return k !== 'epa_per_play'; })[0];
+        for (var w = 0; w < 3; w++) E.ingest.absorbGame(st, { home: 'Alabama', away: 'Auburn', home_points: 31, away_points: 17,
+          team_stats: { home: { epa_per_play: 0.15, success_rate: 0.5 }, away: { epa_per_play: -0.02, success_rate: 0.4 } } });
+        var pr = E.strength.profile(st, 'alabama', true), other = Object.keys(pr.efficiency).filter(function (k) { return k !== 'epa_per_play' && k !== 'success_rate' && pr.efficiency[k].available; })[0];
+        return st.effFresh.alabama === 3
+          && /updated this season/.test(pr.efficiency.epa_per_play.source || '') && /3 of 3 play-level game/.test(pr.efficiency.epa_per_play.basis || '')
+          && (!other || (/TRAINED SEED/.test(pr.efficiency[other].source || '') && pr.efficiency_seed_features.indexOf(other) >= 0)) && !!f;
+      })());
 
     chk('the volatility index states how many drivers it rests on',
       (function () {

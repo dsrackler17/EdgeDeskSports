@@ -192,9 +192,19 @@ function v1Dist(margin, sigma, marketMargin) {
   const P = window.EDCfbP4Params, base = (P.volatility && P.volatility.sigma_base) || (P.distributions && P.distributions.sigma_margin) || 15;
   const s = num(sigma) || base;
   const md = E1.dist.marginDistribution(margin, s);
-  const q = (x) => (md ? E1.dist.quantile(md, x) : null);
   const mm = num(marketMargin), row = v1PmfRow(margin, mm);
   const cond = v1CoverConditioned(margin, row, s, base);
+  /* ONE DISTRIBUTION FOR THE RANGE AND THE COVER (audit_report.md §8.1 C3):
+     the quantiles are read off the same conditioned, re-centred PMF that prices
+     every line (P(margin <= t) = 1 - win(t)), so the basis below is true of
+     the range as well; with no conditioned shape, the engine's pooled
+     distribution, centred on the fair margin */
+  const condQ = (x) => {
+    let lo = margin - 120, hi = margin + 120;
+    for (let i = 0; i < 80; i++) { const m = (lo + hi) / 2; if (1 - cond(m).win >= x) hi = m; else lo = m; }
+    return Math.round(hi * 1e6) / 1e6;
+  };
+  const q = (x) => (cond ? condQ(x) : md ? E1.dist.quantile(md, x) : null);
   const signed = (x) => (x > 0 ? '+' : '') + x.toFixed(1);
   return {
     basis: !cond ? 'the champion’s empirical college margin PMF (EDCfbP4 dist.coverProbSpread), re-centred on its fair margin'

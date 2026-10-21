@@ -416,3 +416,73 @@ Steps 1–6 of the build follow in this branch, in order, with a backtest after 
 6. the other sports
 
 The results — every promoted change and every rejected candidate — are in `football/research/nfl_v2/RESULTS.md`, and the preregistration is in `football/research/nfl_v2/preregistration.json`, written before any 2025 holdout number was computed.
+
+## 8. Step 6 — the other models, audited for the same four bug classes
+
+The same four classes as the NFL: **(1)** a frozen opponent/defence layer, **(2)** a frozen player
+layer, **(3)** a training/serving mismatch, **(4)** dropped components or two distributions describing
+one number. Read-only audits, reproduced from committed artifacts; the scratch scripts are named
+where a number comes from one. What was fixed is in §9.
+
+### 8.1 College football (`football/cfb_p4`, live and priced; `cfb_v2` shadow)
+
+| # | class | finding | size |
+|---|---|---|---|
+| C1 | 2 | 16 of 34 efficiency features (EPA/play, EPA pass, EPA rush, passing-down success, explosive EPA rate, front disruption, points/drive, start field position, and their `def_` mirrors) are never supplied by `football/rankings/engine_efficiency.js`, so `engine.js` never updates them: 2,176 of 2,176 such team-feature cells sit at exactly 0.5 × the 2025 close all season. They are labelled "updated this season" with confidence 1, and `effFresh` counts feature updates, not games ("126 play-level games" for a 7-game team). The held-out record fed them every week from `team_game.csv`, so the record measures a different matchup layer from the served one. | mean 0.42 pts on the slate's fair spread, max 1.56 |
+| C2 | 3 | The measured efficiency features are defined differently in training (`build_team_game.py`) and serving (`engine_efficiency.js` via `players/build_players.js`): sacks credited to the row's `team` (44.6% of 2026 sack rows carry the DEFENCE) vs the drive's offence; garbage time by post-play margin at weight 0.35 vs pre-play margin at weight 0; yards/play without vs with sack yardage; FCS opponents pooled vs keyed. | matchup term moves mean 0.40, max 1.45 pts; 19 of 62 games ≥ 0.5 |
+| C3 | 4 | Three distributions for one margin: the win probability and moneyline from a Normal on the fair margin; the 80% range from `margin_resid_pmf` (mean −1.16, fitted on a core that used HFA 4.08 while the engine now uses 2.8); cover and alternate lines from the market-conditioned PMF. The range median sits exactly 1.00 pt below the fair margin on all 62 cards, P(home) differs by up to 5.1 pp between them, and the range's basis text says "conditioned on the current market spread" when it is not. The terminal's `games.json` says v1.0.0 on 59 of 59 games while the slate prices v1.0.1. | every card |
+| C4 | 3 | The calibrators (`tools/football/linemaker_calibrate.js`, `cfb_p4/research/hfa_unify.js`, `research/calibrate.js`, `health/daily_check.js`) replay an engine with no matchup term and no pace term (they wipe `st.eff` and absorb without `team_stats`); only `backtest_engine.js` passes efficiency. The CFB linemaker's CALIBRATED statuses and the shipped HFA of 2.8 were measured on that engine. | linemaker record |
+| C5 | 4 | The card's scoring-distribution block is centred on a different total than the header's fair total (mean 1.78 pts apart). | display |
+| C6 | 4 | (shadow only) `cfb_v2/research/v2/predict_live.py:110` multiplies drivers by max/max = 1 instead of the stack weight 0.5, and the GBM half is never attributed. | 2× the drivers |
+
+Clean: the rating tracks and scoring EWMAs update both teams through one code path shared by the
+build, the app and the backtest; game order, identity and FBS flags match training; the MEASURED
+defensive features are mirrored from the opponent's offence row (all 2,448 cells moved); the
+conference term reads only the prior season; the P4 QB layer is dormant in both training and serving;
+driver rows sum to the published margin on 62 of 62 cards. `football/engine.js`'s CFB layer is not live.
+
+### 8.2 Basketball lab (`basketball/`: WNBA, NCAAM, NCAAW, the lab's NBA ratings)
+
+| # | class | finding | size |
+|---|---|---|---|
+| B1 | 1, 3 | Team ratings are refit only weekly (`basketball/walkforward.js`, `lab-validate.yml`, Wednesdays) while prices are published daily (`lab-build.yml` → `build_slate.js`) from the stale `params/<league>_live.json`. The validated record absorbs every game as it finishes, so serving lags it by up to 7 days, and week 1 runs on preseason priors. `inputs_known_at` is the latest final in the data, not the ratings' last game, so the freshness gate passes regardless. | mean \|Δp\| 1.4–1.6 pp, max 22–40 pp |
+| B2 | 4 | Two distributions: the moneyline from a logistic fit, the margin, spreads and cover from a separate Normal(mu, sd_margin); up to 3.05 pp apart on the NBA slate. The spread row at line 0 carries a 2.8% push in a sport that cannot tie. | up to 3 pp |
+| B3 | 3 | The serving b2b flag counts a postponed (scheduled, unplayed) game; training counted finals only. | negligible |
+
+### 8.3 NBA (`nba/`)
+
+| # | class | finding | size |
+|---|---|---|---|
+| N1 | 3 | `nba/ingest/season.js` advances `last` / `recent` / `streak` only over FINAL games, so a game whose team's previous game is not yet played is served rest = 3, b2b = 0, games_7d = 0, travel = 0 — values no training row had. 423 real back-to-backs among 2026-27 scheduled rows, 0 flagged; 14 of 22 games on the slate were a second game inside 72 hours. Self-corrects once the first leg is final, so the final pregame number is usually right and earlier ones are not. Props inherit it. | ridge −4.6 pts on a mis-served away b2b |
+| N2 | 4 | "What moved the number" shows ridge contributions while the published price is the G_stack_P model: the rows miss the published margin by 2.51 pts on average (max 4.18) and point the other way in 9 of 22 games. | every card |
+| N3 | 4 | The board's NBA candidates come from the basketball lab's model, not the NBA engine, so the board and the NBA page show two numbers for one game (PHI @ NY 0.811 vs 0.773). | cross-surface |
+| N4 | 3 | (comparison row only) the lab-points row reads the weekly lab params while training used a point-in-time pass. | none on the price |
+
+Clean: every NBA state (Elo, Glicko, Kalman, adjusted efficiency, the RAPM player layer) is re-run
+through the same `pass.js` at serve time every 3 hours; moneyline, spread, total and intervals come
+from one distribution.
+
+### 8.4 The rest
+
+* **NHL** — clean: ratings and the goalie layer re-run every build, rest from the schedule including
+  unplayed games (matches training), the explanation sums exactly (max residual 5e-5), every market
+  from one distribution.
+* **MLB** — the run model is untrained (constants in `mlb/params.js`), so class 3 has no training to
+  compare with; season inputs are read live from Supabase. M1 (minor, 4): a +0.016 last-bat bonus is
+  added to the win probability only, so the moneyline (0.604) and the run distribution (0.588)
+  disagree — documented as a design choice in `params.js`. M2 (minor, 3): the starter's ratios and his
+  shrinkage innings come from different tables; a name-key miss regresses him to league average (a
+  warning shows).
+* **College basketball** — the lab (B1–B3 above) plus `basketball/ncaam_research`, which is clean (one
+  normal for everything; a static pack with no in-season feed, by design).
+* **College baseball** — the lab is clean (deterministic replay, same rest rule as training,
+  projected not oracle starters, coherence check; off-season). The app's `projectCbbGame` has M1's
+  bonus and is a second number beside the lab board (minor).
+* **UFC** — no model is registered (`lib/ufc_research.js`; `engine/lab/ufc_elo.js` measures, publishes
+  nothing). Nothing to audit.
+* **Tennis** — retired 2026-09-27. Latent if revived: the rating layer is frozen at the archive's end
+  (live results never reach the feature rows; class 1/2, would be critical), and serve-time rest,
+  workload and form are anchored to the record's last date while serve/return strength are null at
+  serve time (class 3).
+
+Severity: no critical finding in a live product. Material: C1, C2, C3, C4, B1, B2, N1, N2, N3.

@@ -510,6 +510,16 @@
         out.push([m, w]); tot += w;
       }
       for (i = 0; i < out.length; i++) out[i][1] /= tot;
+      /* CENTRED ON THE FAIR MARGIN (audit_report.md §8.1 C3). The pooled
+         residual PMF was fitted on a rating core that projected with a home
+         field of 4.08; the engine projects with 2.8, so its residuals sit about
+         a point low (median -1) and every card's range median sat exactly one
+         point below the fair margin. The whole-point median offset is removed,
+         so the distribution keeps its integer offsets and its median is the
+         fair margin. */
+      var c = 0, med = null;
+      for (i = 0; i < out.length; i++) { c += out[i][1]; if (c >= 0.5) { med = es[i][0]; break; } }
+      if (med) for (i = 0; i < out.length; i++) out[i][0] -= med;
       return out;
     },
     quantile: function (distr, q) {
@@ -773,13 +783,14 @@
       var CP = P.efficiency.counterpart || {};
       var fs = effFeats(), a = st.effAlpha, aL = P.efficiency.alpha_league || 0.01;
       var sides = [[g.home, g.away], [g.away, g.home]];
-      var pre = {}, i, j, t, opp, f, v, lm, cf, perf, raw;
+      var pre = {}, i, j, t, opp, f, v, lm, cf, perf, raw, moved;
       for (i = 0; i < sides.length; i++) pre[sides[i][0]] = clone(strength._eff(st, sides[i][0]));
       for (i = 0; i < sides.length; i++) {
         t = sides[i][0]; opp = sides[i][1];
         raw = g.team_stats[t];
         if (!raw) continue;
         strength._eff(st, opp);
+        moved = false;
         for (j = 0; j < fs.length; j++) {
           f = fs[j]; v = raw[f];
           if (!isNum(v)) continue;                 /* NaN skips; never a fake 0 */
@@ -789,8 +800,15 @@
           perf = v - lm - (cf && pre[opp] && isNum(pre[opp][cf]) ? pre[opp][cf] : 0);
           st.eff[t][f] = (1 - a) * st.eff[t][f] + a * perf;
           st.effMean[f] = (1 - aL) * lm + aL * v;
-          (st.effFresh || (st.effFresh = {}))[t] = (st.effFresh[t] || 0) + 1;
+          /* per FEATURE: a feature the feed never supplies stays the trained
+             seed all season and must say so (audit_report.md §8.1 C1) */
+          var ff = (st.effFreshF || (st.effFreshF = {}));
+          (ff[t] || (ff[t] = {}))[f] = (ff[t][f] || 0) + 1;
+          moved = true;
         }
+        /* GAMES absorbed, once per game — it counted feature updates, so a
+           seven-game team read "126 play-level games" */
+        if (moved) (st.effFresh || (st.effFresh = {}))[t] = (st.effFresh[t] || 0) + 1;
       }
     },
     /* the interpretable Layer-1 subrating bundle for one team */
@@ -839,14 +857,24 @@
           + (seasonsStale ? ', ' + seasonsStale + ' season(s) old' : '')
           + '. No play-level feed has updated it; supply game.team_stats to absorbGame '
           + 'and it becomes current.';
-      var fs = effFeats(), i;
+      var fs = effFeats(), i, ffT = (st.effFreshF && st.effFreshF[teamKey]) || {}, seedFeats = [];
+      var seedConf = clamp(1 - 0.35 * seasonsStale, 0.15, 0.85);
+      var seedSrc = 'opponent-adjusted EWMA (play-level) — TRAINED SEED, not updated since';
       for (i = 0; i < fs.length; i++) {
+        /* a team with play-level games can still have features the feed never
+           supplies: each feature is labelled by its OWN updates */
+        var fF = ffT[fs[i]] || 0, seedOnly = fresh && !fF;
+        if (seedOnly && e && isNum(e[fs[i]])) seedFeats.push(fs[i]);
         out.efficiency[fs[i]] = (e && isNum(e[fs[i]]))
-          ? M(e[fs[i]], { n: n, confidence: effConf, source: effSrc, basis: effBasis,
-              as_of: fresh ? null : 'season ' + st.seededThrough })
+          ? M(e[fs[i]], { n: n, confidence: seedOnly ? seedConf : effConf, source: seedOnly ? seedSrc : effSrc,
+              basis: seedOnly ? 'closing snapshot of season ' + st.seededThrough + (seasonsStale ? ', ' + seasonsStale + ' season(s) old' : '')
+                + '. The play-level feed supplies this team\'s other features but not this one, so it has not moved this season.'
+                : (fresh ? fF + ' of ' + fresh + ' play-level game(s) updated this feature' : effBasis),
+              as_of: fresh && !seedOnly ? null : 'season ' + st.seededThrough })
           : M.missing('no play-level data absorbed for this team');
       }
       out.efficiency_is_seed = !fresh;
+      out.efficiency_seed_features = seedFeats;
       return out;
     },
     /* Section XXI — regression of unstable statistics. The shrinkage factor
