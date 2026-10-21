@@ -1,0 +1,904 @@
+{
+ "at": "2026-10-21T01:44:52Z",
+ "season": 2026,
+ "week": 6,
+ "served_before": "2.0.0",
+ "runs": 2,
+ "served_after": "2.0.0",
+ "promoted": null,
+ "baseline": {
+  "full": {
+   "n": 4189,
+   "margin_mae": 10.1972,
+   "close_margin_mae": 9.993,
+   "logloss": 0.62297,
+   "close_logloss": 0.60926,
+   "mean_abs_vs_close": 2.1207
+  },
+  "recent_season": {
+   "n": 285,
+   "margin_mae": 10.0584,
+   "close_margin_mae": 9.6702,
+   "logloss": 0.63899,
+   "close_logloss": 0.60699
+  },
+  "this_season": {
+   "n": 93,
+   "margin_mae": 9.5504,
+   "close_margin_mae": 9.3065,
+   "logloss": 0.65632,
+   "close_logloss": 0.66145,
+   "mean_abs_vs_close": 2.158
+  }
+ },
+ "patterns": [
+  {
+   "pattern": "home",
+   "n": 378,
+   "note": "every game; line bias is the model's home lean against the close",
+   "line_bias": 0.543,
+   "line_t": 3.79,
+   "outcome_bias": -0.462,
+   "outcome_t": -0.72,
+   "abs_gap": 2.177,
+   "close_beats_model_by": 0.353
+  },
+  {
+   "pattern": "early_season",
+   "n": 128,
+   "note": "tag_early",
+   "line_bias": 0.792,
+   "line_t": 3.61,
+   "outcome_bias": 0.298,
+   "outcome_t": 0.27,
+   "abs_gap": 2.113,
+   "close_beats_model_by": 0.414
+  },
+  {
+   "pattern": "big_favourites",
+   "n": 107,
+   "note": "tag_big_fav",
+   "line_bias": 0.387,
+   "line_t": 1.2,
+   "outcome_bias": 0.646,
+   "outcome_t": 0.51,
+   "abs_gap": 2.541,
+   "close_beats_model_by": 0.54
+  },
+  {
+   "pattern": "rest",
+   "n": 25,
+   "note": "tag_short",
+   "line_bias": 1.268,
+   "line_t": 1.73,
+   "outcome_bias": -1.928,
+   "outcome_t": -0.66,
+   "abs_gap": 2.617,
+   "close_beats_model_by": 0.845
+  },
+  {
+   "pattern": "bye",
+   "n": 34,
+   "note": "tag_bye",
+   "line_bias": 0.84,
+   "line_t": 2.46,
+   "outcome_bias": -1.429,
+   "outcome_t": -0.77,
+   "abs_gap": 1.741,
+   "close_beats_model_by": -0.519
+  },
+  {
+   "pattern": "division",
+   "n": 127,
+   "note": "tag_div",
+   "line_bias": 0.924,
+   "line_t": 3.34,
+   "outcome_bias": -0.731,
+   "outcome_t": -0.63,
+   "abs_gap": 2.408,
+   "close_beats_model_by": 0.419
+  },
+  {
+   "pattern": "travel",
+   "n": 40,
+   "note": "tag_body_clock",
+   "line_bias": 0.342,
+   "line_t": 0.76,
+   "outcome_bias": 0.445,
+   "outcome_t": 0.22,
+   "abs_gap": 2.239,
+   "close_beats_model_by": -0.409
+  },
+  {
+   "pattern": "qb_change",
+   "n": 70,
+   "note": "tag_new_qb",
+   "line_bias": 0.892,
+   "line_t": 1.86,
+   "outcome_bias": -2.384,
+   "outcome_t": -1.29,
+   "abs_gap": 3.222,
+   "close_beats_model_by": 0.523
+  },
+  {
+   "pattern": "home_dogs",
+   "n": 157,
+   "note": "tag_home_dog",
+   "line_bias": 1.329,
+   "line_t": 6.25,
+   "outcome_bias": -1.593,
+   "outcome_t": -1.55,
+   "abs_gap": 2.303,
+   "close_beats_model_by": 0.564
+  }
+ ],
+ "largest_misses": [
+  {
+   "game_id": "2026_02_CAR_ATL",
+   "model": 5.24,
+   "close": -2.5,
+   "result": -31.0,
+   "gap": 7.74,
+   "top_components": [
+    {
+     "key": "home_field",
+     "points": 2.15
+    },
+    {
+     "key": "rush_def",
+     "points": 1.02
+    },
+    {
+     "key": "timezone",
+     "points": 0.76
+    },
+    {
+     "key": "pass_def",
+     "points": 0.59
+    },
+    {
+     "key": "qb",
+     "points": 0.57
+    }
+   ]
+  },
+  {
+   "game_id": "2026_05_CHI_GB",
+   "model": 6.1,
+   "close": -1.5,
+   "result": 24.0,
+   "gap": 7.6,
+   "top_components": [
+    {
+     "key": "qb",
+     "points": 3.05
+    },
+    {
+     "key": "home_field",
+     "points": 2.15
+    },
+    {
+     "key": "market",
+     "points": 1.5
+    },
+    {
+     "key": "timezone",
+     "points": 0.76
+    },
+    {
+     "key": "pass_def",
+     "points": -0.63
+    }
+   ]
+  },
+  {
+   "game_id": "2026_02_MIA_SF",
+   "model": 6.34,
+   "close": 12.5,
+   "result": 22.0,
+   "gap": -6.16,
+   "top_components": [
+    {
+     "key": "home_field",
+     "points": 2.15
+    },
+    {
+     "key": "timezone",
+     "points": -1.59
+    },
+    {
+     "key": "qb",
+     "points": 1.47
+    },
+    {
+     "key": "rush_off",
+     "points": 0.98
+    },
+    {
+     "key": "travel",
+     "points": 0.9
+    }
+   ]
+  },
+  {
+   "game_id": "2026_03_SEA_WAS",
+   "model": -2.52,
+   "close": -8.5,
+   "result": 2.0,
+   "gap": 5.98,
+   "top_components": [
+    {
+     "key": "market",
+     "points": -2.18
+    },
+    {
+     "key": "home_field",
+     "points": 2.15
+    },
+    {
+     "key": "timezone",
+     "points": -1.59
+    },
+    {
+     "key": "rush_def",
+     "points": -1.45
+    },
+    {
+     "key": "pass_def",
+     "points": -0.91
+    }
+   ]
+  },
+  {
+   "game_id": "2026_05_PHI_JAX",
+   "model": 1.61,
+   "close": 7.5,
+   "result": 2.0,
+   "gap": -5.89,
+   "top_components": [
+    {
+     "key": "qb",
+     "points": 1.82
+    },
+    {
+     "key": "travel",
+     "points": -0.41
+    },
+    {
+     "key": "market",
+     "points": -0.38
+    },
+    {
+     "key": "rush_def",
+     "points": 0.3
+    },
+    {
+     "key": "pass_off",
+     "points": 0.26
+    }
+   ]
+  },
+  {
+   "game_id": "2026_02_JAX_DEN",
+   "model": -2.78,
+   "close": 2.5,
+   "result": 7.0,
+   "gap": -5.28,
+   "top_components": [
+    {
+     "key": "home_field",
+     "points": 2.15
+    },
+    {
+     "key": "qb",
+     "points": -1.91
+    },
+    {
+     "key": "market",
+     "points": -1.29
+    },
+    {
+     "key": "timezone",
+     "points": -0.81
+    },
+    {
+     "key": "rush_def",
+     "points": -0.52
+    }
+   ]
+  },
+  {
+   "game_id": "2026_04_IND_WAS",
+   "model": 0.11,
+   "close": -4.5,
+   "result": -17.0,
+   "gap": 4.61,
+   "top_components": [
+    {
+     "key": "market",
+     "points": -1.09
+    },
+    {
+     "key": "qb",
+     "points": 0.9
+    },
+    {
+     "key": "rush_def",
+     "points": 0.66
+    },
+    {
+     "key": "rush_off",
+     "points": -0.54
+    },
+    {
+     "key": "travel",
+     "points": 0.19
+    }
+   ]
+  },
+  {
+   "game_id": "2026_03_KC_MIA",
+   "model": -5.43,
+   "close": -10.0,
+   "result": -14.0,
+   "gap": 4.57,
+   "top_components": [
+    {
+     "key": "market",
+     "points": -4.3
+    },
+    {
+     "key": "home_field",
+     "points": 2.15
+    },
+    {
+     "key": "qb",
+     "points": -1.92
+    },
+    {
+     "key": "rush_off",
+     "points": -0.91
+    },
+    {
+     "key": "pass_def",
+     "points": -0.6
+    }
+   ]
+  }
+ ],
+ "candidates": [
+  {
+   "at": "2026-10-21T01:30:21Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "era_shorter",
+   "change": {
+    "path": "model.hl_season",
+    "how": [
+     "set",
+     3.0
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "recent_era"
+   ],
+   "full": {
+    "margin_mae": 10.1979,
+    "logloss": 0.62328,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0774,
+    "logloss": 0.6405,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": 0.0007,
+    "full_logloss": 0.00031,
+    "recent_mae": 0.019,
+    "recent_logloss": 0.00151
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0007 does not clear -0.003; full-backtest log loss change +0.00031 does not clear -0.0002; worse on 2025 MAE (+0.0190); worse on 2025 log loss (+0.00151)"
+  },
+  {
+   "at": "2026-10-21T01:30:46Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "recency_faster",
+   "change": {
+    "path": "rating.hl_week",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "recency"
+   ],
+   "full": {
+    "margin_mae": 10.1967,
+    "logloss": 0.62261,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0274,
+    "logloss": 0.63685,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": -0.0005,
+    "full_logloss": -0.00036,
+    "recent_mae": -0.031,
+    "recent_logloss": -0.00214
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0005 does not clear -0.003"
+  },
+  {
+   "at": "2026-10-21T01:31:23Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "pass_off_prior_weaker",
+   "change": {
+    "path": "rating.lam.pass_off",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "prior"
+   ],
+   "full": {
+    "margin_mae": 10.1964,
+    "logloss": 0.62294,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0533,
+    "logloss": 0.63908,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": -0.0008,
+    "full_logloss": -3e-05,
+    "recent_mae": -0.0051,
+    "recent_logloss": 9e-05
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0008 does not clear -0.003; full-backtest log loss change -0.00003 does not clear -0.0002; worse on 2025 log loss (+0.00009)"
+  },
+  {
+   "at": "2026-10-21T01:32:03Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "pass_def_prior_weaker",
+   "change": {
+    "path": "rating.lam.pass_def",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "prior"
+   ],
+   "full": {
+    "margin_mae": 10.1978,
+    "logloss": 0.62289,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0649,
+    "logloss": 0.63924,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": 0.0006,
+    "full_logloss": -8e-05,
+    "recent_mae": 0.0065,
+    "recent_logloss": 0.00025
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0006 does not clear -0.003; full-backtest log loss change -0.00008 does not clear -0.0002; worse on 2025 MAE (+0.0065); worse on 2025 log loss (+0.00025)"
+  },
+  {
+   "at": "2026-10-21T01:32:40Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "off_carry_lower",
+   "change": {
+    "path": "rating.carry.off",
+    "how": [
+     "add",
+     -0.1
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "prior"
+   ],
+   "full": {
+    "margin_mae": 10.1965,
+    "logloss": 0.62295,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0603,
+    "logloss": 0.63874,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": -0.0007,
+    "full_logloss": -2e-05,
+    "recent_mae": 0.0019,
+    "recent_logloss": -0.00025
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0007 does not clear -0.003; full-backtest log loss change -0.00002 does not clear -0.0002; worse on 2025 MAE (+0.0019)"
+  },
+  {
+   "at": "2026-10-21T01:33:17Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "def_carry_lower",
+   "change": {
+    "path": "rating.carry.def",
+    "how": [
+     "add",
+     -0.1
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "prior"
+   ],
+   "full": {
+    "margin_mae": 10.1956,
+    "logloss": 0.62302,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0532,
+    "logloss": 0.6388,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": -0.0016,
+    "full_logloss": 5e-05,
+    "recent_mae": -0.0052,
+    "recent_logloss": -0.00019
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0016 does not clear -0.003; full-backtest log loss change +0.00005 does not clear -0.0002"
+  },
+  {
+   "at": "2026-10-21T01:33:52Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "market_prior_stronger",
+   "change": {
+    "path": "rating.market.lam",
+    "how": [
+     "mul",
+     2.0
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "market"
+   ],
+   "full": {
+    "margin_mae": 10.2054,
+    "logloss": 0.62326,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0449,
+    "logloss": 0.63793,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": 0.0082,
+    "full_logloss": 0.00029,
+    "recent_mae": -0.0135,
+    "recent_logloss": -0.00106
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0082 does not clear -0.003; full-backtest log loss change +0.00029 does not clear -0.0002"
+  },
+  {
+   "at": "2026-10-21T01:34:30Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "market_slower",
+   "change": {
+    "path": "rating.market.hl_week",
+    "how": [
+     "mul",
+     2.0
+    ]
+   },
+   "answers_patterns": [
+    "market"
+   ],
+   "full": {
+    "margin_mae": 10.2016,
+    "logloss": 0.62306,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.1067,
+    "logloss": 0.64196,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": 0.0044,
+    "full_logloss": 9e-05,
+    "recent_mae": 0.0483,
+    "recent_logloss": 0.00297
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0044 does not clear -0.003; full-backtest log loss change +0.00009 does not clear -0.0002; worse on 2025 MAE (+0.0483); worse on 2025 log loss (+0.00297)"
+  },
+  {
+   "at": "2026-10-21T01:35:08Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "split_od_on",
+   "change": {
+    "path": "model.components.pass_split",
+    "how": [
+     "set",
+     true
+    ]
+   },
+   "answers_patterns": [
+    "defence"
+   ],
+   "full": {
+    "margin_mae": 10.2012,
+    "logloss": 0.62339,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0784,
+    "logloss": 0.64037,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": 0.004,
+    "full_logloss": 0.00042,
+    "recent_mae": 0.02,
+    "recent_logloss": 0.00138
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0040 does not clear -0.003; full-backtest log loss change +0.00042 does not clear -0.0002; worse on 2025 MAE (+0.0200); worse on 2025 log loss (+0.00138)"
+  },
+  {
+   "at": "2026-10-21T01:35:33Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "market_carry_higher",
+   "change": {
+    "path": "rating.market.carry",
+    "how": [
+     "add",
+     0.2
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "market"
+   ],
+   "full": {
+    "margin_mae": 10.2004,
+    "logloss": 0.62282,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0677,
+    "logloss": 0.63865,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": 0.0032,
+    "full_logloss": -0.00015,
+    "recent_mae": 0.0093,
+    "recent_logloss": -0.00034
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0032 does not clear -0.003; full-backtest log loss change -0.00015 does not clear -0.0002; worse on 2025 MAE (+0.0093)"
+  },
+  {
+   "at": "2026-10-21T01:42:47Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "hfa_recent_era",
+   "change": {
+    "path": "multi",
+    "how": [
+     "multi",
+     [
+      [
+       "model.hfa_target",
+       [
+        "set",
+        "recent"
+       ]
+      ],
+      [
+       "model.hfa_prior_games",
+       [
+        "set",
+        300.0
+       ]
+      ]
+     ]
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "home_dogs",
+    "recent_era"
+   ],
+   "full": {
+    "margin_mae": 10.1965,
+    "logloss": 0.62293,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0582,
+    "logloss": 0.63897,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": -0.0007,
+    "full_logloss": -4e-05,
+    "recent_mae": -0.0002,
+    "recent_logloss": -2e-05
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0007 does not clear -0.003; full-backtest log loss change -0.00004 does not clear -0.0002"
+  },
+  {
+   "at": "2026-10-21T01:43:12Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "hfa_recent_era_strong",
+   "change": {
+    "path": "multi",
+    "how": [
+     "multi",
+     [
+      [
+       "model.hfa_target",
+       [
+        "set",
+        "recent"
+       ]
+      ],
+      [
+       "model.hfa_prior_games",
+       [
+        "set",
+        3000.0
+       ]
+      ]
+     ]
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "home_dogs"
+   ],
+   "full": {
+    "margin_mae": 10.1946,
+    "logloss": 0.62281,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0574,
+    "logloss": 0.63891,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": -0.0026,
+    "full_logloss": -0.00016,
+    "recent_mae": -0.001,
+    "recent_logloss": -8e-05
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0026 does not clear -0.003; full-backtest log loss change -0.00016 does not clear -0.0002"
+  },
+  {
+   "at": "2026-10-21T01:43:37Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "market_hfa_looser",
+   "change": {
+    "path": "rating.market.lam_hfa",
+    "how": [
+     "mul",
+     0.25
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "home_dogs",
+    "market"
+   ],
+   "full": {
+    "margin_mae": 10.1968,
+    "logloss": 0.62294,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0595,
+    "logloss": 0.63919,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": -0.0004,
+    "full_logloss": -3e-05,
+    "recent_mae": 0.0011,
+    "recent_logloss": 0.0002
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0004 does not clear -0.003; full-backtest log loss change -0.00003 does not clear -0.0002; worse on 2025 MAE (+0.0011); worse on 2025 log loss (+0.00020)"
+  },
+  {
+   "at": "2026-10-21T01:44:25Z",
+   "season": 2026,
+   "week": 6,
+   "served_version": "2.0.0",
+   "candidate": "division_on",
+   "change": {
+    "path": "model.components.division",
+    "how": [
+     "set",
+     true
+    ]
+   },
+   "answers_patterns": [
+    "division"
+   ],
+   "full": {
+    "margin_mae": 10.1965,
+    "logloss": 0.62293,
+    "n": 4189
+   },
+   "recent_season": {
+    "margin_mae": 10.0757,
+    "logloss": 0.63959,
+    "n": 285
+   },
+   "delta": {
+    "full_mae": -0.0007,
+    "full_logloss": -4e-05,
+    "recent_mae": 0.0173,
+    "recent_logloss": 0.0006
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0007 does not clear -0.003; full-backtest log loss change -0.00004 does not clear -0.0002; worse on 2025 MAE (+0.0173); worse on 2025 log loss (+0.00060)"
+  }
+ ]
+}
