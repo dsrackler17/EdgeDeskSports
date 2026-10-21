@@ -766,3 +766,16 @@ So Phases 3–5 are infeasible. The only candidate is the production model, the 
 ### NCAAM-H1: production bb_points (NCAAM 1.1.0), spread ≥1.5, repo 2026–2027 holdout
 ### NCAAM-H2: production, total ≥2.0
 ### NCAAM-H3: production, moneyline ≥0.02
+
+### WNBA and NCAAM holdout results (run once, 2026-10-21)
+
+**k = 3 each.** Lines: DraftKings open and close with their own prices.
+
+| ID | Bets | CLV pts | CLV prob (pp) | α/3 LB | Toward | `clv_ev` | Verdict |
+|---|---|---|---|---|---|---|---|
+| WNBA-H1 spread ≥1.5 (2026; 2025 has no openers) | 198 | +0.232 [-0.062, +0.529] | +0.61 [-0.37, +1.59] | -0.43 | 0.503 | -3.4% | **FAIL** |
+| WNBA-H2 total ≥2.0 | 231 | +0.861 [+0.472, +1.246] | +2.19 [+1.21, +3.17] | +1.15 | 0.612 | -0.4% | **PASS** |
+| WNBA-H3 moneyline ≥0.02 | 271 | – | +0.55 [-0.11, +1.17] | -0.17 | 0.525 | -3.0% | **FAIL** |
+| NCAAM-H1 spread ≥1.5 (2025-26) | 2,862 | +0.336 [+0.258, +0.424] | +1.03 [+0.76, +1.34] | +0.73 | 0.592 | -2.5% | **PASS** |
+| NCAAM-H2 total ≥2.0 | 2,552 | +0.661 [+0.540, +0.784] | +1.58 [+1.26, +1.89] | +1.24 | 0.623 | -1.5% | **PASS** |
+| NCAAM-H3 moneyline ≥0.02 | 3,363 | – | +0.77 [+0.64, +0.91] | +0.63 | 0.597 | -2.5% | **PASS** |

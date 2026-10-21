@@ -1,0 +1,39 @@
+{
+ "qa": {
+  "games": 6300,
+  "fetch_errors": 3,
+  "with_book": 4765,
+  "spread_abs_line_dropped": 1,
+  "spread_move_dropped": 8,
+  "open_total_range_dropped": 0,
+  "close_total_range_dropped": 0,
+  "total_move_dropped": 0,
+  "open_ml_dropped": 4,
+  "close_ml_dropped": 3
+ },
+ "games_with_spread": 4756,
+ "NCAAM-H1": {
+  "result": "n=2862; CLV +0.336 pts [+0.258, +0.424]; CLV +1.03 pp [+0.76, +1.34], p=0; alpha/3 LB +0.73 pp; toward 0.592",
+  "verdict": {
+   "pass": true,
+   "why": "mean clv_prob +0.0103, alpha/3 one-sided lower bound +0.0073"
+  },
+  "clv_ev": -0.02537
+ },
+ "NCAAM-H2": {
+  "result": "n=2552; CLV +0.661 pts [+0.540, +0.784]; CLV +1.58 pp [+1.26, +1.89], p=0; alpha/3 LB +1.24 pp; toward 0.623",
+  "verdict": {
+   "pass": true,
+   "why": "mean clv_prob +0.0158, alpha/3 one-sided lower bound +0.0124"
+  },
+  "clv_ev": -0.01512
+ },
+ "NCAAM-H3": {
+  "result": "n=3363; CLV +0.77 pp [+0.64, +0.91], p=0; alpha/3 LB +0.63 pp; toward 0.597",
+  "verdict": {
+   "pass": true,
+   "why": "mean clv_prob +0.0077, alpha/3 one-sided lower bound +0.0063"
+  },
+  "clv_ev": -0.02539
+ }
+}
