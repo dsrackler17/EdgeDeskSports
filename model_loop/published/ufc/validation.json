@@ -1,0 +1,126 @@
+{
+ "schema": "edgedesk_lab_walkforward_v1",
+ "sport": "mma",
+ "label": "UFC / MMA",
+ "generated_at": "2026-10-21T11:49:32Z",
+ "data": {
+  "source": "ESPN public scoreboard, month by month (model_loop/adapters/ufc/ingest.py)",
+  "bouts": 6932,
+  "final": 6905,
+  "scored": 6781,
+  "seasons": [
+   2014,
+   2026
+  ],
+  "temporal": {
+   "point_in_time": "RETROSPECTIVE",
+   "known_at": "each bout priced from ratings before its date"
+  }
+ },
+ "method": "walk-forward Elo, symmetric in the feed's order, tuned on 2016-2020 under a preregistered protocol (docs/model-loop/ufc/prereg.json)",
+ "selection": {
+  "chosen": "Elo {\"calibration\": \"none\", \"k\": 64, \"k_new_mult\": 1.0, \"layoff_days\": 365, \"layoff_regress\": 0.25, \"new_bouts\": 3, \"scale\": 400.0}",
+  "prereg_sha256": "59f6ebf4b1c82be50c2f8ae893e951434c606cbd2d1b1bf1f559c6e5a4a91610"
+ },
+ "windows": {
+  "confirmation": {
+   "seasons": 4,
+   "range": [
+    2021,
+    2024
+   ]
+  }
+ },
+ "result": {
+  "confirmation": {
+   "window": "validation 2021-2024",
+   "seasons": 4,
+   "n": 2225,
+   "log_loss": 0.67561,
+   "brier": 0.24142,
+   "coin_flip_log_loss": 0.69315,
+   "favourite_mean_p": 0.5611,
+   "favourite_won": 0.5645,
+   "calibration_in_the_large": -0.0034,
+   "calibration_slope": 1.183,
+   "calibration_slope_method": "slope-only recalibration p' = sigmoid(b logit p): a symmetric model has no side to fit an intercept for",
+   "vs_coin_flip": {
+    "mean_diff": -0.017542,
+    "ci95": [
+     -0.02343,
+     -0.011704
+    ],
+    "blocks": 221,
+    "block": "a UFC card (event_id)"
+   }
+  },
+  "holdout_2025": {
+   "window": "holdout 2025-2025",
+   "seasons": 1,
+   "n": 563,
+   "log_loss": 0.66571,
+   "brier": 0.23657,
+   "coin_flip_log_loss": 0.69315,
+   "favourite_mean_p": 0.5643,
+   "favourite_won": 0.6092,
+   "calibration_in_the_large": -0.045,
+   "calibration_slope": 1.537,
+   "calibration_slope_method": "slope-only recalibration p' = sigmoid(b logit p): a symmetric model has no side to fit an intercept for",
+   "vs_coin_flip": {
+    "mean_diff": -0.027434,
+    "ci95": [
+     -0.036613,
+     -0.017285
+    ],
+    "blocks": 52,
+    "block": "a UFC card (event_id)"
+   }
+  },
+  "live_served": {
+   "window": "live 2026-2026",
+   "seasons": 1,
+   "n": 498,
+   "log_loss": 0.67121,
+   "brier": 0.23916,
+   "coin_flip_log_loss": 0.69315,
+   "favourite_mean_p": 0.5774,
+   "favourite_won": 0.5904,
+   "calibration_in_the_large": -0.0129,
+   "calibration_slope": 1.048,
+   "calibration_slope_method": "slope-only recalibration p' = sigmoid(b logit p): a symmetric model has no side to fit an intercept for",
+   "vs_coin_flip": {
+    "mean_diff": -0.02194,
+    "ci95": [
+     -0.042372,
+     -0.00128
+    ],
+    "blocks": 46,
+    "block": "a UFC card (event_id)"
+   },
+   "version": "1.1.0",
+   "note": "the served version's changes after 1.0.0 were chosen on the full window by the weekly rule; this season is their clean test"
+  }
+ },
+ "markets": {
+  "moneyline": {
+   "market": "fight winner",
+   "n": 2225,
+   "log_loss": 0.67561,
+   "brier": 0.24142,
+   "calibration_in_the_large": -0.0034,
+   "calibration_slope": 1.183,
+   "orientation": "favourite's side",
+   "window": "validation 2021-2024",
+   "status": "PROVISIONAL",
+   "failed": [
+    "calibration slope 1.183"
+   ],
+   "market_status": "NOT_TESTED",
+   "market_reason": "no archive of timestamped UFC closing prices is on file"
+  }
+ },
+ "unresolved": [
+  "Round-level fight statistics (UFCStats refuses automated access; an authorised feed is needed) for the method and round markets.",
+  "A closing-price archive: until one exists nothing here can be called an edge."
+ ]
+}

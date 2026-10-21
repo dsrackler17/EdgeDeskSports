@@ -1,6 +1,6 @@
 # CFB Model Lab — 2026 season to date
 
-Generated 2026-10-21T11:07:50.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
+Generated 2026-10-21T12:07:45.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
 
 ## Comparison on the common official set (n = 176)
 
@@ -16,6 +16,7 @@ Generated 2026-10-21T11:07:50.000Z from the immutable ledger (LIVE origin only).
 
 | model | games | MAE | RMSE | Brier | win ECE | 80% cov. | research record | ATS | CLV mean | +CLV |
 |---|---|---|---|---|---|---|---|---|---|---|
+| edgedesk_cfb_loop_v2.0.0 | 0 | — | — | — | — | — | 0-0-0 | — | — | — |
 | edgedesk_cfb_p4_v1.0.0 | 182 | 12.18 | 15.41 | 0.2016 | 0.0689 | — | 58-55-4 | 51.3% | -0.14 | 42.6% |
 | edgedesk_cfb_v2.0.0 | 176 | 12.32 | 15.65 | 0.2031 | 0.0552 | 0.81 | 10-13-1 | 43.5% | -0.02 | 37.5% |
 | edgedesk_cfb_v2.1.0 | 176 | 12.30 | 15.63 | 0.2030 | 0.0755 | 0.81 | 14-11-0 | 56.0% | -0.16 | 44.0% |
@@ -24,10 +25,11 @@ Generated 2026-10-21T11:07:50.000Z from the immutable ledger (LIVE origin only).
 
 - edgedesk_cfb_v2.1.0 vs champion edgedesk_cfb_p4_v1.0.0: **NOT_ELIGIBLE** (n=176 of 150 needed; MAE difference 0.089 [-0.515, 0.676])
 - edgedesk_cfb_v2.0.0 vs champion edgedesk_cfb_p4_v1.0.0: **NOT_ELIGIBLE** (n=176 of 150 needed; MAE difference 0.117 [-0.474, 0.687])
+- edgedesk_cfb_loop_v2.0.0 vs champion edgedesk_cfb_p4_v1.0.0: **INSUFFICIENT_SAMPLE** (n=0 of 150 needed; MAE difference — [—, —])
 
 ## Alerts
 
 - **calibration_worse** (edgedesk_cfb_p4_v1.0.0) last-100 win ECE 0.1035 > 0.06
 - **calibration_worse** (edgedesk_cfb_v2.1.0) last-100 win ECE 0.0865 > 0.06
 - **calibration_worse** (edgedesk_cfb_v2.0.0) last-100 win ECE 0.1053 > 0.06
-- **market_source_stale** 42% of snapshots within 72 h fail odds_freshness
+- **market_source_stale** 38% of snapshots within 72 h fail odds_freshness

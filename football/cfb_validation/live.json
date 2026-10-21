@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-21T11:08:09.306Z",
+ "generated_at": "2026-10-21T12:08:03.543Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -246,6 +246,27 @@
    "changed_files": [
     "football/cfb_p4/engine.js"
    ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "PRICING",
+   "version": "edgedesk_cfb_r1+p11",
+   "effective_at": "2026-10-21T09:57:13.629Z",
+   "reason": "the pricing path changed so a promoted governance champion can price the board (lib/cfb_champion.js): football/cfb_p4/engine.js prices a game from the champion's stored pregame number when the champion table (football/cfb_production/champion.js) has one, keeping V1 beside it and a reconciling row; football/fbs/build_coverage.js loads the table, names each priced request's game and publishes priced_by and a v1 block. With V1 the champion the table is empty and every published number is unchanged (99 of 99 games identical on rebuild)",
+   "changed_files": [
+    "football/cfb_p4/engine.js",
+    "football/fbs/build_coverage.js"
+   ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "RESEARCH",
+   "version": "edgedesk_cfb_r1.research+r10",
+   "effective_at": "2026-10-21T09:59:55.599Z",
+   "reason": "the research path changed so a champion-priced card reconciles: lib/cfb_disagreement.js reads the engine's champion row (the promoted champion's number less V1's, lib/cfb_champion.js) as its own line in the decomposition instead of leaving it unexplained; it is never a V1 component (no range or dominance check). With V1 the champion the row is absent and every decomposition is unchanged",
+   "changed_files": [
+    "lib/cfb_disagreement.js"
+   ]
   }
  ],
  "pending_patches": [],
@@ -254,7 +275,7 @@
   "release": "edgedesk_cfb_r1",
   "frozen_at": "2026-09-28T00:00:00.000Z",
   "live_games": 182,
-  "live_snapshots_tracked": 1524,
+  "live_snapshots_tracked": 1525,
   "model_mae": 12.181,
   "market_moved_toward_edgedesk_pct": 53.3,
   "average_clv": -0.044,
@@ -1454,19 +1475,19 @@
  ],
  "what_changed_this_week": {
   "available": true,
-  "since": "2026-10-15T06:24:09.626Z",
+  "since": "2026-10-15T12:04:37.516Z",
   "changes": [
    {
     "what": "pricing code",
     "kind": "SOFTWARE",
     "from": "f6fc9d15df4dc2b3",
-    "to": "f4e8c1e72135c79e"
+    "to": "2e49d2ae9f7d26ac"
    },
    {
     "what": "research-gate code",
     "kind": "SOFTWARE",
     "from": "ff06bc85056495a2",
-    "to": "5307d02c6836eef8"
+    "to": "dda4d94709c4cd46"
    },
    {
     "what": "research modules / maturity",
@@ -1477,8 +1498,8 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-15T04:57:43.625Z",
-    "to": "2026-10-21T05:06:04.862Z"
+    "from": "2026-10-15T11:51:17.906Z",
+    "to": "2026-10-21T11:49:39.812Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -1526,9 +1547,9 @@
   {
    "kind": "market_source_stale",
    "level": "warn",
-   "message": "42% of snapshots within 72 h fail odds_freshness",
+   "message": "38% of snapshots within 72 h fail odds_freshness",
    "detail": {
-    "share": 0.424
+    "share": 0.383
    }
   }
  ],

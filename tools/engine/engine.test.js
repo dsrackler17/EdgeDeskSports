@@ -33,7 +33,7 @@ const ids = B.SPORTS.map((s) => s.id);
 chk('registry: the 11 sports asked for, each once (soccer removed 2026-10-15)', JSON.stringify(ids.slice().sort()) === JSON.stringify(['cfb', 'college_baseball', 'mlb', 'mma', 'ncaab_m', 'ncaab_w', 'nba', 'nfl', 'nhl', 'tennis', 'wnba'].sort()), ids);
 chk('registry: every cited source exists', B.SPORTS.every((s) => (s.brain.candidates || []).every((c) => (c.sources || []).every((k) => B.SOURCES[k]))));
 chk('registry: a sport with no brain and no data is UNAVAILABLE', B.computeReadiness(B.byId('nba'), { markets: {} }).state === 'UNAVAILABLE');
-chk('registry: a sport with data but no brain is RESEARCH_ONLY', B.computeReadiness(B.byId('mma'), { markets: {} }).state === 'RESEARCH_ONLY');
+chk('registry: a sport with data but no brain is RESEARCH_ONLY', B.computeReadiness({ id: 'x', product: 'ACTIVE', brain: { status: 'NOT_BUILT' }, data: [{ source: 'feed' }] }, { markets: {} }).state === 'RESEARCH_ONLY');
 chk('registry: a retired sport is RETIRED whatever its record', B.computeReadiness(B.byId('tennis'), { markets: { moneyline: { outcome: 'VALIDATED', market: 'TESTED_AHEAD', n: 5000 } } }).state === 'RETIRED');
 const outcomeOnly = B.computeReadiness(B.byId('nhl'), { markets: { moneyline: { outcome: 'VALIDATED', market: 'NOT_TESTED', n: 8000 } } });
 chk('registry: outcome validation alone never enables value claims', outcomeOnly.state === 'OUTCOME_VALIDATED' && !outcomeOnly.markets.moneyline.value_claims);

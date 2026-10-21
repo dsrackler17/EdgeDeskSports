@@ -2,7 +2,7 @@
  "schema": "edgedesk_lab_walkforward_v1",
  "sport": "mlb",
  "label": "MLB",
- "generated_at": "2026-10-14T16:01:27.796Z",
+ "generated_at": "2026-10-21T11:58:01.276Z",
  "protocol": {
   "windows": {
    "burn_in": [
@@ -84,7 +84,18 @@
    "revert": 0.67,
    "ll": 0.683698714417088
   },
-  "rule": "chosen by SELECTION-window (2012-2017) moneyline log loss of team_park_sp; no later season is read"
+  "rule": "chosen by SELECTION-window (2012-2017) moneyline log loss of team_park_sp; no later season is read",
+  "selection_tuned": {
+   "half_life_days": 365,
+   "window_days": 800,
+   "prior_games": 40,
+   "prior_starts": 64,
+   "prior_park_games": 120,
+   "carry": 0.7,
+   "sweeps": 3
+  },
+  "served_version": null,
+  "served_rule": null
  },
  "selection": {
   "rule": "lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= 0.001",

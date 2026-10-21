@@ -115,6 +115,13 @@ const READERS = {
   ncaab_m() { return lab('basketball/validation/ncaam_walkforward.json', BB); },
   ncaab_w() { return lab('basketball/validation/ncaaw_walkforward.json', BB); },
   mma() {
+    /* the model loop's preregistered walk-forward Elo (model_loop/adapters/ufc), judged by this
+       protocol's rules on its 2021-2024 confirmation window; without it, the one-year measurement */
+    const loop = lab('model_loop/published/ufc/validation.json', { moneyline: 'moneyline' });
+    if (Object.keys(loop.markets).length) {
+      loop.files.push('docs/model-loop/ufc/prereg.json', 'docs/model-loop/ufc/backtest.json', 'docs/model-loop/ufc/versions.json');
+      return loop;
+    }
     const r = lab('engine/lab/ufc_elo.json', { moneyline: 'moneyline' });
     if (r.data) { r.model.trained = false; r.model.note = 'Elo measured on 2024 only: INSUFFICIENT (not a model)'; }
     return r;

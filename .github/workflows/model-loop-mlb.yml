@@ -1,0 +1,48 @@
+# EdgeDesk model loop, MLB: the weekly learning loop for the lab brain
+# (mlb/history/loop.js). Every Tuesday, all year: the off-season is when the
+# brain has the whole 2012-to-date record to learn on before Opening Day.
+#
+# Candidate changes from a fixed catalogue (starter, team and park shrinkage,
+# recency, carry, window), each walked forward over every scored season exactly
+# as the record prices it (mlb/history/walkforward.js scoreCandidate). One
+# replaces the served configuration only if the full window's moneyline log
+# loss falls by >= 0.0002 with its 95% interval below zero, Brier and the run
+# line no worse, and the most recent full season no worse. The weekly record
+# (lab-validate.yml, Wednesday) is built with the served version
+# (docs/model-loop/mlb/versions.json), so a promotion reaches the registry the
+# next day. The brain prices no live game: the card uses mlb/engine.js until
+# the owner chooses the 2027 engine.
+name: Model loop MLB (weekly)
+
+on:
+  schedule:
+    - cron: '23 12 * * 2'        # Tuesday 12:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-loop-mlb
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The loop's own checks first
+        run: node tools/lab/lab.test.js
+      - name: Research and report (every candidate over 2012 to date)
+        run: node --max-old-space-size=6000 mlb/history/loop.js all
+      - name: Publish (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "model loop: MLB weekly research — candidates, versions and report" -- docs/model-loop/mlb
