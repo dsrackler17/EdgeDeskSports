@@ -248,6 +248,17 @@ function polite(pages, hosts, extra) {
     ok('schedule: helpers', SC.innings('7 Inn.') === 7 && SC.innings('', '10 innings') === 10 && SC.innings('') === null && SC.hostOf('http://www.msuspartans.com/') === 'msuspartans.com' && SC.cleanOpp('No. 3 LSU') === 'LSU');
   }
 
+  /* 10. a box score (SIDEARM): starters with their hand, lineups with bats, the line, weather */
+  const BX = R('collegiate/boxscores.js');
+  {
+    const x = BX.parseBoxscore(FX('texassports.com/sports_baseball_stats_2026_michigan_state_boxscore_17827'));
+    ok('box score: both teams by their NCAA codes (our team ids), with runs, hits and the line', x.date === '2026-02-21' && x.home.code === '703' && x.away.code === '416' && x.home.runs === 3 && x.away.runs === 1 && x.home.hits === 8 && x.home.line.length === 9 && x.home.line[8] === null);
+    ok('box score: each starter, with throwing hand and outs (matches our record: Harrison 13 outs, Monke 19)', x.home.starter.name === 'Luke Harrison' && x.home.starter.throws === 'L' && x.home.starter.outs === 13 && x.away.starter.name === 'Carter Monke' && x.away.starter.outs === 19 && x.home.pitchers.length === 4);
+    ok('box score: the starting nine with spots and bats', x.home.lineup.length === 9 && x.away.lineup.map((l) => l.bats).join('') === 'RLRRRRRRL' && x.home.lineup[1].bats === 'S');
+    ok('box score: weather as written, split only where it reads plainly', x.weather.temp_f === 69 && x.weather.sky === 'Mostly Cloudy' && x.weather.wind_dir === 'N' && x.weather.wind_mph === 24 && BX.weather('0').raw === null && BX.weather('Dome').temp_f === null && x.attendance === 7397 && x.scheduled_innings === 9);
+    ok('box score: innings pitched are thirds, and an impossible value is not a number', BX.outsOf('4.1') === 13 && BX.outsOf('0.2') === 2 && BX.outsOf('5.3') === null && BX.outsOf('') === null);
+  }
+
   console.log((fail === 0 ? 'ALL GREEN' : 'FAILED') + ' collegiate — ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail === 0 ? 0 : 1);
 })();
