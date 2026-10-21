@@ -607,7 +607,7 @@
       "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
       "n": 17909,
-      "headline": "MLB moneyline (incl. extra innings): PROVISIONAL (does not beat the best baseline with a 95% interval below zero); held-out log loss 0.67727; vs close: not tested; vs Elo Δ 0.001616 (95% 0.000416 to 0.002766)",
+      "headline": "MLB moneyline (incl. extra innings): PROVISIONAL (does not beat the best baseline with a 95% interval below zero); held-out log loss 0.67659; vs close: not tested; vs Elo Δ 0.000939 (95% -0.000074 to 0.001906)",
       "file": "mlb/history/validation/mlb_walkforward.json"
      },
      "spread": {
@@ -617,7 +617,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 17909,
-      "headline": "MLB run line home -1.5: OUTCOME_VALIDATED; held-out log loss 0.64397; vs close: not tested",
+      "headline": "MLB run line home -1.5: OUTCOME_VALIDATED; held-out log loss 0.64306; vs close: not tested",
       "file": "mlb/history/validation/mlb_walkforward.json"
      },
      "total": {
@@ -627,7 +627,7 @@
       "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
       "n": 17909,
-      "headline": "MLB total runs 8.5: PROVISIONAL (calibration slope 0.647); held-out log loss 0.68956; vs close: not tested",
+      "headline": "MLB total runs 8.5: PROVISIONAL (calibration slope 0.693); held-out log loss 0.6889; vs close: not tested",
       "file": "mlb/history/validation/mlb_walkforward.json"
      }
     },
@@ -655,7 +655,7 @@
    "evidence_files": [
     "mlb/history/validation/mlb_walkforward.json"
    ],
-   "evidence_generated_at": "2026-10-14T16:01:27.796Z",
+   "evidence_generated_at": "2026-10-21T12:21:03.884Z",
    "data": [
     {
      "source": "Retrosheet game logs (chadwickbureau/retrosheet)",
@@ -685,12 +685,13 @@
     "lineups: no lineup archive"
    ],
    "blockers": [
+    "The moneyline does not beat Elo on the confirmation window; a weekly loop (mlb/history/loop.js) tries catalogue changes on the whole 2012-to-date record and keeps one only when the full window improves.",
     "No licensed closing-price archive: the market is NOT_TESTED.",
     "Retrosheet has not published 2026; 2024 starters are missing.",
     "No starter-scratch or confirmed-lineup feed."
    ],
    "enable": [
-    "Add a licensed MLB closing archive and run the market test; add 2024 and 2026 game logs when Retrosheet publishes them (node mlb/history/ingest.js && node mlb/history/walkforward.js)."
+    "Add a licensed MLB closing archive and run the market test; add 2024 and 2026 game logs when Retrosheet publishes them (node mlb/history/ingest.js && node mlb/history/walkforward.js). The weekly record is built with the loop's served version (docs/model-loop/mlb/versions.json)."
    ]
   },
   {
@@ -1697,5 +1698,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-21T11:50:00.466Z"
+ "generated_at": "2026-10-21T12:21:03.977Z"
 }

@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-21T05:16:32.709Z",
+ "evaluated_at": "2026-10-21T12:21:04.027Z",
  "verdict": "PASS",
  "best": null,
  "why": [
@@ -6111,7 +6111,7 @@
   {
    "id": "mma",
    "label": "UFC / MMA",
-   "state": "RESEARCH_ONLY",
+   "state": "EXPERIMENTAL",
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
@@ -6119,16 +6119,16 @@
    "ladder": {
     "data_loaded": {
      "done": true,
-     "detail": "566 games (2024-2024), retrospective"
+     "detail": "6932 games (2014-2026), retrospective"
     },
     "model_trained": {
-     "done": false,
-     "detail": "Elo measured on 2024 only: INSUFFICIENT (not a model)"
+     "done": true,
+     "detail": "Elo {\"calibration\": \"none\", \"k\": 64, \"k_new_mult\": 1.0, \"layoff_days\": 365, \"layoff_regress\": 0.25, \"new_bouts\": 3, \"scale\": 400.0}"
     },
     "validation_passed": {
      "done": false,
      "partial": false,
-     "detail": "no market passed (1 scored); primary market (moneyline): research only"
+     "detail": "no market passed (1 scored); primary market (moneyline): experimental"
     },
     "market_tested": {
      "done": false,
@@ -6146,7 +6146,7 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-21T05:16:32.612Z",
+  "registry_generated_at": "2026-10-21T12:21:03.977Z",
   "nhl_slate_generated_at": "2026-10-21T05:16:24.331Z",
   "basketball_slate_generated_at": "2026-10-21T04:05:59.070Z",
   "nhl_quotes": {
@@ -6154,7 +6154,7 @@
    "generated_at": "2026-10-21T05:16:24.279Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
-  "football_sheets_generated_at": "2026-10-21T05:00:54.474Z",
+  "football_sheets_generated_at": "2026-10-21T12:03:14.338Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
