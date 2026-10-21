@@ -115,7 +115,13 @@ push writes a `COMPATIBILITY_CHANGE` audit row.
 
 ## 4. The promotion guard (`promotion.js`, enforced)
 
-Promotion is explicit and never automatic. `node football/cfb_lab/governance.js
+Promotion is explicit: always one exact version, never "latest". Since
+2026-10-21 it is also automatic on the evidence. Every lab hour,
+`football/cfb_production/auto_promote.js` (rule `cfb_auto_promotion_v1`, off
+switch `auto_promotion.enabled` in `football/cfb_lab/config.json`) promotes a
+challenger whose Model Lab evaluation is ELIGIBLE against the current champion,
+through this same guard (docs/cfb-production/CHAMPION.md). By hand,
+`node football/cfb_lab/governance.js
 promote --model <version> --reason "..." --actor <name>` runs the guard first
 (`football/cfb_production/promotion.js`, rule `cfb_promotion_guard_v1`) and
 refuses unless every check passes; the guard's verdict is written into the

@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-21T12:10:51.240Z",
-  "open": 15,
-  "count": 15,
+  "generated_at": "2026-10-21T12:50:50.191Z",
+  "open": 16,
+  "count": 16,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -13,7 +13,7 @@
       "question": "Does EdgeDesk’s explosiveness handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-13T20:41:25.405Z",
-      "updated_at": "2026-10-13T03:50:37.392Z",
+      "updated_at": "2026-10-21T12:31:02.563Z",
       "evidence": [
         {
           "lesson_id": "2026_01_BUF_HOU:contradicted:explosiveness",
@@ -69,16 +69,27 @@
           "result": "Los Angeles Rams 5.82 yards per play against Buffalo Bills 7.65.",
           "severity": "high",
           "at": "2026-10-13T03:50:37.392Z"
+        },
+        {
+          "lesson_id": "2026_06_HOU_JAX:contradicted:explosiveness",
+          "game_id": "2026_06_HOU_JAX",
+          "season": 2026,
+          "week": 6,
+          "team": "Jacksonville Jaguars",
+          "expectation": "Jacksonville Jaguars holds the largest measured edge in this matchup: Jacksonville Jaguars +1.1 pp (#6 of 32) vs Houston Texans −2.1 pp (#29 of 32) — 23 places on the league board.",
+          "result": "Jacksonville Jaguars 6.06 yards per play against Houston Texans 7.22.",
+          "severity": "high",
+          "at": "2026-10-21T12:31:02.563Z"
         }
       ],
-      "occurrences": 5,
+      "occurrences": 6,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
-      "note": "Seen 5 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+      "note": "Seen 6 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -450,7 +461,7 @@
       "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-13T20:41:25.405Z",
-      "updated_at": "2026-10-06T23:51:04.490Z",
+      "updated_at": "2026-10-21T12:31:02.563Z",
       "evidence": [
         {
           "lesson_id": "2026_01_BUF_HOU:total_miss",
@@ -473,14 +484,27 @@
           "result": "The game finished with 69 points, an error of 25.3.",
           "severity": "high",
           "at": "2026-10-06T23:51:04.490Z"
+        },
+        {
+          "lesson_id": "2026_06_HOU_JAX:total_miss",
+          "game_id": "2026_06_HOU_JAX",
+          "season": 2026,
+          "week": 6,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 41.5.",
+          "result": "The game finished with 65 points, an error of 23.5.",
+          "severity": "high",
+          "at": "2026-10-21T12:31:02.563Z"
         }
       ],
-      "occurrences": 2,
+      "occurrences": 3,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -490,7 +514,7 @@
       "question": "Does EdgeDesk’s passing handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-29T01:40:04.103Z",
-      "updated_at": "2026-10-12T03:50:33.685Z",
+      "updated_at": "2026-10-21T12:31:02.563Z",
       "evidence": [
         {
           "lesson_id": "2026_03_HOU_IND:contradicted:passing",
@@ -513,14 +537,27 @@
           "result": "Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257. Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257. Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257.",
           "severity": "high",
           "at": "2026-10-12T03:50:33.685Z"
+        },
+        {
+          "lesson_id": "2026_06_HOU_JAX:contradicted:passing",
+          "game_id": "2026_06_HOU_JAX",
+          "season": 2026,
+          "week": 6,
+          "team": "Jacksonville Jaguars",
+          "expectation": "2 published claims said the same thing: Net passing EPA — Jacksonville Jaguars by 1.4 points — worth +1.4 of the EdgeDesk number, in Jacksonville Jaguars’s favour. Houston Texans’ pass offence rates −0.021 (#17 of 32) and Jacksonville Jaguars’ pass defence rates −0.102 (#9 of 32). Added the way the model adds them, this pairing sits −0.123 from the league mean, which favours Jacksonville Jaguars.",
+          "result": "Jacksonville Jaguars 7.46 yards per pass attempt against Houston Texans 9.18; Jacksonville Jaguars 306 net passing yards against Houston Texans 312. Jacksonville Jaguars 7.46 yards per pass attempt against Houston Texans 9.18; Jacksonville Jaguars 306 net passing yards against Houston Texans 312.",
+          "severity": "high",
+          "at": "2026-10-21T12:31:02.563Z"
         }
       ],
-      "occurrences": 2,
+      "occurrences": 3,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -720,6 +757,35 @@
           "result": "Washington Commanders 2 sacks generated against San Francisco 49ers 4; Washington Commanders 4 sacks allowed against San Francisco 49ers 2.",
           "severity": "high",
           "at": "2026-10-20T03:30:56.567Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:market:price",
+      "sport": "NFL",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-21T12:31:02.563Z",
+      "updated_at": "2026-10-21T12:31:02.563Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_06_HOU_JAX:contradicted:market",
+          "game_id": "2026_06_HOU_JAX",
+          "season": 2026,
+          "week": 6,
+          "team": "Jacksonville Jaguars",
+          "expectation": "EdgeDesk prices this game at Jacksonville Jaguars −2.0 with a fair total of 41.5, which makes Jacksonville Jaguars the better team here by that margin on this field.",
+          "result": "Jacksonville Jaguars lost by 3 where EdgeDesk projected a 2.2-point edge.",
+          "severity": "high",
+          "at": "2026-10-21T12:31:02.563Z"
         }
       ],
       "occurrences": 1,

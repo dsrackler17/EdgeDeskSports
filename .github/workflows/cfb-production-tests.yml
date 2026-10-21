@@ -27,6 +27,8 @@ on:
       - 'football/fbs/build_coverage.js'
       - 'lib/cfb_champion.js'
       - 'football/cfb_p4/engine.js'
+      - 'football/cfb_lab/config.json'
+      - '.github/workflows/cfb-lab.yml'
       - 'supabase/cfb_*.sql'
       - 'football/*/sync_supabase.js'
       - 'football/cfb_v2/artifacts/**'
@@ -93,6 +95,8 @@ jobs:
         run: node football/cfb_production/canonical.test.js
       - name: The governance champion's table and its reader (lib/cfb_champion.js; the loop pathway of the promotion guard)
         run: node football/cfb_production/champion.test.js
+      - name: Automatic promotion (only on an ELIGIBLE evaluation, behind the guard; return to V1; registration; the switch)
+        run: node football/cfb_production/auto_promote.test.js
       - name: Game-level debug view and the prediction trace (admin/cfb-debug)
         run: node football/cfb_production/debug_ui.test.js
       - name: Golden games (stored invariant outputs of the production pathway)

@@ -9,7 +9,10 @@
      partitions.jsonl      live observation / development / future holdout pools
      research_queue.jsonl  evidence-backed research items (OPENED / EVIDENCE / CLOSED)
 
-   Nothing here changes a model. Promotion is a person's command:
+   Nothing here changes a model. Promotion goes through promote() and its
+   guard, run by a person or, every lab hour, by football/cfb_production/
+   auto_promote.js when a challenger's evaluation is ELIGIBLE (off switch:
+   config.json auto_promotion.enabled):
 
      node football/cfb_lab/governance.js roles
      node football/cfb_lab/governance.js promote --model <version> --reason "<why>" --actor <name> [--evidence <report>] [--rollback]
@@ -62,7 +65,7 @@ function auditEvent(type, subject, before, after, reason, actor, at) {
   return withId('audit', { event_type: type, subject, before: before == null ? null : before, after: after == null ? null : after,
     reason: reason || null, actor: actor || null, created_at: U.iso(at || new Date()) });
 }
-/* A person promotes a challenger. The old champion becomes challenger in the
+/* A person (or auto_promote.js) promotes a challenger. The old champion becomes challenger in the
    same act; both changes are audited. Refused without a reason and an actor,
    and, when a promotion guard result is passed (the CLI always passes one:
    football/cfb_production/promotion.js), refused unless every check of it

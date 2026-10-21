@@ -15,6 +15,12 @@
     "edgedesk_cfb_v2.0.0": { "mae": 12.3332, "rmse": 15.611, "brier": 0.1832, "pred_sd": 12.34 },
     "edgedesk_cfb_v2.1.0": { "mae": 12.3213, "rmse": 15.6016, "brier": 0.1831, "pred_sd": 12.448 }
   },
+  "auto_promotion": {
+    "note": "football/cfb_production/auto_promote.js (rule cfb_auto_promotion_v1), every lab hour: promote the best challenger the promotion evaluation calls ELIGIBLE against the current champion, behind the full promotion guard; register a new model loop version as challenger; return to V1 when the champion's source no longer serves it. false = a person promotes.",
+    "enabled": true,
+    "register_loop_versions": true,
+    "return_to_v1": true
+  },
   "research_queue": { "min_n": 50, "z": 2.0, "evidence_step_n": 25 },
   "weekly_report": { "complete_after_last_kickoff_hours": 48 },
   "public_record": { "path": "record/football/cfb_model_lab.json", "min_n_label": 30 }
