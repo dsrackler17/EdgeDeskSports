@@ -21,8 +21,8 @@
   "game_time": "2026-10-22T00:00:00.000Z",
   "game_when_label": "2026-10-22 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-21T23:32:13.016Z",
-  "generated_at": "2026-10-21T23:32:13.016Z",
+  "updated_at": "2026-10-21T23:40:53.053Z",
+  "generated_at": "2026-10-21T23:40:53.053Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/new-mexico-state-vs-sam-houston-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "manual_review",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1924,13 +1924,13 @@
   "snapshot_id": "snap_c6c9b36fc76fdc32",
   "publication_snapshot_id": "snap_c6c9b36fc76fdc32",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-22T00:00:00.000Z",
-    "minutes_before_kickoff": 28,
+    "minutes_before_kickoff": 19,
     "published_at": null,
-    "refreshed": true,
-    "at": "2026-10-21T23:32:13.016Z"
+    "refreshed": false,
+    "at": "2026-10-21T23:40:53.053Z"
   },
   "featured": {
     "editorial_priority": 39,
@@ -2193,20 +2193,14 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-21T23:32:13.016Z"
+    "at": "2026-10-21T23:40:53.053Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-21T23:32:13.016Z",
-    "blocking": [
-      {
-        "id": "my_take",
-        "why": "an auto-generated article publishes only after the owner writes \"My take\" of at least 240 characters",
-        "detail": "0 characters on file"
-      }
-    ],
+    "at": "2026-10-21T23:40:53.053Z",
+    "blocking": [],
     "warnings": [],
-    "hold_reason": "my_take"
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
@@ -2288,114 +2282,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-21T23:32:13.016Z"
-  },
-  "freshness": {
-    "at": "2026-10-21T23:32:13.016Z",
-    "fields": {
-      "market.line": {
-        "value": null,
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no sportsbook quote was captured for this game"
-      },
-      "market.total": {
-        "value": null,
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no sportsbook quote was captured for this game"
-      },
-      "market.book": {
-        "value": null,
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no sportsbook quote was captured for this game"
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "market.line",
-        "why": "no sportsbook quote was captured for this game",
-        "provider": "research market"
-      },
-      {
-        "field": "market.total",
-        "why": "no sportsbook quote was captured for this game",
-        "provider": "research market"
-      },
-      {
-        "field": "market.book",
-        "why": "no sportsbook quote was captured for this game",
-        "provider": "research market"
-      },
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-21T23:40:53.053Z"
   }
 }
