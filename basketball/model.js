@@ -29,9 +29,35 @@
    Point in time: expect() reads the state; absorbDay(day, games) adds games
    whose results are available and refits with weights aged to `day` (a
    fractional day number). The walk-forward decides what is available when.
+
+   D1 FIX (`d1_fix`, men's and women's college only; docs/model-loop/
+   audit_report.md, CBB items 5-6). The college schedules include every game a
+   Division I team plays, so a non-D1 visitor appears once or twice a season
+   and was rated like an ordinary team shrunk toward the D1 average. Its
+   40-point losses then did two things: they inflated the D1 teams that beat it,
+   and, because nearly all of them are home games, they pumped the fitted home
+   advantage h to 7-9 points every November. With the fix:
+     - a team counts as D1 in season S if it played >= d1_prev_min games in
+       S-1 or has played >= d1_cur_min games so far in S (a non-D1 visitor
+       never gets there); both are point-in-time;
+     - h and mu are fitted on D1-vs-D1 games only;
+     - a team that is not (yet) D1 starts from the learned non-D1 rating,
+       pulled with nd1_prior_games of weight instead of prior_games. Only the
+       NET strength is learned (the average o + d of last season's non-D1
+       teams) and it is split evenly, o = d = net / 2: one or two games a
+       season cannot tell a non-D1 team's scoring level from its defence, and
+       learning both let the pair walk without limit. The first season's
+       seed is 15 points below average at both ends (d is points prevented,
+       so a weak defence is negative);
+     - at each season start the D1 ratings are re-centred (mean o = mean d
+       = 0 over last season's D1 teams, the shift moved into mu), because the
+       learned non-D1 prior is otherwise free to walk the whole scale: mu
+       and the o/d levels are only identified by the priors.
+   Off by default: the NBA and WNBA compute exactly what they did.
    =========================================================================== */
 
-const DEFAULTS = { half_life_days: 60, prior_games: 4, carry: 0.6, sweeps: 3, k_mu: 40, k_h: 150 };
+const DEFAULTS = { half_life_days: 60, prior_games: 4, carry: 0.6, sweeps: 3, k_mu: 40, k_h: 150,
+  d1_fix: false, d1_prev_min: 10, d1_cur_min: 6, nd1_prior_games: 6, nd1_init: { o: -15, d: -15 } };
 
 function dayNum(date) { return Math.floor(Date.parse(date + 'T12:00:00Z') / 864e5); }
 
@@ -42,15 +68,44 @@ class PointsRatings {
     this.games = [];           /* this season: { day, h, a, yh, ya, n } */
     this.mu = null; this.h = 3; this.muPrior = null; this.hPrior = 3;
     this.season = null;
+    this.nd1 = Object.assign({}, this.p.nd1_init);   /* the learned non-D1 rating (d1_fix) */
   }
   T(id) {
     let t = this.team.get(id);
-    if (!t) { t = { o: 0, d: 0, po: 0, pd: 0, idx: [] }; this.team.set(id, t); }
+    if (!t) {
+      t = { o: 0, d: 0, po: 0, pd: 0, idx: [], prevN: 0 };
+      if (this.p.d1_fix) { t.po = this.nd1.o; t.pd = this.nd1.d; t.o = t.po; t.d = t.pd; }
+      this.team.set(id, t);
+    }
     return t;
   }
+  /** D1 at this moment: enough games last season, or enough so far this season */
+  isD1(t) { return t.prevN >= this.p.d1_prev_min || t.idx.length >= this.p.d1_cur_min; }
   startSeason(season) {
     if (this.season === season) return;
-    for (const t of this.team.values()) { t.po = t.o * this.p.carry; t.pd = t.d * this.p.carry; t.o = t.po; t.d = t.pd; t.idx = []; }
+    if (this.p.d1_fix && this.season != null) {
+      /* re-centre on last season's D1 teams: ph = mu + o_h - d_a is unchanged
+         when every o drops by co and mu rises by co, or every d drops by cd and
+         mu drops by cd */
+      let co = 0, cd = 0, m = 0;
+      for (const t of this.team.values()) if (t.idx.length && this.isD1(t)) { co += t.o; cd += t.d; m++; }
+      if (m) {
+        co /= m; cd /= m;
+        for (const t of this.team.values()) { t.o -= co; t.d -= cd; }
+        if (this.mu != null) this.mu += co - cd;
+      }
+      /* last season's non-D1 teams' average net strength becomes this season's non-D1 prior */
+      let sn = 0, n = 0;
+      for (const t of this.team.values()) if (t.idx.length && !this.isD1(t)) { sn += t.o + t.d; n++; }
+      if (n >= 10) this.nd1 = { o: sn / n / 2, d: sn / n / 2 };
+      (this.trace || (this.trace = [])).push({ season: this.season, mu: +this.mu.toFixed(3), h: +this.h.toFixed(3), d1_shift: { o: +co.toFixed(3), d: +cd.toFixed(3) }, nd1: { o: +this.nd1.o.toFixed(3), d: +this.nd1.d.toFixed(3) }, non_d1_teams: n });
+    }
+    for (const t of this.team.values()) {
+      t.prevN = t.idx.length;
+      if (this.p.d1_fix && t.prevN < this.p.d1_prev_min) { t.po = this.nd1.o; t.pd = this.nd1.d; }
+      else { t.po = t.o * this.p.carry; t.pd = t.d * this.p.carry; }
+      t.o = t.po; t.d = t.pd; t.idx = [];
+    }
     this.games = [];
     if (this.mu != null) this.muPrior = this.mu;
     this.hPrior = this.h;
@@ -88,23 +143,34 @@ class PointsRatings {
           else { const H = this.team.get(g.h); so += wi * (g.ya - this.mu + hh + H.d); sd += wi * (this.mu + hh + H.o - g.yh); }
           sw += wi;
         }
-        t.o = (so + P.prior_games * t.po) / (sw + P.prior_games);
-        t.d = (sd + P.prior_games * t.pd) / (sw + P.prior_games);
+        const k = P.d1_fix && !this.isD1(t) ? P.nd1_prior_games : P.prior_games;
+        t.o = (so + k * t.po) / (sw + k);
+        t.d = (sd + k * t.pd) / (sw + k);
       }
       /* mu and h, each pulled toward last season's value */
       let sm = 0, smw = 0, shh = 0, shw = 0;
       for (let i = 0; i < G.length; i++) {
         const g = G[i]; const H = this.team.get(g.h), A = this.team.get(g.a);
+        if (P.d1_fix && !(this.isD1(H) && this.isD1(A))) continue;
         const base = (H.o - A.d + A.o - H.d);
         sm += w[i] * ((g.yh + g.ya - base) / 2); smw += w[i];
         if (!g.n) { shh += w[i] * ((g.yh - g.ya) - (H.o - A.d - A.o + H.d)); shw += w[i]; }
       }
-      this.mu = muP == null ? sm / smw : (sm + P.k_mu * muP) / (smw + P.k_mu);
+      if (smw > 0) this.mu = muP == null ? sm / smw : (sm + P.k_mu * muP) / (smw + P.k_mu);
       this.h = (shh + P.k_h * this.hPrior) / (shw + P.k_h);
     }
   }
   /** the ratings as a plain object (the slate's input) */
-  dump() { const t = {}; for (const [id, v] of this.team) t[id] = { o: +v.o.toFixed(3), d: +v.d.toFixed(3), games: v.idx.length }; return { mu: +this.mu.toFixed(3), h: +this.h.toFixed(3), season: this.season, teams: t }; }
+  dump() {
+    const t = {};
+    for (const [id, v] of this.team) {
+      t[id] = { o: +v.o.toFixed(3), d: +v.d.toFixed(3), games: v.idx.length };
+      if (this.p.d1_fix) { t[id].d1 = this.isD1(v); t[id].prev_games = v.prevN; }
+    }
+    const out = { mu: +this.mu.toFixed(3), h: +this.h.toFixed(3), season: this.season, teams: t };
+    if (this.p.d1_fix) out.nd1 = { o: +this.nd1.o.toFixed(3), d: +this.nd1.d.toFixed(3) };
+    return out;
+  }
 }
 
 class Elo {

@@ -16,7 +16,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     permissions:
       contents: write
     concurrency:
@@ -36,6 +36,13 @@ jobs:
       - name: The seasons in progress (completed seasons are cached and unchanged)
         run: |
           node basketball/ingest.js --league all --season current
+      # the daily refresh: the ratings re-fitted on the newest results with the
+      # same tuned formula (the weekly validate job is unchanged; nothing here
+      # tunes or changes a parameter)
+      - name: Ratings refreshed on yesterday's results (same formula)
+        run: |
+          node --max-old-space-size=6144 basketball/walkforward.js --league all
+          node basketball/walkforward.js --check
       - name: Slates, missingness, registry and board
         run: node basketball/build_slate.js && node engine/lab/missingness.js && node engine/build_registry.js && node engine/build_board.js
       - name: The suites pass before anything is written
@@ -45,4 +52,4 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main "lab: current seasons, slates and the cross-sport board" -- \
-            basketball/data basketball/slate.json engine/missingness.json engine/registry.json engine/board.json
+            basketball/data basketball/params basketball/validation basketball/slate.json engine/missingness.json engine/registry.json engine/board.json
