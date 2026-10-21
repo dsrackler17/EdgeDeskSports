@@ -679,3 +679,8 @@ The starter input is replaced with what is knowable at the opener:
 - **Bet rule:** ≥0.05 runs.
 - **Pass:** as B1.
 - **Not testable:** weather. No archive exists.
+
+### MLB amendment (2026-10-21, before any MLB CLV number was computed)
+- **MLB-B3 and MLB-W3 (totals) are withdrawn as INFEASIBLE** and not counted. SBR MLB totals cannot be attributed to games (`DATA_AUDIT.md` addendum).
+- **Moneylines** use the repaired pairing.
+- Nothing else changes.
