@@ -46,6 +46,9 @@ const flip = (n) => (n && /,/.test(n) ? n.split(',').map((s) => s.trim()).filter
 const nameOf = (p) => flip(p.playerFirstLastName || p.checkName || p.name || null);
 const hand = (h) => (/^[LRS]$/.test(String(h || '').toUpperCase()) ? String(h).toUpperCase() : /^B$/i.test(String(h || '')) ? 'S' : null);
 
+/* the school's own name for a player: the slug of the link to his roster page ("/sports/baseball/roster/luke-harrison/15090").
+   Only the school's own players are linked; the slug is the site's and stays across seasons (the trailing id does not) */
+const slugOf = (html) => { const m = String(html || '').match(/\/sports\/[^'"\s]*\/roster\/([a-z0-9-]+)\/\d+/i); return m ? m[1].toLowerCase() : null; };
 const WIND = 'N|NE|E|SE|S|SW|W|NW|NNE|ENE|ESE|SSE|SSW|WSW|WNW|NNW|L-R|R-L|IN|OUT|CALM';
 function weather(w) {
   const raw = w && String(w).trim() && String(w).trim() !== '0' ? String(w).trim() : null;
@@ -66,12 +69,12 @@ function weather(w) {
 
 function team(t) {
   const players = t.players || [];
-  const pitchers = players.filter((p) => p.pitching).map((p) => ({ order: num(p.pitching.orderOfAppearance), name: nameOf(p), roster_player_id: p.rosterPlayerId || null,
+  const pitchers = players.filter((p) => p.pitching).map((p) => ({ order: num(p.pitching.orderOfAppearance), name: nameOf(p), roster_player_id: p.rosterPlayerId || null, slug: slugOf(p.playerUrl),
     throws: hand(p.throws), outs: outsOf(p.pitching.inningsPitched), bf: num(p.pitching.battersFaced), k: num(p.pitching.strikeouts), bb: num(p.pitching.walksAllowed),
-    h: num(p.pitching.hitsAllowed), r: num(p.pitching.runsAllowed), er: num(p.pitching.earnedRunsAllowed), hr: num(p.pitching.homerunsAllowed), pitches: num(p.pitching.pitches),
+    h: num(p.pitching.hitsAllowed), r: num(p.pitching.runsAllowed), er: num(p.pitching.earnedRunsAllowed), hr: num(p.pitching.homerunsAllowed), hb: num(p.pitching.hitBatters), pitches: num(p.pitching.pitches),
     started: p.pitching.gamesStarted === '1' }))
     .sort((a, b) => (a.order == null ? 99 : a.order) - (b.order == null ? 99 : b.order));
-  const lineup = players.filter((p) => p.gameStarted === '1' && num(p.spot) >= 1 && num(p.spot) <= 9).map((p) => ({ spot: num(p.spot), name: nameOf(p), roster_player_id: p.rosterPlayerId || null, pos: p.position || null, bats: hand(p.bats) }))
+  const lineup = players.filter((p) => p.gameStarted === '1' && num(p.spot) >= 1 && num(p.spot) <= 9).map((p) => ({ spot: num(p.spot), name: nameOf(p), roster_player_id: p.rosterPlayerId || null, slug: slugOf(p.playerUrl), pos: p.position || null, bats: hand(p.bats) }))
     .sort((a, b) => a.spot - b.spot);
   const ss = t.scoringSummary || {};
   const line = String(ss.scoreByInnings || '').split(',').filter((x) => x !== '').map((x) => (x === 'X' || x === 'x' ? null : num(x)));
@@ -100,7 +103,6 @@ const text = (s) => String(s == null ? '' : s).replace(/<!--[\s\S]*?-->/g, '').r
 const cells = (tr) => [...tr.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/g)].map((m) => m[1]);
 const bodyRows = (tb) => { const b = (tb.match(/<tbody[\s\S]*?<\/tbody>/) || [tb])[0]; return [...b.matchAll(/<tr\b[\s\S]*?<\/tr>/g)].map((m) => m[0]); };
 const headCols = (tb) => cells((tb.match(/<thead[\s\S]*?<\/thead>/) || [''])[0]).map((c) => text(c).toUpperCase());
-const slugOf = (html) => { const m = String(html || '').match(/href=['"]\/sports\/[^'"]*\/roster\/([a-z0-9-]+)\/\d+/i); return m ? m[1].toLowerCase() : null; };
 /* a team's name as a table names it, to tell which team a table is ("Dayton 6", "Lipscomb University - Pitching Stats") */
 const key = (s) => String(s || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
 
@@ -134,7 +136,7 @@ function legacyPitchers(tb) {
     const name = flip(text(nm != null ? nm : cs[0]).replace(/\s*\((?:[WLS]|BS)\b[^)]*\)\s*$/, '').trim());
     const v = (c) => (at(c) >= 0 ? text(cs[at(c)] || '') : '');
     out.push({ order: out.length + 1, name, slug: slugOf(cs[0]), throws: null, outs: outsOf(v('IP')), bf: num(v('BF')), k: num(v('SO')), bb: num(v('BB')), h: num(v('H')),
-      r: num(v('R')), er: num(v('ER')), hr: null, pitches: num(v('NP')), started: out.length === 0 });
+      r: num(v('R')), er: num(v('ER')), hr: null, hb: num(v('HBP')), pitches: num(v('NP')), started: out.length === 0 });
   }
   return out;
 }
@@ -205,9 +207,10 @@ function parseBoxscore(html) {
 const READ = new Set(['sidearm', 'sidearm_legacy']);
 
 function compact(x) {
-  /* [name, throws, outs, bf, k, bb, h, er, pitches, roster slug] and [spot, name, pos, bats, roster slug]: the slug only where the
-     page links the player to the school's roster (SIDEARM's older sites), for the roster's hands */
-  const pit = (p) => [p.name, p.throws, p.outs, p.bf, p.k, p.bb, p.h, p.er, p.pitches, p.slug || null];
+  /* [name, throws, outs, bf, k, bb, h, er, pitches, roster slug, r, hr, hbp] and [spot, name, pos, bats, roster slug]: the slug only
+     where the page links the player to the school's roster (the school's own players, on both generations): the roster's hands
+     and a person across games and seasons. hr is null on SIDEARM's older boxes, which do not list it */
+  const pit = (p) => [p.name, p.throws, p.outs, p.bf, p.k, p.bb, p.h, p.er, p.pitches, p.slug || null, p.r == null ? null : p.r, p.hr == null ? null : p.hr, p.hb == null ? null : p.hb];
   const side = (t) => ({ code: t.code, name: t.name, runs: t.runs, hits: t.hits, errors: t.errors, line: t.line,
     starter: t.starter ? pit(t.starter) : null, pitchers: t.pitchers.map(pit), lineup: t.lineup.map((l) => [l.spot, l.name, l.pos, l.bats, l.slug || null]) });
   return { platform: x.platform, date: x.date, neutral: x.neutral, conference: x.conference, scheduled_innings: x.scheduled_innings, doubleheader_game: x.doubleheader_game,
