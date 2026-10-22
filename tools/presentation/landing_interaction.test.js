@@ -224,7 +224,16 @@ chk('no number anywhere is invented at random', !/Math\.random/.test(IDX));
 const HM = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_home_model.js'), 'utf8');
 chk('the demo reads exactly two files: the week\'s real games and the public record', () => {
   const urls = [...HM.matchAll(/'(\/(?:football|record)\/[A-Za-z0-9_./-]+\.json)'/g)].map(m => m[1]);
-  return JSON.stringify(urls) === JSON.stringify(['/football/game_research/landing.json', '/record/football/summary.json']) && !/supabase|\/rest\/v1\//.test(HM);
+  return JSON.stringify(urls) === JSON.stringify(['/football/game_research/landing.json', '/record/football/summary.json']);
+});
+/* Kalshi beside the graphic: through the page's anon read (ctx.db), Kalshi's two public tables and nothing else;
+   the database's address and key stay the page's */
+chk('its only database reads are Kalshi\'s two public tables, through the page\'s anon read', () => {
+  const tables = [...HM.matchAll(/X\.KALSHI_[A-Z]+ = '([a-z_]+)'/g)].map(m => m[1]);
+  return JSON.stringify(tables) === JSON.stringify(['kalshi_card_current', 'kalshi_price_snapshots'])
+    && !/supabase|\/rest\/v1\/|SB_URL|SB_KEY|apikey/i.test(HM)
+    && /X\.kalshi\(S\.games, ctx\.db\)/.test(HM)
+    && /function anonRead\(q\)\{[\s\S]{0,200}?fetch\(SB_URL\+'\/rest\/v1\/'\+q,\{headers:\{apikey:SB_KEY,authorization:'Bearer '\+SB_KEY\}\}\)/.test(IDX);
 });
 chk('it loads the research page\'s own libraries, never a second copy of their arithmetic',
   ['research_core.js', 'edgedesk_calc.js', 'edgedesk_fairline.js', 'edgedesk_game_snapshot.js', 'edgedesk_game_graphic.js'].every(f => HM.indexOf("'/lib/" + f + '?v=') >= 0)
@@ -233,7 +242,7 @@ chk('it loads the research page\'s own libraries, never a second copy of their a
 chk('it never reads a sportsbook price (Layer A: the file carries none, and the code asks for none)', !/market_state|reference_market|quotes_h2h|\.book\b|odds_api|best_price/.test(HM));
 chk('it escapes every value it writes and builds every button with its type', /function e\(s\) \{ return String\(s == null \? '' : s\)\.replace\(\/\[&<>"\]\/g/.test(HM) && !/'<button (?!type=)/.test(HM));
 chk('it never invents a number at random, and waits for the reader to come near', !/Math\.random/.test(HM) && /new root\.IntersectionObserver\(/.test(HM) && /rootMargin: '700px 0px'/.test(HM));
-chk('the graphic is drawn on the reader\'s device, never downloaded as an image', /EDGameGraphic\.render\(spec, null, 'square'\)/.test(HM) && !/\.(?:png|jpe?g|webp)'/.test(HM.replace(/'image\/png'/g, '')));
+chk('the graphic is drawn on the reader\'s device, with no sportsbook quote, never downloaded as an image', /EDGameGraphic\.render\(spec, null, 'square', \{ now: Date\.now\(\), kalshi: k \}\)/.test(HM) && !/\.(?:png|jpe?g|webp)'/.test(HM.replace(/'image\/png'/g, '')));
 chk('a failed or late read leaves the free-sample link and says so', /function fail\(why\)/.test(HM) && /couldn’t be loaded just now/.test(HM));
 [/impliedFromAmerican/, /americanFromImplied/, /decimalFromAmerican/, /100\s*\/\s*\(\s*-?\s*a\s*\)/, /\(\s*-a\s*\)\s*\/\s*\(\(-a\)\+100\)/, /1\s*\+\s*100\s*\//, /\bexpectedValue\(/, /\bbreakEven\(/]
   .forEach(re => chk('the landing script does no odds arithmetic of its own: ' + re, !re.test(LANDING), (re.exec(LANDING) || [])[0]));
@@ -307,8 +316,9 @@ chk('the font request asks only for the weights the page uses',
 chk('the database connection is warmed before the first read', /<link rel="preconnect" href="https:\/\/iattxbkbufslbauoumga\.supabase\.co" crossorigin>/.test(IDX));
 chk('nothing below the fold is an image or a video', !/<(?:img|video|iframe)\b/.test(IDX));
 /* the view model also holds the hero's own rules (the two-pillar preview and
-   the selective "worth researching" count), so it gets 36 KiB; the others 32 */
-const LIB_BUDGET = { 'edgedesk_home.js': 36 * 1024, 'edgedesk_track.js': 32 * 1024, 'edgedesk_pricing.js': 32 * 1024, 'edgedesk_home_model.js': 28 * 1024,
+   the selective "worth researching" count), so it gets 36 KiB; the others 32
+   (the #model demo's 28 grew to 32 with Kalshi's read beside the graphic) */
+const LIB_BUDGET = { 'edgedesk_home.js': 36 * 1024, 'edgedesk_track.js': 32 * 1024, 'edgedesk_pricing.js': 32 * 1024, 'edgedesk_home_model.js': 32 * 1024,
   'edgedesk_home_model.css': 12 * 1024, 'edgedesk_landing_pictures.css': 12 * 1024 };
 const libs = Object.keys(LIB_BUDGET).map(f => [f, fs.statSync(path.join(ROOT, 'lib', f)).size]);
 chk('the small libraries and sheets it loads stay small', libs.every(([f, n]) => n < LIB_BUDGET[f]), libs.map(([f, n]) => f + ' ' + n).join(', '));

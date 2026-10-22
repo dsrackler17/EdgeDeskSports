@@ -1464,7 +1464,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <script src="/lib/edgedesk_football_lines.js?v=20261017fl1"></script>
 <script src="/lib/edgedesk_home.js?v=20261017fl1"></script>
 <script src="/lib/edgedesk_home_free.js?v=20261008a"></script>
-<script src="/lib/edgedesk_home_model.js?v=20261016lp1"></script>
+<script src="/lib/edgedesk_home_model.js?v=20261022ks1"></script>
 <!-- The same "Report a problem" the terminal, Games and the 404 page use. It
      matters most HERE: somebody who cannot get past signup has no account, no
      terminal and, until now, nothing but a mailto in the footer. -->
@@ -2897,8 +2897,16 @@ function failAll(){
 var FREE=window.EDHomeFree||null;
 if(FREE) FREE.init({track:track, funnel:funnel, chip:stChip, wait:withDeadline});
 function renderFreeGames(V){ if(FREE) FREE.games(V); }
-/* #model: real games, drawn by the research page's code (lib/edgedesk_home_model.js) */
-if(window.EDHomeModel) EDHomeModel.init({track:track, funnel:funnel, wait:withDeadline});
+/* #model: real games, drawn by the research page's code (lib/edgedesk_home_model.js);
+   db is its one anon read, for Kalshi's public prices beside the graphic */
+function anonRead(q){
+  if(typeof SB_URL==='undefined'||typeof SB_KEY==='undefined') return Promise.reject(new Error('no database configured'));
+  return fetch(SB_URL+'/rest/v1/'+q,{headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY}}).then(function(r){
+    if(r.ok) return r.json();
+    var err=new Error('HTTP '+r.status); err.notDeployed=r.status===404; throw err;
+  });
+}
+if(window.EDHomeModel) EDHomeModel.init({track:track, funnel:funnel, wait:withDeadline, db:anonRead});
 
 (function liveBoard(){
   if(!H){ failAll(); renderFreeGames(null); return; }
