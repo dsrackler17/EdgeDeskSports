@@ -9,7 +9,9 @@ Data built Oct 21, 2026. 2024, 2025 full seasons + 2026 Weeks 1-6 (663 games). W
 | File | What it is |
 |---|---|
 | `schema.sql` | The handoff's draft migration, kept for reference. What ships is `supabase/nfl_ref_flags.sql` (mirrored in `supabase/migrations/20261022100000_nfl_ref_flags.sql`) |
-| `manual_assignments.json` | Referee assignments nflverse has not filled in yet (2026 W5-W7 from Football Zebras). Edit this each week, not the Python |
+| `manual_assignments.json` | Referee assignments nflverse has not filled in yet (Football Zebras). Filled each week by `fetch_assignments.py`; edit it by hand only to correct or add one |
+| `fetch_assignments.py` | The weekly pull: Football Zebras' post for the coming week -> `manual_assignments.json` (`nfl-ref-assignments.yml`) |
+| `merge_season.py` | Folds the Tuesday rebuild of the season in progress into the committed CSVs |
 | `build_ref_data.py` | Rebuilds the CSVs from nflverse + `manual_assignments.json` |
 | `upsert_refs.py` | Upserts both CSVs into Supabase over the REST API, assignments first. With no arguments it is the one-time seed |
 | `ref_assignments.csv` | game_id -> referee, 2024 through 2026 W7 (677 rows). Seeds `nfl_ref_assignments` |
@@ -28,9 +30,11 @@ Steps 1 and 2 can also run from GitHub: *Actions → NFL referee sync → Run wo
 
 ## Every week
 
-**Tuesday 10:00 UTC, September to February** (`.github/workflows/ref-sync.yml`, also *Run workflow* by hand): download nflverse `games.csv` and the season in progress's play-by-play, run `build_ref_data.py --seasons <season>`, upsert that season's rows with `upsert_refs.py`. Earlier seasons are final and stay as seeded. Secrets: `SB_URL`, `SB_SERVICE_ROLE`. A failed upsert fails the job.
+**Tuesday 10:00 UTC, September to February** (`.github/workflows/ref-sync.yml`, also *Run workflow* by hand): download nflverse `games.csv` and the season in progress's play-by-play, run `build_ref_data.py --seasons <season>`, fold that season into the committed `ref_game_penalties.csv` and `ref_assignments.csv` (`merge_season.py`, pushed to main, so the research snapshots count last week's flags), and upsert that season's rows with `upsert_refs.py`. Earlier seasons are final and stay as seeded. Secrets: `SB_URL`, `SB_SERVICE_ROLE`. A failed upsert fails the job.
 
-**Adding next week's referees** (announced Wednesday or Thursday): add a block to `manual_assignments.json`, commit, then *Run workflow* (or wait for Tuesday):
+**Next week's referees, automatically** (`.github/workflows/nfl-ref-assignments.yml`, Wednesday to Friday at 15:17 and 23:17 UTC and Saturday at 13:17 UTC, in season): `fetch_assignments.py` reads Football Zebras' RSS feeds, finds the "Week N referee assignments" post for the week whose games have not been played, matches each game by its two teams, and writes the referees into that week's block of `manual_assignments.json` (source `footballzebras`). A referee is written only when the post ties the name to that game: a crew chief already on file, a name labelled "Referee", or a name standing alone after the matchup. A game nflverse or the file already assigns is never overwritten, and a run with no post yet changes nothing. A change is pushed to main (the next hourly research build puts the referee on the graphic) and the ref sync above is dispatched (the card's Officiating block). *Run workflow* with a week number re-reads one week; tick *dry* to see what it would write.
+
+**Adding a referee by hand** still works the same way, when a post is late or names someone the matcher cannot place: add or extend a block in `manual_assignments.json`, commit, then *Run workflow* on the ref sync (or wait for Tuesday):
 
 ```json
 { "season": 2026, "week": 8, "source": "footballzebras",

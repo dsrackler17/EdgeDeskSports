@@ -50451,6 +50451,22 @@ function fbNflIntlVenue(stadium){
   var m=FB.nfl&&FB.nfl.intlVenues;
   return !!(m&&stadium&&m[String(stadium).toLowerCase()]);
 }
+/* A GAME ABROAD, ITS ROOF: nflverse fills an upcoming international game's roof and surface
+   from the home club's own stadium (PIT at NO in Paris arrives as a dome on sportturf, so the
+   engine read is_dome = 1 and the forecast was skipped). For a game not yet played the verified
+   stadium table's roof and surface replace the feed's, which stay beside them (roof_feed,
+   surface_feed); a played game keeps what its frozen pregame snapshot read. */
+function fbNflSiteRoof(rows){
+  var m=FB.nfl&&FB.nfl.intlVenues,n=0;
+  if(!m)return 0;
+  (rows||[]).forEach(function(g){
+    var v=g&&g.stadium?m[String(g.stadium).toLowerCase()]:null;
+    if(!v||typeof v!=='object'||fbNum(g.home_score)!=null||fbNum(g.away_score)!=null)return;
+    if(v.roof&&g.roof!==v.roof){g.roof_feed=g.roof==null?null:g.roof;g.roof=v.roof;n++;}
+    if(v.surface&&g.surface!==v.surface){g.surface_feed=g.surface==null?null:g.surface;g.surface=v.surface;}
+  });
+  return n;
+}
 function fbNflNeutral(g){ return String(g&&g.location||'')==='Neutral'||fbNflIntlVenue(g&&g.stadium); }
 function fbNflSiteNote(g){
   if(!g||String(g.location||'')==='Neutral'||!fbNflIntlVenue(g.stadium))return null;
@@ -50918,7 +50934,7 @@ function fbLoadNfl(signal){
   /* the verified stadium table's international venues (fbNflNeutral) */
   var venueP=fbFetchText('/football/venues/nfl_stadiums.json',signal).then(function(t){
     var j=JSON.parse(t),m={};
-    ((j&&j.stadiums)||[]).forEach(function(s){if(s&&s.international===true)[s.name].concat(s.aliases||[]).forEach(function(n){if(n)m[String(n).toLowerCase()]=1;});});
+    ((j&&j.stadiums)||[]).forEach(function(s){if(s&&s.international===true)[s.name].concat(s.aliases||[]).forEach(function(n){if(n)m[String(n).toLowerCase()]={name:s.name,roof:s.roof||null,surface:s.surface||null};});});
     /* every stadium's coordinates and time zone: the served model's travel inputs (football/nfl_model.js travelFor) */
     S.stadIndex=window.EDNflModel?window.EDNflModel.indexStadiums(j):null;
     S.intlVenues=m;return m;
@@ -51010,6 +51026,7 @@ function fbLoadNfl(signal){
        home field on one load and without it on the next */
     return Promise.all([stwP,venueP,qbP2,persP]).then(function(pp){
       var byGame=pp[0],qbByGame=pp[2]||{},absorbed=0;
+      fbNflSiteRoof(rows);
       var stateOf=function(){return useV2?{v2:st,seededThrough:st.seededThrough}:st;};
       toAbsorb.sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));});
       S.weekPreds={};

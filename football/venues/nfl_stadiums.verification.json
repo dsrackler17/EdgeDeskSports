@@ -1,9 +1,9 @@
 {
  "schema": "edgedesk_nfl_stadiums_verification_v1",
- "generated_at": "2026-10-22T13:44:38.990Z",
+ "generated_at": "2026-10-22T14:17:03.099Z",
  "table": "football/venues/nfl_stadiums.json",
- "rows": 40,
- "verified": 40,
+ "rows": 41,
+ "verified": 41,
  "refused": 0,
  "with_independent_coordinate_check": 5,
  "basis": "hand-entered coordinates checked against the college venue register (CFBD coordinates) where the stadium hosts college games, nflverse games.csv roof and surface, the state bounding box and the time zone; a stadium with no independent coordinate is VERIFIED on the other checks only and says so",
@@ -1363,6 +1363,33 @@
      "check": "timezone_vs_longitude",
      "ok": true,
      "detail": "longitude zone -3, tz offset -3"
+    }
+   ]
+  },
+  {
+   "name": "Stade de France",
+   "club": null,
+   "verdict": "VERIFIED",
+   "independent_coordinate_check": false,
+   "checks": [
+    {
+     "check": "coordinates",
+     "ok": true
+    },
+    {
+     "check": "register_distance_km",
+     "ok": null,
+     "detail": "not in the college venue register; no independent coordinate to compare"
+    },
+    {
+     "check": "roof_vs_feed",
+     "ok": null,
+     "detail": "only 1 game(s) since 2020 in games.csv: one row is not evidence about a roof or a surface (feed says dome / sportturf)"
+    },
+    {
+     "check": "timezone_vs_longitude",
+     "ok": true,
+     "detail": "longitude zone 0, tz offset 1"
     }
    ]
   },
