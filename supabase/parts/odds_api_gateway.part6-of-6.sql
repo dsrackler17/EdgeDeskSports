@@ -3,6 +3,19 @@
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
 
+revoke all on public.odds_api_categories, public.odds_api_sports, public.odds_api_cadence from anon, authenticated;
+
+-- Daily retention, where pg_cron exists. It calls no provider.
+do $c$ begin
+  if to_regprocedure('cron.schedule(text,text,text)') is not null and to_regclass('cron.job') is not null then
+    if not exists (select 1 from cron.job where jobname = 'odds_api_prune') then
+      perform cron.schedule('odds_api_prune', '37 4 * * *', 'select public.odds_api_prune();');
+    end if;
+  end if;
+end $c$;
+
+notify pgrst, 'reload schema';
+
 -- ── THE REPORT ──────────────────────────────────────────────────────────────
 with checks as (
   select 1 as n, 'odds_api_emergency_stop.sql has been applied (its stop and resume functions exist)' as check_name,

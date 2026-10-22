@@ -38,16 +38,30 @@ end $$;
 -- ── 10. WHAT A READER MAY KNOW: the feed's state and its last verified prices
 create or replace function public.odds_feed_status()
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
-declare c public.odds_api_config; st jsonb; v_state text; v_level smallint;
+declare c public.odds_api_config; st jsonb; v_state text; v_level smallint; v_why text; v_rem bigint;
 begin
   select * into c from public.odds_api_config where id = 1;
   st := public.odds_api_budget_state(now());
   v_level := public.odds_api_shed_level(coalesce((st->>'spent_today')::bigint, 0), 0, (st->>'daily_allowance')::int,
                coalesce(c.daily_overdraft_pct, 0.25), nullif(st->>'budget_used_pct', '')::numeric, coalesce(c.critical_pct, 0.8));
-  v_state := case when c.id is null or not c.odds_api_enabled then 'paused'
+  v_rem := nullif(st->>'provider_remaining_effective', '')::bigint;
+  /* PAUSED IS WHAT ACQUIRE WILL DO, NOT ONLY WHERE THE SWITCH SITS. With the
+     breaker on but no budget, an unconfirmed cycle quota or the provider at
+     its reserve, odds_api_acquire refuses every paid call, so nothing is
+     bought. 2026-10-21 the November budget and breaker were set before the
+     reset (runbook step 7 ahead of step 8): every call was refused as
+     denied_unconfirmed_quota while this said 'live', readers were told prices
+     refresh on schedule beside a 12-day-old board, and the deploy doctor,
+     reading 'live', called that board a capture outage. */
+  v_why := case when c.id is null or not c.odds_api_enabled then 'breaker_off'
+                when c.monthly_budget <= 0 or c.daily_target <= 0 then 'no_budget'
+                when not coalesce((st->>'quota_confirmed')::boolean, false) then 'quota_unconfirmed'
+                when v_rem is not null and v_rem <= c.monthly_reserve then 'provider_reserve' end;
+  v_state := case when v_why is not null then 'paused'
                   when c.provider_cooldown_until > now() or v_level >= 3 then 'degraded' else 'live' end;
   return jsonb_build_object(
     'state', v_state,
+    'paused_by', v_why,
     'paid_refresh', v_state <> 'paused',
     'message', case v_state
       when 'paused' then 'Sportsbook price refresh is paused. Prices shown are the last verified prices, with the time they were captured.'
@@ -228,15 +242,3 @@ end $g$;
 alter table public.odds_api_categories enable row level security;
 alter table public.odds_api_sports enable row level security;
 alter table public.odds_api_cadence enable row level security;
-revoke all on public.odds_api_categories, public.odds_api_sports, public.odds_api_cadence from anon, authenticated;
-
--- Daily retention, where pg_cron exists. It calls no provider.
-do $c$ begin
-  if to_regprocedure('cron.schedule(text,text,text)') is not null and to_regclass('cron.job') is not null then
-    if not exists (select 1 from cron.job where jobname = 'odds_api_prune') then
-      perform cron.schedule('odds_api_prune', '37 4 * * *', 'select public.odds_api_prune();');
-    end if;
-  end if;
-end $c$;
-
-notify pgrst, 'reload schema';

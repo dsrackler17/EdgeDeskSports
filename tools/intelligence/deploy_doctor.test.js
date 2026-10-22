@@ -199,6 +199,15 @@ const OK_BOARD = signals(40, 144);
       (s.checks.find((c) => c.name === 'the board is being captured') || {}).fix);
     net([...base, signals(40, 144), feed('paused')]);
     eq('a current board is CURRENT whatever the feed state', stateOf(await D.doctor(OPTS), 'the board is being captured'), 'CURRENT');
+    /* 2026-10-21: the breaker was switched on before the cycle's quota was
+       confirmed, so every paid call was refused. The feed says paused and names
+       the gate; the doctor carries that name rather than blaming the switch. */
+    net([...base, signals(1135, 4.6), ['/rest/v1/rpc/odds_feed_status', { status: 200, body: JSON.stringify({ state: 'paused',
+      paused_by: 'quota_unconfirmed', paid_refresh: false, message: 'Sportsbook price refresh is paused.' }) }]]);
+    s = await D.doctor(OPTS);
+    eq('a breaker that is on but cannot buy reads PAUSED', stateOf(s, 'the board is being captured'), 'PAUSED');
+    chk('and it names the gate that holds it', /paused_by quota_unconfirmed/.test(detailOf(s, 'the board is being captured')),
+      detailOf(s, 'the board is being captured'));
   }
 
   /* --- IS THE PACKET LEDGER THERE, AND IS THE DEPLOYMENT WRITING TO IT? --
