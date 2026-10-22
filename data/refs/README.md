@@ -24,6 +24,8 @@ Data built Oct 21, 2026. 2024, 2025 full seasons + 2026 Weeks 1-6 (663 games). W
 2. Seed: `SB_URL=https://<project>.supabase.co SB_SERVICE_ROLE=<service-role key> python3 data/refs/upsert_refs.py`. It loads `ref_assignments.csv` (677), then `ref_game_penalties.csv` (663), upserting on `game_id`, so running it again is safe. `--dry-run` checks the files without credentials.
 3. The game card reads `nfl_game_ref_context` by `game_id`.
 
+Steps 1 and 2 can also run from GitHub: *Actions → NFL referee sync → Run workflow* with **apply_sql** (needs the `SB_DB_URL` secret, as the `deploy-*.yml` workflows do) and **seed** ticked. It applies the SQL, loads the committed seed, then syncs the season in progress. Both are safe to repeat.
+
 ## Every week
 
 **Tuesday 10:00 UTC, September to February** (`.github/workflows/ref-sync.yml`, also *Run workflow* by hand): download nflverse `games.csv` and the season in progress's play-by-play, run `build_ref_data.py --seasons <season>`, upsert that season's rows with `upsert_refs.py`. Earlier seasons are final and stay as seeded. Secrets: `SB_URL`, `SB_SERVICE_ROLE`. A failed upsert fails the job.

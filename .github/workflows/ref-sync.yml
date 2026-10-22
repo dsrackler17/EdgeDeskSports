@@ -1,0 +1,152 @@
+# EdgeDesk Football — NFL referee flag tendencies, refreshed weekly
+# (data/refs/README.md, supabase/nfl_ref_flags.sql).
+#
+# Downloads nflverse games.csv and the season in progress's play-by-play,
+# rebuilds that season with data/refs/build_ref_data.py (each game's referee
+# from nflverse, else data/refs/manual_assignments.json; nflverse wins), and
+# upserts both tables over the Supabase REST API with the service role:
+# nfl_ref_assignments first, then nfl_ref_game_penalties (the foreign key),
+# on game_id, so a re-run changes nothing. Earlier seasons are final and stay
+# as the one-time seed loaded them (python3 data/refs/upsert_refs.py).
+#
+# DISPLAY ONLY: the Officiating block on the NFL card. Nothing here touches a
+# projection, a ranking, a grade or the CLV pipeline.
+#
+# WHEN. Tuesday 10:00 UTC, September through February: Monday night's game is
+# final and nflverse has caught up. Crew assignments for the coming week are
+# announced Wednesday or Thursday: add them to manual_assignments.json, merge,
+# and Run workflow by hand.
+#
+# BY HAND (Actions -> NFL referee sync -> Run workflow): leave season empty for
+# the season in progress; tick dry to download and build without writing. The
+# build is kept with the run as an artifact either way.
+#
+# FIRST RUN: tick apply_sql (applies supabase/nfl_ref_flags.sql, idempotent; a
+# report row that says CHECK THIS fails the job) and seed (loads the committed
+# data/refs CSVs: 677 assignments, then 663 games). Both are safe to repeat.
+#
+# SECRETS: SB_URL, SB_SERVICE_ROLE (the ones nfl-market-structure.yml and
+# circa-ownership.yml use); SB_DB_URL only for apply_sql (as deploy-*.yml).
+# A missing secret, a failed download, a failed build or any upsert error
+# fails the job.
+name: NFL referee sync
+
+on:
+  schedule:
+    - cron: '0 10 * 9-12,1,2 2'   # Tuesday 10:00 UTC, in season
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season to rebuild (empty = the season in progress)'
+        required: false
+        default: ''
+      dry:
+        description: 'Dry run: download and build, write nothing'
+        type: boolean
+        default: false
+      apply_sql:
+        description: 'First run: apply supabase/nfl_ref_flags.sql first (idempotent; needs SB_DB_URL)'
+        type: boolean
+        default: false
+      seed:
+        description: 'First run: load the committed seed first (data/refs/*.csv, 2024 to 2026 Week 7)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ref-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pandas and pyarrow
+        run: pip install pandas pyarrow
+
+      - name: The rules must pass before they are allowed to write
+        run: python3 -m unittest discover -s data/refs/tests -v
+
+      - name: Which season
+        id: season
+        env:
+          INPUT_SEASON: ${{ inputs.season }}
+        run: |
+          # an NFL season runs September to February: before March it is last year's
+          if [ -n "$INPUT_SEASON" ]; then s="$INPUT_SEASON"
+          else m=$(date -u +%-m); y=$(date -u +%Y); if [ "$m" -ge 3 ]; then s=$y; else s=$((y - 1)); fi; fi
+          case "$s" in 20[0-9][0-9]) ;; *) echo "::error::season '$s' is not a year"; exit 1;; esac
+          echo "season=$s" >> "$GITHUB_OUTPUT"
+          echo "season $s"
+
+      - name: Download nflverse games.csv and the season's play-by-play
+        env:
+          SEASON: ${{ steps.season.outputs.season }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/nflverse"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/nflverse/games.csv" \
+            https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/nflverse/pbp_${SEASON}.parquet" \
+            "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_${SEASON}.parquet"
+          ls -la "$RUNNER_TEMP/nflverse"
+
+      - name: Build the season
+        env:
+          SEASON: ${{ steps.season.outputs.season }}
+        run: |
+          python3 data/refs/build_ref_data.py --seasons "$SEASON" \
+            --games "$RUNNER_TEMP/nflverse/games.csv" --pbp-dir "$RUNNER_TEMP/nflverse" --out-dir "$RUNNER_TEMP/refs"
+
+      - name: Keep the build with the run
+        uses: actions/upload-artifact@v4
+        with:
+          name: refs-${{ steps.season.outputs.season }}
+          path: ${{ runner.temp }}/refs/
+          retention-days: 30
+
+      - name: Apply supabase/nfl_ref_flags.sql
+        if: ${{ inputs.apply_sql && !inputs.dry }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set: paste supabase/nfl_ref_flags.sql into the SQL editor instead"; exit 1; fi
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/nfl_ref_flags.sql)
+          echo "$out" | tail -9
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::nfl_ref_flags.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Load the committed seed (assignments, then penalties)
+        if: ${{ inputs.seed }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          if [ "$DRY" = "true" ]; then python3 data/refs/upsert_refs.py --dry-run; exit 0; fi
+          python3 data/refs/upsert_refs.py
+
+      - name: Upsert the season into Supabase (assignments, then penalties)
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          if [ "$DRY" = "true" ]; then
+            python3 data/refs/upsert_refs.py --dir "$RUNNER_TEMP/refs" --dry-run
+            exit 0
+          fi
+          if [ -z "$SB_URL" ] || [ -z "$SB_SERVICE_ROLE" ]; then
+            echo "::error::SB_URL and SB_SERVICE_ROLE must be set to write the referee tables"
+            exit 1
+          fi
+          python3 data/refs/upsert_refs.py --dir "$RUNNER_TEMP/refs"

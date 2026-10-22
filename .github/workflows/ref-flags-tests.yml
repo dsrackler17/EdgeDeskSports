@@ -1,0 +1,67 @@
+# EdgeDesk Football — the NFL referee flag suites (data/refs/README.md).
+#
+# The build's assignment rules and the seed's file checks (Python, a synthetic
+# season), the migration and the seed on a real PostgreSQL (the runner's own
+# server binaries; tools/personal/_pg.js starts a throwaway cluster, and the
+# seed runs through a stand-in REST endpoint), and the Officiating block in
+# Chromium. No credentials, nothing written anywhere but the runner.
+name: Referee flag suites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.html'
+      - 'data/refs/**'
+      - 'supabase/nfl_ref_flags.sql'
+      - 'supabase/migrations/*_nfl_ref_flags.sql'
+      - 'tools/refs/**'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/ref-flags-tests.yml'
+      - '.github/workflows/ref-sync.yml'
+  pull_request:
+    paths:
+      - 'app.html'
+      - 'data/refs/**'
+      - 'supabase/nfl_ref_flags.sql'
+      - 'supabase/migrations/*_nfl_ref_flags.sql'
+      - 'tools/refs/**'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/ref-flags-tests.yml'
+      - '.github/workflows/ref-sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install pandas and pyarrow (what ref-sync.yml installs)
+        run: pip install pandas pyarrow
+
+      - name: The build and the seed's file checks
+        run: python3 -m unittest discover -s data/refs/tests -v
+
+      - name: The migration and the seed on a real PostgreSQL
+        env:
+          REFS_SQL_REQUIRED: '1'
+        run: node tools/refs/nfl_ref_flags_sql.test.js
+
+      - name: The Officiating block in Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+          node tools/refs/ref_flags_ui.e2e.js
