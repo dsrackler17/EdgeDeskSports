@@ -8,7 +8,7 @@
      CBASE_PRICES=on node college_baseball/market/fetch_quotes.js
 
    Spends nothing unless BOTH switches are on:
-     1. the repository variable CBASE_PRICES=on (this job), and
+     1. CBASE_PRICES=on, which the workflow sets from college_baseball/market/switch.json, and
      2. the gateway's own sport row: odds_api_sports.baseball_ncaa enabled
         (supabase/cbase_odds_sport.sql inserts it DISABLED).
    With either off it writes college_baseball/data/market/quotes.json with
@@ -98,7 +98,7 @@ async function run(o) {
   const out = path.join(marketRoot, 'quotes.json');
   fs.mkdirSync(marketRoot, { recursive: true });
   const write = (obj) => { fs.writeFileSync(out, JSON.stringify(Object.assign({ schema: 'edgedesk_cbase_market_v1', sport_key: SPORT_KEY, generated_at: now }, obj), null, 1) + '\n'); return obj; };
-  if (String(env.CBASE_PRICES || '').toLowerCase() !== 'on') return write({ status: 'DISABLED', reason: 'college baseball price capture is not authorised: the repository variable CBASE_PRICES is not "on" (and odds_api_sports.baseball_ncaa must be enabled in the gateway)' });
+  if (String(env.CBASE_PRICES || '').toLowerCase() !== 'on') return write({ status: 'DISABLED', reason: 'college baseball price capture is not authorised: CBASE_PRICES is not "on" (the workflow sets it from college_baseball/market/switch.json; odds_api_sports.baseball_ncaa must also be enabled in the gateway)' });
   /* NOTHING FASTER THAN HOURLY (the operator's rule since 2026-10-21): pg_cron wakes this job hourly and GitHub's
      backup schedule may wake it again; a run within MIN_GAP_MIN of the last one that asked the gateway asks nothing
      and leaves every file as it was */

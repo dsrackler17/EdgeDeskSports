@@ -1,0 +1,105 @@
+# Deploy college baseball's database pieces (docs/college-baseball/DEPLOYMENT.md, "Prices" and step 4).
+#
+# MANUAL ON PURPOSE: each piece is the owner's decision, made once (recorded on 2026-10-22:
+# college_baseball/research/authorizations.json, college_baseball/market/switch.json).
+#   1. supabase/cbase_odds_sport.sql   registers baseball_ncaa in the odds gateway, DISABLED
+#                                      (idempotent; never re-disables an operator's choice)
+#   2. enable_prices                   select public.odds_api_set_sport('baseball_ncaa', true):
+#                                      the gateway may then buy college baseball boards for the price
+#                                      job, at most hourly (about 3 credits a buy, at most ~45 a game
+#                                      day, February to June). The Odds API breaker and the shared
+#                                      budget still apply.
+#   3. supabase/cbase_cron.sql         the primary scheduler (pg_cron asks GitHub to run the college
+#                                      baseball and collegiate workflows on time). It dispatches
+#                                      nothing until the Vault secret edgedesk_gh_token is set.
+# Withdraw prices with disable_prices (select public.odds_api_set_sport('baseball_ncaa', false)).
+#
+# SECRET: SB_DB_URL (the same one Deploy odds gateway uses). Without it nothing is applied and the
+# run says so; paste the files into the SQL editor instead.
+name: Deploy college baseball
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_odds_sport:
+        description: 'Apply supabase/cbase_odds_sport.sql (registers baseball_ncaa, disabled; idempotent)'
+        type: boolean
+        default: true
+      enable_prices:
+        description: 'Enable baseball_ncaa in the gateway (the price job may then buy, at most hourly, February to June)'
+        type: boolean
+        default: false
+      disable_prices:
+        description: 'Disable baseball_ncaa in the gateway (wins over enable_prices)'
+        type: boolean
+        default: false
+      apply_scheduler:
+        description: 'Apply supabase/cbase_cron.sql (the pg_cron scheduler; idempotent)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-college-baseball
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The files' own suites pass on a real PostgreSQL before anything is applied
+        env:
+          CBASE_SQL_REQUIRED: '1'
+        run: |
+          node tools/college_baseball/cbase_sql.test.js
+          node tools/college_baseball/cbase_cron_sql.test.js
+          node tools/odds/no_bypass.test.js
+
+      - name: Check the credential exists before claiming anything
+        id: creds
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set: nothing can be applied from CI (paste the files into the SQL editor instead)."; exit 1; fi
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+
+      - name: Apply supabase/cbase_odds_sport.sql
+        if: ${{ inputs.apply_odds_sport }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cbase_odds_sport.sql)
+          echo "$out" | tail -6
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::cbase_odds_sport.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Enable or disable baseball_ncaa in the gateway
+        if: ${{ inputs.enable_prices || inputs.disable_prices }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+          WANT: ${{ inputs.disable_prices && 'false' || 'true' }}
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 -tAc "select public.odds_api_set_sport('baseball_ncaa', $WANT);"
+          state=$(psql "$PGURL" -v ON_ERROR_STOP=1 -tAc "select enabled from public.odds_api_sports where sport_key = 'baseball_ncaa'")
+          echo "baseball_ncaa enabled: $state"
+          if [ "$state" != "$( [ "$WANT" = true ] && echo t || echo f )" ]; then echo "::error::baseball_ncaa is not $WANT after the call"; exit 1; fi
+
+      - name: Apply supabase/cbase_cron.sql
+        if: ${{ inputs.apply_scheduler }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cbase_cron.sql)
+          echo "$out" | tail -6
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::cbase_cron.sql: a report row says CHECK THIS"; exit 1; fi
+          if echo "$out" | grep -q 'pending'; then echo "::warning::the scheduler is installed but dispatches nothing until the Vault secret edgedesk_gh_token is set (docs/college-baseball/DEPLOYMENT.md, step 4)"; fi

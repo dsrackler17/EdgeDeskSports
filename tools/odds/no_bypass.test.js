@@ -173,7 +173,18 @@ chk('7 · the prop capture asks for the core markets only by default', JSON.stri
   chk('10 · the college baseball price job asks the gateway through the shared client', /tools\/lib\/odds_gateway\.js/.test(CQ) && /category: 'featured'/.test(CQ) && /SPORT_KEY = 'baseball_ncaa'/.test(CQ) && /sport_key: SPORT_KEY/.test(CQ));
   chk('10 · and only behind CBASE_PRICES=on', /CBASE_PRICES/.test(CQ) && CQ.indexOf("!== 'on'") > 0 && CQ.indexOf("!== 'on'") < CQ.indexOf('client.request('));
   chk('10 · the college baseball sport row is created disabled', /values \('baseball_ncaa', 'cbase', false,/.test(read('supabase/cbase_odds_sport.sql')));
-  chk('10 · the college baseball price workflow starts only when CBASE_PRICES is on', /if: vars\.CBASE_PRICES == 'on'/.test(read('.github/workflows/college-baseball-prices.yml')));
+  {
+    /* the switch is a committed file (college_baseball/market/switch.json), the variable CBASE_PRICES = off stops it;
+       every step that could reach the gateway runs only behind the switch, and the gateway credentials only reach it there */
+    const PW = read('.github/workflows/college-baseball-prices.yml');
+    const steps = PW.slice(PW.indexOf('steps:')).split(/\n      - /).slice(1);
+    const gated = steps.filter((st) => !/^uses: actions\/checkout/.test(st) && !/^name: The switch/.test(st));
+    chk('10 · the college baseball price workflow does nothing unless its committed switch is on (CBASE_PRICES = off stops it)',
+      /switch\.json/.test(PW) && /OVERRIDE" = "off"/.test(PW) && gated.length >= 5 && gated.every((st) => /if: (always\(\) && )?steps\.switch\.outputs\.on == 'on'/.test(st))
+      && /EDGD_SB_URL: \$\{\{ steps\.switch\.outputs\.on == 'on' && secrets\.SB_URL/.test(PW) && !/vars\.CBASE_PRICES == 'on'/.test(PW), gated.map((st) => st.split('\n')[0]));
+    const SW = JSON.parse(read('college_baseball/market/switch.json'));
+    chk('10 · the switch says who turned it on, and when', ['on', 'off'].includes(SW.capture) && (SW.capture === 'off' || (!!SW.authorized_by && /^\d{4}-\d{2}-\d{2}$/.test(SW.date))), SW);
+  }
 }
 
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));
