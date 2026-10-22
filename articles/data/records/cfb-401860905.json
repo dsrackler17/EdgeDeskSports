@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T22:30:00.000Z",
   "game_when_label": "2026-10-24 22:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-22T17:04:51.495Z",
-  "generated_at": "2026-10-22T17:04:51.495Z",
+  "updated_at": "2026-10-22T21:29:24.032Z",
+  "generated_at": "2026-10-22T21:29:24.032Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -129,11 +129,11 @@
         "fields": 26,
         "applicable": 26,
         "known": 22,
-        "priced": 13,
-        "priced_coverage_pct": 50,
+        "priced": 14,
+        "priced_coverage_pct": 54,
         "by_state": {
-          "USABLE": 13,
-          "RESEARCH_ONLY": 9,
+          "USABLE": 14,
+          "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
@@ -246,7 +246,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-18T02:30:00.000Z",
-        "retrieved_at": "2026-10-22T14:40:41.647Z"
+        "retrieved_at": "2026-10-22T18:00:11.264Z"
       },
       "home": {
         "team": "Colorado State",
@@ -324,9 +324,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-16T00:00:00.000Z",
-        "retrieved_at": "2026-10-22T14:40:41.647Z"
+        "retrieved_at": "2026-10-22T18:00:11.264Z"
       },
-      "generated_at": "2026-10-22T14:41:32.200Z",
+      "generated_at": "2026-10-22T18:00:09.724Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1459,12 +1459,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "REGIME CHANGE (Colorado State): REGIME CHANGE: new head coach; returning roster share at the 10th percentile; returning production at the 23rd percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played.",
           "widening": null
         },
@@ -1495,10 +1489,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
         },
         {
           "item": "Weather at kickoff",
@@ -1575,7 +1565,7 @@
         "pct": 89,
         "tier": "STRONG",
         "text": "89 · STRONG",
-        "sub": "main deduction: no market quote is joined to this game",
+        "sub": "main deduction: no source has established whether Colorado State’s starting QB can play",
         "score": 89,
         "grade": "STRONG",
         "grade_label": "STRONG",
@@ -1590,7 +1580,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.6,
+            "score": 14.4,
             "max": 20
           },
           {
@@ -1608,7 +1598,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14.6,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1618,13 +1608,25 @@
             "max": 10
           }
         ],
-        "main_deduction": "no market quote is joined to this game",
-        "capped_by": [],
+        "main_deduction": "no source has established whether Colorado State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+        "capped_by": [
+          "QB_STATUS_UNCONFIRMED"
+        ],
         "next_actions": [
           {
             "action": "Confirm Colorado State’s QB availability",
             "potential_gain": 4,
             "text": "up to +4"
+          },
+          {
+            "action": "Refresh San Diego State injury availability",
+            "potential_gain": 2,
+            "text": "up to +2 once confirm Colorado State’s QB availability is done"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 2,
+            "text": "up to +2 once confirm Colorado State’s QB availability is done"
           }
         ],
         "stability": {
@@ -1654,7 +1656,7 @@
       "projection_status": {
         "key": "INJURY_UNCERTAINTY",
         "label": "INJURY UNCERTAINTY",
-        "text": "A supplied availability report lists 32 players with an unresolved status; the engine widens this game’s range for it."
+        "text": "A supplied availability report lists 43 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "LOW",
@@ -1871,7 +1873,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1xf7xq21at6obc",
+    "packet_hash": "1foprxx1nee4if",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can San Diego State contain Colorado State’s explosive runs?",
@@ -1898,10 +1900,12 @@
       "Hauss Hejny has completed 47 of 73 passes (64.4%) for 619 yards, 8.5 yards per attempt, 10 touchdowns and 1 interception in three games for Colorado State, and has been sacked on 1 of 74 dropbacks.",
       "Jayden Denegal has completed 82 of 150 passes (54.7%) for 933 yards, 6.2 yards per attempt, 7 touchdowns and 5 interceptions in seven games for San Diego State, and has been sacked on 8 of 158 dropbacks.",
       "Stone Saunders has completed 8 of 15 passes (53.3%) for 81 yards, 5.4 yards per attempt, no touchdowns and no interceptions in two games for San Diego State, and has been sacked on 1 of 16 dropbacks.",
-      "San Diego State’s advance report Pac-12 availability report (published Oct. 21) lists quarterback Jayden Denegal as questionable.",
-      "San Diego State’s advance report Pac-12 availability report (published Oct. 21) lists quarterback Stone Saunders as probable."
+      "San Diego State’s advance report Pac-12 availability report (published Oct. 22) lists quarterback Jayden Denegal as questionable.",
+      "San Diego State’s advance report Pac-12 availability report (published Oct. 22) lists quarterback Stone Saunders as probable."
     ],
     "availability": [
+      "Colorado State’s availability report lists tight end Pearce Spurlin III as questionable.",
+      "Colorado State’s availability report lists receiver RJ Vick as questionable.",
       "San Diego State’s availability report lists tight end Ryan Wolfer as questionable.",
       "San Diego State’s availability report lists running back Javion Kinnard as questionable.",
       "San Diego State’s availability report lists running back Lucky Sutton as questionable.",
@@ -1921,12 +1925,12 @@
       ]
     },
     "unknown": [
-      "San Diego State’s advance report Pac-12 availability report (published Oct. 21) lists quarterback Jayden Denegal as questionable.",
+      "Colorado State’s availability report lists tight end Pearce Spurlin III as questionable.",
+      "Colorado State’s availability report lists receiver RJ Vick as questionable.",
+      "San Diego State’s advance report Pac-12 availability report (published Oct. 22) lists quarterback Jayden Denegal as questionable.",
       "San Diego State’s availability report lists tight end Ryan Wolfer as questionable.",
       "San Diego State’s availability report lists running back Javion Kinnard as questionable.",
-      "San Diego State’s availability report lists running back Lucky Sutton as questionable.",
-      "San Diego State’s availability report lists receiver Nate Acevedo as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Colorado State and San Diego State."
+      "San Diego State’s availability report lists running back Lucky Sutton as questionable."
     ],
     "flags": [
       {
@@ -1950,7 +1954,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-22T14:41:39.904Z",
+        "observed_at": "2026-10-22T18:00:27.930Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1964,7 +1968,7 @@
         "label": "Pac-12 Conference availability report (Advance Report)",
         "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
         "path": "football/availability/reports/",
-        "observed_at": "2026-10-22T02:07:54.132Z",
+        "observed_at": "2026-10-22T16:59:52.868Z",
         "verification": "OFFICIAL_REPORT"
       }
     ],
@@ -1973,6 +1977,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-22T17:04:51.495Z"
+    "at": "2026-10-22T21:29:24.032Z"
   }
 }
