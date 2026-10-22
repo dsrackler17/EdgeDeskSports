@@ -429,6 +429,14 @@ function polite(pages, hosts, extra) {
     ok('schedule (WMT): Vanderbilt\'s and LSU\'s older seasons read whole on the fixed reader (71 and 66 finals, as our record has)', fin(v19).length === 71 && fin(l19).length === 66);
     const am = S('12thman.com/sports_baseball_schedule');
     ok('schedule (WMT): a theme that names the school too (Texas A&M, __name--current) gives the opponent, never the school', am.games.length === 58 && am.games.every((g) => !/Texas A&M/.test(g.opponent)) && am.games[0].opponent === 'Milwaukee' && am.games[0].date === '2027-02-19');
+    /* round 10: three more themes, and a day written apart from its month */
+    const r10 = [['sjsuspartans.com/sports_baseball_schedule_season_2026', 51, 'Long Beach St.', 'A', 'San Jose State'], ['ucfknights.com/sports_baseball_schedule_season_2026', 55, 'Siena', null, 'UCF'],
+      ['purduesports.com/sports_baseball_schedule_season_2026', 57, 'Portland', 'N', 'Purdue'], ['goutsa.com/sports_baseball_schedule_season_2026', 58, 'South Dakota State', null, 'UTSA'],
+      ['goaztecs.com/sports_baseball_schedule_season_2024', 54, 'Portland', 'H', 'San Diego State'], ['hokiesports.com/sports_baseball_schedule_season_2026', 56, 'William & Mary', 'H', 'Virginia Tech']].map(([f, n, opp, site, self]) => {
+      const x = S(f); const f0 = x && fin(x)[0];
+      return { f, ok: !!x && fin(x).length === n && x.undated === 0 && f0.opponent === opp && f0.site === site && !x.games.some((g) => g.opponent === self), got: x && [fin(x).length, x.undated, f0 && f0.opponent, f0 && f0.site] };
+    });
+    ok('schedule (WMT): San José State, UCF, Purdue, UTSA, San Diego State and Virginia Tech read whole (every final their seasons have in our record; Purdue\'s two others are the site\'s scores against ours)', r10.every((r) => r.ok), r10.filter((r) => !r.ok));
     const ps = S('gopsusports.com/sports_baseball_schedule');
     ok('schedule (WMT): Penn State\'s theme reads, its exhibitions flagged, and it names its own labels (2026 is "2026", not "2025-26")', ps && ps.games.length === 41 && ps.undated === 0 && ps.games.filter((g) => g.exhibition).length === 6 && ps.games[0].site === 'H' && ps.games[0].opponent === 'St. Bonaventure' && ps.seasons.some((x) => x.label === '2026' && x.name === '2026'));
     ok('sport: a name ending in the sport is it ("Demon Baseball"); another sport\'s name never is', PL.sportMatches('baseball', null, 'Demon Baseball') && PL.sportMatches('baseball', null, 'Merrimack College Baseball') && !PL.sportMatches('baseball', null, 'Softball') && !PL.sportMatches('baseball', null, 'Baseball Softball'));

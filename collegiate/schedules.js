@@ -26,7 +26,7 @@ const { nuxtData } = require('./nuxt');
 const PL = require('./platforms');
 
 /* the platforms read and how (a backfill completed with fewer is opened again: collegiate/run.js) */
-const READERS = 'sidearm,sidearm_vue,sidearm_legacy,wmt+themes7+sport_path+plain_page';
+const READERS = 'sidearm,sidearm_vue,sidearm_legacy,wmt+themes10+sport_path+plain_page';
 const DATA = path.join(__dirname, 'data');
 const DAY = 24 * 3600 * 1000;
 const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return d; } };
@@ -139,7 +139,7 @@ function sidearmVueSchedule(html) {
    school reads it ("W 10-7": the school's runs first) followed by any innings note ("(8 innings)", "12 Inn.",
    "(10)"). No opponent website, so the opponent joins by name. The page's own data names the season, the sport,
    and every season the site keeps (schedule-list-seasons: each label and the slug its pages use). */
-const WMT_BLOCKS = [/class="schedule-event-item(?=[ "])/g, /class="schedule-item-block(?=[ "])/g, /class="schedule-event(?=[ "])/g];
+const WMT_BLOCKS = [/class="schedule-event-item(?=[ "])/g, /class="schedule-item-block(?=[ "])/g, /class="schedule-event(?=[ "])/g, /class="schedule-event-block(?=[ "])/g];
 function wmtSchedule(html, data, sportHint) {
   const h = String(html || '');
   /* the theme with the most games: a page may carry one game in another theme (Vanderbilt's tournament game) */
@@ -161,19 +161,22 @@ function wmtSchedule(html, data, sportHint) {
   let undated = 0;
   const games = starts.map((st, i) => {
     const seg = h.slice(st, i + 1 < starts.length ? starts[i + 1] : st + 40000);
-    const v = seg.match(/schedule-item-block--(home|away|neutral)\b|venue-label--(home|away|neutral)\b|--venue-(home|away|neutral)\b|class="[^"]*__venue(?:-type|-text)?(?=[ "])[^"]*"[^>]*>\s*(home|away|neutral)\s*<|venue__type--(home|away|neutral)\b|__venue--(home|away|neutral)\b/i);
+    const v = seg.match(/schedule-item-block--(home|away|neutral)\b|venue-label--(home|away|neutral)\b|--venue-(home|away|neutral)\b|class="[^"]*__venue(?:-type|-text)?(?=[ "])[^"]*"[^>]*>\s*(home|away|neutral)\s*<|venue__type--(home|away|neutral)\b|__venue--(home|away|neutral)\b|schedule-event(?:-item)?--(home|away|neutral)\b/i);
     /* a theme that marks no venue says "at" for a road game and "vs." for a home or a neutral one: "vs." is left unknown */
-    const venue = v ? String(v[1] || v[2] || v[3] || v[4] || v[5] || v[6]).toLowerCase() : /^at$/i.test(text(element(seg, '__divider(?=[ "])') || '')) ? 'away' : null;
+    const venue = v ? String(v[1] || v[2] || v[3] || v[4] || v[5] || v[6] || v[7]).toLowerCase() : /^at$/i.test(text(element(seg, '__divider(?=[ "])') || '')) ? 'away' : null;
     const dt = (seg.match(/datetime="([^"]+)"/) || [])[1] || null;
     /* no datetime: the month and day (__month-day, or __label at Nebraska, or Clemson's <time>Fri, Feb 13</time> in
        __time) and the weekday (__weekday, a bare <time>Friday</time>, or the one written before the date) */
-    const md = text(element(seg, 'schedule-event-date__month-day(?=[ "])') || element(seg, 'schedule-event-date__label(?=[ "])') || element(seg, 'schedule-event-date__day(?=[ "])') || element(seg, 'schedule-event-date__time(?=[ "])') || '');
+    /* the first that names a month: San José State's __day holds the day alone ("13"), its __time "Fri, Feb 13" */
+    const md = ['schedule-event-date__month-day', 'schedule-event-date__label', 'schedule-event-date__day', 'schedule-event-date__time']
+      .map((c) => text(element(seg, c + '(?=[ "])') || '')).find((t) => /\b[A-Za-z]{3,}\.?\s+\d{1,2}\b/.test(t)) || '';
     const wd = text(element(seg, 'schedule-event-date__weekday(?=[ "])') || '') || ((seg.match(/<time>\s*(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*\s*<\/time>/i) || [])[1] || '') || ((text(element(seg, 'schedule-event-date__time(?=[ "])') || '').match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*\.?,?\s/i) || [])[1] || '');
     const date = dt ? dt.slice(0, 10) : monthDay(md, wd, seasonNo, sportHint || sport);
     if (!date) undated++;
     /* the opponent: its own element (never the one a theme marks --current, the school itself: Texas A&M), or
        (Vanderbilt's theme) the heading that reads "vs. #10 TCU" */
-    const opp = element(seg, '__opponent-name(?=[ "])') || element(seg, '__opponent(?=[ "])') || element(seg, 'schedule-default-event__name(?=[ "])') || element(seg, 'schedule-event-default__name(?=[ "])(?![^"]*--current)') || element(seg, 'schedule-event-item-team__name(?=[ "])(?![^"]*--current)') || element(seg, 'schedule-item-team__heading(?=[ "])');
+    const opp = element(seg, '__opponent-name(?=[ "])') || element(seg, '__opponent(?=[ "])') || element(seg, 'schedule-default-event__name(?=[ "])') || element(seg, 'schedule-event-default__name(?=[ "])(?![^"]*--current)') || element(seg, 'schedule-event-item-team__name(?=[ "])(?![^"]*--current)')
+      || element(seg, 'schedule-default-event__title(?=[ "])') || element(seg, 'schedule-event-teams__name(?=[ "])(?![^"]*--current)') || element(seg, 'schedule-event-default-team__name(?=[ "])') || element(seg, 'schedule-item-team__heading(?=[ "])');
     const loc = element(seg, 'schedule-event-location(?=[ "])') || element(seg, '__location(?=[ "])');
     const resHtml = element(seg, 'schedule-event-item-result__label(?=[ "])');
     const rt = resHtml != null ? text(resHtml) : '';
