@@ -10,11 +10,14 @@
      states       loading; not deployed (a 404 is the block's own state, never
                   a database fault); unavailable; no assignment = "Assignment
                   not announced"
-     the rule     season flags/game and holding/game vs the conference average
-                  (first) and FBS; offensive holding; 3-yr with game counts;
+     the rule     the NFL Officiating block's rows (data/refs, PR #680): season
+                  flags/game and holding/game vs the conference average (first)
+                  and FBS, two decimals, "vs" in --pos/--neg, rank N of M;
+                  offensive holding; the 3-season baseline with game counts;
                   under 3 games the numbers show with the count and NO rank; no
-                  conference in the dataset's mapping = "Conference unavailable"
-                  and the FBS comparison
+                  conference in the dataset's mapping = "conference unavailable"
+                  and the FBS comparison; a final game with no referee reads
+                  "No referee on record for this game"
      contract     every field the block reads is a column of the view
      display only the classification, drivers and CLV are not read or changed
      limitations  the five known limitations on every state
@@ -88,10 +91,10 @@ const ROW = {
   flags_vs_conf_pg: -0.53, holding_vs_conf_pg: -0.23, flags_vs_fbs_pg: 0.08, holding_vs_fbs_pg: -0.07,
   flags_rank_in_conf: 6, holding_rank_in_conf: 9, conf_refs_ranked: 11, flags_rank_fbs: 50, holding_rank_fbs: 60, fbs_refs_ranked: 95,
   y3_games: 34, y3_holding_games: 33, y3_first_season: 2024, y3_last_season: 2026, y3_flags_pg: 12.03, y3_holding_pg: 2.11,
-  y3_off_holding_pg: 1.6, y3_flags_vs_fbs: -0.33, y3_holding_vs_fbs: -0.36,
+  y3_off_holding_pg: 1.6, y3_flags_vs_fbs: -0.33, y3_holding_vs_fbs: -0.36, y3_fbs_flags_pg: 12.36, y3_fbs_holding_pg: 2.47,
 };
 const LIMS = ['Referee identity is inferred', 'NCAA box score', 'ESPN lists as Referee', 'counted per play from play-by-play',
-  'accepted penalties from the box score', 'that conference’s average', 'Samples are small'];
+  'accepted penalties from the box score', 'that conference’s average', 'Samples are small', 'no over/under record'];
 const hasLims = (h) => LIMS.every((t) => h.indexOf(t) >= 0);
 const strip = (h) => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
@@ -106,7 +109,7 @@ async function card(gid, answer, F) {
 (async () => {
   /* hooks: every branch carries the block */
   const notRun = await card('401871001', { status: 200, body: [] });
-  chk('NOT RUN card: the Observed block is there, loading first', /NOT RUN/.test(notRun.first) && /<h5>Observed /.test(notRun.first) && /data-cfa-ref="401871001"/.test(notRun.first) && /Loading/.test(notRun.first));
+  chk('NOT RUN card: the Observed block is there, loading first', /NOT RUN/.test(notRun.first) && /<h5>Observed /.test(notRun.first) && /data-cfa-ref="401871001"/.test(notRun.first) && /loading…/.test(notRun.first));
   chk('no assignment yet: "Assignment not announced", block not hidden', /Assignment not announced/.test(notRun.after) && /Assignment not announced/.test(notRun.painted || '') && /Officiating/.test(notRun.after));
   chk('the read is by the card\'s game id, with the anon key', CALLS.some((c) => /cfb_game_ref_context\?game_id=eq\.401871001&select=\*/.test(c.url) && c.opts.headers.apikey === 'anon-key'));
   chk('limitations shown with no assignment', hasLims(notRun.after), strip(notRun.after));
@@ -126,42 +129,50 @@ async function card(gid, answer, F) {
   chk('display only: the classification, drivers and CLV are unchanged', JSON.stringify(F) === before && /cfa-badge investigate">INVESTIGATE/.test(h)
     && /spread CLV <b class="pos">\+1\.5 pt/.test(h) && /\+3\.2/.test(h));
   const t = strip(h);
-  chk('the referee, the conference crew, NCAA crew chief', /Jerry Magallanes · ACC crew/.test(t) && /Crew chief on the NCAA box score \(inferred\)/.test(t), t.slice(0, 400));
-  chk('season flags/game vs the conference average first, then FBS, with the rank', /2026 flags\/game \(9 games\) 12\.4 · vs ACC 13\.0 \(−0\.5\) · vs FBS 12\.4 \(\+0\.1\) · #6 of 11 ACC refs/.test(t), t);
-  chk('season holding/game the same way', /2026 holding\/game 2\.3 · vs ACC 2\.6 \(−0\.2\) · vs FBS 2\.4 \(−0\.1\) · #9 of 11 ACC refs/.test(t), t);
-  chk('offensive holding/game, this season and 3-yr', /Offensive holding\/game 1\.8 2026 · 1\.6 3-yr/.test(t), t);
-  chk('3-yr flags/game and holding/game with game counts', /3-yr flags\/game \(2024–2026, 34 games\) 12\.0 · vs FBS −0\.3/.test(t) && /3-yr holding\/game \(33 games\) 2\.1 · vs FBS −0\.4/.test(t), t);
+  chk('the referee, the crew\'s conference, NCAA crew chief', /Officiating Jerry Magallanes · referee · ACC crew · crew chief on the NCAA box score \(inferred\)/.test(t), t.slice(0, 500));
+  chk('season flags/game vs the conference average first, then FBS, with the rank', /Flags \/ game 2026 · 9 games 12\.44 −0\.53 vs ACC 12\.97 \+0\.08 vs FBS 12\.36 · rank 6 of 11 ACC refs/.test(t), t);
+  chk('season holding/game the same way', /Holding \/ game 2026 · 9 games 2\.33 −0\.23 vs ACC 2\.56 −0\.07 vs FBS 2\.40 · rank 9 of 11 ACC refs/.test(t), t);
+  chk('"vs" reads in --pos above the base and --neg below, as the NFL block', /color:var\(--neg\)">−0\.53</.test(h) && /color:var\(--pos\)">\+0\.08</.test(h));
+  chk('offensive holding/game, this season and 3 seasons', /Offensive holding \/ game 1\.78 2026 · 1\.60 2024–2026/.test(t), t);
+  chk('the 3-season baseline with its game count, vs FBS', /3-season baseline 2024–2026 · 34 games 12\.03 flags −0\.33 · 2\.11 holding −0\.36 per game, vs FBS 12\.36 \/ 2\.47/.test(t), t);
+  chk('the rank is explained, and the sample called small', /Rank 1 is the most per game among the 11 ACC referees with 3 or more 2026 games; 9 games are a small sample/.test(t));
+  chk('the rows are the NFL block\'s own (.ms-row / .ms-note / .ms-lim)', /class="ms-row"><span class="l">Officiating<\/span>/.test(h) && /class="ms-note"/.test(h) && /class="ms-lim"><b>Known limitations\.<\/b>/.test(h));
   chk('limitations on a full block', hasLims(h));
 
   const two = await card('401871101', { status: 200, body: [Object.assign({}, ROW, { game_id: 401871101, season_games: 2, season_holding_games: 2, flags_rank_in_conf: null, holding_rank_in_conf: null,
     conf_refs_ranked: null, flags_rank_fbs: null, holding_rank_fbs: null, fbs_refs_ranked: null, y3_games: 2, y3_holding_games: 2 })] });
   const t2 = strip(two.after);
-  chk('under 3 games: the numbers with the game count, and no rank', /2026 flags\/game \(2 games\) 12\.4/.test(t2) && /not ranked \(under 3 games\)/.test(t2) && !/#\d+ of/.test(t2) && /3-yr flags\/game \(2024–2026, 2 games\)/.test(t2), t2);
+  chk('under 3 games: the numbers with the game count, and no rank', /Flags \/ game 2026 · 2 games 12\.44/.test(t2) && /not ranked \(under 3 games\)/.test(t2) && !/rank \d+ of/.test(t2)
+    && /3-season baseline 2024–2026 · 2 games/.test(t2) && /2 games this season: shown without a rank/.test(t2), t2);
   const rankless = await card('401871104', { status: 200, body: [Object.assign({}, ROW, { game_id: 401871104, season_games: 1, flags_rank_in_conf: 3, conf_refs_ranked: 11, flags_rank_fbs: 7, fbs_refs_ranked: 95 })] });
-  chk('under 3 games no rank is shown even if one were sent', !/#\d+ of/.test(strip(rankless.after)));
+  chk('under 3 games no rank is shown even if one were sent', !/rank \d+ of/.test(strip(rankless.after)));
 
   const nc = await card('401871102', { status: 200, body: [Object.assign({}, ROW, { game_id: 401871102, primary_conf: null, conf_flags_pg: null, conf_holding_pg: null,
     flags_vs_conf_pg: null, holding_vs_conf_pg: null, flags_rank_in_conf: null, holding_rank_in_conf: null, conf_refs_ranked: null })] });
   const t3 = strip(nc.after);
-  chk('no conference in the mapping: "Conference unavailable", the FBS comparison and FBS rank', /Jerry Magallanes · Conference unavailable/.test(t3) && /Conference unavailable: /.test(t3)
-    && /12\.4 · vs FBS 12\.4 \(\+0\.1\) · #50 of 95 FBS refs/.test(t3) && !/vs ACC/.test(t3), t3);
+  chk('no conference in the mapping: "conference unavailable", the FBS comparison and FBS rank', /Jerry Magallanes · referee · conference unavailable/.test(t3) && /Conference unavailable: /.test(t3)
+    && /12\.44 \+0\.08 vs FBS 12\.36 · rank 50 of 95 FBS refs/.test(t3) && !/vs ACC/.test(t3), t3);
 
   const espn = await card('401871103', { status: 200, body: [Object.assign({}, ROW, { game_id: 401871103, basis: 'assignment', source: 'espn', referee_identity: 'espn_referee_role',
     first_observed_at: '2026-10-22T15:02:11Z', observed_referees: 2 })] });
   const t4 = strip(espn.after);
-  chk('an ESPN assignment: "ESPN lists as Referee", when it was first seen, and that it changed', /ESPN lists as Referee · first seen Thu, Oct 22, 11:02 AM ET/.test(t4)
+  chk('an ESPN assignment: listed by ESPN as Referee, when it was first seen, and that it changed', /listed by ESPN as Referee, first seen Thu, Oct 22, 11:02 AM ET/.test(t4)
     && /ESPN changed the referee; the earlier listing is kept/.test(t4), t4);
 
   const noSeason = await card('401871105', { status: 200, body: [Object.assign({}, ROW, { game_id: 401871105, basis: 'assignment', source: 'espn', season_games: null, season_flags_pg: null })] });
-  chk('a referee with no games this season yet: says so, 3-yr still shown', /No games on record yet this season/.test(noSeason.after) && /3-yr flags\/game/.test(noSeason.after));
+  chk('a referee with no games this season yet: says so, the 3-season baseline still shown', /no 2026 game worked yet/.test(noSeason.after) && /3-season baseline/.test(noSeason.after));
 
   const nd = await card('401871106', { status: 404, body: '{"code":"PGRST205","message":"Could not find the table"}' });
-  chk('not deployed: the block says so (its own state, not an outage) and keeps its limitations', /not deployed yet/.test(nd.after) && hasLims(nd.after));
+  chk('not deployed: the block says so (its own state, not an outage) and keeps its limitations', /Not deployed/.test(nd.after) && /supabase\/cfb_refs\.sql is not applied yet/.test(nd.after) && hasLims(nd.after));
   const er = await card('401871107', { status: 500, body: 'boom' });
   chk('unavailable: the block says it could not be read', /could not be read \(HTTP 500\)/.test(er.after));
 
   const xss = await card('401871108', { status: 200, body: [Object.assign({}, ROW, { game_id: 401871108, referee: '<img src=x onerror=alert(1)>', primary_conf: '<b>SEC</b>' })] });
   chk('names are escaped', !/<img src=x/.test(xss.after) && /&lt;img src=x/.test(xss.after) && !/<b>SEC<\/b>/.test(xss.after));
+
+  win.cfbGameById = (gid) => (gid === '401871109' ? { game_id: 401871109, completed: true } : null);
+  const fin = await card('401871109', { status: 200, body: [] });
+  chk('a final game with no referee: "No referee on record for this game"', /No referee on record for this game/.test(fin.after) && !/Assignment not announced/.test(fin.after));
 
   const n0 = CALLS.length;
   const bad = win.cfbAnalystHTML('not-a-number');

@@ -829,10 +829,11 @@ Tested against a real PostgreSQL by `football/cfb_production/sql.test.js`
 duplicate job runs; disaster recovery by dump and restore).
 
 ### `cfb_refs.sql` — CFB referee flag tendencies (display only)
-Mirrored in `migrations/20261022150000_cfb_refs.sql`. `.github/workflows/deploy-cfb-refs.yml`
-applies it, seeds it and reports coverage (tests first). The data and how it was
-built: `data/refs/cfb/`. Display only: no model, classification, H-CFB-01 or CLV
-grade reads it.
+Mirrored in `migrations/20261022150000_cfb_refs.sql`. The CFB twin of `nfl_ref_flags.sql`, gated
+and shaped the same way. `.github/workflows/cfb-ref-sync.yml` with **apply_sql** and **seed** ticked
+applies it, seeds it and reports coverage by season (as `ref-sync.yml` does for the NFL). The
+data and how it was built: `data/refs/cfb/`. Display only: no model, classification, H-CFB-01
+or CLV grade reads it.
 
 * `cfb_ref_game_penalties` — one row per completed FBS game, keyed by the ESPN
   game id (= `cfb.games.game_id`: CFBD's ids are ESPN's). Seeded from
@@ -851,7 +852,8 @@ grade reads it.
   averages; a rank only with 3+ games), `cfb_ref_assignment_current`,
   `cfb_game_ref_context` (the card, by game_id).
 
-RLS as the CFB card's own tables: anon and authenticated select, nothing else.
+RLS as the CFB card's own tables and `nfl_ref_flags.sql`: `<table>_read` for select to anon and
+authenticated, every client write revoked.
 Report rows should say ok; row 7 says pending until the seed has run. Tested
 against a real PostgreSQL, with the full seed, by `tools/refs/cfb_refs_sql.test.js`.
 

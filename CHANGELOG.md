@@ -5,16 +5,16 @@
 Display only: no model input, classification (INVESTIGATE / MONITOR / PASS), H-CFB-01, CLV grade or ranking of games changed or reads it.
 
 - **Data.** `data/refs/cfb/`: 2,366 FBS games (2024–2026) with the crew-chief referee, accepted flags, holding (offensive / defensive), DPI / OPI.
-- **Database.** `supabase/cfb_refs.sql`, deployed by `deploy-cfb-refs.yml`. Pregame assignments keep history: `first_observed_at` is never rewritten and a replaced referee keeps its row. A referee's conference is the dataset's mapping, never the home team's.
-- **ESPN backfill.** It fills the 124 games with no referee, except the 13 `assignment_conflict` games. ESPN's Referee must first match the NCAA referee on 5 games, else it stops. The evidence is in `data/refs/cfb/backfill/`.
+- **Database.** `supabase/cfb_refs.sql`: the CFB twin of `nfl_ref_flags.sql`, with the same RLS and reader views. First run: `cfb-ref-sync.yml` with `apply_sql` and `seed`. Pregame assignments keep history: `first_observed_at` is never rewritten and a replaced referee keeps its row. A referee's conference is the dataset's mapping, never the home team's.
+- **ESPN backfill.** It fills the 124 games with no referee, except the 13 `assignment_conflict` games. ESPN's Referee must first match the NCAA referee on 5 games, else it stops. **It stopped:** ESPN's summaries list no officials for these games, so nothing was filled. The evidence is in `data/refs/cfb/backfill/`.
 - **Weekly.** `cfb-ref-sync.yml`: Sunday finals, Thursday and Friday pregame referees.
-- **The card.** An Observed (T0) Officiating block on every CFB Analyst pass:
+- **The card.** An Observed (T0) Officiating block on every CFB Analyst pass, with the NFL block's rows:
   - the season's flags and holding vs the conference average, then vs FBS;
   - a rank only with 3+ games;
   - 3-yr numbers with game counts;
   - "Conference unavailable" or "Assignment not announced" when that is the case.
 
-Tests: `python3 -I tools/refs/test_cfb_refs.py` (24), `node tools/refs/cfb_refs_sql.test.js` (58), `node tools/refs/cfb_refs_ui.test.js` (30).
+Tests: `python3 -I tools/refs/test_cfb_refs.py` (27), `node tools/refs/cfb_refs_sql.test.js` (58), `node tools/refs/cfb_refs_ui.test.js` (34).
 
 ## 2026-10-22 — The matchup card compares Kalshi at the model's time
 

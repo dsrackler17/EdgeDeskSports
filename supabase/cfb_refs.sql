@@ -25,9 +25,10 @@
 --   The views add the conference and FBS averages themselves and a rank among
 --   referees with at least 3 games (fewer: the numbers show, the rank is null).
 --
--- WHO READS. Matches the CFB card's own tables (cfb.games / cfb.lines /
--- cfb.analyst_flags: RLS on, select only): anon and authenticated may select,
--- no client may write. The views run as the reader (security_invoker).
+-- WHO READS. Gated like the CFB card's own tables (cfb.games / cfb.lines /
+-- cfb.analyst_flags: RLS on, select only) and like supabase/nfl_ref_flags.sql:
+-- RLS on, <table>_read for select to anon and authenticated, every client
+-- write revoked. The views run as the reader (security_invoker).
 --
 --   cfb_ref_game_penalties     one row per completed FBS game (ESPN game id =
 --                              the CFB module's game_id, CFBD ids are ESPN's)
@@ -323,13 +324,14 @@ j as (
     join fbs x on x.season = a.season
     left join conf c on c.season = a.season and c.conf = r.primary_conf
 ),
-rk as (   -- ranks count only referees with at least 3 games that season (1 = most)
+rk as (   -- ranks count only referees with at least 3 games that season (1 = most); they order the
+          -- rounded averages, as nfl_ref_season_summary and the dataset's own summary do
   select season, referee_id,
-         case when primary_conf is not null then rank() over (partition by season, primary_conf order by f desc) end as flags_rank_in_conf,
-         case when primary_conf is not null and h is not null then rank() over (partition by season, primary_conf order by h desc nulls last) end as holding_rank_in_conf,
+         case when primary_conf is not null then rank() over (partition by season, primary_conf order by round(f, 2) desc) end as flags_rank_in_conf,
+         case when primary_conf is not null and h is not null then rank() over (partition by season, primary_conf order by round(h, 2) desc nulls last) end as holding_rank_in_conf,
          case when primary_conf is not null then count(*) over (partition by season, primary_conf) end as conf_refs_ranked,
-         rank() over (partition by season order by f desc) as flags_rank_fbs,
-         case when h is not null then rank() over (partition by season order by h desc nulls last) end as holding_rank_fbs,
+         rank() over (partition by season order by round(f, 2) desc) as flags_rank_fbs,
+         case when h is not null then rank() over (partition by season order by round(h, 2) desc nulls last) end as holding_rank_fbs,
          count(*) over (partition by season) as fbs_refs_ranked
     from j where games >= 3
 )
@@ -339,8 +341,10 @@ select j.season, j.referee_id, j.referee, j.primary_conf, j.games, j.holding_gam
        round(j.hma, 2) as home_minus_away_pg, round(j.f100, 2) as flags_per_100_plays,
        round(j.conf_f, 2) as conf_flags_pg, round(j.conf_h, 2) as conf_holding_pg,
        round(j.fbs_f, 2) as fbs_flags_pg, round(j.fbs_h, 2) as fbs_holding_pg,
-       round(j.f - j.conf_f, 2) as flags_vs_conf_pg, round(j.h - j.conf_h, 2) as holding_vs_conf_pg,
-       round(j.f - j.fbs_f, 2) as flags_vs_fbs_pg, round(j.h - j.fbs_h, 2) as holding_vs_fbs_pg,
+       -- "vs" is the rounded average minus the base, as nfl_ref_season_summary computes it, so the
+       -- card's three numbers agree to the hundredth
+       round(round(j.f, 2) - j.conf_f, 2) as flags_vs_conf_pg, round(round(j.h, 2) - j.conf_h, 2) as holding_vs_conf_pg,
+       round(round(j.f, 2) - j.fbs_f, 2) as flags_vs_fbs_pg, round(round(j.h, 2) - j.fbs_h, 2) as holding_vs_fbs_pg,
        rk.flags_rank_in_conf, rk.holding_rank_in_conf, rk.conf_refs_ranked,
        rk.flags_rank_fbs, rk.holding_rank_fbs, rk.fbs_refs_ranked
   from j left join rk on rk.season = j.season and rk.referee_id = j.referee_id;
@@ -356,7 +360,8 @@ a as (select referee_id, count(*) as games, count(holding_total) as holding_game
 select a.referee_id, r.referee, r.primary_conf, a.games, a.holding_games,
        (select s - 2 from mx) as first_season, (select s from mx) as last_season,
        round(a.f, 2) as flags_pg, round(a.h, 2) as holding_pg, round(a.oh, 2) as off_holding_pg,
-       round(a.f - lg.f, 2) as flags_vs_fbs_pg, round(a.h - lg.h, 2) as holding_vs_fbs_pg
+       round(round(a.f, 2) - lg.f, 2) as flags_vs_fbs_pg, round(round(a.h, 2) - lg.h, 2) as holding_vs_fbs_pg,
+       round(lg.f, 2) as fbs_flags_pg, round(lg.h, 2) as fbs_holding_pg
   from a join public.cfb_ref_referees r on r.referee_id = a.referee_id cross join lg;
 
 -- The referee ESPN lists now (latest observation), and how many referees have
@@ -399,7 +404,8 @@ select p.game_id, p.season, p.week, p.referee_id, coalesce(r.referee, a2.referee
        s.flags_rank_fbs, s.holding_rank_fbs, s.fbs_refs_ranked,
        b.games as y3_games, b.holding_games as y3_holding_games, b.first_season as y3_first_season, b.last_season as y3_last_season,
        b.flags_pg as y3_flags_pg, b.holding_pg as y3_holding_pg, b.off_holding_pg as y3_off_holding_pg,
-       b.flags_vs_fbs_pg as y3_flags_vs_fbs, b.holding_vs_fbs_pg as y3_holding_vs_fbs
+       b.flags_vs_fbs_pg as y3_flags_vs_fbs, b.holding_vs_fbs_pg as y3_holding_vs_fbs,
+       b.fbs_flags_pg as y3_fbs_flags_pg, b.fbs_holding_pg as y3_fbs_holding_pg
   from pick p
   left join public.cfb_ref_referees r on r.referee_id = p.referee_id
   left join public.cfb_ref_assignment_current a2 on a2.game_id = p.game_id and a2.referee_id = p.referee_id
@@ -460,5 +466,5 @@ select piece, state from (
                and to_regclass('public.cfb_game_ref_context') is not null then 'ok' else 'CHECK THIS' end
   union all select '7 seeded (data/refs/cfb/cfb_ref_game_penalties.csv: 2,366 games)',
          case when (select count(*) from public.cfb_ref_game_penalties) >= 2366 then 'ok'
-              else 'pending: ' || (select count(*) from public.cfb_ref_game_penalties) || ' rows; run Deploy CFB refs (seed) next' end
+              else 'pending: ' || (select count(*) from public.cfb_ref_game_penalties) || ' rows; run CFB referee sync with seed ticked next' end
 ) r order by 1;
