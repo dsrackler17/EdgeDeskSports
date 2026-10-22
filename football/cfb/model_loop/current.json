@@ -2,7 +2,7 @@
  "schema": "edgedesk_model_loop_cfb_current_v1",
  "model_version": "2.0.0",
  "status": "SERVED",
- "generated_at": "2026-10-21T18:17:23Z",
+ "generated_at": "2026-10-22T00:54:56Z",
  "season": 2026,
  "config_sha256": "af284333f16a8116f7d63dec5d59c0225c421fc283c31f96bb03412f163e75df",
  "distribution": {
@@ -66,161 +66,6 @@
  },
  "note": "CFB model loop: the served version's numbers for the next 10 days of games with an FBS side. Version history and evidence: docs/model-loop/cfb/versions.json and BACKTEST.md.",
  "games": [
-  {
-   "game_id": "401871070",
-   "week": 8,
-   "home": "Sam Houston",
-   "away": "New Mexico State",
-   "home_id": 2534,
-   "away_id": 166,
-   "home_division": "fbs",
-   "away_division": "fbs",
-   "home_conference": "Conference USA",
-   "away_conference": "Conference USA",
-   "neutral_site": false,
-   "kickoff_utc": "2026-10-22T00:00:00Z",
-   "starters": {
-    "home": {
-     "id": "5148427",
-     "name": "Landyn Locke",
-     "basis": "board starter: Landyn Locke \u2014 started the last game; no announcement for this one."
-    },
-    "away": {
-     "id": "5152503",
-     "name": "Adam Damante",
-     "basis": "board starter: Adam Damante \u2014 started the last game; no announcement for this one."
-    }
-   },
-   "fair_home_margin": -2.75,
-   "fair_home_line": 2.75,
-   "fair_total": 48.64,
-   "home_win_prob": 0.4331,
-   "tie_prob": 0.0,
-   "fair_home_ml": 131,
-   "fair_away_ml": -131,
-   "range80": {
-    "lo": -23.65,
-    "hi": 18.14,
-    "centre": -2.75,
-    "half_width": 20.89
-   },
-   "groups": {
-    "Environment": 2.6631,
-    "Base strength": -4.16,
-    "Rest": -1.2548
-   },
-   "components": [
-    {
-     "key": "home_field",
-     "label": "Home field",
-     "group": "environment",
-     "points": 2.6631
-    },
-    {
-     "key": "covid_2020",
-     "label": "Limited-crowd season (2020)",
-     "group": "environment",
-     "points": -0.0
-    },
-    {
-     "key": "pass_off",
-     "label": "Pass offense (team, excluding QB)",
-     "group": "base_strength",
-     "points": 0.9236,
-     "from_prior": 0.0144,
-     "from_this_season": 0.9092,
-     "prior_share": 0.016
-    },
-    {
-     "key": "qb",
-     "label": "Quarterback",
-     "group": "base_strength",
-     "points": 1.3879,
-     "from_prior": 0.2957,
-     "from_this_season": 1.0922,
-     "prior_share": 0.213
-    },
-    {
-     "key": "pass_def",
-     "label": "Pass defense",
-     "group": "base_strength",
-     "points": 2.3727,
-     "from_prior": -0.1566,
-     "from_this_season": 2.5293,
-     "prior_share": 0.058
-    },
-    {
-     "key": "rush_off",
-     "label": "Rush offense",
-     "group": "base_strength",
-     "points": -3.7198,
-     "from_prior": 0.2925,
-     "from_this_season": -4.0123,
-     "prior_share": 0.068
-    },
-    {
-     "key": "rush_def",
-     "label": "Rush defense",
-     "group": "base_strength",
-     "points": -3.9296,
-     "from_prior": -0.5816,
-     "from_this_season": -3.348,
-     "prior_share": 0.148
-    },
-    {
-     "key": "market",
-     "label": "Market rating (prior weeks' closing lines)",
-     "group": "base_strength",
-     "points": -1.1948,
-     "from_prior": -0.109,
-     "from_this_season": -1.0858,
-     "prior_share": 0.091
-    },
-    {
-     "key": "division",
-     "label": "FCS / lower-division opponent (beyond its rating)",
-     "group": "base_strength",
-     "points": -0.0
-    },
-    {
-     "key": "rest",
-     "label": "Rest days",
-     "group": "rest_travel",
-     "points": -0.1349
-    },
-    {
-     "key": "bye",
-     "label": "Off a bye",
-     "group": "rest_travel",
-     "points": -1.1199
-    },
-    {
-     "key": "short",
-     "label": "Short week",
-     "group": "rest_travel",
-     "points": -0.0
-    }
-   ],
-   "reconciliation": {
-    "components_sum": -2.751694,
-    "fair_home_margin": -2.751694,
-    "unattributed": -0.0
-   },
-   "games_played": {
-    "home": 6,
-    "away": 6
-   },
-   "market_reference": {
-    "home_line": 2.5,
-    "source": "CFBD consensus via sportsdataverse cfb_matchup_line (reference, not a price)"
-   },
-   "qb_scenarios": [],
-   "disagreement": null,
-   "data_status": {
-    "status": "OK",
-    "reasons": []
-   }
-  },
   {
    "game_id": "401869845",
    "week": 8,
@@ -15965,6 +15810,946 @@
      "no reference line to measure the model against"
     ]
    }
+  },
+  {
+   "game_id": "401861966",
+   "week": 9,
+   "home": "Air Force",
+   "away": "UConn",
+   "home_id": 2005,
+   "away_id": 41,
+   "home_division": "fbs",
+   "away_division": "fbs",
+   "home_conference": "Mountain West",
+   "away_conference": "FBS Independents",
+   "neutral_site": false,
+   "kickoff_utc": "2026-10-31T19:00:00Z",
+   "starters": {
+    "home": {
+     "id": "5306440",
+     "name": "Evan Medders",
+     "basis": "board starter: Evan Medders \u2014 started the last game; no announcement for this one."
+    },
+    "away": {
+     "id": "5079619",
+     "name": "Kalieb Osborne",
+     "basis": "board starter: Kalieb Osborne \u2014 started the last game; no announcement for this one."
+    }
+   },
+   "fair_home_margin": 3.86,
+   "fair_home_line": -3.86,
+   "fair_total": 57.47,
+   "home_win_prob": 0.5932,
+   "tie_prob": 0.0,
+   "fair_home_ml": -146,
+   "fair_away_ml": 146,
+   "range80": {
+    "lo": -16.96,
+    "hi": 24.67,
+    "centre": 3.86,
+    "half_width": 20.81
+   },
+   "groups": {
+    "Environment": 2.6631,
+    "Base strength": 1.212,
+    "Rest": -0.0193
+   },
+   "components": [
+    {
+     "key": "home_field",
+     "label": "Home field",
+     "group": "environment",
+     "points": 2.6631
+    },
+    {
+     "key": "covid_2020",
+     "label": "Limited-crowd season (2020)",
+     "group": "environment",
+     "points": -0.0
+    },
+    {
+     "key": "pass_off",
+     "label": "Pass offense (team, excluding QB)",
+     "group": "base_strength",
+     "points": -1.1843,
+     "from_prior": -0.3165,
+     "from_this_season": -0.8678,
+     "prior_share": 0.267
+    },
+    {
+     "key": "qb",
+     "label": "Quarterback",
+     "group": "base_strength",
+     "points": -1.2897,
+     "from_prior": -0.6081,
+     "from_this_season": -0.6816,
+     "prior_share": 0.472
+    },
+    {
+     "key": "pass_def",
+     "label": "Pass defense",
+     "group": "base_strength",
+     "points": 0.7835,
+     "from_prior": -0.8193,
+     "from_this_season": 1.6028,
+     "prior_share": 0.338
+    },
+    {
+     "key": "rush_off",
+     "label": "Rush offense",
+     "group": "base_strength",
+     "points": 1.3432,
+     "from_prior": -0.1868,
+     "from_this_season": 1.53,
+     "prior_share": 0.109
+    },
+    {
+     "key": "rush_def",
+     "label": "Rush defense",
+     "group": "base_strength",
+     "points": -1.159,
+     "from_prior": 0.4569,
+     "from_this_season": -1.6159,
+     "prior_share": 0.22
+    },
+    {
+     "key": "market",
+     "label": "Market rating (prior weeks' closing lines)",
+     "group": "base_strength",
+     "points": 2.7183,
+     "from_prior": -0.5129,
+     "from_this_season": 3.2312,
+     "prior_share": 0.137
+    },
+    {
+     "key": "division",
+     "label": "FCS / lower-division opponent (beyond its rating)",
+     "group": "base_strength",
+     "points": -0.0
+    },
+    {
+     "key": "rest",
+     "label": "Rest days",
+     "group": "rest_travel",
+     "points": -0.0193
+    },
+    {
+     "key": "bye",
+     "label": "Off a bye",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "short",
+     "label": "Short week",
+     "group": "rest_travel",
+     "points": -0.0
+    }
+   ],
+   "reconciliation": {
+    "components_sum": 3.855909,
+    "fair_home_margin": 3.855909,
+    "unattributed": 0.0
+   },
+   "games_played": {
+    "home": 6,
+    "away": 6
+   },
+   "market_reference": {
+    "home_line": null,
+    "source": "no line on file (FBS-vs-FCS games are not carried by the feed)"
+   },
+   "qb_scenarios": [],
+   "disagreement": null,
+   "data_status": {
+    "status": "DEGRADED",
+    "reasons": [
+     "no reference line to measure the model against"
+    ]
+   }
+  },
+  {
+   "game_id": "401856734",
+   "week": 9,
+   "home": "Georgia",
+   "away": "Florida",
+   "home_id": 61,
+   "away_id": 57,
+   "home_division": "fbs",
+   "away_division": "fbs",
+   "home_conference": "SEC",
+   "away_conference": "SEC",
+   "neutral_site": true,
+   "kickoff_utc": "2026-10-31T19:30:00Z",
+   "starters": {
+    "home": {
+     "id": "4685578",
+     "name": "Gunner Stockton",
+     "basis": "most recent starter (play-by-play)"
+    },
+    "away": {
+     "id": "5295814",
+     "name": "Tramell Jones Jr.",
+     "basis": "board starter: unresolved: Tramell Jones Jr. 54% of recent dropbacks and Aaron Philo 38% of recent dropbacks \u2014 sources disagree."
+    }
+   },
+   "fair_home_margin": 9.25,
+   "fair_home_line": -9.25,
+   "fair_total": 59.62,
+   "home_win_prob": 0.7132,
+   "tie_prob": 0.0,
+   "fair_home_ml": -249,
+   "fair_away_ml": 249,
+   "range80": {
+    "lo": -11.11,
+    "hi": 29.6,
+    "centre": 9.25,
+    "half_width": 20.36
+   },
+   "groups": {
+    "Environment": 0.0,
+    "Base strength": 9.2455,
+    "Rest": 0.0
+   },
+   "components": [
+    {
+     "key": "home_field",
+     "label": "Home field",
+     "group": "environment",
+     "points": 0.0
+    },
+    {
+     "key": "covid_2020",
+     "label": "Limited-crowd season (2020)",
+     "group": "environment",
+     "points": -0.0
+    },
+    {
+     "key": "pass_off",
+     "label": "Pass offense (team, excluding QB)",
+     "group": "base_strength",
+     "points": 0.9891,
+     "from_prior": 0.7036,
+     "from_this_season": 0.2855,
+     "prior_share": 0.711
+    },
+    {
+     "key": "qb",
+     "label": "Quarterback",
+     "group": "base_strength",
+     "points": 0.8764,
+     "from_prior": -0.5932,
+     "from_this_season": 1.4696,
+     "prior_share": 0.288
+    },
+    {
+     "key": "pass_def",
+     "label": "Pass defense",
+     "group": "base_strength",
+     "points": 0.8375,
+     "from_prior": 0.103,
+     "from_this_season": 0.7345,
+     "prior_share": 0.123
+    },
+    {
+     "key": "rush_off",
+     "label": "Rush offense",
+     "group": "base_strength",
+     "points": 0.8503,
+     "from_prior": 0.6933,
+     "from_this_season": 0.157,
+     "prior_share": 0.815
+    },
+    {
+     "key": "rush_def",
+     "label": "Rush defense",
+     "group": "base_strength",
+     "points": 0.9605,
+     "from_prior": 0.6151,
+     "from_this_season": 0.3454,
+     "prior_share": 0.64
+    },
+    {
+     "key": "market",
+     "label": "Market rating (prior weeks' closing lines)",
+     "group": "base_strength",
+     "points": 4.7317,
+     "from_prior": 0.6051,
+     "from_this_season": 4.1266,
+     "prior_share": 0.128
+    },
+    {
+     "key": "division",
+     "label": "FCS / lower-division opponent (beyond its rating)",
+     "group": "base_strength",
+     "points": -0.0
+    },
+    {
+     "key": "rest",
+     "label": "Rest days",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "bye",
+     "label": "Off a bye",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "short",
+     "label": "Short week",
+     "group": "rest_travel",
+     "points": -0.0
+    }
+   ],
+   "reconciliation": {
+    "components_sum": 9.245453,
+    "fair_home_margin": 9.245453,
+    "unattributed": 0.0
+   },
+   "games_played": {
+    "home": 7,
+    "away": 7
+   },
+   "market_reference": {
+    "home_line": -12.5,
+    "source": "CFBD consensus via sportsdataverse cfb_matchup_line (reference, not a price)"
+   },
+   "qb_scenarios": [],
+   "disagreement": null,
+   "data_status": {
+    "status": "OK",
+    "reasons": []
+   }
+  },
+  {
+   "game_id": "401860910",
+   "week": 9,
+   "home": "Utah State",
+   "away": "Colorado State",
+   "home_id": 328,
+   "away_id": 36,
+   "home_division": "fbs",
+   "away_division": "fbs",
+   "home_conference": "Pac-12",
+   "away_conference": "Pac-12",
+   "neutral_site": false,
+   "kickoff_utc": "2026-10-31T19:30:00Z",
+   "starters": {
+    "home": {
+     "id": "5081197",
+     "name": "Grady Brosterhous",
+     "basis": "board starter: Grady Brosterhous \u2014 started the last game; no announcement for this one."
+    },
+    "away": {
+     "id": "5212610",
+     "name": "K'saan Farrar",
+     "basis": "board starter: Ksaan Farrar \u2014 started the last game; no announcement for this one."
+    }
+   },
+   "fair_home_margin": 4.22,
+   "fair_home_line": -4.22,
+   "fair_total": 57.74,
+   "home_win_prob": 0.6019,
+   "tie_prob": 0.0,
+   "fair_home_ml": -151,
+   "fair_away_ml": 151,
+   "range80": {
+    "lo": -16.65,
+    "hi": 25.09,
+    "centre": 4.22,
+    "half_width": 20.87
+   },
+   "groups": {
+    "Environment": 2.6631,
+    "Base strength": 1.56,
+    "Rest": 0.0
+   },
+   "components": [
+    {
+     "key": "home_field",
+     "label": "Home field",
+     "group": "environment",
+     "points": 2.6631
+    },
+    {
+     "key": "covid_2020",
+     "label": "Limited-crowd season (2020)",
+     "group": "environment",
+     "points": -0.0
+    },
+    {
+     "key": "pass_off",
+     "label": "Pass offense (team, excluding QB)",
+     "group": "base_strength",
+     "points": -2.2531,
+     "from_prior": 0.6245,
+     "from_this_season": -2.8776,
+     "prior_share": 0.178
+    },
+    {
+     "key": "qb",
+     "label": "Quarterback",
+     "group": "base_strength",
+     "points": 1.3481,
+     "from_prior": 0.7987,
+     "from_this_season": 0.5494,
+     "prior_share": 0.592
+    },
+    {
+     "key": "pass_def",
+     "label": "Pass defense",
+     "group": "base_strength",
+     "points": 4.2669,
+     "from_prior": 0.5953,
+     "from_this_season": 3.6716,
+     "prior_share": 0.14
+    },
+    {
+     "key": "rush_off",
+     "label": "Rush offense",
+     "group": "base_strength",
+     "points": -5.8732,
+     "from_prior": 0.0583,
+     "from_this_season": -5.9315,
+     "prior_share": 0.01
+    },
+    {
+     "key": "rush_def",
+     "label": "Rush defense",
+     "group": "base_strength",
+     "points": 3.2672,
+     "from_prior": -0.1177,
+     "from_this_season": 3.3849,
+     "prior_share": 0.034
+    },
+    {
+     "key": "market",
+     "label": "Market rating (prior weeks' closing lines)",
+     "group": "base_strength",
+     "points": 0.8041,
+     "from_prior": 0.5491,
+     "from_this_season": 0.255,
+     "prior_share": 0.683
+    },
+    {
+     "key": "division",
+     "label": "FCS / lower-division opponent (beyond its rating)",
+     "group": "base_strength",
+     "points": -0.0
+    },
+    {
+     "key": "rest",
+     "label": "Rest days",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "bye",
+     "label": "Off a bye",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "short",
+     "label": "Short week",
+     "group": "rest_travel",
+     "points": -0.0
+    }
+   ],
+   "reconciliation": {
+    "components_sum": 4.223087,
+    "fair_home_margin": 4.223087,
+    "unattributed": 0.0
+   },
+   "games_played": {
+    "home": 6,
+    "away": 6
+   },
+   "market_reference": {
+    "home_line": null,
+    "source": "no line on file (FBS-vs-FCS games are not carried by the feed)"
+   },
+   "qb_scenarios": [],
+   "disagreement": null,
+   "data_status": {
+    "status": "DEGRADED",
+    "reasons": [
+     "no reference line to measure the model against"
+    ]
+   }
+  },
+  {
+   "game_id": "401864531",
+   "week": 9,
+   "home": "North Dakota State",
+   "away": "UTEP",
+   "home_id": 2449,
+   "away_id": 2638,
+   "home_division": "fbs",
+   "away_division": "fbs",
+   "home_conference": "Mountain West",
+   "away_conference": "Mountain West",
+   "neutral_site": false,
+   "kickoff_utc": "2026-10-31T19:30:00Z",
+   "starters": {
+    "home": {
+     "id": "5087156",
+     "name": "Nathan Hayes",
+     "basis": "board starter: Nathan Hayes \u2014 started the last game; no announcement for this one."
+    },
+    "away": {
+     "id": "5232049",
+     "name": "Raymond Moore III",
+     "basis": "most recent starter (play-by-play)"
+    }
+   },
+   "fair_home_margin": 26.03,
+   "fair_home_line": -26.03,
+   "fair_total": 48.15,
+   "home_win_prob": 0.9401,
+   "tie_prob": 0.0,
+   "fair_home_ml": -1569,
+   "fair_away_ml": 1569,
+   "range80": {
+    "lo": 4.19,
+    "hi": 47.87,
+    "centre": 26.03,
+    "half_width": 21.84
+   },
+   "groups": {
+    "Environment": 2.6631,
+    "Base strength": 24.6212,
+    "Rest": -1.2548
+   },
+   "components": [
+    {
+     "key": "home_field",
+     "label": "Home field",
+     "group": "environment",
+     "points": 2.6631
+    },
+    {
+     "key": "covid_2020",
+     "label": "Limited-crowd season (2020)",
+     "group": "environment",
+     "points": -0.0
+    },
+    {
+     "key": "pass_off",
+     "label": "Pass offense (team, excluding QB)",
+     "group": "base_strength",
+     "points": 1.9556,
+     "from_prior": -0.0584,
+     "from_this_season": 2.014,
+     "prior_share": 0.028
+    },
+    {
+     "key": "qb",
+     "label": "Quarterback",
+     "group": "base_strength",
+     "points": 2.0791,
+     "from_prior": 0.1275,
+     "from_this_season": 1.9516,
+     "prior_share": 0.061
+    },
+    {
+     "key": "pass_def",
+     "label": "Pass defense",
+     "group": "base_strength",
+     "points": 4.0288,
+     "from_prior": -0.5344,
+     "from_this_season": 4.5632,
+     "prior_share": 0.105
+    },
+    {
+     "key": "rush_off",
+     "label": "Rush offense",
+     "group": "base_strength",
+     "points": 1.0373,
+     "from_prior": -0.5629,
+     "from_this_season": 1.6002,
+     "prior_share": 0.26
+    },
+    {
+     "key": "rush_def",
+     "label": "Rush defense",
+     "group": "base_strength",
+     "points": 4.3346,
+     "from_prior": -0.2835,
+     "from_this_season": 4.6181,
+     "prior_share": 0.058
+    },
+    {
+     "key": "market",
+     "label": "Market rating (prior weeks' closing lines)",
+     "group": "base_strength",
+     "points": 11.1858,
+     "from_prior": -0.2565,
+     "from_this_season": 11.4423,
+     "prior_share": 0.022
+    },
+    {
+     "key": "division",
+     "label": "FCS / lower-division opponent (beyond its rating)",
+     "group": "base_strength",
+     "points": -0.0
+    },
+    {
+     "key": "rest",
+     "label": "Rest days",
+     "group": "rest_travel",
+     "points": -0.1349
+    },
+    {
+     "key": "bye",
+     "label": "Off a bye",
+     "group": "rest_travel",
+     "points": -1.1199
+    },
+    {
+     "key": "short",
+     "label": "Short week",
+     "group": "rest_travel",
+     "points": -0.0
+    }
+   ],
+   "reconciliation": {
+    "components_sum": 26.029433,
+    "fair_home_margin": 26.029433,
+    "unattributed": -0.0
+   },
+   "games_played": {
+    "home": 7,
+    "away": 7
+   },
+   "market_reference": {
+    "home_line": null,
+    "source": "no line on file (FBS-vs-FCS games are not carried by the feed)"
+   },
+   "qb_scenarios": [],
+   "disagreement": null,
+   "data_status": {
+    "status": "DEGRADED",
+    "reasons": [
+     "no reference line to measure the model against"
+    ]
+   }
+  },
+  {
+   "game_id": "401871059",
+   "week": 9,
+   "home": "Liberty",
+   "away": "Florida International",
+   "home_id": 2335,
+   "away_id": 2229,
+   "home_division": "fbs",
+   "away_division": "fbs",
+   "home_conference": "Conference USA",
+   "away_conference": "Conference USA",
+   "neutral_site": false,
+   "kickoff_utc": "2026-10-31T19:30:00Z",
+   "starters": {
+    "home": {
+     "id": "5138131",
+     "name": "Deshawn Purdie",
+     "basis": "board starter: Deshawn Purdie \u2014 started the last game; no announcement for this one."
+    },
+    "away": {
+     "id": "4870883",
+     "name": "JJ Kohl",
+     "basis": "board starter: JJ Kohl \u2014 started the last game; no announcement for this one."
+    }
+   },
+   "fair_home_margin": 4.76,
+   "fair_home_line": -4.76,
+   "fair_total": 48.82,
+   "home_win_prob": 0.6144,
+   "tie_prob": 0.0,
+   "fair_home_ml": -159,
+   "fair_away_ml": 159,
+   "range80": {
+    "lo": -16.04,
+    "hi": 25.55,
+    "centre": 4.76,
+    "half_width": 20.79
+   },
+   "groups": {
+    "Environment": 2.6631,
+    "Base strength": 2.1305,
+    "Rest": -0.0386
+   },
+   "components": [
+    {
+     "key": "home_field",
+     "label": "Home field",
+     "group": "environment",
+     "points": 2.6631
+    },
+    {
+     "key": "covid_2020",
+     "label": "Limited-crowd season (2020)",
+     "group": "environment",
+     "points": -0.0
+    },
+    {
+     "key": "pass_off",
+     "label": "Pass offense (team, excluding QB)",
+     "group": "base_strength",
+     "points": 1.2383,
+     "from_prior": 0.4527,
+     "from_this_season": 0.7856,
+     "prior_share": 0.366
+    },
+    {
+     "key": "qb",
+     "label": "Quarterback",
+     "group": "base_strength",
+     "points": -1.7193,
+     "from_prior": -1.139,
+     "from_this_season": -0.5803,
+     "prior_share": 0.662
+    },
+    {
+     "key": "pass_def",
+     "label": "Pass defense",
+     "group": "base_strength",
+     "points": -0.8091,
+     "from_prior": -0.2194,
+     "from_this_season": -0.5897,
+     "prior_share": 0.271
+    },
+    {
+     "key": "rush_off",
+     "label": "Rush offense",
+     "group": "base_strength",
+     "points": 3.2238,
+     "from_prior": 0.0582,
+     "from_this_season": 3.1656,
+     "prior_share": 0.018
+    },
+    {
+     "key": "rush_def",
+     "label": "Rush defense",
+     "group": "base_strength",
+     "points": -1.7347,
+     "from_prior": -0.9243,
+     "from_this_season": -0.8104,
+     "prior_share": 0.533
+    },
+    {
+     "key": "market",
+     "label": "Market rating (prior weeks' closing lines)",
+     "group": "base_strength",
+     "points": 1.9315,
+     "from_prior": 0.3592,
+     "from_this_season": 1.5723,
+     "prior_share": 0.186
+    },
+    {
+     "key": "division",
+     "label": "FCS / lower-division opponent (beyond its rating)",
+     "group": "base_strength",
+     "points": -0.0
+    },
+    {
+     "key": "rest",
+     "label": "Rest days",
+     "group": "rest_travel",
+     "points": -0.0386
+    },
+    {
+     "key": "bye",
+     "label": "Off a bye",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "short",
+     "label": "Short week",
+     "group": "rest_travel",
+     "points": -0.0
+    }
+   ],
+   "reconciliation": {
+    "components_sum": 4.755188,
+    "fair_home_margin": 4.755188,
+    "unattributed": 0.0
+   },
+   "games_played": {
+    "home": 6,
+    "away": 6
+   },
+   "market_reference": {
+    "home_line": null,
+    "source": "no line on file (FBS-vs-FCS games are not carried by the feed)"
+   },
+   "qb_scenarios": [],
+   "disagreement": null,
+   "data_status": {
+    "status": "DEGRADED",
+    "reasons": [
+     "no reference line to measure the model against"
+    ]
+   }
+  },
+  {
+   "game_id": "401860909",
+   "week": 9,
+   "home": "San Diego State",
+   "away": "Washington State",
+   "home_id": 21,
+   "away_id": 265,
+   "home_division": "fbs",
+   "away_division": "fbs",
+   "home_conference": "Pac-12",
+   "away_conference": "Pac-12",
+   "neutral_site": false,
+   "kickoff_utc": "2026-10-31T23:00:00Z",
+   "starters": {
+    "home": {
+     "id": "4685311",
+     "name": "Jayden Denegal",
+     "basis": "most recent starter (play-by-play)"
+    },
+    "away": {
+     "id": "5263246",
+     "name": "Owen Eshelman",
+     "basis": "most recent starter (play-by-play)"
+    }
+   },
+   "fair_home_margin": 2.96,
+   "fair_home_line": -2.96,
+   "fair_total": 43.83,
+   "home_win_prob": 0.5718,
+   "tie_prob": 0.0,
+   "fair_home_ml": -134,
+   "fair_away_ml": 134,
+   "range80": {
+    "lo": -17.91,
+    "hi": 23.82,
+    "centre": 2.96,
+    "half_width": 20.86
+   },
+   "groups": {
+    "Environment": 2.6631,
+    "Base strength": 0.2924,
+    "Rest": 0.0
+   },
+   "components": [
+    {
+     "key": "home_field",
+     "label": "Home field",
+     "group": "environment",
+     "points": 2.6631
+    },
+    {
+     "key": "covid_2020",
+     "label": "Limited-crowd season (2020)",
+     "group": "environment",
+     "points": -0.0
+    },
+    {
+     "key": "pass_off",
+     "label": "Pass offense (team, excluding QB)",
+     "group": "base_strength",
+     "points": -0.1317,
+     "from_prior": -0.7376,
+     "from_this_season": 0.6059,
+     "prior_share": 0.549
+    },
+    {
+     "key": "qb",
+     "label": "Quarterback",
+     "group": "base_strength",
+     "points": -0.8346,
+     "from_prior": 1.0189,
+     "from_this_season": -1.8535,
+     "prior_share": 0.355
+    },
+    {
+     "key": "pass_def",
+     "label": "Pass defense",
+     "group": "base_strength",
+     "points": 0.3186,
+     "from_prior": -0.2132,
+     "from_this_season": 0.5318,
+     "prior_share": 0.286
+    },
+    {
+     "key": "rush_off",
+     "label": "Rush offense",
+     "group": "base_strength",
+     "points": 0.1742,
+     "from_prior": -0.0441,
+     "from_this_season": 0.2183,
+     "prior_share": 0.168
+    },
+    {
+     "key": "rush_def",
+     "label": "Rush defense",
+     "group": "base_strength",
+     "points": 0.6046,
+     "from_prior": -0.5598,
+     "from_this_season": 1.1644,
+     "prior_share": 0.325
+    },
+    {
+     "key": "market",
+     "label": "Market rating (prior weeks' closing lines)",
+     "group": "base_strength",
+     "points": 0.1613,
+     "from_prior": -0.2672,
+     "from_this_season": 0.4285,
+     "prior_share": 0.384
+    },
+    {
+     "key": "division",
+     "label": "FCS / lower-division opponent (beyond its rating)",
+     "group": "base_strength",
+     "points": -0.0
+    },
+    {
+     "key": "rest",
+     "label": "Rest days",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "bye",
+     "label": "Off a bye",
+     "group": "rest_travel",
+     "points": 0.0
+    },
+    {
+     "key": "short",
+     "label": "Short week",
+     "group": "rest_travel",
+     "points": -0.0
+    }
+   ],
+   "reconciliation": {
+    "components_sum": 2.955526,
+    "fair_home_margin": 2.955526,
+    "unattributed": 0.0
+   },
+   "games_played": {
+    "home": 7,
+    "away": 7
+   },
+   "market_reference": {
+    "home_line": null,
+    "source": "no line on file (FBS-vs-FCS games are not carried by the feed)"
+   },
+   "qb_scenarios": [],
+   "disagreement": null,
+   "data_status": {
+    "status": "DEGRADED",
+    "reasons": [
+     "no reference line to measure the model against"
+    ]
+   }
   }
  ],
  "served": {
@@ -15980,12 +16765,12 @@
   "reasons": [
    "3 game(s) already played have no result in the data yet, so the ratings are behind by those games: 401871055, 401871069, 401871092"
   ],
-  "games_flagged": 73,
+  "games_flagged": 78,
   "missing_results": [
    "401871055",
    "401871069",
    "401871092"
   ],
-  "checked_at": "2026-10-21T18:17:26Z"
+  "checked_at": "2026-10-22T00:54:59Z"
  }
 }
