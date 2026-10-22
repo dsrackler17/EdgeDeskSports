@@ -14,8 +14,13 @@
 #
 # WHEN. Tuesday 10:00 UTC, September through February: Monday night's game is
 # final and nflverse has caught up. Crew assignments for the coming week are
-# announced Wednesday or Thursday: add them to manual_assignments.json, merge,
-# and Run workflow by hand.
+# announced Wednesday or Thursday; nfl-ref-assignments.yml pulls them into
+# manual_assignments.json and dispatches this workflow.
+#
+# THE COMMITTED FILES. The rebuilt season is also folded into
+# data/refs/ref_game_penalties.csv and ref_assignments.csv
+# (data/refs/merge_season.py) and pushed to main, so the research snapshots
+# (tools/football/game_context.js) count last week's flags too.
 #
 # BY HAND (Actions -> NFL referee sync -> Run workflow): leave season empty for
 # the season in progress; tick dry to download and build without writing. The
@@ -54,7 +59,7 @@ on:
         default: false
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ref-sync
@@ -113,6 +118,18 @@ jobs:
           name: refs-${{ steps.season.outputs.season }}
           path: ${{ runner.temp }}/refs/
           retention-days: 30
+
+      - name: Fold the season into the committed CSVs and publish them
+        if: ${{ !inputs.dry }}
+        env:
+          SEASON: ${{ steps.season.outputs.season }}
+        run: |
+          python3 data/refs/merge_season.py --dir "$RUNNER_TEMP/refs" --season "$SEASON"
+          if git diff --quiet -- data/refs/ref_game_penalties.csv data/refs/ref_assignments.csv; then echo "the committed CSVs already carry this build"; exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "refs: $SEASON referee flags through the latest final" -- \
+            data/refs/ref_game_penalties.csv data/refs/ref_assignments.csv
 
       - name: Apply supabase/nfl_ref_flags.sql
         if: ${{ inputs.apply_sql && !inputs.dry }}

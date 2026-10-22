@@ -34,6 +34,8 @@ const GAMES = [
   '2026_01_LA_SF,2026,REG,1,2026-09-10,Thursday,20:15,LA,17,SF,24,Home,7,41,0,,,,,,,,7,7,150,-180,3.5,-110,-110,47.5,-110,-110,1,outdoors,grass,68,5,00-0036355,00-0037834,Matthew Stafford,Brock Purdy,Sean McVay,Kyle Shanahan,,SF01,Levi\'s Stadium',
   '2026_02_KC_BUF,2026,REG,2,2026-09-20,Sunday,13:00,KC,,BUF,,Home,,,,,,,,,,,10,10,120,-140,2.5,-110,-110,49.5,-110,-110,0,outdoors,a_turf,,,00-0033873,00-0034857,Patrick Mahomes,Josh Allen,Andy Reid,Sean McDermott,,BUF00,Highmark Stadium',
   '2026_02_SF_LA,2026,REG,2,2026-09-21,Monday,20:15,SF,,LA,,Home,,,,,,,,,,,10,10,-120,100,-1.5,-110,-110,46,-110,-110,1,dome,sportturf,,,00-0037834,00-0036355,Brock Purdy,Matthew Stafford,Kyle Shanahan,Sean McVay,,LA00,SoFi Stadium',
+  /* a game abroad as nflverse files it: the home club's own dome and turf, not Paris's open-air grass */
+  '2026_02_PIT_NO,2026,REG,2,2026-09-20,Sunday,09:30,PIT,,NO,,Neutral,,,,,,,,,,,7,7,-175,145,-3.5,-102,-118,44.5,-110,-110,0,dome,sportturf,,,,,,,Mike McCarthy,Kellen Moore,,PAR00,Stade de France',
 ].join('\n');
 const STW_HEAD = 'season,week,season_type,team,opponent_team,game_id,completions,attempts,passing_yards,passing_tds,passing_interceptions,sacks_suffered,sack_yards_lost,passing_first_downs,passing_epa,carries,rushing_yards,rushing_tds,rushing_first_downs,rushing_epa,def_sacks,def_interceptions,def_epa';
 const STW = [STW_HEAD,
@@ -45,7 +47,9 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
 (async () => {
   const art = await B.build({
     now: NOW,
-    fetchText: async (u) => (/games\.csv/.test(u) ? GAMES : /stats_team_week/.test(u) ? STW : /roster/.test(u) ? ROSTER : ''),
+    fetchText: async (u) => (/games\.csv/.test(u) ? GAMES : /stats_team_week/.test(u) ? STW : /roster/.test(u) ? ROSTER
+      /* the committed stadium table, as the builder reads it from disk */
+      : /nfl_stadiums\.json$/.test(u) ? require('fs').readFileSync(path.join(__dirname, '..', '..', 'football', 'venues', 'nfl_stadiums.json'), 'utf8') : ''),
     lookahead: 12,
     coachingSeed: { schema: 'fixture-empty-seed', teams: {} },
     coachingValidation: {
@@ -61,7 +65,7 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
   });
   chk('schema', art.schema === 'edgedesk_nfl_slate_v1');
   chk('the completed game was absorbed', art.absorbed_games === 1, art.absorbed_games);
-  chk('two upcoming games are on the slate', art.counts.games === 2, art.counts);
+  chk('three upcoming games are on the slate (one of them abroad)', art.counts.games === 3, art.counts);
   const g = art.games.find((x) => x.game_id === '2026_02_KC_BUF');
   chk('the row carries display names and codes', g && g.home_team === 'Buffalo Bills' && g.away_code === 'KC', g && g.home_team);
   chk('kickoff is Eastern converted to UTC', g && g.kickoff === '2026-09-20T17:00:00.000Z', g && g.kickoff);
@@ -131,6 +135,13 @@ const ROSTER = 'season,team,position,depth_chart_position,jersey_number,status,f
       && d.model_home_line === -d.model_home_margin,
     d && [d.coaching_staff, d.model_home_line, d.model_home_margin]);
 
+  /* a game abroad: the verified stadium table, not the feed's copy of the home club's stadium */
+  const par = art.games.find((x) => x.game_id === '2026_02_PIT_NO');
+  chk('a game abroad takes its roof and surface from the stadium table (Stade de France is open-air grass, not NO\'s dome)',
+    par && par.roof === 'outdoors' && par.surface === 'grass', par && [par.roof, par.surface]);
+  chk('…its weather and travel are Paris\'s, not New Orleans\'s',
+    par && par.venue_geography && par.venue_geography.name === 'Stade de France' && par.venue_geography.tz_name === 'Europe/Paris', par && par.venue_geography);
+  chk('…and a home game keeps the feed\'s roof (SoFi stays a dome)', d && d.roof === 'dome', d && d.roof);
   chk('nothing in the artifact is a price', !JSON.stringify(art.games).includes('"best_dec"') && !JSON.stringify(art.games).includes('"odds_american"'));
   done();
 })().catch((e) => { console.error(e); process.exit(1); });

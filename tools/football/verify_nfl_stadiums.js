@@ -25,7 +25,7 @@ const STATE_BBOX = { /* [minLat, maxLat, minLon, maxLon], generous */
   MI: [41.6, 48.4, -90.5, -82.3], WI: [42.4, 47.1, -92.9, -86.7], MN: [43.4, 49.4, -97.3, -89.4], GA: [30.3, 35.1, -85.7, -80.7], NC: [33.8, 36.6, -84.4, -75.4],
   LA: [28.9, 33.1, -94.1, -88.7], AZ: [31.3, 37.1, -114.9, -109.0], WA: [45.5, 49.1, -124.9, -116.9] };
 function hav(a, b) { const R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLon = (b.lon - a.lon) * Math.PI / 180; const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); }
-function tzOffsetGuess(tz) { /* standard-time offsets, hours */ return ({ 'America/New_York': -5, 'America/Chicago': -6, 'America/Denver': -7, 'America/Phoenix': -7, 'America/Los_Angeles': -8, 'America/Detroit': -5, 'America/Indiana/Indianapolis': -5, 'Europe/London': 0, 'Europe/Dublin': 0, 'Europe/Berlin': 1, 'Europe/Madrid': 1, 'America/Mexico_City': -6, 'Australia/Melbourne': 10, 'America/Sao_Paulo': -3 })[tz]; }
+function tzOffsetGuess(tz) { /* standard-time offsets, hours */ return ({ 'America/New_York': -5, 'America/Chicago': -6, 'America/Denver': -7, 'America/Phoenix': -7, 'America/Los_Angeles': -8, 'America/Detroit': -5, 'America/Indiana/Indianapolis': -5, 'Europe/London': 0, 'Europe/Dublin': 0, 'Europe/Berlin': 1, 'Europe/Madrid': 1, 'Europe/Paris': 1, 'America/Mexico_City': -6, 'Australia/Melbourne': 10, 'America/Sao_Paulo': -3 })[tz]; }
 
 function verify(table, register, games) {
   const byName = {}; Object.values(register.venues || {}).forEach((v) => { if (v && v.name && Number.isFinite(v.lat)) byName[String(v.name).toLowerCase()] = v; });

@@ -1,7 +1,7 @@
 {
   "_how": [
     "Referee assignments nflverse has not filled in yet, keyed by nflverse game_id (games.csv). build_ref_data.py reads this file; no Python edit is needed.",
-    "Each week: add a block with season, week and the games (crew chiefs are announced Wednesday or Thursday, e.g. on footballzebras.com). The Tuesday ref-sync workflow, or Run workflow by hand, loads it.",
+    "Each week .github/workflows/nfl-ref-assignments.yml fills the coming week's block from Football Zebras' assignments post (data/refs/fetch_assignments.py); a block can still be added or corrected by hand. The Tuesday ref-sync workflow, or Run workflow by hand, loads it.",
     "When nflverse fills in a game's referee, nflverse wins: its name is used and the row's source becomes nflverse. A disagreement is printed, never silently merged.",
     "source is nflverse, footballzebras or manual; footballzebras when a block names none. A game_id that is not in games.csv or not in its block's week stops the build."
   ],
