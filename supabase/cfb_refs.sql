@@ -25,10 +25,12 @@
 --   The views add the conference and FBS averages themselves and a rank among
 --   referees with at least 3 games (fewer: the numbers show, the rank is null).
 --
--- WHO READS. Gated like the CFB card's own tables (cfb.games / cfb.lines /
--- cfb.analyst_flags: RLS on, select only) and like supabase/nfl_ref_flags.sql:
--- RLS on, <table>_read for select to anon and authenticated, every client
--- write revoked. The views run as the reader (security_invoker).
+-- WHO READS. Gated like every other supabase/cfb_*.sql table (the CFB security
+-- contract, docs/cfb-production/SECURITY.md, checked by
+-- football/cfb_production/security.test.js): RLS on, <table>_read for select
+-- to authenticated only, anon granted nothing, every client write revoked. The
+-- views run as the reader (security_invoker), so a signed-out visitor reads
+-- nothing and the card asks them to sign in.
 --
 --   cfb_ref_game_penalties     one row per completed FBS game (ESPN game id =
 --                              the CFB module's game_id, CFBD ids are ESPN's)
@@ -417,13 +419,15 @@ do $p$ declare t text; begin
   foreach t in array array['cfb_ref_game_penalties', 'cfb_ref_assignments'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists %I on public.%I', t || '_read', t);
-    execute format('create policy %I on public.%I for select to anon, authenticated using (true)', t || '_read', t);
+    execute format('create policy %I on public.%I for select to authenticated using (true)', t || '_read', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
-    execute format('grant select on public.%I to anon, authenticated', t);
+    execute format('grant select on public.%I to authenticated', t);
   end loop;
 end $p$;
+revoke all on public.cfb_ref_referees, public.cfb_ref_season_summary, public.cfb_ref_baseline_3yr,
+              public.cfb_ref_assignment_current, public.cfb_game_ref_context from anon;
 grant select on public.cfb_ref_referees, public.cfb_ref_season_summary, public.cfb_ref_baseline_3yr,
-                public.cfb_ref_assignment_current, public.cfb_game_ref_context to anon, authenticated;
+                public.cfb_ref_assignment_current, public.cfb_game_ref_context to authenticated;
 revoke all on function public.cfb_ref_merge_games(jsonb, text) from public, anon, authenticated;
 revoke all on function public.cfb_ref_observe_assignments(jsonb) from public, anon, authenticated;
 revoke all on function public.cfb_ref_assignments_guard() from public, anon, authenticated;
@@ -458,8 +462,12 @@ select piece, state from (
                and not has_function_privilege('anon', 'public.cfb_ref_merge_games(jsonb, text)', 'execute')
                and not has_function_privilege('anon', 'public.cfb_ref_observe_assignments(jsonb)', 'execute')
                and not has_table_privilege('anon', 'public.cfb_ref_game_penalties', 'insert') then 'ok' else 'CHECK THIS' end
-  union all select '5 the card can read: anon selects cfb_game_ref_context',
-         case when has_table_privilege('anon', 'public.cfb_game_ref_context', 'select') then 'ok' else 'CHECK THIS' end
+  union all select '5 the card can read when signed in: authenticated selects cfb_game_ref_context, anon nothing',
+         case when has_table_privilege('authenticated', 'public.cfb_game_ref_context', 'select')
+               and not has_table_privilege('anon', 'public.cfb_game_ref_context', 'select')
+               and not has_table_privilege('anon', 'public.cfb_ref_game_penalties', 'select')
+               and not exists (select 1 from pg_policies where schemaname = 'public' and tablename like 'cfb\_ref\_%' escape '\' and 'anon' = any(roles))
+              then 'ok' else 'CHECK THIS' end
   union all select '6 views: referees, season summary, 3-yr baseline, current assignment, game context',
          case when to_regclass('public.cfb_ref_referees') is not null and to_regclass('public.cfb_ref_season_summary') is not null
                and to_regclass('public.cfb_ref_baseline_3yr') is not null and to_regclass('public.cfb_ref_assignment_current') is not null
