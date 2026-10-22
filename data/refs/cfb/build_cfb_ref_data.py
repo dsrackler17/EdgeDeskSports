@@ -21,8 +21,9 @@ import requests
 
 BASE = "https://site.api.espn.com/apis/site/v2/sports/football/college-football"
 HDRS = {"User-Agent": "Mozilla/5.0 EdgeDeskSports ref-sync"}
-CACHE = Path("cache")
-CACHE.mkdir(exist_ok=True)
+# CFB_REF_CACHE: where the raw ESPN JSON is kept (tools/refs/cfb_refs.py points it at data/refs/cfb/cache)
+CACHE = Path(os.environ.get("CFB_REF_CACHE", "cache"))
+CACHE.mkdir(parents=True, exist_ok=True)
 
 HOLD_RE = re.compile(r"\bholding\b", re.I)
 OFF_HOLD_RE = re.compile(r"offensive holding", re.I)
