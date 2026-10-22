@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
  "engine": "edgedesk_pnl_v2",
- "generated_at": "2026-10-22T05:05:59.442Z",
+ "generated_at": "2026-10-22T05:10:05.282Z",
  "season": 2026,
  "strategy": "Verified P&L: every graded EdgeDesk decision — the model's published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default 1.00u when it recorded none. Flat: 1.00u each. Never mixed.",
  "rules": [
@@ -13,7 +13,7 @@
   "Each recommendation is one row, keyed by its recommendation id. A corrected result updates that row and is logged on it; nothing is deleted."
  ],
  "counts": {
-  "rows": 7684,
+  "rows": 7689,
   "bets": 353,
   "verified_bets": 345,
   "priced_decisions": 650,
@@ -1119,20 +1119,20 @@
   "Pinnacle"
  ],
  "states": {
-  "total": 7684,
-  "PENDING": 73,
+  "total": 7689,
+  "PENDING": 78,
   "VERIFIED": 6273,
   "RECORD_ONLY": 1092,
   "VOID": 246,
   "INVALID": 0
  },
  "pending_reasons": {
-  "total": 73,
+  "total": 78,
   "reasons": [
    {
     "key": "UPCOMING",
     "label": "Upcoming game",
-    "n": 73
+    "n": 78
    }
   ]
  },
@@ -1855,7 +1855,7 @@
   }
  },
  "settlement": {
-  "as_of": "2026-10-22T05:05:59.442Z",
+  "as_of": "2026-10-22T05:10:05.282Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
@@ -9141,7 +9141,7 @@
       {
        "key": "Pass",
        "n": 182,
-       "rows": 241,
+       "rows": 246,
        "wins": 89,
        "losses": 87,
        "pushes": 6,
@@ -16804,7 +16804,7 @@
       {
        "key": "Pass",
        "n": 182,
-       "rows": 241,
+       "rows": 246,
        "wins": 89,
        "losses": 87,
        "pushes": 6,
@@ -17202,9 +17202,9 @@
     }
    },
    "data_quality": {
-    "total": 7684,
+    "total": 7689,
     "verified": 6273,
-    "pending": 73,
+    "pending": 78,
     "voids": 246,
     "missing_entry_odds": 1092,
     "simulated_price": 0,
@@ -22692,9 +22692,9 @@
     }
    },
    "data_quality": {
-    "total": 1480,
+    "total": 1485,
     "verified": 497,
-    "pending": 73,
+    "pending": 78,
     "voids": 0,
     "missing_entry_odds": 910,
     "simulated_price": 0,
@@ -32940,9 +32940,9 @@
     }
    },
    "data_quality": {
-    "total": 1710,
+    "total": 1715,
     "verified": 545,
-    "pending": 73,
+    "pending": 78,
     "voids": 0,
     "missing_entry_odds": 1092,
     "simulated_price": 0,
@@ -32972,7 +32972,7 @@
   {
    "source": "CFB decision engine (shadow)",
    "file": "football/cfb_decision/2026/decisions.jsonl",
-   "rows": 3100,
+   "rows": 3106,
    "reason": "a shadow engine under evaluation; its calls are not published EdgeDesk recommendations"
   }
  ],
@@ -33010,8 +33010,8 @@
   {
    "source": "bettor_decision",
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "snapshots": 4628,
-   "rows": 313,
+   "snapshots": 4636,
+   "rows": 318,
    "evaluations_file": "football/cfb_terminal/decisions/2026/evaluations.jsonl"
   },
   {
