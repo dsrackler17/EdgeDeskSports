@@ -1,18 +1,14 @@
 {
- "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 8, from the first backfill (2026-10-21): WMT schedules read at 12 of 28 sites (Vanderbilt one game a season, LSU's paths use its own sport code 'bsb', Nebraska, Clemson and Penn State end in a 404); SIDEARM's older sites read recent seasons but not older ones ('the page is the null schedule'), and George Mason and Bradley give 'no schedule data'; UMKC (SIDEARM) gives none either.",
+ "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 9, from the backfill of 2026-10-22: Clemson's seasons are reached at their slugs (/season/2025 is 2025-26) but no season was written; LSU's season pages under /sports/baseball/ are never answered, so its own code (bsb) is never learnt; Penn State's split label 404s; Vanderbilt's older seasons were read with the first-day reader (one game each) and are checked on the fixed one.",
  "sources": [],
  "schools": [],
  "paths": [],
  "pages": [
-  { "name": "wmt_one_game_vanderbilt_2026", "url": "https://vucommodores.com/sports/baseball/schedule/season/2025-26" },
-  { "name": "wmt_404_nebraska_2026", "url": "https://huskers.com/sports/baseball/schedule/season/2026" },
-  { "name": "wmt_plain_schedule_clemson", "url": "https://clemsontigers.com/sports/baseball/schedule" },
-  { "name": "wmt_split_schedule_pennst_2026", "url": "https://gopsusports.com/sports/baseball/schedule/season/2025-26" },
-  { "name": "wmt_sport_code_lsu_2026", "url": "https://lsusports.net/sports/bsb/schedule/season/2026" },
-  { "name": "legacy_null_title_valpo_2019", "url": "https://valpoathletics.com/sports/baseball/schedule/2019" },
-  { "name": "legacy_null_title_fullerton_2019", "url": "https://fullertontitans.com/sports/baseball/schedule/2019" },
-  { "name": "legacy_no_schedule_mason_2025", "url": "https://gomason.com/sports/baseball/schedule/2025" },
-  { "name": "legacy_no_schedule_bradley_2025", "url": "https://bradleybraves.com/sports/baseball/schedule/2025" },
-  { "name": "sidearm_no_schedule_umkc_2025", "url": "https://kcroos.com/sports/baseball/schedule/2025" }
+  { "name": "wmt_clemson_2026", "url": "https://clemsontigers.com/sports/baseball/schedule/season/2025" },
+  { "name": "wmt_clemson_2019", "url": "https://clemsontigers.com/sports/baseball/schedule/season/2018" },
+  { "name": "wmt_lsu_baseball_path_2026", "url": "https://lsusports.net/sports/baseball/schedule/season/2026" },
+  { "name": "wmt_lsu_bsb_2019", "url": "https://lsusports.net/sports/bsb/schedule/season/2019" },
+  { "name": "wmt_pennst_plain", "url": "https://gopsusports.com/sports/baseball/schedule" },
+  { "name": "wmt_vanderbilt_2019", "url": "https://vucommodores.com/sports/baseball/schedule/season/2018-19" }
  ]
 }

@@ -40,6 +40,7 @@ const range = (spec, sport, today) => {
 /* what each collector can read. A backfill marked complete when its collector read less is opened again: only the
    seasons not held are read (a past season does not change; the weekly run reads the current one and the last) */
 const READERS = { rosters: RO.READERS, schedules: SC.READERS };
+const THIN_FINALS = 10;
 
 async function run(o) {
   const today = o.today || new Date().toISOString().slice(0, 10);
@@ -95,7 +96,15 @@ async function run(o) {
     const prev = done[b.id];
     if (prev && prev.complete && prev.readers === READERS[kind]) continue;
     const seasons = range(b.seasons, b.sport, today);
-    const held = (school, sport, season) => season < RO.currentSeason(sport, today) && fs.existsSync(path.join(DATA, kind, sport, String(season), school + '.json'));
+    /* a past season held is not read again, except a thin schedule (under THIN_FINALS finals) written by older
+       readers: the first day's WMT reader took one game a season at Vanderbilt, and its file must not keep the season */
+    const held = (school, sport, season) => {
+      const f = path.join(DATA, kind, sport, String(season), school + '.json');
+      if (season >= RO.currentSeason(sport, today) || !fs.existsSync(f)) return false;
+      if (kind !== 'schedules') return true;
+      const d = readJson(f, null);
+      return !!d && (d.readers === READERS.schedules || (d.finals || 0) >= THIN_FINALS);
+    };
     const r = await (kind === 'schedules' ? SC : RO).collect({ polite, sports: [b.sport], seasons, today, division: plan.division, lanes, log: o.log, skip: held, dataDir: DATA });
     const hard = (r.misses_by_reason.HTTP || 0) + (r.misses_by_reason.SHRUNK || 0);
     done[b.id] = { sport: b.sport, seasons: b.seasons, kind, readers: READERS[kind], at: today, read_this_run: r.ok, misses_by_reason: r.misses_by_reason,

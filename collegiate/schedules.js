@@ -26,7 +26,7 @@ const { nuxtData } = require('./nuxt');
 const PL = require('./platforms');
 
 /* the platforms read and how (a backfill completed with fewer is opened again: collegiate/run.js) */
-const READERS = 'sidearm,sidearm_vue,sidearm_legacy,wmt+themes5+sport_path';
+const READERS = 'sidearm,sidearm_vue,sidearm_legacy,wmt+themes7+sport_path+plain_page';
 const DATA = path.join(__dirname, 'data');
 const DAY = 24 * 3600 * 1000;
 const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return d; } };
@@ -139,7 +139,7 @@ function sidearmVueSchedule(html) {
    school reads it ("W 10-7": the school's runs first) followed by any innings note ("(8 innings)", "12 Inn.",
    "(10)"). No opponent website, so the opponent joins by name. The page's own data names the season, the sport,
    and every season the site keeps (schedule-list-seasons: each label and the slug its pages use). */
-const WMT_BLOCKS = [/class="schedule-event-item(?=[ "])/g, /class="schedule-item-block(?=[ "])/g];
+const WMT_BLOCKS = [/class="schedule-event-item(?=[ "])/g, /class="schedule-item-block(?=[ "])/g, /class="schedule-event(?=[ "])/g];
 function wmtSchedule(html, data, sportHint) {
   const h = String(html || '');
   /* the theme with the most games: a page may carry one game in another theme (Vanderbilt's tournament game) */
@@ -161,17 +161,19 @@ function wmtSchedule(html, data, sportHint) {
   let undated = 0;
   const games = starts.map((st, i) => {
     const seg = h.slice(st, i + 1 < starts.length ? starts[i + 1] : st + 40000);
-    const v = seg.match(/schedule-item-block--(home|away|neutral)\b|venue-label--(home|away|neutral)\b|--venue-(home|away|neutral)\b|class="[^"]*__venue(?=[ "])[^"]*"[^>]*>\s*(home|away|neutral)\s*<|venue__type--(home|away|neutral)\b/i);
+    const v = seg.match(/schedule-item-block--(home|away|neutral)\b|venue-label--(home|away|neutral)\b|--venue-(home|away|neutral)\b|class="[^"]*__venue(?:-type|-text)?(?=[ "])[^"]*"[^>]*>\s*(home|away|neutral)\s*<|venue__type--(home|away|neutral)\b|__venue--(home|away|neutral)\b/i);
     /* a theme that marks no venue says "at" for a road game and "vs." for a home or a neutral one: "vs." is left unknown */
-    const venue = v ? String(v[1] || v[2] || v[3] || v[4] || v[5]).toLowerCase() : /^at$/i.test(text(element(seg, '__divider(?=[ "])') || '')) ? 'away' : null;
+    const venue = v ? String(v[1] || v[2] || v[3] || v[4] || v[5] || v[6]).toLowerCase() : /^at$/i.test(text(element(seg, '__divider(?=[ "])') || '')) ? 'away' : null;
     const dt = (seg.match(/datetime="([^"]+)"/) || [])[1] || null;
-    /* no datetime: the month and day (__month-day, or __label at Nebraska) and the weekday (__weekday, or a bare <time>Friday</time>) */
-    const md = text(element(seg, 'schedule-event-date__month-day(?=[ "])') || element(seg, 'schedule-event-date__label(?=[ "])') || element(seg, 'schedule-event-date__day(?=[ "])') || '');
-    const wd = text(element(seg, 'schedule-event-date__weekday(?=[ "])') || '') || ((seg.match(/<time>\s*(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*\s*<\/time>/i) || [])[1] || '');
+    /* no datetime: the month and day (__month-day, or __label at Nebraska, or Clemson's <time>Fri, Feb 13</time> in
+       __time) and the weekday (__weekday, a bare <time>Friday</time>, or the one written before the date) */
+    const md = text(element(seg, 'schedule-event-date__month-day(?=[ "])') || element(seg, 'schedule-event-date__label(?=[ "])') || element(seg, 'schedule-event-date__day(?=[ "])') || element(seg, 'schedule-event-date__time(?=[ "])') || '');
+    const wd = text(element(seg, 'schedule-event-date__weekday(?=[ "])') || '') || ((seg.match(/<time>\s*(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*\s*<\/time>/i) || [])[1] || '') || ((text(element(seg, 'schedule-event-date__time(?=[ "])') || '').match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*\.?,?\s/i) || [])[1] || '');
     const date = dt ? dt.slice(0, 10) : monthDay(md, wd, seasonNo, sportHint || sport);
     if (!date) undated++;
-    /* the opponent: its own element, or (Vanderbilt's theme) the heading that reads "vs. #10 TCU" */
-    const opp = element(seg, '__opponent-name(?=[ "])') || element(seg, '__opponent(?=[ "])') || element(seg, 'schedule-default-event__name(?=[ "])') || element(seg, 'schedule-item-team__heading(?=[ "])');
+    /* the opponent: its own element (never the one a theme marks --current, the school itself: Texas A&M), or
+       (Vanderbilt's theme) the heading that reads "vs. #10 TCU" */
+    const opp = element(seg, '__opponent-name(?=[ "])') || element(seg, '__opponent(?=[ "])') || element(seg, 'schedule-default-event__name(?=[ "])') || element(seg, 'schedule-event-default__name(?=[ "])(?![^"]*--current)') || element(seg, 'schedule-event-item-team__name(?=[ "])(?![^"]*--current)') || element(seg, 'schedule-item-team__heading(?=[ "])');
     const loc = element(seg, 'schedule-event-location(?=[ "])') || element(seg, '__location(?=[ "])');
     const resHtml = element(seg, 'schedule-event-item-result__label(?=[ "])');
     const rt = resHtml != null ? text(resHtml) : '';
@@ -293,11 +295,28 @@ async function collectOne(polite, school, sport, season, o) {
     const finals = x.games.filter((g) => g.status === 'final' && !g.exhibition).length;
     if (prev && prev.finals >= 10 && finals < prev.finals / 2) return miss('SHRUNK', 'this read lists ' + finals + ' finals, the last ' + prev.finals + ': not written', url);
     const head = { schema: 'edgedesk_collegiate_schedule_v1', school: school.id, host: school.host, platform: plat, sport, season, season_label: x.season_label, url,
-      first_read: (prev && prev.first_read) || o.today, last_read: o.today, games_listed: x.games.length, finals, undated: x.undated || 0 };
+      first_read: (prev && prev.first_read) || o.today, last_read: o.today, readers: READERS, games_listed: x.games.length, finals, undated: x.undated || 0 };
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(head, null, 1).replace(/\n}$/, ',\n "games": [\n' + x.games.map((g) => '  ' + JSON.stringify(g)).join(',\n') + '\n ]\n}') + '\n');
     if (plat !== 'sidearm') o.labels[key] = label;
     return { ok: true, school: school.id, sport, season, url, games: x.games.length, finals };
+  }
+  /* a WMT site whose season pages do not answer under the sport's name may keep them under its own code (LSU:
+     /sports/bsb/...). Its plain schedule page names the code and every season's slug: read once a run, then the
+     season is tried again under what it names */
+  const pk = school.id + '|' + sport;
+  if (plat === 'wmt' && last && last.code === 'HTTP' && !o.labels[pk + '|path'] && o.plainTried && !o.plainTried.has(pk)) {
+    o.plainTried.add(pk);
+    const url = 'https://' + school.host + '/sports/' + sport + '/schedule';
+    const r = await polite.get(url, { ttlMs: 12 * 3600 * 1000, noStore: true });
+    if (r.refused) return miss('REFUSED', (r.error && r.error.message) || 'refused', url);
+    const x = r.ok ? parseSchedule(r.text(), sport, school.host) : null;
+    if (x) {
+      const before = o.labels[key];
+      for (const s of x.seasons || []) { const k = PL.seasonKey(s.name || s.label, sport); if (k) o.labels[pk + '|' + k] = s.label; }
+      if (x.platform === 'wmt' && x.sport && x.sport !== sport && PL.sportMatches(sport, x.sport, x.sport_name)) o.labels[pk + '|path'] = x.sport;
+      if (o.labels[pk + '|path'] || (o.labels[key] && o.labels[key] !== before && !tried.has(o.labels[key]))) return collectOne(polite, school, sport, season, o);
+    }
   }
   return last || miss('NO_PAGE', 'no page to try');
 }
@@ -311,7 +330,7 @@ async function collect(o) {
   const schools = all.filter((s) => s.host && (o.schools ? o.schools.includes(s.id) : (division === 'all' || s.division === division)));
   const polite = o.polite || require('./polite').createPolite({ hosts: [...new Set(schools.map((s) => s.host))], cacheDir: path.join(__dirname, '..', '.cache', 'collegiate'), log: (m) => console.error(m) });
   const labelsFile = path.join(dataDir, 'season_labels.json');
-  const ctx = { today, dataDir, labels: readJson(labelsFile, {}), platforms: readJson(path.join(dataDir, 'platforms.json'), {}), current: (sp) => RO.currentSeason(sp, today) };
+  const ctx = { today, dataDir, labels: readJson(labelsFile, {}), platforms: readJson(path.join(dataDir, 'platforms.json'), {}), current: (sp) => RO.currentSeason(sp, today), plainTried: new Set() };
   const results = [];
   const queue = schools.slice();
   const lanes = Math.max(1, Math.min(o.lanes || 32, queue.length));
@@ -329,7 +348,13 @@ async function collect(o) {
   writeJson(labelsFile, ctx.labels);
   const byCode = {};
   for (const r of results) if (!r.ok) byCode[r.code] = (byCode[r.code] || 0) + 1;
-  return { schools: schools.length, ok: results.filter((r) => r.ok).length, misses_by_reason: byCode, misses: results.filter((r) => !r.ok) };
+  const misses = results.filter((r) => !r.ok);
+  /* the last run's misses for these seasons, so what a site answered can be read without the job's log */
+  const mf = path.join(dataDir, 'schedule_misses.json'); const md = readJson(mf, {});
+  md[o.sports.join(',') + ':' + o.seasons.slice().sort((a, b) => a - b).join(',')] = { at: today, by_reason: byCode,
+    misses: misses.map((m) => ({ school: m.school, season: m.season, code: m.code, why: m.why, url: m.url })).sort((a, b) => (a.school < b.school ? -1 : a.school > b.school ? 1 : b.season - a.season)) };
+  writeJson(mf, md);
+  return { schools: schools.length, ok: results.filter((r) => r.ok).length, misses_by_reason: byCode, misses };
 }
 
 module.exports = { READERS, parseSchedule, sidearmSchedule, sidearmVueSchedule, wmtSchedule, sidearmLegacySchedule, schedulePath, collect, collectOne, hostOf, cleanOpp, innings, monthDay, element };
