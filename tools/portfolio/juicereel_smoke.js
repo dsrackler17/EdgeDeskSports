@@ -7,10 +7,13 @@
    credentials and CONNECT cannot pass). Nothing here switches anything on.
 
    1. THE DEPLOYMENT. Is portfolio_connect deployed with the Juice Reel
-      secrets, which redirect URI does it send (it must equal the one
-      registered on the Juice Reel application, character for character),
-      and is the callback page served there?
+      secrets (and which are missing, by name), which redirect URI does it
+      send (it must equal the one registered on the Juice Reel application,
+      character for character), is the callback page served there, and does
+      Juice Reel accept the client id and secret (jr_check)?
         node tools/portfolio/juicereel_smoke.js probe
+      (Actions → Juice Reel setup → check does the same without a terminal;
+      → start_live_test also starts the live test below.)
 
    2. THE TEN-STAGE PRODUCTION SMOKE TEST (as connector_smoke.js does for
       Kalshi and Polymarket), with the operator's OWN real Juice Reel
@@ -146,6 +149,13 @@ async function probe(c) {
     const t = p ? await p.text() : '';
     console.log('callback page at that URI: ' + (p ? p.status : 'unreachable') + (/edgedesk\.jr\.callback/.test(t) ? ' (the EdgeDesk callback page)' : ' — NOT the EdgeDesk callback page; is the site deployed?'));
   }
+  if (j && Array.isArray(j.missing) && j.missing.length) console.log('not set in Supabase: ' + j.missing.join(', '));
+  /* does Juice Reel accept the client id and secret? (owner access: one GET /oauth2/me with them; no reader, no bets) */
+  const k = await fetch(c.url + '/functions/v1/portfolio_connect', { method: 'POST', headers: { authorization: 'Bearer ' + c.service, 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'jr_check' }) }).catch(() => null);
+  const v = k ? await k.json().catch(() => ({})) : {};
+  console.log('Juice Reel credentials: ' + (k && k.status === 200 ? (v.accepted ? 'ACCEPTED' : 'NOT ACCEPTED (' + v.code + ')') + ' — ' + v.message
+    : 'not checked (' + (k ? k.status + ' ' + (v.reason || '') : 'unreachable') + '; deploy portfolio_connect with jr_check)'));
 }
 
 async function main() {
@@ -173,4 +183,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch((e) => { console.error(String(K.redact(String(e && e.message || e)))); process.exit(1); });
-module.exports = { runStage };
+module.exports = { runStage, probe };

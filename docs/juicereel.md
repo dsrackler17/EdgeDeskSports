@@ -1,8 +1,10 @@
 # Juice Reel — sportsbook history through Juice Reel's OAuth API
 
-**Status (2026-10-14): built and tested in this repository. NOT deployed, and NOT yet run against Juice Reel.**
+**Status (2026-10-22): built, tested and deployed (2026-10-14). NOT yet run against Juice Reel.**
 
-- EdgeDesk's Juice Reel OAuth application ("EdgeDeskSports") is **awaiting Juice Reel's approval**. Until it is approved, Juice Reel refuses its credentials, and no real authorization or bet sync can happen.
+- **Production, as the 2026-10-14 deploy's health check reported it:** `portfolio_juicereel.sql` applied and `portfolio_connect` deployed; `JUICE_REEL_CLIENT_ID` and `JUICE_REEL_CLIENT_SECRET` **set**; `SPORTSBOOK_SYNC_PROVIDER` **not set** (no Juice Reel panel at all); `PORTFOLIO_CREDENTIAL_KEYS` **not set** (`credential_keys: 0`, so no token could be sealed: connecting would fail as not configured). § 0 fills in both.
+- **Juice Reel replied on 2026-10-20** with a link to its quick-start (juicereel.com/api-docs/quick-start). The reply does not say in writing whether the application is approved, or answer the question about fees for commercial use. The docs it points to are the same reference this was built from, plus one addition used now: **owner access** (§ 10).
+- **Whether Juice Reel has approved EdgeDesk's application can now be checked directly:** `jr_check` asks Juice Reel's `/oauth2/me` with the application's own client id and secret (owner access). Accepted = the id, the secret and the approval are in order. Run it from **Actions → Juice Reel setup → check** (§ 0).
 - Juice Reel is a **sportsbook sync provider** in the connector core's provider registry (`docs/sportsbook-sync-providers.md`). It runs only where `SPORTSBOOK_SYNC_PROVIDER=juicereel` is set; unset, the server has no sportsbook sync at all (the default since SharpSports was retired).
 - Reader linking is **off**. The registry row `juicereel` stays off until Juice Reel approves the application *and* EdgeDesk's commercial use, a ten-stage PRODUCTION smoke test passes, and the terms review is cleared (§ 9). Until then readers see **Awaiting provider approval**; only an operator running that smoke test can connect.
 - Every part runs here against a real PostgreSQL and in Chromium, against a fake Juice Reel that enforces the documented contract (§ 11). **The fake is not Juice Reel.** Nothing here may be called "working in production" until a real authorization and a real bet-history sync have succeeded (§ 9, stages CONNECT and IMPORT).
@@ -10,6 +12,19 @@
 - An adversarial review of this change found nine defects, mostly in sync and token edge cases. All nine are fixed or answered in § 14.
 
 ---
+
+## 0. Go live — the short path (no terminal)
+
+1. **Deploy this build.** Actions → **Deploy Portfolio schema**, `deploy_function` ticked. (It carries `jr_check` and the setup checklist.)
+2. **Check and finish the setup.** Actions → **Juice Reel setup** (`.github/workflows/juicereel-setup.yml`):
+   - `check` — read-only. Which Juice Reel secrets the function sees, **by name**, and whether **Juice Reel accepts EdgeDesk's client id and secret**. The run's summary shows a table.
+   - `setup` — `check`, plus it fills in what is **absent** in Supabase's Edge Function secrets, and never overwrites one that exists: `SPORTSBOOK_SYNC_PROVIDER=juicereel`, and a fresh `PORTFOLIO_CREDENTIAL_KEYS` (version 1). The key is generated on the runner, sent only to Supabase, never printed and never stored in GitHub. Readers then see **Awaiting provider approval**.
+   - `start_live_test` — `setup`, then starts the PRODUCTION live test (§ 9), unless one is running. It refuses if Juice Reel refused the credentials.
+3. **Connect your own Juice Reel.** Signed in to EdgeDesk as an operator (admin): **Portfolio → Accounts → Juice Reel → Connect Juice Reel**. Sign in on Juice Reel and allow open and settled bets. You come back connected: each sportsbook Juice Reel tracks becomes an account, and your history imports.
+4. **Open it to every reader** only after the remaining live-test stages and the terms review (§ 9). That stays one SQL statement.
+
+`JUICE_REEL_CLIENT_ID` and `JUICE_REEL_CLIENT_SECRET` come from Juice Reel and are never set by the workflow. If `check` says **not accepted** (`JR_CLIENT_REFUSED`), either the application is not approved yet or the secret in Supabase is not the current one: compare it with the application's page at Juice Reel.
+
 
 ## 1. Register this redirect URI
 
@@ -48,13 +63,15 @@ Supabase → Edge Functions → Secrets (or `supabase secrets set …`). Never p
 | Secret | Value | Needed |
 |---|---|---|
 | `JUICE_REEL_CLIENT_ID` | the application's client id (`jr_…`) | yes |
-| `JUICE_REEL_CLIENT_SECRET` | its client secret (`jrs_…`); used only in the HTTP Basic header of the token and revoke calls, from the function | yes |
+| `JUICE_REEL_CLIENT_SECRET` | its client secret (`jrs_…`); used only in the HTTP Basic header of the token and revoke calls and of the owner check (`jr_check`), from the function | yes |
 | `PORTFOLIO_CREDENTIAL_KEYS` | `{"1":"<32 random bytes, base64>"}` (`openssl rand -base64 32`); the AES-256-GCM key the tokens are sealed with. Shared with the other connectors: set it once | yes, if not already set |
 | `PORTFOLIO_CREDENTIAL_KEY_VERSION` | `1` (the version new tokens are sealed under; keep old keys while anything is sealed under them) | yes, if not already set |
 | `JUICE_REEL_REDIRECT_URI` | optional; defaults to the URI in § 1. Must be `https` (plain `http` only for `127.0.0.1` / `localhost`) | no |
 | `SPORTSBOOK_SYNC_PROVIDER` | `juicereel`: makes Juice Reel this server's ONE sportsbook sync provider. Unset (the default), the server has no sportsbook sync: Juice Reel is not offered, and nothing is read from it. Setting it before approval is safe: readers then see **Awaiting provider approval** (§ 4) | yes, to show Juice Reel at all |
 
-The function's health check (`GET /functions/v1/portfolio_connect`) reports `configured.sportsbook_sync.provider` and `configured.juicereel: { active, client_id: true, client_secret: true, redirect_uri, scopes, ready }`. It shows whether the id and secret are present, never their values.
+The function's health check (`GET /functions/v1/portfolio_connect`) reports `configured.sportsbook_sync.provider` and `configured.juicereel: { active, client_id: true, client_secret: true, redirect_uri, scopes, ready, missing }`. It shows whether the id and secret are present, never their values. `missing` names each setting still needed (for example `SPORTSBOOK_SYNC_PROVIDER=juicereel`, `PORTFOLIO_CREDENTIAL_KEYS …`). An operator whose panel reads "not configured" is told the same names; a reader is not.
+
+`SPORTSBOOK_SYNC_PROVIDER` and the two `PORTFOLIO_CREDENTIAL_*` settings can be filled in by **Actions → Juice Reel setup → setup** (§ 0) instead of by hand.
 
 ## 4. What the reader sees (Portfolio → Accounts)
 
@@ -108,10 +125,12 @@ each bet's Site ──▶ the reader's account for that book (AGGREGATOR; a quic
 | The adapter: PKCE, the consent URL, token exchange / refresh / revoke, the lease-based rotation, paging, the Bet normalizer, the grant-level sync, reconciliation, disconnect | `lib/edgedesk_portfolio_connect_core.js` § 12 (inlined into the function by `tools/portfolio/inline_connect_core.js`) |
 | Its provider registration: `link`, `discover`, `sync`, `refresh`, `accountState`, `webhookRefs`, `normalize`, plus `sweep`; `grant_level` (one authorization syncs, sweeps and disconnects as a whole) | the same file, § 11 (`defineSportsbookProvider`) |
 | Reader actions and the scheduler | `supabase/functions/portfolio_connect/index.ts`: the seam's `sb_status`, `sb_books`, `sb_link`, `sb_discover`, `sb_refresh` (its `SPORTSBOOK_HANDLERS.juicereel` row), and Juice Reel's own `jr_status`, `jr_start`, `jr_callback`, `jr_sync`, `jr_disconnect`. `sync`, `disconnect` and `sweep` serve Juice Reel books too |
+| The owner credential check | `jr_check` (an operator or the service role only) → `K.jrOwnerCheck`: one `GET /oauth2/me` with the client id and secret. It answers accepted or refused, Juice Reel's HTTP status, the owner's display name and the setup checklist. Nothing is stored and no bet is read |
+| Setup without a terminal | `.github/workflows/juicereel-setup.yml` (§ 0) |
 | The redirect page | `oauth/juicereel-callback.html` |
 | Schema and service functions | `supabase/portfolio_juicereel.sql` (+ `portfolio_decision.sql`: "delete everything" removes the grant) |
 | The page | `lib/edgedesk_portfolio_ui.js` (`juicereelPanel`, `jrConnect`, `jrReturnFlow`) |
-| Live checks | `tools/portfolio/juicereel_smoke.js` |
+| Live checks | `tools/portfolio/juicereel_smoke.js` (`probe` also runs `jr_check`) |
 | Tests | `tools/portfolio/juicereel.test.js`, `juicereel_ui.e2e.js`, `_fake_juicereel.js` |
 
 ### 5.2 OAuth
@@ -259,6 +278,7 @@ Run order: `portfolio.sql` → `portfolio_journal.sql` → `portfolio_connect.sq
 | One reader's data in another's account | State bound to the reader; one Juice Reel account per reader; every bet's `userId` checked; every function keyed to the grant's own reader. Tested with three readers |
 | A reader reaching service functions | `svc` namespace, execute for `service_role` only, and each function asserts its caller. Report rows 4 and 5 |
 | Secrets in errors | Reader errors are fixed sentences keyed by code; no Juice Reel body is passed through |
+| The owner check burning EdgeDesk's rate limit, or leaking | `jr_check` answers only an operator (`portfolio_is_admin`) or a caller presenting the service key, compared in constant time. Anyone else is refused before Juice Reel is asked. It makes one request and never retries. It returns the owner's display name, not their id, and never the client id or secret |
 | Public linking before approval | `portfolio_registry_guard` (unchanged) refuses the switch without a PASSED PRODUCTION smoke test of `juicereel_v1` and `tos_review = 'CLEARED'`; until then the function admits only an operator under a running PRODUCTION smoke test, and the scheduler syncs only such grants |
 | Disconnect | The ciphertext is deleted first, then both tokens are revoked at Juice Reel (refresh first) — exactly the pair the database cleared, read under its row lock, so a rotation a moment earlier cannot leave a live pair behind. Works with the sportsbook switch off. History is kept unless the reader asks (the existing retention rule). If Juice Reel does not confirm, the reader is told to remove EdgeDesk at Juice Reel too |
 | "Delete everything" / account deletion | `portfolio_delete_everything` deletes the grant (the page revokes at Juice Reel first). Deleting the auth user cascades the grant. In that case Juice Reel is not called, so the authorization lapses at Juice Reel on its own terms |
@@ -267,21 +287,21 @@ Run order: `portfolio.sql` → `portfolio_journal.sql` → `portfolio_connect.sq
 
 To be run by someone with access to the Supabase project. The build environment could not reach `*.supabase.co` or `juicereel.com`, so none of this has been run.
 
-1. **Secrets** (§ 3), including `SPORTSBOOK_SYNC_PROVIDER=juicereel`. Without that one, readers see no Juice Reel at all (the plain "Sync off" of main); with it, they see **Awaiting provider approval** until § 9.
+1. **Secrets** (§ 3), including `SPORTSBOOK_SYNC_PROVIDER=juicereel`. Without that one, readers see no Juice Reel at all (the plain "Sync off" of main); with it, they see **Awaiting provider approval** until § 9. (Or **Actions → Juice Reel setup → setup** after step 2: § 0.)
 2. **Merge this change**, then **Actions → Deploy Portfolio schema**, with `deploy_function` ticked. It:
    - runs every Portfolio SQL suite, including `juicereel.test.js`, against a throwaway PostgreSQL;
    - applies each file in one transaction, `portfolio_juicereel.sql` last, failing on any `CHECK THIS` (it re-applies `portfolio_aggregator.sql` too, which carries the adoption fix in § 5.4);
    - deploys `portfolio_connect` (`--no-verify-jwt`) and `sharpsports-webhook` (retired: it answers `ignored: sync_off` unless the provider is `sharpsports`), and prints the health, including the active provider and the Juice Reel redirect URI.
-3. **The site.** Merging deploys `oauth/juicereel-callback.html` and the page with GitHub Pages (`app.html` loads the changed scripts at `?v=20261014jr1`).
+3. **The site.** Merging deploys `oauth/juicereel-callback.html` and the page with GitHub Pages (`app.html` loads the Portfolio page at `?v=20261014jr1` and the connector core at `?v=20261022jr2`).
 4. **The schedule** is unchanged: `supabase/portfolio_sync_cron.sql` already pokes `sweep` every 10 minutes.
-5. **Probe:** `node tools/portfolio/juicereel_smoke.js probe` (with `SB_URL`, `SB_SERVICE_ROLE`). Expect `ready: true`, the redirect URI in § 1, and the callback page served there.
+5. **Probe:** **Actions → Juice Reel setup → check**, or `node tools/portfolio/juicereel_smoke.js probe` (with `SB_URL`, `SB_SERVICE_ROLE`). Expect `ready: true`, nothing missing, the redirect URI in § 1, the callback page served there, and **Juice Reel credentials: ACCEPTED**.
 
 Readers then see **Awaiting provider approval**, which is correct until § 9.
 
 ## 9. Switching on — only after Juice Reel approves
 
 1. **Juice Reel approves the application**, and EdgeDesk's commercial use in writing (EdgeDesk's own subscriptions are billed through Stripe, outside Juice Reel).
-2. **The ten-stage PRODUCTION smoke test**, as an operator with their own real Juice Reel account:
+2. **The ten-stage PRODUCTION smoke test**, as an operator with their own real Juice Reel account. `begin` can be **Actions → Juice Reel setup → start_live_test** instead (§ 0); CONNECT is then pressing Connect Juice Reel in the app:
 
    ```
    node tools/portfolio/juicereel_smoke.js begin
@@ -320,6 +340,7 @@ Readers then see **Awaiting provider approval**, which is correct until § 9.
 - **Read on 2026-10-14:**
   - Juice Reel's full developer reference (juicereel.com/api-docs: authorize, token, refresh, revoke, checkout, `/me`, subscribers, the three bet lists with the full Bet example, rate limits, errors, webhooks), as supplied by the account owner. The site itself was unreachable from the build environment.
   - Juice Reel's official example server, `github.com/juiceintegration/oauth-setup-example`.
+- **Re-read on 2026-10-22**, after Juice Reel's reply pointed to the quick-start: the same reference, as re-supplied by the account owner. One addition is now used: **owner access.** `/oauth2/me` and the three bet lists also accept HTTP Basic client id:secret plus `X-OAuth-Client-Id`, and then answer for the OAuth application's owner. EdgeDesk uses only `/oauth2/me` that way, to check its credentials (`jr_check`). It never reads bets without a reader's grant, so the operator's own bets arrive through the same OAuth connection as every reader's.
 - **Every request** the connector makes is labelled DOCUMENTED in `JUICEREEL.contract`. The facts are listed in `JUICEREEL.verified.facts`.
 - **Not confirmed** (`JUICEREEL.verified.unverified`); the smoke test settles these:
   - whether real amounts carry more than two decimals (handled exactly either way: § 5.5);
@@ -332,7 +353,7 @@ Readers then see **Awaiting provider approval**, which is correct until § 9.
 
 | Suite | What | Result (2026-10-14) |
 |---|---|---|
-| `tools/portfolio/juicereel.test.js` | The shipped function in a stub Deno, the real migrations, a fake Juice Reel enforcing the contract. Covers: static contract and scope checks; the provider registration (contract, ACTIVE, grant-level, active only where named, the reader-safe account state); the callback page (URL stripped first, refusals, storage blocked); PKCE and the consent URL; the normalizer (the docs' own example to the cent, parlays, pushes, voids, cash-outs, sub-cent, non-USD, another user's bet, adjusted risk, edited books); every UI state, Sync off included, and the sportsbook tiles. Then live: health; the switch (readers, operators, DEMO vs PRODUCTION smoke tests); state hashing and the sealed verifier; CSRF with another reader's session; unknown, malformed, expired, replayed and refused states; PKCE failure; missing scope (tokens revoked); refused client credentials; the initial import across three books with paging, adoption of a file bet and an upgraded quick-import account; analytics over the result; idempotent re-sync; the changed feed (checkpoint, settlement, correction, new book, edited book); refresh on expiry; four racing refreshes giving one refresh; 401 → refresh → retry; 5xx retry; 429 backoff; ERROR after five failures and recovery; **the review's findings:** a file bet carrying the book's own id adopted (not doubled), and a later identical bet never taking over a bet already adopted, BOOK_BUSY keeping the checkpoint, a pass cut short by a 429 storing its first page and resuming from its cursor, the rotation's database call failing before and after its commit, a stale generation's refusal ignored, another Juice Reel account's open bet left out of reconciliation, 1,100 bets at one book imported in full; reconciliation of a missed settlement and of a deleted bet; an interrupted import resuming; a rejected cursor restarting; a cursor reset re-reading without duplicates; a refresh racing a disconnect (revoked); reconnect; an expired grant (no retry storm, reconnect); the registry guard; three readers (isolation, a stray bet, the same Juice Reel account refused); the seam's `sb_status` / `sb_link` / `sb_books`; the switch OFF (nothing offered, linked or synced, the existing connection still shown); disconnect (revoked, history kept; deleted with the switch off and Juice Reel not confirming); delete everything; no secret in any log, response or table; no SharpSports request | **140 passed, 0 failed** |
+| `tools/portfolio/juicereel.test.js` | The shipped function in a stub Deno, the real migrations, a fake Juice Reel enforcing the contract. Covers: static contract and scope checks (the secret reaches token, revoke and the owner check only, never a bet list); **the owner credential check (2026-10-22):** health naming what is missing (production's 2026-10-14 state reproduced), `jr_check` refused without a token, to a reader and to a near-miss of the service key with Juice Reel not asked, accepted for the service role and an operator with exactly one Basic `GET /oauth2/me`, refused credentials, asked before the provider is switched on, not asked without an id and secret, a 5xx reported and not retried, an operator told which secret is missing and a reader not, and the `probe` end to end; the provider registration (contract, ACTIVE, grant-level, active only where named, the reader-safe account state); the callback page (URL stripped first, refusals, storage blocked); PKCE and the consent URL; the normalizer (the docs' own example to the cent, parlays, pushes, voids, cash-outs, sub-cent, non-USD, another user's bet, adjusted risk, edited books); every UI state, Sync off included, and the sportsbook tiles. Then live: health; the switch (readers, operators, DEMO vs PRODUCTION smoke tests); state hashing and the sealed verifier; CSRF with another reader's session; unknown, malformed, expired, replayed and refused states; PKCE failure; missing scope (tokens revoked); refused client credentials; the initial import across three books with paging, adoption of a file bet and an upgraded quick-import account; analytics over the result; idempotent re-sync; the changed feed (checkpoint, settlement, correction, new book, edited book); refresh on expiry; four racing refreshes giving one refresh; 401 → refresh → retry; 5xx retry; 429 backoff; ERROR after five failures and recovery; **the review's findings:** a file bet carrying the book's own id adopted (not doubled), and a later identical bet never taking over a bet already adopted, BOOK_BUSY keeping the checkpoint, a pass cut short by a 429 storing its first page and resuming from its cursor, the rotation's database call failing before and after its commit, a stale generation's refusal ignored, another Juice Reel account's open bet left out of reconciliation, 1,100 bets at one book imported in full; reconciliation of a missed settlement and of a deleted bet; an interrupted import resuming; a rejected cursor restarting; a cursor reset re-reading without duplicates; a refresh racing a disconnect (revoked); reconnect; an expired grant (no retry storm, reconnect); the registry guard; three readers (isolation, a stray bet, the same Juice Reel account refused); the seam's `sb_status` / `sb_link` / `sb_books`; the switch OFF (nothing offered, linked or synced, the existing connection still shown); disconnect (revoked, history kept; deleted with the switch off and Juice Reel not confirming); delete everything; no secret in any log, response or table; no SharpSports request | **154 passed, 0 failed** (2026-10-22) |
 | `tools/portfolio/juicereel_ui.e2e.js` | Chromium, 1280 px and 390 px. A reader sees Awaiting provider approval. The operator goes Connect → Juice Reel's page (a stand-in) → the shipped callback page → Connected with the first sync in words; the address is clean and sessionStorage is empty. Then: books as Juice Reel accounts, Open with legs, History, Sync now, Disconnect, a refused consent | **22 passed, 0 failed** |
 | Mutation checks | With the rehome chunking and the BOOK_BUSY rule undone, exactly the two tests written for them fail; with the adoption guard (below) removed, exactly its test fails | as expected |
 | The existing Portfolio suites | calc 106, import 114, bet history 108, process 38, UI 101, journal UI 126, connect core 67, decision record 29; SQL: portfolio 187, journal 73, connect 85, connect sync 33, connect function 18, SharpSports 97, bet slip screenshots 22, model context 21, decision 103, bet history 19; Chromium: portfolio UI 133, bet history 31, SharpSports UI 21; navigation 248 (+ 172 in Chromium); research landing 112; landing positioning 466, interaction 203, EV 68; landing in Chromium 249 | all green |

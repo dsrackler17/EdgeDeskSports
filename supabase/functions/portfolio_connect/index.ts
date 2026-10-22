@@ -41,7 +41,8 @@
 //  'juicereel'. Production only — Juice Reel has no sandbox:
 //    JUICE_REEL_CLIENT_ID             the OAuth application's client id
 //    JUICE_REEL_CLIENT_SECRET         its client secret (token and revoke
-//                                     calls only, from this server only)
+//                                     calls, and the owner credential check
+//                                     jr_check — from this server only)
 //    JUICE_REEL_REDIRECT_URI          optional; default
 //                                     https://edgedesksports.com/oauth/juicereel-callback.html
 //                                     — must EXACTLY match the redirect URI
@@ -126,12 +127,19 @@
 //   POST {action:'jr_disconnect', delete_history}    (signed in) delete the
 //        sealed pair, revoke it at Juice Reel, stop syncing; keep or delete
 //        the synced history
+//   POST {action:'jr_check'}                         (an operator, or the
+//        service role: .github/workflows/juicereel-setup.yml) does Juice Reel
+//        accept EdgeDesk's client id and secret? One GET /oauth2/me with them
+//        (Juice Reel's owner access) → accepted or refused, the app owner's
+//        display name, and the setup checklist; no reader is involved and no
+//        bet is read. Works with SPORTSBOOK_SYNC_PROVIDER unset, so it can
+//        be asked before Juice Reel is switched on
 //   POST {action:'sweep'}                            (pg_cron, and the
 //        sharpsports-webhook function) sync what is due
 //   GET                                              health: build and what is
-//        configured, never a value
+//        configured, never a value (juicereel.missing names what is not set)
 
-const BUILD = 'portfolio_connect-2026-10-14-jr1';
+const BUILD = 'portfolio_connect-2026-10-22-jr2';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -153,6 +161,8 @@ function config() {
   return {
     url: (env('SB_URL') || env('SUPABASE_URL')).replace(/\/+$/, ''),
     serviceKey: env('SB_SERVICE_ROLE') || env('SUPABASE_SERVICE_ROLE_KEY'),
+    /* either name may hold the key a service caller presents (jr_check) */
+    serviceKeys: [env('SB_SERVICE_ROLE'), env('SUPABASE_SERVICE_ROLE_KEY')].filter((x) => x.length >= 20),
     anonKey: env('SUPABASE_ANON_KEY') || env('SB_ANON_KEY'),
     keyring: { current: env('PORTFOLIO_CREDENTIAL_KEY_VERSION') || '1', keys },
     sportsbook: sportsbookConfig(env),
@@ -1496,6 +1506,8 @@ function sharpsportsConfig(env) {
       token: { method: 'POST', path: '/oauth2/token', auth: 'basic', seen: 'DOCUMENTED' },
       revoke: { method: 'POST', path: '/oauth2/revoke', auth: 'basic', seen: 'DOCUMENTED' },
       me: { method: 'GET', path: '/oauth2/me', auth: 'bearer', scope: null, seen: 'DOCUMENTED' },
+      /* the same call with the application's own credentials answers for the app's owner: used only to check that Juice Reel accepts them */
+      owner: { method: 'GET', path: '/oauth2/me', auth: 'basic', scope: null, seen: 'DOCUMENTED' },
       open: { method: 'GET', path: '/oauth2/bets/open', auth: 'bearer', scope: 'bets.open.read', seen: 'DOCUMENTED' },
       settled: { method: 'GET', path: '/oauth2/bets/settled', auth: 'bearer', scope: 'bets.settled.read', seen: 'DOCUMENTED' },
       changed: { method: 'GET', path: '/oauth2/bets/changed', auth: 'bearer', scope: 'bets.open.read bets.settled.read', seen: 'DOCUMENTED' }
@@ -1511,6 +1523,7 @@ function sharpsportsConfig(env) {
         'Revoke: POST /oauth2/revoke, Basic + X-OAuth-Client-Id, form token & token_type_hint (access_token | refresh_token); 200 {} whether or not the token existed',
         'Every external request carries X-OAuth-Client-Id; resource requests Authorization: Bearer <access token>',
         'GET /oauth2/me → { id (integer, stable for the grant), displayName }',
+        'Owner access (docs as re-supplied 2026-10-22): /oauth2/me and the three bet lists also accept HTTP Basic client id:secret plus X-OAuth-Client-Id and then answer for the OAuth application\'s owner; EdgeDesk uses only /oauth2/me that way, to check that Juice Reel accepts its credentials (jrOwnerCheck), and never reads bets without a reader\'s grant',
         'GET /oauth2/bets/open (bets.open.read; datePlacedAfter/Before) and /oauth2/bets/settled (bets.settled.read; dateClosedAfter/Before): descending bet id; { bets, nextCursor (opaque; null when done), hasMore }',
         'GET /oauth2/bets/changed (both scopes): open, closed and cancelled bets by updatedAt descending (bet id breaks ties); updatedAtAfter is an inclusive lower bound; keep the newest updatedAt as the checkpoint',
         'Bet: id, userId, oddsAmerican, amountRisked and toWin (in currencyCode), netResult (+profit / −loss), result (Won, Lost, Push, Cancelled), datePlaced, dateClosed, isAdjustedOdds, isAdjustedLine, adjustedRisk, clvPct, createdAt, updatedAt, currencyCode, BetType {typeName: Straight, Parlay …}, BetStatus {statusName: Closed …}, Site {id, name}, Subbets[]',
@@ -1656,11 +1669,33 @@ function sharpsportsConfig(env) {
       return r.body;
     }
   }
-  async function jrMe(ctx, cfg, token) {
-    var b = await jrGet(ctx, cfg, 'me', token, null);
+  function jrIdentity(b, note) {
     var id = b && typeof b === 'object' ? b.id : null;
-    if (!(Number.isInteger(id) && id > 0) && !(typeof id === 'string' && /^[0-9]{1,18}$/.test(id))) throw codedError('JR_CONTRACT', { note: 'me' });
+    if (!(Number.isInteger(id) && id > 0) && !(typeof id === 'string' && /^[0-9]{1,18}$/.test(id))) throw codedError('JR_CONTRACT', { note: note });
     return { id: String(id), display_name: ssText(b.displayName, 60) };
+  }
+  async function jrMe(ctx, cfg, token) {
+    return jrIdentity(await jrGet(ctx, cfg, 'me', token, null), 'me');
+  }
+  /* DOES JUICE REEL ACCEPT EDGEDESK'S CREDENTIALS? GET /oauth2/me with the
+     application's own client id and secret answers for the app's owner, so
+     the id, the secret and Juice Reel's approval are checked without any
+     reader signing in. One request, never retried; the answer is a verdict,
+     never an error: { accepted, code, status, owner } — Juice Reel's HTTP
+     status and the owner's display name only (no body, and the id stays
+     here). A 403 is undocumented for this call and read as a refusal */
+  async function jrOwnerCheck(ctx, cfg) {
+    if (!cfg || !cfg.clientId || !cfg.clientSecret) return { accepted: false, code: 'NOT_CONFIGURED', status: null, owner: null };
+    var r = null;
+    try {
+      r = await jrCall(ctx, cfg, 'owner', {});
+      var err = jrErrorWord(r.body);
+      if (r.status === 401 || r.status === 403 || err === 'invalid_client' || err === 'unauthorized_client') return { accepted: false, code: 'JR_CLIENT_REFUSED', status: r.status, owner: null };
+      jrCheck(r);
+      return { accepted: true, code: null, status: r.status, owner: jrIdentity(r.body, 'owner').display_name };
+    } catch (e) {
+      return { accepted: false, code: e && e.code ? e.code : 'UNKNOWN', status: r ? r.status : null, owner: null };
+    }
   }
 
   /* ── the token store (portfolio_private.oauth_grants, sealed) ── */
@@ -2393,7 +2428,7 @@ function sharpsportsConfig(env) {
     SHARPSPORTS: SHARPSPORTS, AGGREGATORS: AGGREGATORS, aggregatorInfo: aggregatorInfo, ssBookPlatform: ssBookPlatform, ssAccountState: ssAccountState,
     sharpsportsNormalize: sharpsportsNormalize, sharpsportsLink: sharpsportsLink, sharpsportsDiscover: sharpsportsDiscover, sharpsportsRefresh: sharpsportsRefresh,
     sharpsportsWebhookRefs: sharpsportsWebhookRefs, webhookSignature: webhookSignature, ssCall: ssCall, hexOf: hexOf,
-    JUICEREEL: JUICEREEL, b64url: b64url, jrPkce: jrPkce, jrStateHash: jrStateHash, JR_STATE_RE: JR_STATE_RE, jrAuthorizeUrl: jrAuthorizeUrl,
+    JUICEREEL: JUICEREEL, b64url: b64url, jrPkce: jrPkce, jrOwnerCheck: jrOwnerCheck, jrStateHash: jrStateHash, JR_STATE_RE: JR_STATE_RE, jrAuthorizeUrl: jrAuthorizeUrl,
     jrSealSession: jrSealSession, jrOpenSession: jrOpenSession, jrTokenSet: jrTokenSet, jrToken: jrToken, jrRevokeAll: jrRevokeAll,
     jrAccessToken: jrAccessToken, jrPages: jrPages, jrLeg: jrLeg, jrSite: jrSite, juicereelNormalize: juicereelNormalize,
     juicereelConnect: juicereelConnect, juicereelSync: juicereelSync, juicereelDisconnect: juicereelDisconnect, juicereelLink: juicereelLink, juicereelDiscover: juicereelDiscover, juicereelRefresh: juicereelRefresh, jrAccountState: jrAccountState, juicereelSweep: juicereelSweep
@@ -2675,8 +2710,16 @@ async function ssRefresh(c, user, body) {
    PRODUCTION smoke test and a cleared terms review — or the caller is an
    operator running that smoke test. Everyone else is told it awaits approval. */
 function jrConfigured(c) {
-  const j = c.juicereel;
-  return !!(j.clientId && j.clientSecret && j.redirectUri && c.keyring.keys && c.keyring.keys[String(c.keyring.current)]);
+  return jrMissing(c).length === 0;
+}
+/* what is not set for Juice Reel, by the secret's NAME (never a value) */
+function jrMissing(c) {
+  const j = c.juicereel, out = [];
+  if (!j.clientId) out.push('JUICE_REEL_CLIENT_ID');
+  if (!j.clientSecret) out.push('JUICE_REEL_CLIENT_SECRET');
+  if (!j.redirectUri) out.push('JUICE_REEL_REDIRECT_URI (set, but not an https URL)');
+  if (!(c.keyring.keys && c.keyring.keys[String(c.keyring.current)])) out.push('PORTFOLIO_CREDENTIAL_KEYS (with a key for PORTFOLIO_CREDENTIAL_KEY_VERSION)');
+  return out;
 }
 async function jrGate(c, user, smokeTest) {
   if (c.sportsbook.key !== 'juicereel') return { ok: false, status: 403, reason: 'SYNC_OFF', message: K.ERRORS.SYNC_OFF, operator: false, approval: null };
@@ -2685,13 +2728,14 @@ async function jrGate(c, user, smokeTest) {
   try { operator = await rpcAsCaller(c, user.authz, 'portfolio_is_admin', {}) === true; } catch (_) { operator = false; }
   const approval = reg && reg.automatic_enabled ? 'ENABLED' : 'PENDING';
   if (!reg) return { ok: false, status: 503, reason: 'not_installed', message: 'Juice Reel is not set up on this server yet.', operator, approval };
-  if (!jrConfigured(c)) return { ok: false, status: 503, reason: 'not_configured', message: K.ERRORS.NOT_CONFIGURED, operator, approval };
+  if (!jrConfigured(c)) return { ok: false, status: 503, reason: 'not_configured', operator, approval,
+    message: K.ERRORS.NOT_CONFIGURED + (operator ? ' Operators: not set in Supabase — ' + jrMissing(c).join(', ') + ' (Actions → Juice Reel setup).' : '') };
   if (reg.automatic_enabled) return { ok: true, cfg: c.juicereel, operator, approval, smokeTestId: null };
   if (operator) {
     let smoke = UUID_RE.test(String(smokeTest || '')) ? smokeTest : null;
     if (!smoke) { try { smoke = await serviceRpc(c)('portfolio_svc_jr_smoke_current', { p_env: c.juicereel.env }); } catch (_) { smoke = null; } }
     if (UUID_RE.test(String(smoke || ''))) return { ok: true, cfg: c.juicereel, operator, approval, smokeTestId: smoke };
-    return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL + ' Operators: start the live smoke test (tools/portfolio/juicereel_smoke.js begin) to connect under it.', operator, approval };
+    return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL + ' Operators: start the live smoke test (Actions → Juice Reel setup → start_live_test, or tools/portfolio/juicereel_smoke.js begin) to connect under it.', operator, approval };
   }
   return { ok: false, status: 403, reason: 'awaiting_approval', message: K.ERRORS.JR_AWAITING_APPROVAL, operator, approval };
 }
@@ -2708,6 +2752,36 @@ async function jrStatus(c, user, body) {
     smoke_test: g.operator ? g.smokeTestId || null : null, environment: c.juicereel.env,
     provider: Object.assign(providerInfo('juicereel'), { scopes: K.JUICEREEL.scopes }),
     grant: K.jrAccountState(grant, { operator: !!g.operator }) });
+}
+/* CHECK: does Juice Reel accept EdgeDesk's client id and secret? (an
+   operator or the service role; never a reader — each check is a request
+   to Juice Reel, counted against EdgeDesk's rate limit). Answers the
+   verdict and the setup checklist, by name; nothing is stored */
+async function jrCheck(c) {
+  let reg = null, smoke = null;
+  try { reg = (await runtimeRegistry(c)).juicereel || null; } catch (_) { reg = null; }
+  try { smoke = await serviceRpc(c)('portfolio_svc_jr_smoke_current', { p_env: c.juicereel.env }); } catch (_) { smoke = null; }
+  const v = await K.jrOwnerCheck(ctxFor(c, 15000), c.juicereel);
+  logLine('info', 'juicereel.check', { accepted: v.accepted, code: v.code, status: v.status });
+  const said = v.accepted ? 'Juice Reel accepted EdgeDesk\'s client id and secret' + (v.owner ? ' (the application\'s owner: ' + v.owner + ').' : '.')
+    : v.code === 'JR_CLIENT_REFUSED' ? 'Juice Reel refused EdgeDesk\'s client id and secret (HTTP ' + v.status + '): the application is not approved yet, or the secret in Supabase is not the current one.'
+    : v.code === 'NOT_CONFIGURED' ? 'JUICE_REEL_CLIENT_ID and JUICE_REEL_CLIENT_SECRET must both be set in Supabase before Juice Reel can be asked.'
+    : 'Juice Reel could not be asked just now (' + v.code + '); try again shortly.';
+  return json({ ok: true, accepted: v.accepted, code: v.code, status: v.status, owner: v.owner, message: said,
+    setup: { provider_on: c.sportsbook.key === 'juicereel', missing: jrMissing(c), redirect_uri: c.juicereel.redirectUri || null, scopes: K.JUICEREEL.scopes,
+      registry_installed: !!reg, switched_on_for_readers: !!(reg && reg.automatic_enabled), live_test_running: UUID_RE.test(String(smoke || '')) } });
+}
+/* a constant-time comparison of the bearer a service caller presents */
+function isServiceCaller(c, req) {
+  const m = /^Bearer\s+(\S+)$/i.exec(req.headers.get('authorization') || '');
+  if (!m) return false;
+  const a = m[1];
+  return c.serviceKeys.some((k) => {
+    if (k.length !== a.length) return false;
+    let d = 0;
+    for (let i = 0; i < k.length; i++) d |= k.charCodeAt(i) ^ a.charCodeAt(i);
+    return d === 0;
+  });
 }
 /* the sportsbook seam's status (sb_status): the same gate, in the shape every provider answers */
 async function jrSbStatus(c, user, body) {
@@ -2840,7 +2914,8 @@ async function handle(req) {
           scheduled_refresh_minutes: c.sharpsports.scheduledRefreshMinutes },
         /* the redirect URI is public (it is in every consent URL); the id and secret are named, never shown */
         juicereel: { active: c.sportsbook.key === 'juicereel', environment: c.juicereel.env, client_id: !!c.juicereel.clientId, client_secret: !!c.juicereel.clientSecret,
-          redirect_uri: c.juicereel.redirectUri || null, scopes: K.JUICEREEL.scopes, ready: jrConfigured(c) } } });
+          redirect_uri: c.juicereel.redirectUri || null, scopes: K.JUICEREEL.scopes, ready: jrConfigured(c),
+          missing: (c.sportsbook.key === 'juicereel' ? [] : ['SPORTSBOOK_SYNC_PROVIDER=juicereel']).concat(jrMissing(c)) } } });
   }
   if (req.method !== 'POST') return json({ ok: false, reason: 'method' }, 405);
   if (!c.url || !c.serviceKey || !c.anonKey) return json({ ok: false, reason: 'not_configured' }, 503);
@@ -2853,8 +2928,15 @@ async function handle(req) {
       logLine('info', 'sweep', r);
       return json({ ok: true, due: r.due, done: r.done.length });
     }
+    if (body.action === 'jr_check' && isServiceCaller(c, req)) return await jrCheck(c);
     const user = await getUser(c, req);
     if (!user) return json({ ok: false, reason: 'sign_in_required' }, 401);
+    if (body.action === 'jr_check') {
+      let operator = false;
+      try { operator = await rpcAsCaller(c, user.authz, 'portfolio_is_admin', {}) === true; } catch (_) { operator = false; }
+      if (!operator) return json({ ok: false, reason: 'operators_only', message: 'Only an EdgeDesk operator can check the Juice Reel application.' }, 403);
+      return await jrCheck(c);
+    }
     if (body.action === 'registry') {
       const rt = await runtimeRegistry(c);
       return json({ ok: true, platforms: K.REGISTRY.map((p) => ({ key: p.key, label: p.label, source_type: p.source_type,
