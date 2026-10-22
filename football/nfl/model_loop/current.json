@@ -2,7 +2,7 @@
  "schema": "edgedesk_model_loop_nfl_current_v1",
  "model_version": "2.0.0",
  "status": "EXPERIMENTAL",
- "generated_at": "2026-10-21T18:17:32Z",
+ "generated_at": "2026-10-22T18:11:50Z",
  "season": 2026,
  "config_sha256": "2ae53dbf05e0871616ba35159c4914c5a9073a99252c02e8212349ff6216ef35",
  "distribution": {
@@ -1187,14 +1187,14 @@
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -2.5,
+    "home_line": -3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
    "disagreement": {
-    "level": "WATCH",
-    "text": "Model disagrees with market by 2.8",
-    "gap_points": -2.8210193601406592,
+    "level": "FLAG",
+    "text": "Model disagrees with market by 3.3",
+    "gap_points": -3.3210193601406592,
     "direction": "away",
     "drivers": [
      {
@@ -1367,11 +1367,42 @@
     "unattributed": -0.0
    },
    "market_reference": {
-    "home_line": 4.5,
+    "home_line": 3.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null,
+   "disagreement": {
+    "level": "WATCH",
+    "text": "Model disagrees with market by 2.4",
+    "gap_points": -2.436666492445754,
+    "direction": "away",
+    "drivers": [
+     {
+      "key": "rush_off",
+      "label": "Rush offense",
+      "points": -2.19,
+      "prior_share": 0.706
+     },
+     {
+      "key": "rush_def",
+      "label": "Rush defense",
+      "points": -0.49,
+      "prior_share": 0.408
+     },
+     {
+      "key": "travel",
+      "label": "Travel distance",
+      "points": -0.41,
+      "prior_share": null
+     },
+     {
+      "key": "pass_def",
+      "label": "Pass defense",
+      "points": -0.39,
+      "prior_share": 0.035
+     }
+    ]
+   },
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -1700,26 +1731,26 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     },
     "away": {
-     "id": "00-0031503",
-     "name": "Jameis Winston",
-     "basis": "reconciled starter (DEPTH_CHART_RECONCILED)"
+     "id": "00-0039923",
+     "name": "J.J. McCarthy",
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 10.24,
-   "fair_home_line": -10.24,
-   "fair_total": 42.82,
-   "home_win_prob": 0.7748,
-   "fair_home_ml": -344,
-   "fair_away_ml": 344,
+   "fair_home_margin": 10.67,
+   "fair_home_line": -10.67,
+   "fair_total": 42.48,
+   "home_win_prob": 0.7838,
+   "fair_home_ml": -363,
+   "fair_away_ml": 363,
    "range80": {
-    "lo": -6.82,
-    "hi": 27.31,
-    "centre": 10.24,
-    "half_width": 17.06
+    "lo": -6.53,
+    "hi": 27.87,
+    "centre": 10.67,
+    "half_width": 17.2
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 7.9143,
+    "Base strength": 8.3383,
     "Rest & travel": 0.1851
    },
    "components": [
@@ -1748,10 +1779,10 @@
      "key": "qb",
      "label": "Quarterback",
      "group": "base_strength",
-     "points": 2.155,
-     "from_prior": -0.2613,
-     "from_this_season": 2.4163,
-     "prior_share": 0.098
+     "points": 2.579,
+     "from_prior": 1.3422,
+     "from_this_season": 1.2368,
+     "prior_share": 0.52
     },
     {
      "key": "pass_def",
@@ -1827,12 +1858,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 10.244807,
-    "fair_home_margin": 10.244807,
+    "components_sum": 10.66879,
+    "fair_home_margin": 10.66879,
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -10.0,
+    "home_line": -10.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -2142,7 +2173,7 @@
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": 3.0,
+    "home_line": 2.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -2297,7 +2328,7 @@
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -3.5,
+    "home_line": -3.0,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [
@@ -2306,13 +2337,13 @@
      "qb_id": "00-0034855",
      "fair_home_line": -6.97,
      "home_win_prob": 0.698,
-     "gap_vs_market": 3.47
+     "gap_vs_market": 3.97
     }
    ],
    "disagreement": {
     "level": "QB UNRESOLVED",
-    "text": "Model disagrees with market by 4.1 with the schedule feed's starter; the starter is contested (see scenarios)",
-    "gap_points": 4.120680421587164,
+    "text": "Model disagrees with market by 4.6 with the schedule feed's starter; the starter is contested (see scenarios)",
+    "gap_points": 4.620680421587164,
     "direction": "home",
     "drivers": [
      {
@@ -2354,21 +2385,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 7.26,
-   "fair_home_line": -7.26,
+   "fair_home_margin": 7.33,
+   "fair_home_line": -7.33,
    "fair_total": 50.23,
-   "home_win_prob": 0.7053,
-   "fair_home_ml": -239,
-   "fair_away_ml": 239,
+   "home_win_prob": 0.7069,
+   "fair_home_ml": -241,
+   "fair_away_ml": 241,
    "range80": {
-    "lo": -9.66,
-    "hi": 24.19,
-    "centre": 7.26,
+    "lo": -9.59,
+    "hi": 24.25,
+    "centre": 7.33,
     "half_width": 16.92
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 5.4983,
+    "Base strength": 5.5619,
     "Rest & travel": -0.3801
    },
    "components": [
@@ -2433,10 +2464,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 4.9765,
+     "points": 5.0401,
      "from_prior": 0.3296,
-     "from_this_season": 4.6469,
-     "prior_share": 0.066
+     "from_this_season": 4.7105,
+     "prior_share": 0.065
     },
     {
      "key": "rest",
@@ -2476,8 +2507,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 7.263384,
-    "fair_home_margin": 7.263384,
+    "components_sum": 7.327056,
+    "fair_home_margin": 7.327056,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2509,21 +2540,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": -0.01,
-   "fair_home_line": 0.01,
-   "fair_total": 41.91,
-   "home_win_prob": 0.4996,
+   "fair_home_margin": -0.0,
+   "fair_home_line": 0.0,
+   "fair_total": 41.84,
+   "home_win_prob": 0.5,
    "fair_home_ml": 100,
    "fair_away_ml": -100,
    "range80": {
-    "lo": -16.84,
-    "hi": 16.82,
-    "centre": -0.01,
+    "lo": -16.83,
+    "hi": 16.83,
+    "centre": -0.0,
     "half_width": 16.83
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -2.5584,
+    "Base strength": -2.5448,
     "Rest & travel": 0.3986
    },
    "components": [
@@ -2588,10 +2619,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.5625,
+     "points": -0.5489,
      "from_prior": 0.3186,
-     "from_this_season": -0.8811,
-     "prior_share": 0.266
+     "from_this_season": -0.8675,
+     "prior_share": 0.269
     },
     {
      "key": "rest",
@@ -2631,8 +2662,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -0.014484,
-    "fair_home_margin": -0.014484,
+    "components_sum": -0.00095,
+    "fair_home_margin": -0.00095,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2643,9 +2674,9 @@
     {
      "if": "home starter is Baker Mayfield",
      "qb_id": "00-0034855",
-     "fair_home_line": -0.7,
-     "home_win_prob": 0.521,
-     "gap_vs_market": -0.8
+     "fair_home_line": -0.71,
+     "home_win_prob": 0.5214,
+     "gap_vs_market": -0.79
     }
    ],
    "disagreement": null,
@@ -2677,18 +2708,18 @@
    "fair_home_margin": 8.38,
    "fair_home_line": -8.38,
    "fair_total": 50.52,
-   "home_win_prob": 0.7327,
+   "home_win_prob": 0.7326,
    "fair_home_ml": -274,
    "fair_away_ml": 274,
    "range80": {
-    "lo": -8.26,
-    "hi": 25.03,
+    "lo": -8.27,
+    "hi": 25.02,
     "centre": 8.38,
     "half_width": 16.65
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 4.7001,
+    "Base strength": 4.6968,
     "Rest & travel": 1.5361
    },
    "components": [
@@ -2753,10 +2784,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 1.2072,
+     "points": 1.2039,
      "from_prior": 0.3094,
-     "from_this_season": 0.8978,
-     "prior_share": 0.256
+     "from_this_season": 0.8945,
+     "prior_share": 0.257
     },
     {
      "key": "rest",
@@ -2796,8 +2827,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 8.381487,
-    "fair_home_margin": 8.381487,
+    "components_sum": 8.378271,
+    "fair_home_margin": 8.378271,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -2816,7 +2847,7 @@
    "disagreement": {
     "level": "QB UNRESOLVED",
     "text": "Model disagrees with market by 5.4 with the schedule feed's starter; the starter is contested (see scenarios)",
-    "gap_points": 5.381487284270584,
+    "gap_points": 5.378271016461996,
     "direction": "home",
     "drivers": [
      {
@@ -2870,21 +2901,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 2.6,
-   "fair_home_line": -2.6,
-   "fair_total": 48.25,
-   "home_win_prob": 0.5775,
-   "fair_home_ml": -137,
-   "fair_away_ml": 137,
+   "fair_home_margin": 2.71,
+   "fair_home_line": -2.71,
+   "fair_total": 48.26,
+   "home_win_prob": 0.5806,
+   "fair_home_ml": -138,
+   "fair_away_ml": 138,
    "range80": {
-    "lo": -14.23,
-    "hi": 19.44,
-    "centre": 2.6,
-    "half_width": 16.84
+    "lo": -14.17,
+    "hi": 19.59,
+    "centre": 2.71,
+    "half_width": 16.88
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.6557,
+    "Base strength": 0.7627,
     "Rest & travel": -0.1976
    },
    "components": [
@@ -2949,10 +2980,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.3176,
+     "points": 0.4246,
      "from_prior": 0.402,
-     "from_this_season": -0.0844,
-     "prior_share": 0.826
+     "from_this_season": 0.0226,
+     "prior_share": 0.947
     },
     {
      "key": "rest",
@@ -2992,8 +3023,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 2.603523,
-    "fair_home_margin": 2.603523,
+    "components_sum": 2.710486,
+    "fair_home_margin": 2.710486,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3015,31 +3046,31 @@
    "kickoff_et": "2026-11-02 20:15:00",
    "starters": {
     "home": {
-     "id": "00-0035704",
-     "name": "Drew Lock",
-     "basis": "schedule feed"
+     "id": "00-0034869",
+     "name": "Sam Darnold",
+     "basis": "reconciled starter (DEPTH_CHART_RECONCILED)"
     },
     "away": {
      "id": "00-0039918",
      "name": "Caleb Williams",
-     "basis": "schedule feed"
+     "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 2.38,
-   "fair_home_line": -2.38,
-   "fair_total": 45.57,
-   "home_win_prob": 0.5709,
-   "fair_home_ml": -133,
-   "fair_away_ml": 133,
+   "fair_home_margin": 0.86,
+   "fair_home_line": -0.86,
+   "fair_total": 44.29,
+   "home_win_prob": 0.5257,
+   "fair_home_ml": -111,
+   "fair_away_ml": 111,
    "range80": {
-    "lo": -14.33,
-    "hi": 19.09,
-    "centre": 2.38,
-    "half_width": 16.71
+    "lo": -15.87,
+    "hi": 17.58,
+    "centre": 0.86,
+    "half_width": 16.72
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 1.4305,
+    "Base strength": -0.0935,
     "Rest & travel": -1.1951
    },
    "components": [
@@ -3068,10 +3099,10 @@
      "key": "qb",
      "label": "Quarterback",
      "group": "base_strength",
-     "points": -1.6399,
-     "from_prior": -1.3574,
-     "from_this_season": -0.2825,
-     "prior_share": 0.828
+     "points": -3.2062,
+     "from_prior": 0.3025,
+     "from_this_season": -3.5087,
+     "prior_share": 0.079
     },
     {
      "key": "pass_def",
@@ -3104,10 +3135,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 2.0809,
+     "points": 2.1232,
      "from_prior": 0.5659,
-     "from_this_season": 1.515,
-     "prior_share": 0.272
+     "from_this_season": 1.5573,
+     "prior_share": 0.267
     },
     {
      "key": "rest",
@@ -3147,8 +3178,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 2.380709,
-    "fair_home_margin": 2.380709,
+    "components_sum": 0.856694,
+    "fair_home_margin": 0.856694,
     "unattributed": -0.0
    },
    "market_reference": {
@@ -3156,7 +3187,38 @@
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
-   "disagreement": null,
+   "disagreement": {
+    "level": "WATCH",
+    "text": "Model disagrees with market by 2.1",
+    "gap_points": -2.1433057690233968,
+    "direction": "away",
+    "drivers": [
+     {
+      "key": "qb",
+      "label": "Quarterback",
+      "points": -3.21,
+      "prior_share": 0.079
+     },
+     {
+      "key": "rush_off",
+      "label": "Rush offense",
+      "points": -1.01,
+      "prior_share": 0.159
+     },
+     {
+      "key": "timezone",
+      "label": "Time zones crossed",
+      "points": -0.81,
+      "prior_share": null
+     },
+     {
+      "key": "rest",
+      "label": "Rest days",
+      "points": -0.77,
+      "prior_share": null
+     }
+    ]
+   },
    "data_status": {
     "status": "OK",
     "reasons": []
@@ -3180,21 +3242,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 5.36,
-   "fair_home_line": -5.36,
+   "fair_home_margin": 5.38,
+   "fair_home_line": -5.38,
    "fair_total": 38.79,
-   "home_win_prob": 0.6555,
-   "fair_home_ml": -190,
-   "fair_away_ml": 190,
+   "home_win_prob": 0.656,
+   "fair_home_ml": -191,
+   "fair_away_ml": 191,
    "range80": {
-    "lo": -11.42,
-    "hi": 22.14,
-    "centre": 5.36,
-    "half_width": 16.78
+    "lo": -11.41,
+    "hi": 22.16,
+    "centre": 5.38,
+    "half_width": 16.79
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 2.9856,
+    "Base strength": 3.0018,
     "Rest & travel": 0.2287
    },
    "components": [
@@ -3259,9 +3321,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 2.7756,
+     "points": 2.7918,
      "from_prior": 0.2476,
-     "from_this_season": 2.528,
+     "from_this_season": 2.5442,
      "prior_share": 0.089
     },
     {
@@ -3302,8 +3364,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 5.359652,
-    "fair_home_margin": 5.359652,
+    "components_sum": 5.37588,
+    "fair_home_margin": 5.37588,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3335,21 +3397,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 11.04,
-   "fair_home_line": -11.04,
+   "fair_home_margin": 11.05,
+   "fair_home_line": -11.05,
    "fair_total": 46.57,
-   "home_win_prob": 0.7914,
-   "fair_home_ml": -379,
-   "fair_away_ml": 379,
+   "home_win_prob": 0.7916,
+   "fair_home_ml": -380,
+   "fair_away_ml": 380,
    "range80": {
-    "lo": -6.24,
-    "hi": 28.31,
-    "centre": 11.04,
-    "half_width": 17.27
+    "lo": -6.23,
+    "hi": 28.32,
+    "centre": 11.05,
+    "half_width": 17.28
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 7.1109,
+    "Base strength": 7.1204,
     "Rest & travel": 1.7812
    },
    "components": [
@@ -3414,9 +3476,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 3.013,
+     "points": 3.0225,
      "from_prior": 0.4102,
-     "from_this_season": 2.6028,
+     "from_this_season": 2.6123,
      "prior_share": 0.136
     },
     {
@@ -3457,8 +3519,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 11.037438,
-    "fair_home_margin": 11.037438,
+    "components_sum": 11.047017,
+    "fair_home_margin": 11.047017,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3469,7 +3531,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.5",
-    "gap_points": 3.537437988121164,
+    "gap_points": 3.547016622010597,
     "direction": "home",
     "drivers": [
      {
@@ -3521,21 +3583,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": -2.36,
-   "fair_home_line": 2.36,
+   "fair_home_margin": -2.3,
+   "fair_home_line": 2.3,
    "fair_total": 44.08,
-   "home_win_prob": 0.4296,
-   "fair_home_ml": 133,
-   "fair_away_ml": -133,
+   "home_win_prob": 0.4314,
+   "fair_home_ml": 132,
+   "fair_away_ml": -132,
    "range80": {
-    "lo": -19.06,
-    "hi": 14.34,
-    "centre": -2.36,
-    "half_width": 16.7
+    "lo": -18.96,
+    "hi": 14.36,
+    "centre": -2.3,
+    "half_width": 16.66
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -4.2064,
+    "Base strength": -4.1466,
     "Rest & travel": -0.3
    },
    "components": [
@@ -3600,10 +3662,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.8422,
+     "points": -0.7824,
      "from_prior": 0.1653,
-     "from_this_season": -1.0075,
-     "prior_share": 0.141
+     "from_this_season": -0.9477,
+     "prior_share": 0.148
     },
     {
      "key": "rest",
@@ -3643,8 +3705,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -2.361168,
-    "fair_home_margin": -2.361168,
+    "components_sum": -2.301356,
+    "fair_home_margin": -2.301356,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3676,21 +3738,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 11.08,
-   "fair_home_line": -11.08,
+   "fair_home_margin": 10.91,
+   "fair_home_line": -10.91,
    "fair_total": 45.39,
-   "home_win_prob": 0.7923,
-   "fair_home_ml": -381,
-   "fair_away_ml": 381,
+   "home_win_prob": 0.7888,
+   "fair_home_ml": -373,
+   "fair_away_ml": 373,
    "range80": {
-    "lo": -6.2,
-    "hi": 28.36,
-    "centre": 11.08,
-    "half_width": 17.28
+    "lo": -6.34,
+    "hi": 28.16,
+    "centre": 10.91,
+    "half_width": 17.25
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 9.9922,
+    "Base strength": 9.8204,
     "Rest & travel": -1.0572
    },
    "components": [
@@ -3755,10 +3817,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 4.1368,
+     "points": 3.965,
      "from_prior": 0.1472,
-     "from_this_season": 3.9896,
-     "prior_share": 0.036
+     "from_this_season": 3.8178,
+     "prior_share": 0.037
     },
     {
      "key": "rest",
@@ -3798,8 +3860,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 11.080274,
-    "fair_home_margin": 11.080274,
+    "components_sum": 10.908538,
+    "fair_home_margin": 10.908538,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -3809,8 +3871,8 @@
    "qb_scenarios": [],
    "disagreement": {
     "level": "FLAG",
-    "text": "Model disagrees with market by 3.6",
-    "gap_points": 3.580274139752447,
+    "text": "Model disagrees with market by 3.4",
+    "gap_points": 3.408537501089304,
     "direction": "home",
     "drivers": [
      {
@@ -3862,21 +3924,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 0.59,
-   "fair_home_line": -0.59,
+   "fair_home_margin": 0.45,
+   "fair_home_line": -0.45,
    "fair_total": 44.75,
-   "home_win_prob": 0.5177,
-   "fair_home_ml": -107,
-   "fair_away_ml": 107,
+   "home_win_prob": 0.5136,
+   "fair_home_ml": -106,
+   "fair_away_ml": 106,
    "range80": {
-    "lo": -16.18,
-    "hi": 17.36,
-    "centre": 0.59,
-    "half_width": 16.77
+    "lo": -16.34,
+    "hi": 17.25,
+    "centre": 0.45,
+    "half_width": 16.8
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -1.3325,
+    "Base strength": -1.47,
     "Rest & travel": -0.221
    },
    "components": [
@@ -3941,10 +4003,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.0473,
+     "points": -0.0902,
      "from_prior": -0.1759,
-     "from_this_season": 0.2232,
-     "prior_share": 0.441
+     "from_this_season": 0.0857,
+     "prior_share": 0.672
     },
     {
      "key": "rest",
@@ -3984,12 +4046,12 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 0.591718,
-    "fair_home_margin": 0.591718,
+    "components_sum": 0.454145,
+    "fair_home_margin": 0.454145,
     "unattributed": 0.0
    },
    "market_reference": {
-    "home_line": -1.5,
+    "home_line": 1.5,
     "source": "nflverse games.csv consensus (reference, not a price)"
    },
    "qb_scenarios": [],
@@ -4017,21 +4079,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 4.01,
-   "fair_home_line": -4.01,
-   "fair_total": 49.04,
-   "home_win_prob": 0.6181,
-   "fair_home_ml": -162,
-   "fair_away_ml": 162,
+   "fair_home_margin": 3.99,
+   "fair_home_line": -3.99,
+   "fair_total": 49.03,
+   "home_win_prob": 0.6175,
+   "fair_home_ml": -161,
+   "fair_away_ml": 161,
    "range80": {
-    "lo": -12.97,
-    "hi": 20.99,
-    "centre": 4.01,
+    "lo": -12.99,
+    "hi": 20.97,
+    "centre": 3.99,
     "half_width": 16.98
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 2.1793,
+    "Base strength": 2.158,
     "Rest & travel": -0.3129
    },
    "components": [
@@ -4096,10 +4158,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 0.2303,
+     "points": 0.209,
      "from_prior": 0.2434,
-     "from_this_season": -0.0131,
-     "prior_share": 0.949
+     "from_this_season": -0.0344,
+     "prior_share": 0.876
     },
     {
      "key": "rest",
@@ -4139,9 +4201,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.011789,
-    "fair_home_margin": 4.011789,
-    "unattributed": 0.0
+    "components_sum": 3.990536,
+    "fair_home_margin": 3.990536,
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": -2.5,
@@ -4172,21 +4234,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": -6.29,
-   "fair_home_line": 6.29,
+   "fair_home_margin": -6.32,
+   "fair_home_line": 6.32,
    "fair_total": 45.52,
-   "home_win_prob": 0.3195,
-   "fair_home_ml": 213,
-   "fair_away_ml": -213,
+   "home_win_prob": 0.319,
+   "fair_home_ml": 214,
+   "fair_away_ml": -214,
    "range80": {
-    "lo": -23.13,
-    "hi": 10.54,
-    "centre": -6.29,
+    "lo": -23.15,
+    "hi": 10.52,
+    "centre": -6.32,
     "half_width": 16.84
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": -8.5227,
+    "Base strength": -8.5449,
     "Rest & travel": 0.0837
    },
    "components": [
@@ -4251,9 +4313,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -4.4105,
+     "points": -4.4327,
      "from_prior": -0.3226,
-     "from_this_season": -4.0879,
+     "from_this_season": -4.1101,
      "prior_share": 0.073
     },
     {
@@ -4294,9 +4356,9 @@
     }
    ],
    "reconciliation": {
-    "components_sum": -6.293772,
-    "fair_home_margin": -6.293772,
-    "unattributed": 0.0
+    "components_sum": -6.315927,
+    "fair_home_margin": -6.315927,
+    "unattributed": -0.0
    },
    "market_reference": {
     "home_line": 7.5,
@@ -4329,19 +4391,19 @@
    },
    "fair_home_margin": 4.48,
    "fair_home_line": -4.48,
-   "fair_total": 41.92,
-   "home_win_prob": 0.6311,
+   "fair_total": 41.93,
+   "home_win_prob": 0.6313,
    "fair_home_ml": -171,
    "fair_away_ml": 171,
    "range80": {
-    "lo": -12.37,
-    "hi": 21.32,
+    "lo": -12.36,
+    "hi": 21.33,
     "centre": 4.48,
     "half_width": 16.85
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 0.8803,
+    "Base strength": 0.8859,
     "Rest & travel": 1.4497
    },
    "components": [
@@ -4406,9 +4468,9 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": -0.8957,
+     "points": -0.8901,
      "from_prior": -0.1161,
-     "from_this_season": -0.7796,
+     "from_this_season": -0.774,
      "prior_share": 0.13
     },
     {
@@ -4449,8 +4511,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 4.475285,
-    "fair_home_margin": 4.475285,
+    "components_sum": 4.480901,
+    "fair_home_margin": 4.480901,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -4482,21 +4544,21 @@
      "basis": "reconciled starter (SCHEDULE_FEED)"
     }
    },
-   "fair_home_margin": 13.47,
-   "fair_home_line": -13.47,
+   "fair_home_margin": 13.49,
+   "fair_home_line": -13.49,
    "fair_total": 44.61,
-   "home_win_prob": 0.8373,
-   "fair_home_ml": -515,
-   "fair_away_ml": 515,
+   "home_win_prob": 0.8377,
+   "fair_home_ml": -516,
+   "fair_away_ml": 516,
    "range80": {
-    "lo": -3.92,
-    "hi": 30.86,
-    "centre": 13.47,
+    "lo": -3.9,
+    "hi": 30.88,
+    "centre": 13.49,
     "half_width": 17.39
    },
    "groups": {
     "Environment": 2.1453,
-    "Base strength": 11.8115,
+    "Base strength": 11.8315,
     "Rest & travel": -0.485
    },
    "components": [
@@ -4561,10 +4623,10 @@
      "key": "market",
      "label": "Market rating (prior weeks' closing lines)",
      "group": "base_strength",
-     "points": 5.7451,
+     "points": 5.7651,
      "from_prior": 0.8309,
-     "from_this_season": 4.9142,
-     "prior_share": 0.145
+     "from_this_season": 4.9342,
+     "prior_share": 0.144
     },
     {
      "key": "rest",
@@ -4604,8 +4666,8 @@
     }
    ],
    "reconciliation": {
-    "components_sum": 13.47171,
-    "fair_home_margin": 13.47171,
+    "components_sum": 13.491755,
+    "fair_home_margin": 13.491755,
     "unattributed": 0.0
    },
    "market_reference": {
@@ -4616,7 +4678,7 @@
    "disagreement": {
     "level": "FLAG",
     "text": "Model disagrees with market by 3.5",
-    "gap_points": 3.471709651647963,
+    "gap_points": 3.491754941359263,
     "direction": "home",
     "drivers": [
      {
@@ -4663,7 +4725,7 @@
   "reasons": [],
   "games_flagged": 4,
   "missing_results": [],
-  "checked_at": "2026-10-21T18:17:32Z"
+  "checked_at": "2026-10-22T18:11:51Z"
  },
  "contract": "Per game: fair_home_margin (+ = home), fair_home_line (book convention), home_win_prob, tie_prob, fair moneylines, range80 (centred on the margin), components that sum exactly to fair_home_margin, the starter priced, qb_scenarios for a contested starter, disagreement vs the reference line. distribution (sigma + key-number multipliers by |margin|) prices any spread: P(M=k) proportional to exp(-((k-mu')/sigma)^2/2) * mult[|k|], mu' solved so the mean is the margin."
 }
