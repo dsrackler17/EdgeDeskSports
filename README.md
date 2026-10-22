@@ -1122,22 +1122,31 @@ H-CFB-01, CLV grade or ranking of games reads it.
   Referee. Flags are accepted penalties from the box score; holding (offensive /
   defensive) and DPI / OPI are counted per play from play-by-play.
 - **The NFL twin.** It follows the NFL referee flags (`data/refs/`, `supabase/nfl_ref_flags.sql`,
-  `ref-sync.yml`): the same RLS, `security_invoker` views, REST writes with the service role,
-  first-run `apply_sql` / `seed` inputs on the sync workflow, and the same Officiating rows in
-  an Observed section. CFB differs where its data does: the crew's conference average comes
+  `ref-sync.yml`): `security_invoker` views, REST writes with the service role, first-run
+  `apply_sql` / `seed` inputs on the sync workflow, and the same Officiating rows in an
+  Observed section. CFB differs where its data does: the crew's conference average comes
   first, a rank needs 3 games, and there is no O/U record (the source has no lines).
+- **Who reads.** Signed-in readers only, as every `supabase/cfb_*.sql` table (the CFB security
+  contract, checked by `football/cfb_production/security.test.js`): anon is granted nothing.
+  The card reads with the reader's own token; a signed-out visitor sees "Sign in to see the
+  referee" and no request is made.
 - **Database.** `supabase/cfb_refs.sql`; first run: *Actions → CFB referee sync → Run workflow*
   with **apply_sql** and **seed** (the SQL, the 2,366 games and the backfill, coverage by season).
 - **ESPN backfill.** 124 games had no referee (62 are 2026 Week 7). Before any is
   filled, ESPN's Referee must match the NCAA referee on 5 games that have one
   (no Referee listed = inconclusive, another game is read; a mismatch after
   normalization stops it). The 13 `assignment_conflict` games are left alone.
-  Evidence: `data/refs/cfb/backfill/`. **Result (2026-10-22): stopped.** ESPN's game
-  summaries list no officials for these games, so no Referee could be verified and nothing
-  was filled; coverage stays as the NCAA data has it.
+  Evidence: `data/refs/cfb/backfill/`. **Result (2026-10-22): stopped, twice.** ESPN's
+  college football game summaries carry only venue and attendance in `gameInfo`, with no
+  officials anywhere in the response: 0 of 40 games verified, sampled from 2026, 2025 and
+  2024. Nothing was filled; coverage stays as the NCAA data has it.
 - **Weekly.** `cfb-ref-sync.yml`: Sunday 15:00 UTC, last week's finals; Thursday
   and Friday 15:00 UTC, ESPN's pregame Referee for this week's FBS slate, kept
   with `first_observed_at` (never rewritten; a changed referee is a new row).
+  **While ESPN publishes no CFB officials** (above), the Thursday/Friday pull records
+  nothing (cards read "Assignment not announced") and Sunday's finals carry flags and
+  holding but no referee. The referee for a new game needs another source, such as the
+  NCAA box score the dataset was built from.
 - **The card.** This season's flags/game and holding/game vs the conference
   average first, then FBS, with a rank among referees with 3+ games (fewer: the
   numbers and the count, no rank); offensive holding/game; 3-yr flags and holding

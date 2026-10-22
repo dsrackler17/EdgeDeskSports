@@ -863,8 +863,10 @@ or CLV grade reads it.
   averages; a rank only with 3+ games), `cfb_ref_assignment_current`,
   `cfb_game_ref_context` (the card, by game_id).
 
-RLS as the CFB card's own tables and `nfl_ref_flags.sql`: `<table>_read` for select to anon and
-authenticated, every client write revoked.
+RLS as every other `cfb_*.sql` table (the CFB security contract,
+`football/cfb_production/security.test.js`): `<table>_read` for select to authenticated only,
+anon granted nothing (tables and views), every client write revoked. The card reads with the
+reader's own token.
 Report rows should say ok; row 7 says pending until the seed has run. Tested
 against a real PostgreSQL, with the full seed, by `tools/refs/cfb_refs_sql.test.js`.
 

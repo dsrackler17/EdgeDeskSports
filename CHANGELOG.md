@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-22 — CFB referee flags: signed-in readers only; ESPN publishes no CFB officials
+
+- **Security.** `supabase/cfb_refs.sql` granted anon select. That broke the CFB security contract (`football/cfb_production/security.test.js`: in `supabase/cfb_*.sql`, anon gets nothing but the settled-record views and the analytics writer), and the check went red on `main` with #681.
+  - The referee tables and views are now gated like every other `cfb_*` table: select for authenticated only, and anon is revoked on tables and views.
+  - Report row 5 checks this, and the SQL suite proves anon is refused.
+  - Re-applying the file upgrades a database that took the earlier version.
+- **The card** reads `cfb_game_ref_context` with the reader's own token. A signed-out visitor sees "Sign in to see the referee and that crew's flag tendencies" and no request is made. Signing in shows the block on the next render.
+- **The ESPN backfill stopped again**, now sampling 2026, 2025 and 2024: 0 of 40 games verified. ESPN's CFB summaries carry only venue and attendance in `gameInfo`, with no officials anywhere in the response.
+  - Nothing was filled.
+  - Until ESPN lists officials, the Thursday/Friday assignment pull records nothing, and the Sunday finals carry no referee.
+  - The evidence (`data/refs/cfb/backfill/`), which landed on the branch after the merge, is carried over.
+
+Tests: `node football/cfb_production/security.test.js` (59, green again), `node tools/refs/cfb_refs_sql.test.js` (59), `node tools/refs/cfb_refs_ui.test.js` (37).
+
 ## 2026-10-22 — CFB referee flags on the Analyst pass (display only)
 
 Display only: no model input, classification (INVESTIGATE / MONITOR / PASS), H-CFB-01, CLV grade or ranking of games changed or reads it.
