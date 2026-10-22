@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-22 — The matchup card compares Kalshi at the model's time
+
+These are display and labelling changes only. No model output, projection, fair line, ranking or research logic changed; the snapshot module and the committed research data are untouched. The rules and every judgment call are in `docs/KALSHI_NOTES.md`.
+
+- **Matching timestamps.** The card compares Kalshi only with a quote taken within **15 minutes** of the model snapshot (`model.built_at`). `EDGameGraphic.kalshiAtModel` takes each market's `kalshi_price_snapshots` quote nearest that time, before or after it. Past 15 minutes the card reads **Kalshi price unavailable at model time** and compares nothing. Both times are always printed: `Model 2:04 PM ET · Kalshi 2:05 PM ET`.
+- **Kalshi mid.** The price is `(yes_bid + yes_ask) / 2`, labelled **KALSHI MID**. A spread over 0.06 is unavailable, like rule 1.
+- **The difference in words.** `9.5 PP HIGHER / LOWER` becomes one sentence naming the team: `EdgeDesk 9.5 pts higher on NE than Kalshi` (percentage points, before fees).
+- **Large gap note.** At 7 points or more (`G.LARGE_GAP_PP`): `Large gap vs market. Checking injuries, QB status, and weather before trusting it.`
+- **Home field, from the numbers.** The watch item no longer says home field is "more than the projected margin" beside a PK. The neutral-site margin is the projected margin minus home field, so NE at CHI reads `Home field is the whole game. Neutral site, NE is about a 3-pt favorite.`. A home edge that holds either way reads `Home field adds 3.1 pts to CHI’s edge.`
+- **The rules live in the generator.** `G.content` checks every placed Kalshi price again against the model's time and the spread. A caller that hands it the latest price gets "unavailable at model time", never a comparison across times.
+- **The research page** asks for Kalshi at the snapshot's model time (`window.fbKalshiAtModel`). A race where an older render overwrote a newer graphic is fixed.
+- **The batch export** (`npm run game:graphics`) reads the quotes nearest each game's model time. It prints each game's comparison or why Kalshi is unavailable, and adds the template version (`__g2`) to file names so cards drawn by the old template are drawn again.
+
+Tests: `node tools/football/game_research.test.js` (219), with section 14 new: timestamp matching, the unavailable state, the large-gap threshold, the difference sentence and home field. Also `node tools/football/game_research_ui.e2e.js` (57).
+
 ## 2026-10-22 — The matchup graphic compares EdgeDesk with the market, Kalshi included
 
 - **EDGEDESK vs MARKET.** Where Kalshi has a trusted price, the market strip becomes a table. It has one column per market and three rows, so EdgeDesk and the market sit side by side.

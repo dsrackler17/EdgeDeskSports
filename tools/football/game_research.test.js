@@ -471,11 +471,12 @@ section('12. the NFL card adds up, shows its median, and flags a 3-point disagre
 section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing filled');
 {
   const FI = require(path.join(ROOT, 'lib', 'football_identity.js'));
-  const SNAP_AT = new Date(t0 - 3 * 60000).toISOString();
+  /* a quote a minute after the game's model snapshot: the comparison is made at the model's time */
+  const snapAt = (s) => new Date(Date.parse(s.model.built_at) + 60000).toISOString();
   /* public.kalshi_card_current's rows as the page reads them; the book's names carry mascots */
   const krow = (s, yes, opp, st, mid, extra) => Object.assign({ sport: s.league, game_id: s.game_id, game_key: s.game_key, event_ticker: 'KX-' + s.game_id, market_ticker: 'KX-' + s.game_id + '-' + yes,
     kalshi_yes_name: yes, yes_team: yes, opponent: opp, home_team: s.home.name, away_team: s.away.name, pregame: true, state: st, yes_mid: mid, spread: st === 'OK' ? 0.02 : 0.1,
-    volume: 900, snapshot_at: SNAP_AT, match_confidence: 'high' }, extra || {});
+    volume: 900, snapshot_at: snapAt(s), match_confidence: 'high' }, extra || {});
   const both = (s, pa, ph, extra) => [krow(s, s.away.name, s.home.name, 'OK', pa, extra), krow(s, s.home.name, s.away.name, 'OK', ph, extra)];
   const cfbG = proj.find((g) => g.league === 'cfb'), nflG = proj.find((g) => g.league === 'nfl');
 
@@ -485,7 +486,7 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
   let k = GS.kalshi({ state: 'ok', rows: swapped }, cfbG);
   chk('Kalshi: each price lands on its own team by name, even when the book listed home and away the other way round', k.state === 'OK' && k.home && k.home.mid === 0.585 && k.away && k.away.mid === 0.43, k);
   chk('…a half-cent mid rounds half up, once (58.5¢ → 59%)', k.home.text === '59%' && k.away.text === '43%', [k.home, k.away]);
-  chk('…pregame it is "priced", with the latest snapshot time and the match confidence', k.label === 'priced' && !k.close && k.snapshot_at === SNAP_AT && k.confidence === 'high');
+  chk('…pregame it is "priced", with the latest snapshot time and the match confidence', k.label === 'priced' && !k.close && k.snapshot_at === snapAt(cfbG) && k.confidence === 'high');
   k = GS.kalshi(both(nflG, 0.44, 0.57), nflG);
   chk('Kalshi: an NFL game places by club name (rows alone are an ok read)', k.state === 'OK' && k.away.pct === 44 && k.home.pct === 57, k);
   k = GS.kalshi({ state: 'ok', rows: both(nflG, 0.44, 0.57, { yes_team: 'unreadable' }).map((r, i) => Object.assign(r, { kalshi_yes_name: i ? nflG.home.name : nflG.away.name })) }, nflG);
@@ -526,14 +527,16 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
     && cd.compare.cols.map((x) => x.head).join('|') === cd.away.abbr + ' WIN % · ML|' + cd.home.abbr + ' WIN % · ML'
     && cd.compare.cols[0].mk === '43.0%  ' + amer(0.43) && cd.compare.cols[1].mk === '58.5%  ' + amer(0.585)
     && cd.compare.cols[1].ed === (Math.round(cfbG.model.win_prob.home * 1000) / 10).toFixed(1) + '%  ' + cd.fair_ml.home, cd.compare);
-  chk('…rows say whose number, when, and that the differences are before fees', cd.compare.rows[0] === 'EDGEDESK · UNROUNDED' && /^KALSHI \d{1,2}:\d{2} [AP]M ET$/.test(cd.compare.rows[1]) && cd.compare.rows[2] === 'DIFFERENCE · BEFORE FEES', cd.compare.rows);
+  chk('…rows say whose number (Kalshi’s is its mid) and that the differences are before fees; the times line says when, both of them', cd.compare.rows[0] === 'EDGEDESK · UNROUNDED' && cd.compare.rows[1] === 'KALSHI MID' && cd.compare.rows[2] === 'DIFFERENCE · BEFORE FEES'
+    && /^Model \d{1,2}:\d{2} [AP]M ET · Kalshi \d{1,2}:\d{2} [AP]M ET$/.test(cd.compare.times), [cd.compare.rows, cd.compare.times]);
   chk('…and the model detail strip it replaces is left exactly as it was', cd.detail && cd.detail.note === 'No live sportsbook quote is shown. Every number here is EdgeDesk’s own.' && !cd.detail.cells.some((x) => /KALSHI/.test(x.k)));
   const cm = GG.content(spec, live, { now: t0, kalshi: kc }).content, Lm = GG.layout(cm, 'square');
   chk('graphic: with a live book, EDGEDESK vs MARKET: the book’s spread and total, then Kalshi for each team', cm.compare.title === 'EDGEDESK vs MARKET'
     && cm.compare.cols.map((x) => x.head).join('|') === 'SPREAD|TOTAL|' + cm.away.abbr + ' WIN % · ML|' + cm.home.abbr + ' WIN % · ML'
-    && /^DRAFTKINGS \d{1,2}:\d{2}( [AP]M ET)? · KALSHI \d{1,2}:\d{2} [AP]M ET$/.test(cm.compare.rows[1]), cm.compare);
-  chk('…drawn in place of the market strip (its title is not drawn), every cell on the canvas', Lm.ops.some((o) => o.text === 'EDGEDESK vs MARKET') && !Lm.ops.some((o) => o.text === 'CURRENT MARKET')
-    && cm.compare.cols.every((x) => [x.head, x.ed, x.mk, x.diff].every((t) => Lm.ops.some((o) => o.type === 'text' && o.text === t))));
+    && /^DRAFTKINGS \d{1,2}:\d{2} [AP]M ET · KALSHI MID$/.test(cm.compare.rows[1]), cm.compare);
+  chk('…drawn in place of the market strip (its title is not drawn), every cell, the sentence and both times on the canvas', Lm.ops.some((o) => o.text === 'EDGEDESK vs MARKET') && !Lm.ops.some((o) => o.text === 'CURRENT MARKET')
+    && cm.compare.cols.every((x) => [x.head, x.ed, x.mk, x.diff].filter(Boolean).every((t) => Lm.ops.some((o) => o.type === 'text' && o.text === t)))
+    && [cm.compare.kalshi.diff, cm.compare.times].every((t) => Lm.ops.some((o) => o.type === 'text' && o.text === t)));
   const cs = cm.compare.cols[0], ct = cm.compare.cols[1];
   chk('…the spread: EdgeDesk unrounded, the book as received, the gap toward the side EdgeDesk likes more', homeLine(cs.mk, cm) === -3.5
     && Math.abs(homeLine(cs.ed, cm) - Math.round(-cfbG.model.home_margin * 10) / 10) < 1e-9
@@ -542,19 +545,24 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
   const one = GG.content(spec, null, { now: t0, kalshi: GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.away.name, cfbG.home.name, 'OK', 0.4), krow(cfbG, cfbG.home.name, cfbG.away.name, 'WIDE_SPREAD', null)] }, cfbG) }).content;
   chk('graphic: one trusted side is one column; the other is not filled in', one.compare.cols.length === 1 && one.compare.cols[0].head === one.away.abbr + ' WIN % · ML' && one.compare.cols[0].mk.indexOf('40.0%') === 0, one.compare.cols);
   const cl = GG.content(spec, null, { now: t0, kalshi: GS.kalshi({ state: 'ok', rows: both(cfbG, 0.4, 0.6, { pregame: false }) }, cfbG) }).content;
-  chk('graphic: after kickoff the market row is KALSHI CLOSE', /^KALSHI CLOSE/.test(cl.compare.rows[1]) && /close/.test(cl.compare.note));
-  ['TEAMS_UNCONFIRMED', 'NO_PRICE', 'NO_MARKET'].forEach((st) => {
+  chk('graphic: a close quote at the model’s time is labelled KALSHI CLOSE MID', cl.compare.rows[1] === 'KALSHI CLOSE MID' && /close/.test(cl.compare.note), cl.compare);
+  ['TEAMS_UNCONFIRMED', 'NO_MARKET'].forEach((st) => {
     const fake = { state: st, current: false, away: null, home: null };
     const cx = GG.content(spec, live, { now: t0, kalshi: fake }).content;
     if (cx.kalshi || cx.compare || !GG.layout(cx, 'square').ops.some((o) => o.text === 'CURRENT MARKET')) chk('graphic: a ' + st + ' Kalshi read draws no table and leaves the market strip as it was', false);
   });
+  {
+    const cx = GG.content(spec, live, { now: t0, kalshi: { state: 'NO_PRICE', label: 'wide spread', current: false, away: null, home: null } }).content;
+    chk('graphic: a game Kalshi lists with no usable price says so beside the live book, comparing nothing of Kalshi’s', cx.compare && cx.compare.kalshi.available === false
+      && cx.compare.kalshi.unavailable === 'Kalshi price unavailable at model time' && cx.compare.cols.every((x) => !x.win) && cx.compare.cols.map((x) => x.head).join('|') === 'SPREAD|TOTAL', cx.compare);
+  }
   const nm = clone(spec); nm.model = { available: false, reason: 'test' };
   chk('graphic: no projection, no table (nothing to compare)', !GG.content(nm, null, { now: t0, kalshi: kc }).content.compare);
   const fz = clone(spec); fz.data.status = 'FAULT'; fz.data.faults = ['scores_reconcile: x'];
   const fzc = GG.content(fz, live, { now: t0, kalshi: kc }).content;
   chk('graphic: a data fault keeps the strip for the fault, and the alt text does not read a table it does not show', !GG.layout(fzc, 'square').ops.some((o) => /^EDGEDESK vs/.test(o.text)) && !/Kalshi/.test(GG.altText(fzc)));
-  chk('graphic: the alt text reads the table, column by column, with its sources and the fee caveat', /EdgeDesk vs Kalshi \(Kalshi YES mid \d{1,2}:\d{2} [AP]M ET · .*before Kalshi’s fees\): /.test(GG.altText(cd))
-    && GG.altText(cd).indexOf(cd.home.abbr + ' WIN % · ML EdgeDesk ') > 0 && /difference \d+\.\d PP (HIGHER|LOWER)/.test(GG.altText(cd)), GG.altText(cd));
+  chk('graphic: the alt text reads the table, column by column, with both times, its sources and the fee caveat', /EdgeDesk vs Kalshi \(Model \d{1,2}:\d{2} [AP]M ET · Kalshi \d{1,2}:\d{2} [AP]M ET · Kalshi mid .*before Kalshi’s fees\): /.test(GG.altText(cd))
+    && GG.altText(cd).indexOf(cd.home.abbr + ' WIN % · ML EdgeDesk ') > 0 && /EdgeDesk \d+\.\d pts (higher|lower) on [A-Z&]+ than Kalshi \(percentage points, before fees\)/.test(GG.altText(cd)) && !/ PP /.test(GG.altText(cd)), GG.altText(cd));
   /* every projected game, both formats, all three strips: the arithmetic holds and every text fits */
   let laidK = 0, sums = 0;
   proj.forEach((s) => {
@@ -569,9 +577,15 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
         if (x.head === 'SPREAD') d = Math.abs(homeLine(x.ed, c) - homeLine(x.mk, c));
         else if (x.head === 'TOTAL') d = Math.abs(n1(x.ed) - n1(x.mk));
         else d = Math.abs(n1(x.ed.split(/\s+/)[0]) - n1(x.mk.split(/\s+/)[0]));
-        const shown = x.diff === 'EVEN' ? 0 : n1(x.diff.split(' ')[0]);
+        const shown = x.win ? Math.abs(x.gap_pp) : x.diff === 'EVEN' ? 0 : n1(x.diff.split(' ')[0]);
         if (Math.abs(d - shown) > (x.win ? 1e-9 : 0.051)) chk('every printed difference is the two numbers above it · ' + s.game_key + ' ' + x.head, false, x);
       });
+      /* the sentence: the named team's column, EdgeDesk minus Kalshi, higher or lower */
+      sums++;
+      const KC = c.compare.kalshi, nc = c.compare.cols.find((x) => x.win && c[x.side].abbr === KC.team);
+      const gd = nc ? Math.round((n1(nc.ed.split(/\s+/)[0]) - n1(nc.mk.split(/\s+/)[0])) * 10) / 10 : null;
+      const want = gd === 0 ? 'EdgeDesk matches Kalshi on ' + KC.team : 'EdgeDesk ' + Math.abs(gd).toFixed(1) + ' pts ' + (gd > 0 ? 'higher' : 'lower') + ' on ' + KC.team + ' than Kalshi';
+      if (!nc || KC.diff !== want) chk('the difference sentence is the named team’s two numbers · ' + s.game_key, false, [KC, nc && nc.ed, nc && nc.mk]);
       ['square', 'portrait'].forEach((f) => {
         const L = GG.layout(c, f), [w, h] = W[f];
         laidK++;
@@ -590,15 +604,164 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
   chk('checked the arithmetic of every printed difference', sums >= proj.length * 8, sums);
   /* the cache */
   const kk1 = GG.cacheKey(spec, live, 'square'), kk2 = GG.cacheKey(spec, live, 'square', kc);
-  chk('cache: a Kalshi price draws again; no Kalshi, or one not drawn, keeps the key as it was', kk1 !== kk2 && GG.cacheKey(spec, live, 'square', null) === kk1 && GG.cacheKey(spec, live, 'square', { state: 'NO_PRICE', current: false }) === kk1);
+  chk('cache: a Kalshi price draws again; no Kalshi, or a market that draws nothing, keeps the key as it was', kk1 !== kk2 && GG.cacheKey(spec, live, 'square', null) === kk1
+    && GG.cacheKey(spec, live, 'square', { state: 'NO_MARKET', current: false }) === kk1 && GG.cacheKey(spec, live, 'square', { state: 'TEAMS_UNCONFIRMED', current: false }) === kk1);
+  chk('cache: "unavailable at model time" is drawn, so it is a key of its own', GG.cacheKey(spec, live, 'square', { state: 'NO_PRICE', current: false, quote_at: snapAt(cfbG) }) !== kk1);
   chk('cache: a new Kalshi price is a new key', kk2 !== GG.cacheKey(spec, live, 'square', GS.kalshi({ state: 'ok', rows: both(cfbG, 0.45, 0.56) }, cfbG)));
-  const badK = clone(kc); badK.home.text = 'lock';
-  chk('the copy rule covers the Kalshi strings too', GG.content(spec, null, { now: t0, kalshi: badK }).ok === false);
+  const keepNote = GG.KALSHI_TEXT.unavailable; GG.KALSHI_TEXT.unavailable = 'Lock it in';
+  const badK = GG.content(spec, null, { now: t0, kalshi: { state: 'NO_PRICE', current: false, away: null, home: null } });
+  GG.KALSHI_TEXT.unavailable = keepNote;
+  chk('the copy rule covers the Kalshi strings too', badK.ok === false && badK.reason === 'copy_rule');
   /* the app */
   chk('app: the team resolver loads before the snapshot that uses it', at('/lib/football_identity.js') > 0 && at('/lib/football_identity.js') < at('/lib/edgedesk_game_snapshot.js'));
-  chk('app: the research page is handed the Kalshi rows, waiting for the parse when a #game link opened it first', /kalshi:function\(league,gid\)\{[\s\S]{0,400}window\.fbKalshiRows\(league,gid\)[\s\S]{0,300}DOMContentLoaded/.test(APP));
+  chk('app: the research page is handed the Kalshi rows at the model’s time, waiting for the parse when a #game link opened it first', /kalshi:function\(league,gid,o\)\{[\s\S]{0,200}window\.fbKalshiAtModel\(league,gid,at\)[\s\S]{0,120}window\.fbKalshiRows\(league,gid\)[\s\S]{0,300}DOMContentLoaded/.test(APP));
+  chk('app: the rows at the model’s time are each market’s kalshi_price_snapshots quotes either side of it, re-stated by the graphic', /window\.fbKalshiAtModel=function\(sport,gid,modelAt\)\{[\s\S]{0,1200}kalshi_price_snapshots\?select=ticker,captured_at,yes_bid,yes_ask[\s\S]{0,700}G\.kalshiAtModel\(r\.rows,snaps,iso\)/.test(APP));
+  chk('page: the Kalshi read is asked for at the snapshot’s model time', /S\.opts\.kalshi\(S\.league, S\.gid, \{ model_at: modelAt \}\)/.test(VIEW) && /modelAt = s0 && s0\.model \? s0\.model\.built_at/.test(VIEW));
   chk('app: the Kalshi section serves those rows from its one read', /window\.fbKalshiRows=function\(sport,gid\)\{[\s\S]{0,200}load\(\)[\s\S]{0,300}rowsFor\(sport,\{game_id:gid\},null\)/.test(APP));
   chk('page: the graphic is drawn with the placed Kalshi prices, and downloads with them', /G\.render\(spec, m, fmt, \{ now: Date\.now\(\), kalshi: ks \}\)/.test(VIEW) && /S\.format, \{ now: Date\.now\(\), kalshi: ks \}\)/.test(VIEW) && /GS\(\)\.kalshi\(S\.ks, s\)/.test(VIEW));
+}
+
+/* ======================================================================= */
+section('14. the card’s Kalshi labels: matched times, the unavailable state, the large-gap note, home field (docs/KALSHI_NOTES.md)');
+{
+  const NE = proj.find((g) => g.game_key === 'nfl|2026_07_NE_CHI') || proj.find((g) => g.league === 'nfl');
+  const spec = GS.graphicSpec(NE), mt = Date.parse(NE.model.built_at), iso = (ms) => new Date(mt + ms).toISOString(), MIN = 60000;
+  const link = (yes, opp) => ({ sport: NE.league, game_id: NE.game_id, game_key: NE.game_key, event_ticker: 'KXT-' + NE.game_id, market_ticker: 'KXT-' + NE.game_id + '-' + yes.slice(0, 3),
+    kalshi_yes_name: yes, yes_team: yes, opponent: opp, kickoff_at: NE.kickoff, match_confidence: 'high', pregame: true, state: 'OK', yes_mid: 0.77, gap_pp: 12.3, book_fair_prob: 0.6 });
+  const links = [link(NE.away.name, NE.home.name), link(NE.home.name, NE.away.name)];
+  const q = (i, ms, bid, ask) => ({ ticker: links[i].market_ticker, captured_at: iso(ms), yes_bid: bid, yes_ask: ask });
+  /* the whole path a caller runs: the quotes nearest the model, placed on the teams, then the card */
+  const card = (snaps, market) => {
+    const env = GG.kalshiAtModel(links, snaps, NE.model.built_at), k = GS.kalshi(env, NE);
+    if (k && !k.snapshot_at && env.quote_at) k.quote_at = env.quote_at;
+    return { env, k, c: GG.content(spec, market || null, { now: t0, kalshi: k }).content };
+  };
+  const drawn = (c, f) => GG.layout(c, f || 'square').ops.filter((o) => o.type === 'text').map((o) => o.text);
+
+  /* 1 · timestamp matching */
+  chk('the rules are constants: 15 minutes, a 6¢ spread, a 7-point gap', GG.KALSHI_MATCH_MINUTES === 15 && GG.KALSHI_MAX_SPREAD === 0.06 && GG.LARGE_GAP_PP === 7);
+  let e = GG.kalshiAtModel(links, [q(0, -4 * MIN, 0.30, 0.31), q(0, 1 * MIN, 0.40, 0.41), q(0, 9 * MIN, 0.50, 0.51), q(1, -14 * MIN, 0.58, 0.60), q(1, 20 * MIN, 0.70, 0.71)], NE.model.built_at);
+  chk('matching: each market takes its quote NEAREST the model snapshot, before or after it', e.rows[0].snapshot_at === iso(MIN) && e.rows[0].yes_mid === 0.405 && e.rows[1].snapshot_at === iso(-14 * MIN), e.rows);
+  chk('…the price is the mid, (yes_bid + yes_ask) / 2, with its spread', e.rows[0].yes_bid === 0.4 && e.rows[0].yes_ask === 0.41 && e.rows[0].spread === 0.01 && e.rows[1].yes_mid === 0.59 && e.rows[1].spread === 0.02, e.rows);
+  chk('…quote_at is the nearest quote of the game, and the rows know how far it is from the model', e.quote_at === iso(MIN) && e.rows[0].minutes_from_model === 1 && e.rows[1].minutes_from_model === 14 && e.model_at === NE.model.built_at, e);
+  e = GG.kalshiAtModel(links, [q(0, -5 * MIN, 0.40, 0.42), q(0, 5 * MIN, 0.50, 0.52)], NE.model.built_at);
+  chk('matching: a tie goes to the quote taken before the model (nothing after it is preferred)', e.rows[0].snapshot_at === iso(-5 * MIN) && e.rows[0].yes_mid === 0.41, e.rows[0]);
+  e = GG.kalshiAtModel(links, [q(0, -15 * MIN, 0.40, 0.42), q(1, 15 * MIN + 1000, 0.58, 0.60)], NE.model.built_at);
+  chk('matching: exactly 15 minutes away is matched; a second more is a TIME_GAP with no mid', e.rows[0].state === 'OK' && e.rows[1].state === 'TIME_GAP' && e.rows[1].yes_mid === null && e.rows[1].snapshot_at === iso(15 * MIN + 1000), e.rows);
+  e = GG.kalshiAtModel(links, [q(0, MIN, 0.40, 0.46), q(1, MIN, 0.54, 0.61)], NE.model.built_at);
+  chk('matching: a spread of exactly 6¢ is usable; 7¢ is WIDE_SPREAD with no mid', e.rows[0].state === 'OK' && e.rows[0].yes_mid === 0.43 && e.rows[1].state === 'WIDE_SPREAD' && e.rows[1].yes_mid === null && e.rows[1].spread === 0.07, e.rows);
+  e = GG.kalshiAtModel(links, [q(0, MIN, 0, 0.41), q(0, -2 * MIN, 0.40, 0.41)], NE.model.built_at);
+  chk('matching: the nearest quote is used even when one-sided (no mid), never a better one further away', e.rows[0].state === 'NO_TWO_SIDED_QUOTE' && e.rows[0].yes_mid === null && e.rows[1].state === 'NO_SNAPSHOT', e.rows);
+  chk('matching: the caller’s rows are copies, and the latest snapshot’s book gap is cleared (it belongs to another time)', links[0].yes_mid === 0.77 && links[0].gap_pp === 12.3 && e.rows[0].gap_pp === null && e.rows[0].book_fair_prob === null && e.rows[0] !== links[0]);
+  chk('matching: pregame is the model time against kickoff; no model time is NO_MODEL_TIME', e.rows[0].pregame === (mt < Date.parse(NE.kickoff)) && GG.kalshiAtModel(links, [q(0, 0, 0.4, 0.41)], null).rows[0].state === 'NO_MODEL_TIME');
+
+  /* 2 · the comparison, with both times */
+  let r = card([q(0, MIN, 0.40, 0.41), q(1, MIN, 0.59, 0.60)]);
+  const KC = r.c.compare.kalshi, AB = r.c.away.abbr, HB = r.c.home.abbr;
+  chk('compared: EDGEDESK vs KALSHI with both teams at the model’s time, the market row labelled KALSHI MID', r.k.state === 'OK' && r.c.compare.title === 'EDGEDESK vs KALSHI' && KC.available && r.c.compare.rows[1] === 'KALSHI MID'
+    && r.c.compare.cols.map((x) => x.mk.split(/\s+/)[0]).join('|') === '40.5%|59.5%', r.c.compare);
+  chk('…both times on the card, model first: "Model h:mm PM ET · Kalshi h:mm PM ET"', r.c.compare.times === 'Model ' + GG.clock(NE.model.built_at) + ' · Kalshi ' + GG.clock(iso(MIN))
+    && drawn(r.c).indexOf(r.c.compare.times) >= 0 && drawn(r.c, 'portrait').indexOf(r.c.compare.times) >= 0, r.c.compare.times);
+  if (NE.game_key === 'nfl|2026_07_NE_CHI') chk('…NE at CHI reads exactly "Model 2:04 PM ET · Kalshi 2:05 PM ET"', r.c.compare.times === 'Model 2:04 PM ET · Kalshi 2:05 PM ET', r.c.compare.times);
+  chk('…on different days the times carry their dates', GG.timesLine('2026-10-21T18:04:00Z', '2026-10-22T20:10:00Z') === 'Model Oct 21, 2:04 PM ET · Kalshi Oct 22, 4:10 PM ET', GG.timesLine('2026-10-21T18:04:00Z', '2026-10-22T20:10:00Z'));
+
+  /* 3 · the difference, in words, naming the team */
+  const pa = Math.round(NE.model.win_prob.away * 1000) / 10;
+  chk('difference: a sentence that names the team EdgeDesk is higher on ("EdgeDesk 9.5 pts higher on NE than Kalshi"), from the numbers printed above it',
+    KC.team === AB && KC.diff === 'EdgeDesk ' + (Math.round((pa - 40.5) * 10) / 10).toFixed(1) + ' pts higher on ' + AB + ' than Kalshi', KC);
+  if (NE.game_key === 'nfl|2026_07_NE_CHI') chk('…NE at CHI: "EdgeDesk 9.5 pts higher on NE than Kalshi"', KC.diff === 'EdgeDesk 9.5 pts higher on NE than Kalshi', KC.diff);
+  chk('…drawn once, in Kalshi’s columns, and no "PP HIGHER" / "PP LOWER" anywhere', drawn(r.c).filter((t) => t === KC.diff).length === 1 && !drawn(r.c).some((t) => /\bPP (HIGHER|LOWER)\b/.test(t)) && !/\bPP (HIGHER|LOWER)\b/.test(GG.altText(r.c)));
+  r = card([q(1, MIN, 0.70, 0.71)]);
+  const ph = Math.round(NE.model.win_prob.home * 1000) / 10;
+  chk('difference: lower, and the team is picked from the data (only the home team priced here)', r.c.compare.kalshi.team === HB && r.c.compare.kalshi.diff === 'EdgeDesk ' + (Math.round((70.5 - ph) * 10) / 10).toFixed(1) + ' pts lower on ' + HB + ' than Kalshi', r.c.compare.kalshi);
+  const evenAt = (Math.round(NE.model.win_prob.away * 1000) / 1000);
+  r = card([q(0, MIN, evenAt - 0.005, evenAt + 0.005)]);
+  chk('difference: equal numbers read "EdgeDesk matches Kalshi on …"', r.c.compare.kalshi.diff === 'EdgeDesk matches Kalshi on ' + AB, [r.c.compare.cols, r.c.compare.kalshi.diff]);
+
+  /* 4 · the large-gap note */
+  const gapCard = (pp) => { const m = Math.round((NE.model.win_prob.away * 100 - pp) * 10) / 1000; return card([q(0, MIN, Math.round((m - 0.005) * 1e4) / 1e4, Math.round((m + 0.005) * 1e4) / 1e4)]).c; };
+  const g69 = gapCard(6.9), g70 = gapCard(7.0), gm70 = gapCard(-7.0);
+  chk('large gap: 6.9 points has no note', Math.abs(g69.compare.kalshi.gap_pp) === 6.9 && !g69.compare.kalshi.large_gap && g69.compare.kalshi.note === null && !drawn(g69).some((t) => /^Large gap/.test(t)), g69.compare.kalshi);
+  chk('large gap: 7.0 points adds the note, word for word, drawn beside the times', Math.abs(g70.compare.kalshi.gap_pp) === 7 && g70.compare.kalshi.note === 'Large gap vs market. Checking injuries, QB status, and weather before trusting it.'
+    && drawn(g70).indexOf(g70.compare.kalshi.note) >= 0 && drawn(g70, 'portrait').indexOf(g70.compare.kalshi.note) >= 0 && GG.altText(g70).indexOf(g70.compare.kalshi.note) > 0, g70.compare.kalshi);
+  chk('large gap: the gap is absolute (7.0 points lower adds it too)', gm70.compare.kalshi.gap_pp === -7 && gm70.compare.kalshi.large_gap, gm70.compare.kalshi);
+  const keepGap = GG.LARGE_GAP_PP; GG.LARGE_GAP_PP = 7.5;
+  const g70b = gapCard(7.0); GG.LARGE_GAP_PP = keepGap;
+  chk('large gap: the threshold is the constant G.LARGE_GAP_PP (raised to 7.5, 7.0 has no note)', !g70b.compare.kalshi.large_gap && g70b.compare.kalshi.note === null);
+
+  /* 5 · unavailable at the model's time: never a comparison */
+  const unavailable = (c, why) => c.compare && c.compare.kalshi.available === false && c.compare.kalshi.unavailable === 'Kalshi price unavailable at model time'
+    && !c.compare.cols.some((x) => x.win) && c.compare.kalshi.diff === null && c.compare.kalshi.note === null && why.test(c.compare.kalshi.reason || '');
+  r = card([q(0, 126 * MIN, 0.40, 0.41), q(1, 126 * MIN, 0.59, 0.60)]);
+  chk('unavailable: the nearest quote is over 15 minutes from the model → "Kalshi price unavailable at model time", nothing compared', unavailable(r.c, /2 h 6 min from the model snapshot/), r.c.compare);
+  chk('…and still shows both times', r.c.compare.times === 'Model ' + GG.clock(NE.model.built_at) + ' · Kalshi ' + GG.clock(iso(126 * MIN)) && drawn(r.c).indexOf(r.c.compare.times) >= 0, r.c.compare.times);
+  chk('…drawn as a message, with no EdgeDesk / Kalshi rows and no win columns', drawn(r.c).indexOf('Kalshi price unavailable at model time') >= 0 && drawn(r.c).indexOf('KALSHI MID') < 0 && !drawn(r.c).some((t) => /WIN % · ML/.test(t))
+    && drawn(r.c, 'portrait').indexOf('Kalshi price unavailable at model time') >= 0, drawn(r.c).filter((t) => /Kalshi|KALSHI/.test(t)));
+  chk('…the alt text says so instead of reading a comparison', /Kalshi price unavailable at model time: Closest Kalshi quote is 2 h 6 min/.test(GG.altText(r.c)) && !/pts (higher|lower)/.test(GG.altText(r.c)), GG.altText(r.c));
+  r = card([q(0, MIN, 0.36, 0.45), q(1, MIN, 0.55, 0.64)]);
+  chk('unavailable: a spread over 6¢ at the model’s time is treated the same way', r.k.state === 'NO_PRICE' && unavailable(r.c, /6¢ limit/) && r.c.compare.times === 'Model ' + GG.clock(NE.model.built_at) + ' · Kalshi ' + GG.clock(iso(MIN)), r.c.compare);
+  r = card([]);
+  chk('unavailable: a listed game with no quote at all says so, with "Kalshi no quote"', unavailable(r.c, /No Kalshi quote on record/) && /· Kalshi no quote$/.test(r.c.compare.times), r.c.compare);
+  /* the generator holds the rules whoever called it: a placed price from another time, or a wide one, is refused */
+  const placed = (ms, spread) => ({ state: 'OK', current: true, close: false, label: 'priced', snapshot_at: iso(ms),
+    away: { mid: 0.405, pct: 41, text: '41%', ml: GS.fairAmerican(0.405), spread: spread, snapshot_at: iso(ms) }, home: null });
+  chk('generator: a price placed from the latest snapshot (4 h after the model) is refused, never compared', unavailable(GG.content(spec, null, { now: t0, kalshi: placed(240 * MIN, 0.01) }).content, /4 h from the model snapshot/));
+  chk('generator: a placed price whose spread is over 6¢ is refused', unavailable(GG.content(spec, null, { now: t0, kalshi: placed(MIN, 0.07) }).content, /7¢ is over the 6¢ limit/));
+  chk('generator: a placed price within 15 minutes and 6¢ is compared', GG.content(spec, null, { now: t0, kalshi: placed(15 * MIN, 0.06) }).content.compare.kalshi.available === true);
+  const nb = clone(spec); delete nb.model.built_at; nb.generated_at = null;
+  chk('generator: a model with no time on record compares nothing', unavailable(GG.content(nb, null, { now: t0, kalshi: placed(MIN, 0.01) }).content, /no time on record/));
+  r = card([q(0, 126 * MIN, 0.40, 0.41), q(1, 126 * MIN, 0.59, 0.60)], live);
+  chk('unavailable beside a live book: the book’s columns stay, Kalshi’s place carries the message', r.c.compare.title === 'EDGEDESK vs MARKET' && r.c.compare.cols.map((x) => x.head).join('|') === 'SPREAD|TOTAL'
+    && r.c.compare.rows[1] === r.c.compare.book_row && drawn(r.c).indexOf('Kalshi price unavailable at model time') >= 0, r.c.compare);
+  chk('no Kalshi market: the card is model-only, as before (no EDGEDESK vs KALSHI block)', !GG.content(spec, null, { now: t0, kalshi: GS.kalshi({ state: 'ok', rows: [] }, NE) }).content.compare);
+  /* every state keeps its text inside the canvas and its box, for every projected NFL game */
+  let laidU = 0;
+  proj.filter((g) => g.league === 'nfl').forEach((g) => {
+    const sp = GS.graphicSpec(g), gm = Date.parse(g.model.built_at);
+    const blocks = [placed(MIN, 0.01), { state: 'NO_PRICE', current: false, quote_at: new Date(gm + 126 * MIN).toISOString(), away: null, home: null }];
+    blocks[0].snapshot_at = blocks[0].away.snapshot_at = new Date(gm + MIN).toISOString();
+    blocks[0].away.mid = Math.max(0.02, Math.min(0.98, Math.round((g.model.win_prob.away - 0.095) * 1000) / 1000));
+    blocks.forEach((b) => ['square', 'portrait'].forEach((f) => {
+      const L = GG.layout(GG.content(sp, null, { now: t0, kalshi: b }).content, f), [w, h] = W[f];
+      laidU++;
+      const bad = L.ops.filter((o) => o.type === 'text' && (o.y < 0 || o.y > h || (o.align === 'left' && o.x + Math.min(o.width || 0, o.maxW || 1e9) > w + 1)
+        || (o.align === 'right' && o.x - Math.min(o.width || 0, o.maxW || 1e9) < -1) || (o.align === 'center' && (o.x - (o.width || 0) / 2 < -1 || o.x + (o.width || 0) / 2 > w + 1))));
+      const over = L.ops.filter((o) => o.type === 'text' && o.maxW && o.width > o.maxW + 1 && o.size > 12);
+      if (bad.length || over.length) chk('every Kalshi state fits its canvas and boxes · ' + g.game_key + ' ' + f + ' ' + b.state, false, bad.concat(over).slice(0, 3).map((o) => [o.text, o.x, o.y, o.width, o.maxW, o.size]));
+    }));
+  });
+  chk('laid out both Kalshi states (a large gap, unavailable) for every NFL game in both formats', laidU === proj.filter((g) => g.league === 'nfl').length * 4, laidU);
+  chk('the Kalshi block never changes a model number on the card', ['spread_value', 'spread_text', 'total', 'win', 'scores', 'fair_ml', 'points'].every((f) =>
+    JSON.stringify(GG.content(spec, null, { now: t0 }).content[f]) === JSON.stringify(card([q(0, MIN, 0.40, 0.41), q(1, MIN, 0.59, 0.60)]).c[f])));
+
+  /* 6 · home field, from the numbers */
+  const hf = (hm, hfa) => GG.homeFieldText(hm, hfa, 'CHI', 'NE');
+  chk('home field: projected PK with 3.1 → "Home field is the whole game. Neutral site, NE is about a 3-pt favorite."', hf(0.09, 3.1).text === 'Home field is the whole game. Neutral site, NE is about a 3-pt favorite.' && hf(0.09, 3.1).title === 'HOME FIELD DECIDES IT', hf(0.09, 3.1));
+  chk('home field: when it does not flip or erase the edge → "Home field adds 3.1 pts to CHI’s edge."', hf(5.2, 3.1).text === 'Home field adds 3.1 pts to CHI’s edge.' && hf(5.2, 3.1).title === 'HOME FIELD', hf(5.2, 3.1));
+  chk('home field: when it flips the favourite, the neutral-site margin is projected minus home field, to one decimal', hf(2, 3.1).text === 'Home field is the whole game. Neutral site, NE is about a 1.1-pt favorite.', hf(2, 3.1));
+  chk('home field: when it is the entire edge, a pick’em on a neutral site', hf(3.1, 3.1).text === 'Home field is the whole game. Neutral site, it’s a pick’em.' && hf(0, 0.04) === null, hf(3.1, 3.1));
+  chk('home field: the away team still favoured → it takes points off the away team’s edge', hf(-2.4, 3.1).text === 'Home field takes 3.1 pts off NE’s edge.', hf(-2.4, 3.1));
+  chk('home field: one point is "1 pt"; a missing number restates nothing', hf(4, 1).text === 'Home field adds 1 pt to CHI’s edge.' && hf(null, 3) === null && hf(2, null) === null);
+  if (NE.game_key === 'nfl|2026_07_NE_CHI') {
+    const w = GG.content(spec, null, { now: t0 }).content.insights.find((i) => i.icon === 'home');
+    chk('home field: the NE at CHI card reads "Home field is the whole game. Neutral site, NE is about a 3-pt favorite."', w && w.title === 'HOME FIELD DECIDES IT' && w.text === 'Home field is the whole game. Neutral site, NE is about a 3-pt favorite.', w);
+  }
+  /* every committed game with a home-field item: the card restates it, and its numbers are the snapshot's own */
+  let hfN = 0;
+  proj.forEach((g) => {
+    const it = (g.insights || []).slice(0, 4).find((i) => i.id === 'home_field');
+    if (!it) return;
+    hfN++;
+    const row = (g.drivers.rows || []).find((d) => d.favors === 'home' && (d.key === 'home_field' || d.key === 'hfa' || d.key === 'baseline'));
+    const m = String(it.short).match(GG.HOME_FIELD_RE), c = GG.content(GS.graphicSpec(g), null, { now: t0 }).content, w = c.insights.find((i) => i.icon === 'home');
+    const n = Math.round((g.model.home_margin - row.points) * 10) / 10;
+    const ok = m && Math.abs(Number(m[1]) - row.points) <= 0.05 && w && !/more than the projected margin/.test(w.text)
+      && (/^Home field adds \d+(\.\d)? pts? to [A-Z&]+’s edge\.$/.test(w.text) ? n > 0 && g.model.home_margin > -0.05
+        : /^Home field takes \d+(\.\d)? pts? off [A-Z&]+’s edge\.$/.test(w.text) ? g.model.home_margin < 0
+        : /^Home field is the whole game\. Neutral site, /.test(w.text) && n <= 0.1 && w.title === 'HOME FIELD DECIDES IT');
+    if (!ok) chk('home field restated from the snapshot’s own numbers · ' + g.game_key, false, [it.short, w, g.model.home_margin, row && row.points]);
+  });
+  chk('checked the home-field item on every committed game that has one', hfN >= 10, hfN);
 }
 
 console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | game research (snapshot, graphic, history, price check, wiring) | ' + pass + ' passed, ' + fail + ' failed');

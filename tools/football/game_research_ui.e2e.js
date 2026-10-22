@@ -15,6 +15,9 @@
    is staged too: FRESH has both teams priced, listed with the book's home
    and away swapped and mascots on the names, so the graphic must place each
    price by team; NONE has a market too wide to trust; the NFL game has none.
+   The graphic compares Kalshi at the model's time, so
+   public.kalshi_price_snapshots answers each market's quote nearest the time
+   the page asks about: a minute after it (and one four minutes before).
    Fonts and every third-party host are stubbed, so the run is offline and
    deterministic.
 
@@ -78,6 +81,16 @@ function stagedKalshi() {
   return [row(FRESH, FRESH.away.name, FRESH.home.name, 'OK', 0.415), row(FRESH, FRESH.home.name, FRESH.away.name, 'OK', 0.59),
     row(NONE, NONE.away.name, NONE.home.name, 'WIDE_SPREAD', 0.5), row(NONE, NONE.home.name, NONE.away.name, 'WIDE_SPREAD', 0.5)];
 }
+/* kalshi_price_snapshots, as the page asks for it: one market's quote at or before (lte, desc) or at
+   or after (gte, asc) a time; staged a minute after and four minutes before, at the staged row's bid and ask */
+function stagedSnapshots(url) {
+  const u = new URL(url), tk = (u.searchParams.get('ticker') || '').replace(/^eq\./, ''), at = u.searchParams.get('captured_at') || '';
+  const row = stagedKalshi().find((x) => x.market_ticker === tk), t = Date.parse(at.replace(/^(lte|gte)\./, ''));
+  if (!row || !isFinite(t)) return [];
+  /* the quote's own bid and ask: a 2¢ spread where the row is OK, 11¢ where it is too wide */
+  const mid = row.yes_mid != null ? row.yes_mid : (row.yes_bid + row.yes_ask) / 2, half = row.spread / 2;
+  return [{ ticker: tk, captured_at: new Date(t + (/^gte\./.test(at) ? 60000 : -240000)).toISOString(), yes_bid: Math.round((mid - half) * 1e4) / 1e4, yes_ask: Math.round((mid + half) * 1e4) / 1e4, volume: row.volume }];
+}
 function stagedCurrent() {
   const c = JSON.parse(JSON.stringify(CUR));
   const f = c.games.find((g) => g.game_key === FAULT.game_key);
@@ -129,6 +142,7 @@ function siteHandler(req, res) {
         if (/\/subscriptions/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json',
           body: JSON.stringify([{ status: 'active', price_id: 'price_e2e', current_period_end: new Date(Date.now() + 30 * 864e5).toISOString(), cancel_at_period_end: false, stripe_customer_id: 'cus_e2e' }]) });
         if (/\/kalshi_card_current/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stagedKalshi()) });
+        if (/\/kalshi_price_snapshots/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stagedSnapshots(url)) });
         return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });   /* no captured odds: the provider is down */
       }
       return route.fulfill({ status: 204, body: '' });
@@ -188,7 +202,10 @@ function siteHandler(req, res) {
   chk('the graphic draws EDGEDESK vs MARKET: the book’s spread and total, then Kalshi for each team', ks.content && ks.content.title === 'EDGEDESK vs MARKET'
     && ks.content.cols.map((c) => c.head).join('|') === 'SPREAD|TOTAL|' + AW + ' WIN % · ML|' + HM + ' WIN % · ML', ks.content);
   chk('…each team’s Kalshi price on its own team, though the book listed them the other way round', ks.content && /^41\.5% /.test(ks.content.cols[2].mk) && /^59\.0% /.test(ks.content.cols[3].mk), ks.content && ks.content.cols);
-  chk('…and its alt text reads the table, with the sources', /EdgeDesk vs the market \(DraftKings .*Kalshi YES mid .*before Kalshi’s fees\)/.test(ks.alt), ks.alt);
+  chk('…and its alt text reads the table, with both times and the sources', /EdgeDesk vs the market \(Model \d{1,2}:\d{2} [AP]M ET · Kalshi \d{1,2}:\d{2} [AP]M ET · DraftKings .*Kalshi mid .*before Kalshi’s fees\)/.test(ks.alt), ks.alt);
+  chk('…Kalshi is compared at the model’s time: a minute after it, both times on the card', ks.content && ks.content.kalshi && ks.content.kalshi.available
+    && ks.content.times === 'Model ' + await page.evaluate((iso) => window.EDGameGraphic.clock(iso), FRESH.model.built_at) + ' · Kalshi ' + await page.evaluate((iso) => window.EDGameGraphic.clock(new Date(Date.parse(iso) + 60000).toISOString()), FRESH.model.built_at), ks.content && ks.content.times);
+  chk('…and the difference is a sentence naming the team', ks.content && /^EdgeDesk \d+\.\d pts (higher|lower) on [A-Z&]+ than Kalshi$|^EdgeDesk matches Kalshi on /.test(ks.content.kalshi.diff), ks.content && ks.content.kalshi);
   chk('the Market comparison section sets EdgeDesk beside Kalshi, team by team', /EdgeDesk vs Kalshi/.test(ks.market) && /41\.5%/.test(ks.market) && /59\.0%/.test(ks.market) && /before Kalshi’s trading fees/.test(ks.market), ks.market.slice(-600));
   await shot(page, 'phone_fresh');
 
@@ -269,7 +286,9 @@ function siteHandler(req, res) {
   chk('no odds: no "NO DECISION" anywhere on the page', !/NO DECISION/.test(r.text), null);
   ks = await kalshiSettled(S3.page);
   r = await readPage(S3.page);
-  chk('a Kalshi market too wide to trust: the chip says so and the graphic shows no Kalshi price', /KALSHI\s*wide spread/i.test(r.status) && ks.content === null, { s: r.status, k: ks.content });
+  chk('a Kalshi market too wide to trust: the chip says so and the graphic says "Kalshi price unavailable at model time", comparing nothing', /KALSHI\s*wide spread/i.test(r.status)
+    && ks.content && ks.content.kalshi.available === false && ks.content.kalshi.unavailable === 'Kalshi price unavailable at model time' && !ks.content.cols.some((c) => c.win)
+    && /Kalshi price unavailable at model time/.test(ks.alt), { s: r.status, k: ks.content });
   await shot(S3.page, 'phone_no_odds');
   await S3.ctx.close();
 

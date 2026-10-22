@@ -5,14 +5,20 @@
    PNG files for the owner's social posts. docs/game-research/README.md
 
    No sportsbook strip: the committed snapshot carries no sportsbook price,
-   and this tool never makes one up. KALSHI is drawn where Kalshi has a
-   trusted price: public.kalshi_card_current is read once with the public key
-   the site ships (as anon: Kalshi's prices, no book fair), and each row is
-   placed on the game's teams by EDGameSnapshot.kalshi, exactly as the
-   research page does. A read that fails draws the model-only graphics and
-   says so; --no-kalshi skips the read. A file is named by its snapshot id
-   (and the Kalshi snapshot it shows), so a graphic that already exists is
-   never drawn again.
+   and this tool never makes one up. KALSHI is compared AT THE MODEL'S TIME
+   (docs/KALSHI_NOTES.md): the game's linked markets come from
+   public.kalshi_card_current (read once, as anon: Kalshi's prices, no book
+   fair), and each market's public.kalshi_price_snapshots quote nearest the
+   snapshot's model time (spec.model.built_at), before and after, is placed
+   on the game's teams by EDGameGraphic.kalshiAtModel and
+   EDGameSnapshot.kalshi. The graphic compares only a quote within 15 minutes
+   of the model whose YES spread is at most 6¢; otherwise it says "Kalshi
+   price unavailable at model time". (No kalshi_live_quotes table exists in
+   supabase/, so the snapshots are the source.) A read that fails draws the
+   model-only graphics and says so; --no-kalshi skips the read. A file is
+   named by its snapshot id, the template version and the Kalshi quote it
+   shows, so a graphic that already exists is never drawn again and a new
+   template draws every card again.
 
    Run:
      node tools/football/render_game_graphics.js                 every pregame game, square
@@ -29,7 +35,9 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const ROOT = path.join(__dirname, '..', '..');
+global.window = global.window || global;
 const GS = require(path.join(ROOT, 'lib', 'edgedesk_game_snapshot.js'));
+const GG = require(path.join(ROOT, 'lib', 'edgedesk_game_graphic.js'));
 const SB_URL = (process.env.EDGEDESK_SUPABASE_URL || 'https://iattxbkbufslbauoumga.supabase.co').replace(/\/$/, '');
 /* the same public-safe anon key app.html ships to every browser */
 const ANON = process.env.SUPABASE_ANON_KEY ||
@@ -51,8 +59,37 @@ async function kalshiRows() {
     return null;
   }
 }
-/* the Kalshi snapshot a file shows, for its name: a new price is a new file */
-function kalshiTag(k) { return k && k.state === 'OK' ? '__kalshi-' + (k.close ? 'close-' : '') + String(k.snapshot_at || '').replace(/[^0-9T]/g, '').slice(0, 13) : ''; }
+/* one market's kalshi_price_snapshots quote nearest the model time on one side of it (dir < 0: at or before, > 0: at or after) */
+async function nearestQuote(ticker, iso, dir) {
+  const q = SB_URL + '/rest/v1/kalshi_price_snapshots?select=ticker,captured_at,yes_bid,yes_ask,volume&ticker=eq.' + encodeURIComponent(ticker)
+    + '&captured_at=' + (dir < 0 ? 'lte.' : 'gte.') + encodeURIComponent(iso) + '&order=captured_at.' + (dir < 0 ? 'desc' : 'asc') + '&limit=1';
+  const r = await fetch(q, { headers: { apikey: ANON, authorization: 'Bearer ' + ANON } });
+  if (!r.ok) throw new Error('kalshi_price_snapshots HTTP ' + r.status);
+  return r.json();
+}
+/* a game's Kalshi block at its model time: { k } (EDGameSnapshot.kalshi's placement, with the nearest quote's time),
+   or { error } when the snapshots could not be read */
+async function kalshiAtModel(g, rows) {
+  if (!rows.length) return { k: GS.kalshi({ state: 'ok', rows: [] }, g) };
+  const t = Date.parse(g.model && g.model.built_at), snaps = [];
+  /* no model time on record: nothing can be matched to it (the graphic says so) */
+  if (!isFinite(t)) return { k: GS.kalshi(GG.kalshiAtModel(rows, [], null), g) };
+  const iso = new Date(t).toISOString();
+  try {
+    for (const r of rows) for (const dir of [-1, 1]) (await nearestQuote(r.market_ticker, iso, dir)).forEach((x) => snaps.push(x));
+  } catch (e) { return { error: e && e.message || String(e) }; }
+  const env = GG.kalshiAtModel(rows, snaps, g.model.built_at), k = GS.kalshi(env, g);
+  if (k && !k.snapshot_at && env.quote_at) k.quote_at = env.quote_at;
+  return { k };
+}
+/* what a file shows, for its name: the template version, then the Kalshi quote (a price, or none at the model's time) */
+function kalshiTag(k) {
+  const t = (iso) => String(iso || '').replace(/[^0-9T]/g, '').slice(0, 13);
+  if (k && k.state === 'OK') return '__kalshi-' + (k.close ? 'close-' : '') + t(k.snapshot_at);
+  if (k && k.state === 'NO_PRICE') return '__kalshi-na-' + (t(k.quote_at || k.snapshot_at) || 'none');
+  return '';
+}
+const TEMPLATE_TAG = '__g' + GG.VERSION.split('/').pop();
 function loadPlaywright() {
   for (const p of ['playwright', '/opt/node22/lib/node_modules/playwright', '/opt/node-tools/node_modules/playwright']) { try { return require(p); } catch (_) { /* next */ } }
   return null;
@@ -91,17 +128,27 @@ async function main() {
   fs.mkdirSync(out, { recursive: true });
   const kRows = process.argv.indexOf('--no-kalshi') >= 0 || !games.length ? null : await kalshiRows();
   const todo = [];
-  let priced = 0;
-  games.forEach((g) => {
+  let priced = 0, unavailable = 0;
+  for (const g of games) {
     /* placed in Node, as the page places them: the browser receives the finished block */
-    const k = kRows ? GS.kalshi({ state: 'ok', rows: kRows[g.game_key] || [] }, g) : null;
-    if (k && k.state === 'OK') priced++;
+    let k = null;
+    if (kRows) {
+      const at = await kalshiAtModel(g, kRows[g.game_key] || []);
+      if (at.error) console.warn('  ' + g.game_key + ': Kalshi prices at the model time could not be read (' + at.error + '): drawn without them');
+      k = at.k || null;
+    }
+    const drawn = k && (k.state === 'OK' || k.state === 'NO_PRICE') ? k : null;
+    /* what the card will say, from the same content the browser draws */
+    const ct = drawn ? GG.content(GS.graphicSpec(g), null, { now: Date.parse(g.generated_at), kalshi: drawn }) : null;
+    const KC = ct && ct.ok && ct.content.compare ? ct.content.compare.kalshi : null;
+    if (KC && KC.available) priced++; else if (KC) unavailable++;
+    if (KC) console.log('  ' + g.game_key + ': ' + ct.content.compare.times + ' · ' + (KC.available ? KC.diff + (KC.note ? ' · large gap' : '') : KC.unavailable + ' (' + KC.reason + ')'));
     formats.forEach((f) => {
-      const file = path.join(out, g.game_key.replace(/[^a-z0-9_-]+/gi, '_') + '__' + g.snapshot_id + kalshiTag(k) + '__' + f + '.png');
-      if (!fs.existsSync(file)) todo.push({ g, f, file, k: k && k.state === 'OK' ? k : null });
+      const file = path.join(out, g.game_key.replace(/[^a-z0-9_-]+/gi, '_') + '__' + g.snapshot_id + TEMPLATE_TAG + kalshiTag(drawn) + '__' + f + '.png');
+      if (!fs.existsSync(file)) todo.push({ g, f, file, k: drawn });
     });
-  });
-  console.log(games.length + ' games' + (kRows ? ', ' + priced + ' with a Kalshi price' : '') + ', ' + todo.length + ' graphics to draw (' + (games.length * formats.length - todo.length) + ' already on disk)');
+  }
+  console.log(games.length + ' games' + (kRows ? ', ' + priced + ' compared with Kalshi at the model time, ' + unavailable + ' with Kalshi unavailable at the model time' : '') + ', ' + todo.length + ' graphics to draw (' + (games.length * formats.length - todo.length) + ' already on disk)');
   if (!todo.length) return;
   const srv = await serve();
   const port = srv.address().port;
