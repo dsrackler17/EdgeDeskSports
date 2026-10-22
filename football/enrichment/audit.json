@@ -1,29 +1,29 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-22T17:26:49.757Z",
+ "generated_at": "2026-10-22T21:49:29.744Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-22T17:26:49.757Z",
-  "reliability_generated_at": "2026-10-22T17:26:49.757Z",
-  "enrichment_generated_at": "2026-10-22T17:26:40.580Z",
+  "at": "2026-10-22T21:49:29.744Z",
+  "reliability_generated_at": "2026-10-22T21:49:29.744Z",
+  "enrichment_generated_at": "2026-10-22T21:49:22.388Z",
   "counts": {
    "games": 108,
    "mean": 87.3,
    "median": 89,
    "by_band": {
-    "VERY_STRONG": 17,
+    "VERY_STRONG": 18,
     "ADEQUATE": 22,
-    "STRONG": 67,
+    "STRONG": 66,
     "CAUTION": 2
    },
-   "missing_qb_status": 167,
+   "missing_qb_status": 165,
    "qb_conflicts_open": 10,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 21,
-   "unrated_meaningful_absences": 365,
+   "games_lacking_injury_information": 24,
+   "unrated_meaningful_absences": 384,
    "fcs_games_thin_data": 0,
    "games_under_two_market_sources": 108,
-   "stale_evidence_records": 53,
+   "stale_evidence_records": 55,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -685,11 +685,10 @@
    },
    "401858273": {
     "game": "Boston College @ Georgia Tech",
-    "score": 89,
-    "grade": "STRONG",
+    "score": 96,
+    "grade": "VERY_STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
+     "attribution": 3,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
@@ -698,8 +697,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401858274": {
@@ -1434,8 +1433,8 @@
     "score": 89,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 0.9,
      "transfer_turnover": 0.6
     },
@@ -1444,8 +1443,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401862808": {
@@ -1660,8 +1659,8 @@
     "score": 89,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -1670,8 +1669,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401864527": {
@@ -1699,11 +1698,11 @@
     "score": 79,
     "grade": "ADEQUATE",
     "fam": {
-     "availability": 4.6,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 2.6,
      "qb_conflict": 2.6,
      "contract_conflicts": 1.4,
-     "qb_status": 2,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -1711,8 +1710,8 @@
      "away": "CONFLICTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401864529": {
@@ -2272,7 +2271,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-22T14:42:40.854Z",
+  "at": "2026-10-22T17:26:49.757Z",
   "counts": {
    "games": 108,
    "mean": 87.3,
@@ -2283,53 +2282,32 @@
     "STRONG": 67,
     "CAUTION": 2
    },
-   "missing_qb_status": 171,
+   "missing_qb_status": 167,
    "qb_conflicts_open": 10,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 21,
-   "unrated_meaningful_absences": 329,
+   "unrated_meaningful_absences": 365,
    "fcs_games_thin_data": 0,
    "games_under_two_market_sources": 108,
-   "stale_evidence_records": 50,
+   "stale_evidence_records": 53,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "-4 QB statuses missing (171 → 167)"
+  "-2 QB statuses missing (167 → 165)",
+  "1 game moved STRONG → VERY STRONG"
  ],
  "what_degraded": [
-  "+36 unrated meaningful absences (329 → 365)",
-  "+3 stale evidence records (50 → 53)"
+  "+3 games lacking injury information (21 → 24)",
+  "+19 unrated meaningful absences (365 → 384)",
+  "+2 stale evidence records (53 → 55)"
  ],
- "why": [],
+ "why": [
+  "Boston College @ Georgia Tech: STRONG → VERY STRONG (89 → 96); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL"
+ ],
  "history": [
-  {
-   "at": "2026-10-15T15:22:35.627Z",
-   "counts": {
-    "games": 114,
-    "mean": 86.7,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 15,
-     "LOW": 3,
-     "ADEQUATE": 16,
-     "STRONG": 79,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 188,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 18,
-    "unrated_meaningful_absences": 312,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 114,
-    "stale_evidence_records": 50,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-15T15:59:47.533Z",
    "counts": {
@@ -3737,6 +3715,30 @@
     "fcs_games_thin_data": 0,
     "games_under_two_market_sources": 108,
     "stale_evidence_records": 53,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-22T21:49:29.744Z",
+   "counts": {
+    "games": 108,
+    "mean": 87.3,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 18,
+     "ADEQUATE": 22,
+     "STRONG": 66,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 165,
+    "qb_conflicts_open": 10,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 24,
+    "unrated_meaningful_absences": 384,
+    "fcs_games_thin_data": 0,
+    "games_under_two_market_sources": 108,
+    "stale_evidence_records": 55,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
