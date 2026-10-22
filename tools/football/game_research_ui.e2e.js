@@ -8,7 +8,7 @@
    market state (football/cfb_terminal/board.json) as the page fetches it:
      FRESH   one game's quote captured 10 minutes ago        → LIVE
      STALE   one game's quote captured 30 hours ago          → last known only
-     NONE    one game with no quote                          → unavailable
+     NONE    one game with no quote                          → unavailable (Kalshi: the nearest, wide, price)
    The NFL runs with the odds feed down (no captured signals, no nflverse
    schedule): the research must stand complete. One snapshot is rewritten as
    a DATA FAULT to prove it is prominent. Kalshi (public.kalshi_card_current)
@@ -199,7 +199,7 @@ function siteHandler(req, res) {
   r = await readPage(page);
   chk('Kalshi: priced, a fifth chip beside the four answers', /KALSHI\s*priced/i.test(r.status), r.status);
   const AW = FRESH.away.abbr.toUpperCase(), HM = FRESH.home.abbr.toUpperCase();
-  chk('the graphic draws EDGEDESK vs MARKET: the book’s spread and total, then Kalshi for each team', ks.content && ks.content.title === 'EDGEDESK vs MARKET'
+  chk('the graphic draws EDGEDESK vs MARKET (or the edge it names): the book’s spread and total, then Kalshi for each team', ks.content && (ks.content.title === 'EDGEDESK vs MARKET' || /^EDGE: /.test(ks.content.title))
     && ks.content.cols.map((c) => c.head).join('|') === 'SPREAD|TOTAL|' + AW + ' WIN % · ML|' + HM + ' WIN % · ML', ks.content);
   chk('…each team’s Kalshi price on its own team, though the book listed them the other way round', ks.content && /^41\.5% /.test(ks.content.cols[2].mk) && /^59\.0% /.test(ks.content.cols[3].mk), ks.content && ks.content.cols);
   chk('…and its alt text reads the table, with both times and the sources', /EdgeDesk vs the market \(Model \d{1,2}:\d{2} [AP]M ET · Kalshi \d{1,2}:\d{2} [AP]M ET · DraftKings .*Kalshi mid .*before Kalshi’s fees\)/.test(ks.alt), ks.alt);
@@ -286,9 +286,9 @@ function siteHandler(req, res) {
   chk('no odds: no "NO DECISION" anywhere on the page', !/NO DECISION/.test(r.text), null);
   ks = await kalshiSettled(S3.page);
   r = await readPage(S3.page);
-  chk('a Kalshi market too wide to trust: the chip says so and the graphic says "Kalshi price unavailable at model time", comparing nothing', /KALSHI\s*wide spread/i.test(r.status)
-    && ks.content && ks.content.kalshi.available === false && ks.content.kalshi.unavailable === 'Kalshi price unavailable at model time' && !ks.content.cols.some((c) => c.win)
-    && /Kalshi price unavailable at model time/.test(ks.alt), { s: r.status, k: ks.content });
+  chk('a Kalshi market wider than 6¢: the nearest price is still shown, the chip says so and the graphic calls the spread wide', /KALSHI\s*nearest quote/i.test(r.status)
+    && ks.content && ks.content.kalshi.available === true && /wide 11¢ Kalshi spread/.test(ks.content.kalshi.caveat || '') && ks.content.cols.some((c) => c.win)
+    && /wide 11¢ Kalshi spread/.test(ks.alt), { s: r.status, k: ks.content });
   await shot(S3.page, 'phone_no_odds');
   await S3.ctx.close();
 

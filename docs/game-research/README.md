@@ -135,7 +135,26 @@ a history spec, has no `display` and redraws with its own numbers
 ### Insights ("What to watch for")
 
 Chosen by `EDGameSnapshot.insights` from the snapshot's own numbers only, one
-per family, strongest first, at most four:
+per family, strongest first, at most six (the graphic draws five or six as a
+grid). The game conditions are kept first: the NFL referee, a material trip
+(1,000+ miles, two or more time zones, an early or late body clock, or a
+three-day rest gap) and high altitude.
+
+- **referee** (`snap.officials`, `tools/football/game_context.js` over
+  `data/refs/`): the assigned crew chief's flags per game over three seasons
+  against the league, his rank, his games' over/under record against the
+  closing total, and the measured over rate of games worked by his flag tier.
+  College: the home conference's crews against all FBS crews until a referee
+  is on file;
+- **travel & rest** (`snap.travel`, `lib/edgedesk_game_context.js`): miles
+  from each club's own stadium (`football/venues/nfl_stadiums.json`; games
+  abroad at their real stadium), time zones crossed, the kickoff on the
+  traveller's body clock, rest days. College reads the legs `football/altitude`
+  measured;
+- **college edge signals** (`snap.edges`): altitude climb, quarterback EPA per
+  dropback gap (`football/fbs_epa`), a regime change (`football/coaching`), how
+  far EdgeDesk's independent models agree (the terminal's consensus), and the
+  engine's schedule flags (lookahead, bye, road stretch);
 
 - **unit pairings**: one side's run / pass offense against the unit that must
   stop it (pass rush vs pass protection for the NFL; OL vs DL for college),

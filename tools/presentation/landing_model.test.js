@@ -52,8 +52,9 @@ chk('landing.json is the landing schema, with games', L.schema === BGR.LANDING_S
 chk('a sample: at most ' + BGR.LANDING_GAMES + ' games', L.games.length <= BGR.LANDING_GAMES, L.games.length);
 const byKey = {};
 CUR.games.forEach((g) => { byKey[g.game_key] = g; });
-chk('every game is current.json\'s own snapshot, unchanged', L.games.every((g) => byKey[g.game_key] && JSON.stringify(byKey[g.game_key]) === JSON.stringify(g.snapshot)),
-  L.games.filter((g) => !byKey[g.game_key] || JSON.stringify(byKey[g.game_key]) !== JSON.stringify(g.snapshot)).map((g) => g.game_key));
+const modelOnly = (s) => { const o = Object.assign({}, s); delete o.consensus; return o; };
+chk('every game is current.json\'s own snapshot, unchanged but for its market line (the free page is model only)', L.games.every((g) => byKey[g.game_key] && JSON.stringify(modelOnly(byKey[g.game_key])) === JSON.stringify(g.snapshot) && !('consensus' in g.snapshot)),
+  L.games.filter((g) => !byKey[g.game_key] || JSON.stringify(modelOnly(byKey[g.game_key])) !== JSON.stringify(g.snapshot)).map((g) => g.game_key));
 chk('every sheet is probabilities.json\'s own, built from that snapshot', L.games.every((g) => JSON.stringify(PROB.sheets[g.game_key]) === JSON.stringify(g.sheet) && GS.sheetMatches(g.snapshot, g.sheet)));
 chk('every snapshot\'s id is the hash of its content', L.games.every((g) => GS.snapshotId(g.snapshot) === g.snapshot.snapshot_id));
 chk('the calibration block for each league shown is the sheet file\'s own', L.games.every((g) => JSON.stringify(L.models[g.snapshot.league]) === JSON.stringify(PROB.models[g.snapshot.league])));

@@ -186,6 +186,9 @@ function sub(g, dim, id) { return g.dimensions[dim].items.filter((x) => x.id ===
 /* --------------------------------------------------------- A sport adapters */
 (function adapters() {
   ['nfl', 'cfb', 'nba', 'nhl', 'wnba', 'ncaab_m', 'ncaab_w'].forEach((s) => chk('A ' + s + ' has an adapter', !!G.SPORTS[s]));
+  chk('A a model family keeps its record across patch and minor releases; a new major version is a new family',
+    G.familyOf('edgedesk_cfb_p4_v1.0.0') === G.familyOf('edgedesk_cfb_p4_v1.0.1+starter_context_v1') && G.familyOf('edgedesk_cfb_p4_v1.2') === 'edgedesk_cfb_p4_v1'
+    && G.familyOf('edgedesk_football_v2.0.0') !== G.familyOf('edgedesk_football_v1.0.0') && G.familyOf('edgedesk_nba_v1:m3') === 'edgedesk_nba_v1' && G.familyOf(null) === null);
   const nhl = strong({ sport: 'nhl', event_key: 'NHL|1', fair: { moneyline: {}, spread: { home_line: null }, total: { line: 6.5, expected: 6.4 } }, projected_score: { home: 3.4, away: 3.0, total: 6.4 } });
   const gn = grade(nhl, ctx({ extra: { data_quality: { early_season: false } }, quote: Object.assign({}, QUOTE, { spread: { home_point: -1.5, home_price: 150, away_point: 1.5, away_price: -170 }, total: { point: 6.5, over: -110, under: -110 } }) })).grade;
   chk('A NHL: the puck line is not a margin — the spread comparison does not arise (n/a), never penalised', sub(gn, 'market', 'spread_agreement').status === 'n/a' && sub(gn, 'market', 'spread_agreement').points === 0 && gn.dimensions.market.score > 80);
@@ -442,7 +445,7 @@ function snapFor(o) {
   /* a model-version change: a new family, its track record starts again */
   x = await run2(Date.parse('2026-10-08T15:00:00Z'), [F.proj({ id: 'G2', start: S2, pred: '2026-10-08T10:00:00.000Z', p: 0.55, line: -1, total: 41, model: 'edgedesk_football_v2.0.0' })]);
   const mv = PL.latest(x.state.research_grades);
-  chk('L a model-version change is a new grade revision naming the new model', x.state.research_grades.length === 3 && mv.versions.model_id === 'edgedesk_football_v2.0.0' && mv.inputs.track.family === 'edgedesk_football_v2.0.0' && mv.inputs.track.n === 0);
+  chk('L a model-version change is a new grade revision naming the new model', x.state.research_grades.length === 3 && mv.versions.model_id === 'edgedesk_football_v2.0.0' && mv.inputs.track.family === 'edgedesk_football_v2' && mv.inputs.track.n === 0);
   /* a grade-version change: a new revision; the old ones still reproduce under their own version */
   G.CONFIGS.rg_v1_test = JSON.parse(JSON.stringify(G.CONFIGS.rg_v1)); G.CONFIGS.rg_v1_test.grade_version = 'rg_v1_test'; G.CONFIGS.rg_v1_test.weights = { reliability: 20, completeness: 35, market: 20, clarity: 15, uncertainty: 10 };
   const realGrade = G.gradeProjection;
