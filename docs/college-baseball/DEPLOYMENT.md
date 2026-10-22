@@ -36,14 +36,14 @@ Owner actions that unblock gates:
 
 | Gate | Action |
 |---|---|
-| G1 | Review the NCAA terms for the stats behind baseballr-data; record the decision in `college_baseball/research/authorizations.json` as `{ "baseballr_data": { "commercial_use": true, "signed_by": "<name>", "date": "<YYYY-MM-DD>" } }` |
+| G1 | Done 2026-10-22: the owner (Davis) reviewed the NCAA terms for the stats behind baseballr-data and authorised commercial use; recorded in `college_baseball/research/authorizations.json` |
 | G12 | Capture prices (below), verify each book's college-baseball settlement rules, and mark the matching profile in `college_baseball/lib/pricing.js` VERIFIED |
 
-**Prices, from the first game of the season.** The model can only be market-validated on prices captured after it was frozen (EXPERIMENTS.md, CBASE-H1), so capture has to start before the first pitch of 2027. Four owner actions, in order:
+**Prices, from the first game of the season.** The model can only be market-validated on prices captured after it was frozen (EXPERIMENTS.md, CBASE-H1), so capture has to start before the first pitch of 2027. The owner authorised it on 2026-10-22. `.github/workflows/deploy-college-baseball.yml` (Actions → Deploy college baseball, by hand) does steps 1, 2 and 4 with the `SB_DB_URL` secret:
 
 1. Apply `supabase/cbase_odds_sport.sql` (also `supabase/migrations/20261021200000_cbase_odds_sport_row.sql`). It registers `baseball_ncaa` DISABLED, at priority 5, so it is shed first.
-2. Enable it in the gateway: `select public.odds_api_set_sport('baseball_ncaa', true);`.
-3. Set the repository variable `CBASE_PRICES` to `on`. `.github/workflows/college-baseball-prices.yml` then runs hourly from 14:00 to 04:59 UTC, February to June. Nothing that can reach a paid path runs more often than hourly (the operator's rule since 2026-10-21).
+2. Enable it in the gateway: `select public.odds_api_set_sport('baseball_ncaa', true);` (the workflow's `enable_prices`).
+3. The price job's switch: `college_baseball/market/switch.json` says `"capture": "on"` (set 2026-10-22, by the owner's direction; a committed, reviewed change). The repository variable `CBASE_PRICES = off` stops it without a commit. `.github/workflows/college-baseball-prices.yml` then runs hourly from 14:00 to 04:59 UTC, February to June. Nothing that can reach a paid path runs more often than hourly (the operator's rule since 2026-10-21).
    - Each run is one `featured` request: about 3 credits when bought, and nothing inside the gateway's cadence window. The worst case is about 45 credits a game day.
    - A run within 50 minutes of the last capture asks the gateway nothing.
    - It keeps prices under `college_baseball/data/market/`.
@@ -58,7 +58,7 @@ Owner actions that unblock gates:
 
    Stop a job with `select cron.unschedule('cbase_prices');` (or any job's name).
 
-Withdraw with `select public.odds_api_set_sport('baseball_ncaa', false);` or by unsetting `CBASE_PRICES`.
+Withdraw with `select public.odds_api_set_sport('baseball_ncaa', false);` (the deploy workflow's `disable_prices`), by setting the repository variable `CBASE_PRICES` to `off`, or by committing `"capture": "off"` in `college_baseball/market/switch.json`.
 
 Each run's `college_baseball/data/market/quotes.json` names any provider team name it could not join (`unmatched_names`) and the names it joined by our team name (`matched_by_name_prefix`).
 - Add a name that is one of our teams to `college_baseball/market/aliases.json`, with its team id.
