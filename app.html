@@ -2924,7 +2924,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261022km1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261022edge1">
 <link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021inj1">
 </head>
 <body>
@@ -4019,9 +4019,9 @@ window.mcRefresh=function(){
 <!-- the canonical team resolver (the one supabase/functions/kalshi_sync links games with):
      the graphic places each Kalshi price on this game's own home or away team with it -->
 <script src="/lib/football_identity.js?v=20261021ks1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261022km1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261022km1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261022km1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261022edge1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261022edge1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261022edge1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -66288,9 +66288,9 @@ try{
     });
   };
   /* the same markets AT THE MODEL'S TIME, for the research page's matchup graphic: each market's
-     public.kalshi_price_snapshots quote nearest the snapshot's model time (one at or before it, one at
-     or after), re-stated by EDGameGraphic.kalshiAtModel. The graphic compares a quote only within 15
-     minutes of the model and at a YES spread of at most 6¢ (docs/KALSHI_NOTES.md); nothing here judges */
+     public.kalshi_price_snapshots TWO-SIDED quote nearest the snapshot's model time (one at or before it,
+     one at or after), re-stated by EDGameGraphic.kalshiAtModel. The graphic shows the nearest price and
+     says how far from the model it was quoted and how wide it was (docs/KALSHI_NOTES.md) */
   var AT={};
   window.fbKalshiAtModel=function(sport,gid,modelAt){
     return window.fbKalshiRows(sport,gid).then(function(r){
@@ -66299,7 +66299,7 @@ try{
       var iso=new Date(t).toISOString(),key=sport+'|'+gid+'|'+iso+'|'+r.rows.map(function(x){return x.market_ticker;}).join(',');
       if(AT[key]&&Date.now()-AT[key].at<TTL)return AT[key].p;
       var q=function(tk,dir){return get('kalshi_price_snapshots?select=ticker,captured_at,yes_bid,yes_ask,volume&ticker=eq.'+encodeURIComponent(tk)
-        +'&captured_at='+(dir<0?'lte.':'gte.')+encodeURIComponent(iso)+'&order=captured_at.'+(dir<0?'desc':'asc')+'&limit=1');};
+        +'&yes_bid=gt.0&yes_ask=lt.1&captured_at='+(dir<0?'lte.':'gte.')+encodeURIComponent(iso)+'&order=captured_at.'+(dir<0?'desc':'asc')+'&limit=1');};
       var p=Promise.all(r.rows.map(function(x){return Promise.all([q(x.market_ticker,-1),q(x.market_ticker,1)]);})).then(function(all){
         var snaps=[];all.forEach(function(two){two.forEach(function(a){(a||[]).forEach(function(x){snaps.push(x);});});});
         return G.kalshiAtModel(r.rows,snaps,iso);

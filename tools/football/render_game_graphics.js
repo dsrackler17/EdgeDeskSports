@@ -4,16 +4,16 @@
    uses (lib/edgedesk_game_graphic.js), run in headless Chromium, written as
    PNG files for the owner's social posts. docs/game-research/README.md
 
-   No sportsbook strip: the committed snapshot carries no sportsbook price,
-   and this tool never makes one up. KALSHI is compared AT THE MODEL'S TIME
-   (docs/KALSHI_NOTES.md): the game's linked markets come from
-   public.kalshi_card_current (read once, as anon: Kalshi's prices, no book
-   fair), and each market's public.kalshi_price_snapshots quote nearest the
+   The market strip is the snapshot's own market line (spec.consensus: the
+   CFB terminal's latest book quote, nflverse's NFL consensus), labelled with
+   its time; this tool never makes one up. KALSHI is the NEAREST two-sided
+   quote to the model's time (docs/KALSHI_NOTES.md): the game's linked
+   markets come from public.kalshi_card_current (read once, as anon), and
+   each market's public.kalshi_price_snapshots two-sided quote nearest the
    snapshot's model time (spec.model.built_at), before and after, is placed
    on the game's teams by EDGameGraphic.kalshiAtModel and
-   EDGameSnapshot.kalshi. The graphic compares only a quote within 15 minutes
-   of the model whose YES spread is at most 6¢; otherwise it says "Kalshi
-   price unavailable at model time". (No kalshi_live_quotes table exists in
+   EDGameSnapshot.kalshi. The graphic compares it and says how far from the
+   model it was taken, and when its spread is over 6¢. (No kalshi_live_quotes table exists in
    supabase/, so the snapshots are the source.) A read that fails draws the
    model-only graphics and says so; --no-kalshi skips the read. A file is
    named by its snapshot id, the template version and the Kalshi quote it
@@ -59,10 +59,10 @@ async function kalshiRows() {
     return null;
   }
 }
-/* one market's kalshi_price_snapshots quote nearest the model time on one side of it (dir < 0: at or before, > 0: at or after) */
+/* one market's two-sided kalshi_price_snapshots quote nearest the model time on one side of it (dir < 0: at or before, > 0: at or after) */
 async function nearestQuote(ticker, iso, dir) {
   const q = SB_URL + '/rest/v1/kalshi_price_snapshots?select=ticker,captured_at,yes_bid,yes_ask,volume&ticker=eq.' + encodeURIComponent(ticker)
-    + '&captured_at=' + (dir < 0 ? 'lte.' : 'gte.') + encodeURIComponent(iso) + '&order=captured_at.' + (dir < 0 ? 'desc' : 'asc') + '&limit=1';
+    + '&yes_bid=gt.0&yes_ask=lt.1&captured_at=' + (dir < 0 ? 'lte.' : 'gte.') + encodeURIComponent(iso) + '&order=captured_at.' + (dir < 0 ? 'desc' : 'asc') + '&limit=1';
   const r = await fetch(q, { headers: { apikey: ANON, authorization: 'Bearer ' + ANON } });
   if (!r.ok) throw new Error('kalshi_price_snapshots HTTP ' + r.status);
   return r.json();
@@ -142,13 +142,13 @@ async function main() {
     const ct = drawn ? GG.content(GS.graphicSpec(g), null, { now: Date.parse(g.generated_at), kalshi: drawn }) : null;
     const KC = ct && ct.ok && ct.content.compare ? ct.content.compare.kalshi : null;
     if (KC && KC.available) priced++; else if (KC) unavailable++;
-    if (KC) console.log('  ' + g.game_key + ': ' + ct.content.compare.times + ' · ' + (KC.available ? KC.diff + (KC.note ? ' · large gap' : '') : KC.unavailable + ' (' + KC.reason + ')'));
+    if (KC) console.log('  ' + g.game_key + ': ' + ct.content.compare.times + ' · ' + (KC.available ? KC.diff + (KC.note ? ' · ' + KC.note : '') : KC.unavailable + ' (' + KC.reason + ')'));
     formats.forEach((f) => {
       const file = path.join(out, g.game_key.replace(/[^a-z0-9_-]+/gi, '_') + '__' + g.snapshot_id + TEMPLATE_TAG + kalshiTag(drawn) + '__' + f + '.png');
       if (!fs.existsSync(file)) todo.push({ g, f, file, k: drawn });
     });
   }
-  console.log(games.length + ' games' + (kRows ? ', ' + priced + ' compared with Kalshi at the model time, ' + unavailable + ' with Kalshi unavailable at the model time' : '') + ', ' + todo.length + ' graphics to draw (' + (games.length * formats.length - todo.length) + ' already on disk)');
+  console.log(games.length + ' games' + (kRows ? ', ' + priced + ' compared with Kalshi (the nearest quote), ' + unavailable + ' with no two-sided Kalshi quote' : '') + ', ' + todo.length + ' graphics to draw (' + (games.length * formats.length - todo.length) + ' already on disk)');
   if (!todo.length) return;
   const srv = await serve();
   const port = srv.address().port;

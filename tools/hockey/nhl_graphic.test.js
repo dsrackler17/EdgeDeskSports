@@ -7,7 +7,8 @@
                 the model's (regulation + overtime/shootout share) and add to
                 the expected total in tenths; the win percents add to 100;
                 the fair moneyline is the slate's; the copy rule holds
-     market     only a named-book price captured in the last 180 minutes,
+     market     the nearest named-book price (older than 180 minutes: the last
+                known market, with its time),
                 labelled a reference; otherwise EdgeDesk's own detail
      watch      the decomposition's largest factors, each naming its club
                 and its size, then the goalies; never more than four
@@ -71,7 +72,7 @@ let c = N.content(G1, Object.assign({}, base, { market: mk(30) })).content;
 chk('a price from 30 minutes ago: the market snapshot, named and labelled a reference', c.market && /DraftKings/.test(c.market.meta) && /REFERENCE/.test(c.market.note) && c.market.home_ml === '−150' && c.market.away_ml === '+130' && !c.detail, c.market);
 chk('…with the no-vig split adding to 100 and the model beside it', c.market && parseInt(c.market.no_vig.home, 10) + parseInt(c.market.no_vig.away, 10) === 100 && c.market.vs.length === 2);
 c = N.content(G1, Object.assign({}, base, { market: mk(181) })).content;
-chk('a price older than 180 minutes is not shown', !c.market && !!c.detail);
+chk('a price older than 180 minutes is the last known market, with its time (the nearest price, never hidden)', c.market && c.market.title === 'LAST KNOWN MARKET' && c.market.state === 'STALE' && !c.detail, c.market);
 c = N.content(G1, Object.assign({}, base, { market: mk(10, { book: null }) })).content;
 chk('a price with no named book is not shown', !c.market);
 c = N.content(G1, Object.assign({}, base, { market: mk(10, { moneyline: {}, total: {} }) })).content;
