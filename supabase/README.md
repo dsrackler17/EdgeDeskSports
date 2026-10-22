@@ -828,6 +828,33 @@ Tested against a real PostgreSQL by `football/cfb_production/sql.test.js`
 (chaos: concurrent lock contention, a real two-session deadlock, lock timeouts,
 duplicate job runs; disaster recovery by dump and restore).
 
+### `cfb_refs.sql` — CFB referee flag tendencies (display only)
+Mirrored in `migrations/20261022150000_cfb_refs.sql`. `.github/workflows/deploy-cfb-refs.yml`
+applies it, seeds it and reports coverage (tests first). The data and how it was
+built: `data/refs/cfb/`. Display only: no model, classification, H-CFB-01 or CLV
+grade reads it.
+
+* `cfb_ref_game_penalties` — one row per completed FBS game, keyed by the ESPN
+  game id (= `cfb.games.game_id`: CFBD's ids are ESPN's). Seeded from
+  `data/refs/cfb/cfb_ref_game_penalties.csv` (2,366 games, upsert on game_id) plus
+  the ESPN backfill, then filled weekly by `cfb-ref-sync.yml`.
+* `cfb_ref_assignments` — pregame referee observations, keyed (game_id,
+  referee_id) so a replaced referee keeps its row; `first_observed_at` can never
+  be rewritten and no observation can be deleted (trigger).
+* `cfb_ref_merge_games(rows, mode)` and `cfb_ref_observe_assignments(rows)` —
+  the only writers (service_role). `seed` never undoes the backfill; `espn_referee`
+  fills only games with no referee and never an `assignment_conflict` game;
+  `espn_final` only fills null columns.
+* Views (run as the reader): `cfb_ref_referees` (the conference is the dataset's
+  mapping, read from its NCAA rows only, never the home team),
+  `cfb_ref_season_summary` and `cfb_ref_baseline_3yr` (vs the conference and FBS
+  averages; a rank only with 3+ games), `cfb_ref_assignment_current`,
+  `cfb_game_ref_context` (the card, by game_id).
+
+RLS as the CFB card's own tables: anon and authenticated select, nothing else.
+Report rows should say ok; row 7 says pending until the seed has run. Tested
+against a real PostgreSQL, with the full seed, by `tools/refs/cfb_refs_sql.test.js`.
+
 ### `ufc_live_center.sql` — the UFC Live Fight Center contract
 The Fight Center used to read a live layer no file in this repository ever
 created (`ufc.live_events`, `ufc.live_fights`, `ufc.live_event_state`,
