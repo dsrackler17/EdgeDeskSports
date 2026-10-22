@@ -1,0 +1,40 @@
+{
+  "_how": [
+    "Referee assignments nflverse has not filled in yet, keyed by nflverse game_id (games.csv). build_ref_data.py reads this file; no Python edit is needed.",
+    "Each week: add a block with season, week and the games (crew chiefs are announced Wednesday or Thursday, e.g. on footballzebras.com). The Tuesday ref-sync workflow, or Run workflow by hand, loads it.",
+    "When nflverse fills in a game's referee, nflverse wins: its name is used and the row's source becomes nflverse. A disagreement is printed, never silently merged.",
+    "source is nflverse, footballzebras or manual; footballzebras when a block names none. A game_id that is not in games.csv or not in its block's week stops the build."
+  ],
+  "weeks": [
+    {
+      "season": 2026, "week": 5, "source": "footballzebras",
+      "games": {
+        "2026_05_TB_DAL": "Alex Moore", "2026_05_PHI_JAX": "Ron Torbert", "2026_05_CHI_GB": "Clay Martin",
+        "2026_05_CIN_MIA": "Brad Rogers", "2026_05_LV_NE": "Craig Wrolstad", "2026_05_MIN_NO": "John Hussey",
+        "2026_05_CLE_NYJ": "Bill Vinovich", "2026_05_IND_PIT": "Shawn Smith", "2026_05_HOU_TEN": "Alex Kemp",
+        "2026_05_NYG_WAS": "Clete Blakeman", "2026_05_DEN_LAC": "Shawn Hochuli", "2026_05_DET_ARI": "Carl Cheffers",
+        "2026_05_SF_SEA": "Land Clark", "2026_05_BAL_ATL": "Brad Allen", "2026_05_BUF_LA": "Scott Novak"
+      }
+    },
+    {
+      "season": 2026, "week": 6, "source": "footballzebras",
+      "games": {
+        "2026_06_SEA_DEN": "Brad Rogers", "2026_06_HOU_JAX": "Shawn Hochuli", "2026_06_CHI_ATL": "Scott Novak",
+        "2026_06_BAL_CLE": "Carl Cheffers", "2026_06_TEN_IND": "Bill Vinovich", "2026_06_NYJ_NE": "Clete Blakeman",
+        "2026_06_NO_NYG": "Alex Kemp", "2026_06_CAR_PHI": "John Hussey", "2026_06_PIT_TB": "Land Clark",
+        "2026_06_ARI_LA": "Clay Martin", "2026_06_LAC_KC": "Alan Eck", "2026_06_BUF_LV": "Shawn Smith",
+        "2026_06_DAL_GB": "Craig Wrolstad", "2026_06_WAS_SF": "Adrian Hill"
+      }
+    },
+    {
+      "season": 2026, "week": 7, "source": "footballzebras",
+      "games": {
+        "2026_07_NE_CHI": "Alan Eck", "2026_07_PIT_NO": "Bill Vinovich", "2026_07_SF_ATL": "Clay Martin",
+        "2026_07_CIN_BAL": "Shawn Smith", "2026_07_TB_CAR": "Carl Cheffers", "2026_07_NYG_HOU": "Land Clark",
+        "2026_07_IND_MIN": "Brad Rogers", "2026_07_MIA_NYJ": "Brad Allen", "2026_07_CLE_TEN": "Scott Novak",
+        "2026_07_DEN_ARI": "Craig Wrolstad", "2026_07_GB_DET": "Alex Moore", "2026_07_LA_LV": "Ron Torbert",
+        "2026_07_KC_SEA": "John Hussey", "2026_07_DAL_PHI": "Alex Kemp"
+      }
+    }
+  ]
+}

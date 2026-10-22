@@ -111,6 +111,17 @@ Run in that order (`.github/workflows/deploy-kalshi.yml` does it, tests first). 
 
 Tested against a real PostgreSQL by `tools/kalshi/kalshi_sql.test.js`.
 
+### `nfl_ref_flags.sql` — NFL referee flag tendencies on the game card (display only)
+
+Mirrored in `migrations/20261022100000_nfl_ref_flags.sql`. T0 counts from nflverse play-by-play, shown in the Officiating block of the NFL card's Market Structure → Observed section. Nothing here feeds a projection, spread, total, probability, EV, grade, ranking or the CLV record. The data, the build and the weekly sync are in `data/refs/README.md`.
+
+- **Tables:** `nfl_ref_assignments` (game_id → referee; `source` is nflverse, footballzebras or manual) and `nfl_ref_game_penalties` (one row per played game; its `game_id` references the assignment, so assignments load first). `updated_at` is set by trigger on every write.
+- **Views** (all `security_invoker`): `nfl_ref_season_summary` (per referee per season vs that season's league average, ranks, referee count, O/U), `nfl_ref_baseline_3yr` (latest season on file and the two before it) and `nfl_game_ref_context` (what the card reads, by `game_id`; no row = assignment not announced).
+- **Access:** gated like the card's other Observed tables (`nfl_market_structure.sql`, `contest_ownership.sql`, `kalshi_market_data.sql`): RLS on, `<table>_read` for select to anon and authenticated, every client write revoked, only `service_role` inserts and updates. The handoff draft's two PUBLIC `using (true)` policies are dropped if it was pasted first.
+- **Loading:** `python3 data/refs/upsert_refs.py` with `SB_URL` and `SB_SERVICE_ROLE` set is the one-time seed (677 assignments, 663 penalty rows); `.github/workflows/ref-sync.yml` upserts the season in progress every Tuesday. Report row 7 says pending until the seed has run.
+
+Tested against a real PostgreSQL by `tools/refs/nfl_ref_flags_sql.test.js` (the seed runs through a stand-in REST endpoint, and every Week 7 row is checked against `data/refs/ref_assignments_2026_w7.csv`).
+
 ### `desk_articles.sql` + `desk_articles_cron.sql` — data-first articles with a required take
 
 Run after `site_articles.sql` (the guard says so). `funnel.sql` and `growth.sql` are read by Article Performance when present.

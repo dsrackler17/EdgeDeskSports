@@ -65635,7 +65635,12 @@ try{
                          flag, the CLV of the frozen price; the situational
                          flags and the season-to-date records
                          (football/market_structure/nfl.json); Circa Million
-                         ownership (public.contest_ownership_latest)
+                         ownership (public.contest_ownership_latest); the
+                         game's referee and that referee's flags and holding
+                         per game against the league, this season and over
+                         three (public.nfl_game_ref_context, by game_id;
+                         data/refs/README.md). Display only: no projection,
+                         ranking, grade or CLV reads any of it
      Deterministic (T2)  the key numbers a line sits on or straddles, the
                          value of a half point from the league's own margin
                          distribution, the Six watch (lib/edgedesk_market_structure.js)
@@ -65662,7 +65667,10 @@ try{
   var S={art:null,pre:null,board:null,own:null,ostat:null,alerts:null,err:{},st:{},at:{}};
   var LIMITS='<b>Known limitations.</b> Not owned, so not shown: the timing of injury-status changes (Coming Soon), margins before 1999, '
     +'ownership by unique player (Circa counts entries, so a three-entry player counts three times). The freeze, current and close are EdgeDesk’s own capture '
-    +'(Odds API books), not Circa’s line source; season-to-date records are small samples and describe, they do not predict.';
+    +'(Odds API books), not Circa’s line source; season-to-date records are small samples and describe, they do not predict. '
+    +'Officiating: penalties are counted one per play from nflverse play-by-play, so a play with two flags counts once; a referee’s current-season '
+    +'sample is small (its game count is shown with each number); league-wide flags are up in 2026 (15.0 a game, against 13.1 over 2024–26), '
+    +'so each referee is shown against that season’s league average, not as a raw count.';
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(x){if(x===null||x===undefined||x==='')return null;var n=Number(x);return isFinite(n)?n:null;}
@@ -65754,6 +65762,67 @@ try{
     }catch(_){return {state:'unread'};}
   }
 
+  /* ------------------------------------------- officiating (T0, display only)
+     public.nfl_game_ref_context by game_id (supabase/nfl_ref_flags.sql). The
+     cards of one render ask together: their ids queue, and one request per 50
+     reads them; each answer is kept for TTL like every other load here. No
+     row means no announced assignment. Nothing outside this section reads it. */
+  var REFQ={},refT=null;
+  function refWant(gid){
+    var k='ref:'+gid;
+    if(S.st[k]==='loading')return;
+    if(S.at[k]&&Date.now()-S.at[k]<TTL)return;
+    S.st[k]='loading';REFQ[gid]=1;
+    if(!refT)refT=setTimeout(refFlush,0);
+  }
+  function refFlush(){
+    refT=null;
+    var ids=Object.keys(REFQ);REFQ={};
+    for(var i=0;i<ids.length;i+=50)(function(ch){
+      anon('nfl_game_ref_context?select=*&game_id=in.('+ch.map(encodeURIComponent).join(',')+')').then(function(rows){
+        var by={};(rows||[]).forEach(function(r){by[r.game_id]=r;});
+        ch.forEach(function(gid){var k='ref:'+gid;S[k]=by[gid]||null;S.err[k]=null;S.st[k]='ok';S.at[k]=Date.now();});
+        repaint();
+      },function(e){
+        ch.forEach(function(gid){var k='ref:'+gid;S.err[k]=e;S.st[k]=e&&e.notDeployed?'not_deployed':'error';S.at[k]=Date.now();});
+        repaint();
+      });
+    })(ids.slice(i,i+50));
+  }
+  function refRow(gid){return S.st['ref:'+gid]==='ok'?S['ref:'+gid]:null;}
+  function f2(x){x=num(x);return x==null?'—':x.toFixed(2);}
+  /* above the league average reads in --pos, below in --neg, as the CLV does */
+  function vsLg(x){
+    x=num(x);if(x==null)return '—';
+    return '<span style="color:'+(x>0?'var(--pos)':x<0?'var(--neg)':'var(--text)')+'">'+(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(2)+'</span>';
+  }
+  function officiatingHTML(ctx){
+    var k='ref:'+ctx.gid,lab='Officiating';
+    if(S.st[k]!=='ok')return row(lab,stateNote(k,'the referee assignments','supabase/nfl_ref_flags.sql'));
+    var r=S[k];
+    if(!r||!r.referee)return row(lab,'<span class="ms-m">'+(ctx.final?'No referee on record for this game':'Assignment not announced')+'</span>');
+    var SRC={nflverse:'nflverse',footballzebras:'Football Zebras',manual:'entered by hand'};
+    var h=row(lab,esc(r.referee)+' <span class="m">· referee · assignment from '+esc(SRC[r.source]||r.source||'—')+'</span>');
+    var sea=esc(r.season),n=num(r.season_games),of=int(r.season_refs);
+    var yl=r.y3_first_season!=null&&r.y3_last_season!=null?esc(r.y3_first_season)+'–'+esc(r.y3_last_season):'3 seasons',n3=num(r.y3_games);
+    if(n){
+      var gl=' <span class="ms-m">'+sea+' · '+int(n)+' game'+(n===1?'':'s')+'</span>';
+      h+=row('Flags / game'+gl,f2(r.season_flags_pg)+' '+vsLg(r.season_flags_vs_league)+' <span class="m">vs league '+f2(r.season_lg_flags_pg)+' · rank '+int(r.flags_rank)+' of '+of+'</span>');
+      h+=row('Holding / game'+gl,f2(r.season_holding_pg)+' '+vsLg(r.season_holding_vs_league)+' <span class="m">vs league '+f2(r.season_lg_holding_pg)+' · rank '+int(r.holding_rank)+' of '+of+'</span>');
+    }else h+=row('This season','<span class="ms-m">no '+sea+' regular-season game worked yet</span>');
+    if(n3)h+=row('3-season baseline <span class="ms-m">'+yl+' · '+int(n3)+' games</span>',
+      f2(r.y3_flags_pg)+' <span class="m">flags</span> '+vsLg(r.y3_flags_vs_league)+' <span class="m">·</span> '+f2(r.y3_holding_pg)+' <span class="m">holding</span> '+vsLg(r.y3_holding_vs_league)
+      +' <span class="m">per game, vs league '+f2(r.y3_lg_flags_pg)+' / '+f2(r.y3_lg_holding_pg)+'</span>');
+    var ou=[],push=num(r.season_pushes)||num(r.y3_pushes);
+    var rec=function(o,u,p){return int(o)+'-'+int(u)+(push?'-'+int(p||0):'');};
+    if(n)ou.push(sea+' '+rec(r.season_overs,r.season_unders,r.season_pushes));
+    if(n3)ou.push(yl+' '+rec(r.y3_overs,r.y3_unders,r.y3_pushes));
+    if(ou.length)h+=row('O/U record <span class="ms-m">over-under'+(push?'-push':'')+'</span>',ou.join(' <span class="m">·</span> ')+' <span class="m">in this referee’s games; a count, not a signal</span>');
+    if(n)h+='<div class="ms-note">Regular season. Rank 1 is the most per game among the '+of+' referees who worked a '+sea+' game; '
+      +int(n)+' game'+(n===1?' is':'s are')+' a small sample, and the 3-season numbers are the steadier read.</div>';
+    return h;
+  }
+
   /* ---------------------------------------------------- the sections */
   function observedHTML(ctx){
     var h='',b=ctx.board,home=ctx.hc,away=ctx.ac;
@@ -65819,6 +65888,8 @@ try{
       else ov='<span class="ms-m">not posted for week '+esc(ctx.week)+' yet — Circa publishes Saturday</span>';
     }
     h+=row('Circa Million <span class="ms-m">week '+esc(ctx.week)+'</span>',ov);
+    /* officiating */
+    try{h+=officiatingHTML(ctx);}catch(e){h+=row('Officiating','<span class="ms-m">could not render ('+esc(e.message)+')</span>');}
     return '<div class="ms-sub">'+badge('rs-t0','Observed','T0: observed, with its source')+'</div>'+h;
   }
 
@@ -65877,13 +65948,16 @@ try{
     var b=boardRow(hc,ac,t);
     var o=S.st.own==='ok'?ownFor(g.season,g.week,hc,ac):null;
     var keySide=homeLine!=null&&[homeLine,-homeLine].some(function(x){return x===6||x===6.5||x===-5.5;});
-    var ctx={hc:hc,ac:ac,homeLine:homeLine,sides:sides,board:b,season:g.season,week:g.week,final:!!opts.final,keySide:keySide,hasOwn:!!(o&&!o.conflict)};
+    var gid=String(g.game_id||'');
+    if(gid)refWant(gid);
+    var ctx={hc:hc,ac:ac,homeLine:homeLine,sides:sides,board:b,season:g.season,week:g.week,final:!!opts.final,keySide:keySide,hasOwn:!!(o&&!o.conflict),gid:gid};
     var kc=homeLine!=null?MS.keyContext(homeLine):null;
     var sum='<b>Market Structure</b>';
     if(kc&&kc.six_watch)sum+=chip('six watch','warn');
     if(b&&(ctx.final?b.close_flagged:b.current_flagged))sum+=chip('stale line','flag');
     if(sides.home.divisional_home_dog)sum+=chip('div home dog','warn');
     if(ctx.hasOwn){var big=(o.home&&(!o.away||num(o.home.share_of_game)>=num(o.away.share_of_game)))?o.home:o.away;sum+=chip('Circa '+pct(num(big.share_of_game),0)+' '+big.side_team_code);}
+    var rr=refRow(gid);if(rr&&rr.referee)sum+=chip('ref '+rr.referee);
     sum+='<span class="ms-chev">›</span>';
     var body='';
     try{body+=observedHTML(ctx);}catch(e){body+='<div class="ms-note">Observed could not render: '+esc(e.message)+'</div>';}
