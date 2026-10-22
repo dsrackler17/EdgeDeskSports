@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_forecast_store_v1",
  "why": "the last forecast EdgeDesk actually observed for each game, so a build that cannot reach the provider carries it forward at its real observation time instead of publishing a refusal. Only observed forecasts are written here; a carried one is never re-committed as a fresh one.",
- "generated_at": "2026-10-22T13:45:06.811Z",
+ "generated_at": "2026-10-22T14:42:40.545Z",
  "source": "open-meteo forecast (keyless), joined on the trained venue coordinates",
  "by_game": {
   "401856727": {
@@ -10,7 +10,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.416Z",
+   "as_of": "2026-10-22T14:42:09.928Z",
    "kickoff_local": "2026-10-24T14:00",
    "kickoff_label": "2 PM",
    "timezone": "America/Chicago",
@@ -112,7 +112,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.091Z",
+   "as_of": "2026-10-22T14:42:09.670Z",
    "kickoff_local": "2026-10-24T11:00",
    "kickoff_label": "11 AM",
    "timezone": "America/Chicago",
@@ -308,7 +308,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T23:30:00.000Z"
+   "kickoff": "2026-10-24T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856730": {
    "temp_f": 78.2,
@@ -316,7 +318,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.419Z",
+   "as_of": "2026-10-22T14:42:09.914Z",
    "kickoff_local": "2026-10-24T14:00",
    "kickoff_label": "2 PM",
    "timezone": "America/Chicago",
@@ -418,7 +420,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.491Z",
+   "as_of": "2026-10-22T14:42:09.914Z",
    "kickoff_local": "2026-10-24T15:00",
    "kickoff_label": "3 PM",
    "timezone": "America/New_York",
@@ -614,7 +616,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T23:30:00.000Z"
+   "kickoff": "2026-10-24T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856733": {
    "temp_f": 65.8,
@@ -716,7 +720,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856735": {
    "temp_f": 62.7,
@@ -818,7 +824,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856736": {
    "temp_f": 56.7,
@@ -920,7 +928,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856737": {
    "temp_f": 66.8,
@@ -1022,7 +1032,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856834": {
    "temp_f": 70.7,
@@ -1030,7 +1042,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.336Z",
+   "as_of": "2026-10-22T14:42:09.832Z",
    "kickoff_local": "2026-10-24T12:00",
    "kickoff_label": "12 PM",
    "timezone": "America/Chicago",
@@ -1132,7 +1144,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.491Z",
+   "as_of": "2026-10-22T14:42:09.917Z",
    "kickoff_local": "2026-10-24T15:00",
    "kickoff_label": "3 PM",
    "timezone": "America/New_York",
@@ -1328,7 +1340,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T23:00:00.000Z"
+   "kickoff": "2026-10-24T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856837": {
    "temp_f": 51.5,
@@ -1430,7 +1444,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-25T02:15:00.000Z"
+   "kickoff": "2026-10-25T02:15:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856838": {
    "temp_f": 71.9,
@@ -1532,7 +1548,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T23:30:00.000Z"
+   "kickoff": "2026-10-24T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856839": {
    "temp_f": 76.1,
@@ -1540,7 +1558,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.724Z",
+   "as_of": "2026-10-22T14:42:10.009Z",
    "kickoff_local": "2026-10-24T12:00",
    "kickoff_label": "12 PM",
    "timezone": "America/Phoenix",
@@ -1642,7 +1660,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.099Z",
+   "as_of": "2026-10-22T14:42:09.749Z",
    "kickoff_local": "2026-10-24T12:00",
    "kickoff_label": "12 PM",
    "timezone": "America/New_York",
@@ -1744,7 +1762,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.101Z",
+   "as_of": "2026-10-22T14:42:09.749Z",
    "kickoff_local": "2026-10-24T11:00",
    "kickoff_label": "11 AM",
    "timezone": "America/Chicago",
@@ -1940,7 +1958,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856843": {
    "temp_f": 55.9,
@@ -2042,7 +2062,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856844": {
    "temp_f": 75.8,
@@ -2144,7 +2166,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-30T23:30:00.000Z"
+   "kickoff": "2026-10-30T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856845": {
    "temp_f": 67.8,
@@ -2246,7 +2270,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856846": {
    "temp_f": 53.9,
@@ -2348,7 +2374,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856847": {
    "temp_f": 47.2,
@@ -2450,7 +2478,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856848": {
    "temp_f": 45.7,
@@ -2552,7 +2582,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858270": {
    "temp_f": 72.8,
@@ -2560,7 +2592,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.176Z",
+   "as_of": "2026-10-22T14:42:09.755Z",
    "kickoff_local": "2026-10-24T11:00",
    "kickoff_label": "11 AM",
    "timezone": "America/Chicago",
@@ -2657,42 +2689,42 @@
    "kickoff": "2026-10-24T16:00:00.000Z"
   },
   "401858271": {
-   "temp_f": 52.9,
-   "wind_mph": 4.8,
+   "temp_f": 54,
+   "wind_mph": 4.7,
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:03.946Z",
+   "as_of": "2026-10-22T14:42:09.689Z",
    "kickoff_local": "2026-10-23T19:00",
    "kickoff_label": "7 PM",
    "timezone": "America/New_York",
    "tz_abbrev": "GMT-4",
    "utc_offset_seconds": -14400,
-   "feels_f": 47.7,
-   "humidity_pct": 53,
-   "gust_mph": 9.8,
+   "feels_f": 49.5,
+   "humidity_pct": 58,
+   "gust_mph": 9.4,
    "precip_pct": 0,
    "code": 0,
    "text": "Clear",
    "icon": "🌙",
    "wind_word": "CALM",
-   "wind_from": "NE",
-   "wind_arrow": "↙",
+   "wind_from": "N",
+   "wind_arrow": "↓",
    "hours": [
     {
      "local": "2026-10-23T19:00",
      "at": "2026-10-23T23:00:00.000Z",
      "label": "7 PM",
-     "temp_f": 52.9,
-     "feels_f": 47.7,
+     "temp_f": 54,
+     "feels_f": 49.5,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 53,
-     "wind_mph": 4.8,
-     "gust_mph": 9.8,
-     "wind_dir_deg": 34,
-     "wind_from": "NE",
-     "wind_arrow": "↙",
+     "humidity_pct": 58,
+     "wind_mph": 4.7,
+     "gust_mph": 9.4,
+     "wind_dir_deg": 17,
+     "wind_from": "N",
+     "wind_arrow": "↓",
      "code": 0,
      "text": "Clear",
      "icon": "🌙",
@@ -2702,14 +2734,14 @@
      "local": "2026-10-23T20:00",
      "at": "2026-10-24T00:00:00.000Z",
      "label": "8 PM",
-     "temp_f": 50.1,
-     "feels_f": 44.9,
+     "temp_f": 51.4,
+     "feels_f": 46.9,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 58,
-     "wind_mph": 4.7,
-     "gust_mph": 8.5,
-     "wind_dir_deg": 47,
+     "humidity_pct": 62,
+     "wind_mph": 4.3,
+     "gust_mph": 7.4,
+     "wind_dir_deg": 28,
      "wind_from": "NE",
      "wind_arrow": "↙",
      "code": 0,
@@ -2721,16 +2753,16 @@
      "local": "2026-10-23T21:00",
      "at": "2026-10-24T01:00:00.000Z",
      "label": "9 PM",
-     "temp_f": 48.3,
-     "feels_f": 43.3,
+     "temp_f": 49.6,
+     "feels_f": 45,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 60,
-     "wind_mph": 4,
-     "gust_mph": 8.3,
-     "wind_dir_deg": 46,
-     "wind_from": "NE",
-     "wind_arrow": "↙",
+     "humidity_pct": 66,
+     "wind_mph": 4.7,
+     "gust_mph": 6.3,
+     "wind_dir_deg": 5,
+     "wind_from": "N",
+     "wind_arrow": "↓",
      "code": 0,
      "text": "Clear",
      "icon": "🌙",
@@ -2740,16 +2772,16 @@
      "local": "2026-10-23T22:00",
      "at": "2026-10-24T02:00:00.000Z",
      "label": "10 PM",
-     "temp_f": 46.6,
-     "feels_f": 41.6,
+     "temp_f": 47.9,
+     "feels_f": 43.3,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 66,
-     "wind_mph": 4.3,
-     "gust_mph": 6.5,
-     "wind_dir_deg": 15,
-     "wind_from": "N",
-     "wind_arrow": "↓",
+     "humidity_pct": 72,
+     "wind_mph": 4.9,
+     "gust_mph": 4.9,
+     "wind_dir_deg": 336,
+     "wind_from": "NW",
+     "wind_arrow": "↘",
      "code": 0,
      "text": "Clear",
      "icon": "🌙",
@@ -2759,25 +2791,25 @@
    "kickoff": "2026-10-23T23:00:00.000Z"
   },
   "401858272": {
-   "temp_f": 59.5,
-   "wind_mph": 4.6,
+   "temp_f": 59.6,
+   "wind_mph": 6.4,
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.085Z",
+   "as_of": "2026-10-22T14:42:09.667Z",
    "kickoff_local": "2026-10-23T19:00",
    "kickoff_label": "7 PM",
    "timezone": "America/Los_Angeles",
    "tz_abbrev": "GMT-7",
    "utc_offset_seconds": -25200,
-   "feels_f": 58.8,
-   "humidity_pct": 83,
-   "gust_mph": 11.6,
+   "feels_f": 58.5,
+   "humidity_pct": 85,
+   "gust_mph": 13.4,
    "precip_pct": 0,
-   "code": 1,
-   "text": "Mostly clear",
+   "code": 0,
+   "text": "Clear",
    "icon": "🌙",
-   "wind_word": "CALM",
+   "wind_word": "LIGHT",
    "wind_from": "NW",
    "wind_arrow": "↘",
    "hours": [
@@ -2785,18 +2817,18 @@
      "local": "2026-10-23T19:00",
      "at": "2026-10-24T02:00:00.000Z",
      "label": "7 PM",
-     "temp_f": 59.5,
-     "feels_f": 58.8,
+     "temp_f": 59.6,
+     "feels_f": 58.5,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 83,
-     "wind_mph": 4.6,
-     "gust_mph": 11.6,
-     "wind_dir_deg": 322,
+     "humidity_pct": 85,
+     "wind_mph": 6.4,
+     "gust_mph": 13.4,
+     "wind_dir_deg": 324,
      "wind_from": "NW",
      "wind_arrow": "↘",
-     "code": 1,
-     "text": "Mostly clear",
+     "code": 0,
+     "text": "Clear",
      "icon": "🌙",
      "is_day": 0
     },
@@ -2804,14 +2836,14 @@
      "local": "2026-10-23T20:00",
      "at": "2026-10-24T03:00:00.000Z",
      "label": "8 PM",
-     "temp_f": 57.7,
-     "feels_f": 57,
+     "temp_f": 57.5,
+     "feels_f": 56.3,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 84,
-     "wind_mph": 3.6,
-     "gust_mph": 9.2,
-     "wind_dir_deg": 297,
+     "humidity_pct": 85,
+     "wind_mph": 4.9,
+     "gust_mph": 12.8,
+     "wind_dir_deg": 317,
      "wind_from": "NW",
      "wind_arrow": "↘",
      "code": 0,
@@ -2823,14 +2855,14 @@
      "local": "2026-10-23T21:00",
      "at": "2026-10-24T04:00:00.000Z",
      "label": "9 PM",
-     "temp_f": 57.8,
-     "feels_f": 56.3,
+     "temp_f": 56.1,
+     "feels_f": 54.9,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 79,
-     "wind_mph": 4.3,
-     "gust_mph": 6.9,
-     "wind_dir_deg": 281,
+     "humidity_pct": 83,
+     "wind_mph": 3.6,
+     "gust_mph": 4.9,
+     "wind_dir_deg": 270,
      "wind_from": "W",
      "wind_arrow": "→",
      "code": 0,
@@ -2842,14 +2874,14 @@
      "local": "2026-10-23T22:00",
      "at": "2026-10-24T05:00:00.000Z",
      "label": "10 PM",
-     "temp_f": 58.2,
-     "feels_f": 56.7,
+     "temp_f": 55.7,
+     "feels_f": 53.8,
      "precip_in": 0,
      "precip_pct": 0,
      "humidity_pct": 76,
-     "wind_mph": 4.1,
-     "gust_mph": 4.6,
-     "wind_dir_deg": 268,
+     "wind_mph": 3.4,
+     "gust_mph": 4,
+     "wind_dir_deg": 270,
      "wind_from": "W",
      "wind_arrow": "→",
      "code": 0,
@@ -2866,7 +2898,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.559Z",
+   "as_of": "2026-10-22T14:42:09.914Z",
    "kickoff_local": "2026-10-24T15:00",
    "kickoff_label": "3 PM",
    "timezone": "America/New_York",
@@ -2968,7 +3000,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.177Z",
+   "as_of": "2026-10-22T14:42:09.751Z",
    "kickoff_local": "2026-10-24T12:00",
    "kickoff_label": "12 PM",
    "timezone": "America/New_York",
@@ -3164,7 +3196,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T23:30:00.000Z"
+   "kickoff": "2026-10-24T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858276": {
    "temp_f": 59.1,
@@ -3172,7 +3206,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.970Z",
+   "as_of": "2026-10-22T14:42:15.481Z",
    "kickoff_local": "2026-10-24T19:00",
    "kickoff_label": "7 PM",
    "timezone": "America/New_York",
@@ -3368,7 +3402,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858278": {
    "dome": true,
@@ -3378,7 +3414,7 @@
    "roof": true,
    "hours": [],
    "source": "trained venue table — indoor venue, no request made",
-   "as_of": "2026-10-22T13:45:03.291Z",
+   "as_of": "2026-10-22T14:42:09.387Z",
    "kickoff": "2026-10-31T04:00:00.000Z"
   },
   "401858279": {
@@ -3481,7 +3517,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858280": {
    "temp_f": 64.1,
@@ -3583,7 +3621,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858281": {
    "temp_f": 47.8,
@@ -3685,7 +3725,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858282": {
    "temp_f": 61.7,
@@ -3787,7 +3829,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858283": {
    "temp_f": 54,
@@ -3889,7 +3933,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858284": {
    "temp_f": 62.5,
@@ -3991,7 +4037,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858495": {
    "temp_f": 71.4,
@@ -3999,7 +4047,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.410Z",
+   "as_of": "2026-10-22T14:42:09.845Z",
    "kickoff_local": "2026-10-24T14:00",
    "kickoff_label": "2 PM",
    "timezone": "America/Chicago",
@@ -4101,7 +4149,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.250Z",
+   "as_of": "2026-10-22T14:42:09.763Z",
    "kickoff_local": "2026-10-24T12:00",
    "kickoff_label": "12 PM",
    "timezone": "America/Detroit",
@@ -4203,7 +4251,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.573Z",
+   "as_of": "2026-10-22T14:42:09.926Z",
    "kickoff_local": "2026-10-24T14:00",
    "kickoff_label": "2 PM",
    "timezone": "America/Chicago",
@@ -4305,7 +4353,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.256Z",
+   "as_of": "2026-10-22T14:42:09.764Z",
    "kickoff_local": "2026-10-24T11:00",
    "kickoff_label": "11 AM",
    "timezone": "America/Chicago",
@@ -4407,7 +4455,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.575Z",
+   "as_of": "2026-10-22T14:42:09.995Z",
    "kickoff_local": "2026-10-24T12:00",
    "kickoff_label": "12 PM",
    "timezone": "America/Los_Angeles",
@@ -4603,7 +4651,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T23:30:00.000Z"
+   "kickoff": "2026-10-24T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858501": {
    "temp_f": 44.2,
@@ -4705,7 +4755,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858502": {
    "temp_f": 45.3,
@@ -4807,7 +4859,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858503": {
    "temp_f": 52.5,
@@ -4909,7 +4963,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858504": {
    "temp_f": 44.3,
@@ -5011,7 +5067,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858505": {
    "temp_f": 51.9,
@@ -5113,7 +5171,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858506": {
    "temp_f": 38,
@@ -5215,7 +5275,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858507": {
    "temp_f": 50.2,
@@ -5317,7 +5379,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858508": {
    "temp_f": 66.3,
@@ -5419,7 +5483,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858509": {
    "temp_f": 68.3,
@@ -5521,7 +5587,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401860905": {
    "temp_f": 56.2,
@@ -5529,7 +5597,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.893Z",
+   "as_of": "2026-10-22T14:42:15.483Z",
    "kickoff_local": "2026-10-24T16:00",
    "kickoff_label": "4 PM",
    "timezone": "America/Denver",
@@ -5725,7 +5793,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T23:30:00.000Z"
+   "kickoff": "2026-10-24T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401860907": {
    "temp_f": 55.3,
@@ -5733,7 +5803,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.895Z",
+   "as_of": "2026-10-22T14:42:10.077Z",
    "kickoff_local": "2026-10-24T15:00",
    "kickoff_label": "3 PM",
    "timezone": "America/Los_Angeles",
@@ -5929,7 +5999,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-11-01T02:00:00.000Z"
+   "kickoff": "2026-11-01T02:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401860909": {
    "temp_f": 68.3,
@@ -6031,7 +6103,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T23:00:00.000Z"
+   "kickoff": "2026-10-31T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401860910": {
    "temp_f": 53.7,
@@ -6133,7 +6207,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-31T19:30:00.000Z"
+   "kickoff": "2026-10-31T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401860924": {
    "temp_f": 64.6,
@@ -6235,66 +6311,68 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401861965": {
-   "temp_f": 46.3,
-   "wind_mph": 4.9,
+   "temp_f": 46.4,
+   "wind_mph": 2.7,
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:03.933Z",
+   "as_of": "2026-10-22T14:42:09.694Z",
    "kickoff_local": "2026-10-23T19:00",
    "kickoff_label": "7 PM",
    "timezone": "America/New_York",
    "tz_abbrev": "GMT-4",
    "utc_offset_seconds": -14400,
-   "feels_f": 39.4,
-   "humidity_pct": 42,
-   "gust_mph": 9.2,
+   "feels_f": 40.1,
+   "humidity_pct": 37,
+   "gust_mph": 2.7,
    "precip_pct": 0,
-   "code": 0,
-   "text": "Clear",
-   "icon": "🌙",
+   "code": 2,
+   "text": "Partly cloudy",
+   "icon": "☁️",
    "wind_word": "CALM",
-   "wind_from": "N",
-   "wind_arrow": "↓",
+   "wind_from": "E",
+   "wind_arrow": "←",
    "hours": [
     {
      "local": "2026-10-23T19:00",
      "at": "2026-10-23T23:00:00.000Z",
      "label": "7 PM",
-     "temp_f": 46.3,
-     "feels_f": 39.4,
+     "temp_f": 46.4,
+     "feels_f": 40.1,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 42,
-     "wind_mph": 4.9,
-     "gust_mph": 9.2,
-     "wind_dir_deg": 360,
-     "wind_from": "N",
-     "wind_arrow": "↓",
-     "code": 0,
-     "text": "Clear",
-     "icon": "🌙",
+     "humidity_pct": 37,
+     "wind_mph": 2.7,
+     "gust_mph": 2.7,
+     "wind_dir_deg": 85,
+     "wind_from": "E",
+     "wind_arrow": "←",
+     "code": 2,
+     "text": "Partly cloudy",
+     "icon": "☁️",
      "is_day": 0
     },
     {
      "local": "2026-10-23T20:00",
      "at": "2026-10-24T00:00:00.000Z",
      "label": "8 PM",
-     "temp_f": 44.1,
-     "feels_f": 37.2,
+     "temp_f": 43.1,
+     "feels_f": 36,
      "precip_in": 0,
      "precip_pct": 0,
      "humidity_pct": 45,
-     "wind_mph": 4.8,
+     "wind_mph": 5,
      "gust_mph": 5.8,
-     "wind_dir_deg": 57,
-     "wind_from": "NE",
-     "wind_arrow": "↙",
-     "code": 2,
-     "text": "Partly cloudy",
+     "wind_dir_deg": 111,
+     "wind_from": "E",
+     "wind_arrow": "←",
+     "code": 3,
+     "text": "Overcast",
      "icon": "☁️",
      "is_day": 0
     },
@@ -6302,38 +6380,38 @@
      "local": "2026-10-23T21:00",
      "at": "2026-10-24T01:00:00.000Z",
      "label": "9 PM",
-     "temp_f": 42.3,
-     "feels_f": 36.5,
+     "temp_f": 41.8,
+     "feels_f": 35.3,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 46,
-     "wind_mph": 1.9,
-     "gust_mph": 1.8,
-     "wind_dir_deg": 51,
-     "wind_from": "NE",
-     "wind_arrow": "↙",
-     "code": 0,
-     "text": "Clear",
-     "icon": "🌙",
+     "humidity_pct": 42,
+     "wind_mph": 2.8,
+     "gust_mph": 4.9,
+     "wind_dir_deg": 108,
+     "wind_from": "E",
+     "wind_arrow": "←",
+     "code": 3,
+     "text": "Overcast",
+     "icon": "☁️",
      "is_day": 0
     },
     {
      "local": "2026-10-23T22:00",
      "at": "2026-10-24T02:00:00.000Z",
      "label": "10 PM",
-     "temp_f": 40.7,
-     "feels_f": 34.6,
+     "temp_f": 40.4,
+     "feels_f": 33.8,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 48,
-     "wind_mph": 2.5,
+     "humidity_pct": 45,
+     "wind_mph": 3.1,
      "gust_mph": 3.8,
-     "wind_dir_deg": 116,
-     "wind_from": "SE",
-     "wind_arrow": "↖",
-     "code": 1,
-     "text": "Mostly clear",
-     "icon": "🌙",
+     "wind_dir_deg": 184,
+     "wind_from": "S",
+     "wind_arrow": "↑",
+     "code": 3,
+     "text": "Overcast",
+     "icon": "☁️",
      "is_day": 0
     }
    ],
@@ -6439,23 +6517,25 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-31T19:00:00.000Z"
+   "kickoff": "2026-10-31T19:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862807": {
-   "temp_f": 72.5,
+   "temp_f": 72.7,
    "wind_mph": 4.7,
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:03.919Z",
+   "as_of": "2026-10-22T14:42:09.645Z",
    "kickoff_local": "2026-10-22T18:00",
    "kickoff_label": "6 PM",
    "timezone": "America/Chicago",
    "tz_abbrev": "GMT-5",
    "utc_offset_seconds": -18000,
-   "feels_f": 67.5,
+   "feels_f": 67.7,
    "humidity_pct": 27,
-   "gust_mph": 8.3,
+   "gust_mph": 7.8,
    "precip_pct": 0,
    "code": 0,
    "text": "Clear",
@@ -6468,14 +6548,14 @@
      "local": "2026-10-22T18:00",
      "at": "2026-10-22T23:00:00.000Z",
      "label": "6 PM",
-     "temp_f": 72.5,
-     "feels_f": 67.5,
+     "temp_f": 72.7,
+     "feels_f": 67.7,
      "precip_in": 0,
      "precip_pct": 0,
      "humidity_pct": 27,
      "wind_mph": 4.7,
-     "gust_mph": 8.3,
-     "wind_dir_deg": 359,
+     "gust_mph": 7.8,
+     "wind_dir_deg": 360,
      "wind_from": "N",
      "wind_arrow": "↓",
      "code": 0,
@@ -6487,14 +6567,14 @@
      "local": "2026-10-22T19:00",
      "at": "2026-10-23T00:00:00.000Z",
      "label": "7 PM",
-     "temp_f": 67.5,
-     "feels_f": 61.7,
+     "temp_f": 67.6,
+     "feels_f": 62.1,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 29,
-     "wind_mph": 5.4,
-     "gust_mph": 10.5,
-     "wind_dir_deg": 7,
+     "humidity_pct": 30,
+     "wind_mph": 5.2,
+     "gust_mph": 11,
+     "wind_dir_deg": 5,
      "wind_from": "N",
      "wind_arrow": "↓",
      "code": 0,
@@ -6507,13 +6587,13 @@
      "at": "2026-10-23T01:00:00.000Z",
      "label": "8 PM",
      "temp_f": 64.3,
-     "feels_f": 58.7,
+     "feels_f": 58.9,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 33,
-     "wind_mph": 5.4,
-     "gust_mph": 13,
-     "wind_dir_deg": 34,
+     "humidity_pct": 35,
+     "wind_mph": 5.2,
+     "gust_mph": 12.5,
+     "wind_dir_deg": 25,
      "wind_from": "NE",
      "wind_arrow": "↙",
      "code": 0,
@@ -6525,14 +6605,14 @@
      "local": "2026-10-22T21:00",
      "at": "2026-10-23T02:00:00.000Z",
      "label": "9 PM",
-     "temp_f": 62,
-     "feels_f": 56.7,
+     "temp_f": 61.8,
+     "feels_f": 56.5,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 39,
-     "wind_mph": 5.5,
-     "gust_mph": 13.6,
-     "wind_dir_deg": 40,
+     "humidity_pct": 40,
+     "wind_mph": 5.6,
+     "gust_mph": 14.1,
+     "wind_dir_deg": 37,
      "wind_from": "NE",
      "wind_arrow": "↙",
      "code": 0,
@@ -6544,42 +6624,42 @@
    "kickoff": "2026-10-22T23:30:00.000Z"
   },
   "401862808": {
-   "temp_f": 69.8,
-   "wind_mph": 5.5,
+   "temp_f": 70.8,
+   "wind_mph": 6,
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:03.976Z",
+   "as_of": "2026-10-22T14:42:09.646Z",
    "kickoff_local": "2026-10-23T19:00",
    "kickoff_label": "7 PM",
    "timezone": "America/Chicago",
    "tz_abbrev": "GMT-5",
    "utc_offset_seconds": -18000,
-   "feels_f": 65.8,
-   "humidity_pct": 39,
-   "gust_mph": 10.3,
+   "feels_f": 65.3,
+   "humidity_pct": 29,
+   "gust_mph": 12.1,
    "precip_pct": 0,
    "code": 3,
    "text": "Overcast",
    "icon": "☁️",
-   "wind_word": "CALM",
-   "wind_from": "SE",
-   "wind_arrow": "↖",
+   "wind_word": "LIGHT",
+   "wind_from": "S",
+   "wind_arrow": "↑",
    "hours": [
     {
      "local": "2026-10-23T19:00",
      "at": "2026-10-24T00:00:00.000Z",
      "label": "7 PM",
-     "temp_f": 69.8,
-     "feels_f": 65.8,
+     "temp_f": 70.8,
+     "feels_f": 65.3,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 39,
-     "wind_mph": 5.5,
-     "gust_mph": 10.3,
-     "wind_dir_deg": 138,
-     "wind_from": "SE",
-     "wind_arrow": "↖",
+     "humidity_pct": 29,
+     "wind_mph": 6,
+     "gust_mph": 12.1,
+     "wind_dir_deg": 165,
+     "wind_from": "S",
+     "wind_arrow": "↑",
      "code": 3,
      "text": "Overcast",
      "icon": "☁️",
@@ -6589,14 +6669,14 @@
      "local": "2026-10-23T20:00",
      "at": "2026-10-24T01:00:00.000Z",
      "label": "8 PM",
-     "temp_f": 68.2,
-     "feels_f": 63.8,
+     "temp_f": 67.2,
+     "feels_f": 62.2,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 39,
-     "wind_mph": 5.9,
-     "gust_mph": 14.1,
-     "wind_dir_deg": 151,
+     "humidity_pct": 35,
+     "wind_mph": 5.6,
+     "gust_mph": 9.8,
+     "wind_dir_deg": 140,
      "wind_from": "SE",
      "wind_arrow": "↖",
      "code": 3,
@@ -6608,14 +6688,14 @@
      "local": "2026-10-23T21:00",
      "at": "2026-10-24T02:00:00.000Z",
      "label": "9 PM",
-     "temp_f": 66.6,
-     "feels_f": 61.4,
+     "temp_f": 67.2,
+     "feels_f": 61.7,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 37,
+     "humidity_pct": 34,
      "wind_mph": 6.5,
-     "gust_mph": 15.4,
-     "wind_dir_deg": 147,
+     "gust_mph": 14.8,
+     "wind_dir_deg": 139,
      "wind_from": "SE",
      "wind_arrow": "↖",
      "code": 3,
@@ -6627,14 +6707,14 @@
      "local": "2026-10-23T22:00",
      "at": "2026-10-24T03:00:00.000Z",
      "label": "10 PM",
-     "temp_f": 65.5,
-     "feels_f": 59.9,
+     "temp_f": 66.1,
+     "feels_f": 60,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 37,
-     "wind_mph": 6.8,
+     "humidity_pct": 34,
+     "wind_mph": 7.2,
      "gust_mph": 16.6,
-     "wind_dir_deg": 143,
+     "wind_dir_deg": 150,
      "wind_from": "SE",
      "wind_arrow": "↖",
      "code": 3,
@@ -6651,7 +6731,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.253Z",
+   "as_of": "2026-10-22T14:42:09.833Z",
    "kickoff_local": "2026-10-24T12:00",
    "kickoff_label": "12 PM",
    "timezone": "America/New_York",
@@ -6753,7 +6833,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.573Z",
+   "as_of": "2026-10-22T14:42:09.996Z",
    "kickoff_local": "2026-10-24T15:00",
    "kickoff_label": "3 PM",
    "timezone": "America/New_York",
@@ -6949,7 +7029,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-25T00:00:00.000Z"
+   "kickoff": "2026-10-25T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862812": {
    "temp_f": 77.5,
@@ -7051,7 +7133,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-29T23:30:00.000Z"
+   "kickoff": "2026-10-29T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862813": {
    "temp_f": 71.9,
@@ -7153,7 +7237,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-30T23:00:00.000Z"
+   "kickoff": "2026-10-30T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862814": {
    "temp_f": 67.8,
@@ -7255,7 +7341,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862815": {
    "temp_f": 56.4,
@@ -7357,7 +7445,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862816": {
    "temp_f": 71.5,
@@ -7459,23 +7549,25 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401864525": {
-   "temp_f": 48.7,
-   "wind_mph": 7.4,
+   "temp_f": 49.4,
+   "wind_mph": 8.1,
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.021Z",
+   "as_of": "2026-10-22T14:42:09.590Z",
    "kickoff_local": "2026-10-23T19:00",
    "kickoff_label": "7 PM",
    "timezone": "America/Denver",
    "tz_abbrev": "GMT-6",
    "utc_offset_seconds": -21600,
-   "feels_f": 41.1,
-   "humidity_pct": 43,
-   "gust_mph": 17.7,
+   "feels_f": 41.4,
+   "humidity_pct": 42,
+   "gust_mph": 20.6,
    "precip_pct": 2,
    "code": 0,
    "text": "Clear",
@@ -7488,14 +7580,14 @@
      "local": "2026-10-23T19:00",
      "at": "2026-10-24T01:00:00.000Z",
      "label": "7 PM",
-     "temp_f": 48.7,
-     "feels_f": 41.1,
+     "temp_f": 49.4,
+     "feels_f": 41.4,
      "precip_in": 0,
      "precip_pct": 2,
-     "humidity_pct": 43,
-     "wind_mph": 7.4,
-     "gust_mph": 17.7,
-     "wind_dir_deg": 258,
+     "humidity_pct": 42,
+     "wind_mph": 8.1,
+     "gust_mph": 20.6,
+     "wind_dir_deg": 256,
      "wind_from": "W",
      "wind_arrow": "→",
      "code": 0,
@@ -7507,14 +7599,14 @@
      "local": "2026-10-23T20:00",
      "at": "2026-10-24T02:00:00.000Z",
      "label": "8 PM",
-     "temp_f": 45.9,
-     "feels_f": 40,
+     "temp_f": 46.5,
+     "feels_f": 39.6,
      "precip_in": 0,
      "precip_pct": 2,
-     "humidity_pct": 46,
-     "wind_mph": 2.9,
-     "gust_mph": 15.9,
-     "wind_dir_deg": 269,
+     "humidity_pct": 45,
+     "wind_mph": 5.4,
+     "gust_mph": 16.6,
+     "wind_dir_deg": 268,
      "wind_from": "W",
      "wind_arrow": "→",
      "code": 0,
@@ -7526,37 +7618,37 @@
      "local": "2026-10-23T21:00",
      "at": "2026-10-24T03:00:00.000Z",
      "label": "9 PM",
-     "temp_f": 44.1,
-     "feels_f": 37.3,
+     "temp_f": 44.3,
+     "feels_f": 38.8,
      "precip_in": 0,
      "precip_pct": 2,
-     "humidity_pct": 49,
-     "wind_mph": 5,
-     "gust_mph": 11,
-     "wind_dir_deg": 27,
-     "wind_from": "NE",
-     "wind_arrow": "↙",
-     "code": 3,
-     "text": "Overcast",
-     "icon": "☁️",
+     "humidity_pct": 48,
+     "wind_mph": 2.1,
+     "gust_mph": 8.3,
+     "wind_dir_deg": 252,
+     "wind_from": "W",
+     "wind_arrow": "→",
+     "code": 0,
+     "text": "Clear",
+     "icon": "🌙",
      "is_day": 0
     },
     {
      "local": "2026-10-23T22:00",
      "at": "2026-10-24T04:00:00.000Z",
      "label": "10 PM",
-     "temp_f": 43.9,
-     "feels_f": 36.4,
+     "temp_f": 42.5,
+     "feels_f": 34.5,
      "precip_in": 0,
      "precip_pct": 2,
-     "humidity_pct": 52,
-     "wind_mph": 7.1,
-     "gust_mph": 11.5,
-     "wind_dir_deg": 75,
-     "wind_from": "E",
-     "wind_arrow": "←",
-     "code": 1,
-     "text": "Mostly clear",
+     "humidity_pct": 53,
+     "wind_mph": 8.2,
+     "gust_mph": 13.4,
+     "wind_dir_deg": 317,
+     "wind_from": "NW",
+     "wind_arrow": "↘",
+     "code": 0,
+     "text": "Clear",
      "icon": "🌙",
      "is_day": 0
     }
@@ -7569,7 +7661,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.654Z",
+   "as_of": "2026-10-22T14:42:09.997Z",
    "kickoff_local": "2026-10-24T14:00",
    "kickoff_label": "2 PM",
    "timezone": "America/Chicago",
@@ -7765,7 +7857,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-25T02:00:00.000Z"
+   "kickoff": "2026-10-25T02:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401864528": {
    "temp_f": 56.3,
@@ -7773,7 +7867,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.807Z",
+   "as_of": "2026-10-22T14:42:10.080Z",
    "kickoff_local": "2026-10-24T14:00",
    "kickoff_label": "2 PM",
    "timezone": "America/Los_Angeles",
@@ -7969,7 +8063,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401864530": {
    "dome": true,
@@ -7979,7 +8075,7 @@
    "roof": true,
    "hours": [],
    "source": "trained venue table — indoor venue, no request made",
-   "as_of": "2026-10-22T13:45:03.291Z",
+   "as_of": "2026-10-22T14:42:09.387Z",
    "kickoff": "2026-11-01T02:30:00.000Z"
   },
   "401864531": {
@@ -7990,7 +8086,7 @@
    "roof": true,
    "hours": [],
    "source": "trained venue table — indoor venue, no request made",
-   "as_of": "2026-10-22T13:45:03.291Z",
+   "as_of": "2026-10-22T14:42:09.387Z",
    "kickoff": "2026-10-31T19:30:00.000Z"
   },
   "401866446": {
@@ -7999,7 +8095,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.336Z",
+   "as_of": "2026-10-22T14:42:09.836Z",
    "kickoff_local": "2026-10-24T13:00",
    "kickoff_label": "1 PM",
    "timezone": "America/New_York",
@@ -8101,7 +8197,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.653Z",
+   "as_of": "2026-10-22T14:42:09.999Z",
    "kickoff_local": "2026-10-24T15:00",
    "kickoff_label": "3 PM",
    "timezone": "America/Indiana/Indianapolis",
@@ -8203,7 +8299,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.721Z",
+   "as_of": "2026-10-22T14:42:10.009Z",
    "kickoff_local": "2026-10-24T15:00",
    "kickoff_label": "3 PM",
    "timezone": "America/New_York",
@@ -8305,7 +8401,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.725Z",
+   "as_of": "2026-10-22T14:42:10.076Z",
    "kickoff_local": "2026-10-24T16:00",
    "kickoff_label": "4 PM",
    "timezone": "America/New_York",
@@ -8407,7 +8503,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.258Z",
+   "as_of": "2026-10-22T14:42:09.833Z",
    "kickoff_local": "2026-10-24T12:00",
    "kickoff_label": "12 PM",
    "timezone": "America/New_York",
@@ -8603,7 +8699,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T02:30:00.000Z"
+   "kickoff": "2026-10-31T02:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401866452": {
    "temp_f": 49.1,
@@ -8705,7 +8803,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-31T16:00:00.000Z"
+   "kickoff": "2026-10-31T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401866476": {
    "temp_f": 63.8,
@@ -8713,7 +8813,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.417Z",
+   "as_of": "2026-10-22T14:42:09.846Z",
    "kickoff_local": "2026-10-24T13:00",
    "kickoff_label": "1 PM",
    "timezone": "America/Detroit",
@@ -8810,20 +8910,20 @@
    "kickoff": "2026-10-24T17:00:00.000Z"
   },
   "401869845": {
-   "temp_f": 52.1,
-   "wind_mph": 6,
+   "temp_f": 52.4,
+   "wind_mph": 6.5,
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:03.875Z",
+   "as_of": "2026-10-22T14:42:09.545Z",
    "kickoff_local": "2026-10-22T19:00",
    "kickoff_label": "7 PM",
    "timezone": "America/New_York",
    "tz_abbrev": "GMT-4",
    "utc_offset_seconds": -14400,
-   "feels_f": 46.1,
+   "feels_f": 46.3,
    "humidity_pct": 51,
-   "gust_mph": 13.6,
+   "gust_mph": 11.9,
    "precip_pct": 0,
    "code": 0,
    "text": "Clear",
@@ -8836,14 +8936,14 @@
      "local": "2026-10-22T19:00",
      "at": "2026-10-22T23:00:00.000Z",
      "label": "7 PM",
-     "temp_f": 52.1,
-     "feels_f": 46.1,
+     "temp_f": 52.4,
+     "feels_f": 46.3,
      "precip_in": 0,
      "precip_pct": 0,
      "humidity_pct": 51,
-     "wind_mph": 6,
-     "gust_mph": 13.6,
-     "wind_dir_deg": 319,
+     "wind_mph": 6.5,
+     "gust_mph": 11.9,
+     "wind_dir_deg": 322,
      "wind_from": "NW",
      "wind_arrow": "↘",
      "code": 0,
@@ -8855,14 +8955,14 @@
      "local": "2026-10-22T20:00",
      "at": "2026-10-23T00:00:00.000Z",
      "label": "8 PM",
-     "temp_f": 49.6,
-     "feels_f": 43.6,
+     "temp_f": 49.5,
+     "feels_f": 43.4,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 56,
-     "wind_mph": 6,
-     "gust_mph": 9.4,
-     "wind_dir_deg": 311,
+     "humidity_pct": 55,
+     "wind_mph": 6.2,
+     "gust_mph": 11.4,
+     "wind_dir_deg": 314,
      "wind_from": "NW",
      "wind_arrow": "↘",
      "code": 0,
@@ -8874,14 +8974,14 @@
      "local": "2026-10-22T21:00",
      "at": "2026-10-23T01:00:00.000Z",
      "label": "9 PM",
-     "temp_f": 47.9,
+     "temp_f": 47.7,
      "feels_f": 41.3,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 54,
-     "wind_mph": 6.5,
-     "gust_mph": 11.4,
-     "wind_dir_deg": 323,
+     "humidity_pct": 55,
+     "wind_mph": 6.2,
+     "gust_mph": 11.9,
+     "wind_dir_deg": 322,
      "wind_from": "NW",
      "wind_arrow": "↘",
      "code": 0,
@@ -8893,14 +8993,14 @@
      "local": "2026-10-22T22:00",
      "at": "2026-10-23T02:00:00.000Z",
      "label": "10 PM",
-     "temp_f": 47.1,
-     "feels_f": 39.4,
+     "temp_f": 47,
+     "feels_f": 39.8,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 43,
-     "wind_mph": 7.2,
-     "gust_mph": 12.1,
-     "wind_dir_deg": 331,
+     "humidity_pct": 45,
+     "wind_mph": 6,
+     "gust_mph": 11,
+     "wind_dir_deg": 321,
      "wind_from": "NW",
      "wind_arrow": "↘",
      "code": 0,
@@ -9011,7 +9111,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869935": {
    "temp_f": 73,
@@ -9113,7 +9215,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T23:00:00.000Z"
+   "kickoff": "2026-10-24T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869944": {
    "temp_f": 66.4,
@@ -9215,7 +9319,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869963": {
    "temp_f": 59.2,
@@ -9317,7 +9423,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-29T23:30:00.000Z"
+   "kickoff": "2026-10-29T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869967": {
    "temp_f": 78.4,
@@ -9419,23 +9527,25 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-24T21:00:00.000Z"
+   "kickoff": "2026-10-24T21:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (timeout after 15000ms); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871056": {
-   "temp_f": 66.9,
-   "wind_mph": 6.2,
+   "temp_f": 67.4,
+   "wind_mph": 6,
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:03.903Z",
+   "as_of": "2026-10-22T14:42:09.619Z",
    "kickoff_local": "2026-10-22T19:00",
    "kickoff_label": "7 PM",
    "timezone": "America/New_York",
    "tz_abbrev": "GMT-4",
    "utc_offset_seconds": -14400,
-   "feels_f": 61.3,
+   "feels_f": 62,
    "humidity_pct": 33,
-   "gust_mph": 11.9,
+   "gust_mph": 11.4,
    "precip_pct": 0,
    "code": 0,
    "text": "Clear",
@@ -9448,14 +9558,14 @@
      "local": "2026-10-22T19:00",
      "at": "2026-10-22T23:00:00.000Z",
      "label": "7 PM",
-     "temp_f": 66.9,
-     "feels_f": 61.3,
+     "temp_f": 67.4,
+     "feels_f": 62,
      "precip_in": 0,
      "precip_pct": 0,
      "humidity_pct": 33,
-     "wind_mph": 6.2,
-     "gust_mph": 11.9,
-     "wind_dir_deg": 316,
+     "wind_mph": 6,
+     "gust_mph": 11.4,
+     "wind_dir_deg": 304,
      "wind_from": "NW",
      "wind_arrow": "↘",
      "code": 0,
@@ -9467,14 +9577,14 @@
      "local": "2026-10-22T20:00",
      "at": "2026-10-23T00:00:00.000Z",
      "label": "8 PM",
-     "temp_f": 63.2,
-     "feels_f": 57.6,
+     "temp_f": 63.7,
+     "feels_f": 57.9,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 37,
-     "wind_mph": 6,
-     "gust_mph": 13.9,
-     "wind_dir_deg": 317,
+     "humidity_pct": 35,
+     "wind_mph": 6.1,
+     "gust_mph": 14.1,
+     "wind_dir_deg": 306,
      "wind_from": "NW",
      "wind_arrow": "↘",
      "code": 0,
@@ -9486,16 +9596,16 @@
      "local": "2026-10-22T21:00",
      "at": "2026-10-23T01:00:00.000Z",
      "label": "9 PM",
-     "temp_f": 60.7,
-     "feels_f": 55,
+     "temp_f": 60.9,
+     "feels_f": 55.9,
      "precip_in": 0,
      "precip_pct": 0,
-     "humidity_pct": 38,
-     "wind_mph": 5.5,
-     "gust_mph": 14.8,
-     "wind_dir_deg": 341,
-     "wind_from": "N",
-     "wind_arrow": "↓",
+     "humidity_pct": 37,
+     "wind_mph": 3.7,
+     "gust_mph": 13,
+     "wind_dir_deg": 322,
+     "wind_from": "NW",
+     "wind_arrow": "↘",
      "code": 0,
      "text": "Clear",
      "icon": "🌙",
@@ -9505,16 +9615,16 @@
      "local": "2026-10-22T22:00",
      "at": "2026-10-23T02:00:00.000Z",
      "label": "10 PM",
-     "temp_f": 58.5,
-     "feels_f": 52.5,
+     "temp_f": 58.9,
+     "feels_f": 54.1,
      "precip_in": 0,
      "precip_pct": 0,
      "humidity_pct": 38,
-     "wind_mph": 5.6,
-     "gust_mph": 12.8,
-     "wind_dir_deg": 331,
-     "wind_from": "NW",
-     "wind_arrow": "↘",
+     "wind_mph": 2.7,
+     "gust_mph": 11,
+     "wind_dir_deg": 279,
+     "wind_from": "W",
+     "wind_arrow": "→",
      "code": 0,
      "text": "Clear",
      "icon": "🌙",
@@ -9623,7 +9733,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-29T00:00:00.000Z"
+   "kickoff": "2026-10-29T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871058": {
    "temp_f": 66.5,
@@ -9725,7 +9837,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-28T23:00:00.000Z"
+   "kickoff": "2026-10-28T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871059": {
    "temp_f": 63.7,
@@ -9827,7 +9941,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-31T19:30:00.000Z"
+   "kickoff": "2026-10-31T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871071": {
    "temp_f": 66,
@@ -9929,7 +10045,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-27T23:00:00.000Z"
+   "kickoff": "2026-10-27T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871072": {
    "temp_f": 60.6,
@@ -10031,7 +10149,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-28T00:00:00.000Z"
+   "kickoff": "2026-10-28T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871093": {
    "temp_f": 84.2,
@@ -10039,7 +10159,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.889Z",
+   "as_of": "2026-10-22T14:42:15.484Z",
    "kickoff_local": "2026-10-24T16:00",
    "kickoff_label": "4 PM",
    "timezone": "America/Chicago",
@@ -10141,7 +10261,7 @@
    "precip_in": 0,
    "dome": false,
    "source": "open-meteo forecast",
-   "as_of": "2026-10-22T13:45:04.731Z",
+   "as_of": "2026-10-22T14:42:15.475Z",
    "kickoff_local": "2026-10-24T15:00",
    "kickoff_label": "3 PM",
    "timezone": "America/Chicago",
@@ -10337,7 +10457,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871096": {
    "temp_f": 57.4,
@@ -10439,7 +10561,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871097": {
    "temp_f": 63.5,
@@ -10541,7 +10665,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-31T04:00:00.000Z"
+   "kickoff": "2026-10-31T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   }
  }
 }
