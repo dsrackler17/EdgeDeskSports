@@ -45,6 +45,7 @@ const DEFAULTS = {
   phi: 1.8, halflife_days: 0, max_sweeps: 30, tol: 2e-4, hier: true, parks: true,
   cont_k: 0,                          // roster continuity: 0 = off (see startSeason)
   sp_k: 0,                            // projected starters: 0 = off (see predict)
+  pl_k: 0,                            // platoon, the projected starter's hand against the opposing nine: 0 = off
 };
 
 class Index {
@@ -236,6 +237,10 @@ class TeamQuality {
        without one (its recent games not boxed) is priced exactly as before */
     const sp = this.o.sp_k && this.meta && this.meta.starter ? this.meta.starter(g) : null;
     if (sp) { if (sp.a != null) lh *= Math.exp(this.o.sp_k * sp.a); if (sp.h != null) la *= Math.exp(this.o.sp_k * sp.h); }
+    /* PLATOON (pl_k > 0): a nine with more of its bats on the advantaged side of the projected starter's hand than
+       is usual scores more; meta.platoon gives that share against the league's, from earlier games' lineups */
+    const pl = this.o.pl_k && this.meta && this.meta.platoon ? this.meta.platoon(g) : null;
+    if (pl) { if (pl.a != null) lh *= Math.exp(this.o.pl_k * pl.a); if (pl.h != null) la *= Math.exp(this.o.pl_k * pl.h); }
     const vh = this.netVar(h); const va = this.netVar(a);
     const same = vh.c === va.c;
     return {

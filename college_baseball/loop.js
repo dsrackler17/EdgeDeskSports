@@ -81,6 +81,11 @@ const CATALOGUE = [
   ['starter_quality_half', 'tq.sp_k', ['set', 0.5], ['midweek', 'favourites'], 'school_box'],
   ['starter_quality_stronger', 'tq.sp_k', ['mul', 1.5], ['midweek', 'favourites'], 'school_box'],
   ['starter_quality_weaker', 'tq.sp_k', ['mul', 0.67], ['midweek', 'favourites'], 'school_box'],
+  /* platoon (the same module): the projected starter's hand against the opposing nine's usual bats; inactive until both are known */
+  ['platoon', 'tq.pl_k', ['set', 0.3], ['favourites'], 'hands'],
+  ['platoon_half', 'tq.pl_k', ['set', 0.15], ['favourites'], 'hands'],
+  ['platoon_stronger', 'tq.pl_k', ['mul', 1.5], ['favourites'], 'hands'],
+  ['platoon_weaker', 'tq.pl_k', ['mul', 0.67], ['favourites'], 'hands'],
 ];
 /* what a data-dependent candidate needs before it is tried: the share of D-I team-seasons it can see */
 const MIN_COVERAGE = 0.8;
@@ -96,11 +101,13 @@ function inactiveCandidates(o) {
     const cov = C.coverage(ts);
     if (cov < MIN_COVERAGE) for (const c of CATALOGUE.filter((x) => x[4] === 'continuity')) off.set(c[0], 'INACTIVE: roster continuity covers ' + (100 * cov).toFixed(1) + '% of D-I team-seasons ' + span + ' (needs ' + 100 * MIN_COVERAGE + '%); the collegiate roster backfill (collegiate/plan.json) fills it');
   }
-  if (needs.has('school_box')) {
+  if (needs.has('school_box') || needs.has('hands')) {
     const SP = require('./lib/starters');
     const B = o.starters || SP.inputs({ until: WF.WIN.validation[1] });
     const cov = B.coverage(ts);
     if (cov < MIN_COVERAGE) for (const c of CATALOGUE.filter((x) => x[4] === 'school_box')) off.set(c[0], 'INACTIVE: the schools\' box scores cover ' + (100 * cov).toFixed(1) + '% of D-I team-seasons ' + span + ' (a team-season counts when ' + 100 * SP.COVERED + '% of its contests are boxed; needs ' + 100 * MIN_COVERAGE + '%); the collegiate box-score backfill (collegiate/plan.json) fills it');
+    const hc = B.handCoverage ? B.handCoverage(ts) : 0;
+    if (hc < MIN_COVERAGE) for (const c of CATALOGUE.filter((x) => x[4] === 'hands')) off.set(c[0], 'INACTIVE: the starter\'s hand and the opposing nine\'s bats are both known for ' + (100 * hc).toFixed(1) + '% of D-I team-seasons ' + span + ' (a team-season counts when they are for ' + 100 * SP.COVERED + '% of its contests; needs ' + 100 * MIN_COVERAGE + '%); box scores and the schools\' rosters (collegiate/) fill it');
   }
   return off;
 }

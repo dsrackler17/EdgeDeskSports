@@ -167,3 +167,9 @@ Added before any model with the starter term was scored. Everything above keeps 
   - a team-season counts as covered when at least 80% of its contests are boxed.
   - Once active, the four catalogue changes (`starter_quality`, `_half`, `_stronger`, `_weaker`) are tried under the full-window rule, like every other.
 - **The ceiling, stated now.** From the schedules held on 2026-10-22, about 83% of D-I team-seasons will be covered in 2022 and 2024, but about 22% in 2014. Older seasons' schedules link fewer box scores, and the WMT sites' boxes are not read. So the term may stay inactive until more older-season boxes are found. The weekly report names its coverage every week. A lower bar would test the term mostly on recent seasons, so the bar is not lowered for it.
+- **Platoon (step 6), the same rule.** `tq.pl_k` (0, off) reads two inputs:
+  - the opposing nine's usual bats: its starting nines in its own boxed games of the last 28 days, never today's lineup;
+  - the projected starter's throwing hand.
+  - The term is pl = Σ p_i s_i (advantaged share against hand_i − the league's share against that hand, measured on the 2013 burn-in).
+  - A hand comes from the box, or else from the school's roster for the same name. Only a name that matches exactly one roster player counts, and nothing stands in for an unknown hand.
+  - It is inactive until both hands are known for 80% of the contests of 80% of D-I team-seasons in SELECTION + VALIDATION. Its catalogue changes are `platoon`, `_half`, `_stronger` and `_weaker`.

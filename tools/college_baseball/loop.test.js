@@ -42,11 +42,12 @@ ok('projected starters start off and are switched on by one change', L.applyChan
   /* the coverage gate, on a synthetic record: 300 D-I teams a season, 2014-2024 */
   const ts = []; for (let s = 2014; s <= 2024; s++) for (let t = 1; t <= 300; t++) ts.push({ season: s, team_id: String(t), division: 1 });
   const cov = (share) => ({ coverage: (list) => list.filter(([, id]) => +id <= 300 * share).length / list.length });
-  const gate = (c, b) => L.inactiveCandidates({ continuity: cov(c), starters: cov(b), teamSeasons: ts });
-  const none = gate(0, 0); const some = gate(0.79, 0.9); const most = gate(0.875, 0.875); const boxesShort = gate(0.9, 0.5);
+  const gate = (c, b, h) => L.inactiveCandidates({ continuity: cov(c), starters: Object.assign(cov(b), { handCoverage: cov(h == null ? b : h).coverage }), teamSeasons: ts });
+  const none = gate(0, 0); const some = gate(0.79, 0.9); const most = gate(0.875, 0.875); const boxesShort = gate(0.9, 0.5, 0.9); const handsShort = gate(0.9, 0.9, 0.4);
   ok('with no collegiate rosters, continuity is inactive and says why', /^INACTIVE: roster continuity covers 0\.0% of D-I team-seasons 2014-2024 \(needs 80%\)/.test(none.get('roster_continuity_carry') || ''), none.get('roster_continuity_carry'));
   ok('below 80% it stays inactive; at 80% or more every continuity candidate is tried like any other', some.size === 3 && [...some.keys()].every((k) => /^roster_continuity/.test(k)) && most.size === 0, [some.size, most.size]);
-  ok('the starter term waits on the schools\' box scores the same way, and says what counts', none.size === 7 && boxesShort.size === 4 && /^INACTIVE: the schools' box scores cover 50\.0% of D-I team-seasons 2014-2024 \(a team-season counts when 80% of its contests are boxed; needs 80%\)/.test(boxesShort.get('starter_quality') || ''), boxesShort.get('starter_quality'));
+  ok('the starter term waits on the schools\' box scores the same way, and says what counts', none.size === 11 && boxesShort.size === 4 && /^INACTIVE: the schools' box scores cover 50\.0% of D-I team-seasons 2014-2024 \(a team-season counts when 80% of its contests are boxed; needs 80%\)/.test(boxesShort.get('starter_quality') || ''), boxesShort.get('starter_quality'));
+  ok('the platoon term waits on both hands being known, on its own', handsShort.size === 4 && [...handsShort.keys()].every((k) => /^platoon/.test(k)) && /^INACTIVE: the starter's hand and the opposing nine's bats are both known for 40\.0%/.test(handsShort.get('platoon') || ''), [...handsShort.keys()]);
 }
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cbloop-'));
@@ -62,7 +63,7 @@ ok('a pass is STAGED, never served: the served version is unchanged', vd.current
 ok('the staged change is the one that passed', vd.versions[1].config.tq.sigma_team === +(0.12 * 1.33).toFixed(6) && vd.versions[1].config_sha256 === WF.configHash(vd.versions[1].config));
 const wk2 = L.research({ docs, score, only: ['team_spread_looser'], today: '2026-10-28', inactive: offC });
 ok('the next week builds on the staged version', wk2.baseline.from_version === '1.1.0');
-ok('a candidate waiting on data is logged as skipped, with the reason', by('roster_continuity_carry').decision === 'SKIPPED' && /no rosters/.test(by('roster_continuity_carry').reason) && wk.inactive.length === 7);
+ok('a candidate waiting on data is logged as skipped, with the reason', by('roster_continuity_carry').decision === 'SKIPPED' && /no rosters/.test(by('roster_continuity_carry').reason) && wk.inactive.length === 11);
 ok('every candidate is logged', fs.readFileSync(path.join(docs, 'candidates.jsonl'), 'utf8').trim().split('\n').length === 5);
 ok('the report says what is staged, that the holdout is untouched, and what waits on data', /Staged/.test(L.report({ docs })) && /never read here/.test(fs.readFileSync(path.join(docs, 'weekly_model_report.md'), 'utf8')) && /Waiting on data we do not hold yet/.test(fs.readFileSync(path.join(docs, 'weekly_model_report.md'), 'utf8')));
 
@@ -98,6 +99,9 @@ WF.cfgsFromTuning = realCfgs;
   const plain = (() => { const t = new TQm.TeamQuality({ hier: false, parks: false }, { conf: () => 'C1', div: () => 1 }); t.startSeason(1); return t.predict(g); })();
   ok('starter term off: the runs are the hierarchy\'s alone', off.lh === plain.lh && off.la === plain.la);
   ok('starter term on: the side facing a worse arm than usual scores more, by exp(sp_k q); a side without one as before', Math.abs(on.lh / off.lh - Math.exp(0.1)) < 1e-12 && Math.abs(half.lh / off.lh - Math.exp(0.05)) < 1e-12 && on.la === off.la, { off, on });
+  const metaP = Object.assign({}, meta, { platoon: () => ({ h: -0.2, a: null }) });
+  const pl = (() => { const t = new TQm.TeamQuality({ hier: false, parks: false, pl_k: 0.5 }, metaP); t.startSeason(1); return t.predict(g); })();
+  ok('platoon on: the nine at a disadvantage against the projected starter\'s hand scores less, by exp(pl_k x); the other as before', Math.abs(pl.la / off.la - Math.exp(-0.1)) < 1e-12 && pl.lh === off.lh, { pl, off });
 }
 
 /* the walk-forward's holdout look belongs to one configuration */

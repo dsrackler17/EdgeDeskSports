@@ -38,6 +38,7 @@ function meta(o) {
   return {
     continuity: (s, id) => { if (!cont) cont = require('./continuity').load(); return cont.centred(s, id); },
     starter: (g) => { if (!sp) sp = require('./starters').load({ until: o.until }); return sp.of(g); },
+    platoon: (g) => { if (!sp) sp = require('./starters').load({ until: o.until }); return sp.platoon(g); },
     conf: (s, id) => { const t = by.get(s + ':' + id); return t ? t.conference || null : null; },
     div: (s, id) => { const t = by.get(s + ':' + id); return t ? t.division : null; },
     name: (s, id) => { const t = by.get(s + ':' + id); return t ? t.name : null; },

@@ -11,7 +11,10 @@
      - a game's own box never moves its own number (the actual starter is oracle);
      - a team whose recent games are not boxed has no number, and its
        team-season does not count toward coverage;
-     - a game after the record (the live board) is priced from everything before it.
+     - a game after the record (the live board) is priced from everything before it;
+     - platoon: the projected starter's hand against the opposing nine's
+       usual bats (earlier games only), hands from the box or, by name, the
+       school's roster, and none where neither gives one.
 
    Run: node tools/college_baseball/starters.test.js
    =========================================================================== */
@@ -44,7 +47,7 @@ let seed = 7;
 const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
 const binom = (n, p) => { let k = 0; for (let i = 0; i < n; i++) if (rnd() < p) k++; return k; };
 const TEAMS = Array.from({ length: 12 }, (_, i) => String(101 + i));
-const ARMS = { fri: { name: 'Adam Fridayson', k: 0.32, bb: 0.05, h: 0.15 }, sat: { name: 'Sam Saturn', k: 0.21, bb: 0.09, h: 0.23 }, sun: { name: 'Stu Sundance', k: 0.12, bb: 0.15, h: 0.31 } };
+const ARMS = { fri: { name: 'Adam Fridayson', throws: 'L', k: 0.32, bb: 0.05, h: 0.15 }, sat: { name: 'Sam Saturn', k: 0.21, bb: 0.09, h: 0.23 }, sun: { name: 'Stu Sundance', k: 0.12, bb: 0.15, h: 0.31 } };
 const PEN = [{ name: 'Rob Relief', k: 0.22, bb: 0.1, h: 0.22 }, { name: 'Ray Bullen', k: 0.2, bb: 0.11, h: 0.23 }, { name: 'Pat Closer', k: 0.24, bb: 0.09, h: 0.21 }];
 function line(arm, bf) {
   const k = binom(bf, arm.k), bb = binom(bf, arm.bb), h = binom(bf, arm.h), hb = binom(bf, 0.02);
@@ -59,7 +62,12 @@ function staff(slot) {
   const runs = Math.max(0, Math.round(-0.12 * sum('bf') + 0.6 * (sum('bb') + sum('hb')) + 0.8 * sum('h') + (rnd() - 0.5) * 2));
   return { all, runs };
 }
-const row = (l, r) => [l.arm.name, 'R', l.outs, l.bf, l.k, l.bb, l.h, r, null, null, r, null, l.hb];
+const row = (l, r) => [l.arm.name, l.arm.throws || 'R', l.outs, l.bf, l.k, l.bb, l.h, r, null, null, r, null, l.hb];
+/* half the league bats left-heavy, half right-heavy */
+const NINE = (t) => (+t <= 106 ? 'LLLLLLSRR' : 'RRRRRRRSL').split('').map((b, i) => [i + 1, 'Bat' + 'abcdefghi'[i] + ' Hitter' + 'abcdefghi'[i], 'X', b, null]);
+/* team 108's boxes carry no hands (an older site); its roster lists them */
+const NOHANDS = '108';
+const bare = (t, pitchers, lineup) => (t === NOHANDS ? { pitchers: pitchers.map((r) => Object.assign([], r, { 1: null })), lineup: lineup.map((l) => Object.assign([], l, { 3: null })) } : { pitchers, lineup });
 function season(s, firstFriday, weeks, skipBoxesOf) {
   const games = []; const files = new Map();
   for (let w = 0; w < weeks; w++) {
@@ -75,7 +83,7 @@ function season(s, firstFriday, weeks, skipBoxesOf) {
         games.push({ game_id: id, season: s, date, home_id: h, away_id: a, home_runs: hr, away_runs: ar, status: 'FINAL', start_time_local: '' });
         if (skipBoxesOf && (h === skipBoxesOf || a === skipBoxesOf)) continue;
         const box = { game_key: id, school: 'school' + h, url: 'https://example.edu/box/' + id, platform: 'sidearm', date, doubleheader_game: 0,
-          home: { code: h, runs: hr, pitchers: H.all.map((l, i) => row(l, i ? 0 : ar)) }, away: { code: a, runs: ar, pitchers: A.all.map((l, i) => row(l, i ? 0 : hr)) } };
+          home: Object.assign({ code: h, runs: hr }, bare(h, H.all.map((l, i) => row(l, i ? 0 : ar)), NINE(h))), away: Object.assign({ code: a, runs: ar }, bare(a, A.all.map((l, i) => row(l, i ? 0 : hr)), NINE(a))) };
         if (!files.has(h)) files.set(h, []); files.get(h).push(box);
       }
     });
@@ -93,7 +101,14 @@ function writeBoxes(dir, mutate) {
 }
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cbstarters-'));
 const d1 = path.join(tmp, 'a'); writeBoxes(d1);
-const L = SP.load({ until: 2014, gamesOf, boxDir: d1 });
+const rostersDir = path.join(tmp, 'rosters');
+for (const s of [2013, 2014]) {
+  fs.mkdirSync(path.join(rostersDir, String(s)), { recursive: true });
+  const players = [...Object.values(ARMS), ...PEN].map((x) => ({ name: x.name, throws: x.throws || 'R', bats: 'R' })).concat(NINE(NOHANDS).map((l) => ({ name: l[1], bats: l[3], throws: 'R' })));
+  fs.writeFileSync(path.join(rostersDir, String(s), 'school' + NOHANDS + '.json'), JSON.stringify({ players }));
+}
+const OPTS = { until: 2014, gamesOf, boxDir: d1, rostersDir, schoolsOf: (t) => ['school' + t] };
+const L = SP.load(OPTS);
 
 ok('the weights are fitted on the burn-in (2013) and have no home-run term', L.fitted.fit_season === 2013 && L.fitted.linear_weights && L.fitted.linear_weights.hr === 0 && L.fitted.linear_weights.n === 2 * S13.games.length);
 const lw = L.fitted.linear_weights;
@@ -124,14 +139,35 @@ const boxedShare = (t) => { const gs = S14.games.filter((g) => g.home_id === t |
 const expected = TEAMS.filter((t) => boxedShare(t) >= 0.8).length / 12;
 ok('coverage counts the team-seasons with 80% of their contests boxed (never the team whose boxes are not held)', Math.abs(L.coverage(pairs) - expected) < 1e-9 && expected < 1 && L.coverage([[2014, '112']]) === 0 && L.coverage([[2013, '101']]) === 1, [L.coverage(pairs), expected]);
 
+/* platoon: the projected starter's hand against the opposing nine's usual bats */
+const pb = L.fitted.platoon_base;
+ok('the league\'s platoon advantage is measured on the burn-in\'s nines', pb && Math.abs(pb.R - 0.5) < 0.02 && Math.abs(pb.L - (3 / 9 + 8 / 9) / 2) < 0.02, pb);
+const plOf = (g, t) => { const v = L.platoon(g); return t === g.home_id ? v.h : v.a; };
+const lefty = (t) => +t <= 106;
+const cell = { fri_L: [], fri_R: [], sat_L: [], sat_R: [] };
+for (const g of late) for (const [t, o] of [[g.home_id, g.away_id], [g.away_id, g.home_id]]) {
+  const slot = g.game_id.split('_')[2]; if (slot === 'sun' || t === '112' || o === '112') continue;
+  const x = plOf(g, t); if (x != null) cell[slot + '_' + (lefty(o) ? 'L' : 'R')].push(x);
+}
+ok('the lefty ace against a left-heavy nine: the nine is at a disadvantage (fewer runs); against a right-heavy one, the opposite', cell.fri_L.length > 10 && cell.fri_R.length > 10 && mean(cell.fri_L) < -0.05 && mean(cell.fri_R) > 0.05, { L: mean(cell.fri_L), R: mean(cell.fri_R) });
+ok('a right-hander the other way round', cell.sat_L.length > 10 && mean(cell.sat_L) > 0.05 && mean(cell.sat_R) < -0.05, { L: mean(cell.sat_L), R: mean(cell.sat_R) });
+const g111 = late.filter((g) => (g.home_id === NOHANDS || g.away_id === NOHANDS) && g.home_id !== '112' && g.away_id !== '112');
+ok('a school whose boxes carry no hands takes them from its roster, by name: its staff and its nine both have a platoon number', g111.some((g) => plOf(g, NOHANDS) != null) && g111.some((g) => plOf(g, g.home_id === NOHANDS ? g.away_id : g.home_id) != null));
+const LN = SP.load(Object.assign({}, OPTS, { rostersDir: path.join(tmp, 'none') }));
+ok('...and without the roster it has none (nothing stands in for a hand we do not hold)', g111.every((g) => { const v = LN.platoon(g); return (g.home_id === NOHANDS ? v.h : v.a) == null; }));
+ok('hand coverage counts the team-seasons whose starters\' hands and opposing nines\' bats are known for 80% of contests', L.handCoverage([[2014, '101']]) === 1 && L.handCoverage([[2014, '112']]) === 0 && LN.handCoverage([[2014, NOHANDS]]) === 0 && L.handCoverage([[2014, NOHANDS]]) === 1);
+
 /* the actual starter is oracle: rewrite one game's own box (another, far better starter) and its own number does not move */
 {
   const target = late.find((g) => g.home_id === '101' && g.game_id.includes('_sun_'));
   const d2 = path.join(tmp, 'b');
-  writeBoxes(d2, (b) => (b.game_key === target.game_id ? Object.assign({}, b, { home: Object.assign({}, b.home, { pitchers: [['Zed Phenom', 'L', 27, 28, 20, 0, 1, 0, null, null, 0, null, 0]] }) }) : b));
-  const L2 = SP.load({ until: 2014, gamesOf, boxDir: d2 });
+  const flip = (l) => l.map((x) => Object.assign([], x, { 3: x[3] === 'L' ? 'R' : 'L' }));
+  writeBoxes(d2, (b) => (b.game_key === target.game_id ? Object.assign({}, b, { home: Object.assign({}, b.home, { pitchers: [['Zed Phenom', 'L', 27, 28, 20, 0, 1, 0, null, null, 0, null, 0]], lineup: flip(b.home.lineup) }), away: Object.assign({}, b.away, { lineup: flip(b.away.lineup) }) }) : b));
+  const L2 = SP.load(Object.assign({}, OPTS, { boxDir: d2 }));
   const a = L.of(target), b = L2.of(target);
   ok('a game\'s own box never moves its own number (its actual starter is never an input)', a.h != null && a.h === b.h && a.a === b.a, { a, b });
+  const pa = L.platoon(target), pb2 = L2.platoon(target);
+  ok('...nor its own platoon number (its actual lineups and starter are never inputs)', pa.h != null && pa.a != null && pa.h === pb2.h && pa.a === pb2.a, { pa, pb2 });
   const next = S14.games.filter((g) => g.date > target.date && (g.home_id === '101' || g.away_id === '101'));
   ok('...it enters only the games after it', next.some((g) => sideQ(g, '101') !== (g.home_id === '101' ? L2.of(g).h : L2.of(g).a)));
 }
