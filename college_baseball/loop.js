@@ -79,13 +79,14 @@ const CATALOGUE = [
 ];
 /* what a data-dependent candidate needs before it is tried: the share of D-I team-seasons it can see */
 const MIN_COVERAGE = 0.8;
-function inactiveCandidates() {
+function inactiveCandidates(o) {
+  o = o || {};
   const off = new Map();
   const needs = new Set(CATALOGUE.filter((c) => c[4]).map((c) => c[4]));
   if (needs.has('continuity')) {
     const W = require('./lib/warehouse');
-    const C = require('./lib/continuity').load();
-    const ts = W.teamSeasons().filter((t) => +t.division === 1 && +t.season >= WF.WIN.selection[0] && +t.season <= WF.WIN.validation[1]).map((t) => [t.season, t.team_id]);
+    const C = o.continuity || require('./lib/continuity').load();
+    const ts = (o.teamSeasons || W.teamSeasons()).filter((t) => +t.division === 1 && +t.season >= WF.WIN.selection[0] && +t.season <= WF.WIN.validation[1]).map((t) => [t.season, t.team_id]);
     const cov = C.coverage(ts);
     if (cov < MIN_COVERAGE) for (const c of CATALOGUE.filter((x) => x[4] === 'continuity')) off.set(c[0], 'INACTIVE: roster continuity covers ' + (100 * cov).toFixed(1) + '% of D-I team-seasons ' + WF.WIN.selection[0] + '-' + WF.WIN.validation[1] + ' (needs ' + 100 * MIN_COVERAGE + '%); the collegiate roster backfill (collegiate/plan.json) fills it');
   }

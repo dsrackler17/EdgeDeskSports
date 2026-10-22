@@ -26,7 +26,7 @@ const { nuxtData } = require('./nuxt');
 const PL = require('./platforms');
 
 /* the platforms read and how (a backfill completed with fewer is opened again: collegiate/run.js) */
-const READERS = 'sidearm,sidearm_legacy,wmt+themes4';
+const READERS = 'sidearm,sidearm_vue,sidearm_legacy,wmt+themes5+sport_path';
 const DATA = path.join(__dirname, 'data');
 const DAY = 24 * 3600 * 1000;
 const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return d; } };
@@ -78,6 +78,24 @@ function clock(s) {
   return String(h).padStart(2, '0') + ':' + m[2];
 }
 
+/* one SIDEARM game, from the data either generation keeps (the Nuxt store, or the schedule a Vue page is handed) */
+function sidearmGame(g) {
+  const r = g.result || {};
+  const us = r.team_score !== '' && r.team_score != null ? +r.team_score : null;
+  const them = r.opponent_score !== '' && r.opponent_score != null ? +r.opponent_score : null;
+  const status = g.status === 'C' ? 'cancelled' : g.status === 'P' ? 'postponed' : (us != null && them != null && Number.isFinite(us) && Number.isFinite(them)) ? 'final' : 'scheduled';
+  const opp = g.opponent || {};
+  return {
+    game_key: String(g.id), date: String(g.date || '').slice(0, 10), time: g.time || null,
+    site: g.location_indicator === 'H' ? 'H' : g.location_indicator === 'A' ? 'A' : g.location_indicator === 'N' ? 'N' : null,
+    opponent: cleanOpp(opp.title), opponent_host: opp.website ? hostOf(opp.website) : null, conference: !!g.conference,
+    postseason: g.type === 'P', doubleheader: !!g.is_a_doubleheader, status,
+    us: status === 'final' ? us : null, them: status === 'final' ? them : null, outcome: status === 'final' ? (r.status || null) : null,
+    innings: innings(r.postscore_info, r.prescore_info), location: g.location || null, event: (g.tournament && g.tournament.title) || null,
+    boxscore: (r.boxscore && r.boxscore.url) || null, note: g.noplay_text || null,
+  };
+}
+
 /* SIDEARM: pinia.schedule.schedules['schedules-<sport>,<season>'].games */
 function sidearmSchedule(data) {
   const sch = data && data.pinia && data.pinia.schedule && data.pinia.schedule.schedules;
@@ -86,23 +104,32 @@ function sidearmSchedule(data) {
   if (!key) return null;
   const s = sch[key];
   const sport = (s.sport && (s.sport.globalSportNameSlug || s.sport.shortName)) || key.replace(/^schedules-/, '').split(',')[0] || null;
-  const games = s.games.map((g) => {
-    const r = g.result || {};
-    const us = r.team_score !== '' && r.team_score != null ? +r.team_score : null;
-    const them = r.opponent_score !== '' && r.opponent_score != null ? +r.opponent_score : null;
-    const status = g.status === 'C' ? 'cancelled' : g.status === 'P' ? 'postponed' : (us != null && them != null && Number.isFinite(us) && Number.isFinite(them)) ? 'final' : 'scheduled';
-    const opp = g.opponent || {};
-    return {
-      game_key: String(g.id), date: String(g.date || '').slice(0, 10), time: g.time || null,
-      site: g.location_indicator === 'H' ? 'H' : g.location_indicator === 'A' ? 'A' : g.location_indicator === 'N' ? 'N' : null,
-      opponent: cleanOpp(opp.title), opponent_host: opp.website ? hostOf(opp.website) : null, conference: !!g.conference,
-      postseason: g.type === 'P', doubleheader: !!g.is_a_doubleheader, status,
-      us: status === 'final' ? us : null, them: status === 'final' ? them : null, outcome: status === 'final' ? (r.status || null) : null,
-      innings: innings(r.postscore_info, r.prescore_info), location: g.location || null, event: (g.tournament && g.tournament.title) || null,
-      boxscore: (r.boxscore && r.boxscore.url) || null, note: g.noplay_text || null,
-    };
-  });
-  return { platform: 'sidearm', sport, sport_name: null, season_label: s.season && s.season.title, school_name: s.school_name || null, seasons: [], games, undated: 0 };
+  return { platform: 'sidearm', sport, sport_name: null, season_label: s.season && s.season.title, school_name: s.school_name || null, seasons: [], games: s.games.map(sidearmGame), undated: 0 };
+}
+
+/* a JSON object literal in a page's script, from its opening brace (strings and escapes respected) */
+function jsonAt(h, open) {
+  let depth = 0, inStr = false, esc = false;
+  for (let j = open; j < h.length; j++) {
+    const c = h[j];
+    if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true; else if (c === '{') depth++; else if (c === '}') { depth--; if (depth === 0) { try { return JSON.parse(h.slice(open, j + 1)); } catch (_) { return null; } } }
+  }
+  return null;
+}
+
+/* SIDEARM's Vue generation (George Mason, Bradley): the page hands its Vue component the season's schedule as a literal
+   (`schedule : {...}`), its games in the same shape as the Nuxt store's; the season is its title ("2025 Baseball Schedule") */
+function sidearmVueSchedule(html) {
+  const h = String(html || '');
+  const m = /\bschedule\s*:\s*\{"id":/.exec(h);
+  if (!m) return null;
+  const o = jsonAt(h, m.index + m[0].indexOf('{'));
+  if (!o || !Array.isArray(o.games)) return null;
+  const t = String(o.title || '').match(/(\d{4}(?:\s*-\s*\d{2,4})?)\s+(.*?)\s*Schedule/i);
+  const sport = o.sport && (o.sport.global_sport_name_slug || o.sport.shortname) || null;
+  return { platform: 'sidearm_legacy', sport, sport_name: t ? t[2].trim() || null : null, season_label: t ? t[1].replace(/\s+/g, '') : null, school_name: o.school_name || null,
+    seasons: [], games: o.games.map(sidearmGame), undated: 0 };
 }
 
 /* WMT renders a schedule's games into the page (not its data), in one of several themes: one block per game
@@ -115,15 +142,18 @@ function sidearmSchedule(data) {
 const WMT_BLOCKS = [/class="schedule-event-item(?=[ "])/g, /class="schedule-item-block(?=[ "])/g];
 function wmtSchedule(html, data, sportHint) {
   const h = String(html || '');
+  /* the theme with the most games: a page may carry one game in another theme (Vanderbilt's tournament game) */
   let starts = [];
-  for (const re of WMT_BLOCKS) { const at = []; for (let m; (m = re.exec(h));) at.push(m.index); if (at.length) { starts = at; break; } }
+  for (const re of WMT_BLOCKS) { const at = []; for (let m; (m = re.exec(h));) at.push(m.index); if (at.length > starts.length) starts = at; }
   if (!starts.length) return null;
   const d = (data && data.data) || {};
   const view = Object.entries(d).find(([k, v]) => /^sport-view-/.test(k) && v && v.slug);
   const bySlug = Object.entries(d).find(([k, v]) => /^sport-.+-schedule-by-slug-/.test(k) && v && v.season);
   const byId = Object.entries(d).find(([k, v]) => /^schedule-\d+$/.test(k) && v && v.data && v.data.season);
   const season = (bySlug && bySlug[1].season) || (byId && byId[1].data.season) || null;
-  const label = season ? season.slug || season.name : null;
+  /* a season is known by its name ("2026-27") and reached by its slug, which can differ (Clemson's 2026-27 is /season/2026) */
+  const label = season ? season.name || season.slug : null;
+  const slug = season ? season.slug || season.name : null;
   const list = Object.entries(d).find(([k, v]) => /^schedule-list-seasons-/.test(k) && Array.isArray(v));
   const seasons = list ? list[1].filter((x) => x && x.value).map((x) => ({ label: String(x.value), name: x.label != null ? String(x.label) : null })) : [];
   const sport = view ? view[1].slug : null;
@@ -131,13 +161,17 @@ function wmtSchedule(html, data, sportHint) {
   let undated = 0;
   const games = starts.map((st, i) => {
     const seg = h.slice(st, i + 1 < starts.length ? starts[i + 1] : st + 40000);
-    const v = seg.match(/schedule-item-block--(home|away|neutral)\b|venue-label--(home|away|neutral)\b|--venue-(home|away|neutral)\b|class="[^"]*__venue(?=[ "])[^"]*"[^>]*>\s*(home|away|neutral)\s*</i);
+    const v = seg.match(/schedule-item-block--(home|away|neutral)\b|venue-label--(home|away|neutral)\b|--venue-(home|away|neutral)\b|class="[^"]*__venue(?=[ "])[^"]*"[^>]*>\s*(home|away|neutral)\s*<|venue__type--(home|away|neutral)\b/i);
     /* a theme that marks no venue says "at" for a road game and "vs." for a home or a neutral one: "vs." is left unknown */
-    const venue = v ? String(v[1] || v[2] || v[3] || v[4]).toLowerCase() : /^at$/i.test(text(element(seg, '__divider(?=[ "])') || '')) ? 'away' : null;
+    const venue = v ? String(v[1] || v[2] || v[3] || v[4] || v[5]).toLowerCase() : /^at$/i.test(text(element(seg, '__divider(?=[ "])') || '')) ? 'away' : null;
     const dt = (seg.match(/datetime="([^"]+)"/) || [])[1] || null;
-    const date = dt ? dt.slice(0, 10) : monthDay(text(element(seg, 'schedule-event-date__month-day')), text(element(seg, 'schedule-event-date__weekday')), seasonNo, sportHint || sport);
+    /* no datetime: the month and day (__month-day, or __label at Nebraska) and the weekday (__weekday, or a bare <time>Friday</time>) */
+    const md = text(element(seg, 'schedule-event-date__month-day(?=[ "])') || element(seg, 'schedule-event-date__label(?=[ "])') || element(seg, 'schedule-event-date__day(?=[ "])') || '');
+    const wd = text(element(seg, 'schedule-event-date__weekday(?=[ "])') || '') || ((seg.match(/<time>\s*(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*\s*<\/time>/i) || [])[1] || '');
+    const date = dt ? dt.slice(0, 10) : monthDay(md, wd, seasonNo, sportHint || sport);
     if (!date) undated++;
-    const opp = element(seg, '__opponent-name(?=[ "])') || element(seg, '__opponent(?=[ "])') || element(seg, 'schedule-default-event__name(?=[ "])');
+    /* the opponent: its own element, or (Vanderbilt's theme) the heading that reads "vs. #10 TCU" */
+    const opp = element(seg, '__opponent-name(?=[ "])') || element(seg, '__opponent(?=[ "])') || element(seg, 'schedule-default-event__name(?=[ "])') || element(seg, 'schedule-item-team__heading(?=[ "])');
     const loc = element(seg, 'schedule-event-location(?=[ "])') || element(seg, '__location(?=[ "])');
     const resHtml = element(seg, 'schedule-event-item-result__label(?=[ "])');
     const rt = resHtml != null ? text(resHtml) : '';
@@ -155,7 +189,7 @@ function wmtSchedule(html, data, sportHint) {
       us: sc ? +sc[2] : null, them: sc ? +sc[3] : null, outcome: sc ? sc[1] : null, innings: innings(rt.replace(/^[\s\S]*?\d+\s*-\s*\d+/, ''), after, note),
       location: loc ? text(loc) || null : null, event: null, boxscore: box, note: note || null }, exhibition ? { exhibition: true } : {});
   }).filter((g) => g.date && g.opponent);
-  return { platform: 'wmt', sport, sport_name: view ? view[1].name || null : null, season_label: label, school_name: null, seasons, games, undated };
+  return { platform: 'wmt', sport, sport_name: view ? view[1].name || null : null, season_label: label, season_slug: slug, school_name: null, seasons, games, undated };
 }
 
 /* SIDEARM's older sites: one li.sidearm-schedule-game per game (data-game-id), its class naming the site
@@ -168,8 +202,10 @@ function sidearmLegacySchedule(html, sportHint, ownHost) {
   const starts = []; const re = /<li class="sidearm-schedule-game[ "][^>]*>/g;
   for (let m; (m = re.exec(h));) starts.push({ at: m.index, tag: m[0] });
   if (!starts.length) return null;
-  const head = text((h.match(/class="sidearm-schedule-title[^"]*"[^>]*>[\s\S]*?<h2>([\s\S]*?)<\/h2>/) || [])[1] || (h.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '');
-  const t = head.match(/(\d{4}(?:\s*-\s*\d{2,4})?)\s+([^-]*?)\s*Schedule/i);
+  /* the season: the schedule heading when it names one ("2026 Baseball Schedule"), else the page's title */
+  const SEASON_TITLE = /(\d{4}(?:\s*-\s*\d{2,4})?)\s+([^-]*?)\s*Schedule/i;
+  const heads = [text((h.match(/class="sidearm-schedule-title[^"]*"[^>]*>\s*(?:<[^>]+>\s*)*<h2>([\s\S]*?)<\/h2>/) || [])[1] || ''), text((h.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '')];
+  const t = heads.map((x) => x.match(SEASON_TITLE)).find(Boolean) || null;
   const label = t ? t[1].replace(/\s+/g, '') : null;
   const sportName = t ? t[2].trim() || null : null;
   const seasonNo = PL.seasonKey(label, sportHint);
@@ -209,7 +245,7 @@ function sidearmLegacySchedule(html, sportHint, ownHost) {
 function parseSchedule(html, sportHint, ownHost) {
   const data = nuxtData(html);
   if (data) return sidearmSchedule(data) || wmtSchedule(html, data, sportHint);
-  return sidearmLegacySchedule(html, sportHint, ownHost);
+  return sidearmVueSchedule(html) || sidearmLegacySchedule(html, sportHint, ownHost);
 }
 
 /* where a season's schedule lives on each platform */
@@ -218,6 +254,9 @@ function schedulePath(platform, sport, label) {
   if (platform === 'wmt') return '/sports/' + sport + '/schedule/season/' + label;
   return null;
 }
+/* a miss worth reporting over another: what a page said beats a 404 of a label it did not use */
+const MISS_RANK = { HTTP: 0, NO_PAGE: 0, NO_SCHEDULE: 1, SEASON_MISMATCH: 2, SPORT_MISMATCH: 2, EMPTY_SCHEDULE: 3 };
+const better = (a, b) => (!a ? b : (MISS_RANK[b.code] || 0) > (MISS_RANK[a.code] || 0) ? b : a);
 
 /* one school's season: the season's own page, parsed and written whole (a read listing under half the finals the
    last one did is refused). A WMT season is tried under each way WMT sites label it (rosters.seasonLabelsFor), and
@@ -231,21 +270,24 @@ async function collectOne(polite, school, sport, season, o) {
   const past = season < o.current(sport);
   const tried = new Set();
   let last = null;
+  /* a WMT site's own code for the sport is the one its pages use (LSU: /sports/bsb/...) */
+  const sportPath = (plat === 'wmt' && o.labels[school.id + '|' + sport + '|path']) || sport;
   for (let queue = RO.seasonLabelsFor(school, plat, sport, season, o); queue.length;) {
     const label = queue.shift();
     if (tried.has(label)) continue;
     tried.add(label);
-    const url = 'https://' + school.host + schedulePath(plat, sport, label);
+    const url = 'https://' + school.host + schedulePath(plat, sportPath, label);
     const r = await polite.get(url, { ttlMs: past ? 30 * DAY : 12 * 3600 * 1000, noStore: true });
-    if (!r.ok) { last = miss(r.refused ? 'REFUSED' : 'HTTP', (r.error && r.error.message) || 'no answer', url); if (r.refused) return last; continue; }
+    if (!r.ok) { const m = miss(r.refused ? 'REFUSED' : 'HTTP', (r.error && r.error.message) || 'no answer', url); if (r.refused) return m; last = better(last, m); continue; }
     const x = parseSchedule(r.text(), sport, school.host);
-    if (!x) { last = miss('NO_SCHEDULE', 'the page carries no schedule data', url); continue; }
-    /* the page names the site's own label for every season it keeps: learnt, and this season's tried next if new */
-    for (const s of x.seasons || []) { const k = PL.seasonKey(s.label, sport); if (k) o.labels[school.id + '|' + sport + '|' + k] = s.label; }
+    if (!x) { last = better(last, miss('NO_SCHEDULE', 'the page carries no schedule data', url)); continue; }
+    /* the page names the site's own slug for every season it keeps, by the season's name: learnt, and this season's tried next if new */
+    for (const s of x.seasons || []) { const k = PL.seasonKey(s.name || s.label, sport); if (k) o.labels[school.id + '|' + sport + '|' + k] = s.label; }
+    if (x.platform === 'wmt' && x.sport && x.sport !== sport && PL.sportMatches(sport, x.sport, x.sport_name)) o.labels[school.id + '|' + sport + '|path'] = x.sport;
     if (o.labels[key] && !tried.has(o.labels[key])) queue.unshift(o.labels[key]);
-    if (PL.seasonKey(x.season_label, sport) !== season) { last = miss('SEASON_MISMATCH', 'the page is the ' + x.season_label + ' schedule', url); continue; }
-    if ((x.sport || x.sport_name) && !PL.sportMatches(sport, x.sport, x.sport_name)) { last = miss('SPORT_MISMATCH', 'the page is ' + (x.sport_name || x.sport), url); continue; }
-    if (!x.games.length) { last = miss('EMPTY_SCHEDULE', 'the schedule lists no games' + (x.undated ? ' (' + x.undated + ' whose date does not read)' : ''), url); continue; }
+    if (PL.seasonKey(x.season_label, sport) !== season) { last = better(last, miss('SEASON_MISMATCH', 'the page is the ' + x.season_label + ' schedule', url)); continue; }
+    if ((x.sport || x.sport_name) && !PL.sportMatches(sport, x.sport, x.sport_name)) { last = better(last, miss('SPORT_MISMATCH', 'the page is ' + (x.sport_name || x.sport), url)); continue; }
+    if (!x.games.length) { last = better(last, miss('EMPTY_SCHEDULE', 'the schedule lists no games' + (x.undated ? ' (' + x.undated + ' whose date does not read)' : ''), url)); continue; }
     const file = path.join(o.dataDir, 'schedules', sport, String(season), school.id + '.json');
     const prev = readJson(file, null);
     const finals = x.games.filter((g) => g.status === 'final' && !g.exhibition).length;
@@ -290,4 +332,4 @@ async function collect(o) {
   return { schools: schools.length, ok: results.filter((r) => r.ok).length, misses_by_reason: byCode, misses: results.filter((r) => !r.ok) };
 }
 
-module.exports = { READERS, parseSchedule, sidearmSchedule, wmtSchedule, sidearmLegacySchedule, schedulePath, collect, collectOne, hostOf, cleanOpp, innings, monthDay, element };
+module.exports = { READERS, parseSchedule, sidearmSchedule, sidearmVueSchedule, wmtSchedule, sidearmLegacySchedule, schedulePath, collect, collectOne, hostOf, cleanOpp, innings, monthDay, element };

@@ -37,7 +37,14 @@ const offC = new Map(L.CATALOGUE.filter((c) => c[4] === 'continuity').map((c) =>
 const allWeeks = new Set(); for (let w = 0; w < 30; w++) for (const c of L.rankCandidates([{ pattern: 'first_3_weeks', t: 3 }], w, 8, offC)) allWeeks.add(c);
 ok('a candidate waiting on data is never ranked, whatever the week or pattern', ![...offC.keys()].some((c) => allWeeks.has(c)) && allWeeks.size === L.CATALOGUE.length - offC.size);
 ok('roster continuity starts off and is switched on by one change', L.applyChange(start, 'tq.cont_k', ['set', 0.5]).tq.cont_k === 0.5 && L.applyChange(start, 'tq.cont_k', ['mul', 1.6]) === null);
-ok('with no collegiate rosters in the record, continuity is inactive and says why', /^INACTIVE: roster continuity covers \d/.test(L.inactiveCandidates().get('roster_continuity_carry') || ''));
+{
+  /* the coverage gate, on a synthetic record: 300 D-I teams a season, 2014-2024 */
+  const ts = []; for (let s = 2014; s <= 2024; s++) for (let t = 1; t <= 300; t++) ts.push({ season: s, team_id: String(t), division: 1 });
+  const cov = (share) => ({ coverage: (list) => list.filter(([, id]) => +id <= 300 * share).length / list.length });
+  const none = L.inactiveCandidates({ continuity: cov(0), teamSeasons: ts }); const some = L.inactiveCandidates({ continuity: cov(0.79), teamSeasons: ts }); const most = L.inactiveCandidates({ continuity: cov(0.875), teamSeasons: ts });
+  ok('with no collegiate rosters, continuity is inactive and says why', /^INACTIVE: roster continuity covers 0\.0% of D-I team-seasons 2014-2024 \(needs 80%\)/.test(none.get('roster_continuity_carry') || ''), none.get('roster_continuity_carry'));
+  ok('below 80% it stays inactive; at 80% or more every continuity candidate is tried like any other', some.size === 3 && most.size === 0, [some.size, most.size]);
+}
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cbloop-'));
 const docs = path.join(tmp, 'docs');

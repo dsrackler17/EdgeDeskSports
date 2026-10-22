@@ -65,7 +65,11 @@ const SPORT_NAMES = {
 const sportSlug = (x) => String(x || '').toLowerCase().replace(/[’']/g, '').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 function sportMatches(sport, code, name) {
   const ok = new Set([sport].concat(SPORT_NAMES[sport] || []));
-  return [code, name].filter(Boolean).some((x) => ok.has(sportSlug(x)));
+  if ([code, name].filter(Boolean).some((x) => ok.has(sportSlug(x)))) return true;
+  /* a page that names the sport with the school before it ("Demon Baseball", "Merrimack College Baseball"); the word must
+     be the sport's own, and the name no other sport's ("Softball" is never baseball) */
+  const own = { baseball: 'baseball', softball: 'softball', football: 'football' }[sport];
+  return !!(own && name && new RegExp('(^|-)' + own + '$').test(sportSlug(name)) && !/(^|-)(softball|baseball|football|basketball|soccer|volleyball)-/.test(sportSlug(name).replace(new RegExp(own + '$'), '')));
 }
 /* how a label is written: "2026" year, "2025-26" split2, "2025-2026" split4 */
 const labelStyle = (label) => (/^\d{4}$/.test(String(label)) ? 'year' : /^\d{4}-\d{2}$/.test(String(label)) ? 'split2' : /^\d{4}-\d{4}$/.test(String(label)) ? 'split4' : null);

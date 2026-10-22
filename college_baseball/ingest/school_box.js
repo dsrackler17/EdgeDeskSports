@@ -118,6 +118,25 @@ function build(season, o) {
   return { season, counts, contests: games.length, coverage: games.length ? +(counts.joined / games.length).toFixed(4) : 0, rows };
 }
 
+/* one person, however a scorer writes the name: "Luke Matta", "L. MATTA", "Matta", "Matta, Luke", or truncated at the
+   scorer's field width ("K. Montgomer"). Same person = the same last name (or one a 6-letter-or-longer prefix of the other,
+   a truncation) and, where both give one, the same first initial. Suffixes (Jr., III) are ignored. */
+function nameParts(n) {
+  let s = String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\b(jr|sr|ii|iii|iv)\b\.?/gi, '').trim();
+  if (/,/.test(s)) s = s.split(',').map((x) => x.trim()).filter(Boolean).reverse().join(' ');
+  const w = s.split(/\s+/).filter(Boolean);
+  if (!w.length) return null;
+  const last = w[w.length - 1].toLowerCase().replace(/[^a-z]/g, '');
+  const first = w.length > 1 ? w[0].toLowerCase().replace(/[^a-z]/g, '') : '';
+  return { last, initial: first ? first[0] : '' };
+}
+function samePerson(a, b) {
+  const x = nameParts(a), y = nameParts(b);
+  if (!x || !y || !x.last || !y.last) return false;
+  const lastOk = x.last === y.last || (Math.min(x.last.length, y.last.length) >= 6 && (x.last.startsWith(y.last) || y.last.startsWith(x.last)));
+  return lastOk && (!x.initial || !y.initial || x.initial === y.initial);
+}
+
 /* the schools' starters against our own box scores (2024-2026) */
 function audit(season, o) {
   o = o || {};
@@ -131,7 +150,7 @@ function audit(season, o) {
     const s = starters.get(r.game_id + '|' + r.team_id);
     if (!s || !r.starter) continue;
     compared++;
-    if (normName(s.name) === normName(r.starter)) { same++; if (String(s.outs) === String(r.starter_outs)) outsSame++; } else { differ++; if (examples.length < 20) examples.push({ game_id: r.game_id, team_id: r.team_id, ours: s.name, schools: r.starter }); }
+    if (normName(s.name) === normName(r.starter) || samePerson(s.name, r.starter)) { same++; if (String(s.outs) === String(r.starter_outs)) outsSame++; } else { differ++; if (examples.length < 20) examples.push({ game_id: r.game_id, team_id: r.team_id, ours: s.name, schools: r.starter }); }
   }
   return { season, compared, starter_agreement: compared ? +(same / compared).toFixed(4) : null, outs_agreement: same ? +(outsSame / same).toFixed(4) : null, differ, examples, coverage: b.coverage, counts: b.counts };
 }
@@ -144,4 +163,4 @@ if (require.main === module) {
   delete r.rows;
   console.error('[school box] ' + a[0] + ' ' + season + ': ' + JSON.stringify(r));
 }
-module.exports = { build, audit, boxes, rosterHands, HEADER };
+module.exports = { build, audit, boxes, rosterHands, samePerson, HEADER };

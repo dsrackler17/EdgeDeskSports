@@ -41,7 +41,7 @@ ok('audit: the schools\' starters are our record\'s, with the same outs', au.com
 /* an older SIDEARM site's box (Dayton at Lipscomb, 2026-02-13): the teams by the schedule's join, the hands by the roster slug */
 {
   const lx = B.legacyCodes(B.parseBoxscore(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, 'collegiate/probe/fixtures/daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441.gz'))).toString('utf8')),
-    { school: 'dayton', opponent: 'lipscomb', site: 'A', conference: false, dh_n: 0 }, new Map([['dayton', { baseball_team_id: '175' }], ['lipscomb', { baseball_team_id: '28600' }]]));
+    { school: 'dayton', opponent: 'lipscomb', own_team_id: '175', opp_team_id: '28600', site: 'A', conference: false, dh_n: 0 });
   const row = Object.assign({ game_key: '17441', school: 'dayton', url: 'https://daytonflyers.com/sports/baseball/stats/2026/lipscomb/boxscore/17441' }, B.compact(lx));
   const d2 = fs.mkdtempSync(path.join(os.tmpdir(), 'schoolbox-legacy-'));
   fs.mkdirSync(path.join(d2, 'box', '2026'), { recursive: true });
@@ -57,6 +57,9 @@ ok('audit: the schools\' starters are our record\'s, with the same outs', au.com
   ok('older SIDEARM audit: both starters are our record\'s, with the same outs', au2.compared === 2 && au2.starter_agreement === 1 && au2.outs_agreement === 1, au2);
   fs.rmSync(d2, { recursive: true, force: true });
 }
+
+ok('audit: a starter is one person however the scorer writes him (initial, last name only, truncated, last-first)', SB.samePerson('Luke Matta', 'L. MATTA') && SB.samePerson('Myles Patton', 'Patton') && SB.samePerson('Kellan Montgomery', 'K. Montgomer')
+  && SB.samePerson('Rice, Michael', 'Michael Rice') && !SB.samePerson('Tom Rice', 'Tom Price') && !SB.samePerson('Luke Matta', 'J. Matta'));
 
 fs.rmSync(dir, { recursive: true, force: true });
 console.log((fail === 0 ? 'ALL GREEN' : 'FAILED') + ' school box scores — ' + pass + ' passed, ' + fail + ' failed');

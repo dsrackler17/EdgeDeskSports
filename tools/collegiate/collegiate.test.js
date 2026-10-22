@@ -406,6 +406,38 @@ function polite(pages, hosts, extra) {
     ok('schedules (WMT): a page of another season names the site\'s labels, and the season is then read under its own', r2.ok === 1 && labels['virginia|baseball|2026'] === '2025-26' && JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/virginia.json'), 'utf8')).finals === 60, r2.misses);
   }
 
+  /* 12b. what the first backfill could not read (probe round 8) */
+  {
+    const S = (f, host) => SC.parseSchedule(FX(f), 'baseball', host);
+    const fin = (x) => x.games.filter((g) => g.status === 'final' && !g.exhibition);
+    const ma = S('gomason.com/sports_baseball_schedule_2025', 'gomason.com'); const br = S('bradleybraves.com/sports_baseball_schedule_2025', 'bradleybraves.com');
+    ok('schedule (SIDEARM, Vue generation): the schedule the page hands its component, read as the Nuxt store is', ma.season_label === '2025' && fin(ma).length === 61 && fin(ma).filter((g) => g.outcome === 'W').length === 40 && ma.games.every((g) => g.opponent_host) && br.games.length === 51 && br.games[0].opponent_host === 'rolltide.com' && br.games[0].us === 6 && br.games[0].them === 10 && br.games[0].boxscore === '/sports/baseball/stats/2025/university-of-alabama/boxscore/22404');
+    const va = S('valpoathletics.com/sports_baseball_schedule_2019', 'valpoathletics.com'); const fu = S('fullertontitans.com/sports_baseball_schedule_2019', 'fullertontitans.com');
+    ok('schedule (SIDEARM, older sites): a season named only in the page title is read (2019, Valparaiso and Cal State Fullerton)', va.season_label === '2019' && fin(va).length === 50 && fu.season_label === '2019' && fin(fu).length === 54 && fu.games.every((g) => g.date.startsWith('2019-')));
+    const ne = S('huskers.com/sports_baseball_schedule_season_2026'); const vu = S('vucommodores.com/sports_baseball_schedule_season_2025_26');
+    ok('schedule (WMT, Nebraska\'s theme): the date from its label and a bare weekday, the venue from its type', fin(ne).length === 60 && ne.undated === 0 && ne.games[0].date === '2026-02-13' && ne.games[0].site === 'N' && ne.games[0].opponent === 'UConn' && ne.games[0].innings === 7);
+    ok('schedule (WMT): the theme with the most games is read (Vanderbilt\'s 58, not its one tournament game); a heading names the opponent', fin(vu).length === 58 && vu.games[0].opponent === 'TCU' && vu.games[0].us === 4 && vu.games[0].them === 5);
+    const cl = S('clemsontigers.com/sports_baseball_schedule'); const ls = S('lsusports.net/sports_bsb_schedule_season_2026');
+    ok('schedule (WMT): a season is keyed by its name and reached by its slug (Clemson\'s 2026-27 is /season/2026)', cl.season_label === '2026-27' && cl.season_slug === '2026' && PL.seasonKey(cl.season_label, 'baseball') === 2027 && cl.seasons.some((x) => x.label === '2025' && x.name === '2025-26'));
+    ok('schedule (WMT): LSU\'s pages under its own sport code read as baseball', ls.sport === 'bsb' && fin(ls).length === 58 && PL.sportMatches('baseball', ls.sport, ls.sport_name));
+    ok('sport: a name ending in the sport is it ("Demon Baseball"); another sport\'s name never is', PL.sportMatches('baseball', null, 'Demon Baseball') && PL.sportMatches('baseball', null, 'Merrimack College Baseball') && !PL.sportMatches('baseball', null, 'Softball') && !PL.sportMatches('baseball', null, 'Baseball Softball'));
+    ok('schedule (SIDEARM): a page that renders its schedule in the browser carries none, and says so', S('kcroos.com/sports_baseball_schedule_2025') === null);
+    /* collecting: LSU's own sport code learnt from its roster and used for its schedule; Clemson's slug learnt by the season's name;
+       a 404 of a label never hides what an earlier page said */
+    const t = polite({ 'https://lsusports.net/robots.txt': { body: FX('lsusports.net/robots_txt') }, 'https://lsusports.net/sports/baseball/roster': { body: FX('lsusports.net/sports_baseball_roster') },
+      'https://lsusports.net/sports/bsb/schedule/season/2026': { body: FX('lsusports.net/sports_bsb_schedule_season_2026') },
+      'https://clemsontigers.com/robots.txt': { body: '' }, 'https://clemsontigers.com/sports/baseball/schedule/season/2026': { body: FX('clemsontigers.com/sports_baseball_schedule') },
+      'https://uni.edu/robots.txt': { body: '' }, 'https://uni.edu/sports/baseball/schedule/2025': { body: FX('kcroos.com/sports_baseball_schedule_2025') } }, ['lsusports.net', 'clemsontigers.com', 'uni.edu']);
+    const dataDir = path.join(t.dir, 'data'); fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'platforms.json'), JSON.stringify({ lsu: { platform: 'wmt' }, clemson: { platform: 'wmt' }, roos: { platform: 'sidearm' } }));
+    const rr = await RO.collect({ polite: t.c, schoolsList: [{ id: 'lsu', host: 'lsusports.net', division: 1 }], sports: ['baseball'], seasons: [2027], today: '2026-10-22', dataDir, log: false });
+    const sl = await SC.collect({ polite: t.c, schoolsList: [{ id: 'lsu', host: 'lsusports.net', division: 1 }], sports: ['baseball'], seasons: [2026], today: '2026-10-22', dataDir, log: false });
+    ok('WMT: the sport code a site\'s own pages use is learnt from its roster and used for its season pages', rr.ok === 1 && sl.ok === 1 && JSON.parse(fs.readFileSync(path.join(dataDir, 'season_labels.json'), 'utf8'))['lsu|baseball|path'] === 'bsb', [rr.misses, sl.misses]);
+    const cs = await SC.collect({ polite: t.c, schoolsList: [{ id: 'clemson', host: 'clemsontigers.com', division: 1 }], sports: ['baseball'], seasons: [2026], today: '2026-10-22', dataDir, log: false });
+    const lab = JSON.parse(fs.readFileSync(path.join(dataDir, 'season_labels.json'), 'utf8'));
+    ok('WMT: a page of another season names this one\'s slug by its name, and the miss reported is what a page said, not a later 404', lab['clemson|baseball|2026'] === '2025' && lab['clemson|baseball|2027'] === '2026' && cs.misses.length === 1 && cs.misses[0].code === 'SEASON_MISMATCH', cs.misses);
+  }
+
   /* 13. box scores on SIDEARM's older sites: the scorer's tables, the teams by the schedule's exact join */
   {
     const B = (f) => BX.parseBoxscore(FX(f));
@@ -417,9 +449,8 @@ function polite(pages, hosts, extra) {
     const x12 = B('appstatesports.com/sports_baseball_stats_2026_gardner_webb_boxscore_9710'); const x7 = B('appstatesports.com/sports_baseball_stats_2026_canisius_boxscore_9703'); const x16 = B('goshockers.com/sports_baseball_stats_2016_northern_colorado_boxscore_3511');
     ok('box score (older SIDEARM): twelve innings, seven, and 2016 read the same', x12.home.line.length === 12 && x12.own_side === 'away' && x7.home.line.length === 7 && x7.own_side === 'home' && x16.date === '2016-02-19' && x16.home.starter.name === 'Sam Tewes' && x16.home.starter.outs === 18);
     /* the codes from the schedule's join; a box whose opponent joins to no registry school is a miss */
-    const byId = new Map([['dayton', { id: 'dayton', baseball_team_id: '175' }], ['lipscomb', { id: 'lipscomb', baseball_team_id: '362' }]]);
-    const j = BX.legacyCodes(B('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441'), { school: 'dayton', opponent: 'lipscomb', site: 'A', conference: false, dh_n: 0 }, byId);
-    ok('box score (older SIDEARM): the teams take our ids from the registry and the opponent\'s website; the opponent keeps no slug', j.away.code === '175' && j.home.code === '362' && j.neutral === false && j.home.pitchers.every((p) => !p.slug) && BX.legacyCodes(B('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441'), { school: 'dayton', opponent: null }, byId) === null);
+    const j = BX.legacyCodes(B('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441'), { school: 'dayton', opponent: 'lipscomb', own_team_id: '175', opp_team_id: '362', site: 'A', conference: false, dh_n: 0 });
+    ok('box score (older SIDEARM): the teams take the ids the plan resolved; the opponent keeps no slug', j.away.code === '175' && j.home.code === '362' && j.neutral === false && j.home.pitchers.every((p) => !p.slug) && BX.legacyCodes(B('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441'), { school: 'dayton', own_team_id: '175', opp_team_id: null }) === null);
     const c = BX.compact(j);
     ok('box score (older SIDEARM): kept compact as the newer platform\'s, with the roster slug, runs and hit batters (no home runs listed)', c.platform === 'sidearm_legacy' && c.away.starter[0] === 'Sawyer Jensen' && c.away.starter[2] === 13 && c.away.starter[9] === 'sawyer-jensen' && c.away.starter[10] === 5 && c.away.starter[11] === null && c.away.starter[12] === 2 && c.away.lineup[0][4] === 'jason-bello' && c.home.starter[9] === null);
     const nc = BX.compact(BX.parseBoxscore(FX('texassports.com/sports_baseball_stats_2026_michigan_state_boxscore_17827')));
@@ -429,15 +460,52 @@ function polite(pages, hosts, extra) {
     const sched = SC.parseSchedule(FX('daytonflyers.com/sports_baseball_schedule_2026'), 'baseball', 'daytonflyers.com');
     const f = path.join(dir, 'schedules/baseball/2026/dayton.json'); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, JSON.stringify({ school: 'dayton', games: sched.games }));
     fs.writeFileSync(path.join(dir, 'platforms.json'), JSON.stringify({ dayton: { platform: 'sidearm_legacy' } }));
+    /* Lipscomb is in the registry; Eastern Kentucky (a Division II-style gap: no registry row here) only through the ids the
+       schedules establish (team_ids.json); every other opponent of Dayton's is unknown */
     const schoolsList = [{ id: 'dayton', host: 'daytonflyers.com', division: 1, baseball_team_id: '175' }, { id: 'lipscomb', host: 'lipscombsports.com', division: 1, baseball_team_id: '362' }];
+    fs.writeFileSync(path.join(dir, 'team_ids.json'), JSON.stringify({ schools: {}, hosts: { 'ekusports.com': { team_id: '204', votes: 40, of: 40 } } }));
     const pl = BX.plan(dir, 'baseball', [2026], schoolsList, { dayton: { platform: 'sidearm_legacy' } });
     const ek = pl.filter((p) => p.date === '2026-02-20');
-    ok('box scores: an older SIDEARM site\'s games are planned, a doubleheader\'s numbered in order', pl.length === 54 && ek.length === 2 && ek[0].dh_n === 1 && ek[1].dh_n === 2 && pl.find((p) => p.game_key === '17441').dh_n === 0 && pl.find((p) => p.game_key === '17441').opponent === 'lipscomb');
+    ok('box scores: an older SIDEARM site\'s games are planned with both teams\' ids, a doubleheader\'s numbered in order', pl.length === 6 && pl.unjoinable === 48 && ek.length === 2 && ek[0].dh_n === 1 && ek[1].dh_n === 2 && ek[0].opp_team_id === '204'
+      && pl.find((p) => p.game_key === '17441').dh_n === 0 && pl.find((p) => p.game_key === '17441').opp_team_id === '362' && pl.every((p) => p.own_team_id === '175'), { n: pl.length, u: pl.unjoinable });
     const t = polite({ 'https://daytonflyers.com/robots.txt': { body: '' }, 'https://daytonflyers.com/sports/baseball/stats/2026/lipscomb/boxscore/17441': { body: FX('daytonflyers.com/sports_baseball_stats_2026_lipscomb_boxscore_17441') },
       'https://daytonflyers.com/sports/baseball/stats/2026/eastern-kentucky/boxscore/17444': { body: FX('daytonflyers.com/sports_baseball_stats_2026_eastern_kentucky_boxscore_17444') } }, ['daytonflyers.com', 'lipscombsports.com']);
     const r = await BX.collect({ polite: t.c, dataDir: dir, schoolsList, seasons: [2026], today: '2026-10-21', perHost: 100 });
     const held = BX.readLines(path.join(dir, 'boxscores/baseball/2026/dayton.jsonl.gz'));
-    ok('box scores: an older SIDEARM box is kept with our team ids; one whose opponent joins to no school with a baseball id is a miss', r.ok === 1 && held.length === 1 && held[0].game_key === '17441' && held[0].away.code === '175' && held[0].home.code === '362' && r.misses_by_reason.NO_TEAM_CODE === 1, r);
+    const lip = held.find((x) => x.game_key === '17441'); const eku = held.find((x) => x.game_key === '17444');
+    ok('box scores: an older SIDEARM box is kept with our team ids, a learnt website\'s included', r.ok === 2 && lip && lip.away.code === '175' && lip.home.code === '362' && eku && eku.home.code === '175' && eku.away.code === '204' && eku.doubleheader_game === 1, r);
+    ok('box scores: a game whose opponent joins to none of our teams is never requested', r.unjoinable === 48 && !t.w.seen.some((x) => /boxscore\/17447$/.test(x.url)) && !r.misses_by_reason.NO_TEAM_CODE, r);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  /* 13b. our team ids where the registry has none, from the schools' schedules and our own record */
+  {
+    const TI = R('collegiate/teamids.js');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'teamids-')); const dataDir = path.join(dir, 'data'); const gamesDir = path.join(dir, 'games');
+    fs.mkdirSync(gamesDir, { recursive: true });
+    const H = 'game_id,date,home_id,away_id,status,home_runs,away_runs';
+    const rows = []; const put = (school, games) => { const f = path.join(dataDir, 'schedules/baseball/2025', school + '.json'); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, JSON.stringify({ school, games })); };
+    const g = (date, host, us, them) => ({ date, opponent: 'x', opponent_host: host, status: 'final', us, them });
+    /* "app" (no id in the registry) plays known "alpha" (team 1) six times; our record has those six games with team 27 */
+    const appGames = []; const alphaGames = [];
+    for (let i = 0; i < 6; i++) { const d = '2025-03-0' + (i + 1); rows.push(['c' + i, d, '27', '1', 'FINAL', 5 + i, 2].join(',')); appGames.push(g(d, 'alpha.edu', 5 + i, 2)); }
+    /* known "alpha" lists four games against an old website of team 9 (too few), and six against beta-old.com, five of them matching our team 9 and one team 10 */
+    for (let i = 0; i < 4; i++) { const d = '2025-04-0' + (i + 1); rows.push(['d' + i, d, '1', '9', 'FINAL', 3, i].join(',')); alphaGames.push(g(d, 'few.com', 3, i)); }
+    for (let i = 0; i < 6; i++) { const d = '2025-05-0' + (i + 1); const t = i < 5 ? '9' : '10'; rows.push(['e' + i, d, '1', t, 'FINAL', 7, i].join(',')); alphaGames.push(g(d, 'beta-old.com', 7, i)); }
+    /* known "alpha" lists ten games against gamma-old.com, all our team 12 */
+    for (let i = 0; i < 10; i++) { const d = '2025-06-' + String(i + 10); rows.push(['f' + i, d, '1', '12', 'FINAL', 4, i].join(',')); alphaGames.push(g(d, 'gamma-old.com', 4, i)); }
+    fs.writeFileSync(path.join(gamesDir, '2025.csv'), [H].concat(rows).join('\n') + '\n');
+    put('app', appGames); put('alpha', alphaGames);
+    const schools = [{ id: 'app', host: 'appstate.edu' }, { id: 'alpha', host: 'alpha.edu', baseball_team_id: 1 }, { id: 'gamma', host: 'gamma-old.com' }, { id: 'taken', host: 't.edu', baseball_team_id: 27 }];
+    const out = TI.learn({ dataDir, gamesDir, schools });
+    const out2 = TI.learn({ dataDir, gamesDir, schools: schools.filter((s) => s.id !== 'taken') });
+    ok('teamids: a school whose finals against a known opponent are our contests (same date, same score) is that team; never one another school already is', out2.schools.app && out2.schools.app.team_id === '27' && out2.schools.app.votes === 6 && !out.schools.app, [out.schools, out2.schools]);
+    ok('teamids: a website is learnt from a known school\'s finals; too few, or evidence split below 90%, is not learnt', out2.hosts['gamma-old.com'] && out2.hosts['gamma-old.com'].team_id === '12' && !out2.hosts['few.com'] && !out2.hosts['beta-old.com'], out2.hosts);
+    ok('teamids: a school whose own website the schedules establish is that team', out2.schools.gamma && out2.schools.gamma.team_id === '12' && /website/.test(out2.schools.gamma.via));
+    TI.update(dataDir, schools.filter((s) => s.id !== 'taken'), { gamesDir });
+    fs.writeFileSync(path.join(dataDir, 'schools.json'), JSON.stringify({ schools: schools.filter((s) => s.id !== 'taken') }));
+    const loaded = RO.loadSchools(dataDir);
+    ok('teamids: the collectors read a learnt id as the school\'s baseball id, and resolve a learnt website', loaded.find((s) => s.id === 'app').baseball_team_id === '27' && loaded.find((s) => s.id === 'app').team_id_source === 'schedules_join' && RO.teamOfHost(dataDir, loaded)('gamma-old.com') === '12' && RO.teamOfHost(dataDir, loaded)('alpha.edu') === '1');
     fs.rmSync(dir, { recursive: true, force: true });
   }
 

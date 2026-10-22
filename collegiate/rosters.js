@@ -34,7 +34,7 @@ const { createPolite } = require('./polite');
 const PL = require('./platforms');
 
 /* the platforms read and how (a backfill completed with fewer is opened again: collegiate/run.js) */
-const READERS = 'sidearm,sidearm_legacy,wmt+season_labels';
+const READERS = 'sidearm,sidearm_legacy,wmt+season_labels+sport_path';
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(__dirname, 'data');
 const DAY = 24 * 3600 * 1000;
@@ -51,12 +51,24 @@ function writeSnapshot(p, snap) {
 
 /* the registry, with any dead host replaced by the site the school's opponents name for it (hosts.js); a host the
    registry read from a website with its scheme written twice is read again from the website (directory.hostOf) */
-function loadSchools(dataDir) {
+function loadSchools(dataDir, opts) {
   const d = dataDir || DATA;
   const { hostOf } = require('./directory');
   const schools = ((readJson(path.join(d, 'schools.json'), { schools: [] }).schools) || [])
     .map((s) => (s.website && hostOf(s.website) !== (s.host || null) ? Object.assign({}, s, { host: hostOf(s.website) }) : s));
-  return require('./hosts').apply(schools, readJson(path.join(d, 'host_corrections.json'), {}));
+  /* a school the registry ties to no baseball id, whose id the schedules and our record establish (teamids.js) */
+  /* (learning itself starts from the registry alone: { learnt: false }) */
+  const ids = opts && opts.learnt === false ? { school: () => null } : require('./teamids').load(d);
+  const withIds = schools.map((s) => (!s.baseball_team_id && ids.school(s.id) ? Object.assign({}, s, { baseball_team_id: ids.school(s.id), team_id_source: 'schedules_join' }) : s));
+  return require('./hosts').apply(withIds, readJson(path.join(d, 'host_corrections.json'), {}));
+}
+
+/* a website -> our team id: the registry's (its corrected host and the one it replaced) and the ones the schedules establish */
+function teamOfHost(dataDir, schools) {
+  const m = new Map();
+  for (const s of schools) if (s.baseball_team_id) for (const h of [s.host, s.registry_host]) if (h && !m.has(h)) m.set(h, String(s.baseball_team_id));
+  const ids = require('./teamids').load(dataDir || DATA);
+  return (h) => (h ? m.get(h) || ids.host(h) || null : null);
 }
 
 /* the current season of a sport on a date: split-year sports and spring sports roll over in August */
@@ -115,7 +127,9 @@ function candidates(school, platform, sport, season, o) {
   const out = [];
   if (!platform) return [plain];                                     /* learn the platform from the plain page first */
   if (season >= currentSeason(sport, o.today) - 1) out.push(plain);
-  for (const label of seasonLabelsFor(school, platform, sport, season, o)) out.push(PL.rosterPath(platform, sport, label));
+  /* a WMT site's own code for the sport is the one its season pages use (LSU: /sports/bsb/roster/season/2026) */
+  const sportPath = (platform === 'wmt' && o.labels && o.labels[school.id + '|' + sport + '|path']) || sport;
+  for (const label of seasonLabelsFor(school, platform, sport, season, o)) out.push(PL.rosterPath(platform, sportPath, label));
   return [...new Set(out)];
 }
 
@@ -164,6 +178,7 @@ async function collectOne(polite, school, sport, season, o) {
     /* the label that reached the season (a WMT site names no list of its seasons) */
     const used = p.match(/\/season\/([^/]+)$/);
     if (parsed.platform === 'wmt') o.labels[school.id + '|' + sport + '|' + season] = used ? decodeURIComponent(used[1]) : parsed.season_label;
+    if (parsed.platform === 'wmt' && parsed.sport && parsed.sport !== sport) o.labels[school.id + '|' + sport + '|path'] = parsed.sport;
     return { ok: true, school: school.id, sport, season, url, platform: parsed.platform, listed: snap.listed, removed: snap.players.filter((x) => x.removed_at).length };
   }
   return last || miss('NO_PAGE', 'no page to try');
@@ -231,4 +246,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error(e.stack || e); process.exit(1); });
-module.exports = { collect, collectOne, mergeSnapshot, currentSeason, loadSchools, candidates, seasonLabelsFor, writeSnapshot, READERS };
+module.exports = { collect, collectOne, mergeSnapshot, currentSeason, loadSchools, teamOfHost, candidates, seasonLabelsFor, writeSnapshot, READERS };
