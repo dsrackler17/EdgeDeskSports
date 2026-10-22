@@ -10,17 +10,23 @@
 #      select public.odds_api_set_sport('baseball_ncaa', true);).
 # The job never reads the provider key: it asks supabase/functions/odds_gateway through
 # tools/lib/odds_gateway.js, one `featured` request (h2h, spreads, totals) a run, about
-# 3 credits when the gateway buys it and nothing inside the gateway's cadence window.
+# 3 credits when the gateway buys it and nothing inside the gateway's cadence window
+# (an hour at most): about 15 runs a game day, so at most about 45 credits.
 #
-# Every 20 minutes from 14:00 to 04:59 UTC, February to June: a game's last pregame
-# price is the close, so the job runs often enough near first pitches (East Coast
-# afternoons through West Coast nights).
+# WHO WAKES IT. The PRIMARY scheduler is pg_cron (supabase/cbase_cron.sql): hourly
+# at :24 from 14:00 to 04:59 UTC, February to June, East Coast afternoons through
+# West Coast nights. A game's last pregame price is the close, and GitHub's own
+# schedule does not fire reliably here (on 2026-10-22 two of this project's
+# schedules never ran), so the schedule below is only the BACKUP, every 2 hours.
+# Nothing that can reach a paid path runs more often than hourly (the operator's
+# rule since 2026-10-21, docs/odds-api-incident-2026-10/INCIDENT.md): a run within
+# 55 minutes of the last capture asks the gateway nothing (fetch_quotes.js).
 name: College baseball prices
 
 on:
   schedule:
-    - cron: '*/20 14-23 * 2-6 *'
-    - cron: '*/20 0-4 * 2-6 *'
+    - cron: '44 14-22/2 * 2-6 *'    # the backup (pg_cron is primary, hourly)
+    - cron: '44 0-4/2 * 2-6 *'
   workflow_dispatch:
 
 permissions:

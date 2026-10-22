@@ -43,6 +43,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const MARKET = path.join(__dirname, '..', 'data', 'market');
 const BOARD = path.join(__dirname, '..', 'board');
 const SPORT_KEY = 'baseball_ncaa';
+const MIN_GAP_MIN = 50;   /* under an hour, so ten minutes of dispatch delay never costs an hour's capture; the gateway's own floor keeps purchases hourly */
 
 /* the date a game is played on, as our record dates it (US Eastern) */
 function easternDate(iso) {
@@ -98,6 +99,12 @@ async function run(o) {
   fs.mkdirSync(marketRoot, { recursive: true });
   const write = (obj) => { fs.writeFileSync(out, JSON.stringify(Object.assign({ schema: 'edgedesk_cbase_market_v1', sport_key: SPORT_KEY, generated_at: now }, obj), null, 1) + '\n'); return obj; };
   if (String(env.CBASE_PRICES || '').toLowerCase() !== 'on') return write({ status: 'DISABLED', reason: 'college baseball price capture is not authorised: the repository variable CBASE_PRICES is not "on" (and odds_api_sports.baseball_ncaa must be enabled in the gateway)' });
+  /* NOTHING FASTER THAN HOURLY (the operator's rule since 2026-10-21): pg_cron wakes this job hourly and GitHub's
+     backup schedule may wake it again; a run within MIN_GAP_MIN of the last one that asked the gateway asks nothing
+     and leaves every file as it was */
+  const prev = Q.readJson(out, null);
+  if (prev && ['LIVE', 'CACHED'].includes(prev.status) && Date.parse(now) - Date.parse(prev.generated_at) < MIN_GAP_MIN * 60000)
+    return { status: 'SKIPPED', reason: 'the last capture was at ' + prev.generated_at + ', under ' + MIN_GAP_MIN + ' minutes ago: the gateway is not asked again' };
   const cfg = GW.config(env);
   if (!cfg) return write({ status: 'UNAVAILABLE', reason: 'no gateway credentials in this job (EDGD_SB_URL / EDGD_SB_SERVICE or ODDS_GATEWAY_SECRET)' });
   const client = GW.client(cfg, o.fetchImpl);
@@ -142,4 +149,4 @@ if (require.main === module) {
   run().then((r) => console.log('[cbase prices] ' + r.status + (r.reason ? ': ' + r.reason : '') + (r.events != null ? ' — ' + r.matched + '/' + r.events + ' events matched, ' + r.observations_kept + ' prices changed, ' + r.events_closed + ' closed, ' + r.model_numbers_taken + ' model numbers taken' : '')))
     .catch((e) => { console.error(e.stack || e); process.exit(1); });
 }
-module.exports = { run, captureModels, easternDate, servedConfig };
+module.exports = { run, captureModels, easternDate, servedConfig, MIN_GAP_MIN };

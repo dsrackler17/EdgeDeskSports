@@ -36,6 +36,23 @@ ok('the strongest pattern\'s candidates go first', rk[0] === 'div_spread_tighter
 const offC = new Map(L.CATALOGUE.filter((c) => c[4]).map((c) => [c[0], c[4] === 'continuity' ? 'INACTIVE: no rosters' : 'INACTIVE: no box scores']));
 const allWeeks = new Set(); for (let w = 0; w < 30; w++) for (const c of L.rankCandidates([{ pattern: 'first_3_weeks', t: 3 }], w, 8, offC)) allWeeks.add(c);
 ok('a candidate waiting on data is never ranked, whatever the week or pattern', ![...offC.keys()].some((c) => allWeeks.has(c)) && allWeeks.size === L.CATALOGUE.length - offC.size);
+{
+  /* the slate: a change not yet tried from this version goes first (a change whose data just arrived is tried the week
+     it activates); the tried ones a full slate further on each week, so every one comes round */
+  const offB = new Map(L.CATALOGUE.filter((c) => c[4] === 'school_box' || c[4] === 'hands').map((c) => [c[0], 'x']));
+  const base = L.CATALOGUE.filter((c) => !c[4]).map((c) => c[0]);
+  const triedAll = new Set(base.filter((c) => c !== 'recency_faster'));
+  const r1 = L.rankCandidates([], 5, 8, offB, triedAll);
+  ok('untried changes go first, in catalogue order: here the one base change and roster continuity', r1.slice(0, 4).join() === 'recency_faster,roster_continuity_carry,roster_continuity_stronger,roster_continuity_weaker' && r1.length === 8, r1);
+  const seen = new Set(); const tr = new Set(L.CATALOGUE.filter((c) => !offB.has(c[0])).map((c) => c[0]));
+  for (let w = 0; w < Math.ceil(tr.size / 8); w++) for (const c of L.rankCandidates([], 100 + w, 8, offB, tr)) seen.add(c);
+  ok('with every change tried, consecutive weeks are new slates: all ' + tr.size + ' come round in ' + Math.ceil(tr.size / 8) + ' weeks', seen.size === tr.size, [seen.size, tr.size]);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cbtried-'));
+  fs.writeFileSync(path.join(dir, 'candidates.jsonl'), [{ from_version: '1.0.0', candidate: 'a', decision: 'PASS' }, { from_version: '1.0.0', candidate: 'b', decision: 'FAIL' },
+    { from_version: '1.0.0', candidate: 'c', decision: 'SKIPPED' }, { from_version: '1.1.0', candidate: 'd', decision: 'FAIL' }].map((x) => JSON.stringify(x)).join('\n') + '\n');
+  ok('tried = scored (PASS or FAIL) from that version; a skip (waiting on data) is not a try', [...L.triedFrom(dir, '1.0.0')].sort().join() === 'a,b' && [...L.triedFrom(dir, '1.1.0')].join() === 'd' && L.triedFrom(path.join(dir, 'none'), '1.0.0').size === 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+}
 ok('roster continuity starts off and is switched on by one change', L.applyChange(start, 'tq.cont_k', ['set', 0.5]).tq.cont_k === 0.5 && L.applyChange(start, 'tq.cont_k', ['mul', 1.6]) === null);
 ok('projected starters start off and are switched on by one change', L.applyChange(start, 'tq.sp_k', ['set', 1]).tq.sp_k === 1 && L.applyChange(start, 'tq.sp_k', ['mul', 1.5]) === null && L.applyChange({ tq: { sp_k: 1 } }, 'tq.sp_k', ['mul', 1.5]).tq.sp_k === 1.5);
 {

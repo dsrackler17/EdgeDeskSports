@@ -204,7 +204,10 @@ function errorAnalysis(rows) {
   return out;
 }
 
-function rankCandidates(patterns, weekIndex, n, exclude) {
+/* the week's slate: the strongest patterns' changes first; then any change not yet tried from the version research
+   starts from (`tried`), so a change whose data has just arrived is tried the week it activates; then the tried
+   ones, a full slate further on each week (a re-run of an unchanged change on unchanged data says the same) */
+function rankCandidates(patterns, weekIndex, n, exclude, tried) {
   n = n || MAX_CANDIDATES;
   const CAT = CATALOGUE.filter((c) => !(exclude && exclude.has(c[0])));
   const sig = patterns.map((p) => [Math.abs(p.t || 0), p.pattern]).sort((a, b) => b[0] - a[0]);
@@ -215,8 +218,19 @@ function rankCandidates(patterns, weekIndex, n, exclude) {
   }
   top = top.slice(0, n - 2);
   const rest = CAT.map((c) => c[0]).filter((c) => !top.includes(c));
-  const k = weekIndex % Math.max(1, rest.length);
-  return top.concat(rest.slice(k).concat(rest.slice(0, k)).slice(0, n - top.length));
+  const fresh = tried ? rest.filter((c) => !tried.has(c)) : [];
+  const again = rest.filter((c) => !fresh.includes(c));
+  const slots = Math.max(1, n - top.length - fresh.length);   /* the step is the slots left, so the weeks tile the list */
+  const k = (weekIndex * slots) % Math.max(1, again.length);
+  return top.concat(fresh, again.slice(k), again.slice(0, k)).slice(0, n);
+}
+/* the changes already scored (PASS or FAIL) from one version */
+function triedFrom(docs, version) {
+  const f = path.join(docs, 'candidates.jsonl');
+  if (!fs.existsSync(f)) return new Set();
+  const out = new Set();
+  for (const l of fs.readFileSync(f, 'utf8').split('\n')) { if (!l.trim()) continue; try { const r = JSON.parse(l); if (r.from_version === version && (r.decision === 'PASS' || r.decision === 'FAIL')) out.add(r.candidate); } catch (_) { /* a torn line */ } }
+  return out;
 }
 
 /* ------------------------------------------------------------ research */
@@ -235,7 +249,10 @@ function research(opts) {
   const today = (opts.today || nowIso()).slice(0, 10);
   const weekIndex = Math.floor(Date.parse(today) / (7 * 864e5));
   const off = opts.inactive || inactiveCandidates();
-  const order = opts.only ? opts.only.filter((c) => CATALOGUE.some((x) => x[0] === c)) : rankCandidates(patterns, weekIndex, opts.max, off);
+  /* a change that would leave the configuration as it is (x1.6 of a term that is 0) takes no slot */
+  const noop = new Set(CATALOGUE.filter((c) => !applyChange(from.config, c[1], c[2])).map((c) => c[0]));
+  const order = opts.only ? opts.only.filter((c) => CATALOGUE.some((x) => x[0] === c))
+    : rankCandidates(patterns, weekIndex, opts.max, new Set([...off.keys(), ...noop]), triedFrom(docs, from.version));
   const byId = new Map(rows0.map((x) => [x.game_id, x]));
   const results = [];
   for (const cid of order) {
@@ -352,7 +369,7 @@ function report(opts) {
   return text;
 }
 
-module.exports = { CATALOGUE, MIN_GAIN, MIN_COVERAGE, inactiveCandidates, applyChange, rankCandidates, errorAnalysis, binomialZ, metrics, research, release, report, scoreConfig };
+module.exports = { CATALOGUE, MIN_GAIN, MIN_COVERAGE, inactiveCandidates, applyChange, rankCandidates, triedFrom, errorAnalysis, binomialZ, metrics, research, release, report, scoreConfig };
 
 if (require.main === module) {
   const cmd = process.argv[2];

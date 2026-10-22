@@ -28,6 +28,10 @@ on:
       - '.github/workflows/college-baseball-research-build.yml'
       - '.github/workflows/college-baseball-prices.yml'
       - 'supabase/cbase_odds_sport.sql'
+      - 'supabase/cbase_cron.sql'
+      - '.github/workflows/model-loop-college-baseball.yml'
+      - '.github/workflows/collegiate-backfill.yml'
+      - '.github/workflows/collegiate-rosters.yml'
       - 'supabase/migrations/20261021200000_cbase_odds_sport_row.sql'
       - 'tools/odds/no_bypass.test.js'
   push:
@@ -51,9 +55,9 @@ jobs:
           node-version: '22'
       - name: The engine's tests (synthetic, then the committed artifacts)
         run: node tools/college_baseball/college_baseball.test.js && node tools/college_baseball/loop.test.js && node tools/college_baseball/school_results.test.js && node tools/college_baseball/school_box.test.js && node tools/college_baseball/starters.test.js && node tools/college_baseball/market.test.js
-      - name: College baseball's odds row on a real PostgreSQL (registered disabled; nothing bought until authorised)
+      - name: College baseball's odds row and its scheduler on a real PostgreSQL (registered disabled; nothing bought until authorised; nothing faster than hourly)
         env: { CBASE_SQL_REQUIRED: '1' }
-        run: node tools/college_baseball/cbase_sql.test.js
+        run: node tools/college_baseball/cbase_sql.test.js && node tools/college_baseball/cbase_cron_sql.test.js
       - name: Every committed record reproduces and passes its check
         run: |
           node college_baseball/coverage.js --check

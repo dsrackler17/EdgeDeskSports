@@ -20,7 +20,8 @@ name: Collegiate rosters and portal (weekly)
 
 on:
   schedule:
-    - cron: '41 7 * * 1'          # Monday 07:41 UTC
+    - cron: '41 11 * * 1'         # the backup, Monday 11:41 UTC (pg_cron is primary, 07:41: supabase/cbase_cron.sql;
+                                  # a sport read in the last 6 days is not read again)
   push:
     branches: [main]              # the data lives on main; a branch run would read every school twice
     paths:

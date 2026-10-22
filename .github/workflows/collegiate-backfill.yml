@@ -9,8 +9,13 @@ name: Collegiate backfill (daily)
 
 on:
   schedule:
-    - cron: '17 9 * * *'          # daily 09:17 UTC
+    - cron: '17 13 * * *'         # the backup, daily 13:17 UTC (pg_cron is primary, 09:17: supabase/cbase_cron.sql)
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'read a slice even if today already had one (true/false)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -34,7 +39,8 @@ jobs:
         run: node tools/collegiate/collegiate.test.js
       - name: Backfill slice, then the ledger
         timeout-minutes: 320
-        run: node --max-old-space-size=6000 collegiate/run.js --only-backfill --skip-directory
+        # one slice a day: pg_cron wakes it at 09:17, and GitHub's backup does nothing if that ran
+        run: node --max-old-space-size=6000 collegiate/run.js --only-backfill --skip-directory ${{ inputs.force != 'true' && '--once-a-day' || '' }}
       - name: Publish what was read (tools/ci/push_generated.sh)
         if: always()
         run: |
