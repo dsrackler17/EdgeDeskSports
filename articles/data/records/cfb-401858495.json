@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T19:00:00.000Z",
   "game_when_label": "2026-10-24 19:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-22T04:32:02.363Z",
-  "generated_at": "2026-10-22T04:32:02.363Z",
+  "updated_at": "2026-10-22T11:41:18.519Z",
+  "generated_at": "2026-10-22T11:41:18.519Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1603,7 +1603,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.7,
+            "score": 16,
             "max": 20
           },
           {
@@ -1643,8 +1643,8 @@
           },
           {
             "action": "Confirm Oregon’s starting QB (Brock Thomas)",
-            "potential_gain": 8,
-            "text": "up to +8 once resolve Oregon’s starter conflict is done"
+            "potential_gain": 12,
+            "text": "up to +12 once resolve Oregon’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1683,9 +1683,9 @@
         "text": "A supplied availability report lists 20 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
-        "tier": "HIGH",
-        "label": "High",
-        "text": "the published numbers span 0.6 pts across 2 readings"
+        "tier": "LOW",
+        "label": "Low",
+        "text": "the published numbers span 3.3 pts across 2 readings"
       },
       "published": [
         {
@@ -1695,19 +1695,19 @@
           "text": "Oregon -8.7"
         },
         {
-          "at": "2026-10-19T02:01:31.477Z",
+          "at": "2026-10-22T05:08:29.173Z",
           "source": "latest published",
-          "home_margin": -8.16,
-          "text": "Oregon -8.2"
+          "home_margin": -12.06,
+          "text": "Oregon -12.1"
         }
       ],
-      "revisions": 3,
+      "revisions": 4,
       "change_since_published": {
         "comparable": false,
-        "points": 3.9,
+        "points": 0,
         "toward_team": "Oregon",
-        "since_at": "2026-10-19T02:01:31.477Z",
-        "text": "3.9 pts toward Oregon since the latest published number"
+        "since_at": "2026-10-22T05:08:29.173Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": false,
@@ -1897,27 +1897,27 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "17r3hlgxmvsae",
-    "status": "NO_MATERIAL_DISAGREEMENT",
+    "packet_hash": "fiz7igmjnzqi",
+    "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can Illinois’ pass rush get to Oregon’s quarterback?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.3 points.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Oregon, and its own breakdown accounts for about 0.0 of the 3.6 points, but not the full gap. Input warning: EdgeDesk’s model is built on Katin Houser starting for Illinois, but the availability report lists him as out. It is a research question, not a bet.",
     "gap": {
-      "points": 1.3,
-      "toward": "Illinois",
-      "other": "Oregon"
+      "points": 3.6,
+      "toward": "Oregon",
+      "other": "Illinois"
     },
     "supporting": [
-      "When Oregon has the ball (big plays on the ground): Oregon’s offense turns 3.0% of its runs into explosive gains, and Illinois’ defense gives up explosive gains on 3.5% of opponent runs (FBS average 6.6%).",
-      "When Illinois has the ball (the line of scrimmage on running plays): Illinois’ offense is stopped at or behind the line on 10.8% of its runs, and Oregon’s defense stops 18.3% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Oregon has the ball (the run game against the run defense): Oregon’s offense averages 4.1 yards per carry, and Illinois’ defense allows 4.3 yards per carry (FBS average 5.1).",
-      "In his last two games (UCLA and Nebraska), Raiola averaged 2.8 yards per attempt, against 11.2 in his two games before that."
-    ],
-    "contradicting": [
       "When Oregon has the ball (pass protection against the pass rush): Oregon’s offense has allowed a sack on 3.1% of its dropbacks, and Illinois’ defense sacks the quarterback on 2.7% of opponent dropbacks (FBS average 5.6%).",
       "In his last two games (Purdue and Michigan State), Houser averaged 6.3 yards per attempt, against 8.5 in his four games before that.",
       "Dante Moore has completed 70 of 100 passes (70.0%) for 935 yards, 9.4 yards per attempt, 9 touchdowns and no interceptions in four games for Oregon, and has been sacked on 6 of 106 dropbacks.",
       "In his last two games (portlandstate and USC), Moore averaged 10.8 yards per attempt, against 8.6 in his two games before that."
+    ],
+    "contradicting": [
+      "When Oregon has the ball (big plays on the ground): Oregon’s offense turns 3.0% of its runs into explosive gains, and Illinois’ defense gives up explosive gains on 3.5% of opponent runs (FBS average 6.6%).",
+      "When Illinois has the ball (the line of scrimmage on running plays): Illinois’ offense is stopped at or behind the line on 10.8% of its runs, and Oregon’s defense stops 18.3% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Oregon has the ball (the run game against the run defense): Oregon’s offense averages 4.1 yards per carry, and Illinois’ defense allows 4.3 yards per carry (FBS average 5.1).",
+      "In his last two games (UCLA and Nebraska), Raiola averaged 2.8 yards per attempt, against 11.2 in his two games before that."
     ],
     "quarterbacks": [
       "Katin Houser has completed 122 of 187 passes (65.2%) for 1,440 yards, 7.7 yards per attempt, 12 touchdowns and 4 interceptions in six games for Illinois, and has been sacked on 6 of 193 dropbacks.",
@@ -1934,15 +1934,15 @@
     ],
     "script": {
       "model": [
-        "Illinois’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 2.7% of opponent dropbacks, against an offense that has allowed a sack on 3.1% of its dropbacks.",
-        "Illinois’ offense has to hold its own on third down against a defense that allows opponents to convert 27.9% of their third downs.",
-        "Illinois’ defense has to come out ahead on long runs: it gives up explosive gains on 3.5% of opponent runs, against an offense that turns 3.0% of its runs into explosive gains.",
-        "Illinois’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 10.8% of its runs, and Oregon’s defense stops 18.3% of opponent runs at or behind the line."
+        "Oregon’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.1% of its dropbacks, and Illinois’ defense sacks the quarterback on 2.7% of opponent dropbacks.",
+        "Oregon’s offense has to hold its own on long runs against a defense that gives up explosive gains on 3.5% of opponent runs.",
+        "Oregon’s defense has to slow Illinois at the line of scrimmage — Illinois’ offense is stopped at or behind the line on 10.8% of its runs.",
+        "Oregon’s defense has to come out ahead on third down: it allows opponents to convert 27.9% of their third downs, against an offense that converts 43.7% of its third downs."
       ],
       "market": [
-        "Oregon’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.1% of its dropbacks, and Illinois’ defense sacks the quarterback on 2.7% of opponent dropbacks.",
-        "Oregon’s defense has to come out ahead on third down: it allows opponents to convert 27.9% of their third downs, against an offense that converts 43.7% of its third downs.",
-        "Moore keeps producing at his season rate (70.0% completions, 9.4 yards per attempt, 9 TD, 0 INT)."
+        "Illinois’ defense has to come out ahead on long runs: it gives up explosive gains on 3.5% of opponent runs, against an offense that turns 3.0% of its runs into explosive gains.",
+        "Illinois’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 10.8% of its runs, and Oregon’s defense stops 18.3% of opponent runs at or behind the line.",
+        "Illinois’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 2.7% of opponent dropbacks, against an offense that has allowed a sack on 3.1% of its dropbacks."
       ]
     },
     "unknown": [
@@ -1960,14 +1960,19 @@
         "key": "DATA_CONFLICT",
         "severity": "medium",
         "text": "EdgeDesk’s own sources disagree on sack rate (Illinois); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "QB_REPLACEMENT_GENERIC",
+        "severity": "medium",
+        "text": "The availability report lists Katin Houser out, and EdgeDesk’s main model subtracts a generic quarterback absence (3.9 points) from Illinois — it does not price the replacement’s own play."
       }
     ],
     "sources": [
       {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-21T21:45:32.838Z",
+        "observed_at": "2026-10-22T04:53:13.559Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1988,7 +1993,7 @@
         "label": "EdgeDesk input audit (model starter vs official availability report)",
         "url": null,
         "path": null,
-        "observed_at": "2026-10-22T04:07:41.875Z",
+        "observed_at": "2026-10-22T11:08:03.923Z",
         "verification": "CONFLICTING"
       }
     ],
@@ -1997,6 +2002,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-22T04:32:02.363Z"
+    "at": "2026-10-22T11:41:18.519Z"
   }
 }
