@@ -1246,11 +1246,25 @@ Every NFL and CFB matchup graphic (`lib/edgedesk_game_graphic.js`: the
 research page's image, its Download PNG and Share, and `npm run
 game:graphics`) carries Kalshi's price where `kalshi_card_current` trusted one:
 
-- each team's **YES mid as a whole percent**, in a **KALSHI** column beside the
-  live sportsbook quote, or as the third cell of **EdgeDesk model detail** when
-  there is none; **KALSHI CLOSE** after kickoff;
-- only from a row in state OK. A side without one prints nothing, and the other
-  side is never derived from it. No trusted price: no Kalshi on the graphic;
+- **EDGEDESK vs MARKET**, a table in the market strip's place: one column per
+  market, three rows.
+  - **Columns:** the live book's spread and total (when one is live), then each
+    priced team's **win % · ML**. With no live book it is **EDGEDESK vs KALSHI**:
+    the team columns alone.
+  - **Rows:**
+    - EdgeDesk, unrounded: the raw projection at one decimal, and the win
+      probability with its fair moneyline;
+    - the market, with its source and time (e.g. `DRAFTKINGS 7:32 · KALSHI
+      7:43 PM ET`): the book's line as received, and Kalshi's YES mid with that
+      price as a moneyline;
+    - the difference: `0.4 TOWARD SHSU`, `0.3 LOWER`, `2.2 PP HIGHER`. It is
+      EdgeDesk minus the market, before Kalshi's fees, so every difference is the
+      subtraction of the two numbers printed above it (a test holds this for
+      every committed game).
+  - After kickoff the market row reads **KALSHI CLOSE**;
+- only from a row in state OK. A side without one has no column, and the other
+  side is never derived from it. No trusted price: no table, and the market strip
+  or model detail is drawn as before;
 - **placed by team, not by the row's home/away.** The link accepts a book listing
   with home and away swapped, so `EDGameSnapshot.kalshi`
   (`lib/edgedesk_game_snapshot.js`) resolves each YES team onto the snapshot's
