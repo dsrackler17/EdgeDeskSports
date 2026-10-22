@@ -2,7 +2,7 @@
 
 Data built Oct 21, 2026. 2024, 2025 full seasons + 2026 Weeks 1-6 (663 games). Week 7 assignments included.
 
-**Display only.** Every number here is an observed count (T0) shown in the Officiating block of the NFL card (Market Structure → Observed). None of it feeds a spread, total, probability, EV, grade, ranking or the CLV record.
+**Observed, not priced.** Every number here is an observed count (T0). It is shown in the Officiating block of the NFL card (Market Structure → Observed) and, since 2026-10-22, on every game's research snapshot and matchup graphic: `tools/football/game_context.js` reads `ref_assignments.csv`, `manual_assignments.json` and `ref_game_penalties.csv`, and `lib/edgedesk_game_context.js` turns them into the referee's flags per game against the league, his rank, his games' over/under record and the measured over rate of his flag tier ("REF: …" in What to watch for). None of it feeds a spread, total, probability, EV, grade, ranking or the CLV record. College games show their home conference's crews (`cfb/cfb_conference_baselines.csv`) until an assignment is on file.
 
 ## Files
 

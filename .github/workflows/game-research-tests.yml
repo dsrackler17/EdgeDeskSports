@@ -24,6 +24,9 @@ on:
       - 'lib/edgedesk_decision_ui.js'
       - 'lib/edgedesk_quote_ev.js'
       - 'lib/football_identity.js'
+      - 'lib/edgedesk_game_context.js'
+      - 'data/refs/**'
+      - 'football/venues/nfl_stadiums.json'
       - 'football/engine.js'
       - 'football/cfb_p4/engine.js'
       - 'football/cfb_p4/params.js'
@@ -32,6 +35,7 @@ on:
       - 'tools/football/build_fair_lines.js'
       - 'tools/football/render_game_graphics.js'
       - 'tools/football/game_research*.js'
+      - 'tools/football/game_context*.js'
       - 'tools/football/football_lines.test.js'
       - 'football/game_research/**'
       - 'app.html'
@@ -56,12 +60,14 @@ jobs:
           node-version: '22'
       - name: Syntax
         run: |
-          for f in lib/edgedesk_football_lines.js lib/edgedesk_game_snapshot.js lib/edgedesk_game_graphic.js lib/edgedesk_game_view.js \
-                   tools/football/build_game_research.js tools/football/render_game_graphics.js; do node --check "$f"; done
+          for f in lib/edgedesk_football_lines.js lib/edgedesk_game_snapshot.js lib/edgedesk_game_graphic.js lib/edgedesk_game_view.js lib/edgedesk_game_context.js \
+                   tools/football/build_game_research.js tools/football/render_game_graphics.js tools/football/game_context.js; do node --check "$f"; done
       - name: The committed snapshots are self-consistent
         run: node tools/football/build_game_research.js --check
       - name: Football display lines (half points, PK, whole-number scores, raw gaps, key numbers)
         run: node tools/football/football_lines.test.js
+      - name: Game context (referees, travel, rest) and the edge signals in What to watch for
+        run: node tools/football/game_context.test.js
       - name: Snapshot, insights, consistency, market states, price check, graphic, history, wiring
         run: node tools/football/game_research.test.js
       - name: Install Chromium for the browser suite

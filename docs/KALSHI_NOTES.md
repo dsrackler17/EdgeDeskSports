@@ -13,7 +13,36 @@ snapshot modules (`lib/edgedesk_game_snapshot.js`, `lib/edgedesk_calc.js`,
 data (`football/game_research/`) are untouched. A test checks that the card's
 model numbers are identical with and without a Kalshi block.
 
-## The rules
+## Revision, 2026-10-22 (later the same day): the nearest price is always shown
+
+The owner's call: a Kalshi price is never withheld for its age or its spread.
+The card shows the **nearest two-sided quote** to the model snapshot and says
+how near it is. Rules 1 and 2 and the matching notes below are superseded
+where they say "unavailable":
+
+- `G.kalshiAtModel` takes each market's nearest **two-sided** quote (a
+  one-sided book has no price; the page and `npm run game:graphics` ask
+  `kalshi_price_snapshots` for `yes_bid > 0 and yes_ask < 1` on each side of
+  the model time). Every two-sided quote carries its mid; its state still says
+  OK, TIME_GAP (over 15 minutes from the model) or WIDE_SPREAD (over 6¢).
+- `EDGameSnapshot.kalshi` places every side with a mid whatever its row
+  state, and labels the read `nearest quote` when any side is not OK.
+- `G.content` compares it and prints the caveat beside the times line, e.g.
+  `Nearest Kalshi quote: 2 h 1 min after the model` or `wide 9¢ Kalshi
+  spread`; the large-gap note follows it.
+- Only a game with no two-sided quote at all says `No two-sided Kalshi quote
+  on record`.
+- The constants keep their values: they now decide the caveat, not a refusal.
+
+The same revision adds the edge strip (`G.pickMarket`, `G.edgeOf`): the
+market beside the model is a LIVE book quote, else the newer of the page's
+last captured quote and the snapshot's own market line (`consensus`: the CFB
+terminal's latest book quote, nflverse's consensus line for the NFL), each
+labelled with its book and time. The strip's title names the side the
+unrounded projection leans to at 1.5+ points on the spread and 2+ on the total
+(`EDGE: NE +3 · UNDER 50.5`).
+
+## The rules (as first written)
 
 All four live in `lib/edgedesk_game_graphic.js`, so every caller follows them:
 the research page's graphic, its Download PNG and Share, and

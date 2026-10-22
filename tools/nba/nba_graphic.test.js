@@ -7,7 +7,8 @@
      content    every committed slate game builds; the fair spread, fair total,
                 moneyline and expected points are the slate's own; the win
                 percents add to 100; the copy rule holds
-     market     only a named-book price captured in the last 180 minutes and
+     market     the nearest named-book price before tip (older than 180 minutes:
+                the last known market, with its time) and
                 before tip; its gaps are the book's line against the fair line
                 on the graphic; otherwise EdgeDesk's own detail
      watch      at most four lines, each naming a team, never a data-state
@@ -85,7 +86,11 @@ chk('…the no-vig split adds to 100', parseInt(c.market.no_vig.home, 10) + pars
 chk('…and the gaps are the book’s line against the fair line on the graphic', c.market.vs[0] === 'Spread: EdgeDesk 4.0 pts toward ' + G1.home.abbr && c.market.vs[1] === 'Total: EdgeDesk 4.0 pts lower', c.market.vs);
 c = N.content(G1, Object.assign({}, base, { market: mk(30, { spread: { home: { point: fl1, price: -110 }, away: { point: -fl1, price: -110 } }, total: { point: ft1 } }) })).content;
 chk('the same line both ways reads as agreement', c.market.vs.join(' | ') === 'Spread: EdgeDesk and the market agree | Total: EdgeDesk and the market agree', c.market.vs);
-chk('a price older than 180 minutes is not shown', !N.content(G1, Object.assign({}, base, { market: mk(181) })).content.market);
+{
+  const co = N.content(G1, Object.assign({}, base, { market: mk(181) })).content;
+  chk('a price older than 180 minutes is the last known market, with its time (the nearest price, never hidden)', co.market && co.market.title === 'LAST KNOWN MARKET' && co.market.state === 'STALE' && !co.detail && /Last known market/.test(N.altText ? N.altText(co) : co.alt || 'Last known market'), co.market);
+  chk('…a gap of 2+ points on the spread or 3+ on the total names the edge, at the book’s line', co.edge && co.edge.headline === G1.home.abbr + ' ' + co.market.home_spread + ' · UNDER ' + co.market.total, co.edge);
+}
 chk('a price with no named book is not shown', !N.content(G1, Object.assign({}, base, { market: mk(10, { book: null }) })).content.market);
 chk('a quote that carries no price is not shown', !N.content(G1, Object.assign({}, base, { market: mk(10, { moneyline: {}, spread: {}, total: {} }) })).content.market);
 const tip = Date.parse(G1.start_utc);

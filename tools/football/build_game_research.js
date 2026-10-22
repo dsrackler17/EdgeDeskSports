@@ -47,6 +47,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const GS = require(path.join(ROOT, 'lib', 'edgedesk_game_snapshot.js'));
 const FL = require(path.join(ROOT, 'lib', 'edgedesk_fairline.js'));
+const CTX = require(path.join(__dirname, 'game_context.js'));
 const { writeIfChanged } = require(path.join(__dirname, 'write_if_changed.js'));
 
 const OUT = path.join(ROOT, 'football', 'game_research');
@@ -69,12 +70,15 @@ function writeLanding(land, dir) {
   const json = (f) => { try { return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch (_) { return null; } };
   const file = path.join(dir, 'landing.json'), cur = json('current.json'), disk = {};
   ((cur && cur.games) || []).forEach((s) => { disk[s.game_key] = s; });
-  land.games.forEach((g) => { if (disk[g.game_key]) g.snapshot = disk[g.game_key]; });
+  land.games.forEach((g) => { if (disk[g.game_key]) g.snapshot = landingSnapshot(disk[g.game_key]); });
   const prev = json('landing.json');
   const embedded = (l) => JSON.stringify(((l && l.games) || []).map((g) => g.snapshot));
   if (prev && embedded(prev) !== embedded(land)) { fs.writeFileSync(file, JSON.stringify(land)); return 'written'; }
   return writeIfChanged(file, land, { pretty: false });
 }
+/* the free landing page shows the model only: a snapshot's market line (its
+   consensus block, the members' edge strip) stays off it */
+function landingSnapshot(s) { if (!s || !('consensus' in s)) return s; const o = Object.assign({}, s); delete o.consensus; return o; }
 function readJson(rel) { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch (_) { return null; } }
 function num(v) { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
 
@@ -185,6 +189,9 @@ function build(opts) {
   const today = opts.today !== undefined ? opts.today : readJson('today/slate.json');
   const ident = opts.identity !== undefined ? opts.identity : readJson('football/game_research/identity_cfb.json');
   const featured = opts.featured !== undefined ? opts.featured : readJson('articles/data/editorial/featured.json');
+  const forecasts = opts.forecasts !== undefined ? opts.forecasts : readJson('football/venues/forecasts.json');
+  /* referees, travel and rest (tools/football/game_context.js): committed files only */
+  const context = opts.context !== undefined ? opts.context : CTX.load({ season: (nfl && nfl.season) || (fbs && fbs.games && fbs.games[0] && fbs.games[0].season) });
   const prevHistory = opts.history || null;
   const prevCurrent = opts.previous !== undefined ? opts.previous : null;
 
@@ -217,7 +224,8 @@ function build(opts) {
   ((nfl && nfl.games) || []).forEach((g) => {
     try {
       const gk = 'nfl|' + g.game_id;
-      const s = GS.fromNfl(g, { teams: nfl.teams, generated_at: nfl.generated_at, source: 'football/nfl/slate.json', records: nflRecs, polls: pollsFor(gk), sheet: fullSheets[gk] || null });
+      const s = GS.fromNfl(g, { teams: nfl.teams, generated_at: nfl.generated_at, source: 'football/nfl/slate.json', records: nflRecs, polls: pollsFor(gk), sheet: fullSheets[gk] || null,
+        context: context ? CTX.nflContext(g, context) : null });
       snaps.push(s);
     } catch (e) { refused.push({ game_key: 'nfl|' + g.game_id, reason: String(e && e.message || e) }); }
   });
@@ -232,7 +240,9 @@ function build(opts) {
       });
       const s = GS.fromCfb(g, { terminal: term && term.games ? term.games[String(g.game_id)] : null, rankings: rk && rk.teams, rankings_as_of: rk && (rk.data_as_of || rk.generated_at),
         team_count: rk && rk.team_count, rank_counts: rankCounts, identity, records: recs, polls: pollsFor(gk), units_label: rk && rk.week_label ? rk.week_label + ' ratings' : null, sheet: fullSheets[gk] || null,
-        generated_at: fbs.generated_at, source: 'football/fbs/slate.json' });
+        generated_at: fbs.generated_at, source: 'football/fbs/slate.json',
+        forecast: forecasts && forecasts.by_game ? forecasts.by_game[String(g.game_id)] || null : null,
+        context: context ? CTX.cfbContext(g, context, { home: GS.teamIdentity('cfb', g.home_team, g.home_team_id, identity).abbr, away: GS.teamIdentity('cfb', g.away_team, g.away_team_id, identity).abbr }) : null });
       snaps.push(s);
     } catch (e) { refused.push({ game_key: 'cfb|' + g.game_id, reason: String(e && e.message || e) }); }
   });
@@ -329,7 +339,7 @@ function landingFor(current, probabilities, featured, now) {
     const s = by[gk], f = why[gk];
     return { game_key: gk,
       chosen_because: f ? 'featured by EdgeDesk’s editorial desk this week' + (f.window_label ? ' (' + f.window_label + (f.rivalry_label ? ', ' + f.rivalry_label : '') + ')' : '') : 'the next game with a full data check',
-      snapshot: s, sheet: probabilities.sheets[gk] };
+      snapshot: landingSnapshot(s), sheet: probabilities.sheets[gk] };
   });
   const leagues = {};
   games.forEach((g) => { leagues[g.snapshot.league] = 1; });
@@ -468,4 +478,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { build, buildIdentity, loadHistory, historyRow, nflRecords, espnByGame, sheetsFor, landingFor, writeLanding, SCHEMA, PROB_SCHEMA, HISTORY_SCHEMA, LANDING_SCHEMA, LANDING_GAMES };
+module.exports = { build, buildIdentity, landingSnapshot, loadHistory, historyRow, nflRecords, espnByGame, sheetsFor, landingFor, writeLanding, SCHEMA, PROB_SCHEMA, HISTORY_SCHEMA, LANDING_SCHEMA, LANDING_GAMES };
