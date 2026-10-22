@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T23:30:00.000Z",
   "game_when_label": "2026-10-24 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-22T11:41:18.519Z",
-  "generated_at": "2026-10-22T11:41:18.519Z",
+  "updated_at": "2026-10-22T04:32:02.363Z",
+  "generated_at": "2026-10-22T04:32:02.363Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -124,22 +124,22 @@
         "note": "Quoted from Texas State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 82,
-      "inputs_reached_pct": 81,
+      "inputs_reached_pct": 73,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 21,
-        "priced": 13,
-        "priced_coverage_pct": 50,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 13,
+          "USABLE": 11,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 0,
+          "FETCH_FAILED": 2,
           "UNAVAILABLE": 5
         },
         "absent": [
@@ -148,6 +148,18 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Texas State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Utah State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
           },
           {
             "field": "qb_availability",
@@ -1472,6 +1484,18 @@
         {
           "sev": "LOW",
           "label": "missing",
+          "text": "home injury report not supplied",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "away injury report not supplied",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
         },
@@ -1490,6 +1514,14 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
+        },
+        {
+          "item": "Home availability / injuries",
+          "why": "no injury report supplied for home"
+        },
+        {
+          "item": "Away availability / injuries",
+          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1567,11 +1599,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 81,
         "tier": "STRONG",
-        "text": "86 · STRONG",
-        "sub": "main deduction: no market quote is joined to this game",
-        "score": 86,
+        "text": "81 · STRONG",
+        "sub": "main deduction: Utah State’s availability sources refused",
+        "score": 81,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1585,7 +1617,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.7,
+            "score": 8.4,
             "max": 20
           },
           {
@@ -1597,13 +1629,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 11.6,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.4,
+            "score": 13.3,
             "max": 15
           },
           {
@@ -1613,18 +1645,18 @@
             "max": 10
           }
         ],
-        "main_deduction": "no market quote is joined to this game",
+        "main_deduction": "Utah State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Utah State’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Confirm Utah State’s QB availability",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Utah State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Confirm Texas State’s QB availability",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Texas State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Capture a market quote",
@@ -1669,9 +1701,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "INJURY_UNCERTAINTY",
-        "label": "INJURY UNCERTAINTY",
-        "text": "A supplied availability report lists 26 players with an unresolved status; the engine widens this game’s range for it."
+        "key": "NOT_COMPARED",
+        "label": "NOT COMPARED",
+        "text": "This load’s live number is not compared with the published one: the published number came from edgedesk_cfb_p4_v1.0.0 and this page runs edgedesk_cfb_p4_v1.0.1. A difference between them is not a move."
       },
       "stability": {
         "tier": "HIGH",
@@ -1888,7 +1920,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "2klu8815gvfmy",
+    "packet_hash": "116b6dy11e9oac",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Utah State take away Texas State’s big plays?",
@@ -1915,11 +1947,7 @@
       "Grady Brosterhous has completed 79 of 146 passes (54.1%) for 913 yards, 6.3 yards per attempt, 7 touchdowns and 6 interceptions in six games for Utah State, and has been sacked on 16 of 162 dropbacks.",
       "McCae Hillstead has completed 17 of 38 passes (44.7%) for 225 yards, 5.9 yards per attempt, 2 touchdowns and 4 interceptions in two games for Utah State, and has been sacked on 3 of 41 dropbacks."
     ],
-    "availability": [
-      "Texas State’s availability report lists running back Davian Jackson as questionable.",
-      "Utah State’s availability report lists receiver Eli Wood as questionable.",
-      "Utah State’s availability report lists receiver Rex Haynes as questionable."
-    ],
+    "availability": [],
     "script": {
       "model": [
         "Texas State’s offense has to keep winning on big pass plays: it turns 15.1% of its pass plays into explosive gains, and Utah State’s defense gives up explosive gains on 4.3% of opponent pass plays.",
@@ -1934,11 +1962,8 @@
       ]
     },
     "unknown": [
-      "Texas State’s availability report lists running back Davian Jackson as questionable.",
-      "Utah State’s availability report lists receiver Eli Wood as questionable.",
-      "Utah State’s availability report lists receiver Rex Haynes as questionable.",
       "EdgeDesk’s own sources disagree on sack rate allowed for Texas State and Utah State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
     ],
     "flags": [
       {
@@ -1957,7 +1982,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-22T04:53:13.559Z",
+        "observed_at": "2026-10-21T21:45:32.838Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1973,13 +1998,6 @@
         "path": "football/fbs_epa/qb_epa_2026.json",
         "observed_at": "2026-10-18T03:00:00.000Z",
         "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Pac-12 Conference availability report (Advance Report)",
-        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-22T02:08:41.017Z",
-        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1987,6 +2005,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-22T11:41:18.519Z"
+    "at": "2026-10-22T04:32:02.363Z"
   }
 }

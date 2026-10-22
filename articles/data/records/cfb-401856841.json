@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "West Virginia vs. TCU: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "West Virginia vs. TCU 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for West Virginia at TCU: TCU −13.0, fair total 53.5. TCU wins 81% of simulations. Data confidence 89%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for West Virginia at TCU: TCU −13.0, fair total 53.5. TCU wins 81% of simulations. Data confidence 84%. Model status NO MARKET. Research, not picks.",
   "excerpt": "TCU carries the stronger underlying team rating — +7.2 against -0.3, a 7.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it TCU −13.0 before any sportsbook number is consulted, with TCU winning 81% of simulations.",
   "home_team": "TCU",
   "away_team": "West Virginia",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-24T16:00:00.000Z",
   "game_when_label": "2026-10-24 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-22T11:41:18.519Z",
-  "generated_at": "2026-10-22T11:41:18.519Z",
+  "updated_at": "2026-10-22T04:32:02.363Z",
+  "generated_at": "2026-10-22T04:32:02.363Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
-  "confidence": 89,
+  "confidence": 84,
   "priced": true,
   "fair_spread_text": "TCU −13.0",
   "fair_total": "53.5",
@@ -66,7 +66,7 @@
       "TCU carries the stronger underlying team rating — +7.2 against -0.3, a 7.5-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it TCU −13.0 before any sportsbook number is consulted, with TCU winning 81% of simulations.",
       "The position-group comparison shows where the separation comes from: the widest measured gap is pass defense, where TCU leads West Virginia by 127 places nationally.",
-      "Data confidence on this matchup is 89% — high by this board’s standards, so the margin is the strongest part of the read."
+      "Data confidence on this matchup is 84% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
@@ -123,24 +123,24 @@
         "volatility_discriminates": false,
         "note": "Quoted from TCU’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 89,
-      "inputs_reached_pct": 89,
+      "confidence_pct": 84,
+      "inputs_reached_pct": 73,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 23,
-        "priced": 15,
-        "priced_coverage_pct": 58,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
         "by_state": {
-          "USABLE": 15,
+          "USABLE": 11,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -148,6 +148,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for TCU and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for West Virginia and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff"
           },
           {
             "field": "off_field",
@@ -1474,6 +1498,18 @@
         {
           "sev": "LOW",
           "label": "missing",
+          "text": "home injury report not supplied",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "away injury report not supplied",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
         },
@@ -1492,6 +1528,14 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
+        },
+        {
+          "item": "Home availability / injuries",
+          "why": "no injury report supplied for home"
+        },
+        {
+          "item": "Away availability / injuries",
+          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1564,18 +1608,18 @@
         "reason": "no market line is joined to this game"
       },
       "confidence": {
-        "score": 89,
+        "score": 84,
         "tier": "HIGH",
         "label": "High"
       },
       "reliability": {
-        "pct": 95,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "95 · VERY STRONG",
-        "sub": "main deduction: no market quote is joined to this game",
-        "score": 95,
-        "grade": "VERY_STRONG",
-        "grade_label": "VERY STRONG",
+        "text": "85 · STRONG",
+        "sub": "main deduction: West Virginia’s availability sources refused",
+        "score": 85,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1587,7 +1631,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 18.4,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1599,13 +1643,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14.9,
+            "score": 15,
             "max": 15
           },
           {
@@ -1615,9 +1659,25 @@
             "max": 10
           }
         ],
-        "main_deduction": "no market quote is joined to this game",
+        "main_deduction": "West Virginia’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of West Virginia’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
-        "next_actions": [],
+        "next_actions": [
+          {
+            "action": "Restore an injury/availability source for West Virginia",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Restore an injury/availability source for TCU",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
+          }
+        ],
         "stability": {
           "tier": "VERY_STABLE",
           "sd": 0.96,
@@ -1655,9 +1715,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "INJURY_UNCERTAINTY",
-        "label": "INJURY UNCERTAINTY",
-        "text": "A supplied availability report lists 21 players with an unresolved status; the engine widens this game’s range for it."
+        "key": "NOT_COMPARED",
+        "label": "NOT COMPARED",
+        "text": "This load’s live number is not compared with the published one: the published number came from edgedesk_cfb_p4_v1.0.0 and this page runs edgedesk_cfb_p4_v1.0.1. A difference between them is not a move."
       },
       "stability": {
         "tier": "HIGH",
@@ -1874,7 +1934,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "17iewvxnb4z1b",
+    "packet_hash": "t6opz819bhjc6",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can TCU take away West Virginia’s big plays?",
@@ -1898,15 +1958,9 @@
     ],
     "quarterbacks": [
       "Jaden Craig has completed 128 of 192 passes (66.7%) for 1,687 yards, 8.8 yards per attempt, 10 touchdowns and 5 interceptions in six games for TCU, and has been sacked on 17 of 209 dropbacks.",
-      "Michael Hawkins Jr. has completed 83 of 144 passes (57.6%) for 1,519 yards, 10.5 yards per attempt, 10 touchdowns and 1 interception in seven games for West Virginia, and has been sacked on 12 of 156 dropbacks.",
-      "Jaden Craig does not appear on TCU’s initial availability report.",
-      "Michael Hawkins Jr. does not appear on West Virginia’s initial availability report."
+      "Michael Hawkins Jr. has completed 83 of 144 passes (57.6%) for 1,519 yards, 10.5 yards per attempt, 10 touchdowns and 1 interception in seven games for West Virginia, and has been sacked on 12 of 156 dropbacks."
     ],
-    "availability": [
-      "TCU’s availability report lists running back Jeremy Payne as questionable.",
-      "TCU’s availability report lists running back Landon Walker as doubtful.",
-      "TCU’s availability report lists tight end Kari Ashley as questionable."
-    ],
+    "availability": [],
     "script": {
       "model": [
         "TCU’s defense has to come out ahead on big pass plays: it gives up explosive gains on 6.3% of opponent pass plays, against an offense that turns 22.4% of its pass plays into explosive gains.",
@@ -1921,11 +1975,8 @@
       ]
     },
     "unknown": [
-      "TCU’s availability report lists running back Jeremy Payne as questionable.",
-      "TCU’s availability report lists running back Landon Walker as doubtful.",
-      "TCU’s availability report lists tight end Kari Ashley as questionable.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for TCU and West Virginia.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
     ],
     "flags": [
       {
@@ -1939,7 +1990,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-22T04:53:13.559Z",
+        "observed_at": "2026-10-21T21:45:32.838Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1948,13 +1999,6 @@
         "path": "football/fbs_epa/qb_epa_2026.json",
         "observed_at": "2026-10-18T03:00:00.000Z",
         "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big 12 Conference availability report (Initial)",
-        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-22T02:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1962,6 +2006,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-22T11:41:18.519Z"
+    "at": "2026-10-22T04:32:02.363Z"
   }
 }
