@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: '22'
       - name: The engine's tests (synthetic, then the committed artifacts)
-        run: node tools/college_baseball/college_baseball.test.js && node tools/college_baseball/loop.test.js && node tools/college_baseball/school_results.test.js && node tools/college_baseball/school_box.test.js && node tools/college_baseball/market.test.js
+        run: node tools/college_baseball/college_baseball.test.js && node tools/college_baseball/loop.test.js && node tools/college_baseball/school_results.test.js && node tools/college_baseball/school_box.test.js && node tools/college_baseball/starters.test.js && node tools/college_baseball/market.test.js
       - name: College baseball's odds row on a real PostgreSQL (registered disabled; nothing bought until authorised)
         env: { CBASE_SQL_REQUIRED: '1' }
         run: node tools/college_baseball/cbase_sql.test.js

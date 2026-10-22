@@ -76,6 +76,11 @@ const CATALOGUE = [
   ['roster_continuity_carry', 'tq.cont_k', ['set', 0.5], ['first_3_weeks'], 'continuity'],
   ['roster_continuity_stronger', 'tq.cont_k', ['mul', 1.6], ['first_3_weeks'], 'continuity'],
   ['roster_continuity_weaker', 'tq.cont_k', ['mul', 0.6], ['first_3_weeks'], 'continuity'],
+  /* projected starters (lib/starters.js, from the schools' box scores): inactive until the boxes cover Division I */
+  ['starter_quality', 'tq.sp_k', ['set', 1], ['midweek', 'favourites'], 'school_box'],
+  ['starter_quality_half', 'tq.sp_k', ['set', 0.5], ['midweek', 'favourites'], 'school_box'],
+  ['starter_quality_stronger', 'tq.sp_k', ['mul', 1.5], ['midweek', 'favourites'], 'school_box'],
+  ['starter_quality_weaker', 'tq.sp_k', ['mul', 0.67], ['midweek', 'favourites'], 'school_box'],
 ];
 /* what a data-dependent candidate needs before it is tried: the share of D-I team-seasons it can see */
 const MIN_COVERAGE = 0.8;
@@ -83,12 +88,19 @@ function inactiveCandidates(o) {
   o = o || {};
   const off = new Map();
   const needs = new Set(CATALOGUE.filter((c) => c[4]).map((c) => c[4]));
+  const W = require('./lib/warehouse');
+  const ts = (o.teamSeasons || W.teamSeasons()).filter((t) => +t.division === 1 && +t.season >= WF.WIN.selection[0] && +t.season <= WF.WIN.validation[1]).map((t) => [t.season, t.team_id]);
+  const span = WF.WIN.selection[0] + '-' + WF.WIN.validation[1];
   if (needs.has('continuity')) {
-    const W = require('./lib/warehouse');
     const C = o.continuity || require('./lib/continuity').load();
-    const ts = (o.teamSeasons || W.teamSeasons()).filter((t) => +t.division === 1 && +t.season >= WF.WIN.selection[0] && +t.season <= WF.WIN.validation[1]).map((t) => [t.season, t.team_id]);
     const cov = C.coverage(ts);
-    if (cov < MIN_COVERAGE) for (const c of CATALOGUE.filter((x) => x[4] === 'continuity')) off.set(c[0], 'INACTIVE: roster continuity covers ' + (100 * cov).toFixed(1) + '% of D-I team-seasons ' + WF.WIN.selection[0] + '-' + WF.WIN.validation[1] + ' (needs ' + 100 * MIN_COVERAGE + '%); the collegiate roster backfill (collegiate/plan.json) fills it');
+    if (cov < MIN_COVERAGE) for (const c of CATALOGUE.filter((x) => x[4] === 'continuity')) off.set(c[0], 'INACTIVE: roster continuity covers ' + (100 * cov).toFixed(1) + '% of D-I team-seasons ' + span + ' (needs ' + 100 * MIN_COVERAGE + '%); the collegiate roster backfill (collegiate/plan.json) fills it');
+  }
+  if (needs.has('school_box')) {
+    const SP = require('./lib/starters');
+    const B = o.starters || SP.inputs({ until: WF.WIN.validation[1] });
+    const cov = B.coverage(ts);
+    if (cov < MIN_COVERAGE) for (const c of CATALOGUE.filter((x) => x[4] === 'school_box')) off.set(c[0], 'INACTIVE: the schools\' box scores cover ' + (100 * cov).toFixed(1) + '% of D-I team-seasons ' + span + ' (a team-season counts when ' + 100 * SP.COVERED + '% of its contests are boxed; needs ' + 100 * MIN_COVERAGE + '%); the collegiate box-score backfill (collegiate/plan.json) fills it');
   }
   return off;
 }

@@ -22,6 +22,9 @@
      source (the box's address).
    audit: for 2024-2026, where our record has its own box scores, how often
    the schools' starter is ours (by name) and their outs agree.
+   pitcherRows: every pitcher's line in the joined boxes, in the pitcher
+   warehouse's terms, for the projected-starter term (lib/starters.js).
+   Nothing is written for them: they are read from the collector's boxes.
 
    HANDS. A newer SIDEARM box gives each player's throwing hand and bats. An
    older SIDEARM box gives none, but links the school's own players to its
@@ -89,15 +92,16 @@ function sideRow(c, team, opp, side, b) {
     attendance: b.attendance != null ? b.attendance : '', source: b.url || '' };
 }
 
-function build(season, o) {
+/* the boxes held for a season joined to our contests: [{ c (our contest), H, A (the box's sides as our home and away), b }] */
+function joined(season, o) {
   o = o || {};
-  const games = readCsv(o.gamesFile || path.join(GAMES, season + '.csv')).rows.filter((g) => g.status === 'FINAL');
+  const games = o.games || readCsv(o.gamesFile || path.join(GAMES, season + '.csv')).rows.filter((g) => g.status === 'FINAL');
   const ours = new Map();
   for (const g of games) { const k = pairKey(g.date, g.home_id, g.away_id); if (!ours.has(k)) ours.set(k, []); ours.get(k).push(g); }
   for (const list of ours.values()) list.sort((a, b) => (a.start_time_local || '').localeCompare(b.start_time_local || '') || a.game_id.localeCompare(b.game_id));
   const byPair = new Map();
   for (const raw of boxes(season, o)) { const b = rosterHands(raw, season, o); const k = pairKey(b.date, b.home.code, b.away.code); if (!byPair.has(k)) byPair.set(k, []); byPair.get(k).push(b); }
-  const rows = []; const counts = { boxes: 0, joined: 0, no_contest: 0, score_differs: 0 };
+  const out = []; const counts = { boxes: 0, joined: 0, no_contest: 0, score_differs: 0 };
   for (const [k, bs] of byPair) {
     counts.boxes += bs.length;
     const cs = ours.get(k);
@@ -111,11 +115,37 @@ function build(season, o) {
       const H = homeIsHome ? b.home : b.away; const A = homeIsHome ? b.away : b.home;
       if (+c.home_runs !== H.runs || +c.away_runs !== A.runs) { counts.score_differs++; return; }
       counts.joined++;
-      rows.push(sideRow(c, H, A, 'H', b), sideRow(c, A, H, 'A', b));
+      out.push({ c, H, A, b });
     });
   }
+  return { season, games, counts, list: out };
+}
+
+function build(season, o) {
+  o = o || {};
+  const j = joined(season, o);
+  const rows = [];
+  for (const { c, H, A, b } of j.list) rows.push(sideRow(c, H, A, 'H', b), sideRow(c, A, H, 'A', b));
   if (o.write !== false && rows.length) { fs.mkdirSync(o.outDir || OUT, { recursive: true }); fs.writeFileSync(path.join(o.outDir || OUT, season + '.csv'), toCsv(HEADER, rows)); }
-  return { season, counts, contests: games.length, coverage: games.length ? +(counts.joined / games.length).toFixed(4) : 0, rows };
+  return { season, counts: j.counts, contests: j.games.length, coverage: j.games.length ? +(j.counts.joined / j.games.length).toFixed(4) : 0, rows };
+}
+
+/* every pitcher's line in the joined boxes, in the pitcher warehouse's terms (lib/warehouse.js pitchers), without a
+   person id (lib/starters.js gives one): the staff's order of appearance is the box's, the first listed is the starter.
+   Home runs allowed are not kept: an older SIDEARM box does not give them. */
+function pitcherRows(season, o) {
+  const out = [];
+  for (const { c, H, A } of ((o && o.joined) || joined(season, o)).list) {
+    for (const [t, side, team, opp] of [[H, 'H', c.home_id, c.away_id], [A, 'A', c.away_id, c.home_id]]) {
+      (t.pitchers || []).forEach((p, i) => {
+        if (!p || !p[0] || p[2] == null) return;
+        out.push({ game_id: c.game_id, season: +c.season, date: c.date, team_id: String(team), opp_id: String(opp), side, seq: i + 1, starter: i === 0 ? 1 : 0,
+          name: p[0], throws: p[1] || '', slug: p[9] || '', outs: +p[2] || 0, bf: +p[3] || 0, so: +p[4] || 0, bb: +p[5] || 0, h: +p[6] || 0, er: +p[7] || 0,
+          r: p[10] != null ? +p[10] : null, hb: p[12] != null ? +p[12] : 0, hr_a: 0 });
+      });
+    }
+  }
+  return out;
 }
 
 /* one person, however a scorer writes the name: "Luke Matta", "L. MATTA", "Matta", "Matta, Luke", or truncated at the
@@ -163,4 +193,4 @@ if (require.main === module) {
   delete r.rows;
   console.error('[school box] ' + a[0] + ' ' + season + ': ' + JSON.stringify(r));
 }
-module.exports = { build, audit, boxes, rosterHands, samePerson, HEADER };
+module.exports = { build, joined, pitcherRows, audit, boxes, rosterHands, samePerson, nameParts, HEADER };

@@ -146,3 +146,24 @@ Added before any college baseball price existed. Everything above keeps its mean
 - **Market status.** `MARKET_VALIDATED` is the G7 PASS on at least 500 bets, for the configuration that was served when the prices were captured. A version released later starts its own forward test.
 - **The board.** It makes a value claim only when `college_baseball/lib/market_gate.js` allows it: `MARKET_VALIDATED` for the served configuration, the release gates passing (G12, the books' settlement rules, among them), and a live board. Until then it shows probabilities only, with the model's outcome status, and no value claim.
 - **No backtest stands in for it.** The walk-forward's own market status stays `NOT_TESTED`: it is a retrospective reconstruction with no prices. The only market evidence is the forward test.
+
+## Amendment 2026-10-22: projected starters from the schools' box scores, 2014–2024
+
+Added before any model with the starter term was scored. Everything above keeps its meaning. §2's box-score windows (2024–2026) were set by the box scores we held then (baseballr-data). The collegiate collector now holds the schools' own box scores from 2013 on (`collegiate/`; joined to our contests by `ingest/school_box.js`), so a pitcher-aware term can be scored on the results windows.
+
+- **The windows.** A starter term read from the schools' box scores uses the results-only windows of §2:
+  - **burn-in / fit 2013**: the linear weights and the starter-projection logit are fitted here and nowhere else;
+  - **SELECTION 2014–2022** and **VALIDATION 2023–2024**, which the learning loop reads;
+  - **HOLDOUT 2025–2026**, read once per model version by `loop.js release`, as before.
+  - The baseballr pitcher study (`pitcher_walkforward.js`, §2's box-score windows) is unchanged and keeps its own record.
+- **The term.** `lib/starters.js`, entering the run model as `tq.sp_k` (0, off, in every version so far). For each staff it computes:
+  - the starter projected from the team's own recent starts (the same weekday slot last week, rest, recent start share; `lib/pitchers.js` projectStarter);
+  - each candidate's shrunk run value per batter faced, from boxes dated before the game;
+  - q = log(1 + Σ p_i s_i (rv_i − rv_staff) / rv_staff), which moves the opposing side's expected runs by exp(sp_k · q).
+- **What it never reads.** The game's own box. The actual starter is oracle: the pitching state folds in only appearances dated before the game, and `tools/college_baseball/starters.test.js` checks that rewriting a game's box leaves that game's number unchanged.
+- **Missing data.** A side has no value unless its last 28 days are boxed (at least 3 contests and 80% of them). A side without a value is priced exactly as before. Home runs allowed are missing from older SIDEARM boxes, so the weights have no home-run term. A pitcher who changes schools starts again.
+- **When it is tried.** Under the 2026-10-21 amendment's rule for data we did not hold:
+  - inactive until the input covers at least 80% of D-I team-seasons in SELECTION + VALIDATION;
+  - a team-season counts as covered when at least 80% of its contests are boxed.
+  - Once active, the four catalogue changes (`starter_quality`, `_half`, `_stronger`, `_weaker`) are tried under the full-window rule, like every other.
+- **The ceiling, stated now.** From the schedules held on 2026-10-22, about 83% of D-I team-seasons will be covered in 2022 and 2024, but about 22% in 2014. Older seasons' schedules link fewer box scores, and the WMT sites' boxes are not read. So the term may stay inactive until more older-season boxes are found. The weekly report names its coverage every week. A lower bar would test the term mostly on recent seasons, so the bar is not lowered for it.

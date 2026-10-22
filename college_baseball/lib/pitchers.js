@@ -72,7 +72,12 @@ class PitchingState {
   }
   load(seasons) {
     const all = [];
-    for (const s of seasons) for (const p of W.pitchers(s)) if (p.person_id && p.team_id && p.date) all.push(p);
+    for (const s of seasons) for (const p of W.pitchers(s)) all.push(p);
+    return this.loadRows(all);
+  }
+  /** appearances from another source in the warehouse's terms (lib/starters.js: the schools' own box scores) */
+  loadRows(rows) {
+    const all = rows.filter((p) => p.person_id && p.team_id && p.date);
     all.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.game_id < b.game_id ? -1 : a.game_id > b.game_id ? 1 : a.seq - b.seq));
     this.queue = all; this.qi = 0;
     return this;
@@ -235,10 +240,10 @@ function fitAvailability(state, season, games) {
 }
 
 /** fit the starter-projection conditional logit by gradient ascent on the FIT season */
-function fitProjection(state, season, games) {
+function fitProjection(state, season, games, rows) {
   const sets = [];
   const starterOf = new Map();
-  for (const p of W.pitchers(season)) if (p.starter && p.person_id) starterOf.set(p.game_id + '|' + p.team_id, p.person_id);
+  for (const p of rows || W.pitchers(season)) if (p.starter && p.person_id && p.season === season) starterOf.set(p.game_id + '|' + p.team_id, p.person_id);
   for (const g of games) {
     state.advance(g.date);
     for (const team of [g.home_id, g.away_id]) {
