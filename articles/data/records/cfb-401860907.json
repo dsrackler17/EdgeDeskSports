@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T22:00:00.000Z",
   "game_when_label": "2026-10-24 22:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-21T21:35:06.289Z",
-  "generated_at": "2026-10-21T21:35:06.289Z",
+  "updated_at": "2026-10-22T04:32:02.363Z",
+  "generated_at": "2026-10-22T04:32:02.363Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -138,9 +138,9 @@
           "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -148,6 +148,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Washington State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Boise State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -1619,7 +1643,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 10.9,
+            "score": 7.4,
             "max": 20
           },
           {
@@ -1631,7 +1655,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 11.6,
             "max": 15
           },
           {
@@ -1659,8 +1683,8 @@
           },
           {
             "action": "Confirm Washington State’s starting QB (Owen Eshelman)",
-            "potential_gain": 8,
-            "text": "up to +8 once resolve Washington State’s starter conflict is done"
+            "potential_gain": 4,
+            "text": "up to +4 once resolve Washington State’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1913,7 +1937,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "i52xxgqrn8di",
+    "packet_hash": "wzovu51ugfehb",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": true,
     "question": "Can Washington State get Boise State off the field on third down?",
@@ -1987,7 +2011,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-21T18:04:23.901Z",
+        "observed_at": "2026-10-21T21:45:32.838Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2003,6 +2027,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-21T21:35:06.289Z"
+    "at": "2026-10-22T04:32:02.363Z"
   }
 }
