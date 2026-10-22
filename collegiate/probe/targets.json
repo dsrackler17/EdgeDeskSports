@@ -1,14 +1,16 @@
 {
- "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 9, from the backfill of 2026-10-22: Clemson's seasons are reached at their slugs (/season/2025 is 2025-26) but no season was written; LSU's season pages under /sports/baseball/ are never answered, so its own code (bsb) is never learnt; Penn State's split label 404s; Vanderbilt's older seasons were read with the first-day reader (one game each) and are checked on the fixed one.",
+ "note": "What the probe reads once, on a GitHub runner, so the collectors are written against real pages. Every host is read through collegiate/polite.js (robots.txt first, one request at a time per host, 2 s apart, longer where robots.txt asks). Hosts and URLs are candidates to verify, not facts: one that does not answer is recorded as such. Round 10, from the backfill of 2026-10-22 on the round-9 readers (collegiate/data/schedule_misses.json): WMT schedules that miss every season: Notre Dame and Virginia Tech carry no schedule data the readers know, San José State and UCF list games whose dates do not read, Purdue, UTSA and San Diego State list none; Purdue Fort Wayne (SIDEARM) carries none.",
  "sources": [],
  "schools": [],
  "paths": [],
  "pages": [
-  { "name": "wmt_clemson_2026", "url": "https://clemsontigers.com/sports/baseball/schedule/season/2025" },
-  { "name": "wmt_clemson_2019", "url": "https://clemsontigers.com/sports/baseball/schedule/season/2018" },
-  { "name": "wmt_lsu_baseball_path_2026", "url": "https://lsusports.net/sports/baseball/schedule/season/2026" },
-  { "name": "wmt_lsu_bsb_2019", "url": "https://lsusports.net/sports/bsb/schedule/season/2019" },
-  { "name": "wmt_pennst_plain", "url": "https://gopsusports.com/sports/baseball/schedule" },
-  { "name": "wmt_vanderbilt_2019", "url": "https://vucommodores.com/sports/baseball/schedule/season/2018-19" }
+  { "name": "wmt_notre_dame_2026", "url": "https://und.com/sports/baseball/schedule/season/2025-26" },
+  { "name": "wmt_virginia_tech_2026", "url": "https://hokiesports.com/sports/baseball/schedule/season/2026" },
+  { "name": "wmt_sjsu_2026", "url": "https://sjsuspartans.com/sports/baseball/schedule/season/2026" },
+  { "name": "wmt_ucf_2026", "url": "https://ucfknights.com/sports/baseball/schedule/season/2026" },
+  { "name": "wmt_purdue_2026", "url": "https://purduesports.com/sports/baseball/schedule/season/2026" },
+  { "name": "wmt_utsa_2026", "url": "https://goutsa.com/sports/baseball/schedule/season/2026" },
+  { "name": "wmt_sdsu_2024", "url": "https://goaztecs.com/sports/baseball/schedule/season/2024" },
+  { "name": "sidearm_pfw_2026", "url": "https://gomastodons.com/sports/baseball/schedule/2026" }
  ]
 }
