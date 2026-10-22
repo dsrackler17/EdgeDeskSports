@@ -1,5 +1,5 @@
 {
- "today": "2026-10-21",
+ "today": "2026-10-22",
  "steps": [
   {
    "step": "hosts",
@@ -75,45 +75,85 @@
       "duke",
       "florida-st"
      ]
+    },
+    "miami-oh": {
+     "host": "miamiredhawks.com",
+     "registry_host": "muredhawks.com",
+     "named_by": 49,
+     "examples": [
+      "dayton",
+      "illinois-st",
+      "indiana",
+      "michigan-st",
+      "northern-ill"
+     ]
+    },
+    "north-dakota": {
+     "host": "fightinghawks.com",
+     "registry_host": "https",
+     "named_by": 20,
+     "examples": [
+      "creighton",
+      "neb-omaha",
+      "njit",
+      "north-dakota-st",
+      "northern-colo"
+     ]
+    },
+    "southeast-mo-st": {
+     "host": "semoredhawks.com",
+     "registry_host": "gosoutheast.com",
+     "named_by": 12,
+     "examples": [
+      "ark-pine-bluff",
+      "central-ark",
+      "bowling-green",
+      "eastern-ill",
+      "ohio"
+     ]
     }
    }
   },
   {
    "step": "backfill",
    "id": "baseball-rosters-2013-2026",
-   "ok": 3752,
+   "ok": 25,
    "misses_by_reason": {
-    "HTTP": 548,
-    "NO_ROSTER": 385,
-    "SEASON_MISMATCH": 56,
     "REFUSED": 6,
-    "PLATFORM_NOT_READ": 3,
-    "EMPTY_ROSTER": 2
+    "HTTP": 520,
+    "NO_ROSTER": 388,
+    "SEASON_MISMATCH": 56,
+    "EMPTY_ROSTER": 2,
+    "PLATFORM_NOT_READ": 3
    }
   },
   {
    "step": "backfill",
    "id": "baseball-schedules-2013-2026",
-   "ok": 3349,
+   "ok": 342,
    "misses_by_reason": {
-    "PLATFORM_NOT_READ": 46,
-    "NO_SCHEDULE": 351,
-    "SEASON_MISMATCH": 252,
-    "SPORT_MISMATCH": 60,
-    "EMPTY_SCHEDULE": 8,
-    "HTTP": 226
+    "PLATFORM_NOT_READ": 44,
+    "SEASON_MISMATCH": 81,
+    "NO_SCHEDULE": 407,
+    "EMPTY_SCHEDULE": 78,
+    "HTTP": 15,
+    "SPORT_MISMATCH": 2
    }
+  },
+  {
+   "step": "team_ids",
+   "schools": 42,
+   "hosts": 93
   },
   {
    "step": "boxscores",
    "id": "baseball-boxscores-2013-2026",
-   "planned": 93279,
-   "ok": 7612,
-   "left": 85667,
+   "planned": 93609,
+   "unjoinable": 2972,
+   "ok": 10434,
+   "left": 76025,
    "misses_by_reason": {
-    "NO_TEAM_CODE": 2233,
-    "NO_BOXSCORE": 328,
-    "HTTP": 1
+    "NO_BOXSCORE": 6
    }
   },
   {
@@ -122,93 +162,93 @@
     {
      "sport": "baseball",
      "season": 2014,
-     "schools_both": 256,
-     "transfers": 501,
-     "matched_both_ends": 35
+     "schools_both": 257,
+     "transfers": 512,
+     "matched_both_ends": 37
     },
     {
      "sport": "baseball",
      "season": 2015,
-     "schools_both": 267,
-     "transfers": 592,
-     "matched_both_ends": 50
+     "schools_both": 268,
+     "transfers": 598,
+     "matched_both_ends": 51
     },
     {
      "sport": "baseball",
      "season": 2016,
-     "schools_both": 275,
-     "transfers": 623,
+     "schools_both": 276,
+     "transfers": 635,
      "matched_both_ends": 55
     },
     {
      "sport": "baseball",
      "season": 2017,
-     "schools_both": 278,
-     "transfers": 786,
-     "matched_both_ends": 85
+     "schools_both": 280,
+     "transfers": 796,
+     "matched_both_ends": 86
     },
     {
      "sport": "baseball",
      "season": 2018,
-     "schools_both": 278,
-     "transfers": 860,
+     "schools_both": 280,
+     "transfers": 882,
      "matched_both_ends": 79
     },
     {
      "sport": "baseball",
      "season": 2019,
-     "schools_both": 277,
-     "transfers": 957,
+     "schools_both": 279,
+     "transfers": 968,
      "matched_both_ends": 82
     },
     {
      "sport": "baseball",
      "season": 2020,
-     "schools_both": 278,
-     "transfers": 1092,
-     "matched_both_ends": 128
+     "schools_both": 280,
+     "transfers": 1106,
+     "matched_both_ends": 131
     },
     {
      "sport": "baseball",
      "season": 2021,
-     "schools_both": 279,
-     "transfers": 1017,
-     "matched_both_ends": 280
+     "schools_both": 281,
+     "transfers": 1031,
+     "matched_both_ends": 282
     },
     {
      "sport": "baseball",
      "season": 2022,
-     "schools_both": 277,
-     "transfers": 1612,
-     "matched_both_ends": 556
+     "schools_both": 279,
+     "transfers": 1624,
+     "matched_both_ends": 562
     },
     {
      "sport": "baseball",
      "season": 2023,
-     "schools_both": 281,
-     "transfers": 1964,
-     "matched_both_ends": 672
+     "schools_both": 283,
+     "transfers": 1984,
+     "matched_both_ends": 681
     },
     {
      "sport": "baseball",
      "season": 2024,
-     "schools_both": 282,
-     "transfers": 2289,
-     "matched_both_ends": 812
+     "schools_both": 284,
+     "transfers": 2308,
+     "matched_both_ends": 821
     },
     {
      "sport": "baseball",
      "season": 2025,
-     "schools_both": 282,
-     "transfers": 2779,
-     "matched_both_ends": 969
+     "schools_both": 284,
+     "transfers": 2805,
+     "matched_both_ends": 977
     },
     {
      "sport": "baseball",
      "season": 2026,
-     "schools_both": 281,
-     "transfers": 2831,
-     "matched_both_ends": 1208
+     "schools_both": 283,
+     "transfers": 2850,
+     "matched_both_ends": 1225
     },
     {
      "sport": "baseball",
