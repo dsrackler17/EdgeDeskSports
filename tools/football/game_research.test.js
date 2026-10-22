@@ -514,46 +514,80 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
     && GS.kalshi(null, cfbG).state === 'UNAVAILABLE' && GS.kalshi({ state: 'ok', rows: [] }, cfbG).state === 'NO_MARKET');
   chk('Kalshi: the resolver is the one the sync links games with', typeof FI.resolveTeam === 'function');
 
-  /* the graphic */
+  /* the graphic: EDGEDESK vs MARKET, a table whose differences are the subtraction of what it prints */
   const kOk = (s) => GS.kalshi(both(s, 0.415, 0.59), s);
   const spec = GS.graphicSpec(cfbG), kc = GS.kalshi({ state: 'ok', rows: swapped }, cfbG);
+  const n1 = (t) => Number(String(t).replace('−', '-').replace(/[^0-9.+-]/g, ''));
+  /* a printed spread ("NMSU −3.6", "PK") as a home line */
+  const homeLine = (t, c) => (t === 'PK' ? 0 : (t.indexOf(c.home.abbr + ' ') === 0 ? 1 : -1) * n1(t.slice(t.lastIndexOf(' ') + 1)));
+  const amer = (p) => { const a = GS.fairAmerican(p); return (a > 0 ? '+' : '−') + Math.abs(a); };
   const cd = GG.content(spec, null, { now: t0, kalshi: kc }).content;
-  chk('graphic: without a live book, Kalshi takes the third model-detail cell, both teams, with its time', cd.kalshi && cd.detail.cells.length === 3 && cd.detail.cells[2].k === 'KALSHI'
-    && cd.detail.cells[2].v.join('|') === cd.away.abbr + ' 43%|' + cd.home.abbr + ' 59%' && /^prediction market · \d{1,2}:\d{2} [AP]M ET$/.test(cd.detail.cells[2].s), cd.detail);
-  chk('…and the note no longer claims every number is EdgeDesk’s own', /Kalshi is a prediction market; every other number is EdgeDesk’s own\./.test(cd.detail.note), cd.detail.note);
+  chk('graphic: without a live book, EDGEDESK vs KALSHI, one column per priced team: win % and moneyline, EdgeDesk over Kalshi', cd.compare && cd.compare.title === 'EDGEDESK vs KALSHI'
+    && cd.compare.cols.map((x) => x.head).join('|') === cd.away.abbr + ' WIN % · ML|' + cd.home.abbr + ' WIN % · ML'
+    && cd.compare.cols[0].mk === '43.0%  ' + amer(0.43) && cd.compare.cols[1].mk === '58.5%  ' + amer(0.585)
+    && cd.compare.cols[1].ed === (Math.round(cfbG.model.win_prob.home * 1000) / 10).toFixed(1) + '%  ' + cd.fair_ml.home, cd.compare);
+  chk('…rows say whose number, when, and that the differences are before fees', cd.compare.rows[0] === 'EDGEDESK · UNROUNDED' && /^KALSHI \d{1,2}:\d{2} [AP]M ET$/.test(cd.compare.rows[1]) && cd.compare.rows[2] === 'DIFFERENCE · BEFORE FEES', cd.compare.rows);
+  chk('…and the model detail strip it replaces is left exactly as it was', cd.detail && cd.detail.note === 'No live sportsbook quote is shown. Every number here is EdgeDesk’s own.' && !cd.detail.cells.some((x) => /KALSHI/.test(x.k)));
   const cm = GG.content(spec, live, { now: t0, kalshi: kc }).content, Lm = GG.layout(cm, 'square');
-  chk('graphic: with a live book, a KALSHI column after the book’s, one line per team', cm.market && Lm.ops.some((o) => o.type === 'text' && o.text === 'KALSHI') && Lm.ops.some((o) => o.text === cm.away.abbr + ' 43%') && Lm.ops.some((o) => o.text === cm.home.abbr + ' 59%')
-    && Lm.ops.findIndex((o) => o.text === 'KALSHI') > Lm.ops.findIndex((o) => o.text === 'MONEYLINE'));
+  chk('graphic: with a live book, EDGEDESK vs MARKET: the book’s spread and total, then Kalshi for each team', cm.compare.title === 'EDGEDESK vs MARKET'
+    && cm.compare.cols.map((x) => x.head).join('|') === 'SPREAD|TOTAL|' + cm.away.abbr + ' WIN % · ML|' + cm.home.abbr + ' WIN % · ML'
+    && /^DRAFTKINGS \d{1,2}:\d{2}( [AP]M ET)? · KALSHI \d{1,2}:\d{2} [AP]M ET$/.test(cm.compare.rows[1]), cm.compare);
+  chk('…drawn in place of the market strip (its title is not drawn), every cell on the canvas', Lm.ops.some((o) => o.text === 'EDGEDESK vs MARKET') && !Lm.ops.some((o) => o.text === 'CURRENT MARKET')
+    && cm.compare.cols.every((x) => [x.head, x.ed, x.mk, x.diff].every((t) => Lm.ops.some((o) => o.type === 'text' && o.text === t))));
+  const cs = cm.compare.cols[0], ct = cm.compare.cols[1];
+  chk('…the spread: EdgeDesk unrounded, the book as received, the gap toward the side EdgeDesk likes more', homeLine(cs.mk, cm) === -3.5
+    && Math.abs(homeLine(cs.ed, cm) - Math.round(-cfbG.model.home_margin * 10) / 10) < 1e-9
+    && Math.abs(Math.abs(homeLine(cs.ed, cm) - homeLine(cs.mk, cm)) - n1(cs.diff)) < 0.051 && cs.diff.indexOf(homeLine(cs.ed, cm) < homeLine(cs.mk, cm) ? cm.home.abbr : cm.away.abbr) > 0, cs);
+  chk('…the total: the difference is EdgeDesk minus the book, higher or lower', ct.mk === '47.5' && Math.abs(Math.abs(n1(ct.ed) - 47.5) - n1(ct.diff)) < 0.051 && /(HIGHER|LOWER)$/.test(ct.diff) && (n1(ct.ed) > 47.5) === /HIGHER/.test(ct.diff), ct);
   const one = GG.content(spec, null, { now: t0, kalshi: GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.away.name, cfbG.home.name, 'OK', 0.4), krow(cfbG, cfbG.home.name, cfbG.away.name, 'WIDE_SPREAD', null)] }, cfbG) }).content;
-  chk('graphic: one trusted side prints one line, no dash for the other', one.detail.cells[2].v.length === 1 && one.detail.cells[2].v[0] === one.away.abbr + ' 40%', one.detail.cells[2]);
+  chk('graphic: one trusted side is one column; the other is not filled in', one.compare.cols.length === 1 && one.compare.cols[0].head === one.away.abbr + ' WIN % · ML' && one.compare.cols[0].mk.indexOf('40.0%') === 0, one.compare.cols);
   const cl = GG.content(spec, null, { now: t0, kalshi: GS.kalshi({ state: 'ok', rows: both(cfbG, 0.4, 0.6, { pregame: false }) }, cfbG) }).content;
-  chk('graphic: after kickoff it reads KALSHI CLOSE, the last price before kickoff', cl.kalshi.title === 'KALSHI CLOSE' && cl.detail.cells[2].s === 'last price before kickoff');
+  chk('graphic: after kickoff the market row is KALSHI CLOSE', /^KALSHI CLOSE/.test(cl.compare.rows[1]) && /close/.test(cl.compare.note));
   ['TEAMS_UNCONFIRMED', 'NO_PRICE', 'NO_MARKET'].forEach((st) => {
     const fake = { state: st, current: false, away: null, home: null };
-    if (GG.content(spec, null, { now: t0, kalshi: fake }).content.kalshi) chk('graphic: a ' + st + ' Kalshi read draws nothing', false);
+    const cx = GG.content(spec, live, { now: t0, kalshi: fake }).content;
+    if (cx.kalshi || cx.compare || !GG.layout(cx, 'square').ops.some((o) => o.text === 'CURRENT MARKET')) chk('graphic: a ' + st + ' Kalshi read draws no table and leaves the market strip as it was', false);
   });
   const nm = clone(spec); nm.model = { available: false, reason: 'test' };
-  chk('graphic: no projection, no Kalshi (as with the book)', !GG.content(nm, null, { now: t0, kalshi: kc }).content.kalshi);
+  chk('graphic: no projection, no table (nothing to compare)', !GG.content(nm, null, { now: t0, kalshi: kc }).content.compare);
   const fz = clone(spec); fz.data.status = 'FAULT'; fz.data.faults = ['scores_reconcile: x'];
   const fzc = GG.content(fz, live, { now: t0, kalshi: kc }).content;
-  chk('graphic: a data fault keeps the strip for the fault, and the alt text does not read a Kalshi price it does not show', !GG.layout(fzc, 'square').ops.some((o) => o.text === 'KALSHI') && !/Kalshi/.test(GG.altText(fzc)));
-  chk('graphic: the alt text reads the Kalshi prices as a prediction market', /Kalshi YES mid at \d{1,2}:\d{2} [AP]M ET \(a prediction market\): /.test(GG.altText(cd)) && GG.altText(cd).indexOf(cd.home.abbr + ' 59%') > 0, GG.altText(cd));
-  /* every projected game, both formats, both strips, with Kalshi: every text inside the canvas and its box */
-  let laidK = 0;
+  chk('graphic: a data fault keeps the strip for the fault, and the alt text does not read a table it does not show', !GG.layout(fzc, 'square').ops.some((o) => /^EDGEDESK vs/.test(o.text)) && !/Kalshi/.test(GG.altText(fzc)));
+  chk('graphic: the alt text reads the table, column by column, with its sources and the fee caveat', /EdgeDesk vs Kalshi \(Kalshi YES mid \d{1,2}:\d{2} [AP]M ET · .*before Kalshi’s fees\): /.test(GG.altText(cd))
+    && GG.altText(cd).indexOf(cd.home.abbr + ' WIN % · ML EdgeDesk ') > 0 && /difference \d+\.\d PP (HIGHER|LOWER)/.test(GG.altText(cd)), GG.altText(cd));
+  /* every projected game, both formats, all three strips: the arithmetic holds and every text fits */
+  let laidK = 0, sums = 0;
   proj.forEach((s) => {
     const sp = GS.graphicSpec(s), kk = kOk(s);
     if (kk.state !== 'OK') { chk('Kalshi places on every committed game’s own names · ' + s.game_key, false, kk); return; }
-    const ml = GS.market({ home_line: -3.5, total: 47.5, ml_home: -170, ml_away: 145, book: 'williamhill_us', captured_at: new Date(t0 - 12 * 60000).toISOString() }, { now: t0 });
-    [null, live, ml].forEach((mk) => ['square', 'portrait'].forEach((f) => {
-      const L = GG.layout(GG.content(sp, mk, { now: t0, kalshi: kk }).content, f), [w, h] = W[f];
-      laidK++;
-      const bad = L.ops.filter((o) => o.type === 'text' && (o.y < 0 || o.y > h || (o.align === 'left' && o.x + Math.min(o.width || 0, o.maxW || 1e9) > w + 1) || (o.align === 'center' && (o.x - (o.width || 0) / 2 < -1 || o.x + (o.width || 0) / 2 > w + 1))));
-      const over = L.ops.filter((o) => o.type === 'text' && o.maxW && o.width > o.maxW + 1 && o.size > 12);
-      if (bad.length || over.length) chk('with Kalshi, every text inside the canvas and its box · ' + s.game_key + ' ' + f + (mk ? ' market' : ' detail'), false, bad.concat(over).slice(0, 3).map((o) => [o.text, o.x, o.y, o.width, o.maxW]));
-      if (!L.ops.some((o) => o.type === 'text' && /^KALSHI/.test(o.text))) chk('Kalshi is drawn · ' + s.game_key + ' ' + f, false);
-    }));
+    const ml = GS.market({ home_line: 6.25, total: 41.25, ml_home: 210, ml_away: -250, book: 'williamhill_us', captured_at: new Date(t0 - 12 * 60000).toISOString() }, { now: t0 });
+    [null, live, ml].forEach((mk) => {
+      const c = GG.content(sp, mk, { now: t0, kalshi: kk }).content;
+      c.compare.cols.forEach((x) => {
+        sums++;
+        let d;
+        if (x.head === 'SPREAD') d = Math.abs(homeLine(x.ed, c) - homeLine(x.mk, c));
+        else if (x.head === 'TOTAL') d = Math.abs(n1(x.ed) - n1(x.mk));
+        else d = Math.abs(n1(x.ed.split(/\s+/)[0]) - n1(x.mk.split(/\s+/)[0]));
+        const shown = x.diff === 'EVEN' ? 0 : n1(x.diff.split(' ')[0]);
+        if (Math.abs(d - shown) > (x.win ? 1e-9 : 0.051)) chk('every printed difference is the two numbers above it · ' + s.game_key + ' ' + x.head, false, x);
+      });
+      ['square', 'portrait'].forEach((f) => {
+        const L = GG.layout(c, f), [w, h] = W[f];
+        laidK++;
+        const bad = L.ops.filter((o) => o.type === 'text' && (o.y < 0 || o.y > h || (o.align === 'left' && o.x + Math.min(o.width || 0, o.maxW || 1e9) > w + 1) || (o.align === 'center' && (o.x - (o.width || 0) / 2 < -1 || o.x + (o.width || 0) / 2 > w + 1))));
+        const over = L.ops.filter((o) => o.type === 'text' && o.maxW && o.width > o.maxW + 1 && o.size > 12);
+        if (bad.length || over.length) chk('with the table, every text inside the canvas and its box · ' + s.game_key + ' ' + f + (mk ? ' market' : ' detail'), false, bad.concat(over).slice(0, 3).map((o) => [o.text, o.x, o.y, o.width, o.maxW]));
+        if (!L.ops.some((o) => o.type === 'text' && /^EDGEDESK vs /.test(o.text))) chk('the table is drawn · ' + s.game_key + ' ' + f, false);
+        /* the table keeps clear of the model panels above it and the watch panel below */
+        const tb = L.ops.find((o) => o.type === 'rect' && o.y > 600 && o.y < 900 && o.h > 100 && o.h < 160);
+        const gq = f === 'portrait' ? { top: 792, bottom: 958 } : { top: 688, bottom: 826 };
+        if (!tb || tb.y < gq.top + 4 || tb.y + tb.h > gq.bottom - 4) chk('the table stays between the panels and What to watch for · ' + s.game_key + ' ' + f, false, tb && [tb.y, tb.h]);
+      });
+    });
   });
-  chk('laid out every projected game with Kalshi, three strips × two formats', laidK === proj.length * 6, laidK);
+  chk('laid out every projected game with the table, three strips × two formats', laidK === proj.length * 6, laidK);
+  chk('checked the arithmetic of every printed difference', sums >= proj.length * 8, sums);
   /* the cache */
   const kk1 = GG.cacheKey(spec, live, 'square'), kk2 = GG.cacheKey(spec, live, 'square', kc);
   chk('cache: a Kalshi price draws again; no Kalshi, or one not drawn, keeps the key as it was', kk1 !== kk2 && GG.cacheKey(spec, live, 'square', null) === kk1 && GG.cacheKey(spec, live, 'square', { state: 'NO_PRICE', current: false }) === kk1);

@@ -152,7 +152,8 @@ function siteHandler(req, res) {
   async function kalshiSettled(page) {
     await page.waitForFunction(() => { const s = window.EDGameView._state(), i = document.getElementById('gvImg');
       return s.ks && s.img && i && !i.hidden && i.src === s.img.url && !/checking/i.test((document.querySelector('.gv-status') || {}).innerText || ''); }, null, { timeout: 30000 }).catch(() => {});
-    return page.evaluate(() => { const s = window.EDGameView._state(); return { content: s.img && s.img.content ? s.img.content.kalshi || null : null, alt: (document.getElementById('gvImg') || {}).alt || '' }; });
+    return page.evaluate(() => { const s = window.EDGameView._state(); return { content: s.img && s.img.content ? s.img.content.compare || null : null, alt: (document.getElementById('gvImg') || {}).alt || '',
+      market: (document.getElementById('gvMarket') || {}).innerText || '' }; });
   }
   const shot = async (page, name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: true }); };
   const readPage = (page) => page.evaluate(() => {
@@ -183,9 +184,12 @@ function siteHandler(req, res) {
   let ks = await kalshiSettled(page);
   r = await readPage(page);
   chk('Kalshi: priced, a fifth chip beside the four answers', /KALSHI\s*priced/i.test(r.status), r.status);
-  chk('Kalshi on the graphic: each team’s YES mid on its own team, though the book listed them the other way round', ks.content && ks.content.title === 'KALSHI'
-    && ks.content.away === FRESH.away.abbr.toUpperCase() + ' 42%' && ks.content.home === FRESH.home.abbr.toUpperCase() + ' 59%', ks.content);
-  chk('…and in the alt text, named a prediction market', /Kalshi YES mid at .* \(a prediction market\)/.test(ks.alt), ks.alt);
+  const AW = FRESH.away.abbr.toUpperCase(), HM = FRESH.home.abbr.toUpperCase();
+  chk('the graphic draws EDGEDESK vs MARKET: the book’s spread and total, then Kalshi for each team', ks.content && ks.content.title === 'EDGEDESK vs MARKET'
+    && ks.content.cols.map((c) => c.head).join('|') === 'SPREAD|TOTAL|' + AW + ' WIN % · ML|' + HM + ' WIN % · ML', ks.content);
+  chk('…each team’s Kalshi price on its own team, though the book listed them the other way round', ks.content && /^41\.5% /.test(ks.content.cols[2].mk) && /^59\.0% /.test(ks.content.cols[3].mk), ks.content && ks.content.cols);
+  chk('…and its alt text reads the table, with the sources', /EdgeDesk vs the market \(DraftKings .*Kalshi YES mid .*before Kalshi’s fees\)/.test(ks.alt), ks.alt);
+  chk('the Market comparison section sets EdgeDesk beside Kalshi, team by team', /EdgeDesk vs Kalshi/.test(ks.market) && /41\.5%/.test(ks.market) && /59\.0%/.test(ks.market) && /before Kalshi’s trading fees/.test(ks.market), ks.market.slice(-600));
   await shot(page, 'phone_fresh');
 
   /* levels */

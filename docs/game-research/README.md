@@ -175,9 +175,11 @@ draw**, the pattern of `lib/edgedesk_share_card.js`.
   bar · **Fair total** with projected points; then either the **current
   market** (LIVE quotes only: book, capture time, spread, total, moneyline,
   no-vig win %, and EdgeDesk vs market) or **EdgeDesk model detail**
-  (neutral-field edge, 80% range, model moneyline, power rank); **Kalshi**
-  (each team's trusted YES mid: a column after the book's, or the third
-  model-detail cell; see README §Kalshi market data → The matchup graphic);
+  (neutral-field edge, 80% range, model moneyline, power rank). Where Kalshi
+  has a trusted price, **EdgeDesk vs market** replaces either: EdgeDesk's
+  unrounded spread, total and win % · moneyline over the book's and Kalshi's,
+  and the difference under each (see README §Kalshi market data → The matchup
+  graphic);
   **What to watch for**; reliability or data check, model status, snapshot
   time and id.
 - **No empty boxes.** A market without a moneyline draws no moneyline column;

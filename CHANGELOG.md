@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-22 — The matchup graphic compares EdgeDesk with the market, Kalshi included
+
+- **EDGEDESK vs MARKET.** Where Kalshi has a trusted price, the market strip becomes a table. It has one column per market and three rows, so EdgeDesk and the market sit side by side.
+  - **The rows:** EdgeDesk, unrounded; the market, with its source and time; the difference.
+  - **The columns:** the live book's **spread** and **total**, then each team's **win % · ML**. The win columns show EdgeDesk's win probability and fair moneyline over Kalshi's YES mid and that price as a moneyline (e.g. `59.7%  −148` over `57.5%  −135`, then `2.2 PP HIGHER`).
+  - **No live book:** the table is **EDGEDESK vs KALSHI**, the win columns alone.
+- **Every difference is the two numbers above it.** EdgeDesk's row is its raw projection at one decimal, and the book's line is printed as received. A test checks every printed difference for every committed game, in three strip states.
+- **The research page's Market comparison** adds the same EdgeDesk vs Kalshi table per team, with or without a live book. It states the snapshot time and that the differences are before Kalshi's trading fees.
+- **Replaced from yesterday's change:** the KALSHI column and the Kalshi model-detail cell. Without a trusted Kalshi price, the market strip and the model detail are exactly as they were before Kalshi.
+- **Merged separately (#675): the CFB production job registry** (`football/cfb_production/jobs.json`, and its seed in `supabase/cfb_production.sql`) carries capture's hourly schedules. `capture_cron.sql` moved them on 2026-10-21, and the registry drift check had failed on `main` since.
+
+Tests: `node tools/football/game_research.test.js` (172), `node tools/football/game_research_ui.e2e.js` (55), `node football/cfb_production/tests.js` (122).
+
 ## 2026-10-21 — Kalshi on the NFL and CFB matchup graphics
 
 - **Every NFL and college football matchup graphic now carries Kalshi's price** wherever Kalshi has a trusted one: each team's YES mid, as a whole percent.
