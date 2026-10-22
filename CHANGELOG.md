@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-22 — NFL referee flag tendencies on the game card
+
+Display only. No projection, spread, total, probability, EV, grade, ranking or CLV logic changed, and nothing in those pipelines reads the new tables. README §NFL referee flag tendencies; the runbook is `data/refs/README.md`.
+
+- **Officiating** in Market Structure → Observed on every NFL card: the referee and the assignment's source; this season's flags and holding per game against that season's league average (above in `--pos`, below in `--neg`), each with its rank of 17; the 2024–2026 baseline with its game count; the O/U record as a plain count. **Assignment not announced** when there is none. The referee's name is also a chip on the section summary.
+- **Known limitations** gain three lines: one penalty per play from play-by-play; small current-season samples (the game count is shown); league-wide flags are up in 2026.
+- **`supabase/nfl_ref_flags.sql`** (+ `migrations/20261022100000_nfl_ref_flags.sql`): two tables, three `security_invoker` views, and RLS gated like the card's other Observed tables.
+- **`data/refs/upsert_refs.py`** is the one-time seed: 677 assignments, then 663 games, upserted on `game_id`.
+- **`.github/workflows/ref-sync.yml`** runs Tuesday 10:00 UTC in season and on demand. It also takes first-run `apply_sql` and `seed` inputs.
+- **Next week's referees** go in `data/refs/manual_assignments.json`. nflverse wins once it fills a game in.
+
+Tests: `python3 -m unittest discover -s data/refs/tests` (17), `node tools/refs/nfl_ref_flags_sql.test.js` (39), `node tools/refs/ref_flags_ui.e2e.js` (21), all in `.github/workflows/ref-flags-tests.yml`.
+
 ## 2026-10-22 — The matchup card compares Kalshi at the model's time
 
 These are display and labelling changes only. No model output, projection, fair line, ranking or research logic changed; the snapshot module and the committed research data are untouched. The rules and every judgment call are in `docs/KALSHI_NOTES.md`.
