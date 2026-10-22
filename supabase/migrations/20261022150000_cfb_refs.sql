@@ -18,7 +18,7 @@
 --      A re-seed never undoes the ESPN backfill, the backfill never touches an
 --      assignment_conflict row, and a weekly pull only fills what is missing.
 --   3. A referee's conference is the dataset's documented mapping
---      (referee_primary_conf: his most common conference across in-conference
+--      (referee_primary_conf: the referee's most common conference across in-conference
 --      games, cfb_enrich.py), read only from the dataset's own NCAA rows. It is
 --      never inferred from a game's home team; a referee the dataset does not
 --      map has primary_conf null and the card says "Conference unavailable".

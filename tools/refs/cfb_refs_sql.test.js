@@ -188,7 +188,7 @@ try {
     if (v && !(near(v.conf_flags_pg, b.flags_pg, 0.0101) && near(v.conf_holding_pg, b.holding_pg, 0.0101))) bad.push([b.season, b.home_conference, b.flags_pg, v.conf_flags_pg, b.holding_pg, v.conf_holding_pg]);
   });
   chk('conference averages match cfb_conference_baselines.csv', bad.length === 0, bad);
-  chk('vs conference = his average minus his conference average', view.every((r) => r.conf_flags_pg === null
+  chk('vs conference = the referee average minus the conference average', view.every((r) => r.conf_flags_pg === null
     || (near(r.flags_vs_conf_pg, Number(r.flags_pg) - Number(r.conf_flags_pg), 0.0101) && near(r.holding_vs_conf_pg, Number(r.holding_pg) - Number(r.conf_holding_pg), 0.0101))),
     view.filter((r) => r.conf_flags_pg !== null && !near(r.flags_vs_conf_pg, Number(r.flags_pg) - Number(r.conf_flags_pg), 0.0101)).slice(0, 3));
   /* The conference and FBS averages are every game's (data/refs/cfb/cfb_schema.sql, and
@@ -256,7 +256,7 @@ try {
   chk('a first observation is new', a1.new === 1 && a1.replaced === 0, a1);
   chk('no assignment yet: the game has no context row ("Assignment not announced")', psql(`select count(*) from public.cfb_game_ref_context where game_id = ${G + 1}`) === '0');
   const ctx1 = JSON.parse(psql(`select row_to_json(c) from public.cfb_game_ref_context c where game_id = ${G}`));
-  chk('an assignment: the context names him, his conference, season and 3-yr numbers', ctx1.basis === 'assignment' && ctx1.referee_id === known[0]
+  chk('an assignment: the context names the referee, the conference, season and 3-yr numbers', ctx1.basis === 'assignment' && ctx1.referee_id === known[0]
     && ctx1.primary_conf === known[2] && ctx1.season_games > 0 && ctx1.y3_games > 0 && !!ctx1.first_observed_at && ctx1.referee === known[1]
     && ctx1.source === 'espn' && ctx1.referee_identity === 'espn_referee_role', ctx1);
   const a2 = observe([{ game_id: G, season: 2026, week: 8, referee_id: known[0], referee: known[1] }]);
@@ -270,7 +270,7 @@ try {
   chk('the card shows the replacement, with its own first_observed_at, and that it changed', ctx2.referee_id === 'jerrymagallanes' && ctx2.observed_referees === 2
     && ctx2.first_observed_at && ctx2.first_observed_at !== ctx1.first_observed_at, ctx2);
   observe([{ game_id: G, season: 2026, week: 8, referee_id: known[0], referee: known[1] }]);
-  chk('back to the first referee: he is current again, his first_observed_at still the first one',
+  chk('back to the first referee: current again, with the first first_observed_at',
     psql(`select referee_id from public.cfb_ref_assignment_current where game_id = ${G}`) === known[0]
     && psql(`select first_observed_at from public.cfb_ref_assignments where game_id = ${G} and referee_id = '${known[0]}'`) === t1);
   chk('first_observed_at cannot be rewritten (not even by the owner)', /only last_observed_at may change/.test(mustFail(`update public.cfb_ref_assignments set first_observed_at = now() - interval '1 day' where game_id = ${G}`) || ''));
