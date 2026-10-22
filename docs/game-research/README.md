@@ -176,12 +176,19 @@ draw**, the pattern of `lib/edgedesk_share_card.js`.
   market** (LIVE quotes only: book, capture time, spread, total, moneyline,
   no-vig win %, and EdgeDesk vs market) or **EdgeDesk model detail**
   (neutral-field edge, 80% range, model moneyline, power rank). Where Kalshi
-  has a trusted price, **EdgeDesk vs market** replaces either: EdgeDesk's
-  unrounded spread, total and win % · moneyline over the book's and Kalshi's,
-  and the difference under each (see README §Kalshi market data → The matchup
-  graphic);
-  **What to watch for**; reliability or data check, model status, snapshot
-  time and id.
+  lists the game, **EdgeDesk vs Kalshi** (vs market, with a live book)
+  replaces either. Kalshi is compared only at the model's time: the
+  `kalshi_price_snapshots` quote within 15 minutes of the model snapshot,
+  with a YES spread of at most 6¢, shown as the **Kalshi mid**. Then the
+  table shows EdgeDesk's unrounded win % · moneyline over Kalshi's, the
+  difference as a sentence (`EdgeDesk 9.5 pts higher on NE than Kalshi`),
+  and a large-gap note at 7 points or more. Otherwise it reads **Kalshi price
+  unavailable at model time**. Both times are always printed (`Model 2:04 PM
+  ET · Kalshi 2:05 PM ET`); see `docs/KALSHI_NOTES.md` and README §Kalshi
+  market data → The matchup graphic;
+  **What to watch for** (the home-field item restated from the numbers: the
+  neutral-site margin is the projected margin minus home field); reliability
+  or data check, model status, snapshot time and id.
 - **No empty boxes.** A market without a moneyline draws no moneyline column;
   the model detail strip only prints cells that exist.
 - **Fonts.** Barlow Condensed (display) and Inter (body) from Google Fonts,
@@ -194,7 +201,7 @@ draw**, the pattern of `lib/edgedesk_share_card.js`.
   name). **No team logo or helmet is drawn**: EdgeDesk holds no licence for
   them. A team with no identity on file gets initials and neutral colours.
 - **Cache.** `EDGameGraphic.cacheKey` = renderer version + template + snapshot
-  id + the market quote shown + format (+ the Kalshi prices shown, when any). A page view reuses a drawn graphic; a
+  id + the market quote shown + format (+ the Kalshi block drawn, a price or "unavailable at model time"). A page view reuses a drawn graphic; a
   new snapshot or a new live quote draws a new one automatically. A stale
   quote does not change the key (it is never drawn).
 - **History.** `football/game_research/history/<season>.jsonl` stores the
@@ -202,8 +209,9 @@ draw**, the pattern of `lib/edgedesk_share_card.js`.
   append-only). Any past graphic can be redrawn exactly.
 - **Batch export.** `npm run game:graphics -- [--league cfb] [--format both]
   [--week 7] [--out dir] [--no-kalshi]` renders PNGs through Playwright into
-  `.cache/game_graphics/`, named by snapshot id and the Kalshi snapshot shown;
-  files already on disk are never redrawn.
+  `.cache/game_graphics/`, named by snapshot id, template version (`__g2`) and
+  the Kalshi quote shown (`__kalshi-<time>`, or `__kalshi-na-<time>` when it is
+  unavailable at the model's time); files already on disk are never redrawn.
 
 ### What the reference graphics got wrong, and what the product does instead
 

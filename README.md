@@ -1244,38 +1244,48 @@ module's limitations):
 
 Every NFL and CFB matchup graphic (`lib/edgedesk_game_graphic.js`: the
 research page's image, its Download PNG and Share, and `npm run
-game:graphics`) carries Kalshi's price where `kalshi_card_current` trusted one:
+game:graphics`) sets Kalshi beside EdgeDesk **at the model's time**. The rules
+and the judgment calls behind them are in `docs/KALSHI_NOTES.md`.
 
-- **EDGEDESK vs MARKET**, a table in the market strip's place: one column per
-  market, three rows.
-  - **Columns:** the live book's spread and total (when one is live), then each
-    priced team's **win % · ML**. With no live book it is **EDGEDESK vs KALSHI**:
-    the team columns alone.
-  - **Rows:**
-    - EdgeDesk, unrounded: the raw projection at one decimal, and the win
-      probability with its fair moneyline;
-    - the market, with its source and time (e.g. `DRAFTKINGS 7:32 · KALSHI
-      7:43 PM ET`): the book's line as received, and Kalshi's YES mid with that
-      price as a moneyline;
-    - the difference: `0.4 TOWARD SHSU`, `0.3 LOWER`, `2.2 PP HIGHER`. It is
-      EdgeDesk minus the market, before Kalshi's fees, so every difference is the
-      subtraction of the two numbers printed above it (a test holds this for
-      every committed game).
-  - After kickoff the market row reads **KALSHI CLOSE**;
-- only from a row in state OK. A side without one has no column, and the other
-  side is never derived from it. No trusted price: no table, and the market strip
-  or model detail is drawn as before;
-- **placed by team, not by the row's home/away.** The link accepts a book listing
-  with home and away swapped, so `EDGameSnapshot.kalshi`
+- **The quote nearest the model snapshot.** For each linked market,
+  `EDGameGraphic.kalshiAtModel` takes the `kalshi_price_snapshots` quote
+  nearest `model.built_at`, either side of it. The graphic compares a quote
+  only if it is within **15 minutes** of the model (`G.KALSHI_MATCH_MINUTES`)
+  and its YES spread is at most **0.06** (`G.KALSHI_MAX_SPREAD`). The price is
+  the mid, `(yes_bid + yes_ask) / 2`, labelled **Kalshi mid**. The graphic
+  applies both rules itself, so a price from another time is never compared,
+  whoever drew it.
+- **EDGEDESK vs KALSHI**, a table in the market strip's place (**EDGEDESK vs
+  MARKET** when a live book adds its spread and total columns):
+  - **columns:** each usable team's **win % · ML**;
+  - **rows:** EdgeDesk, unrounded (the win probability with its fair
+    moneyline); the Kalshi mid with that price as a moneyline; the difference.
+    The difference is one sentence naming the team: `EdgeDesk 9.5 pts higher on
+    NE than Kalshi` (percentage points, before Kalshi's fees). It is computed
+    from the two numbers printed above it, and a test holds this for every
+    committed game;
+  - **times,** always: `Model 2:04 PM ET · Kalshi 2:05 PM ET`;
+  - **large gap:** at **7 points** or more (`G.LARGE_GAP_PP`), `Large gap vs
+    market. Checking injuries, QB status, and weather before trusting it.`
+- **Unavailable at the model's time.** When no team's quote passes (more than
+  15 minutes away, a spread over 6¢, one-sided, or none), the strip reads
+  **Kalshi price unavailable at model time**, with the reason and both times,
+  and compares nothing. A team that fails has no column, and the other team is
+  never derived from it. A game Kalshi does not list keeps the model detail
+  strip, as before.
+- **Placed by team, not by the row's home/away.** The link accepts a book
+  listing with home and away swapped, so `EDGameSnapshot.kalshi`
   (`lib/edgedesk_game_snapshot.js`) resolves each YES team onto the snapshot's
   own teams with `lib/football_identity.js`, the resolver the sync links games
   with. A team that does not resolve places nothing.
 
 The research page shows why with a **KALSHI** status chip and a Kalshi row
-under Lab → Market diagnostics. The rows come from the cards' own read
-(`window.fbKalshiRows`). The batch export reads the view with the site's public
-key (anon sees Kalshi's prices and no gap) and draws model-only if it cannot.
-The landing page's graphics stay model-only.
+under Lab → Market diagnostics. The page asks for the game's markets at the
+snapshot's model time (`window.fbKalshiAtModel`: the cards' own
+`kalshi_card_current` read, then each market's nearest `kalshi_price_snapshots`
+quotes). The batch export reads the same tables with the site's public key
+(anon sees Kalshi's prices and no gap) and draws model-only if it cannot. The
+landing page's graphics stay model-only.
 
 ### Readiness
 

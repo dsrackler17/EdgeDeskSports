@@ -2924,7 +2924,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261022ks2">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261022km1">
 <link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021inj1">
 </head>
 <body>
@@ -4019,9 +4019,9 @@ window.mcRefresh=function(){
 <!-- the canonical team resolver (the one supabase/functions/kalshi_sync links games with):
      the graphic places each Kalshi price on this game's own home or away team with it -->
 <script src="/lib/football_identity.js?v=20261021ks1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261022ks2"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261022ks2"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261022ks2"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261022km1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261022km1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261022km1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -4182,8 +4182,10 @@ window.mcRefresh=function(){
     market:function(league,gid){return league==='cfb'?gvCfb(gid):gvNfl(gid);},
     /* a #game link opens this page while the document is still parsing: the Kalshi section's
        script sits near its end, so wait for the parse before deciding it is absent */
-    kalshi:function(league,gid){
-      var go=function(){return window.fbKalshiRows?window.fbKalshiRows(league,gid):{state:'error',rows:null,error:'the Kalshi section is not loaded'};};
+    /* at the snapshot's model time when the page names it (EDGameGraphic compares Kalshi only there) */
+    kalshi:function(league,gid,o){
+      var at=o&&o.model_at;
+      var go=function(){return at&&window.fbKalshiAtModel?window.fbKalshiAtModel(league,gid,at):window.fbKalshiRows?window.fbKalshiRows(league,gid):{state:'error',rows:null,error:'the Kalshi section is not loaded'};};
       if(window.fbKalshiRows||document.readyState!=='loading')return Promise.resolve().then(go);
       return new Promise(function(res){document.addEventListener('DOMContentLoaded',function(){res();},{once:true});}).then(go);
     },
@@ -66093,6 +66095,27 @@ try{
     return Promise.resolve(S.p).then(function(){
       if(S.st!=='ok')return {state:S.st==='unread'?'error':S.st,rows:null,error:S.err&&S.err.message||null};
       return {state:'ok',rows:(sport==='nfl'||sport==='cfb')?(rowsFor(sport,{game_id:gid},null)||[]):[]};
+    });
+  };
+  /* the same markets AT THE MODEL'S TIME, for the research page's matchup graphic: each market's
+     public.kalshi_price_snapshots quote nearest the snapshot's model time (one at or before it, one at
+     or after), re-stated by EDGameGraphic.kalshiAtModel. The graphic compares a quote only within 15
+     minutes of the model and at a YES spread of at most 6¢ (docs/KALSHI_NOTES.md); nothing here judges */
+  var AT={};
+  window.fbKalshiAtModel=function(sport,gid,modelAt){
+    return window.fbKalshiRows(sport,gid).then(function(r){
+      var G=window.EDGameGraphic,t=Date.parse(modelAt);
+      if(!r||r.state!=='ok'||!r.rows||!r.rows.length||!G||typeof G.kalshiAtModel!=='function'||!isFinite(t))return r;
+      var iso=new Date(t).toISOString(),key=sport+'|'+gid+'|'+iso+'|'+r.rows.map(function(x){return x.market_ticker;}).join(',');
+      if(AT[key]&&Date.now()-AT[key].at<TTL)return AT[key].p;
+      var q=function(tk,dir){return get('kalshi_price_snapshots?select=ticker,captured_at,yes_bid,yes_ask,volume&ticker=eq.'+encodeURIComponent(tk)
+        +'&captured_at='+(dir<0?'lte.':'gte.')+encodeURIComponent(iso)+'&order=captured_at.'+(dir<0?'desc':'asc')+'&limit=1');};
+      var p=Promise.all(r.rows.map(function(x){return Promise.all([q(x.market_ticker,-1),q(x.market_ticker,1)]);})).then(function(all){
+        var snaps=[];all.forEach(function(two){two.forEach(function(a){(a||[]).forEach(function(x){snaps.push(x);});});});
+        return G.kalshiAtModel(r.rows,snaps,iso);
+      },function(e){delete AT[key];return {state:'error',rows:null,error:'Kalshi prices at the model time could not be read ('+(e&&e.message||'error')+')'};});
+      AT[key]={p:p,at:Date.now()};
+      return p;
     });
   };
   window.fbKalshiHTML=function(sport,g,t,ev,opts){
