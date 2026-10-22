@@ -383,7 +383,7 @@ async function live() {
       hb.configured.juicereel.ready === false && hb.configured.juicereel.missing.length === 2 && hb.configured.juicereel.missing[0] === 'SPORTSBOOK_SYNC_PROVIDER=juicereel'
         && /^PORTFOLIO_CREDENTIAL_KEYS/.test(hb.configured.juicereel.missing[1]) && !JSON.stringify(hb).includes(J.clientSecret), hb.configured.juicereel);
 
-    /* ── the owner credential check (jr_check): does Juice Reel accept EdgeDesk's id and secret? ── */
+    /* ── the credential check (jr_check): does Juice Reel accept EdgeDesk's id and secret? ── */
     const callBy = async (handler, body, bearer) => {
       const res = await handler(new Request('https://fn.local/portfolio_connect', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' },
         bearer ? { authorization: 'Bearer ' + bearer } : {}), body: JSON.stringify(body) }));
@@ -391,7 +391,7 @@ async function live() {
       fnResponses.push(JSON.stringify(out.body));
       return out;
     };
-    const jrBefore = J.calls.length;
+    const jrBefore = J.calls.length, revBefore = J.revokes.length;
     r = await call({ action: 'jr_check' });
     const rB = await call({ action: 'jr_check' }, 'tok-b'), rX = await call({ action: 'jr_check' }, SERVICE + 'x');
     chk('jr_check: no token → 401; a reader → 403 operators only; a near-miss of the service key is no service key (401) — and Juice Reel was not asked',
@@ -403,17 +403,25 @@ async function live() {
         && r.body.setup.provider_on === true && r.body.setup.missing.length === 0 && r.body.setup.registry_installed === true
         && r.body.setup.switched_on_for_readers === false && r.body.setup.live_test_running === false
         && r.body.setup.redirect_uri === 'https://edgedesksports.com/oauth/juicereel-callback.html', r.body);
-    chk('…ONE request: GET /oauth2/me with the client id:secret (Basic) and X-OAuth-Client-Id — no bet list read, no token issued, no reader involved',
-      ownerCalls.length === 1 && ownerCalls[0].m === 'GET' && ownerCalls[0].p === '/oauth2/me' && ownerCalls[0].auth === 'basic' && ownerCalls[0].owner === true
-        && ownerCalls[0].clientHeader === J.clientId && J.issued.length === 0, ownerCalls);
+    const probe = J.revokes.slice(revBefore);
+    chk('…TWO requests, both Basic client id:secret + X-OAuth-Client-Id: POST /oauth2/revoke of a random token Juice Reel never issued, then GET /oauth2/me — no bet list read, no token issued, no reader involved',
+      ownerCalls.length === 2 && ownerCalls[0].m === 'POST' && ownerCalls[0].p === '/oauth2/revoke' && ownerCalls[1].m === 'GET' && ownerCalls[1].p === '/oauth2/me' && ownerCalls[1].owner === true
+        && ownerCalls.every((x) => x.auth === 'basic' && x.clientHeader === J.clientId) && J.issued.length === 0
+        && probe.length === 1 && /^[A-Za-z0-9_-]{43}$/.test(probe[0].token) && !J.access[probe[0].token] && !J.refresh[probe[0].token] && r.body.owner_access === 'yes', { ownerCalls, probe });
     chk('…the owner\'s Juice Reel id is not passed on, nor the id or the secret', !('id' in r.body) && !/"owner_id"|"id":7\b/.test(JSON.stringify(r.body))
       && !JSON.stringify(r.body).includes(J.clientSecret) && !JSON.stringify(r.body).includes(J.clientId));
     r = await call({ action: 'jr_check' }, 'tok-op');
     chk('jr_check as a signed-in operator: the same verdict', r.status === 200 && r.body.accepted === true && r.body.owner === 'EdgeDesk Owner');
     const fnWrong = load(Object.assign({}, env, { JUICE_REEL_CLIENT_SECRET: 'jrs_wrong_secret' }));
     r = await callBy(fnWrong, { action: 'jr_check' }, SERVICE);
-    chk('Juice Reel refusing the credentials (unapproved, or a stale secret): accepted false, JR_CLIENT_REFUSED with Juice Reel\'s status, said plainly',
-      r.status === 200 && r.body.accepted === false && r.body.code === 'JR_CLIENT_REFUSED' && r.body.status === 401 && /not approved yet/.test(r.body.message) && r.body.owner === null, r.body);
+    chk('Juice Reel refusing the credentials (unapproved, or a stale secret): accepted false, JR_CLIENT_REFUSED with Juice Reel\'s status, refused at both calls, said plainly',
+      r.status === 200 && r.body.accepted === false && r.body.code === 'JR_CLIENT_REFUSED' && r.body.status === 401 && r.body.owner_access === 'refused'
+        && /not approved yet/.test(r.body.message) && /and at its owner lookup/.test(r.body.message) && r.body.owner === null, r.body);
+    J.ownerAccess = false;
+    r = await call({ action: 'jr_check' }, SERVICE);
+    J.ownerAccess = true;
+    chk('a Juice Reel that does not offer owner access (GET /oauth2/me with the credentials → 401) does NOT refuse good credentials: the revoke accepted them — accepted, no owner named, said so',
+      r.status === 200 && r.body.accepted === true && r.body.code === null && r.body.owner === null && r.body.owner_access === 'refused' && /connecting does not need it/.test(r.body.message), r.body);
     r = await callBy(fnBare, { action: 'jr_check' }, SERVICE);
     chk('…it can be asked BEFORE Juice Reel is switched on (provider unset, no vault key): accepted, with the checklist naming what is still missing',
       r.status === 200 && r.body.accepted === true && r.body.setup.provider_on === false && r.body.setup.missing.length === 1 && /^PORTFOLIO_CREDENTIAL_KEYS/.test(r.body.setup.missing[0]), r.body);
@@ -422,11 +430,14 @@ async function live() {
     r = await callBy(fnNoId, { action: 'jr_check' }, SERVICE);
     chk('…without an id and secret it does not call Juice Reel: NOT_CONFIGURED, both names listed', r.body.accepted === false && r.body.code === 'NOT_CONFIGURED' && J.calls.length === nBefore
       && r.body.setup.missing.indexOf('JUICE_REEL_CLIENT_ID') >= 0 && r.body.setup.missing.indexOf('JUICE_REEL_CLIENT_SECRET') >= 0, r.body);
-    J.fail['/oauth2/me'] = [502];
+    J.fail['/oauth2/revoke'] = [502]; J.fail['/oauth2/me'] = [502];
     const fBefore = J.calls.length;
     r = await call({ action: 'jr_check' }, SERVICE);
-    chk('…Juice Reel failing (5xx): a verdict, not an error — PLATFORM_DOWN, asked once, never retried', r.status === 200 && r.body.accepted === false && r.body.code === 'PLATFORM_DOWN'
-      && J.calls.length === fBefore + 1, r.body);
+    chk('…Juice Reel failing (5xx at both): a verdict, not an error — PLATFORM_DOWN, each call made once, never retried', r.status === 200 && r.body.accepted === false && r.body.code === 'PLATFORM_DOWN'
+      && r.body.owner_access === 'unavailable' && J.calls.length === fBefore + 2, r.body);
+    J.fail['/oauth2/me'] = [502];
+    r = await call({ action: 'jr_check' }, SERVICE);
+    chk('…the owner lookup failing alone (5xx) does not refuse credentials the revoke accepted', r.body.accepted === true && r.body.owner_access === 'unavailable' && /did not answer/.test(r.body.message), r.body);
     r = await callBy(fnBare, { action: 'jr_status' }, 'tok-op');
     const rr = await callBy(fnBare, { action: 'jr_status' }, 'tok-b');
     chk('the provider unset: jr_status says sync is off, to operators and readers alike',

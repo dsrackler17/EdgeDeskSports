@@ -149,6 +149,8 @@ function make(o) {
     /* owner access: the application's own credentials answer for its owner (only /me is modelled; EdgeDesk reads no bets this way) */
     if (m === 'GET' && p === '/oauth2/me' && auth === 'basic') {
       if (!basicOk(h)) return res(401, { error: 'invalid_client', error_description: 'Client authentication failed' });
+      /* J.ownerAccess = false: a Juice Reel that does not offer owner access (it then reads the call as a missing bearer) */
+      if (J.ownerAccess === false) return res(401, { error: 'Invalid OAuth access token' });
       return res(200, { id: J.owner.id, displayName: J.owner.displayName });
     }
     if (m === 'GET' && /^\/oauth2\/(me|bets\/(open|settled|changed))$/.test(p)) {
