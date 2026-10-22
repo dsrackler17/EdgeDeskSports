@@ -11,7 +11,10 @@
                            consumed one revokes the token family (the grant)
     POST /oauth2/revoke    Basic + header; token & token_type_hint; 200 {}
                            whether or not the token existed
-    GET  /oauth2/me        Bearer + X-OAuth-Client-Id → { id, displayName }
+    GET  /oauth2/me        Bearer + X-OAuth-Client-Id → { id, displayName };
+                           with Basic client id:secret instead (owner access)
+                           → the application owner's { id, displayName }, or
+                           401 invalid_client for credentials it refuses
     GET  /oauth2/bets/open | /settled | /changed
                            scopes; the documented filters and ordering
                            (descending id; changed: updatedAt desc, id desc);
@@ -38,6 +41,7 @@ function make(o) {
     redirects: o.redirects || ['https://edgedesksports.com/oauth/juicereel-callback.html'],
     users: {}, codes: {}, access: {}, refresh: {}, families: {}, calls: [], revokes: [], issued: [],
     pageSize: o.pageSize || 2, fail: {}, grantScopes: null, accessTtl: 3600, deny: false,
+    owner: o.owner || { id: 7, displayName: 'EdgeDesk Owner' },
   };
   J.user = function (id, name) { J.users[String(id)] = J.users[String(id)] || { id: +id, displayName: name || ('User ' + id), bets: [] }; return J.users[String(id)]; };
   /* the user approves EdgeDesk on the consent page: a code for this challenge and redirect */
@@ -104,7 +108,7 @@ function make(o) {
     const h = {}; Object.keys(init.headers || {}).forEach((k) => { h[k.toLowerCase()] = init.headers[k]; });
     const m = (init.method || 'GET').toUpperCase(), p = u.pathname;
     const auth = /^Basic /.test(h.authorization || '') ? 'basic' : /^Bearer /.test(h.authorization || '') ? 'bearer' : 'none';
-    J.calls.push({ m, p, q: Object.fromEntries(u.searchParams), auth, clientHeader: h['x-oauth-client-id'] || null });
+    J.calls.push({ m, p, q: Object.fromEntries(u.searchParams), auth, clientHeader: h['x-oauth-client-id'] || null, owner: m === 'GET' && p === '/oauth2/me' && auth === 'basic' });
     /* scripted failures: { '/oauth2/bets/changed': [429, 502] } (0: that call is answered normally) */
     const f = J.fail[p];
     if (f && f.length) { const st = f.shift(); if (st) return res(st, st === 429 ? { error: 'Rate limit exceeded' } : st >= 500 ? { error: 'Internal server error' } : { error: 'scripted' }); }
@@ -141,6 +145,11 @@ function make(o) {
         return res(200, issue(r.userId, r.scopes, r.family));
       }
       return res(400, { error: 'invalid_request' });
+    }
+    /* owner access: the application's own credentials answer for its owner (only /me is modelled; EdgeDesk reads no bets this way) */
+    if (m === 'GET' && p === '/oauth2/me' && auth === 'basic') {
+      if (!basicOk(h)) return res(401, { error: 'invalid_client', error_description: 'Client authentication failed' });
+      return res(200, { id: J.owner.id, displayName: J.owner.displayName });
     }
     if (m === 'GET' && /^\/oauth2\/(me|bets\/(open|settled|changed))$/.test(p)) {
       const a = bearer(h);

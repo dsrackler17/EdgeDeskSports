@@ -70,9 +70,11 @@ chk('every Juice Reel service function asserts its caller first',
   (SQL.match(/create or replace function public\.portfolio_svc_\w+/g) || []).length === (SQL.match(/perform public\.portfolio_svc_assert\(\);/g) || []).length);
 chk('the Juice Reel seed never writes automatic_enabled', !/automatic_enabled\s*=\s*excluded/.test(SQL) && !/insert into public\.portfolio_platform_registry \([^)]*automatic_enabled/.test(SQL));
 chk('portfolio_connect carries the current core (Juice Reel included)', require('./inline_connect_core.js').inSync() && /JUICEREEL/.test(FN_SRC));
-chk('every Juice Reel request is DOCUMENTED; reads are GETs, the client secret goes only to token and revoke',
+chk('every Juice Reel request is DOCUMENTED; reads are GETs, the client secret goes only to token, revoke and the owner check (GET /oauth2/me) — never to a bet list',
   Object.keys(K.JUICEREEL.contract).every((k) => K.JUICEREEL.contract[k].seen === 'DOCUMENTED')
-    && Object.keys(K.JUICEREEL.contract).filter((k) => K.JUICEREEL.contract[k].auth === 'basic').sort().join() === 'revoke,token'
+    && Object.keys(K.JUICEREEL.contract).filter((k) => K.JUICEREEL.contract[k].auth === 'basic').sort().join() === 'owner,revoke,token'
+    && K.JUICEREEL.contract.owner.method === 'GET' && K.JUICEREEL.contract.owner.path === '/oauth2/me'
+    && Object.keys(K.JUICEREEL.contract).filter((k) => /bets/.test(K.JUICEREEL.contract[k].path || '')).every((k) => K.JUICEREEL.contract[k].auth === 'bearer')
     && ['me', 'open', 'settled', 'changed'].every((k) => K.JUICEREEL.contract[k].method === 'GET' && K.JUICEREEL.contract[k].auth === 'bearer'));
 chk('EdgeDesk asks only for the two bet scopes: never subscribers.read, the subscriber endpoints, checkout or a subscription webhook',
   JSON.stringify(K.JUICEREEL.scopes) === '["bets.open.read","bets.settled.read"]'
@@ -372,6 +374,83 @@ async function live() {
         && !JSON.stringify(hb).includes(J.clientSecret) && !JSON.stringify(hb).includes(J.clientId), hb.configured.juicereel);
     chk('…Juice Reel is this server\'s ONE sportsbook sync provider; SharpSports (retired) is not active although its keys are present',
       hb.configured.sportsbook_sync.provider === 'juicereel' && hb.configured.juicereel.active === true && hb.configured.sharpsports.active === false, { sb: hb.configured.sportsbook_sync, ss: hb.configured.sharpsports });
+    chk('…and with everything set, nothing is listed as missing', Array.isArray(hb.configured.juicereel.missing) && hb.configured.juicereel.missing.length === 0, hb.configured.juicereel.missing);
+    /* production as the 2026-10-14 deploy left it: the Juice Reel id and secret set, the provider and the vault key not */
+    const bare = Object.assign({}, env); delete bare.SPORTSBOOK_SYNC_PROVIDER; delete bare.PORTFOLIO_CREDENTIAL_KEYS; delete bare.PORTFOLIO_CREDENTIAL_KEY_VERSION;
+    const fnBare = load(bare);
+    hb = await (await fnBare(new Request('https://fn.local/portfolio_connect', { method: 'GET' }))).json();
+    chk('health names, by secret NAME, what stops Juice Reel: the provider switch and the vault key (production on 2026-10-14) — never a value',
+      hb.configured.juicereel.ready === false && hb.configured.juicereel.missing.length === 2 && hb.configured.juicereel.missing[0] === 'SPORTSBOOK_SYNC_PROVIDER=juicereel'
+        && /^PORTFOLIO_CREDENTIAL_KEYS/.test(hb.configured.juicereel.missing[1]) && !JSON.stringify(hb).includes(J.clientSecret), hb.configured.juicereel);
+
+    /* ── the owner credential check (jr_check): does Juice Reel accept EdgeDesk's id and secret? ── */
+    const callBy = async (handler, body, bearer) => {
+      const res = await handler(new Request('https://fn.local/portfolio_connect', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' },
+        bearer ? { authorization: 'Bearer ' + bearer } : {}), body: JSON.stringify(body) }));
+      const out = { status: res.status, body: await res.json() };
+      fnResponses.push(JSON.stringify(out.body));
+      return out;
+    };
+    const jrBefore = J.calls.length;
+    r = await call({ action: 'jr_check' });
+    const rB = await call({ action: 'jr_check' }, 'tok-b'), rX = await call({ action: 'jr_check' }, SERVICE + 'x');
+    chk('jr_check: no token → 401; a reader → 403 operators only; a near-miss of the service key is no service key (401) — and Juice Reel was not asked',
+      r.status === 401 && rB.status === 403 && rB.body.reason === 'operators_only' && rX.status === 401 && J.calls.length === jrBefore);
+    r = await call({ action: 'jr_check' }, SERVICE);
+    const ownerCalls = J.calls.slice(jrBefore);
+    chk('jr_check as the service role: accepted, the application owner named, the setup checklist complete — off for readers, no live test running',
+      r.status === 200 && r.body.accepted === true && r.body.code === null && r.body.owner === 'EdgeDesk Owner' && /accepted/.test(r.body.message)
+        && r.body.setup.provider_on === true && r.body.setup.missing.length === 0 && r.body.setup.registry_installed === true
+        && r.body.setup.switched_on_for_readers === false && r.body.setup.live_test_running === false
+        && r.body.setup.redirect_uri === 'https://edgedesksports.com/oauth/juicereel-callback.html', r.body);
+    chk('…ONE request: GET /oauth2/me with the client id:secret (Basic) and X-OAuth-Client-Id — no bet list read, no token issued, no reader involved',
+      ownerCalls.length === 1 && ownerCalls[0].m === 'GET' && ownerCalls[0].p === '/oauth2/me' && ownerCalls[0].auth === 'basic' && ownerCalls[0].owner === true
+        && ownerCalls[0].clientHeader === J.clientId && J.issued.length === 0, ownerCalls);
+    chk('…the owner\'s Juice Reel id is not passed on, nor the id or the secret', !('id' in r.body) && !/"owner_id"|"id":7\b/.test(JSON.stringify(r.body))
+      && !JSON.stringify(r.body).includes(J.clientSecret) && !JSON.stringify(r.body).includes(J.clientId));
+    r = await call({ action: 'jr_check' }, 'tok-op');
+    chk('jr_check as a signed-in operator: the same verdict', r.status === 200 && r.body.accepted === true && r.body.owner === 'EdgeDesk Owner');
+    const fnWrong = load(Object.assign({}, env, { JUICE_REEL_CLIENT_SECRET: 'jrs_wrong_secret' }));
+    r = await callBy(fnWrong, { action: 'jr_check' }, SERVICE);
+    chk('Juice Reel refusing the credentials (unapproved, or a stale secret): accepted false, JR_CLIENT_REFUSED with Juice Reel\'s status, said plainly',
+      r.status === 200 && r.body.accepted === false && r.body.code === 'JR_CLIENT_REFUSED' && r.body.status === 401 && /not approved yet/.test(r.body.message) && r.body.owner === null, r.body);
+    r = await callBy(fnBare, { action: 'jr_check' }, SERVICE);
+    chk('…it can be asked BEFORE Juice Reel is switched on (provider unset, no vault key): accepted, with the checklist naming what is still missing',
+      r.status === 200 && r.body.accepted === true && r.body.setup.provider_on === false && r.body.setup.missing.length === 1 && /^PORTFOLIO_CREDENTIAL_KEYS/.test(r.body.setup.missing[0]), r.body);
+    const fnNoId = load(Object.assign({}, env, { JUICE_REEL_CLIENT_ID: '', JUICE_REEL_CLIENT_SECRET: '' }));
+    const nBefore = J.calls.length;
+    r = await callBy(fnNoId, { action: 'jr_check' }, SERVICE);
+    chk('…without an id and secret it does not call Juice Reel: NOT_CONFIGURED, both names listed', r.body.accepted === false && r.body.code === 'NOT_CONFIGURED' && J.calls.length === nBefore
+      && r.body.setup.missing.indexOf('JUICE_REEL_CLIENT_ID') >= 0 && r.body.setup.missing.indexOf('JUICE_REEL_CLIENT_SECRET') >= 0, r.body);
+    J.fail['/oauth2/me'] = [502];
+    const fBefore = J.calls.length;
+    r = await call({ action: 'jr_check' }, SERVICE);
+    chk('…Juice Reel failing (5xx): a verdict, not an error — PLATFORM_DOWN, asked once, never retried', r.status === 200 && r.body.accepted === false && r.body.code === 'PLATFORM_DOWN'
+      && J.calls.length === fBefore + 1, r.body);
+    r = await callBy(fnBare, { action: 'jr_status' }, 'tok-op');
+    const rr = await callBy(fnBare, { action: 'jr_status' }, 'tok-b');
+    chk('the provider unset: jr_status says sync is off, to operators and readers alike',
+      r.body.reason === 'SYNC_OFF' && rr.body.reason === 'SYNC_OFF', { op: r.body.reason, b: rr.body.reason });
+    /* the operator's probe (tools/portfolio/juicereel_smoke.js probe) over the shipped function and callback page */
+    const realFetch = globalThis.fetch, realLog = console.log, printed = [];
+    globalThis.fetch = async (u, i) => {
+      const url = String(u);
+      if (url.indexOf(SB + '/functions/v1/portfolio_connect') === 0) return fn(new Request(url, i));
+      if (url === 'https://edgedesksports.com/oauth/juicereel-callback.html') return new Response(CALLBACK, { status: 200 });
+      throw new Error('no network: ' + url);
+    };
+    console.log = (x) => printed.push(String(x));
+    try { await require('./juicereel_smoke.js').probe({ url: SB, service: SERVICE }); } finally { globalThis.fetch = realFetch; console.log = realLog; }
+    chk('the probe names the redirect URI to register, finds the callback page there, and reports Juice Reel ACCEPTING the credentials — no secret printed',
+      printed.some((l) => /https:\/\/edgedesksports\.com\/oauth\/juicereel-callback\.html/.test(l)) && printed.some((l) => /the EdgeDesk callback page/.test(l))
+        && printed.some((l) => /^Juice Reel credentials: ACCEPTED/.test(l)) && !printed.join('\n').includes(J.clientSecret) && !printed.join('\n').includes(SERVICE), printed);
+    const noVault = Object.assign({}, env); delete noVault.PORTFOLIO_CREDENTIAL_KEYS;
+    const fnNoVault = load(noVault);
+    r = await callBy(fnNoVault, { action: 'jr_status' }, 'tok-op');
+    const rr2 = await callBy(fnNoVault, { action: 'jr_status' }, 'tok-b');
+    chk('…(no vault key) operator: not_configured naming PORTFOLIO_CREDENTIAL_KEYS; reader: not_configured, no secret names',
+      r.body.reason === 'not_configured' && /PORTFOLIO_CREDENTIAL_KEYS/.test(r.body.message) && rr2.body.reason === 'not_configured' && !/PORTFOLIO_CREDENTIAL_KEYS|Operators/.test(rr2.body.message),
+      { op: r.body.message, b: rr2.body.message });
 
     /* ── PHASE 2 · who may connect: nobody while Juice Reel is off ── */
     r = await call({ action: 'jr_status' });
@@ -495,8 +574,8 @@ async function live() {
         && jrCalls.filter((c) => c.p === '/oauth2/bets/settled').length >= 3 && !jrCalls.some((c) => c.p === '/oauth2/bets/changed')
         && jrCalls.filter((c) => c.p === '/oauth2/bets/settled' && c.q.cursor).length >= 2, { cur1, paths: jrCalls.map((c) => c.p) });
     chk('every request carried X-OAuth-Client-Id; the secret (Basic) went only to the token endpoint; resources only ever saw a Bearer token; no subscriber or checkout endpoint was called',
-      J.calls.every((c) => c.clientHeader === J.clientId) && J.calls.filter((c) => c.auth === 'basic').every((c) => c.p === '/oauth2/token' || c.p === '/oauth2/revoke')
-        && J.calls.filter((c) => /bets|me/.test(c.p)).every((c) => c.auth === 'bearer') && !J.calls.some((c) => /subscribers|checkout/.test(c.p)));
+      J.calls.every((c) => c.clientHeader === J.clientId) && J.calls.filter((c) => c.auth === 'basic').every((c) => c.p === '/oauth2/token' || c.p === '/oauth2/revoke' || (c.p === '/oauth2/me' && c.owner))
+        && J.calls.filter((c) => /bets|me/.test(c.p) && !c.owner).every((c) => c.auth === 'bearer') && !J.calls.some((c) => /subscribers|checkout/.test(c.p)));
     chk('the state is used up: replaying the same callback is refused', (await call({ action: 'jr_callback', state: ok1.approve.state, code: ok1.approve.code }, 'tok-op')).body.reason === 'JR_STATE_INVALID');
     const st1 = await call({ action: 'jr_status' }, 'tok-op');
     chk('status for the page: Connected as Sharp Bettor, 3 books, open bets — no token, ciphertext or Juice Reel id in it',
@@ -856,8 +935,8 @@ async function live() {
 
     /* ── nothing secret anywhere ── */
     const everything = logs.join('\n') + '\n' + fnResponses.join('\n');
-    const secrets = [J.clientSecret].concat(J.issued, Object.keys(J.codes), [opened.verifier]);
-    chk('no client secret, access or refresh token, authorization code or PKCE verifier appears in any log line or any response',
+    const secrets = [J.clientSecret, SERVICE].concat(J.issued, Object.keys(J.codes), [opened.verifier]);
+    chk('no client secret, service key, access or refresh token, authorization code or PKCE verifier appears in any log line or any response',
       secrets.every((s) => everything.indexOf(s) < 0) && logs.every((l) => { try { return JSON.parse(l).fn === 'portfolio_connect'; } catch (_) { return false; } }), secrets.filter((s) => everything.indexOf(s) >= 0).slice(0, 3));
     const dump = db.sql(`select coalesce(string_agg(t::text, ' '), '') from (select row_to_json(x)::text as t from public.platform_accounts x union all select row_to_json(x)::text from public.portfolio_positions x
         union all select row_to_json(x)::text from public.portfolio_sync_runs x union all select row_to_json(x)::text from portfolio_private.connect_sessions x

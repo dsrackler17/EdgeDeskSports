@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-22 — Juice Reel: check the credentials, finish the setup and connect without a terminal
+
+**Juice Reel replied (2026-10-20) with a link to its quick-start.** The reply does not say in writing whether EdgeDesk's application is approved, or answer the question about fees. Juice Reel's sportsbook sync was built, tested and deployed on 2026-10-14, but the deploy's own health check showed two settings missing in Supabase: `SPORTSBOOK_SYNC_PROVIDER` (so no Juice Reel panel at all) and `PORTFOLIO_CREDENTIAL_KEYS` (so no token could be sealed). This change makes the remaining steps clicks. Docs: `docs/juicereel.md` § 0.
+
+- **Is the application approved? Now it can be asked.** `jr_check` uses Juice Reel's documented owner access: one `GET /oauth2/me` with the application's own client id and secret, which answers for the app's owner. Accepted means the id, the secret and the approval are in order.
+  - No reader is involved and no bet is read. Bets are still read only under a reader's own OAuth grant.
+  - Only an operator, or a caller with the service key (compared in constant time), can ask; anyone else is refused before Juice Reel is called.
+  - It answers a verdict (accepted, or `JR_CLIENT_REFUSED` with Juice Reel's HTTP status), the owner's display name and a setup checklist. It never returns the owner's id, the client id or the secret.
+- **What is missing, by name.** The health check's `configured.juicereel.missing` lists each setting still needed. An operator whose panel reads "not configured" is told the same names; a reader is not.
+- **Actions → Juice Reel setup** (`.github/workflows/juicereel-setup.yml`, manual), in three steps:
+  - `check` — read-only.
+  - `setup` — fills in `SPORTSBOOK_SYNC_PROVIDER=juicereel` and a fresh vault key **only where absent**. It never overwrites; it stops on a malformed key or a different provider. The key is generated on the runner, never printed, never stored in GitHub.
+  - `start_live_test` — starts the PRODUCTION live test, so an operator can connect their own Juice Reel in the app (Portfolio → Accounts). It refuses if Juice Reel refused the credentials.
+  - Nothing switches Juice Reel on for readers: that stays the live-test stages, the terms review and one SQL statement (§ 9).
+- `tools/portfolio/juicereel_smoke.js probe` runs the same check.
+
+Tests: `node tools/portfolio/juicereel.test.js` (154, was 140): the new checks run over the real migrations, and their auth was mutation-checked. Every Portfolio unit, SQL and Chromium suite was run again: all green except `sharpsports_ui.e2e.js` "a refresh says SharpSports is reading the book", which fails identically here without this change and passes in CI.
+
 ## 2026-10-22 — CFB referee flags: signed-in readers only; ESPN publishes no CFB officials
 
 - **Security.** `supabase/cfb_refs.sql` granted anon select. That broke the CFB security contract (`football/cfb_production/security.test.js`: in `supabase/cfb_*.sql`, anon gets nothing but the settled-record views and the analytics writer), and the check went red on `main` with #681.
