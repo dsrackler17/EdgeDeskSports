@@ -1,13 +1,13 @@
 {
  "schema": "edgedesk_model_loop_health_v1",
- "generated_at": "2026-10-21T11:38:19Z",
- "status": "OK",
+ "generated_at": "2026-10-22T21:28:03Z",
+ "status": "DEGRADED",
  "summary": {
-  "OK": 5,
+  "OK": 7,
   "STALE": 0,
-  "DEGRADED": 0,
+  "DEGRADED": 1,
   "OFF_SEASON": 2,
-  "NOT_SERVED": 0
+  "NOT_SERVED": 1
  },
  "rules": {
   "refresh_max_hours": 36,
@@ -26,10 +26,10 @@
     "version": "2.0.0",
     "since": "2026-10-21T01:28:58Z",
     "promoted_by": "owner",
-    "versions": 1
+    "versions": 3
    },
-   "refreshed_at": "2026-10-21T03:54:21Z",
-   "refreshed_age_h": 7.7,
+   "refreshed_at": "2026-10-22T18:11:50Z",
+   "refreshed_age_h": 3.3,
    "research": {
     "file": "docs/model-loop/nfl/weekly/2026-w06.json",
     "at": "2026-10-21T01:44:52Z",
@@ -41,9 +41,9 @@
     "data_status": {
      "status": "OK",
      "reasons": [],
-     "games_flagged": 2,
+     "games_flagged": 4,
      "missing_results": [],
-     "checked_at": "2026-10-21T03:54:21Z"
+     "checked_at": "2026-10-22T18:11:51Z"
     },
     "graded_games": 0
    },
@@ -52,21 +52,36 @@
   {
    "id": "cfb",
    "label": "College football",
-   "status": "OK",
+   "status": "DEGRADED",
    "in_season": true,
-   "reasons": [],
+   "reasons": [
+    "4 game(s) already played have no result in the data yet, so the ratings are behind by those games: 401871055, 401871069, 401871070, 401871092"
+   ],
    "served": {
     "version": "2.0.0",
     "since": "2026-10-21T03:02:31Z",
     "promoted_by": "preregistered-rule",
-    "versions": 1
+    "versions": 3
    },
-   "refreshed_at": "2026-10-21T03:37:28Z",
-   "refreshed_age_h": 8.0,
+   "refreshed_at": "2026-10-22T18:11:48Z",
+   "refreshed_age_h": 3.3,
    "research": null,
    "data": {
-    "games_published": 65,
-    "data_status": null,
+    "games_published": 108,
+    "data_status": {
+     "status": "DEGRADED",
+     "reasons": [
+      "4 game(s) already played have no result in the data yet, so the ratings are behind by those games: 401871055, 401871069, 401871070, 401871092"
+     ],
+     "games_flagged": 80,
+     "missing_results": [
+      "401871055",
+      "401871069",
+      "401871070",
+      "401871092"
+     ],
+     "checked_at": "2026-10-22T18:11:51Z"
+    },
     "graded_games": 0
    },
    "workflow": ".github/workflows/model-loop-cfb.yml"
@@ -81,18 +96,18 @@
     "version": "1.0.0",
     "since": "2026-10-21T01:51:05Z",
     "promoted_by": "selection-window tuning",
-    "versions": 1
+    "versions": 2
    },
-   "refreshed_at": "2026-10-21T04:05:34Z",
-   "refreshed_age_h": 7.5,
+   "refreshed_at": "2026-10-22T14:31:28Z",
+   "refreshed_age_h": 6.9,
    "research": {
     "file": "docs/model-loop/nba/weekly/2026-10-21.json",
-    "at": "2026-10-21T01:51:18Z",
+    "at": "2026-10-21T23:31:15Z",
     "promoted": null,
-    "candidates": 8
+    "candidates": 16
    },
    "data": {
-    "last_game_date": "2026-06-13",
+    "last_game_date": "2026-10-21",
     "for_season": 2027
    },
    "workflow": ".github/workflows/model-loop-basketball.yml"
@@ -109,16 +124,16 @@
     "promoted_by": "selection-window tuning",
     "versions": 1
    },
-   "refreshed_at": "2026-10-21T04:05:34Z",
-   "refreshed_age_h": 7.5,
+   "refreshed_at": "2026-10-22T14:31:28Z",
+   "refreshed_age_h": 6.9,
    "research": {
     "file": "docs/model-loop/wnba/weekly/2026-10-21.json",
-    "at": "2026-10-21T01:51:19Z",
+    "at": "2026-10-21T23:31:16Z",
     "promoted": null,
-    "candidates": 8
+    "candidates": 16
    },
    "data": {
-    "last_game_date": "2026-10-19",
+    "last_game_date": "2026-10-21",
     "for_season": 2026
    },
    "workflow": ".github/workflows/model-loop-basketball.yml"
@@ -135,13 +150,13 @@
     "promoted_by": "weekly-loop",
     "versions": 2
    },
-   "refreshed_at": "2026-10-21T04:05:47Z",
-   "refreshed_age_h": 7.5,
+   "refreshed_at": "2026-10-22T14:31:46Z",
+   "refreshed_age_h": 6.9,
    "research": {
     "file": "docs/model-loop/ncaam/weekly/2026-10-21.json",
-    "at": "2026-10-21T01:55:00Z",
+    "at": "2026-10-21T23:33:11Z",
     "promoted": "1.1.0",
-    "candidates": 8
+    "candidates": 16
    },
    "data": {
     "last_game_date": "2026-04-06",
@@ -161,13 +176,13 @@
     "promoted_by": "weekly-loop",
     "versions": 2
    },
-   "refreshed_at": "2026-10-21T04:05:58Z",
-   "refreshed_age_h": 7.5,
+   "refreshed_at": "2026-10-22T14:32:02Z",
+   "refreshed_age_h": 6.9,
    "research": {
     "file": "docs/model-loop/ncaaw/weekly/2026-10-21.json",
-    "at": "2026-10-21T01:58:16Z",
+    "at": "2026-10-21T23:34:52Z",
     "promoted": "1.1.0",
-    "candidates": 8
+    "candidates": 16
    },
    "data": {
     "last_game_date": "2026-04-05",
@@ -187,8 +202,8 @@
     "promoted_by": "weekly-loop",
     "versions": 2
    },
-   "refreshed_at": "2026-10-21T04:09:13Z",
-   "refreshed_age_h": 7.5,
+   "refreshed_at": "2026-10-22T19:38:27Z",
+   "refreshed_age_h": 1.8,
    "research": {
     "file": "docs/model-loop/ufc/weekly/2026-10-21.json",
     "at": "2026-10-21T04:09:13Z",
@@ -209,6 +224,429 @@
     }
    },
    "workflow": ".github/workflows/model-loop-ufc.yml"
+  },
+  {
+   "id": "mlb",
+   "label": "MLB (lab brain)",
+   "status": "NOT_SERVED",
+   "in_season": false,
+   "reasons": [
+    "the lab brain prices no live game (the card uses mlb/engine.js); its loop learns on the 2012-to-date record so the 2027 engine can be chosen on evidence"
+   ],
+   "served": {
+    "version": "1.1.0",
+    "since": "2026-10-21T12:18:04Z",
+    "promoted_by": "weekly-loop",
+    "versions": 3
+   },
+   "refreshed_at": null,
+   "refreshed_age_h": null,
+   "research": {
+    "file": "docs/model-loop/mlb/weekly/2026-10-21.json",
+    "at": "2026-10-21T23:37:24Z",
+    "promoted": "1.1.0",
+    "candidates": 19
+   },
+   "data": null,
+   "workflow": ".github/workflows/model-loop-mlb.yml"
+  },
+  {
+   "id": "college_baseball",
+   "label": "College baseball",
+   "status": "OK",
+   "in_season": false,
+   "reasons": [],
+   "served": {
+    "version": "1.0.0",
+    "since": "2026-10-21T12:49:00Z",
+    "promoted_by": "selection-window tuning",
+    "versions": 1
+   },
+   "refreshed_at": null,
+   "refreshed_age_h": null,
+   "research": {
+    "file": "docs/model-loop/college_baseball/weekly/2026-10-22.json",
+    "at": "2026-10-22T15:27:34Z",
+    "promoted": null,
+    "candidates": 8
+   },
+   "data": null,
+   "workflow": ".github/workflows/model-loop-college-baseball.yml"
+  },
+  {
+   "id": "nhl",
+   "label": "NHL engine",
+   "status": "OK",
+   "in_season": true,
+   "reasons": [],
+   "served": {
+    "version": "edgedesk_nhl_v1:xg_core",
+    "since": "2026-10-20T15:19:46.910Z",
+    "promoted_by": "its own protocol (hockey/model/walkforward.js)"
+   },
+   "refreshed_at": "2026-10-22T17:37:19Z",
+   "refreshed_age_h": 3.8,
+   "research": {
+    "file": "docs/model-loop/nhl/weekly/2026-10-21.json",
+    "at": "2026-10-21T23:31:51Z",
+    "promoted": null,
+    "candidates": 0
+   },
+   "data": {
+    "graded": 64,
+    "games_priced": 98,
+    "missing_results": 0,
+    "unpriced": 0,
+    "validated_at": "2026-10-20T15:19:46.910Z"
+   },
+   "workflow": ".github/workflows/model-loop-engines.yml"
+  },
+  {
+   "id": "nba_engine",
+   "label": "NBA engine",
+   "status": "OK",
+   "in_season": true,
+   "reasons": [],
+   "served": {
+    "version": "E_ridge_P",
+    "since": "2026-10-21T18:14:51.980Z",
+    "promoted_by": "its own protocol (nba/model/walkforward.js)"
+   },
+   "refreshed_at": "2026-10-22T17:23:18Z",
+   "refreshed_age_h": 4.1,
+   "research": {
+    "file": "docs/model-loop/nba_engine/weekly/2026-10-21.json",
+    "at": "2026-10-21T23:31:51Z",
+    "promoted": null,
+    "candidates": 0
+   },
+   "data": {
+    "graded": 14,
+    "games_priced": 36,
+    "missing_results": 0,
+    "unpriced": 0,
+    "validated_at": "2026-10-21T18:14:51.980Z"
+   },
+   "workflow": ".github/workflows/model-loop-engines.yml"
+  }
+ ],
+ "feeds": [
+  {
+   "id": "collegiate",
+   "label": "Collegiate collector",
+   "status": "OK",
+   "reasons": [
+    "backfill baseball-boxscores-2013-2026: in progress (10279 read on 2026-10-22, 55371 left)",
+    "backfill baseball-rosters-2013-2026: in progress (14 read on 2026-10-22)",
+    "6 host(s) refused automated reads and are left alone (collegiate/data/refusals.jsonl)"
+   ],
+   "last_run": "2026-10-22",
+   "schools": {
+    "listed": 1170,
+    "schools": 1103,
+    "with_host": 1086,
+    "with_division": 1061,
+    "d1": 358,
+    "misses": 67
+   },
+   "steps": [
+    {
+     "step": "hosts",
+     "corrected": {
+      "arizona-st": {
+       "host": "thesundevils.com",
+       "registry_host": "thesundevils.fansonly.com",
+       "named_by": 19,
+       "examples": [
+        "arizona",
+        "baylor",
+        "houston",
+        "kansas-st",
+        "mississippi-st"
+       ]
+      },
+      "ga-southern": {
+       "host": "gseagles.com",
+       "registry_host": "georgiasoutherneagles.com",
+       "named_by": 13,
+       "examples": [
+        "charleston-so",
+        "citadel",
+        "coastal-caro",
+        "col-of-charleston",
+        "james-madison"
+       ]
+      },
+      "george-washington": {
+       "host": "gwsports.com",
+       "registry_host": "gwsports.collegesports.com",
+       "named_by": 5,
+       "examples": [
+        "davidson",
+        "james-madison",
+        "lehigh",
+        "richmond",
+        "maryland"
+       ]
+      },
+      "louisville": {
+       "host": "gocards.com",
+       "registry_host": "uoflsports.com",
+       "named_by": 15,
+       "examples": [
+        "california",
+        "central-mich",
+        "duke",
+        "indiana",
+        "marshall"
+       ]
+      },
+      "texas-am": {
+       "host": "12thman.com",
+       "registry_host": "aggieathletics.com",
+       "named_by": 13,
+       "examples": [
+        "florida",
+        "georgia",
+        "houston",
+        "mississippi-st",
+        "oklahoma"
+       ]
+      },
+      "wake-forest": {
+       "host": "godeacs.com",
+       "registry_host": "wakeforestsports.com",
+       "named_by": 13,
+       "examples": [
+        "california",
+        "coastal-caro",
+        "davidson",
+        "duke",
+        "florida-st"
+       ]
+      },
+      "miami-oh": {
+       "host": "miamiredhawks.com",
+       "registry_host": "muredhawks.com",
+       "named_by": 49,
+       "examples": [
+        "dayton",
+        "illinois-st",
+        "indiana",
+        "michigan-st",
+        "northern-ill"
+       ]
+      },
+      "north-dakota": {
+       "host": "fightinghawks.com",
+       "registry_host": "https",
+       "named_by": 21,
+       "examples": [
+        "creighton",
+        "neb-omaha",
+        "njit",
+        "north-dakota-st",
+        "northern-colo"
+       ]
+      },
+      "southeast-mo-st": {
+       "host": "semoredhawks.com",
+       "registry_host": "gosoutheast.com",
+       "named_by": 12,
+       "examples": [
+        "ark-pine-bluff",
+        "central-ark",
+        "bowling-green",
+        "eastern-ill",
+        "ohio"
+       ]
+      }
+     }
+    },
+    {
+     "step": "backfill",
+     "id": "baseball-rosters-2013-2026",
+     "ok": 14,
+     "misses_by_reason": {
+      "REFUSED": 6,
+      "HTTP": 479,
+      "NO_ROSTER": 388,
+      "SEASON_MISMATCH": 56,
+      "EMPTY_ROSTER": 2,
+      "PLATFORM_NOT_READ": 4
+     }
+    },
+    {
+     "step": "team_ids",
+     "schools": 42,
+     "hosts": 93
+    },
+    {
+     "step": "boxscores",
+     "id": "baseball-boxscores-2013-2026",
+     "planned": 93616,
+     "unjoinable": 2978,
+     "ok": 10279,
+     "left": 55371,
+     "misses_by_reason": {
+      "NO_BOXSCORE": 11,
+      "HTTP": 1
+     }
+    },
+    {
+     "step": "portal",
+     "built": [
+      {
+       "sport": "baseball",
+       "season": 2014,
+       "schools_both": 259,
+       "transfers": 519,
+       "matched_both_ends": 38
+      },
+      {
+       "sport": "baseball",
+       "season": 2015,
+       "schools_both": 270,
+       "transfers": 600,
+       "matched_both_ends": 52
+      },
+      {
+       "sport": "baseball",
+       "season": 2016,
+       "schools_both": 278,
+       "transfers": 642,
+       "matched_both_ends": 56
+      },
+      {
+       "sport": "baseball",
+       "season": 2017,
+       "schools_both": 282,
+       "transfers": 800,
+       "matched_both_ends": 90
+      },
+      {
+       "sport": "baseball",
+       "season": 2018,
+       "schools_both": 282,
+       "transfers": 888,
+       "matched_both_ends": 81
+      },
+      {
+       "sport": "baseball",
+       "season": 2019,
+       "schools_both": 281,
+       "transfers": 972,
+       "matched_both_ends": 84
+      },
+      {
+       "sport": "baseball",
+       "season": 2020,
+       "schools_both": 282,
+       "transfers": 1108,
+       "matched_both_ends": 133
+      },
+      {
+       "sport": "baseball",
+       "season": 2021,
+       "schools_both": 283,
+       "transfers": 1037,
+       "matched_both_ends": 290
+      },
+      {
+       "sport": "baseball",
+       "season": 2022,
+       "schools_both": 281,
+       "transfers": 1637,
+       "matched_both_ends": 575
+      },
+      {
+       "sport": "baseball",
+       "season": 2023,
+       "schools_both": 285,
+       "transfers": 1995,
+       "matched_both_ends": 702
+      },
+      {
+       "sport": "baseball",
+       "season": 2024,
+       "schools_both": 286,
+       "transfers": 2322,
+       "matched_both_ends": 838
+      },
+      {
+       "sport": "baseball",
+       "season": 2025,
+       "schools_both": 286,
+       "transfers": 2828,
+       "matched_both_ends": 1004
+      },
+      {
+       "sport": "baseball",
+       "season": 2026,
+       "schools_both": 285,
+       "transfers": 2867,
+       "matched_both_ends": 1251
+      },
+      {
+       "sport": "baseball",
+       "season": 2027,
+       "schools_both": 117,
+       "transfers": 1359,
+       "matched_both_ends": 311
+      },
+      {
+       "sport": "football",
+       "season": 2026,
+       "schools_both": 130,
+       "transfers": 3203,
+       "matched_both_ends": 1541
+      },
+      {
+       "sport": "mens-basketball",
+       "season": 2027,
+       "schools_both": 158,
+       "transfers": 954,
+       "matched_both_ends": 405
+      },
+      {
+       "sport": "mens-soccer",
+       "season": 2026,
+       "schools_both": 88,
+       "transfers": 528,
+       "matched_both_ends": 153
+      },
+      {
+       "sport": "softball",
+       "season": 2027,
+       "schools_both": 126,
+       "transfers": 350,
+       "matched_both_ends": 160
+      },
+      {
+       "sport": "womens-basketball",
+       "season": 2027,
+       "schools_both": 158,
+       "transfers": 637,
+       "matched_both_ends": 275
+      },
+      {
+       "sport": "womens-soccer",
+       "season": 2026,
+       "schools_both": 153,
+       "transfers": 675,
+       "matched_both_ends": 322
+      },
+      {
+       "sport": "womens-volleyball",
+       "season": 2026,
+       "schools_both": 144,
+       "transfers": 383,
+       "matched_both_ends": 155
+      }
+     ]
+    }
+   ],
+   "workflow": "collegiate-rosters.yml"
   }
  ]
 }
