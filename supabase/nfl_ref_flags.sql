@@ -107,6 +107,9 @@ create trigger nfl_ref_game_penalties_touch before insert or update on public.nf
 -- Per-ref averages for any season, compared to that season's league average.
 -- Regular season only. Rank 1 = the most per game; refs = how many referees
 -- worked a regular-season game that season (the "of N" in "rank 2 of 17").
+-- "vs league" is the ref's rounded average minus the league average, and the
+-- ranks order the rounded averages: data/refs/build_ref_data.py's arithmetic,
+-- so the card and ref_summary.csv agree to the hundredth.
 create or replace view public.nfl_ref_season_summary with (security_invoker = true) as
 with lg as (
   select season,
@@ -125,12 +128,12 @@ select g.season, g.referee,
        round(avg(g.false_start), 2)                     as false_start_pg,
        round(avg(g.home_flags - g.away_flags), 2)       as home_minus_away_pg,
        round(100.0 * sum(g.flags) / nullif(sum(g.snaps), 0), 2) as flags_per_100_snaps,
-       round(avg(g.flags) - lg.lg_flags_pg, 2)          as flags_vs_league_pg,
-       round(avg(g.holding_total) - lg.lg_holding_pg, 2) as holding_vs_league_pg,
+       round(round(avg(g.flags), 2) - lg.lg_flags_pg, 2)          as flags_vs_league_pg,
+       round(round(avg(g.holding_total), 2) - lg.lg_holding_pg, 2) as holding_vs_league_pg,
        coalesce(sum(g.went_over), 0)                    as overs,
        count(g.went_over) - coalesce(sum(g.went_over), 0) as unders,
-       rank() over (partition by g.season order by avg(g.flags) desc)         as flags_rank,
-       rank() over (partition by g.season order by avg(g.holding_total) desc) as holding_rank,
+       rank() over (partition by g.season order by round(avg(g.flags), 2) desc)         as flags_rank,
+       rank() over (partition by g.season order by round(avg(g.holding_total), 2) desc) as holding_rank,
        -- appended after the handoff's columns, which keep their places
        count(*) over (partition by g.season)            as refs,
        round(lg.lg_flags_pg, 2)                         as lg_flags_pg,
@@ -154,8 +157,8 @@ select referee,
        round(avg(off_holding), 2)             as off_holding_pg,
        round(avg(dpi), 2)                     as dpi_pg,
        round(100.0 * sum(flags) / nullif(sum(snaps), 0), 2) as flags_per_100_snaps,
-       round(avg(flags) - (select f from lg), 2)          as flags_vs_league_pg,
-       round(avg(holding_total) - (select h from lg), 2)  as holding_vs_league_pg,
+       round(round(avg(flags), 2) - (select f from lg), 2)          as flags_vs_league_pg,
+       round(round(avg(holding_total), 2) - (select h from lg), 2)  as holding_vs_league_pg,
        -- appended after the handoff's columns, which keep their places
        (select s0 from lg)                    as first_season,
        (select s1 from lg)                    as last_season,
