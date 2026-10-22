@@ -19,6 +19,12 @@
                       user-entered label, and bad input refused with a reason
      5  THE RECORD    the season's graded count is the public record's own sum
      6  THE COPY      nothing the demo can print is a pick word or a promise
+     7  KALSHI        the graphic's Kalshi block is the research page's: the
+                      games' markets, each at its quote nearest the model's
+                      time, placed on the right team (a listing with home and
+                      away swapped included), from Kalshi's two public tables
+                      only; a game Kalshi does not list draws none, and a
+                      failed read is a state, never an error
 
    Run: node tools/presentation/landing_model.test.js
    =========================================================================== */
@@ -30,6 +36,7 @@ const HM = require(path.join(ROOT, 'lib', 'edgedesk_home_model.js'));
 const GS = require(path.join(ROOT, 'lib', 'edgedesk_game_snapshot.js'));
 const FL = require(path.join(ROOT, 'lib', 'edgedesk_fairline.js'));
 const BGR = require(path.join(ROOT, 'tools', 'football', 'build_game_research.js'));
+const GG = require(path.join(ROOT, 'lib', 'edgedesk_game_graphic.js'));
 const read = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
 
 let pass = 0, fail = 0;
@@ -185,7 +192,61 @@ chk('the result carries the user-entered label', HM.compare(L.games[0], L.models
   chk('a typed price is never stored or sent', /Nothing you type is stored or sent\./.test(src) && !/localStorage|sessionStorage/.test(src));
 }
 
+/* ======================================================================== */
+/* 7. KALSHI: the research page's block, from Kalshi's two public tables    */
+/* ======================================================================== */
+(async () => {
+  const G0 = L.games[0], s0 = G0.snapshot, modelAt = Date.parse(s0.model.built_at);
+  /* the first game's two markets, listed with home and away swapped (a neutral-site listing), each
+     quoted a minute after the model's time and four before, two-sided at a 2¢ spread */
+  const row = (yes, opp, mid) => ({ sport: s0.league, game_id: s0.game_id, game_key: G0.game_key, event_ticker: 'KXE2E-' + s0.game_id,
+    market_ticker: 'KXE2E-' + s0.game_id + '-' + yes.slice(0, 3).toUpperCase(), kalshi_yes_name: yes, yes_team: yes, opponent: opp,
+    home_team: s0.away.name, away_team: s0.home.name, kickoff_at: s0.kickoff, match_confidence: 'high', pregame: true, state: 'OK', yes_mid: mid });
+  const ROWS = [row(s0.away.name, s0.home.name, 0.415), row(s0.home.name, s0.away.name, 0.59)];
+  const asked = [];
+  const staged = (opts) => (q) => {
+    asked.push(q);
+    if (q.indexOf('kalshi_card_current?') === 0) return opts.card ? Promise.reject(opts.card) : Promise.resolve(ROWS);
+    if (q.indexOf('kalshi_price_snapshots?') === 0) {
+      if (opts.snaps) return Promise.reject(opts.snaps);
+      const u = new URLSearchParams(q.slice(q.indexOf('?') + 1)), tk = u.get('ticker').replace(/^eq\./, ''), at = u.get('captured_at');
+      const r = ROWS.find((x) => x.market_ticker === tk), t = Date.parse(at.replace(/^(lte|gte)\./, ''));
+      return Promise.resolve([{ ticker: tk, captured_at: new Date(t + (/^gte\./.test(at) ? 60000 : -240000)).toISOString(), yes_bid: r.yes_mid - 0.01, yes_ask: r.yes_mid + 0.01, volume: 4200 }]);
+    }
+    return Promise.reject(new Error('not a Kalshi table: ' + q));
+  };
+  const by = await HM.kalshi(L.games, staged({}));
+  const k0 = by[G0.game_key];
+  chk('Kalshi: every game shown gets a block', L.games.every((g) => by[g.game_key] && by[g.game_key].state), Object.keys(by));
+  chk('Kalshi: the first game is priced', k0.state === 'OK' && HM.kalshiDrawn(k0), k0);
+  chk('Kalshi: each price on its own team, though the listing had home and away swapped', k0.away && k0.home && k0.away.mid === 0.415 && k0.home.mid === 0.59, [k0.away, k0.home]);
+  chk('Kalshi: the quote nearest the model\'s time (a minute after, not four before)', k0.snapshot_at === new Date(modelAt + 60000).toISOString(), k0.snapshot_at);
+  chk('Kalshi: a game Kalshi does not list draws nothing', L.games.slice(1).every((g) => by[g.game_key].state === 'NO_MARKET' && !HM.kalshiDrawn(by[g.game_key])), L.games.slice(1).map((g) => by[g.game_key].state));
+  chk('Kalshi: only its two public tables are asked for', asked.every((q) => /^kalshi_(card_current|price_snapshots)\?/.test(q)) && asked.filter((q) => /^kalshi_card_current\?/.test(q)).length === 1, asked);
+  chk('Kalshi: one read for the games\' markets, by each game\'s own id', L.games.every((g) => decodeURIComponent(asked[0]).indexOf('"' + g.snapshot.game_id + '"') >= 0) && /game_id=in\.\(/.test(asked[0]), asked[0]);
+  const iso = new Date(modelAt).toISOString();
+  chk('Kalshi: each market\'s two-sided quote at or before and at or after the model\'s time', ROWS.every((r) => ['lte.', 'gte.'].every((d) => asked.some((q) => q.indexOf('ticker=eq.' + encodeURIComponent(r.market_ticker)) >= 0 && q.indexOf('captured_at=' + d + encodeURIComponent(iso)) >= 0 && /yes_bid=gt\.0&yes_ask=lt\.1/.test(q) && /&limit=1$/.test(q)))), asked.slice(1));
+  /* the graphic itself: the research page's own content, with no sportsbook quote */
+  const ct = GG.content(GS.graphicSpec(s0), null, { now: modelAt + 3600e3, kalshi: k0 });
+  const KC = ct.ok && ct.content.compare ? ct.content.compare : null;
+  chk('the graphic draws EDGEDESK vs KALSHI (or the edge it names), with no sportsbook column', KC && (KC.title === 'EDGEDESK vs KALSHI' || /^EDGE: /.test(KC.title)) && KC.cols.every((c) => c.win) && !KC.book_row, KC && { title: KC.title, cols: KC.cols.map((c) => c.head), book: KC.book_row });
+  chk('…each team\'s Kalshi mid as received', KC && KC.cols.length === 2 && /^41\.5% /.test(KC.cols[0].mk) && /^59\.0% /.test(KC.cols[1].mk), KC && KC.cols);
+  chk('…both times on the card, and the difference a sentence naming the team', KC && KC.times === 'Model ' + GG.clock(s0.model.built_at) + ' · Kalshi ' + GG.clock(new Date(modelAt + 60000).toISOString())
+    && /^EdgeDesk \d+\.\d pts (higher|lower) on [A-Z&]+ than Kalshi$|^EdgeDesk matches Kalshi on /.test(KC.kalshi.diff), KC && [KC.times, KC.kalshi]);
+  chk('a game without a block draws the graphic it always drew', JSON.stringify(GG.content(GS.graphicSpec(L.games[1].snapshot), null, { now: modelAt, kalshi: by[L.games[1].game_key] }).content)
+    === JSON.stringify(GG.content(GS.graphicSpec(L.games[1].snapshot), null, { now: modelAt }).content));
+  /* a failed read is a state the page can draw past */
+  const nd = Object.assign(new Error('HTTP 404'), { notDeployed: true });
+  const a = await HM.kalshi(L.games, staged({ card: nd })), b = await HM.kalshi(L.games, staged({ card: new Error('HTTP 503') })), c = await HM.kalshi(L.games, staged({ snaps: new Error('HTTP 500') }));
+  chk('Kalshi not deployed: every game says so, nothing is drawn', L.games.every((g) => a[g.game_key].state === 'NOT_DEPLOYED' && !HM.kalshiDrawn(a[g.game_key])));
+  chk('the markets could not be read: unavailable, with the reason', L.games.every((g) => b[g.game_key].state === 'UNAVAILABLE' && /HTTP 503/.test(b[g.game_key].reason)));
+  chk('the quotes could not be read: unavailable, nothing drawn', c[G0.game_key].state === 'UNAVAILABLE' && /at the model time could not be read \(HTTP 500\)/.test(c[G0.game_key].reason), c[G0.game_key]);
+  chk('no games, no read', JSON.stringify(await HM.kalshi([], () => { throw new Error('asked'); })) === '{}');
+  const src = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_home_model.js'), 'utf8');
+  chk('the footer says Kalshi is beside EdgeDesk\'s numbers, and still that no sportsbook price is read', /with Kalshi’s price at the model’s time where Kalshi lists the game/.test(src) && /No sportsbook price is read or shown here\./.test(src));
+})().catch((e) => chk('the Kalshi checks ran', false, String(e && e.stack || e))).then(() => {
 console.log('');
 failures.forEach((f) => console.log('  FAIL  ' + f));
 console.log('\nlanding model demo: ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
+});

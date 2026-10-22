@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-22 — The landing page's matchup graphics carry Kalshi, as the research page's do
+
+The landing page's **Real games, the way subscribers see them** (`index.html` #model, `lib/edgedesk_home_model.js`) drew each featured game's graphic model only. The research page's graphic for the same game sets **EdgeDesk vs Kalshi** beside the model. The landing page now draws that same graphic.
+
+- **The same reads as the research page** (`app.html` `fbKalshiAtModel`), made as anon. First, the shown games' markets from `public.kalshi_card_current`, in one read. Then each market's two-sided `public.kalshi_price_snapshots` quote at or before and at or after the snapshot's model time. `EDGameGraphic.kalshiAtModel` keeps the nearest quote and `EDGameSnapshot.kalshi` places it on the right team, using the team resolver (`lib/football_identity.js`, now loaded with the research libraries).
+- **The graphic is the research page's own drawing.** It shows both times ("Model 2:00 PM ET · Kalshi 2:02 PM ET"), each team's Kalshi mid and moneyline beside EdgeDesk's unrounded win % and fair moneyline, and the difference as a sentence naming the team, before fees. The download is the same PNG.
+- **No sportsbook price** is read or shown, as before: the graphic's market argument is still `null`, and `landing.json` is unchanged. A game Kalshi does not list draws the graphic it always drew.
+- **The page never waits long.** The first graphic waits up to 3 s for Kalshi and then draws without it. A later answer redraws it, with a matching download. A failed read is a state, never an error.
+- The page holds the database address and key. It passes the module one anon read (`init({…, db: anonRead})`), and the module asks it only for Kalshi's two public tables.
+- The caption and footer say Kalshi's price is shown at the model's time where Kalshi lists the game.
+
+Tests: `node tools/presentation/landing_model.test.js` (122, was 105): placement on the right team with home and away swapped, the nearest quote, only the two tables asked for, the graphic's EDGEDESK vs KALSHI content, and not-deployed and failed reads. Mutation-checked. `node tools/home/landing.e2e.js` (300): the drawn graphic at 390 and 1280, a game Kalshi does not list, and a late answer redrawn. `landing_interaction` holds the module to Kalshi's two tables with no credentials; its size budget is 32 KiB (was 28), like the other landing libraries.
+
 ## 2026-10-22 — Juice Reel's credential check no longer depends on owner access
 
 The first **Juice Reel setup** run (`start_live_test`) set the provider switch and the vault key: nothing is missing in Supabase now. Juice Reel then answered **401** to EdgeDesk's credentials, so no live test was started.

@@ -54,6 +54,11 @@
            bad one refused, the season's graded count read from the record,
            one tool_used; with the file missing, the free-sample link and a
            line saying the games could not be loaded
+   KALSHI  the first game's Kalshi markets (staged as anon reads them) on
+           its graphic, as the research page draws them: EdgeDesk vs Kalshi
+           at the model's time, both times printed, only Kalshi's two public
+           tables asked for; a game Kalshi does not list draws none; a late
+           answer redraws the graphic it was first drawn without
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
 
@@ -527,9 +532,30 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     L.games.forEach((g, i) => { g.snapshot.kickoff = new Date(Date.now() + (i + 1) * 864e5).toISOString(); });
     return L;
   }
+  /* Kalshi for the first game, as anon reads it: its two markets, listed with home and away swapped,
+     each quoted a minute after the model's time (and four before) at a 2¢ spread */
+  const K0 = LAND.games[0].snapshot;
+  const kalshiRows = () => [[K0.away.name, K0.home.name, 0.415], [K0.home.name, K0.away.name, 0.59]].map(([yes, opp, mid]) => ({ sport: K0.league, game_id: K0.game_id,
+    game_key: LAND.games[0].game_key, event_ticker: 'KXE2E-' + K0.game_id, market_ticker: 'KXE2E-' + K0.game_id + '-' + yes.slice(0, 3).toUpperCase(), kalshi_yes_name: yes, yes_team: yes,
+    opponent: opp, home_team: K0.away.name, away_team: K0.home.name, kickoff_at: K0.kickoff, match_confidence: 'high', pregame: true, state: 'OK', yes_mid: mid }));
+  async function stageKalshi(page, asked, delayMs) {
+    await page.route(/supabase\.co\/rest\/v1\/kalshi_/, async (route) => {
+      const url = route.request().url(), u = new URL(url);
+      asked.push(u.pathname.split('/').pop());
+      if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
+      if (/\/kalshi_card_current$/.test(u.pathname)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(kalshiRows()) });
+      const tk = (u.searchParams.get('ticker') || '').replace(/^eq\./, ''), at = u.searchParams.get('captured_at') || '', t = Date.parse(at.replace(/^(lte|gte)\./, ''));
+      const r = kalshiRows().find((x) => x.market_ticker === tk);
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r && isFinite(t)
+        ? [{ ticker: tk, captured_at: new Date(t + (/^gte\./.test(at) ? 60000 : -240000)).toISOString(), yes_bid: r.yes_mid - 0.01, yes_ask: r.yes_mid + 0.01, volume: 4200 }] : []) });
+    });
+  }
+  const KALSHI_ALT = /EdgeDesk vs Kalshi \(Model \d{1,2}:\d{2} [AP]M ET · Kalshi \d{1,2}:\d{2} [AP]M ET[^:]*\): \S+ WIN % · ML EdgeDesk [\d.]+% [+−]\d+, Kalshi mid 41\.5% [+−]\d+; \S+ WIN % · ML EdgeDesk [\d.]+% [+−]\d+, Kalshi mid 59\.0% [+−]\d+; EdgeDesk (\d+\.\d pts (higher|lower) on [A-Z&]+ than|matches) Kalshi/;
   for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
     for (const missing of [false, true]) {
       const S = await open(vp, 'live');
+      const asked = [];
+      await stageKalshi(S.page, asked);
       await S.page.route('**/football/game_research/landing.json', (route) => missing ? route.fulfill({ status: 404, body: '' })
         : route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(landingAhead()) }));
       await S.page.evaluate(() => document.getElementById('model').scrollIntoView());
@@ -545,6 +571,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       }
       await S.page.waitForFunction(() => { const i = document.querySelector('#mdFig img'); return i && i.naturalWidth > 0; }, null, { timeout: 30000 }).catch(() => {});
       const r = await S.page.evaluate(() => ({
+        cap: (document.querySelector('#mdFig figcaption span') || {}).textContent || '',
         tabs: [...document.querySelectorAll('#mdTabs button')].map((b) => ({ text: b.innerText.replace(/\s+/g, ' ').trim(), sel: b.getAttribute('aria-selected') })),
         title: (document.querySelector('.md-gh b') || {}).textContent,
         img: (() => { const i = document.querySelector('#mdFig img'); return i ? { w: i.naturalWidth, h: i.naturalHeight, alt: i.alt } : null; })(),
@@ -562,6 +589,10 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       chk(tag + ': the season\'s graded count is read from the public record', /^ \(\d[\d,]* games so far in \d{4}\)$/.test(r.graded || ''), r.graded);
       chk(tag + ': the call to action counts the games EdgeDesk projects', new RegExp('^Each of the ' + LAND.counts.model_available + ' NFL and FBS games').test(r.count), r.count);
       chk(tag + ': it says no sportsbook price is read here', /No sportsbook price is read or shown here\./.test(r.foot), r.foot);
+      chk(tag + ': the first graphic sets Kalshi beside EdgeDesk at the model’s time, each price on its own team, both times printed', KALSHI_ALT.test(r.img && r.img.alt || ''), r.img && r.img.alt.slice(0, 700));
+      chk(tag + ': its caption and the footer say Kalshi is beside EdgeDesk’s numbers', /, with Kalshi’s price at the model’s time\./.test(r.cap) && /with Kalshi’s price at the model’s time where Kalshi lists the game\./.test(r.foot), [r.cap, r.foot]);
+      chk(tag + ': only Kalshi’s two public tables are read, the games’ markets once', asked.every((t) => t === 'kalshi_card_current' || t === 'kalshi_price_snapshots') && asked.filter((t) => t === 'kalshi_card_current').length === 1
+        && asked.filter((t) => t === 'kalshi_price_snapshots').length === 4, asked);
       await S.page.click('[data-md-level="research"]');
       const res = await S.page.evaluate(() => document.getElementById('mdLevel').innerText);
       chk(tag + ': Research shows the projection, what to watch for and what the model does not know', /Projected score/i.test(res) && /What to watch for/i.test(res) && /What the model doesn.t know yet/i.test(res), res.slice(0, 160));
@@ -580,6 +611,10 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       await S.page.click('#mdTabs button:nth-child(2)');
       await S.page.waitForFunction((t) => (document.querySelector('.md-gh b') || {}).textContent === t, LAND.games[1].snapshot.away.name + ' @ ' + LAND.games[1].snapshot.home.name, { timeout: 5000 }).catch(() => {});
       chk(tag + ': another game opens on its tab', (await S.page.evaluate(() => (document.querySelector('.md-gh b') || {}).textContent)) === LAND.games[1].snapshot.away.name + ' @ ' + LAND.games[1].snapshot.home.name);
+      const away1 = LAND.games[1].snapshot.away.name.toUpperCase();
+      await S.page.waitForFunction((n) => { const i = document.querySelector('#mdFig img'); return i && i.alt.toUpperCase().indexOf(n) >= 0; }, away1, { timeout: 15000 }).catch(() => {});
+      const r2 = await S.page.evaluate(() => ({ alt: (document.querySelector('#mdFig img') || {}).alt || '', cap: (document.querySelector('#mdFig figcaption span') || {}).textContent || '' }));
+      chk(tag + ': a game Kalshi does not list draws its graphic without Kalshi, and says nothing of it', r2.alt.toUpperCase().indexOf(away1) >= 0 && !/Kalshi/.test(r2.alt) && !/Kalshi/.test(r2.cap), [r2.alt.slice(0, 200), r2.cap]);
       await S.page.waitForTimeout(1600); /* past one funnel flush (lib/edgedesk_track.js flush_ms 1200) */
       const used = S.events.filter((e) => e.event === 'tool_used' && e.props && e.props.entity === 'compare_home');
       chk(tag + ': one tool_used for the price check, however many prices are typed', used.length === 1, used.length);
@@ -591,6 +626,23 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       if (SHOTS) await (await S.page.$('#model')).screenshot({ path: path.join(SHOTS, 'model-' + vp.width + '.png') });
       await S.ctx.close();
     }
+  }
+
+  /* Kalshi answers late: the graphic is drawn without it first (the page never waits long), then again with it */
+  {
+    const S = await open({ width: 1280, height: 900 }, 'live');
+    const asked = [];
+    await stageKalshi(S.page, asked, 4500);
+    await S.page.route('**/football/game_research/landing.json', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(landingAhead()) }));
+    await S.page.evaluate(() => document.getElementById('model').scrollIntoView());
+    await S.page.waitForFunction(() => { const i = document.querySelector('#mdFig img'); return i && i.naturalWidth > 0; }, null, { timeout: 30000 }).catch(() => {});
+    const first = await S.page.evaluate(() => (document.querySelector('#mdFig img') || {}).alt || '');
+    chk('1280 model, Kalshi late: the graphic is drawn without Kalshi rather than waiting', /^EdgeDesk research graphic: /.test(first) && !/Kalshi/.test(first), first.slice(0, 200));
+    await S.page.waitForFunction(() => / vs Kalshi \(/.test((document.querySelector('#mdFig img') || {}).alt || ''), null, { timeout: 30000 }).catch(() => {});
+    const later = await S.page.evaluate(() => ({ alt: (document.querySelector('#mdFig img') || {}).alt || '', dl: (document.getElementById('mdDl') || {}).href || '', img: (document.querySelector('#mdFig img') || {}).src || '' }));
+    chk('1280 model, Kalshi late: its answer redraws the graphic with Kalshi, and the download is the new one', KALSHI_ALT.test(later.alt) && later.dl === later.img, later.alt.slice(0, 300));
+    chk('1280 model, Kalshi late: no script errors', S.errors.length === 0, S.errors);
+    await S.ctx.close();
   }
 
   /* the methodology page the long explanations live on */

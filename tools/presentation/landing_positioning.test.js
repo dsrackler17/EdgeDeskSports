@@ -215,7 +215,7 @@ has(MOD, 'id="mdDemo" role="region" aria-label="Real games, the way subscribers 
 chk('without script the demo is a link to the free sample, and no number is in the markup',
   /id="mdBody" aria-live="polite">See one game researched end to end in <a class="lnk" href="\/research\/sample\/" data-cta="model_sample">the free sample<\/a>\.<\/div>/.test(MOD)
   && !/\d+(?:\.\d)?%|[−-]\d+\.\d/.test(plain(MOD.slice(MOD.indexOf('id="mdDemo"')))));
-chk('the demo reads real games through the research page\'s own code', /<script src="\/lib\/edgedesk_home_model\.js\?v=/.test(IDX) && /EDHomeModel\.init\(\{track:track, funnel:funnel, wait:withDeadline\}\)/.test(IDX));
+chk('the demo reads real games through the research page\'s own code', /<script src="\/lib\/edgedesk_home_model\.js\?v=/.test(IDX) && /EDHomeModel\.init\(\{track:track, funnel:funnel, wait:withDeadline, db:anonRead\}\)/.test(IDX));
 chk('the demo closes on the one call to action', /<button type="button" class="btn primary lg" onclick="startSubscribe\(\)" data-track="model_trial_click" data-cta="model_trial">Start free trial /.test(MOD)
   && MOD.indexOf('<span data-ed-price="cta">' + X.CTA_LINE + '</span>') > 0);
 
