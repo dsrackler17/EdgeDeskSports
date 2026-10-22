@@ -219,12 +219,17 @@ function compact(x) {
 const readLines = (f) => { try { return zlib.gunzipSync(fs.readFileSync(f)).toString('utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch (_) { return []; } };
 const writeLines = (f, rows) => { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, zlib.gzipSync(rows.map((r) => JSON.stringify(r)).join('\n') + '\n')); };
 
-/* which games to read, and from which school: [{ school, host, season, game_key, url, platform, opponent, site, date, dh_game }] */
-function plan(dataDir, sport, seasons, schools, platforms) {
+/* which games to read, and from which school: [{ school, host, season, game_key, url, platform, opponent, own_team_id, opp_team_id, site, date, dh_n }],
+   newest season first (the current season's starters are wanted before the oldest seasons'). A game on SIDEARM's older sites
+   whose two teams do not both resolve to our ids (the school's id; the opponent's website, through the registry of every
+   division and the ids the schedules establish, teamids.js) is not read at all: its box could not be joined (`unjoinable`) */
+function plan(dataDir, sport, seasons, schools, platforms, o) {
+  o = o || {};
   const byId = new Map(schools.map((s) => [s.id, s]));
   const byHost = new Map(schools.map((s) => [s.host, s.id]));
+  const teamOfHost = o.teamOfHost || require('./rosters').teamOfHost(dataDir, o.allSchools || schools);
   const reads = (id) => READ.has((platforms[id] || {}).platform);
-  const out = [];
+  const out = []; let unjoinable = 0;
   for (const season of seasons) {
     const dir = path.join(dataDir, 'schedules', sport, String(season));
     if (!fs.existsSync(dir)) continue;
@@ -237,6 +242,7 @@ function plan(dataDir, sport, seasons, schools, platforms) {
       const times = new Map();
       for (const g of d.games || []) times.set(dkey(g), (times.get(dkey(g)) || 0) + 1);
       const seen = new Map();
+      const own = byId.get(sid).baseball_team_id ? String(byId.get(sid).baseball_team_id) : null;
       for (const g of d.games || []) {
         const n = (seen.get(dkey(g)) || 0) + 1; seen.set(dkey(g), n);
         if (g.status !== 'final' || !g.boxscore || g.exhibition) continue;
@@ -244,21 +250,26 @@ function plan(dataDir, sport, seasons, schools, platforms) {
         const oppReads = opp && held.has(opp) && reads(opp);
         /* the other school reads it when it is home, or (neutral) sorts first */
         if (oppReads && (g.site === 'A' || (g.site === 'N' && opp < sid))) continue;
+        const oppTeam = teamOfHost(g.opponent_host);
+        if (platforms[sid].platform === 'sidearm_legacy' && (!own || !oppTeam)) { unjoinable++; continue; }
         out.push({ school: sid, host: byId.get(sid).host, season, game_key: g.game_key, url: 'https://' + byId.get(sid).host + g.boxscore,
-          platform: platforms[sid].platform, opponent: opp || null, site: g.site || null, date: g.date, conference: g.conference, dh_n: times.get(dkey(g)) > 1 ? n : 0 });
+          platform: platforms[sid].platform, opponent: opp || null, own_team_id: own, opp_team_id: oppTeam, site: g.site || null, date: g.date, conference: g.conference,
+          dh_n: times.get(dkey(g)) > 1 ? n : 0 });
       }
     }
   }
+  out.sort((a, b) => b.season - a.season);
+  out.unjoinable = unjoinable;
   return out;
 }
 
-/* an older SIDEARM box's teams in our record's ids: the school's own (its registry baseball id) and the opponent the
-   schedule row names by its website; null when either does not join */
-function legacyCodes(x, t, byId) {
-  const own = byId.get(t.school); const opp = t.opponent ? byId.get(t.opponent) : null;
-  if (!x.own_side || !own || !own.baseball_team_id || !opp || !opp.baseball_team_id) return null;
+/* an older SIDEARM box's teams in our record's ids: the school's own and its opponent's, as the plan resolved them; null when
+   either is unknown or the page does not say which side is the school */
+function legacyCodes(x, t) {
+  const own = t.own_team_id; const opp = t.opp_team_id;
+  if (!x.own_side || !own || !opp) return null;
   const ownT = x.own_side === 'home' ? x.home : x.away; const oppT = x.own_side === 'home' ? x.away : x.home;
-  ownT.code = String(own.baseball_team_id); oppT.code = String(opp.baseball_team_id);
+  ownT.code = String(own); oppT.code = String(opp);
   for (const p of oppT.pitchers.concat(oppT.lineup)) p.slug = null;      /* the opponent's links, if any, are not the school's roster */
   x.neutral = t.site === 'N'; x.conference = t.conference == null ? null : !!t.conference; x.doubleheader_game = t.dh_n || 0;
   return x;
@@ -272,9 +283,8 @@ async function collect(o) {
   const all = o.schoolsList || RO.loadSchools(dataDir);
   const division = o.division == null ? 1 : o.division;
   const schools = all.filter((s) => s.host && (division === 'all' || s.division === division));
-  const byId = new Map(all.map((s) => [s.id, s]));
   const platforms = readJson(path.join(dataDir, 'platforms.json'), {});
-  const todo = plan(dataDir, sport, o.seasons, schools, platforms);
+  const todo = plan(dataDir, sport, o.seasons, schools, platforms, { allSchools: all });
   /* what is already held */
   const heldKeys = new Map();
   const fileOf = (season, school) => path.join(dataDir, 'boxscores', sport, String(season), school + '.jsonl.gz');
@@ -295,7 +305,7 @@ async function collect(o) {
         if (!r.ok) { results.push({ ok: false, code: r.refused ? 'REFUSED' : 'HTTP', t }); if (r.refused) break; continue; }
         let x = parseBoxscore(r.text());
         if (x && x.platform === 'sidearm_legacy') {
-          x = legacyCodes(x, t, byId);
+          x = legacyCodes(x, t);
           if (!x) { results.push({ ok: false, code: 'NO_TEAM_CODE', t }); continue; }
         }
         if (!x || !x.home.code || !x.away.code) { results.push({ ok: false, code: 'NO_BOXSCORE', t }); continue; }
@@ -314,7 +324,7 @@ async function collect(o) {
   }));
   const byCode = {};
   for (const r of results) if (!r.ok) byCode[r.code] = (byCode[r.code] || 0) + 1;
-  return { planned: todo.length, pending: pending.length, ok: results.filter((r) => r.ok).length, left: pending.length - results.filter((r) => r.ok).length, misses_by_reason: byCode };
+  return { planned: todo.length, unjoinable: todo.unjoinable || 0, pending: pending.length, ok: results.filter((r) => r.ok).length, left: pending.length - results.filter((r) => r.ok).length, misses_by_reason: byCode };
 }
 
 module.exports = { parseBoxscore, sidearmBoxscore, sidearmLegacyBoxscore, legacyCodes, outsOf, weather, compact, plan, collect, readLines, READ };

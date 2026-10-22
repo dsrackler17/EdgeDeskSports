@@ -107,14 +107,20 @@ async function run(o) {
     console.error('[run] backfill ' + b.id + ' ' + r.ok + ' read, misses ' + JSON.stringify(r.misses_by_reason));
   }
 
+  /* 3a. our team ids for the schools and websites the registry ties to none, from the schedules held and our record
+     (teamids.js): the box scores below join through them */
+  const ids = require('./teamids').update(DATA, RO.loadSchools(DATA, { learnt: false }), { gamesDir: o.gamesDir });
+  summary.steps.push({ step: 'team_ids', schools: Object.keys(ids.schools).length, hosts: Object.keys(ids.hosts).length });
+  console.error('[run] team ids learnt from the schedules: ' + Object.keys(ids.schools).length + ' schools, ' + Object.keys(ids.hosts).length + ' websites');
+
   /* 3b. box scores for the schedules held: a per-host slice a run. The plan is made again each run from the schedules
      held (new seasons, newly read schools, the current season's games), so nothing is ever marked done for good */
   for (const b of o.skipBackfill ? [] : plan.boxscores || []) {
     const r = await BX.collect({ polite, sport: b.sport, seasons: range(b.seasons, b.sport, today), today, division: plan.division, lanes, perHost: b.per_host || 100, dataDir: DATA });
-    done[b.id] = { sport: b.sport, seasons: b.seasons, kind: 'boxscores', readers: [...BX.READ].sort().join(','), at: today, planned: r.planned, read_this_run: r.ok, left: r.left,
+    done[b.id] = { sport: b.sport, seasons: b.seasons, kind: 'boxscores', readers: [...BX.READ].sort().join(','), at: today, planned: r.planned, unjoinable: r.unjoinable, read_this_run: r.ok, left: r.left,
       misses_by_reason: r.misses_by_reason, complete: r.planned > 0 && r.left === 0 };
     writeJson(doneFile, done);
-    summary.steps.push({ step: 'boxscores', id: b.id, planned: r.planned, ok: r.ok, left: r.left, misses_by_reason: r.misses_by_reason });
+    summary.steps.push({ step: 'boxscores', id: b.id, planned: r.planned, unjoinable: r.unjoinable, ok: r.ok, left: r.left, misses_by_reason: r.misses_by_reason });
     console.error('[run] box scores ' + b.id + ': ' + r.ok + ' read, ' + r.left + ' left of ' + r.planned + ', misses ' + JSON.stringify(r.misses_by_reason));
   }
 

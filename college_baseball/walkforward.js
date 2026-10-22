@@ -86,7 +86,7 @@ function applyCalibration(beta, p, neutral) { return beta ? S.sigmoid(beta[0] + 
 function runAll(names, cfgs, o) {
   o = o || {};
   const games = W.results(C.SEASONS.first, o.until || C.SEASONS.last);
-  const ctx = { meta: M.meta(), constants: constants(), dist: tuning().dist };
+  const ctx = { meta: M.meta({ until: o.until }), constants: constants(), dist: tuning().dist };
   const p7 = p7Context(); ctx.p7 = p7.fn;
   const preds = {}; const timing = {};
   for (const n of names) {

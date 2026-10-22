@@ -23,7 +23,8 @@ function load(o) {
   o = o || {};
   const dir = o.dir || COLLEGIATE;
   const ref = o.refSeasons || [2014, 2022];
-  const schools = (() => { try { return JSON.parse(fs.readFileSync(path.join(dir, 'schools.json'), 'utf8')).schools || []; } catch (_) { return []; } })();
+  /* the registry with the ids the schedules establish for schools it ties to none (collegiate/teamids.js) */
+  const schools = (() => { try { return fs.existsSync(path.join(dir, 'schools.json')) ? require('../../collegiate/rosters').loadSchools(dir) : []; } catch (_) { return []; } })();
   const teamOf = new Map(schools.filter((s) => s.baseball_team_id).map((s) => [s.id, String(s.baseball_team_id)]));
   const share = new Map();
   const pdir = path.join(dir, 'portal', 'baseball');

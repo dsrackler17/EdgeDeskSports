@@ -61,9 +61,13 @@ const keyName = (s) => String(s || '').toLowerCase().replace(/&/g, 'and').replac
 function schoolRows(season, o) {
   o = o || {};
   const dir = o.collegiate || COLL;
-  const reg = readJson(path.join(dir, 'schools.json'), { schools: [] }).schools || [];
+  /* the registry with its corrected hosts and the ids the schedules establish (collegiate/teamids.js), and every website a
+     school is known by */
+  const RO = require('../../collegiate/rosters');
+  const reg = fs.existsSync(path.join(dir, 'schools.json')) ? RO.loadSchools(dir) : [];
   const teamOf = new Map(reg.filter((s) => s.baseball_team_id).map((s) => [s.id, String(s.baseball_team_id)]));
-  const byHost = new Map(reg.filter((s) => s.host && s.baseball_team_id).map((s) => [s.host, String(s.baseball_team_id)]));
+  const hostTeam = RO.teamOfHost(dir, reg);
+  const byHost = { get: (h) => hostTeam(h) || undefined };
   /* names: our NCAA names for this season, then the registry's */
   const byName = new Map();
   const ts = o.teamSeasons || readCsv(TEAMS).rows.filter((t) => +t.season === season);
