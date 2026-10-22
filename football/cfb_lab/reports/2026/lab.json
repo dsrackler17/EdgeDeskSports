@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-22T05:07:41.000Z",
+ "generated_at": "2026-10-22T06:07:43.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -62,10 +62,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1587,
-    "latest_snapshot_at": "2026-10-22T03:07:46.000Z",
-    "upcoming_games": 105,
-    "avg_confidence_upcoming": 80.3
+    "snapshots": 1590,
+    "latest_snapshot_at": "2026-10-22T06:07:43.000Z",
+    "upcoming_games": 108,
+    "avg_confidence_upcoming": 80.2
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
@@ -87,19 +87,15 @@
    }
   ],
   "data_quality": {
-   "games": 106,
+   "games": 108,
    "counts": {
     "GREEN": 52,
-    "YELLOW": 54,
+    "YELLOW": 56,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 54,
-     "RED": 0
-    },
-    "team_mapping": {
-     "YELLOW": 1,
+     "YELLOW": 56,
      "RED": 0
     }
    },
@@ -798,11 +794,6 @@
      "status": "YELLOW",
      "issues": [
       {
-       "check": "team_mapping",
-       "status": "YELLOW",
-       "detail": "the game is not on the published board, so its teams could not be cross-checked"
-      },
-      {
        "check": "odds_freshness",
        "status": "YELLOW",
        "detail": "no market quote captured yet"
@@ -810,11 +801,37 @@
      ],
      "kickoff": "2026-10-31T23:00:00.000Z",
      "matchup": "Washington State @ San Diego State"
+    },
+    {
+     "game_id": "401860908",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-01T02:00:00.000Z",
+     "matchup": "Texas State @ Boise State"
+    },
+    {
+     "game_id": "401864530",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-11-01T02:30:00.000Z",
+     "matchup": "Northern Illinois @ UNLV"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-22T05:07:41.000Z",
-    "quotes_total": 22121,
+    "last_quote_at": "2026-10-22T06:07:43.000Z",
+    "quotes_total": 22125,
     "last_result_at": "2026-10-22T04:07:27.000Z"
    }
   },
@@ -848,9 +865,9 @@
    }
   ],
   "ledger": {
-   "predictions": 6139,
-   "live_predictions": 5629,
-   "quotes": 22121,
+   "predictions": 6142,
+   "live_predictions": 5632,
+   "quotes": 22125,
    "lines": 3615,
    "results": 465,
    "evaluations": 5387,
