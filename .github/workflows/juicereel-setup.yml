@@ -1,0 +1,204 @@
+# Juice Reel: check the production setup, finish it, and start the live test —
+# from GitHub, without a terminal (docs/juicereel.md § 8–9).
+#
+# MANUAL ON PURPOSE (workflow_dispatch). Pick one step:
+#
+#   check            READ-ONLY. Which Juice Reel secrets the deployed
+#                    portfolio_connect sees (by NAME), and whether Juice Reel
+#                    accepts EdgeDesk's client id and secret right now — one
+#                    GET /oauth2/me with them (Juice Reel's owner access),
+#                    which answers for the application's owner. Accepted
+#                    means the id, the secret and Juice Reel's approval are
+#                    in order; no reader is involved and no bet is read.
+#   setup            check, and fills in what is ABSENT in Supabase's
+#                    Edge Function secrets — never overwriting one that exists:
+#                      SPORTSBOOK_SYNC_PROVIDER=juicereel  (readers then see
+#                        "Awaiting provider approval"; nothing links yet)
+#                      PORTFOLIO_CREDENTIAL_KEYS / _KEY_VERSION — a fresh
+#                        AES-256 key, generated on this runner and sent only
+#                        to Supabase. It is never printed and never stored in
+#                        GitHub. Readers' Juice Reel tokens are sealed with it.
+#                    JUICE_REEL_CLIENT_ID / _SECRET come from Juice Reel and
+#                    are never set here: the run says if they are missing.
+#   start_live_test  setup, then starts the PRODUCTION live test of Juice
+#                    Reel (portfolio_svc_ag_smoke_begin), unless one is
+#                    running. For 30 days an EdgeDesk operator (an admin)
+#                    can then connect their OWN Juice Reel in the app:
+#                    Portfolio → Accounts → Connect Juice Reel. Readers still
+#                    see "Awaiting provider approval" until the switch in
+#                    docs/juicereel.md § 9 is thrown.
+#
+# Nothing here switches Juice Reel on for readers. That stays one SQL
+# statement after a PASSED live test and a cleared terms review (§ 9).
+#
+# BEFORE IT: portfolio_connect must be deployed from a commit that has
+# jr_check (Actions → Deploy Portfolio schema, deploy_function ticked).
+#
+# SECRETS (the ones the Portfolio deploy already uses):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   the CLI (secret names, the
+#                                                 service key for jr_check)
+#   SB_DB_URL                                     start_live_test only
+name: Juice Reel setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        description: 'check (read-only) · setup (fill in missing Supabase secrets, never overwrite) · start_live_test (setup, then let an operator connect their own Juice Reel)'
+        type: choice
+        options:
+          - check
+          - setup
+          - start_live_test
+        default: check
+
+permissions:
+  contents: read
+
+concurrency:
+  group: juicereel-setup
+  cancel-in-progress: false
+
+jobs:
+  juicereel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      STEP: ${{ inputs.step }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The credentials this needs
+        run: |
+          # Presence only. No value is ever printed.
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF must be set in Settings > Secrets and variables > Actions (the Portfolio deploy uses the same two)."; exit 1
+          fi
+
+      - name: Install the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: What the deployed function sees (names only)
+        run: |
+          fn="https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/portfolio_connect"
+          code=$(curl -sS -o /tmp/health.json -w '%{http_code}' "$fn" || echo 000)
+          if [ "$code" != "200" ]; then echo "::error::portfolio_connect answered $code to its health check (404 = not deployed; 401 = deployed with JWT verification on — redeploy with Actions → Deploy Portfolio schema)"; exit 1; fi
+          node -e "
+            const h = JSON.parse(require('fs').readFileSync('/tmp/health.json', 'utf8')), c = h.configured || {}, j = c.juicereel || {};
+            console.log('build:                 ' + h.build);
+            console.log('sportsbook provider:   ' + ((c.sportsbook_sync || {}).provider || 'none'));
+            console.log('client id / secret:    ' + (j.client_id ? 'set' : 'MISSING') + ' / ' + (j.client_secret ? 'set' : 'MISSING'));
+            console.log('vault key:             ' + (c.credential_keys > 0 && c.current_key_version ? 'set (version ' + c.current_key_version + ')' : 'MISSING'));
+            console.log('redirect URI:          ' + j.redirect_uri);
+            console.log('ready to connect:      ' + !!j.ready);
+            if (!Array.isArray(j.missing)) console.log('::warning::This build predates the Juice Reel setup check (jr_check). Run Actions → Deploy Portfolio schema with deploy_function ticked, then run this again.');
+          "
+          supabase secrets list --project-ref "$SUPABASE_PROJECT_REF" > /tmp/secret_names.txt 2>/tmp/secrets_err.txt || { cat /tmp/secrets_err.txt; echo "::error::supabase secrets list failed: is SUPABASE_ACCESS_TOKEN still valid?"; exit 1; }
+          for n in JUICE_REEL_CLIENT_ID JUICE_REEL_CLIENT_SECRET SPORTSBOOK_SYNC_PROVIDER PORTFOLIO_CREDENTIAL_KEYS PORTFOLIO_CREDENTIAL_KEY_VERSION; do
+            if grep -qw "$n" /tmp/secret_names.txt; then echo "secret $n: present"; else echo "secret $n: absent"; fi
+          done
+
+      - name: Fill in what is absent (never overwrite)
+        if: ${{ inputs.step != 'check' }}
+        run: |
+          has() { grep -qw "$1" /tmp/secret_names.txt; }
+          umask 077
+          envfile="$RUNNER_TEMP/jr.env"; : > "$envfile"
+          provider=$(node -e "const h=JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8'));process.stdout.write(String(((h.configured||{}).sportsbook_sync||{}).provider||''))")
+          keys=$(node -e "const h=JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8'));process.stdout.write(String((h.configured||{}).credential_keys||0))")
+          if ! has JUICE_REEL_CLIENT_ID || ! has JUICE_REEL_CLIENT_SECRET; then
+            echo "::error::JUICE_REEL_CLIENT_ID and JUICE_REEL_CLIENT_SECRET come from Juice Reel (your application's credentials) and must be added by hand: Supabase dashboard → Edge Functions → Secrets. This run never sets them."; exit 1
+          fi
+          if has SPORTSBOOK_SYNC_PROVIDER; then
+            if [ "$provider" != "juicereel" ]; then echo "::error::SPORTSBOOK_SYNC_PROVIDER exists but is not 'juicereel' (the function reads: '${provider:-none}'). Not overwritten — change it by hand if you mean to."; exit 1; fi
+            echo "SPORTSBOOK_SYNC_PROVIDER: already juicereel"
+          else
+            echo "SPORTSBOOK_SYNC_PROVIDER=juicereel" >> "$envfile"; echo "SPORTSBOOK_SYNC_PROVIDER: will be set to juicereel"
+          fi
+          if has PORTFOLIO_CREDENTIAL_KEYS; then
+            if [ "$keys" = "0" ]; then echo "::error::PORTFOLIO_CREDENTIAL_KEYS exists but the function cannot read it (it must be JSON like {\"1\":\"<base64 of 32 bytes>\"}). Not overwritten: anything sealed under it would be lost. Fix it by hand."; exit 1; fi
+            echo "PORTFOLIO_CREDENTIAL_KEYS: already set"
+          elif has PORTFOLIO_CREDENTIAL_KEY_VERSION; then
+            echo "::error::PORTFOLIO_CREDENTIAL_KEY_VERSION is set but PORTFOLIO_CREDENTIAL_KEYS is not. Set the keyring by hand for that version (docs/juicereel.md § 3)."; exit 1
+          else
+            key=$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64'))")
+            echo "::add-mask::$key"
+            printf "PORTFOLIO_CREDENTIAL_KEYS='{\"1\":\"%s\"}'\nPORTFOLIO_CREDENTIAL_KEY_VERSION=1\n" "$key" >> "$envfile"
+            key=""
+            echo "PORTFOLIO_CREDENTIAL_KEYS: a new key (version 1) will be set — generated here, never printed"
+          fi
+          if [ -s "$envfile" ]; then
+            supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" --env-file "$envfile" >/dev/null || { rm -f "$envfile"; echo "::error::supabase secrets set failed; nothing was changed by this step"; exit 1; }
+            rm -f "$envfile"
+            echo "Set in Supabase. Waiting for the function to read them…"
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              curl -sS -o /tmp/health.json "https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/portfolio_connect" || true
+              if node -e "const j=((JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8')).configured)||{}).juicereel||{};process.exit(j.ready&&j.active?0:1)"; then echo "portfolio_connect: Juice Reel configured"; break; fi
+              sleep 5
+            done
+          else
+            rm -f "$envfile"; echo "Nothing to set."
+          fi
+          node -e "const j=((JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8')).configured)||{}).juicereel||{};if(!(j.ready&&j.active)){console.log('::error::The function still reports missing: '+JSON.stringify(j.missing||'unknown'));process.exit(1)}"
+
+      - name: Does Juice Reel accept EdgeDesk's credentials?
+        id: check
+        run: |
+          # The service key stays on this runner, masked, for this one call.
+          svc=$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" -o json 2>/dev/null \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const k=JSON.parse(s).find(x=>x&&x.name==='service_role'&&/^[\w-]+\.[\w-]+\.[\w-]+$/.test(x.api_key||''));process.stdout.write(k?k.api_key:'')}catch(e){}})" || true)
+          if [ -z "$svc" ]; then echo "::warning::Could not read the project's service_role key with the CLI, so Juice Reel was not asked. Run: node tools/portfolio/juicereel_smoke.js probe (SB_URL, SB_SERVICE_ROLE) instead."; echo "accepted=unknown" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "::add-mask::$svc"
+          code=$(curl -sS -o /tmp/check.json -w '%{http_code}' -X POST "https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/portfolio_connect" \
+            -H "authorization: Bearer $svc" -H 'content-type: application/json' -d '{"action":"jr_check"}' || echo 000)
+          svc=""
+          if [ "$code" = "400" ] && grep -q unknown_action /tmp/check.json; then echo "::error::The deployed portfolio_connect predates jr_check. Run Actions → Deploy Portfolio schema with deploy_function ticked, then this again."; exit 1; fi
+          if [ "$code" != "200" ]; then echo "::error::jr_check answered $code"; head -c 300 /tmp/check.json; echo; exit 1; fi
+          node -e "
+            const r = JSON.parse(require('fs').readFileSync('/tmp/check.json', 'utf8')), s = r.setup || {};
+            console.log(r.message);
+            console.log('setup: ' + JSON.stringify(s));
+            require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'accepted=' + (r.accepted ? 'yes' : 'no') + '\n');
+            const sum = ['### Juice Reel', '', '| | |', '|---|---|',
+              '| Juice Reel accepts EdgeDesk\'s credentials | ' + (r.accepted ? '**yes**' + (r.owner ? ' (owner: ' + r.owner + ')' : '') : '**no** — ' + r.code + (r.status ? ' (HTTP ' + r.status + ')' : '')) + ' |',
+              '| Sportsbook provider | ' + (s.provider_on ? 'juicereel' : 'off') + ' |',
+              '| Missing secrets | ' + ((s.missing || []).join(', ') || 'none') + ' |',
+              '| Redirect URI to register at Juice Reel | ' + s.redirect_uri + ' |',
+              '| Live test running | ' + (s.live_test_running ? 'yes' : 'no') + ' |',
+              '| On for every reader | ' + (s.switched_on_for_readers ? 'yes' : 'no') + ' |', ''];
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, sum.join('\n') + '\n');
+            if (!r.accepted) console.log('::warning::' + r.message);
+          "
+
+      - name: Start the live test (an operator can then connect their own Juice Reel)
+        if: ${{ inputs.step == 'start_live_test' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+          ACCEPTED: ${{ steps.check.outputs.accepted }}
+        run: |
+          if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set (Settings > Secrets and variables > Actions)."; exit 1; fi
+          if [ "$ACCEPTED" = "no" ]; then echo "::error::Juice Reel refused EdgeDesk's credentials (above), so connecting would fail. Once Juice Reel approves the application — or the secret in Supabase is corrected — run this again."; exit 1; fi
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          id=$(psql "$PGURL" -X -q -t -A -v ON_ERROR_STOP=1 -c "select public.portfolio_svc_jr_smoke_current('production');")
+          if [ -n "$id" ]; then
+            echo "A live test is already running: $id"
+          else
+            id=$(psql "$PGURL" -X -q -t -A -v ON_ERROR_STOP=1 -c "select public.portfolio_svc_ag_smoke_begin('juicereel', 'production', 'juicereel-setup workflow');")
+            echo "Live test started: $id"
+          fi
+          {
+            echo "### Live test $id (PRODUCTION)"
+            echo ""
+            echo "1. Sign in to EdgeDesk with an operator (admin) account."
+            echo "2. Open **Portfolio → Accounts → Juice Reel → Connect Juice Reel**, sign in on Juice Reel and allow open and settled bets."
+            echo "3. You come back to EdgeDesk connected; your sportsbooks appear as accounts and your history imports."
+            echo ""
+            echo "It stays open for operators for 30 days. Readers see *Awaiting provider approval* until the stages in docs/juicereel.md § 9 pass and Juice Reel is switched on."
+            echo "Next stages: \`node tools/portfolio/juicereel_smoke.js stage $id IMPORT\` (and the rest of § 9)."
+          } >> "$GITHUB_STEP_SUMMARY"
