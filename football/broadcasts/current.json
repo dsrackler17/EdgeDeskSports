@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_broadcast_listings_v1",
  "version": "edgedesk_broadcast/1",
- "generated_at": "2026-10-21T23:07:59.145Z",
+ "generated_at": "2026-10-22T00:08:10.120Z",
  "week": 8,
  "source": {
   "name": "ESPN scoreboard",
@@ -11,14 +11,6 @@
  },
  "rule": "A listing is what ESPN’s scoreboard carried at retrieved_at; it is verified by lib/edgedesk_broadcast.js and printed only when CONFIRMED and fresh. A failed fetch keeps the previous listing with its real retrieval time.",
  "fetches": [
-  {
-   "day": "20261021",
-   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261021",
-   "ok": false,
-   "status": 403,
-   "error": "HTTP 403",
-   "retrieved_at": null
-  },
   {
    "day": "20261022",
    "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261022",
@@ -39,13 +31,13 @@
    "day": "20261024",
    "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261024",
    "ok": false,
-   "status": null,
-   "error": "host circuit open: HTTP 403 x3",
+   "status": 403,
+   "error": "HTTP 403",
    "retrieved_at": null
   }
  ],
  "coverage": {
-  "games": 53,
+  "games": 52,
   "refreshed": 0,
   "kept_from_previous": 0
  },

@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-21T23:07:57.321Z",
+ "generated_at": "2026-10-22T00:08:07.263Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-15T20:32:00.221Z",
+  "since": "2026-10-15T23:16:28.589Z",
   "changes": [
    {
     "what": "pricing code",
@@ -28,7 +28,7 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-15T17:48:06.339Z",
+    "from": "2026-10-15T21:35:50.716Z",
     "to": "2026-10-21T21:52:56.312Z"
    },
    {
@@ -386,7 +386,7 @@
   },
   {
    "from_at": "2026-10-14T05:09:34.133Z",
-   "to_at": "2026-10-19T16:39:39.062Z",
+   "to_at": "2026-10-21T21:52:56.312Z",
    "old_fair": 10.87,
    "new_fair": 5.95,
    "change": -4.92,
@@ -415,10 +415,10 @@
    "game_id": "401858273",
    "game": "Boston College @ Georgia Tech",
    "market_then": null,
-   "market_now": -4,
+   "market_now": -4.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
@@ -457,43 +457,6 @@
    "status_then": "NO_MARKET",
    "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-10-12T03:47:04.230Z",
-   "to_at": "2026-10-19T16:39:39.062Z",
-   "old_fair": 0.75,
-   "new_fair": -3.6,
-   "change": -4.35,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "HOME_VENUE_CORRECTION",
-     "term": "hfa",
-     "points": -1.28
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -0.3
-    }
-   ],
-   "unexplained": -0.01,
-   "game_id": "401871070",
-   "game": "New Mexico State @ Sam Houston",
-   "market_then": null,
-   "market_now": 3,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "PRICE NO LONGER ATTRACTIVE"
   },
   {
    "from_at": "2026-10-14T05:09:34.133Z",
