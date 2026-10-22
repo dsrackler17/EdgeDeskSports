@@ -5,9 +5,10 @@
 #
 #   check            READ-ONLY. Which Juice Reel secrets the deployed
 #                    portfolio_connect sees (by NAME), and whether Juice Reel
-#                    accepts EdgeDesk's client id and secret right now — one
-#                    GET /oauth2/me with them (Juice Reel's owner access),
-#                    which answers for the application's owner. Accepted
+#                    accepts EdgeDesk's client id and secret right now: a
+#                    revoke of a random token EdgeDesk made (the same client
+#                    authentication the code exchange uses; it decides), and
+#                    GET /oauth2/me with them for the owner's name. Accepted
 #                    means the id, the secret and Juice Reel's approval are
 #                    in order; no reader is involved and no bet is read.
 #   setup            check, and fills in what is ABSENT in Supabase's
@@ -167,6 +168,7 @@ jobs:
             require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'accepted=' + (r.accepted ? 'yes' : 'no') + '\n');
             const sum = ['### Juice Reel', '', '| | |', '|---|---|',
               '| Juice Reel accepts EdgeDesk\'s credentials | ' + (r.accepted ? '**yes**' + (r.owner ? ' (owner: ' + r.owner + ')' : '') : '**no** — ' + r.code + (r.status ? ' (HTTP ' + r.status + ')' : '')) + ' |',
+              '| Owner lookup (GET /oauth2/me with the credentials) | ' + ({ yes: 'answered', refused: 'refused', unavailable: 'no answer' }[r.owner_access] || '—') + ' |',
               '| Sportsbook provider | ' + (s.provider_on ? 'juicereel' : 'off') + ' |',
               '| Missing secrets | ' + ((s.missing || []).join(', ') || 'none') + ' |',
               '| Redirect URI to register at Juice Reel | ' + s.redirect_uri + ' |',

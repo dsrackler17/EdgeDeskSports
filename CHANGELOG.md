@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-22 — Juice Reel's credential check no longer depends on owner access
+
+The first **Juice Reel setup** run (`start_live_test`) set the provider switch and the vault key: nothing is missing in Supabase now. Juice Reel then answered **401** to EdgeDesk's credentials, so no live test was started.
+
+That check asked only `GET /oauth2/me` with the client id and secret (Juice Reel's owner access), and its refusal blocked the live test. A Juice Reel that does not offer owner access would therefore have refused good credentials.
+
+- **`jr_check` now decides with `POST /oauth2/revoke` of a random token EdgeDesk made.** Juice Reel documents that revocation "does not reveal whether the token existed": valid client credentials get 200 `{}`, refused ones get 401 `invalid_client`. It is the same client authentication the code exchange uses.
+  - The token is 32 random bytes, never issued, never stored and never logged.
+  - `GET /oauth2/me` is still asked, for the owner's name only. Its answer is reported as `owner_access` (yes, refused or unavailable) and blocks nothing on its own.
+- The workflow summary shows the owner lookup on its own row. The refusal message names both calls when both refused.
+
+Tests: `node tools/portfolio/juicereel.test.js` (156, was 154). New: good credentials accepted where owner access is refused; an owner lookup failing alone refuses nothing. Both mutation-checked.
+
 ## 2026-10-22 — Juice Reel: check the credentials, finish the setup and connect without a terminal
 
 **Juice Reel replied (2026-10-20) with a link to its quick-start.** The reply does not say in writing whether EdgeDesk's application is approved, or answer the question about fees. Juice Reel's sportsbook sync was built, tested and deployed on 2026-10-14, but the deploy's own health check showed two settings missing in Supabase: `SPORTSBOOK_SYNC_PROVIDER` (so no Juice Reel panel at all) and `PORTFOLIO_CREDENTIAL_KEYS` (so no token could be sealed). This change makes the remaining steps clicks. Docs: `docs/juicereel.md` § 0.

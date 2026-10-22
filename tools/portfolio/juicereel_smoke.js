@@ -150,7 +150,7 @@ async function probe(c) {
     console.log('callback page at that URI: ' + (p ? p.status : 'unreachable') + (/edgedesk\.jr\.callback/.test(t) ? ' (the EdgeDesk callback page)' : ' — NOT the EdgeDesk callback page; is the site deployed?'));
   }
   if (j && Array.isArray(j.missing) && j.missing.length) console.log('not set in Supabase: ' + j.missing.join(', '));
-  /* does Juice Reel accept the client id and secret? (owner access: one GET /oauth2/me with them; no reader, no bets) */
+  /* does Juice Reel accept the client id and secret? (a revoke of a random token, and GET /oauth2/me with them; no reader, no bets) */
   const k = await fetch(c.url + '/functions/v1/portfolio_connect', { method: 'POST', headers: { authorization: 'Bearer ' + c.service, 'content-type': 'application/json' },
     body: JSON.stringify({ action: 'jr_check' }) }).catch(() => null);
   const v = k ? await k.json().catch(() => ({})) : {};
