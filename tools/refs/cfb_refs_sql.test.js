@@ -143,7 +143,7 @@ try {
 
   /* ---------------------------------------------------- the seed, as the tool sends it */
   const EMIT = path.join(HOME, 'seed.json');
-  cp.execFileSync('python3', ['-I', path.join(ROOT, 'tools', 'refs', 'cfb_refs.py'), 'seed', '--emit', EMIT],
+  cp.execFileSync('python3', ['-I', path.join(ROOT, 'tools', 'refs', 'cfb_refs.py'), 'seed', '--dry-run', '--emit', EMIT],
     { stdio: 'pipe', encoding: 'utf8', env: Object.assign({}, process.env, { SB_URL: '', SB_SERVICE_ROLE: '', GITHUB_STEP_SUMMARY: '' }) });
   if (asPostgres) cp.execSync(`chmod 644 ${EMIT}`);
   const payload = JSON.parse(fs.readFileSync(EMIT, 'utf8'));

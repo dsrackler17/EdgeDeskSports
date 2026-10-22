@@ -17,9 +17,12 @@ lowercase letters only, then the ALIASES map in data/refs/cfb/cfb_enrich.py
 (read from the file, never copied).
 
 Writes go through supabase/cfb_refs.sql's service-role functions, with SB_URL
-and SB_SERVICE_ROLE. Without them, or before that file is applied, a command
-writes nothing to the database, says so, and exits 0. `backfill` exits 2 when
-the five-game check fails: nothing is filled and the report says why.
+and SB_SERVICE_ROLE (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY when those are
+unset), as data/refs/upsert_refs.py does for the NFL. --dry-run reads, builds
+and reports but writes nothing to the database. Without --dry-run a missing
+secret, a migration that is not applied or a failed write exits 1, so the job
+fails. `backfill` exits 2 when the five-game check fails: nothing is filled and
+data/refs/cfb/backfill/STOPPED.md says why.
 """
 import argparse
 import ast
@@ -201,6 +204,24 @@ def officials(summary):
     return espn().find_referee(summary or {})
 
 
+def officials_diag(summary):
+    """What ESPN's summary says about officials, for the evidence file when no Referee is listed."""
+    s = summary or {}
+    gi = s.get("gameInfo")
+    if not isinstance(gi, dict):
+        return "no gameInfo in the summary (top-level keys: " + ",".join(sorted(s)[:12]) + ")"
+    offs = gi.get("officials")
+    if offs is None:
+        elsewhere = '"officials"' in json.dumps(s)
+        return ("gameInfo has no officials list (gameInfo keys: " + ",".join(sorted(gi)) + ")"
+                + ("; an officials key exists elsewhere in the summary" if elsewhere else "; no officials anywhere in the summary"))
+    if not offs:
+        return "gameInfo.officials is an empty list"
+    pos = sorted({str(((o.get("position") or {}).get("displayName") or (o.get("position") or {}).get("name") or "(no position)"))
+                  for o in offs if isinstance(o, dict)})
+    return f"{len(offs)} officials listed, none labelled Referee (positions: " + ", ".join(pos) + ")"
+
+
 def summary_for(game_id, completed=True):
     B = espn()
     return B.get(f"{B.BASE}/summary", {"event": game_id}, cache_key=f"sum_{game_id}.json" if completed else None)
@@ -351,8 +372,8 @@ def day_of(start):
 # ------------------------------------------------------------------ database (PostgREST, service role)
 class DB:
     def __init__(self):
-        self.url = (os.environ.get("SB_URL") or "").rstrip("/")
-        self.key = os.environ.get("SB_SERVICE_ROLE") or ""
+        self.url = (os.environ.get("SB_URL") or os.environ.get("SUPABASE_URL") or "").rstrip("/")
+        self.key = os.environ.get("SB_SERVICE_ROLE") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or ""
         self.ok = bool(self.url and self.key)
 
     def _h(self, profile=None):
@@ -389,6 +410,24 @@ class DB:
 
 class NotDeployed(Exception):
     pass
+
+
+def error(msg):
+    print(("::error::" if os.environ.get("GITHUB_ACTIONS") else "ERROR: ") + msg)
+    return 1
+
+
+def writer(a):
+    """The database to write to: None on --dry-run (nothing is written), False when a write was asked for but
+    SB_URL / SB_SERVICE_ROLE are missing (the job fails, as ref-sync.yml does for the NFL)."""
+    if getattr(a, "dry_run", False):
+        print("dry run: nothing written to the database")
+        return None
+    db = DB()
+    if not db.ok:
+        error("SB_URL and SB_SERVICE_ROLE must be set to write the referee tables (or pass --dry-run)")
+        return False
+    return db
 
 
 def warn(msg):
@@ -428,16 +467,25 @@ def map_report(espn_ids, games, label):
 
 # ------------------------------------------------------------------ backfill
 def validation_candidates(rows, missing_ids):
-    """Games that already have an NCAA referee, nearest the gap (2026 Week 7) first, one per referee."""
+    """Games that already have an NCAA referee, one per referee, taken in turn from each season (newest
+    first) and within a season nearest Week 7 (the gap) first, so a check that reads many games samples
+    every season ESPN might list officials for, not one week."""
     cand = [r for r in rows if r["referee_id"] and r["referee_source"] in NCAA_SOURCES and not r["assignment_conflict"]
             and r["game_id"] not in missing_ids]
-    cand.sort(key=lambda r: (-r["season"], abs((r["week"] or 0) - 7), r["game_id"]))
-    seen, out = set(), []
+    cand.sort(key=lambda r: (abs((r["week"] or 0) - 7), r["game_id"]))
+    by_season = {}
     for r in cand:
-        if r["referee_id"] in seen:
-            continue
-        seen.add(r["referee_id"])
-        out.append(r)
+        by_season.setdefault(r["season"], []).append(r)
+    queues = [by_season[k] for k in sorted(by_season, reverse=True)]
+    seen, out = set(), []
+    while any(queues):
+        for q in queues:
+            while q:
+                r = q.pop(0)
+                if r["referee_id"] not in seen:
+                    seen.add(r["referee_id"])
+                    out.append(r)
+                    break
     return out
 
 
@@ -461,6 +509,7 @@ def validate(rows, refs, fetch, missing_ids, need=VALIDATION_GAMES, max_tries=VA
         row["crew"] = crew
         if not name:
             row["result"] = "inconclusive_no_referee_listed"
+            row["detail"] = officials_diag(s)
             report.append(row)
             continue
         rid, how, cands = refs.resolve(name)
@@ -512,7 +561,7 @@ def backfill(rows, refs, fetch, missing):
             continue
         name, crew = officials(s)
         if not name:
-            log.append(dict(entry, outcome="no_referee_listed", crew=crew))
+            log.append(dict(entry, outcome="no_referee_listed", crew=crew, detail=officials_diag(s)))
             continue
         rid, how, cands = refs.resolve(name)
         if not rid:
@@ -579,11 +628,25 @@ def cmd_backfill(a):
     for r in report:
         summary(f"| {r['order']} | {r['game_id']} {r['matchup']} | {r['ncaa_referee']} | {r.get('espn_referee') or '—'} | {r['result']} |")
     if not ok:
+        seen = {}
+        for r in report:
+            k = (r["season"], r["result"], r.get("detail") if r["result"].startswith("inconclusive") else "")
+            seen[k] = seen.get(k, 0) + 1
+        lines = [f"- {s}: {n} game{'s' if n != 1 else ''} {res}" + (f" ({d})" if d else "")
+                 for (s, res, d), n in sorted(seen.items(), key=lambda kv: (-kv[0][0], kv[0][1]))]
+        cov = coverage(rows)
+        write_csv(OUT / "coverage_by_season.csv", cov, COV_COLS)
         (OUT / "STOPPED.md").write_text(
-            "# ESPN backfill stopped\n\n" + why + "\n\nNothing was filled. See espn_validation.csv.\n")
+            "# ESPN backfill stopped\n\n" + why + ". Nothing was filled.\n\n"
+            "The rule: ESPN must list an official explicitly as Referee on 5 games that already have an NCAA "
+            "referee, and that Referee must match after normalization. A game with no Referee listed is "
+            "inconclusive and another game is read.\n\nWhat ESPN returned, by season:\n\n" + "\n".join(lines)
+            + "\n\nEvery game read is in espn_validation.csv. Coverage stays as the NCAA data has it "
+            "(coverage_by_season.csv).\n")
         for f in ("espn_backfill.csv", "espn_backfill_log.csv"):
             (OUT / f).unlink(missing_ok=True)
-        summary(f"\n**STOPPED: {why}.** Nothing was filled.")
+        summary(f"\n**STOPPED: {why}.** Nothing was filled.\n\n" + "\n".join(lines))
+        summary("\n### Coverage by season (unchanged)\n\n" + coverage_md(cov))
         return 2
     (OUT / "STOPPED.md").unlink(missing_ok=True)
     summary(f"\nCheck passed: {why}.\n")
@@ -607,15 +670,19 @@ def cmd_backfill(a):
     if new:
         summary("\nNew referee ids (not in the dataset; conference unavailable): " + ", ".join(new))
     summary("\n### Coverage by season\n\n" + coverage_md(cov))
-    db = DB()
-    if a.write_db and db.ok and fills:
+    db = writer(a)
+    if db is None:
+        return 0
+    if db is False:
+        return 1
+    if fills:
         try:
             res = db.rpc("cfb_ref_merge_games", {"p_rows": [dict(game_id=int(f["game_id"]), referee_id=f["referee_id"],
                                                                  referee=f["referee"]) for f in fills],
                                                  "p_mode": "espn_referee"})
-            summary(f"\nDatabase: {res}")
-        except NotDeployed as e:
-            warn(str(e) + " — the backfill is saved under data/refs/cfb/backfill/ and loads with the seed")
+            summary(f"\nDatabase: {res['updated']} games filled")
+        except (NotDeployed, RuntimeError) as e:
+            return error(str(e))
     return 0
 
 
@@ -628,10 +695,11 @@ def cmd_seed(a):
         Path(a.emit).write_text(json.dumps({"seed": rows, "espn_referee": [
             dict(game_id=int(f["game_id"]), referee_id=f["referee_id"], referee=f["referee"]) for f in fills]}))
         print("wrote", a.emit)
-    db = DB()
-    if not db.ok:
-        warn("SB_URL / SB_SERVICE_ROLE not set: nothing loaded (dry run)")
-        return 0
+    db = writer(a)
+    if db is None:
+        return cmd_coverage(a, db=None)
+    if db is False:
+        return 1
     try:
         games = cfb_games(db, seasons=sorted({r["season"] for r in rows}))
         map_report([r["game_id"] for r in rows], games, "seed")
@@ -649,15 +717,14 @@ def cmd_seed(a):
                                                                  referee=f["referee"]) for f in fills],
                                                  "p_mode": "espn_referee"})
             summary(f"- ESPN backfill applied: {res['updated']} games")
-    except NotDeployed as e:
-        warn(str(e))
-        return 0
+    except (NotDeployed, RuntimeError) as e:
+        return error(str(e))
     return cmd_coverage(a, db=db)
 
 
 def cmd_coverage(a, db=None):
-    db = db or DB()
-    if db.ok:
+    db = db if db is not None else (None if getattr(a, "dry_run", False) else DB())
+    if db is not None and db.ok:
         try:
             rows = db.select_all("cfb_ref_game_penalties?select=game_id,season,referee_id,referee_source,assignment_conflict&order=game_id.asc")
             src = "database"
@@ -794,14 +861,16 @@ def cmd_finals(a):
             print(f"  name: game {n['game_id']} ESPN '{n['espn_name']}' -> {n['referee_id']} ({n['name_match']} {n['candidates'] or ''})")
     if a.emit:
         Path(a.emit).write_text(json.dumps({"rows": rows, "notes": notes}, default=str))
-    if not db.ok:
-        warn("SB_URL / SB_SERVICE_ROLE not set: nothing written (dry run)")
+    w = writer(a)
+    if w is None:
         return 0
+    if w is False:
+        return 1
     try:
-        res = db.rpc("cfb_ref_merge_games", {"p_rows": rows, "p_mode": "espn_final"})
+        res = w.rpc("cfb_ref_merge_games", {"p_rows": rows, "p_mode": "espn_final"})
         summary(f"- database: {res['inserted']} new games, {res['updated']} filled, {res['unchanged']} unchanged")
-    except NotDeployed as e:
-        warn(str(e))
+    except (NotDeployed, RuntimeError) as e:
+        return error(str(e))
     return 0
 
 
@@ -839,32 +908,35 @@ def cmd_assignments(a):
     summary(f"- ESPN lists a Referee for {len(rows)} of {len(evs)} games")
     if a.emit:
         Path(a.emit).write_text(json.dumps(rows))
-    if not db.ok:
-        warn("SB_URL / SB_SERVICE_ROLE not set: nothing written (dry run)")
+    w = writer(a)
+    if w is None:
         return 0
+    if w is False:
+        return 1
     if not rows:
         return 0
     try:
-        res = db.rpc("cfb_ref_observe_assignments", {"p_rows": rows})
+        res = w.rpc("cfb_ref_observe_assignments", {"p_rows": rows})
         summary(f"- database: {res['new']} new, {res['seen_again']} seen again, {res['replaced']} replaced (the earlier referee is kept)")
-    except NotDeployed as e:
-        warn(str(e))
+    except (NotDeployed, RuntimeError) as e:
+        return error(str(e))
     return 0
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    b = sub.add_parser("backfill")
-    b.add_argument("--no-write-db", dest="write_db", action="store_false")
-    sd = sub.add_parser("seed")
+    dry = argparse.ArgumentParser(add_help=False)
+    dry.add_argument("--dry-run", action="store_true", help="read, build and report; write nothing to the database")
+    sub.add_parser("backfill", parents=[dry])
+    sd = sub.add_parser("seed", parents=[dry])
     sd.add_argument("--emit")
     for n in ("finals", "assignments"):
-        p = sub.add_parser(n)
+        p = sub.add_parser(n, parents=[dry])
         p.add_argument("--season", type=int)
         p.add_argument("--week", type=int)
         p.add_argument("--emit")
-    sub.add_parser("coverage")
+    sub.add_parser("coverage", parents=[dry])
     a = ap.parse_args(argv)
     return {"backfill": cmd_backfill, "seed": cmd_seed, "finals": cmd_finals, "assignments": cmd_assignments,
             "coverage": cmd_coverage}[a.cmd](a)

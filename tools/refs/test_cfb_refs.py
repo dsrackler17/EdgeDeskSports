@@ -109,7 +109,8 @@ class Validation(unittest.TestCase):
         self.assertTrue(all(c["referee_source"] in M.NCAA_SOURCES and not c["assignment_conflict"] for c in CANDS))
         self.assertEqual(len({c["referee_id"] for c in CANDS}), len(CANDS))
         self.assertFalse({c["game_id"] for c in CANDS} & MISSING_IDS)
-        self.assertEqual(CANDS[0]["season"], 2026)
+        # one season at a time, newest first, so many reads sample every season
+        self.assertEqual([c["season"] for c in CANDS[:6]], [2026, 2025, 2024, 2026, 2025, 2024])
         # 2026 Week 7 (the gap) has no NCAA referee at all, so the nearest weeks come first
         self.assertEqual(abs(CANDS[0]["week"] - 7), min(abs(c["week"] - 7) for c in CANDS if c["season"] == 2026))
 
@@ -149,6 +150,19 @@ class Validation(unittest.TestCase):
         ok, why, rep = M.validate(ROWS, REFS, ncaa_fetch(o), MISSING_IDS)
         self.assertTrue(ok, why)
         self.assertEqual(rep[0]["result"], "match")
+
+    def test_what_espn_returned_is_recorded(self):
+        o = {CANDS[0]["game_id"]: {"gameInfo": {"venue": {}, "attendance": 1}, "header": {}},
+             CANDS[1]["game_id"]: summ(),
+             CANDS[2]["game_id"]: summ(officials=[("Umpire", "Ump Ire"), ("Line Judge", "L J")]),
+             CANDS[3]["game_id"]: {"header": {}}}
+        ok, why, rep = M.validate(ROWS, REFS, ncaa_fetch(o), MISSING_IDS)
+        self.assertTrue(ok, why)
+        d = [r["detail"] for r in rep[:4]]
+        self.assertEqual(d[0], "gameInfo has no officials list (gameInfo keys: attendance,venue); no officials anywhere in the summary")
+        self.assertEqual(d[1], "gameInfo.officials is an empty list")
+        self.assertEqual(d[2], "2 officials listed, none labelled Referee (positions: Line Judge, Umpire)")
+        self.assertTrue(d[3].startswith("no gameInfo in the summary"))
 
     def test_fewer_than_five_verifiable_stops(self):
         o = {c["game_id"]: summ() for c in CANDS[3:12]}
@@ -212,21 +226,41 @@ class Backfill(unittest.TestCase):
             try:
                 M.summary_for = lambda gid, completed=True: ncaa_fetch()(gid) if gid not in MISSING_IDS else ref_summary("Jerry Magallanes")
                 with contextlib.redirect_stdout(io.StringIO()):
-                    rc = M.cmd_backfill(type("A", (), {"write_db": False})())
+                    rc = M.cmd_backfill(type("A", (), {"dry_run": True})())
                 self.assertEqual(rc, 0)
                 for f in ("espn_validation.csv", "espn_backfill.csv", "espn_backfill_log.csv", "coverage_by_season.csv"):
                     self.assertTrue((Path(d) / f).exists(), f)
                 self.assertFalse((Path(d) / "STOPPED.md").exists())
                 M.summary_for = lambda gid, completed=True: ref_summary("Totally Different Person")
                 with contextlib.redirect_stdout(io.StringIO()) as out:
-                    rc = M.cmd_backfill(type("A", (), {"write_db": False})())
+                    rc = M.cmd_backfill(type("A", (), {"dry_run": True})())
                 self.assertEqual(rc, 2)
                 self.assertIn("STOPPED", out.getvalue())
+                stopped = (Path(d) / "STOPPED.md").read_text()
+                self.assertIn("identity mismatch", stopped)
+                self.assertTrue((Path(d) / "coverage_by_season.csv").exists(), "coverage is reported even when stopped")
                 self.assertTrue((Path(d) / "STOPPED.md").exists())
                 self.assertFalse((Path(d) / "espn_backfill.csv").exists(), "a failed check leaves no fills behind")
             finally:
                 M.summary_for = real
                 M.OUT = M.DATA / "backfill"
+
+
+class Writes(unittest.TestCase):
+    def test_dry_run_writes_nothing_and_a_missing_secret_fails(self):
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(M.writer(type("A", (), {"dry_run": True})()))
+            self.assertIs(M.writer(type("A", (), {"dry_run": False})()), False)
+        self.assertIn("SB_URL and SB_SERVICE_ROLE must be set", out.getvalue())
+
+    def test_the_nfl_seed_s_secret_names_are_read_too(self):
+        os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "https://x.supabase.co/", "k"
+        try:
+            db = M.DB()
+            self.assertTrue(db.ok)
+            self.assertEqual(db.url, "https://x.supabase.co")
+        finally:
+            del os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 
 
 def play(text, ptype="Rush", pos=None):
