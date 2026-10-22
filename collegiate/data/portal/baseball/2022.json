@@ -2,18 +2,18 @@
  "schema": "edgedesk_collegiate_portal_v1",
  "sport": "baseball",
  "season": 2022,
- "built_at": "2026-10-22T15:52:05.064Z",
+ "built_at": "2026-10-22T18:53:19.851Z",
  "note": "Built from the rosters schools publish, season to season. Dates are when we saw a change, not portal entry dates (the NCAA portal database is not public).",
  "coverage": {
-  "schools_this_season": 284,
-  "schools_last_season": 283,
-  "schools_both": 280
+  "schools_this_season": 285,
+  "schools_last_season": 284,
+  "schools_both": 281
  },
  "counts": {
-  "transfers": 1625,
-  "transfers_matched_both_ends": 566,
-  "departures": 4177,
-  "newcomers": 2743
+  "transfers": 1637,
+  "transfers_matched_both_ends": 575,
+  "departures": 4183,
+  "newcomers": 2752
  },
  "teams": [
   {
@@ -212,9 +212,9 @@
    "transfers_in": 4,
    "transfers_in_from_tracked": 2,
    "transfers_in_juco": 0,
-   "transfers_out": 7,
+   "transfers_out": 10,
    "departures_eligibility_done": 2,
-   "departures_other": 13,
+   "departures_other": 10,
    "newcomers": 10,
    "conference": "Big 12",
    "transfers_in_same_conference": 0,
@@ -1314,13 +1314,13 @@
    "roster_now": 40,
    "returning": 23,
    "returning_share": 0.561,
-   "transfers_in": 0,
-   "transfers_in_from_tracked": 0,
+   "transfers_in": 1,
+   "transfers_in_from_tracked": 1,
    "transfers_in_juco": 0,
    "transfers_out": 2,
    "departures_eligibility_done": 3,
    "departures_other": 13,
-   "newcomers": 17,
+   "newcomers": 16,
    "conference": "Sun Belt",
    "transfers_in_same_conference": 0,
    "transfers_out_same_conference": 0
@@ -1501,13 +1501,13 @@
    "roster_now": 39,
    "returning": 16,
    "returning_share": 0.3636,
-   "transfers_in": 8,
-   "transfers_in_from_tracked": 5,
+   "transfers_in": 9,
+   "transfers_in_from_tracked": 6,
    "transfers_in_juco": 1,
    "transfers_out": 4,
    "departures_eligibility_done": 8,
    "departures_other": 16,
-   "newcomers": 15,
+   "newcomers": 14,
    "conference": "Big 12",
    "transfers_in_same_conference": 2,
    "transfers_out_same_conference": 0
@@ -1987,6 +1987,23 @@
    "conference": "West Coast",
    "transfers_in_same_conference": 0,
    "transfers_out_same_conference": 1
+  },
+  {
+   "school": "lsu",
+   "roster_before": 38,
+   "roster_now": 44,
+   "returning": 23,
+   "returning_share": 0.6053,
+   "transfers_in": 10,
+   "transfers_in_from_tracked": 6,
+   "transfers_in_juco": 3,
+   "transfers_out": 3,
+   "departures_eligibility_done": 3,
+   "departures_other": 9,
+   "newcomers": 11,
+   "conference": "Southeastern",
+   "transfers_in_same_conference": 0,
+   "transfers_out_same_conference": 0
   },
   {
    "school": "maine",
@@ -3306,9 +3323,9 @@
    "transfers_in": 8,
    "transfers_in_from_tracked": 5,
    "transfers_in_juco": 1,
-   "transfers_out": 3,
+   "transfers_out": 4,
    "departures_eligibility_done": 9,
-   "departures_other": 9,
+   "departures_other": 8,
    "newcomers": 9,
    "conference": "Southern",
    "transfers_in_same_conference": 0,
@@ -3357,9 +3374,9 @@
    "transfers_in": 10,
    "transfers_in_from_tracked": 6,
    "transfers_in_juco": 0,
-   "transfers_out": 1,
+   "transfers_out": 2,
    "departures_eligibility_done": 6,
-   "departures_other": 15,
+   "departures_other": 14,
    "newcomers": 8,
    "conference": "West Coast",
    "transfers_in_same_conference": 1,
@@ -3544,8 +3561,8 @@
    "transfers_in": 10,
    "transfers_in_from_tracked": 2,
    "transfers_in_juco": 6,
-   "transfers_out": 1,
-   "departures_eligibility_done": 10,
+   "transfers_out": 2,
+   "departures_eligibility_done": 9,
    "departures_other": 12,
    "newcomers": 8,
    "conference": "Southland",
@@ -6980,15 +6997,27 @@
    "in_season": false
   },
   {
-   "kind": "departure",
+   "kind": "transfer",
    "player": "Jacob Berry",
    "from": "arizona",
+   "to": "lsu",
    "from_pid": "6373",
+   "to_pid": "892",
    "class_before": "FR",
-   "pos": "3B/1B",
-   "outcome": "not_found_on_a_roster_we_read",
+   "class_after": "SO",
+   "pos": "Infield",
+   "hometown": "Queen Creek, Ariz.",
+   "high_school": "Queen Creek HS",
+   "evidence": [
+    "previous_school",
+    "name",
+    "hometown",
+    "high_school"
+   ],
    "left_seen": null,
-   "in_season": false
+   "arrived_seen": "2026-10-22",
+   "from_conference": "Big 12",
+   "to_conference": "Southeastern"
   },
   {
    "kind": "departure",
@@ -7035,26 +7064,50 @@
    "to_conference": "West Coast"
   },
   {
-   "kind": "departure",
+   "kind": "transfer",
    "player": "Bryce Collins",
    "from": "arizona",
+   "to": "lsu",
    "from_pid": "5832",
+   "to_pid": "894",
    "class_before": "FR",
-   "pos": "RHP",
-   "outcome": "not_found_on_a_roster_we_read",
+   "class_after": "SO",
+   "pos": "Right-Handed Pitcher",
+   "hometown": "Valencia, Calif.",
+   "high_school": "Hart HS",
+   "evidence": [
+    "previous_school",
+    "name",
+    "hometown",
+    "high_school"
+   ],
    "left_seen": null,
-   "in_season": false
+   "arrived_seen": "2026-10-22",
+   "from_conference": "Big 12",
+   "to_conference": "Southeastern"
   },
   {
-   "kind": "departure",
+   "kind": "transfer",
    "player": "Riley Cooper",
    "from": "arizona",
+   "to": "lsu",
    "from_pid": "6380",
+   "to_pid": "887",
    "class_before": "FR",
-   "pos": "LHP",
-   "outcome": "not_found_on_a_roster_we_read",
+   "class_after": "SO",
+   "pos": "Left-Handed Pitcher",
+   "hometown": "Fresno, Calif.",
+   "high_school": "Clovis North HS",
+   "evidence": [
+    "previous_school",
+    "name",
+    "hometown",
+    "high_school"
+   ],
    "left_seen": null,
-   "in_season": false
+   "arrived_seen": "2026-10-22",
+   "from_conference": "Big 12",
+   "to_conference": "Southeastern"
   },
   {
    "kind": "transfer",
@@ -29152,6 +29205,203 @@
    "to_conference": "Big 12"
   },
   {
+   "kind": "transfer",
+   "player": "Zach Arnold",
+   "from": "lsu",
+   "to": "houston",
+   "from_pid": "5512",
+   "to_pid": "2670",
+   "class_before": "SO",
+   "class_after": "SO",
+   "pos": "INF",
+   "hometown": "Temecula, Calif.",
+   "high_school": "Great Oak",
+   "evidence": [
+    "name",
+    "hometown",
+    "high_school"
+   ],
+   "left_seen": null,
+   "arrived_seen": "2026-10-21",
+   "from_conference": "Southeastern",
+   "to_conference": "Big 12"
+  },
+  {
+   "kind": "departure",
+   "player": "Matthew Beck",
+   "from": "lsu",
+   "from_pid": "3120",
+   "class_before": "GR",
+   "pos": "Right-handed Pitcher",
+   "outcome": "eligibility_likely_done",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Alex Brady",
+   "from": "lsu",
+   "from_pid": "5785",
+   "class_before": "SO",
+   "pos": "Left-Handed Pitcher",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Braden Doughty",
+   "from": "lsu",
+   "from_pid": "3318",
+   "class_before": "SR",
+   "pos": "Catcher/Utility",
+   "outcome": "eligibility_likely_done",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Aaron George",
+   "from": "lsu",
+   "from_pid": "3368",
+   "class_before": "GR",
+   "pos": "Right-handed Pitcher",
+   "outcome": "eligibility_likely_done",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "transfer",
+   "player": "Maurice Hampton Jr.",
+   "from": "lsu",
+   "to": "samford",
+   "from_pid": "3171",
+   "to_pid": "3604",
+   "class_before": "SO",
+   "class_after": "JR",
+   "pos": "OF",
+   "hometown": "Memphis, Tenn.",
+   "high_school": "Memphis University HS",
+   "evidence": [
+    "previous_school",
+    "name",
+    "hometown"
+   ],
+   "left_seen": null,
+   "arrived_seen": "2026-10-21",
+   "from_conference": "Southeastern",
+   "to_conference": "Southern"
+  },
+  {
+   "kind": "departure",
+   "player": "Jaden Hill",
+   "from": "lsu",
+   "from_pid": "3392",
+   "class_before": "JR",
+   "pos": "Right-handed Pitcher",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "transfer",
+   "player": "Brandon Kaminer",
+   "from": "lsu",
+   "to": "georgia-st",
+   "from_pid": "5540",
+   "to_pid": "slug:brandon-kaminer",
+   "class_before": "SR",
+   "class_after": "GR",
+   "pos": "LHP",
+   "hometown": "Coral Springs, Fla.",
+   "high_school": "Stoneman Douglas/Wallace Dothan/LSU",
+   "evidence": [
+    "name",
+    "hometown"
+   ],
+   "left_seen": null,
+   "arrived_seen": "2026-10-21",
+   "from_conference": "Southeastern",
+   "to_conference": "Sun Belt"
+  },
+  {
+   "kind": "departure",
+   "player": "AJ Labas",
+   "from": "lsu",
+   "from_pid": "3331",
+   "class_before": "JR",
+   "pos": "Right-handed Pitcher",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Landon Marceaux",
+   "from": "lsu",
+   "from_pid": "3384",
+   "class_before": "JR",
+   "pos": "Right-handed Pitcher",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Theo Millas",
+   "from": "lsu",
+   "from_pid": "5774",
+   "class_before": "FR",
+   "pos": "Right-handed Pitcher",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Zachary Murray",
+   "from": "lsu",
+   "from_pid": "5773",
+   "class_before": "FR",
+   "pos": "Right-handed Pitcher",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Brooks Rice",
+   "from": "lsu",
+   "from_pid": "5768",
+   "class_before": "FR",
+   "pos": "Right-handed Pitcher",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Mitchell Sanford",
+   "from": "lsu",
+   "from_pid": "5556",
+   "class_before": "SO",
+   "pos": "Outfield",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
+   "kind": "departure",
+   "player": "Jacob Wyeth",
+   "from": "lsu",
+   "from_pid": "5764",
+   "class_before": "JR",
+   "pos": "Catcher",
+   "outcome": "not_found_on_a_roster_we_read",
+   "left_seen": null,
+   "in_season": false
+  },
+  {
    "kind": "departure",
    "player": "Michael Bacica",
    "from": "maine",
@@ -44791,15 +45041,26 @@
    "in_season": false
   },
   {
-   "kind": "departure",
+   "kind": "transfer",
    "player": "Tyler McManus",
    "from": "samford",
+   "to": "lsu",
    "from_pid": "3291",
+   "to_pid": "895",
    "class_before": "JR",
-   "pos": "C",
-   "outcome": "not_found_on_a_roster_we_read",
+   "class_after": "GR",
+   "pos": "Catcher",
+   "hometown": "Slidell, La.",
+   "high_school": "Slidell HS",
+   "evidence": [
+    "previous_school",
+    "name",
+    "hometown"
+   ],
    "left_seen": null,
-   "in_season": false
+   "arrived_seen": "2026-10-22",
+   "from_conference": "Southern",
+   "to_conference": "Southeastern"
   },
   {
    "kind": "departure",
@@ -45499,15 +45760,27 @@
    "in_season": false
   },
   {
-   "kind": "departure",
+   "kind": "transfer",
    "player": "Eric Reyzelman",
    "from": "san-francisco",
+   "to": "lsu",
    "from_pid": "2676",
+   "to_pid": "891",
    "class_before": "FR",
-   "pos": "RHP",
-   "outcome": "not_found_on_a_roster_we_read",
+   "class_after": "SO",
+   "pos": "Right-Handed Pitcher",
+   "hometown": "San Ramon, Calif.",
+   "high_school": "De La Salle HS",
+   "evidence": [
+    "previous_school",
+    "name",
+    "hometown",
+    "high_school"
+   ],
    "left_seen": null,
-   "in_season": false
+   "arrived_seen": "2026-10-22",
+   "from_conference": "West Coast",
+   "to_conference": "Southeastern"
   },
   {
    "kind": "departure",
@@ -47783,15 +48056,26 @@
    "in_season": false
   },
   {
-   "kind": "departure",
+   "kind": "transfer",
    "player": "Trey Shaffer",
    "from": "southeastern-la",
+   "to": "lsu",
    "from_pid": "slug:trey-shaffer",
+   "to_pid": "898",
    "class_before": "SR",
-   "pos": "P",
-   "outcome": "eligibility_likely_done",
+   "class_after": "GR",
+   "pos": "Left-Handed Pitcher",
+   "hometown": "Biloxi, Miss.",
+   "high_school": "Biloxi HS",
+   "evidence": [
+    "name",
+    "hometown",
+    "high_school"
+   ],
    "left_seen": null,
-   "in_season": false
+   "arrived_seen": "2026-10-22",
+   "from_conference": "Southland",
+   "to_conference": "Southeastern"
   },
   {
    "kind": "departure",
@@ -76846,17 +77130,6 @@
   },
   {
    "kind": "newcomer",
-   "player": "Brandon Kaminer",
-   "to": "georgia-st",
-   "to_pid": "slug:brandon-kaminer",
-   "class_after": "GR",
-   "pos": "LHP",
-   "hometown": "Coral Springs, Fla.",
-   "high_school": "Stoneman Douglas/Wallace Dothan/LSU",
-   "arrived_seen": "2026-10-21"
-  },
-  {
-   "kind": "newcomer",
    "player": "Nick Lommen",
    "to": "georgia-st",
    "to_pid": "slug:nick-lommen",
@@ -78815,17 +79088,6 @@
    "arrived_seen": "2026-10-21",
    "from_conference": null,
    "to_conference": "Southland"
-  },
-  {
-   "kind": "newcomer",
-   "player": "Zach Arnold",
-   "to": "houston",
-   "to_pid": "2670",
-   "class_after": "SO",
-   "pos": "INF",
-   "hometown": "Temecula, Calif.",
-   "high_school": "Great Oak",
-   "arrived_seen": "2026-10-21"
   },
   {
    "kind": "newcomer",
@@ -84323,6 +84585,203 @@
    "hometown": "Modesto, Calif.",
    "high_school": "Gregori HS",
    "arrived_seen": "2026-10-21"
+  },
+  {
+   "kind": "transfer",
+   "player": "Jason Bollman",
+   "from": null,
+   "from_text": "Wabash Valley CC",
+   "from_level": "juco",
+   "to": "lsu",
+   "to_pid": "889",
+   "class_after": "SO",
+   "pos": "Right-Handed Pitcher",
+   "hometown": "Peoria, Ill.",
+   "high_school": "Dunlap HS",
+   "evidence": [
+    "previous_school"
+   ],
+   "arrived_seen": "2026-10-22",
+   "from_conference": null,
+   "to_conference": "Southeastern"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Samuel Dutton",
+   "to": "lsu",
+   "to_pid": "869",
+   "class_after": "FR",
+   "pos": "Right-Handed Pitcher",
+   "hometown": "Southside, Ala.",
+   "high_school": "Westbrook Christian HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Grant Fontenot",
+   "to": "lsu",
+   "to_pid": "871",
+   "class_after": "FR",
+   "pos": "Right-Handed Pitcher",
+   "hometown": "Lafayette, La.",
+   "high_school": "Lafayette HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "transfer",
+   "player": "Paul Gervase",
+   "from": null,
+   "from_text": "Pitt CC",
+   "from_level": "juco",
+   "to": "lsu",
+   "to_pid": "884",
+   "class_after": "JR",
+   "pos": "Right-Handed Pitcher",
+   "hometown": "Fuquay-Varina, N.C.",
+   "high_school": "Harnett Central HS",
+   "evidence": [
+    "previous_school"
+   ],
+   "arrived_seen": "2026-10-22",
+   "from_conference": null,
+   "to_conference": "Southeastern"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Brennan Holt",
+   "to": "lsu",
+   "to_pid": "882",
+   "class_after": "FR",
+   "pos": "Infield",
+   "hometown": "Baton Rouge, La.",
+   "high_school": "Parkview Baptist HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "transfer",
+   "player": "Brayden Jobert",
+   "from": null,
+   "from_text": "Delgado CC",
+   "from_level": "juco",
+   "to": "lsu",
+   "to_pid": "880",
+   "class_after": "SO",
+   "pos": "Outfield/First Base",
+   "hometown": "Slidell, La.",
+   "high_school": "Northshore HS",
+   "evidence": [
+    "previous_school"
+   ],
+   "arrived_seen": "2026-10-22",
+   "from_conference": null,
+   "to_conference": "Southeastern"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Cale Lansville",
+   "to": "lsu",
+   "to_pid": "870",
+   "class_after": "FR",
+   "pos": "Right-Handed Pitcher",
+   "hometown": "Centennial, Colo.",
+   "high_school": "Thunder Ridge HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Luke Leto",
+   "to": "lsu",
+   "to_pid": "873",
+   "class_after": "FR",
+   "pos": "Infield",
+   "hometown": "Portage, Mich.",
+   "high_school": "Portage Central HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "transfer",
+   "player": "Jack Merrifield",
+   "from": null,
+   "from_text": "LSU-Eunice",
+   "from_level": "other",
+   "to": "lsu",
+   "to_pid": "879",
+   "class_after": "JR",
+   "pos": "Infield",
+   "hometown": "Prairieville, La.",
+   "high_school": "Dutchtown HS",
+   "evidence": [
+    "previous_school"
+   ],
+   "arrived_seen": "2026-10-22",
+   "from_conference": null,
+   "to_conference": "Southeastern"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Josh Pearson",
+   "to": "lsu",
+   "to_pid": "876",
+   "class_after": "FR",
+   "pos": "Outfield",
+   "hometown": "West Monroe, La.",
+   "high_school": "West Monroe HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Blaise Priester",
+   "to": "lsu",
+   "to_pid": "872",
+   "class_after": "FR",
+   "pos": "Catcher",
+   "hometown": "Denham Springs, La.",
+   "high_school": "Live Oak HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Connor Simon",
+   "to": "lsu",
+   "to_pid": "881",
+   "class_after": "FR",
+   "pos": "Infield",
+   "hometown": "Mandeville, La.",
+   "high_school": "St. Paul's HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Josh Stevenson",
+   "to": "lsu",
+   "to_pid": "883",
+   "class_after": "FR",
+   "pos": "Outfield",
+   "hometown": "Youngsville, La.",
+   "high_school": "St. Thomas More HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Nick Storz",
+   "to": "lsu",
+   "to_pid": "3359",
+   "class_after": "GR",
+   "pos": "Tight End",
+   "hometown": "Brooklyn, N.Y.",
+   "high_school": "Poly Prep Country Day HS",
+   "arrived_seen": "2026-10-22"
+  },
+  {
+   "kind": "newcomer",
+   "player": "Grant Taylor",
+   "to": "lsu",
+   "to_pid": "874",
+   "class_after": "FR",
+   "pos": "Right-Handed Pitcher",
+   "hometown": "Florence, Ala.",
+   "high_school": "Florence HS",
+   "arrived_seen": "2026-10-22"
   },
   {
    "kind": "newcomer",
@@ -97693,25 +98152,6 @@
    "hometown": "Alpharetta, Ga.",
    "high_school": null,
    "arrived_seen": "2026-10-21"
-  },
-  {
-   "kind": "transfer",
-   "player": "Maurice Hampton Jr.",
-   "from": "lsu",
-   "from_text": "LSU",
-   "from_level": "tracked",
-   "to": "samford",
-   "to_pid": "3604",
-   "class_after": "JR",
-   "pos": "OF",
-   "hometown": "Memphis, Tenn.",
-   "high_school": null,
-   "evidence": [
-    "previous_school"
-   ],
-   "arrived_seen": "2026-10-21",
-   "from_conference": "Southeastern",
-   "to_conference": "Southern"
   },
   {
    "kind": "transfer",
@@ -113713,7 +114153,7 @@
   "State University": 1,
   "Lake Michigan College": 1,
   "Wabash Valley": 1,
-  "LSU-Eunice": 2,
+  "LSU-Eunice": 3,
   "Florida Southwestern College": 1,
   "Cowley College": 3,
   "NOC-Tonkawa": 1,
