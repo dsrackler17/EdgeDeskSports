@@ -1413,6 +1413,94 @@ All run in `.github/workflows/kalshi.yml`.
 
 Rollback: `supabase/kalshi_market_data_rollback.sql`.
 
+## NFL referee flag tendencies — who is officiating, and how often that crew throws flags
+
+Every NFL game card names the game's referee and shows how many flags and
+holding calls that referee's games have averaged against the league. It sits in
+an **Officiating** block in Market Structure → **Observed**. **Display only**: no
+spread, total, probability, EV, grade, ranking or CLV record reads any of it.
+A flag-adjusted number would go to Research Models (Experimental) and stay out of
+the model until it clears the incremental-CLV test.
+
+- **Observed (T0).** Counts from nflverse play-by-play, one penalty per play,
+  regular season only. The referee comes from nflverse `games.csv` or, where
+  nflverse has not filled it in yet, from `data/refs/manual_assignments.json`
+  (Football Zebras, announced Wednesday or Thursday). nflverse wins whenever it
+  has a name.
+- **The block:** the referee and the assignment's source; this season's flags and
+  holding per game, each with its +/− against that season's league average
+  (above in `--pos`, below in `--neg`, as the card colours CLV) and its rank of N
+  referees; the 3-season baseline with its game count; the O/U record as a plain
+  over-under count. No grade, label or composite score. A game with no row reads
+  **Assignment not announced**. The referee's name is also a chip on the section's
+  summary line.
+- **Known limitations** (on the card): one penalty per play, so multi-flag plays
+  undercount; this season's samples are 5–6 games (the count is shown); flags are
+  up league-wide in 2026 (15.0 a game against 13.1 over 2024–26), so each number
+  is read against its own season's average.
+
+### Data, tables and the weekly sync
+
+- `data/refs/` holds the build (`build_ref_data.py`), the hand-entered
+  assignments, the seed CSVs (2024, 2025 and 2026 Weeks 1–6: 663 games; 677
+  assignments through Week 7) and `upsert_refs.py`. Its README is the runbook.
+- `supabase/nfl_ref_flags.sql` (mirrored in
+  `supabase/migrations/20261022100000_nfl_ref_flags.sql`) adds
+  `nfl_ref_assignments`, `nfl_ref_game_penalties` and the views
+  `nfl_ref_season_summary`, `nfl_ref_baseline_3yr` and `nfl_game_ref_context`
+  (what the card reads, by `game_id`). Access is gated like the card's other
+  Observed tables: anon and authenticated read, only `service_role` writes, and
+  every view runs as the reader.
+- `.github/workflows/ref-sync.yml` runs Tuesday 10:00 UTC, September to February,
+  and on demand. It downloads `games.csv` and the season's play-by-play, rebuilds
+  that season and upserts it (assignments, then penalties) with `SB_URL` and
+  `SB_SERVICE_ROLE`. Any error fails the job.
+
+### Decisions made without asking
+
+1. **RLS copies the Observed tables of the same card** (`nfl_market_structure.sql`,
+   `contest_ownership.sql`, `kalshi_market_data.sql`): public read for anon and
+   authenticated, no client writes. The data is public nflverse and published
+   assignments, and the card reads it with the anon key, as the rest of the
+   section does. The draft's `using (true)` policies granted to PUBLIC are
+   replaced, and its views now run as the reader.
+2. **The views compute exactly what `build_ref_data.py` computes**: the rounded
+   average minus the league average, and ranks over the rounded average. Taking
+   the difference before rounding left 9 of the 14 Week 7 games 0.01 off the
+   handoff's `ref_assignments_2026_w7.csv`.
+3. **The views gained columns** (the referee count for "rank N of M", league
+   averages, the O/U record with pushes, the 3-season range), appended after the
+   draft's, so a pasted draft upgrades in place.
+4. **The weekly job rebuilds the season in progress only.** Earlier seasons are
+   final and stay as seeded. It runs September to February, because there is no
+   play-by-play file to download in the off-season.
+5. **The source label follows the rule.** A game nflverse has filled in is
+   `nflverse` even if it is also in the JSON (2026_05_TB_DAL, same referee).
+6. **One request per board.** The cards of a render queue their ids and read
+   `nfl_game_ref_context?game_id=in.(…)` once per 50.
+
+### Tests
+
+- `python3 -m unittest discover -s data/refs/tests -v` — the build's rules on a
+  synthetic season, and the seed's file checks
+- `REFS_SQL_REQUIRED=1 node tools/refs/nfl_ref_flags_sql.test.js` — the layer
+  on a real PostgreSQL; the seed through a stand-in REST endpoint; every Week 7
+  row against the handoff CSV
+- `node tools/refs/ref_flags_ui.e2e.js` — the block in Chromium (Week 7 numbers,
+  colours, not announced, not deployed, a 390 px phone, every other card line
+  unchanged)
+
+All run in `.github/workflows/ref-flags-tests.yml`.
+
+### Deploy
+
+1. Run **NFL referee sync** with `apply_sql` and `seed` ticked (needs
+   `SB_DB_URL`). Or paste `supabase/nfl_ref_flags.sql` into the SQL editor and run
+   `SB_URL=… SB_SERVICE_ROLE=… python3 data/refs/upsert_refs.py`.
+2. Each Wednesday or Thursday, add the coming week's referees to
+   `data/refs/manual_assignments.json` and run the workflow (or let Tuesday's run
+   pick them up).
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means

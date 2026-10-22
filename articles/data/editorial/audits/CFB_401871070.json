@@ -1,0 +1,541 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401871070",
+  "game_id": "401871070",
+  "sport": "CFB",
+  "snapshot_id": "snap_d8930db88239ce10",
+  "audited_at": "2026-10-22T04:20:49.113Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Sam Houston +3.5 with a fair total of 46.0, which makes New Mexico State the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 3.6,
+      "favours_side": "away",
+      "favours_team": "New Mexico State",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 3.60330567828385,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Sam Houston winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether New Mexico State is ahead on the scoreboard in a way that looks like Sam Houston +3.5 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "New Mexico State is the better football team by 5.7 points on opponent-adjusted results, with roughly 40% of it still inherited from last season — worth -5.7 of the EdgeDesk number, in New Mexico State’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 5.7,
+      "favours_side": "away",
+      "favours_team": "New Mexico State",
+      "expected_signal": null,
+      "falsifier": "Sam Houston winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Playing at Sam Houston is worth 2.8 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +2.8 of the EdgeDesk number, in Sam Houston’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 2.8,
+      "favours_side": "home",
+      "favours_team": "Sam Houston",
+      "expected_signal": null,
+      "falsifier": "New Mexico State winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Stylistically the matchup favours New Mexico State by 0.7 points: ball control vs front disruption — worth -0.7 of the EdgeDesk number, in New Mexico State’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "model",
+      "weight": 0.7,
+      "favours_side": "away",
+      "favours_team": "New Mexico State",
+      "expected_signal": null,
+      "falsifier": "Sam Houston winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "New Mexico State’s pass offense rates 43.4 (#101 of 137) against Sam Houston’s pass defense at 59.3 (#26 of 138). Sam Houston’s unit stands higher among its own position group, by 75 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How New Mexico State pass offense handles Sam Houston pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "New Mexico State’s run offense rates 51.3 (#61 of 138) against Sam Houston’s run defense at 38.8 (#108 of 138). New Mexico State’s unit stands higher among its own position group, by 47 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How New Mexico State run offense handles Sam Houston run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Sam Houston’s pass offense rates 43.1 (#104 of 137) against New Mexico State’s pass defense at 49.5 (#70 of 138). New Mexico State’s unit stands higher among its own position group, by 34 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Sam Houston pass offense handles New Mexico State pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Sam Houston’s run offense rates 32.8 (#132 of 138) against New Mexico State’s run defense at 48.3 (#75 of 138). New Mexico State’s unit stands higher among its own position group, by 57 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Sam Houston run offense handles New Mexico State run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "New Mexico State holds the largest measured edge in this matchup: New Mexico State 57.7 (#25 of 138) vs Sam Houston 46.9 (#125 of 138) — 100 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "pressure",
+      "weight": 25,
+      "favours_side": "away",
+      "favours_team": "New Mexico State",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Sam Houston winning that category on the day.",
+      "watch": "Whether New Mexico State’s edge in Defensive line shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Defensive line"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Sam Houston holds the largest measured edge in this matchup: Sam Houston 57.0 (#41 of 138) vs New Mexico State 52.2 (#137 of 138) — 96 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "special_teams",
+      "weight": 24,
+      "favours_side": "home",
+      "favours_team": "Sam Houston",
+      "expected_signal": null,
+      "falsifier": "New Mexico State winning that category on the day.",
+      "watch": "Whether Sam Houston’s edge in Kicking shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Kicking"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 2,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on sample.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Sam Houston +3.5 with a fair total of 46.0, which makes New Mexico State the better team here by that margin on this field.",
+      "weight": 3.6,
+      "favours_team": "New Mexico State",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 3.60330567828385,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": -6,
+          "away": 6,
+          "diff": 6
+        }
+      ],
+      "observed_result": "New Mexico State Aggies won by 6 where EdgeDesk projected a 3.6-point edge.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the right side won and the margin landed in the neighbourhood of the projection"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "New Mexico State is the better football team by 5.7 points on opponent-adjusted results, with roughly 40% of it still inherited from last season — worth -5.7 of the EdgeDesk number, in New Mexico State’s favour.",
+      "weight": 5.7,
+      "favours_team": "New Mexico State",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Playing at Sam Houston is worth 2.8 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +2.8 of the EdgeDesk number, in Sam Houston’s favour.",
+      "weight": 2.8,
+      "favours_team": "Sam Houston",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Stylistically the matchup favours New Mexico State by 0.7 points: ball control vs front disruption — worth -0.7 of the EdgeDesk number, in New Mexico State’s favour.",
+      "weight": 0.7,
+      "favours_team": "New Mexico State",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "New Mexico State’s pass offense rates 43.4 (#101 of 137) against Sam Houston’s pass defense at 59.3 (#26 of 138). Sam Houston’s unit stands higher among its own position group, by 75 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "New Mexico State’s run offense rates 51.3 (#61 of 138) against Sam Houston’s run defense at 38.8 (#108 of 138). New Mexico State’s unit stands higher among its own position group, by 47 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Sam Houston’s pass offense rates 43.1 (#104 of 137) against New Mexico State’s pass defense at 49.5 (#70 of 138). New Mexico State’s unit stands higher among its own position group, by 34 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Sam Houston’s run offense rates 32.8 (#132 of 138) against New Mexico State’s run defense at 48.3 (#75 of 138). New Mexico State’s unit stands higher among its own position group, by 57 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "pressure",
+      "claim": "New Mexico State holds the largest measured edge in this matchup: New Mexico State 57.7 (#25 of 138) vs Sam Houston 46.9 (#125 of 138) — 100 places on the national board.",
+      "weight": 25,
+      "favours_team": "New Mexico State",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "sacks_generated",
+          "available": false,
+          "label": "sacks generated",
+          "unit": "sacks",
+          "why": "the box score for this game published no sacks generated"
+        },
+        {
+          "metric": "sacks_allowed",
+          "available": false,
+          "label": "sacks allowed",
+          "unit": "sacks",
+          "why": "the box score for this game published no sacks allowed"
+        }
+      ],
+      "observed_result": "Not published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the box score for this game published no sacks generated"
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "special_teams",
+      "claim": "Sam Houston holds the largest measured edge in this matchup: Sam Houston 57.0 (#41 of 138) vs New Mexico State 52.2 (#137 of 138) — 96 places on the national board.",
+      "weight": 24,
+      "favours_team": "Sam Houston",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Kicking"
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+      "weight": 2,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 1,
+      "PARTIALLY CONFIRMED": 0,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 10
+    },
+    "graded": 1,
+    "total": 11,
+    "not_observable": 10,
+    "headline": "1 of 1 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401871070",
+    "sport": "CFB",
+    "snapshot_id": "snap_d8930db88239ce10",
+    "graded_at": "2026-10-22T04:20:49.113Z",
+    "final": {
+      "home_team": "Sam Houston Bearkats",
+      "away_team": "New Mexico State Aggies",
+      "home_score": 24,
+      "away_score": 30,
+      "margin": 6,
+      "total_points": 54,
+      "winner": "New Mexico State Aggies"
+    },
+    "implied_side": {
+      "available": false,
+      "why": "No sportsbook quote was captured before kickoff, so there is no market number for EdgeDesk’s to be measured against. The model’s own projection is still graded below; the bet columns are not."
+    },
+    "implied_total": {
+      "available": false,
+      "why": "EdgeDesk published no fair total, or no sportsbook total was captured."
+    },
+    "bet_result": {
+      "spread": null,
+      "total": null,
+      "moneyline": null
+    },
+    "bet_headline": "NOT GRADED",
+    "closing_line": {
+      "available": false,
+      "why": "no implied side, so there is nothing to measure line movement against"
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": -3.6,
+      "actual_home_margin": -6,
+      "margin_error": 2.4,
+      "right_side": true,
+      "projected_total": 46.2,
+      "actual_total": 54,
+      "total_error": 7.8,
+      "projected_score": {
+        "away": 25,
+        "home": 21
+      },
+      "inside_published_range": true,
+      "range_text": "-24.6 → +17.4 (Sam Houston)"
+    },
+    "process": {
+      "grade": "UNTESTED",
+      "reasons": [
+        "None of the mechanism EdgeDesk named before kickoff could be graded against the statistics published for this game. The scoreboard is not evidence about a mechanism nobody could observe."
+      ],
+      "confirmed": 0,
+      "partial": 0,
+      "wrong": 0,
+      "graded": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNTESTED",
+    "variance_markers": [
+      {
+        "key": "nonoffensive_score",
+        "severity": "medium",
+        "label": "1 non-offensive or return score",
+        "text": "Points that arrived without an offensive drive. They count the same on the scoreboard and belong to a different distribution from the one the model prices."
+      }
+    ],
+    "verdict": {
+      "key": "ungraded",
+      "line": "No sportsbook quote was captured before publication, so there is no bet result to separate from the process. The reasoning is graded on its own below, which is the half that compounds."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401871070:unobservable",
+      "game_id": "401871070",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 8,
+      "article_id": "postgame-cfb-401871070",
+      "snapshot_id": "snap_d8930db88239ce10",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "9 of the claims in this article rested on model, passing, rushing, pressure, special_teams.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the read does not name a side, so there is no direction to test.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
+      "bet_result": "NOT GRADED",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-22T04:20:49.113Z"
+    }
+  ]
+}
