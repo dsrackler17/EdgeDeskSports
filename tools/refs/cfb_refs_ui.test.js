@@ -9,7 +9,8 @@
                   pass) carries the block; it is never hidden
      states       loading; not deployed (a 404 is the block's own state, never
                   a database fault); unavailable; no assignment = "Assignment
-                  not announced"
+                  not announced"; signed out = "Sign in" with no request made
+                  (the view is signed-in only, as every supabase/cfb_*.sql table)
      the rule     the NFL Officiating block's rows (data/refs, PR #680): season
                   flags/game and holding/game vs the conference average (first)
                   and FBS, two decimals, "vs" in --pos/--neg, rank N of M;
@@ -45,8 +46,10 @@ const OFF = SRC.slice(SRC.indexOf('/* ---- Observed: Officiating'), SRC.indexOf(
 const CODE = OFF.replace(/\/\*[\s\S]*?\*\//g, '');
 chk('display only: the officiating code reads nothing of the analyst pass', CODE.length > 1000
   && !/\bF\.|classification|CFB\.flags|clv|INVESTIGATE|MONITOR/i.test(CODE));
-chk('read as anon, apart from sbFetch', /SB_URL\+'\/rest\/v1\/cfb_game_ref_context\?game_id=eq\.'\+encodeURIComponent\(gid\)\+'&select=\*'/.test(CODE)
-  && /authorization:'Bearer '\+SB_KEY/.test(CODE) && !/sbFetch|sbGet/.test(CODE));
+chk('read with the reader\'s own token, apart from sbFetch; nothing requested while signed out',
+  /SB_URL\+'\/rest\/v1\/cfb_game_ref_context\?game_id=eq\.'\+encodeURIComponent\(gid\)\+'&select=\*'/.test(CODE)
+  && /edToken\(\)/.test(CODE) && /if\(!tok\|\|tok===SB_KEY\)throw/.test(CODE) && /authorization:'Bearer '\+tok/.test(CODE)
+  && !/'Bearer '\+SB_KEY/.test(CODE) && !/sbFetch|sbGet/.test(CODE));
 
 /* the view's columns (the select list of cfb_game_ref_context) against what the block reads */
 const vA = SQL.indexOf('create or replace view public.cfb_game_ref_context');
@@ -62,7 +65,7 @@ chk('limitations: the CFB module states it is display only and small samples', /
 chk('the hook in the CFB game detail is unchanged (the card is still the analyst pass)', /rows\+cfbLineHTML\(g\)\+cfbAnalystHTML\(gid\)\+/.test(HTML));
 
 /* ---------------------------------------------------------------- run it */
-let ANSWER = {}, CALLS = [];
+let ANSWER = {}, CALLS = [], TOKEN = 'user-token';
 const painted = {};
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const win = {
@@ -76,6 +79,7 @@ const win = {
   },
   document: { querySelectorAll: (sel) => { const gid = (/data-cfa-ref="(\d+)"/.exec(sel) || [])[1]; const el = { set innerHTML(v) { painted[gid] = v; } }; return [el]; } },
   SB_URL: 'https://example.supabase.co', SB_KEY: 'anon-key',
+  edToken: () => Promise.resolve(TOKEN),
   Date, Math, String, Number, Object, JSON, Promise, encodeURIComponent, isFinite, Array, RegExp, Error, setTimeout,
 };
 win.window = win;
@@ -111,7 +115,8 @@ async function card(gid, answer, F) {
   const notRun = await card('401871001', { status: 200, body: [] });
   chk('NOT RUN card: the Observed block is there, loading first', /NOT RUN/.test(notRun.first) && /<h5>Observed /.test(notRun.first) && /data-cfa-ref="401871001"/.test(notRun.first) && /loading…/.test(notRun.first));
   chk('no assignment yet: "Assignment not announced", block not hidden', /Assignment not announced/.test(notRun.after) && /Assignment not announced/.test(notRun.painted || '') && /Officiating/.test(notRun.after));
-  chk('the read is by the card\'s game id, with the anon key', CALLS.some((c) => /cfb_game_ref_context\?game_id=eq\.401871001&select=\*/.test(c.url) && c.opts.headers.apikey === 'anon-key'));
+  chk('the read is by the card\'s game id, with the reader\'s token', CALLS.some((c) => /cfb_game_ref_context\?game_id=eq\.401871001&select=\*/.test(c.url)
+    && c.opts.headers.apikey === 'anon-key' && c.opts.headers.authorization === 'Bearer user-token'));
   chk('limitations shown with no assignment', hasLims(notRun.after), strip(notRun.after));
 
   const di = await card('401871002', { status: 200, body: [] }, { classification: 'DATA_INSUFFICIENT', missing_inputs: '["SP+"]' });
@@ -173,6 +178,18 @@ async function card(gid, answer, F) {
   win.cfbGameById = (gid) => (gid === '401871109' ? { game_id: 401871109, completed: true } : null);
   const fin = await card('401871109', { status: 200, body: [] });
   chk('a final game with no referee: "No referee on record for this game"', /No referee on record for this game/.test(fin.after) && !/Assignment not announced/.test(fin.after));
+
+  TOKEN = 'anon-key';
+  const nOut = CALLS.length;
+  const out = await card('401871110', { status: 200, body: [ROW] });
+  chk('signed out: "Sign in", the limitations, and no request made', /Sign in to see the referee/.test(out.after) && hasLims(out.after) && CALLS.length === nOut);
+  TOKEN = 'user-token';
+  await card('401871110', { status: 200, body: [Object.assign({}, ROW, { game_id: 401871110 })] });
+  await flush(); await flush();
+  chk('signing in shows the block on the next render (no five-minute wait), painted in place', /Jerry Magallanes/.test(painted['401871110'] || '')
+    && /Jerry Magallanes/.test(win.cfbAnalystHTML('401871110')) && CALLS.length === nOut + 1);
+  const exp = await card('401871111', { status: 401, body: '{"code":"42501","message":"permission denied for view cfb_game_ref_context"}' });
+  chk('a refused token reads "Sign in", not an outage', /Sign in to see the referee/.test(exp.after) && !/unavailable/.test(exp.after));
 
   const n0 = CALLS.length;
   const bad = win.cfbAnalystHTML('not-a-number');

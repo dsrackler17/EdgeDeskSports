@@ -16,7 +16,8 @@
      - the views reproduce the dataset's own summary (cfb_ref_summary.csv) and
        conference baselines (cfb_conference_baselines.csv); refs under 3 games
        have numbers but no rank;
-     - anon reads, nobody but service_role writes.
+     - signed-in readers read, anon reads nothing (the CFB security contract,
+       football/cfb_production/security.test.js), nobody but service_role writes.
 
    Starts a throwaway cluster, applies the Supabase shim, applies the file twice
    with psql and once the way the SQL editor sends it (one string).
@@ -204,8 +205,11 @@ try {
   })());
 
   /* ---------------------------------------------------- reading and writing rights */
-  chk('anon reads the game context', psql(`select count(*) > 0 from public.cfb_game_ref_context`, { role: 'anon' }) === 't');
   chk('authenticated reads the game context', psql(`select count(*) > 0 from public.cfb_game_ref_context`, { role: 'authenticated' }) === 't');
+  chk('authenticated reads the summaries', psql(`select count(*) > 0 from public.cfb_ref_season_summary`, { role: 'authenticated' }) === 't');
+  chk('anon reads nothing: the context, the summaries, the tables', ['cfb_game_ref_context', 'cfb_ref_season_summary', 'cfb_ref_baseline_3yr',
+    'cfb_ref_referees', 'cfb_ref_assignment_current', 'cfb_ref_game_penalties', 'cfb_ref_assignments']
+    .every((t) => /permission denied/.test(mustFail(`select 1 from public.${t} limit 1`, { role: 'anon' }) || '')));
   chk('anon cannot insert a game', !!mustFail(`insert into public.cfb_ref_game_penalties (game_id, season) values (1, 2026)`, { role: 'anon' }));
   chk('authenticated cannot update a referee', !!mustFail(`update public.cfb_ref_game_penalties set referee_id = 'x' where game_id = 401635525`, { role: 'authenticated' }));
   chk('anon cannot call the merge', !!mustFail(`select public.cfb_ref_merge_games('[]'::jsonb, 'seed')`, { role: 'anon' }));

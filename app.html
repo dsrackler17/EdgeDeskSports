@@ -25122,9 +25122,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      conference average comes first and FBS second, and a referee with fewer than
      3 games this season is shown without a rank. Reads its own view by the
      card's game id and never touches the classification, the drivers or CLV
-     above it. Read as the anon visitor, NOT through sbFetch: before the
-     migration is applied the view answers 404, and that is a state of this
-     block, not a database outage. */
+     above it. The view is gated like every supabase/cfb_*.sql table (signed-in
+     readers only, the CFB security contract), so it is read with the reader's
+     own token, and a signed-out visitor is asked to sign in, with no request
+     made. NOT through sbFetch: before the migration is applied the view
+     answers 404, and that is a state of this block, not a database outage. */
   var REF={},REF_TTL=5*60e3;
   var REF_LIMITS='<b>Known limitations.</b> Referee identity is inferred: the single official on the NCAA box score (the crew chief) or the official ESPN lists as Referee. '
     +'Holding and pass interference are counted per play from play-by-play; flags are accepted penalties from the box score. '
@@ -25141,10 +25143,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function refRow(l,v){return '<div class="ms-row"><span class="l">'+l+'</span><span class="v">'+v+'</span></div>';}
   function refFetch(gid){
     if(typeof SB_URL==='undefined'||typeof SB_KEY==='undefined')return Promise.reject(Object.assign(new Error('no database configured'),{notDeployed:true}));
-    return fetch(SB_URL+'/rest/v1/cfb_game_ref_context?game_id=eq.'+encodeURIComponent(gid)+'&select=*',{headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY}}).then(function(r){
+    return Promise.resolve(typeof edToken==='function'?edToken():SB_KEY).then(function(tok){
+      if(!tok||tok===SB_KEY)throw Object.assign(new Error('signed out'),{signin:true});
+      return fetch(SB_URL+'/rest/v1/cfb_game_ref_context?game_id=eq.'+encodeURIComponent(gid)+'&select=*',{headers:{apikey:SB_KEY,authorization:'Bearer '+tok}});
+    }).then(function(r){
       if(r.ok)return r.json();
       return r.text().then(function(b){var e=new Error('HTTP '+r.status);e.status=r.status;
-        e.notDeployed=r.status===404||/PGRST20[0-9]|42P01|does not exist|Could not find/.test(b||'');throw e;});
+        e.notDeployed=r.status===404||/PGRST20[0-9]|42P01|does not exist|Could not find/.test(b||'');
+        e.signin=!e.notDeployed&&(r.status===401||r.status===403||/42501|permission denied/.test(b||''));throw e;});
     });
   }
   function refPaint(gid){
@@ -25152,10 +25158,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   function refLoad(gid){
     var S=REF[gid];
-    if(S&&(S.st==='loading'||Date.now()-S.at<REF_TTL))return;
-    REF[gid]={st:'loading',at:Date.now(),row:S&&S.row};
+    if(S&&(S.st==='loading'||S.busy))return;
+    /* "sign in" stays on screen and is re-checked on every render (no request is
+       made while signed out); anything else is kept for the TTL */
+    if(S&&S.st==='signin')S.busy=true;
+    else if(S&&Date.now()-S.at<REF_TTL)return;
+    else REF[gid]={st:'loading',at:Date.now(),row:S&&S.row};
     refFetch(gid).then(function(rows){REF[gid]={st:'ok',at:Date.now(),row:(rows&&rows[0])||null};refPaint(gid);},
-      function(e){REF[gid]={st:e&&e.notDeployed?'not_deployed':'error',at:Date.now(),err:e&&e.message};refPaint(gid);});
+      function(e){REF[gid]={st:e&&e.signin?'signin':e&&e.notDeployed?'not_deployed':'error',at:Date.now(),err:e&&e.message};refPaint(gid);});
   }
   function refFinal(gid){try{var g=(typeof cfbGameById==='function')?cfbGameById(gid):null;return !!(g&&g.completed);}catch(_){return false;}}
   /* one comparison: the value, vs the crew's conference, vs FBS, the rank (3+ games only) */
@@ -25173,6 +25183,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var lim='<div class="ms-lim">'+REF_LIMITS+'</div>';
     if(!S||S.st==='loading')return refRow(lab,'<span class="ms-m">loading…</span>')+lim;
     if(S.st==='not_deployed')return refRow(lab,'<span class="ms-soon">Not deployed</span> <span class="ms-m">the referee tables — supabase/cfb_refs.sql is not applied yet</span>')+lim;
+    if(S.st==='signin')return refRow(lab,'<span class="ms-m">Sign in to see the referee and that crew\u2019s flag tendencies</span>')+lim;
     if(S.st==='error')return refRow(lab,'<span class="ms-chip warn">unavailable</span> <span class="ms-m">the referee tables could not be read ('+esc(S.err||'error')+')</span>')+lim;
     var R=S.row;
     if(!R||!R.referee_id){
