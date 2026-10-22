@@ -1,0 +1,58 @@
+# EdgeDesk CFB referee flags — the rules, on the pull request.
+#
+# The officiating block is display only, and the database is where its rules
+# live (first_observed_at never rewritten, a replaced referee kept, the backfill
+# never touching an assignment_conflict game, the dataset's conference, no rank
+# under 3 games). A change that breaks one of them has to fail on the PR that
+# makes it, not in the Sunday sync.
+#
+# Offline: no network, no credentials. The migration runs against a real
+# PostgreSQL (the runner's own), seeded with all 2,366 games.
+name: CFB referee tests
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/cfb_refs.sql'
+      - 'supabase/migrations/*_cfb_refs.sql'
+      - 'tools/refs/**'
+      - 'data/refs/cfb/**'
+      - 'app.html'
+      - '.github/workflows/cfb-ref-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/cfb_refs.sql'
+      - 'tools/refs/**'
+      - 'data/refs/cfb/*.csv'
+      - '.github/workflows/cfb-ref-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-ref-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q pandas requests
+      - name: The ESPN check, the backfill, name keys, play parsing (fixture summaries)
+        run: python3 -I tools/refs/test_cfb_refs.py
+      - name: The migration against a real PostgreSQL (seed, merge rules, history, views, rights)
+        env:
+          CFB_REFS_SQL_REQUIRED: '1'
+        run: node tools/refs/cfb_refs_sql.test.js
+      - name: The card's Officiating block (states, no rank under 3 games, display only)
+        run: node tools/refs/cfb_refs_ui.test.js
