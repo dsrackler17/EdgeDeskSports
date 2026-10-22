@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-22T05:08:29.173Z",
+ "generated_at": "2026-10-22T12:12:33.181Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,19 +119,19 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 109,
+  "total": 108,
   "by_group": {
-   "other": 54,
+   "other": 53,
    "p4": 56,
    "independent": 3
   },
   "by_matchup": {
-   "conference": 105,
+   "conference": 104,
    "non_conference": 4
   },
   "by_conference": {
-   "cusa": 7,
    "sunbelt": 11,
+   "cusa": 6,
    "american": 11,
    "acc": 15,
    "independents": 3,
@@ -200,22 +200,24 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 109
+  "PREDICTED": 108
  },
  "weather": {
-  "requested": 104,
-  "answered": 104,
+  "requested": 103,
+  "answered": 102,
   "dome": 3,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 1,
+  "carried": 1,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 429": 1
+  },
   "host": "api.open-meteo.com",
-  "summary": "104 of 104 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "102 of 103 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (HTTP 429 x1)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 109
+  "NO_MARKET": 108
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -284,12 +286,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 53,
-    "total": 109,
+    "non_power_games": 52,
+    "total": 108,
     "example": [
-     "New Mexico State @ Sam Houston",
      "James Madison @ App State",
-     "Liberty @ Kennesaw State"
+     "Liberty @ Kennesaw State",
+     "East Carolina @ Memphis"
     ]
    }
   },
@@ -304,7 +306,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 105,
+    "conference_games": 104,
     "wrong": 0
    }
   },
@@ -338,8 +340,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 109,
-    "audit_total": 109
+    "slate": 108,
+    "audit_total": 108
    }
   },
   {
