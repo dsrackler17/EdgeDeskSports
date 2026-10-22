@@ -225,6 +225,9 @@ async function doctor(opts) {
     let j = null; try { j = f.ok ? JSON.parse(f.text) : null; } catch (_) { /* unreadable is not paused */ }
     return j && j.state === 'paused' ? j : null;
   }
+  /* which gate holds it: the switch is not the only one (odds_feed_status
+     paused_by), and "paused" beside a breaker someone just turned on needs it */
+  const pausedBy = (p) => (p.paused_by ? ', paused_by ' + p.paused_by : '');
   const PAUSED_FIX_HINT = ' If paid odds retrieval is meant to be paused (docs/odds-api-incident-2026-10/INCIDENT.md), '
     + 'apply supabase/odds_api_emergency_stop.sql and supabase/odds_api_gateway.sql (the Deploy odds gateway workflow) '
     + 'so the pause is recorded where this check can read it.';
@@ -250,7 +253,7 @@ async function doctor(opts) {
       if (paused) {
         add('the board is being captured', 'PAUSED',
           'not one signal row exists for any game that has not started yet, and paid odds retrieval is paused '
-          + `(odds_feed_status: ${paused.message || 'paused'}). Not a fault while the pause holds.`);
+          + `(odds_feed_status: ${paused.message || 'paused'}${pausedBy(paused)}). Not a fault while the pause holds.`);
       } else {
         add('the board is being captured', 'EMPTY',
           'not one signal row exists for any game that has not started yet',
@@ -287,7 +290,7 @@ async function doctor(opts) {
         add('the board is being captured', 'PAUSED',
           `the newest capture on an upcoming game is ${age} old (${r.sport_key || 'unknown sport'}, `
           + `kicks off ${r.commence_time || 'at an unknown time'}), and paid odds retrieval is paused `
-          + `(odds_feed_status: ${paused.message || 'paused'}). Not a fault while the pause holds; `
+          + `(odds_feed_status: ${paused.message || 'paused'}${pausedBy(paused)}). Not a fault while the pause holds; `
           + 'it is lifted by the re-enable runbook in docs/odds-api-incident-2026-10/INCIDENT.md.');
       } else if (state === 'AGING') {
         add('the board is being captured', 'AGING',

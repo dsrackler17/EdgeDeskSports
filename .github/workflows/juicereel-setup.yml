@@ -202,5 +202,5 @@ jobs:
             echo "3. You come back to EdgeDesk connected; your sportsbooks appear as accounts and your history imports."
             echo ""
             echo "It stays open for operators for 30 days. Readers see *Awaiting provider approval* until the stages in docs/juicereel.md § 9 pass and Juice Reel is switched on."
-            echo "Next stages: \`node tools/portfolio/juicereel_smoke.js stage $id IMPORT\` (and the rest of § 9)."
+            printf 'Next stages: `node tools/portfolio/juicereel_smoke.js stage %s IMPORT` (and the rest of § 9).\n' "$id"
           } >> "$GITHUB_STEP_SUMMARY"

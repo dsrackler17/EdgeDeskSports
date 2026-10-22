@@ -140,8 +140,15 @@ try {
   T.chk('5 · the recovery budget is 60,000 operational, 40,000 reserve, 1,500/day', J("select public.odds_api_apply_recovery_budget()").monthly_budget === 60000
     && db.sql('select monthly_reserve::text || daily_target::text from public.odds_api_config') === '400001500');
   T.chk('5 · a reason is required to turn it on', J("select public.odds_api_set_enabled(true, '  ')").ok === false);
+  /* the feed state readers and the deploy doctor see: paused while acquire
+     would refuse every paid call, whichever gate refuses it */
+  const feedNow = () => J('select public.odds_feed_status()');
+  const feedPaused = (why) => { const f = feedNow(); return f.state === 'paused' && f.paid_refresh === false && f.paused_by === why; };
+  T.chk('5 · the feed reads paused (breaker_off) while the breaker is off', feedPaused('breaker_off'), feedNow());
   T.chk('5 · with a budget and a reason it turns on', J("select public.odds_api_set_enabled(true, 'test')").ok === true);
+  T.chk('5 · on, but with this cycle\'s quota unconfirmed, the feed still reads paused (quota_unconfirmed), never live', feedPaused('quota_unconfirmed'), feedNow());
   db.sql("select public.odds_api_confirm_quota(0, 100000, 'test')");
+  T.chk('5 · once the quota is confirmed the feed is live and names no gate', feedNow().state === 'live' && feedNow().paused_by === null, feedNow());
   db.sql("update public.odds_api_config set day_weights = '{\"0\":1,\"1\":1,\"2\":1,\"3\":1,\"4\":1,\"5\":1,\"6\":1}'::jsonb");
 
   /* ── 6 · single flight under REAL concurrency ─────────────────────────── */
@@ -231,10 +238,16 @@ try {
     && 'projected_cycle' in st && st.quota_confirmed === true, st);
   db.sql("update public.odds_api_config set provider_observed_at = date_trunc('month', now()) - interval '1 day' where id = 1");
   T.chk('10 · a quota observed only in the previous cycle is NOT assumed for this one', acq({ caller: 't', category: 'featured', sport_key: 'americanfootball_nfl' }).decision === 'denied_unconfirmed_quota');
+  T.chk('10 · and the feed says so: paused (quota_unconfirmed)', feedPaused('quota_unconfirmed'), feedNow());
   db.sql("select public.odds_api_confirm_quota(0, 100000, 'test')"); clean();
   db.sql("update public.odds_api_config set monthly_reserve = 99999 where id = 1");
   T.chk('10 · the provider reserve is never spent', acq({ caller: 't', category: 'featured', sport_key: 'americanfootball_nfl' }).decision === 'denied_reserve');
+  T.chk('10 · a reserve the confirmed remainder cannot clear for even one credit reads paused (provider_reserve)',
+    db.sql("update public.odds_api_config set monthly_reserve = provider_requests_remaining where id = 1 returning 1") === '1' && feedPaused('provider_reserve'), feedNow());
   db.sql("update public.odds_api_config set monthly_reserve = 0 where id = 1"); clean();
+  db.sql("update public.odds_api_config set daily_target = 0 where id = 1");
+  T.chk('10 · a zero daily target (acquire: denied_no_budget) reads paused (no_budget)', feedPaused('no_budget'), feedNow());
+  db.sql("update public.odds_api_config set daily_target = 1500 where id = 1"); clean();
 
   /* ── 11 · untracked usage, alerts, redaction ─────────────────────────── */
   db.sql("truncate public.odds_api_requests, public.odds_api_alerts restart identity; update public.odds_api_config set untracked_baseline = null, untracked_baseline_cycle = null;");
