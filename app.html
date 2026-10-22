@@ -6070,7 +6070,8 @@ var RS_PROV={
     {nm:'SP+ rating, ranking, SOS',tier:'T3',model:'cfbd.sp_plus',src:'Third-party opponent-adjusted model, ingested from CollegeFootballData'},
     {nm:'Pregame Elo',tier:'T3',model:'cfbd.elo',src:'Third-party rating model, ingested from CollegeFootballData (cfb.games.*_pregame_elo)'},
     {nm:'SP+ favourite margin shown on game rows',tier:'T2',src:'Computed in the browser as home SP+ minus away SP+'},
-    {nm:'Analyst flag drivers and flag-to-close CLV',tier:'T2',src:'cfb.analyst_flags — deterministic rules computed server-side from stored drivers'}
+    {nm:'Analyst flag drivers and flag-to-close CLV',tier:'T2',src:'cfb.analyst_flags — deterministic rules computed server-side from stored drivers'},
+    {nm:'Officiating: referee, flags and holding per game vs the crew\u2019s conference and FBS (Analyst pass, display only)',tier:'T0',src:'public.cfb_game_ref_context (supabase/cfb_refs.sql) — accepted penalties from the box score, holding and pass interference counted per play from play-by-play, the referee from the NCAA box score (crew chief, inferred) or the official ESPN lists as Referee (data/refs/cfb, synced by cfb-ref-sync.yml). Read by no model, classification or CLV grade.'}
   ],
   football:[
     {nm:'NFL schedule, results, rest, starting QBs, closing consensus lines',tier:'T0',src:'nflverse/nfldata games.csv — public keyless dataset, fetched browser-direct (CORS-open)'},
@@ -6142,7 +6143,8 @@ var RS_LIMITS={
        'Lines are consensus book numbers, not Pinnacle, and are not a CLV measurement.',
        'Per-play and drive data are not ingested (free CollegeFootballData tier), so the deep dive is season aggregates only.',
        'SP+ and Elo are third-party models. EdgeDesk has not validated either against closing lines.',
-       'Game lists are capped at 150 rows per segment.'],
+       'Game lists are capped at 150 rows per segment.',
+       'Referee tendencies are display only and small samples: a referee with fewer than 3 games is shown without a rank, and the comparison is to the crew’s conference average because crews work one conference.'],
   football:['The model is UNPROVEN by EdgeDesk’s own standard: its 2016–2025 walk-forward record does NOT beat the NFL closing line (48.7–50.8% ATS by gap size), and the module says so on every card.',
        'No public historical CFB betting-line archive exists, so the CFB side makes no market claim at all; its benchmarks are margin accuracy vs a third-party Elo and home-field-only.',
        'NFL and NCAAF quotes join from live captured signals where they exist; outside a capture window the cards show the engine’s numbers with reference lines clearly labeled as such.',
@@ -25097,6 +25099,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .cfa-clv .pos{color:var(--pos)}.cfa-clv .neg{color:var(--neg)}
 .cfa-none{padding:10px 12px;font-size:11.5px;color:var(--faint)}
 .cfa-foot{padding:8px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--faint);line-height:1.45}
+/* the Officiating rows reuse the NFL card's Market Structure rows (.ms-row, .ms-note, .ms-lim) */
+.cfa-ref .ms-lim{margin-top:6px;padding-top:6px}
 </style>
 <script>
 (function(){
@@ -25111,12 +25115,113 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   function arr(v){ if(Array.isArray(v))return v; if(typeof v==='string'){try{var p=JSON.parse(v);return Array.isArray(p)?p:[];}catch(e){return [];}} return []; }
 
+  /* ---- Observed: Officiating (public.cfb_game_ref_context, supabase/cfb_refs.sql) ----
+     DISPLAY ONLY. The same block as the NFL card's Officiating (Market
+     Structure -> Observed): the same rows, two decimals, "vs" in --pos/--neg as
+     the CLV, the rank "of N", "Assignment not announced". For CFB the crew's
+     conference average comes first and FBS second, and a referee with fewer than
+     3 games this season is shown without a rank. Reads its own view by the
+     card's game id and never touches the classification, the drivers or CLV
+     above it. Read as the anon visitor, NOT through sbFetch: before the
+     migration is applied the view answers 404, and that is a state of this
+     block, not a database outage. */
+  var REF={},REF_TTL=5*60e3;
+  var REF_LIMITS='<b>Known limitations.</b> Referee identity is inferred: the single official on the NCAA box score (the crew chief) or the official ESPN lists as Referee. '
+    +'Holding and pass interference are counted per play from play-by-play; flags are accepted penalties from the box score. '
+    +'Crews work one conference, so the comparison that matters is to that conference’s average. Samples are small: a few games per season. '
+    +'The source has no betting lines, so there is no over/under record.';
+  function f2(x){x=n(x);return x==null?'—':x.toFixed(2);}
+  function int(x){return x==null?'—':String(x);}
+  /* above the base reads in --pos, below in --neg, as the CLV does (and the NFL block) */
+  function vsB(x){
+    x=n(x);if(x==null)return '—';
+    return '<span style="color:'+(x>0?'var(--pos)':x<0?'var(--neg)':'var(--text)')+'">'+(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(2)+'</span>';
+  }
+  function etWhen(iso){try{return new Date(iso).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET';}catch(_){return String(iso);}}
+  function refRow(l,v){return '<div class="ms-row"><span class="l">'+l+'</span><span class="v">'+v+'</span></div>';}
+  function refFetch(gid){
+    if(typeof SB_URL==='undefined'||typeof SB_KEY==='undefined')return Promise.reject(Object.assign(new Error('no database configured'),{notDeployed:true}));
+    return fetch(SB_URL+'/rest/v1/cfb_game_ref_context?game_id=eq.'+encodeURIComponent(gid)+'&select=*',{headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY}}).then(function(r){
+      if(r.ok)return r.json();
+      return r.text().then(function(b){var e=new Error('HTTP '+r.status);e.status=r.status;
+        e.notDeployed=r.status===404||/PGRST20[0-9]|42P01|does not exist|Could not find/.test(b||'');throw e;});
+    });
+  }
+  function refPaint(gid){
+    try{var els=document.querySelectorAll('[data-cfa-ref="'+gid+'"]');for(var i=0;i<els.length;i++)els[i].innerHTML=refBody(gid);}catch(_){}
+  }
+  function refLoad(gid){
+    var S=REF[gid];
+    if(S&&(S.st==='loading'||Date.now()-S.at<REF_TTL))return;
+    REF[gid]={st:'loading',at:Date.now(),row:S&&S.row};
+    refFetch(gid).then(function(rows){REF[gid]={st:'ok',at:Date.now(),row:(rows&&rows[0])||null};refPaint(gid);},
+      function(e){REF[gid]={st:e&&e.notDeployed?'not_deployed':'error',at:Date.now(),err:e&&e.message};refPaint(gid);});
+  }
+  function refFinal(gid){try{var g=(typeof cfbGameById==='function')?cfbGameById(gid):null;return !!(g&&g.completed);}catch(_){return false;}}
+  /* one comparison: the value, vs the crew's conference, vs FBS, the rank (3+ games only) */
+  function refStat(v,conf,confAvg,confD,fbsAvg,fbsD,rankC,ofC,rankF,ofF,games){
+    var h=f2(v);
+    if(conf&&confAvg!=null)h+=' '+vsB(confD)+' <span class="m">vs '+esc(conf)+' '+f2(confAvg)+'</span>';
+    if(fbsAvg!=null)h+=' '+vsB(fbsD)+' <span class="m">vs FBS '+f2(fbsAvg)+'</span>';
+    if(n(games)!=null&&n(games)<3)h+=' <span class="m">· not ranked (under 3 games)</span>';
+    else if(conf&&rankC!=null)h+=' <span class="m">· rank '+int(rankC)+' of '+int(ofC)+' '+esc(conf)+' refs</span>';
+    else if(rankF!=null)h+=' <span class="m">· rank '+int(rankF)+' of '+int(ofF)+' FBS refs</span>';
+    return h;
+  }
+  function refBody(gid){
+    var S=REF[gid],lab='Officiating';
+    var lim='<div class="ms-lim">'+REF_LIMITS+'</div>';
+    if(!S||S.st==='loading')return refRow(lab,'<span class="ms-m">loading…</span>')+lim;
+    if(S.st==='not_deployed')return refRow(lab,'<span class="ms-soon">Not deployed</span> <span class="ms-m">the referee tables — supabase/cfb_refs.sql is not applied yet</span>')+lim;
+    if(S.st==='error')return refRow(lab,'<span class="ms-chip warn">unavailable</span> <span class="ms-m">the referee tables could not be read ('+esc(S.err||'error')+')</span>')+lim;
+    var R=S.row;
+    if(!R||!R.referee_id){
+      var fin=refFinal(gid);
+      return refRow(lab,'<span class="ms-m">'+(fin?'No referee on record for this game':'Assignment not announced')+'</span>')
+        +(fin?'':'<div class="ms-note">ESPN’s pregame officials are read Thursday and Friday; the referee shows here once ESPN lists one.</div>')+lim;
+    }
+    var conf=R.primary_conf||null;
+    var how=(R.basis==='assignment'||R.source==='espn')
+      ?('listed by ESPN as Referee'+(R.first_observed_at?', first seen '+esc(etWhen(R.first_observed_at)):''))
+      :'crew chief on the NCAA box score (inferred)';
+    var h=refRow(lab,esc(R.referee||R.referee_id)+' <span class="m">· referee · '+(conf?esc(conf)+' crew':'conference unavailable')+' · '+how
+      +(n(R.observed_referees)>1?' · ESPN changed the referee; the earlier listing is kept':'')+'</span>');
+    var sea=R.season!=null?esc(String(R.season)):'this season',g=n(R.season_games);
+    var yl=(R.y3_first_season!=null&&R.y3_last_season!=null)?esc(R.y3_first_season)+'–'+esc(R.y3_last_season):'3 seasons',g3=n(R.y3_games);
+    if(g){
+      var gl=' <span class="ms-m">'+sea+' · '+g+' game'+(g===1?'':'s')+'</span>';
+      var hg=n(R.season_holding_games);
+      h+=refRow('Flags / game'+gl,refStat(R.season_flags_pg,conf,R.conf_flags_pg,R.flags_vs_conf_pg,R.fbs_flags_pg,R.flags_vs_fbs_pg,R.flags_rank_in_conf,R.conf_refs_ranked,R.flags_rank_fbs,R.fbs_refs_ranked,g));
+      h+=refRow('Holding / game'+gl+(hg!=null&&hg<g?' <span class="ms-m">('+hg+' with play-by-play)</span>':''),
+        refStat(R.season_holding_pg,conf,R.conf_holding_pg,R.holding_vs_conf_pg,R.fbs_holding_pg,R.holding_vs_fbs_pg,R.holding_rank_in_conf,R.conf_refs_ranked,R.holding_rank_fbs,R.fbs_refs_ranked,g));
+    }else h+=refRow('This season','<span class="ms-m">no '+sea+' game worked yet</span>');
+    h+=refRow('Offensive holding / game',(g?f2(R.season_off_holding_pg)+' <span class="m">'+sea+'</span>':'—')
+      +(g3?' <span class="m">·</span> '+f2(R.y3_off_holding_pg)+' <span class="m">'+yl+'</span>':''));
+    if(g3)h+=refRow('3-season baseline <span class="ms-m">'+yl+' · '+g3+' game'+(g3===1?'':'s')+'</span>',
+      f2(R.y3_flags_pg)+' <span class="m">flags</span> '+vsB(R.y3_flags_vs_fbs)+' <span class="m">·</span> '+f2(R.y3_holding_pg)+' <span class="m">holding</span> '+vsB(R.y3_holding_vs_fbs)
+      +' <span class="m">per game, vs FBS '+f2(R.y3_fbs_flags_pg)+' / '+f2(R.y3_fbs_holding_pg)+'</span>');
+    else h+=refRow('3-season baseline','<span class="ms-m">no games on record</span>');
+    if(g&&g<3)h+='<div class="ms-note">'+g+' game'+(g===1?'':'s')+' this season: shown without a rank (3 or more are needed), and the 3-season numbers are the steadier read.</div>';
+    else if(g&&conf&&R.conf_refs_ranked!=null)h+='<div class="ms-note">Rank 1 is the most per game among the '+int(R.conf_refs_ranked)+' '+esc(conf)+' referees with 3 or more '+sea+' games; '
+      +g+' games are a small sample, and the 3-season numbers are the steadier read.</div>';
+    if(!conf)h+='<div class="ms-note">Conference unavailable: the dataset maps this referee to no conference, so the comparison is to FBS.</div>';
+    return h+lim;
+  }
+  function refBlockHTML(gid){
+    var id=String(gid==null?'':gid);
+    if(/^\d+$/.test(id))refLoad(id);
+    else REF[id]={st:'ok',at:Date.now(),row:null};
+    return '<div class="cfa-sec cfa-obs"><h5>Observed <span class="rs-badge rs-t0" title="T0: observed, with its source. Nothing is estimated or modeled." style="cursor:default;margin-left:4px"><span class="dot"></span>T0</span></h5>'
+      +'<div class="cfa-ref" data-cfa-ref="'+esc(id)+'">'+refBody(id)+'</div></div>';
+  }
+  window.cfbRefHTML=refBlockHTML;
+
   window.cfbAnalystHTML=function(gid){
     var F=(window.CFB&&CFB.flags)?CFB.flags[gid]:null;
     if(!F){
       return '<div class="cfa-card"><div class="cfa-h"><span class="cfa-t">Analyst pass</span>'+
              '<span class="cfa-badge pass">NOT RUN</span></div>'+
-             '<div class="cfa-none">No analyst pass on record for this game yet.</div></div>';
+             '<div class="cfa-none">No analyst pass on record for this game yet.</div>'+refBlockHTML(gid)+'</div>';
     }
     var cls=(F.classification||'PASS').toLowerCase();
     var uv=F.undervalued_side?('undervalued: '+esc(F.undervalued_side)):'';
@@ -25126,7 +25231,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
     if(F.classification==='DATA_INSUFFICIENT'){
       return '<div class="cfa-card">'+head+
-        '<div class="cfa-none">Primary inputs missing (SP+ or a reference line). Not classified.</div>'+
+        '<div class="cfa-none">Primary inputs missing (SP+ or a reference line). Not classified.</div>'+refBlockHTML(gid)+
         '<div class="cfa-sec"><h5>Data limitations</h5>'+list(arr(F.missing_inputs))+'</div></div>';
     }
 
@@ -25157,7 +25262,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         '</div>';
     }
 
-    return '<div class="cfa-card">'+head+drv+why+obs+par+hid+lim+pending+clv+
+    return '<div class="cfa-card">'+head+drv+why+obs+par+hid+refBlockHTML(gid)+lim+pending+clv+
       '<div class="cfa-foot">Classification is computed from stored drivers, not chosen by the model. No confidence score. CLV is flag price to close, same book. Research context, not a bet.</div></div>';
   };
 })();

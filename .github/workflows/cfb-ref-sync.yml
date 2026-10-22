@@ -1,0 +1,195 @@
+# EdgeDesk CFB referee flags — the ESPN sync (data/refs/cfb/, supabase/cfb_refs.sql).
+# Tier: Observed (T0), display only: the Officiating block on the CFB Analyst
+# pass. Nothing here feeds a model, a classification, H-CFB-01 or CLV grading.
+# The NFL's twin is ref-sync.yml; this one follows its shape.
+#
+#   Sunday 15:00 UTC      finals: last week's completed FBS games -> cfb_ref_game_penalties
+#                         (box score totalPenaltiesYards for flags and yards, play text +
+#                         possession for holding off/def and DPI/OPI, officials for the
+#                         Referee). New games are inserted; a stored game is only filled
+#                         where a column is empty, never rewritten.
+#   Thursday + Friday     assignments: this week's FBS slate. When ESPN's summary lists an
+#   15:00 UTC             official as Referee it goes to cfb_ref_assignments with source
+#                         espn and first_observed_at = now(), never rewritten; a changed
+#                         referee is a new row and the earlier one is kept.
+#   pull_request          backfill, when the dataset or the tool changes, as a DRY RUN (no
+#                         database credentials): the five-game check against the NCAA
+#                         referees, then the missing referees, committed to
+#                         data/refs/cfb/backfill/ on the pull request so the evidence is
+#                         reviewed with the change. The seed loads it.
+#
+# BY HAND (Actions -> CFB referee sync -> Run workflow): pick the mode (season and week
+# optional); tick dry to read and build without writing.
+#
+# FIRST RUN: tick apply_sql (applies supabase/cfb_refs.sql, idempotent; a report row
+# that says CHECK THIS fails the job) and seed (the committed 2,366 games, upsert on
+# game_id, then the ESPN backfill in data/refs/cfb/backfill/; it checks every ESPN id
+# against cfb.games, logs the misses and prints coverage by season). Both are safe to
+# repeat.
+#
+# The backfill stops (and this job fails) when ESPN's Referee does not match the NCAA
+# referee on five games, or five cannot be verified: STOPPED.md says why, nothing is
+# filled.
+#
+# SECRETS: SB_URL, SB_SERVICE_ROLE (as ref-sync.yml); SB_DB_URL only for apply_sql.
+# Outside a dry run, a missing secret, a migration that is not applied or a failed write
+# fails the job. Raw ESPN JSON for completed games is cached between runs
+# (actions/cache); pregame summaries are always fetched fresh.
+name: CFB referee sync
+
+on:
+  schedule:
+    - cron: '0 15 * * 0'      # Sunday: finals
+    - cron: '0 15 * * 4,5'    # Thursday and Friday: assignments
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'assignments (this week) | finals (last week) | backfill (the 5-game check, then the missing referees) | none (only apply_sql / seed)'
+        type: choice
+        options: [assignments, finals, backfill, none]
+        default: assignments
+      season:
+        description: 'Season (empty = ESPN current)'
+        required: false
+      week:
+        description: 'Week (empty = this week for assignments, last week for finals)'
+        required: false
+      dry:
+        description: 'Dry run: read and build, write nothing'
+        type: boolean
+        default: false
+      apply_sql:
+        description: 'First run: apply supabase/cfb_refs.sql first (idempotent; needs SB_DB_URL)'
+        type: boolean
+        default: false
+      seed:
+        description: 'First run: load the committed seed first (2,366 games + the ESPN backfill)'
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - 'data/refs/cfb/*.csv'
+      - 'data/refs/cfb/*.py'
+      - 'tools/refs/cfb_refs.py'
+      - '.github/workflows/cfb-ref-sync.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cfb-ref-sync-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # a fork's pull request cannot push the evidence back
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Mode
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT: ${{ inputs.mode }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          dry=false
+          case "$EVENT" in
+            schedule)     if [ "$SCHEDULE" = "0 15 * * 0" ]; then m=finals; else m=assignments; fi ;;
+            pull_request) m=backfill; dry=true ;;
+            *)            m="${INPUT:-assignments}"; [ "$DRY" = "true" ] && dry=true ;;
+          esac
+          echo "mode=$m" >> "$GITHUB_OUTPUT"
+          echo "dry=$dry" >> "$GITHUB_OUTPUT"
+          echo "mode $m, dry $dry"
+
+      - uses: actions/checkout@v5
+        with:
+          # the pull request's own branch (not the merge commit), so the evidence can be pushed to it
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pandas and requests
+        run: pip install -q pandas requests
+
+      - name: The rules must pass before they are allowed to write
+        run: python3 -I tools/refs/test_cfb_refs.py
+
+      - name: Apply supabase/cfb_refs.sql
+        if: ${{ inputs.apply_sql && !inputs.dry }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set: paste supabase/cfb_refs.sql into the SQL editor instead"; exit 1; fi
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/cfb_refs.sql)
+          echo "$out" | tail -9
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::cfb_refs.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Load the committed seed (2,366 games, then the ESPN backfill), game-id check, coverage by season
+        if: ${{ inputs.seed }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          DRY: ${{ steps.mode.outputs.dry }}
+        run: |
+          if [ "$DRY" = "true" ]; then python3 -I tools/refs/cfb_refs.py seed --dry-run; exit 0; fi
+          python3 -I tools/refs/cfb_refs.py seed
+
+      - name: ESPN cache (completed games only)
+        if: ${{ steps.mode.outputs.mode != 'none' }}
+        uses: actions/cache@v4
+        with:
+          path: data/refs/cfb/cache
+          key: cfb-ref-espn-${{ github.run_id }}
+          restore-keys: cfb-ref-espn-
+
+      - name: Run
+        id: run
+        if: ${{ steps.mode.outputs.mode != 'none' }}
+        env:
+          MODE: ${{ steps.mode.outputs.mode }}
+          DRY: ${{ steps.mode.outputs.dry }}
+          SEASON: ${{ inputs.season }}
+          WEEK: ${{ inputs.week }}
+          # a pull request never writes the database
+          SB_URL: ${{ github.event_name != 'pull_request' && secrets.SB_URL || '' }}
+          SB_SERVICE_ROLE: ${{ github.event_name != 'pull_request' && secrets.SB_SERVICE_ROLE || '' }}
+        run: |
+          set +e
+          args=()
+          if [ "$MODE" != backfill ]; then
+            [ -n "$SEASON" ] && args+=(--season "$SEASON")
+            [ -n "$WEEK" ] && args+=(--week "$WEEK")
+          fi
+          [ "$DRY" = "true" ] && args+=(--dry-run)
+          python3 -I tools/refs/cfb_refs.py "$MODE" "${args[@]}"
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit the backfill evidence (also when the check stopped it)
+        if: ${{ steps.mode.outputs.mode == 'backfill' }}
+        env:
+          BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+        run: |
+          git config user.name "edgedesk-bot"
+          git config user.email "edgedesk-bot@users.noreply.github.com"
+          tools/ci/push_generated.sh "$BRANCH" "cfb refs: ESPN referee backfill (5-game check, fills, coverage by season)" -- data/refs/cfb/backfill
+
+      # On a pull request the backfill is a dry evidence run: a stopped check is the
+      # finding (committed as STOPPED.md), reported as a warning, not a broken build.
+      # Anywhere it would write, a stop fails the job.
+      - name: Result
+        if: ${{ steps.mode.outputs.mode != 'none' }}
+        env:
+          RC: ${{ steps.run.outputs.rc }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$RC" = "2" ] && [ "$EVENT" = "pull_request" ]; then echo "::warning::ESPN backfill stopped: the 5-game check did not pass, nothing was filled (data/refs/cfb/backfill/STOPPED.md)"; exit 0; fi
+          if [ "$RC" = "2" ]; then echo "::error::ESPN backfill stopped: the 5-game check failed (data/refs/cfb/backfill/STOPPED.md)"; exit 2; fi
+          if [ "$RC" != "0" ]; then echo "::error::cfb_refs.py exited $RC"; exit 1; fi

@@ -1108,6 +1108,45 @@ All are in `.github/workflows/nba.yml`.
 
 Rollback: `supabase/nba_injury_layer_rollback.sql`.
 
+## CFB referee flags — the Officiating block on the Analyst pass
+
+The CFB Analyst pass card has an **Observed (T0)** section with an
+**Officiating** block: who the referee is, and how many flags and holding calls
+that referee's games have drawn against the crew's conference average and FBS's.
+**Display only**: no model input, classification (INVESTIGATE / MONITOR / PASS),
+H-CFB-01, CLV grade or ranking of games reads it.
+
+- **Data.** `data/refs/cfb/` (2,366 FBS games, 2024–2026, built and validated
+  outside this repository; its README says how). Referee = the single official on
+  the NCAA box score (the crew chief, inferred) or the official ESPN lists as
+  Referee. Flags are accepted penalties from the box score; holding (offensive /
+  defensive) and DPI / OPI are counted per play from play-by-play.
+- **The NFL twin.** It follows the NFL referee flags (`data/refs/`, `supabase/nfl_ref_flags.sql`,
+  `ref-sync.yml`): the same RLS, `security_invoker` views, REST writes with the service role,
+  first-run `apply_sql` / `seed` inputs on the sync workflow, and the same Officiating rows in
+  an Observed section. CFB differs where its data does: the crew's conference average comes
+  first, a rank needs 3 games, and there is no O/U record (the source has no lines).
+- **Database.** `supabase/cfb_refs.sql`; first run: *Actions → CFB referee sync → Run workflow*
+  with **apply_sql** and **seed** (the SQL, the 2,366 games and the backfill, coverage by season).
+- **ESPN backfill.** 124 games had no referee (62 are 2026 Week 7). Before any is
+  filled, ESPN's Referee must match the NCAA referee on 5 games that have one
+  (no Referee listed = inconclusive, another game is read; a mismatch after
+  normalization stops it). The 13 `assignment_conflict` games are left alone.
+  Evidence: `data/refs/cfb/backfill/`. **Result (2026-10-22): stopped.** ESPN's game
+  summaries list no officials for these games, so no Referee could be verified and nothing
+  was filled; coverage stays as the NCAA data has it.
+- **Weekly.** `cfb-ref-sync.yml`: Sunday 15:00 UTC, last week's finals; Thursday
+  and Friday 15:00 UTC, ESPN's pregame Referee for this week's FBS slate, kept
+  with `first_observed_at` (never rewritten; a changed referee is a new row).
+- **The card.** This season's flags/game and holding/game vs the conference
+  average first, then FBS, with a rank among referees with 3+ games (fewer: the
+  numbers and the count, no rank); offensive holding/game; 3-yr flags and holding
+  with game counts. A referee the dataset does not map to a conference reads
+  "Conference unavailable" and is compared with FBS. No referee yet: "Assignment
+  not announced".
+- **Tests.** `python3 -I tools/refs/test_cfb_refs.py`, `node tools/refs/cfb_refs_sql.test.js`,
+  `node tools/refs/cfb_refs_ui.test.js` (`cfb-ref-tests.yml`).
+
 ## Kalshi market data — the prediction market beside the book (NFL and CFB)
 
 Kalshi's public order book for NFL and college football game-winner markets,
