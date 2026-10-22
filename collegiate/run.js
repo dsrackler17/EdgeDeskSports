@@ -9,7 +9,7 @@
    every season with its previous one (portal.js). collegiate-rosters.yml runs it weekly, and on a branch when
    the plan changes.
 
-     node collegiate/run.js [--today YYYY-MM-DD] [--skip-directory] [--only-backfill | --skip-backfill] [--force]
+     node collegiate/run.js [--today YYYY-MM-DD] [--skip-directory] [--only-backfill | --skip-backfill] [--force] [--once-a-day]
 
    The weekly workflow runs --skip-backfill (registry, rosters, schedules,
    ledger); the daily one --only-backfill (past seasons and box-score
@@ -17,6 +17,9 @@
 
    --force reads the weekly sports even when they were read in the last six
    days (a plan change on its own does not re-read them).
+   --once-a-day (the daily workflow) reads no second backfill slice on a day
+   that had one: pg_cron wakes it (supabase/cbase_cron.sql) and GitHub's backup
+   schedule then finds it done.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -48,6 +51,12 @@ async function run(o) {
   const plan = readJson(o.planFile || path.join(__dirname, 'plan.json'), null);
   if (!plan) throw new Error('collegiate/plan.json is missing');
   const summary = { today, steps: [] };
+  /* one backfill slice a day: pg_cron wakes it (supabase/cbase_cron.sql) and GitHub's backup schedule finds it done */
+  const prior = readJson(path.join(DATA, 'last_run.json'), {});
+  if (o.onceADay && o.onlyBackfill && prior.backfill_read_at === today) {
+    console.error('[run] today\'s backfill slice already ran (' + today + '): nothing to do');
+    return Object.assign({ skipped: 'backfill already read today' }, prior);
+  }
 
   /* 1. the registry */
   const reg = readJson(path.join(DATA, 'schools.json'), null);
@@ -145,6 +154,7 @@ async function run(o) {
   summary.steps.push({ step: 'portal', built });
   console.error('[run] portal ' + built.length + ' sport-seasons');
   summary.weekly_read_at = readAt;
+  summary.backfill_read_at = o.skipBackfill ? lastRun.backfill_read_at || null : today;
   writeJson(path.join(DATA, 'last_run.json'), summary);
   return summary;
 }
@@ -152,7 +162,7 @@ async function run(o) {
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const val = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
-  run({ today: val('--today'), skipDirectory: argv.includes('--skip-directory'), onlyBackfill: argv.includes('--only-backfill'), skipBackfill: argv.includes('--skip-backfill'), force: argv.includes('--force') })
+  run({ today: val('--today'), skipDirectory: argv.includes('--skip-directory'), onlyBackfill: argv.includes('--only-backfill'), skipBackfill: argv.includes('--skip-backfill'), force: argv.includes('--force'), onceADay: argv.includes('--once-a-day') })
     .catch((e) => { console.error(e.stack || e); process.exit(1); });
 }
 module.exports = { run, range, READERS };

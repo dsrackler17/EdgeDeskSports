@@ -14,15 +14,23 @@
 #                        what the holdout said.
 name: Model loop college baseball (weekly)
 
+# WHO WAKES IT. pg_cron (supabase/cbase_cron.sql) on Thursday at 13:13 UTC, to research
+# only. GitHub's own schedule does not fire reliably here, so the one below is the
+# BACKUP, the same evening; a research run on a day that already has its record
+# (docs/model-loop/college_baseball/weekly/<date>.json) does nothing unless forced.
 on:
   schedule:
-    - cron: '13 13 * * 4'        # Thursday 13:13 UTC
+    - cron: '13 19 * * 4'        # the backup, Thursday 19:13 UTC (pg_cron is primary, 13:13)
   workflow_dispatch:
     inputs:
       mode:
         description: 'research (stage a change) or release (serve the staged version after its holdout look)'
         required: false
         default: 'research'
+      force:
+        description: 'research again even if today already has its record (true/false)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -46,8 +54,11 @@ jobs:
         run: node tools/college_baseball/college_baseball.test.js && node tools/college_baseball/loop.test.js
       - name: Research (stage) or release (serve after the holdout look)
         run: |
+          today="docs/model-loop/college_baseball/weekly/$(date -u +%F).json"
           if [ "${{ inputs.mode }}" = "release" ]; then
             node --max-old-space-size=6000 college_baseball/loop.js release
+          elif [ -f "$today" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo "today's research already ran ($today): nothing to do (dispatch with force=true to run it again)"
           else
             node --max-old-space-size=6000 college_baseball/loop.js all
           fi

@@ -108,6 +108,12 @@ before it keeps its label.
   were never tuned (`sigma_div`, `sigma_park`, `carry_conf`, `carry_div`,
   `carry_park`), and the run distribution's dispersion. Patterns in the
   VALIDATION misses (binomial z ≥ 2) choose which go first; the rest rotate.
+  (2026-10-22, the order only; the rule below is unchanged.) After the patterns'
+  changes come those not yet scored from the version research starts from, so a
+  change whose data has just arrived is tried the week it activates. The rest
+  rotate a full slate a week: re-scoring an unchanged change on unchanged data
+  says the same thing. A change that would leave the configuration as it is
+  (×1.6 of a term that is 0) takes no slot.
 - **The rule.** A change is kept only if, over SELECTION + VALIDATION, its log
   loss is lower by ≥ 0.0002 with a date-block bootstrap 95% interval wholly
   below zero, its Brier score is no worse, and it is no worse on VALIDATION.

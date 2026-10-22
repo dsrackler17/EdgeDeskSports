@@ -7,7 +7,7 @@ run-name: College baseball research build · ${{ github.event_name }}
 
 on:
   schedule:
-    - cron: '23 11 * 2-6 *'   # daily, February-June: today's games, coverage, board, audit, gates
+    - cron: '23 14 * 2-6 *'   # the backup, daily February-June (pg_cron is primary, 11:23: supabase/cbase_cron.sql)
   workflow_dispatch:
 
 permissions:

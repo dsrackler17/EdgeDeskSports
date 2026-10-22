@@ -558,6 +558,9 @@ function polite(pages, hosts, extra) {
     ok('run: a backfill completed with fewer readers is opened again, and a season held is not read again', s1.steps.some((x) => x.step === 'backfill' && x.ok === 1) && done.sched.readers === SC.READERS && done.sched.complete === true && !t.w.seen.some((x) => /schedule\/2016/.test(x.url)) && fs.existsSync(path.join(dataDir, 'schedules/baseball/2023/dayton.json')), { steps: s1.steps, seen: t.w.seen.map((x) => x.url) });
     ok('run: a thin season held from an older reader is read again; a full one is not', t.w.seen.some((x) => /schedule\/2019$/.test(x.url)) && !t.w.seen.some((x) => /schedule\/2021$/.test(x.url)), t.w.seen.map((x) => x.url));
     const n = t.w.seen.length;
+    /* one slice a day: pg_cron wakes the daily run, and GitHub's backup the same day finds it done */
+    const again = await RUN.run({ today: '2026-10-21', planFile, dataDir, polite: t.c, skipDirectory: true, onlyBackfill: true, onceADay: true, log: false });
+    ok('run: --once-a-day reads nothing on a day whose backfill has run', again.skipped && t.w.seen.length === n && JSON.parse(fs.readFileSync(path.join(dataDir, 'last_run.json'), 'utf8')).backfill_read_at === '2026-10-21', again);
     await RUN.run({ today: '2026-10-22', planFile, dataDir, polite: t.c, skipDirectory: true, log: false });
     ok('run: a backfill complete under the current readers is not read again', t.w.seen.length === n);
     fs.rmSync(dir, { recursive: true, force: true });

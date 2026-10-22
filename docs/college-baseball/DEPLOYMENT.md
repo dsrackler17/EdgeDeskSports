@@ -39,13 +39,24 @@ Owner actions that unblock gates:
 | G1 | Review the NCAA terms for the stats behind baseballr-data; record the decision in `college_baseball/research/authorizations.json` as `{ "baseballr_data": { "commercial_use": true, "signed_by": "<name>", "date": "<YYYY-MM-DD>" } }` |
 | G12 | Capture prices (below), verify each book's college-baseball settlement rules, and mark the matching profile in `college_baseball/lib/pricing.js` VERIFIED |
 
-**Prices, from the first game of the season.** The model can only be market-validated on prices captured after it was frozen (EXPERIMENTS.md, CBASE-H1), so capture has to start before the first pitch of 2027. Three owner actions, in order:
+**Prices, from the first game of the season.** The model can only be market-validated on prices captured after it was frozen (EXPERIMENTS.md, CBASE-H1), so capture has to start before the first pitch of 2027. Four owner actions, in order:
 
 1. Apply `supabase/cbase_odds_sport.sql` (also `supabase/migrations/20261021200000_cbase_odds_sport_row.sql`). It registers `baseball_ncaa` DISABLED, at priority 5, so it is shed first.
 2. Enable it in the gateway: `select public.odds_api_set_sport('baseball_ncaa', true);`.
-3. Set the repository variable `CBASE_PRICES` to `on`. `.github/workflows/college-baseball-prices.yml` then runs every 20 minutes from 14:00 to 04:59 UTC, February to June.
-   - Each run is one `featured` request: about 3 credits when bought, and nothing inside the gateway's cadence window. The worst case is about 100 credits a game day.
+3. Set the repository variable `CBASE_PRICES` to `on`. `.github/workflows/college-baseball-prices.yml` then runs hourly from 14:00 to 04:59 UTC, February to June. Nothing that can reach a paid path runs more often than hourly (the operator's rule since 2026-10-21).
+   - Each run is one `featured` request: about 3 credits when bought, and nothing inside the gateway's cadence window. The worst case is about 45 credits a game day.
+   - A run within 50 minutes of the last capture asks the gateway nothing.
    - It keeps prices under `college_baseball/data/market/`.
+4. Apply `supabase/cbase_cron.sql` (SQL editor). It schedules five jobs that ask GitHub to run the workflows on time. GitHub's own schedules don't fire reliably here: on 2026-10-22 the 09:17 backfill and the 13:13 loop never ran. The jobs:
+   - `cbase_prices`: hourly at :24, 14:00–04:59 UTC, February–June. It isn't woken while the Odds API breaker is off.
+   - `cbase_build`: daily at 11:23, February–June.
+   - `collegiate_backfill`: daily at 09:17.
+   - `collegiate_rosters`: Monday at 07:41.
+   - `cbase_loop`: Thursday at 13:13, research only. Releasing a version stays yours.
+   - It reads the GitHub token `edgedesk_gh_token` from Vault, the same one `supabase/editorial_dispatch_sql.sql` uses. Until that's set it dispatches nothing and says so. Its last statement reports each piece.
+   - Each workflow keeps its own GitHub schedule as a backup, later in the day. A backup run that finds the job already done does nothing.
+
+   Stop a job with `select cron.unschedule('cbase_prices');` (or any job's name).
 
 Withdraw with `select public.odds_api_set_sport('baseball_ncaa', false);` or by unsetting `CBASE_PRICES`.
 

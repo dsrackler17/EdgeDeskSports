@@ -106,8 +106,13 @@ const ev = (id, home, away, start, books) => ({ id, sport_key: 'baseball_ncaa', 
 
   /* the same snapshot again (served from the gateway's cache): nothing new is folded or taken */
   payload = Object.assign({}, payload, { source: 'cache', fresh: false });
-  const r2 = await FQ.run(o({ now: '2027-02-13T12:15:00Z' }));
+  const r2 = await FQ.run(o({ now: '2027-02-13T13:05:00Z' }));
   ok('a snapshot no newer than the last folded adds nothing', r2.status === 'CACHED' && r2.snapshot_new === false && r2.observations_kept === 0 && models().length === 2, r2);
+  /* nothing faster than hourly: a second wake inside the gap (GitHub's backup after pg_cron) asks the gateway nothing */
+  const quotesBefore = fs.readFileSync(path.join(marketRoot, 'quotes.json'), 'utf8');
+  const calls = seen.length;
+  const rs = await FQ.run(o({ now: '2027-02-13T13:45:00Z' }));
+  ok('a run within ' + FQ.MIN_GAP_MIN + ' minutes of the last capture asks the gateway nothing and changes no file', rs.status === 'SKIPPED' && seen.length === calls && fs.readFileSync(path.join(marketRoot, 'quotes.json'), 'utf8') === quotesBefore && FQ.MIN_GAP_MIN < 60, rs);
 
   /* a newer snapshot after game 2 started: game 2 closes at its last pregame price; game 1's moved price is logged */
   payload = { ok: true, decision: 'granted', source: 'provider', fresh: true, fetched_at: '2027-02-13T19:30:00Z', request_id: 'r3', cost: 3, data: data(-170, -400) };
