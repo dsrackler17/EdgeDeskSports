@@ -19,7 +19,10 @@
    points, regulation and regulation-plus-overtime wins, goals) and every
    club's 2026-27 schedule, one line per game.
    NBA: the standings page (its tiebreaker paragraph), the play-in and NBA Cup
-   explainers, and the league's 2026-27 schedule file, one line per game.
+   explainers, the 2026-27 schedule release and key dates, and the league's
+   2026-27 schedule file, one line per game; each page from nba.com, from
+   api-hub.nba.com and as the Internet Archive keeps it (nba.com refuses the
+   runners), the schedule release also from pr.nba.com.
    Kalshi (each sport): every Sports series whose title names the league or
    its championship (with the series' own fee_type / fee_multiplier), every
    open market in them with its FULL settlement rules and their sha256 (the
@@ -58,12 +61,27 @@ const NHL_PAGES: Page[] = [
   { id: 'nhl_tie_breaking_procedure', url: 'https://www.nhl.com/info/standings-info/tie-breaking-procedure' },
   { id: 'nhl_playoff_format', url: 'https://www.nhl.com/info/standings-info/playoff-format' }
 ];
-const NBA_PAGES: Page[] = [
-  /* the standings page carries the league's tiebreaker paragraph; the play-in and NBA Cup explainers */
-  { id: 'nba_standings', url: 'https://www.nba.com/standings' },
-  { id: 'nba_play_in', url: 'https://www.nba.com/news/nba-play-in-tournament' },
-  { id: 'nba_cup_101', url: 'https://www.nba.com/news/nba-cup-101' }
+/* nba.com and cdn.nba.com answer GitHub's runners 403 (Akamai "Access Denied", run 39957383090, 2026-10-23).
+   The league serves the same pages from api-hub.nba.com and its communications site pr.nba.com, and the
+   Internet Archive keeps nba.com's pages as published (id_ = the archived bytes, unmodified; the final URL
+   names the capture's time). Each is printed under its own id, so a verification cites which copy it read. */
+const NBA_ARCHIVE = 'https://web.archive.org/web/20261023000000id_/';
+const NBA_ARTICLES: Array<[string, string]> = [
+  /* the standings page carries the league's tiebreaker paragraph */
+  ['nba_standings', 'https://www.nba.com/standings'],
+  /* the play-in and NBA Cup explainers, the Cup's questions page */
+  ['nba_play_in', 'https://www.nba.com/news/nba-play-in-tournament'],
+  ['nba_cup_101', 'https://www.nba.com/news/nba-cup-101'],
+  ['nba_cup_faq', 'https://www.nba.com/news/nba-cup-frequently-asked-questions'],
+  /* the 2026-27 season as the league announced it: the schedule release and the key dates */
+  ['nba_2026_27_schedule_release', 'https://www.nba.com/news/2026-27-nba-regular-season-schedule'],
+  ['nba_2026_27_key_dates', 'https://www.nba.com/news/key-dates']
 ];
+const NBA_PAGES: Page[] = NBA_ARTICLES.flatMap(([id, url]): Page[] => [
+  { id, url },
+  { id: id + '_apihub', url: url.replace('https://www.nba.com/', 'https://api-hub.nba.com/') },
+  { id: id + '_archive', url: NBA_ARCHIVE + url }
+]).concat([{ id: 'nba_2026_27_schedule_release_pr', url: 'https://pr.nba.com/2026-27-nba-regular-season-schedule/' }]);
 const KALSHI_FEE_PAGES: Page[] = [
   /* Kalshi's fee schedule, and the API documentation of fee types, multipliers and rounding */
   { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' },
@@ -195,8 +213,11 @@ async function nhlApi() {
 
 /* NBA: the league's season schedule file (cdn.nba.com, what nba.com/schedule reads) */
 async function nbaApi() {
-  section('SOURCE nba_schedule  https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json');
-  const j = await fetchJson('nba_schedule', 'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json');
+  const live = 'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json';
+  section('SOURCE nba_schedule  ' + live);
+  let j = await fetchJson('nba_schedule', live);
+  /* the runners are refused by cdn.nba.com: read the Internet Archive's copy of the same file instead */
+  if (!j) { console.log('  live file refused; the archived copy follows'); j = await fetchJson('nba_schedule_archive', NBA_ARCHIVE + live); }
   const ls = (j && j.leagueSchedule) || {};
   console.log('  seasonYear ' + ls.seasonYear + ' · leagueId ' + ls.leagueId);
   const lines: string[] = [];
