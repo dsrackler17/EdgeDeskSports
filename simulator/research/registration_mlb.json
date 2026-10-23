@@ -1,0 +1,56 @@
+{
+ "schema": "edgedesk_research_registration_v1",
+ "model_key": "SIM-MLB-SEASON",
+ "name": "EdgeDesk Simulator — MLB correlated season and postseason simulation",
+ "version": "0.1.0",
+ "status": "EXPERIMENTAL",
+ "provenance": "T3",
+ "provenance_label": "EdgeDesk research model (T3)",
+ "sport": "MLB",
+ "registered_at": "2026-10-23",
+ "registry_sql": "NOT GENERATED: simulator/src/research/build_registry_sql.ts generates the registry SQL for one model (registration.json, SIM-NFL-SEASON) and names it in public.sim_config; extending it to a second model is follow-up work. This file is the preregistration of record until then.",
+ "hypothesis": "Simulating the remaining MLB season and postseason 100,000 times from the served MLB lab brain (mlb/history, v1.1.0), with persistent club and starting-pitcher strength offsets calibrated on 2012-2023 frozen forecasts and starters Projected from a measured rotation model, produces calibrated probabilities of division titles, postseason berths, byes, pennants and the World Series.",
+ "objective": "Calibrated season-outcome probabilities from any as-of date of an MLB-2022-format season, as a research comparison against futures prices where EdgeDesk captures them; never a recommendation.",
+ "primary_metric": "Brier score of win_division and make_playoffs probabilities on the holdout seasons at as-of stages 40, 81, 120 and 140 club games, pooled; then log loss with probabilities clipped to [max(1e-6, 0.5/N), 1 - that].",
+ "unit": "One club-season-outcome at one as-of stage (30 clubs x outcome x stage x season); the stages of one season share outcomes: every interval is a season-cluster bootstrap.",
+ "baseline": "The same simulator with sigma_team = sigma_sp = 0 (the frozen model's game probabilities only); and, where owned, same-time Kalshi futures reference prices (none owned).",
+ "training_window": "sigma_team, sigma_sp and the replacement level calibrated on 2012-2023 frozen forecasts (2020 and 2024 left out); rotation uncertainty fitted on 2018-2023 (simulator/data/mlb_rotation_study.json); the game model is the served one.",
+ "validation_window": "2022, 2023 and 2025 as-of replays (simulator/data/mlb_backtest.json), descriptive only: 2022 and 2023 are in-sample for the sigmas, 2025 is one season.",
+ "holdout_window": "Seasons 2026 (from its first live snapshot), 2027 and 2028, each evaluated once after its World Series.",
+ "machine": {
+  "window_dates": {
+   "training": ["2012-03-01", "2024-03-01"],
+   "validation": ["2022-03-01", "2025-11-15"],
+   "holdout": ["2026-03-01", "2028-11-15"]
+  },
+  "window_note": "[from, to): dates of the seasons inside each window",
+  "minimum_sample": 3,
+  "version": "0.1.0",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3"
+ },
+ "minimum_sample": {
+  "holdout_seasons": 3,
+  "kalshi_matched_outcomes_for_market_criteria": 200,
+  "flags_with_observed_closes_for_clv": 100,
+  "note": "Below three holdout seasons the record is reported descriptively and no result row is written. No MLB futures quotes are captured; until enough are, the market criteria are NOT EVALUABLE and the model cannot pass."
+ },
+ "promotion_criteria": {
+  "decision_rule": "passed = true only if every criterion below holds on the holdout. A criterion that cannot be evaluated is not met. Passing makes the model eligible; a person promotes it through a validation report. Software tests passing is never evidence for any criterion.",
+  "criteria": [
+   { "id": "C1_BRIER_VS_NO_UNCERTAINTY", "rule": "Pooled Brier (win_division, make_playoffs; stages 40/81/120/140; holdout seasons) of the production simulator <= the sigma = 0 simulator's, with the season-cluster bootstrap 95% upper bound of (production - sigma0) below +0.002." },
+   { "id": "C2_CALIBRATION", "rule": "Calibration slope of make_playoffs probabilities (logistic regression of outcome on logit p, holdout) within [0.8, 1.2] and calibration in the large within 0.02." },
+   { "id": "C3_MARKET_REFERENCE", "rule": "Brier no worse than same-time Kalshi futures reference prices on at least 200 matched outcomes (NOT EVALUABLE until captured)." },
+   { "id": "C4_EXECUTABLE_CLV", "rule": "Positive mean closing-line value of flagged futures at the executable ask, fees verified, on at least 100 flags with observed closes (NOT EVALUABLE until captured)." }
+  ]
+ },
+ "forking_paths": "Choices made before any holdout season: the rotation set (last five distinct starters), the regular-season rule (oldest rested), the postseason rule (best rested of the four best by s; chosen on 2012-2023 one-step accuracy), the spot-start conventions, the stage grid and the sigma grid. Any change to these is a new version, re-registered before the next holdout evaluation.",
+ "limitations": [
+  "The served game model's moneyline does not beat Elo in its walk-forward record and showed no skill over 494 postseason games (2012-2025).",
+  "Bullpen usage and fatigue, lineups, platoons, weather and injuries beyond rotation departures are not modelled.",
+  "Projected starters: the next start named correctly 63% of the time in 2018-2023, a postseason start 52%.",
+  "The postseason carries the stage-140 sigma, not calibrated after the regular season.",
+  "The 2026 rules facts are UNVERIFIED (simulator/src/sports/mlb/config.ts)."
+ ],
+ "result": null
+}

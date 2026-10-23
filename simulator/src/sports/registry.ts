@@ -14,6 +14,7 @@
 import { NFL_2026 } from './nfl/config.ts';
 import { NBA_2026_27 } from './nba/config.ts';
 
+
 export type SportStatus = 'ACTIVE' | 'BLOCKED' | 'COMING_SOON';
 export interface SportEntry {
   key: string;
@@ -32,24 +33,17 @@ export interface SportEntry {
 function nflStatus(): { status: SportStatus; blockers: string[] } {
   return factStatus([['2026 tiebreaking procedures', NFL_2026.rules], ['2026 playoff format', NFL_2026.playoff_format], ['Super Bowl LXI venue and designated home team', NFL_2026.super_bowl]]);
 }
+/** NHL: engine, rules, studies and tests are complete; the 2026-27 rules facts await
+    human verification against the NHL's own pages, and the reader has no NHL view */
+function nhlStatus(): { status: SportStatus; blockers: string[] } {
+  const f = factStatus([['2026-27 tie-breaking procedure', NHL_2027.rules], ['2026-27 playoff format', NHL_2027.playoff_format], ['2026-27 playoff home-ice rule', NHL_2027.home_ice]], 'NHL');
+  const blockers = f.blockers.concat(['The reader (lib/edgedesk_simulator.js) renders the NFL outcome set only (seeds 1-7, Super Bowl); an NHL view (D1-D3, wild cards, Presidents\' Trophy, Stanley Cup) must exist before NHL numbers can be shown.']);
+  return { status: 'BLOCKED', blockers };
+}
 type Fact = { verification: string; affects_results: boolean; verify_by: string; verified_by: string | null; verified_at: string | null };
 /** a fact counts as verified only with VERIFIED, a named verifier and a date */
 export const isVerified = (f: Fact) => f.verification === 'VERIFIED' && !!f.verified_by && !!f.verified_by.trim() && /^\d{4}-\d{2}-\d{2}$/.test(f.verified_at || '');
-export function factStatus(facts: Array<[string, Fact]>, league = 'NFL'): { status: SportStatus; blockers: string[] } {
-  const blockers = facts.filter(([, f]) => f.affects_results && !isVerified(f))
-    .map(([label, f]) => label + ' not verified against the ' + league + '\'s official source: ' + f.verify_by);
-  return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
-}
 
-/** NBA: rules, inputs, study and tests are complete; the 2026-27 facts await verification, and the
-    season cannot be simulated for publication until the NBA Cup-dependent games are on the schedule */
-function nbaStatus(): { status: SportStatus; blockers: string[] } {
-  const c = NBA_2026_27;
-  const f = factStatus([['2026-27 tiebreaker procedure', c.tiebreakers], ['2026-27 definition of playoff teams for the tiebreaker', c.playoff_clubs_for_tiebreakers], ['2026-27 play-in format', c.play_in],
-    ['2026-27 playoff format', c.playoff_format], ['2026-27 home-court rules', c.home_court], ['2026-27 NBA Cup standings rules', c.nba_cup]], 'NBA');
-  const blockers = f.blockers.concat(['The 30 regular-season games that depend on the NBA Cup group stage (two per club) are not on the schedule yet; until they are, the schedule.complete gate refuses the season (expected after the group stage, early December 2026).']);
-  return { status: 'BLOCKED', blockers };
-}
 
 const NFL_LIMITS = [
   'Strength uncertainty: one persistent normal offset per club (sigma calibrated on 2006-2024 frozen forecasts so the spread of simulated remaining wins matches history); the 2025 holdout season was more volatile than that calibration.',
@@ -57,7 +51,17 @@ const NFL_LIMITS = [
   'No injury return is sampled: future games use the board\'s starter treatment (the club\'s carried quarterback level beyond the current week). No new injuries are simulated.',
   'Ratings are frozen at the as-of date: simulated results do not update ratings. Within-season drift is OFF.',
   'Points-ranking tiebreakers use Estimated scores from the linemaker team-points model, conditioned on the simulated margin. Net-touchdown tiebreakers have no model input: a run that reaches one is resolved by the seeded coin toss and counted.',
-  'Postseason rest and the Super Bowl venue are Estimated inputs from the format; a postseason draw of the model\'s tie mass is resolved 50/50.',
+  'Postseason rest is an Estimated input from the format; a postseason draw of the model\'s tie mass is resolved 50/50.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
+const NHL_LIMITS = [
+  'Game outcomes come from the served edgedesk_nhl_v1 (xg_core) distribution: regulation win, overtime win or shootout win for each side. Its 60-minute tie is under-priced (about 1-2 percentage points out of sample), so simulated loser points run slightly low; independent Poisson would be far worse (about 6 points).',
+  'Strength uncertainty: one persistent normal offset per club on the goal rate (sigma calibrated on 2013-14 .. 2024-25 frozen forecasts so the spread of simulated remaining points matches history); the 2025-26 holdout season was more volatile than that calibration.',
+  'Goalies: no starter is assumed for any future game; each club\'s goaltending is its recent team record. Confirmed starters with a recorded source are used for the game they start; projections are not. No injuries, returns or new absences are simulated for goalies or skaters.',
+  'Overtime: regular-season 3-on-3 then shootout with the OT/shootout split fitted on earlier seasons; playoff overtime is sudden death in proportion to the two scoring rates (no fatigue or multi-overtime dynamics).',
+  'Ratings are frozen at the as-of date: simulated results do not update ratings. Within-season drift is OFF.',
+  'Tie-breaking beyond goals for is a seeded coin toss (counted); a three-or-more club tie at the head-to-head step continues without a restart.',
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
@@ -71,8 +75,7 @@ const NBA_LIMITS = [
 ];
 
 export function sportRegistry(): SportEntry[] {
-  const nfl = nflStatus();
-  const nba = nbaStatus();
+
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
@@ -80,15 +83,7 @@ export function sportRegistry(): SportEntry[] {
       blockers: ['No conference title-game qualification rules or tiebreakers for 2026 in the repository (9 FBS conferences, each with its own).', 'No 2026 CFP format, seeding or selection data, and no committee-ranking proxy inputs (no CFP/AP rankings are committed).', 'No neutral-site flags for the remaining 2026 schedule and no committed full schedule (football/fbs/.cache is gitignored).'],
       limitations: ['The production game model (football/cfb_p4 engine) can price any rated FBS pairing offline; everything else above is missing.'],
       activation_path: 'Commit a versioned 2026 conference-rules table with sources, a CFP bracket config, an explicitly Estimated committee proxy, and the full schedule with neutral flags.' },
-    { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
-      activation_path: 'Verify the six 2026-27 facts in simulator/src/sports/nba/config.ts against the NBA\'s official pages (VERIFIED with verified_by/verified_at in a reviewed commit), wait for the NBA Cup-dependent games on the schedule, then a 100,000-run publication.' },
-    { key: 'nhl', label: 'NHL', status: 'BLOCKED', structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],
-      blockers: ['No committed full 2026-27 schedule (hockey/build_slate.js downloads it into a gitignored cache).', 'No conference/division table.', 'No standings (regulation wins, points), wild card or series code; no strength-uncertainty study.'],
-      limitations: ['The game model prices regulation/OT/shootout outcomes offline; the 60-minute draw is under-priced (PROVISIONAL).'],
-      activation_path: 'Commit the schedule and alignment, implement NHL points/tiebreakers and the bracket, run an uncertainty study.' },
-    { key: 'mlb', label: 'MLB', status: 'COMING_SOON', structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],
-      blockers: ['The 2026 regular season is complete; only the World Series remains.', 'No 2026 ratings, results or starting pitchers are committed (the history model ends in 2025).', 'The live engine\'s inputs sit only in Supabase; the history model does not beat Elo.'],
-      limitations: [], activation_path: 'A 2027 season with committed ratings, rotation inputs labelled Projected, and series formats.' },
+
     { key: 'cbb', label: 'College Basketball', status: 'COMING_SOON', structure: 'tournament', tabs: ['conference', 'tournament', 'futures'],
       blockers: ['The 2026-27 season has not started; the schedule is partial with placeholder times.', 'No 2026-27 conference membership, conference-tournament formats, or NCAA selection/seed/bracket data.'],
       limitations: [], activation_path: 'Conference membership and tournament formats; a selection/seeding proxy labelled Estimated.' },

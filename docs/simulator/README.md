@@ -6,13 +6,13 @@ verified mapping exists) with Kalshi futures prices. Design, evidence, status
 and limitations are in [`SIMULATOR_NOTES.md`](../../SIMULATOR_NOTES.md) at the
 repository root; this page is how to run, verify, deploy, disable and recover it.
 
-**Status today.** The NFL engine, rules, database layer, reader and workflows
-are implemented and tested. The NFL is **BLOCKED for publication** until a
-person verifies three 2026 facts against the NFL's official pages
-(tiebreaking procedures, playoff format, Super Bowl LXI venue). No Kalshi
-futures market is mapped and the Kalshi fee schedule is unverified, so the
-market comparison reports *unavailable*. Nothing has been applied to the
-production database and nothing has been published.
+**Status (2026-10-23).** The NFL engine, rules, database layer, reader and
+workflows are implemented and tested. The database layer is applied to
+production. The NFL's three 2026 facts (tiebreaking procedures, playoff format,
+Super Bowl LXI) were verified against the NFL's own pages, read from GitHub's
+runners by *Simulator source check*, so the NFL is **ACTIVE**. 352 Kalshi
+futures markets are mapped exactly and the fee schedule is verified. The first
+publication runs from `main` through the *Simulator* workflow.
 
 ## What you need
 
@@ -55,7 +55,12 @@ $env:SIM_E2E_REQUIRED = '1'; npm run sim:e2e; Remove-Item Env:SIM_E2E_REQUIRED
 npm run sim:dry-run                              # builds the snapshot from the live feeds, 100,000 runs, 4 workers
 node simulator/src/cli/run.ts --sport nfl --season 2026 --runs 20000 --workers 4 --dry-run --out simulator/out/try
 node simulator/src/cli/run.ts --sport nfl --season 2026 --offline --dry-run      # cached feeds only (simulator/.cache/feeds)
+npm run sim:nhl:dry-run                          # NHL 2026-27 (season key 2027); needs python3 + pyarrow for the schedule parquet
 ```
+
+The NHL runs from the command line only (it is not in the nightly
+workflow); its record, studies and limitations are in
+[`NHL_SIMULATOR_NOTES.md`](../../NHL_SIMULATOR_NOTES.md).
 
 Each run writes `snapshot.json` (the frozen, content-hashed inputs),
 `results.json`, `gates.json` and `manifest.json` to `simulator/out/<dir>/`
@@ -99,6 +104,16 @@ in `simulator/research/registration.json` are met on the holdout seasons.
 
 ## Kalshi futures
 
+The mappings are generated, not typed: run Actions → *Simulator source check*,
+then build the config from its `kalshi_candidates.json` artifact (download it
+from the run page):
+
+```powershell
+node simulator/src/cli/build_kalshi_mappings.ts --candidates C:/Downloads/kalshi_candidates.json --run <run id>
+npm run sim:test
+```
+
+
 ```powershell
 npm run sim:kalshi:discover -- --sport nfl       # writes simulator/out/kalshi_candidates.json; never the config
 npm run sim:markets -- --results simulator/out/try/results.json      # compares without writing anything
@@ -113,18 +128,47 @@ the ask at the configured quantity; the midpoint is a reference only. Until
 the fee schedule is verified (`fees.verified`), every executable figure is
 labelled pre-fee and nothing is flagged. The simulator never places an order.
 
+## MLB
+
+The MLB season and postseason simulator (design, evidence and limitations:
+[`MLB_SIMULATOR_NOTES.md`](../../MLB_SIMULATOR_NOTES.md)) is **BLOCKED for
+publication**: six 2026 facts in `simulator/src/sports/mlb/config.ts` await
+a person's verification, one of them a first check of the live feed. It
+runs from history (any morning of 2022–2025) or live (2026, MLB's Stats API).
+
+```powershell
+npm run sim:test:mlb                                                                         # the seven MLB suites
+node simulator/src/cli/run.ts --sport mlb --season 2025 --snapshot simulator/fixtures/mlb_2025_ws_g3_snapshot.json.gz --runs 100000 --workers 4 --dry-run
+node simulator/src/cli/run.ts --sport mlb --season 2025 --as-of 2025-08-15 --runs 20000 --workers 4 --dry-run   # rebuilds the model point-in-time (~90 s)
+npm run sim:mlb:dry-run                                                                      # live 2026: needs statsapi.mlb.com (Actions runners reach it)
+npm run sim:mlb:probe                                                                        # read the live sources, write nothing
+npm run sim:mlb:postseason-fixture; npm run sim:mlb:studies; npm run sim:mlb:backtest; npm run sim:mlb:fixture   # regenerate the evidence, in this order
+```
+
+The results add `starting_pitchers`: the announced (Confirmed) starters and,
+per simulated game, the share of runs each pitcher started it (Projected: a
+distribution, never one name). Bullpen fatigue is not modelled. MLB is not
+in the nightly schedule: Actions → *Simulator* → Run workflow with sport
+`mlb` runs it as a dry run; the plan step refuses to publish it while it is
+BLOCKED. The `mlb-live-probe` job of *Simulator suites* reads the live
+sources on every pull request that touches the simulator.
+
 ## Deployment sequence
 
 Every step is a decision a person makes; none runs by itself.
 
-1. **Verify the NFL facts.** Compare `SIMULATOR_NOTES.md` §NFL rules with
-   <https://operations.nfl.com/the-rules/nfl-tiebreaking-procedures/>, confirm
-   the 2026 playoff format and the Super Bowl LXI venue and date. In
+1. **Verify the NFL facts** (done for 2026 on 2026-10-23; repeat each season).
+   Run Actions → *Simulator source check* (it reads the NFL's and Kalshi's pages
+   from GitHub's runners), then compare `SIMULATOR_NOTES.md` §NFL rules with
+   <https://www.nfl.com/standings/tie-breaking-procedures> and the league's
+   approved rules for the season, and confirm the Super Bowl venue and
+   designated home. In
    `simulator/src/sports/nfl/config.ts` set each fact's `verification` to
    `VERIFIED` with `verified_by` and `verified_at` (YYYY-MM-DD) in a reviewed
    commit, then `node simulator/src/cli/build_ui_registry.ts` and
    `npm run sim:test`. A fact marked VERIFIED without both fields still blocks.
-2. **Apply the database layer.** Actions → *Deploy simulator SQL* → Run
+2. **Apply the database layer** (done 2026-10-23, run 39947585888; it is
+   idempotent, so re-running after a schema change is safe). Actions → *Deploy simulator SQL* → Run
    workflow (needs the `SB_DB_URL` secret), or paste
    `supabase/simulator.sql` into the Supabase SQL editor (it is idempotent and
    ends in a report; every row must read `ok`). Then

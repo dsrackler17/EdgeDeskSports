@@ -1521,12 +1521,11 @@ and championship probabilities with their Monte Carlo error, and compares them
 with Kalshi futures only where a person has mapped a market to the exact
 outcome it settles on.
 
-- **Status: implemented, tested, not active.** The NFL is BLOCKED for
-  publication until three 2026 facts (tiebreaking procedures, playoff format,
-  Super Bowl LXI venue) are verified against the NFL's own pages; every other
-  sport is Blocked or Coming Soon with its blockers named. No Kalshi futures
-  market is mapped and the fee schedule is unverified, so the comparison
-  reports *unavailable*. Nothing is published.
+- **Status (2026-10-23): NFL ACTIVE.** Its three 2026 facts (tiebreaking
+  procedures, playoff format, Super Bowl LXI) were verified against the NFL's
+  own pages; the database layer is applied; 352 Kalshi futures markets are
+  mapped exactly and the fee schedule is verified. Every other sport is Blocked
+  or Coming Soon with its blockers named.
 - **Research, EXPERIMENTAL (T3).** Registered before validation; the
   2010–2025 backtest shows no interval that excludes zero. Not an edge claim.
 - **Where:** `simulator/` (engine, NFL rules and model adapter, Kalshi

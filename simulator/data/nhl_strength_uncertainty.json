@@ -1,0 +1,207 @@
+{
+ "schema": "edgedesk_sim_nhl_strength_uncertainty_v1",
+ "generated_at": "2026-10-23T12:12:14.468Z",
+ "model": {
+  "id": "edgedesk_nhl_v1:xg_core",
+  "live_params_sha256": "4ec4e2b489aea465ee6bb798a84959279553df8abf34db1a23d513c6d64a8748",
+  "distribution": "served (no draw inflation)",
+  "goal_study_sha256": "b7576c5b9eb7bd7c25343e77e1377a1c869dc5c58934c4b976988157887c8def"
+ },
+ "method": "One persistent offset per club per run on the log goal rate (λH·exp((dH−dA)/2)); σ by variance matching of remaining points against frozen-forecast residuals (centred per season-checkpoint, n/(n−1)); 300 common-random-number offset draws per σ cell; σ grid 0-0.30 by 0.01; 2,000-resample season bootstrap.",
+ "estimation_seasons": [
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "holdout_seasons": [
+  2026
+ ],
+ "excluded": {
+  "2020": "the 2019-20 season stopped; remaining games never played"
+ },
+ "pricing_variant": {
+  "rule": "lower pooled MSE of remaining points at σ = 0, estimation seasons",
+  "mse": {
+   "asof": {
+    "mse": 60.008,
+    "mse_centred": 61.791,
+    "mean_residual": 0.1927,
+    "club_checkpoints": 1984
+   },
+   "game_date": {
+    "mse": 61.096,
+    "mse_centred": 62.929,
+    "mean_residual": 0.1762,
+    "club_checkpoints": 1984
+   }
+  },
+  "chosen": "asof"
+ },
+ "by_checkpoint": [
+  {
+   "checkpoint_games_played": 10,
+   "club_seasons": 341,
+   "sigma": 0.115253,
+   "sigma_ci95": [
+    0.099351,
+    0.130799
+   ],
+   "bootstrap_valid": 2000,
+   "sigma_uncentred": 0.111621,
+   "empirical_msd_centred": 109.938,
+   "empirical_msd": 106.799,
+   "simulated_variance_at_sigma0": 58.429,
+   "simulated_variance_at_sigma": 109.938,
+   "slope_actual_on_forecast": 1.0959,
+   "holdout": {
+    "seasons": [
+     2026
+    ],
+    "club_seasons": 32,
+    "empirical_msd_centred": 175.627,
+    "simulated_variance_at_sigma": 117.19,
+    "simulated_variance_at_sigma0": 61.467
+   }
+  },
+  {
+   "checkpoint_games_played": 20,
+   "club_seasons": 341,
+   "sigma": 0.121008,
+   "sigma_ci95": [
+    0.097861,
+    0.139673
+   ],
+   "bootstrap_valid": 2000,
+   "sigma_uncentred": 0.116933,
+   "empirical_msd_centred": 91.29,
+   "empirical_msd": 88.664,
+   "simulated_variance_at_sigma0": 49.911,
+   "simulated_variance_at_sigma": 91.29,
+   "slope_actual_on_forecast": 1.1196,
+   "holdout": {
+    "seasons": [
+     2026
+    ],
+    "club_seasons": 32,
+    "empirical_msd_centred": 132.764,
+    "simulated_variance_at_sigma": 97.635,
+    "simulated_variance_at_sigma0": 52.71
+   }
+  },
+  {
+   "checkpoint_games_played": 30,
+   "club_seasons": 341,
+   "sigma": 0.124437,
+   "sigma_ci95": [
+    0.102307,
+    0.143289
+   ],
+   "bootstrap_valid": 2000,
+   "sigma_uncentred": 0.12001,
+   "empirical_msd_centred": 71.948,
+   "empirical_msd": 69.851,
+   "simulated_variance_at_sigma0": 41.499,
+   "simulated_variance_at_sigma": 71.948,
+   "slope_actual_on_forecast": 1.1453,
+   "holdout": {
+    "seasons": [
+     2026
+    ],
+    "club_seasons": 32,
+    "empirical_msd_centred": 90.743,
+    "simulated_variance_at_sigma": 76.861,
+    "simulated_variance_at_sigma0": 43.92
+   }
+  },
+  {
+   "checkpoint_games_played": 41,
+   "club_seasons": 341,
+   "sigma": 0.113436,
+   "sigma_ci95": [
+    0.089633,
+    0.137956
+   ],
+   "bootstrap_valid": 2000,
+   "sigma_uncentred": 0.108103,
+   "empirical_msd_centred": 47.351,
+   "empirical_msd": 45.973,
+   "simulated_variance_at_sigma0": 32.002,
+   "simulated_variance_at_sigma": 47.351,
+   "slope_actual_on_forecast": 1.106,
+   "holdout": {
+    "seasons": [
+     2026
+    ],
+    "club_seasons": 32,
+    "empirical_msd_centred": 67.079,
+    "simulated_variance_at_sigma": 52.732,
+    "simulated_variance_at_sigma0": 35.117
+   }
+  },
+  {
+   "checkpoint_games_played": 55,
+   "club_seasons": 310,
+   "sigma": 0.12688,
+   "sigma_ci95": [
+    0.094327,
+    0.155578
+   ],
+   "bootstrap_valid": 2000,
+   "sigma_uncentred": 0.120044,
+   "empirical_msd_centred": 31.03,
+   "empirical_msd": 30.127,
+   "simulated_variance_at_sigma0": 22.219,
+   "simulated_variance_at_sigma": 31.03,
+   "slope_actual_on_forecast": 1.1636,
+   "holdout": {
+    "seasons": [
+     2026
+    ],
+    "club_seasons": 32,
+    "empirical_msd_centred": 30.187,
+    "simulated_variance_at_sigma": 32.223,
+    "simulated_variance_at_sigma0": 22.913
+   }
+  },
+  {
+   "checkpoint_games_played": 70,
+   "club_seasons": 310,
+   "sigma": 0.140486,
+   "sigma_ci95": [
+    0.062952,
+    0.191302
+   ],
+   "bootstrap_valid": 2000,
+   "sigma_uncentred": 0.127472,
+   "empirical_msd_centred": 11.855,
+   "empirical_msd": 11.507,
+   "simulated_variance_at_sigma0": 9.806,
+   "simulated_variance_at_sigma": 11.855,
+   "slope_actual_on_forecast": 1.0672,
+   "holdout": {
+    "seasons": [
+     2026
+    ],
+    "club_seasons": 32,
+    "empirical_msd_centred": 12.277,
+    "simulated_variance_at_sigma": 11.406,
+    "simulated_variance_at_sigma0": 9.512
+   }
+  }
+ ],
+ "code": {
+  "replay_ts": "793a974d4e785f6c04c2b74583d6e50c6037cb7fde9645d5fe0dfd03141d6685",
+  "study_ts": "0dd5a5b8a1c70e6ab27ce16e0e959d9492a3316320b3cf69f1f629795fad2de3",
+  "distribution_js": "b47a5535be243bd923c829bb43046d49e064644b049acdf63deeb32d737bbc92",
+  "ratings_js": "b27f4e970c12e09c9754d315732eec40ebee502154def861c241a4d6d5006c0d"
+ },
+ "runtime_ms": 135063
+}
