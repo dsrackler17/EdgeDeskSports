@@ -7,7 +7,7 @@ import { kit } from './_kit.ts';
 import { MLB_2026, teamsFor, formatFor, DIVISIONS } from '../src/sports/mlb/config.ts';
 import { historyConfig } from '../src/sports/mlb/inputs.ts';
 import { loadRegularSeason, loadPostseason, dayOf, REPO } from '../src/sports/mlb/history.ts';
-import { sportRegistry, isVerified } from '../src/sports/registry.ts';
+import { sportRegistry, isVerified, factStatus } from '../src/sports/registry.ts';
 
 const K = kit('MLB configuration and registry');
 
@@ -23,9 +23,14 @@ K.eq('six divisions of five clubs', DIVISIONS.map((d) => teamsFor(2026).filter((
 K.eq('formats by season', [2012, 2013, 2019, 2021, 2022, 2026].map((s) => formatFor(s).id + ':' + formatFor(s).playoff_clubs_per_league), ['MLB-2012:5', 'MLB-2012:5', 'MLB-2012:5', 'MLB-2012:5', 'MLB-2022:6', 'MLB-2022:6']);
 K.eq('World Series home field: All-Star Game league 2012-2016, the better record from 2017', [2016, 2017].map((s) => formatFor(s).ws_home.rule), ['all_star_game', 'better_record']);
 
-/* the 2026 facts: every one that moves a number is UNVERIFIED with a verify_by, nothing claims VERIFIED */
+/* the 2026 facts: each moves a number, and is either VERIFIED from what the Simulator source check (or the live
+   dry run) fetched from MLB on GitHub's runners, citing the run and the bytes' sha256, or measured in every run */
 const facts = ['alignment', 'format', 'tiebreakers', 'world_series_home', 'extra_innings', 'live_inputs'] as const;
-K.chk('2026 facts: each affects results, is UNVERIFIED, names what to check, and has no verifier', facts.every((k) => { const f = MLB_2026[k] as any; return f.affects_results && f.verification === 'UNVERIFIED' && f.verify_by.length > 20 && f.verified_by === null && f.verified_at === null && !isVerified(f); }));
+const VERIFIED_2026: string[] = ['alignment', 'format', 'world_series_home', 'extra_innings', 'live_inputs'], MEASURED_2026: string[] = ['tiebreakers'];
+K.eq('2026 facts: which are VERIFIED and which measured', [facts.filter((k) => isVerified(MLB_2026[k])), facts.filter((k) => (MLB_2026[k] as any).measured === true)], [VERIFIED_2026, MEASURED_2026]);
+K.chk('  ... every one affects results and is one or the other', facts.every((k) => MLB_2026[k].affects_results && (isVerified(MLB_2026[k]) !== ((MLB_2026[k] as any).measured === true))));
+K.chk('  ... a VERIFIED one cites the GitHub Actions run that fetched it, a sha256 and the date', VERIFIED_2026.every((k: string) => { const f = MLB_2026[k as typeof facts[number]]; return /\b\d{11}\b/.test(f.verified_by || '') && /[0-9a-f]{64}/.test(f.source) && f.verified_at === '2026-10-23'; }));
+K.chk('  ... a measured one stays UNVERIFIED, with what to check', MEASURED_2026.every((k: string) => { const f = MLB_2026[k as typeof facts[number]]; return f.verification === 'UNVERIFIED' && f.verified_by === null && f.verify_by.length > 20; }));
 K.eq('the postseason calendar is an Estimated input, not a fact to verify', MLB_2026.postseason_calendar.verification, 'NOT_APPLICABLE');
 K.eq('bullpen, lineups, drift and availability are OFF', [MLB_2026.bullpen.mode, MLB_2026.lineups.mode, MLB_2026.drift.mode, MLB_2026.availability.mode], ['off', 'off', 'off', 'off']);
 {
@@ -35,14 +40,14 @@ K.eq('bullpen, lineups, drift and availability are OFF', [MLB_2026.bullpen.mode,
 /* the registry */
 {
   const reg = sportRegistry(); const mlb = reg.find((s) => s.key === 'mlb')!; const nfl = reg.find((s) => s.key === 'nfl')!;
-  K.eq('MLB is BLOCKED (implemented; the 2026 facts await verification)', mlb.status, 'BLOCKED');
-  K.eq('one blocker per unverified 2026 fact', mlb.blockers.length, facts.length);
-  K.chk('each MLB blocker names MLB\'s official source and what to check', mlb.blockers.every((b) => b.includes('MLB\'s official source')));
+  K.eq('MLB is ACTIVE: no standing blocker (the measured tiebreak procedure is the run\'s gate to decide)', [mlb.status, mlb.blockers], ['ACTIVE', []]);
   K.chk('the NFL\'s blockers still read as before', nfl.blockers.every((b) => b.includes('the NFL\'s official source')));
   K.chk('MLB\'s limitations say bullpen fatigue is not modelled and that starters are Projected', mlb.limitations.some((l) => /Bullpen usage and fatigue are NOT modelled/.test(l)) && mlb.limitations.some((l) => /Projected/.test(l)));
   const t = { ...MLB_2026 } as any;
-  for (const k of facts) t[k] = { ...t[k], verification: 'VERIFIED' };
+  for (const k of facts) t[k] = { ...t[k], verification: 'VERIFIED', verified_by: null, verified_at: null };
   K.chk('VERIFIED without verified_by and verified_at does not count', facts.every((k) => !isVerified(t[k])));
+  const unv = { value: 'x', source: 's', retrieved: '2026-10-23', verification: 'UNVERIFIED', verify_by: 'check it', affects_results: true, verified_by: null, verified_at: null };
+  K.eq('a measured fact is no standing blocker (its run gate decides); an unmeasured one is', [factStatus([['m', { ...unv, measured: true }]]).status, factStatus([['u', unv]]).status], ['ACTIVE', 'BLOCKED']);
 }
 /* the Estimated postseason calendar is the 2025 calendar, as offsets from the last regular-season date */
 {

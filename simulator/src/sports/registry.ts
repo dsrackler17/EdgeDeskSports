@@ -40,11 +40,12 @@ function nflStatus(): { status: SportStatus; blockers: string[] } {
 function nhlStatus(): { status: SportStatus; blockers: string[] } {
   return factStatus([['2026-27 tie-breaking procedure', NHL_2027.rules], ['2026-27 playoff format', NHL_2027.playoff_format], ['2026-27 playoff home-ice rule', NHL_2027.home_ice]], 'the NHL\'s official source');
 }
-type Fact = { verification: string; affects_results: boolean; verify_by: string; verified_by: string | null; verified_at: string | null };
+type Fact = { verification: string; affects_results: boolean; verify_by: string; verified_by: string | null; verified_at: string | null; measured?: boolean };
 /** a fact counts as verified only with VERIFIED, a named verifier and a date */
 export const isVerified = (f: Fact) => f.verification === 'VERIFIED' && !!f.verified_by && !!f.verified_by.trim() && /^\d{4}-\d{2}-\d{2}$/.test(f.verified_at || '');
 export function factStatus(facts: Array<[string, Fact]>, source = 'the NFL\'s official source'): { status: SportStatus; blockers: string[] } {
-  const blockers = facts.filter(([, f]) => f.affects_results && !isVerified(f))
+  /* a measured fact is the run's to decide (a gate refuses any run it decided), not a standing blocker */
+  const blockers = facts.filter(([, f]) => f.affects_results && !f.measured && !isVerified(f))
     .map(([label, f]) => label + ' not verified against ' + source + ': ' + f.verify_by);
   return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
 }
@@ -83,6 +84,7 @@ const MLB_LIMITS = [
   'No lineups, platoon splits, weather or injuries (beyond rotation departures) enter a game. Ratings are frozen at the as-of date; within-season drift is OFF.',
   'Extra innings are never played out: a level regulation draw resolves at the home win rate measured under the rule in force (automatic runner in the regular season; the standard rule, a home win rate near 52%, in the postseason).',
   'Postseason dates the schedule does not carry yet are Estimated from the 2025 calendar; short-rest postseason starts (4% in history) are rarer in the simulation.',
+  'Tie-breaking: MLB\'s published tiebreaker procedure was not found, so it is measured instead of verified: the 2026 final standings hold no equal record at any place a tiebreaker decides, and a run in which a tie decided a reported place is never published.',
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
@@ -158,7 +160,7 @@ export function sportRegistry(): SportEntry[] {
       blockers: nhl.blockers, limitations: NHL_LIMITS,
       activation_path: 'Each season: re-run the Simulator source check, compare the NHL.com tie-breaking and playoff-format pages with NHL_SIMULATOR_NOTES.md, and re-verify the three facts in simulator/src/sports/nhl/config.ts in a reviewed commit.' },
     { key: 'mlb', label: 'MLB', status: mlb.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: mlb.blockers, limitations: MLB_LIMITS,
-      activation_path: 'Build the live 2026 snapshot once on a runner that reaches statsapi.mlb.com and check it against MLB\'s standings; verify the 2026 facts in simulator/src/sports/mlb/config.ts against MLB\'s pages; set each VERIFIED with verified_by/verified_at in a reviewed commit; apply supabase/simulator.sql.' },
+      activation_path: 'Each season: re-run the Simulator source check (job fetch (mlb): MLB\'s standings, postseason schedule, rulebook and explainers) and a dispatched MLB dry run, re-verify the facts in simulator/src/sports/mlb/config.ts in a reviewed commit, and set the season\'s nightly window (nightly_through). MLB_SIMULATOR_NOTES.md §15.' },
     { key: 'ncaam', label: 'College Basketball', status: ncaam.status, structure: 'tournament', tabs: ['games', 'upset_watch', 'tournament', 'model_health'], blockers: ncaam.blockers, limitations: NCAAM_LIMITS,
       activation_path: 'After Selection Sunday 2027: write basketball/ncaam_forecast/config/brackets/2027.json from the official bracket, record the 2027 format and bracket as VERIFIED with verified_by/verified_at in simulator/src/sports/ncaam/config.ts, apply supabase/simulator.sql and supabase/ncaam_forecast.sql, and promote a research_team_model champion through the weekly gates.' },
     { key: 'wnba', label: 'WNBA', status: 'BLOCKED', structure: 'series', tabs: ['title'],

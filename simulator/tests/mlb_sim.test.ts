@@ -12,7 +12,7 @@ import { mlbModule } from '../src/sports/mlb/module.ts';
 import { validateMlbInputs, mlbMathStatus } from '../src/sports/mlb/validate.ts';
 import { runRange, summarise, checkAggregateSums } from '../src/core/engine.ts';
 import { runPlan } from '../src/core/runner.ts';
-import { parseArgs, execute } from '../src/cli/run.ts';
+import { parseArgs, execute, mlbTiebreakGate } from '../src/cli/run.ts';
 import { MLB_FIXTURES } from '../src/cli/build_mlb_fixture.ts';
 import { planRuns } from '../src/cli/plan.ts';
 import { mlbFixture } from './_mlb_fixture.ts';
@@ -120,11 +120,34 @@ const P = (r: ReturnType<typeof summarise>, code: string, o: string) => r.find((
   K.eq('confirmed starters are reported as Confirmed (game 3)', res.starting_pitchers.confirmed.map((g: any) => [g.away_starter, g.home_starter, g.label]), [['Max Scherzer', 'Tyler Glasnow', 'Confirmed']]);
   K.chk('game 3 is reported Confirmed (one name, as announced)', Object.values(res.starting_pitchers.by_game['WS-G3']).every((x: any) => x.label === 'Confirmed' && Object.keys(x.share).length === 1));
   K.chk('later starters are reported as Projected distributions, never one name', Object.entries(res.starting_pitchers.by_game).filter(([k]) => k !== 'WS-G3').every(([, clubs]: any) => Object.values(clubs).every((x: any) => x.label === 'Projected' && Object.keys(x.share).length >= 2)));
-  K.chk('not publishable: MLB is BLOCKED and a history replay is never published', !o.publishable && o.gates.some((g) => g.id === 'sport.active' && g.status === 'FAIL') && o.gates.some((g) => g.id === 'mode.live' && g.status === 'FAIL'));
+  K.chk('not publishable: a history replay is never published (MLB itself is ACTIVE)', !o.publishable && o.gates.some((g) => g.id === 'sport.active' && g.status === 'PASS') && o.gates.some((g) => g.id === 'mode.live' && g.status === 'FAIL' && g.blocks === 'publication'));
   K.chk('starter keys are moved out of the diagnostics', !Object.keys(res.diagnostics).some((k) => k.startsWith('starter|')));
   fs.rmSync(out, { recursive: true, force: true });
-  K.eq('the workflow plan: an MLB dispatch plans one live 2026 dry run', planRuns('workflow_dispatch', { sport: 'mlb', season: '2026', runs: '100000', seed: '', publish: 'false' }).map((r) => [r.sport, r.season, r.publish, r.status]), [['mlb', '2026', false, 'BLOCKED']]);
-  K.throws('publishing MLB is refused before anything runs (BLOCKED)', () => planRuns('workflow_dispatch', { sport: 'mlb', season: '2026', runs: '100000', seed: '', publish: 'true' }), /BLOCKED/);
-  K.chk('the nightly schedule does not run MLB (its live feed is checked by hand first)', !planRuns('schedule', {}).some((r) => r.sport === 'mlb'));
+  K.eq('the workflow plan: an MLB dispatch plans one live 2026 dry run', planRuns('workflow_dispatch', { sport: 'mlb', season: '2026', runs: '100000', seed: '', publish: 'false' }).map((r) => [r.sport, r.season, r.publish, r.status]), [['mlb', '2026', false, 'ACTIVE']]);
+  K.eq('  ... and a publication, at 100,000 runs', planRuns('workflow_dispatch', { sport: 'mlb', season: '2026', runs: '100000', seed: '', publish: 'true' }).map((r) => r.publish), [true]);
+  K.throws('  ... never with fewer runs', () => planRuns('workflow_dispatch', { sport: 'mlb', season: '2026', runs: '99999', seed: '', publish: 'true' }), /at least 100000/);
+  const nightly = (iso: string) => planRuns('schedule', {}, undefined, new Date(iso)).filter((r) => r.sport === 'mlb');
+  K.eq('the nightly schedule runs MLB through the World Series window, under its configured season', nightly('2026-10-24T10:17:00Z').map((r) => [r.season, r.runs]), [['2026', '100000']]);
+  K.eq('  ... through its last date, and not after it', [nightly('2026-11-07T10:17:00Z').length, nightly('2026-11-08T10:17:00Z').length], [1, 0]);
+  K.eq('  ... while a dispatch is never refused by the date', planRuns('workflow_dispatch', { sport: 'mlb', season: '2026', runs: '100000', seed: '', publish: 'false' }, undefined, new Date('2027-01-15T00:00:00Z')).length, 1);
+}
+/* ---- the tiebreak procedure, measured while unverified: a tie that decides a reported place refuses the run ---- */
+{
+  const fact = { value: 'x', source: 's', retrieved: '2026-10-23', verification: 'UNVERIFIED' as const, verify_by: 'v', affects_results: true, verified_by: null, verified_at: null, measured: true };
+  const g = (f: any, diags: Record<string, number>) => mlbTiebreakGate(f, diags, 100000);
+  K.eq('measured and unverified: no tie reached a reported place -> passes', [g(fact, {}).status, g(fact, {}).blocks], ['PASS', 'none']);
+  K.eq('  ... one tie group in any run -> refused', [g(fact, { 'tiebreak:groups': 1 }).status, g(fact, { 'tiebreak:groups': 1 }).blocks], ['FAIL', 'publication']);
+  K.eq('  ... an equal-record World Series host -> refused', g(fact, { 'tiebreak:world_series_home': 3 }).blocks, 'publication');
+  K.eq('  ... the steps a group used are not what counts (the group is)', g(fact, { 'tiebreak:step:head_to_head': 5 }).status, 'PASS');
+  const verified = { ...fact, verification: 'VERIFIED' as const, verified_by: 'x', verified_at: '2026-10-23' };
+  K.eq('verified: ties are the procedure\'s to decide -> passes', g(verified, { 'tiebreak:groups': 40 }).status, 'PASS');
+  K.eq('not measured (a history replay): never refused here', g({ ...fact, measured: undefined, verification: 'NOT_APPLICABLE' }, { 'tiebreak:groups': 40 }).status, 'PASS');
+  /* the 2025 World Series snapshot: its final standings carry three ties at reported places (MLB_SIMULATOR_NOTES.md
+     §4.2: the AL East and the NL wild cards, decided head-to-head), so every run forms exactly three tie groups and a
+     measured, unverified procedure would refuse the season. 2026 has none (MLB's standings: no equal record at any place). */
+  const d = mlbFixture('ws').data;
+  const agg = runRange(mlbModule(d, { seed: 3n }), { start: 0, end: 400 });
+  K.eq('a finished 2025 season: the same three tie groups in every run, no equal-record World Series', [agg.diags['tiebreak:groups'], agg.diags['tiebreak:world_series_home'] || 0], [3 * 400, 0]);
+  K.eq('  ... which the gate refuses while the procedure is measured', g(fact, agg.diags).blocks, 'publication');
 }
 process.exit(K.done());

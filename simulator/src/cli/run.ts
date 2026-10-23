@@ -50,7 +50,8 @@ import { runPlan } from '../core/runner.ts';
 import { buildResults, PRODUCTION_RUNS, type ResultsDoc } from '../core/results.ts';
 import { buildNflSnapshot, readSnapshot, writeSnapshot, type NflSnapshot } from '../sports/nfl/inputs.ts';
 import { validateNflInputs, nflMathStatus, type Gate } from '../sports/nfl/validate.ts';
-import { sportRegistry } from '../sports/registry.ts';
+import { sportRegistry, isVerified } from '../sports/registry.ts';
+import type { SeasonFact } from '../sports/nfl/config.ts';
 import { NFL_2026 } from '../sports/nfl/config.ts';
 import { NHL_2027 } from '../sports/nhl/config.ts';
 import { buildNhlSnapshot, readNhlSnapshot, writeNhlSnapshot, type NhlSnapshot } from '../sports/nhl/inputs.ts';
@@ -291,6 +292,17 @@ async function executeNba(args: CliArgs, log: (s: string) => void): Promise<RunO
 }
 
 /* ---------------- MLB ---------------- */
+/** the tiebreak procedure, measured while unverified (mlb/config.ts tiebreakers.measured): a tie that decided a
+    reported place in any run (a division title, a postseason place, a seed, the World Series host) refuses
+    publication. Standings.rank breaks ties only inside the places it fills, so a tie below them is never counted. */
+export function mlbTiebreakGate(tb: SeasonFact<string>, diags: Record<string, number>, n: number): Gate {
+  const measured = tb.measured === true && !isVerified(tb);
+  const ties = (diags['tiebreak:groups'] || 0) + (diags['tiebreak:world_series_home'] || 0);
+  const ok = !measured || ties === 0;
+  return { id: 'run.tiebreak_measured', status: ok ? 'PASS' : 'FAIL', blocks: ok ? 'none' : 'publication',
+    detail: !measured ? 'not measured: the tiebreak procedure is ' + tb.verification
+      : ties + ' tie(s) across ' + n + ' runs reached a reported place (a division title, a postseason place, a seed or the World Series host); the procedure is unverified, so ' + (ties ? 'the run is refused' : 'it decided nothing') };
+}
 async function executeMlb(args: CliArgs, log: (s: string) => void): Promise<RunOutcome> {
   if (args.season > MLB_2026.season || args.season < 2022) throw Object.assign(new Error('MLB seasons: 2022-2025 as history replays (--as-of), ' + MLB_2026.season + ' live'), { exitCode: 2 });
   /* 1 inputs: replay a snapshot, rebuild a history morning, or read the live season (network, before any simulation) */
@@ -342,6 +354,7 @@ async function executeMlb(args: CliArgs, log: (s: string) => void): Promise<RunO
     { id: 'run.finite', status: results.checks.finite_and_bounded ? 'PASS' : 'FAIL', blocks: results.checks.finite_and_bounded ? 'none' : 'publication', detail: 'every probability finite and in [0,1]' },
     { id: 'run.count', status: agg.n >= PRODUCTION_RUNS ? 'PASS' : 'FAIL', blocks: agg.n >= PRODUCTION_RUNS ? 'none' : 'publication', detail: agg.n + ' runs (' + PRODUCTION_RUNS + ' required to publish)' },
     { id: 'run.tiebreak_exhausted', status: exhausted / agg.n <= args.maxUnsupportedFraction ? 'PASS' : 'FAIL', blocks: exhausted / agg.n <= args.maxUnsupportedFraction ? 'none' : 'publication', detail: exhausted + ' of ' + agg.n + ' runs exhausted every tiebreak step and were resolved by the seeded draw (limit ' + args.maxUnsupportedFraction + ')' },
+    mlbTiebreakGate(d.config.tiebreakers, agg.diags, agg.n),
     { id: 'mode.live', status: d.mode === 'live' ? 'PASS' : 'FAIL', blocks: d.mode === 'live' ? 'none' : 'publication', detail: d.mode === 'live' ? 'live season inputs' : 'a history replay (' + d.season + ' as of ' + d.as_of + ') is research output, never published' },
     { id: 'sport.active', status: reg.status === 'ACTIVE' ? 'PASS' : 'FAIL', blocks: reg.status === 'ACTIVE' ? 'none' : 'publication', detail: reg.status + (reg.blockers.length ? ': ' + reg.blockers.join(' | ') : '') }
   ];

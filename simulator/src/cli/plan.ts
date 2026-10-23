@@ -27,11 +27,17 @@ import fs from 'node:fs';
 
 /** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season (the NHL by its end year: 2027 = 2026-27) */
 export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, nhl: NHL_2027.season, cfb: CFB_2026.season, ncaam: NCAAM_2027.season };
-/** the nightly schedule: MLB runs only when a person dispatches it (its live feed is checked by hand first:
-    simulator/src/sports/mlb/config.ts live_inputs); college football runs nightly, dry until it is ACTIVE
-    (a night with unchanged inputs reuses the published run: the idempotency key); college basketball joins
-    only once its official bracket file exists (inputsReady) */
-export const NIGHTLY = ['nfl', 'cfb', 'nhl', 'ncaam'];
+/** the nightly schedule: college football runs nightly, dry until it is ACTIVE (a night with unchanged inputs
+    reuses the published run: the idempotency key); MLB runs only inside its season's nightly window
+    (inSeason: through the World Series); college basketball joins only once its official bracket file
+    exists (inputsReady) */
+export const NIGHTLY = ['nfl', 'cfb', 'nhl', 'mlb', 'ncaam'];
+/** the last date (UTC) a sport's configured season is run nightly; absent = every night */
+const NIGHTLY_THROUGH: Record<string, string> = { mlb: MLB_2026.nightly_through };
+export function inSeason(sport: string, now: Date): { ready: boolean; reason: string } {
+  const until = NIGHTLY_THROUGH[sport];
+  return !until || now.toISOString().slice(0, 10) <= until ? { ready: true, reason: '' } : { ready: false, reason: 'the configured season ran nightly through ' + until };
+}
 
 /* NCAAM has valid inputs only once the official bracket file exists (after
    Selection Sunday): the nightly schedule skips it until then instead of
@@ -45,9 +51,9 @@ export function inputsReady(sport: string): { ready: boolean; reason: string } {
 
 export interface PlannedRun { sport: string; season: string; runs: string; seed: string; publish: boolean; status: string; blockers: string[] }
 
-export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }, reg: SportEntry[] = sportRegistry()): PlannedRun[] {
+export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }, reg: SportEntry[] = sportRegistry(), now: Date = new Date()): PlannedRun[] {
   if (event === 'schedule') {
-    return NIGHTLY.filter((k) => inputsReady(k).ready).map((k) => {
+    return NIGHTLY.filter((k) => inputsReady(k).ready && inSeason(k, now).ready).map((k) => {
       const s = reg.find((r) => r.key === k)!;
       return { sport: k, season: String(RUNNABLE[k]), runs: String(PRODUCTION_RUNS), seed: '', publish: s.status === 'ACTIVE', status: s.status, blockers: s.blockers };
     });

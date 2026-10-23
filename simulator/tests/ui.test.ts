@@ -14,6 +14,8 @@ import { resultRows, entityRows } from '../src/publish/publish.ts';
 import { CFB_FIXTURE } from './_cfb.ts';
 import { nhlFixture } from './_fixture.ts';
 import { nhlModule } from '../src/sports/nhl/module.ts';
+import { mlbModule } from '../src/sports/mlb/module.ts';
+import { mlbFixture } from './_mlb_fixture.ts';
 import { runRange } from '../src/core/engine.ts';
 import { buildResults } from '../src/core/results.ts';
 import { nbaFixture } from './_nba_fixture.ts';
@@ -173,5 +175,27 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
   const meta = UI.renderMeta({ key: 'nba', label: 'NBA' }, { n_sims: 100000, input_snapshot_at: '2026-10-23T05:00:00Z', published_at: '2026-10-23T06:00:00Z', model_version: 'm', rules_version: 'r', seed: '1', validation_summary: { flags: { tiebreak_random_drawing: 3 } } }, { stale: false, notes: [] }, Date.parse('2026-10-23T12:00:00Z'));
   T.chk('NBA run notes count random drawings (a league rule), not the NFL\'s points model', /3 runs reached the random drawing/.test(meta) && !/points-ranking/.test(meta));
   T.eq('the reader asks the database for the NBA\'s season label', REG.nba.season, '2026-27');
+}
+/* the MLB view, from a real (short) simulation of the committed 2025 World Series snapshot through the publisher's row mapping */
+{
+  const snap = mlbFixture('ws');
+  const m = mlbModule(snap.data, { seed: 7n });
+  const agg = runRange(m, { start: 0, end: 300 });
+  const results = buildResults({ module: m, agg, seed: 7n, runs: 300, workers: 1, input_hash: snap.input_hash, input_snapshot_at: '2025-10-27T12:00:00Z', model_version: 'm', config: {}, rules_version: 'MLB-2022',
+    started_at: '2025-10-27T12:00:00Z', finished_at: '2025-10-27T12:00:01Z', runtime_ms: 1, peak_rss_mb: 1,
+    entityExtras: () => ({ record: { w: 93, l: 69 }, math_status: null }) });
+  const res = resultRows({ results }), ents = entityRows({ results });
+  const M = UI.buildModel({ sport: 'mlb', comparison_id: null }, res, ents, []);
+  T.eq('MLB clubs are grouped by league, not conference', Object.keys(M.conferences).sort(), ['AL', 'NL']);
+  const div = UI.renderDivision(M), conf = UI.renderConference(M), title = UI.renderTitle(M, { kind: 'unavailable' });
+  T.chk('MLB division tab: W-L and projected wins, make postseason; no ties, points or OTL', />W-L</.test(div) && /Proj\. wins/.test(div) && /93-69/.test(div) && /Make postseason/.test(div) && !/W-L-T|W-L-OTL|>Pts</.test(div));
+  T.eq('MLB division tab: six divisions of five', [(div.match(/<div class="sm-h">/g) || []).length, (div.match(/<tr><td>/g) || []).length], [6, 30]);
+  T.chk('MLB league tab: per league seeds 1-6 with the two byes, the Division Series, the LCS and the pennant; no seed 7', ['American League seeds', 'National League seeds', '1 (bye)', '2 (bye)', '6', 'Division Series', 'LCS', 'Pennant'].every((h) => conf.includes('>' + h + '<')) && !conf.includes('>7<') && !conf.includes('>3 (bye)<'));
+  T.chk('MLB title tab: the World Series, the pennant and the postseason, never the Super Bowl or a conference', /win World Series/.test(title) && /Pennant /.test(title) && /Postseason /.test(title) && !/Super Bowl|Conference /.test(title));
+  T.eq('MLB title cards: one per club', (title.match(/class="sm-club"/g) || []).length, 30);
+  const ws = ents.map((e: any) => (results.entities as any[]).find((x) => x.entity_id === e.entity_id).outcomes.win_world_series.probability);
+  T.chk('... and its World Series column sums to one champion', Math.abs(ws.reduce((a: number, b: number) => a + b, 0) - 1) < 1e-9);
+  T.eq('the reader asks the database for MLB\'s season', REG.mlb.season, '2026');
+  T.eq('the league view is labelled League for MLB, Conference elsewhere', [UI.tabLabel({ key: 'mlb' }, 'conference'), UI.tabLabel({ key: 'nfl' }, 'conference')], ['League', 'Conference']);
 }
 process.exit(T.done());

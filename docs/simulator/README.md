@@ -166,10 +166,11 @@ labelled pre-fee and nothing is flagged. The simulator never places an order.
 ## MLB
 
 The MLB season and postseason simulator (design, evidence and limitations:
-[`MLB_SIMULATOR_NOTES.md`](../../MLB_SIMULATOR_NOTES.md)) is **BLOCKED for
-publication**: six 2026 facts in `simulator/src/sports/mlb/config.ts` await
-a person's verification, one of them a first check of the live feed. It
-runs from history (any morning of 2022–2025) or live (2026, MLB's Stats API).
+[`MLB_SIMULATOR_NOTES.md`](../../MLB_SIMULATOR_NOTES.md)) is **ACTIVE** for
+the 2026 World Series: its 2026 facts were read from MLB's Stats API, mlb.com
+and the 2026 Official Baseball Rules by the *Simulator source check* (job
+`fetch (mlb)`) and a live dry run on GitHub's runners (§15 there). It runs
+from history (any morning of 2022–2025) or live (2026, MLB's Stats API).
 
 ```powershell
 npm run sim:test:mlb                                                                         # the seven MLB suites
@@ -182,11 +183,13 @@ npm run sim:mlb:postseason-fixture; npm run sim:mlb:studies; npm run sim:mlb:bac
 
 The results add `starting_pitchers`: the announced (Confirmed) starters and,
 per simulated game, the share of runs each pitcher started it (Projected: a
-distribution, never one name). Bullpen fatigue is not modelled. MLB is not
-in the nightly schedule: Actions → *Simulator* → Run workflow with sport
-`mlb` runs it as a dry run; the plan step refuses to publish it while it is
-BLOCKED. The `mlb-live-probe` job of *Simulator suites* reads the live
-sources on every pull request that touches the simulator.
+distribution, never one name). Bullpen fatigue is not modelled. MLB runs in
+the nightly schedule through `nightly_through` in
+`simulator/src/sports/mlb/config.ts` (2026-11-07), then leaves it until the
+next season's configuration; by hand: Actions → *Simulator* → Run workflow
+with sport `mlb`, season `2026`, publish on. The `mlb-live-probe` job of
+*Simulator suites* reads the live sources on every pull request that touches
+the simulator.
 
 ## Deployment sequence
 
