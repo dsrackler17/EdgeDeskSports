@@ -21,8 +21,8 @@
   "game_time": "2026-10-23T23:00:00.000Z",
   "game_when_label": "2026-10-23 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-23T17:50:56.375Z",
-  "generated_at": "2026-10-23T17:50:56.375Z",
+  "updated_at": "2026-10-23T18:00:56.291Z",
+  "generated_at": "2026-10-23T18:00:56.291Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -252,7 +252,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T19:30:00.000Z",
-        "retrieved_at": "2026-10-23T17:17:49.501Z"
+        "retrieved_at": "2026-10-23T17:53:39.760Z"
       },
       "home": {
         "team": "Virginia",
@@ -324,9 +324,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T16:00:00.000Z",
-        "retrieved_at": "2026-10-23T17:17:49.501Z"
+        "retrieved_at": "2026-10-23T17:53:39.760Z"
       },
-      "generated_at": "2026-10-23T17:18:23.395Z",
+      "generated_at": "2026-10-23T17:53:37.842Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1870,15 +1870,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_accb0cb3d338b997",
+  "snapshot_id": "snap_5db54ee6bc403c9f",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-23T23:00:00.000Z",
-    "minutes_before_kickoff": 309,
+    "minutes_before_kickoff": 299,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-23T17:50:56.375Z"
+    "at": "2026-10-23T18:00:56.291Z"
   },
   "featured": {
     "editorial_priority": 39.7,
@@ -2163,17 +2163,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-23T17:50:56.375Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, ",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-23T18:00:56.291Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-23T17:50:56.375Z",
+    "at": "2026-10-23T18:00:56.291Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2181,12 +2188,18 @@
         "detail": "0 characters on file"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, "
+      }
+    ],
     "hold_reason": "my_take"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "f1qd9aqp21a4",
+    "packet_hash": "nkwddg19ufg9i",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Duke’s pass rush get to Beau Pribula?",
@@ -2257,7 +2270,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-23T17:18:28.447Z",
+        "observed_at": "2026-10-23T17:54:02.088Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2287,6 +2300,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-23T17:50:56.375Z"
+    "at": "2026-10-23T18:00:56.291Z"
   }
 }
