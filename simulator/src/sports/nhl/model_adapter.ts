@@ -40,8 +40,10 @@
    to EDNHLDist.game's tie_split by the same test.
    =========================================================================== */
 import { createRequire } from 'node:module';
+import fs from 'node:fs';
 import path from 'node:path';
 import { REPO } from '../nfl/model_adapter.ts';
+import { hashCanonical } from '../../core/canonical.ts';
 
 const require = createRequire(import.meta.url);
 
@@ -50,6 +52,15 @@ let DIST: any = null;
 export function hockeyDist(): any {
   if (!DIST) DIST = require(path.join(REPO, 'hockey', 'model', 'distribution.js'));
   return DIST;
+}
+
+/** the served parameters' identity: hockey/model/params/live.json without its
+    generated_at stamp (the weekly walk-forward re-run rewrites the stamp and
+    nothing else until the model or its data change) */
+export function liveParamsHash(): string {
+  const live = JSON.parse(fs.readFileSync(path.join(REPO, 'hockey', 'model', 'params', 'live.json'), 'utf8'));
+  delete live.generated_at;
+  return hashCanonical(live);
 }
 
 export interface OtParams { format: 'R3v3' | 'R4v4'; k: number; so_home: number }

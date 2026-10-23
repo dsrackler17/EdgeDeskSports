@@ -40,7 +40,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { walkforwardReplay, frozenForecasts, type Frozen } from './nhl_replay.ts';
-import { OutcomeTable, tieSplit, offsetRates, type DistParams } from '../sports/nhl/model_adapter.ts';
+import { OutcomeTable, tieSplit, offsetRates, liveParamsHash, type DistParams } from '../sports/nhl/model_adapter.ts';
 import { streamFor, STREAM } from '../core/prng.ts';
 import { normalQuantile } from '../core/normal.ts';
 import { sha256Hex } from '../core/canonical.ts';
@@ -187,7 +187,7 @@ export function runStudy(log: (s: string) => void = console.log) {
   return {
     schema: 'edgedesk_sim_nhl_strength_uncertainty_v1',
     generated_at: new Date().toISOString(),
-    model: { id: 'edgedesk_nhl_v1:xg_core', live_params_sha256: file('hockey/model/params/live.json'), distribution: adopted ? 'served + walk-forward draw inflation' : 'served (no draw inflation)', goal_study_sha256: sha256Hex(fs.readFileSync(GOAL_STUDY_FILE)) },
+    model: { id: 'edgedesk_nhl_v1:xg_core', live_params_sha256: file('hockey/model/params/live.json'), live_params_model_sha256: liveParamsHash(), distribution: adopted ? 'served + walk-forward draw inflation' : 'served (no draw inflation)', goal_study_sha256: sha256Hex(fs.readFileSync(GOAL_STUDY_FILE)) },
     method: 'One persistent offset per club per run on the log goal rate (λH·exp((dH−dA)/2)); σ by variance matching of remaining points against frozen-forecast residuals (centred per season-checkpoint, n/(n−1)); 300 common-random-number offset draws per σ cell; σ grid 0-0.30 by 0.01; 2,000-resample season bootstrap.',
     estimation_seasons: ESTIMATION, holdout_seasons: HOLDOUT, excluded: { 2020: 'the 2019-20 season stopped; remaining games never played' },
     pricing_variant: { rule: 'lower pooled MSE of remaining points at σ = 0, estimation seasons', mse: Object.fromEntries(Object.entries(mse).map(([k, v]) => [k, { mse: r(v.mse, 3), mse_centred: r(v.mse_centred, 3), mean_residual: r(v.mean_residual, 4), club_checkpoints: v.n }])), chosen },

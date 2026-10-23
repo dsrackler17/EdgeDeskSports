@@ -83,33 +83,33 @@ export const NHL_2027: NhlSeasonConfig = {
   rules_version: 'NHL-TB-2019',
   rules: {
     value: 'Clubs tied in points: 1 points percentage, 2 regulation wins, 3 regulation + overtime wins, 4 total wins, 5 points in games among the tied clubs (percentage of available points; each pair\'s odd game(s) - the first game played in the city that had the extra game - excluded), 6 goal differential (overtime goals and the shootout-winner credit included), 7 goals for; beyond: seeded coin toss (counted). 2 points per win, 1 per overtime or shootout loss.',
-    source: 'NHL standings tie-breaking procedure in force since 2019-20 (regulation wins added as the first criterion after points percentage), as recorded in this repository from the NHL\'s published procedure; not re-read from an official page in this build (nhl.com, records.nhl.com and media.nhl.com were not reachable from the build environment). Consistent with every 2021-22 .. 2025-26 playoff field, pairing and home-ice assignment re-derived from hockey/data/team_games (simulator/tests/nhl_rules_history.test.ts).',
+    source: 'NHL.com, Tie-Breaking Procedure, https://www.nhl.com/info/standings-info/tie-breaking-procedure (HTTP 200; page sha256 84f4dcedb26fd9712ec640b6844c7e96aac26c22f3861cf46240749b0ff7e61e, text sha256 0f154a833b7cf61363c86b8bbfe60ecd2c10c76db3c25789c82da706b773721e). Its seven steps, compared one by one with rules.ts NHL_TB_2019: 1 fewer games played (superior points percentage), 2 regulation wins (RW), 3 wins excluding shootout wins (ROW), 4 total wins, 5 points in games among the tied clubs - the first game in the city with the extra game (the odd game) excluded, the percentage of available points among three or more - 6 goal differential including overtime goals and the goal awarded for a shootout win, 7 goals for, same inclusion; NOTE: a shootout win counts as one goal for, a shootout loss one goal against. Identical. The page states no step beyond goals for and no restart for three or more clubs (the engine: seeded coin, counted; no restart). The same order reproduces every 2021-22 .. 2025-26 playoff field, pairing and home-ice assignment in hockey/data/team_games (simulator/tests/nhl_rules_history.test.ts).',
     retrieved: '2026-10-23',
-    verification: 'UNVERIFIED',
-    verify_by: 'Compare NHL_SIMULATOR_NOTES.md §Rules with the tie-breaking procedure on NHL.com standings for 2026-27 (in particular any change for the 84-game schedule and the treatment of three-or-more-club ties at the head-to-head step).',
+    verification: 'VERIFIED',
+    verify_by: 'Each season: re-run .github/workflows/simulator-sources.yml and compare the NHL.com tie-breaking page with NHL_SIMULATOR_NOTES.md §9.2.',
     affects_results: true,
-    verified_by: null,
-    verified_at: null
+    verified_by: 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request (2026-10-23), from the official text fetched by GitHub Actions run 39957383090 (Simulator source check, job fetch (nhl), 2026-10-23T12:59Z)',
+    verified_at: '2026-10-23'
   },
   playoff_format: {
     value: '16 clubs: top 3 of each division + 2 wild cards per conference; the division winner with the better record meets WC2, the other meets WC1, D2 meets D3; fixed bracket (no reseeding); every round best of seven.',
-    source: 'NHL division-based playoff format in force since 2013-14 (except the 2019-20 and 2020-21 emergency formats); reproduced against every 2013-14 .. 2018-19 and 2021-22 .. 2025-26 playoff series in hockey/data/team_games by simulator/tests/nhl_rules_history.test.ts.',
+    source: 'NHL.com, Playoff Format, https://www.nhl.com/info/standings-info/playoff-format (HTTP 200; page sha256 7ed1469132bf1b89a3edb575310cd3e3b17760459cac3f6250613480a346ddf7, text sha256 af4bc9dfab221102fa3fba6626eb645a2f83c5bdd51834bd8fdb78aa9cf6a218): 16 teams; a set bracket, largely division-based with wild cards; the top three in each division, then the next two highest-placed finishers in each conference regardless of division; the division winner with the best record meets the wild card with the lesser record, the better wild card the other division winner; second and third meet within the bracket headed by their division winner; first-round winners within each bracket meet in the second round; every round best of seven. Identical to rules.ts buildBracket / playPostseason, and reproduced against every 2013-14 .. 2018-19 and 2021-22 .. 2025-26 series (simulator/tests/nhl_rules_history.test.ts).',
     retrieved: '2026-10-23',
-    verification: 'UNVERIFIED',
-    verify_by: 'Confirm no 2026-27 change to the playoff format (NHL.com, Stanley Cup Playoffs format).',
+    verification: 'VERIFIED',
+    verify_by: 'Each season: re-run .github/workflows/simulator-sources.yml and compare the NHL.com playoff-format page with NHL_SIMULATOR_NOTES.md §9.3.',
     affects_results: true,
-    verified_by: null,
-    verified_at: null
+    verified_by: 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request (2026-10-23), from the official text fetched by GitHub Actions run 39957383090 (Simulator source check, job fetch (nhl), 2026-10-23T12:59Z)',
+    verified_at: '2026-10-23'
   },
   home_ice: {
     value: 'Rounds 1-2: the club placed higher in the bracket (D1 > D2 > D3 > wild card). Conference final and Stanley Cup Final: the better regular-season record (points, then the tiebreakers). Series 2-2-1-1-1 (games 1, 2, 5, 7 at the club with home ice).',
-    source: 'Derived from the owned data: every series of 2013-14 .. 2018-19 and 2021-22 .. 2025-26 (165 series) in hockey/data/team_games, including 2016 round 2 (Tampa Bay, Atlantic 2nd, 97 points, hosted the NY Islanders, wild card, 100 points) which a points-only rule gets wrong. Not read from an official page.',
+    source: 'NHL.com, Playoff Format, https://www.nhl.com/info/standings-info/playoff-format (HTTP 200; page sha256 7ed1469132bf1b89a3edb575310cd3e3b17760459cac3f6250613480a346ddf7): "Home-ice advantage through the first two rounds goes to the team that placed higher in the regular-season standings" and "In the Conference Finals and Stanley Cup Final, home-ice advantage goes to the team that had the better regular-season record - regardless of the teams\' final standing in their respective divisions." The contrast places the first two rounds by divisional standing (D1 > D2 > D3; a wild card below the division\'s top three), which is what every series of 2013-14 .. 2018-19 and 2021-22 .. 2025-26 in hockey/data/team_games shows (165 of 165, including 2016 round 2: Tampa Bay, Atlantic 2nd, 97 points, hosted the wild-card NY Islanders, 100). The 2-2-1-1-1 order is not on the page; it is the order of every one of those series\' games (simulator/tests/nhl_rules_history.test.ts).',
     retrieved: '2026-10-23',
-    verification: 'UNVERIFIED',
-    verify_by: 'Confirm the 2026-27 home-ice rule (NHL.com, Stanley Cup Playoffs format).',
+    verification: 'VERIFIED',
+    verify_by: 'Each season: re-run .github/workflows/simulator-sources.yml and compare the NHL.com playoff-format page with NHL_SIMULATOR_NOTES.md §9.4.',
     affects_results: true,
-    verified_by: null,
-    verified_at: null
+    verified_by: 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request (2026-10-23), from the official text fetched by GitHub Actions run 39957383090 (Simulator source check, job fetch (nhl), 2026-10-23T12:59Z)',
+    verified_at: '2026-10-23'
   },
   overtime: {
     value: 'Regular season: 5-minute 3-on-3 sudden-death overtime, then a shootout. Playoffs: 20-minute 5-on-5 sudden-death periods until a goal; no shootout.',

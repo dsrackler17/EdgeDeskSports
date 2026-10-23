@@ -49,7 +49,7 @@ import { REPO } from '../nfl/model_adapter.ts';
 import { NHL_TEAMS_2027, NHL_2027, type NhlSeasonConfig } from './config.ts';
 import { dayNum, hockeyWalkforward } from './history.ts';
 import type { NhlTeam } from './rules.ts';
-import type { DistParams } from './model_adapter.ts';
+import { liveParamsHash, type DistParams } from './model_adapter.ts';
 import { parseCsv } from '../../core/csv.ts';
 import { hashCanonical, sha256Hex } from '../../core/canonical.ts';
 import { sigmaAt, STRENGTH_STUDY_FILE } from '../../research/nhl_strength_uncertainty.ts';
@@ -272,7 +272,7 @@ export async function buildNhlSnapshot(opt: BuildOptions = {}): Promise<NhlSnaps
   /* 4 the distribution, the draw decision, the strength sigma */
   const goal = JSON.parse(fs.readFileSync(GOAL_STUDY_FILE, 'utf8'));
   const strength = JSON.parse(fs.readFileSync(STRENGTH_STUDY_FILE, 'utf8'));
-  if (strength.model.live_params_sha256 !== sha256Hex(fs.readFileSync(path.join(REPO, 'hockey', 'model', 'params', 'live.json')))) throw new Error('the strength study was calibrated on another hockey/model/params/live.json: re-run simulator/src/research/nhl_strength_uncertainty.ts');
+  if (strength.model.live_params_model_sha256 !== liveParamsHash()) throw new Error('the strength study was calibrated on other served parameters (hockey/model/params/live.json, generated_at aside): re-run simulator/src/research/nhl_strength_uncertainty.ts');
   const meanGp = (2 * done.length) / teams.length;
   const sg = sigmaAt(strength, meanGp);
   const lastResult = done.length ? done.reduce((a, g) => (g.date > a ? g.date : a), done[0].date) : null;
