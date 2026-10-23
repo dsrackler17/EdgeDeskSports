@@ -21,8 +21,8 @@
   "game_time": "2026-10-23T23:00:00.000Z",
   "game_when_label": "2026-10-23 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-23T15:01:49.028Z",
-  "generated_at": "2026-10-23T15:01:49.028Z",
+  "updated_at": "2026-10-23T15:10:55.644Z",
+  "generated_at": "2026-10-23T15:10:55.644Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1875,10 +1875,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-23T23:00:00.000Z",
-    "minutes_before_kickoff": 478,
+    "minutes_before_kickoff": 469,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-23T15:01:49.028Z"
+    "at": "2026-10-23T15:10:55.644Z"
   },
   "featured": {
     "editorial_priority": 39.7,
@@ -2163,17 +2163,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-23T15:01:49.028Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, ",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-23T15:10:55.644Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-23T15:01:49.028Z",
+    "at": "2026-10-23T15:10:55.644Z",
     "blocking": [
       {
         "id": "my_take",
@@ -2181,12 +2188,18 @@
         "detail": "0 characters on file"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Eli Holstein has completed 12 of 18 passes (66.7%) for 180 yards, 10.0 yards per attempt, "
+      }
+    ],
     "hold_reason": "my_take"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "173schi1npinbo",
+    "packet_hash": "7s6rrq8lm8hg",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Duke’s pass rush get to Beau Pribula?",
@@ -2287,6 +2300,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-23T15:01:49.028Z"
+    "at": "2026-10-23T15:10:55.644Z"
   }
 }
