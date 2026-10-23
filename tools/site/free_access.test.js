@@ -176,7 +176,7 @@ chk('a free account (no subscription row) is not granted access', ACCESS.grants(
 
 /* ── SECRETS ─────────────────────────────────────────────────────────── */
 {
-  const files = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean)
+  const files = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).split('\n').filter(Boolean)
     .filter((f) => /\.(html|js|ts|json|css|md|sql|yml|txt|xml)$/.test(f))
     /* test fixtures carry placeholder keys on purpose; they configure a
        throwaway local database and are never a live credential */
