@@ -25,6 +25,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NFL_TEAMS_2026 } from '../sports/nfl/config.ts';
+import { MLB_TEAMS, teamsFor, type League } from '../sports/mlb/config.ts';
 import type { FuturesConfig, Mapping, OutcomeSet } from '../markets/compare.ts';
 import { FUTURES_CONFIG } from './markets.ts';
 
@@ -109,18 +110,121 @@ export function buildMappings(markets: Candidate[], series: SeriesInfo[], verifi
   return { mappings, sets, left };
 }
 
+/* ---------------------------------------------------------------- MLB */
+/** Kalshi ticker suffix -> Retrosheet franchise key (the simulator's MLB entity id); every other suffix is the same */
+export const KALSHI_TO_RETRO: Record<string, string> = { ATH: 'OAK', AZ: 'ARI', CHC: 'CHN', CWS: 'CHA', KC: 'KCA', LAA: 'ANA', LAD: 'LAN', NYM: 'NYN', NYY: 'NYA',
+  SD: 'SDN', SF: 'SFN', STL: 'SLN', TB: 'TBA', WSH: 'WAS' };
+/** the label (yes_sub_title) Kalshi gives each club: the ticker and the label must name the same club */
+export const KALSHI_LABEL: Record<string, string> = { MIL: 'Milwaukee', TBA: 'Tampa Bay' };
+
+interface MlbSeriesRule { outcome: string; league?: League; div?: string; re: RegExp; basis: string }
+/* each template captures the club (1) and the season (2); the season must be the event ticker's (KXMLB-26: 2026), so
+   next season's markets map to next season's run as soon as Kalshi lists them */
+export const MLB_SERIES: Record<string, MlbSeriesRule> = {
+  KXMLB: { outcome: 'win_world_series', re: /^If (.+) wins the (\d{4}) Pro Baseball Championship, then the market resolves to Yes\.$/,
+    basis: 'wins the season\'s Pro Baseball Championship (the World Series) = win_world_series' }
+};
+
+export function buildMlbMappings(markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }) {
+  const mappings: Mapping[] = [], left: Array<{ market_ticker: string; why: string[] }> = [];
+  const fee = new Map(series.map((s) => [s.ticker, s]));
+  const squash = (x: string | null) => String(x || '').replace(/\s+/g, ' ').trim();
+  for (const k of markets) {
+    const rule = MLB_SERIES[k.series_ticker];
+    if (!rule) continue;                                    // a series with no simulated outcome is not a candidate at all
+    const why: string[] = [];
+    const sf = fee.get(k.series_ticker);
+    if (!sf || !/^quadratic/.test(sf.fee_type) || Number(sf.fee_multiplier) !== 1) why.push('series fee is ' + (sf ? sf.fee_type + ' x' + sf.fee_multiplier : 'unknown') + ', not quadratic x1');
+    const suffix = k.market_ticker.split('-').pop() as string, code = KALSHI_TO_RETRO[suffix] || suffix;
+    const team = MLB_TEAMS.find((t) => t.code === code);
+    if (!team) why.push('ticker suffix ' + suffix + ' is not a club');
+    const m = squash(k.rules_primary).match(rule.re);
+    if (!m) why.push('rules text does not match the ' + k.series_ticker + ' template');
+    else if (m[1] !== squash(k.yes_sub_title)) why.push('rules name "' + m[1] + '" but the market is labelled "' + k.yes_sub_title + '"');
+    const season = m ? m[2] : '';
+    if (m && !new RegExp('^' + k.series_ticker + '-' + season.slice(2) + '(?![0-9])').test(k.event_ticker)) why.push('event ' + k.event_ticker + ' is not the ' + season + ' season');
+    if (team && m && KALSHI_LABEL[team.code] !== squash(k.yes_sub_title)) why.push('labelled "' + k.yes_sub_title + '", not ' + team.code + '\'s "' + KALSHI_LABEL[team.code] + '"');
+    if (squash(k.rules_secondary) !== DISCLAIMER) why.push('secondary rules carry more than the standard disclaimer');
+    if (!/^[0-9a-f]{64}$/.test(k.rules_sha256 || '')) why.push('no rules sha256');
+    if (team && rule.league && team.league !== rule.league) why.push(team.code + ' is not in the ' + rule.league);
+    if (team && rule.div && team.division !== rule.div) why.push(team.code + ' is not in the ' + rule.div);
+    if (why.length || !team) { left.push({ market_ticker: k.market_ticker, why }); continue; }
+    const o = rule.outcome, id = 'mlb' + season;
+    const set = o === 'make_playoffs' ? null : o === 'win_world_series' ? id + ':win_world_series' : o === 'win_division' ? id + ':win_division:' + team.division : id + ':' + o + ':' + team.league;
+    mappings.push({ mapping_id: id + ':' + k.market_ticker, status: 'verified', sport: 'mlb', competition: 'MLB', season,
+      series_ticker: k.series_ticker, event_ticker: k.event_ticker, market_ticker: k.market_ticker, entity_id: team.code, outcome: o, outcome_set: set,
+      settlement: { basis: 'Kalshi ' + k.series_ticker + ': ' + rule.basis, rules_sha256: k.rules_sha256, rules_excerpt: squash(k.rules_primary) },
+      verified_by: verified.by, verified_at: verified.at });
+  }
+  mappings.sort((a, b) => a.market_ticker.localeCompare(b.market_ticker));
+  /* complete sets only: every club that can win the outcome has its market (a finished season's eliminated clubs
+     have none, so a World Series with two clubs left is compared one market at a time) */
+  const members = new Map<string, Mapping[]>();
+  for (const x of mappings) if (x.outcome_set) members.set(x.outcome_set, [...(members.get(x.outcome_set) || []), x]);
+  const sets: OutcomeSet[] = [];
+  for (const [id, ms] of [...members].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const scope = id.split(':')[2];
+    const eligible = teamsFor(Number(ms[0].season)).filter((t) => !scope || t.league === scope || t.division === scope).map((t) => t.code);
+    const have = new Set(ms.map((x) => x.entity_id));
+    if (have.size !== ms.length || ms.length !== eligible.length || eligible.some((e) => !have.has(e))) {
+      for (const x of ms) x.outcome_set = null;   // incomplete: compared one market at a time, never normalised
+      continue;
+    }
+    sets.push({ id, outcome: ms[0].outcome, entities: eligible.slice().sort(), mutually_exclusive: true, exhaustive: true,
+      note: 'exactly one of these clubs ' + (ms[0].outcome === 'win_world_series' ? 'wins the World Series' : ms[0].outcome === 'win_pennant' ? 'wins the ' + scope + ' pennant' : 'wins the ' + scope) });
+  }
+  return { mappings, sets, left };
+}
+
+/** the candidates file read back from the source check's job log, for when its artifact cannot be downloaded:
+    every series row (with its fee fields) and every open market line, each with the rules sha256 the runner
+    computed on the raw text. The log prints the rules with whitespace squashed, which is how the templates read
+    them anyway. SETTLED lines (a series' wording between seasons) are never candidates. */
+export function candidatesFromLog(text: string): { fetched_at: string; series: SeriesInfo[]; markets: Candidate[] } {
+  const series: SeriesInfo[] = [], markets: Candidate[] = [];
+  let at = '', current = '';
+  for (const raw of text.split(/\r?\n/)) {
+    const ts = raw.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+Z) /);
+    if (ts && !at) at = ts[1];
+    const line = ts ? raw.slice(ts[0].length) : raw;
+    let m = line.match(/^## SERIES (\S+) \|/);
+    if (m) { current = m[1]; continue; }
+    m = line.match(/^ {2}(KX[A-Z0-9-]+) \| .* \| (\S+) \| (\S+?)(?: {3}<- futures)?$/);
+    if (m) { series.push({ ticker: m[1], fee_type: m[2], fee_multiplier: m[3] }); continue; }
+    m = line.match(/^ {2}- (\S+) \| event (\S+) \| (.*?) \| close \S+ \| bid .*? \| rules_sha256 (\S+) \| RULES: (.*?)(?: \| RULES2: (.*))?$/);
+    if (m && current) markets.push({ series_ticker: current, event_ticker: m[2], market_ticker: m[1], yes_sub_title: m[3], rules_primary: m[5], rules_secondary: m[6] ?? null, rules_sha256: m[4] });
+  }
+  return { fetched_at: at, series, markets };
+}
+
+/** the config's mapping_version names the source check each sport's mappings came from ('nfl <date>.run<id>; mlb ...');
+    a version without a sport is the NFL's, the only sport built before */
+export function versionWith(cur: string, sport: string, v: string): string {
+  const parts = new Map<string, string>();
+  for (const p of String(cur || '').split('; ').filter(Boolean)) { const i = p.indexOf(' '); if (i < 0) parts.set('nfl', p); else parts.set(p.slice(0, i), p.slice(i + 1)); }
+  parts.set(sport, v);
+  return [...parts].sort((x, y) => x[0].localeCompare(y[0])).map(([s, x]) => s + ' ' + x).join('; ');
+}
+
+const BUILDERS: Record<string, typeof buildMappings> = { nfl: buildMappings, mlb: buildMlbMappings };
+
 const isMain = !!process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
   const a = process.argv.slice(2), get = (k: string) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
-  const file = get('--candidates'), runId = get('--run');
-  if (!file || !fs.existsSync(file) || !/^\d+$/.test(runId || '')) { console.error('usage: --candidates <kalshi_candidates.json> --run <actions run id> [--check]'); process.exit(2); }
-  const cand = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const sport = get('--sport') || 'nfl', file = get('--candidates') || get('--log'), runId = get('--run');
+  if (!BUILDERS[sport] || !file || !fs.existsSync(file) || !/^\d+$/.test(runId || '')) {
+    console.error('usage: [--sport nfl|mlb] --candidates <kalshi_candidates[_mlb].json> | --log <the source check job\'s log> --run <actions run id> [--check]'); process.exit(2);
+  }
+  const cand = get('--log') ? candidatesFromLog(fs.readFileSync(file, 'utf8')) : JSON.parse(fs.readFileSync(file, 'utf8'));
   const at = String(cand.fetched_at || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(at)) { console.error('error: the candidates carry no fetch date (a log must keep its timestamps)'); process.exit(2); }
   const by = 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request, from the settlement rules Kalshi\'s API returned to GitHub Actions run ' + runId + ' (Simulator source check), matched by simulator/src/cli/build_kalshi_mappings.ts';
-  const { mappings, sets, left } = buildMappings(cand.markets, cand.series, { by, at });
+  const { mappings, sets, left } = BUILDERS[sport](cand.markets, cand.series, { by, at });
   const cfg = JSON.parse(fs.readFileSync(FUTURES_CONFIG, 'utf8')) as FuturesConfig & Record<string, unknown>;
-  cfg.mapping_version = at + '.run' + runId;
-  cfg.outcome_sets = sets; cfg.mappings = mappings;
+  /* only this sport's mappings and outcome sets are rebuilt; every other sport's stay as they are */
+  cfg.mapping_version = versionWith(cfg.mapping_version, sport, at + '.run' + runId);
+  cfg.outcome_sets = cfg.outcome_sets.filter((s) => !s.id.startsWith(sport)).concat(sets).sort((x, y) => x.id.localeCompare(y.id));
+  cfg.mappings = cfg.mappings.filter((m) => m.sport !== sport).concat(mappings).sort((x, y) => x.sport.localeCompare(y.sport));   // stable: each sport keeps its own order
   const text = JSON.stringify(cfg, null, 2) + '\n';
   if (a.includes('--check')) { const cur = fs.readFileSync(FUTURES_CONFIG, 'utf8'); console.log(cur === text ? 'kalshi_futures.json is current' : 'kalshi_futures.json differs'); process.exit(cur === text ? 0 : 1); }
   fs.writeFileSync(FUTURES_CONFIG, text);
