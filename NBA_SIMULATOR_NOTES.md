@@ -494,9 +494,17 @@ Monte Carlo ± is simulation noise only.
   work tables: the committed snapshots); the nightly `simulator.yml` still
   plans the NFL only — the NBA needs its work-table step first (runbook).
 - Reader: the Simulator seat shows the NBA's status, blockers and
-  limitations (generated registry); its result tables are NFL-shaped and need
-  an NBA layout (division, play-in, seeds 1-8, four rounds) before an NBA run
-  is published.
+  limitations (generated registry) and, once the NBA is ACTIVE, its own
+  views (`lib/edgedesk_simulator.js`):
+  - Division: W-L, projected wins, division title, play-in and playoffs.
+  - Conference: regular-season first place, play-in, playoffs, both rounds,
+    the playoff conference title, then seeds 1-8. Each is its own column, with
+    a note that these are four different outcomes.
+  - Title: the NBA title, with the regular-season places on their own line.
+
+  Tested on real simulations of the committed fixture: `ui.test.ts`, and
+  `ui.e2e.ts` in Chromium at 390 and 1440 px, with the NBA served ACTIVE for
+  that scenario only.
 - Kalshi: no NBA mapping.
 - Nothing is "production-ready", "deployed" or a "validated edge".
 

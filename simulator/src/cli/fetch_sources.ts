@@ -76,22 +76,32 @@ const NBA_ARCHIVE = 'https://web.archive.org/web/20261023000000id_/';
 const NBA_RULES = /tie|break|head-to-head|percentage|won-lost|differential|net points|division (winner|leader)|playoff team|play-in|seed|home[- ]court|reseed|best-of-seven|2-2-1-1-1|random|drawing/i;
 const NBA_CUP = /standings|count|regular[- ]season|\b8[0-3]\b|Group Play|Knockout|Quarterfinal|Semifinal|Championship|wild card|tiebreak|host|neutral/i;
 const NBA_SEASON = /play-in|playoff|Finals|Cup|\b8[0-3]\b|standings|format|regular season (ends|concludes|begins|tips)/i;
+const NBA_PLAY_IN = /No\. ?\d|seed|host|winner|loser|eliminat|play-in|home/i;
+const NBA_FORMAT = /seed|record|tie|head-to-head|home[- ]court|best-of-seven|2-2-1-1-1|2-3-2|games? (1|2|3|4|5|6|7)\b|bracket|round|Finals|division/i;
 const NBA_ARTICLES: Array<[string, string, RegExp]> = [
   /* the standings page carries the league's tiebreaker paragraph */
   ['nba_standings', 'https://www.nba.com/standings', NBA_RULES],
   /* the play-in and NBA Cup explainers, the Cup's questions page */
-  ['nba_play_in', 'https://www.nba.com/news/nba-play-in-tournament', NBA_RULES],
+  ['nba_play_in', 'https://www.nba.com/news/nba-play-in-tournament', NBA_PLAY_IN],
   ['nba_cup_101', 'https://www.nba.com/news/nba-cup-101', NBA_CUP],
   ['nba_cup_faq', 'https://www.nba.com/news/nba-cup-frequently-asked-questions', NBA_CUP],
   /* the 2026-27 season as the league announced it: the schedule release and the key dates */
   ['nba_2026_27_schedule_release', 'https://www.nba.com/news/2026-27-nba-regular-season-schedule', NBA_SEASON],
-  ['nba_2026_27_key_dates', 'https://www.nba.com/news/key-dates', NBA_SEASON]
+  ['nba_2026_27_key_dates', 'https://www.nba.com/news/key-dates', NBA_SEASON],
+  /* the playoff field and bracket as the league presented the 2026 postseason */
+  ['nba_2026_playoffs_bracket', 'https://www.nba.com/news/2026-nba-playoffs-standings-and-bracket-updates', NBA_FORMAT]
 ];
 const NBA_PAGES: Page[] = NBA_ARTICLES.flatMap(([id, url, excerpt]): Page[] => [
   { id, url, excerpt },
   { id: id + '_apihub', url: url.replace('https://www.nba.com/', 'https://api-hub.nba.com/'), excerpt },
   { id: id + '_archive', url: NBA_ARCHIVE + url, excerpt }
-]).concat([{ id: 'nba_2026_27_schedule_release_pr', url: 'https://pr.nba.com/2026-27-nba-regular-season-schedule/', excerpt: NBA_SEASON }]);
+]).concat([
+  { id: 'nba_2026_27_schedule_release_pr', url: 'https://pr.nba.com/2026-27-nba-regular-season-schedule/', excerpt: NBA_SEASON },
+  /* the league's releases that set the current format: seeding by record and its tiebreak for seeding and home court
+     (2015), and 2-2-1-1-1 in every round including the Finals (2014); pr.nba.com refuses the runners, so as archived */
+  { id: 'nba_pr_seeding_by_record_2015_archive', url: NBA_ARCHIVE + 'https://pr.nba.com/nba-playoff-seeding-changes', excerpt: NBA_FORMAT },
+  { id: 'nba_pr_finals_format_2014_archive', url: NBA_ARCHIVE + 'https://pr.nba.com/nba-finals-format-change-2014/', excerpt: NBA_FORMAT }
+]);
 const EXCERPTS: string[] = [];
 /* MLB: the postseason landing page and the official-information page (its links name the rulebook PDFs);
    the explainers for the format, the tiebreakers and the extra-inning runner are found, not guessed: the
@@ -190,7 +200,8 @@ async function fetchPage(p: Page) {
   SUMMARY.push(p.id + ': ' + head + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
   console.log('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):\n' + text.slice(0, 60000));
   if (p.excerpt && res.ok) {
-    const hit = [...new Set(text.split('\n').filter((l) => p.excerpt!.test(l)))];
+    /* every matching paragraph in page order, repeats kept (a list can repeat an item another list has) */
+    const hit = text.split('\n').filter((l) => p.excerpt!.test(l));
     EXCERPTS.push('== EXCERPT ' + p.id + '  ' + res.url + '  (text sha256 ' + sha256Hex(text) + '; ' + hit.length + ' paragraphs matching ' + p.excerpt + ')\n' + hit.map((l) => '  ' + l).join('\n'));
   }
 }
