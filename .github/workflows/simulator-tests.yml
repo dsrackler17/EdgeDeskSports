@@ -3,6 +3,8 @@
 #   unit   typecheck (pinned typescript from simulator/package-lock.json), the
 #          engine, rules (NFL 2002-2025 and NHL 2013-14..2025-26 history +
 #          synthetic), simulation, hooks, config, markets and reader suites,
+#          the college football suites (conference ties, the 2024-2025 title
+#          games and brackets, the committee proxy, favourite calibration),
 #          and the generated-file checks
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
@@ -31,6 +33,9 @@ on:
       - 'football/engine.js'
       - 'hockey/model/**'
       - 'hockey/data/teams.json'
+      - 'football/cfb_p4/**'
+      - 'football/fbs/fbs.js'
+      - 'football/matchup/inputs.js'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -48,6 +53,9 @@ on:
       - 'football/engine.js'
       - 'hockey/model/**'
       - 'hockey/data/teams.json'
+      - 'football/cfb_p4/**'
+      - 'football/fbs/fbs.js'
+      - 'football/matchup/inputs.js'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -91,6 +99,8 @@ jobs:
           node simulator/tests/nhl_rules_synthetic.test.ts
           node simulator/tests/nhl_config.test.ts
           node simulator/tests/nhl_sim.test.ts
+      - name: College football rules (synthetic ties, the 2024-2025 title games), CFP brackets, committee proxy, calibration, configuration and simulation
+        run: npm run sim:cfb:test
       - name: Kalshi futures comparison and the reader
         run: |
           node simulator/tests/markets.test.ts
