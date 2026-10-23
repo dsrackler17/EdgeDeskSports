@@ -32,6 +32,7 @@ import { buildWnbaSnapshot } from '../src/sports/wnba/inputs.ts';
 import { executeUfc } from '../src/sports/ufc/run.ts';
 import { buildUfcSnapshot } from '../src/sports/ufc/inputs.ts';
 import { executeGolf } from '../src/sports/golf/run.ts';
+import { tennisRuns } from './_tennis_fixture.ts';
 import os from 'node:os';
 
 const require = createRequire(import.meta.url);
@@ -121,6 +122,15 @@ const golf = gout.runs.map((r, i) => {
     validation_summary: { flags: r.results.flags, sport_summary: (r.results as any).sport_summary } }, rows: resultRows(r as any), ents: entityRows(r as any) };
 });
 const golfOf = (u: string) => golf.find((g) => u.includes(g.id) || u.includes(encodeURIComponent(g.id)) || u.includes('competition=eq.' + encodeURIComponent(g.comp))) || null;
+/* tennis: every draw whose order the committed feeds give, and the day's matches, simulated offline (3,000 runs each) */
+const tout = await tennisRuns(3000, '5');   /* the committed feeds, or the frozen fixture on a day they give no draw */
+const tennis = tout.runs.map((r, i) => {
+  const id = 'ffffffff-0000-0000-0000-00000000000' + i, comp = r.results.run.competition;
+  return { id, comp, run: { ...run, run_id: id, sport: 'tennis', competition: comp, season: '2026', n_sims: 3000, seed: '5', model_version: r.results.run.model_version, rules_version: r.results.run.rules_version, comparison_id: null,
+    validation_summary: { flags: r.results.flags, sport_summary: (r.results as any).sport_summary } }, rows: resultRows(r as any), ents: entityRows(r as any) };
+});
+const tennisOf = (u: string) => tennis.find((g) => u.includes(g.id) || u.includes(encodeURIComponent(g.id)) || u.includes('competition=eq.' + encodeURIComponent(g.comp))) || null;
+const TENNIS_DRAWS = tennis.filter((t) => t.comp !== 'matches');
 const EVIL = '<img src=x onerror="window.__xss=1">';
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 
@@ -173,10 +183,13 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         /* PostgREST pages: limit and offset, as the reader asks (an NBA run publishes 1,050 result rows, a UFC run about 1,500) */
         const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
         const gstatus = golf.map((g) => ({ ...status, sport: 'golf', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, ...gstatus]); }
+        const tstatus = tennis.map((g) => ({ ...status, sport: 'tennis', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
+        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, ...gstatus, ...tstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
-        const g = /sport=eq\.golf|eeeeeeee-/.test(u) ? golfOf(u) : null;
-        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? (g ? [g.run] : /sport=eq\.golf/.test(u) ? [] : [isUfc(u) ? urun : isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run]) : []);
+        const g = /sport=eq\.golf|eeeeeeee-/.test(u) ? golfOf(u) : /sport=eq\.tennis|ffffffff-/.test(u) ? tennisOf(u) : null;
+        /* the tennis reader first asks for every tennis run (its draw picker's names), then each competition's */
+        if (/sim_current_runs/.test(u) && /sport=eq\.tennis/.test(u) && !/competition=eq/.test(u)) return J(sc.entitled && sc.published ? tennis.map((t) => t.run) : []);
+        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? (g ? [g.run] : /sport=eq\.(golf|tennis)/.test(u) ? [] : [isUfc(u) ? urun : isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run]) : []);
         if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(g ? g.rows : isUfc(u) ? urows : isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
         if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(g ? g.ents : isUfc(u) ? uents : isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
         if (/sim_current_edges/.test(u)) return J(sc.entitled ? edges : []);
@@ -378,11 +391,38 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       await ctx.close();
     }
     {
-      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/tennis', { entitled: true, published: true });
-      await page.evaluate(() => (window as any).navHashRoute('#simulator/tennis')); await page.waitForTimeout(300);
+      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/college_baseball', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/college_baseball')); await page.waitForTimeout(300);
       const t = await text(page);
-      T.chk('a sport that is not ACTIVE (#simulator/tennis) shows its blockers and no number', /Coming Soon/.test(t) && /Retired from coverage/.test(t) && !/\d+\.\d%/.test(t));
-      await shot(page, 'sim-blocked-tennis-390'); await ctx.close();
+      T.chk('a sport that is not ACTIVE (#simulator/college_baseball) shows its blockers and no number', /Coming Soon/.test(t) && /Out of season/.test(t) && !/\d+\.\d%/.test(t));
+      await shot(page, 'sim-blocked-college-baseball-390'); await ctx.close();
+    }
+    /* tennis (its own adapter: Draws, Matches, Model Health; one competition per draw and one for the day's matches) */
+    if (TENNIS_DRAWS.length) for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width + 'w';
+      const { ctx, page, errors } = await open(vp, '#simulator/tennis', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/tennis')); await page.waitForTimeout(700);
+      let t = await text(page);
+      T.chk(W + ': tennis: the tabs are Draws, Matches and Model Health, Draws open', /Matches/.test(await page.locator('#simHost .sm-tabs').innerText()) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Draws');
+      T.chk(W + ': tennis Draws: the draw, who wins the title with fair odds', /3,000 simulated draws/.test(t) && /Who wins the title/.test(t) && /Draw order:/.test(t), t.slice(0, 400));
+      if (TENNIS_DRAWS.length > 1) T.chk(W + ': tennis: a draw picker with every draw', (await page.locator('#simHost [data-sim-act="draw"]').count()) === TENNIS_DRAWS.length);
+      T.chk(W + ': tennis Draws: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1), await page.evaluate(() => [document.scrollingElement!.scrollWidth, window.innerWidth]));
+      await shot(page, 'sim-tennis-draws-' + W);
+      if (TENNIS_DRAWS.length > 1) {
+        const other = TENNIS_DRAWS[TENNIS_DRAWS.length - 1];
+        await page.click('#simHost [data-sim-act="draw"][data-sim-val="' + other.comp + '"]'); await page.waitForTimeout(600);
+        T.chk(W + ': tennis: picking another draw shows it', (await text(page)).includes((other.run.validation_summary as any).sport_summary.tournament.name));
+      }
+      await page.click('#simHost .sm-tabs button:has-text("Matches")'); await page.waitForTimeout(400); t = await text(page);
+      T.chk(W + ': tennis Matches: every scheduled match with fair odds', /Every scheduled singles match/.test(t) || /No match prices have been published/.test(t));
+      T.chk(W + ': tennis Matches: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-tennis-matches-' + W);
+      await page.click('#simHost .sm-tabs button:has-text("Model Health")'); await page.waitForTimeout(400); t = await text(page);
+      T.chk(W + ': tennis Model Health: the holdout and the draw backtest in plain words', /Does the match rating work\?/.test(t) && /Does the draw simulation call tournaments\?/.test(t));
+      T.chk(W + ': tennis Model Health: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-tennis-health-' + W);
+      T.eq(W + ': tennis: no page errors', errors, []);
+      await ctx.close();
     }
     {
       const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failSecond: true });

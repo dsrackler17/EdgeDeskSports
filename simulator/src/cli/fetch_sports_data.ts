@@ -36,6 +36,8 @@ import { fileURLToPath } from 'node:url';
 import { sha256Hex } from '../core/canonical.ts';
 /* one parser for the feed and for a golf run's live read (the same record either way) */
 import { ESPN, ESPN_WEB, golfEvent, competitionMeta } from '../sports/golf/espn.ts';
+/* the tennis rows: one parser for this feed and for a tennis run's live read */
+import { espnTennis, tennisMatchRow } from '../sports/tennis/espn.ts';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const require = createRequire(import.meta.url);
@@ -47,10 +49,10 @@ const OUT = opt('--out') || path.join(REPO, 'simulator', 'data', 'feeds');
 const GOLF_SEASONS = (opt('--golf-seasons') || '2023,2024,2025,2026').split(',').map(Number).filter(Boolean);
 const GOLF_LEAGUES = (opt('--golf-leagues') || 'pga,lpga,eur').split(',').filter(Boolean);
 const CURRENT_LEAGUES = ['pga', 'lpga', 'eur'];
-const espnTennis = require(path.join(REPO, 'tools', 'tennis', 'espn.js')) as {
-  scoreboardRangeUrl: (tour: string, fromMs: number, toMs: number) => string; scoreboardPlainUrl: (tour: string) => string; summaryUrl: (tour: string, id: string) => string;
-  parseScoreboard: (j: unknown, tour: string) => Array<Record<string, any>>; rankingsUrls: (tour: string) => string[]; parseRankings: (j: unknown) => unknown };
 const TENNIS_FROM = opt('--tennis-from') || '2022-01';
+const WIKI_API = 'https://en.wikipedia.org/w/api.php';
+/* Wikipedia asks API clients to identify themselves */
+const WIKI_UA = 'EdgeDeskSimulator/1.0 (https://github.com/dsrackler17/EdgeDeskSports; simulator feeds)';
 const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
 type Req = { url: string; status: number | string; bytes: number; ms: number; note?: string };
@@ -79,8 +81,8 @@ async function fetchText(url: string, opts: { accept?: string; ua?: string; trie
   }
   return null;
 }
-async function fetchJson(url: string): Promise<any | null> {
-  const r = await fetchText(url);
+async function fetchJson(url: string, ua?: string): Promise<any | null> {
+  const r = await fetchText(url, ua ? { ua } : {});
   if (!r || r.status !== 200) return null;
   try { return JSON.parse(r.text); } catch (_) { return null; }
 }
@@ -265,16 +267,18 @@ export function parseUfcRankings(html: string) {
 }
 
 /* ------------------------------------------------------------------ tennis */
-/** one singles match, as the tennis simulation reads it (side a = the feed's first competitor) */
-function tennisMatchRow(m: Record<string, any>, t: Record<string, any>) {
-  return {
-    id: m.provider_match_id, tid: t.provider_tournament_id, tournament: t.name, level: t.level, surface: t.surface, start: t.start_date, end: t.end_date, draw_size: t.draw_size,
-    tour: m.tour, grouping: m.grouping, round: m.round, best_of: m.best_of, at: m.scheduled_at, order: m.match_order,
-    a_id: m.home_provider_id, a: m.home_name, a_seed: m.home_seed, a_rank: m.home_rank,
-    b_id: m.away_provider_id, b: m.away_name, b_seed: m.away_seed, b_rank: m.away_rank,
-    status: m.status, result: m.result_type, detail: m.status_detail, winner: m.winner_side === 'home' ? 'a' : m.winner_side === 'away' ? 'b' : null,
-    sets: (m.set_scores || []).map((x: any) => [x.home, x.away, x.home_tb, x.away_tb])
-  };
+/** the Wikipedia titles worth reading for a tournament's singles draw: a draw article among the search hits
+    ("2026 Swiss Indoors – Singles"; at a combined event "– Men's singles" / "– Women's singles"), this year's
+    tournament articles among them with the draw suffix, and ESPN's own name with it. Never qualifying, doubles,
+    juniors or wheelchair. */
+export function drawCandidates(hits: string[], yr: string, espnName: string, gender: string, tour: string | null): string[] {
+  const bad = /qualifying|doubles|wheelchair|junior|boys|girls/i;
+  const genderOk = (h: string) => tour == null || (tour === 'atp' ? /men's singles/i.test(h) && !/women's/i.test(h) : /women's singles/i.test(h));
+  const draw = hits.filter((h) => h.startsWith(yr + ' ') && /singles/i.test(h) && !bad.test(h) && genderOk(h));
+  const bases = hits.filter((h) => h.startsWith(yr + ' ') && !/ – /.test(h) && !/season|tournaments|tour$|in sports/i.test(h)).map((h) => h + ' – ' + gender);
+  const out: string[] = [];
+  for (const t of [...draw, ...bases, yr + ' ' + espnName + ' – ' + gender]) if (!out.includes(t)) out.push(t);
+  return out;
 }
 async function fetchTennis() {
   const [y0, m0] = TENNIS_FROM.split('-').map(Number);
@@ -299,24 +303,48 @@ async function fetchTennis() {
   }
   const matches = [...rows.values()].sort((a, b) => String(a.at).localeCompare(String(b.at)) || String(a.id).localeCompare(String(b.id)));
   const histHash = writeGz('tennis_matches.json.gz', { schema: 'edgedesk_feed_tennis_matches_v1', fetched_at: new Date().toISOString(), source: 'ESPN public tennis scoreboard, half-month ranges (tools/tennis/espn.js parseScoreboard); singles only', windows, unread, tournaments: [...tournaments.values()], matches });
-  /* the tournaments in progress or starting within two weeks: ESPN's summary document whole (its draw / bracket shape is read in the repository) */
+  /* the tournaments in progress or starting within two weeks, and the tours' scoreboards for today, whole */
   const soon = [...tournaments.values()].filter((t) => t.end && t.start && Date.parse(t.end + 'T23:59:59Z') >= now.getTime() - 864e5 && Date.parse(t.start + 'T00:00:00Z') <= now.getTime() + 14 * 864e5);
-  const summaries: Record<string, unknown> = {};
-  for (const t of soon.slice(0, 12)) {
-    const tour = t.tour === 'WTA' ? 'wta' : 'atp';
-    summaries[t.id] = { tournament: t, summary: await fetchJson(espnTennis.summaryUrl(tour, t.id)) };
-  }
   const current: Record<string, unknown> = {};
   for (const tour of ['atp', 'wta']) current[tour] = await fetchJson(espnTennis.scoreboardPlainUrl(tour));
-  writeGz('tennis_current.json.gz', { schema: 'edgedesk_feed_tennis_current_v1', fetched_at: new Date().toISOString(), tournaments: soon, summaries, scoreboards: current });
+  writeGz('tennis_current.json.gz', { schema: 'edgedesk_feed_tennis_current_v1', fetched_at: new Date().toISOString(), tournaments: soon, scoreboards: current });
+  /* the draws. The scoreboard lists a draw's matches by time, with no position in the draw and TBD for every
+     match not yet scheduled; ESPN's bracket page answers GitHub's runners with a bot challenge (AWS WAF,
+     2026-10-23) and its core API carries no draw position. Wikipedia's draw article for each tournament lists
+     the first-round lines in draw order (its bracket templates' RD1-team01, 02, ...): its wikitext, found by
+     the search API, is kept whole and parsed in the repository (simulator/src/sports/tennis/wiki_draw.ts) */
+  const draws: Array<Record<string, unknown>> = [];
+  for (const t of soon) {
+    const yr = String(t.id).split('-')[1] || String(t.start).slice(0, 4);
+    const kinds: string[] = t.tour === 'MIXED' ? ['atp', 'wta'] : t.tour === 'WTA' ? ['wta'] : ['atp'];
+    for (const tour of kinds) {
+      const gender = t.tour === 'MIXED' ? (tour === 'atp' ? "Men's singles" : "Women's singles") : 'Singles';
+      const q = yr + ' ' + t.name + ' ' + gender.toLowerCase();
+      const sr = await fetchJson(WIKI_API + '?action=query&list=search&format=json&srlimit=8&srsearch=' + encodeURIComponent(q), WIKI_UA);
+      const hits: string[] = ((sr && sr.query && sr.query.search) || []).map((h: any) => String(h.title));
+      /* candidates: a draw article among the hits; each of this year's tournament articles among them plus
+         " – Singles"; ESPN's own name plus " – Singles". All are kept: the repository picks the one whose
+         lines are ESPN's players (inputs.ts), never the search's first guess */
+      const cands = drawCandidates(hits, yr, t.name, gender, t.tour === 'MIXED' ? tour : null).slice(0, 4);
+      const articles: Array<{ title: string; revid: number | null; wikitext: string }> = [];
+      for (const title of cands) {
+        const w = await fetchJson(WIKI_API + '?action=parse&format=json&formatversion=2&prop=wikitext%7Crevid&redirects=1&page=' + encodeURIComponent(title), WIKI_UA);
+        if (w && w.parse && w.parse.wikitext && !articles.some((a) => a.revid === w.parse.revid)) articles.push({ title: w.parse.title || title, revid: w.parse.revid ?? null, wikitext: w.parse.wikitext });
+        await sleep(100);
+      }
+      draws.push({ tournament: t.id, name: t.name, tour, query: q, hits, candidates: cands, articles });
+    }
+  }
+  writeGz('tennis_draws.json.gz', { schema: 'edgedesk_feed_tennis_draws_v3', fetched_at: new Date().toISOString(), source: "Wikipedia draw articles (search API, then the article's wikitext)", draws });
   /* the tours' rankings (seeding and a prior for players the history barely knows) */
   const rankings: Record<string, unknown> = {};
   for (const tour of ['atp', 'wta']) {
-    for (const u of espnTennis.rankingsUrls(tour)) { const j = await fetchJson(u); if (j) { rankings[tour] = { url: u, parsed: espnTennis.parseRankings(j) }; break; } }
+    for (const u of espnTennis.rankingsUrls(tour)) { const j = await fetchJson(u.url); if (j) { rankings[tour] = { url: u.url, via: u.via, parsed: espnTennis.parseRankings(j) }; break; } }
   }
   writeJson('tennis_rankings.json', { schema: 'edgedesk_feed_tennis_rankings_v1', fetched_at: new Date().toISOString(), rankings });
   const done = matches.filter((m) => m.winner).length;
-  report.summary.tennis = { matches: matches.length, decided: done, tournaments: tournaments.size, windows: windows.length, unread, current_tournaments: soon.map((t) => t.tour + ' ' + t.name), matches_sha256: histHash };
+  report.summary.tennis = { matches: matches.length, decided: done, tournaments: tournaments.size, windows: windows.length, unread, current_tournaments: soon.map((t) => t.tour + ' ' + t.name), matches_sha256: histHash,
+    draws: draws.map((d) => d.tour + ' ' + d.name + ': ' + ((d.articles as any[]).map((a) => a.title).join(' | ') || 'no article (tried ' + JSON.stringify(d.candidates) + ')')), rankings: Object.keys(rankings) };
   console.log('tennis: ' + matches.length + ' singles matches (' + done + ' decided) in ' + tournaments.size + ' tournaments from ' + windows.length + ' windows; unread ' + (unread.join(',') || 'none') + '; current ' + soon.map((t) => t.tour + ' ' + t.name + ' (' + t.start + '..' + t.end + ')').join(' | '));
 }
 

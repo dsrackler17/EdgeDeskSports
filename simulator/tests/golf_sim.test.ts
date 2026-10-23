@@ -276,9 +276,12 @@ const P = (x: ReturnType<typeof run>, id: string, k: string) => { const e = x.re
   const by = (t: string) => snapshots.find((s) => s.data.tour === t);
   K.chk('committed data: a snapshot per tour event in play, offline (or each skip with its reason)', snapshots.length + skipped.length === 3 && skipped.every((s) => s.reason.length > 0));
   const pga = by('pga');
+  /* the committed feed is refreshed daily: the Bermuda Championship's cut is measured before round 2 ends and Observed after */
   if (pga && pga.data.event.name === 'Butterfield Bermuda Championship') {
-    K.eq('committed data: the Bermuda Championship\'s cut is measured (top 65 and ties after round 2, the tour standard)', [pga.data.cut.state, pga.data.cut.n, pga.data.cut.round, pga.data.cut.provenance], ['pending', 65, 2, 'Research']);
-    K.chk('committed data: round 2 in progress: holes played counted, the withdrawn player out', pga.data.players.some((p) => p.partial && p.partial.r === 2) && pga.data.players.filter((p) => p.status === 'wd').length === 1);
+    if (pga.data.cut.state === 'pending') {
+      K.eq('committed data: the Bermuda Championship\'s cut is measured (top 65 and ties after round 2, the tour standard)', [pga.data.cut.state, pga.data.cut.n, pga.data.cut.round, pga.data.cut.provenance], ['pending', 65, 2, 'Research']);
+      K.chk('committed data: round 2 in progress: holes played counted', pga.data.players.some((p) => p.partial && p.partial.r === 2));
+    } else K.eq('committed data: the Bermuda Championship\'s cut, once made, is Observed', [pga.data.cut.state, pga.data.cut.provenance], ['made', 'Observed']);
   }
   const lpga = by('lpga');
   if (lpga && lpga.data.event.name === 'BMW Ladies Championship') K.eq('committed data: the BMW Ladies Championship has no cut (every edition)', lpga.data.cut.state, 'none');
