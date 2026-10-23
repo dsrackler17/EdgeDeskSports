@@ -8,9 +8,14 @@
 #   - the NFL's published tiebreaking procedures, its approved 2026 rules,
 #     bylaws and resolutions (and the proposals), NFL support's seeding and
 #     playoff scheduling pages, the NFL.com Super Bowl LXI site announcement
-#   - Kalshi's NFL futures series (fee_type, fee_multiplier), every open
-#     market's full settlement rules and their sha256, the fee schedule
-# Runs on a pull request that changes it, or by hand.
+#   - the NHL's tie-breaking procedure and playoff format pages, and from
+#     its API the season format flags, the standings and the 2026-27 schedule
+#   - the NBA's standings (tiebreakers), play-in and NBA Cup pages, and its
+#     2026-27 schedule file
+#   - Kalshi's futures series for each sport (fee_type, fee_multiplier), every
+#     open market's full settlement rules and their sha256, the fee schedule
+# One job per sport, so each log stays readable. Runs on a pull request that
+# changes it, or by hand.
 name: Simulator source check
 
 on:
@@ -31,20 +36,25 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        sport: [nfl, nhl, nba]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: '22.22.0'
       - name: Install pdftotext (for the fee schedule PDF)
+        if: ${{ matrix.sport == 'nfl' }}
         run: (sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils) >/dev/null 2>&1 || echo "::warning::poppler-utils did not install; the PDFs will be kept but not printed"
       - name: Fetch and print the sources
-        run: node simulator/src/cli/fetch_sources.ts --out simulator/out/sources
+        run: node simulator/src/cli/fetch_sources.ts --sport ${{ matrix.sport }} --out simulator/out/sources
       - name: Keep the fetched files
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: simulator-sources-${{ github.run_id }}
+          name: simulator-sources-${{ matrix.sport }}-${{ github.run_id }}
           path: simulator/out/sources
           if-no-files-found: ignore
           retention-days: 30
