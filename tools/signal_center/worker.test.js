@@ -19,6 +19,7 @@
                   failed run; a 503 is retried; a persistent failure fails the run,
                   is recorded, and the next run recovers
      invalidation a source record that vanishes withdraws its signal, history kept
+     undeployed   a database without the migration fails with what to do, not a stack
      secrets      the service key never appears in an error
    =========================================================================== */
 'use strict';
@@ -148,6 +149,15 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
       chk('a vanished source record withdraws its signal', q('select publication || \',\' || lifecycle || \',\' || verification_state from public.sc_signals where signal_key = ' + lit(active[0].key) + ';') === 'WITHDRAWN,WITHDRAWN,INVALIDATED');
       chk('…keeping every earlier version', +q('select count(*) from public.sc_signal_versions v join public.sc_signals s using (signal_id) where s.signal_key = ' + lit(active[0].key) + ';') >= 2);
     }
+
+    /* ---- a database without the migration: one clear sentence, nothing written ---- */
+    const bare = DB.client({ SB_URL: 'http://standin', SB_SERVICE_ROLE: 'service-key-xyz' }, { fetchImpl: async () => ({ ok: false, status: 404,
+      text: async () => '{"code":"PGRST202","message":"Could not find the function public.sc_begin_run(p) in the schema cache"}' }), sleep: async () => {} });
+    let nd = null;
+    console.log = () => {};
+    try { await RUN.liveRun(bare, inputs, Object.assign({ idem: 'run-nd' }, opts)); } catch (e) { nd = e; } finally { console.log = quiet; }
+    chk('a database without the migration fails the run with what to do, and says nothing was written', nd && nd.notDeployed === true
+      && /not deployed here/.test(nd.message) && /nothing was written/.test(nd.message) && /Deploy Signal Center schema/.test(nd.message), nd && nd.message);
 
     /* ---- the key never leaks ---- */
     const leaky = DB.client({ SB_URL: 'http://standin', SB_SERVICE_ROLE: 'super-secret-key-123' }, { fetchImpl: async () => ({ ok: false, status: 400, text: async () => 'bad request near super-secret-key-123' }), sleep: async () => {} });
