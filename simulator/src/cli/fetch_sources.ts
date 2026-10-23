@@ -123,10 +123,11 @@ const MLB_ARTICLES: Array<[string, string, RegExp?]> = [
 const mlbPages = (list: Array<[string, string, RegExp?]>): Page[] => list.flatMap(([id, url, links]): Page[] => [
   { id, url, links }, { id: id + '_archive', url: MLB_ARCHIVE + url, links }
 ]);
-/* the rulebook: Rule 7.01 (Regulation Games: (b) Extra Innings, (g) where the runner on second applies) printed whole;
-   the contents line "7.01 Regulation Games ....... 92" does not open the span */
+/* the rulebook: Rules 7.01 (Regulation Games: (b) Extra Innings) and 7.02 (Suspended, Postponed and Tie Games, whose
+   last paragraph says where the runner on second does not apply) printed whole, up to 7.03; the contents line
+   "7.01 Regulation Games ....... 92" does not open the span */
 const MLB_RULES_PDF: Page = { id: 'mlb_official_baseball_rules_2026_pdf', url: 'https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf',
-  span: [/^\s*7\.01 Regulation Games\s*$/, /^\s*7\.02 Suspended/] };
+  span: [/^\s*7\.01 Regulation Games\s*$/, /^\s*7\.03 Forfeited/] };
 const KALSHI_FEE_PAGES: Page[] = [
   /* Kalshi's fee schedule, and the API documentation of fee types, multipliers and rounding */
   { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' },
@@ -346,15 +347,19 @@ async function mlbDiscover(): Promise<Array<[string, string]>> {
     if (m && MLB_TOPICS.test(m[1])) found.add('https://www.mlb.com' + m[1].replace(/\/+$/, ''));
   };
   const CDX = 'https://web.archive.org/cdx/search/cdx?collapse=urlkey&fl=original&filter=statuscode:200&matchType=prefix';
+  let down = 0;
   for (const [id, url] of [['mlb_cdx_glossary', CDX + '&url=mlb.com/glossary/&limit=5000'] as [string, string]]
     .concat(MLB_SLUGS.map((x): [string, string] => ['mlb_cdx_' + x.replace(/[^a-z0-9]+/gi, '_'), CDX + '&url=mlb.com/' + x + '&from=2022&limit=200']))) {
+    /* three failures in a row: the index is down for now, and the rest would only spend the job's time */
+    if (down >= 3) { console.log('INDEX ' + id + ' SKIPPED (the index failed 3 times in a row)'); continue; }
     try {
       /* the archive's index is slow: 30 s each, so 25 queries stay inside the job's timeout */
       const { res, body } = await fetchRaw(url, 'text/plain', 30_000);
       const rows = body.toString('utf8').split('\n').filter(Boolean);
       console.log('INDEX ' + id + ' status ' + res.status + ' · ' + rows.length + ' urls');
+      down = res.ok ? 0 : down + 1;
       for (const r of rows) keep(r);
-    } catch (e) { console.log('INDEX ' + id + ' FAILED ' + String((e as Error).message || e)); }
+    } catch (e) { down++; console.log('INDEX ' + id + ' FAILED ' + String((e as Error).message || e)); }
   }
   try {
     const { res, body } = await fetchRaw('https://www.mlb.com/sitemap.xml', 'application/xml,text/xml');
