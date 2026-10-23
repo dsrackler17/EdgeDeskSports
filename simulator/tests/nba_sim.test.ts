@@ -224,6 +224,7 @@ const rehash = (s: NbaSnapshot): NbaSnapshot => ({ ...s, input_hash: hashCanonic
   T.throws('CLI: --as-of with --publish is refused', () => parseArgs(['--sport', 'nba', '--publish', '--as-of', '2026-04-25']), /dry runs only/);
   T.throws('CLI: --allow-incomplete-schedule for the NFL is refused', () => parseArgs(['--sport', 'nfl', '--allow-incomplete-schedule']), /NBA only/);
   T.eq('CLI: the NBA season defaults to its end year (2026-27 = 2027)', parseArgs(['--sport', 'nba']).season, 2027);
+  T.chk('CLI: an NBA snapshot replay may carry --allow-incomplete-schedule (the sport comes from the file)', (() => { try { parseArgs(['--snapshot', 'x.json', '--allow-incomplete-schedule', '--dry-run']); return true; } catch (_) { return false; } })());
   fs.rmSync(tmp, { recursive: true, force: true });
 }
 

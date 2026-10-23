@@ -36,7 +36,7 @@ npm ci --prefix simulator --no-audit --no-fund   # the pinned typechecker (dev o
 
 ```powershell
 npm run sim:typecheck                            # tsc --noEmit, strict
-npm run sim:test                                 # engine, hooks, NFL rules 2002-2025, synthetic, simulation, config, markets, reader, CLI, publisher
+npm run sim:test                                 # engine, hooks; NFL, NHL, MLB, college football and NBA rules (history + synthetic), simulation, config; markets, reader, CLI, publisher
 npm run sim:check                                # generated files are current
 npm run sim:sql                                  # supabase/simulator.sql on a throwaway PostgreSQL (skips without one)
 npm install --no-save playwright@1.49.1; npx playwright install chromium; npm run sim:e2e   # the Simulator seat in Chromium

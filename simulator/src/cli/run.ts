@@ -92,8 +92,9 @@ export function parseArgs(argv: string[]): CliArgs {
   }
   if (Number.isNaN(a.season)) a.season = SEASON_DEFAULT[a.sport] != null ? SEASON_DEFAULT[a.sport] : NFL_2026.season;
   if (a.sport === 'nba' && a.asOf != null && !(Number.isFinite(Date.parse(a.asOf)) && /^\d{4}-\d{2}-\d{2}/.test(a.asOf))) throw new Error('--as-of needs an ISO time');
-  if (a.sport === 'nba' && a.publish && (a.asOf != null || a.allowIncompleteSchedule)) throw new Error('--as-of and --allow-incomplete-schedule are for dry runs only');
-  if (a.allowIncompleteSchedule && a.sport !== 'nba') throw new Error('--allow-incomplete-schedule applies to the NBA only');
+  if (a.publish && (a.allowIncompleteSchedule || (a.sport === 'nba' && a.asOf != null))) throw new Error('--as-of (NBA) and --allow-incomplete-schedule are for dry runs only');
+  /* an NBA snapshot replay names no sport (it comes from the file): execute() re-checks once the sport is known */
+  if (a.allowIncompleteSchedule && a.sport !== 'nba' && !a.snapshot) throw new Error('--allow-incomplete-schedule applies to the NBA only');
   if (!sportRegistry().some((s) => s.key === a.sport)) throw new Error('unknown sport ' + a.sport);
   if (a.sport === 'nhl' && !seasonGiven) a.season = NHL_2027.season;
   if (!Number.isInteger(a.season) || a.season < 2000 || a.season > 2100) throw new Error('bad season ' + a.season);
@@ -116,6 +117,7 @@ export async function execute(args: CliArgs, log: (s: string) => void = console.
   /* a replay takes its sport and season from the snapshot itself */
   if (args.snapshot && snapshotSchema(args.snapshot) === NBA_INPUT_SCHEMA) args = { ...args, sport: 'nba' };
   if (args.sport === 'nba') return executeNba(args, log);
+  if (args.allowIncompleteSchedule) throw Object.assign(new Error('--allow-incomplete-schedule applies to the NBA only'), { exitCode: 2 });
   if (args.sport === 'nhl') return executeNhl(args, log);
   if (args.sport === 'mlb') return executeMlb(args, log);
   if (args.sport === 'cfb') return (await executeCfb(args, log)) as unknown as RunOutcome;
