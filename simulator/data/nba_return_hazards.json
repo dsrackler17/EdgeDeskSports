@@ -1,0 +1,624 @@
+{
+ "schema": "edgedesk_nba_return_hazards_v1",
+ "generated_at": "2026-10-23T12:53:24.545Z",
+ "definition": "tracked absence: last appearance (minutes played) for the club in the current or previous season, not in its latest game, expected minutes (player-model EWM, half-life 8 games) >= 10; hazard = share of at-risk club games in which he played, by (carried from an earlier season, minutes tier, games missed so far)",
+ "estimation_seasons": [
+  2005,
+  2006,
+  2007,
+  2008,
+  2009,
+  2010,
+  2011,
+  2012,
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2022,
+  2023
+ ],
+ "holdout_seasons": [
+  2024,
+  2025,
+  2026
+ ],
+ "as_of_points": [
+  1,
+  10,
+  20,
+  41,
+  61
+ ],
+ "holdout": {
+  "rows": 15902,
+  "by_within": [
+   {
+    "within_games": 1,
+    "n": 2761,
+    "mean_predicted": 0.1452,
+    "observed": 0.1369,
+    "brier": 0.0903,
+    "brier_never_returns": 0.1369,
+    "brier_holdout_base_rate": 0.1182,
+    "calibration": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 1457,
+      "mean_p": 0.0224,
+      "observed": 0.0226
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 502,
+      "mean_p": 0.1349,
+      "observed": 0.1056
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.4,
+      "n": 444,
+      "mean_p": 0.2929,
+      "observed": 0.2365
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.6,
+      "n": 358,
+      "mean_p": 0.4767,
+      "observed": 0.5223
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.8,
+      "n": 0,
+      "mean_p": null,
+      "observed": null
+     },
+     {
+      "lo": 0.8,
+      "hi": 1,
+      "n": 0,
+      "mean_p": null,
+      "observed": null
+     }
+    ]
+   },
+   {
+    "within_games": 3,
+    "n": 2761,
+    "mean_predicted": 0.2709,
+    "observed": 0.2438,
+    "brier": 0.1255,
+    "brier_never_returns": 0.2438,
+    "brier_holdout_base_rate": 0.1843,
+    "calibration": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 1099,
+      "mean_p": 0.0251,
+      "observed": 0.0282
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 300,
+      "mean_p": 0.1548,
+      "observed": 0.1167
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.4,
+      "n": 561,
+      "mean_p": 0.2912,
+      "observed": 0.2442
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.6,
+      "n": 312,
+      "mean_p": 0.5219,
+      "observed": 0.4103
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.8,
+      "n": 489,
+      "mean_p": 0.7112,
+      "observed": 0.6994
+     },
+     {
+      "lo": 0.8,
+      "hi": 1,
+      "n": 0,
+      "mean_p": null,
+      "observed": null
+     }
+    ]
+   },
+   {
+    "within_games": 5,
+    "n": 2761,
+    "mean_predicted": 0.333,
+    "observed": 0.3003,
+    "brier": 0.1364,
+    "brier_never_returns": 0.3003,
+    "brier_holdout_base_rate": 0.2101,
+    "calibration": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 1052,
+      "mean_p": 0.0355,
+      "observed": 0.0409
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 134,
+      "mean_p": 0.1565,
+      "observed": 0.1567
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.4,
+      "n": 608,
+      "mean_p": 0.3131,
+      "observed": 0.2385
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.6,
+      "n": 266,
+      "mean_p": 0.5136,
+      "observed": 0.4887
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.8,
+      "n": 343,
+      "mean_p": 0.6947,
+      "observed": 0.5598
+     },
+     {
+      "lo": 0.8,
+      "hi": 1,
+      "n": 358,
+      "mean_p": 0.8263,
+      "observed": 0.8324
+     }
+    ]
+   },
+   {
+    "within_games": 10,
+    "n": 2761,
+    "mean_predicted": 0.4147,
+    "observed": 0.3796,
+    "brier": 0.1421,
+    "brier_never_returns": 0.3796,
+    "brier_holdout_base_rate": 0.2355,
+    "calibration": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 764,
+      "mean_p": 0.036,
+      "observed": 0.0484
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 319,
+      "mean_p": 0.1348,
+      "observed": 0.1034
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.4,
+      "n": 258,
+      "mean_p": 0.3234,
+      "observed": 0.2907
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.6,
+      "n": 479,
+      "mean_p": 0.4751,
+      "observed": 0.3841
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.8,
+      "n": 395,
+      "mean_p": 0.7176,
+      "observed": 0.7063
+     },
+     {
+      "lo": 0.8,
+      "hi": 1,
+      "n": 546,
+      "mean_p": 0.8792,
+      "observed": 0.8059
+     }
+    ]
+   },
+   {
+    "within_games": 20,
+    "n": 2761,
+    "mean_predicted": 0.489,
+    "observed": 0.4473,
+    "brier": 0.141,
+    "brier_never_returns": 0.4473,
+    "brier_holdout_base_rate": 0.2472,
+    "calibration": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 549,
+      "mean_p": 0.0319,
+      "observed": 0.0474
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 369,
+      "mean_p": 0.1506,
+      "observed": 0.1274
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.4,
+      "n": 245,
+      "mean_p": 0.2834,
+      "observed": 0.2286
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.6,
+      "n": 407,
+      "mean_p": 0.5031,
+      "observed": 0.3661
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.8,
+      "n": 352,
+      "mean_p": 0.6986,
+      "observed": 0.6733
+     },
+     {
+      "lo": 0.8,
+      "hi": 1,
+      "n": 839,
+      "mean_p": 0.9023,
+      "observed": 0.8582
+     }
+    ]
+   },
+   {
+    "within_games": 41,
+    "n": 2097,
+    "mean_predicted": 0.5475,
+    "observed": 0.4979,
+    "brier": 0.1464,
+    "brier_never_returns": 0.4979,
+    "brier_holdout_base_rate": 0.25,
+    "calibration": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 316,
+      "mean_p": 0.0518,
+      "observed": 0.0854
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 214,
+      "mean_p": 0.1451,
+      "observed": 0.1168
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.4,
+      "n": 262,
+      "mean_p": 0.2695,
+      "observed": 0.2443
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.6,
+      "n": 324,
+      "mean_p": 0.5288,
+      "observed": 0.3673
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.8,
+      "n": 219,
+      "mean_p": 0.7195,
+      "observed": 0.6393
+     },
+     {
+      "lo": 0.8,
+      "hi": 1,
+      "n": 762,
+      "mean_p": 0.9202,
+      "observed": 0.878
+     }
+    ]
+   }
+  ],
+  "note": "brier_never_returns is the served frozen projection's implicit assumption (a missing player never comes back); brier_holdout_base_rate is an oracle constant equal to the holdout's own observed rate (not available ahead of time)"
+ },
+ "production": {
+  "schema": "edgedesk_nba_return_hazard_v1",
+  "estimation_seasons": [
+   2005,
+   2006,
+   2007,
+   2008,
+   2009,
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ],
+  "min_minutes": 10,
+  "k_bins": [
+   [
+    1,
+    1
+   ],
+   [
+    2,
+    2
+   ],
+   [
+    3,
+    3
+   ],
+   [
+    4,
+    4
+   ],
+   [
+    5,
+    6
+   ],
+   [
+    7,
+    9
+   ],
+   [
+    10,
+    14
+   ],
+   [
+    15,
+    24
+   ],
+   [
+    25,
+    39
+   ],
+   [
+    40,
+    59
+   ],
+   [
+    60,
+    9999
+   ]
+  ],
+  "tiers": [
+   [
+    10,
+    24
+   ],
+   [
+    24,
+    99
+   ]
+  ],
+  "cells": {
+   "C0:7": [
+    105,
+    9389
+   ],
+   "C0:0": [
+    178,
+    1288
+   ],
+   "C0:1": [
+    118,
+    1173
+   ],
+   "C1:0": [
+    144,
+    496
+   ],
+   "C0:8": [
+    74,
+    14188
+   ],
+   "C0:10": [
+    50,
+    42314
+   ],
+   "C0:2": [
+    90,
+    1118
+   ],
+   "C1:8": [
+    85,
+    2493
+   ],
+   "C0:9": [
+    29,
+    19608
+   ],
+   "C0:4": [
+    93,
+    2081
+   ],
+   "C0:5": [
+    86,
+    2990
+   ],
+   "C1:1": [
+    109,
+    414
+   ],
+   "C1:6": [
+    91,
+    1246
+   ],
+   "C1:2": [
+    65,
+    356
+   ],
+   "C0:6": [
+    73,
+    4832
+   ],
+   "C0:3": [
+    50,
+    1064
+   ],
+   "C1:3": [
+    43,
+    329
+   ],
+   "C1:7": [
+    116,
+    2045
+   ],
+   "C1:9": [
+    55,
+    3086
+   ],
+   "C1:4": [
+    74,
+    613
+   ],
+   "S0:0": [
+    12910,
+    27339
+   ],
+   "S1:0": [
+    6065,
+    12098
+   ],
+   "S1:1": [
+    1784,
+    5836
+   ],
+   "S0:1": [
+    4959,
+    14149
+   ],
+   "S1:2": [
+    904,
+    3941
+   ],
+   "C1:5": [
+    97,
+    853
+   ],
+   "S0:2": [
+    2432,
+    8985
+   ],
+   "S1:3": [
+    500,
+    2966
+   ],
+   "S0:3": [
+    1407,
+    6410
+   ],
+   "S0:4": [
+    1438,
+    8811
+   ],
+   "S1:4": [
+    615,
+    4388
+   ],
+   "S0:5": [
+    950,
+    8470
+   ],
+   "S1:5": [
+    460,
+    4435
+   ],
+   "S0:6": [
+    611,
+    8966
+   ],
+   "S1:6": [
+    330,
+    4627
+   ],
+   "S0:7": [
+    421,
+    10392
+   ],
+   "S1:7": [
+    266,
+    5029
+   ],
+   "S1:8": [
+    90,
+    3324
+   ],
+   "S0:8": [
+    137,
+    7778
+   ],
+   "C1:10": [
+    52,
+    5145
+   ],
+   "S1:9": [
+    29,
+    1650
+   ],
+   "S0:9": [
+    51,
+    4629
+   ],
+   "S1:10": [
+    5,
+    586
+   ],
+   "S0:10": [
+    8,
+    1573
+   ]
+  },
+  "source": "nba/data/games + .cache/nba_work player_games (sportsdataverse/hoopR, ESPN box scores): appearances only"
+ },
+ "code_sha256": {
+  "simulator/src/sports/nba/availability.ts": "b406cfe182dcaac990c8d5a184b78612d0956e12ccb73d7c14c0e64e1b903b0c"
+ }
+}

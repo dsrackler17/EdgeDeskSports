@@ -12,6 +12,7 @@
    simulator/tests/registry.test.ts holds the two equal.
    =========================================================================== */
 import { NFL_2026 } from './nfl/config.ts';
+import { NBA_2026_27 } from './nba/config.ts';
 
 export type SportStatus = 'ACTIVE' | 'BLOCKED' | 'COMING_SOON';
 export interface SportEntry {
@@ -34,10 +35,20 @@ function nflStatus(): { status: SportStatus; blockers: string[] } {
 type Fact = { verification: string; affects_results: boolean; verify_by: string; verified_by: string | null; verified_at: string | null };
 /** a fact counts as verified only with VERIFIED, a named verifier and a date */
 export const isVerified = (f: Fact) => f.verification === 'VERIFIED' && !!f.verified_by && !!f.verified_by.trim() && /^\d{4}-\d{2}-\d{2}$/.test(f.verified_at || '');
-export function factStatus(facts: Array<[string, Fact]>): { status: SportStatus; blockers: string[] } {
+export function factStatus(facts: Array<[string, Fact]>, league = 'NFL'): { status: SportStatus; blockers: string[] } {
   const blockers = facts.filter(([, f]) => f.affects_results && !isVerified(f))
-    .map(([label, f]) => label + ' not verified against the NFL\'s official source: ' + f.verify_by);
+    .map(([label, f]) => label + ' not verified against the ' + league + '\'s official source: ' + f.verify_by);
   return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
+}
+
+/** NBA: rules, inputs, study and tests are complete; the 2026-27 facts await verification, and the
+    season cannot be simulated for publication until the NBA Cup-dependent games are on the schedule */
+function nbaStatus(): { status: SportStatus; blockers: string[] } {
+  const c = NBA_2026_27;
+  const f = factStatus([['2026-27 tiebreaker procedure', c.tiebreakers], ['2026-27 definition of playoff teams for the tiebreaker', c.playoff_clubs_for_tiebreakers], ['2026-27 play-in format', c.play_in],
+    ['2026-27 playoff format', c.playoff_format], ['2026-27 home-court rules', c.home_court], ['2026-27 NBA Cup standings rules', c.nba_cup]], 'NBA');
+  const blockers = f.blockers.concat(['The 30 regular-season games that depend on the NBA Cup group stage (two per club) are not on the schedule yet; until they are, the schedule.complete gate refuses the season (expected after the group stage, early December 2026).']);
+  return { status: 'BLOCKED', blockers };
 }
 
 const NFL_LIMITS = [
@@ -50,8 +61,18 @@ const NFL_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
+const NBA_LIMITS = [
+  'Game outcomes come from the served NBA model (the projected-track ridge, edgedesk_nba_v1:E_ridge_P), priced from the states frozen at the as-of time, including its early-season shrinkage; it has never been tested against a closing market.',
+  'Strength uncertainty: one persistent normal offset per club, calibrated so the spread of simulated remaining wins matches frozen historical forecasts.',
+  'Availability: the projected rotation is who played in the club\'s latest game; a rotation player missing since an earlier game returns at a game drawn from empirical return hazards (Estimated, reason for the absence unknown). No new absences are simulated; roster moves after the as-of time are not.',
+  'Rest, back-to-backs and travel come from the schedule for every regular-season game; a postseason game not yet scheduled carries the median rest of its round and game number (Estimated). The model\'s own learned postseason term applies; no playoff rotation change is assumed.',
+  'Ratings are frozen at the as-of time: simulated results do not update them. Within-season drift is OFF.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
 export function sportRegistry(): SportEntry[] {
   const nfl = nflStatus();
+  const nba = nbaStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
@@ -59,10 +80,8 @@ export function sportRegistry(): SportEntry[] {
       blockers: ['No conference title-game qualification rules or tiebreakers for 2026 in the repository (9 FBS conferences, each with its own).', 'No 2026 CFP format, seeding or selection data, and no committee-ranking proxy inputs (no CFP/AP rankings are committed).', 'No neutral-site flags for the remaining 2026 schedule and no committed full schedule (football/fbs/.cache is gitignored).'],
       limitations: ['The production game model (football/cfb_p4 engine) can price any rated FBS pairing offline; everything else above is missing.'],
       activation_path: 'Commit a versioned 2026 conference-rules table with sources, a CFP bracket config, an explicitly Estimated committee proxy, and the full schedule with neutral flags.' },
-    { key: 'nba', label: 'NBA', status: 'BLOCKED', structure: 'season', tabs: ['conference', 'title', 'futures'],
-      blockers: ['No 2026-27 conference/division table in the repository.', '30 regular-season games (2 per club) depend on NBA Cup results and are not yet scheduled.', 'No standings, tiebreaker, play-in or series code; no strength-uncertainty study.', 'The chosen model (E_ridge_P) needs the network-built .cache/nba_work tables to price offline.'],
-      limitations: ['The roster/injury layer has statuses but no return dates.'],
-      activation_path: 'Conference/division table, NBA tiebreakers + play-in + series state machine, a full schedule after the Cup group stage, an uncertainty study.' },
+    { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
+      activation_path: 'Verify the six 2026-27 facts in simulator/src/sports/nba/config.ts against the NBA\'s official pages (VERIFIED with verified_by/verified_at in a reviewed commit), wait for the NBA Cup-dependent games on the schedule, then a 100,000-run publication.' },
     { key: 'nhl', label: 'NHL', status: 'BLOCKED', structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],
       blockers: ['No committed full 2026-27 schedule (hockey/build_slate.js downloads it into a gitignored cache).', 'No conference/division table.', 'No standings (regulation wins, points), wild card or series code; no strength-uncertainty study.'],
       limitations: ['The game model prices regulation/OT/shootout outcomes offline; the 60-minute draw is under-priced (PROVISIONAL).'],

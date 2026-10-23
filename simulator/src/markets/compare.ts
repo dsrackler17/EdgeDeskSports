@@ -34,7 +34,9 @@ export interface Mapping {
   sport: string; competition: string; season: string;
   series_ticker: string; event_ticker: string; market_ticker: string;
   entity_id: string; outcome: string; outcome_set?: string | null;
-  settlement: { basis: string; rules_sha256: string; rules_excerpt?: string };
+  /** semantic: what the market settles on, in the run's own vocabulary (results.outcome_semantics); required
+      when the run declares semantics, and it must be the mapped outcome's (no two outcomes share one) */
+  settlement: { basis: string; rules_sha256: string; rules_excerpt?: string; semantic?: string };
   verified_by: string | null; verified_at: string | null; exclusion_reason?: string;
 }
 export interface OutcomeSet { id: string; outcome: string; entities: string[]; mutually_exclusive: boolean; exhaustive: boolean; note?: string }
@@ -45,7 +47,9 @@ export interface FuturesConfig {
   outcome_sets: OutcomeSet[];
   mappings: Mapping[];
 }
-export interface RunView { sport: string; competition: string; season: string; entities: Array<{ entity_id: string; outcomes: Record<string, { probability: number; mcse: number }> }> }
+export interface RunView { sport: string; competition: string; season: string; entities: Array<{ entity_id: string; outcomes: Record<string, { probability: number; mcse: number }> }>;
+  /** outcome key -> what it settles on (e.g. regular-season conference first place vs the conference playoff title) */
+  outcome_semantics?: Record<string, string> }
 
 /** structural validation of the config against a run: wrong season, entity or outcome is rejected */
 export function validateFuturesConfig(cfg: FuturesConfig, run: RunView): string[] {
@@ -58,6 +62,11 @@ export function validateFuturesConfig(cfg: FuturesConfig, run: RunView): string[
   const ents = new Set(run.entities.map((e) => e.entity_id));
   const outs = new Set(run.entities.length ? Object.keys(run.entities[0].outcomes) : []);
   const seen = new Set<string>(), sets = new Map(cfg.outcome_sets.map((s) => [s.id, s]));
+  const sem = run.outcome_semantics || null;
+  if (sem) {
+    const byS = new Map<string, string>();
+    for (const [o, x] of Object.entries(sem)) { const prev = byS.get(x); if (prev) errs.push('outcomes ' + prev + ' and ' + o + ' declare the same settlement semantic ' + x); byS.set(x, o); }
+  }
   for (const s of cfg.outcome_sets) {
     if (!outs.has(s.outcome)) errs.push('outcome set ' + s.id + ': unknown outcome ' + s.outcome);
     for (const e of s.entities) if (!ents.has(e)) errs.push('outcome set ' + s.id + ': unknown entity ' + e);
@@ -72,6 +81,7 @@ export function validateFuturesConfig(cfg: FuturesConfig, run: RunView): string[
     if (!ents.has(m.entity_id)) errs.push(id + ': unknown entity ' + m.entity_id);
     if (!outs.has(m.outcome)) errs.push(id + ': unknown outcome ' + m.outcome + ' (a regular-season title is not a playoff title: map only an outcome the simulator defines)');
     if (!m.settlement || !m.settlement.basis || !/^[0-9a-f]{64}$/.test(m.settlement.rules_sha256 || '')) errs.push(id + ': settlement basis and the rules text sha256 are required');
+    if (sem && m.settlement && sem[m.outcome] && m.settlement.semantic !== sem[m.outcome]) errs.push(id + ': the market settles on ' + (m.settlement.semantic || '(no semantic declared)') + ', outcome ' + m.outcome + ' is ' + sem[m.outcome] + ' — a different futures market');
     if (!m.verified_by || !m.verified_at || !/^\d{4}-\d{2}-\d{2}/.test(m.verified_at)) errs.push(id + ': verified_by and verified_at are required');
     if (m.outcome_set) { const s = sets.get(m.outcome_set); if (!s) errs.push(id + ': unknown outcome set ' + m.outcome_set); else if (s.outcome !== m.outcome || s.entities.indexOf(m.entity_id) < 0) errs.push(id + ': not a member of outcome set ' + m.outcome_set); }
   }

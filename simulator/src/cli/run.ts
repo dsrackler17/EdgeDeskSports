@@ -20,6 +20,11 @@
      --out DIR                local output directory (default simulator/out/<sport>-<season>-<stamp>)
      --trace-runs 0,1,2       runs to trace in full (at most 5)
      --allow-unreconciled     dry run only: proceed when the standings source is unavailable
+     --as-of ISO              NBA: freeze the season at this time (games from then on are unplayed);
+                              a historical replay, dry run only
+     --allow-incomplete-schedule
+                              NBA, dry run only: simulate a season whose NBA Cup-dependent games are
+                              not on the schedule yet (WARN: never publishable)
    Exit codes: 0 ok, 1 a gate blocked (nothing published), 2 invalid inputs or arguments, 3 publish failed.
    =========================================================================== */
 import fs from 'node:fs';
@@ -32,6 +37,10 @@ import { buildNflSnapshot, readSnapshot, writeSnapshot, type NflSnapshot } from 
 import { validateNflInputs, nflMathStatus, type Gate } from '../sports/nfl/validate.ts';
 import { sportRegistry } from '../sports/registry.ts';
 import { NFL_2026 } from '../sports/nfl/config.ts';
+import { NBA_2026_27 } from '../sports/nba/config.ts';
+import { buildNbaSnapshot, readSnapshot as readNbaSnapshot, writeSnapshot as writeNbaSnapshot, NBA_INPUT_SCHEMA, type NbaSnapshot } from '../sports/nba/inputs.ts';
+import { validateNbaInputs, nbaMathStatus } from '../sports/nba/validate.ts';
+import { NBA_OUTCOME_SEMANTICS } from '../sports/nba/module.ts';
 import { sha256Hex } from '../core/canonical.ts';
 
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -39,10 +48,13 @@ const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export interface CliArgs {
   sport: string; season: number; runs: number; seed: string | null; workers: number; snapshot: string | null; offline: boolean;
   publish: boolean; out: string | null; traceRuns: number[]; allowUnreconciled: boolean; maxUnsupportedFraction: number;
+  asOf: string | null; allowIncompleteSchedule: boolean;
 }
+/** each sport's configured season (the NBA's is its end year: 2027 = 2026-27) */
+export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nba: NBA_2026_27.season };
 export function parseArgs(argv: string[]): CliArgs {
-  const a: CliArgs = { sport: 'nfl', season: NFL_2026.season, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
-    publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4 };
+  const a: CliArgs = { sport: 'nfl', season: NaN, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
+    publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4, asOf: null, allowIncompleteSchedule: false };
   const need = (i: number) => { if (argv[i + 1] == null || argv[i + 1].startsWith('--')) throw new Error(argv[i] + ' needs a value'); return argv[i + 1]; };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
@@ -59,9 +71,15 @@ export function parseArgs(argv: string[]): CliArgs {
       case '--out': a.out = need(i); i++; break;
       case '--trace-runs': a.traceRuns = need(i).split(',').filter(Boolean).map(Number); i++; break;
       case '--allow-unreconciled': a.allowUnreconciled = true; break;
+      case '--as-of': a.asOf = need(i); i++; break;
+      case '--allow-incomplete-schedule': a.allowIncompleteSchedule = true; break;
       default: throw new Error('unknown option ' + k);
     }
   }
+  if (Number.isNaN(a.season)) a.season = SEASON_DEFAULT[a.sport] != null ? SEASON_DEFAULT[a.sport] : NFL_2026.season;
+  if (a.asOf != null && !(Number.isFinite(Date.parse(a.asOf)) && /^\d{4}-\d{2}-\d{2}/.test(a.asOf))) throw new Error('--as-of needs an ISO time');
+  if (a.publish && (a.asOf != null || a.allowIncompleteSchedule)) throw new Error('--as-of and --allow-incomplete-schedule are for dry runs only');
+  if ((a.asOf != null || a.allowIncompleteSchedule) && a.sport !== 'nba') throw new Error('--as-of and --allow-incomplete-schedule apply to the NBA only');
   if (!sportRegistry().some((s) => s.key === a.sport)) throw new Error('unknown sport ' + a.sport);
   if (!Number.isInteger(a.season) || a.season < 2000 || a.season > 2100) throw new Error('bad season ' + a.season);
   if (!Number.isInteger(a.runs) || a.runs < 1 || a.runs > 10000000) throw new Error('--runs must be an integer in [1, 10000000]');
@@ -72,9 +90,12 @@ export function parseArgs(argv: string[]): CliArgs {
   return a;
 }
 
-export interface RunOutcome { results: ResultsDoc; gates: Gate[]; snapshot: NflSnapshot; outDir: string; publishable: boolean }
+export interface RunOutcome { results: ResultsDoc; gates: Gate[]; snapshot: NflSnapshot | NbaSnapshot; outDir: string; publishable: boolean }
 
 export async function execute(args: CliArgs, log: (s: string) => void = console.log): Promise<RunOutcome> {
+  /* a replay takes its sport and season from the snapshot itself */
+  if (args.snapshot && snapshotSchema(args.snapshot) === NBA_INPUT_SCHEMA) args = { ...args, sport: 'nba' };
+  if (args.sport === 'nba') return executeNba(args, log);
   if (args.sport !== 'nfl') throw Object.assign(new Error('sport ' + args.sport + ' has no simulation module: ' + (sportRegistry().find((s) => s.key === args.sport) as any).blockers.join(' | ')), { exitCode: 2 });
   if (args.season !== NFL_2026.season) throw Object.assign(new Error('no NFL season config for ' + args.season), { exitCode: 2 });
   /* 1 inputs: build (network, before any simulation) or replay */
@@ -128,7 +149,72 @@ export async function execute(args: CliArgs, log: (s: string) => void = console.
   return { results, gates, snapshot: snap, outDir, publishable };
 }
 
+function snapshotSchema(file: string): string | null {
+  try { const head = fs.readFileSync(file, 'utf8').slice(0, 200); const m = /"schema"\s*:\s*"([^"]+)"/.exec(head); return m ? m[1] : null; } catch (_) { return null; }
+}
+
+/** the NBA run: the same stages, the NBA snapshot, validation and gates */
+async function executeNba(args: CliArgs, log: (s: string) => void): Promise<RunOutcome> {
+  const snap = args.snapshot ? readNbaSnapshot(args.snapshot) : await buildNbaSnapshot({ season: args.season, asOf: args.asOf, log });
+  if (!args.snapshot && snap.data.season !== args.season) throw Object.assign(new Error('the snapshot is season ' + snap.data.season + ', the run asks for ' + args.season), { exitCode: 2 });
+  args = { ...args, season: snap.data.season };
+  const inputGates = validateNbaInputs(snap, { allowIncompleteSchedule: args.allowIncompleteSchedule });
+  const blocked = inputGates.filter((g) => g.status === 'FAIL' && g.blocks === 'simulation');
+  if (blocked.length) throw Object.assign(new Error('invalid inputs, nothing simulated: ' + blocked.map((g) => g.id + ' (' + g.detail + ')').join('; ')), { exitCode: 2, gates: inputGates });
+  const seed = args.seed != null ? parseSeed(args.seed) : BigInt('0x' + snap.input_hash.slice(0, 16));
+  const d = snap.data;
+  log('inputs ' + snap.input_hash.slice(0, 12) + ' · ' + d.season_label + ' as of ' + d.as_of + ' (' + d.as_of_games + ' games per club) · ' + d.games.filter((g) => !g.done).length + ' remaining games · sigma ' + (d.strength ? d.strength.sigma_points.toFixed(3) : '?') + ' · seed ' + seed);
+  const t0 = Date.now(), startedAt = new Date().toISOString();
+  let peak = 0; const sampler = setInterval(() => { peak = Math.max(peak, process.memoryUsage().rss); }, 250);
+  const { agg, module, workers } = await runPlan({ sport: 'nba', data: d, seed, runs: args.runs, workers: args.workers, traceRuns: args.traceRuns });
+  clearInterval(sampler); peak = Math.max(peak, process.memoryUsage().rss);
+  const status = nbaMathStatus(d);
+  const rec: Record<string, { w: number; l: number }> = {};
+  for (const t of d.teams) rec[t.code] = { w: 0, l: 0 };
+  for (const g of d.games) if (g.done) { if ((g.home_score as number) > (g.away_score as number)) { rec[g.home].w++; rec[g.away].l++; } else { rec[g.away].w++; rec[g.home].l++; } }
+  const results = buildResults({ module, agg, seed, runs: args.runs, workers, input_hash: snap.input_hash, input_snapshot_at: snap.meta.built_at,
+    model_version: d.model.model_version, config: d.config, rules_version: d.rules_version,
+    started_at: startedAt, finished_at: new Date().toISOString(), runtime_ms: Date.now() - t0, peak_rss_mb: Math.round(peak / 1048576),
+    entityExtras: (id) => ({ record: rec[id], math_status: status[id] }) });
+  (results as any).outcome_semantics = NBA_OUTCOME_SEMANTICS;
+  const reg = sportRegistry().find((s) => s.key === 'nba')!;
+  const draws = agg.flags.tiebreak_random_drawing || 0, frac = draws / agg.n;
+  const runGates: Gate[] = [
+    { id: 'run.sum_rules', status: results.checks.sum_rule_errors.length ? 'FAIL' : 'PASS', blocks: results.checks.sum_rule_errors.length ? 'publication' : 'none', detail: results.checks.sum_rule_errors.length ? results.checks.sum_rule_errors.slice(0, 5).join('; ') : 'every per-run and aggregate format sum holds' },
+    { id: 'run.finite', status: results.checks.finite_and_bounded ? 'PASS' : 'FAIL', blocks: results.checks.finite_and_bounded ? 'none' : 'publication', detail: 'every probability finite and in [0,1]' },
+    { id: 'run.count', status: agg.n >= PRODUCTION_RUNS ? 'PASS' : 'FAIL', blocks: agg.n >= PRODUCTION_RUNS ? 'none' : 'publication', detail: agg.n + ' runs (' + PRODUCTION_RUNS + ' required to publish)' },
+    { id: 'run.random_drawings', status: frac <= args.maxUnsupportedFraction ? 'PASS' : 'WARN', blocks: 'none', detail: draws + ' of ' + agg.n + ' runs reached the random drawing of the tiebreaker (a rule of the league, seeded here, not an unsupported input)' },
+    { id: 'sport.active', status: reg.status === 'ACTIVE' ? 'PASS' : 'FAIL', blocks: reg.status === 'ACTIVE' ? 'none' : 'publication', detail: reg.status + (reg.blockers.length ? ': ' + reg.blockers.join(' | ') : '') }
+  ];
+  const gates = inputGates.concat(runGates);
+  const publishable = gates.every((g) => g.blocks === 'none');
+  const stamp = startedAt.replace(/[:.]/g, '').replace('T', '-').slice(0, 15);
+  const outDir = args.out || path.join(SIM, 'out', 'nba-' + args.season + '-' + stamp);
+  fs.mkdirSync(outDir, { recursive: true });
+  writeNbaSnapshot(path.join(outDir, 'snapshot.json'), snap);
+  const resText = JSON.stringify(results, null, 1), gateText = JSON.stringify(gates, null, 1);
+  fs.writeFileSync(path.join(outDir, 'results.json'), resText);
+  fs.writeFileSync(path.join(outDir, 'gates.json'), gateText);
+  fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify({
+    schema: 'edgedesk_sim_run_manifest_v1', input_hash: snap.input_hash, results_sha256: sha256Hex(resText), gates_sha256: sha256Hex(gateText),
+    snapshot_sha256: sha256Hex(fs.readFileSync(path.join(outDir, 'snapshot.json'))), publishable, published: false
+  }, null, 1));
+  return { results, gates, snapshot: snap, outDir, publishable };
+}
+
+function printNbaSummary(o: RunOutcome, log: (s: string) => void) {
+  const r = o.results;
+  log('runs ' + r.run.n_sims + ' · ' + (r.run.runtime_ms / 1000).toFixed(1) + ' s · ' + r.run.workers + ' worker(s) · peak RSS ' + r.run.peak_rss_mb + ' MB · ' + r.run.platform + ' ' + r.run.node);
+  const pp = (o: any) => (100 * o.probability).toFixed(1).padStart(5) + '±' + (100 * 1.96 * o.mcse).toFixed(1);
+  const ents = (r.entities as any[]).slice().sort((a, b) => b.outcomes.win_title.probability - a.outcomes.win_title.probability);
+  log('club  W-L    mean W   division   1st conf   play-in    playoffs   conf semis conf final conf champ title      (percent, ±95% Monte Carlo interval half-width)');
+  for (const e of ents) log(e.entity_id.padEnd(5) + (e.record.w + '-' + e.record.l).padEnd(7) + e.mean_wins.toFixed(1).padStart(6) + '   ' + [e.outcomes.win_division, e.outcomes.finish_1, e.outcomes.play_in, e.outcomes.make_playoffs, e.outcomes.reach_conference_semifinals, e.outcomes.reach_conference_finals, e.outcomes.win_conference, e.outcomes.win_title].map(pp).join('  '));
+  for (const g of o.gates) if (g.status !== 'PASS') log(g.status + ' ' + g.id + ' [' + g.blocks + '] ' + g.detail);
+  log((o.publishable ? 'PUBLISHABLE' : 'NOT PUBLISHABLE') + ' · local output ' + path.relative(process.cwd(), o.outDir));
+}
+
 function printSummary(o: RunOutcome, log: (s: string) => void) {
+  if (o.results.run.sport === 'nba') return printNbaSummary(o, log);
   const r = o.results;
   log('runs ' + r.run.n_sims + ' · ' + (r.run.runtime_ms / 1000).toFixed(1) + ' s · ' + r.run.workers + ' worker(s) · peak RSS ' + r.run.peak_rss_mb + ' MB · ' + r.run.platform + ' ' + r.run.node);
   const pp = (o: any) => (100 * o.probability).toFixed(1).padStart(5) + '±' + (100 * 1.96 * o.mcse).toFixed(1);

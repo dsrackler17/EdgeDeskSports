@@ -61,7 +61,7 @@ export async function publishRun(o: RunOutcome, opt: PublishOptions = {}): Promi
   }
   const runId = begin.run_id;
   try {
-    await db.rpc('sim_put_snapshot', { p: { input_hash: o.snapshot.input_hash, sport: r.sport, schema: o.snapshot.schema, data: o.snapshot.data, meta: { built_at: o.snapshot.meta.built_at, feeds: o.snapshot.meta.feeds } } });
+    await db.rpc('sim_put_snapshot', { p: { input_hash: o.snapshot.input_hash, sport: r.sport, schema: o.snapshot.schema, data: o.snapshot.data, meta: { built_at: o.snapshot.meta.built_at, feeds: 'feeds' in o.snapshot.meta ? o.snapshot.meta.feeds : [] } } });
     const rows = resultRows(o);
     for (let i = 0; i < rows.length; i += chunk) await db.rpc('sim_put_results', { p_run: runId, p_rows: rows.slice(i, i + chunk) });
     const ents = (o.results.entities as any[]).map((e) => ({ entity_id: e.entity_id, entity_name: e.entity_name, entity_groups: e.groups, record: e.record || null,

@@ -1,7 +1,8 @@
 # EdgeDesk Simulator — every suite, on every change to the simulator.
 #
 #   unit   typecheck (pinned typescript from simulator/package-lock.json), the
-#          engine, rules (2002-2025 history + synthetic), simulation, hooks,
+#          engine, NFL rules (2002-2025 history + synthetic), NBA rules
+#          (2006-07..2025-26 postseasons + synthetic), simulation, hooks,
 #          config, markets and reader suites, and the generated-file checks
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
@@ -28,6 +29,9 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
+      - 'nba/model/**'
+      - 'nba/lib/**'
+      - 'nba/config.js'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -43,6 +47,9 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
+      - 'nba/model/**'
+      - 'nba/lib/**'
+      - 'nba/config.js'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -88,6 +95,15 @@ jobs:
         run: node simulator/tests/cli.test.ts
       - name: The publisher's client side (bounded retries, key redaction, call order, failure handling)
         run: node simulator/tests/publish.test.ts
+      - name: NBA rules against every postseason 2006-07..2025-26, and the synthetic cases
+        run: |
+          node simulator/tests/nba_rules_history.test.ts
+          node simulator/tests/nba_rules_synthetic.test.ts
+      - name: NBA configuration, the served model, availability and the simulation (committed snapshots)
+        run: |
+          node simulator/tests/nba_config.test.ts
+          node simulator/tests/nba_model.test.ts
+          node simulator/tests/nba_sim.test.ts
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check
