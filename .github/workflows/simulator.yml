@@ -1,7 +1,7 @@
 # EdgeDesk Simulator — the nightly season simulation, and the Kalshi futures
 # comparison as a SEPARATE job.
 #
-#   schedule 10:17 UTC daily   every sport with a simulation module, 100,000 runs.
+#   schedule 10:17 UTC daily   the NFL and college football (plan.ts NIGHTLY), 100,000 runs.
 #                              (10:17 UTC = 06:17 New York in daylight time,
 #                              05:17 in standard time: after the last Monday
 #                              night game is final and nflverse's games.csv has
@@ -18,6 +18,11 @@
 #                              run) until its season facts are verified.
 #   workflow_dispatch          one sport; inputs validated by
 #                              simulator/src/cli/plan.ts before anything runs.
+#                              MLB runs only from here (not nightly): its live
+#                              2026 inputs come from MLB's Stats API, which the
+#                              build environment could not reach, so the first
+#                              dispatched dry run is the check the registry's
+#                              live_inputs fact asks a person to make.
 #
 # FAILURE SEPARATION. simulate: a gate that blocks, an invalid input or a
 # failed publication fails THIS job, records a FAILURE in public.sim_alerts
@@ -49,10 +54,10 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, ncaam]
+        options: [nfl, mlb, cfb, ncaam]
         default: nfl
       season:
-        description: 'Season (must equal the sport''s configured season: nfl 2026, ncaam 2027)'
+        description: 'Season (must equal the sport''s configured season: nfl, mlb and cfb 2026; ncaam 2027)'
         type: string
         default: '2026'
       runs:
@@ -131,7 +136,15 @@ jobs:
           node simulator/tests/nfl_rules_synthetic.test.ts
           node simulator/tests/nfl_sim.test.ts
           node simulator/tests/nfl_config.test.ts
-          node simulator/tests/ncaam_sim.test.ts
+      - name: The MLB suites, before an MLB run
+        if: ${{ matrix.sport == 'mlb' }}
+        run: npm run sim:test:mlb
+      - name: The college football suites, before a CFB run
+        if: ${{ matrix.sport == 'cfb' }}
+        run: npm run sim:cfb:test
+      - name: The college basketball suites, before an NCAAM run
+        if: ${{ matrix.sport == 'ncaam' }}
+        run: node simulator/tests/ncaam_sim.test.ts
       - name: Status
         env:
           STATUS: ${{ matrix.status }}
@@ -208,9 +221,11 @@ jobs:
           retention-days: 30
 
   markets:
-    # after a successful PUBLICATION only; its failure never touches the simulation
+    # after each PUBLICATION, for the run that sport published (a sport that only ran dry leaves no
+    # publish.json); a comparison's failure never touches the simulation. Each run is compared with its
+    # own results: the matrix has several sports, and one job output cannot say which run is whose.
     needs: simulate
-    if: ${{ needs.simulate.result == 'success' && needs.simulate.outputs.run_id != '' && (github.event_name == 'schedule' || inputs.markets) }}
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.markets) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -222,19 +237,27 @@ jobs:
         with:
           pattern: simulator-*-${{ github.run_id }}-${{ github.run_attempt }}
           path: simulator/out/downloaded
-      - name: Compare with Kalshi futures
+      - name: Compare each published run with Kalshi futures
         env:
-          RUN_ID: ${{ needs.simulate.outputs.run_id }}
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
           SIM_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set +e
-          res=$(ls simulator/out/downloaded/*/results.json | head -1)
-          node simulator/src/cli/markets.ts --results "$res" --run-id "$RUN_ID" --publish
-          rc=$?
-          if [ "$rc" != "0" ]; then
-            echo "::error::Kalshi futures comparison failed (exit $rc); the simulation stays published and no old quote is shown as fresh"
-            node simulator/src/cli/alert.ts --severity DEGRADED --code sim.market_failed --run-id "$RUN_ID" --message "Kalshi futures comparison failed (exit $rc)" || true
-            exit 1
-          fi
+          shopt -s nullglob
+          status=0; n=0
+          for pub in simulator/out/downloaded/*/publish.json; do
+            dir=$(dirname "$pub")
+            id=$(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).run_id || ""))' "$pub")
+            [ -n "$id" ] && [ -f "$dir/results.json" ] || continue
+            n=$((n + 1))
+            node simulator/src/cli/markets.ts --results "$dir/results.json" --run-id "$id" --publish
+            rc=$?
+            if [ "$rc" != "0" ]; then
+              echo "::error::Kalshi futures comparison failed for run $id (exit $rc); the simulation stays published and no old quote is shown as fresh"
+              node simulator/src/cli/alert.ts --severity DEGRADED --code sim.market_failed --run-id "$id" --message "Kalshi futures comparison failed (exit $rc)" || true
+              status=1
+            fi
+          done
+          [ "$n" -gt 0 ] || echo "no run was published in this workflow run: nothing to compare"
+          exit $status

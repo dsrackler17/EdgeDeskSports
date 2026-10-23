@@ -13,7 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compareFutures, validateFuturesConfig, type FuturesConfig, type RunView } from '../markets/compare.ts';
+import { compareFutures, validateFuturesConfig, configForSport, type FuturesConfig, type RunView } from '../markets/compare.ts';
 import { kalshiClient, fetchQuotes } from '../markets/kalshi.ts';
 import { postgrestDb, type SimDb } from '../publish/db.ts';
 
@@ -22,13 +22,14 @@ export const FUTURES_CONFIG = path.join(SIM, 'config', 'kalshi_futures.json');
 
 export function runView(results: any): RunView {
   return { sport: results.run.sport, competition: results.run.competition, season: results.run.season,
-    entities: results.entities.map((e: any) => ({ entity_id: e.entity_id, outcomes: Object.fromEntries(Object.entries(e.outcomes).map(([k, o]: [string, any]) => [k, { probability: o.probability, mcse: o.mcse }])) })) };
+    entities: results.entities.map((e: any) => ({ entity_id: e.entity_id, outcomes: Object.fromEntries(Object.entries(e.outcomes).map(([k, o]: [string, any]) => [k, { probability: o.probability, mcse: o.mcse }])) })),
+    ...(results.outcome_semantics ? { outcome_semantics: results.outcome_semantics } : {}) };
 }
 
 export async function marketStep(opt: { results: any; runId: string | null; publish: boolean; cfg?: FuturesConfig; db?: SimDb; fetchImpl?: typeof fetch; log?: (s: string) => void; now?: Date }) {
   const log = opt.log || console.log;
-  const cfg = opt.cfg || JSON.parse(fs.readFileSync(FUTURES_CONFIG, 'utf8')) as FuturesConfig;
   const run = runView(opt.results);
+  const cfg = configForSport(opt.cfg || JSON.parse(fs.readFileSync(FUTURES_CONFIG, 'utf8')) as FuturesConfig, run);
   const errs = validateFuturesConfig(cfg, run);
   if (errs.length) throw Object.assign(new Error('invalid futures mapping: ' + errs.join('; ')), { exitCode: 2 });
   const live = cfg.mappings.filter((m) => m.status === 'verified');

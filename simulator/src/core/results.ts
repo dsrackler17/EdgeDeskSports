@@ -54,10 +54,15 @@ export function buildResults(x: ResultsInput) {
   const sumErrors = checkAggregateSums(x.module, x.agg).concat(x.agg.violations.map((v) => 'run ' + v.run + ': ' + v.rule + ' ' + v.detail));
   const ents = summarise(x.module, x.agg).map((e) => {
     const outcomes: Record<string, unknown> = {};
-    for (const [k, s] of Object.entries(e.outcomes)) outcomes[k] = { ...s, applicable: true, fair_decimal: fairDecimal(s.probability), provenance: 'Research' };
-    const n = x.agg.n, hist = e.value_hist;
-    const mean = hist.reduce((a, c, b) => a + c * b, 0) / n / 2;
-    return { entity_id: e.entity_id, entity_name: e.entity_name, groups: e.groups, outcomes, mean_wins: Math.round(mean * 1e4) / 1e4, wins_hist_x2: hist, ...(x.entityExtras ? x.entityExtras(e.entity_id) : {}) };
+    const prov = new Map(x.module.outcomes.map((o) => [o.key, o]));
+    for (const [k, s] of Object.entries(e.outcomes)) {
+      const def = prov.get(k);
+      outcomes[k] = { ...s, applicable: true, fair_decimal: fairDecimal(s.probability), provenance: def ? def.provenance : 'Research', ...(def && def.conditional_on ? { conditional_on: def.conditional_on } : {}) };
+    }
+    const n = x.agg.n, hist = e.value_hist, v = x.module.value;
+    const mean = hist.reduce((a, c, b) => a + c * b, 0) / n / (v ? v.divisor : 2);
+    const value = v ? { ['mean_' + v.key]: Math.round(mean * 1e4) / 1e4, [v.key + '_hist']: hist } : { mean_wins: Math.round(mean * 1e4) / 1e4, wins_hist_x2: hist };
+    return { entity_id: e.entity_id, entity_name: e.entity_name, groups: e.groups, outcomes, ...value, ...(x.entityExtras ? x.entityExtras(e.entity_id) : {}) };
   });
   const finiteOk = ents.every((e) => Object.values(e.outcomes as Record<string, any>).every((o) => Number.isFinite(o.probability) && o.probability >= 0 && o.probability <= 1 && Number.isFinite(o.mcse)));
   return {

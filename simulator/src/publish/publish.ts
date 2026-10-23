@@ -37,6 +37,12 @@ export function resultRows(o: Pick<RunOutcome, 'results'>): Array<Record<string,
   return rows;
 }
 
+/** college football: what the reader labels beside the numbers (the CFP layer's mode and each conference's rule exposure) */
+function cfbSummary(results: unknown): { cfb?: unknown } {
+  const c = (results as { cfb?: { cfp_mode: string; cfp_mode_reason: string; uncertainty_layers: unknown; conferences: unknown } }).cfb;
+  return c ? { cfb: { cfp_mode: c.cfp_mode, cfp_mode_reason: c.cfp_mode_reason, uncertainty_layers: c.uncertainty_layers, conferences: c.conferences } } : {};
+}
+
 export interface PublishOptions { db?: SimDb; log?: (s: string) => void; chunk?: number }
 export interface PublishResult { run_id: string; status: string; existing: boolean; published: boolean; detail?: unknown }
 
@@ -50,7 +56,7 @@ export async function publishRun(o: RunOutcome, opt: PublishOptions = {}): Promi
     n_sims: r.n_sims, model_version: r.model_version, engine_version: r.engine_version, source_commit: r.source_commit || '', rules_version: r.rules_version,
     config_hash: r.config_hash, input_snapshot_at: r.input_snapshot_at, input_ref: 'db:sim_input_snapshots/' + r.input_hash, input_hash: r.input_hash,
     expected: { entities: o.results.entities.length, outcomes: o.results.outcomes.length, sum_rules: o.results.sum_rules },
-    gates: o.gates, validation_summary: { checks: o.results.checks, flags: o.results.flags },
+    gates: o.gates, validation_summary: { checks: o.results.checks, flags: o.results.flags, ...cfbSummary(o.results) },
     diagnostics: o.results.diagnostics, limitations: reg ? reg.limitations : [],
     runtime: { runtime_ms: r.runtime_ms, workers: r.workers, peak_rss_mb: r.peak_rss_mb, node: r.node, platform: r.platform },
     started_at: r.started_at, finished_at: r.finished_at
@@ -61,11 +67,11 @@ export async function publishRun(o: RunOutcome, opt: PublishOptions = {}): Promi
   }
   const runId = begin.run_id;
   try {
-    await db.rpc('sim_put_snapshot', { p: { input_hash: o.snapshot.input_hash, sport: r.sport, schema: o.snapshot.schema, data: o.snapshot.data, meta: { built_at: o.snapshot.meta.built_at, feeds: o.snapshot.meta.feeds } } });
+    await db.rpc('sim_put_snapshot', { p: { input_hash: o.snapshot.input_hash, sport: r.sport, schema: o.snapshot.schema, data: o.snapshot.data, meta: { built_at: o.snapshot.meta.built_at, feeds: 'feeds' in o.snapshot.meta ? o.snapshot.meta.feeds : [] } } });
     const rows = resultRows(o);
     for (let i = 0; i < rows.length; i += chunk) await db.rpc('sim_put_results', { p_run: runId, p_rows: rows.slice(i, i + chunk) });
     const ents = (o.results.entities as any[]).map((e) => ({ entity_id: e.entity_id, entity_name: e.entity_name, entity_groups: e.groups, record: e.record || null,
-      mean_wins: e.mean_wins, wins_hist_x2: e.wins_hist_x2, math_status: e.math_status || null }));
+      mean_wins: e.mean_wins ?? null, wins_hist_x2: e.wins_hist_x2 ?? null, math_status: e.math_status || null }));
     await db.rpc('sim_put_entities', { p_run: runId, p_rows: ents });
     const tr = o.results.traces.slice(0, 5).map((t) => ({ run_index: t.run, trace: { events: t.events } })).filter((t) => JSON.stringify(t.trace).length <= 65536);
     if (tr.length) await db.rpc('sim_put_traces', { p_run: runId, p_rows: tr });

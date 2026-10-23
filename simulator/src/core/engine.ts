@@ -27,9 +27,12 @@ export interface OutcomeDef {
   key: string;
   label: string;
   /** the tab the outcome belongs to in the reader */
-  category: 'division' | 'conference' | 'title' | 'playoffs' | 'seed' | 'round';
-  /** provenance of the number: simulated probabilities are Research */
-  provenance: 'Research';
+  category: 'division' | 'conference' | 'title' | 'playoffs' | 'seed' | 'round' | 'regular_season';
+  /** provenance of the number: simulated probabilities are Research; a probability that passes
+      through an Estimated input (a committee proxy) is Estimated; a fact already decided is Observed */
+  provenance: 'Research' | 'Estimated' | 'Observed';
+  /** what the number is conditional on, when it is (a stated scenario); absent = unconditional */
+  conditional_on?: string;
 }
 
 export interface SumRule {
@@ -38,6 +41,8 @@ export interface SumRule {
   by: string;
   /** exactly this many entities per group achieve the outcome in every run */
   perGroup: number;
+  /** group labels the rule does not apply to (e.g. independents have no title game) */
+  skip?: string[];
 }
 
 export interface RunMarks {
@@ -63,6 +68,8 @@ export interface SimModule {
   sumRules: SumRule[];
   /** number of histogram bins per entity for value() */
   valueBins: number;
+  /** what value() records; absent = regular-season wins x 2 (the NFL, ties as half) */
+  value?: { key: string; label: string; divisor: number };
   runOne(run: number, marks: RunMarks): void;
 }
 
@@ -96,7 +103,7 @@ function partitions(m: SimModule): Array<{ rule: SumRule; o: number; groups: num
       if (g == null) throw new Error('entity ' + e.id + ' has no group ' + rule.by);
       (by[g] = by[g] || []).push(i);
     });
-    return { rule, o, groups: Object.keys(by).sort().map((k) => by[k]) };
+    return { rule, o, groups: Object.keys(by).filter((k) => !(rule.skip || []).includes(k)).sort().map((k) => by[k]) };
   });
 }
 

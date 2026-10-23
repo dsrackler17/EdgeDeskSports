@@ -114,7 +114,10 @@ export const STREAM = {
   overtime: 5,      // postseason overtime resolution of the model's tie mass
   points: 6,        // scoring-based tiebreak inputs (drawn only when a tie reaches them)
   availability: 7,  // injury return draws (reserved: no sport samples availability today)
-  drift: 8          // within-season strength drift (reserved: OFF, see config)
+  drift: 8,         // within-season strength drift (reserved: OFF, see config)
+  rotation: 9,      // starting-rotation draws: departures, spot starts (MLB)
+  pitcher: 10,      // persistent per-starter strength offsets (MLB)
+  committee: 11     // the CFB committee proxy: its parameter draw and ranking noise
 } as const;
 
 /** The generator for (master seed, run index, stream id). */

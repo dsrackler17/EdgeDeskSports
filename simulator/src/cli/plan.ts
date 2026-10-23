@@ -7,7 +7,7 @@
    Prints {"include":[...]} for a job matrix. Every value a later step puts on
    a command line is checked here against a strict pattern, so nothing a
    person types into the Run workflow form reaches a shell unvalidated.
-   Schedule: every sport with a simulation module, at the production run
+   Schedule: every sport in NIGHTLY whose inputs exist, at the production run
    count; an ACTIVE sport publishes, any other runs dry and its blockers are
    printed as warnings. Dispatch: the requested sport; publishing is refused
    up front for a sport that is not ACTIVE or for fewer than 100,000 runs.
@@ -15,15 +15,22 @@
    =========================================================================== */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { sportRegistry } from '../sports/registry.ts';
+import { sportRegistry, type SportEntry } from '../sports/registry.ts';
 import { parseSeed } from '../core/prng.ts';
 import { PRODUCTION_RUNS } from '../core/results.ts';
 import { NFL_2026 } from '../sports/nfl/config.ts';
+import { MLB_2026 } from '../sports/mlb/config.ts';
+import { CFB_2026 } from '../sports/cfb/config.ts';
 import { NCAAM_2027 } from '../sports/ncaam/config.ts';
 import fs from 'node:fs';
 
 /** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season */
-export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, ncaam: NCAAM_2027.season };
+export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, cfb: CFB_2026.season, ncaam: NCAAM_2027.season };
+/** the nightly schedule: MLB runs only when a person dispatches it (its live feed is checked by hand first:
+    simulator/src/sports/mlb/config.ts live_inputs); college football runs nightly, dry until it is ACTIVE
+    (a night with unchanged inputs reuses the published run: the idempotency key); college basketball
+    joins only once its official bracket file exists (inputsReady) */
+export const NIGHTLY = ['nfl', 'cfb', 'ncaam'];
 
 /* NCAAM has valid inputs only once the official bracket file exists (after
    Selection Sunday): the nightly schedule skips it until then instead of
@@ -37,10 +44,9 @@ export function inputsReady(sport: string): { ready: boolean; reason: string } {
 
 export interface PlannedRun { sport: string; season: string; runs: string; seed: string; publish: boolean; status: string; blockers: string[] }
 
-export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }): PlannedRun[] {
-  const reg = sportRegistry();
+export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }, reg: SportEntry[] = sportRegistry()): PlannedRun[] {
   if (event === 'schedule') {
-    return Object.keys(RUNNABLE).filter((k) => inputsReady(k).ready).map((k) => {
+    return NIGHTLY.filter((k) => inputsReady(k).ready).map((k) => {
       const s = reg.find((r) => r.key === k)!;
       return { sport: k, season: String(RUNNABLE[k]), runs: String(PRODUCTION_RUNS), seed: '', publish: s.status === 'ACTIVE', status: s.status, blockers: s.blockers };
     });

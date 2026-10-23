@@ -1,0 +1,308 @@
+{
+ "schema": "edgedesk_nba_strength_uncertainty_v1",
+ "generated_at": "2026-10-23T15:23:42.328Z",
+ "served_model": {
+  "chosen": "E_ridge_P",
+  "parameters": "rebuilt out of sample per season (simulator/src/sports/nba/model_adapter.ts seasonParams)"
+ },
+ "method": "win-total calibration of one persistent normal offset per club (points of margin), on frozen out-of-sample forecasts; see the file header of simulator/src/research/nba_strength_uncertainty.ts",
+ "estimation_seasons": [
+  2010,
+  2011,
+  2012,
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2022,
+  2023,
+  2024
+ ],
+ "holdout_seasons": [
+  2025,
+  2026
+ ],
+ "by_as_of": [
+  {
+   "as_of_games": 1,
+   "win_total_calibration": {
+    "sigma": 3.110649,
+    "sigma_ci95": [
+     2.703801,
+     3.49775
+    ],
+    "regime": "production: return trajectories ON, ratings frozen",
+    "empirical_msd": 75.138305,
+    "simulated_var": 75.138305,
+    "simulated_var_at_zero": 18.078213,
+    "n_club_cells": 390,
+    "draws_per_cell": 300,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   },
+   "returns_off": {
+    "sigma": 3.191845,
+    "empirical_msd": 77.217512,
+    "simulated_var_at_zero": 17.486945
+   },
+   "returns_effect_at_zero": {
+    "msd_returns_on": 75.138305,
+    "msd_returns_off": 77.217512,
+    "note": "mean squared deviation of actual remaining wins from the sigma-0 expectation; lower is closer to what happened"
+   },
+   "holdout": {
+    "seasons": [
+     2025,
+     2026
+    ],
+    "empirical_msd": 115.46152,
+    "simulated_var_at_estimation_sigma": 63.329363,
+    "simulated_var_at_zero": 18.517282,
+    "sigma_that_would_fit": 4.858406,
+    "n_club_cells": 60
+   }
+  },
+  {
+   "as_of_games": 10,
+   "win_total_calibration": {
+    "sigma": 2.694235,
+    "sigma_ci95": [
+     2.330376,
+     3.040882
+    ],
+    "regime": "production: return trajectories ON, ratings frozen",
+    "empirical_msd": 49.628003,
+    "simulated_var": 49.628003,
+    "simulated_var_at_zero": 15.596999,
+    "n_club_cells": 390,
+    "draws_per_cell": 300,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   },
+   "returns_off": {
+    "sigma": 2.777202,
+    "empirical_msd": 50.79585,
+    "simulated_var_at_zero": 15.260369
+   },
+   "returns_effect_at_zero": {
+    "msd_returns_on": 49.628003,
+    "msd_returns_off": 50.79585,
+    "note": "mean squared deviation of actual remaining wins from the sigma-0 expectation; lower is closer to what happened"
+   },
+   "holdout": {
+    "seasons": [
+     2025,
+     2026
+    ],
+    "empirical_msd": 71.02749,
+    "simulated_var_at_estimation_sigma": 42.200416,
+    "simulated_var_at_zero": 15.977515,
+    "sigma_that_would_fit": 4.061896,
+    "n_club_cells": 60
+   }
+  },
+  {
+   "as_of_games": 20,
+   "win_total_calibration": {
+    "sigma": 2.560827,
+    "sigma_ci95": [
+     2.196273,
+     2.922324
+    ],
+    "regime": "production: return trajectories ON, ratings frozen",
+    "empirical_msd": 35.637095,
+    "simulated_var": 35.637095,
+    "simulated_var_at_zero": 13.237232,
+    "n_club_cells": 390,
+    "draws_per_cell": 300,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   },
+   "returns_off": {
+    "sigma": 2.622315,
+    "empirical_msd": 36.198142,
+    "simulated_var_at_zero": 13.005653
+   },
+   "returns_effect_at_zero": {
+    "msd_returns_on": 35.637095,
+    "msd_returns_off": 36.198142,
+    "note": "mean squared deviation of actual remaining wins from the sigma-0 expectation; lower is closer to what happened"
+   },
+   "holdout": {
+    "seasons": [
+     2025,
+     2026
+    ],
+    "empirical_msd": 49.383682,
+    "simulated_var_at_estimation_sigma": 31.218846,
+    "simulated_var_at_zero": 13.580117,
+    "sigma_that_would_fit": 3.777326,
+    "n_club_cells": 60
+   }
+  },
+  {
+   "as_of_games": 41,
+   "win_total_calibration": {
+    "sigma": 2.577911,
+    "sigma_ci95": [
+     2.258492,
+     2.905273
+    ],
+    "regime": "production: return trajectories ON, ratings frozen",
+    "empirical_msd": 18.101846,
+    "simulated_var": 18.101846,
+    "simulated_var_at_zero": 8.547347,
+    "n_club_cells": 390,
+    "draws_per_cell": 300,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   },
+   "returns_off": {
+    "sigma": 2.633329,
+    "empirical_msd": 18.291135,
+    "simulated_var_at_zero": 8.429625
+   },
+   "returns_effect_at_zero": {
+    "msd_returns_on": 18.101846,
+    "msd_returns_off": 18.291135,
+    "note": "mean squared deviation of actual remaining wins from the sigma-0 expectation; lower is closer to what happened"
+   },
+   "holdout": {
+    "seasons": [
+     2025,
+     2026
+    ],
+    "empirical_msd": 26.602861,
+    "simulated_var_at_estimation_sigma": 16.626333,
+    "simulated_var_at_zero": 8.928396,
+    "sigma_that_would_fit": 4.075982,
+    "n_club_cells": 60
+   }
+  },
+  {
+   "as_of_games": 61,
+   "win_total_calibration": {
+    "sigma": 1.895635,
+    "sigma_ci95": [
+     1.35963,
+     2.296874
+    ],
+    "regime": "production: return trajectories ON, ratings frozen",
+    "empirical_msd": 5.436564,
+    "simulated_var": 5.436564,
+    "simulated_var_at_zero": 4.143925,
+    "n_club_cells": 390,
+    "draws_per_cell": 300,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   },
+   "returns_off": {
+    "sigma": 1.885437,
+    "empirical_msd": 5.33991,
+    "simulated_var_at_zero": 4.078055
+   },
+   "returns_effect_at_zero": {
+    "msd_returns_on": 5.436564,
+    "msd_returns_off": 5.33991,
+    "note": "mean squared deviation of actual remaining wins from the sigma-0 expectation; lower is closer to what happened"
+   },
+   "holdout": {
+    "seasons": [
+     2025,
+     2026
+    ],
+    "empirical_msd": 8.327266,
+    "simulated_var_at_estimation_sigma": 5.384854,
+    "simulated_var_at_zero": 4.360555,
+    "sigma_that_would_fit": 3.905867,
+    "n_club_cells": 60
+   }
+  }
+ ],
+ "code_sha256": {
+  "simulator/src/research/nba_strength_uncertainty.ts": "0c75290b0375e93079aef14edd52ee42e04c12cd20a4b6d9b25954c66a3615fd",
+  "simulator/src/research/nba_frozen_forecasts.ts": "9d41389ad7f60d8d301ecb3923dedd195677f9d7241468e0959094156c6e402d",
+  "simulator/src/sports/nba/availability.ts": "a11f1b66940a8309e71bb7f196076b6f78d9f832fbdac2771ec359832a9c38bb",
+  "simulator/src/sports/nba/game_dist.ts": "c968918e2af8eb9e736532e5e2ddfa0d81ecfefcdc86e6e82647f719ac418bdc"
+ },
+ "frozen_sha256": {
+  "2010_1": "e023856220bde9bf440cbe7c31971dab5f344bec2ee72448288bebef79e50416",
+  "2011_1": "0f49558d13a73d38eb53e6d7231bbd827fe1ab9c43ce42b3cd268121a44e4c5d",
+  "2012_1": "7620506c313f89efd24b2c00caf77e629927e0fa2716f0108cb1e075a872489a",
+  "2013_1": "2162039f1687b79d2782f7971747faceef65ff520bb1ddc192edbbf05e15b6dd",
+  "2014_1": "eb1b6828d3e334967a153875b61e0ce175e1079b99a3ec8c54a6d5d3c8682629",
+  "2015_1": "f8380c6285098516271fbd22b9d828229aed30f31ba028efdc75eaa7716ea083",
+  "2016_1": "a5a759f7f452f277c91756a89c7b81f118ee27153fa66afe858d88b5343bc038",
+  "2017_1": "d66cec98aa9cf2562aaf8957115f4dcb3707cfa00ccea4c077c4ec2216b12333",
+  "2018_1": "1e315ff6d194574305af8cd80153537a13e65b90acf2d415cad73a2fdd44a350",
+  "2019_1": "2e5303ba3d228d0c3cb60258b9e4e82bd07ca24bf689fcfddc4e9e038fe079ae",
+  "2022_1": "45d61920917ec8a0c1dd5bafdc9a740e1e45a1e9ac93116b751c3d141c2f38a4",
+  "2023_1": "2eb9a918ea0bc4c37d14c47c93cb36f9652514a3208a684ed7d26e26f5162218",
+  "2024_1": "f77d5e97aa906183c9b400decae9f30b2289d25126a9110555c0f321464746ba",
+  "2025_1": "63dca1e21e731c218f34447780a8c6811cddffb11c316610c76ad8116a2c8d28",
+  "2026_1": "5e099e28660b87c4771fb736d86a459835b08d9c34771ddf6dbef32384098fdd",
+  "2010_10": "f59dcd9e49b95cbfd6e0287f040373bceace1682ccbd15b3128ff9f9337ff3b2",
+  "2011_10": "c31e2cdf74733c44d0a06943701d10d60e11d87a761b8bcc63c527b9728165ef",
+  "2012_10": "4949d6aac92683f1c3bc569817b6a1555c1954489b6e2a97b8c731f7ca63dbdb",
+  "2013_10": "0b1f2735621e7879da0849422e502e1b6dc8147f67ed5fe756f8050aa8db47a9",
+  "2014_10": "0bbc63cad95e5c661869b182a3610fa75ec6cb24af65c2d67fb93305787788e3",
+  "2015_10": "8205109f1f012509db228f363245dfeb42452f5cc923e71d94cf71a6a4f84264",
+  "2016_10": "7459c2ef8ddcf11b3e805f5fbe0474413be02a8f1d26facef8d7d87c0c7a39a5",
+  "2017_10": "82caf4a64f7bab93c6b24f2a42bcaa311d8de28f21f26e9b5d58e62b37d3b90c",
+  "2018_10": "ade40cb501e5a751c2cf177725e362d297218b521aa7852e12b2916d5fb79aad",
+  "2019_10": "eb5771f79ae47c5006781295bd4487c141fe2c22a34ddc132487d414b4a640da",
+  "2022_10": "c79fd9a61fb63b35086c9ccc888de6ab8bb670691c8ff8837ce41e3835d87195",
+  "2023_10": "c6fec636ddfd9c87ea1edb7ebab897e3a00906fd01457e8a3c7897a2990815b5",
+  "2024_10": "c64027ba36c0e430c128530ec1a78e45abb83ee18c17d2aa71c36fd9b8fcfb60",
+  "2025_10": "8d35047de95bf25537994439a26b3912ac501963460156f0cae1431b21b6dc7b",
+  "2026_10": "411e85fda497b1dd84f64d6e2143bf4873fbae28db49bd4e9dc8b22db24ea283",
+  "2010_20": "99be0e8199fea96235d65305aed45429be973a85a17685c1494777bd9ad5a4f3",
+  "2011_20": "078be1f315c9d53b73a1bc2d333d279f9b4da8a5088433a3fda861e5768788c9",
+  "2012_20": "8b41a7e3f0534b700a136bb31d8f0056d7871d332c8f7bcb78fa9cd97b5e8340",
+  "2013_20": "1097f2b56ab4e64dc6a2b1589be6f1119f0b2cc1287ce29f78f5e92e84a76bab",
+  "2014_20": "7cbd4d4acdd958658932f217dff4b8e9985c93f1113c626e79084f37de135d63",
+  "2015_20": "8c4d124cff0f3f72cd8663218f3d0003d7bab5c9618409041c37ba6afeba3612",
+  "2016_20": "df3c43a75d51a9bd50ce65026b3a322559c47fdc1291d3a913cb69a425b3cb11",
+  "2017_20": "4ad57746f7ef7449a0d627ca38138624eb3e2b1c036fcb7e0e2cee6c47779896",
+  "2018_20": "29bd7c3bb02c371bc6d61525c0b036f93bb7360264b2b90ca6eaff6631d7f515",
+  "2019_20": "024a5638fa3809113a957a26eacadce361c543df92f013049f63a29dba0ff362",
+  "2022_20": "7c19b72c1c2a5022274ca04f511d6d30d890971f2df358469f7aa052b7451375",
+  "2023_20": "4259caa4864f9456079dfc70c62547e61209d3ef090a157d9c8dec5a36ca68ea",
+  "2024_20": "129199937a677cd4093d37721fc836ba5944dc3ea258fdde94c6f77f11ab1ac8",
+  "2025_20": "087fe10e47cde2b47d26df56ded507c440a40d3f9565ef8f0a7eda2d4cec1e5c",
+  "2026_20": "ef5e3b45b0624039e566550ba624513a95c4d99f17c3315facd189f237bf198a",
+  "2010_41": "7bf4f76e12ceaf340bc8d19ef7d3d77c89574191674b6dfb6017f54cdf0eb59a",
+  "2011_41": "18a1d1676c33a2103b97d36fe613141b829043258824becc8eb151fdcb5dcc8a",
+  "2012_41": "6ec63c0a84f00c4ae3cebca2917cc12b5cda64163c1797277d012a4d7d6faf7b",
+  "2013_41": "070d6513d9bddbf1509436dfd3bb806663b9cce3954947f3fd39eeb9d09e33a5",
+  "2014_41": "d61f32a39f9ec5174593d6121e50b16ccf372f0b5e03685e98515cfd07a3ef01",
+  "2015_41": "f63029f07c366c9eeb5c2ab987f5dad7aedeb5b7f2b8697736cc2812a0df6234",
+  "2016_41": "58d36bbf04725a7587c6faa8323de03416360ce7b5eedec9f6c806044c6f1947",
+  "2017_41": "5da10406d704297eec73db1867fb020a27c976d30644b25f0a30367e9cd01bed",
+  "2018_41": "8d674861d9c9f51e05ce921872feab50a8fdd5d84ff122f5b31c0cf7f5c48af7",
+  "2019_41": "a1f8b0e72055412c17500ab42782172f4e343290a3678009d04c01853586724a",
+  "2022_41": "16a57f6375edfc5078183e5b5c9cdcaba0d7a5327d38eb1a81b810a350a1d658",
+  "2023_41": "2c9d264937ded199f5210c1c6227c80b543b1548dd63e9008a6e2c0cfe4cb048",
+  "2024_41": "210d5075c741ba189f5fc3fe121528893ec720aceb43fd7d54505b46b86671ac",
+  "2025_41": "d4620eaea6338e287f093883739607016a7b3886b11e1b1b2f32aba643cbcfac",
+  "2026_41": "0bfc52378422ba34512593bb92717b153213738a9ef5fc16b1b3ac94949d4a5f",
+  "2010_61": "fbb51fc7d30dc59693075d5fbf6ef3c10f86865f46b6d69fb7c64dc70d412472",
+  "2011_61": "8d86cdffa98d939fc329842de42d49d6c209e476e9f279e8484c21c0884a69c7",
+  "2012_61": "733675e45378be85bb671ef4dd5f656f774e6370a3bfda35d840c6aebae7a77a",
+  "2013_61": "52344887f7a574b3c8ed79b2df8351092903286963dac2e42277ca0f0cdc1a7e",
+  "2014_61": "12c195628d924a205660d3a7a1a31b11bda62f2fc052aa02f9ec49c46f85f9c6",
+  "2015_61": "e4b313bcdec502c3260fa8572f2fc53e8f6604610d1681ac39f990bcb2597e28",
+  "2016_61": "f43b926ff6001e4339efe60a9985e786c12e77bd36b1e4f9f8469b895c530da2",
+  "2017_61": "d3dcfc2982f9d97d18d0f3c82bb9c370070fff17cb73697a5d75efb1caf09ff8",
+  "2018_61": "29b8cc52a0d30ea49e3dfe4c13b4d528c5ca93cfe53ccbf752d2fa37c6769a82",
+  "2019_61": "4bf54ad0aa5eaf7aa629ea1652dd50ae38d49a9e089d7dfd5931b9a14f8f162a",
+  "2022_61": "08a82b2cc0f5de031a619ca81adcb17c445f5d6a1604fe03f8864aac42e40f69",
+  "2023_61": "5b1a6f80abd9355ff1b6c6be2ed9ea465131d8945f4cb0aac880ca17da1b3d10",
+  "2024_61": "0c7e60d5b4e892f172be4d072d4883676b3081d6e5949c4dc921b65855dfe52a",
+  "2025_61": "86b2699f32b2aeb5fdc5e01c7803f4914b4e5063861c8eae894d092165b6881d",
+  "2026_61": "5aa9756f97b6c26e9c91d01efa80c02c763b0d6c5618820bbefa8fa586d0da13"
+ }
+}

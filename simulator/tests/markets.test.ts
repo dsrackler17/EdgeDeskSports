@@ -2,7 +2,7 @@
    and rules: no real Kalshi market is represented here).
    node simulator/tests/markets.test.ts */
 import { kit } from './_kit.ts';
-import { compareFutures, validateFuturesConfig, feePerContract, type FuturesConfig, type Quote, type RunView, type Mapping } from '../src/markets/compare.ts';
+import { compareFutures, validateFuturesConfig, configForSport, feePerContract, type FuturesConfig, type Quote, type RunView, type Mapping } from '../src/markets/compare.ts';
 import { quoteFromMarket, kalshiClient, fetchQuotes } from '../src/markets/kalshi.ts';
 import { sha256Hex } from '../src/core/canonical.ts';
 import fs from 'node:fs';
@@ -10,6 +10,9 @@ import { marketStep } from '../src/cli/markets.ts';
 import type { SimDb } from '../src/publish/db.ts';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildMappings, DISCLAIMER, type Candidate } from '../src/cli/build_kalshi_mappings.ts';
+import { NFL_TEAMS_2026 } from '../src/sports/nfl/config.ts';
+import { NFL_OUTCOMES } from '../src/sports/nfl/module.ts';
 
 const T = kit('Kalshi futures comparison (SYNTHETIC markets)');
 const RULES = 'SYNTHETIC: resolves YES if the club wins Super Bowl LXI.';
@@ -38,6 +41,14 @@ T.chk('a mapping to an outcome the simulator does not define (e.g. a regular-sea
 T.chk('a mapping without verification is rejected', validateFuturesConfig(cfg({ mappings: [map('BUF', { verified_by: null })] }), run).some((e) => /verified_by/.test(e)));
 T.chk('a mapping without the settlement rules hash is rejected', validateFuturesConfig(cfg({ mappings: [map('BUF', { settlement: { basis: 'x', rules_sha256: '' } })] }), run).some((e) => /rules text sha256/.test(e)));
 T.chk('the same market mapped twice is rejected', validateFuturesConfig(cfg({ mappings: [map('BUF'), map('BUF', { mapping_id: 'dup' })] }), run).some((e) => /mapped twice/.test(e)));
+{
+  /* one config holds every sport's mappings: a run sees only its own sport's (another season of its sport is still an error) */
+  const cfbRun: RunView = { sport: 'cfb', competition: 'NCAA FBS', season: '2026', entities: [{ entity_id: 'alabama', outcomes: { national_champion: { probability: 0.05, mcse: 0.0007 } } }] };
+  const mixed = cfg({ mappings: [map('BUF'), map('KC', { season: '2025' })] });
+  T.eq('a college football run sees none of the NFL mappings (and no NFL outcome set)', [configForSport(mixed, cfbRun).mappings.length, configForSport(mixed, cfbRun).outcome_sets.length], [0, 0]);
+  T.eq('... so it validates instead of failing on another sport\'s markets', validateFuturesConfig(configForSport(mixed, cfbRun), cfbRun), []);
+  T.chk('an NFL run still rejects its own wrong-season mapping', validateFuturesConfig(configForSport(mixed, run), run).some((e) => /the run is nfl\/NFL\/2026/.test(e)));
+}
 T.chk('a verified fee schedule must name its source', validateFuturesConfig(cfg({ fees: { ...cfg().fees, verified: true } }), run).some((e) => /verified fee schedule/.test(e)));
 T.throws('an invalid mapping refuses to compare at all', () => compareFutures(cfg({ mappings: [map('BUF', { season: '2025' })] }), run, Q(q('BUF')), now), /mapping is invalid/);
 /* ---- no coverage is unavailable, not zero ---- */
@@ -132,6 +143,13 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   let err = ''; try { await fetchQuotes(down, ['X']); } catch (e) { err = String((e as Error).message); }
   T.chk('an outage raises (the market step fails; the simulation is untouched)', /could not be reached/.test(err), err);
 }
+/* ---- the market step on a sport the committed config maps nothing for: unavailable, nothing fetched, no error ---- */
+{
+  const cfb = { run: { sport: 'cfb', competition: 'NCAA FBS', season: '2026' }, entities: [{ entity_id: 'alabama', outcomes: { national_champion: { probability: 0.05, mcse: 0.0007 } } }] };
+  const lines: string[] = [];
+  const r = await marketStep({ results: cfb, runId: null, publish: false, log: (s) => lines.push(s), fetchImpl: (async () => { throw new Error('nothing should be fetched'); }) as unknown as typeof fetch });
+  T.chk('a college football run against the committed (NFL-only) futures config is unavailable, not a failure', r.status === 'unavailable' && /no verified Kalshi mapping for cfb/.test(lines.join(' ')), { r, lines });
+}
 /* ---- the market step: an outage fails the COMPARISON only ---- */
 {
   const results = { run: { sport: 'nfl', competition: 'NFL', season: '2026' }, entities: run.entities.map((e) => ({ entity_id: e.entity_id, outcomes: e.outcomes })) };
@@ -144,12 +162,41 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   const none = await marketStep({ results, runId: null, publish: true, cfg: cfg({ mappings: [] }), db, log: () => {}, now });
   T.eq('with no verified mapping the step fetches and writes nothing', none.status, 'unavailable');
 }
-/* ---- the committed config ---- */
+/* ---- the mapping generator refuses anything short of an exact match (SYNTHETIC markets) ---- */
+{
+  const ok = (over: Partial<Candidate> = {}): Candidate => ({ series_ticker: 'KXNFLAFCEAST', event_ticker: 'KXNFLAFCEAST-27', market_ticker: 'KXNFLAFCEAST-27-BUF', yes_sub_title: 'Buffalo',
+    rules_primary: 'If Buffalo wins the Pro Football AFC East Division, then the market resolves to Yes.', rules_secondary: DISCLAIMER, rules_sha256: 'a'.repeat(64), ...over });
+  const fee = [{ ticker: 'KXNFLAFCEAST', fee_type: 'quadratic_with_maker_fees', fee_multiplier: 1 }];
+  const by = { by: 'test', at: '2026-10-23' };
+  const b = (cs: Candidate[], f = fee) => buildMappings(cs, f, by);
+  T.eq('an exact match maps to the simulated outcome', b([ok()]).mappings.map((m) => [m.entity_id, m.outcome]), [['BUF', 'win_division']]);
+  T.eq('different wording is left out', b([ok({ rules_primary: 'If Buffalo wins the Pro Football AFC East Division or has the best record, then the market resolves to Yes.' })]).left.length, 1);
+  T.eq('extra secondary rules are left out', b([ok({ rules_secondary: DISCLAIMER + ' If the season is shortened, the market resolves to No.' })]).left.length, 1);
+  T.eq('a club outside the division is left out', b([ok({ market_ticker: 'KXNFLAFCEAST-27-KC', yes_sub_title: 'Kansas City', rules_primary: 'If Kansas City wins the Pro Football AFC East Division, then the market resolves to Yes.' })]).left.length, 1);
+  T.eq('rules naming another club than the label are left out', b([ok({ yes_sub_title: 'Miami' })]).left.length, 1);
+  T.eq('a flat or multiplied fee type is left out', [b([ok()], [{ ticker: 'KXNFLAFCEAST', fee_type: 'flat', fee_multiplier: 1 }]).left.length, b([ok()], [{ ticker: 'KXNFLAFCEAST', fee_type: 'quadratic', fee_multiplier: 2 }]).left.length], [1, 1]);
+  T.eq('Kalshi suffixes map to nflverse codes (JAC -> JAX, LAR -> LA)', b([ok({ series_ticker: 'KXSB', event_ticker: 'KXSB-27', market_ticker: 'KXSB-27-JAC', yes_sub_title: 'Jacksonville', rules_primary: 'If Jacksonville wins the 2027 Pro Football Championship, then the market resolves to Yes.' })],
+    [{ ticker: 'KXSB', fee_type: 'quadratic', fee_multiplier: 1 }]).mappings.map((m) => m.entity_id), ['JAX']);
+  const one = b([ok()]);
+  T.chk('an incomplete set (one of four clubs) is never normalised', one.sets.length === 0 && one.mappings[0].outcome_set === null);
+  const four = b(['BUF:Buffalo', 'MIA:Miami', 'NE:New England', 'NYJ:New York J'].map((x) => { const [c, n] = x.split(':'); return ok({ market_ticker: 'KXNFLAFCEAST-27-' + c, yes_sub_title: n, rules_primary: 'If ' + n + ' wins the Pro Football AFC East Division, then the market resolves to Yes.' }); }));
+  T.chk('a complete division is one mutually exclusive, exhaustive set', four.sets.length === 1 && four.sets[0].entities.length === 4 && four.mappings.every((m) => m.outcome_set === 'nfl2026:win_division:AFC East'));
+}
+/* ---- the committed config (real Kalshi markets, generated by build_kalshi_mappings.ts) ---- */
 {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const real = JSON.parse(fs.readFileSync(path.join(here, '..', 'config', 'kalshi_futures.json'), 'utf8')) as FuturesConfig;
-  T.eq('the committed futures config validates', validateFuturesConfig(real, run), []);
-  T.chk('the committed fee schedule is marked unverified until a person verifies it', real.fees.verified === false);
-  T.eq('no mapping is committed until a person has read each market\'s rules', real.mappings.length, 0);
+  const nflRun: RunView = { sport: 'nfl', competition: 'NFL', season: '2026',
+    entities: NFL_TEAMS_2026.map((t) => ({ entity_id: t.code, outcomes: Object.fromEntries(NFL_OUTCOMES.map((o) => [o.key, { probability: 0, mcse: 0 }])) })) };
+  T.eq('the committed futures config validates against a full NFL 2026 run', validateFuturesConfig(real, nflRun), []);
+  T.chk('the fee schedule is verified only with a verifier, a date and an https source', !real.fees.verified || (!!real.fees.verified_by && /^\d{4}-\d{2}-\d{2}$/.test(real.fees.verified_at || '') && /^https:\/\//.test(real.fees.source)));
+  T.chk('every mapping is verified, dated and carries its rules sha256', real.mappings.every((m) => m.status === 'verified' && /^[0-9a-f]{64}$/.test(m.settlement.rules_sha256) && !!m.verified_by && /^\d{4}-\d{2}-\d{2}$/.test(m.verified_at || '')));
+  const clubs = (scope: string) => NFL_TEAMS_2026.filter((t) => !scope || t.conference === scope || t.division === scope).map((t) => t.code).sort();
+  T.chk('every outcome set is exactly the clubs that can win it, each with one mapped market', real.outcome_sets.every((s) => {
+    const members = real.mappings.filter((m) => m.outcome_set === s.id);
+    return s.mutually_exclusive && s.exhaustive && JSON.stringify(s.entities) === JSON.stringify(clubs(s.id.split(':')[2] || '')) && members.length === s.entities.length && members.every((m) => m.outcome === s.outcome);
+  }));
+  T.chk('make_playoffs is never normalised (seven clubs per conference qualify)', real.mappings.filter((m) => m.outcome === 'make_playoffs').every((m) => m.outcome_set == null));
+  T.chk('each club and outcome is mapped at most once', new Set(real.mappings.map((m) => m.entity_id + '|' + m.outcome)).size === real.mappings.length);
 }
 process.exit(T.done());

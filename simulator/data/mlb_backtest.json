@@ -1,0 +1,222 @@
+{
+ "schema": "edgedesk_sim_mlb_backtest_v1",
+ "built_at": "2026-10-23T13:12:05.084Z",
+ "design": {
+  "seasons": [
+   2022,
+   2023,
+   2025
+  ],
+  "stages": [
+   40,
+   81,
+   120,
+   140
+  ],
+  "runs_per_cell": 2000,
+  "log_loss_clip": 0.00025,
+  "baseline": "the same simulator with sigma_team = sigma_sp = 0",
+  "unit": "season cluster (four stages of a season share outcomes)",
+  "caveats": [
+   "sigma_team and sigma_sp were calibrated on 2012-2023: 2022 and 2023 are in-sample for them; 2025 is the one out-of-sample season",
+   "three seasons cannot decide anything; the intervals are a three-cluster bootstrap and are wide",
+   "no market baseline: EdgeDesk owns no MLB futures prices",
+   "2024 left out: its game table has no starting pitchers"
+  ]
+ },
+ "by_family": {
+  "win_division": {
+   "n": 360,
+   "brier_prod": 0.08529,
+   "brier_zero": 0.089388,
+   "log_loss_prod": 0.277074,
+   "log_loss_zero": 0.298737,
+   "brier_diff_ci95_season_bootstrap": [
+    -0.013154,
+    0.005062
+   ],
+   "holdout_2025": {
+    "n": 120,
+    "brier_prod": 0.136555,
+    "brier_zero": 0.149709,
+    "log_loss_prod": 0.441584,
+    "log_loss_zero": 0.501576
+   },
+   "by_stage": {
+    "40": {
+     "n": 90,
+     "brier_prod": 0.11071,
+     "brier_zero": 0.118194,
+     "log_loss_prod": 0.350977,
+     "log_loss_zero": 0.381916
+    },
+    "81": {
+     "n": 90,
+     "brier_prod": 0.110922,
+     "brier_zero": 0.120562,
+     "log_loss_prod": 0.332889,
+     "log_loss_zero": 0.37935
+    },
+    "120": {
+     "n": 90,
+     "brier_prod": 0.064354,
+     "brier_zero": 0.063933,
+     "log_loss_prod": 0.196432,
+     "log_loss_zero": 0.194601
+    },
+    "140": {
+     "n": 90,
+     "brier_prod": 0.055176,
+     "brier_zero": 0.054865,
+     "log_loss_prod": 0.228,
+     "log_loss_zero": 0.239081
+    }
+   }
+  },
+  "make_playoffs": {
+   "n": 360,
+   "brier_prod": 0.105852,
+   "brier_zero": 0.108748,
+   "log_loss_prod": 0.320338,
+   "log_loss_zero": 0.33163,
+   "brier_diff_ci95_season_bootstrap": [
+    -0.005349,
+    0.000682
+   ],
+   "holdout_2025": {
+    "n": 120,
+    "brier_prod": 0.131416,
+    "brier_zero": 0.135437,
+    "log_loss_prod": 0.395831,
+    "log_loss_zero": 0.41694
+   },
+   "by_stage": {
+    "40": {
+     "n": 90,
+     "brier_prod": 0.153343,
+     "brier_zero": 0.162943,
+     "log_loss_prod": 0.450557,
+     "log_loss_zero": 0.485507
+    },
+    "81": {
+     "n": 90,
+     "brier_prod": 0.128021,
+     "brier_zero": 0.129344,
+     "log_loss_prod": 0.382926,
+     "log_loss_zero": 0.390775
+    },
+    "120": {
+     "n": 90,
+     "brier_prod": 0.064382,
+     "brier_zero": 0.063205,
+     "log_loss_prod": 0.210177,
+     "log_loss_zero": 0.202124
+    },
+    "140": {
+     "n": 90,
+     "brier_prod": 0.077663,
+     "brier_zero": 0.0795,
+     "log_loss_prod": 0.237692,
+     "log_loss_zero": 0.248114
+    }
+   }
+  },
+  "win_pennant": {
+   "n": 360,
+   "brier_prod": 0.062566,
+   "brier_zero": 0.064717,
+   "log_loss_prod": 0.229137,
+   "log_loss_zero": 0.240613,
+   "brier_diff_ci95_season_bootstrap": [
+    -0.003536,
+    -0.001157
+   ],
+   "holdout_2025": {
+    "n": 120,
+    "brier_prod": 0.055729,
+    "brier_zero": 0.056886,
+    "log_loss_prod": 0.19682,
+    "log_loss_zero": 0.201215
+   },
+   "by_stage": {
+    "40": {
+     "n": 90,
+     "brier_prod": 0.063898,
+     "brier_zero": 0.066407,
+     "log_loss_prod": 0.247005,
+     "log_loss_zero": 0.267696
+    },
+    "81": {
+     "n": 90,
+     "brier_prod": 0.0614,
+     "brier_zero": 0.064418,
+     "log_loss_prod": 0.217666,
+     "log_loss_zero": 0.228218
+    },
+    "120": {
+     "n": 90,
+     "brier_prod": 0.06019,
+     "brier_zero": 0.062155,
+     "log_loss_prod": 0.21813,
+     "log_loss_zero": 0.227733
+    },
+    "140": {
+     "n": 90,
+     "brier_prod": 0.064778,
+     "brier_zero": 0.065887,
+     "log_loss_prod": 0.233747,
+     "log_loss_zero": 0.238805
+    }
+   }
+  },
+  "win_world_series": {
+   "n": 360,
+   "brier_prod": 0.030745,
+   "brier_zero": 0.031235,
+   "log_loss_prod": 0.116273,
+   "log_loss_zero": 0.116467,
+   "brier_diff_ci95_season_bootstrap": [
+    -0.00156,
+    0.000228
+   ],
+   "holdout_2025": {
+    "n": 120,
+    "brier_prod": 0.028221,
+    "brier_zero": 0.027993,
+    "log_loss_prod": 0.102255,
+    "log_loss_zero": 0.100163
+   },
+   "by_stage": {
+    "40": {
+     "n": 90,
+     "brier_prod": 0.030682,
+     "brier_zero": 0.030554,
+     "log_loss_prod": 0.122728,
+     "log_loss_zero": 0.119285
+    },
+    "81": {
+     "n": 90,
+     "brier_prod": 0.029961,
+     "brier_zero": 0.030762,
+     "log_loss_prod": 0.111413,
+     "log_loss_zero": 0.111701
+    },
+    "120": {
+     "n": 90,
+     "brier_prod": 0.030047,
+     "brier_zero": 0.030853,
+     "log_loss_prod": 0.106157,
+     "log_loss_zero": 0.107228
+    },
+    "140": {
+     "n": 90,
+     "brier_prod": 0.032291,
+     "brier_zero": 0.03277,
+     "log_loss_prod": 0.124795,
+     "log_loss_zero": 0.127655
+    }
+   }
+  }
+ },
+ "rows_sha256": "964c9a1106450f9abadf316ce8e1a23a23ffd055691e5e3bbb375bf936830ab4"
+}

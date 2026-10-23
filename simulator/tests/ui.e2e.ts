@@ -5,8 +5,8 @@
    committed snapshot (3,000 runs, in process) shaped exactly as the
    sim_current_* views return them; the futures rows are SYNTHETIC (invented
    tickers and prices). TEST ONLY: the sport registry is served with the NFL
-   marked ACTIVE so the results views can be exercised; in the repository the
-   NFL is BLOCKED until its 2026 facts are verified.
+   marked ACTIVE so the results views can be exercised (it already is once its
+   2026 facts are verified; the override only applies while it is BLOCKED).
 
      node simulator/tests/ui.e2e.ts [--shots DIR]
    Skips (exit 0) when Playwright is not installed.
@@ -68,7 +68,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     if (p === '/lib/edgedesk_simulator_sports.js') {
       const before = String(body);
       body = before.replace(/("key": "nfl",\s*"label": "NFL",\s*"status": )"BLOCKED"/, '$1"ACTIVE"');
-      if (body === before) throw new Error('test override did not apply');
+      if (!/"key": "nfl",\s*"label": "NFL",\s*"status": "ACTIVE"/.test(String(body))) throw new Error('the NFL is neither ACTIVE nor overridable to ACTIVE');
     }
     res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' }); res.end(body);
   }); s.listen(0, '127.0.0.1', () => resolve(s)); });
@@ -169,11 +169,11 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       await ctx.close();
     }
     {
-      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/cfb', { entitled: true, published: true });
-      await page.evaluate(() => (window as any).navHashRoute('#simulator/cfb')); await page.waitForTimeout(300);
+      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/nba', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/nba')); await page.waitForTimeout(300);
       const t = await text(page);
-      T.chk('a blocked sport (#simulator/cfb) shows its blockers and no number', /Blocked/.test(t) && /CFP/.test(t) && !/\d+\.\d%/.test(t));
-      await shot(page, 'sim-blocked-cfb-390'); await ctx.close();
+      T.chk('a blocked sport (#simulator/nba) shows its blockers and no number', /Blocked/.test(t) && /NBA Cup/.test(t) && !/\d+\.\d%/.test(t));
+      await shot(page, 'sim-blocked-nba-390'); await ctx.close();
     }
     {
       const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failSecond: true });
