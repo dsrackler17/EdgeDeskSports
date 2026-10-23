@@ -1,0 +1,71 @@
+# EdgeDesk Simulator — the golf and UFC feeds, read from GitHub's runners (the
+# build environment cannot reach ESPN or ufc.com) and committed as hashed files
+# under simulator/data/feeds/ (simulator/src/cli/fetch_sports_data.ts).
+#
+#   golf_events.json.gz    ESPN: every PGA Tour event 2023 on, each player's
+#                          strokes per round, status and finish (the golf
+#                          model's history)
+#   golf_current.json      ESPN: the current PGA Tour, LPGA and DP World Tour
+#                          scoreboards (field, rounds, the event's own fields)
+#   ufc_bouts.json.gz      ESPN: every UFC bout 2014 on with its title flag,
+#                          ranks at the time, winner, method and end round
+#   ufc_rankings.json      ufc.com/rankings: champion and 1-15 per division
+#                          (+ the page itself, gzipped, and its sha256)
+#   fetch_report_*.json    every request's URL, HTTP status and size
+#
+#   schedule 09:41 UTC daily   before the nightly Simulator run (10:17 UTC):
+#                              commits to main (tools/ci/push_generated.sh)
+#   pull_request               a pull request that changes the fetcher or this
+#                              file: commits to that pull request's branch, so
+#                              the reviewed change carries the data it read
+#   workflow_dispatch          by hand, to main
+#
+# No secret and no database: public, keyless feeds only. Nothing logs in or
+# pays. A feed that does not answer is recorded in the report, never filled.
+name: Simulator sports data
+
+on:
+  schedule:
+    - cron: '41 9 * * *'
+  pull_request:
+    paths:
+      - '.github/workflows/simulator-sports-data.yml'
+      - 'simulator/src/cli/fetch_sports_data.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: simulator-sports-data-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    # a fork's pull request gets a read-only token: it cannot push, so it does not run
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Golf (ESPN)
+        run: node simulator/src/cli/fetch_sports_data.ts --what golf
+      - name: UFC (ESPN, ufc.com)
+        run: node simulator/src/cli/fetch_sports_data.ts --what ufc
+      - name: Commit the feeds
+        env:
+          EVENT: ${{ github.event_name }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ "$EVENT" = "pull_request" ]; then
+            bash tools/ci/push_generated.sh "$HEAD_REF" "simulator feeds: golf and UFC (ESPN, ufc.com)" -- simulator/data/feeds
+          else
+            bash tools/ci/push_generated.sh main "simulator feeds: golf and UFC (ESPN, ufc.com)" -- simulator/data/feeds
+          fi
