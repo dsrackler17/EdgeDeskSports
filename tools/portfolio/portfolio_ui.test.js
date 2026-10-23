@@ -281,7 +281,7 @@ chk('#portfolio deep-links to it, and #portfolio/<tab> to a tab', /NAV_HASH_MAP=
 chk('More no longer lists it: it has a seat', APP.indexOf("dest.push(moreItem(IC.portfolio,'Portfolio'") < 0);
 chk('a reader can make it their landing page', APP.indexOf("['portfolio','Portfolio']") > 0);
 const nav = APP.slice(APP.indexOf('<nav class="bottomnav"'), APP.indexOf('</nav>', APP.indexOf('<nav class="bottomnav"'))).replace(/<!--[\s\S]*?-->/g, '');
-chk('Portfolio is one of the five seats', (nav.match(/data-v="/g) || []).length === 5 && /data-v="portfolio"/.test(nav));
+chk('Portfolio is one of the six seats', (nav.match(/data-v="/g) || []).length === 6 && /data-v="portfolio"/.test(nav));
 chk('the CSS prefix does not collide with the Ledger\'s .pfl- panel', !/\.pfl-/.test(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_portfolio.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')));
 
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 600) : '')));

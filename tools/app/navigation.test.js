@@ -5,9 +5,11 @@
    The product hierarchy is a claim the app makes with its own chrome, and
    these hold it (docs/ia/NAVIGATION_AUDIT.md):
 
-     1  FIVE destinations, one per question a reader brings — Research ·
-        Card · Portfolio · Process · More — and no sixth one, including the
-        one the AI drawer used to append at runtime;
+     1  SIX destinations, one per question a reader brings — Research ·
+        Card · Portfolio · Process · Simulator · More — and no seventh one,
+        including the one the AI drawer used to append at runtime (the
+        Simulator seat was added on the owner's request, 2026-10-23:
+        docs/simulator/README.md);
      2  Props and Edges are Research panels, AI is contextual, the Ledger
         merged into Portfolio, and Record is EdgeDesk's MODEL performance in
         More — never the reader's own P&L;
@@ -53,7 +55,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 
 /* ======================================================================== */
-/* 1. THE BOTTOM NAV — FIVE DESTINATIONS, NO SIXTH                          */
+/* 1. THE BOTTOM NAV — SIX DESTINATIONS, NO SEVENTH                        */
 /* ======================================================================== */
 const NAV_START = APP.indexOf('<nav class="bottomnav"');
 const NAV_END = APP.indexOf('</nav>', NAV_START);
@@ -64,13 +66,13 @@ const NAV = APP.slice(NAV_START, NAV_END);
 const live = NAV.replace(/<!--[\s\S]*?-->/g, '');
 const order = (live.match(/data-v="([a-z]+)"/g) || []).map(s => s.replace(/[^a-z]/g, '').replace(/^datav/, ''));
 
-eq('the navigation is exactly the five destinations, in order', order.join(','), 'research,card,portfolio,process,more');
-eq('five seats, not six', order.length, 5);
+eq('the navigation is exactly the six destinations, in order', order.join(','), 'research,card,portfolio,process,simulator,more');
+eq('six seats, not seven', order.length, 6);
 ['pprops', 'edges', 'ai', 'record', 'ledger', 'faults', 'collective', 'news'].forEach(v =>
   chk(v + ' holds no seat in the bottom bar', order.indexOf(v) < 0));
 chk('Research is the tab the markup rests on', /data-v="research" class="on"/.test(NAV));
 chk('and no second button claims the active class', (live.match(/class="on"/g) || []).length === 1);
-['Research', 'EdgeDesk Card', 'Portfolio', 'Process', 'More'].forEach(l =>
+['Research', 'EdgeDesk Card', 'Portfolio', 'Process', 'Simulator', 'More'].forEach(l =>
   has(live, 'aria-label="' + l + '"', 'the ' + l + ' seat is named for screen readers'));
 has(APP, "b[j].setAttribute('aria-current','page')", 'the active seat is announced, not only coloured');
 /* the AI drawer used to append its own seat whenever none was there */
@@ -152,7 +154,7 @@ has(APP, "var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'
    a sixth seat, it lights Research, and #games routes through navHashRoute */
 has(APP, "games:'research'", 'the games page lights the Research seat, not a new one');
 has(APP, "if(/^#games(?:[\\/?]|$)/.test(h))", 'a #games link routes to the games page');
-has(APP, "var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1};", '"remember last tab" remembers destinations only');
+has(APP, "var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1,simulator:1};", '"remember last tab" remembers destinations only');
 
 /* ======================================================================== */
 /* 3. DEFAULT LANDING, DEEP LINKS AND ROUTE SAFETY                          */
