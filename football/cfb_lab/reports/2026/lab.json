@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-23T18:07:47.000Z",
+ "generated_at": "2026-10-23T18:42:00.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -53,8 +53,8 @@
     "model_version": "edgedesk_cfb_loop_v2.0.0",
     "label": "Loop v2.0.0",
     "role": "challenger",
-    "snapshots": 244,
-    "latest_snapshot_at": "2026-10-23T17:08:38.000Z",
+    "snapshots": 245,
+    "latest_snapshot_at": "2026-10-23T18:42:00.000Z",
     "upcoming_games": 105,
     "avg_confidence_upcoming": null
    },
@@ -62,17 +62,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1670,
-    "latest_snapshot_at": "2026-10-23T17:08:38.000Z",
+    "snapshots": 1671,
+    "latest_snapshot_at": "2026-10-23T18:42:00.000Z",
     "upcoming_games": 105,
-    "avg_confidence_upcoming": 80.7
+    "avg_confidence_upcoming": 80.8
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 2020,
-    "latest_snapshot_at": "2026-10-23T17:08:38.000Z",
+    "snapshots": 2021,
+    "latest_snapshot_at": "2026-10-23T18:42:00.000Z",
     "upcoming_games": 95,
     "avg_confidence_upcoming": 75.6
    },
@@ -80,8 +80,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 2020,
-    "latest_snapshot_at": "2026-10-23T17:08:38.000Z",
+    "snapshots": 2021,
+    "latest_snapshot_at": "2026-10-23T18:42:00.000Z",
     "upcoming_games": 95,
     "avg_confidence_upcoming": 75.2
    }
@@ -89,13 +89,13 @@
   "data_quality": {
    "games": 105,
    "counts": {
-    "GREEN": 47,
-    "YELLOW": 58,
+    "GREEN": 48,
+    "YELLOW": 57,
     "RED": 0
    },
    "by_check": {
     "qb_status_freshness": {
-     "YELLOW": 2,
+     "YELLOW": 1,
      "RED": 0
     },
     "odds_freshness": {
@@ -104,19 +104,6 @@
     }
    },
    "not_green": [
-    {
-     "game_id": "401862808",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "qb_status_freshness",
-       "status": "YELLOW",
-       "detail": "QB evidence older than 72 h"
-      }
-     ],
-     "kickoff": "2026-10-24T00:30:00.000Z",
-     "matchup": "Army @ Tulsa"
-    },
     {
      "game_id": "401862810",
      "status": "YELLOW",
@@ -860,8 +847,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-23T18:07:47.000Z",
-    "quotes_total": 23373,
+    "last_quote_at": "2026-10-23T18:42:00.000Z",
+    "quotes_total": 23381,
     "last_result_at": "2026-10-23T04:07:49.000Z"
    }
   },
@@ -895,9 +882,9 @@
    }
   ],
   "ledger": {
-   "predictions": 6464,
-   "live_predictions": 5954,
-   "quotes": 23373,
+   "predictions": 6468,
+   "live_predictions": 5958,
+   "quotes": 23381,
    "lines": 3657,
    "results": 468,
    "evaluations": 5483,
@@ -1134,16 +1121,16 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-23T13:07:58.000Z",
+     "prediction_ts": "2026-10-23T18:42:00.000Z",
      "margin": -6.32,
      "fair": "Army -6.5",
      "p_home": 0.3329,
      "sigma": 14.632,
-     "conf": 75,
-     "dq": "YELLOW",
+     "conf": 89,
+     "dq": "GREEN",
      "decision": "LEAN",
      "status": "LEAN",
      "side": "AWAY",
@@ -1154,18 +1141,18 @@
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-23T13:07:58.000Z",
+     "prediction_ts": "2026-10-23T18:42:00.000Z",
      "margin": -4.08,
      "fair": "Army -4.0",
      "p_home": 0.3993,
      "sigma": 16.118,
      "conf": 75,
-     "dq": "YELLOW",
-     "decision": "LEAN",
-     "status": "LEAN",
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
      "side": "AWAY",
      "gap": -5.58,
      "line": 1.5,
@@ -1178,16 +1165,16 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-23T13:07:58.000Z",
+     "prediction_ts": "2026-10-23T18:42:00.000Z",
      "margin": -3.71,
      "fair": "Army -3.5",
      "p_home": 0.4088,
      "sigma": 16.213,
      "conf": 72,
-     "dq": "YELLOW",
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
@@ -1202,16 +1189,16 @@
     },
     "edgedesk_cfb_loop_v2.0.0": {
      "label": "Loop v2.0.0",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-23T13:07:58.000Z",
+     "prediction_ts": "2026-10-23T18:42:00.000Z",
      "margin": 2.99,
      "fair": "Tulsa -3.0",
      "p_home": 0.5726,
      "sigma": 16.075,
      "conf": null,
-     "dq": "YELLOW",
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
      "side": "HOME",
