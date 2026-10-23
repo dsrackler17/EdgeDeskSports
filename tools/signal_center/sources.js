@@ -77,8 +77,9 @@ function footballGames(root) {
     out.push({
       game: {
         sport: league, league, season: last.season, event_key: key, event_at: last.kickoff,
-        home: { name: (spec.home && spec.home.name) || null, abbr: (spec.home && spec.home.abbr) || null },
-        away: { name: (spec.away && spec.away.name) || null, abbr: (spec.away && spec.away.abbr) || null },
+        /* the colours the research graphic already draws (no logo exists) */
+        home: { name: (spec.home && spec.home.name) || null, abbr: (spec.home && spec.home.abbr) || null, color: (spec.home && spec.home.color) || null, alt: (spec.home && spec.home.alt_color) || null, on: (spec.home && spec.home.on_color) || null },
+        away: { name: (spec.away && spec.away.name) || null, abbr: (spec.away && spec.away.abbr) || null, color: (spec.away && spec.away.color) || null, alt: (spec.away && spec.away.alt_color) || null, on: (spec.away && spec.away.on_color) || null },
         neutral: !!spec.neutral_site, settles: FOOTBALL_SETTLES,
         research_href: '#game/' + league + '/' + encodeURIComponent(last.game_id),
         simulator_href: '#simulator/' + league,

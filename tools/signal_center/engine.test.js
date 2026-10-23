@@ -136,7 +136,7 @@ function snap(id, at, p, ver, extra) {
   const d = r.signals[0];
   chk('a 29 pp gap is a divergence', r.signals.length === 1, r);
   chk('…on the side the model is higher on (away)', d.subject.side === 'away' && d.values.change_pp > 0);
-  chk('…naming the book, capture time and de-vig method', d.market.book === 'Draft Kings' && d.market.captured_at === '2026-10-23T19:30:00.000Z' && /multiplicative/.test(d.market.devig_method));
+  chk('…naming the book, capture time and de-vig method', d.market.book === 'DraftKings' && d.market.captured_at === '2026-10-23T19:30:00.000Z' && /multiplicative/.test(d.market.devig_method));
   chk('…carrying the market test caveat', /behind the closing market/.test(d.evidence.summary));
   chk('…never claiming an edge or value', E.copyOk(d.headline) && E.copyOk(d.summary) && /not a betting/i.test(d.summary));
   chk('…and a consensus block with no consensus number', d.consensus.available && d.consensus.consensus === null && /validated out of sample/.test(d.consensus.consensus_note));
