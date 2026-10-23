@@ -21,8 +21,8 @@
   "game_time": "2026-10-23T23:00:00.000Z",
   "game_when_label": "2026-10-23 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-23T22:30:53.737Z",
-  "generated_at": "2026-10-23T22:30:53.737Z",
+  "updated_at": "2026-10-23T22:50:53.568Z",
+  "generated_at": "2026-10-23T22:50:53.568Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/duke-vs-virginia-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "manual_review",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1873,13 +1873,13 @@
   "snapshot_id": "snap_e5ce1f6230e88254",
   "publication_snapshot_id": "snap_e5ce1f6230e88254",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-23T23:00:00.000Z",
-    "minutes_before_kickoff": 29,
+    "minutes_before_kickoff": 9,
     "published_at": null,
-    "refreshed": true,
-    "at": "2026-10-23T22:30:53.737Z"
+    "refreshed": false,
+    "at": "2026-10-23T22:50:53.568Z"
   },
   "featured": {
     "editorial_priority": 39.7,
@@ -2170,24 +2170,18 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-23T22:30:53.737Z"
+    "at": "2026-10-23T22:50:53.568Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-23T22:30:53.737Z",
-    "blocking": [
-      {
-        "id": "my_take",
-        "why": "an auto-generated article publishes only after the owner writes \"My take\" of at least 240 characters",
-        "detail": "0 characters on file"
-      }
-    ],
+    "at": "2026-10-23T22:50:53.568Z",
+    "blocking": [],
     "warnings": [],
-    "hold_reason": "my_take"
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "62cq3jwr21rx",
+    "packet_hash": "bumk631wglq7t",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Duke’s pass rush get to Beau Pribula?",
@@ -2288,104 +2282,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-23T22:30:53.737Z"
-  },
-  "freshness": {
-    "at": "2026-10-23T22:30:53.737Z",
-    "fields": {
-      "market.line": {
-        "value": "Virginia −6.5",
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": null,
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at DraftKings",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "market.total",
-        "why": null,
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings"
-      },
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-23T22:50:53.568Z"
   }
 }

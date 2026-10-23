@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Signal Center — What Changed in EdgeDesk's Research, and Why</title>
+<meta name="description" content="EdgeDesk Signal Center: verified changes in EdgeDesk's football research — forecast shifts, model–market disagreements, availability changes and model reliability warnings — each with the evidence behind it and its limits. Research, not picks.">
+<link rel="canonical" href="https://edgedesksports.com/signals/">
+<!-- noindex while Signal Center runs in shadow mode (nothing is published yet);
+     switched to index,follow and added to the sitemap when it goes live
+     (docs/signal-center/DEPLOYMENT.md, "Going live") -->
+<meta name="robots" content="noindex,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/signals/">
+<meta property="og:title" content="Signal Center — EdgeDesk">
+<meta property="og:description" content="Know what changed. Understand why. See whether the evidence supports it.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<style>
+/* Signal Center's public preview: number-free headlines, counts, and the rules */
+.sp-state{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:12px 14px;margin:0 0 14px;font-size:14px}
+.sp-state.warn{border-color:color-mix(in srgb,var(--warn) 55%,var(--border))}
+.sp-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:8px 0}
+.sp-kpi{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface2);min-width:0}
+.sp-kpi b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.sp-kpi span{display:block;font-size:12px;color:var(--dim);line-height:1.35}
+.sp-sig{border:1px dashed var(--border2);border-radius:12px;padding:12px;margin:0 0 10px;background:var(--surface);overflow-wrap:anywhere}
+.sp-sig h3{font-size:17px;margin:4px 0}
+.sp-chips{display:flex;flex-wrap:wrap;gap:5px}
+.sp-chip{font-size:11px;font-weight:700;border:1px solid var(--border);border-radius:7px;padding:2px 7px;color:var(--dim);white-space:nowrap}
+.sp-chip.major{color:#fff;background:color-mix(in srgb,var(--mdl) 70%,transparent);border-color:transparent}
+.sp-chip.notable{color:var(--on-accent);background:var(--accent);border-color:transparent}
+.sp-chip.ev{color:var(--mdl)}
+.sp-ex{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.sp-ex img{width:100%;height:auto;border-radius:10px;border:1px solid var(--border)}
+.btn{min-height:44px;display:inline-flex;align-items:center}
+@media(max-width:620px){.sp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body data-ed-page="signal_center">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Main">
+    <a href="/articles/" data-ed-nav="research">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="signals_header_trial">Start free trial</a>
+</header>
+<main class="wrap" id="main">
+  <span class="ey">EdgeDesk · Research, not picks</span>
+  <h1>Signal Center</h1>
+  <p class="lede">Know what changed. Understand why. See whether the evidence supports it. Signal Center watches
+  EdgeDesk’s own records — every forecast snapshot, every captured market price, every dated availability report,
+  every published Simulator run — and tells you when something material moved, what the evidence for the change is,
+  and how far the model behind it can be trusted.</p>
+
+  <div id="spState" class="sp-state" role="status">Loading Signal Center…</div>
+
+  <section class="card" aria-labelledby="pulse-h">
+    <h2 id="pulse-h" style="margin-top:0">Research Pulse · the last 24 hours</h2>
+    <div id="spPulse" aria-live="polite"><p class="note">Loading…</p></div>
+    <p class="note">Counts of published, verified signals only. A change caused by a new model version is counted apart, never as news.</p>
+  </section>
+
+  <section aria-labelledby="feed-h">
+    <h2 id="feed-h">The free preview</h2>
+    <p class="note" id="spFeedNote">What changed, without the numbers. Full Access shows the numbers, the evidence, the model’s record and every version.</p>
+    <div id="spFeed" aria-live="polite"><noscript><p class="note">The preview needs JavaScript. EdgeDesk’s published research is at <a href="/articles/">/articles/</a>.</p></noscript></div>
+  </section>
+
+  <section id="spExamples" hidden aria-labelledby="ex-h">
+    <h2 id="ex-h">Example research graphics</h2>
+    <p class="note">From EdgeDesk’s published history. The events have passed; these are not current research.</p>
+    <div class="sp-ex" id="spExGrid"></div>
+  </section>
+
+  <section>
+    <h2>How Signal Center decides</h2>
+    <ul class="steps">
+      <li><b>Only comparable numbers.</b> The same event, the same outcome, the same model and the same market definition — or no signal.</li>
+      <li><b>The evidence ladder.</b> <i>Confirmed cause</i> needs a calculation that isolates one input. A dated event between two snapshots is a <i>supported association</i>. Otherwise the movement is <i>unexplained</i>, and Signal Center says it does not know yet.</li>
+      <li><b>Model changes are labelled.</b> A move across a new model version is reported as a methodology change, not as new information about the game.</li>
+      <li><b>Markets, honestly.</b> A named sportsbook, a recent capture time, a two-way price with the margin removed, and the teams in the right order. A disagreement is a question to research, never a recommendation.</li>
+      <li><b>Model DNA.</b> Every signal carries the model’s live record: calibration, Brier score and log loss against real results, and how it compares with the market on the same games. Raw win rate is not a measure of model quality and is not shown as one.</li>
+      <li><b>History is kept.</b> A correction is a new version; a withdrawal keeps every earlier version readable.</li>
+    </ul>
+    <p>Signal Center starts with NFL and college football. Where a sport has no dated source for a kind of signal, it
+    says so instead of filling the gap. The full rules are in EdgeDesk’s <a href="/methodology/">methodology</a>.</p>
+  </section>
+
+  <aside class="cta">
+    <span class="k">EdgeDesk Full Access</span>
+    <h2 style="margin-top:6px">Every signal, with the numbers and the evidence.</h2>
+    <p>The full feed with filters and history, “Why did this change?” for every signal, Model DNA for every sport, the
+    research graphics, and in-app notices for the teams you follow.</p>
+    <div class="row"><a class="btn" href="/#subscribe" data-ed-cta="signals_trial">Start the free trial</a>
+      <a class="btn ghost" href="/app.html#signals" data-ed-cta="signals_terminal">Open Signal Center in the terminal</a></div>
+  </aside>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> Signal Center reports changes in EdgeDesk’s research and in captured market prices. Nothing here is betting advice, a prediction or a recommendation.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/articles/">Free research</a><a href="/today/">Today’s games</a><a href="/tools/">Free tools</a><a href="/newsletter/">Weekly research email</a><a href="/methodology/">Methodology</a><a href="/performance/">Model performance</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<script>
+/* THE PUBLIC PREVIEW, through the three anonymous doors and nothing else
+   (supabase/signal_center.sql): sc_status() (mode, last evaluation),
+   sc_pulse(hours) (counts only) and sc_public_feed(limit) (number-free
+   headlines, at most the configured few, plus example graphics of events that
+   have passed). No number from a current signal reaches this page: the doors
+   do not return one. */
+(function () {
+  var SB_URL = 'https://iattxbkbufslbauoumga.supabase.co';
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8';
+  var $ = function (id) { return document.getElementById(id); };
+  var CAT = { FORECAST_SHIFT: 'Forecast shift', MARKET_DIVERGENCE: 'Model–market disagreement', MARKET_CONVERGENCE: 'Market convergence', LINE_MOVEMENT: 'Market movement',
+    SIMULATION_SHIFT: 'Simulator change', INJURY_IMPACT: 'Availability change', MODEL_RELIABILITY_WARNING: 'Model reliability warning', DATA_QUALITY_WARNING: 'Data freshness warning' };
+  var EV = { CONFIRMED_CAUSE: 'Confirmed cause', SUPPORTED_ASSOCIATION: 'Supported association', OBSERVED: 'Observed', UNEXPLAINED: 'Unexplained movement', MODEL_VERSION_CHANGE: 'Model version change' };
+  var SPORT = { nfl: 'NFL', cfb: 'College football', nba: 'NBA', nhl: 'NHL', mlb: 'MLB', wnba: 'WNBA', ncaam: 'Men’s college basketball' };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function timeout(p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
+  function rpc(name, args) {
+    return timeout(fetch(SB_URL + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify(args || {}) })
+      .then(function (r) { return r.text().then(function (t) { if (!r.ok) { var e = new Error('db ' + r.status); e.status = r.status; e.body = t; throw e; } return t ? JSON.parse(t) : null; }); }), 8000);
+  }
+  function notDeployed(e) { return e && (e.status === 404 || /PGRST202|Could not find the function|does not exist/i.test(String(e.body || ''))); }
+  var ETF = null; try { ETF = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (_) { ETF = null; }
+  function when(t) { var x = Date.parse(t); return isFinite(x) ? (ETF ? ETF.format(new Date(x)) + ' ET' : new Date(x).toISOString().slice(0, 16).replace('T', ' ') + ' UTC') : ''; }
+  function state(html, warn) { var el = $('spState'); el.innerHTML = html; el.className = 'sp-state' + (warn ? ' warn' : ''); }
+
+  function pulse(p) {
+    var cells = [['published', 'New signals'], ['major', 'Major'], ['forecast_shifts', 'Forecast shifts ≥ 5 pp'], ['market_divergences', 'Model–market disagreements'],
+      ['availability', 'Availability updates'], ['simulator', 'Simulator changes'], ['reliability_warnings', 'Reliability warnings'], ['freshness_warnings', 'Freshness warnings']];
+    if (!p || !cells.some(function (c) { return (p[c[0]] || 0) > 0; })) { $('spPulse').innerHTML = '<p class="note">No material changes detected in the selected period.</p>'; return; }
+    $('spPulse').innerHTML = '<div class="sp-kpis">' + cells.map(function (c) { return '<div class="sp-kpi"><b>' + esc(p[c[0]] || 0) + '</b><span>' + esc(c[1]) + '</span></div>'; }).join('') + '</div>';
+  }
+  function feed(page) {
+    var items = (page && page.items) || [];
+    if (page && page.note) $('spFeedNote').textContent = page.note;
+    if (!items.length) { $('spFeed').innerHTML = '<p class="note">No published signal in the preview window right now.</p>'; return; }
+    $('spFeed').innerHTML = items.map(function (it) {
+      var lbl = String(it.label || '').toLowerCase();
+      return '<article class="sp-sig"><div class="sp-chips"><span class="sp-chip ' + esc(lbl) + '">' + esc(it.label) + '</span><span class="sp-chip">' + esc(CAT[it.category] || it.category) + '</span><span class="sp-chip">' + esc(SPORT[it.sport] || it.sport) + '</span>'
+        + (it.evidence_class ? '<span class="sp-chip ev">' + esc(EV[it.evidence_class] || it.evidence_class) + '</span>' : '') + '</div>'
+        + '<h3>' + esc(it.public_headline) + '</h3>'
+        + (it.event_label ? '<div class="note" style="margin:0">' + esc(it.event_label) + (it.event_at ? ' · ' + esc(when(it.event_at)) : '') + '</div>' : '')
+        + (it.explanation ? '<p class="note">' + esc(it.explanation) + '</p>' : '')
+        + '<div class="row"><a class="btn ghost" href="/#subscribe" data-ed-cta="signals_row_trial">See the numbers and the evidence</a></div></article>';
+    }).join('');
+  }
+  /* the example graphics are drawn here from their stored content, with the
+     same renderer the terminal uses; they load only when there is one */
+  function examples(list) {
+    if (!list || !list.length) return;
+    var libs = ['/lib/edgedesk_calc.js?v=20261008i', '/lib/edgedesk_game_graphic.js?v=20261022edge1', '/lib/edgedesk_signal_engine.js?v=20261024sc1', '/lib/edgedesk_signal_graphic.js?v=20261024sc1'];
+    libs.reduce(function (p, src) { return p.then(function () { return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }); }, Promise.resolve())
+      .then(function () {
+        $('spExamples').hidden = false;
+        return Promise.all(list.map(function (x) {
+          return window.EDSignalGraphic.render(x.content, x.format || 'square', { stamp: 'EXAMPLE' }).then(function (r) {
+            var img = document.createElement('img'); img.src = r.url; img.alt = r.alt; img.width = r.canvas.width; img.height = r.canvas.height; $('spExGrid').appendChild(img);
+          });
+        }));
+      }).catch(function () { $('spExamples').hidden = true; });
+  }
+
+  rpc('sc_status', {}).then(function (st) {
+    if (st && st.mode === 'live') state('<b>Live</b> for ' + esc((st.live_sports || []).map(function (s) { return SPORT[s] || s; }).join(', ') || 'no sport yet')
+      + (st.last_completed_at ? ' · last evaluated ' + esc(when(st.last_completed_at)) : ' · no evaluation has completed yet') + '.');
+    else state('<b>Shadow mode.</b> Signal Center is evaluating EdgeDesk’s research and checking every signal against its sources before anything is published. Nothing is shown here until it is; nothing is invented to fill the page.', true);
+    return Promise.all([rpc('sc_pulse', { p_hours: 24 }).then(pulse), rpc('sc_public_feed', { p_limit: 3 }).then(function (pg) { feed(pg); examples(pg && pg.examples); })]);
+  }).catch(function (e) {
+    if (notDeployed(e)) { state('<b>Signal Center is being prepared.</b> Its database is not switched on yet, so there is nothing to show — and nothing is invented to fill the page.', true); $('spPulse').innerHTML = '<p class="note">Not available yet.</p>'; $('spFeed').innerHTML = ''; return; }
+    state('Signal Center could not be reached just now. Try again in a minute.', true);
+    $('spPulse').innerHTML = '<p class="note">Not loaded.</p>';
+  });
+})();
+</script>
+<script src="/lib/edgedesk_track.js?v=20261024sc1" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

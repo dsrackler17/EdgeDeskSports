@@ -6,7 +6,7 @@
    drives the authenticated app in Chromium at a phone (390×844) and a desktop
    (1440×900) and holds what a reader actually gets:
 
-     1  five seats — Research · Card · Portfolio · Process · More — no sixth one
+     1  seven seats — Signals · Research · Card · Portfolio · Process · Simulator · More — no eighth one
         appearing at runtime, no horizontal scroll, no clipped label, tap
         targets at least 44px;
      2  every old route still lands somewhere real (#playerprops…, #research/…,
@@ -20,7 +20,7 @@
      6  tracking a price keeps the reader where they were;
      7  every seat tap is recorded as primary_nav_<seat>;
      8  the disclaimer keeps every element and takes one line on a phone;
-     9  on a desktop the same six destinations stand as a rail.
+     9  on a desktop the same seven destinations stand as a rail.
 
    Run: node tools/app/navigation.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -134,7 +134,7 @@ function seededLedger(now) {
   try {
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
-      /* ------------------------------------------------ 1 the five seats */
+      /* ------------------------------------------------ 1 the seven seats */
       let S = await open(vp, '');
       let { page } = S;
       await page.waitForTimeout(1500);   // the AI block, first-run and every late script have run
@@ -144,14 +144,15 @@ function seededLedger(now) {
           clipped: bs.filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.dataset.v), minH: Math.min.apply(null, bs.map((b) => b.getBoundingClientRect().height)),
           minW: Math.min.apply(null, bs.map((b) => b.getBoundingClientRect().width)), rect: (() => { const r = document.querySelector('.bottomnav').getBoundingClientRect(); return { w: r.width, h: r.height }; })() };
       });
-      chk(W + ': exactly six seats, in order', nav.seats.join(',') === 'research,card,portfolio,process,simulator,more', nav.seats);
-      chk(W + ': labelled Research · Card · Portfolio · Process · Simulator · More', nav.labels.join(',') === 'Research,Card,Portfolio,Process,Simulator,More', nav.labels);
+      chk(W + ': exactly seven seats, in order', nav.seats.join(',') === 'signals,research,card,portfolio,process,simulator,more', nav.seats);
+      chk(W + ': labelled Signals · Research · Card · Portfolio · Process · Simulator · More', nav.labels.join(',') === 'Signals,Research,Card,Portfolio,Process,Simulator,More', nav.labels);
       chk(W + ': no AI seat appears at runtime', nav.seats.indexOf('ai') < 0);
-      chk(W + ': Research is the landing seat', nav.on.join() === 'research', nav.on);
+      /* a new reader lands on Signal Center only once it is live; here its doors answer 404, so they are handed on to Research */
+      chk(W + ': Research is the landing seat while Signal Center is not deployed', nav.on.join() === 'research', nav.on);
       chk(W + ': no seat label is clipped', nav.clipped.length === 0, nav.clipped);
       chk(W + ': every seat is a 44px tap target', nav.minH >= 44 && nav.minW >= 44, [nav.minH, nav.minW]);
       chk(W + ': no horizontal scroll on Research', await noHScroll(page));
-      if (W === 1440) chk('1440: the same six destinations stand as a rail', nav.rect.h > nav.rect.w, nav.rect);
+      if (W === 1440) chk('1440: the same seven destinations stand as a rail', nav.rect.h > nav.rect.w, nav.rect);
       const rs = await page.evaluate(() => { const n = document.querySelector('.research-sub'); const bs = [...n.querySelectorAll('button')];
         return { subs: bs.map((b) => b.dataset.sub), fits: n.scrollWidth <= n.clientWidth + 1, on: bs.filter((b) => b.classList.contains('on')).map((b) => b.dataset.sub) }; });
       chk(W + ': Research reads Football · Props · Edges · Other', rs.subs.join(',') === 'football,pprops,edges,other', rs.subs);
@@ -373,7 +374,7 @@ function seededLedger(now) {
       page = S.page;
       st = await state(page);
       chk(W + ': a new account starts at setup, not on a board', st.views.join() === 'v-setup', st);
-      chk(W + ': setup explains the six destinations', await page.evaluate(() => document.querySelectorAll('#setupHost .su-dest li').length === 6));
+      chk(W + ': setup explains the seven destinations', await page.evaluate(() => document.querySelectorAll('#setupHost .su-dest li').length === 7));
       await shot(page, 'setup-1-' + W);
       await page.click('#setupHost [data-su="next"]');
       chk(W + ': step 2 builds the portfolio: connect or import', /Connect or import/.test(await page.textContent('#setupHost')) && !!(await page.$('#setupHost [data-su="import"]')) && !!(await page.$('#setupHost [data-su="accounts"]')));

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Signal Center operations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE SIGNAL CENTER OPERATOR CONSOLE (supabase/signal_center.sql,
+     docs/signal-center/DEPLOYMENT.md).
+
+     Every action here is a call to an operator door that checks the operator
+     list IN THE DATABASE (sc_require_admin → billing_is_admin) under the
+     operator's own token. Hiding this page proves nothing and is not relied
+     on: a reader who opens it gets "not an operator" from the server.
+
+       mode          shadow (nothing published) or live, and which sports
+       queue         every signal, shadow and unverified included: publish,
+                     hold, withdraw, the free preview pin, regenerate
+       graphics      the stored graphic of a signal version, drawn here from
+                     its stored content: download it, approve or revoke it for
+                     external publication (a RECORD ONLY: nothing is posted
+                     anywhere from here or by any job), or withdraw it
+       recap         the weekly recap graphic, built from stored, verified,
+                     published signal versions only
+       runs          the evaluation runs and the open failures (dead letters)
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--mdl:#d274b0}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent);overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}.hide{display:none!important}
+.who{font-size:11px;color:var(--dim)}
+nav a{font-size:12px;color:var(--dim);text-decoration:none;margin-left:10px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+h3{font-size:14px;margin:4px 0 6px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.f{display:flex;flex-direction:column;gap:4px;min-width:130px;flex:1}
+label{font-size:11px;color:var(--dim);font-weight:600}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:0 10px;min-height:44px;font:500 13px Inter,system-ui,sans-serif;width:100%}
+input[type=checkbox],input[type=radio]{width:18px;height:18px;min-height:0}
+.chk{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px;color:var(--text);margin-right:10px;font-weight:500}
+button{border:none;border-radius:8px;background:var(--accent);color:var(--on-accent);font:700 12.5px Inter,system-ui,sans-serif;padding:0 13px;min-height:44px;cursor:pointer}
+button.g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+button.danger{background:var(--neg);color:#1a0703}
+button:disabled{opacity:.5;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.tw{overflow-x:auto}
+.msg{font-size:12px;margin-top:8px}.msg.err{color:var(--neg)}.msg.ok{color:var(--pos)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.kpi i{display:block;font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.kpi b{display:block;font-size:20px;margin-top:4px;font-weight:700}
+.state{padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:12px}
+.state.live{border-color:rgba(118,189,62,.5)}.state.shadow{border-color:rgba(217,154,43,.55)}
+.pill{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:8px;border:1px solid var(--border);white-space:nowrap}
+.pill.PUBLISHED{color:var(--pos)}.pill.SHADOW{color:var(--warn)}.pill.HELD{color:var(--mdl)}.pill.WITHDRAWN{color:var(--neg)}
+.note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:8px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.grid2>*{min-width:0}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.gfx img{display:block;width:100%;max-width:520px;height:auto;border-radius:10px;border:1px solid var(--border)}
+tr.sel td{background:rgba(47,167,154,.08)}
+td.h{min-width:240px}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">signal center</span><nav><a href="/app.html#signals">Signal Center</a><a href="/admin/data-health/">Data health</a></nav><span class="sp"></span><span class="who" id="who"></span></div></header>
+<div class="wrap">
+  <div id="gate" class="card" style="max-width:420px;margin:40px auto">
+    <h2 style="margin-top:0">Operator sign-in</h2>
+    <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username"></div>
+    <div class="f" style="margin-top:8px"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password"></div>
+    <div class="row" style="margin-top:12px"><button id="gGo">Sign in</button></div>
+    <div class="msg" id="gMsg"></div>
+  </div>
+  <div id="app" class="hide">
+    <div class="row" style="margin-top:16px"><span class="note" style="margin:0">Every action is checked by the database against the operator list and kept in the audit trail. Nothing here posts anywhere outside EdgeDesk.</span><span class="sp"></span><button class="g" id="reload">Refresh</button></div>
+    <div id="denied" class="state shadow hide" role="alert"></div>
+    <div id="ops">
+      <h2>Mode</h2>
+      <div class="card">
+        <div id="modeBox" class="state" role="status"></div>
+        <div class="kpis" id="kpis"></div>
+        <div class="row" style="margin-top:12px">
+          <span class="chk"><input type="radio" name="mode" value="shadow" id="mShadow"><label for="mShadow" style="font-size:13px;color:var(--text)">Shadow</label></span>
+          <span class="chk"><input type="radio" name="mode" value="live" id="mLive"><label for="mLive" style="font-size:13px;color:var(--text)">Live</label></span>
+          <span id="sportsBox"></span>
+          <button id="modeGo">Save mode</button>
+        </div>
+        <div class="msg" id="modeMsg"></div>
+        <div class="note">A run publishes under the mode it began in. Switching to live publishes new and re-versioned signals of the chosen sports that clear the publication rule; nothing already in the queue moves until an operator publishes it.</div>
+      </div>
+
+      <h2>Queue</h2>
+      <div class="card">
+        <div class="row">
+          <div class="f"><label for="qPub">Publication</label><select id="qPub"><option value="">Any</option><option>SHADOW</option><option>PUBLISHED</option><option>HELD</option><option>WITHDRAWN</option></select></div>
+          <div class="f"><label for="qSport">Sport</label><select id="qSport"><option value="">Any</option></select></div>
+          <div class="f"><label for="qCat">Signal type</label><select id="qCat"><option value="">Any</option></select></div>
+          <div class="f"><label for="qVer">Verification</label><select id="qVer"><option value="">Any</option><option>VERIFIED</option><option>UNVERIFIED</option><option>INVALIDATED</option></select></div>
+          <div class="f"><label for="qSort">Order</label><select id="qSort"><option value="recent">Most recent</option><option value="score">Importance</option><option value="shift">Largest shift</option></select></div>
+        </div>
+        <div class="tw" style="margin-top:10px"><table id="queue"></table></div>
+        <div class="row" style="margin-top:10px"><button class="g hide" id="qMore">Load more</button><span class="note" id="qNote" style="margin:0"></span></div>
+      </div>
+
+      <div id="selBox" class="hide">
+        <h2>Signal</h2>
+        <div class="grid2">
+          <div class="card" id="selInfo"></div>
+          <div class="card">
+            <h3>Graphic</h3>
+            <div class="row" id="gfxFmts"></div>
+            <div class="gfx" id="gfxView" style="margin-top:10px"></div>
+            <div class="row" style="margin-top:10px">
+              <button class="g" id="gDl">Download PNG</button>
+              <button id="gApprove">Approve for external publication</button>
+              <button class="g" id="gRevoke">Revoke approval</button>
+              <button class="danger" id="gWithdraw">Withdraw graphic</button>
+            </div>
+            <div class="msg" id="gfxMsg"></div>
+            <div class="note">Approval is a record that a person checked this exact graphic. No job posts it: EdgeDesk has no configured publishing workflow for X, Discord or any other service.</div>
+          </div>
+        </div>
+      </div>
+
+      <h2>Weekly recap</h2>
+      <div class="card">
+        <div class="row">
+          <div class="f"><label for="rDays">Window</label><select id="rDays"><option value="7" selected>Last 7 days</option><option value="14">Last 14 days</option></select></div>
+          <div class="f"><label for="rSport">Sport</label><select id="rSport"><option value="">Every sport</option></select></div>
+          <div class="f"><label for="rTop">Signals shown</label><select id="rTop"><option>3</option><option selected>5</option></select></div>
+          <button id="rGo">Build the recap</button><button class="g" id="rDl" disabled>Download PNG</button>
+        </div>
+        <div class="gfx" id="rView" style="margin-top:10px"></div>
+        <div class="msg" id="rMsg"></div>
+        <div class="note">Built in this page from stored, published, verified signal versions, ranked by the documented importance score. It is not stored and not posted.</div>
+      </div>
+
+      <div class="grid2">
+        <div><h2>Runs</h2><div class="card tw"><table id="runs"></table></div></div>
+        <div><h2>Open failures</h2><div class="card tw"><table id="fails"></table></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/lib/edgedesk_calc.js?v=20261008i"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261022edge1"></script>
+<script src="/lib/edgedesk_signal_engine.js?v=20261024sc1"></script>
+<script src="/lib/edgedesk_signal_graphic.js?v=20261024sc1"></script>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+var KEY = 'edgedesk_signals_admin_session';
+var SESSION = null;
+var SPORTS = [['nfl', 'NFL'], ['cfb', 'College football'], ['nba', 'NBA'], ['nhl', 'NHL'], ['mlb', 'MLB'], ['wnba', 'WNBA'], ['ncaam', 'Men’s college basketball']];
+var CATS = { FORECAST_SHIFT: 'Forecast shift', MARKET_DIVERGENCE: 'Model–market disagreement', MARKET_CONVERGENCE: 'Market convergence', LINE_MOVEMENT: 'Market movement', SIMULATION_SHIFT: 'Simulator change',
+  INJURY_IMPACT: 'Availability change', MODEL_RELIABILITY_WARNING: 'Model reliability warning', DATA_QUALITY_WARNING: 'Data freshness warning' };
+var Q = { page: null, items: [], sel: null, detail: null, gfx: null, recap: null };
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function say(id, kind, t) { var el = $(id); el.className = 'msg ' + kind; el.textContent = t; }
+function when(t) { var x = Date.parse(t); if (!isFinite(x)) return '—'; try { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(x)) + ' ET'; } catch (_) { return new Date(x).toISOString().slice(0, 16); } }
+function tok() { return (SESSION && SESSION.access_token) || SB_KEY; }
+async function rpc(name, body) {
+  var r = await fetch(SB_URL + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: SB_KEY, authorization: 'Bearer ' + tok(), 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+  var t = await r.text();
+  if (!r.ok) { var m = t; try { m = JSON.parse(t).message || t; } catch (_) {} var e = new Error(String(m).replace(/^.*ERROR:\s*/, '').slice(0, 300)); e.status = r.status; throw e; }
+  return t ? JSON.parse(t) : null;
+}
+function dl(r) { if (!r) return; var a = document.createElement('a'); a.href = r.url; a.download = r.file_name; document.body.appendChild(a); a.click(); a.remove(); }
+
+/* ---------------------------------------------------------------- mode */
+function paintMode(q) {
+  var live = q.mode === 'live';
+  $('modeBox').className = 'state ' + (live ? 'live' : 'shadow');
+  $('modeBox').innerHTML = '<b>' + (live ? 'Live' : 'Shadow') + '</b> · publishing sports: ' + esc((q.live_sports || []).join(', ') || 'none')
+    + '<div class="note" style="margin-top:4px">' + (live ? 'Verified signals of these sports that clear the publication rule are published to readers.' : 'Signals are evaluated and stored for review; readers see nothing.') + '</div>';
+  $(live ? 'mLive' : 'mShadow').checked = true;
+  $('sportsBox').innerHTML = SPORTS.map(function (s) { return '<span class="chk"><input type="checkbox" name="lsport" value="' + s[0] + '" id="ls_' + s[0] + '"' + ((q.live_sports || []).indexOf(s[0]) >= 0 ? ' checked' : '') + '><label for="ls_' + s[0] + '" style="font-size:13px;color:var(--text)">' + esc(s[1]) + '</label></span>'; }).join('');
+  var pub = q.publication || {}, gx = q.graphics || {};
+  $('kpis').innerHTML = [['Published', pub.PUBLISHED], ['Shadow', pub.SHADOW], ['Held', pub.HELD], ['Withdrawn', pub.WITHDRAWN], ['Graphics ready', gx.READY], ['Graphics outdated', gx.OUTDATED], ['Open failures', q.open_failures]]
+    .map(function (k) { return '<div class="kpi"><i>' + esc(k[0]) + '</i><b>' + esc(k[1] || 0) + '</b></div>'; }).join('');
+}
+$('modeGo').onclick = async function () {
+  var mode = (document.querySelector('input[name="mode"]:checked') || {}).value;
+  var sports = Array.prototype.filter.call(document.querySelectorAll('input[name="lsport"]'), function (i) { return i.checked; }).map(function (i) { return i.value; });
+  if (!mode) return;
+  if (mode === 'live' && !confirm('Switch Signal Center to LIVE for ' + (sports.join(', ') || 'no sport') + '? Readers will start seeing published signals.')) return;
+  try { var r = await rpc('sc_admin_set_mode', { p_mode: mode, p_live_sports: sports }); say('modeMsg', 'ok', 'Saved: ' + r.mode + '. ' + r.note); await load(); }
+  catch (e) { say('modeMsg', 'err', e.message); }
+};
+
+/* ---------------------------------------------------------------- queue */
+function qFilters() {
+  var f = { sort: $('qSort').value || 'recent' };
+  if ($('qSport').value) f.sport = $('qSport').value;
+  if ($('qCat').value) f.category = $('qCat').value;
+  if ($('qVer').value) f.verification = $('qVer').value;
+  return f;
+}
+function paintQueue() {
+  var pubF = $('qPub').value;
+  var rows = Q.items.filter(function (it) { return !pubF || it.publication === pubF; });
+  $('queue').innerHTML = '<thead><tr><th>#</th><th>Label</th><th>Type</th><th>Sport</th><th>Headline</th><th>Publication</th><th>Verification</th><th>Lifecycle</th><th class="n">Score</th><th>Detected</th><th></th></tr></thead><tbody>'
+    + (rows.length ? rows.map(function (it) {
+      return '<tr' + (Q.sel === it.signal_id ? ' class="sel"' : '') + '><td class="mono">' + esc(it.signal_id) + '</td><td>' + esc(it.label) + '</td><td>' + esc(CATS[it.category] || it.category) + '</td><td>' + esc(it.sport) + '</td>'
+        + '<td class="h">' + esc(it.headline) + '</td><td><span class="pill ' + esc(it.publication) + '">' + esc(it.publication) + '</span></td><td>' + esc(it.verification) + '</td><td>' + esc(it.lifecycle) + '</td>'
+        + '<td class="n">' + esc(it.score) + '</td><td>' + esc(when(it.first_detected_at)) + '</td><td><button class="g" data-open="' + esc(it.signal_id) + '">Review</button></td></tr>';
+    }).join('') : '<tr><td colspan="11" class="note">No signal matches.</td></tr>') + '</tbody>';
+  $('qMore').classList.toggle('hide', !(Q.page && Q.page.next_cursor));
+  $('qNote').textContent = Q.items.length + ' loaded' + (pubF ? ', ' + rows.length + ' ' + pubF.toLowerCase() : '') + '.';
+}
+async function loadQueue(more) {
+  var page = await rpc('sc_admin_queue', { p_filters: qFilters(), p_cursor: more && Q.page ? Q.page.next_cursor : null, p_limit: 50 });
+  Q.items = more ? Q.items.concat(page.items || []) : (page.items || []);
+  Q.page = page;
+  paintMode(page);
+  paintQueue();
+}
+['qSport', 'qCat', 'qVer', 'qSort'].forEach(function (id) { $(id).onchange = function () { loadQueue(false).catch(function (e) { $('qNote').textContent = e.message; }); }; });
+$('qPub').onchange = paintQueue;
+$('qMore').onclick = function () { loadQueue(true).catch(function (e) { $('qNote').textContent = e.message; }); };
+$('queue').onclick = function (ev) { var b = ev.target.closest && ev.target.closest('[data-open]'); if (b) review(+b.getAttribute('data-open')); };
+
+/* ---------------------------------------------------------------- one signal */
+async function review(id) {
+  if (Q.sel !== id) Q.gfxRow = null;
+  Q.sel = id; paintQueue();
+  try { Q.detail = await rpc('sc_signal', { p_id: id }); } catch (e) { say('gfxMsg', 'err', e.message); return; }
+  paintDetail();
+}
+function paintDetail() {
+  var d = Q.detail; if (!d || d.found === false) return;
+  var it = d.item || {}, p = d.payload || {};
+  $('selBox').classList.remove('hide');
+  $('selInfo').innerHTML = '<div class="row"><span class="pill ' + esc(it.publication) + '">' + esc(it.publication) + '</span><span class="pill">' + esc(it.verification) + '</span><span class="pill">' + esc(it.label) + ' · ' + esc(it.score) + '</span>'
+    + (it.public_preview ? '<span class="pill">free preview</span>' : '') + '</div>'
+    + '<h3 style="margin-top:8px">' + esc(p.headline) + '</h3><p class="note">' + esc(p.summary || '') + '</p>'
+    + '<p class="note"><b>Evidence:</b> ' + esc((p.evidence && p.evidence.label) || '') + '. ' + esc((p.evidence && p.evidence.summary) || '') + '</p>'
+    + '<p class="note mono">' + esc(p.signal_key) + ' · v' + esc(it.version) + ' · ' + esc(String(d.payload_sha256 || '').slice(0, 16)) + '…</p>'
+    + '<div class="row" style="margin-top:8px">' + [['publish', 'Publish', ''], ['hold', 'Hold', 'g'], ['withdraw', 'Withdraw', 'danger'], ['preview_on', 'Pin to the free preview', 'g'], ['preview_off', 'Unpin', 'g'], ['regenerate', 'Regenerate graphics', 'g']]
+      .map(function (a) { return '<button class="' + a[2] + '" data-act="' + a[0] + '">' + esc(a[1]) + '</button>'; }).join('') + '</div>'
+    + '<div class="msg" id="actMsg"></div><p class="note"><a href="/app.html#signals/s/' + esc(it.signal_id) + '" style="color:var(--accent)">Open the reader’s view</a></p>';
+  var gfx = (d.graphics || []).filter(function (g) { return g.content; });
+  $('gfxFmts').innerHTML = gfx.length ? gfx.map(function (g, i) { return '<button class="' + (i ? 'g' : '') + '" data-gfx="' + esc(g.graphic_id) + '">' + esc(g.format + ' · ' + g.status.toLowerCase() + (g.external_approval && g.external_approval !== 'NONE' ? ' · ' + g.external_approval.toLowerCase() : '')) + '</button>'; }).join('') : '<span class="note">No graphic for this signal (graphics are drawn for verified signals rated Notable or above).</span>';
+  Q.gfx = null; $('gfxView').innerHTML = '';
+  /* after an action, keep the graphic the operator was looking at */
+  var keep = Q.gfxRow && gfx.filter(function (g) { return g.graphic_id === Q.gfxRow.graphic_id; })[0];
+  if (gfx.length) drawGfx(keep || gfx[0]);
+}
+function drawGfx(g) {
+  Q.gfxRow = g;
+  var stamp = g.status === 'WITHDRAWN' ? 'WITHDRAWN' : (g.status === 'OUTDATED' || !g.current ? 'OUTDATED' : null);
+  window.EDSignalGraphic.render(g.content, g.format, { stamp: stamp }).then(function (r) {
+    Q.gfx = r; $('gfxView').innerHTML = '<img src="' + r.url + '" alt="' + esc(r.alt) + '">';
+  }).catch(function (e) { say('gfxMsg', 'err', 'Could not draw: ' + (e.message || e)); });
+}
+$('gfxFmts').onclick = function (ev) { var b = ev.target.closest && ev.target.closest('[data-gfx]'); if (!b) return; var g = (Q.detail.graphics || []).filter(function (x) { return x.graphic_id === +b.getAttribute('data-gfx'); })[0]; if (g) drawGfx(g); };
+$('selInfo').onclick = async function (ev) {
+  var b = ev.target.closest && ev.target.closest('[data-act]'); if (!b) return;
+  var a = b.getAttribute('data-act'), reason = null;
+  if (a === 'withdraw' || a === 'hold') { reason = prompt('Reason (kept in the audit trail):'); if (a === 'withdraw' && !reason) return; }
+  try { Q.detail = await rpc('sc_admin_act', { p_signal: Q.sel, p_action: a, p_reason: reason }); paintDetail(); say('actMsg', 'ok', 'Done: ' + a.replace('_', ' ') + '.'); loadQueue(false).catch(function () {}); }
+  catch (e) { say('actMsg', 'err', 'Refused: ' + e.message); }
+};
+async function gfxAct(action, confirmText) {
+  var g = Q.gfxRow; if (!g) return;
+  if (confirmText && !confirm(confirmText)) return;
+  try { await rpc('sc_admin_graphic', { p_graphic: g.graphic_id, p_action: action }); say('gfxMsg', 'ok', 'Recorded: ' + action.replace('_', ' ') + '.'); await review(Q.sel); }
+  catch (e) { say('gfxMsg', 'err', 'Refused: ' + e.message); }
+}
+$('gApprove').onclick = function () { gfxAct('approve_external', 'Record that you checked this exact graphic and approve it for external publication? Nothing is posted automatically.'); };
+$('gRevoke').onclick = function () { gfxAct('revoke_external'); };
+$('gWithdraw').onclick = function () { gfxAct('withdraw', 'Withdraw this graphic? It stays on file, stamped WITHDRAWN.'); };
+$('gDl').onclick = function () { dl(Q.gfx); };
+
+/* ---------------------------------------------------------------- recap */
+$('rGo').onclick = async function () {
+  var days = +$('rDays').value, top = +$('rTop').value, sport = $('rSport').value || null;
+  var to = new Date(), from = new Date(Date.now() - days * 864e5);
+  $('rDl').disabled = true; $('rView').innerHTML = ''; say('rMsg', '', 'Building…');
+  try {
+    var f = { sort: 'score', scope: 'all', from: from.toISOString(), to: to.toISOString() }; if (sport) f.sport = sport;
+    var page = await rpc('sc_admin_queue', { p_filters: f, p_cursor: null, p_limit: 40 });
+    var picks = (page.items || []).filter(function (it) { return it.publication === 'PUBLISHED' && it.verification === 'VERIFIED' && !it.fixture && it.category !== 'DATA_QUALITY_WARNING'; }).slice(0, top);
+    var payloads = [];
+    for (var i = 0; i < picks.length; i++) { var d = await rpc('sc_signal', { p_id: picks[i].signal_id }); if (d && d.payload) payloads.push(d.payload); }
+    var rc = window.EDSignalGraphic.recap(payloads, { from: from.toISOString(), to: to.toISOString(), sport: sport || 'all', top: top, now: Date.now() });
+    if (!rc.ok) { say('rMsg', 'err', 'No recap: ' + rc.reason); return; }
+    var r = await window.EDSignalGraphic.render(rc.content, 'square', {});
+    Q.recap = r; $('rView').innerHTML = '<img src="' + r.url + '" alt="' + esc(r.alt) + '">'; $('rDl').disabled = false;
+    say('rMsg', 'ok', payloads.length + ' published, verified signal' + (payloads.length === 1 ? '' : 's') + ' in the recap.');
+  } catch (e) { say('rMsg', 'err', e.message); }
+};
+$('rDl').onclick = function () { dl(Q.recap); };
+
+/* ---------------------------------------------------------------- runs, failures */
+async function loadRuns() {
+  var runs = await rpc('sc_admin_runs', { p_limit: 15 });
+  $('runs').innerHTML = '<thead><tr><th>Started</th><th>Status</th><th>Mode</th><th class="n">Signals</th><th class="n">Published</th><th>Commit</th></tr></thead><tbody>'
+    + ((runs || []).map(function (r) { var c = r.counts || {}; return '<tr><td>' + esc(when(r.started_at)) + '</td><td>' + esc(r.status) + '</td><td>' + esc(r.mode) + '</td><td class="n">' + esc(c.signals != null ? c.signals : (c.inserted != null ? c.inserted : '—')) + '</td><td class="n">' + esc(c.published != null ? c.published : '—') + '</td><td class="mono">' + esc(String(r.source_commit || '').slice(0, 7)) + '</td></tr>'; }).join('') || '<tr><td colspan="6" class="note">No run yet.</td></tr>') + '</tbody>';
+  var fails = await rpc('sc_admin_failures', { p_limit: 30 });
+  $('fails').innerHTML = '<thead><tr><th>When</th><th>Stage</th><th>Item</th><th>Error</th><th></th></tr></thead><tbody>'
+    + ((fails || []).map(function (f) { return '<tr><td>' + esc(when(f.created_at)) + '</td><td>' + esc(f.stage) + '</td><td class="mono">' + esc(String(f.item_key || '').slice(0, 40)) + '</td><td>' + esc(String(f.error || '').slice(0, 160)) + '</td><td><button class="g" data-resolve="' + esc(f.id) + '">Resolve</button></td></tr>'; }).join('') || '<tr><td colspan="5" class="note">None open.</td></tr>') + '</tbody>';
+}
+$('fails').onclick = async function (ev) { var b = ev.target.closest && ev.target.closest('[data-resolve]'); if (!b) return; try { await rpc('sc_admin_resolve_failure', { p_id: +b.getAttribute('data-resolve') }); await loadRuns(); } catch (e) { alert(e.message); } };
+
+/* ---------------------------------------------------------------- boot */
+async function load() {
+  try {
+    var st = await rpc('sc_status', {});
+    if (!st || !st.admin) {
+      $('ops').classList.add('hide'); $('denied').classList.remove('hide');
+      $('denied').textContent = st && st.signed_in ? 'This account is not an operator. The database refuses every operator action for it.' : 'Sign in with an operator account.';
+      return;
+    }
+    $('denied').classList.add('hide'); $('ops').classList.remove('hide');
+    await loadQueue(false);
+    await loadRuns();
+  } catch (e) {
+    $('ops').classList.add('hide'); $('denied').classList.remove('hide');
+    $('denied').textContent = (e.status === 404 || /does not exist|Could not find/.test(e.message)) ? 'Signal Center’s database is not deployed yet (docs/signal-center/DEPLOYMENT.md).' : 'Could not read Signal Center: ' + e.message;
+  }
+}
+async function boot() {
+  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+  $('who').textContent = (SESSION && SESSION.user && SESSION.user.email) || '';
+  await load();
+}
+$('gGo').onclick = async function () {
+  var email = $('gEmail').value.trim(), pass = $('gPass').value;
+  if (!email || !pass) return;
+  try {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email: email, password: pass }) });
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
+    SESSION = j; try { localStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {}
+    await boot();
+  } catch (e) { say('gMsg', 'err', String(e.message || e)); }
+};
+$('reload').onclick = load;
+SPORTS.forEach(function (s) { ['qSport', 'rSport'].forEach(function (id) { var o = document.createElement('option'); o.value = s[0]; o.textContent = s[1]; $(id).appendChild(o); }); });
+Object.keys(CATS).forEach(function (k) { var o = document.createElement('option'); o.value = k; o.textContent = CATS[k]; $('qCat').appendChild(o); });
+(function () {
+  /* this console's own session first, then the terminal's: an operator already
+     signed in to EdgeDesk needs no second sign-in. Either way the server decides. */
+  try {
+    var keys = [KEY, 'edgedesk_session'];
+    for (var i = 0; i < keys.length; i++) { var s = JSON.parse(localStorage.getItem(keys[i]) || 'null'); if (s && s.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) { SESSION = s; boot(); return; } }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

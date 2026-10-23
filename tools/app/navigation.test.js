@@ -5,11 +5,12 @@
    The product hierarchy is a claim the app makes with its own chrome, and
    these hold it (docs/ia/NAVIGATION_AUDIT.md):
 
-     1  SIX destinations, one per question a reader brings — Research ·
-        Card · Portfolio · Process · Simulator · More — and no seventh one,
-        including the one the AI drawer used to append at runtime (the
-        Simulator seat was added on the owner's request, 2026-10-23:
-        docs/simulator/README.md);
+     1  SEVEN destinations, one per question a reader brings — Signal
+        Center · Research · Card · Portfolio · Process · Simulator · More —
+        and no eighth one, including the one the AI drawer used to append at
+        runtime (the Simulator seat was added on the owner's request,
+        2026-10-23: docs/simulator/README.md; Signal Center on 2026-10-23:
+        docs/signal-center/README.md);
      2  Props and Edges are Research panels, AI is contextual, the Ledger
         merged into Portfolio, and Record is EdgeDesk's MODEL performance in
         More — never the reader's own P&L;
@@ -66,13 +67,13 @@ const NAV = APP.slice(NAV_START, NAV_END);
 const live = NAV.replace(/<!--[\s\S]*?-->/g, '');
 const order = (live.match(/data-v="([a-z]+)"/g) || []).map(s => s.replace(/[^a-z]/g, '').replace(/^datav/, ''));
 
-eq('the navigation is exactly the six destinations, in order', order.join(','), 'research,card,portfolio,process,simulator,more');
-eq('six seats, not seven', order.length, 6);
+eq('the navigation is exactly the seven destinations, in order', order.join(','), 'signals,research,card,portfolio,process,simulator,more');
+eq('seven seats, not eight', order.length, 7);
 ['pprops', 'edges', 'ai', 'record', 'ledger', 'faults', 'collective', 'news'].forEach(v =>
   chk(v + ' holds no seat in the bottom bar', order.indexOf(v) < 0));
 chk('Research is the tab the markup rests on', /data-v="research" class="on"/.test(NAV));
 chk('and no second button claims the active class', (live.match(/class="on"/g) || []).length === 1);
-['Research', 'EdgeDesk Card', 'Portfolio', 'Process', 'Simulator', 'More'].forEach(l =>
+['Signal Center', 'Research', 'EdgeDesk Card', 'Portfolio', 'Process', 'Simulator', 'More'].forEach(l =>
   has(live, 'aria-label="' + l + '"', 'the ' + l + ' seat is named for screen readers'));
 has(APP, "b[j].setAttribute('aria-current','page')", 'the active seat is announced, not only coloured');
 /* the AI drawer used to append its own seat whenever none was there */
@@ -154,7 +155,7 @@ has(APP, "var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'
    a sixth seat, it lights Research, and #games routes through navHashRoute */
 has(APP, "games:'research'", 'the games page lights the Research seat, not a new one');
 has(APP, "if(/^#games(?:[\\/?]|$)/.test(h))", 'a #games link routes to the games page');
-has(APP, "var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1,simulator:1};", '"remember last tab" remembers destinations only');
+has(APP, "var NAV_PRIMARY={signals:1,research:1,card:1,portfolio:1,process:1,simulator:1};", '"remember last tab" remembers destinations only');
 
 /* ======================================================================== */
 /* 3. DEFAULT LANDING, DEEP LINKS AND ROUTE SAFETY                          */
@@ -192,7 +193,7 @@ has(APP, "if(m&&RS_RETIRED[m[1]])return {sub:RS_RETIRED[m[1]],entity:null,retire
     'and a #research/tennis/… deep link resolves there instead of being ignored');
 has(APP, "^#research\\/([a-z]+)(?:\\/(.+))?$", 'the research hash grammar is unchanged');
 has(APP, "window.addEventListener('hashchange'", 'back and forward still route');
-has(APP, "if(/^#research\\//.test(_h)||/^#playerprops/.test(_h)||NAV_HASH_RE.test(_h))history.replaceState",
+has(APP, "if(/^#research\\//.test(_h)||/^#playerprops/.test(_h)||/^#signals\\//.test(_h)||NAV_HASH_RE.test(_h))history.replaceState",
     'leaving the Research shell clears the research hash');
 chk('and it clears ONLY a research or destination hash, never the record receipt link',
     APP.indexOf("'#receipt='") >= 0 && !/NAV_HASH_RE=\/[^/]*receipt/.test(APP));
@@ -404,11 +405,16 @@ has(APP, "var go=(id?'edNavTrack(\\'secondary\\',\\'more:'+id+'\\');':'')+call;"
 /* ======================================================================== */
 const TRACK = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_track.js'), 'utf8');
 const FSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'funnel.sql'), 'utf8');
-['primary_nav_research', 'primary_nav_card', 'primary_nav_portfolio', 'primary_nav_process', 'primary_nav_more', 'secondary_nav_opened'].forEach(n => {
+['primary_nav_signals', 'primary_nav_research', 'primary_nav_card', 'primary_nav_portfolio', 'primary_nav_process', 'primary_nav_more', 'secondary_nav_opened'].forEach(n => {
   has(TRACK, "'" + n + "'", n + ' is a name the tracker sends');
   chk(n + ' is in funnel.sql\'s client registry', new RegExp("\\('" + n + "',\\s*'client'").test(FSQL));
 });
 has(APP, "var name=kind==='primary'?'primary_nav_'+dest:'secondary_nav_opened';", 'a seat tap is primary_nav_<seat>, everything else secondary_nav_opened');
+/* Signal Center: its own hash, its long-name alias, and a landing that never strands a reader */
+has(APP, "if(/^#signal-center(?:\\/|$)/.test(h)){h='#signals'+h.slice(14);", '#signal-center is rewritten to #signals');
+has(APP, "if(/^#signals(?:\\/|$)/.test(h)){", 'Signal Center routes its own #signals hashes');
+has(APP, "else if(_fresh){SC_LANDING=true;show('signals');}", 'a new reader lands on Signal Center');
+has(APP, "landing:landing,onHandoff:function(){if(!$('v-signals').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');}", '…and is handed on to Research when it has nothing to show them');
 has(APP, "edNavTrack('secondary','research:'+b.dataset.sub)", 'Research tabs are recorded');
 
 /* ======================================================================== */
