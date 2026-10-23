@@ -16,6 +16,7 @@ import { NHL_2027 } from './nhl/config.ts';
 import { MLB_2026 } from './mlb/config.ts';
 import { NBA_2026_27 } from './nba/config.ts';
 import { cfbFacts, isCfbVerified } from './cfb/config.ts';
+import { NCAAM_2027 } from './ncaam/config.ts';
 
 export type SportStatus = 'ACTIVE' | 'BLOCKED' | 'COMING_SOON';
 export interface SportEntry {
@@ -23,7 +24,7 @@ export interface SportEntry {
   label: string;
   status: SportStatus;
   structure: 'season' | 'tournament' | 'series' | 'none';
-  tabs: Array<'division' | 'conference' | 'title' | 'futures' | 'tournament'>;
+  tabs: Array<'division' | 'conference' | 'title' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health'>;
   blockers: string[];
   limitations: string[];
   /** what would have to exist for this sport to be activated */
@@ -95,6 +96,22 @@ function nbaStatus(): { status: SportStatus; blockers: string[] } {
   return { status: 'BLOCKED', blockers };
 }
 
+/** NCAAM: the bracket engine, model and tests are complete; publication waits
+    for the official 2027 field and a verified 2027 format */
+function ncaamStatus(): { status: SportStatus; blockers: string[] } {
+  const facts: Array<[string, Fact]> = [['2027 NCAA tournament format (field size, play-in games, regions)', NCAAM_2027.format], ['2027 official bracket (Selection Sunday)', NCAAM_2027.official_bracket]];
+  const blockers = facts.filter(([, f]) => f.affects_results && !isVerified(f)).map(([label, f]) => label + ' not verified: ' + f.verify_by);
+  return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
+}
+const NCAAM_LIMITS = [
+  'Team strength: opponent-adjusted efficiency and tempo from box scores (2010-present), refitted daily; a team\'s latent strength is drawn once per simulated tournament and kept through every round.',
+  'Player availability is not modelled: no owned college-basketball injury or lineup feed exists. A star\'s absence announced before tip is not in the number.',
+  'Every NCAA tournament game is treated as a neutral site; travel distance and crowd proximity are not modelled.',
+  'Before Selection Sunday no national-title forecast is shown: no selection or seeding proxy is owned, and a guessed field is not presented as the official one.',
+  'Conference tournaments are not simulated until a verified format for each conference exists in the repository.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
 const NFL_LIMITS = [
   'Strength uncertainty: one persistent normal offset per club (sigma calibrated on 2006-2024 frozen forecasts so the spread of simulated remaining wins matches history); the 2025 holdout season was more volatile than that calibration.',
   'Game outcomes come from the served edgedesk_nfl_v2 margin distribution, including its own tie mass. The model does not beat the closing line in its walk-forward record.',
@@ -128,6 +145,7 @@ export function sportRegistry(): SportEntry[] {
   const nfl = nflStatus(), nhl = nhlStatus(), cfb = cfbStatus();
   const mlb = mlbStatus();
   const nba = nbaStatus();
+  const ncaam = ncaamStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
@@ -141,9 +159,8 @@ export function sportRegistry(): SportEntry[] {
       activation_path: 'Each season: re-run the Simulator source check, compare the NHL.com tie-breaking and playoff-format pages with NHL_SIMULATOR_NOTES.md, and re-verify the three facts in simulator/src/sports/nhl/config.ts in a reviewed commit.' },
     { key: 'mlb', label: 'MLB', status: mlb.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: mlb.blockers, limitations: MLB_LIMITS,
       activation_path: 'Build the live 2026 snapshot once on a runner that reaches statsapi.mlb.com and check it against MLB\'s standings; verify the 2026 facts in simulator/src/sports/mlb/config.ts against MLB\'s pages; set each VERIFIED with verified_by/verified_at in a reviewed commit; apply supabase/simulator.sql.' },
-    { key: 'cbb', label: 'College Basketball', status: 'COMING_SOON', structure: 'tournament', tabs: ['conference', 'tournament', 'futures'],
-      blockers: ['The 2026-27 season has not started; the schedule is partial with placeholder times.', 'No 2026-27 conference membership, conference-tournament formats, or NCAA selection/seed/bracket data.'],
-      limitations: [], activation_path: 'Conference membership and tournament formats; a selection/seeding proxy labelled Estimated.' },
+    { key: 'ncaam', label: 'College Basketball', status: ncaam.status, structure: 'tournament', tabs: ['games', 'upset_watch', 'tournament', 'model_health'], blockers: ncaam.blockers, limitations: NCAAM_LIMITS,
+      activation_path: 'After Selection Sunday 2027: write basketball/ncaam_forecast/config/brackets/2027.json from the official bracket, record the 2027 format and bracket as VERIFIED with verified_by/verified_at in simulator/src/sports/ncaam/config.ts, apply supabase/simulator.sql and supabase/ncaam_forecast.sql, and promote a research_team_model champion through the weekly gates.' },
     { key: 'wnba', label: 'WNBA', status: 'BLOCKED', structure: 'series', tabs: ['title'],
       blockers: ['No series simulator or strength-uncertainty study; the 2026 Finals end by 2026-10-31.'],
       limitations: [], activation_path: 'A series state machine and an uncertainty study before the 2027 season.' },

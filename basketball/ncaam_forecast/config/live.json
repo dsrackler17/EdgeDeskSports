@@ -1,0 +1,21 @@
+{
+ "schema": "edgedesk_ncaam_fc_live_config_v1",
+ "enabled": false,
+ "model": "score_time",
+ "model_params": { "model": "score_time", "v_pos": 2, "kappa_window_s": 2400 },
+ "chosen_by": "validation/live_backtest.json: the development checkpoints (games before 2026-02-01) choose the variant; the test checkpoints are scored once",
+ "feed": {
+  "source": "public.slate_live (tools/slate/live_poll.js, ESPN scoreboard every 45 s inside the games-live.yml window)",
+  "fields": ["score", "period", "display clock", "status", "updated_at (fetch time)"],
+  "missing": ["possession (treated as explicit variance v_pos, never guessed)", "event timestamps (only the fetch time)", "box score / play-by-play (no in-game shooting, turnover or foul information)"],
+  "max_age_s": 120
+ },
+ "blockers": [
+  "No always-on runtime writes live forecasts: GitHub Actions schedules are not a real-time service, and the existing live poller (games-live.yml) only refreshes public.slate_live, which is overwritten and pruned after 4 days, so live forecasts could not be audited afterwards.",
+  "The live feed has no possession indicator and no event timestamps; the model treats possession as explicit uncertainty and data age by fetch time only.",
+  "The checkpoint backtest covers one season (2025-26, reconstructed from substitution stints); production feed latency is unmeasured.",
+  "Enabling needs: an operator-run writer (basketball/ncaam_forecast/live_writer.js) on an always-on host polling within provider limits, ncaam_fc_config.live_enabled = 'true', and this file's enabled = true in a reviewed commit."
+ ],
+ "alert_hysteresis": { "on_at": 0.40, "off_at": 0.33 },
+ "slow_start": { "minutes": 8, "points_below": 8, "use": "a measured, configurable state shown beside the probability; never a penalty and not a pregame tendency (no chronological test supports one)" }
+}

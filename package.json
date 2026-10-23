@@ -575,6 +575,15 @@
     "sim:mlb:backtest": "node simulator/src/research/mlb_backtest.ts",
     "sim:mlb:fixture": "node simulator/src/cli/build_mlb_fixture.ts all",
     "sim:mlb:postseason-fixture": "node simulator/src/research/build_mlb_history_fixture.ts",
-    "sim:mlb:probe": "node simulator/src/cli/probe_mlb_live.ts"
+    "sim:mlb:probe": "node simulator/src/cli/probe_mlb_live.ts",
+    "ncaam:fc:ingest": "node basketball/ncaam_forecast/ingest.js --season current",
+    "ncaam:fc:refresh": "node basketball/ncaam_forecast/refresh.js --hours 48",
+    "ncaam:fc:weekly": "node basketball/ncaam_forecast/weekly.js --max 4",
+    "ncaam:fc:status": "node basketball/ncaam_forecast/registry.js status",
+    "ncaam:fc:check": "node basketball/ncaam_forecast/select.js --check && node basketball/ncaam_forecast/validate.js --check && node basketball/ncaam_forecast/registry.js verify && node simulator/src/research/build_ncaam_registry_sql.ts --check",
+    "ncaam:fc:test": "node basketball/ncaam_forecast/tests/model.test.js && node basketball/ncaam_forecast/tests/live_writer.test.js && node basketball/ncaam_forecast/tests/sql.test.js && node simulator/tests/ncaam_sim.test.ts && node simulator/tests/ncaam_ui.test.ts",
+    "ncaam:fc:test:ops": "node basketball/ncaam_forecast/tests/ops.test.js",
+    "ncaam:fc:e2e": "node simulator/tests/ncaam_ui.e2e.ts",
+    "ncaam:fc:bench": "node simulator/src/cli/run.ts --sport ncaam --season 2026 --mode historical --model champion --runs 100000 --workers 4 --dry-run"
   }
 }

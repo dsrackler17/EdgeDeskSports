@@ -1,0 +1,76 @@
+{
+ "schema": "edgedesk_ncaam_fc_model_v1",
+ "model_id": "ncaam_adjeff",
+ "version": "1.0.0",
+ "engine": "research_team_model",
+ "config": {
+  "model_id": "ncaam_adjeff",
+  "version": "1.0.0",
+  "engine": "research_team_model",
+  "params": {
+   "lambda": 300,
+   "lambda_tempo": 2,
+   "kMu": 3000,
+   "kEta": 6000,
+   "sweeps": 6,
+   "half_life": null,
+   "carry": 0.9,
+   "carry_tempo": 0.9,
+   "continuity_slope": 0,
+   "continuity_ref": 0.45,
+   "transfer_beta": 0,
+   "blowout_margin": 30,
+   "blowout_weight": 1,
+   "scale": "additive",
+   "new_program_quantile": 0.25,
+   "nond1_lambda": 400,
+   "poss_coef": null
+  },
+  "calibration": {
+   "refit_days": 7,
+   "window_seasons": 3,
+   "min_rows": {
+    "D1_D1": 300,
+    "D1_OTHER": 100
+   },
+   "kappa": "fit",
+   "variance": {
+    "margin": "v1",
+    "total": "v2"
+   },
+   "parameter_variance": "stable"
+  },
+  "selection_hash": "7807a94ff33649c647752ba1ecfe05e64339ccf3b66e7c388f04a83f5be68757"
+ },
+ "config_sha256": "7cfb49bf85d621ea31f3dae062f70bc7805075bba0500c28a35bb5f5c6cdfbde",
+ "code_sha256": "e4fa8d9787c7a2cd9938ff1bfe9a3433f4cc8093b84693bfaf45b866c6a9a3ee",
+ "training_snapshot": {
+  "through": "2026-10-23T12:52:34.409Z",
+  "rows": 99846,
+  "sha256": "49a7f94b0574208c8997afcf00c4549c331ed4ce203b843939192f26a8793b4c",
+  "seasons": [
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ]
+ },
+ "recorded_at": "2026-10-23T12:54:42.100Z",
+ "status": "CHAMPION",
+ "promoted_at": "2026-10-23T12:54:42Z",
+ "evaluation_report": "basketball/ncaam_forecast/reports/weekly/2026-10-23-selection_v1.json",
+ "evaluation_report_sha256": "3a6a04434513f4d5ced13a4b7c5d4b8e3f88eb092273474f7d26c759d2672813"
+}

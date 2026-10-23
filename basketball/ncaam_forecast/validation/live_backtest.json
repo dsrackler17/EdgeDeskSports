@@ -1,0 +1,1032 @@
+{
+ "schema": "edgedesk_ncaam_fc_live_backtest_v1",
+ "generated_at": "2026-10-23T13:08:36.066Z",
+ "selection_hash": "7807a94ff33649c647752ba1ecfe05e64339ccf3b66e7c388f04a83f5be68757",
+ "data": {
+  "source": "datapack/ncaam_v1 ncaa_mbb_matchup_stints_2026 (hash-verified)",
+  "games_with_states": 5690,
+  "excluded": {
+   "NOT_D1_V_D1": 541,
+   "LAST_STINT_SCORE_NE_FINAL": 60
+  },
+  "development_games": 3671,
+  "test_games": 2019,
+  "split": "development before 2026-02-01, test from 2026-02-01 (whole games)",
+  "checkpoints_elapsed_min": [
+   10,
+   20,
+   30,
+   35,
+   38,
+   39
+  ],
+  "state_rule": "score at the last stint boundary at or before the checkpoint; remaining time from that boundary"
+ },
+ "variants": {
+  "score_time": {
+   "model": "score_time",
+   "v_pos": 1,
+   "kappa_window_s": 2400
+  },
+  "score_time_vpos0": {
+   "model": "score_time",
+   "v_pos": 0,
+   "kappa_window_s": 2400
+  },
+  "score_time_vpos2": {
+   "model": "score_time",
+   "v_pos": 2,
+   "kappa_window_s": 2400
+  },
+  "score_time_kappa_late": {
+   "model": "score_time",
+   "v_pos": 1,
+   "kappa_window_s": 120
+  },
+  "shrunk_update_k20": {
+   "model": "shrunk_update",
+   "v_pos": 1,
+   "kappa_window_s": 2400,
+   "k_update_min": 20
+  },
+  "shrunk_update_k40": {
+   "model": "shrunk_update",
+   "v_pos": 1,
+   "kappa_window_s": 2400,
+   "k_update_min": 40
+  },
+  "shrunk_update_k80": {
+   "model": "shrunk_update",
+   "v_pos": 1,
+   "kappa_window_s": 2400,
+   "k_update_min": 80
+  },
+  "shrunk_update_k160": {
+   "model": "shrunk_update",
+   "v_pos": 1,
+   "kappa_window_s": 2400,
+   "k_update_min": 160
+  },
+  "shrunk_update_k320": {
+   "model": "shrunk_update",
+   "v_pos": 1,
+   "kappa_window_s": 2400,
+   "k_update_min": 320
+  },
+  "shrunk_update_k640": {
+   "model": "shrunk_update",
+   "v_pos": 1,
+   "kappa_window_s": 2400,
+   "k_update_min": 640
+  }
+ },
+ "chosen_on_development": "score_time_vpos2",
+ "results": {
+  "development": {
+   "score_time": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.30847,
+    "brier": 0.09871,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.45027,
+      "brier": 0.14926
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.39906,
+      "brier": 0.12979
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.32561,
+      "brier": 0.10259
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.26697,
+      "brier": 0.08429
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.21764,
+      "brier": 0.06751
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19129,
+      "brier": 0.05882
+     }
+    }
+   },
+   "score_time_vpos0": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.31023,
+    "brier": 0.09885,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.45036,
+      "brier": 0.14928
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.39945,
+      "brier": 0.12985
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.32648,
+      "brier": 0.10268
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.2686,
+      "brier": 0.08447
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.22069,
+      "brier": 0.06776
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19577,
+      "brier": 0.05909
+     }
+    }
+   },
+   "score_time_vpos2": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.30722,
+    "brier": 0.0986,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.4502,
+      "brier": 0.14924
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.3987,
+      "brier": 0.12973
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.32481,
+      "brier": 0.10251
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.2656,
+      "brier": 0.08414
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.21544,
+      "brier": 0.06733
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.18856,
+      "brier": 0.05865
+     }
+    }
+   },
+   "score_time_kappa_late": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.31186,
+    "brier": 0.09935,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.45124,
+      "brier": 0.14953
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.40174,
+      "brier": 0.13041
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.32921,
+      "brier": 0.10325
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.2719,
+      "brier": 0.08516
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.22319,
+      "brier": 0.06844
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19386,
+      "brier": 0.0593
+     }
+    }
+   },
+   "shrunk_update_k20": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.34584,
+    "brier": 0.10703,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.55248,
+      "brier": 0.17325
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.47083,
+      "brier": 0.14484
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.3532,
+      "brier": 0.10864
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.27858,
+      "brier": 0.08691
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.22399,
+      "brier": 0.06887
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19596,
+      "brier": 0.05966
+     }
+    }
+   },
+   "shrunk_update_k40": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.32791,
+    "brier": 0.10331,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.49385,
+      "brier": 0.1608
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.43914,
+      "brier": 0.13866
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.34313,
+      "brier": 0.1065
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.27472,
+      "brier": 0.08604
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.22204,
+      "brier": 0.06845
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19458,
+      "brier": 0.0594
+     }
+    }
+   },
+   "shrunk_update_k80": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.31797,
+    "brier": 0.10101,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.46788,
+      "brier": 0.15425
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.41927,
+      "brier": 0.13441
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.33546,
+      "brier": 0.10482
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.27155,
+      "brier": 0.08532
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.22035,
+      "brier": 0.06809
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19335,
+      "brier": 0.05918
+     }
+    }
+   },
+   "shrunk_update_k160": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.31303,
+    "brier": 0.09982,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.45752,
+      "brier": 0.15138
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.40883,
+      "brier": 0.13205
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.33075,
+      "brier": 0.10376
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.26946,
+      "brier": 0.08485
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.21916,
+      "brier": 0.06784
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19246,
+      "brier": 0.05902
+     }
+    }
+   },
+   "shrunk_update_k320": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.31067,
+    "brier": 0.09924,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.45342,
+      "brier": 0.15019
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.40377,
+      "brier": 0.13088
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.32821,
+      "brier": 0.10318
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.26826,
+      "brier": 0.08458
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.21845,
+      "brier": 0.06769
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19192,
+      "brier": 0.05893
+     }
+    }
+   },
+   "shrunk_update_k640": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.30955,
+    "brier": 0.09897,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.45171,
+      "brier": 0.14969
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.40136,
+      "brier": 0.13032
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.32691,
+      "brier": 0.10289
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.26763,
+      "brier": 0.08444
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.21806,
+      "brier": 0.0676
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.19162,
+      "brier": 0.05887
+     }
+    }
+   },
+   "pregame_only": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.50042,
+    "brier": 0.16868,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.50042,
+      "brier": 0.16868
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.50042,
+      "brier": 0.16868
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.50042,
+      "brier": 0.16868
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.50042,
+      "brier": 0.16868
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.50042,
+      "brier": 0.16868
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.50042,
+      "brier": 0.16868
+     }
+    }
+   },
+   "score_only": {
+    "n": 22008,
+    "games": 3668,
+    "log_loss": 0.34764,
+    "brier": 0.11307,
+    "by_checkpoint": {
+     "10": {
+      "n": 3668,
+      "log_loss": 0.5717,
+      "brier": 0.19509
+     },
+     "20": {
+      "n": 3668,
+      "log_loss": 0.46305,
+      "brier": 0.15221
+     },
+     "30": {
+      "n": 3668,
+      "log_loss": 0.35065,
+      "brier": 0.1121
+     },
+     "35": {
+      "n": 3668,
+      "log_loss": 0.27853,
+      "brier": 0.08851
+     },
+     "38": {
+      "n": 3668,
+      "log_loss": 0.22484,
+      "brier": 0.06994
+     },
+     "39": {
+      "n": 3668,
+      "log_loss": 0.1971,
+      "brier": 0.06054
+     }
+    }
+   }
+  },
+  "test": {
+   "score_time": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.35172,
+    "brier": 0.11459,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.5374,
+      "brier": 0.18105
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.45705,
+      "brier": 0.15092
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.37559,
+      "brier": 0.11926
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.29727,
+      "brier": 0.09408
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.22938,
+      "brier": 0.07412
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21371,
+      "brier": 0.06817
+     }
+    }
+   },
+   "score_time_vpos0": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.35345,
+    "brier": 0.1148,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.53765,
+      "brier": 0.18111
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.45762,
+      "brier": 0.15103
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.37686,
+      "brier": 0.11939
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.29907,
+      "brier": 0.09426
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.23126,
+      "brier": 0.07439
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21832,
+      "brier": 0.06866
+     }
+    }
+   },
+   "score_time_vpos2": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.35053,
+    "brier": 0.11444,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.53716,
+      "brier": 0.181
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.45651,
+      "brier": 0.15082
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.37444,
+      "brier": 0.11914
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.2958,
+      "brier": 0.09392
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.2282,
+      "brier": 0.07393
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21115,
+      "brier": 0.06785
+     }
+    }
+   },
+   "score_time_kappa_late": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.3555,
+    "brier": 0.11529,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.53951,
+      "brier": 0.18162
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.46073,
+      "brier": 0.15174
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.38054,
+      "brier": 0.12
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.3022,
+      "brier": 0.09495
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.23411,
+      "brier": 0.075
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21603,
+      "brier": 0.06844
+     }
+    }
+   },
+   "shrunk_update_k20": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.39356,
+    "brier": 0.12349,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.67151,
+      "brier": 0.21179
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.52971,
+      "brier": 0.16496
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.40594,
+      "brier": 0.12503
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.30644,
+      "brier": 0.09612
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.23189,
+      "brier": 0.07462
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21597,
+      "brier": 0.06844
+     }
+    }
+   },
+   "shrunk_update_k40": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.37333,
+    "brier": 0.11958,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.59781,
+      "brier": 0.19694
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.49781,
+      "brier": 0.15939
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.39487,
+      "brier": 0.12301
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.30334,
+      "brier": 0.09541
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.23101,
+      "brier": 0.07443
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21523,
+      "brier": 0.06833
+     }
+    }
+   },
+   "shrunk_update_k80": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.36221,
+    "brier": 0.1171,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.56346,
+      "brier": 0.18845
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.47765,
+      "brier": 0.15543
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.38648,
+      "brier": 0.12139
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.30083,
+      "brier": 0.09484
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.23031,
+      "brier": 0.07429
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21462,
+      "brier": 0.06825
+     }
+    }
+   },
+   "shrunk_update_k160": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.35672,
+    "brier": 0.1158,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.54883,
+      "brier": 0.18442
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.467,
+      "brier": 0.15316
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.38132,
+      "brier": 0.12038
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.29919,
+      "brier": 0.09447
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.22987,
+      "brier": 0.0742
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.2142,
+      "brier": 0.06821
+     }
+    }
+   },
+   "shrunk_update_k320": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.35412,
+    "brier": 0.11517,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.54262,
+      "brier": 0.18261
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.46184,
+      "brier": 0.15202
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.3785,
+      "brier": 0.11982
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.29826,
+      "brier": 0.09428
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.22962,
+      "brier": 0.07416
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21397,
+      "brier": 0.06819
+     }
+    }
+   },
+   "shrunk_update_k640": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.35289,
+    "brier": 0.11487,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.53987,
+      "brier": 0.18179
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.45938,
+      "brier": 0.15146
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.37705,
+      "brier": 0.11954
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.29777,
+      "brier": 0.09418
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.2295,
+      "brier": 0.07414
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21384,
+      "brier": 0.06818
+     }
+    }
+   },
+   "pregame_only": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.57744,
+    "brier": 0.19864,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.5769,
+      "brier": 0.19842
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.57755,
+      "brier": 0.19868
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.57755,
+      "brier": 0.19868
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.57755,
+      "brier": 0.19868
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.57755,
+      "brier": 0.19868
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.57755,
+      "brier": 0.19868
+     }
+    }
+   },
+   "score_only": {
+    "n": 12077,
+    "games": 2013,
+    "log_loss": 0.37492,
+    "brier": 0.12422,
+    "by_checkpoint": {
+     "10": {
+      "n": 2012,
+      "log_loss": 0.61302,
+      "brier": 0.21279
+     },
+     "20": {
+      "n": 2013,
+      "log_loss": 0.4954,
+      "brier": 0.16545
+     },
+     "30": {
+      "n": 2013,
+      "log_loss": 0.39196,
+      "brier": 0.12653
+     },
+     "35": {
+      "n": 2013,
+      "log_loss": 0.30322,
+      "brier": 0.09708
+     },
+     "38": {
+      "n": 2013,
+      "log_loss": 0.23138,
+      "brier": 0.07503
+     },
+     "39": {
+      "n": 2013,
+      "log_loss": 0.21465,
+      "brier": 0.06852
+     }
+    }
+   }
+  }
+ },
+ "comparisons_test": {
+  "score_time_vpos2_vs_pregame_only": {
+   "n": 12077,
+   "clusters": 2013,
+   "mean_diff": -0.22692,
+   "ci95": [
+    -0.24725,
+    -0.20703
+   ]
+  },
+  "score_time_vpos2_vs_score_only": {
+   "n": 12077,
+   "clusters": 2013,
+   "mean_diff": -0.02439,
+   "ci95": [
+    -0.0316,
+    -0.01735
+   ]
+  },
+  "score_time_vpos2_vs_score_time": {
+   "n": 12077,
+   "clusters": 2013,
+   "mean_diff": -0.00119,
+   "ci95": [
+    -0.00182,
+    -0.00065
+   ]
+  }
+ },
+ "note": "log loss clipped to [1e-6, 1 - 1e-6]; intervals: bootstrap over games (all checkpoints of a game move together)"
+}

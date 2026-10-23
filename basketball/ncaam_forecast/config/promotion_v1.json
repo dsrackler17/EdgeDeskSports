@@ -1,0 +1,37 @@
+{
+ "schema": "edgedesk_ncaam_fc_promotion_v1",
+ "version": "1.0.0",
+ "written_at": "2026-10-23",
+ "written_before": "any candidate was evaluated against these gates (the first evaluation is the weekly pipeline's bootstrap run recorded in registry/history.jsonl)",
+ "scope": "operational champion of the NCAAM pregame forecast (basketball/ncaam_forecast). Does NOT change the research registry tier: SIM/forecast research status stays EXPERIMENTAL until the separate research criteria in research/registration.json pass.",
+ "evaluation": {
+  "games": "D1-v-D1 games scored walk-forward (causal ratings; calibration fitted weekly on earlier games only)",
+  "window": "every complete season from 2020 to the last complete season, plus the season in progress to date (rolling origin: each game predicted only from what was available 30 minutes before tip)",
+  "excluded": "NCAA tournament games of the final tournament holdout seasons 2024, 2025, 2026 (never used to choose or promote anything)",
+  "pairing": "champion and challenger scored on the SAME games; differences challenger minus champion; 95% intervals by bootstrap clustered on game day (1,000 resamples)"
+ },
+ "gates": {
+  "G1_min_sample": { "rule": "at least 15000 shared scored games and at least 3 seasons in the window", "min_games": 15000, "min_seasons": 3,
+   "why": "below about 15,000 games the 95% interval of a log-loss difference between two good models is wider than the 0.0002 gain required (measured half-width ~0.00025 at 37,600 games)" },
+  "G2_log_loss": { "rule": "mean difference <= -0.0002 AND the 95% interval's upper bound < 0", "max_diff": -0.0002,
+   "why": "0.0002 is the noise floor the existing basketball loop already uses (basketball/loop.js MIN_GAIN.logloss); requiring the interval below zero rejects gains the data cannot distinguish from chance" },
+  "G3_brier": { "rule": "mean Brier difference <= 0", "max_diff": 0, "why": "a log-loss gain bought with worse Brier would mean the gain sits in extreme probabilities only" },
+  "G4_margin_crps": { "rule": "mean margin CRPS difference <= +0.002", "max_diff": 0.002,
+   "why": "the margin distribution is what spreads, totals and the simulator read; 0.002 is the research engine's challenger margin (3% of the spread between configurations)" },
+  "G5_calibration": { "rule": "challenger in the window: |calibration-in-the-large| <= 0.015, logistic recalibration slope within [0.90, 1.10], 80% margin and total interval coverage within [0.77, 0.83], |forecast - observed overtime rate| <= 0.01",
+   "citl_max": 0.015, "slope": [0.9, 1.1], "coverage80": [0.77, 0.83], "ot_rate_abs_max": 0.01,
+   "why": "measured on the current champion candidate's development window: citl 0.005-0.011, slope 1.04-1.07, coverage 0.80; the bounds leave room for that and refuse a visibly miscalibrated challenger" },
+  "G6_cohorts": { "rule": "no gated cohort is worse by more than 0.002 log loss with its 95% interval entirely above 0; cohorts with fewer than 300 shared games are reported, not gated",
+   "cohorts": ["neutral_site", "home_site", "early_season_min_games_lt_5", "postseason_non_holdout", "most_recent_complete_season", "d1_vs_non_d1_regime"], "max_worse": 0.002, "min_games": 300,
+   "why": "an aggregate gain must not hide a real regression where it matters most in March (neutral sites, postseason) or for poorly observed teams" },
+  "G7_integrity": { "rule": "dataset hashes match the manifest; no row predicted with an input known after its prediction time; the training snapshot hash is recorded; rebuilding the artifact twice gives the same sha256",
+   "why": "a model is only as honest as its inputs" },
+  "G8_operations": { "rule": "the weekly run finishes within 45 minutes; every probability is finite and inside (0, 1)", "max_runtime_min": 45 }
+ },
+ "decisions": {
+  "PROMOTE": "every gate passes: the challenger's artifact becomes champion through the atomic pointer swap (registry.js), the previous champion stays as the rollback target",
+  "RETAIN": "any gate G2-G8 fails: the champion is unchanged",
+  "INSUFFICIENT_EVIDENCE": "G1 fails: nothing is promoted, whatever the point estimates say",
+  "one_per_week": "at most one promotion per weekly run (the passing challenger with the largest log-loss gain)"
+ }
+}
