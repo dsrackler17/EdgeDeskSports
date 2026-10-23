@@ -92,7 +92,8 @@ export function parseDivision(page: string, sectionId: string, division: string)
     if (c.length === 1) {
       /* a note row: the title was stripped, vacated or relinquished */
       const note = cellText(c[0].html).join(' ');
-      if (/\b(stripped|vacat|relinquish|retire)/i.test(note)) prevUndisputed = null;
+      /* (a note about the INTERIM title, "stripped of the interim title", leaves the undisputed champion in place) */
+      if (/\b(stripped|vacat|relinquish|retire)/i.test(note) && !/interim title/i.test(note)) prevUndisputed = null;
       continue;
     }
     if (c.length !== 6) continue;
