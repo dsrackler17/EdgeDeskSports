@@ -31,10 +31,18 @@ const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https:
 fs.mkdirSync(OUT, { recursive: true });
 
 const PAGES: Array<{ id: string; url: string; links?: RegExp }> = [
-  { id: 'nfl_tiebreaking', url: 'https://operations.nfl.com/the-rules/nfl-tiebreaking-procedures/', links: /playoff|seed|tie|rulebook/i },
-  { id: 'nfl_rules_index', url: 'https://operations.nfl.com/the-rules/', links: /playoff|seed|tie|rulebook|2026/i },
+  /* the NFL's published tiebreaking procedures (operations.nfl.com/the-rules/nfl-tiebreaking-procedures answered 404 on 2026-10-23) */
   { id: 'nfl_standings_tiebreaking', url: 'https://www.nfl.com/standings/tie-breaking-procedures' },
+  /* what changed for 2026: the league's own list of adopted rules, bylaws and resolutions, and the proposals before the vote */
+  { id: 'nfl_2026_approved', url: 'https://media.nfl.com/football-information/2026/news/approved-2026-playing-rules--bylaws-and-resolutions' },
+  { id: 'nfl_2026_announced', url: 'https://www.nfl.com/news/nfl-announces-new-playing-rules-bylaws-resolutions-for-2026' },
+  { id: 'nfl_2026_proposals_pdf', url: 'https://media.nfl.com/content/dam/communications/football-communications/2026/news/2026%20Playing%20Rules,%20Bylaw%20and%20Resolution%20Proposals.pdf' },
+  /* the playoff field, seeding and scheduling, from NFL support */
+  { id: 'nfl_support_seeding', url: 'https://support.nfl.com/hc/en-us/articles/35869775009556-Standings-Seeding-Rankings' },
+  { id: 'nfl_support_playoff_schedule', url: 'https://support.nfl.com/hc/en-us/articles/35869712287508-Schedule' },
+  /* Super Bowl LXI: site */
   { id: 'nfl_super_bowl_lxi', url: 'https://www.nfl.com/news/sofi-stadium-approved-to-host-super-bowl-lxi-in-2027' },
+  /* Kalshi's fee schedule */
   { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' }
 ];
 
@@ -62,14 +70,20 @@ const SUMMARY: string[] = [];
 async function fetchPage(p: (typeof PAGES)[number]) {
   section('SOURCE ' + p.id + '  ' + p.url);
   let res: Response;
-  try { res = await fetch(p.url, { headers: { 'user-agent': UA, accept: 'text/html,application/xhtml+xml,application/pdf;q=0.9,*/*;q=0.8' }, redirect: 'follow' }); }
+  try {
+    for (let attempt = 0; ; attempt++) {
+      res = await fetch(p.url, { headers: { 'user-agent': UA, accept: 'text/html,application/xhtml+xml,application/pdf;q=0.9,*/*;q=0.8' }, redirect: 'follow' });
+      if ((res.status === 429 || res.status >= 500) && attempt < 3) { await new Promise((r) => setTimeout(r, 4000 * 2 ** attempt)); continue; }
+      break;
+    }
+  }
   catch (e) { console.log('FETCH FAILED: ' + String((e as Error).message || e)); SUMMARY.push(p.id + ': FETCH FAILED ' + String((e as Error).message || e)); return; }
   const body = Buffer.from(await res.arrayBuffer());
   const head = 'status ' + res.status + ' · final url ' + res.url + ' · ' + body.length + ' bytes · sha256 ' + sha256Hex(body) + ' · fetched_at ' + new Date().toISOString();
   console.log(head);
   const isPdf = /\.pdf($|\?)/i.test(res.url) || (res.headers.get('content-type') || '').includes('pdf');
   fs.writeFileSync(path.join(OUT, p.id + (isPdf ? '.pdf' : '.html')), body);
-  let text: string;
+  let text = '';
   if (isPdf) {
     try { text = execFileSync('pdftotext', ['-layout', path.join(OUT, p.id + '.pdf'), '-'], { encoding: 'utf8', maxBuffer: 32 << 20 }); }
     catch (e) { console.log('pdftotext unavailable or failed: ' + String((e as Error).message).slice(0, 200)); return; }
@@ -81,6 +95,7 @@ async function fetchPage(p: (typeof PAGES)[number]) {
       console.log('-- links matching ' + p.links + ':\n' + links.map((l) => '  ' + l).join('\n'));
     }
   }
+  text = text.split('\n').filter((l) => l.replace(/^[-\s]+/, '').length > 3).join('\n');
   fs.writeFileSync(path.join(OUT, p.id + '.txt'), text);
   SUMMARY.push(p.id + ': ' + head + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
   console.log('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):\n' + text.slice(0, 60000));
@@ -94,10 +109,10 @@ const NOT_FUTURES = /game|spread|total|points|yards|touchdown|TD|MVP|player|quar
 async function kalshi() {
   section('SOURCE kalshi_api  public REST, no key');
   const c = kalshiClient();
-  const match = /NFL|Super Bowl|Pro Football|AFC|NFC/i;
+  const match = /\bNFL\b|Super Bowl|Pro Football|American Football Conference|National Football Conference|^KXNFL|^KXSB|^KXAFC$|^KXNFC$/i, notNfl = /NCAA|College|AFCON|Fantasy|NBA|FCS/i;
   let s: any;
   try { s = await c.get('/series', { category: 'Sports' }); } catch (e) { console.log('KALSHI FAILED: ' + String((e as Error).message || e)); SUMMARY.push('kalshi: FAILED ' + String((e as Error).message || e)); return; }
-  const series = ((s && s.series) || []).filter((x: any) => x && x.ticker && match.test(String(x.title || '') + ' ' + String(x.ticker)) && !/GAME$/.test(x.ticker));
+  const series = ((s && s.series) || []).filter((x: any) => x && x.ticker && (match.test(String(x.title || '')) || match.test(String(x.ticker))) && !notNfl.test(String(x.title || '') + ' ' + String(x.ticker)) && !/GAME$/.test(x.ticker));
   const futures = series.filter((x: any) => FUTURES.test(String(x.title || '')) && !NOT_FUTURES.test(String(x.title || '')));
   console.log('host ' + c.host + ' · ' + ((s && s.series) || []).length + ' Sports series · ' + series.length + ' name the NFL · ' + futures.length + ' look like season futures');
   console.log('-- every NFL-named series (ticker | title | fee_type | fee_multiplier):');
@@ -115,7 +130,7 @@ async function kalshi() {
         all.push({ series_ticker: x.ticker, event_ticker: k.event_ticker, market_ticker: k.ticker, title: k.title, yes_sub_title: k.yes_sub_title, close_time: k.close_time,
           rules_primary: k.rules_primary, rules_secondary: k.rules_secondary || null, rules_sha256, yes_bid: k.yes_bid_dollars, yes_ask: k.yes_ask_dollars, yes_ask_size: k.yes_ask_size_fp });
         console.log('  - ' + k.ticker + ' | event ' + k.event_ticker + ' | ' + (k.yes_sub_title || '') + ' | close ' + k.close_time + ' | bid ' + k.yes_bid_dollars + ' ask ' + k.yes_ask_dollars
-          + ' | rules_sha256 ' + rules_sha256 + '\n    RULES: ' + String(k.rules_primary || '').replace(/\s+/g, ' ') + (k.rules_secondary ? '\n    RULES2: ' + String(k.rules_secondary).replace(/\s+/g, ' ') : ''));
+          + ' size ' + k.yes_ask_size_fp + ' | rules_sha256 ' + rules_sha256 + ' | RULES: ' + String(k.rules_primary || '').replace(/\s+/g, ' ') + (k.rules_secondary ? ' | RULES2: ' + String(k.rules_secondary).replace(/\s+/g, ' ') : ''));
       }
       cursor = (m && m.cursor) || '';
       if (!cursor) break;

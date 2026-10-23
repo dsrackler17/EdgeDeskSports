@@ -5,8 +5,9 @@
 # source whole (URL, HTTP status, sha256, text) and keeps the files as an
 # artifact, so the reviewed commit that marks a fact VERIFIED or adds a
 # Kalshi mapping can cite exactly what was read:
-#   - operations.nfl.com tiebreaking procedures and playoff seeding
-#   - the NFL.com Super Bowl LXI site announcement
+#   - the NFL's published tiebreaking procedures, its approved 2026 rules,
+#     bylaws and resolutions (and the proposals), NFL support's seeding and
+#     playoff scheduling pages, the NFL.com Super Bowl LXI site announcement
 #   - Kalshi's NFL futures series (fee_type, fee_multiplier), every open
 #     market's full settlement rules and their sha256, the fee schedule
 # Runs on a pull request that changes it, or by hand.
@@ -36,7 +37,7 @@ jobs:
         with:
           node-version: '22.22.0'
       - name: Install pdftotext (for the fee schedule PDF)
-        run: sudo apt-get install -y -qq poppler-utils >/dev/null 2>&1 || echo "::warning::poppler-utils did not install; the fee schedule PDF will be kept but not printed"
+        run: (sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils) >/dev/null 2>&1 || echo "::warning::poppler-utils did not install; the PDFs will be kept but not printed"
       - name: Fetch and print the sources
         run: node simulator/src/cli/fetch_sources.ts --out simulator/out/sources
       - name: Keep the fetched files
