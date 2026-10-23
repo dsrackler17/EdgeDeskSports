@@ -33,7 +33,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { hashCanonical, sha256Hex } from '../../core/canonical.ts';
-import { REPO, loadServedBouts, loadCurrent, servedVersion, walk, checkReproduction, sortBouts, emptyState, codeIdentity, FINAL, round4,
+import { REPO, loadServedBouts, loadCurrent, servedVersion, walk, checkReproduction, sortBouts, emptyState, codeIdentity, FINAL, round4, attachChampions, loadTitleChampions, TITLE_BOUTS_CSV,
   type Bout, type EloState, type ReproductionCheck, type EloConfig, type WalkRow } from './elo.ts';
 import { parseTitleHistory, divisionRates, normalisedGaps, type DivisionRates, type DivisionHistory } from './title_history.ts';
 import { finishStudy, baseRate, studyRoundDist, dev, DIVISIONS, type FinishStudy } from './finish.ts';
@@ -91,6 +91,8 @@ export interface TitleRecord {
   from: string; matched: number; unmatched: string[];
   /** undisputed title fights with a champion going in and a winner */
   decided: number; champion_won: number; elo_expected_champion_wins: number; log_loss: number; coin_log_loss: number;
+  /** the same count split at TITLE_SPLIT: where the champions' edge over the Elo sits in time */
+  periods: Array<{ from: string; to: string; decided: number; champion_won: number; elo_expected_champion_wins: number }>;
   challengers: { n: number; coming_off_win: number; coming_off_loss: number; coming_off_draw: number; rest_days: { p10: number; median: number; p90: number } };
 }
 export interface UfcInputData {
@@ -105,6 +107,8 @@ export interface UfcInputData {
   finish: { m: number; c: number | null; holdout_log_loss: number; base_only_log_loss: number; constant_log_loss: number; n_holdout: number;
     rounds_holdout: { chosen: number; format_only: number }; base: FinishStudy['base']; no_winner: FinishStudy['no_winner']; by_rounds: FinishStudy['rounds']['by_rounds'] };
   title_record: TitleRecord;
+  /** the champion term's latest weekly test (docs/model-loop/ufc/candidates.jsonl, candidate champion_term); null before the first */
+  champion_term: { tested_at: string; served_version: string; bonus: number; decision: string; delta: Record<string, number>; ci95: number[]; reason: string } | null;
   rankings: { url: string; fetched_at: string; page_sha256: string; html_sha256: string | null; groupings: number; divisions: number; deduped: number; pound_for_pound: number };
   title_history: { sha256: string; unparsed: string[]; window_years: number };
   cross_checks: { wikipedia: Array<{ division: string; ufc: string; wikipedia: string | null; agree: boolean }>; espn: Array<{ bout_id: string; division: string; holder: string; champion: string; agree: boolean }> };
@@ -126,9 +130,9 @@ export const tokenKey = (s: string) => normName(s).split(' ').sort().join(' ');
 
 /* ------------------------------------------------------------ feeds */
 function gz(rel: string): Buffer { return zlib.gunzipSync(fs.readFileSync(path.join(REPO, rel))); }
-interface FeedBout { bout_id: string; event_id: string; event: string; date: string; weight_class: string | null; rounds: number | null; order: number | null;
+export interface FeedBout { bout_id: string; event_id: string; event: string; date: string; weight_class: string | null; rounds: number | null; order: number | null;
   a_id: string; a: string; b_id: string; b: string; status: string; winner: string | null; end_round: number | null; end_time: string | null }
-function feedToBout(f: FeedBout): Bout {
+export function feedToBout(f: FeedBout): Bout {
   const fin = f.status === 'final';
   return { bout_id: String(f.bout_id), event_id: String(f.event_id), event_name: f.event, start_time: f.date, ts: Date.parse(f.date),
     fighter_a_id: String(f.a_id), fighter_a: f.a, fighter_b_id: String(f.b_id), fighter_b: f.b,
@@ -160,13 +164,18 @@ function quantile(xs: number[], q: number): number {
   return s[lo] + (s[hi] - s[lo]) * (i - lo);
 }
 
+/** the title record's split: before it the champions beat the Elo by 16 wins in 100 fights, after it by about 1 in 87 (2026-10-23) */
+export const TITLE_SPLIT = '2021-01-01';
 /** the champions' record in undisputed title fights against the served Elo, and the challengers' last result and rest */
 export function titleRecord(H: DivisionHistory[], rows: WalkRow[], from: string, asOf: number): TitleRecord {
   const finals = rows.filter((r) => r.final);
   const byDay = new Map<string, WalkRow[]>();
   for (const r of finals) { const d = isoDay(r.bout.ts); (byDay.get(d) || byDay.set(d, []).get(d)!).push(r); }
   const sur = (s: string) => { const t = normName(s).split(' '); return t[t.length - 1]; };
-  const out: TitleRecord = { from, matched: 0, unmatched: [], decided: 0, champion_won: 0, elo_expected_champion_wins: 0, log_loss: 0, coin_log_loss: Math.LN2,
+  const asOfDay = isoDay(asOf), split = TITLE_SPLIT > from ? TITLE_SPLIT : from;
+  const periods = [{ from, to: isoDay(Date.parse(split + 'T00:00:00Z') - DAY), decided: 0, champion_won: 0, elo_expected_champion_wins: 0 },
+    { from: split, to: asOfDay, decided: 0, champion_won: 0, elo_expected_champion_wins: 0 }].filter((x) => x.from <= x.to);
+  const out: TitleRecord = { from, matched: 0, unmatched: [], decided: 0, champion_won: 0, elo_expected_champion_wins: 0, log_loss: 0, coin_log_loss: Math.LN2, periods,
     challengers: { n: 0, coming_off_win: 0, coming_off_loss: 0, coming_off_draw: 0, rest_days: { p10: NaN, median: NaN, p90: NaN } } };
   const rest: number[] = [];
   let ll = 0;
@@ -186,6 +195,8 @@ export function titleRecord(H: DivisionHistory[], rows: WalkRow[], from: string,
     if (f.result === 'champion_won' || f.result === 'challenger_won') {
       const y = f.result === 'champion_won' ? 1 : 0;
       out.decided++; out.champion_won += y; out.elo_expected_champion_wins += pc;
+      const per = periods.find((x) => f.date >= x.from && f.date <= x.to);
+      if (per) { per.decided++; per.champion_won += y; per.elo_expected_champion_wins += pc; }
       ll += -Math.log(Math.min(1 - 1e-12, Math.max(1e-12, y ? pc : 1 - pc)));
     }
     /* the challenger's previous final */
@@ -201,6 +212,7 @@ export function titleRecord(H: DivisionHistory[], rows: WalkRow[], from: string,
     }
   }
   out.elo_expected_champion_wins = r6(out.elo_expected_champion_wins);
+  for (const x of periods) x.elo_expected_champion_wins = r6(x.elo_expected_champion_wins);
   out.log_loss = out.decided ? r6(ll / out.decided) : NaN;
   out.coin_log_loss = r6(Math.LN2);
   out.challengers.rest_days = { p10: Math.floor(quantile(rest, 0.1)), median: Math.round(quantile(rest, 0.5)), p90: Math.round(quantile(rest, 0.9)) };
@@ -249,6 +261,8 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
     union.push(b);
   }
   for (const f of feed.bouts) if (!csvById.has(String(f.bout_id))) { const b = feedToBout(f); if (Number.isFinite(b.ts)) { union.push(b); if (b.status === FINAL) finalsFeedOnly++; } }
+  /* the champion going in (title_bouts.csv) on every row, the feed's own rows included: the champion term, when served */
+  attachChampions(union, loadTitleChampions().map);
   sortBouts(union);
   const finalsU = union.filter((b) => b.status === FINAL);
   const asOfMs = Math.max(...finalsU.map((b) => b.ts));
@@ -397,6 +411,12 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
     market: (val.markets && val.markets.moneyline && val.markets.moneyline.market_reason) || 'no closing-price archive',
     record_graded: (recJson.bouts || []).length
   };
+  /* 12 the champion term's latest weekly test */
+  const candFile = path.join(REPO, 'docs', 'model-loop', 'ufc', 'candidates.jsonl');
+  const candBuf = fs.existsSync(candFile) ? fs.readFileSync(candFile) : null;
+  const lastTest = candBuf ? candBuf.toString('utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((x) => x.candidate === 'champion_term').pop() : null;
+  const championTerm: UfcInputData['champion_term'] = lastTest ? { tested_at: lastTest.at, served_version: lastTest.served_version, bonus: Number(lastTest.change.how[1]), decision: lastTest.decision,
+    delta: lastTest.delta, ci95: lastTest.ci95, reason: lastTest.reason } : null;
   const late = union.filter((b) => b.status === 'STATUS_SCHEDULED' && b.ts < asOfMs).map((b) => b.bout_id);
   const pubAgree = { listed: 0, equal: 0, newer_finals: finalsFeedOnly };
   for (const b of booked) if (b.p_a_published != null) { pubAgree.listed++; if (round4(b.p_a) === b.p_a_published) pubAgree.equal++; }
@@ -413,6 +433,7 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
       rounds_holdout: { chosen: study.rounds.grid.find((g) => g.c === study.rounds.chosen_c)!.holdout_log_lik, format_only: study.rounds.grid.find((g) => g.c == null)!.holdout_log_lik },
       base: study.base, no_winner: study.no_winner, by_rounds: study.rounds.by_rounds },
     title_record: record,
+    champion_term: championTerm,
     rankings: { url: rk.url, fetched_at: rk.fetched_at, page_sha256: rk.page_sha256, html_sha256: htmlSha, groupings: groups.length, divisions: seen.size, deduped, pound_for_pound: p4p },
     title_history: { sha256: sha256Hex(wikiBuf), unparsed: H.flatMap((h) => h.unparsed), window_years: C.rate_window_years },
     cross_checks: { wikipedia: wiki, espn },
@@ -427,6 +448,7 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
     meta: { built_at: new Date().toISOString(), builder: 'simulator/src/sports/ufc/inputs.ts',
       feeds: [{ name: 'model_loop/data/ufc/bouts.csv', sha256: served.sha256 }, { name: 'model_loop/published/ufc/current.json', sha256: cur.sha256 }, { name: C.feeds.bouts, sha256: sha256Hex(fs.readFileSync(path.join(REPO, C.feeds.bouts))) },
         { name: C.feeds.rankings, sha256: sha256Hex(fs.readFileSync(path.join(REPO, C.feeds.rankings))) }, { name: C.feeds.title_history, sha256: sha256Hex(fs.readFileSync(path.join(REPO, C.feeds.title_history))) },
+        ...(served.titles_sha256 ? [{ name: TITLE_BOUTS_CSV, sha256: served.titles_sha256 }] : []), ...(candBuf ? [{ name: 'docs/model-loop/ufc/candidates.jsonl', sha256: sha256Hex(candBuf) }] : []),
         ...(samplesSha ? [{ name: C.feeds.espn_samples, sha256: samplesSha }] : [])] } };
 }
 

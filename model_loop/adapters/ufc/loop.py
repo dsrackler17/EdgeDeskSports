@@ -57,6 +57,14 @@ CATALOGUE = [
     ("new_window_longer", "new_bouts", ("set", 6)),
     ("layoff_more", "layoff_regress", ("add", 0.15)), ("layoff_less", "layoff_regress", ("add", -0.15)),
     ("calibration_toggle", "calibration", ("toggle", None)),
+    # the champion term (model.py champ_bonus): +100 Elo for the defending champion in an undisputed title fight,
+    # sized on the tune window alone (2016-2020 log loss over every decided bout: 0.67946 with no term, lowest at 100
+    # of 0, 25, ..., 150). Tested every week like every other change: since 2014 champions won 123 of 187 title fights
+    # where the served Elo expected 106, but the gap is 2014-2020 (+16.2 wins in 100 fights); 2021-2026 is +0.8 in 87,
+    # and on 2016-2026 the term does not clear the weekly rule (2026-10-23). It is served only if champions pull away
+    # from the Elo again. The champion going in: model_loop/data/ufc/title_bouts.csv
+    # (simulator/src/research/ufc_title_bouts.ts, regenerated before every run).
+    ("champion_term", "champ_bonus", ("set", 100.0)),
 ]
 
 

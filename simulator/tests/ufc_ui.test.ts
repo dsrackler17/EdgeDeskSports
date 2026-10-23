@@ -68,13 +68,19 @@ T.chk('Title Path: eleven divisions, each with its champion and pace', (tp.match
 T.chk('Title Path: the booked title fights named, the others say none is booked', (tp.match(/Booked title fight:/g) || []).length === 4 && (tp.match(/No title fight booked/g) || []).length === 7);
 T.chk('Title Path: every contender row with hold, win, shot and beat-the-champion columns', /Champion at horizon/.test(tp) && /Beats the champion if given the shot/.test(tp) && /Movsar Evloev/.test(tp));
 T.chk('Title Path: contenders with no shot in any simulated year are listed apart with the reason', /No title shot in any simulated year:<\/b> [^<]*Alexandre Pantoja \(#1, coming off a loss\)/.test(tp));
-T.chk('Title Path: the champions-v-Elo caveat and what is not modelled', /understate a champion’s chance to keep the belt/.test(tp) && /Interim belts/.test(tp));
+T.chk('Title Path: how champions are priced, by period, and what is not modelled', /From 2014 to 2020 champions won 71 of 100 where it expected 54\.8 — it underrated them then; since 2021 champions have won about as many title fights as it expected \(52 of 87, expected 51\.2\)/.test(tp)
+  && /A champion term is tested every week/.test(tp) && !/understate/.test(tp) && /Interim belts/.test(tp));
 T.chk('Title Path: a contender who moved divisions is named under the division they left', /booked in another division \(counted there\): [^<]*Diego Lopes \(Lightweight\)/.test(tp));
 /* Model Health */
 const h = paint(cache(), 'model_health');
 T.chk('Model Health: the reproduction check and the three windows beside a coin', /reproduces every price the loop published: 25 of 25/.test(h) && (h.match(/<tr><td>(validation|holdout|2026)/g) || []).length === 3 && /0\.693/.test(h));
 T.chk('Model Health: the plain-language verdict and no closing-price test', /better than a coin flip, but not by much/.test(h) && /never been compared with closing prices/.test(h));
 T.chk('Model Health: champions against the Elo, and the finish model out of sample', /champions won <b>\d+<\/b>; the Elo expected about <b>\d+<\/b>/.test(h) && /tested on [\d,]+ later bouts/.test(h));
+T.chk('Model Health: the title record in two periods', /<tr><td>2014–2020<\/td><td class="sm-num">100<\/td><td class="sm-num">71<\/td><td class="sm-num">54\.8<\/td><td class="sm-num">\+16\.2<\/td><\/tr>/.test(h) && /<tr><td>2021–2026<\/td><td class="sm-num">87<\/td>/.test(h));
+T.chk('Model Health: the champion term, not served, with its latest weekly test in plain words', /The champion term\.<\/b> The model loop tests, every week, giving the champion going in 100 extra rating points/.test(h)
+  && /Latest test, [^:]+: <b>not adopted<\/b>\. Over every bout since 2016 it moved the log loss by \+0\.00009 \(lower is better; adopting it takes a fall of at least 0\.0005\), and on 2025 alone by \+0\.00241\./.test(h) && /title fights are priced without one/.test(h));
+T.chk('Model Health: a served champion term is stated as served', (() => { const r2 = JSON.parse(JSON.stringify(run)); r2.validation_summary.sport_summary.model_health.champion_term.served_bonus = 100;
+  const x = paint(cache({ run: r2 }), 'model_health'); return /gives the champion going in 100 extra rating points/.test(x) && !/Latest test/.test(x); })());
 
 /* escaping */
 const evilEnt = entities.map((e) => Object.assign({}, e, { entity_name: EVIL + e.entity_name }));

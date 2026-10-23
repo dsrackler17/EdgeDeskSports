@@ -11,6 +11,15 @@ Parameters
                     the data (a debutant's rating moves faster)
   layoff_days       a fighter returning after this long ...
   layoff_regress    ... has this share of their distance from 1500 removed
+  champ_bonus       Elo points added to the defending champion's rating in an
+                    undisputed title fight, for the bout's expectation and so
+                    for its update too (as a home advantage is): the champion
+                    going in is read from model_loop/data/ufc/title_bouts.csv
+                    (Wikipedia's title history matched to the bouts, and booked
+                    defences from ufc.com's current champions), which is known
+                    when the bout is booked. 0 = no term (every version before
+                    the term existed prices exactly as it did). Symmetric: it
+                    follows the champion, whichever side the feed lists first
   calibration       "none" or "slope": p' = sigmoid(b * logit(p)), b fitted on
                     every earlier season's out-of-sample bouts. Slope only, no
                     intercept, so a bout is priced the same whichever fighter the
@@ -20,6 +29,7 @@ Parameters
                     is not used (the pregame ledger records it, to test that)
 """
 import math
+import os
 
 import numpy as np
 import pandas as pd
@@ -27,8 +37,17 @@ import pandas as pd
 from ...core import metrics as M
 
 DEFAULTS = {"k": 32.0, "k_new_mult": 1.0, "new_bouts": 3, "layoff_days": 365, "layoff_regress": 0.0,
-            "scale": 400.0, "calibration": "none"}
+            "scale": 400.0, "calibration": "none", "champ_bonus": 0.0}
 FINAL = "STATUS_FINAL"
+
+
+def title_champions(path):
+    """bout id -> the champion going in, from title_bouts.csv beside the bouts (empty when the file is absent)"""
+    f = os.path.join(os.path.dirname(path), "title_bouts.csv")
+    if not os.path.exists(f):
+        return {}
+    t = pd.read_csv(f, dtype={"bout_id": str, "champion_id": str})
+    return dict(zip(t.bout_id, t.champion_id))
 
 
 def load(path):
@@ -41,6 +60,8 @@ def load(path):
     d["y"] = np.where(d.final & aw & ~bw, 1.0, np.where(d.final & bw & ~aw, 0.0, np.nan))
     d["draw"] = d.final & ~aw & ~bw
     d["season"] = d.ts.dt.year
+    champs = title_champions(path)
+    d["champ"] = d.bout_id.map(champs).fillna("")
     return d
 
 
@@ -60,10 +81,15 @@ def walk(d, params):
             R[f] = r
         return r
 
+    cb = float(P.get("champ_bonus") or 0.0)
+    has_champ = "champ" in d.columns
     for i, row in enumerate(d.itertuples()):
         a, b, t = row.fighter_a_id, row.fighter_b_id, row.ts
         ra, rb = rating(a, t), rating(b, t)
-        e = 1.0 / (1.0 + 10 ** (-(ra - rb) / P["scale"]))
+        adj = 0.0
+        if cb and has_champ and row.champ:
+            adj = cb if row.champ == a else (-cb if row.champ == b else 0.0)
+        e = 1.0 / (1.0 + 10 ** (-(ra - rb + adj) / P["scale"]))
         out[i] = e
         na[i], nb[i] = N.get(a, 0), N.get(b, 0)
         if row.final and (not math.isnan(row.y) or row.draw):

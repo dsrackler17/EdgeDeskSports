@@ -25,8 +25,9 @@
       and has rested at least the measured minimum; the winner is drawn from
       the served Elo on the ratings frozen at the as-of time, with the served
       layoff rule at the fight's date (a fighter idle 365 days or more loses
-      25% of their distance from 1500, and keeps the loss). A simulated fight
-      never moves a rating.
+      25% of their distance from 1500, and keeps the loss) and the served
+      champion term (champ_bonus Elo points to the champion going in; 0, so
+      off, in the served config). A simulated fight never moves a rating.
    Outcomes per fighter: the next booked bout won (by finish, by decision);
    a title shot, a title won and the title held at the horizon (Estimated:
    they pass through the matchmaking rule). Sum rules (after every run): one
@@ -102,6 +103,8 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
   const oNext = O.get('win_next_bout')!, oFin = O.get('win_next_finish')!, oDec = O.get('win_next_decision')!;
   const oShot = O.get('title_shot')!, oWin = O.get('win_title')!, oHold = O.get('champion_at_horizon')!;
   const nE = entities.length;
+  /* the served Elo's scale and champion term (0 while the term is not served) */
+  const eloScale = d.elo.config.scale || 400, champBonus = d.elo.config.champ_bonus || 0;
   /* the fighters' state at the as-of time */
   const baseRating = new Float64Array(nE), baseLast = new Float64Array(nE), baseRes = new Uint8Array(nE), finW = new Float64Array(nE), finL = new Float64Array(nE);
   d.fighters.forEach((f, i) => {
@@ -199,7 +202,7 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
         else {
           unbooked++;
           regress(c, t); regress(ch, t);
-          const pCh = 1 / (1 + 10 ** (-(rating[ch] - rating[c]) / 400));
+          const pCh = 1 / (1 + 10 ** (-(rating[ch] - rating[c] - champBonus) / eloScale));
           const chWins = rt.nextDouble() < pCh;
           const w = chWins ? ch : c, l = chWins ? c : ch;
           const fin = rm.nextDouble() < 1 / (1 + Math.exp(-(x.lf5 + finW[w] + finL[l])));

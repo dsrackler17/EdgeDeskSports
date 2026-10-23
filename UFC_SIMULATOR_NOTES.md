@@ -170,15 +170,55 @@ heavyweight → heavyweight). A contender's rank cannot be measured historically
 (no rankings history is owned), which is why the rule is Estimated.
 
 **Each title fight** is priced by the served Elo on the ratings frozen at the
-as-of time, with the served layoff rule at the fight's date. A simulated fight
-never moves a rating.
+as-of time, with the served layoff rule at the fight's date and the served
+champion term (`champ_bonus` Elo points to the champion going in; the served
+1.1.0 has none, so 0). A simulated fight never moves a rating.
 
-**Champions against the Elo (MEASURED).** In those 187 title fights champions
-won **123**; the Elo expected **106.0** (log loss 0.657 against a coin's 0.693).
-The Elo underrates champions in title fights (most likely its layoff regression
-and k step, tuned on all bouts); the title path uses it unchanged, so it likely
-**understates a champion's chance to keep the belt**. Stated in the limitations
-and the reader; not corrected (that would be a new model, not the served one).
+**Champions against the Elo (MEASURED, 2026-10-23).** In those 187 title fights
+champions won **123**; the Elo expected **106.0** (log loss 0.657 against a
+coin's 0.693). The gap is not spread evenly, so the record is published in two
+periods (`title_record.periods`, split at `TITLE_SPLIT` = 2021-01-01):
+
+| Title fights | N | Champions won | Elo expected | Champions ahead by |
+|---|---|---|---|---|
+| 2014–2020 | 100 | 71 | 54.8 | +16.2 |
+| 2021–2026 | 87 | 52 | 51.2 | +0.8 |
+
+Finer: 2014–15 +7.5 in 31, 2016–20 +8.7 in 69, 2021–24 +1.0 in 63, 2025 −1.2
+in 17, 2026 +1.0 in 7. The Elo underrated champions before 2021; since then it
+has matched them.
+
+**The champion term (the fix belongs in the model, so it lives there).**
+`model_loop/adapters/ufc/model.py` gained `champ_bonus`: Elo points added to the
+champion going in for the bout's expectation (and so its update) in an
+undisputed title fight. The champion going in is point in time (who holds the
+belt, and that the bout is for it, is known when the bout is booked) and comes
+from `model_loop/data/ufc/title_bouts.csv`, written by
+`simulator/src/research/ufc_title_bouts.ts`: Wikipedia's title history matched
+to bouts.csv and the ESPN feed (191 past fights; one unmatched since 2014, W
+Flyweight 2020-02-08 Shevchenko v Chookagian, which ESPN does not list), plus
+booked defences (a ufc.com champion at their own weight in a bout not yet
+final: Volkanovski and Yan on 2026-10-24, Gane and Harrison on 2026-11-15).
+With the term at 0 the walk is unchanged price for price.
+
+Sized on the tune window alone (2016–2020 log loss over every decided bout:
+0.67946 with no term, lowest at +100 of 0, 25, …, 150), the term went through
+the preregistered weekly rule like every other change
+(`docs/model-loop/ufc/candidates.jsonl`, 2026-10-23): log loss over every bout
+since 2016 **+0.00009** (it needs −0.0005 with a paired 95% interval below zero;
+the interval was [−0.00106, +0.00124]), Brier unchanged, 2025 **+0.00241**
+(worse). Over 2016–2026 title fights alone it lifts the expected champion wins
+from 90.5 to 109.6 against 100 won: it fixes 2016–2020 and overshoots since. So
+it is **not served**. It is a permanent candidate in the loop's catalogue
+(`loop.py` CATALOGUE `champion_term`), retested every week on fresh title flags
+(the UFC loop workflow regenerates `title_bouts.csv` before each run); if
+champions pull away from the Elo again it passes and is promoted.
+
+The simulator is ready for that: the Elo port (`elo.ts`) reads `champ_bonus` and
+`title_bouts.csv` exactly as model.py does, so the reproduction gate holds under
+a promoted term, and the module prices every unbooked title fight with it. The
+reader states the two periods and the latest weekly test (Model Health), read
+from the run, never typed in.
 
 **Not modelled** (stated in the registry and the reader): interim belts and
 promotions; a champion vacating, being stripped or retiring; bouts not yet on the
@@ -288,9 +328,10 @@ horizontal page scroll, no page error.
 4. Rankings move only through booked bouts; interim titles, vacated or stripped
    titles, retirements, injuries and withdrawals are not modelled; a contender
    booked in another division is treated as having moved.
-5. Champions have beaten the Elo's expectation in title fights since 2014 (123 v
-   106 expected): the title path likely understates a champion's chance to keep
-   the belt.
+5. Title fights are priced without a champion term: champions beat the Elo's
+   expectation from 2014 to 2020 (71 of 100 v 54.8 expected) but have matched it
+   since 2021 (52 of 87 v 51.2). The term is retested every week (section 5) and
+   served only if it clears the preregistered rule.
 6. Ratings are frozen at the last result (the served layoff rule still applies at
    a fight's date).
 7. The ± is simulation noise only.

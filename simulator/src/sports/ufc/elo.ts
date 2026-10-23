@@ -27,6 +27,13 @@
        bout counts and the last-bout times move.
    Nothing about a fighter's later career reaches an earlier bout. The
    served calibration is "none": the price is e itself.
+
+   The champion term (model.py champ_bonus): champ_bonus Elo points added to
+   the defending champion's rating for the bout's expectation (and so its
+   update) in an undisputed title fight, the champion going in read from
+   model_loop/data/ufc/title_bouts.csv exactly as model.py load() reads it.
+   The loop tests it every week; while the served configuration has no
+   champ_bonus (0), it changes nothing.
    =========================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -49,9 +56,10 @@ export function codeIdentity(): Record<string, string> {
   return out;
 }
 
-export interface EloConfig { k: number; k_new_mult: number; new_bouts: number; layoff_days: number; layoff_regress: number; scale: number; calibration: string }
+export interface EloConfig { k: number; k_new_mult: number; new_bouts: number; layoff_days: number; layoff_regress: number; scale: number; calibration: string; champ_bonus?: number }
 /** model.py DEFAULTS: the served config is laid over them */
-export const ELO_DEFAULTS: EloConfig = { k: 32, k_new_mult: 1, new_bouts: 3, layoff_days: 365, layoff_regress: 0, scale: 400, calibration: 'none' };
+export const ELO_DEFAULTS: EloConfig = { k: 32, k_new_mult: 1, new_bouts: 3, layoff_days: 365, layoff_regress: 0, scale: 400, calibration: 'none', champ_bonus: 0 };
+export const TITLE_BOUTS_CSV = 'model_loop/data/ufc/title_bouts.csv';
 
 export interface ServedVersion { version: string; config: EloConfig; config_sha256: string; status: string; promoted_at: string; evidence: unknown }
 export function servedVersion(): ServedVersion {
@@ -68,6 +76,8 @@ export interface Bout {
   a_winner: boolean; b_winner: boolean; status: string;
   /** the round and clock the bout ended at (finals), and the scheduled rounds (format_json regulation.periods) */
   round: number | null; clock: string | null; periods: number | null; weight_class: string;
+  /** the defending champion's id in an undisputed title fight (title_bouts.csv), else absent */
+  champ?: string;
 }
 
 /** model.py load(): parse, drop unparseable start times, order by (time, bout id) */
@@ -88,9 +98,21 @@ export function parseBoutsCsv(text: string): Bout[] {
 export function sortBouts(rows: Bout[]): Bout[] {
   return rows.sort((a, b) => (a.ts !== b.ts ? a.ts - b.ts : a.bout_id < b.bout_id ? -1 : a.bout_id > b.bout_id ? 1 : 0));
 }
-export function loadServedBouts(): { bouts: Bout[]; sha256: string } {
+export function loadServedBouts(): { bouts: Bout[]; sha256: string; titles_sha256: string | null } {
   const buf = fs.readFileSync(path.join(REPO, BOUTS_CSV));
-  return { bouts: parseBoutsCsv(buf.toString('utf8')), sha256: sha256Hex(buf) };
+  const t = loadTitleChampions();
+  return { bouts: attachChampions(parseBoutsCsv(buf.toString('utf8')), t.map), sha256: sha256Hex(buf), titles_sha256: t.sha256 };
+}
+/** model.py title_champions(): bout id -> the champion going in, from title_bouts.csv beside the bouts (empty when absent) */
+export function loadTitleChampions(): { map: Map<string, string>; sha256: string | null } {
+  const f = path.join(REPO, TITLE_BOUTS_CSV);
+  if (!fs.existsSync(f)) return { map: new Map(), sha256: null };
+  const buf = fs.readFileSync(f);
+  return { map: new Map(parseCsv(buf.toString('utf8')).map((r) => [String(r.bout_id), String(r.champion_id)])), sha256: sha256Hex(buf) };
+}
+export function attachChampions(bouts: Bout[], map: Map<string, string>): Bout[] {
+  for (const b of bouts) { const c = map.get(b.bout_id); if (c) b.champ = c; else delete b.champ; }
+  return bouts;
 }
 
 /** the walk's ratings at any point: rating, absorbed bouts, last absorbed bout time (ms) */
@@ -120,7 +142,9 @@ export function walk(bouts: Bout[], cfg: EloConfig, S: EloState = emptyState()):
   for (const b of bouts) {
     const a = b.fighter_a_id, bb = b.fighter_b_id, t = b.ts;
     const ra = rating(S, cfg, a, t), rb = rating(S, cfg, bb, t);
-    const e = expectA(cfg, ra, rb);
+    const cb = cfg.champ_bonus || 0;
+    const adj = cb && b.champ ? (b.champ === a ? cb : b.champ === bb ? -cb : 0) : 0;
+    const e = expectA(cfg, ra + adj, rb);
     const final = b.status === FINAL;
     const y = final && b.a_winner && !b.b_winner ? 1 : final && b.b_winner && !b.a_winner ? 0 : null;
     const draw = final && !b.a_winner && !b.b_winner;

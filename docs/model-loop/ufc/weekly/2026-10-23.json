@@ -1,0 +1,127 @@
+{
+ "at": "2026-10-23T22:14:17Z",
+ "served_before": "1.1.0",
+ "promoted": null,
+ "window": [
+  2016,
+  2026
+ ],
+ "recent_full_season": 2025,
+ "baseline": {
+  "full": {
+   "n": 5823,
+   "logloss": 0.6745,
+   "brier": 0.24086,
+   "coin_flip_logloss": 0.69315,
+   "vs_coin_flip": {
+    "n": 5823,
+    "mean_diff": -0.01865,
+    "t": -7.5,
+    "ci95": [
+     -0.02353,
+     -0.0144
+    ]
+   },
+   "accuracy": 0.5732,
+   "calibration": {
+    "bins": [
+     {
+      "bin": "0.0-0.2",
+      "n": 5,
+      "mean_pred": 0.1781,
+      "observed": 0.2
+     },
+     {
+      "bin": "0.2-0.4",
+      "n": 1011,
+      "mean_pred": 0.3494,
+      "observed": 0.3452
+     },
+     {
+      "bin": "0.4-0.6",
+      "n": 4091,
+      "mean_pred": 0.4952,
+      "observed": 0.4669
+     },
+     {
+      "bin": "0.6-0.8",
+      "n": 710,
+      "mean_pred": 0.6478,
+      "observed": 0.6268
+     },
+     {
+      "bin": "0.8-1.0",
+      "n": 6,
+      "mean_pred": 0.819,
+      "observed": 0.8333
+     }
+    ],
+    "ece": 0.0232
+   }
+  },
+  "recent": {
+   "n": 563,
+   "logloss": 0.66108,
+   "brier": 0.23436,
+   "coin_flip_logloss": 0.69315,
+   "vs_coin_flip": {
+    "n": 563,
+    "mean_diff": -0.03207,
+    "t": -4.032,
+    "ci95": [
+     -0.04749,
+     -0.0174
+    ]
+   },
+   "accuracy": 0.5897,
+   "calibration": {
+    "bins": [
+     {
+      "bin": "0.2-0.4",
+      "n": 101,
+      "mean_pred": 0.3461,
+      "observed": 0.3366
+     },
+     {
+      "bin": "0.4-0.6",
+      "n": 382,
+      "mean_pred": 0.4916,
+      "observed": 0.4319
+     },
+     {
+      "bin": "0.6-0.8",
+      "n": 80,
+      "mean_pred": 0.6445,
+      "observed": 0.6625
+     }
+    ],
+    "ece": 0.0448
+   }
+  }
+ },
+ "candidates": [
+  {
+   "at": "2026-10-23T22:14:17Z",
+   "served_version": "1.1.0",
+   "candidate": "champion_term",
+   "change": {
+    "key": "champ_bonus",
+    "how": [
+     "set",
+     100.0
+    ]
+   },
+   "delta": {
+    "logloss": 9e-05,
+    "brier": 0.0,
+    "2025_logloss": 0.00241
+   },
+   "ci95": [
+    -0.00106,
+    0.00124
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00009 does not clear -0.0005; 95% interval [-0.00106, 0.00124] is not below zero; worse on 2025"
+  }
+ ]
+}
