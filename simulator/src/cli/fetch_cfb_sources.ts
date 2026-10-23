@@ -4,7 +4,10 @@
    them (GitHub's runners: .github/workflows/simulator-cfb-sources.yml), and
    print them whole.
 
-     node simulator/src/cli/fetch_cfb_sources.ts [--out simulator/out/cfb_sources] [--only id,id]
+     node simulator/src/cli/fetch_cfb_sources.ts [--out simulator/out/cfb_sources] [--only id,id] [--rows]
+
+   --rows prints the rankings tables row by row (they are always written to
+   --out as .tsv; the log keeps one summary line per season without it).
 
    Read-only. No credential, no database, nothing written outside --out.
    For each source: the URL asked and the URL answered, the HTTP status, the
@@ -12,6 +15,12 @@
    pdftotext). A reviewed commit compares that text with
    simulator/src/sports/cfb/config.ts and CFB_SIMULATOR_NOTES.md and cites the
    sha256 it read; nothing here marks anything verified.
+
+   A source marked render is also loaded in headless Chrome (CHROME_BIN, else
+   google-chrome / chromium on the PATH) and read from the rendered DOM: the
+   conference sites build their articles in the browser, so the served HTML
+   holds only the headline. A PDF with no text layer is read by OCR
+   (pdftoppm + tesseract) and its text says so.
 
    Three kinds of source:
      rules     the CFP's 2026 format and selection protocol, each FBS
@@ -32,13 +41,14 @@ import { sha256Hex } from '../core/canonical.ts';
 const a = process.argv.slice(2), get = (k: string) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
 const OUT = get('--out') || path.join('simulator', 'out', 'cfb_sources');
 const ONLY = (get('--only') || '').split(',').filter(Boolean);
+const ROWS = a.includes('--rows');
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
 type Kind = 'rules' | 'discover' | 'rankings' | 'tables';
 /** links: print matching hrefs · snippet: print raw HTML windows around a pattern (lists a text dump loses) ·
     nextData: print the long strings of an embedded __NEXT_DATA__ JSON that match (script-rendered articles) */
-interface Source { id: string; kind: Kind; url: string; links?: RegExp; max?: number; snippet?: RegExp; nextData?: RegExp }
+interface Source { id: string; kind: Kind; url: string; links?: RegExp; max?: number; snippet?: RegExp; nextData?: RegExp; render?: boolean }
 const LINKS = /tie-?break|tiebreak|championship|eligib|playoff|protocol|selection|format|2026/i;
 
 export const CFB_SOURCES: Source[] = [
@@ -50,7 +60,7 @@ export const CFB_SOURCES: Source[] = [
   { id: 'ncaa_cfp_explainer_2026', kind: 'rules', url: 'https://www.ncaa.com/news/football/article/2026-08-11/how-college-football-playoff-works-schedule-selections-rankings-byes-and-more' },
   /* conference championship-game tiebreakers */
   { id: 'acc_2026_tiebreaker', kind: 'rules', url: 'https://theacc.com/news/2026/7/15/acc-announces-new-football-championship-tiebreaker-policy.aspx', links: LINKS },
-  { id: 'sec_tiebreaker_2024', kind: 'rules', url: 'https://www.secsports.com/news/2024/08/sec-announces-football-tie-breaking-process', links: LINKS, nextData: /tie|scoring margin|head-to-head|common/i },
+  { id: 'sec_tiebreaker_2024', kind: 'rules', url: 'https://www.secsports.com/news/2024/08/sec-announces-football-tie-breaking-process', links: LINKS, nextData: /tie|scoring margin|head-to-head|common/i, render: true },
   /* secondary reports of procedures whose official page a script renders or refuses (labelled secondary in config.ts) */
   { id: 'sec_tiebreaker_espn_2024', kind: 'rules', url: 'https://www.espn.com/college-football/story/_/id/40944783/sec-reveals-tiebreaking-procedures-conference-title-game' },
   { id: 'sec_tiebreaker_cbs', kind: 'rules', url: 'https://www.cbssports.com/college-football/news/sec-football-tiebreakers-heres-how-the-conference-will-circumvent-identical-records-in-divisionless-format/' },
@@ -58,11 +68,30 @@ export const CFB_SOURCES: Source[] = [
   { id: 'big_ten_tiebreaker_cbs', kind: 'rules', url: 'https://www.cbssports.com/college-football/news/big-ten-football-tiebreakers-how-conference-will-decide-championship-game-matchup-with-divisions-gone-away/' },
   { id: 'mw_tiebreaker_pfn', kind: 'rules', url: 'https://www.profootballnetwork.com/cfb/mountain-west-tiebreakers-everything-to-know/' },
   { id: 'big_ten_tiebreaker_2024_pdf', kind: 'rules', url: 'https://nextgen.bigten.org/api/media/file/f142aa7f-aa37-430b-bf09-8988a6952c0c-2024_Big_Ten_Football_Tiebreaker_-_FINAL_10__72_.pdf' },
-  { id: 'big_ten_tiebreaker_2024_release', kind: 'rules', url: 'https://bigten.org/fb/article/blt6104802d94ebe1ab/', links: LINKS, nextData: /tie|seed|championship/i },
+  { id: 'big_ten_tiebreaker_2024_release', kind: 'rules', url: 'https://bigten.org/fb/article/blt6104802d94ebe1ab/', links: LINKS, nextData: /tie|seed|championship/i, render: true },
+  { id: 'big_ten_tiebreakers_2025', kind: 'rules', url: 'https://bigten.org/fb/article/58967/', links: LINKS, nextData: /tie|seed|championship/i, render: true },
+  { id: 'big_ten_fcg_2026', kind: 'rules', url: 'https://bigten.org/news/2026/8/19/championship-2026-discover-big-ten-football-championship-game-information.aspx', links: LINKS, render: true },
   { id: 'big_ten_fcg', kind: 'rules', url: 'https://bigten.org/FCG', links: LINKS },
   { id: 'big12_tiebreaker_pdf', kind: 'rules', url: 'https://s3.amazonaws.com/big12sports.com/documents/2025/11/4/Big_12_Football_2024_Tiebreaker_Policy.pdf' },
   { id: 'aac_tiebreaker_2025', kind: 'rules', url: 'https://theamerican.org/news/2025/11/23/FOOTBALL_Tiebreaker.aspx', links: LINKS },
   { id: 'aac_tiebreaker_2025_pdf', kind: 'rules', url: 'https://theamerican.org/documents/2025/10/29/25_FB_Tiebreakers.pdf' },
+  { id: 'aac_standings_2026', kind: 'discover', url: 'https://theamerican.org/standings.aspx?standings=133', links: LINKS, render: true },
+  { id: 'aac_2026_pairings', kind: 'rules', url: 'https://theamerican.org/news/2025/10/14/american-announces-2026-football-schedule-pairings.aspx', links: LINKS },
+  { id: 'cusa_tiebreaker_policy_pdf', kind: 'rules', url: 'https://conferenceusa.com/documents/2024/9/19/CUSA_FB_Championship_Game_Tiebreaker_Policy.pdf' },
+  { id: 'pac12_2026_operations', kind: 'rules', url: 'https://pac-12.com/news/2026/9/3/pac-12-announces-commercial-and-operational-updates-ahead-of-its-2026-football-season-kickoff.aspx', links: LINKS, render: true },
+  { id: 'mw_2026_ccg', kind: 'rules', url: 'https://themw.com/news/2026/6/4/broadcast-details-announced-for-2026-mountain-west-football-championship-game.aspx', links: LINKS, render: true },
+  { id: 'mw_2026_schedule', kind: 'rules', url: 'https://themw.com/news/2026/6/4/mw-announces-2026-football-schedule.aspx', links: LINKS, render: true },
+  { id: 'mw_weekly_release_wk8', kind: 'rules', url: 'https://themw.com/news/2026/10/20/2026-mw-football-weekly-release-week-8.aspx', links: LINKS, render: true },
+  { id: 'mw_2022_divisional_tiebreakers_pdf', kind: 'rules', url: 'https://admin.themw.com/documents/2022/9/27/2022_MW_Football_Divisional_Tiebreakers.pdf' },
+  { id: 'ndsu_fbs_faq', kind: 'rules', url: 'https://gobison.com/sports/2026/2/9/fbs-frequently-asked-questions', links: LINKS, render: true },
+  { id: 'ndsu_bowl_eligible_release', kind: 'rules', url: 'https://gobison.com/news/2026/10/17/bison-bowl-eligible-after-beating-nevada-31-17', links: LINKS },
+  { id: 'mac_sac_state_joins', kind: 'rules', url: 'https://getsomemaction.com/news/2026/2/16/sacramento-state-joins-mid-american-conference-as-football-only-member.aspx', links: LINKS },
+  { id: 'mac_sac_state_official', kind: 'rules', url: 'https://getsomemaction.com/news/2026/6/29/sacramento-state-officially-joins-mac-as-football-affiliate-member.aspx', links: LINKS },
+  { id: 'mac_2026_schedule', kind: 'rules', url: 'https://getsomemaction.com/news/2026/3/24/2026-mac-football-schedule-released.aspx', links: LINKS },
+  { id: 'mac_week0_release_pdf', kind: 'rules', url: 'https://getsomemaction.com/documents/2026/8/27//2026_FB_Release_Week_Zero_8_27.pdf' },
+  { id: 'mac_week8_preview', kind: 'discover', url: 'https://getsomemaction.com/news/2026/10/20/week-8-mac-football-preview.aspx', links: LINKS },
+  { id: 'sac_state_mac_join', kind: 'rules', url: 'https://hornetsports.com/news/2026/2/16/hornet-football-to-join-the-mac-in-2026.aspx', links: LINKS },
+  { id: 'sac_state_affiliation_faq', kind: 'rules', url: 'https://hornetsports.com/sports/2024/9/17/conference-affiliation-breakdown.aspx', links: LINKS },
   { id: 'sun_belt_tiebreakers', kind: 'rules', url: 'https://sunbeltsports.org/sports/2018/8/30/FB_Tie-Breakers.aspx', links: LINKS, snippet: /two divisions are/i },
   { id: 'mac_tiebreaker', kind: 'rules', url: 'https://getsomemaction.com/sports/2025/11/12/FB_1112255434.aspx', links: LINKS },
   { id: 'mac_sacramento_state', kind: 'rules', url: 'https://getsomemaction.com/news/2026/8/28/football-sacramento-state.aspx', links: LINKS },
@@ -76,15 +105,11 @@ export const CFB_SOURCES: Source[] = [
   { id: 'cfp_rankings_history', kind: 'tables', url: 'https://collegefootballplayoff.com/sports/2026/8/9/rankings-history.aspx', links: /rank|history|20\d\d/i },
   { id: 'cfp_rankings_week_by_week', kind: 'tables', url: 'https://collegefootballplayoff.com/sports/2026/8/9/wk-x-wk-rankings.aspx', links: /rank|week|20\d\d/i },
   /* where the 2026 documents live when the URL is not known yet */
-  { id: 'mw_football', kind: 'discover', url: 'https://themw.com/sports/football', links: LINKS },
-  { id: 'mw_news', kind: 'discover', url: 'https://themw.com/news', links: LINKS },
+  { id: 'mw_football', kind: 'discover', url: 'https://themw.com/sports/football', links: LINKS, render: true },
   { id: 'cusa_football', kind: 'discover', url: 'https://conferenceusa.com/sports/football', links: LINKS },
-  { id: 'aac_football', kind: 'discover', url: 'https://theamerican.org/sports/football', links: LINKS },
-  { id: 'pac12_football', kind: 'discover', url: 'https://pac-12.com/football', links: LINKS },
+  { id: 'aac_football', kind: 'discover', url: 'https://theamerican.org/sports/football', links: LINKS, render: true },
   { id: 'sun_belt_football', kind: 'discover', url: 'https://sunbeltsports.org/sports/football', links: LINKS },
   { id: 'mac_football', kind: 'discover', url: 'https://getsomemaction.com/sports/football', links: LINKS },
-  ...['themw.com', 'conferenceusa.com', 'pac-12.com', 'theamerican.org', 'getsomemaction.com', 'sunbeltsports.org'].map((h): Source =>
-    ({ id: 'search_' + h.split('.')[0].replace(/-/g, ''), kind: 'discover', url: 'https://' + h + '/search?query=football%20tiebreaker', links: /tie-?break|championship|documents\/|\.pdf/i })),
   /* historical committee rankings (Wikipedia, CC BY-SA): the CFP table only */
   ...Array.from({ length: 12 }, (_, i): Source => {
     const y = 2014 + i;
@@ -154,6 +179,35 @@ export function cfpTables(html: string): Array<{ heading: string; rows: string[]
 function section(title: string) { console.log('\n' + '='.repeat(100) + '\n== ' + title + '\n' + '='.repeat(100)); }
 const SUMMARY: string[] = [];
 
+/** the page's DOM after its scripts ran (headless Chrome), or null with the reason printed */
+export function renderDom(url: string): string | null {
+  const bins = [process.env.CHROME_BIN, 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'].filter((b): b is string => !!b);
+  let why = 'no Chrome binary';
+  for (const b of bins) {
+    try {
+      return execFileSync(b, ['--headless=new', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--virtual-time-budget=20000', '--dump-dom', url],
+        { encoding: 'utf8', maxBuffer: 64 << 20, timeout: 90000, stdio: ['ignore', 'pipe', 'ignore'] });
+    } catch (e) { why = b + ': ' + String((e as Error).message).slice(0, 160); }
+  }
+  console.log('-- render failed (' + why + ')');
+  return null;
+}
+
+/** text of a PDF: its text layer, else OCR of each page at 300 dpi (labelled), else null */
+function pdfText(file: string): { text: string; via: string } | null {
+  let text = '';
+  try { text = execFileSync('pdftotext', ['-layout', file, '-'], { encoding: 'utf8', maxBuffer: 32 << 20 }); }
+  catch (e) { console.log('pdftotext unavailable or failed: ' + String((e as Error).message).slice(0, 200)); return null; }
+  if (text.replace(/\s/g, '').length >= 200) return { text, via: 'pdftotext' };
+  const dir = fs.mkdtempSync(file + '.ocr-');
+  try {
+    execFileSync('pdftoppm', ['-r', '300', '-png', file, path.join(dir, 'p')]);
+    const pages = fs.readdirSync(dir).filter((f) => f.endsWith('.png')).sort();
+    const ocr = pages.map((f) => execFileSync('tesseract', [path.join(dir, f), '-', '--psm', '6'], { encoding: 'utf8', maxBuffer: 32 << 20, stdio: ['ignore', 'pipe', 'ignore'] })).join('\n\f\n');
+    return { text: '[OCR of ' + pages.length + ' page image(s): the PDF has no text layer]\n' + ocr, via: 'ocr' };
+  } catch (e) { console.log('no text layer and OCR unavailable or failed: ' + String((e as Error).message).slice(0, 200)); return null; }
+}
+
 async function fetchSource(s: Source) {
   section('SOURCE ' + s.id + ' [' + s.kind + ']  ' + s.url);
   let res: Response;
@@ -169,19 +223,32 @@ async function fetchSource(s: Source) {
     console.log('-- CFP tables: ' + tabs.length);
     tabs.forEach((t, i) => {
       console.log('-- table ' + i + ' under "' + t.heading + '" (' + t.rows.length + ' rows)');
-      for (const r of t.rows) console.log('ROW\t' + r.join('\t'));
+      if (ROWS) for (const r of t.rows) console.log('ROW\t' + r.join('\t'));
     });
     const tsv = tabs.map((t, i) => t.rows.map((r) => [i, ...r].join('\t')).join('\n')).join('\n');
     fs.writeFileSync(path.join(OUT, s.id + '.tsv'), tsv);
     SUMMARY.push(s.id + ': ' + head + ' · ' + tabs.length + ' CFP tables · tsv sha256 ' + sha256Hex(tsv));
     return;
   }
-  let text: string;
-  const html = isPdf ? '' : body.toString('utf8');
+  let text: string, rendered = '';
+  let html = isPdf ? '' : body.toString('utf8');
   if (isPdf) {
-    try { text = execFileSync('pdftotext', ['-layout', path.join(OUT, s.id + '.pdf'), '-'], { encoding: 'utf8', maxBuffer: 32 << 20 }); }
-    catch (e) { console.log('pdftotext unavailable or failed: ' + String((e as Error).message).slice(0, 200)); SUMMARY.push(s.id + ': ' + head + ' · PDF not converted'); return; }
-  } else text = htmlText(html);
+    const t = pdfText(path.join(OUT, s.id + '.pdf'));
+    if (!t) { SUMMARY.push(s.id + ': ' + head + ' · PDF not converted'); return; }
+    text = t.text;
+    if (t.via === 'ocr') rendered = ' · read by OCR';
+  } else {
+    if (s.render) {
+      const dom = renderDom(s.url);
+      if (dom) {
+        html = dom;
+        rendered = ' · rendered DOM ' + Buffer.byteLength(dom) + ' bytes, sha256 ' + sha256Hex(dom);
+        fs.writeFileSync(path.join(OUT, s.id + '.rendered.html'), dom);
+        console.log('-- read from the rendered DOM (headless Chrome)' + rendered);
+      }
+    }
+    text = htmlText(html);
+  }
   if (!isPdf && s.links) {
     const links = [...new Set([...html.matchAll(/href=["']([^"'#]+)["'][^>]*>([\s\S]{0,600}?)<\/a>/gi)]
       .map((m) => [m[1], decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim()])
@@ -209,7 +276,7 @@ async function fetchSource(s: Source) {
     tabs.forEach((t, i) => { console.log('-- table ' + i + ' (' + t.length + ' rows)'); for (const r of t.slice(0, 40)) console.log('ROW\t' + r.join('\t')); });
   }
   fs.writeFileSync(path.join(OUT, s.id + '.txt'), text);
-  SUMMARY.push(s.id + ': ' + head + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
+  SUMMARY.push(s.id + ': ' + head + rendered + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
   if (s.kind === 'discover') return;
   console.log('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):\n' + text.slice(0, s.max || 40000));
 }
