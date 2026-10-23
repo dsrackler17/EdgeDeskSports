@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-22T21:49:29.744Z",
+ "generated_at": "2026-10-23T05:03:47.069Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,19 +119,17 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 108,
+  "total": 106,
   "by_group": {
-   "other": 53,
+   "other": 51,
    "p4": 56,
    "independent": 3
   },
   "by_matchup": {
-   "conference": 104,
+   "conference": 102,
    "non_conference": 4
   },
   "by_conference": {
-   "sunbelt": 11,
-   "cusa": 6,
    "american": 11,
    "acc": 15,
    "independents": 3,
@@ -140,7 +138,9 @@
    "sec": 11,
    "big12": 15,
    "bigten": 15,
-   "pac12": 7
+   "sunbelt": 10,
+   "pac12": 7,
+   "cusa": 5
   },
   "fbs_fcs_in_source": 0
  },
@@ -200,11 +200,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 108
+  "PREDICTED": 106
  },
  "weather": {
-  "requested": 103,
-  "answered": 103,
+  "requested": 101,
+  "answered": 101,
   "dome": 3,
   "no_venue": 0,
   "failed": 0,
@@ -212,10 +212,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "103 of 103 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "101 of 101 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 108
+  "NO_MARKET": 106
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -284,12 +284,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 52,
-    "total": 108,
+    "non_power_games": 50,
+    "total": 106,
     "example": [
-     "James Madison @ App State",
-     "Liberty @ Kennesaw State",
-     "East Carolina @ Memphis"
+     "East Carolina @ Memphis",
+     "Massachusetts @ UConn",
+     "Army @ Tulsa"
     ]
    }
   },
@@ -304,7 +304,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 104,
+    "conference_games": 102,
     "wrong": 0
    }
   },
@@ -338,8 +338,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 108,
-    "audit_total": 108
+    "slate": 106,
+    "audit_total": 106
    }
   },
   {
