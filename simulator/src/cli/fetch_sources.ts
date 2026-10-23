@@ -40,8 +40,9 @@ const PAGES: Array<{ id: string; url: string; links?: RegExp }> = [
   /* the playoff field, seeding and scheduling, from NFL support */
   { id: 'nfl_support_seeding', url: 'https://support.nfl.com/hc/en-us/articles/35869775009556-Standings-Seeding-Rankings' },
   { id: 'nfl_support_playoff_schedule', url: 'https://support.nfl.com/hc/en-us/articles/35869712287508-Schedule' },
-  /* Super Bowl LXI: site */
+  /* Super Bowl LXI: site, and the rule that names the designated home team (it alternates between the conferences) */
   { id: 'nfl_super_bowl_lxi', url: 'https://www.nfl.com/news/sofi-stadium-approved-to-host-super-bowl-lxi-in-2027' },
+  { id: 'nfl_super_bowl_home_rule', url: 'https://www.nfl.com/news/bengals-not-rams-are-official-home-team-for-super-bowl-lvi-at-sofi-stadium' },
   /* Kalshi's fee schedule */
   { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' }
 ];
