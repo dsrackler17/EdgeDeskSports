@@ -2,9 +2,9 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-23T05:08:03.236Z",
+ "as_of": "2026-10-23T06:29:39.288Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "d76482fc47a6230e",
+ "inputs_key": "9b20e1cfe9089ba2",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "cbb752b5ea4f"
+   "sha1": "51ec8f401da9"
   },
   {
    "file": "football/params.js",
@@ -16172,57 +16172,57 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-23T00:45:32.412Z",
+  "generated_at": "2026-10-23T06:29:39.288Z",
   "sports": {
    "nfl": {
     "versions": [
      "edgedesk_football_v1.0.0",
      "edgedesk_nfl_v2.1.0"
     ],
-    "graded": 77,
+    "graded": 78,
     "ats": {
-     "n": 77,
+     "n": 78,
      "w": 38,
-     "l": 34,
+     "l": 35,
      "p": 5,
-     "pct": 52.8,
+     "pct": 52.1,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 77,
-      "text": "n=77 · Early signal",
+      "n": 78,
+      "text": "n=78 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 75,
-     "avg": 0.5,
+     "n": 76,
+     "avg": 0.49,
      "beat": 35,
      "flat": 26,
-     "lost": 14,
-     "beat_pct": 46.7,
+     "lost": 15,
+     "beat_pct": 46.1,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 75,
-      "text": "n=75 · Early signal",
+      "n": 76,
+      "text": "n=76 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 77,
-     "model_mae": 9.14,
-     "close_mae": 8.9,
-     "model_closer_pct": 48.1,
-     "total_n": 77,
-     "model_total_mae": 10.84,
-     "close_total_mae": 10.37
+     "n": 78,
+     "model_mae": 9.09,
+     "close_mae": 8.82,
+     "model_closer_pct": 47.4,
+     "total_n": 78,
+     "model_total_mae": 10.8,
+     "close_total_mae": 10.28
     },
     "brier": {
-     "n": 77,
-     "model": 0.2354
+     "n": 78,
+     "model": 0.2356
     }
    },
    "cfb": {
@@ -16230,50 +16230,50 @@
      "edgedesk_cfb_p4_v1.0.0",
      "edgedesk_cfb_p4_v1.0.1"
     ],
-    "graded": 414,
+    "graded": 417,
     "ats": {
-     "n": 414,
-     "w": 196,
-     "l": 213,
+     "n": 417,
+     "w": 198,
+     "l": 214,
      "p": 5,
-     "pct": 47.9,
+     "pct": 48.1,
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 414,
-      "text": "n=414 · Developing evidence",
+      "n": 417,
+      "text": "n=417 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 254,
-     "avg": 0.34,
-     "beat": 112,
-     "flat": 43,
+     "n": 257,
+     "avg": 0.35,
+     "beat": 114,
+     "flat": 44,
      "lost": 99,
-     "beat_pct": 44.1,
+     "beat_pct": 44.4,
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 254,
-      "text": "n=254 · Developing evidence",
+      "n": 257,
+      "text": "n=257 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 414,
+     "n": 417,
      "model_mae": 12.59,
-     "close_mae": 11.14,
-     "model_closer_pct": 39.6,
-     "total_n": 341,
-     "model_total_mae": 12.78,
-     "close_total_mae": 12.34
+     "close_mae": 11.15,
+     "model_closer_pct": 39.8,
+     "total_n": 344,
+     "model_total_mae": 12.79,
+     "close_total_mae": 12.35
     },
     "brier": {
-     "n": 329,
-     "model": 0.1673
+     "n": 332,
+     "model": 0.1685
     }
    }
   }
