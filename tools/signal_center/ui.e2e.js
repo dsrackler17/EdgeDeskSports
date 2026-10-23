@@ -119,6 +119,13 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
       chk(W + ': the seat reads Signals and is named Signal Center', nav.labels[0] === 'Signals' && nav.aria[0] === 'Signal Center', [nav.labels[0], nav.aria[0]]);
       chk(W + ': a returning reader still lands on their remembered Research', nav.on.join() === 'research', nav.on);
       chk(W + ': no seat label is clipped', nav.clipped.length === 0, nav.clipped);
+      /* and with the wide fallback face a browser uses when web fonts are blocked (CI's runners) */
+      const wide = await page.evaluate(() => {
+        const st = document.createElement('style'); st.textContent = ".bottomnav button{font-family:'DejaVu Sans','Verdana',sans-serif!important}"; document.head.appendChild(st);
+        const out = [...document.querySelectorAll('.bottomnav button')].filter((b) => b.offsetParent !== null && b.scrollWidth > b.clientWidth + 1).map((b) => b.dataset.v);
+        st.remove(); return out;
+      });
+      chk(W + ': no seat label is clipped in a wide fallback face either', wide.length === 0, wide);
       chk(W + ': every seat is a 44px tap target', nav.minH >= 44 && nav.minW >= 44, [nav.minH, nav.minW]);
       await page.click('.bottomnav button[data-v="signals"]');
       await waitCards(page);

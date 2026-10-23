@@ -829,6 +829,9 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 /* six seats share a phone's width, so the labels stay readable at 320px */
 @media(max-width:359px){.bottomnav button{font-size:10px}}
 @media(min-width:760px){.bottomnav{justify-content:center;gap:8px}.bottomnav button{flex:0 1 104px;font-size:11px}}
+/* seven seats share a phone's width: the labels scale with it, so even a wide fallback face (DejaVu Sans, where web fonts are blocked) keeps "Simulator" whole at 320 px */
+@media(max-width:430px){nav.bottomnav button{font-size:clamp(9px,2.55vw,10.5px);letter-spacing:0}}
+@media(max-width:359px){nav.bottomnav button{letter-spacing:-.03em}}
 /* the disclaimer sits ABOVE the nav (nav height + its own safe-area pad) as
    one compact line. Every compliance element stays on every width — not
    betting advice, signals can be wrong, 21+, 1-800-GAMBLER — and a phone
