@@ -7,7 +7,7 @@
    Prints {"include":[...]} for a job matrix. Every value a later step puts on
    a command line is checked here against a strict pattern, so nothing a
    person types into the Run workflow form reaches a shell unvalidated.
-   Schedule: every sport with a simulation module, at the production run
+   Schedule: every sport in NIGHTLY (the NFL), at the production run
    count; an ACTIVE sport publishes, any other runs dry and its blockers are
    printed as warnings. Dispatch: the requested sport; publishing is refused
    up front for a sport that is not ACTIVE or for fewer than 100,000 runs.
@@ -19,15 +19,19 @@ import { sportRegistry, type SportEntry } from '../sports/registry.ts';
 import { parseSeed } from '../core/prng.ts';
 import { PRODUCTION_RUNS } from '../core/results.ts';
 import { NFL_2026 } from '../sports/nfl/config.ts';
+import { MLB_2026 } from '../sports/mlb/config.ts';
 
 /** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season */
-export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season };
+export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season };
+/** the nightly schedule: MLB runs only when a person dispatches it (its live feed is checked by hand first:
+    simulator/src/sports/mlb/config.ts live_inputs) */
+export const NIGHTLY = ['nfl'];
 
 export interface PlannedRun { sport: string; season: string; runs: string; seed: string; publish: boolean; status: string; blockers: string[] }
 
 export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }, reg: SportEntry[] = sportRegistry()): PlannedRun[] {
   if (event === 'schedule') {
-    return Object.keys(RUNNABLE).map((k) => {
+    return NIGHTLY.map((k) => {
       const s = reg.find((r) => r.key === k)!;
       return { sport: k, season: String(RUNNABLE[k]), runs: String(PRODUCTION_RUNS), seed: '', publish: s.status === 'ACTIVE', status: s.status, blockers: s.blockers };
     });

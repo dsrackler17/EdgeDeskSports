@@ -27,6 +27,7 @@ deployment: §16 states exactly what exists and what does not.
 | GitHub Actions | Linted (actionlint 1.7.7); *Deploy simulator SQL* and *Simulator source check* have run on GitHub; the first *Simulator* publication runs from `main` | `.github/workflows/simulator*.yml`, `deploy-simulator.yml` |
 | 100,000-run benchmark | Executed: 15.7 s on 4 workers | §14 |
 | NHL season and Stanley Cup simulation | Implemented, tested (202 assertions; reproduces all 165 playoff series 2013-14..2025-26); **BLOCKED for publication** | [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) |
+| MLB season and postseason | Implemented, tested, studies committed; **BLOCKED for publication** (six 2026 facts unverified, live feed never run from the build environment) | [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) |
 | College football (season, title games, CFP) | Implemented, tested; **BLOCKED for publication** (eight 2026 facts not VERIFIED) | [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) |
 | Other sports | Not active: BLOCKED or COMING SOON with named blockers | §4 |
 
@@ -112,7 +113,7 @@ it is stale.
 | NBA | BLOCKED | season | `nba/` model and injury layer | no 2026-27 conference/division table; 30 regular-season games (2 per club) depend on NBA Cup results and are not yet scheduled; no standings/tiebreaker/play-in/series code; no uncertainty study; the chosen model needs network-built `.cache/nba_work` tables |
 | NHL | BLOCKED (Implementable — implemented — blocked on verification) | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | 2026-27 tie-breaking procedure, playoff format and home-ice rule not verified against NHL.com (unreachable from the build environment); the reader has no NHL view; not in the nightly workflow (needs a pyarrow step) |
 | WNBA | BLOCKED | series | — | no series simulator or uncertainty study; the 2026 Finals end by 2026-10-31 |
-| MLB | COMING SOON | season | `mlb/` history model | the 2026 regular season is over (only the World Series remains); no 2026 ratings/results/starters committed; live inputs only in Supabase; history model does not beat Elo |
+| **MLB** | **BLOCKED** (implemented — blocked on verification) | season | served lab brain `mlb/history/model.js` replayed point-in-time; Retrosheet 2010–2025 (+ postseason 2012–2025); live 2026 from MLB's Stats API; rules reproduce every 2012–2025 postseason pairing and host | 2026 alignment, postseason format, tiebreaker procedure, World Series home field and extra-inning rules not verified against MLB's pages (unreachable); the live 2026 feed never run from the build environment — [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) §15 |
 | College basketball | COMING SOON | tournament | `basketball/` | the 2026-27 season has not started; partial schedule with placeholder times; no conference membership, conference-tournament formats or NCAA selection/seed/bracket data |
 | Tennis | COMING SOON | tournament | `tools/tennis/` | retired from coverage (2026-09-27); ratings only in the database; no owned draw structure; no validated point-level model |
 | Golf | COMING SOON | tournament | — | no golf model, field data, round-score distribution or cut rules in the repository |
@@ -468,6 +469,7 @@ backtest runs (of 128,000 production-σ runs) coin-tossed a points tie.
 | `simulator/tests/publish.test.ts` (PostgREST retries, key redaction, publish order, failure handling) | 18 | pass |
 | `simulator/tests/sql.test.ts` (real PostgreSQL 16, incl. fail-closed entitlement) | 82 | pass |
 | `simulator/tests/ui.e2e.ts` (Chromium, 3 widths) | 31 | pass |
+| MLB suites (`mlb_rules_history`, `mlb_rules_synthetic`, `mlb_rotation`, `mlb_model`, `mlb_sim`, `mlb_statsapi`, `mlb_config`): see [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) §12 | 279 | pass |
 | typecheck (`tsc --noEmit`, strict) | — | clean |
 | generated files (`sim:check`), migration byte-identical | — | current |
 | existing: `tools/app/navigation.test.js` | 256 | pass |
@@ -587,6 +589,8 @@ limitations, and what blocks publication.
 ---
 
 ## 17. File manifest
+
+The MLB module's files are listed in [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) §3.
 
 ```
 SIMULATOR_NOTES.md                         this file

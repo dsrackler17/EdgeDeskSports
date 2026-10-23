@@ -160,6 +160,31 @@ the ask at the configured quantity; the midpoint is a reference only. Until
 the fee schedule is verified (`fees.verified`), every executable figure is
 labelled pre-fee and nothing is flagged. The simulator never places an order.
 
+## MLB
+
+The MLB season and postseason simulator (design, evidence and limitations:
+[`MLB_SIMULATOR_NOTES.md`](../../MLB_SIMULATOR_NOTES.md)) is **BLOCKED for
+publication**: six 2026 facts in `simulator/src/sports/mlb/config.ts` await
+a person's verification, one of them a first check of the live feed. It
+runs from history (any morning of 2022–2025) or live (2026, MLB's Stats API).
+
+```powershell
+npm run sim:test:mlb                                                                         # the seven MLB suites
+node simulator/src/cli/run.ts --sport mlb --season 2025 --snapshot simulator/fixtures/mlb_2025_ws_g3_snapshot.json.gz --runs 100000 --workers 4 --dry-run
+node simulator/src/cli/run.ts --sport mlb --season 2025 --as-of 2025-08-15 --runs 20000 --workers 4 --dry-run   # rebuilds the model point-in-time (~90 s)
+npm run sim:mlb:dry-run                                                                      # live 2026: needs statsapi.mlb.com (Actions runners reach it)
+npm run sim:mlb:probe                                                                        # read the live sources, write nothing
+npm run sim:mlb:postseason-fixture; npm run sim:mlb:studies; npm run sim:mlb:backtest; npm run sim:mlb:fixture   # regenerate the evidence, in this order
+```
+
+The results add `starting_pitchers`: the announced (Confirmed) starters and,
+per simulated game, the share of runs each pitcher started it (Projected: a
+distribution, never one name). Bullpen fatigue is not modelled. MLB is not
+in the nightly schedule: Actions → *Simulator* → Run workflow with sport
+`mlb` runs it as a dry run; the plan step refuses to publish it while it is
+BLOCKED. The `mlb-live-probe` job of *Simulator suites* reads the live
+sources on every pull request that touches the simulator.
+
 ## Deployment sequence
 
 Every step is a decision a person makes; none runs by itself.
@@ -201,6 +226,47 @@ PowerShell, to check what a step will do before running it in CI:
 ```powershell
 $env:SIM_EVENT='workflow_dispatch'; $env:SIM_SPORT='nfl'; $env:SIM_SEASON='2026'; $env:SIM_RUNS='100000'; $env:SIM_SEED=''; $env:SIM_PUBLISH='true'; node simulator/src/cli/plan.ts
 ```
+
+## NBA (2026-27): blocked, runnable as a dry run
+
+Design, evidence and what is and is not modelled:
+[`NBA_SIMULATOR_NOTES.md`](../../NBA_SIMULATOR_NOTES.md). The NBA is
+**BLOCKED**: six 2026-27 rules facts await verification against nba.com
+(unreachable from the build environment), and 30 regular-season games depend
+on the NBA Cup group stage and are not on the schedule until early December.
+
+The NBA snapshot prices every game with the served NBA model, which needs the
+NBA work tables (`.cache/nba_work`, rebuilt from the public hoopR feeds; about
+eight minutes and 0.5 GB the first time) and `pyarrow`:
+
+```powershell
+pip install pyarrow
+node --max-old-space-size=6144 nba/ingest/season.js --season all      # the work tables (the committed nba/data files may change: git checkout nba/data keeps the committed ones)
+npm run sim:nba:test                                                    # NBA rules (2006-07..2025-26 postseasons), synthetic cases, config, model, simulation
+npm run sim:nba:dry-run -- --runs 100000                                # the 2026-27 season as committed; --allow-incomplete-schedule is a WARN that blocks publication
+node --max-old-space-size=8000 simulator/src/cli/run.ts --sport nba --season 2026 --as-of 2026-04-25T00:00:00Z --dry-run --runs 20000 --workers 4   # a historical replay: 2025-26 frozen in the first round
+npm run sim:replay -- simulator/out/<dir>/snapshot.json                 # replay an NBA snapshot (sport and season come from the file)
+```
+
+Research artifacts (committed; rebuild in this order when the NBA model changes):
+
+```powershell
+npm run sim:nba:hazards                  # simulator/data/nba_return_hazards.json (seconds)
+npm run sim:nba:frozen                   # frozen forecasts, 15 seasons x 5 as-of points (simulator/.cache/nba_frozen; hours)
+npm run sim:nba:uncertainty              # simulator/data/nba_strength_uncertainty.json
+npm run sim:nba:audit                    # simulator/data/nba_postseason_audit.json
+npm run sim:nba:fixture                  # simulator/fixtures/nba_2027_snapshot.json.gz and nba_2026_r1_snapshot.json.gz (the test snapshots)
+```
+
+**To activate the NBA:** verify the six facts in
+`simulator/src/sports/nba/config.ts` (VERIFIED, `verified_by`, `verified_at`)
+in a reviewed commit; once the NBA Cup-dependent games are on the schedule
+(`schedule.complete` passes) remove the schedule blocker in
+`simulator/src/sports/registry.ts`; regenerate the reader registry
+(`node simulator/src/cli/build_ui_registry.ts`); add `nba` to `RUNNABLE` in
+`simulator/src/cli/plan.ts` and an NBA work-table step to
+`.github/workflows/simulator.yml` (restore the `nba-work-` cache the NBA build
+keeps, as `nba-build.yml` does); then a first 100,000-run publication by hand.
 
 ## Disable and recover
 

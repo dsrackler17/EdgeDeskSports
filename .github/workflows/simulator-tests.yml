@@ -1,11 +1,13 @@
 # EdgeDesk Simulator — every suite, on every change to the simulator.
 #
 #   unit   typecheck (pinned typescript from simulator/package-lock.json), the
-#          engine, rules (NFL 2002-2025 and NHL 2013-14..2025-26 history +
-#          synthetic), simulation, hooks, config, markets and reader suites,
-#          the college football suites (conference ties, the 2024-2025 title
-#          games and brackets, the committee proxy, favourite calibration),
-#          and the generated-file checks
+#          engine, rules (NFL 2002-2025, NHL 2013-14..2025-26 and NBA
+#          2006-07..2025-26 postseasons + synthetic), simulation, hooks, config,
+#          markets and reader suites, the MLB suites (rules 2012-2025 and
+#          synthetic, rotations, game model, simulation, the Stats API grammar on
+#          MLB's real 2024 responses, configuration), the college football suites
+#          (conference ties, the 2024-2025 title games and brackets, the committee
+#          proxy, favourite calibration), and the generated-file checks
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
 #   sql    supabase/simulator.sql on a real, throwaway PostgreSQL: RLS, the
@@ -13,8 +15,13 @@
 #          (SIM_SQL_REQUIRED=1: a missing cluster FAILS, never skips)
 #   e2e    the Simulator seat in Chromium at desktop, tablet and phone widths
 #          (SIM_E2E_REQUIRED=1: a missing browser FAILS, never skips)
+#   mlb-live-probe (pull requests and manual runs only) reads MLB's Stats API
+#          and the Chadwick register on a real runner, exactly as the live MLB
+#          snapshot does, and writes nothing: the live MLB path cannot be run
+#          from the environment it was built in, so a runner checks it.
 #
-# No network beyond package installs, no credentials, nothing written.
+# No network beyond package installs (and the read-only MLB probe), no
+# credentials, nothing written.
 name: Simulator suites
 
 on:
@@ -22,6 +29,9 @@ on:
     branches: [main]
     paths:
       - 'simulator/**'
+      - 'mlb/history/**'
+      - 'docs/model-loop/mlb/versions.json'
+      - 'datapack/quant_v1/data/mlb/raw/**'
       - 'supabase/simulator.sql'
       - 'supabase/simulator_registry.sql'
       - 'supabase/migrations/20261023120000_simulator.sql'
@@ -33,6 +43,9 @@ on:
       - 'football/engine.js'
       - 'hockey/model/**'
       - 'hockey/data/teams.json'
+      - 'nba/model/**'
+      - 'nba/lib/**'
+      - 'nba/config.js'
       - 'football/cfb_p4/**'
       - 'football/fbs/fbs.js'
       - 'football/matchup/inputs.js'
@@ -42,6 +55,9 @@ on:
   pull_request:
     paths:
       - 'simulator/**'
+      - 'mlb/history/**'
+      - 'docs/model-loop/mlb/versions.json'
+      - 'datapack/quant_v1/data/mlb/raw/**'
       - 'supabase/simulator.sql'
       - 'supabase/simulator_registry.sql'
       - 'supabase/migrations/20261023120000_simulator.sql'
@@ -53,6 +69,9 @@ on:
       - 'football/engine.js'
       - 'hockey/model/**'
       - 'hockey/data/teams.json'
+      - 'nba/model/**'
+      - 'nba/lib/**'
+      - 'nba/config.js'
       - 'football/cfb_p4/**'
       - 'football/fbs/fbs.js'
       - 'football/matchup/inputs.js'
@@ -99,6 +118,15 @@ jobs:
           node simulator/tests/nhl_rules_synthetic.test.ts
           node simulator/tests/nhl_config.test.ts
           node simulator/tests/nhl_sim.test.ts
+      - name: MLB rules against every postseason 2012-2025, the synthetic branches, rotations, game model, simulation, Stats API grammar and configuration
+        run: |
+          node simulator/tests/mlb_rules_history.test.ts
+          node simulator/tests/mlb_rules_synthetic.test.ts
+          node simulator/tests/mlb_rotation.test.ts
+          node simulator/tests/mlb_model.test.ts
+          node simulator/tests/mlb_sim.test.ts
+          node simulator/tests/mlb_statsapi.test.ts
+          node simulator/tests/mlb_config.test.ts
       - name: College football rules (synthetic ties, the 2024-2025 title games), CFP brackets, committee proxy, calibration, configuration and simulation
         run: npm run sim:cfb:test
       - name: Kalshi futures comparison and the reader
@@ -109,11 +137,32 @@ jobs:
         run: node simulator/tests/cli.test.ts
       - name: The publisher's client side (bounded retries, key redaction, call order, failure handling)
         run: node simulator/tests/publish.test.ts
+      - name: NBA rules against every postseason 2006-07..2025-26, and the synthetic cases
+        run: |
+          node simulator/tests/nba_rules_history.test.ts
+          node simulator/tests/nba_rules_synthetic.test.ts
+      - name: NBA configuration, the served model, availability and the simulation (committed snapshots)
+        run: |
+          node simulator/tests/nba_config.test.ts
+          node simulator/tests/nba_model.test.ts
+          node simulator/tests/nba_sim.test.ts
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check
           node simulator/src/research/build_registry_sql.ts --check
           cmp supabase/simulator.sql supabase/migrations/20261023120000_simulator.sql
+
+  mlb-live-probe:
+    if: ${{ github.event_name != 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Read MLB's Stats API and the Chadwick register as the live MLB snapshot does (writes nothing)
+        run: node simulator/src/cli/probe_mlb_live.ts
 
   sql:
     runs-on: ubuntu-latest

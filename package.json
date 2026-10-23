@@ -535,7 +535,15 @@
     "grades:sql": "node tools/performance/research_grades_sql.test.js",
     "grades:e2e": "node tools/performance/grades_ui.e2e.js",
     "sim:typecheck": "npm run --prefix simulator typecheck",
-    "sim:test": "node simulator/tests/core.test.ts && node simulator/tests/hooks.test.ts && node simulator/tests/nfl_rules_history.test.ts && node simulator/tests/nfl_rules_synthetic.test.ts && node simulator/tests/nfl_sim.test.ts && node simulator/tests/nfl_config.test.ts && node simulator/tests/nhl_rules_history.test.ts && node simulator/tests/nhl_rules_synthetic.test.ts && node simulator/tests/nhl_config.test.ts && node simulator/tests/nhl_sim.test.ts && node simulator/tests/markets.test.ts && node simulator/tests/ui.test.ts && node simulator/tests/cli.test.ts && node simulator/tests/publish.test.ts && npm run sim:cfb:test",
+    "sim:test": "node simulator/tests/core.test.ts && node simulator/tests/hooks.test.ts && node simulator/tests/nfl_rules_history.test.ts && node simulator/tests/nfl_rules_synthetic.test.ts && node simulator/tests/nfl_sim.test.ts && node simulator/tests/nfl_config.test.ts && node simulator/tests/nhl_rules_history.test.ts && node simulator/tests/nhl_rules_synthetic.test.ts && node simulator/tests/nhl_config.test.ts && node simulator/tests/nhl_sim.test.ts && npm run sim:test:mlb && node simulator/tests/markets.test.ts && node simulator/tests/ui.test.ts && node simulator/tests/cli.test.ts && node simulator/tests/publish.test.ts && npm run sim:cfb:test && npm run sim:nba:test",
+    "sim:test:mlb": "node simulator/tests/mlb_rules_history.test.ts && node simulator/tests/mlb_rules_synthetic.test.ts && node simulator/tests/mlb_rotation.test.ts && node simulator/tests/mlb_model.test.ts && node simulator/tests/mlb_sim.test.ts && node simulator/tests/mlb_statsapi.test.ts && node simulator/tests/mlb_config.test.ts",
+    "sim:nba:test": "node simulator/tests/nba_rules_history.test.ts && node simulator/tests/nba_rules_synthetic.test.ts && node simulator/tests/nba_config.test.ts && node simulator/tests/nba_model.test.ts && node simulator/tests/nba_sim.test.ts",
+    "sim:nba:dry-run": "node --max-old-space-size=8000 simulator/src/cli/run.ts --sport nba --workers 4 --dry-run --allow-incomplete-schedule",
+    "sim:nba:frozen": "node --max-old-space-size=8000 simulator/src/research/nba_frozen_forecasts.ts --all --parallel 3",
+    "sim:nba:uncertainty": "node --max-old-space-size=8000 simulator/src/research/nba_strength_uncertainty.ts",
+    "sim:nba:hazards": "node --max-old-space-size=6000 simulator/src/research/nba_return_hazards.ts",
+    "sim:nba:audit": "node --max-old-space-size=8000 simulator/src/research/nba_postseason_audit.ts",
+    "sim:nba:fixture": "node --max-old-space-size=8000 simulator/src/cli/build_nba_fixture.ts",
     "sim:cfb:test": "node simulator/tests/cfb_rules_synthetic.test.ts && node simulator/tests/cfb_rules_history.test.ts && node simulator/tests/cfb_cfp.test.ts && node simulator/tests/cfb_committee.test.ts && node simulator/tests/cfb_calibration.test.ts && node simulator/tests/cfb_config.test.ts && node simulator/tests/cfb_sim.test.ts",
     "sim:cfb:dry-run": "node simulator/src/cli/run.ts --sport cfb --season 2026 --workers 4 --dry-run",
     "sim:cfb:calibration": "node simulator/src/research/cfb_calibration.ts",
@@ -559,6 +567,13 @@
     "sim:nhl:dry-run": "node simulator/src/cli/run.ts --sport nhl --season 2027 --workers 4 --dry-run",
     "sim:nhl:goal-study": "node simulator/src/research/nhl_goal_distribution.ts",
     "sim:nhl:uncertainty": "node simulator/src/research/nhl_strength_uncertainty.ts",
-    "sim:nhl:fixture": "node simulator/src/cli/build_fixture.ts --sport nhl"
+    "sim:nhl:fixture": "node simulator/src/cli/build_fixture.ts --sport nhl",
+    "sim:mlb:dry-run": "node simulator/src/cli/run.ts --sport mlb --season 2026 --workers 4 --dry-run",
+    "sim:mlb:history": "node simulator/src/cli/run.ts --sport mlb --dry-run --workers 4 --season",
+    "sim:mlb:studies": "node simulator/src/research/mlb_game_model_study.ts && node simulator/src/research/mlb_rotation_study.ts && node simulator/src/research/mlb_strength_uncertainty.ts",
+    "sim:mlb:backtest": "node simulator/src/research/mlb_backtest.ts",
+    "sim:mlb:fixture": "node simulator/src/cli/build_mlb_fixture.ts all",
+    "sim:mlb:postseason-fixture": "node simulator/src/research/build_mlb_history_fixture.ts",
+    "sim:mlb:probe": "node simulator/src/cli/probe_mlb_live.ts"
   }
 }

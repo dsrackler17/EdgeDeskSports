@@ -31,7 +31,7 @@
       probability is produced at all.
 
    Streams (core/prng.ts STREAM): strength 1, games 2, postseason 3, coin 4,
-   points 6, committee 9.
+   points 6, committee 11.
    =========================================================================== */
 import type { SimModule, RunMarks, OutcomeDef, SumRule, EntityDef } from '../../core/engine.ts';
 import { streamFor, STREAM } from '../../core/prng.ts';

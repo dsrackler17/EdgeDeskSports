@@ -13,6 +13,11 @@
 #                              run that keeps the whole pipeline exercised.
 #   workflow_dispatch          one sport; inputs validated by
 #                              simulator/src/cli/plan.ts before anything runs.
+#                              MLB runs only from here (not nightly): its live
+#                              2026 inputs come from MLB's Stats API, which the
+#                              build environment could not reach, so the first
+#                              dispatched dry run is the check the registry's
+#                              live_inputs fact asks a person to make.
 #
 # FAILURE SEPARATION. simulate: a gate that blocks, an invalid input or a
 # failed publication fails THIS job, records a FAILURE in public.sim_alerts
@@ -44,7 +49,7 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl]
+        options: [nfl, mlb]
         default: nfl
       season:
         description: 'Season (must equal the sport''s configured season)'
@@ -126,6 +131,9 @@ jobs:
           node simulator/tests/nfl_rules_synthetic.test.ts
           node simulator/tests/nfl_sim.test.ts
           node simulator/tests/nfl_config.test.ts
+      - name: The MLB suites, before an MLB run
+        if: ${{ matrix.sport == 'mlb' }}
+        run: npm run sim:test:mlb
       - name: Status
         env:
           STATUS: ${{ matrix.status }}

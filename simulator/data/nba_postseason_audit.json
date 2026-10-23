@@ -1,0 +1,97 @@
+{
+ "schema": "edgedesk_nba_postseason_audit_v1",
+ "generated_at": "2026-10-23T13:01:00.481Z",
+ "model": {
+  "chosen": "E_ridge_P",
+  "playoff_feature": {
+   "coefficient_points_home_margin": 1.6855,
+   "training_mean": 0.0662,
+   "trained_through": 2026,
+   "note": "the ridge margin model's own postseason term (nba/params/ml_live.json): a learned home-margin shift on play-in and playoff games, applied by the simulator as the served model applies it"
+  },
+  "rotation": "player layer: projected rotation = the club's latest game; minutes = each player's EWM when he plays (half-life 8 games, cap 40), scaled to 240 (nba/model/players.js strength). No postseason minutes concentration."
+ },
+ "seasons": [
+  2010,
+  2011,
+  2012,
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025,
+  2026
+ ],
+ "regular": {
+  "n": 19289,
+  "mean_residual": 0.003,
+  "calibration_slope": 1.009,
+  "log_loss": 0.6028,
+  "home_win_rate": 0.5754,
+  "mean_p_home": 0.5726,
+  "mean_mu": 2.361,
+  "mean_residual_ci95": [
+   -0.213,
+   0.209
+  ],
+  "slope_ci95": [
+   0.976,
+   1.044
+  ]
+ },
+ "play_in": {
+  "n": 36,
+  "mean_residual": 2.493,
+  "calibration_slope": -0.233,
+  "log_loss": 0.6359,
+  "home_win_rate": 0.6667,
+  "mean_p_home": 0.6449,
+  "mean_mu": 4.73
+ },
+ "playoffs": {
+  "n": 1338,
+  "mean_residual": -0.372,
+  "calibration_slope": 1.16,
+  "log_loss": 0.6315,
+  "home_win_rate": 0.6114,
+  "mean_p_home": 0.6418,
+  "mean_mu": 4.37,
+  "mean_residual_ci95": [
+   -1.118,
+   0.447
+  ],
+  "slope_ci95": [
+   0.99,
+   1.341
+  ]
+ },
+ "postseason": {
+  "n": 1374,
+  "mean_residual": -0.297,
+  "calibration_slope": 1.146,
+  "log_loss": 0.6316,
+  "home_win_rate": 0.6128,
+  "mean_p_home": 0.6419,
+  "mean_mu": 4.379,
+  "mean_residual_ci95": [
+   -1.009,
+   0.46
+  ],
+  "slope_ci95": [
+   0.978,
+   1.325
+  ]
+ },
+ "reading": "mean_residual > 0: the home club does better than the model says; calibration_slope > 1: the better club does better than the model says (a tightened rotation would show here). Intervals are a season bootstrap (2000 resamples).",
+ "code_sha256": {
+  "nba/model/pass.js": "59e59d77462d59c40aa33a1edb8af267e624ac5a9279b760931de1909b6a7fd5",
+  "nba/params/ml_live.json": "4737cf3c20ef161657ecd3f40978dda7ed31aea8ea6dfd5cb00f53c4816efdb8"
+ }
+}
