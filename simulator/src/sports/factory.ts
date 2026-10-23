@@ -8,6 +8,8 @@ import { mlbModule } from './mlb/module.ts';
 import type { MlbInputData } from './mlb/inputs.ts';
 import { nbaModule } from './nba/module.ts';
 import type { NbaInputData } from './nba/inputs.ts';
+import { cfbModule } from './cfb/module.ts';
+import type { CfbInputData } from './cfb/inputs.ts';
 
 export function buildModule(sport: string, data: unknown, opt: { seed: bigint; sigma?: number }): SimModule {
   switch (sport) {
@@ -15,6 +17,7 @@ export function buildModule(sport: string, data: unknown, opt: { seed: bigint; s
     case 'nhl': return nhlModule(data as NhlInputData, { seed: opt.seed, sigma: opt.sigma });
     case 'mlb': return mlbModule(data as MlbInputData, { seed: opt.seed, sigma: opt.sigma });
     case 'nba': return nbaModule(data as NbaInputData, { seed: opt.seed, sigma: opt.sigma });
+    case 'cfb': return cfbModule(data as CfbInputData, { seed: opt.seed, tau: opt.sigma });
     default: throw new Error('no simulation module for sport ' + sport + ' (see simulator/src/sports/registry.ts for its status)');
   }
 }

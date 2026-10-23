@@ -8,11 +8,12 @@
      node simulator/src/cli/run.ts --snapshot simulator/out/<dir>/snapshot.json --dry-run   (replay)
      node simulator/src/cli/run.ts --sport nhl --season 2027 --workers 4 --dry-run   (2026-27; NHL season keys are end years)
      node simulator/src/cli/run.ts --sport nba --dry-run                               (2026-27; NBA season keys are end years)
+     node simulator/src/cli/run.ts --sport cfb --season 2026 --dry-run                 (college football: run_cfb.ts)
      node simulator/src/cli/run.ts --sport mlb --season 2026 --dry-run                 (live: MLB Stats API)
      node simulator/src/cli/run.ts --sport mlb --season 2025 --as-of 2025-10-27 --dry-run   (history replay, 2022-2025)
 
    Options
-     --sport nfl|nhl|nba|mlb  the sport (simulator/src/sports/registry.ts)
+     --sport nfl|nhl|nba|mlb|cfb  the sport (simulator/src/sports/registry.ts)
      --season 2026            must match the sport's season config (default: it; NHL and NBA keys are end years, 2027 = 2026-27)
      --runs N                 default 100000 (production); fewer only for a dry run
      --seed S                 decimal or 0x-hex u64; default: derived from the input hash
@@ -25,9 +26,9 @@
      --trace-runs 0,1,2       runs to trace in full (at most 5)
      --allow-unreconciled     dry run only: proceed when the standings source is unavailable
      --as-of YYYY-MM-DD       MLB: the morning to simulate from (history seasons: required; live: default today)
+     --confirm-through DATE   MLB history only: games before DATE (from --as-of) carry their actual starters as Confirmed
      --as-of ISO              NBA: freeze the season at this time (games from then on are unplayed);
                               a historical replay, dry run only
-     --confirm-through DATE   MLB history only: games before DATE (from --as-of) carry their actual starters as Confirmed
      --allow-incomplete-schedule
                               NBA, dry run only: simulate a season whose NBA Cup-dependent games are
                               not on the schedule yet (WARN: never publishable)
@@ -54,6 +55,7 @@ import { buildNbaSnapshot, readSnapshot as readNbaSnapshot, writeSnapshot as wri
 import { validateNbaInputs, nbaMathStatus } from '../sports/nba/validate.ts';
 import { NBA_OUTCOME_SEMANTICS } from '../sports/nba/module.ts';
 import { sha256Hex } from '../core/canonical.ts';
+import { executeCfb, printCfbSummary, type CfbRunOutcome } from './run_cfb.ts';
 
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -67,17 +69,18 @@ export interface CliArgs {
   /** NBA, dry run only: simulate without the NBA Cup-dependent games */
   allowIncompleteSchedule: boolean;
 }
-/** each sport's configured season (the NHL's and the NBA's are their end years: 2027 = 2026-27) */
-export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, nba: NBA_2026_27.season, mlb: MLB_2026.season };
+/** each sport's configured season (the NBA's is its end year: 2027 = 2026-27) */
+export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nba: NBA_2026_27.season };
 export function parseArgs(argv: string[]): CliArgs {
   const a: CliArgs = { sport: 'nfl', season: NaN, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
     publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4, asOf: null, confirmThrough: null, allowIncompleteSchedule: false };
   const need = (i: number) => { if (argv[i + 1] == null || argv[i + 1].startsWith('--')) throw new Error(argv[i] + ' needs a value'); return argv[i + 1]; };
+  let seasonGiven = false;
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     switch (k) {
       case '--sport': a.sport = need(i); i++; break;
-      case '--season': a.season = Number(need(i)); i++; break;
+      case '--season': a.season = Number(need(i)); seasonGiven = true; i++; break;
       case '--runs': a.runs = Number(need(i)); i++; break;
       case '--seed': a.seed = need(i); i++; break;
       case '--workers': a.workers = Number(need(i)); i++; break;
@@ -94,27 +97,24 @@ export function parseArgs(argv: string[]): CliArgs {
       default: throw new Error('unknown option ' + k);
     }
   }
-  if (!sportRegistry().some((s) => s.key === a.sport)) throw new Error('unknown sport ' + a.sport);
   if (Number.isNaN(a.season)) a.season = SEASON_DEFAULT[a.sport] != null ? SEASON_DEFAULT[a.sport] : NFL_2026.season;
-  /* sport-specific options: the NBA's --as-of is a time, MLB's a date */
-  if (a.allowIncompleteSchedule && a.sport !== 'nba') throw new Error('--allow-incomplete-schedule applies to the NBA only');
-  if (a.sport === 'nba') {
-    if (a.asOf != null && !(Number.isFinite(Date.parse(a.asOf)) && /^\d{4}-\d{2}-\d{2}/.test(a.asOf))) throw new Error('--as-of needs an ISO time');
-    if (a.publish && (a.asOf != null || a.allowIncompleteSchedule)) throw new Error('--as-of and --allow-incomplete-schedule are for dry runs only');
-    if (a.confirmThrough) throw new Error('--confirm-through is for MLB history replays (with --as-of)');
-  } else {
-    for (const d of [a.asOf, a.confirmThrough]) if (d != null && !/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error('dates are YYYY-MM-DD: ' + d);
-    if (a.sport !== 'mlb' && (a.asOf || a.confirmThrough)) throw new Error('--as-of and --confirm-through are MLB options (and --as-of the NBA\'s)');
-    if (a.sport === 'mlb' && a.season < MLB_2026.season && !a.snapshot && !a.asOf) throw new Error('an MLB history season needs --as-of YYYY-MM-DD');
-    if (a.sport === 'mlb' && a.season < MLB_2026.season && a.publish) throw new Error('an MLB history replay is never published');
-    if (a.confirmThrough && (a.season >= MLB_2026.season || !a.asOf)) throw new Error('--confirm-through is for MLB history replays (with --as-of)');
-  }
+  if (a.sport === 'nba' && a.asOf != null && !(Number.isFinite(Date.parse(a.asOf)) && /^\d{4}-\d{2}-\d{2}/.test(a.asOf))) throw new Error('--as-of needs an ISO time');
+  if (a.publish && (a.allowIncompleteSchedule || (a.sport === 'nba' && a.asOf != null))) throw new Error('--as-of (NBA) and --allow-incomplete-schedule are for dry runs only');
+  /* an NBA snapshot replay names no sport (it comes from the file): execute() re-checks once the sport is known */
+  if (a.allowIncompleteSchedule && a.sport !== 'nba' && !a.snapshot) throw new Error('--allow-incomplete-schedule applies to the NBA only');
+  if (!sportRegistry().some((s) => s.key === a.sport)) throw new Error('unknown sport ' + a.sport);
+  if (a.sport === 'nhl' && !seasonGiven) a.season = NHL_2027.season;
   if (!Number.isInteger(a.season) || a.season < 2000 || a.season > 2100) throw new Error('bad season ' + a.season);
   if (!Number.isInteger(a.runs) || a.runs < 1 || a.runs > 10000000) throw new Error('--runs must be an integer in [1, 10000000]');
   if (!Number.isInteger(a.workers) || a.workers < 1 || a.workers > 64) throw new Error('--workers must be an integer in [1, 64]');
   if (a.seed != null) parseSeed(a.seed);
   if (a.traceRuns.length > 5 || a.traceRuns.some((r) => !Number.isInteger(r) || r < 0)) throw new Error('--trace-runs: at most 5 non-negative run indices');
   if (a.publish && a.allowUnreconciled) throw new Error('--allow-unreconciled is for dry runs only');
+  if (a.sport === 'mlb') for (const d of [a.asOf, a.confirmThrough]) if (d != null && !/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error('dates are YYYY-MM-DD: ' + d);
+  if (a.sport !== 'mlb' && (a.confirmThrough || (a.asOf && a.sport !== 'nba'))) throw new Error('--as-of (MLB and NBA) and --confirm-through (MLB) are MLB options');
+  if (a.sport === 'mlb' && a.season < MLB_2026.season && !a.snapshot && !a.asOf) throw new Error('an MLB history season needs --as-of YYYY-MM-DD');
+  if (a.sport === 'mlb' && a.season < MLB_2026.season && a.publish) throw new Error('an MLB history replay is never published');
+  if (a.confirmThrough && (a.season >= MLB_2026.season || !a.asOf)) throw new Error('--confirm-through is for MLB history replays (with --as-of)');
   return a;
 }
 
@@ -124,8 +124,10 @@ export async function execute(args: CliArgs, log: (s: string) => void = console.
   /* a replay takes its sport and season from the snapshot itself */
   if (args.snapshot && snapshotSchema(args.snapshot) === NBA_INPUT_SCHEMA) args = { ...args, sport: 'nba' };
   if (args.sport === 'nba') return executeNba(args, log);
+  if (args.allowIncompleteSchedule) throw Object.assign(new Error('--allow-incomplete-schedule applies to the NBA only'), { exitCode: 2 });
   if (args.sport === 'nhl') return executeNhl(args, log);
   if (args.sport === 'mlb') return executeMlb(args, log);
+  if (args.sport === 'cfb') return (await executeCfb(args, log)) as unknown as RunOutcome;
   if (args.sport !== 'nfl') throw Object.assign(new Error('sport ' + args.sport + ' has no simulation module: ' + (sportRegistry().find((s) => s.key === args.sport) as any).blockers.join(' | ')), { exitCode: 2 });
   if (args.season !== NFL_2026.season) throw Object.assign(new Error('no NFL season config for ' + args.season), { exitCode: 2 });
   /* 1 inputs: build (network, before any simulation) or replay */
@@ -404,7 +406,7 @@ if (isMain) {
     try { args = parseArgs(process.argv.slice(2)); } catch (e) { console.error('error: ' + (e as Error).message); process.exit(2); }
     try {
       const o = await execute(args);
-      printSummary(o, console.log);
+      if (args.sport === 'cfb') printCfbSummary(o as unknown as CfbRunOutcome, console.log); else printSummary(o, console.log);
       if (args.publish) {
         if (!o.publishable) { console.error('nothing published: a gate failed (see gates.json)'); process.exit(1); }
         const { publishRun } = await import('../publish/publish.ts');

@@ -15,6 +15,7 @@ import { NFL_2026 } from './nfl/config.ts';
 import { NHL_2027 } from './nhl/config.ts';
 import { MLB_2026 } from './mlb/config.ts';
 import { NBA_2026_27 } from './nba/config.ts';
+import { cfbFacts, isCfbVerified } from './cfb/config.ts';
 
 export type SportStatus = 'ACTIVE' | 'BLOCKED' | 'COMING_SOON';
 export interface SportEntry {
@@ -49,6 +50,25 @@ export function factStatus(facts: Array<[string, Fact]>, source = 'the NFL\'s of
     .map(([label, f]) => label + ' not verified against ' + source + ': ' + f.verify_by);
   return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
 }
+
+/** CFB: the engine, rules, committee proxy and tests are complete; publication waits on the facts
+    whose governing text could not be read or does not yet exist for 2026 (config.ts). */
+function cfbStatus(): { status: SportStatus; blockers: string[] } {
+  /* a measured assumption is the run's to decide (run.eligibility_sensitive), not a standing blocker */
+  const blockers = cfbFacts().filter(([, f]) => f.affects_results && !f.measured && !isCfbVerified(f))
+    .map(([label, f]) => label + ': ' + f.label + ' is ' + f.verification + '; the title-game, CFP and national-title outputs it feeds stay unpublished until it is verified (simulator/src/sports/cfb/config.ts lists the source to verify against)');
+  return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
+}
+const CFB_LIMITS = [
+  'Game outcomes come from the served edgedesk_cfb_p4 engine replayed over the feed (the path its calibration was validated on, 2014-2025); every game keeps the engine\'s own margin distribution. The engine does not beat the closing line.',
+  'Strength uncertainty: one persistent normal offset per team (tau calibrated so the spread of simulated remaining wins matches 2014-2023; 2024-2025 held out), carved out of the engine sigma so no single game is flattened.',
+  'FCS opponents are the engine\'s single floor rating (its win rates are calibrated in aggregate on 2014-2025 FBS-vs-FCS games); Pac-12 Week 13 flex games are not in the feed and are not simulated.',
+  'Quarterback availability moves a price only for a sourced primary-QB absence, through the engine\'s trained coefficient; no return dates or new injuries are simulated. Ratings are frozen at the as-of date.',
+  'Conference tiebreaker steps that name an external ranking (SportSource Analytics, computer composites, CFP rankings) are resolved by an Estimated surrogate (the run\'s latent strength), and counted per conference.',
+  'CFP selection and seeding come from an Estimated committee proxy (a Plackett-Luce model of the committee\'s final rankings 2014-2025, validated chronologically); a simulated record never decides the ranking by itself. Once the bracket is announced, the observed bracket replaces it.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy or committee uncertainty.'
+];
+
 
 /** MLB: the engine, rules, rotation model, studies and tests are complete; what remains is the human
     verification of the 2026 facts MLB's own pages hold, and one check of the live feed */
@@ -100,7 +120,7 @@ const NHL_LIMITS = [
 
 const NBA_LIMITS = [
   'Game outcomes come from the served NBA model (the projected-track ridge, edgedesk_nba_v1:E_ridge_P), priced from the states frozen at the as-of time, including its early-season shrinkage; it has never been tested against a closing market.',
-  'Strength uncertainty: one persistent normal offset per club, calibrated so the spread of simulated remaining wins matches frozen historical forecasts.',
+  'Strength uncertainty: one persistent normal offset per club, calibrated on 2009-10..2023-24 so the spread of simulated remaining wins matches frozen historical forecasts; the 2024-25 and 2025-26 holdout seasons were markedly more volatile than that calibration, so season-level numbers are likely too confident.',
   'Availability: the projected rotation is who played in the club\'s latest game; a rotation player missing since an earlier game returns at a game drawn from empirical return hazards (Estimated, reason for the absence unknown). No new absences are simulated; roster moves after the as-of time are not.',
   'Rest, back-to-backs and travel come from the schedule for every regular-season game; a postseason game not yet scheduled carries the median rest of its round and game number (Estimated). The model\'s own learned postseason term applies; no playoff rotation change is assumed.',
   'Ratings are frozen at the as-of time: simulated results do not update them. Within-season drift is OFF.',
@@ -108,16 +128,15 @@ const NBA_LIMITS = [
 ];
 
 export function sportRegistry(): SportEntry[] {
-  const nfl = nflStatus(), nhl = nhlStatus();
+  const nfl = nflStatus(), nhl = nhlStatus(), cfb = cfbStatus();
   const mlb = mlbStatus();
   const nba = nbaStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
-    { key: 'cfb', label: 'College Football', status: 'BLOCKED', structure: 'season', tabs: ['conference', 'title', 'futures'],
-      blockers: ['No conference title-game qualification rules or tiebreakers for 2026 in the repository (9 FBS conferences, each with its own).', 'No 2026 CFP format, seeding or selection data, and no committee-ranking proxy inputs (no CFP/AP rankings are committed).', 'No neutral-site flags for the remaining 2026 schedule and no committed full schedule (football/fbs/.cache is gitignored).'],
-      limitations: ['The production game model (football/cfb_p4 engine) can price any rated FBS pairing offline; everything else above is missing.'],
-      activation_path: 'Commit a versioned 2026 conference-rules table with sources, a CFP bracket config, an explicitly Estimated committee proxy, and the full schedule with neutral flags.' },
+    { key: 'cfb', label: 'College Football', status: cfb.status, structure: 'season', tabs: ['conference', 'title', 'futures'],
+      blockers: cfb.blockers, limitations: CFB_LIMITS,
+      activation_path: 'Active: every conference procedure, the 2026 CFP format and North Dakota State\'s eligibility are VERIFIED from the governing bodies\' own text (simulator/src/sports/cfb/config.ts); Sacramento State\'s MAC eligibility is measured in every run and holds publication if any run depended on it. A new season, or a changed procedure, means re-reading the sources (Simulator CFB source check) and re-verifying in a reviewed commit. CFB_SIMULATOR_NOTES.md §4, §16.' },
     { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
       activation_path: 'Verify the six 2026-27 facts in simulator/src/sports/nba/config.ts against the NBA\'s official pages (VERIFIED with verified_by/verified_at in a reviewed commit), wait for the NBA Cup-dependent games on the schedule, then a 100,000-run publication.' },
     { key: 'nhl', label: 'NHL', status: nhl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],
