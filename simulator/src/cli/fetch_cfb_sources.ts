@@ -75,6 +75,11 @@ export const CFB_SOURCES: Source[] = [
   { id: 'big_ten_tiebreaker_2024_pdf', kind: 'rules', url: 'https://nextgen.bigten.org/api/media/file/f142aa7f-aa37-430b-bf09-8988a6952c0c-2024_Big_Ten_Football_Tiebreaker_-_FINAL_10__72_.pdf' },
   { id: 'big_ten_tiebreaker_2024_release', kind: 'rules', url: 'https://bigten.org/fb/article/blt6104802d94ebe1ab/', links: LINKS, nextData: /tie|seed|championship/i, render: true },
   { id: 'big_ten_tiebreakers_2025', kind: 'rules', url: 'https://bigten.org/fb/article/58967/', links: LINKS, nextData: /tie|seed|championship/i, render: true },
+  /* the Big Ten's own tiebreaker texts moved or refuse automated readers (HTTP 402); the Internet Archive keeps the
+     official pages and PDF as published (id_ = the archived bytes, unmodified) */
+  { id: 'big_ten_tiebreaker_2024_pdf_archive', kind: 'rules', url: 'https://web.archive.org/web/2026id_/https://nextgen.bigten.org/api/media/file/f142aa7f-aa37-430b-bf09-8988a6952c0c-2024_Big_Ten_Football_Tiebreaker_-_FINAL_10__72_.pdf' },
+  { id: 'big_ten_tiebreakers_2025_archive', kind: 'rules', url: 'https://web.archive.org/web/20251201000000id_/https://bigten.org/fb/article/58967/', nextData: /tie|seed|championship|head-to-head|SportSource/i },
+  { id: 'big_ten_tiebreaker_2024_release_archive', kind: 'rules', url: 'https://web.archive.org/web/2025id_/https://bigten.org/fb/article/blt6104802d94ebe1ab/', nextData: /tie|seed|championship|head-to-head|SportSource/i },
   { id: 'big_ten_fcg_2026_game', kind: 'rules', url: 'https://bigten.org/news/2026/9/24/2026-discover-big-ten-football-championship-game.aspx', links: LINKS, render: true },
   { id: 'big_ten_week7_release', kind: 'rules', url: 'https://bigten.org/news/2026/10/14/2026-week-7-football-release.aspx', links: LINKS, render: true },
   { id: 'big_ten_fcg_2026', kind: 'rules', url: 'https://bigten.org/news/2026/8/19/championship-2026-discover-big-ten-football-championship-game-information.aspx', links: LINKS, render: true },
