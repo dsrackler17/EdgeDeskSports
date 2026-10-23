@@ -29,7 +29,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NFL_TEAMS_2026 } from '../sports/nfl/config.ts';
-import { MLB_TEAMS, DIVISIONS, teamsFor, type League } from '../sports/mlb/config.ts';
+import { DIVISIONS, teamsFor } from '../sports/mlb/config.ts';
+import { NHL_TEAMS_2027 } from '../sports/nhl/config.ts';
 import type { FuturesConfig, Mapping, OutcomeSet } from '../markets/compare.ts';
 import { FUTURES_CONFIG } from './markets.ts';
 
@@ -114,6 +115,78 @@ export function buildMappings(markets: Candidate[], series: SeriesInfo[], verifi
   return { mappings, sets, left };
 }
 
+/* ---------------------------------------------------------------- MLB and the NHL: one season-keyed builder */
+interface LeagueTeam { code: string; name: string; group: string; division: string }
+/** group: the league (MLB) or conference (NHL) the series names; secondary: the only secondary rules texts the
+    series may carry (default: Kalshi's standard disclaimer alone) */
+interface LeagueSeriesRule { outcome: string; group?: string; div?: string; re: RegExp; basis: string; secondary?: string[] }
+interface LeagueSpec {
+  sport: string; competition: string; series: Record<string, LeagueSeriesRule>;
+  /** Kalshi ticker suffix -> the simulator's entity id; every other suffix is the same */
+  suffix: Record<string, string>;
+  /** the clubs of a season (null: no alignment configured, so nothing of that season maps) */
+  teams(season: string): LeagueTeam[] | null;
+  /** '' when the label is the club's own, else why not */
+  label(team: LeagueTeam, label: string): string;
+  /** the note of a complete outcome set */
+  note(outcome: string, scope: string): string;
+}
+
+/* Each template captures the club (1) and the season (2); the season must be the event ticker's (KXMLB-26: 2026,
+   KXNHL-27: 2026-27), so next season's markets map to next season's run as soon as Kalshi lists them. */
+function buildLeagueMappings(spec: LeagueSpec, markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }) {
+  const mappings: Mapping[] = [], left: Array<{ market_ticker: string; why: string[] }> = [];
+  const fee = new Map(series.map((s) => [s.ticker, s]));
+  const squash = (x: string | null) => String(x || '').replace(/\s+/g, ' ').trim();
+  for (const k of markets) {
+    const rule = spec.series[k.series_ticker];
+    if (!rule) continue;                                    // a series with no simulated outcome is not a candidate at all
+    const why: string[] = [];
+    const sf = fee.get(k.series_ticker);
+    if (!sf || !/^quadratic/.test(sf.fee_type) || Number(sf.fee_multiplier) !== 1) why.push('series fee is ' + (sf ? sf.fee_type + ' x' + sf.fee_multiplier : 'unknown') + ', not quadratic x1');
+    const m = squash(k.rules_primary).match(rule.re);
+    if (!m) why.push('rules text does not match the ' + k.series_ticker + ' template');
+    else if (m[1] !== squash(k.yes_sub_title)) why.push('rules name "' + m[1] + '" but the market is labelled "' + k.yes_sub_title + '"');
+    const season = m ? m[2] : '';
+    if (m && !new RegExp('^' + k.series_ticker + '-' + season.slice(-2) + '(?![0-9])').test(k.event_ticker)) why.push('event ' + k.event_ticker + ' is not the ' + season + ' season');
+    const teams = m ? spec.teams(season) : null;
+    if (m && !teams) why.push('no ' + spec.competition + ' alignment is configured for ' + season);
+    const suffix = k.market_ticker.split('-').pop() as string, code = spec.suffix[suffix] || suffix;
+    const team = teams ? teams.find((t) => t.code === code) : undefined;
+    if (teams && !team) why.push('ticker suffix ' + suffix + ' is not a club');
+    const lab = team ? spec.label(team, squash(k.yes_sub_title)) : '';
+    if (lab) why.push(lab);
+    if (!(rule.secondary || [DISCLAIMER]).includes(squash(k.rules_secondary))) why.push('secondary rules are not the series\' own (' + (rule.secondary ? 'its stated text' : 'the standard disclaimer alone') + ')');
+    if (!/^[0-9a-f]{64}$/.test(k.rules_sha256 || '')) why.push('no rules sha256');
+    if (team && rule.group && team.group !== rule.group) why.push(team.code + ' is not in the ' + rule.group);
+    if (team && rule.div && team.division !== rule.div) why.push(team.code + ' is not in the ' + rule.div);
+    if (why.length || !team) { left.push({ market_ticker: k.market_ticker, why }); continue; }
+    const o = rule.outcome, id = spec.sport + season;
+    const set = o === 'make_playoffs' ? null : rule.div ? id + ':' + o + ':' + team.division : rule.group ? id + ':' + o + ':' + team.group : id + ':' + o;
+    mappings.push({ mapping_id: id + ':' + k.market_ticker, status: 'verified', sport: spec.sport, competition: spec.competition, season,
+      series_ticker: k.series_ticker, event_ticker: k.event_ticker, market_ticker: k.market_ticker, entity_id: team.code, outcome: o, outcome_set: set,
+      settlement: { basis: 'Kalshi ' + k.series_ticker + ': ' + rule.basis, rules_sha256: k.rules_sha256, rules_excerpt: squash(k.rules_primary) },
+      verified_by: verified.by, verified_at: verified.at });
+  }
+  mappings.sort((a, b) => a.market_ticker.localeCompare(b.market_ticker));
+  /* complete sets only: every club that can win the outcome has its market (a finished season's eliminated clubs
+     have none, so a final down to two clubs is compared one market at a time) */
+  const members = new Map<string, Mapping[]>();
+  for (const x of mappings) if (x.outcome_set) members.set(x.outcome_set, [...(members.get(x.outcome_set) || []), x]);
+  const sets: OutcomeSet[] = [];
+  for (const [id, ms] of [...members].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const scope = id.split(':')[2];
+    const eligible = (spec.teams(ms[0].season) || []).filter((t) => !scope || t.group === scope || t.division === scope).map((t) => t.code);
+    const have = new Set(ms.map((x) => x.entity_id));
+    if (have.size !== ms.length || ms.length !== eligible.length || eligible.some((e) => !have.has(e))) {
+      for (const x of ms) x.outcome_set = null;   // incomplete: compared one market at a time, never normalised
+      continue;
+    }
+    sets.push({ id, outcome: ms[0].outcome, entities: eligible.slice().sort(), mutually_exclusive: true, exhaustive: true, note: spec.note(ms[0].outcome, scope) });
+  }
+  return { mappings, sets, left };
+}
+
 /* ---------------------------------------------------------------- MLB */
 /** Kalshi ticker suffix -> Retrosheet franchise key (the simulator's MLB entity id); every other suffix is the same */
 export const KALSHI_TO_RETRO: Record<string, string> = { ATH: 'OAK', AZ: 'ARI', CHC: 'CHN', CWS: 'CHA', KC: 'KCA', LAA: 'ANA', LAD: 'LAN', NYM: 'NYN', NYY: 'NYA',
@@ -129,19 +202,16 @@ export const KALSHI_LABEL: Record<string, string> = {
   ARI: 'Arizona', COL: 'Colorado', LAN: 'Los Angeles D', SDN: 'San Diego', SFN: 'San Francisco'
 };
 
-interface MlbSeriesRule { outcome: string; league?: League; div?: string; re: RegExp; basis: string }
 /* Kalshi's wording, from the 2026 markets (run 40019030435: the World Series open, every other series settled).
-   Each template captures the club (1) and the season (2); the season must be the event ticker's (KXMLB-26: 2026),
-   so next season's markets map to next season's run as soon as Kalshi lists them. Not mapped: the league or
-   division of the champion, exact World Series matchups, the champion's seed, win totals, awards and props (no
-   club's simulated outcome settles on them), and Kalshi's older series under other tickers (KXMLBWS, KXWSAL,
-   KXWSNL, KXMLBDIVWINNER, KXMBLNLEAST), which listed no market in 2026. */
-export const MLB_SERIES: Record<string, MlbSeriesRule> = {
+   Not mapped: the league or division of the champion, exact World Series matchups, the champion's seed, win
+   totals, awards and props (no club's simulated outcome settles on them), and Kalshi's older series under other
+   tickers (KXMLBWS, KXWSAL, KXWSNL, KXMLBDIVWINNER, KXMBLNLEAST), which listed no market in 2026. */
+export const MLB_SERIES: Record<string, LeagueSeriesRule> = {
   KXMLB: { outcome: 'win_world_series', re: /^If (.+) wins the (\d{4}) Pro Baseball Championship, then the market resolves to Yes\.$/,
     basis: 'wins the season\'s Pro Baseball Championship (the World Series) = win_world_series' },
-  KXMLBAL: { outcome: 'win_pennant', league: 'AL', re: /^If (.+) win the (\d{4}) Pro Baseball American League Championship, then the market resolves to Yes\.$/,
+  KXMLBAL: { outcome: 'win_pennant', group: 'AL', re: /^If (.+) win the (\d{4}) Pro Baseball American League Championship, then the market resolves to Yes\.$/,
     basis: 'wins the American League Championship (the pennant: reaches the World Series) = win_pennant' },
-  KXMLBNL: { outcome: 'win_pennant', league: 'NL', re: /^If (.+) win the (\d{4}) Pro Baseball National League Championship, then the market resolves to Yes\.$/,
+  KXMLBNL: { outcome: 'win_pennant', group: 'NL', re: /^If (.+) win the (\d{4}) Pro Baseball National League Championship, then the market resolves to Yes\.$/,
     basis: 'wins the National League Championship (the pennant: reaches the World Series) = win_pennant' },
   KXMLBPLAYOFFS: { outcome: 'make_playoffs', re: /^If (.+) is one of the (\d{4}) Pro Baseball Playoff Qualifiers, then the market resolves to Yes\.$/,
     basis: 'is one of the season\'s playoff qualifiers = make_playoffs' }
@@ -151,56 +221,51 @@ for (const d of DIVISIONS)
     re: new RegExp('^If (.+) is the (\\d{4}) Pro Baseball ' + d + ' Division Winner, then the market resolves to Yes\\.$'),
     basis: 'is the ' + d + ' Division Winner (the season\'s tiebreak procedure decides a tie) = win_division' };
 
-export function buildMlbMappings(markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }) {
-  const mappings: Mapping[] = [], left: Array<{ market_ticker: string; why: string[] }> = [];
-  const fee = new Map(series.map((s) => [s.ticker, s]));
-  const squash = (x: string | null) => String(x || '').replace(/\s+/g, ' ').trim();
-  for (const k of markets) {
-    const rule = MLB_SERIES[k.series_ticker];
-    if (!rule) continue;                                    // a series with no simulated outcome is not a candidate at all
-    const why: string[] = [];
-    const sf = fee.get(k.series_ticker);
-    if (!sf || !/^quadratic/.test(sf.fee_type) || Number(sf.fee_multiplier) !== 1) why.push('series fee is ' + (sf ? sf.fee_type + ' x' + sf.fee_multiplier : 'unknown') + ', not quadratic x1');
-    const suffix = k.market_ticker.split('-').pop() as string, code = KALSHI_TO_RETRO[suffix] || suffix;
-    const team = MLB_TEAMS.find((t) => t.code === code);
-    if (!team) why.push('ticker suffix ' + suffix + ' is not a club');
-    const m = squash(k.rules_primary).match(rule.re);
-    if (!m) why.push('rules text does not match the ' + k.series_ticker + ' template');
-    else if (m[1] !== squash(k.yes_sub_title)) why.push('rules name "' + m[1] + '" but the market is labelled "' + k.yes_sub_title + '"');
-    const season = m ? m[2] : '';
-    if (m && !new RegExp('^' + k.series_ticker + '-' + season.slice(2) + '(?![0-9])').test(k.event_ticker)) why.push('event ' + k.event_ticker + ' is not the ' + season + ' season');
-    if (team && m && KALSHI_LABEL[team.code] !== squash(k.yes_sub_title)) why.push('labelled "' + k.yes_sub_title + '", not ' + team.code + '\'s "' + KALSHI_LABEL[team.code] + '"');
-    if (squash(k.rules_secondary) !== DISCLAIMER) why.push('secondary rules carry more than the standard disclaimer');
-    if (!/^[0-9a-f]{64}$/.test(k.rules_sha256 || '')) why.push('no rules sha256');
-    if (team && rule.league && team.league !== rule.league) why.push(team.code + ' is not in the ' + rule.league);
-    if (team && rule.div && team.division !== rule.div) why.push(team.code + ' is not in the ' + rule.div);
-    if (why.length || !team) { left.push({ market_ticker: k.market_ticker, why }); continue; }
-    const o = rule.outcome, id = 'mlb' + season;
-    const set = o === 'make_playoffs' ? null : o === 'win_world_series' ? id + ':win_world_series' : o === 'win_division' ? id + ':win_division:' + team.division : id + ':' + o + ':' + team.league;
-    mappings.push({ mapping_id: id + ':' + k.market_ticker, status: 'verified', sport: 'mlb', competition: 'MLB', season,
-      series_ticker: k.series_ticker, event_ticker: k.event_ticker, market_ticker: k.market_ticker, entity_id: team.code, outcome: o, outcome_set: set,
-      settlement: { basis: 'Kalshi ' + k.series_ticker + ': ' + rule.basis, rules_sha256: k.rules_sha256, rules_excerpt: squash(k.rules_primary) },
-      verified_by: verified.by, verified_at: verified.at });
-  }
-  mappings.sort((a, b) => a.market_ticker.localeCompare(b.market_ticker));
-  /* complete sets only: every club that can win the outcome has its market (a finished season's eliminated clubs
-     have none, so a World Series with two clubs left is compared one market at a time) */
-  const members = new Map<string, Mapping[]>();
-  for (const x of mappings) if (x.outcome_set) members.set(x.outcome_set, [...(members.get(x.outcome_set) || []), x]);
-  const sets: OutcomeSet[] = [];
-  for (const [id, ms] of [...members].sort((a, b) => a[0].localeCompare(b[0]))) {
-    const scope = id.split(':')[2];
-    const eligible = teamsFor(Number(ms[0].season)).filter((t) => !scope || t.league === scope || t.division === scope).map((t) => t.code);
-    const have = new Set(ms.map((x) => x.entity_id));
-    if (have.size !== ms.length || ms.length !== eligible.length || eligible.some((e) => !have.has(e))) {
-      for (const x of ms) x.outcome_set = null;   // incomplete: compared one market at a time, never normalised
-      continue;
-    }
-    sets.push({ id, outcome: ms[0].outcome, entities: eligible.slice().sort(), mutually_exclusive: true, exhaustive: true,
-      note: 'exactly one of these clubs ' + (ms[0].outcome === 'win_world_series' ? 'wins the World Series' : ms[0].outcome === 'win_pennant' ? 'wins the ' + scope + ' pennant' : 'wins the ' + scope) });
-  }
-  return { mappings, sets, left };
-}
+const MLB_SPEC: LeagueSpec = {
+  sport: 'mlb', competition: 'MLB', series: MLB_SERIES, suffix: KALSHI_TO_RETRO,
+  teams: (season) => { try { return teamsFor(Number(season)).map((t) => ({ code: t.code, name: t.name, group: t.league, division: t.division })); } catch (_) { return null; } },
+  label: (team, label) => KALSHI_LABEL[team.code] === label ? '' : 'labelled "' + label + '", not ' + team.code + '\'s "' + KALSHI_LABEL[team.code] + '"',
+  note: (o, scope) => 'exactly one of these clubs ' + (o === 'win_world_series' ? 'wins the World Series' : o === 'win_pennant' ? 'wins the ' + scope + ' pennant' : 'wins the ' + scope)
+};
+export function buildMlbMappings(markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }) { return buildLeagueMappings(MLB_SPEC, markets, series, verified); }
+
+/* ---------------------------------------------------------------- the NHL */
+/** Kalshi ticker suffix -> the NHL's own three-letter code (the simulator's entity id); every other suffix is the same */
+export const KALSHI_TO_NHL: Record<string, string> = { LA: 'LAK', NJ: 'NJD', SJ: 'SJS', TB: 'TBL' };
+/** KXNHLPRES's secondary rules: the Presidents' Trophy tiebreakers, which are the simulator's NHL-TB-2019 steps
+    after points (every club plays 84 games, so points percentage separates no club that points do not) */
+export const NHL_PRES_TIEBREAK = 'If teams finish tied in points, the Presidents’ Trophy tiebreakers are: 1) Regulation wins 2) Regulation and overtime wins 3) Total wins 4) Head-to-head points 5) Goal differential 6) Goals scored';
+
+/* Kalshi's wording, from the 2026-27 markets (run 40019030435, every one open). Its labels are the clubs' full names.
+   Not mapped: the Stanley Cup Final matchups (KXTEAMSINSC), a Canadian club winning the Cup (KXCANADACUP: any of
+   seven clubs), the NBA + NHL champion combination (KXNBANHL), point totals, awards and props. */
+export const NHL_SERIES: Record<string, LeagueSeriesRule> = {
+  KXNHL: { outcome: 'win_stanley_cup', re: /^If (.+) wins the (\d{4}-\d{2}) Stanley Cup® Finals, then the market resolves to Yes\.$/,
+    basis: 'wins the season\'s Stanley Cup Final = win_stanley_cup' },
+  KXNHLEAST: { outcome: 'win_conference', group: 'Eastern', re: /^If the (.+) win the (\d{4}-\d{2}) NHL Eastern Conference Finals, then the market resolves to Yes\.$/,
+    basis: 'wins the Eastern Conference Final (the playoff conference title: reaches the Stanley Cup Final) = win_conference' },
+  KXNHLWEST: { outcome: 'win_conference', group: 'Western', re: /^If the (.+) win the (\d{4}-\d{2}) NHL Western Conference Finals, then the market resolves to Yes\.$/,
+    basis: 'wins the Western Conference Final (the playoff conference title: reaches the Stanley Cup Final) = win_conference' },
+  KXNHLPRES: { outcome: 'presidents_trophy', re: /^If the (.+) win the (\d{4}-\d{2}) NHL Presidents' Trophy, then the market resolves to Yes\.$/, secondary: [NHL_PRES_TIEBREAK],
+    basis: 'wins the Presidents\' Trophy (best regular-season record; its stated tiebreakers are the simulator\'s) = presidents_trophy' },
+  KXNHLPLAYOFF: { outcome: 'make_playoffs', re: /^If the (.+) qualify for the playoffs in the (\d{4}-\d{2}) NHL season, then the market resolves to Yes\.$/, secondary: [''],
+    basis: 'qualifies for the playoffs = make_playoffs' }
+};
+for (const d of ['Atlantic', 'Metropolitan', 'Central', 'Pacific'])
+  NHL_SERIES['KXNHL' + d.toUpperCase()] = { outcome: 'win_division', div: d, secondary: [''],
+    re: new RegExp('^If the (.+) win the (\\d{4}-\\d{2}) NHL ' + d + ' Division, then the market resolves to Yes\\.$'),
+    basis: 'wins the ' + d + ' Division (the regular-season division title, D1; the NHL\'s tiebreakers decide a tie) = win_division' };
+
+const deaccent = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+const NHL_SPEC: LeagueSpec = {
+  sport: 'nhl', competition: 'NHL', series: NHL_SERIES, suffix: KALSHI_TO_NHL,
+  /* the 2026-27 clubs and alignment (unchanged since Utah joined in 2024-25); no earlier season maps */
+  teams: (season) => Number(season.slice(0, 4)) >= 2026 ? NHL_TEAMS_2027.map((t) => ({ code: t.code, name: t.name, group: t.conference, division: t.division })) : null,
+  /* Kalshi writes the club's full name, with or without its accent (Montréal / Montreal) */
+  label: (team, label) => deaccent(label) === deaccent(team.name) ? '' : 'labelled "' + label + '", not ' + team.code + '\'s "' + team.name + '"',
+  note: (o, scope) => 'exactly one of these clubs ' + (o === 'win_stanley_cup' ? 'wins the Stanley Cup' : o === 'presidents_trophy' ? 'wins the Presidents\' Trophy' : o === 'win_conference' ? 'wins the ' + scope + ' Conference playoffs' : 'wins the ' + scope + ' Division')
+};
+export function buildNhlMappings(markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }) { return buildLeagueMappings(NHL_SPEC, markets, series, verified); }
 
 /** the candidates file read back from the source check's job log, for when its artifact cannot be downloaded:
     every series row (with its fee fields) and every open market line, each with the rules sha256 the runner
@@ -233,14 +298,14 @@ export function versionWith(cur: string, sport: string, v: string): string {
   return [...parts].sort((x, y) => x[0].localeCompare(y[0])).map(([s, x]) => s + ' ' + x).join('; ');
 }
 
-const BUILDERS: Record<string, typeof buildMappings> = { nfl: buildMappings, mlb: buildMlbMappings };
+const BUILDERS: Record<string, typeof buildMappings> = { nfl: buildMappings, mlb: buildMlbMappings, nhl: buildNhlMappings };
 
 const isMain = !!process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
   const a = process.argv.slice(2), get = (k: string) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
   const sport = get('--sport') || 'nfl', file = get('--candidates') || get('--log'), runId = get('--run');
   if (!BUILDERS[sport] || !file || !fs.existsSync(file) || !/^\d+$/.test(runId || '')) {
-    console.error('usage: [--sport nfl|mlb] --candidates <kalshi_candidates[_mlb].json> | --log <the source check job\'s log> --run <actions run id> [--check]'); process.exit(2);
+    console.error('usage: [--sport nfl|mlb|nhl] --candidates <kalshi_candidates[_<sport>].json> | --log <the source check job\'s log> --run <actions run id> [--check]'); process.exit(2);
   }
   const cand = get('--log') ? candidatesFromLog(fs.readFileSync(file, 'utf8')) : JSON.parse(fs.readFileSync(file, 'utf8'));
   const at = String(cand.fetched_at || '').slice(0, 10);
