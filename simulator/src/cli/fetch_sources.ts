@@ -47,7 +47,9 @@ if (!['nfl', 'nhl', 'nba', 'mlb'].includes(SPORT)) { console.error('usage: --spo
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
-type Page = { id: string; url: string; links?: RegExp; grep?: RegExp; excerpt?: RegExp };
+/* grep: print only the lines that match; span: print every run of lines from one matching the first
+   pattern up to (not including) the next matching the second (a rulebook's whole rule, not its fragments) */
+type Page = { id: string; url: string; links?: RegExp; grep?: RegExp; excerpt?: RegExp; span?: [RegExp, RegExp] };
 const NFL_PAGES: Page[] = [
   /* the NFL's published tiebreaking procedures (operations.nfl.com/the-rules/nfl-tiebreaking-procedures answered 404 on 2026-10-23) */
   { id: 'nfl_standings_tiebreaking', url: 'https://www.nfl.com/standings/tie-breaking-procedures' },
@@ -108,7 +110,12 @@ const EXCERPTS: string[] = [];
    archive's index of mlb.com and mlb.com's own sitemap are searched for them (mlbDiscover). Every page is
    also read as the Internet Archive keeps it, in case mlb.com refuses the runners as nba.com does. */
 const MLB_ARCHIVE = 'https://web.archive.org/web/20261023000000id_/';
-const MLB_TOPICS = /tie-?break|postseason-format|playoff-format|postseason-bracket|playoff-bracket|automatic-runner|extra-inning|runner-on-second|home-field/i;
+const MLB_TOPICS = /tie-?break|postseason-format|playoff-format|postseason-bracket|playoff-bracket|postseason-schedule|automatic-runner|extra-inning|runner-on-second|zombie-runner|home-field/i;
+/* the archive's index is searched by slug prefix: one filtered scan of all of mlb.com/news answers 504 */
+const MLB_SLUGS = ['news/mlb-tiebreak', 'news/mlb-tie-break', 'news/tiebreak', 'news/how-mlb-tiebreak', 'news/mlb-playoff-tiebreak', 'news/mlb-postseason-tiebreak', 'news/mlb-standings-tiebreak',
+  'news/mlb-postseason-format', 'news/mlb-playoff-format', 'news/postseason-format', 'news/playoff-format', 'news/2026-mlb-postseason', 'news/mlb-postseason-schedule',
+  'news/world-series-home-field', 'news/home-field-advantage', 'news/mlb-home-field', 'news/extra-innings', 'news/extra-inning', 'news/automatic-runner', 'news/zombie-runner', 'news/mlb-extra-inning',
+  'press-release/press-release-mlb-announces-2026', 'press-release/press-release-2026-postseason', 'press-release/press-release-mlb-postseason'];
 const MLB_ARTICLES: Array<[string, string, RegExp?]> = [
   ['mlb_postseason', 'https://www.mlb.com/postseason'],
   ['mlb_official_information', 'https://www.mlb.com/official-information', /\.pdf|rules/i]
@@ -116,9 +123,10 @@ const MLB_ARTICLES: Array<[string, string, RegExp?]> = [
 const mlbPages = (list: Array<[string, string, RegExp?]>): Page[] => list.flatMap(([id, url, links]): Page[] => [
   { id, url, links }, { id: id + '_archive', url: MLB_ARCHIVE + url, links }
 ]);
-/* the rulebook: only its extra-inning and tiebreak lines are printed */
+/* the rulebook: Rule 7.01 (Regulation Games: (b) Extra Innings, (g) where the runner on second applies) printed whole;
+   the contents line "7.01 Regulation Games ....... 92" does not open the span */
 const MLB_RULES_PDF: Page = { id: 'mlb_official_baseball_rules_2026_pdf', url: 'https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf',
-  grep: /extra inning|runner (on|at|to) second|automatic runner|tie-?break|7\.01|regulation game/i };
+  span: [/^\s*7\.01 Regulation Games\s*$/, /^\s*7\.02 Suspended/] };
 const KALSHI_FEE_PAGES: Page[] = [
   /* Kalshi's fee schedule, and the API documentation of fee types, multipliers and rounding */
   { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' },
@@ -195,7 +203,9 @@ async function fetchPage(p: Page) {
       console.log('-- links matching ' + p.links + ':\n' + links.map((l) => '  ' + l).join('\n'));
     }
   }
-  text = text.split('\n').filter((l) => l.replace(/^[-\s]+/, '').length > 3 && (!p.grep || p.grep.test(l))).join('\n');
+  let lines = text.split('\n');
+  if (p.span) { let on = false; lines = lines.filter((l) => { if (on && p.span![1].test(l)) on = false; else if (!on && p.span![0].test(l)) on = true; return on; }); }
+  text = lines.filter((l) => l.replace(/^[-\s]+/, '').length > 3 && (!p.grep || p.grep.test(l))).join('\n');
   fs.writeFileSync(path.join(OUT, p.id + '.txt'), text);
   SUMMARY.push(p.id + ': ' + head + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
   console.log('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):\n' + text.slice(0, 60000));
@@ -336,10 +346,8 @@ async function mlbDiscover(): Promise<Array<[string, string]>> {
     if (m && MLB_TOPICS.test(m[1])) found.add('https://www.mlb.com' + m[1].replace(/\/+$/, ''));
   };
   const CDX = 'https://web.archive.org/cdx/search/cdx?collapse=urlkey&fl=original&filter=statuscode:200&matchType=prefix';
-  for (const [id, url] of [
-    ['mlb_cdx_glossary', CDX + '&url=mlb.com/glossary/&limit=5000'],
-    ['mlb_cdx_news', CDX + '&url=mlb.com/news/&from=2022&limit=300&filter=original:.*(tiebreak|postseason-format|playoff-format|automatic-runner|extra-inning|home-field).*']
-  ]) {
+  for (const [id, url] of [['mlb_cdx_glossary', CDX + '&url=mlb.com/glossary/&limit=5000'] as [string, string]]
+    .concat(MLB_SLUGS.map((x): [string, string] => ['mlb_cdx_' + x.replace(/[^a-z0-9]+/gi, '_'), CDX + '&url=mlb.com/' + x + '&from=2022&limit=200']))) {
     try {
       const { res, body } = await fetchRaw(url, 'text/plain');
       const rows = body.toString('utf8').split('\n').filter(Boolean);
