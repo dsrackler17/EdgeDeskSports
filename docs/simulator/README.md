@@ -113,6 +113,31 @@ the ask at the configured quantity; the midpoint is a reference only. Until
 the fee schedule is verified (`fees.verified`), every executable figure is
 labelled pre-fee and nothing is flagged. The simulator never places an order.
 
+## MLB
+
+The MLB season and postseason simulator (design, evidence and limitations:
+[`MLB_SIMULATOR_NOTES.md`](../../MLB_SIMULATOR_NOTES.md)) is **BLOCKED for
+publication**: six 2026 facts in `simulator/src/sports/mlb/config.ts` await
+a person's verification, one of them a first check of the live feed. It
+runs from history (any morning of 2022–2025) or live (2026, MLB's Stats API).
+
+```powershell
+npm run sim:test:mlb                                                                         # the seven MLB suites
+node simulator/src/cli/run.ts --sport mlb --season 2025 --snapshot simulator/fixtures/mlb_2025_ws_g3_snapshot.json.gz --runs 100000 --workers 4 --dry-run
+node simulator/src/cli/run.ts --sport mlb --season 2025 --as-of 2025-08-15 --runs 20000 --workers 4 --dry-run   # rebuilds the model point-in-time (~90 s)
+npm run sim:mlb:dry-run                                                                      # live 2026: needs statsapi.mlb.com (Actions runners reach it)
+npm run sim:mlb:probe                                                                        # read the live sources, write nothing
+npm run sim:mlb:postseason-fixture; npm run sim:mlb:studies; npm run sim:mlb:backtest; npm run sim:mlb:fixture   # regenerate the evidence, in this order
+```
+
+The results add `starting_pitchers`: the announced (Confirmed) starters and,
+per simulated game, the share of runs each pitcher started it (Projected: a
+distribution, never one name). Bullpen fatigue is not modelled. MLB is not
+in the nightly schedule: Actions → *Simulator* → Run workflow with sport
+`mlb` runs it as a dry run; the plan step refuses to publish it while it is
+BLOCKED. The `mlb-live-probe` job of *Simulator suites* reads the live
+sources on every pull request that touches the simulator.
+
 ## Deployment sequence
 
 Every step is a decision a person makes; none runs by itself.

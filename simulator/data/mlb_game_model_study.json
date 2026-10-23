@@ -1,0 +1,372 @@
+{
+ "schema": "edgedesk_sim_mlb_game_model_study_v1",
+ "built_at": "2026-10-23T12:19:09.112Z",
+ "served_model": {
+  "version": "1.1.0",
+  "config": {
+   "half_life_days": 365,
+   "window_days": 800,
+   "prior_games": 40,
+   "prior_starts": 128,
+   "prior_park_games": 120,
+   "carry": 0.7,
+   "sweeps": 3
+  },
+  "config_sha256": "cb577719f58a849f80a6b2d9778805e914fb645e15ac30a0171b039f424a4286",
+  "candidate": "team_park_sp",
+  "source": "docs/model-loop/mlb/versions.json current 1.1.0"
+ },
+ "inputs": {
+  "data_sha256": {
+   "mlb/history/data/2010.csv": "bc3c4b8039be18ea83553d21fb5aa33da01015169c2a02d845cdc2eb4cd28f8d",
+   "mlb/history/data/2011.csv": "a64ecde5cafcf3dd9e5f5ad5ad33243b7bd6e1a6143ba1cef8773dee6f56d825",
+   "mlb/history/data/2012.csv": "5fb017c4b002946f870354f67ad8e99241fb6833f25b76875c6db95755086a83",
+   "mlb/history/data/2013.csv": "2946b5750d8ebaf1097960c6090918d8409aa5b5927d6f4e33dbec149b06a2f0",
+   "mlb/history/data/2014.csv": "15576f6e59b6a83efa42e4fd7208f5081e9b1a959f0d58df8b446c0c4c6e40d0",
+   "mlb/history/data/2015.csv": "b40eaae8ec3311ba44c31e9cdca9d61b9c76b88a7fe66e40220be6c21a0c1120",
+   "mlb/history/data/2016.csv": "9774d6a3f153000fc78771de59ed7d35b19a40c48fca777ac041e98ddebaa5cb",
+   "mlb/history/data/2017.csv": "cdfc777fbb9e8151447906abf1331aa08e569b1659a7444ce2f14ccb77587dde",
+   "mlb/history/data/2018.csv": "f5e4cddbbed78ce13f2f2c957321ea693fa87d0a1d988d5e8ac3add0d0481107",
+   "mlb/history/data/2019.csv": "52f24c0be016aedbd0529d621090be43cfc50ab98c78aaa5fc148ddf7ec3394d",
+   "mlb/history/data/2020.csv": "98488f1322cd2d50f72d56da23de0226391abed8fe433ff7340ea21e5d9ebc49",
+   "mlb/history/data/2021.csv": "710b4479af29806af4a5ef21d109b44d69c87978e9361efa0ce139edf4110f64",
+   "mlb/history/data/2022.csv": "ff2d85185d25b9b3e87652d19aa95f365c78cfcf43c3e9f7ef599baa67a97a40",
+   "mlb/history/data/2023.csv": "b887b44564d648f85db61d75e2139a18d736b0d6319a5aadc0a0e52bf1d7f333",
+   "mlb/history/data/2024.csv": "969a22ff47e4d6533966feba0b15f4c42dd878f16d321606f2f1301aa63ff084",
+   "mlb/history/data/2025.csv": "bc982f2f7bdafaa84d5d25ab59336779bb538002bed3ad43133f8e7dddcb3dec"
+  },
+  "postseason_fixture_sha256": "40bb687ce422b7df0ca9a20a6dbad12b73fe8d68c30e325e72f29f9138410ba6",
+  "model_sha256": "df7f846f40fee2779df665520860f927de708979d6e476d0e3116c14474ec57f",
+  "walkforward_sha256": "f8a215b1eb0c0fa7d6e14652d475fd699cdac7f6fc1ef32bf3fe1e9d1e8666f0"
+ },
+ "run_distribution": {
+  "window": [
+   2018,
+   2025
+  ],
+  "team_games": 35812,
+  "nb_size_by_season": {
+   "2012": 4,
+   "2013": 4,
+   "2014": 4,
+   "2015": 4,
+   "2016": 4,
+   "2017": 4,
+   "2018": 4,
+   "2019": 4,
+   "2020": 4,
+   "2021": 4,
+   "2022": 4,
+   "2023": 4,
+   "2024": 4,
+   "2025": 4,
+   "2026": 4
+  },
+  "mean_bias_runs": 0.009201,
+  "observed_variance_about_mean": 9.974942,
+  "model_variance": 9.693082,
+  "max_abs_pmf_difference": 0.011716,
+  "pmf": [
+   {
+    "runs": "0",
+    "observed": 0.063694,
+    "model": 0.051978
+   },
+   {
+    "runs": "1",
+    "observed": 0.104937,
+    "model": 0.107195
+   },
+   {
+    "runs": "2",
+    "observed": 0.129482,
+    "model": 0.138843
+   },
+   {
+    "runs": "3",
+    "observed": 0.139143,
+    "model": 0.144565
+   },
+   {
+    "runs": "4",
+    "observed": 0.127527,
+    "model": 0.132338
+   },
+   {
+    "runs": "5",
+    "observed": 0.114068,
+    "model": 0.111288
+   },
+   {
+    "runs": "6",
+    "observed": 0.089076,
+    "model": 0.088149
+   },
+   {
+    "runs": "7",
+    "observed": 0.068692,
+    "model": 0.066806
+   },
+   {
+    "runs": "8",
+    "observed": 0.051296,
+    "model": 0.048956
+   },
+   {
+    "runs": "9",
+    "observed": 0.035044,
+    "model": 0.034947
+   },
+   {
+    "runs": "10",
+    "observed": 0.026555,
+    "model": 0.024432
+   },
+   {
+    "runs": "11",
+    "observed": 0.018653,
+    "model": 0.016798
+   },
+   {
+    "runs": "12",
+    "observed": 0.011169,
+    "model": 0.011392
+   },
+   {
+    "runs": "13",
+    "observed": 0.007288,
+    "model": 0.007641
+   },
+   {
+    "runs": "14",
+    "observed": 0.00511,
+    "model": 0.005078
+   },
+   {
+    "runs": "15+",
+    "observed": 0.008265,
+    "model": 0.009594
+   }
+  ],
+  "by_decile_of_predicted_mean": [
+   {
+    "decile": 1,
+    "n": 3581,
+    "mean_predicted": 3.451419,
+    "mean_observed": 3.613795
+   },
+   {
+    "decile": 2,
+    "n": 3581,
+    "mean_predicted": 3.812232,
+    "mean_observed": 3.92907
+   },
+   {
+    "decile": 3,
+    "n": 3581,
+    "mean_predicted": 4.02558,
+    "mean_observed": 4.154705
+   },
+   {
+    "decile": 4,
+    "n": 3581,
+    "mean_predicted": 4.199851,
+    "mean_observed": 4.234292
+   },
+   {
+    "decile": 5,
+    "n": 3582,
+    "mean_predicted": 4.366167,
+    "mean_observed": 4.429369
+   },
+   {
+    "decile": 6,
+    "n": 3581,
+    "mean_predicted": 4.535642,
+    "mean_observed": 4.498185
+   },
+   {
+    "decile": 7,
+    "n": 3581,
+    "mean_predicted": 4.713176,
+    "mean_observed": 4.672438
+   },
+   {
+    "decile": 8,
+    "n": 3581,
+    "mean_predicted": 4.922572,
+    "mean_observed": 4.969282
+   },
+   {
+    "decile": 9,
+    "n": 3581,
+    "mean_predicted": 5.203841,
+    "mean_observed": 5.123429
+   },
+   {
+    "decile": 10,
+    "n": 3582,
+    "mean_predicted": 5.817641,
+    "mean_observed": 5.515634
+   }
+  ]
+ },
+ "extra_innings": {
+  "definition": "regular season: more than 54 outs (Retrosheet length in outs; 2024 has none and is left out); postseason: more than nine innings in the visiting line score",
+  "level_after_nine_by_season": {
+   "2012": {
+    "games": 2430,
+    "observed_extra_share": 0.079012,
+    "model_level_after_nine": 0.105945
+   },
+   "2013": {
+    "games": 2431,
+    "observed_extra_share": 0.099959,
+    "model_level_after_nine": 0.106414
+   },
+   "2014": {
+    "games": 2430,
+    "observed_extra_share": 0.095473,
+    "model_level_after_nine": 0.108524
+   },
+   "2015": {
+    "games": 2429,
+    "observed_extra_share": 0.087279,
+    "model_level_after_nine": 0.109634
+   },
+   "2016": {
+    "games": 2428,
+    "observed_extra_share": 0.076194,
+    "model_level_after_nine": 0.106097
+   },
+   "2017": {
+    "games": 2430,
+    "observed_extra_share": 0.074897,
+    "model_level_after_nine": 0.101864
+   },
+   "2018": {
+    "games": 2431,
+    "observed_extra_share": 0.088852,
+    "model_level_after_nine": 0.100767
+   },
+   "2019": {
+    "games": 2429,
+    "observed_extra_share": 0.085632,
+    "model_level_after_nine": 0.098917
+   },
+   "2020": {
+    "games": 898,
+    "observed_extra_share": 0.075724,
+    "model_level_after_nine": 0.096839
+   },
+   "2021": {
+    "games": 2429,
+    "observed_extra_share": 0.088925,
+    "model_level_after_nine": 0.09928
+   },
+   "2022": {
+    "games": 2430,
+    "observed_extra_share": 0.088889,
+    "model_level_after_nine": 0.102031
+   },
+   "2023": {
+    "games": 2430,
+    "observed_extra_share": 0.082716,
+    "model_level_after_nine": 0.101973
+   },
+   "2025": {
+    "games": 2430,
+    "observed_extra_share": 0.086008,
+    "model_level_after_nine": 0.102639
+   }
+  },
+  "postseason": {
+   "games": 494,
+   "observed_extra_share": 0.087045,
+   "model_level_after_nine": 0.108017
+  }
+ },
+ "extra_inning_home_rate": {
+  "automatic_runner_regular_season_2020_2025": {
+   "wins": 455,
+   "games": 910,
+   "rate": 0.5,
+   "ci95": [
+    0.467582,
+    0.532418
+   ]
+  },
+  "standard_regular_season_2010_2019": {
+   "wins": 1099,
+   "games": 2127,
+   "rate": 0.51669,
+   "ci95": [
+    0.495442,
+    0.537878
+   ]
+  },
+  "standard_postseason_2012_2025": {
+   "wins": 23,
+   "games": 43,
+   "rate": 0.534884,
+   "ci95": [
+    0.389156,
+    0.674889
+   ]
+  },
+  "standard_pooled": {
+   "wins": 1122,
+   "games": 2170,
+   "rate": 0.517051,
+   "ci95": [
+    0.496014,
+    0.538027
+   ]
+  },
+  "difference_standard_minus_runner": {
+   "estimate": 0.017051,
+   "ci95": [
+    -0.021645,
+    0.055747
+   ]
+  },
+  "used_by_simulator": {
+   "regular_season": "the served calibration xi of the season (three earlier seasons, the rule in force then)",
+   "postseason": 0.517051,
+   "postseason_rule": "standard (no automatic runner)"
+  }
+ },
+ "postseason_pipeline": {
+  "seasons": "2012-2025 except 2020",
+  "frozen_at": "the morning after the last regular-season date",
+  "starters": "actual (Retrosheet)",
+  "with_standard_xi": {
+   "n": 494,
+   "log_loss": 0.694155,
+   "brier": 0.25047,
+   "mean_p": 0.536866,
+   "mean_y": 0.538462,
+   "calibration_in_the_large": 0.001596
+  },
+  "with_regular_season_xi": {
+   "n": 494,
+   "log_loss": 0.694182,
+   "brier": 0.250484,
+   "mean_p": 0.536028,
+   "mean_y": 0.538462,
+   "calibration_in_the_large": 0.002434
+  },
+  "coin": {
+   "n": 494,
+   "log_loss": 0.693147,
+   "brier": 0.25,
+   "mean_p": 0.5,
+   "mean_y": 0.538462,
+   "calibration_in_the_large": 0.038462
+  }
+ },
+ "notes": [
+  "The served model is fitted on final scores (extra innings included) and resolves its level mass with xi; P(level) is compared with the observed share of extra-inning games as a check of that construction, not as a model of innings.",
+  "Outcome validation only: no MLB closing prices are archived (mlb/history/validation/mlb_walkforward.json; the moneyline is PROVISIONAL and does not beat Elo)."
+ ]
+}
