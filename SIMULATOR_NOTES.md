@@ -26,7 +26,8 @@ deployment: §16 states exactly what exists and what does not.
 | Reader (Simulator seat in `app.html`) | Implemented, tested in Chromium at three widths | `lib/edgedesk_simulator.js`, §13 |
 | GitHub Actions | Linted (actionlint 1.7.7); *Deploy simulator SQL* and *Simulator source check* have run on GitHub; the first *Simulator* publication runs from `main` | `.github/workflows/simulator*.yml`, `deploy-simulator.yml` |
 | 100,000-run benchmark | Executed: 15.7 s on 4 workers | §14 |
-
+| NHL season and Stanley Cup simulation | Implemented, tested (202 assertions; reproduces all 165 playoff series 2013-14..2025-26); **BLOCKED for publication** | [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) |
+| MLB season and postseason | Implemented, tested, studies committed; **BLOCKED for publication** (six 2026 facts unverified, live feed never run from the build environment) | [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) |
 | Other sports | Not active: BLOCKED or COMING SOON with named blockers | §4 |
 
 ---
