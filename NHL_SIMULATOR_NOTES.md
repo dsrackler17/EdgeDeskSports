@@ -508,19 +508,16 @@ change was needed: publication checks the run's own sum rules and gates.
   the NHL suites in the pre-publication test gate. One leg's failure never
   stops another.
 - The markets job compares each published sport's run against that sport's
-  own Kalshi mappings (`configForSport`, simulator/src/markets/compare.ts).
-  The NHL has none yet, so its comparison reads "unavailable": not mapped,
-  not zero.
+  own Kalshi mappings (`configForSport`, simulator/src/markets/compare.ts):
+  for the NHL, the 160 markets of §16.
 - The weekly NHL walk-forward re-run (`nhl-validate.yml`) rewrites
   `live.json`'s `generated_at` only. The snapshot's guard therefore compares
   the parameters without that stamp (`liveParamsHash`, recorded by the
   strength study). A real refit still stops the NHL leg until the study is
   re-run.
 
-**Not done:** no Kalshi NHL futures are mapped (the source check lists 417
-open NHL futures markets; mapping them follows the NFL's
-`build_kalshi_mappings.ts` route), and the NHL has no research-registry
-entry. Neither gates publication.
+**Not done:** the NHL has no research-registry entry. It does not gate
+publication.
 
 ### Other limitations
 (Goalies §7, overtime §6.)
@@ -562,9 +559,67 @@ simulator/src/research/nhl_replay.ts            the walk-forward replay and froz
 simulator/src/research/nhl_goal_distribution.ts -> simulator/data/nhl_goal_distribution.json
 simulator/src/research/nhl_strength_uncertainty.ts -> simulator/data/nhl_strength_uncertainty.json
 simulator/fixtures/nhl_2027_snapshot.json.gz    test fixture (inputs only)
+simulator/fixtures/kalshi_nhl_2026_27_markets.json  Kalshi's 2026-27 NHL futures, as listed (§16)
 simulator/tests/nhl_*.test.ts                   four suites
 modified: simulator/src/core/engine.ts (regular_season category, value descriptor), core/results.ts (points instead of wins),
           cli/run.ts (NHL path, shared gates), cli/build_fixture.ts, publish/publish.ts (null wins for NHL),
           sports/factory.ts, sports/registry.ts (NHL status, blockers, limitations), lib/edgedesk_simulator_sports.js (generated),
           simulator/tests/_fixture.ts, package.json (scripts), .github/workflows/simulator-tests.yml, SIMULATOR_NOTES.md
 ```
+
+## 16. Kalshi futures
+
+`simulator/src/cli/build_kalshi_mappings.ts --sport nhl` maps a market only
+when its rules match one of Kalshi's own NHL templates word for word. They
+were read from the 2026-27 markets the Simulator source check listed (run
+40019030435, 2026-10-23, every one open):
+
+| Series | Kalshi's wording | Simulated outcome | Outcome set |
+|---|---|---|---|
+| `KXNHL` | If *club* wins the *2026-27* Stanley Cup® Finals | `win_stanley_cup` | all 32 |
+| `KXNHLEAST`, `KXNHLWEST` | If the *club* win the *2026-27* NHL Eastern / Western Conference Finals | `win_conference` (the **playoff** title) | the conference's 16 |
+| `KXNHLATLANTIC` … `KXNHLPACIFIC` | If the *club* win the *2026-27* NHL Atlantic (…) Division | `win_division` (regular season, D1) | the division's 8 |
+| `KXNHLPRES` | If the *club* win the *2026-27* NHL Presidents' Trophy | `presidents_trophy` | all 32 |
+| `KXNHLPLAYOFF` | If the *club* qualify for the playoffs in the *2026-27* NHL season | `make_playoffs` | never (16 qualify) |
+
+- **Season.** It is read from the rules and must match the event ticker
+  (`KXNHL-27`: 2026-27, the run's season key).
+- **Clubs.** Kalshi's suffixes are the NHL's codes except `LA`, `NJ`, `SJ`
+  and `TB`. Its label is the club's full name, which must be the
+  configured club's name; `Montréal` is accepted with or without its accent,
+  as Kalshi writes both.
+- **Secondary rules.** The Cup and conference series carry Kalshi's standard
+  disclaimer alone. The division and playoff series carry none. The
+  Presidents' Trophy states its tiebreakers (regulation wins, then
+  regulation plus overtime wins, total wins, head-to-head points, goal
+  differential, goals scored). These are NHL-TB-2019's steps after points
+  (§9.2); every club plays 84 games, so points percentage separates no club
+  that points do not. Any other secondary text is left out.
+- **Not mapped.** The Final's matchups (`KXTEAMSINSC`), a Canadian club
+  winning the Cup (`KXCANADACUP`), the NBA + NHL champion combination, point
+  totals, awards and props.
+- **Mapped now.** All 160 markets: 32 for the Cup, 32 for the conference
+  titles, 32 for the divisions, 32 for the Presidents' Trophy and 32 for
+  playoff qualification. They form 8 complete sets and are compared after
+  each NHL publication.
+- **Evidence.** `simulator/fixtures/kalshi_nhl_2026_27_markets.json` keeps
+  the 160 real markets. `markets.test.ts` maps every one and leaves out each
+  alteration (season, label, conference, division, tiebreakers, extra
+  rules). It also compares the committed mappings end to end against an NHL
+  run.
+- **Hashes.** The 32 Presidents' Trophy rules hashes cannot be recomputed
+  from the printed text, because its tiebreak list is printed with its line
+  breaks squashed. The stored hash is the one the runner computed on the raw
+  text, which is what each live quote is checked against.
+
+**Next season (2027-28):** once Kalshi lists the markets, run *Simulator
+source check*, then
+
+```
+node simulator/src/cli/build_kalshi_mappings.ts --sport nhl --log <the fetch (nhl) job's log> --run <run id>   # or --candidates <kalshi_candidates_nhl.json>
+npm run sim:test
+```
+
+and commit. A mapping for 2027-28 is never compared with a 2026-27 run
+(`configForSport`). A 2026-27 mapping left in once a 2027-28 run exists is an
+error the *markets* job reports.
