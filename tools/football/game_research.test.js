@@ -682,7 +682,8 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
     && r.c.compare.cols.map((x) => x.mk.split(/\s+/)[0]).join('|') === '40.5%|59.5%', r.c.compare);
   chk('…both times on the card, model first: "Model h:mm PM ET · Kalshi h:mm PM ET"', r.c.compare.times === 'Model ' + GG.clock(NE.model.built_at) + ' · Kalshi ' + GG.clock(iso(MIN))
     && drawn(r.c).indexOf(r.c.compare.times) >= 0 && drawn(r.c, 'portrait').indexOf(r.c.compare.times) >= 0, r.c.compare.times);
-  if (NE.game_key === 'nfl|2026_07_NE_CHI') chk('…NE at CHI reads exactly "Model 2:04 PM ET · Kalshi 2:05 PM ET"', r.c.compare.times === 'Model 2:04 PM ET · Kalshi 2:05 PM ET', r.c.compare.times);
+  /* the exact wording on fixed times: the committed snapshot's built_at is regenerated hourly, so it cannot pin a clock */
+  chk('…a same-day pair reads exactly "Model 2:04 PM ET · Kalshi 2:05 PM ET"', GG.timesLine('2026-10-22T18:04:00Z', '2026-10-22T18:05:00Z') === 'Model 2:04 PM ET · Kalshi 2:05 PM ET', GG.timesLine('2026-10-22T18:04:00Z', '2026-10-22T18:05:00Z'));
   chk('…on different days the times carry their dates', GG.timesLine('2026-10-21T18:04:00Z', '2026-10-22T20:10:00Z') === 'Model Oct 21, 2:04 PM ET · Kalshi Oct 22, 4:10 PM ET', GG.timesLine('2026-10-21T18:04:00Z', '2026-10-22T20:10:00Z'));
 
   /* 3 · the difference, in words, naming the team */
