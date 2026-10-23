@@ -244,5 +244,13 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
   T.chk('... and its World Series column sums to one champion', Math.abs(ws.reduce((a: number, b: number) => a + b, 0) - 1) < 1e-9);
   T.eq('the reader asks the database for MLB\'s season', REG.mlb.season, '2026');
   T.eq('the league view is labelled League for MLB, Conference elsewhere', [UI.tabLabel({ key: 'mlb' }, 'conference'), UI.tabLabel({ key: 'nfl' }, 'conference')], ['League', 'Conference']);
+  /* no Kalshi market mapped: the Futures tab still shows a fair price for every key outcome */
+  const fut = UI.renderFutures(M, UI.marketState(null, { comparison_id: null }, []), { key: 'exec_edge_pp', dir: 'desc' });
+  T.chk('MLB futures with no market mapped: the unavailable notice, then the fair-price board', /No Kalshi futures comparison/.test(fut) && /Fair prices/.test(fut) && ['Make postseason', 'Win division', 'Win pennant', 'Win World Series'].every((h) => fut.includes('>' + h + '<')));
+  T.chk('... only clubs still alive for a listed outcome (the two pennant winners at most for the World Series)', (fut.match(/<tr><td><b>/g) || []).length >= 2 && (fut.match(/<tr><td><b>/g) || []).length <= 30);
+  T.chk('... each open probability carries fair decimal and American odds', /<span class="sm-dim">\d+\.\d\d · [+-]\d+<\/span>/.test(fut));
+  T.eq('fair American odds: 60% -150, 40% +150, 50% -100, none at 0 or 1', [UI.fairAmerican(0.6), UI.fairAmerican(0.4), UI.fairAmerican(0.5), UI.fairAmerican(0), UI.fairAmerican(1)], ['-150', '+150', '-100', '—', '—']);
+  const evilM = UI.buildModel({ sport: 'mlb', comparison_id: null }, res.map((r: any) => ({ ...r, entity_name: '<img src=x onerror=1>' })), ents.map((e: any) => ({ ...e, entity_name: '<img src=x onerror=1>' })), []);
+  T.chk('... hostile names are escaped on the fair-price board', !/<img/.test(UI.renderFairBoard(evilM)));
 }
 process.exit(T.done());
