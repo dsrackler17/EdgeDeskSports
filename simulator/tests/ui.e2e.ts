@@ -29,6 +29,8 @@ import { nbaModule } from '../src/sports/nba/module.ts';
 import { nbaMathStatus } from '../src/sports/nba/validate.ts';
 import { executeWnba } from '../src/sports/wnba/run.ts';
 import { buildWnbaSnapshot } from '../src/sports/wnba/inputs.ts';
+import { executeUfc } from '../src/sports/ufc/run.ts';
+import { buildUfcSnapshot } from '../src/sports/ufc/inputs.ts';
 import os from 'node:os';
 
 const require = createRequire(import.meta.url);
@@ -102,6 +104,13 @@ const WNBA_RUN_ID = 'cccccccc-dddd-eeee-ffff-000000000000';
 const wrun = wout ? { ...run, run_id: WNBA_RUN_ID, sport: 'wnba', season: '2026', n_sims: 3000, seed: '5', model_version: wout.results.run.model_version, rules_version: wout.results.run.rules_version, comparison_id: null,
   validation_summary: { flags: wout.results.flags, sport_summary: (wout.results as any).sport_summary } } : null;
 const wrows = wout ? resultRows(wout as any) : [], wents = wout ? entityRows(wout as any) : [];
+/* the UFC: a real (short) run of every booked bout and each division's title path on the committed data */
+const usnap = buildUfcSnapshot();
+const uout = await executeUfc({ season: 2026, runs: 3000, seed: '9', workers: 1, snapshot: null, out: fs.mkdtempSync(path.join(os.tmpdir(), 'ufc-e2e-')), traceRuns: [], nowMs: Date.parse(usnap.data.rankings.fetched_at) + 3600e3 }, () => {});
+const UFC_RUN_ID = 'dddddddd-eeee-ffff-0000-111111111111';
+const urun = { ...run, run_id: UFC_RUN_ID, sport: 'ufc', season: '2026', n_sims: 3000, seed: '9', model_version: uout.results.run.model_version, rules_version: uout.results.run.rules_version, comparison_id: null,
+  validation_summary: { flags: uout.results.flags, sport_summary: (uout.results as any).sport_summary } };
+const urows = resultRows(uout as any), uents = entityRows(uout as any);
 const EVIL = '<img src=x onerror="window.__xss=1">';
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 
@@ -142,6 +151,8 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     const bstatus = { ...status, sport: 'nba', competition: 'NBA', season: '2026-27', published_run_id: sc.published ? NBA_RUN_ID : null, n_sims: 500, model_version: brun.model_version, comparison_status: null, comparison_at: null };
     const wstatus = { ...status, sport: 'wnba', competition: 'WNBA Playoffs', season: '2026', published_run_id: sc.published && wrun ? WNBA_RUN_ID : null, n_sims: 3000, model_version: wrun ? wrun.model_version : '', comparison_status: null, comparison_at: null };
     const isWnba = (u: string) => u.includes(encodeURIComponent(WNBA_RUN_ID)) || u.includes(WNBA_RUN_ID) || /sport=eq\.wnba/.test(u);
+    const ustatus = { ...status, sport: 'ufc', competition: 'UFC Fights and Title Path', season: '2026', published_run_id: sc.published ? UFC_RUN_ID : null, n_sims: 3000, model_version: urun.model_version, comparison_status: null, comparison_at: null };
+    const isUfc = (u: string) => u.includes(encodeURIComponent(UFC_RUN_ID)) || u.includes(UFC_RUN_ID) || /sport=eq\.ufc/.test(u);
     const isNhl = (u: string) => u.includes(encodeURIComponent(NHL_RUN_ID)) || u.includes(NHL_RUN_ID) || /sport=eq\.nhl/.test(u);
     const isNba = (u: string) => u.includes(encodeURIComponent(NBA_RUN_ID)) || u.includes(NBA_RUN_ID) || /sport=eq\.nba/.test(u);
     await ctx.route('**/*', async (route: any) => {
@@ -149,13 +160,13 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       if (u.startsWith('http://127.0.0.1')) return route.continue();
       if (/supabase\.co/.test(u)) {
         const J = (b: unknown, st = 200) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(b) });
-        /* PostgREST pages: limit and offset, as the reader asks (an NBA run publishes 1,050 result rows) */
+        /* PostgREST pages: limit and offset, as the reader asks (an NBA run publishes 1,050 result rows, a UFC run about 1,500) */
         const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus]); }
+        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
-        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run] : []);
-        if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
-        if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
+        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [isUfc(u) ? urun : isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run] : []);
+        if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(isUfc(u) ? urows : isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
+        if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(isUfc(u) ? uents : isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
         if (/sim_current_edges/.test(u)) return J(sc.entitled ? edges : []);
         if (/subscriptions/.test(u)) return J([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]);
         /* an onboarded reader: without it the personal desk's first-run walkthrough opens over the page once it is quiet */
@@ -292,6 +303,30 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       T.chk(W + ': WNBA Model Health: the record windows, calibration and the shared offset', /The served model/.test(t) && /Calibration, playoff games since 2010/.test(t) && /shared offset/.test(t));
       await shot(page, 'sim-wnba-health-' + W);
       T.eq(W + ': WNBA: no page errors', errors, []);
+      await ctx.close();
+    }
+    /* the UFC (its own adapter: Fights, Title Path, Model Health) */
+    for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width;
+      const { ctx, page, errors } = await open(vp, '#simulator/ufc', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/ufc')); await page.waitForTimeout(500);
+      let t = await text(page);
+      const tabs = await page.locator('#simHost .sm-tabs').innerText();
+      T.chk(W + ': UFC: the tabs are Fights, Title Path and Model Health, Fights open', /Fights/.test(tabs) && /Title Path/.test(tabs) && /Model Health/.test(tabs) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Fights');
+      T.chk(W + ': UFC Fights: the cards by date, title fights badged, fair decimal and American odds, finish and rounds', /UFC 333: Volkanovski vs\. Evloev/.test(t) && /Featherweight title/.test(t) && /New champion:/.test(t) && /Finish by round: R1/.test(t) && /[+-]\d{2,4}/.test(t) && /3,000 simulated runs/.test(t));
+      T.chk(W + ': UFC Fights: no horizontal page scroll (tables scroll in their cards)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-ufc-fights-' + W);
+      await page.click('#simHost [data-sim-tab="title_path"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': UFC Title Path: the rule in plain words, eleven divisions, Estimated', /Who becomes champion by/.test(t) && /EdgeDesk’s rule, not the UFC’s/.test(t) && (await page.locator('#simHost .sm-card .sm-h .sm-estimated').count()) >= 12 && /Women’s Bantamweight/.test(t));
+      T.chk(W + ': UFC Title Path: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-ufc-title-path-' + W);
+      await page.click('#simHost [data-sim-tab="model_health"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': UFC Model Health: the served Elo, its record beside a coin, champions against it, the finish model', /The served fight model/.test(t) && /better than a coin flip, but not by much/.test(t) && /Champions against the Elo/.test(t) && /How fights end/.test(t));
+      T.chk(W + ': UFC Model Health: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-ufc-health-' + W);
+      T.eq(W + ': UFC: no page errors', errors, []);
       await ctx.close();
     }
     {

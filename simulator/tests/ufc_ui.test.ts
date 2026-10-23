@@ -55,7 +55,7 @@ const fights = paint(cache(), 'fights');
 T.chk('Fights: the EXPERIMENTAL label and the count of simulated runs', /EXPERIMENTAL/.test(fights) && /4,000 simulated runs/.test(fights));
 T.chk('Fights: every card by date, UFC 333 first', (fights.match(/class="sm-sub"/g) || []).length === S.cards.length && fights.indexOf('UFC 333') < fights.indexOf('UFC 335'));
 T.chk('Fights: every bout with both fighters\' win shares and ±', (fights.match(/<b>\d+\.\d% ±\d/g) || []).length === 2 * nBouts);
-T.chk('Fights: fair decimal and American odds for every fighter', (fights.match(/<td class="sm-num">\d+\.\d\d<\/td><td class="sm-num">[+-]\d+<\/td>/g) || []).length === 2 * nBouts);
+T.chk('Fights: fair decimal and American odds for every fighter', (fights.match(/no margin">\d+\.\d\d · [+-]\d+<\/div>/g) || []).length === 2 * nBouts);
 T.chk('Fights: finish v decision and the round of a finish for every bout', (fights.match(/Ends in a finish \d/g) || []).length === nBouts && (fights.match(/Finish by round: R1 /g) || []).length === nBouts && /R5 \d/.test(fights));
 T.chk('Fights: the four title fights carry the title badge and the chance of a new champion', (fights.match(/ title<\/span>/g) || []).length === 4 && (fights.match(/New champion:<\/b> \d+\.\d% ±/g) || []).length === 4);
 T.chk('Fights: the ufc.com champion and ranks beside the names, and debutants marked', /Champion<\/span>/.test(fights) && /#1 Featherweight/.test(fights) && /UFC debut/.test(fights));
@@ -67,6 +67,7 @@ T.chk('Title Path: Estimated, the horizon and the matchmaking rule in plain word
 T.chk('Title Path: eleven divisions, each with its champion and pace', (tp.match(/<div class="sm-h">[^<]+ <span class="sm-dim sm-small">champion /g) || []).length === 11 && (tp.match(/undisputed title fights in the five years to/g) || []).length === 11);
 T.chk('Title Path: the booked title fights named, the others say none is booked', (tp.match(/Booked title fight:/g) || []).length === 4 && (tp.match(/No title fight booked/g) || []).length === 7);
 T.chk('Title Path: every contender row with hold, win, shot and beat-the-champion columns', /Champion at horizon/.test(tp) && /Beats the champion if given the shot/.test(tp) && /Movsar Evloev/.test(tp));
+T.chk('Title Path: contenders with no shot in any simulated year are listed apart with the reason', /No title shot in any simulated year:<\/b> [^<]*Alexandre Pantoja \(#1, coming off a loss\)/.test(tp));
 T.chk('Title Path: the champions-v-Elo caveat and what is not modelled', /understate a champion’s chance to keep the belt/.test(tp) && /Interim belts/.test(tp));
 T.chk('Title Path: a contender who moved divisions is named under the division he left', /booked in another division \(counted there\): [^<]*Diego Lopes \(Lightweight\)/.test(tp));
 /* Model Health */
