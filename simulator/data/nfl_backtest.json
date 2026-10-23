@@ -1,0 +1,1272 @@
+{
+ "schema": "edgedesk_sim_nfl_backtest_v1",
+ "generated_at": "2026-10-23T06:40:15.771Z",
+ "runs_per_cell": 2000,
+ "seasons": [
+  2010,
+  2025
+ ],
+ "as_of_weeks": [
+  4,
+  8,
+  12,
+  16
+ ],
+ "seasons_scored": 16,
+ "method": "simulator/src/research/nfl_backtest.ts header",
+ "log_loss_clip": 0.00025,
+ "caveats": [
+  "Strength sigma was calibrated on 2006-2024: seasons 2010-2024 are in-sample for sigma and descriptive only; 2025 is the only out-of-sample season.",
+  "The four as-of snapshots of a season share its outcomes; intervals resample whole seasons.",
+  "No point-in-time points model: a points-ranking tie is coin-tossed (counted in cells[].flags).",
+  "Postseason rest and venues are the same estimates as production; Super Bowl designated home by the alternation rule.",
+  "Market baselines: unavailable (EdgeDesk owns no historical Kalshi futures quotes). Closing-market comparisons are not part of this file."
+ ],
+ "market_baseline": {
+  "status": "unavailable",
+  "reason": "no historical Kalshi futures quotes are owned; capture starts with sim_futures_quotes"
+ },
+ "families": {
+  "win_division": {
+   "pooled": {
+    "production": {
+     "n": 2048,
+     "brier": 0.09939561962890635,
+     "logloss": 0.3074077220107932
+    },
+    "sigma0": {
+     "n": 2048,
+     "brier": 0.10124897509765635,
+     "logloss": 0.3153544987156522
+    },
+    "brier_diff_ci95_season_bootstrap": [
+     -0.004798274169921881,
+     0.0004658713378906253
+    ]
+   },
+   "in_sample_for_sigma_2010_2024": {
+    "production": {
+     "n": 1920,
+     "brier": 0.09337380052083341,
+     "logloss": 0.2909379302904433
+    },
+    "sigma0": {
+     "n": 1920,
+     "brier": 0.09401563307291669,
+     "logloss": 0.29083634328574576
+    }
+   },
+   "holdout_2025": {
+    "production": {
+     "n": 128,
+     "brier": 0.18972290625000005,
+     "logloss": 0.554454597816046
+    },
+    "sigma0": {
+     "n": 128,
+     "brier": 0.2097491054687499,
+     "logloss": 0.6831268301642551
+    }
+   },
+   "by_week": {
+    "4": {
+     "production": {
+      "n": 512,
+      "brier": 0.14658067968749994,
+      "logloss": 0.45110432417563723
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.1510698916015624,
+      "logloss": 0.4781584549277
+     }
+    },
+    "8": {
+     "production": {
+      "n": 512,
+      "brier": 0.10684745117187505,
+      "logloss": 0.3386214033471143
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.10639636425781251,
+      "logloss": 0.3358648005765686
+     }
+    },
+    "12": {
+     "production": {
+      "n": 512,
+      "brier": 0.0944328388671875,
+      "logloss": 0.28822864671917625
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.09725457128906241,
+      "logloss": 0.29616611389287195
+     }
+    },
+    "16": {
+     "production": {
+      "n": 512,
+      "brier": 0.04972150878906252,
+      "logloss": 0.15167651380123975
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.05027507324218748,
+      "logloss": 0.15122862546546534
+     }
+    }
+   },
+   "calibration_production": [
+    {
+     "lo": 0,
+     "hi": 0.1,
+     "n": 959,
+     "mean_p": 0.0235,
+     "observed": 0.0188
+    },
+    {
+     "lo": 0.1,
+     "hi": 0.2,
+     "n": 241,
+     "mean_p": 0.1479,
+     "observed": 0.1245
+    },
+    {
+     "lo": 0.2,
+     "hi": 0.30000000000000004,
+     "n": 190,
+     "mean_p": 0.2462,
+     "observed": 0.2737
+    },
+    {
+     "lo": 0.3,
+     "hi": 0.4,
+     "n": 136,
+     "mean_p": 0.35,
+     "observed": 0.3529
+    },
+    {
+     "lo": 0.4,
+     "hi": 0.5,
+     "n": 115,
+     "mean_p": 0.453,
+     "observed": 0.5043
+    },
+    {
+     "lo": 0.5,
+     "hi": 0.6,
+     "n": 88,
+     "mean_p": 0.5457,
+     "observed": 0.4773
+    },
+    {
+     "lo": 0.6,
+     "hi": 0.7,
+     "n": 92,
+     "mean_p": 0.6451,
+     "observed": 0.5978
+    },
+    {
+     "lo": 0.7,
+     "hi": 0.7999999999999999,
+     "n": 61,
+     "mean_p": 0.7469,
+     "observed": 0.8361
+    },
+    {
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 54,
+     "mean_p": 0.8454,
+     "observed": 0.9074
+    },
+    {
+     "lo": 0.9,
+     "hi": 1,
+     "n": 112,
+     "mean_p": 0.9715,
+     "observed": 0.9732
+    }
+   ]
+  },
+  "make_playoffs": {
+   "pooled": {
+    "production": {
+     "n": 2048,
+     "brier": 0.11883271801757837,
+     "logloss": 0.360385947806892
+    },
+    "sigma0": {
+     "n": 2048,
+     "brier": 0.12083402905273445,
+     "logloss": 0.36870194779350185
+    },
+    "brier_diff_ci95_season_bootstrap": [
+     -0.004630053955078121,
+     0.00023541064453124966
+    ]
+   },
+   "in_sample_for_sigma_2010_2024": {
+    "production": {
+     "n": 1920,
+     "brier": 0.1157306890625002,
+     "logloss": 0.35256987175306914
+    },
+    "sigma0": {
+     "n": 1920,
+     "brier": 0.11697352734375,
+     "logloss": 0.3565537250467727
+    }
+   },
+   "holdout_2025": {
+    "production": {
+     "n": 128,
+     "brier": 0.16536315234374985,
+     "logloss": 0.47762708861423603
+    },
+    "sigma0": {
+     "n": 128,
+     "brier": 0.17874155468749997,
+     "logloss": 0.5509252889944473
+    }
+   },
+   "by_week": {
+    "4": {
+     "production": {
+      "n": 512,
+      "brier": 0.17513932421874998,
+      "logloss": 0.521575451247948
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.17978346386718766,
+      "logloss": 0.5438702075995897
+     }
+    },
+    "8": {
+     "production": {
+      "n": 512,
+      "brier": 0.1331351064453124,
+      "logloss": 0.41041289729332914
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.13454196777343747,
+      "logloss": 0.4145316511332463
+     }
+    },
+    "12": {
+     "production": {
+      "n": 512,
+      "brier": 0.1086456503906249,
+      "logloss": 0.3299504582884877
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.110371666015625,
+      "logloss": 0.3350064861094854
+     }
+    },
+    "16": {
+     "production": {
+      "n": 512,
+      "brier": 0.05841079101562498,
+      "logloss": 0.17960498439780082
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.0586390185546875,
+      "logloss": 0.18139944633168484
+     }
+    }
+   },
+   "calibration_production": [
+    {
+     "lo": 0,
+     "hi": 0.1,
+     "n": 597,
+     "mean_p": 0.0231,
+     "observed": 0.0218
+    },
+    {
+     "lo": 0.1,
+     "hi": 0.2,
+     "n": 209,
+     "mean_p": 0.1478,
+     "observed": 0.1483
+    },
+    {
+     "lo": 0.2,
+     "hi": 0.30000000000000004,
+     "n": 180,
+     "mean_p": 0.2468,
+     "observed": 0.2389
+    },
+    {
+     "lo": 0.3,
+     "hi": 0.4,
+     "n": 139,
+     "mean_p": 0.3501,
+     "observed": 0.3813
+    },
+    {
+     "lo": 0.4,
+     "hi": 0.5,
+     "n": 157,
+     "mean_p": 0.4463,
+     "observed": 0.4013
+    },
+    {
+     "lo": 0.5,
+     "hi": 0.6,
+     "n": 134,
+     "mean_p": 0.5487,
+     "observed": 0.6194
+    },
+    {
+     "lo": 0.6,
+     "hi": 0.7,
+     "n": 121,
+     "mean_p": 0.6457,
+     "observed": 0.6033
+    },
+    {
+     "lo": 0.7,
+     "hi": 0.7999999999999999,
+     "n": 112,
+     "mean_p": 0.7481,
+     "observed": 0.7232
+    },
+    {
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 121,
+     "mean_p": 0.8453,
+     "observed": 0.8512
+    },
+    {
+     "lo": 0.9,
+     "hi": 1,
+     "n": 278,
+     "mean_p": 0.9728,
+     "observed": 0.982
+    }
+   ]
+  },
+  "win_conference": {
+   "pooled": {
+    "production": {
+     "n": 2048,
+     "brier": 0.047865620117187334,
+     "logloss": 0.16538085519615717
+    },
+    "sigma0": {
+     "n": 2048,
+     "brier": 0.04769906274414055,
+     "logloss": 0.16513810523957084
+    },
+    "brier_diff_ci95_season_bootstrap": [
+     -0.001423824707031252,
+     0.0018768085937500058
+    ]
+   },
+   "in_sample_for_sigma_2010_2024": {
+    "production": {
+     "n": 1920,
+     "brier": 0.047066981770833204,
+     "logloss": 0.16133134839507055
+    },
+    "sigma0": {
+     "n": 1920,
+     "brier": 0.04663217187499991,
+     "logloss": 0.15966605053779936
+    }
+   },
+   "holdout_2025": {
+    "production": {
+     "n": 128,
+     "brier": 0.05984519531249998,
+     "logloss": 0.2261234572124539
+    },
+    "sigma0": {
+     "n": 128,
+     "brier": 0.06370242578125,
+     "logloss": 0.24721892576613683
+    }
+   },
+   "by_week": {
+    "4": {
+     "production": {
+      "n": 512,
+      "brier": 0.05074543066406248,
+      "logloss": 0.1858722697893277
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.05018256054687499,
+      "logloss": 0.18494906436039849
+     }
+    },
+    "8": {
+     "production": {
+      "n": 512,
+      "brier": 0.0482998115234375,
+      "logloss": 0.16403215481547934
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.04768267382812501,
+      "logloss": 0.15987829633625705
+     }
+    },
+    "12": {
+     "production": {
+      "n": 512,
+      "brier": 0.0471912109375,
+      "logloss": 0.15891632357541807
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.04738316992187497,
+      "logloss": 0.15973045061402444
+     }
+    },
+    "16": {
+     "production": {
+      "n": 512,
+      "brier": 0.04522602734374997,
+      "logloss": 0.15270267260440193
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.0455478466796875,
+      "logloss": 0.15599460964760026
+     }
+    }
+   },
+   "calibration_production": [
+    {
+     "lo": 0,
+     "hi": 0.1,
+     "n": 1611,
+     "mean_p": 0.0218,
+     "observed": 0.0161
+    },
+    {
+     "lo": 0.1,
+     "hi": 0.2,
+     "n": 253,
+     "mean_p": 0.1442,
+     "observed": 0.1502
+    },
+    {
+     "lo": 0.2,
+     "hi": 0.30000000000000004,
+     "n": 101,
+     "mean_p": 0.2407,
+     "observed": 0.2772
+    },
+    {
+     "lo": 0.3,
+     "hi": 0.4,
+     "n": 58,
+     "mean_p": 0.3456,
+     "observed": 0.4138
+    },
+    {
+     "lo": 0.4,
+     "hi": 0.5,
+     "n": 17,
+     "mean_p": 0.4588,
+     "observed": 0.5294
+    },
+    {
+     "lo": 0.5,
+     "hi": 0.6,
+     "n": 8,
+     "mean_p": 0.5259,
+     "observed": 0.375
+    },
+    {
+     "lo": 0.6,
+     "hi": 0.7,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    },
+    {
+     "lo": 0.7,
+     "hi": 0.7999999999999999,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    },
+    {
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    },
+    {
+     "lo": 0.9,
+     "hi": 1,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    }
+   ]
+  },
+  "win_super_bowl": {
+   "pooled": {
+    "production": {
+     "n": 2048,
+     "brier": 0.028257704101562434,
+     "logloss": 0.1101681053711379
+    },
+    "sigma0": {
+     "n": 2048,
+     "brier": 0.028771036621093656,
+     "logloss": 0.11164424690233182
+    },
+    "brier_diff_ci95_season_bootstrap": [
+     -0.0011621875000000005,
+     0.00017669262695312317
+    ]
+   },
+   "in_sample_for_sigma_2010_2024": {
+    "production": {
+     "n": 1920,
+     "brier": 0.028154984635416606,
+     "logloss": 0.10952147501914941
+    },
+    "sigma0": {
+     "n": 1920,
+     "brier": 0.028618097395833233,
+     "logloss": 0.11066014909008685
+    }
+   },
+   "holdout_2025": {
+    "production": {
+     "n": 128,
+     "brier": 0.02979849609375,
+     "logloss": 0.11986756065096567
+    },
+    "sigma0": {
+     "n": 128,
+     "brier": 0.031065125000000002,
+     "logloss": 0.12640571408600765
+    }
+   },
+   "by_week": {
+    "4": {
+     "production": {
+      "n": 512,
+      "brier": 0.02873179296874997,
+      "logloss": 0.11382382754401962
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.029217703124999977,
+      "logloss": 0.11142851611311079
+     }
+    },
+    "8": {
+     "production": {
+      "n": 512,
+      "brier": 0.028478570312499982,
+      "logloss": 0.10948565462179617
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.029120932617187494,
+      "logloss": 0.11016147501491323
+     }
+    },
+    "12": {
+     "production": {
+      "n": 512,
+      "brier": 0.0278559921875,
+      "logloss": 0.10720729743661656
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.028291458007812485,
+      "logloss": 0.11050158169504336
+     }
+    },
+    "16": {
+     "production": {
+      "n": 512,
+      "brier": 0.02796446093749999,
+      "logloss": 0.1101556418821206
+     },
+     "sigma0": {
+      "n": 512,
+      "brier": 0.028454052734374985,
+      "logloss": 0.11448541478626255
+     }
+    }
+   },
+   "calibration_production": [
+    {
+     "lo": 0,
+     "hi": 0.1,
+     "n": 1857,
+     "mean_p": 0.0178,
+     "observed": 0.0205
+    },
+    {
+     "lo": 0.1,
+     "hi": 0.2,
+     "n": 150,
+     "mean_p": 0.1389,
+     "observed": 0.12
+    },
+    {
+     "lo": 0.2,
+     "hi": 0.30000000000000004,
+     "n": 34,
+     "mean_p": 0.2326,
+     "observed": 0.2059
+    },
+    {
+     "lo": 0.3,
+     "hi": 0.4,
+     "n": 7,
+     "mean_p": 0.316,
+     "observed": 0.1429
+    },
+    {
+     "lo": 0.4,
+     "hi": 0.5,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    },
+    {
+     "lo": 0.5,
+     "hi": 0.6,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    },
+    {
+     "lo": 0.6,
+     "hi": 0.7,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    },
+    {
+     "lo": 0.7,
+     "hi": 0.7999999999999999,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    },
+    {
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    },
+    {
+     "lo": 0.9,
+     "hi": 1,
+     "n": 0,
+     "mean_p": null,
+     "observed": null
+    }
+   ]
+  }
+ },
+ "cells": [
+  {
+   "season": 2010,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2010,
+   "week": 8,
+   "remaining_games": 152,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2010,
+   "week": 12,
+   "remaining_games": 96,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 3
+   },
+   "unsupported_runs": 3
+  },
+  {
+   "season": 2010,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2011,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2011,
+   "week": 8,
+   "remaining_games": 153,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2011,
+   "week": 12,
+   "remaining_games": 96,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 3
+   },
+   "unsupported_runs": 3
+  },
+  {
+   "season": 2011,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2012,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 4
+   },
+   "unsupported_runs": 4
+  },
+  {
+   "season": 2012,
+   "week": 8,
+   "remaining_games": 152,
+   "sigma": 4.009435,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2012,
+   "week": 12,
+   "remaining_games": 96,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2012,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2013,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2013,
+   "week": 8,
+   "remaining_games": 149,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2013,
+   "week": 12,
+   "remaining_games": 94,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2013,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2014,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2014,
+   "week": 8,
+   "remaining_games": 150,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2014,
+   "week": 12,
+   "remaining_games": 95,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2014,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2015,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2015,
+   "week": 8,
+   "remaining_games": 151,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2015,
+   "week": 12,
+   "remaining_games": 96,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2015,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2016,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 5
+   },
+   "unsupported_runs": 5
+  },
+  {
+   "season": 2016,
+   "week": 8,
+   "remaining_games": 149,
+   "sigma": 4.009435,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2016,
+   "week": 12,
+   "remaining_games": 95,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 3
+   },
+   "unsupported_runs": 3
+  },
+  {
+   "season": 2016,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2017,
+   "week": 4,
+   "remaining_games": 209,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2017,
+   "week": 8,
+   "remaining_games": 150,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2017,
+   "week": 12,
+   "remaining_games": 96,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2017,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2018,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2018,
+   "week": 8,
+   "remaining_games": 149,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2018,
+   "week": 12,
+   "remaining_games": 95,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2018,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2019,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 3
+   },
+   "unsupported_runs": 3
+  },
+  {
+   "season": 2019,
+   "week": 8,
+   "remaining_games": 150,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2019,
+   "week": 12,
+   "remaining_games": 94,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2019,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2020,
+   "week": 4,
+   "remaining_games": 208,
+   "sigma": 4.299242,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2020,
+   "week": 8,
+   "remaining_games": 151,
+   "sigma": 4.009435,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2020,
+   "week": 12,
+   "remaining_games": 95,
+   "sigma": 3.453084,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2020,
+   "week": 16,
+   "remaining_games": 32,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2021,
+   "week": 4,
+   "remaining_games": 224,
+   "sigma": 4.299242,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2021,
+   "week": 8,
+   "remaining_games": 165,
+   "sigma": 4.009435,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2021,
+   "week": 12,
+   "remaining_games": 107,
+   "sigma": 3.453084,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2021,
+   "week": 16,
+   "remaining_games": 48,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2022,
+   "week": 4,
+   "remaining_games": 223,
+   "sigma": 4.299242,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2022,
+   "week": 8,
+   "remaining_games": 163,
+   "sigma": 4.009435,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2022,
+   "week": 12,
+   "remaining_games": 107,
+   "sigma": 3.453084,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2022,
+   "week": 16,
+   "remaining_games": 47,
+   "sigma": 4.433723,
+   "flags": {
+    "tiebreak_unsupported_input": 3
+   },
+   "unsupported_runs": 3
+  },
+  {
+   "season": 2023,
+   "week": 4,
+   "remaining_games": 224,
+   "sigma": 4.299242,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2023,
+   "week": 8,
+   "remaining_games": 166,
+   "sigma": 4.009435,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2023,
+   "week": 12,
+   "remaining_games": 108,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2023,
+   "week": 16,
+   "remaining_games": 48,
+   "sigma": 4.433723,
+   "flags": {
+    "tiebreak_unsupported_input": 3
+   },
+   "unsupported_runs": 3
+  },
+  {
+   "season": 2024,
+   "week": 4,
+   "remaining_games": 224,
+   "sigma": 4.299242,
+   "flags": {
+    "tiebreak_unsupported_input": 2
+   },
+   "unsupported_runs": 2
+  },
+  {
+   "season": 2024,
+   "week": 8,
+   "remaining_games": 165,
+   "sigma": 4.009435,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2024,
+   "week": 12,
+   "remaining_games": 106,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2024,
+   "week": 16,
+   "remaining_games": 48,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2025,
+   "week": 4,
+   "remaining_games": 224,
+   "sigma": 4.299242,
+   "flags": {},
+   "unsupported_runs": 0
+  },
+  {
+   "season": 2025,
+   "week": 8,
+   "remaining_games": 164,
+   "sigma": 4.009435,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2025,
+   "week": 12,
+   "remaining_games": 108,
+   "sigma": 3.453084,
+   "flags": {
+    "tiebreak_unsupported_input": 1
+   },
+   "unsupported_runs": 1
+  },
+  {
+   "season": 2025,
+   "week": 16,
+   "remaining_games": 48,
+   "sigma": 4.433723,
+   "flags": {},
+   "unsupported_runs": 0
+  }
+ ],
+ "runtime_s": 364
+}

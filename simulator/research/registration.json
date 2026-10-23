@@ -1,0 +1,73 @@
+{
+  "schema": "edgedesk_research_registration_v1",
+  "model_key": "SIM-NFL-SEASON",
+  "name": "EdgeDesk Simulator — NFL correlated season simulation",
+  "version": "0.1.0",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3",
+  "provenance_label": "EdgeDesk research model (T3)",
+  "sport": "NFL",
+  "registered_at": "2026-10-23",
+  "hypothesis": "Simulating the remaining NFL season 100,000 times from the served game model (edgedesk_nfl_v2), with one persistent normal strength offset per club calibrated on 2006-2024 frozen forecasts, produces calibrated probabilities of playoff qualification, division titles, seeds, conference titles and the Super Bowl.",
+  "objective": "Calibrated season-outcome probabilities (make playoffs, win division, seed 1, win conference, win Super Bowl) from any as-of week, as a research comparison against Kalshi futures prices; never a recommendation.",
+  "primary_metric": "Brier score of win_division and make_playoffs probabilities on the holdout seasons at as-of weeks 4, 8, 12 and 16, pooled; then log loss with probabilities clipped to [max(1e-6, 0.5/N), 1 - that].",
+  "unit": "One club-season-outcome at one as-of week (32 clubs x outcome x week x season); repeated snapshots of one season are NOT independent: every interval is a season-cluster bootstrap.",
+  "baseline": "The same simulator with sigma = 0 (no strength uncertainty, the model's game probabilities only); and, where owned, same-time Kalshi futures reference prices (none owned historically).",
+  "training_window": "Strength sigma calibrated on frozen-forecast residuals of 2006-2024 (simulator/data/nfl_strength_uncertainty.json); the game model is the served one, trained through 2025.",
+  "validation_window": "2010-2024 walk-forward replay (simulator/src/research/nfl_backtest.ts), descriptive only: sigma was calibrated on these seasons, so they cannot decide promotion.",
+  "holdout_window": "Seasons 2025, 2026 and 2027, each evaluated once after its Super Bowl.",
+  "machine": {
+    "window_dates": { "training": ["2006-09-01", "2025-02-15"], "validation": ["2010-09-01", "2025-02-15"], "holdout": ["2025-09-01", "2028-02-20"] },
+    "window_note": "[from, to): dates of the seasons inside each window",
+    "minimum_sample": 3,
+    "version": "0.1.0",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3"
+  },
+  "minimum_sample": {
+    "holdout_seasons": 3,
+    "kalshi_matched_outcomes_for_market_criteria": 200,
+    "flags_with_observed_closes_for_clv": 100,
+    "note": "Below three holdout seasons the record is reported descriptively and no result row is written. The market criteria need same-time Kalshi futures quotes EdgeDesk captured itself (sim_futures_quotes); none exist before 2026, so until enough are captured those criteria are NOT EVALUABLE and the model cannot pass."
+  },
+  "promotion_criteria": {
+    "decision_rule": "passed = true only if every criterion below holds on the holdout. A criterion that cannot be evaluated is not met. Passing makes the model eligible; a person promotes it through a validation report. Software tests passing is never evidence for any criterion.",
+    "criteria": [
+      { "id": "C1_BRIER_VS_NO_UNCERTAINTY", "rule": "Pooled Brier (win_division, make_playoffs; weeks 4/8/12/16; holdout seasons) of the production simulator <= the sigma = 0 simulator's, with the season-cluster bootstrap 95% upper bound of (production - sigma0) below +0.002." },
+      { "id": "C2_CALIBRATION", "rule": "Calibration slope of logit(p) on the pooled holdout outcomes within [0.8, 1.2] and every decile bin with n >= 30 within 0.08 of its observed rate." },
+      { "id": "C3_MARKET_REFERENCE", "rule": "Log loss below the same-time Kalshi reference (mid of a two-sided quote within 60 minutes of the run's input snapshot) on >= 200 matched outcomes, season-cluster bootstrap 95% CI of the difference below 0. Closing-market comparisons are reported separately and cannot satisfy this criterion." },
+      { "id": "C4_EXECUTABLE_CLV", "rule": "Flagged opportunities (executable edge after verified fees) show a positive mean executable CLV against the observed close on >= 100 flags with observed closes; missing closes are counted as missing, never as a settled 0/1." }
+    ],
+    "family_correction": "All four are required (an intersection test); no criterion is reported as a pass on its own."
+  },
+  "forking_paths": {
+    "candidates_tried": [
+      { "version": "0.1.0", "strength": "persistent normal offset per club, sigma by win-total calibration", "evaluated_against_outcomes": "only through the sigma calibration (2006-2024 remaining-win variance), not through any season-outcome probability" }
+    ],
+    "alternatives_considered_not_tried": [
+      "sigma from the within-club residual covariance alone (3.85 at week 7 vs the chosen 3.99; reported beside it)",
+      "a Gaussian copula preserving each game's exact model marginal",
+      "Elo-style in-season rating updates from simulated results (hot simulation)",
+      "a t-distributed offset"
+    ],
+    "choice_and_reason": "The win-total calibration targets the season-level quantity directly and absorbs the served margin distribution's own width (the frozen-forecast consistency check showed that adding the covariance sigma on top of the served distribution would overstate per-game variance); the two estimators agree within their intervals.",
+    "data_already_seen": "2006-2025 NFL results and the 2026 season to week 7 (the simulator's first live inputs). No 2025-2027 season-outcome probability has been scored.",
+    "comparisons_made": 0,
+    "stopping_rule": "Fixed horizon: each holdout season is evaluated once after its Super Bowl."
+  },
+  "spec": {
+    "engine": "simulator/src/core (xoshiro128** 1.1 seeded by SplitMix64; per-run streams from (seed, run, stream))",
+    "game_model": "football/engine.js dist.coverProbSpread over the served nfl_params_v2 margin table, read at fair + d_home - d_away",
+    "rules": "simulator/src/sports/nfl/rules.ts NFL-TB-2020 (verified against 2002-2025 nflverse standings: every division rank and seed)",
+    "strength": "simulator/data/nfl_strength_uncertainty.json win_total_calibration.sigma for the as-of week",
+    "runs": 100000,
+    "known_limitations": [
+      "no injury return sampling; no new injuries",
+      "ratings frozen at the as-of date; within-season drift OFF",
+      "points-ranking tiebreaks use Estimated scores; net-touchdown tiebreaks have no model input (seeded coin toss, counted)",
+      "postseason rest and the Super Bowl site are Estimated inputs",
+      "the served game model does not beat the closing line"
+    ]
+  },
+  "result": null
+}

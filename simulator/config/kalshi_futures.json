@@ -1,0 +1,25 @@
+{
+  "schema": "edgedesk_sim_kalshi_futures_v1",
+  "mapping_version": "2026-10-23.0",
+  "note": "Every Kalshi futures market the simulator may compare against, mapped BY A PERSON to one exact simulated outcome after reading the market's settlement rules. A market that is not listed here is never compared. Fuzzy or automatic matches are never published: simulator/src/cli/kalshi_discover.ts lists candidates for review and writes nothing here. No mapping is listed yet: Kalshi's API was not reachable from the build environment, so no market's rules could be read and verified.",
+  "thresholds": {
+    "max_quote_age_minutes": 30,
+    "max_reference_spread": 0.06,
+    "max_normalization_skew_minutes": 10,
+    "exec_quantity": 10,
+    "min_exec_edge_pp": 3.0,
+    "min_edge_mcse_multiple": 4,
+    "note": "max_reference_spread follows public.kalshi_rule('max_spread') (0.06). A flag needs a fresh quote, a verified mapping, the ask size at exec_quantity, a verified fee schedule, an executable edge of at least min_exec_edge_pp points and at least min_edge_mcse_multiple Monte Carlo SEs."
+  },
+  "fees": {
+    "verified": false,
+    "kind": "taker",
+    "formula": "fee per order = ceil_to_cent(rate x contracts x P x (1 - P)), P the price in dollars",
+    "rate": 0.07,
+    "source": "Kalshi fee schedule as recalled, NOT VERIFIED: kalshi.com was not reachable from the build environment. Until a person verifies the schedule for these series and sets verified true with a source URL and date, every executable comparison is labelled pre-fee and no opportunity is flagged.",
+    "verified_by": null,
+    "verified_at": null
+  },
+  "outcome_sets": [],
+  "mappings": []
+}
