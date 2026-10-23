@@ -31,6 +31,17 @@ export function validateCfbInputs(snap: CfbSnapshot, opt: { ignoreCodeDrift?: bo
   g('schedule.complete', short.length === 0, 'every FBS team has at least 11 regular-season games in the feed' + (short.length ? ': ' + short.map(([n, c]) => n + ' ' + c).join(', ') : ''));
   g('schedule.pac12_flex', pac12Short === 0, pac12Short + ' Pac-12 teams are missing their Week 13 flex game (opponent set at most six days ahead; non-conference by rule): not simulated, missing from their overall records', 'none', true);
   g('results.completed', d.games.every((x) => !x.done || (Number.isInteger(x.home_points) && Number.isInteger(x.away_points) && x.home_points !== x.away_points)), 'every completed game has two integer scores and a winner');
+  /* a game already played must never be simulated as if it were not (finals.ts) */
+  const ro = d.results_overlay, nm = (i: number) => (i >= 0 ? d.teams[i].name : 'FCS');
+  if (ro && ro.checked) {
+    g('results.current', ro.unresolved.length === 0, (ro.applied.length ? ro.applied.length + ' final(s) the schedule feed had not yet carried taken from ESPN: ' + ro.applied.map((f) => f.away + ' ' + f.away_points + ' @ ' + f.home + ' ' + f.home_points).join('; ') + '. ' : 'the schedule feed carried every final. ')
+      + (ro.not_played.length ? 'Postponed or canceled (simulated as scheduled): ' + ro.not_played.map((x) => x.away + ' @ ' + x.home + ' ' + x.status).join('; ') + '. ' : '')
+      + (ro.unresolved.length ? ro.unresolved.length + ' game(s) kicked off more than ' + ro.lag_hours + ' h before the snapshot with no final in either source: ' + ro.unresolved.slice(0, 8).map((x) => x.away + ' @ ' + x.home + ' ' + x.kickoff + ' (' + x.status + ')').join('; ') : 'every game that kicked off more than ' + ro.lag_hours + ' h before the snapshot is final'), 'publication');
+  } else {
+    /* a snapshot built offline, or before this check existed: say what it holds, block nothing */
+    const built = Date.parse(snap.meta && snap.meta.built_at), late = d.games.filter((x) => !x.done && Number.isFinite(built) && Date.parse(x.kickoff) <= built - 6 * 3600e3);
+    g('results.current', late.length === 0, 'finals not looked up for this snapshot' + (late.length ? '; ' + late.length + ' game(s) kicked off more than 6 h before it was built and are simulated as unplayed: ' + late.slice(0, 8).map((x) => nm(x.away) + ' @ ' + nm(x.home) + ' ' + x.kickoff).join('; ') : ''), 'none', true);
+  }
   const open = d.games.filter((x) => !x.done);
   const tau = d.strength.tau_points;
   const bad = open.filter((x) => !x.model || !Number.isFinite(x.model.fair) || !(x.model.sigma > Math.sqrt(x.model.k) * tau) || Math.abs(x.model.fair) > 80);

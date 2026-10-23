@@ -545,7 +545,7 @@
     "sim:nba:hazards": "node --max-old-space-size=6000 simulator/src/research/nba_return_hazards.ts",
     "sim:nba:audit": "node --max-old-space-size=8000 simulator/src/research/nba_postseason_audit.ts",
     "sim:nba:fixture": "node --max-old-space-size=8000 simulator/src/cli/build_nba_fixture.ts",
-    "sim:cfb:test": "node simulator/tests/cfb_rules_synthetic.test.ts && node simulator/tests/cfb_rules_history.test.ts && node simulator/tests/cfb_cfp.test.ts && node simulator/tests/cfb_committee.test.ts && node simulator/tests/cfb_calibration.test.ts && node simulator/tests/cfb_config.test.ts && node simulator/tests/cfb_sim.test.ts",
+    "sim:cfb:test": "node simulator/tests/cfb_finals.test.ts && node simulator/tests/cfb_rules_synthetic.test.ts && node simulator/tests/cfb_rules_history.test.ts && node simulator/tests/cfb_cfp.test.ts && node simulator/tests/cfb_committee.test.ts && node simulator/tests/cfb_calibration.test.ts && node simulator/tests/cfb_config.test.ts && node simulator/tests/cfb_sim.test.ts",
     "sim:cfb:dry-run": "node simulator/src/cli/run.ts --sport cfb --season 2026 --workers 4 --dry-run",
     "sim:cfb:calibration": "node simulator/src/research/cfb_calibration.ts",
     "sim:cfb:uncertainty": "node simulator/src/research/cfb_strength_uncertainty.ts",

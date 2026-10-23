@@ -53,9 +53,13 @@ export const schedUrl = (y: number) => 'https://raw.githubusercontent.com/sports
 
 export interface FeedGame {
   game_id: string; season: number; week: number; season_type: string; start_date: string; kick: number;
+  /** the kickoff time is not set yet: start_date is the date only (midnight Eastern) */
+  time_tbd: boolean;
   completed: boolean; neutral: boolean; conference_game: boolean; notes: string | null; venue_id: number | null;
   home: string; away: string; home_division: string; away_division: string; home_conference: string; away_conference: string;
   home_points: number | null; away_points: number | null;
+  /** the feed's team ids (ESPN's): finals.ts checks a late final's teams by them */
+  home_id: string | null; away_id: string | null;
 }
 const TRUE = (v: unknown) => /^(true|1|t|yes)$/i.test(String(v == null ? '' : v).trim());
 export function feedRows(text: string): FeedGame[] {
@@ -63,13 +67,14 @@ export function feedRows(text: string): FeedGame[] {
     const hp = num(r.home_points), ap = num(r.away_points);
     return {
       game_id: String(r.game_id), season: Number(r.season), week: Number(r.week), season_type: String(r.season_type || ''),
-      start_date: String(r.start_date || ''), kick: Date.parse(String(r.start_date || '')) || 0,
+      start_date: String(r.start_date || ''), kick: Date.parse(String(r.start_date || '')) || 0, time_tbd: TRUE(r.start_time_tbd),
       completed: TRUE(r.completed) && hp != null && ap != null, neutral: TRUE(r.neutral_site), conference_game: TRUE(r.conference_game),
       notes: r.notes && r.notes !== 'NA' ? String(r.notes) : null, venue_id: num(r.venue_id),
       home: String(r.home_team), away: String(r.away_team),
       home_division: String(r.home_division || '').toLowerCase(), away_division: String(r.away_division || '').toLowerCase(),
       home_conference: String(r.home_conference || ''), away_conference: String(r.away_conference || ''),
-      home_points: hp, away_points: ap
+      home_points: hp, away_points: ap,
+      home_id: num(r.home_id) != null ? String(num(r.home_id)) : null, away_id: num(r.away_id) != null ? String(num(r.away_id)) : null
     };
   });
 }

@@ -218,6 +218,13 @@ Who is FBS and each team's conference come from the 2026 cfbfastR-data schedule 
 ### 6.2 Completed results
 Every completed game is fixed at its real score in every run (tested: only unplayed games are ever drawn). The as-of week is the latest completed regular-season week.
 
+**Late finals (`finals.ts`).** The schedule feed is refreshed in batches. On 2026-10-23 it still listed every week-8 game from Tuesday to Thursday as unplayed, so the published run simulated James Madison at App State, which App State had won 34-31 in overtime the night before.
+- **Lookup.** Before the replay, every feed game that has kicked off and is not completed is looked up on ESPN's public scoreboard. This is the read `tools/slate/espn.js` makes: one US-Eastern day per request, the FBS group (80), then the FCS group (81) for a game the FBS board lacks.
+- **When a final is taken.** Only when ESPN's event id is the feed's `game_id`, ESPN's two team ids are the feed's `home_id`/`away_id`, and ESPN calls the game final with two integer, unequal scores. Scores are assigned by team id, so a neutral site's home/away labels cannot swap them. The engine's state then absorbs the result like any other final.
+- **Postponed or canceled.** Listed, and still simulated as scheduled.
+- **Unresolved.** A game that kicked off more than 6 h before the snapshot and neither source settles is unresolved, and the gate `results.current` holds publication. For a game with no kickoff time yet, the 6 h start when its day ends.
+- **Recorded.** The finals taken, games not played and unresolved games are in the hashed inputs (`results_overlay`); each ESPN read's URL and sha256 are in `meta.feeds`. A snapshot built offline, or before this check existed, only warns, and lists what it simulated although played: the committed week-7 fixture lists 7 such games.
+
 ### 6.3 Remaining schedule
 All 378 remaining 2026 games, FCS opponents included, with neutral flags. Army–Navy is excluded from AAC qualification and from the committee, both of which come before it. The Pac-12 Week 13 flex games are not in the feed yet (opponents are set at most six days ahead). They are not simulated; they never count in the Pac-12 standings, but they are missing from those teams' overall records (gate WARN).
 
@@ -464,6 +471,7 @@ These are benchmark outputs from the committed test snapshot; the nightly run bu
 | Sacramento State's eligibility has no governing-body statement | assumed and measured each run; it blocks only a run that depended on it |
 | A CFB run would have failed the Kalshi step on the NFL's mappings, and the markets job could pair one sport's results with another's run | the config is scoped by sport; each published run is compared with its own results |
 | A conditional scenario could have been published as unconditional | `cfp.scenario_not_published` holds it |
+| The schedule feed lagged: run 3641b9ed (2026-10-23) simulated four games already played Wednesday-Thursday, among them James Madison at App State (App State won 34-31 in OT), and kept JMU unbeaten (make CFP 76.6%) | late finals from ESPN by event and team ids (`finals.ts`, §6.2); `results.current` holds publication when a played game is unsettled; with the four finals, JMU 7-1, make CFP 34.8% (20,000-run check) |
 | After the SQL fix was deployed (19:43 UTC) no CFB run had been attempted, so the reader still said the latest attempt failed and published nothing | Simulator dispatched for `cfb` (run 40014764361): published run `3641b9ed…` |
 | The CFP tab put Make CFP and the title behind the record and seven other columns, so a phone showed neither; the regular season (projected record, six wins, unbeaten) and the independents were not shown at all | Make CFP and Win title lead the row; the Group of Six bid and seeds cards; regular-season columns from the published win distribution, the schedule length published in `record.games` |
 | The database refused the first CFB publication ("sum rule ccg_appearance per ccg fails in 1 group(s)"): `sim_publish_run` ignored the rules' `skip` of the no-title-game group | the SQL honours `skip`; a real CFB run publishes on PostgreSQL and the same rules without `skip` are still refused |
@@ -472,7 +480,7 @@ These are benchmark outputs from the committed test snapshot; the nightly run bu
 
 ```
 CFB_SIMULATOR_NOTES.md                          this file
-simulator/src/sports/cfb/                       config, rules, cfp, committee, inputs, module, status, validate, engine_adapter
+simulator/src/sports/cfb/                       config, rules, cfp, committee, inputs, finals, module, status, validate, engine_adapter
 simulator/src/cli/run_cfb.ts                    the CFB run path (run.ts --sport cfb)
 simulator/src/cli/build_cfb_fixture.ts          the test snapshot
 simulator/src/cli/fetch_cfb_sources.ts          the primary-source reader (GitHub runner job)
@@ -480,7 +488,7 @@ simulator/src/research/                         cfb_replay, cfb_calibration, cfb
 simulator/data/                                 cfb_calibration.json, cfb_strength_uncertainty.json, cfb_committee_proxy.json, cfb_cfp_rankings_history.json
 simulator/config/                               cfb_availability.json, cfb_cfp_bracket.json
 simulator/fixtures/                             cfb_2026_wk7_snapshot.json.gz, cfb_history.json.gz
-simulator/tests/                                cfb_rules_synthetic, cfb_rules_history, cfb_cfp, cfb_committee, cfb_calibration, cfb_config, cfb_sim (+ _cfb.ts)
+simulator/tests/                                cfb_finals, cfb_rules_synthetic, cfb_rules_history, cfb_cfp, cfb_committee, cfb_calibration, cfb_config, cfb_sim (+ _cfb.ts)
 .github/workflows/simulator-cfb-sources.yml     the read-only source job
 modified: simulator/src/core/engine.ts (Estimated/Observed provenance, sum-rule skip), core/results.ts (per-outcome provenance),
           core/prng.ts (committee stream 11), sports/registry.ts, sports/factory.ts, cli/run.ts, cli/plan.ts (CFB nightly), lib/edgedesk_simulator_sports.js (generated),
