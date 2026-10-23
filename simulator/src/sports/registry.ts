@@ -17,14 +17,15 @@ import { MLB_2026 } from './mlb/config.ts';
 import { NBA_2026_27 } from './nba/config.ts';
 import { cfbFacts, isCfbVerified } from './cfb/config.ts';
 import { NCAAM_2027 } from './ncaam/config.ts';
+import { WNBA_2026 } from './wnba/config.ts';
 
 export type SportStatus = 'ACTIVE' | 'BLOCKED' | 'COMING_SOON';
 export interface SportEntry {
   key: string;
   label: string;
   status: SportStatus;
-  structure: 'season' | 'tournament' | 'series' | 'none';
-  tabs: Array<'division' | 'conference' | 'title' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health'>;
+  structure: 'season' | 'tournament' | 'series' | 'events' | 'none';
+  tabs: Array<'division' | 'conference' | 'title' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health' | 'fights' | 'title_path' | 'leaderboard' | 'finishes'>;
   blockers: string[];
   limitations: string[];
   /** what would have to exist for this sport to be activated */
@@ -143,11 +144,25 @@ const NBA_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
+/** WNBA: the series formats and hosts are measured from the schedule in every run (schedule.series), not standing facts */
+function wnbaStatus(): { status: SportStatus; blockers: string[] } {
+  return factStatus([['2026 playoff series format', WNBA_2026.series_format], ['2026 playoff hosts', WNBA_2026.home_court]], 'the WNBA\'s official source');
+}
+const WNBA_LIMITS = [
+  'Game outcomes come from the served WNBA model (points ratings and the season calibration fitted on the three seasons before it: the price on the basketball board). Its moneyline is PROVISIONAL: it has never been compared with closing prices.',
+  'A series\' games move together through one shared offset per simulated series (tau about 2.7 points of margin, measured from late-season residuals 2010-2024 and checked on playoff series); it is carved out of the served distribution, so each game keeps the board\'s price on average. The 2025 holdout season was more volatile than the estimate.',
+  'The ratings are frozen at the last final: a simulated game does not update them. The served model has no player input: an injury, a suspension or a return after the as-of time is not in any number.',
+  'Series formats and hosts are read from the schedule (every remaining game, "if necessary" ones included), not from a rulebook; a series whose clubs are not yet known is never invented.',
+  'A game\'s chance "if played" differs from the board\'s price: a game 6 or 7 is played only in some series paths, and those paths say something about the two clubs.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
 export function sportRegistry(): SportEntry[] {
   const nfl = nflStatus(), nhl = nhlStatus(), cfb = cfbStatus();
   const mlb = mlbStatus();
   const nba = nbaStatus();
   const ncaam = ncaamStatus();
+  const wnba = wnbaStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
@@ -163,9 +178,8 @@ export function sportRegistry(): SportEntry[] {
       activation_path: 'Each season: re-run the Simulator source check (job fetch (mlb): MLB\'s standings, postseason schedule, rulebook and explainers) and a dispatched MLB dry run, re-verify the facts in simulator/src/sports/mlb/config.ts in a reviewed commit, and set the season\'s nightly window (nightly_through). MLB_SIMULATOR_NOTES.md §15.' },
     { key: 'ncaam', label: 'College Basketball', status: ncaam.status, structure: 'tournament', tabs: ['games', 'upset_watch', 'tournament', 'model_health'], blockers: ncaam.blockers, limitations: NCAAM_LIMITS,
       activation_path: 'After Selection Sunday 2027: write basketball/ncaam_forecast/config/brackets/2027.json from the official bracket, record the 2027 format and bracket as VERIFIED with verified_by/verified_at in simulator/src/sports/ncaam/config.ts, apply supabase/simulator.sql and supabase/ncaam_forecast.sql, and promote a research_team_model champion through the weekly gates.' },
-    { key: 'wnba', label: 'WNBA', status: 'BLOCKED', structure: 'series', tabs: ['title'],
-      blockers: ['No series simulator or strength-uncertainty study; the 2026 Finals end by 2026-10-31.'],
-      limitations: [], activation_path: 'A series state machine and an uncertainty study before the 2027 season.' },
+    { key: 'wnba', label: 'WNBA', status: wnba.status, structure: 'series', tabs: ['title', 'games', 'model_health'], blockers: wnba.blockers, limitations: WNBA_LIMITS,
+      activation_path: 'Active for the 2026 postseason: the series formats and hosts are measured from the schedule (simulator/src/sports/wnba/config.ts), the game model is the served basketball walk-forward and the shared series offset comes from simulator/data/wnba_strength_uncertainty.json. For 2027: a configuration with the season\'s playoff bracket rule (pairings of rounds not yet played), re-run the uncertainty study, set nightly_through. WNBA_SIMULATOR_NOTES.md.' },
     { key: 'tennis', label: 'Tennis', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
       blockers: ['Retired from coverage (2026-09-27).', 'Fitted ratings live only in the database; no owned draw structure; no validated point-level serve/return model.'],
       limitations: [], activation_path: 'Draw data, a validated point-level model, and the coverage decision reversed.' },

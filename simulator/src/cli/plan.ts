@@ -23,17 +23,18 @@ import { MLB_2026 } from '../sports/mlb/config.ts';
 import { CFB_2026 } from '../sports/cfb/config.ts';
 import { NHL_2027 } from '../sports/nhl/config.ts';
 import { NCAAM_2027 } from '../sports/ncaam/config.ts';
+import { WNBA_2026 } from '../sports/wnba/config.ts';
 import fs from 'node:fs';
 
 /** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season (the NHL by its end year: 2027 = 2026-27) */
-export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, nhl: NHL_2027.season, cfb: CFB_2026.season, ncaam: NCAAM_2027.season };
+export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, nhl: NHL_2027.season, cfb: CFB_2026.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season };
 /** the nightly schedule: college football runs nightly, dry until it is ACTIVE (a night with unchanged inputs
     reuses the published run: the idempotency key); MLB runs only inside its season's nightly window
     (inSeason: through the World Series); college basketball joins only once its official bracket file
     exists (inputsReady) */
-export const NIGHTLY = ['nfl', 'cfb', 'nhl', 'mlb', 'ncaam'];
+export const NIGHTLY = ['nfl', 'cfb', 'nhl', 'mlb', 'ncaam', 'wnba'];
 /** the last date (UTC) a sport's configured season is run nightly; absent = every night */
-const NIGHTLY_THROUGH: Record<string, string> = { mlb: MLB_2026.nightly_through };
+const NIGHTLY_THROUGH: Record<string, string> = { mlb: MLB_2026.nightly_through, wnba: WNBA_2026.nightly_through };
 export function inSeason(sport: string, now: Date): { ready: boolean; reason: string } {
   const until = NIGHTLY_THROUGH[sport];
   return !until || now.toISOString().slice(0, 10) <= until ? { ready: true, reason: '' } : { ready: false, reason: 'the configured season ran nightly through ' + until };

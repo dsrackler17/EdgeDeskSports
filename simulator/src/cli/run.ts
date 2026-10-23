@@ -14,7 +14,7 @@
      node simulator/src/cli/run.ts --sport nba --workers 4 --dry-run --allow-incomplete-schedule   (2026-27; NBA season keys are end years)
 
    Options
-     --sport nfl|nhl|nba|mlb|cfb|ncaam  the sport (simulator/src/sports/registry.ts)
+     --sport nfl|nhl|nba|mlb|cfb|ncaam|wnba  the sport (simulator/src/sports/registry.ts)
      --season 2026            must match the sport's season config (default: it; NHL and NBA keys are end years, 2027 = 2026-27)
      --runs N                 default 100000 (production); fewer only for a dry run
      --seed S                 decimal or 0x-hex u64; default: derived from the input hash
@@ -67,6 +67,9 @@ import { sha256Hex } from '../core/canonical.ts';
 import { executeCfb, printCfbSummary, type CfbRunOutcome } from './run_cfb.ts';
 import { NCAAM_2027 } from '../sports/ncaam/config.ts';
 import { executeNcaam, printNcaamSummary } from '../sports/ncaam/run.ts';
+import { WNBA_2026 } from '../sports/wnba/config.ts';
+import { executeWnba, printWnbaSummary } from '../sports/wnba/run.ts';
+import { WNBA_INPUT_SCHEMA } from '../sports/wnba/inputs.ts';
 
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -78,7 +81,7 @@ export interface CliArgs {
   mode: 'official' | 'historical'; model: 'champion' | 'selection'; bracket: string | null;
 }
 /** each sport's configured season (the NHL's and the NBA's are end years: 2027 = 2026-27) */
-export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, mlb: MLB_2026.season, nba: NBA_2026_27.season, ncaam: NCAAM_2027.season };
+export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, mlb: MLB_2026.season, nba: NBA_2026_27.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season };
 export function parseArgs(argv: string[]): CliArgs {
   const a: CliArgs = { sport: 'nfl', season: NaN, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
     publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4, asOf: null, confirmThrough: null, allowIncompleteSchedule: false,
@@ -141,7 +144,9 @@ export interface RunOutcome { results: ResultsDoc; gates: Gate[]; snapshot: NflS
 export async function execute(args: CliArgs, log: (s: string) => void = console.log): Promise<RunOutcome> {
   /* an NBA replay takes its sport and season from the snapshot itself */
   if (args.snapshot && snapshotSchema(args.snapshot) === NBA_INPUT_SCHEMA) args = { ...args, sport: 'nba' };
+  if (args.snapshot && snapshotSchema(args.snapshot) === WNBA_INPUT_SCHEMA) args = { ...args, sport: 'wnba' };
   if (args.sport === 'nba') return executeNba(args, log);
+  if (args.sport === 'wnba') return executeWnba({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns, offline: args.offline }, log) as unknown as RunOutcome;
   if (args.allowIncompleteSchedule) throw Object.assign(new Error('--allow-incomplete-schedule applies to the NBA only'), { exitCode: 2 });
   if (args.sport === 'nhl') return executeNhl(args, log);
   if (args.sport === 'mlb') return executeMlb(args, log);
@@ -429,6 +434,7 @@ if (isMain) {
       const o = await execute(args);
       if (args.sport === 'cfb') printCfbSummary(o as unknown as CfbRunOutcome, console.log);
       else if (args.sport === 'ncaam') printNcaamSummary(o as any, console.log);
+      else if (o.results.run.sport === 'wnba') printWnbaSummary(o as any, console.log);
       else printSummary(o, console.log);
       if (args.publish) {
         if (!o.publishable) { console.error('nothing published: a gate failed (see gates.json)'); process.exit(1); }

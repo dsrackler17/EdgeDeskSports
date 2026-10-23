@@ -39,7 +39,7 @@ const argv = process.argv.slice(2), opt = (k: string) => { const i = argv.indexO
 const WHAT = opt('--what') || 'all';
 const OUT = opt('--out') || path.join(REPO, 'simulator', 'data', 'feeds');
 const GOLF_SEASONS = (opt('--golf-seasons') || '2023,2024,2025,2026').split(',').map(Number).filter(Boolean);
-const GOLF_LEAGUES = (opt('--golf-leagues') || 'pga').split(',').filter(Boolean);
+const GOLF_LEAGUES = (opt('--golf-leagues') || 'pga,lpga,eur').split(',').filter(Boolean);
 const CURRENT_LEAGUES = ['pga', 'lpga', 'eur'];
 const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
@@ -184,9 +184,28 @@ async function fetchGolf() {
   for (const league of CURRENT_LEAGUES) {
     const j = await fetchJson(ESPN + '/' + league + '/scoreboard');
     if (!j) { current[league] = null; continue; }
+    const events: any[] = [];
+    for (const ev of j.events || []) {
+      /* the leaderboard carries each player's status (cut, WD), position, thru and tee time; the scoreboard does not */
+      const lb = await fetchJson(ESPN_WEB + '/leaderboard?league=' + league + '&event=' + ev.id);
+      const lev = lb ? (Array.isArray(lb.events) ? lb.events : []).find((e: any) => String(e.id) === String(ev.id)) : null;
+      const use = lev && lev.competitions && lev.competitions[0] && Array.isArray(lev.competitions[0].competitors) && lev.competitions[0].competitors.length ? lev : ev;
+      events.push({ ...golfEvent(use, league, use === lev ? 'leaderboard' : 'scoreboard'), competition: competitionMeta((use.competitions || [])[0]), event_keys: Object.keys(use).sort(),
+        leaderboard_competitor_sample: use === lev ? lev.competitions[0].competitors.slice(0, 2) : null });
+    }
+    /* the next two calendar events: their fields, when ESPN lists them before the first round */
+    const cal = (j.leagues || [])[0] && Array.isArray(j.leagues[0].calendar) ? j.leagues[0].calendar : [];
+    const now = Date.now(), have = new Set(events.map((e) => e.id));
+    const next = cal.filter((c: any) => c.startDate && Date.parse(c.startDate) > now && !have.has(String(c.id))).slice(0, 2);
+    const upcoming: any[] = [];
+    for (const c of next) {
+      const lb = await fetchJson(ESPN_WEB + '/leaderboard?league=' + league + '&event=' + c.id);
+      const lev = lb ? (Array.isArray(lb.events) ? lb.events : []).find((e: any) => String(e.id) === String(c.id)) : null;
+      upcoming.push(lev ? golfEvent(lev, league, 'leaderboard') : { league, id: String(c.id), name: c.label || null, start: c.startDate || null, competitors: [] });
+    }
     current[league] = {
       league: (j.leagues || [])[0] ? { id: j.leagues[0].id, name: j.leagues[0].name, season: j.leagues[0].season, calendar: j.leagues[0].calendar } : null,
-      events: (j.events || []).map((ev: any) => ({ ...golfEvent(ev, league, 'scoreboard'), competition: competitionMeta((ev.competitions || [])[0]), event_keys: Object.keys(ev).sort() }))
+      events, upcoming
     };
   }
   const currentHash = writeJson('golf_current.json', { schema: 'edgedesk_feed_golf_current_v1', fetched_at: new Date().toISOString(), source: ESPN + '/<league>/scoreboard', current });
@@ -232,6 +251,20 @@ async function fetchUfc() {
     fs.writeFileSync(path.join(OUT, 'ufc_rankings.html.gz'), zlib.gzipSync(Buffer.from(page.text), { level: 9 }));
     rankings = parseUfcRankings(page.text);
   }
+  /* the champions' history (every title fight and reign by division), as Wikipedia's list keeps it: a
+     secondary source, saved whole and parsed in the repository so a parser change needs no refetch */
+  const wiki = await fetchText('https://en.wikipedia.org/wiki/List_of_UFC_champions', { accept: 'text/html', ua: BROWSER_UA });
+  if (wiki && wiki.status === 200) fs.writeFileSync(path.join(OUT, 'ufc_champions_wikipedia.html.gz'), zlib.gzipSync(Buffer.from(wiki.text), { level: 9 }));
+  /* raw samples of ESPN's own documents for the current and next month and the next cards' fight centres,
+     so fields the parser does not read (title flags, ranks, methods) are visible in the repository */
+  const samples: Record<string, unknown> = {};
+  for (const k of [0, 1]) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + k, 1)), key = d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, '0');
+    samples['scoreboard_' + key] = await fetchJson('https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=' + key + '&limit=1000');
+  }
+  const upcomingEvents = [...new Set(bouts.filter((b) => b.status === 'scheduled').map((b) => b.event_id))].slice(0, 3);
+  for (const id of upcomingEvents) samples['fightcenter_' + id] = await fetchJson('https://site.web.api.espn.com/apis/site/v2/sports/mma/ufc/fightcenter/' + id + '?region=us&lang=en');
+  writeGz('ufc_espn_samples.json.gz', { schema: 'edgedesk_feed_ufc_samples_v1', fetched_at: new Date().toISOString(), samples });
   const rankHash = writeJson('ufc_rankings.json', { schema: 'edgedesk_feed_ufc_rankings_v1', fetched_at: new Date().toISOString(), url: 'https://www.ufc.com/rankings', http_status: page ? page.status : null, page_sha256: pageSha, divisions: rankings });
   const titles = bouts.filter((b) => b.is_title);
   report.summary.ufc = { bouts: bouts.length, title_bouts: titles.length, months: months.length, unread, rankings_divisions: Array.isArray(rankings) ? rankings.length : 0, bouts_sha256: boutsHash, rankings_sha256: rankHash };
