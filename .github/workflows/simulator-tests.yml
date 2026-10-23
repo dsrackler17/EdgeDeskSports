@@ -56,6 +56,10 @@ on:
       - 'basketball/walkforward.js'
       - 'basketball/data/wnba/**'
       - 'basketball/params/wnba_live.json'
+      - 'model_loop/adapters/ufc/**'
+      - 'model_loop/data/ufc/bouts.csv'
+      - 'model_loop/published/ufc/**'
+      - 'docs/model-loop/ufc/versions.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -88,6 +92,10 @@ on:
       - 'basketball/walkforward.js'
       - 'basketball/data/wnba/**'
       - 'basketball/params/wnba_live.json'
+      - 'model_loop/adapters/ufc/**'
+      - 'model_loop/data/ufc/bouts.csv'
+      - 'model_loop/published/ufc/**'
+      - 'docs/model-loop/ufc/versions.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -167,6 +175,8 @@ jobs:
           node simulator/tests/ncaam_ui.test.ts
       - name: WNBA postseason simulation (series, the shared offset, the served model on the committed data) and its reader tabs
         run: npm run sim:wnba:test
+      - name: UFC fights and title path (the Elo port against the served prices, sum rules, title-path invariants, workers) and its reader tabs
+        run: npm run sim:ufc:test
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check

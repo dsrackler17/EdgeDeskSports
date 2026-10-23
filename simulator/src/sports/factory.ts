@@ -13,6 +13,8 @@ import type { CfbInputData } from './cfb/inputs.ts';
 import { ncaamModule, type NcaamInputData } from './ncaam/module.ts';
 import { wnbaModule } from './wnba/module.ts';
 import type { WnbaInputData } from './wnba/inputs.ts';
+import { ufcModule } from './ufc/module.ts';
+import type { UfcInputData } from './ufc/inputs.ts';
 
 export function buildModule(sport: string, data: unknown, opt: { seed: bigint; sigma?: number }): SimModule {
   switch (sport) {
@@ -25,6 +27,7 @@ export function buildModule(sport: string, data: unknown, opt: { seed: bigint; s
     case 'ncaam': return ncaamModule(data as NcaamInputData, { seed: opt.seed, strengthVariance: opt.sigma });
     /* sigma, when given, overrides the shared series offset tau (0 = independent games) */
     case 'wnba': return wnbaModule(data as WnbaInputData, { seed: opt.seed, tau: opt.sigma });
+    case 'ufc': return ufcModule(data as UfcInputData, { seed: opt.seed });
     default: throw new Error('no simulation module for sport ' + sport + ' (see simulator/src/sports/registry.ts for its status)');
   }
 }
