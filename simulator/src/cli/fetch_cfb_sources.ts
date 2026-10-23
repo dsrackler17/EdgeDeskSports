@@ -8,6 +8,9 @@
 
    --rows prints the rankings tables row by row (they are always written to
    --out as .tsv; the log keeps one summary line per season without it).
+   Each text, link list and table prints as ONE JSON-encoded line (--lines
+   for plain multi-line text): a job log is read back through an API that
+   returns only its last 5,000 lines.
 
    Read-only. No credential, no database, nothing written outside --out.
    For each source: the URL asked and the URL answered, the HTTP status, the
@@ -41,7 +44,9 @@ import { sha256Hex } from '../core/canonical.ts';
 const a = process.argv.slice(2), get = (k: string) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
 const OUT = get('--out') || path.join('simulator', 'out', 'cfb_sources');
 const ONLY = (get('--only') || '').split(',').filter(Boolean);
-const ROWS = a.includes('--rows');
+const ROWS = a.includes('--rows'), LINES = a.includes('--lines');
+/** one log line (JSON-encoded) unless --lines */
+const out = (label: string, v: unknown) => console.log(label + (LINES ? '\n' + (typeof v === 'string' ? v : JSON.stringify(v, null, 1)) : ' ' + JSON.stringify(v)));
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -70,6 +75,8 @@ export const CFB_SOURCES: Source[] = [
   { id: 'big_ten_tiebreaker_2024_pdf', kind: 'rules', url: 'https://nextgen.bigten.org/api/media/file/f142aa7f-aa37-430b-bf09-8988a6952c0c-2024_Big_Ten_Football_Tiebreaker_-_FINAL_10__72_.pdf' },
   { id: 'big_ten_tiebreaker_2024_release', kind: 'rules', url: 'https://bigten.org/fb/article/blt6104802d94ebe1ab/', links: LINKS, nextData: /tie|seed|championship/i, render: true },
   { id: 'big_ten_tiebreakers_2025', kind: 'rules', url: 'https://bigten.org/fb/article/58967/', links: LINKS, nextData: /tie|seed|championship/i, render: true },
+  { id: 'big_ten_fcg_2026_game', kind: 'rules', url: 'https://bigten.org/news/2026/9/24/2026-discover-big-ten-football-championship-game.aspx', links: LINKS, render: true },
+  { id: 'big_ten_week7_release', kind: 'rules', url: 'https://bigten.org/news/2026/10/14/2026-week-7-football-release.aspx', links: LINKS, render: true },
   { id: 'big_ten_fcg_2026', kind: 'rules', url: 'https://bigten.org/news/2026/8/19/championship-2026-discover-big-ten-football-championship-game-information.aspx', links: LINKS, render: true },
   { id: 'big_ten_fcg', kind: 'rules', url: 'https://bigten.org/FCG', links: LINKS },
   { id: 'big12_tiebreaker_pdf', kind: 'rules', url: 'https://s3.amazonaws.com/big12sports.com/documents/2025/11/4/Big_12_Football_2024_Tiebreaker_Policy.pdf' },
@@ -213,17 +220,31 @@ async function fetchSource(s: Source) {
   let res: Response;
   try { res = await fetch(s.url, { headers: { 'user-agent': UA, accept: 'text/html,application/xhtml+xml,application/pdf;q=0.9,*/*;q=0.8' }, redirect: 'follow', signal: AbortSignal.timeout(45000) }); }
   catch (e) { const msg = String((e as Error).message || e); console.log('FETCH FAILED: ' + msg); SUMMARY.push(s.id + ': FETCH FAILED ' + msg); return; }
-  const body = Buffer.from(await res.arrayBuffer());
-  const head = 'status ' + res.status + ' · final url ' + res.url + ' · ' + body.length + ' bytes · sha256 ' + sha256Hex(body) + ' · fetched_at ' + new Date().toISOString();
+  let body = Buffer.from(await res.arrayBuffer());
+  let head = 'status ' + res.status + ' · final url ' + res.url + ' · ' + body.length + ' bytes · sha256 ' + sha256Hex(body) + ' · fetched_at ' + new Date().toISOString();
   console.log(head);
   const isPdf = /\.pdf($|\?)/i.test(res.url) || (res.headers.get('content-type') || '').includes('pdf');
+  /* a league site's /documents/ URL can answer with a viewer page that embeds the file: read the file it names */
+  if (isPdf && body.subarray(0, 5).toString('latin1') !== '%PDF-') {
+    const m = body.toString('utf8').match(/(?:href|src|data)=["']([^"']+?\.pdf(?:\?[^"']*)?)["']/i);
+    const inner = m ? new URL(m[1].replace(/&amp;/g, '&'), res.url).href : null;
+    if (inner && inner !== res.url) {
+      try {
+        const r2 = await fetch(inner, { headers: { 'user-agent': UA, accept: 'application/pdf,*/*;q=0.8' }, redirect: 'follow', signal: AbortSignal.timeout(45000) });
+        const b2 = Buffer.from(await r2.arrayBuffer());
+        head += ' · the page wraps ' + r2.url + ': status ' + r2.status + ' · ' + b2.length + ' bytes · sha256 ' + sha256Hex(b2);
+        console.log('-- the URL answered with a page that embeds the document; read ' + r2.url + ' (status ' + r2.status + ', sha256 ' + sha256Hex(b2) + ')');
+        if (b2.subarray(0, 5).toString('latin1') === '%PDF-') body = b2;
+      } catch (e) { console.log('-- embedded document fetch failed: ' + String((e as Error).message).slice(0, 160)); }
+    } else console.log('-- not a PDF and no embedded .pdf link (first bytes ' + JSON.stringify(body.subarray(0, 60).toString('latin1')) + ')');
+  }
   fs.writeFileSync(path.join(OUT, s.id + (isPdf ? '.pdf' : '.html')), body);
   if (s.kind === 'rankings') {
     const tabs = cfpTables(body.toString('utf8'));
     console.log('-- CFP tables: ' + tabs.length);
     tabs.forEach((t, i) => {
       console.log('-- table ' + i + ' under "' + t.heading + '" (' + t.rows.length + ' rows)');
-      if (ROWS) for (const r of t.rows) console.log('ROW\t' + r.join('\t'));
+      if (ROWS) out('-- rows', t.rows);
     });
     const tsv = tabs.map((t, i) => t.rows.map((r) => [i, ...r].join('\t')).join('\n')).join('\n');
     fs.writeFileSync(path.join(OUT, s.id + '.tsv'), tsv);
@@ -253,12 +274,12 @@ async function fetchSource(s: Source) {
     const links = [...new Set([...html.matchAll(/href=["']([^"'#]+)["'][^>]*>([\s\S]{0,600}?)<\/a>/gi)]
       .map((m) => [m[1], decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim()])
       .filter(([h, t]) => s.links!.test(h) || s.links!.test(t) || /\/documents\/|\.pdf(\?|$)/i.test(h)).map(([h, t]) => h + '  «' + t.slice(0, 90) + '»'))].slice(0, 150);
-    console.log('-- links matching ' + s.links + ' or naming a document (' + links.length + '):\n' + links.map((l) => '  ' + l).join('\n'));
+    out('-- links matching ' + s.links + ' or naming a document (' + links.length + '):', links);
   }
   if (!isPdf && s.snippet) {
     const re = new RegExp(s.snippet.source, 'gi');
     let m: RegExpExecArray | null, k = 0;
-    while ((m = re.exec(html)) && k++ < 3) console.log('-- raw html around ' + s.snippet + ':\n' + html.slice(m.index, m.index + 2500));
+    while ((m = re.exec(html)) && k++ < 3) out('-- raw html around ' + s.snippet + ':', html.slice(m.index, m.index + 2500));
   }
   if (!isPdf && s.nextData) {
     const nd = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
@@ -268,17 +289,17 @@ async function fetchSource(s: Source) {
     /* other frameworks inline the article as a JSON string in a script */
     for (const sc of html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || []) if (s.nextData.test(sc) && /tie-?break/i.test(sc) && !/__NEXT_DATA__/.test(sc)) found.push(sc.slice(0, 30000));
     console.log('-- embedded article strings (' + found.length + '):');
-    for (const f of [...new Set(found)].slice(0, 12)) console.log('>>> ' + htmlText(f.replace(/\\u003c/g, '<').replace(/\\u003e/g, '>').replace(/\\n/g, '\n').replace(/\\"/g, '"')).slice(0, 20000));
+    for (const f of [...new Set(found)].slice(0, 12)) out('>>>', htmlText(f.replace(/\\u003c/g, '<').replace(/\\u003e/g, '>').replace(/\\n/g, '\n').replace(/\\"/g, '"')).slice(0, 20000));
   }
   if (s.kind === 'tables') {
     const tabs = (html.match(/<table\b[\s\S]*?<\/table>/gi) || []).map(tableRows);
     console.log('-- tables: ' + tabs.length);
-    tabs.forEach((t, i) => { console.log('-- table ' + i + ' (' + t.length + ' rows)'); for (const r of t.slice(0, 40)) console.log('ROW\t' + r.join('\t')); });
+    tabs.forEach((t, i) => out('-- table ' + i + ' (' + t.length + ' rows, first 40):', t.slice(0, 40)));
   }
   fs.writeFileSync(path.join(OUT, s.id + '.txt'), text);
   SUMMARY.push(s.id + ': ' + head + rendered + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
   if (s.kind === 'discover') return;
-  console.log('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):\n' + text.slice(0, s.max || 40000));
+  out('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):', text.slice(0, s.max || 40000));
 }
 
 const isMain = !!process.argv[1] && path.resolve(process.argv[1]).endsWith(path.join('cli', 'fetch_cfb_sources.ts'));
