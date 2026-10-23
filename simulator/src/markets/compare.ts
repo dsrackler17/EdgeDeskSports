@@ -51,10 +51,14 @@ export interface RunView { sport: string; competition: string; season: string; e
   /** outcome key -> what it settles on (e.g. regular-season conference first place vs the conference playoff title) */
   outcome_semantics?: Record<string, string> }
 
-/** the part of the shared config that belongs to the run's sport: another sport's mappings, and the outcome
-    sets only they use, are not this run's to validate or compare (a wrong season within the sport still is) */
+/** the first year a season key names: '2026' -> 2026, '2026-27' -> 2026 */
+const seasonYear = (s: string) => Number(String(s).slice(0, 4));
+
+/** the part of the shared config that belongs to the run's sport: another sport's mappings, a LATER season's of
+    its own sport (next season's futures, listed while this one finishes), and the outcome sets only they use, are
+    not this run's to validate or compare. An EARLIER season of its sport still is an error: a stale mapping. */
 export function configForSport(cfg: FuturesConfig, run: RunView): FuturesConfig {
-  const mappings = cfg.mappings.filter((m) => m.sport === run.sport);
+  const mappings = cfg.mappings.filter((m) => m.sport === run.sport && !(seasonYear(m.season) > seasonYear(run.season)));
   const used = new Set(mappings.map((m) => m.outcome_set).filter(Boolean));
   return { ...cfg, mappings, outcome_sets: cfg.outcome_sets.filter((s) => used.has(s.id)) };
 }

@@ -2,7 +2,7 @@
 # build environment cannot reach ESPN or ufc.com) and committed as hashed files
 # under simulator/data/feeds/ (simulator/src/cli/fetch_sports_data.ts).
 #
-#   golf_events.json.gz    ESPN: every PGA Tour event 2023 on, each player's
+#   golf_events.json.gz    ESPN: every PGA Tour, LPGA and DP World Tour event 2023 on, each player's
 #                          strokes per round, status and finish (the golf
 #                          model's history)
 #   golf_current.json      ESPN: the current PGA Tour, LPGA and DP World Tour
@@ -11,6 +11,11 @@
 #                          ranks at the time, winner, method and end round
 #   ufc_rankings.json      ufc.com/rankings: champion and 1-15 per division
 #                          (+ the page itself, gzipped, and its sha256)
+#   ufc_champions_wikipedia.html.gz   Wikipedia's List of UFC champions (title
+#                          history by division; a secondary source, parsed in
+#                          the repository)
+#   ufc_espn_samples.json.gz   raw ESPN documents (this and next month's
+#                          scoreboard, the next cards' fight centres)
 #   fetch_report_*.json    every request's URL, HTTP status and size
 #
 #   schedule 09:41 UTC daily   before the nightly Simulator run (10:17 UTC):

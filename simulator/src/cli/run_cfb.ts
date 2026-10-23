@@ -15,6 +15,7 @@ import { buildResults, PRODUCTION_RUNS, type ResultsDoc } from '../core/results.
 import { buildCfbSnapshot, readSnapshot, writeSnapshot, type CfbSnapshot } from '../sports/cfb/inputs.ts';
 import { validateCfbInputs, cfbRunGates, conferenceStatus, type Gate } from '../sports/cfb/validate.ts';
 import { cfpMode } from '../sports/cfb/module.ts';
+import { describeFinals } from '../sports/cfb/finals.ts';
 import { cfbMathStatus } from '../sports/cfb/status.ts';
 import { sportRegistry } from '../sports/registry.ts';
 import { CFB_2026 } from '../sports/cfb/config.ts';
@@ -33,14 +34,20 @@ export async function executeCfb(args: CliArgs, log: (s: string) => void = conso
   const seed = args.seed != null ? parseSeed(args.seed) : BigInt('0x' + snap.input_hash.slice(0, 16));
   const d = snap.data, cm = cfpMode(d);
   log('inputs ' + snap.input_hash.slice(0, 12) + ' · as-of week ' + d.as_of_week + ' · ' + d.games.filter((g) => !g.done).length + ' remaining games · tau ' + d.strength.tau_points.toFixed(3) + ' · CFP: ' + cm.mode + ' (' + cm.reason + ') · seed ' + seed);
+  if (d.results_overlay && d.results_overlay.applied.length) log('finals from ESPN (the schedule feed had not carried them): ' + describeFinals(d.results_overlay));
   const t0 = Date.now(), startedAt = new Date().toISOString();
   let peak = 0; const sampler = setInterval(() => { peak = Math.max(peak, process.memoryUsage().rss); }, 250);
   const { agg, module, workers } = await runPlan({ sport: 'cfb', data: d, seed, runs: args.runs, workers: args.workers, traceRuns: args.traceRuns });
   clearInterval(sampler); peak = Math.max(peak, process.memoryUsage().rss);
   const status = cfbMathStatus(d);
-  const rec: Record<string, { w: number; l: number }> = {};
-  d.teams.forEach((t) => { rec[t.id] = { w: 0, l: 0 }; });
-  for (const g of d.games) if (g.done) {
+  /* games: every regular-season game on the team's schedule, played or not (the games its wins histogram counts),
+     so the reader can turn the histogram into a projected record and an unbeaten regular season */
+  const rec: Record<string, { w: number; l: number; games: number }> = {};
+  d.teams.forEach((t) => { rec[t.id] = { w: 0, l: 0, games: 0 }; });
+  for (const g of d.games) {
+    if (g.home >= 0) rec[d.teams[g.home].id].games++;
+    if (g.away >= 0) rec[d.teams[g.away].id].games++;
+    if (!g.done) continue;
     const hw = (g.home_points as number) > (g.away_points as number);
     if (g.home >= 0) rec[d.teams[g.home].id][hw ? 'w' : 'l']++;
     if (g.away >= 0) rec[d.teams[g.away].id][hw ? 'l' : 'w']++;

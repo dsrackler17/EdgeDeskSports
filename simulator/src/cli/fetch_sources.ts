@@ -32,7 +32,9 @@
    Kalshi (each sport): every Sports series whose title names the league or
    its championship (with the series' own fee_type / fee_multiplier), every
    open market in them with its FULL settlement rules and their sha256 (the
-   hash simulator/src/markets/kalshi.ts computes), and Kalshi's fee schedule.
+   hash simulator/src/markets/kalshi.ts computes), for a futures series with
+   no open market the closed and settled ones (the wording it last used,
+   between seasons; never a mapping candidate), and Kalshi's fee schedule.
    =========================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -397,7 +399,7 @@ async function kalshi() {
   console.log('host ' + c.host + ' · ' + ((s && s.series) || []).length + ' Sports series · ' + series.length + ' name the ' + SPORT.toUpperCase() + ' · ' + futures.length + ' look like season futures');
   console.log('-- every ' + SPORT.toUpperCase() + '-named series (ticker | title | fee_type | fee_multiplier):');
   for (const x of series) console.log('  ' + x.ticker + ' | ' + x.title + ' | ' + x.fee_type + ' | ' + x.fee_multiplier + (futures.includes(x) ? '   <- futures' : ''));
-  const all: any[] = [];
+  const all: any[] = [], settled: any[] = [];
   for (const x of futures) {
     console.log('\n## SERIES ' + x.ticker + ' | ' + x.title + ' | fee_type ' + x.fee_type + ' | fee_multiplier ' + x.fee_multiplier + ' | frequency ' + x.frequency
       + ' | settlement_sources ' + JSON.stringify(x.settlement_sources || null));
@@ -414,6 +416,20 @@ async function kalshi() {
       }
       cursor = (m && m.cursor) || '';
       if (!cursor) break;
+    }
+    /* a series with no open market (between seasons) shows the wording it last settled on, so its template can be
+       written before the next season's markets list: printed as SETTLED and kept apart, never a mapping candidate
+       (one status per request: Kalshi answers 'closed,settled' with a 400) */
+    if (!all.some((k) => k.series_ticker === x.ticker)) for (const status of ['settled', 'closed']) {
+      let m: any;
+      try { m = await c.get('/markets', { series_ticker: x.ticker, status, limit: 200 }); } catch (e) { console.log('  ' + status + ' markets failed: ' + String((e as Error).message)); continue; }
+      for (const k of (m && m.markets) || []) {
+        const rules_sha256 = k.rules_primary ? sha256Hex(String(k.rules_primary) + '\n' + String(k.rules_secondary || '')) : null;
+        settled.push({ series_ticker: x.ticker, event_ticker: k.event_ticker, market_ticker: k.ticker, title: k.title, yes_sub_title: k.yes_sub_title, close_time: k.close_time,
+          status: k.status, result: k.result, rules_primary: k.rules_primary, rules_secondary: k.rules_secondary || null, rules_sha256 });
+        console.log('  ~ SETTLED ' + k.ticker + ' | event ' + k.event_ticker + ' | ' + (k.yes_sub_title || '') + ' | close ' + k.close_time + ' | ' + k.status + ' ' + (k.result || '')
+          + ' | rules_sha256 ' + rules_sha256 + ' | RULES: ' + String(k.rules_primary || '').replace(/\s+/g, ' ') + (k.rules_secondary ? ' | RULES2: ' + String(k.rules_secondary).replace(/\s+/g, ' ') : ''));
+      }
     }
   }
   /* fees can be overridden per event and changed on a schedule: print both for the futures events */
@@ -436,8 +452,9 @@ async function kalshi() {
   } catch (err) { console.log('  FEECHANGES FAILED ' + String((err as Error).message).slice(0, 160)); }
   /* the NFL's file keeps the name build_kalshi_mappings.ts was first run on */
   const file = SPORT === 'nfl' ? 'kalshi_candidates.json' : 'kalshi_candidates_' + SPORT + '.json';
-  fs.writeFileSync(path.join(OUT, file), JSON.stringify({ fetched_at: new Date().toISOString(), host: c.host, sport: SPORT, series, futures: futures.map((x: any) => x.ticker), markets: all }, null, 1));
-  SUMMARY.push('kalshi: host ' + c.host + ' · ' + series.length + ' ' + SPORT.toUpperCase() + '-named series · ' + futures.length + ' futures series · ' + all.length + ' open futures markets');
+  fs.writeFileSync(path.join(OUT, file), JSON.stringify({ fetched_at: new Date().toISOString(), host: c.host, sport: SPORT, series, futures: futures.map((x: any) => x.ticker), markets: all, settled }, null, 1));
+  SUMMARY.push('kalshi: host ' + c.host + ' · ' + series.length + ' ' + SPORT.toUpperCase() + '-named series · ' + futures.length + ' futures series · ' + all.length + ' open futures markets · '
+    + settled.length + ' closed or settled markets of series with none open');
 }
 
 await kalshi();

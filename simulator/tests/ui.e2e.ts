@@ -260,11 +260,11 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       await ctx.close();
     }
     {
-      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/wnba', { entitled: true, published: true });
-      await page.evaluate(() => (window as any).navHashRoute('#simulator/wnba')); await page.waitForTimeout(300);
+      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/tennis', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/tennis')); await page.waitForTimeout(300);
       const t = await text(page);
-      T.chk('a blocked sport (#simulator/wnba) shows its blockers and no number', /Blocked/.test(t) && /series simulator/.test(t) && !/\d+\.\d%/.test(t));
-      await shot(page, 'sim-blocked-wnba-390'); await ctx.close();
+      T.chk('a sport that is not ACTIVE (#simulator/tennis) shows its blockers and no number', /Coming Soon/.test(t) && /Retired from coverage/.test(t) && !/\d+\.\d%/.test(t));
+      await shot(page, 'sim-blocked-tennis-390'); await ctx.close();
     }
     {
       const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failSecond: true });

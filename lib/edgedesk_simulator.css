@@ -50,9 +50,12 @@
 .sm-list li{margin:4px 0;overflow-wrap:anywhere}
 .sm-lim{margin:0 0 12px;font-size:12.5px}
 .sm-lim summary{cursor:pointer;color:var(--dim,#aa9c87);font-weight:600;margin:4px 0}
+/* a team's conference beside its name; under it on a narrow screen, so the sticky name column stays narrow */
+.sm-sub{margin-left:4px}
 @media (max-width:760px){
   .sm-cards{grid-template-columns:1fr 1fr}
   .sm-tbl th,.sm-tbl td{padding:5px 6px}
+  .sm-sub{display:block;margin-left:0;font-size:11px}
 }
 @media (max-width:420px){
   .sm-cards{grid-template-columns:1fr}
