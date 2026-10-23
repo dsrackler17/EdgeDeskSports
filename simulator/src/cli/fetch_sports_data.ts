@@ -279,12 +279,18 @@ function tennisMatchRow(m: Record<string, any>, t: Record<string, any>) {
     sets: (m.set_scores || []).map((x: any) => [x.home, x.away, x.home_tb, x.away_tb])
   };
 }
-/** the search hit that is this year's singles draw article ("2026 Swiss Indoors – Singles"; at a combined event,
-    "– Men's singles" / "– Women's singles"), never qualifying, doubles or the tournament's own article */
-export function pickDrawTitle(hits: string[], yr: string, tour: string | null): string | null {
-  const ok = (h: string) => h.startsWith(yr + ' ') && /singles/i.test(h) && !/qualifying|doubles|wheelchair|junior|boys|girls/i.test(h)
-    && (tour == null || (tour === 'atp' ? /men's singles/i.test(h) && !/women's/i.test(h) : /women's singles/i.test(h)));
-  return hits.find(ok) || null;
+/** the Wikipedia titles worth reading for a tournament's singles draw: a draw article among the search hits
+    ("2026 Swiss Indoors – Singles"; at a combined event "– Men's singles" / "– Women's singles"), this year's
+    tournament articles among them with the draw suffix, and ESPN's own name with it. Never qualifying, doubles,
+    juniors or wheelchair. */
+export function drawCandidates(hits: string[], yr: string, espnName: string, gender: string, tour: string | null): string[] {
+  const bad = /qualifying|doubles|wheelchair|junior|boys|girls/i;
+  const genderOk = (h: string) => tour == null || (tour === 'atp' ? /men's singles/i.test(h) && !/women's/i.test(h) : /women's singles/i.test(h));
+  const draw = hits.filter((h) => h.startsWith(yr + ' ') && /singles/i.test(h) && !bad.test(h) && genderOk(h));
+  const bases = hits.filter((h) => h.startsWith(yr + ' ') && !/ – /.test(h) && !/season|tournaments|tour$|in sports/i.test(h)).map((h) => h + ' – ' + gender);
+  const out: string[] = [];
+  for (const t of [...draw, ...bases, yr + ' ' + espnName + ' – ' + gender]) if (!out.includes(t)) out.push(t);
+  return out;
 }
 async function fetchTennis() {
   const [y0, m0] = TENNIS_FROM.split('-').map(Number);
@@ -324,16 +330,24 @@ async function fetchTennis() {
     const yr = String(t.id).split('-')[1] || String(t.start).slice(0, 4);
     const kinds: string[] = t.tour === 'MIXED' ? ['atp', 'wta'] : t.tour === 'WTA' ? ['wta'] : ['atp'];
     for (const tour of kinds) {
-      const q = yr + ' ' + t.name + (t.tour === 'MIXED' ? (tour === 'atp' ? " men's singles" : " women's singles") : ' singles');
+      const gender = t.tour === 'MIXED' ? (tour === 'atp' ? "Men's singles" : "Women's singles") : 'Singles';
+      const q = yr + ' ' + t.name + ' ' + gender.toLowerCase();
       const sr = await fetchJson(WIKI_API + '?action=query&list=search&format=json&srlimit=8&srsearch=' + encodeURIComponent(q), WIKI_UA);
       const hits: string[] = ((sr && sr.query && sr.query.search) || []).map((h: any) => String(h.title));
-      const title = pickDrawTitle(hits, yr, t.tour === 'MIXED' ? tour : null);
-      const w = title ? await fetchJson(WIKI_API + '?action=parse&format=json&formatversion=2&prop=wikitext%7Crevid&redirects=1&page=' + encodeURIComponent(title), WIKI_UA) : null;
-      draws.push({ tournament: t.id, name: t.name, tour, query: q, hits, title, revid: w && w.parse ? w.parse.revid : null, wikitext: w && w.parse ? w.parse.wikitext : null });
-      await sleep(150);
+      /* candidates: a draw article among the hits; each of this year's tournament articles among them plus
+         " – Singles"; ESPN's own name plus " – Singles". All are kept: the repository picks the one whose
+         lines are ESPN's players (inputs.ts), never the search's first guess */
+      const cands = drawCandidates(hits, yr, t.name, gender, t.tour === 'MIXED' ? tour : null).slice(0, 4);
+      const articles: Array<{ title: string; revid: number | null; wikitext: string }> = [];
+      for (const title of cands) {
+        const w = await fetchJson(WIKI_API + '?action=parse&format=json&formatversion=2&prop=wikitext%7Crevid&redirects=1&page=' + encodeURIComponent(title), WIKI_UA);
+        if (w && w.parse && w.parse.wikitext && !articles.some((a) => a.revid === w.parse.revid)) articles.push({ title: w.parse.title || title, revid: w.parse.revid ?? null, wikitext: w.parse.wikitext });
+        await sleep(100);
+      }
+      draws.push({ tournament: t.id, name: t.name, tour, query: q, hits, candidates: cands, articles });
     }
   }
-  writeGz('tennis_draws.json.gz', { schema: 'edgedesk_feed_tennis_draws_v2', fetched_at: new Date().toISOString(), source: "Wikipedia draw articles (search API, then the article's wikitext)", draws });
+  writeGz('tennis_draws.json.gz', { schema: 'edgedesk_feed_tennis_draws_v3', fetched_at: new Date().toISOString(), source: "Wikipedia draw articles (search API, then the article's wikitext)", draws });
   /* the tours' rankings (seeding and a prior for players the history barely knows) */
   const rankings: Record<string, unknown> = {};
   for (const tour of ['atp', 'wta']) {
@@ -342,7 +356,7 @@ async function fetchTennis() {
   writeJson('tennis_rankings.json', { schema: 'edgedesk_feed_tennis_rankings_v1', fetched_at: new Date().toISOString(), rankings });
   const done = matches.filter((m) => m.winner).length;
   report.summary.tennis = { matches: matches.length, decided: done, tournaments: tournaments.size, windows: windows.length, unread, current_tournaments: soon.map((t) => t.tour + ' ' + t.name), matches_sha256: histHash,
-    draws: draws.map((d) => d.tour + ' ' + d.name + ': ' + (d.title ? d.title + (d.wikitext ? ' (' + String(d.wikitext).length + ' chars)' : ' (no text)') : 'no article among ' + JSON.stringify(d.hits))), rankings: Object.keys(rankings) };
+    draws: draws.map((d) => d.tour + ' ' + d.name + ': ' + ((d.articles as any[]).map((a) => a.title).join(' | ') || 'no article (tried ' + JSON.stringify(d.candidates) + ')')), rankings: Object.keys(rankings) };
   console.log('tennis: ' + matches.length + ' singles matches (' + done + ' decided) in ' + tournaments.size + ' tournaments from ' + windows.length + ' windows; unread ' + (unread.join(',') || 'none') + '; current ' + soon.map((t) => t.tour + ' ' + t.name + ' (' + t.start + '..' + t.end + ')').join(' | '));
 }
 
