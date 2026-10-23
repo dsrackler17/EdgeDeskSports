@@ -1,8 +1,9 @@
 # EdgeDesk Simulator — every suite, on every change to the simulator.
 #
 #   unit   typecheck (pinned typescript from simulator/package-lock.json), the
-#          engine, rules (2002-2025 history + synthetic), simulation, hooks,
-#          config, markets and reader suites, and the generated-file checks
+#          engine, rules (NFL 2002-2025 and NHL 2013-14..2025-26 history +
+#          synthetic), simulation, hooks, config, markets and reader suites,
+#          and the generated-file checks
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
 #   sql    supabase/simulator.sql on a real, throwaway PostgreSQL: RLS, the
@@ -28,6 +29,8 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
+      - 'hockey/model/**'
+      - 'hockey/data/teams.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -43,6 +46,8 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
+      - 'hockey/model/**'
+      - 'hockey/data/teams.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -80,6 +85,12 @@ jobs:
         run: |
           node simulator/tests/nfl_sim.test.ts
           node simulator/tests/nfl_config.test.ts
+      - name: NHL rules against every series 2013-14 .. 2025-26, the synthetic cases, configuration and simulation
+        run: |
+          node simulator/tests/nhl_rules_history.test.ts
+          node simulator/tests/nhl_rules_synthetic.test.ts
+          node simulator/tests/nhl_config.test.ts
+          node simulator/tests/nhl_sim.test.ts
       - name: Kalshi futures comparison and the reader
         run: |
           node simulator/tests/markets.test.ts

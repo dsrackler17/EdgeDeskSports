@@ -65,7 +65,7 @@ export async function publishRun(o: RunOutcome, opt: PublishOptions = {}): Promi
     const rows = resultRows(o);
     for (let i = 0; i < rows.length; i += chunk) await db.rpc('sim_put_results', { p_run: runId, p_rows: rows.slice(i, i + chunk) });
     const ents = (o.results.entities as any[]).map((e) => ({ entity_id: e.entity_id, entity_name: e.entity_name, entity_groups: e.groups, record: e.record || null,
-      mean_wins: e.mean_wins, wins_hist_x2: e.wins_hist_x2, math_status: e.math_status || null }));
+      mean_wins: e.mean_wins ?? null, wins_hist_x2: e.wins_hist_x2 ?? null, math_status: e.math_status || null }));
     await db.rpc('sim_put_entities', { p_run: runId, p_rows: ents });
     const tr = o.results.traces.slice(0, 5).map((t) => ({ run_index: t.run, trace: { events: t.events } })).filter((t) => JSON.stringify(t.trace).length <= 65536);
     if (tr.length) await db.rpc('sim_put_traces', { p_run: runId, p_rows: tr });

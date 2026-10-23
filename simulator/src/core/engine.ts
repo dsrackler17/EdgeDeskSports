@@ -27,7 +27,7 @@ export interface OutcomeDef {
   key: string;
   label: string;
   /** the tab the outcome belongs to in the reader */
-  category: 'division' | 'conference' | 'title' | 'playoffs' | 'seed' | 'round';
+  category: 'division' | 'conference' | 'title' | 'playoffs' | 'seed' | 'round' | 'regular_season';
   /** provenance of the number: simulated probabilities are Research */
   provenance: 'Research';
 }
@@ -63,6 +63,8 @@ export interface SimModule {
   sumRules: SumRule[];
   /** number of histogram bins per entity for value() */
   valueBins: number;
+  /** what value() records; absent = regular-season wins x 2 (the NFL, ties as half) */
+  value?: { key: string; label: string; divisor: number };
   runOne(run: number, marks: RunMarks): void;
 }
 

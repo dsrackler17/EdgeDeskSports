@@ -26,6 +26,7 @@ deployment: §16 states exactly what exists and what does not.
 | Reader (Simulator seat in `app.html`) | Implemented, tested in Chromium at three widths | `lib/edgedesk_simulator.js`, §13 |
 | GitHub Actions | Written, linted (actionlint 1.7.7); **never run on GitHub** | `.github/workflows/simulator*.yml`, `deploy-simulator.yml` |
 | 100,000-run benchmark | Executed: 15.7 s on 4 workers | §14 |
+| NHL season and Stanley Cup simulation | Implemented, tested (202 assertions; reproduces all 165 playoff series 2013-14..2025-26); **BLOCKED for publication** | [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) |
 | Other sports | Not active: BLOCKED or COMING SOON with named blockers | §4 |
 
 ---
@@ -108,7 +109,7 @@ it is stale.
 | **NFL** | **BLOCKED** (Implementable — implemented — blocked on verification) | season | served model `football/nfl_model.js`; schedule/results/standings from nflverse; rules engine reproduces 2002–2025 | 2026 tiebreaking procedures, 2026 playoff format and Super Bowl LXI venue/designated home not verified against the NFL's official pages (unreachable from the build environment) — §7.5 |
 | College football | BLOCKED (Implementable but blocked) | season | `football/cfb_p4` engine prices any rated FBS pairing offline | no 2026 conference title-game qualification rules/tiebreakers (9 FBS conferences); no 2026 CFP format/seeding/selection data or committee proxy; no neutral-site flags or committed full schedule (`football/fbs/.cache` is gitignored) |
 | NBA | BLOCKED | season | `nba/` model and injury layer | no 2026-27 conference/division table; 30 regular-season games (2 per club) depend on NBA Cup results and are not yet scheduled; no standings/tiebreaker/play-in/series code; no uncertainty study; the chosen model needs network-built `.cache/nba_work` tables |
-| NHL | BLOCKED | season | `hockey/` model (regulation/OT/shootout) | no committed full 2026-27 schedule (`hockey/build_slate.js` downloads into a gitignored cache); no alignment table; no points/regulation-wins/wild-card/series code; no uncertainty study; 60-minute draw under-priced (PROVISIONAL) |
+| NHL | BLOCKED (Implementable — implemented — blocked on verification) | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | 2026-27 tie-breaking procedure, playoff format and home-ice rule not verified against NHL.com (unreachable from the build environment); the reader has no NHL view; not in the nightly workflow (needs a pyarrow step) |
 | WNBA | BLOCKED | series | — | no series simulator or uncertainty study; the 2026 Finals end by 2026-10-31 |
 | MLB | COMING SOON | season | `mlb/` history model | the 2026 regular season is over (only the World Series remains); no 2026 ratings/results/starters committed; live inputs only in Supabase; history model does not beat Elo |
 | College basketball | COMING SOON | tournament | `basketball/` | the 2026-27 season has not started; partial schedule with placeholder times; no conference membership, conference-tournament formats or NCAA selection/seed/bracket data |
@@ -530,6 +531,12 @@ rest and Super Bowl context; Monte Carlo ± is simulation noise only.
 
 **To activate the NFL:** §7.5 verification → apply the SQL → first manual
 publication → nightly (docs/simulator/README.md, "Deployment sequence").
+
+**The NHL** (season and Stanley Cup simulator, command line only) has its own
+record: [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) — the
+regulation/OT/shootout model check, the goal-distribution validation, the
+strength study, the rules and their history evidence, goalie and overtime
+limitations, and what blocks publication.
 
 ---
 
