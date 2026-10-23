@@ -9,8 +9,9 @@ import path from 'node:path';
 import { kit } from './_kit.ts';
 import { REPO, liveParams, marginTable, nbaModules } from '../src/sports/nba/model_adapter.ts';
 import { NbaGameDist } from '../src/sports/nba/game_dist.ts';
-import { AppearanceScan, returnDistribution, hazard, kBin, MIN_MINUTES, type HazardTable, type TeamGame } from '../src/sports/nba/availability.ts';
+import { AppearanceScan, returnDistribution, hazard, hazards, kBin, MIN_MINUTES, type HazardTable, type TeamGame } from '../src/sports/nba/availability.ts';
 import { AvailabilityPlan } from '../src/core/hooks.ts';
+import { sigmaFor } from '../src/sports/nba/inputs.ts';
 import { streamFor } from '../src/core/prng.ts';
 
 const T = kit('NBA served model and availability');
@@ -78,13 +79,15 @@ const T = kit('NBA served model and availability');
   const doc = JSON.parse(fs.readFileSync(path.join(REPO, 'simulator', 'data', 'nba_return_hazards.json'), 'utf8'));
   const H = doc.production as HazardTable;
   T.chk('the production table is fitted on completed seasons only (through 2025-26)', Math.max(...H.estimation_seasons) === 2026 && !H.estimation_seasons.includes(2020) && !H.estimation_seasons.includes(2021));
-  T.chk('every cell has at-risk observations and returns <= at-risk', Object.values(H.cells).every(([r, n]) => n > 0 && r >= 0 && r <= n));
+  T.chk('every cell has entries, and returns + leaves <= entries', Object.values(H.cells).every(([r, n, l]) => n > 0 && r >= 0 && l >= 0 && r + l <= n));
+  T.chk('a carried absence leaves (appears for another club) more often than an in-season one', hazards(H, true, 1, 1).leave > hazards(H, false, 1, 1).leave, [hazards(H, true, 1, 1), hazards(H, false, 1, 1)]);
   for (const a of [{ k: 1, carried: false, exp_min: 30 }, { k: 12, carried: false, exp_min: 15 }, { k: 70, carried: true, exp_min: 33 }]) {
     const d = returnDistribution(H, a, 60, 'test');
     const mass = d.periods.reduce((u, p) => u + p.probability, 0) + d.out_for_season;
     T.near('k ' + a.k + (a.carried ? ' carried' : '') + ': the distribution is a unit mass', mass, 1, 1e-12);
     T.chk('k ' + a.k + ': periods are the club\'s games 1..60, each probability positive', d.periods.every((p, i) => p.period === i + 1 && p.probability > 0) && d.periods.length === 60);
-    T.chk('k ' + a.k + ': the first game carries the hazard of k games missed', Math.abs(d.periods[0].probability - hazard(H, a.carried, a.exp_min >= 24 ? 1 : 0, a.k)) < 1e-15);
+    const h0 = hazards(H, a.carried, a.exp_min >= 24 ? 1 : 0, a.k);
+    T.chk('k ' + a.k + ': the first game is (1 - leave) x return at k games missed', Math.abs(d.periods[0].probability - (1 - h0.leave) * h0.ret) < 1e-15);
   }
   T.chk('a fresh absence returns sooner than a long one (hazard at k=1 vs k=40)', hazard(H, false, 1, 1) > 3 * hazard(H, false, 1, 40));
   T.chk('a carried absence (since last season) rarely returns', hazard(H, true, 1, 70) < 0.05);
@@ -100,6 +103,19 @@ const T = kit('NBA served model and availability');
   const h = doc.holdout.by_within as any[];
   T.chk('holdout 2023-24..2025-26: the hazards beat "never returns" (the frozen projection) at every horizon', h.every((x) => x.brier < x.brier_never_returns), h.map((x) => [x.within_games, x.brier, x.brier_never_returns]));
   T.chk('holdout: mean predicted return within 1-41 games is within 6 points of what happened', h.every((x) => Math.abs(x.mean_predicted - x.observed) < 0.06), h.map((x) => [x.within_games, x.mean_predicted, x.observed]));
+}
+
+/* 5 the strength sigma a snapshot takes from the committed study */
+{
+  const unc = JSON.parse(fs.readFileSync(path.join(REPO, 'simulator', 'data', 'nba_strength_uncertainty.json'), 'utf8'));
+  const at = (g: number) => unc.by_as_of.find((b: any) => b.as_of_games === g).win_total_calibration.sigma;
+  T.eq('the study calibrates five as-of points, estimation seasons before the 2024-25..2025-26 holdout', [unc.by_as_of.map((b: any) => b.as_of_games), Math.max(...unc.estimation_seasons) < Math.min(...unc.holdout_seasons)], [[1, 10, 20, 41, 61], true]);
+  T.near('at a calibrated point the snapshot takes its sigma (10 games)', sigmaFor(10)!.sigma_points, at(10), 1e-12);
+  T.near('between two points, linear (5.5 games)', sigmaFor(5.5)!.sigma_points, at(1) + 0.5 * (at(10) - at(1)), 1e-12);
+  T.near('before the first point, flat (0.93 games)', sigmaFor(0.93)!.sigma_points, at(1), 1e-12);
+  T.near('after the last point, flat (82 games)', sigmaFor(82)!.sigma_points, at(61), 1e-12);
+  T.chk('the method says which', /linear between the as-of points 1 and 10/.test(sigmaFor(5.5)!.method) && /nearest calibrated point/.test(sigmaFor(0.93)!.method));
+  T.chk('every calibrated sigma is positive with its interval around it', unc.by_as_of.every((b: any) => b.win_total_calibration.sigma > 0 && b.win_total_calibration.sigma_ci95[0] <= b.win_total_calibration.sigma && b.win_total_calibration.sigma <= b.win_total_calibration.sigma_ci95[1]));
 }
 
 process.exit(T.done());

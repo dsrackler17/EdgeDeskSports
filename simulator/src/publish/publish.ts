@@ -37,6 +37,12 @@ export function resultRows(o: Pick<RunOutcome, 'results'>): Array<Record<string,
   return rows;
 }
 
+/** college football: what the reader labels beside the numbers (the CFP layer's mode and each conference's rule exposure) */
+function cfbSummary(results: unknown): { cfb?: unknown } {
+  const c = (results as { cfb?: { cfp_mode: string; cfp_mode_reason: string; uncertainty_layers: unknown; conferences: unknown } }).cfb;
+  return c ? { cfb: { cfp_mode: c.cfp_mode, cfp_mode_reason: c.cfp_mode_reason, uncertainty_layers: c.uncertainty_layers, conferences: c.conferences } } : {};
+}
+
 export interface PublishOptions { db?: SimDb; log?: (s: string) => void; chunk?: number }
 export interface PublishResult { run_id: string; status: string; existing: boolean; published: boolean; detail?: unknown }
 
@@ -50,7 +56,7 @@ export async function publishRun(o: RunOutcome, opt: PublishOptions = {}): Promi
     n_sims: r.n_sims, model_version: r.model_version, engine_version: r.engine_version, source_commit: r.source_commit || '', rules_version: r.rules_version,
     config_hash: r.config_hash, input_snapshot_at: r.input_snapshot_at, input_ref: 'db:sim_input_snapshots/' + r.input_hash, input_hash: r.input_hash,
     expected: { entities: o.results.entities.length, outcomes: o.results.outcomes.length, sum_rules: o.results.sum_rules },
-    gates: o.gates, validation_summary: { checks: o.results.checks, flags: o.results.flags },
+    gates: o.gates, validation_summary: { checks: o.results.checks, flags: o.results.flags, ...cfbSummary(o.results) },
     diagnostics: o.results.diagnostics, limitations: reg ? reg.limitations : [],
     runtime: { runtime_ms: r.runtime_ms, workers: r.workers, peak_rss_mb: r.peak_rss_mb, node: r.node, platform: r.platform },
     started_at: r.started_at, finished_at: r.finished_at

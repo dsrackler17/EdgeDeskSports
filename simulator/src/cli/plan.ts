@@ -20,12 +20,14 @@ import { parseSeed } from '../core/prng.ts';
 import { PRODUCTION_RUNS } from '../core/results.ts';
 import { NFL_2026 } from '../sports/nfl/config.ts';
 import { MLB_2026 } from '../sports/mlb/config.ts';
+import { CFB_2026 } from '../sports/cfb/config.ts';
 
 /** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season */
-export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season };
+export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, cfb: CFB_2026.season };
 /** the nightly schedule: MLB runs only when a person dispatches it (its live feed is checked by hand first:
-    simulator/src/sports/mlb/config.ts live_inputs) */
-export const NIGHTLY = ['nfl'];
+    simulator/src/sports/mlb/config.ts live_inputs); college football runs nightly, dry until it is ACTIVE
+    (a night with unchanged inputs reuses the published run: the idempotency key) */
+export const NIGHTLY = ['nfl', 'cfb'];
 
 export interface PlannedRun { sport: string; season: string; runs: string; seed: string; publish: boolean; status: string; blockers: string[] }
 

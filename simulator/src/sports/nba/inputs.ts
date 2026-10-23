@@ -75,7 +75,7 @@ export interface NbaInputData {
   postseason_context: ContextTable;
   strength: { distribution: 'normal'; sigma_points: number; sigma_ci95: [number, number]; as_of_games: number; method: string; source: string; source_sha256: string } | null;
   availability: { mode: 'off' | 'return_hazards'; hazards: HazardTable | null; teams: Record<string, { projected: string[]; tracked: TrackedAbsence[]; untracked: number; subsets: { net: number[]; full: number[] } }> };
-  integrity: { box_mismatch: number | null; final_mismatch: number | null; stale_scheduled: string[]; source: string };
+  integrity: { box_mismatch: number | null; final_mismatch: number | null; stale_scheduled: string[]; placeholder_postseason: string[]; source: string };
   code_sha256: Record<string, string>;
 }
 export interface NbaSnapshot { schema: string; input_hash: string; data: NbaInputData; meta: { built_at: string; builder: string; pass_seconds: number; params: string } }
@@ -94,13 +94,15 @@ export function sigmaFor(asOfGames: number): NbaInputData['strength'] {
   const text = fs.readFileSync(UNC_FILE, 'utf8'), unc = JSON.parse(text);
   const pts = (unc.by_as_of as any[]).filter((b) => b.win_total_calibration).sort((a, b) => a.as_of_games - b.as_of_games);
   if (!pts.length) return null;
-  let lo = pts[0], hi = pts[pts.length - 1];
-  for (let i = 0; i + 1 < pts.length; i++) if (asOfGames >= pts[i].as_of_games && asOfGames <= pts[i + 1].as_of_games) { lo = pts[i]; hi = pts[i + 1]; }
+  /* flat outside the calibrated points, linear between the two that bracket the as-of point */
+  let lo = asOfGames <= pts[0].as_of_games ? pts[0] : pts[pts.length - 1], hi = lo;
+  for (let i = 0; i + 1 < pts.length; i++) if (asOfGames > pts[i].as_of_games && asOfGames < pts[i + 1].as_of_games) { lo = pts[i]; hi = pts[i + 1]; }
+  const exact = pts.find((p) => p.as_of_games === asOfGames); if (exact) { lo = exact; hi = exact; }
   const w = hi.as_of_games === lo.as_of_games ? 0 : Math.min(1, Math.max(0, (asOfGames - lo.as_of_games) / (hi.as_of_games - lo.as_of_games)));
   const lerp = (a: number, b: number) => a + w * (b - a);
   const L = lo.win_total_calibration, H = hi.win_total_calibration;
   return { distribution: 'normal', sigma_points: lerp(L.sigma, H.sigma), sigma_ci95: [lerp(L.sigma_ci95[0], H.sigma_ci95[0]), lerp(L.sigma_ci95[1], H.sigma_ci95[1])], as_of_games: asOfGames,
-    method: 'win-total calibration at as-of points ' + lo.as_of_games + (hi.as_of_games !== lo.as_of_games ? '-' + hi.as_of_games + ' (linear)' : ''), source: 'simulator/data/nba_strength_uncertainty.json', source_sha256: sha256Hex(text) };
+    method: 'win-total calibration, ' + (hi.as_of_games !== lo.as_of_games ? 'linear between the as-of points ' + lo.as_of_games + ' and ' + hi.as_of_games : 'the as-of point ' + lo.as_of_games + (asOfGames !== lo.as_of_games ? ' (the nearest calibrated point; flat outside 1-61 games)' : '')) + ', return trajectories ON', source: 'simulator/data/nba_strength_uncertainty.json', source_sha256: sha256Hex(text) };
 }
 
 export interface BuildOptions {
@@ -128,8 +130,12 @@ export async function buildNbaSnapshot(opt: BuildOptions = {}): Promise<NbaSnaps
   /* 1 the schedule */
   const raw = D.games([S]);
   const reg = raw.filter((g: any) => g.type === 'R' && g.scope === 'regular_season');
-  const post = raw.filter((g: any) => g.type === 'I' || g.type === 'P').sort((a: any, b: any) => a.start_ms - b.start_ms);
-  for (const g of reg.concat(post)) if (!byId[String(g.home_id)] || !byId[String(g.away_id)]) throw new Error('unknown club in game ' + g.game_id);
+  const known = (g: any) => !!byId[String(g.home_id)] && !!byId[String(g.away_id)];
+  /* a postseason game on the schedule before its pairing is set carries placeholder clubs: skipped (counted), never guessed */
+  const postAll = raw.filter((g: any) => g.type === 'I' || g.type === 'P').sort((a: any, b: any) => a.start_ms - b.start_ms);
+  const placeholders = postAll.filter((g: any) => g.status === 'SCHEDULED' && !isDone(g) && !known(g)).map((g: any) => String(g.game_id));
+  const post = postAll.filter((g: any) => !placeholders.includes(String(g.game_id)));
+  for (const g of reg.concat(post)) if (!known(g)) throw new Error('unknown club in game ' + g.game_id);
   const homeCity: Record<string, string> = {};
   { const cnt: Record<string, Record<string, number>> = {};
     for (const g of reg) if (!g.neutral && g.city) { const m = (cnt[g.home_id] = cnt[g.home_id] || {}); m[g.city] = (m[g.city] || 0) + 1; }
@@ -244,7 +250,7 @@ export async function buildNbaSnapshot(opt: BuildOptions = {}): Promise<NbaSnaps
       record_spec_hash: S === cfg.season ? live.record_spec_hash || null : null },
     postseason_pairs: pairs, postseason_context: ctx,
     strength: sigmaFor(asOfGames), availability: avail,
-    integrity: { box_mismatch: integ ? Number(integ.team_box_points_mismatch) : null, final_mismatch: integ && integ.pbp_final_mismatch != null ? Number(integ.pbp_final_mismatch) : null, stale_scheduled: stale, source: 'nba/data/manifest.json seasons.' + S + '.integrity' },
+    integrity: { box_mismatch: integ ? Number(integ.team_box_points_mismatch) : null, final_mismatch: integ && integ.pbp_final_mismatch != null ? Number(integ.pbp_final_mismatch) : null, stale_scheduled: stale, placeholder_postseason: placeholders, source: 'nba/data/manifest.json seasons.' + S + '.integrity' },
     code_sha256: codeHashes()
   };
   return { schema: NBA_INPUT_SCHEMA, input_hash: hashCanonical(data), data, meta: { built_at: new Date().toISOString(), builder: 'simulator/src/sports/nba/inputs.ts', pass_seconds: passSeconds, params: sp.source } };

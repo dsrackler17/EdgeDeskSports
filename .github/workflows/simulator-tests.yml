@@ -1,7 +1,13 @@
 # EdgeDesk Simulator — every suite, on every change to the simulator.
 #
 #   unit   typecheck (pinned typescript from simulator/package-lock.json), the
-
+#          engine, rules (NFL 2002-2025, NHL 2013-14..2025-26 and NBA
+#          2006-07..2025-26 postseasons + synthetic), simulation, hooks, config,
+#          markets and reader suites, the MLB suites (rules 2012-2025 and
+#          synthetic, rotations, game model, simulation, the Stats API grammar on
+#          MLB's real 2024 responses, configuration), the college football suites
+#          (conference ties, the 2024-2025 title games and brackets, the committee
+#          proxy, favourite calibration), and the generated-file checks
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
 #   sql    supabase/simulator.sql on a real, throwaway PostgreSQL: RLS, the
@@ -35,7 +41,14 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
-
+      - 'hockey/model/**'
+      - 'hockey/data/teams.json'
+      - 'nba/model/**'
+      - 'nba/lib/**'
+      - 'nba/config.js'
+      - 'football/cfb_p4/**'
+      - 'football/fbs/fbs.js'
+      - 'football/matchup/inputs.js'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -54,7 +67,14 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
-
+      - 'hockey/model/**'
+      - 'hockey/data/teams.json'
+      - 'nba/model/**'
+      - 'nba/lib/**'
+      - 'nba/config.js'
+      - 'football/cfb_p4/**'
+      - 'football/fbs/fbs.js'
+      - 'football/matchup/inputs.js'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -92,7 +112,23 @@ jobs:
         run: |
           node simulator/tests/nfl_sim.test.ts
           node simulator/tests/nfl_config.test.ts
-
+      - name: NHL rules against every series 2013-14 .. 2025-26, the synthetic cases, configuration and simulation
+        run: |
+          node simulator/tests/nhl_rules_history.test.ts
+          node simulator/tests/nhl_rules_synthetic.test.ts
+          node simulator/tests/nhl_config.test.ts
+          node simulator/tests/nhl_sim.test.ts
+      - name: MLB rules against every postseason 2012-2025, the synthetic branches, rotations, game model, simulation, Stats API grammar and configuration
+        run: |
+          node simulator/tests/mlb_rules_history.test.ts
+          node simulator/tests/mlb_rules_synthetic.test.ts
+          node simulator/tests/mlb_rotation.test.ts
+          node simulator/tests/mlb_model.test.ts
+          node simulator/tests/mlb_sim.test.ts
+          node simulator/tests/mlb_statsapi.test.ts
+          node simulator/tests/mlb_config.test.ts
+      - name: College football rules (synthetic ties, the 2024-2025 title games), CFP brackets, committee proxy, calibration, configuration and simulation
+        run: npm run sim:cfb:test
       - name: Kalshi futures comparison and the reader
         run: |
           node simulator/tests/markets.test.ts
