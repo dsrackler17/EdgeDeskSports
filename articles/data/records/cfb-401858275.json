@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T23:30:00.000Z",
   "game_when_label": "2026-10-24 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-22T21:29:24.032Z",
-  "generated_at": "2026-10-22T21:29:24.032Z",
+  "updated_at": "2026-10-23T04:37:22.621Z",
+  "generated_at": "2026-10-23T04:37:22.621Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -124,21 +124,21 @@
         "note": "Quoted from North Carolina’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 84,
-      "inputs_reached_pct": 73,
+      "inputs_reached_pct": 89,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 23,
+        "priced": 15,
+        "priced_coverage_pct": 58,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 15,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 0,
           "UNAVAILABLE": 3
         },
@@ -1460,18 +1460,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
         },
@@ -1490,14 +1478,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1575,13 +1555,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 87,
+        "pct": 93,
         "tier": "STRONG",
-        "text": "87 · STRONG",
-        "sub": "main deduction: Syracuse’s availability report is not due yet",
-        "score": 87,
-        "grade": "STRONG",
-        "grade_label": "STRONG",
+        "text": "93 · VERY STRONG",
+        "sub": "main deduction: no market quote is joined to this game",
+        "score": 93,
+        "grade": "VERY_STRONG",
+        "grade_label": "VERY STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1593,7 +1573,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.6,
+            "score": 18.3,
             "max": 20
           },
           {
@@ -1611,7 +1591,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.3,
+            "score": 13.5,
             "max": 15
           },
           {
@@ -1621,25 +1601,9 @@
             "max": 10
           }
         ],
-        "main_deduction": "Syracuse’s availability report is not due yet; the impact of Syracuse’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "no market quote is joined to this game",
         "capped_by": [],
-        "next_actions": [
-          {
-            "action": "Re-read availability inside the filing window (Syracuse)",
-            "potential_gain": 2,
-            "text": "up to +2"
-          },
-          {
-            "action": "Re-read availability inside the filing window (North Carolina)",
-            "potential_gain": 2,
-            "text": "up to +2"
-          },
-          {
-            "action": "Capture a market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
-          }
-        ],
+        "next_actions": [],
         "stability": {
           "tier": "VERY_STABLE",
           "sd": 1.16,
@@ -1677,9 +1641,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "NOT_COMPARED",
-        "label": "NOT COMPARED",
-        "text": "This load’s live number is not compared with the published one: the published number came from edgedesk_cfb_p4_v1.0.0 and this page runs edgedesk_cfb_p4_v1.0.1. A difference between them is not a move."
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 23 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "HIGH",
@@ -1896,13 +1860,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1qipg52g1ao44",
+    "packet_hash": "11asdj0vkfvoe",
     "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
+    "input_suspect": true,
     "question": "Can North Carolina take away Syracuse’s big plays?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.5 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.5 points.",
     "gap": {
-      "points": 1.5,
+      "points": 0.5,
       "toward": "North Carolina",
       "other": "Syracuse"
     },
@@ -1921,9 +1885,18 @@
     "quarterbacks": [
       "Billy Edwards Jr. has completed 94 of 158 passes (59.5%) for 1,259 yards, 8.0 yards per attempt, 9 touchdowns and 5 interceptions in six games for North Carolina, and has been sacked on 13 of 171 dropbacks.",
       "Steve Angeli has completed 58 of 104 passes (55.8%) for 720 yards, 6.9 yards per attempt, 4 touchdowns and 4 interceptions in three games for Syracuse, and has been sacked on 8 of 112 dropbacks.",
-      "Malachi Nelson has completed 42 of 70 passes (60.0%) for 532 yards, 7.6 yards per attempt, 3 touchdowns and 2 interceptions in three games for Syracuse, and has been sacked on 5 of 75 dropbacks."
+      "Malachi Nelson has completed 42 of 70 passes (60.0%) for 532 yards, 7.6 yards per attempt, 3 touchdowns and 2 interceptions in three games for Syracuse, and has been sacked on 5 of 75 dropbacks.",
+      "Billy Edwards Jr. does not appear on North Carolina’s update 1 availability report.",
+      "Syracuse’s update 1 ACC availability report (published Oct. 22) lists quarterback Steve Angeli as questionable.",
+      "Syracuse’s update 1 ACC availability report (published Oct. 22) lists quarterback Amari Odom as out.",
+      "Syracuse’s update 1 ACC availability report (published Oct. 22) lists quarterback Malachi Nelson as out.",
+      "EdgeDesk’s model is built on Malachi Nelson starting for Syracuse, but the availability report lists him as out."
     ],
-    "availability": [],
+    "availability": [
+      "North Carolina’s availability report lists receiver Jordan Shipp as questionable.",
+      "North Carolina’s availability report lists running back Benjamin Hall as questionable.",
+      "Syracuse’s availability report lists four players as out, including offensive linemen Jackson Iak, D'Joni Scatliffe and Matthew Hawn."
+    ],
     "script": {
       "model": [
         "North Carolina’s defense has to come out ahead on big pass plays: it gives up explosive gains on 8.0% of opponent pass plays, against an offense that turns 12.9% of its pass plays into explosive gains.",
@@ -1938,10 +1911,19 @@
       ]
     },
     "unknown": [
+      "North Carolina’s availability report lists receiver Jordan Shipp as questionable.",
+      "North Carolina’s availability report lists running back Benjamin Hall as questionable.",
+      "Syracuse’s update 1 ACC availability report (published Oct. 22) lists quarterback Steve Angeli as questionable.",
+      "The model expects Malachi Nelson, but Malachi Nelson is listed as out.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for North Carolina and Syracuse.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
     ],
     "flags": [
+      {
+        "key": "QB_INPUT_CONFLICT",
+        "severity": "high",
+        "text": "EdgeDesk’s model is built on Malachi Nelson starting for Syracuse, but the availability report lists him as out."
+      },
       {
         "key": "DATA_CONFLICT",
         "severity": "medium",
@@ -1953,7 +1935,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-22T18:00:27.930Z",
+        "observed_at": "2026-10-22T21:39:15.821Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1969,6 +1951,20 @@
         "path": "football/fbs_epa/qb_epa_2026.json",
         "observed_at": "2026-10-18T03:00:00.000Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Atlantic Coast Conference availability report (Update 1)",
+        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-23T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      },
+      {
+        "label": "EdgeDesk input audit (model starter vs official availability report)",
+        "url": null,
+        "path": null,
+        "observed_at": "2026-10-23T04:08:05.021Z",
+        "verification": "CONFLICTING"
       }
     ],
     "needs_confirmation": []
@@ -1976,6 +1972,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-22T21:29:24.032Z"
+    "at": "2026-10-23T04:37:22.621Z"
   }
 }

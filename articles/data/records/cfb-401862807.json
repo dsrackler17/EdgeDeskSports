@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-22T23:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-22. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1914,93 +1914,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-22. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "z3kn9i2bqmzo",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can East Carolina win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.7 points.",
-    "gap": {
-      "points": 1.7,
-      "toward": "East Carolina",
-      "other": "Memphis"
-    },
-    "supporting": [
-      "When Memphis has the ball (pass protection against the pass rush): Memphis’ offense has allowed a sack on 7.3% of its dropbacks, and East Carolina’s defense sacks the quarterback on 10.4% of opponent dropbacks (FBS average 5.6%).",
-      "When Memphis has the ball (the line of scrimmage on running plays): Memphis’ offense is stopped at or behind the line on 11.7% of its runs, and East Carolina’s defense stops 33.0% of opponent runs at or behind the line (FBS average 17.4%).",
-      "In his last two games (UAB and Tulane), Stokes averaged 8.1 yards per attempt, against 11.2 in his five games before that.",
-      "EdgeDesk’s position-group ratings put East Carolina’s defensive line No. 9 nationally and Memphis’ No. 76."
-    ],
-    "contradicting": [
-      "When Memphis has the ball (the passing game against the pass defense): Memphis’ offense averages 10.2 yards per pass attempt, and East Carolina’s defense allows 7.1 yards per pass attempt (FBS average 7.4).",
-      "When Memphis has the ball (big plays through the air): Memphis’ offense turns 14.3% of its pass plays into explosive gains, and East Carolina’s defense gives up explosive gains on 10.3% of opponent pass plays (FBS average 10.3%).",
-      "When East Carolina has the ball (pass protection against the pass rush): East Carolina’s offense has allowed a sack on 6.9% of its dropbacks, and Memphis’ defense sacks the quarterback on 8.2% of opponent dropbacks (FBS average 5.6%).",
-      "When East Carolina has the ball (third down): East Carolina’s offense converts 28.4% of its third downs, and Memphis’ defense allows opponents to convert 32.2% of their third downs (FBS average 39.7%)."
-    ],
-    "quarterbacks": [
-      "Marcus Stokes has completed 121 of 181 passes (66.9%) for 1,849 yards, 10.2 yards per attempt, 19 touchdowns and 6 interceptions in seven games for Memphis, and has been sacked on 15 of 196 dropbacks.",
-      "Emory Williams has completed 67 of 103 passes (65.0%) for 662 yards, 6.4 yards per attempt, 7 touchdowns and 2 interceptions in five games for East Carolina, and has been sacked on 8 of 111 dropbacks.",
-      "Mitch Griffis has completed 39 of 71 passes (54.9%) for 422 yards, 5.9 yards per attempt, 3 touchdowns and 1 interception in five games for East Carolina, and has been sacked on 5 of 76 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "East Carolina’s defense has to come out ahead at the line of scrimmage: it stops 33.0% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 11.7% of its runs.",
-        "East Carolina’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 8.2% of opponent dropbacks.",
-        "East Carolina’s offense has to hold its own on third down against a defense that allows opponents to convert 32.2% of their third downs.",
-        "East Carolina’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.4% of opponent dropbacks, against an offense that has allowed a sack on 7.3% of its dropbacks."
-      ],
-      "market": [
-        "Memphis’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.2% of opponent dropbacks, against an offense that has allowed a sack on 6.9% of its dropbacks.",
-        "Memphis’ defense has to come out ahead on third down: it allows opponents to convert 32.2% of their third downs, against an offense that converts 28.4% of its third downs.",
-        "Memphis’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 11.7% of its runs, and East Carolina’s defense stops 33.0% of opponent runs at or behind the line."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Memphis and East Carolina.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Memphis), sack rate (Memphis), sack rate allowed (East Carolina) and sack rate (East Carolina); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Memphis: new head coach; returning roster share at the 5th percentile; returning production at the 3rd percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-22T18:00:27.930Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-22T14:41:06.454Z",
-        "verification": "RATING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-22T21:29:24.032Z"
+    "at": "2026-10-23T04:37:22.621Z"
   }
 }
