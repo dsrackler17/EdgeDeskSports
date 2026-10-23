@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-23T16:08:14.224Z",
- "board_generated_at": "2026-10-23T16:08:05.470Z",
+ "generated_at": "2026-10-23T17:08:55.094Z",
+ "board_generated_at": "2026-10-23T17:08:49.449Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -82,6 +82,72 @@
    "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail."
   },
   {
+   "game_id": "401866449",
+   "game": "Eastern Michigan @ Ohio",
+   "kickoff": "2026-10-24T20:00:00.000Z",
+   "named": false,
+   "edgedesk": "Ohio −17.0",
+   "market": "Ohio −10.0",
+   "books": 1,
+   "gap": 7.2,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-24T20:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Peden Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 7 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Ohio: Nick Poulos (previous game) · PASS: Eastern Michigan: Noah Kim (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Ohio: availability sources checked, nothing filed · PASS: Eastern Michigan: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "WARN: the matchup term alone (2.8 pts) lifts the gap over 7: without it the gap is 4.3 — historically informative, flagged for scrutiny"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.4 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.4 — the extreme is not supported by how margins of this size have actually finished"
+    }
+   ],
+   "consistent": true,
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+  },
+  {
    "game_id": "401862808",
    "game": "Army @ Tulsa",
    "kickoff": "2026-10-24T00:30:00.000Z",
@@ -121,7 +187,7 @@
     {
      "requirement": "resolved QB",
      "result": "FAIL",
-     "detail": "FAIL: Army: starter unresolved (competition) — must be resolved or scenario-weighted at this size"
+     "detail": "FAIL: Army: starter unresolved (unknown) — must be resolved or scenario-weighted at this size"
     },
     {
      "requirement": "no abnormal availability",
@@ -187,7 +253,7 @@
     {
      "requirement": "resolved QB",
      "result": "PASS",
-     "detail": "WARN: Navy: starter unresolved (competition) · PASS: Notre Dame: CJ Carr (previous game)"
+     "detail": "WARN: Navy: starter unresolved (unknown) · PASS: Notre Dame: CJ Carr (previous game)"
     },
     {
      "requirement": "no abnormal availability",

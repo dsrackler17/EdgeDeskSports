@@ -1,5 +1,5 @@
 {
- "started_at": "2026-10-23T16:07:48.000Z",
+ "started_at": "2026-10-23T17:08:38.000Z",
  "season": 2026,
  "steps": {
   "seed": {
@@ -7,12 +7,12 @@
    "roles": 0,
    "experiments": 0,
    "partitions": 0,
-   "ms": 0
+   "ms": 1
   },
   "supabase_pull": {
    "ok": true,
    "quotes": 0,
-   "ms": 1464
+   "ms": 771
   },
   "market": {
    "ok": true,
@@ -34,9 +34,9 @@
       "cooldown_min": null,
       "last_error": null,
       "last_error_class": null,
-      "last_success_at": "2026-10-23T16:07:48.000Z",
+      "last_success_at": "2026-10-23T17:08:38.000Z",
       "last_failure_at": null,
-      "calls": 15330,
+      "calls": 15353,
       "failures": 0
      }
     },
@@ -68,46 +68,47 @@
      "reasons": {}
     },
     "confirmations": {
-     "confirmed": 179,
-     "kept": 3997,
+     "confirmed": 98,
+     "kept": 4005,
      "written": true
     }
    },
    "dedupe": {
     "received": 3341,
-    "written": 13,
-    "duplicates": 3328,
+    "written": 94,
+    "duplicates": 3247,
     "refused": 0,
     "refusals": {},
-    "confirmed": 179
+    "confirmed": 98
    },
-   "written": 13,
+   "written": 94,
    "conflicts": [],
    "schedule_games": 109,
-   "ms": 3345
+   "ms": 1331
   },
   "freeze_import": {
    "ok": true,
    "files": 4,
    "imported": 0,
    "skipped": [],
-   "ms": 854
+   "ms": 494
   },
   "checkpoints": {
    "ok": true,
-   "now": "2026-10-23T16:07:48.000Z",
+   "now": "2026-10-23T17:08:38.000Z",
    "season": 2026,
-   "due": 36,
-   "taken": 36,
+   "due": 20,
+   "taken": 20,
    "skipped_no_projection": 0,
    "by_model": {
-    "edgedesk_cfb_p4_v1.0.0": 9,
-    "edgedesk_cfb_v2.1.0": 9,
-    "edgedesk_cfb_v2.0.0": 9,
-    "edgedesk_cfb_loop_v2.0.0": 9
+    "edgedesk_cfb_p4_v1.0.0": 5,
+    "edgedesk_cfb_v2.1.0": 5,
+    "edgedesk_cfb_v2.0.0": 5,
+    "edgedesk_cfb_loop_v2.0.0": 5
    },
    "by_checkpoint": {
-    "T24": 36
+    "T6": 8,
+    "T24": 12
    },
    "skipped_schedule": {},
    "kickoff_moved": [
@@ -1153,7 +1154,7 @@
    "rescheduled_adhoc": 0,
    "bet_gated": 0,
    "refused_duplicate_checkpoint": [],
-   "ms": 1910
+   "ms": 1308
   },
   "audit": {
    "ok": true,
@@ -1162,7 +1163,7 @@
   },
   "settle": {
    "ok": true,
-   "now": "2026-10-23T16:07:48.000Z",
+   "now": "2026-10-23T17:08:38.000Z",
    "season": 2026,
    "espn_schema": {
     "rejected_payloads": 0,
@@ -1178,9 +1179,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-23T16:07:48.000Z",
+     "last_success_at": "2026-10-23T17:08:38.000Z",
      "last_failure_at": null,
-     "calls": 667,
+     "calls": 668,
      "failures": 0
     },
     "espn_scoreboard": {
@@ -1191,9 +1192,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-23T16:07:48.000Z",
+     "last_success_at": "2026-10-23T17:08:38.000Z",
      "last_failure_at": null,
-     "calls": 15341,
+     "calls": 15364,
      "failures": 0
     }
    },
@@ -1212,50 +1213,50 @@
    },
    "evaluations": 0,
    "miss_reviews": 0,
-   "ms": 1439
+   "ms": 1684
   },
   "report": {
    "ok": true,
-   "now": "2026-10-23T16:07:48.000Z",
+   "now": "2026-10-23T17:08:38.000Z",
    "weekly_written": [],
    "research_events": 0,
    "alerts": 3,
    "public_graded": 186,
-   "ms": 555
+   "ms": 531
   },
   "verify": {
    "ok": true,
    "problems": 0,
-   "ms": 1599
+   "ms": 1011
   }
  },
  "freshness": {
   "rule": "cfb_source_freshness_v1",
-  "at": "2026-10-23T16:07:48.000Z",
+  "at": "2026-10-23T17:08:38.000Z",
   "odds": {
    "source": "odds",
    "status": "FRESH",
    "age_h": 0,
    "max_age_h": 6,
    "importance": "CRITICAL",
-   "upcoming_quotes": 4130
+   "upcoming_quotes": 4224
   },
   "schedule": {
    "source": "schedule",
    "status": "FRESH",
-   "age_h": 3.01,
+   "age_h": 0.06,
    "max_age_h": 26,
    "importance": "CRITICAL"
   },
   "model_features": {
    "source": "pbp",
    "status": "FRESH",
-   "age_h": 53.33,
+   "age_h": 54.34,
    "max_age_h": 192,
    "importance": "CRITICAL"
   },
   "results_newest": "2026-10-23T04:07:49.000Z"
  },
- "finished_at": "2026-10-23T16:07:59.988Z",
+ "finished_at": "2026-10-23T17:08:45.601Z",
  "ok": true
 }
