@@ -85,9 +85,10 @@ const D = nhlFixture().data;
 /* ---- 4 the facts that block publication ---- */
 {
   for (const [k, f] of [['rules', NHL_2027.rules], ['playoff_format', NHL_2027.playoff_format], ['home_ice', NHL_2027.home_ice]] as const) {
-    T.chk(k + ' affects results, names a source, and is not verified (no verifier, no date)', f.affects_results && f.source.length > 40 && !isVerified(f) && f.verified_by === null);
+    T.chk(k + ' affects results and is VERIFIED from the NHL.com page fetched by the Simulator source check (URL, page sha256, run, verifier, date)',
+      f.affects_results && isVerified(f) && /https:\/\/www\.nhl\.com\/info\/standings-info\/(tie-breaking-procedure|playoff-format)/.test(f.source) && /[0-9a-f]{64}/.test(f.source) && /39957383090/.test(f.verified_by || '') && f.verified_at === '2026-10-23');
   }
-  T.chk('a fact with VERIFIED but no verifier does not count', !isVerified({ ...NHL_2027.rules, verification: 'VERIFIED' }));
+  T.chk('a fact with VERIFIED but no verifier, or no date, does not count', !isVerified({ ...NHL_2027.rules, verified_by: null }) && !isVerified({ ...NHL_2027.rules, verified_at: null }) && !isVerified({ ...NHL_2027.rules, verification: 'UNVERIFIED' }));
   T.chk('availability: confirmed starters only, with the baseline stated', NHL_2027.availability.mode === 'confirmed_starters_only' && /No starting goalie is assumed/.test(NHL_2027.availability.baseline));
   T.eq('drift is off', NHL_2027.drift.mode, 'off');
 }

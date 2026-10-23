@@ -7,10 +7,10 @@
 #                              night game is final and nflverse's games.csv has
 #                              its score.) An ACTIVE sport publishes; any other
 #                              sport runs as a DRY RUN and its blockers are
-#                              printed as warnings. Today the NFL is BLOCKED
-#                              (its 2026 rules facts await human verification:
-#                              SIMULATOR_NOTES.md), so the nightly job is a dry
-#                              run that keeps the whole pipeline exercised.
+#                              printed as warnings. The NFL and the NHL (season
+#                              key 2027 = 2026-27; its schedule is a parquet,
+#                              read with pyarrow) each run as their own leg:
+#                              one sport's failure never stops the other.
 #   workflow_dispatch          one sport; inputs validated by
 #                              simulator/src/cli/plan.ts before anything runs.
 #                              MLB runs only from here (not nightly): its live
@@ -49,10 +49,10 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, mlb, cfb]
+        options: [nfl, nhl, mlb, cfb]
         default: nfl
       season:
-        description: 'Season (must equal the sport''s configured season)'
+        description: 'Season (must equal the sport''s configured season: NFL 2026, NHL 2027 = 2026-27)'
         type: string
         default: '2026'
       runs:
@@ -137,6 +137,12 @@ jobs:
       - name: The college football suites, before a CFB run
         if: ${{ matrix.sport == 'cfb' }}
         run: npm run sim:cfb:test
+      - name: The NHL suites, before an NHL run
+        if: ${{ matrix.sport == 'nhl' }}
+        run: npm run sim:test:nhl
+      - name: pyarrow (the NHL schedule is a parquet, read by hockey/tools/parquet_select.py)
+        if: ${{ matrix.sport == 'nhl' }}
+        run: pip install --quiet pyarrow
       - name: Status
         env:
           STATUS: ${{ matrix.status }}

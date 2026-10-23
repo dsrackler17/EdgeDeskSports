@@ -26,6 +26,11 @@ export function runView(results: any): RunView {
     ...(results.outcome_semantics ? { outcome_semantics: results.outcome_semantics } : {}) };
 }
 
+/** the mappings of one sport, and the outcome sets they use: one config file serves every sport's run */
+export function forSport(cfg: FuturesConfig, sport: string): FuturesConfig {
+  return configForSport(cfg, { sport } as RunView);
+}
+
 export async function marketStep(opt: { results: any; runId: string | null; publish: boolean; cfg?: FuturesConfig; db?: SimDb; fetchImpl?: typeof fetch; log?: (s: string) => void; now?: Date }) {
   const log = opt.log || console.log;
   const run = runView(opt.results);

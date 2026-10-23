@@ -6,7 +6,7 @@ import { compareFutures, validateFuturesConfig, configForSport, feePerContract, 
 import { quoteFromMarket, kalshiClient, fetchQuotes } from '../src/markets/kalshi.ts';
 import { sha256Hex } from '../src/core/canonical.ts';
 import fs from 'node:fs';
-import { marketStep } from '../src/cli/markets.ts';
+import { marketStep, forSport } from '../src/cli/markets.ts';
 import type { SimDb } from '../src/publish/db.ts';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -161,6 +161,12 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   T.chk('a Kalshi outage exits 4 and marks the comparison failed (never the run)', code === 4 && calls.includes('sim_fail_comparison') && !calls.some((c) => /sim_(fail|publish)_run/.test(c)), { code, calls, msg });
   const none = await marketStep({ results, runId: null, publish: true, cfg: cfg({ mappings: [] }), db, log: () => {}, now });
   T.eq('with no verified mapping the step fetches and writes nothing', none.status, 'unavailable');
+  /* one config serves every sport: an NHL run sees only NHL mappings (none today) and the NFL's outcome sets never reach its validation */
+  const nhl = { run: { sport: 'nhl', competition: 'NHL', season: '2026-27' }, entities: [{ entity_id: 'CAR', outcomes: { win_stanley_cup: { probability: 0.1, mcse: 0.001 } } }] };
+  const real = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config', 'kalshi_futures.json'), 'utf8')) as FuturesConfig;
+  const nhlStep = await marketStep({ results: nhl, runId: null, publish: false, cfg: real, log: () => {}, now });
+  T.eq('an NHL run against the NFL-only mapping file is unavailable, not invalid', nhlStep.status, 'unavailable');
+  T.eq('forSport keeps a sport\'s mappings and only the outcome sets they use', [forSport(real, 'nhl').mappings.length, forSport(real, 'nhl').outcome_sets.length, forSport(real, 'nfl').mappings.length === real.mappings.length], [0, 0, true]);
 }
 /* ---- the mapping generator refuses anything short of an exact match (SYNTHETIC markets) ---- */
 {
