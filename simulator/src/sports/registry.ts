@@ -19,6 +19,7 @@ import { cfbFacts, isCfbVerified } from './cfb/config.ts';
 import { NCAAM_2027 } from './ncaam/config.ts';
 import { WNBA_2026 } from './wnba/config.ts';
 import { golfActivation } from './golf/activation.ts';
+import { tennisActivation } from './tennis/activation.ts';
 import { UFC_2026 } from './ufc/config.ts';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,7 +31,7 @@ export interface SportEntry {
   label: string;
   status: SportStatus;
   structure: 'season' | 'tournament' | 'series' | 'events' | 'none';
-  tabs: Array<'division' | 'conference' | 'title' | 'cup' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health' | 'fights' | 'title_path' | 'leaderboard' | 'finishes'>;
+  tabs: Array<'division' | 'conference' | 'title' | 'cup' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health' | 'fights' | 'title_path' | 'leaderboard' | 'finishes' | 'draws' | 'matches'>;
   blockers: string[];
   limitations: string[];
   /** what would have to exist for this sport to be activated */
@@ -202,6 +203,17 @@ const GOLF_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
+/** Tennis: ACTIVE only while the committed study and backtest meet the activation conditions on their holdout
+    (simulator/src/sports/tennis/activation.ts); a draw's order is checked per run (run.ts) */
+const TENNIS_LIMITS = [
+  'Who wins a match comes from a rating of every ATP and WTA singles match ESPN lists since 2022 (main draws and qualifying): an Elo per tour that moves by the share of games won, its settings chosen on 2023-2024. On 2025-2026 matches its log loss was about 9% below a coin\'s and below FiveThirtyEight\'s published tennis Elo; it has never been compared with closing prices.',
+  'The court surface is not in the data, so one rating covers clay, grass and hard courts: a clay or grass specialist is misjudged on the other surfaces. Injuries, fitness and withdrawals after the scoreboard was read are not modelled; a match in progress is priced from before its first ball, not from its score.',
+  'A draw is simulated only when its order is known: Wikipedia\'s draw article, confirmed line by line against ESPN\'s players and results, or from the semifinals on ESPN\'s own listing. Draws whose article is not filled in yet are listed with that reason and not simulated; their matches still appear under Matches.',
+  'Ratings are frozen when the scoreboard is read: a simulated win does not raise a rating. A men\'s Grand Slam main-draw match is priced as best of five (through the set; it predicted those matches better); the score of a match (sets and games) is not simulated.',
+  'The ATP and WTA Finals group stages (round robin) are not simulated.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
 export function sportRegistry(): SportEntry[] {
   const nfl = nflStatus(), nhl = nhlStatus(), cfb = cfbStatus();
   const mlb = mlbStatus();
@@ -209,6 +221,7 @@ export function sportRegistry(): SportEntry[] {
   const ncaam = ncaamStatus();
   const wnba = wnbaStatus();
   const golf = golfActivation();
+  const tennis = tennisActivation();
   const ufc = ufcStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
@@ -227,9 +240,8 @@ export function sportRegistry(): SportEntry[] {
       activation_path: 'After Selection Sunday 2027: write basketball/ncaam_forecast/config/brackets/2027.json from the official bracket, record the 2027 format and bracket as VERIFIED with verified_by/verified_at in simulator/src/sports/ncaam/config.ts, apply supabase/simulator.sql and supabase/ncaam_forecast.sql, and promote a research_team_model champion through the weekly gates.' },
     { key: 'wnba', label: 'WNBA', status: wnba.status, structure: 'series', tabs: ['title', 'games', 'model_health'], blockers: wnba.blockers, limitations: WNBA_LIMITS,
       activation_path: 'Active for the 2026 postseason: the series formats and hosts are measured from the schedule (simulator/src/sports/wnba/config.ts), the game model is the served basketball walk-forward and the shared series offset comes from simulator/data/wnba_strength_uncertainty.json. For 2027: a configuration with the season\'s playoff bracket rule (pairings of rounds not yet played), re-run the uncertainty study, set nightly_through. WNBA_SIMULATOR_NOTES.md.' },
-    { key: 'tennis', label: 'Tennis', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
-      blockers: ['Retired from coverage (2026-09-27).', 'Fitted ratings live only in the database; no owned draw structure; no validated point-level serve/return model.'],
-      limitations: [], activation_path: 'Draw data, a validated point-level model, and the coverage decision reversed.' },
+    { key: 'tennis', label: 'Tennis', status: tennis.status, structure: 'events', tabs: ['draws', 'matches', 'model_health'], blockers: tennis.blockers, limitations: TENNIS_LIMITS,
+      activation_path: 'Active while the committed study and backtest (simulator/data/tennis_elo_study.json, tennis_backtest.json: walk-forward over 2025-2026) meet the activation conditions in simulator/src/sports/tennis/activation.ts. A draw is simulated only when its order is known (a Wikipedia draw article confirmed against ESPN, or the semifinals on). Each season: let the feeds refresh, re-run the study and the backtest, and set the new season and nightly_through in simulator/src/sports/tennis/config.ts. Tennis is in the Simulator only; EdgeDesk Research still has it retired (lib/edgedesk_sports.js). TENNIS_SIMULATOR_NOTES.md.' },
     { key: 'golf', label: 'Golf', status: golf.status, structure: 'events', tabs: ['leaderboard', 'finishes', 'model_health'], blockers: golf.blockers, limitations: GOLF_LIMITS,
       activation_path: 'Active while the committed backtest (simulator/data/golf_backtest.json, walk-forward over 2025-2026) meets its activation conditions; each event\'s cut, rounds and field are measured per run. Each season: let the feeds refresh, re-run the skill study and the backtest, and set the new season and nightly_through in simulator/src/sports/golf/config.ts. GOLF_SIMULATOR_NOTES.md.' },
     { key: 'ufc', label: 'UFC', status: ufc.status, structure: 'events', tabs: ['fights', 'title_path', 'model_health'], blockers: ufc.blockers, limitations: UFC_LIMITS,

@@ -22,14 +22,16 @@
    the quarterfinals (a round already reached counts in every run), and win
    their next match (the first match of theirs not yet decided). Sum rules
    after every run: one champion; two finalists, four semifinalists, eight
-   quarterfinalists when the draw has those rounds.
+   quarterfinalists when the draw has those rounds (fewer only where a bye
+   leaves a first-round slot empty). A draw that starts at the semifinals
+   (inputs.ts: ESPN's late rounds) counts its players as quarterfinalists.
    =========================================================================== */
 import type { SimModule, EntityDef, OutcomeDef, SumRule, RunMarks } from '../../core/engine.ts';
 import { streamFor, STREAM } from '../../core/prng.ts';
 import { price, type TennisEloConfig } from './elo.ts';
 
 /** a decided match at (level, index): its winner's line, and whether it was a walkover */
-export interface TennisResult { level: number; index: number; winner: string; match_id: string; walkover: boolean; retired: boolean }
+export interface TennisResult { level: number; index: number; winner: string; loser: string | null; match_id: string; walkover: boolean; retired: boolean }
 export interface TennisPlayer { id: string; name: string; seed: string | null; entry: string | null; rating: number; n: number; line: number; country: string | null }
 export interface TennisDraw {
   /** the player id on each line, null = a bye */
@@ -76,10 +78,14 @@ export function tennisModule(d: TennisModuleData, opt: { seed: bigint }): SimMod
   }
   const oTitle = O.get('win_title')!;
   const reachAt = levels.map((l) => (LEVEL_OUTCOME[l] ? O.get(LEVEL_OUTCOME[l])! : -1));
+  /* the players who reach each level in every run: its slots fed by a line or a match with someone in it (a bye
+     empties a first-round slot only) */
+  const filled: number[] = [];
+  { let occ: number[] = lineP.map((x) => (x === -1 ? 0 : 1)); for (const l of levels) { filled[l] = occ.reduce((a, b) => a + b, 0); const nx: number[] = []; for (let j = 0; j < occ.length; j += 2) nx.push(occ[j] || occ[j + 1] ? 1 : 0); occ = nx; } }
   const sumRules: SumRule[] = [{ outcome: 'win_title', by: 'league', perGroup: 1 }];
-  if (first <= 6) sumRules.push({ outcome: 'reach_final', by: 'league', perGroup: 2 });
-  if (first <= 5) sumRules.push({ outcome: 'reach_semifinal', by: 'league', perGroup: 4 });
-  if (first <= 4) sumRules.push({ outcome: 'reach_quarterfinal', by: 'league', perGroup: 8 });
+  for (const [l, k] of [[6, 'reach_final'], [5, 'reach_semifinal'], [4, 'reach_quarterfinal']] as Array<[number, string]>) if (first <= l) sumRules.push({ outcome: k, by: 'league', perGroup: filled[l] });
+  /* a draw that starts late (the semifinals on): every player in it already reached the rounds before */
+  const before = [4, 5, 6].filter((l) => l < first).map((l) => O.get(LEVEL_OUTCOME[l])!);
   const cfg = d.elo.config, bo = d.draw.bo;
   /* the first undecided match of every player still in the draw: the level where it is played (found per run, but fixed: it does not depend on the draws) */
   const nextLevel = new Int32Array(entities.length).fill(-1);
@@ -104,7 +110,7 @@ export function tennisModule(d: TennisModuleData, opt: { seed: bigint }): SimMod
     runOne(run: number, marks: RunMarks): void {
       const rs = streamFor(opt.seed, run, STREAM.games);
       let n = L;
-      for (let i = 0; i < L; i++) work[i] = lineP[i];
+      for (let i = 0; i < L; i++) { work[i] = lineP[i]; if (lineP[i] >= 0) for (const o of before) marks.mark(lineP[i], o); }
       for (let li = 0; li < levels.length; li++) {
         const half = n >> 1;
         for (let j = 0; j < half; j++) {
@@ -161,4 +167,29 @@ export function exactReach(d: TennisModuleData): Map<string, number[]> {
   }
   for (const [i, pi] of cur[0]) out.get(i)![7] += pi;
   return out;
+}
+
+/* ---------------------------------------------------------------------------
+   THE DAY'S MATCHES — every scheduled singles match with both players known
+   (main draws and qualifying), each on its own: the winner drawn from the
+   served price (the match's format: best of five in a men's Grand Slam main
+   draw). An entity is a player in one match (m<match id>:<player id>, so a
+   player listed twice is two entries); one winner per match in every run. */
+export const MATCH_OUTCOMES: OutcomeDef[] = [{ key: 'win_match', label: 'Win the match', category: 'round', provenance: 'Research' }];
+export interface MatchesModuleData { competition: string; season: number; matches: Array<{ id: string; a: { id: string; name: string }; b: { id: string; name: string }; p_a: number }> }
+export function matchesModule(d: MatchesModuleData, opt: { seed: bigint }): SimModule {
+  const entities: EntityDef[] = [];
+  for (const m of d.matches) {
+    if (!(m.p_a > 0 && m.p_a < 1)) throw new Error('match ' + m.id + ' is not priced');
+    entities.push({ id: 'm' + m.id + ':' + m.a.id, name: m.a.name, groups: { match: m.id } }, { id: 'm' + m.id + ':' + m.b.id, name: m.b.name, groups: { match: m.id } });
+  }
+  const P = d.matches.map((m) => m.p_a);
+  return {
+    sport: 'tennis', competition: d.competition, season: String(d.season), entities, outcomes: MATCH_OUTCOMES,
+    sumRules: [{ outcome: 'win_match', by: 'match', perGroup: 1 }], valueBins: 0,
+    runOne(run: number, marks: RunMarks): void {
+      const rs = streamFor(opt.seed, run, STREAM.games);
+      for (let k = 0; k < P.length; k++) marks.mark(rs.nextDouble() < P[k] ? 2 * k : 2 * k + 1, 0);
+    }
+  };
 }

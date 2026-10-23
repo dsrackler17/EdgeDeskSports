@@ -30,13 +30,11 @@
    Usage: node simulator/src/research/tennis_tournament_backtest.ts
    =========================================================================== */
 import fs from 'node:fs';
-import path from 'node:path';
-import { readFeed, loadMatches, walk, emptyState, cloneState, price, ELO_538, TOURS, REPO, STUDY_FILE, isPlaceholder, bestOf, dedupeFeed, type TennisEloConfig, type EloState, type FeedMatch, type Tour } from '../sports/tennis/elo.ts';
+import { readFeed, loadMatches, walk, emptyState, cloneState, price, ELO_538, TOURS, STUDY_FILE, isPlaceholder, bestOf, dedupeFeed, type TennisEloConfig, type EloState, type FeedMatch, type Tour } from '../sports/tennis/elo.ts';
 import { buildTree, entrants, nodes, isMainRound, type DrawMatch, type Node } from '../sports/tennis/draw.ts';
 import { streamFor } from '../core/prng.ts';
 
-export const BACKTEST_FILE = path.join(REPO, 'simulator', 'data', 'tennis_backtest.json');
-export const BACKTEST_SCHEMA = 'edgedesk_sim_tennis_backtest_v1';
+import { BACKTEST_FILE, BACKTEST_SCHEMA } from '../sports/tennis/activation.ts';
 export const HOLD_FROM = Date.parse('2025-01-01T00:00:00Z');
 const BOOT = 1000;
 const r6 = (x: number) => Math.round(x * 1e6) / 1e6;

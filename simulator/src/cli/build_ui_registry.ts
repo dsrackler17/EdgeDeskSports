@@ -15,6 +15,7 @@ import { MLB_2026 } from '../sports/mlb/config.ts';
 import { WNBA_2026 } from '../sports/wnba/config.ts';
 import { UFC_2026 } from '../sports/ufc/config.ts';
 import { GOLF_2026 } from '../sports/golf/config.ts';
+import { TENNIS_2026 } from '../sports/tennis/config.ts';
 
 const OUT = path.join(REPO, 'lib', 'edgedesk_simulator_sports.js');
 export function uiRegistrySource(): string {
@@ -32,6 +33,8 @@ export function uiRegistrySource(): string {
     ufc: { season: UFC_2026.label, competition: UFC_2026.competition, rules_version: UFC_2026.rules_version, horizon_days: UFC_2026.horizon_days },
     /* golf publishes one competition per tour event (<tour>-<ESPN event id>): the reader lists them */
     golf: { season: GOLF_2026.label, competition: 'one per tour event', rules_version: GOLF_2026.rules_version, tours: GOLF_2026.tours },
+    /* tennis publishes one competition per singles main draw (<tour>-<ESPN tournament id>) and one for the day's matches ("matches") */
+    tennis: { season: TENNIS_2026.label, competition: 'one per draw, and matches', rules_version: TENNIS_2026.rules_version },
     ncaam: { season: String(NCAAM_2027.season), competition: NCAAM_2027.competition, rules_version: NCAAM_2027.rules_version,
       pre_selection: NCAAM_2027.pre_selection, conference_tournaments: NCAAM_2027.conference_tournaments, venue: NCAAM_2027.venue,
       live: (() => { const l = JSON.parse(fs.readFileSync(path.join(REPO, 'basketball', 'ncaam_forecast', 'config', 'live.json'), 'utf8')); return { enabled: l.enabled === true, blockers: l.blockers }; })() }

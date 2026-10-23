@@ -34,12 +34,12 @@ import { parseWikiDraw, type WikiLine } from './wiki_draw.ts';
 import { scoreboardRows, espnTennis } from './espn.ts';
 import { exactReach, type TennisPlayer, type TennisDraw, type TennisResult, type TennisModuleData } from './module.ts';
 import { TENNIS_2026 } from './config.ts';
+import { BACKTEST_FILE } from './activation.ts';
 
 export const TENNIS_INPUT_SCHEMA = 'edgedesk_sim_tennis_input_v1';
 export const CURRENT_FILE = path.join(FEEDS, 'tennis_current.json.gz');
 export const DRAWS_FILE = path.join(FEEDS, 'tennis_draws.json.gz');
 export const RANKINGS_FILE = path.join(FEEDS, 'tennis_rankings.json');
-export const BACKTEST_FILE = path.join(REPO, 'simulator', 'data', 'tennis_backtest.json');
 export const TENNIS_CODE_FILES = ['simulator/src/sports/tennis/elo.ts', 'simulator/src/sports/tennis/draw.ts', 'simulator/src/sports/tennis/wiki_draw.ts', 'simulator/src/sports/tennis/module.ts',
   'simulator/src/sports/tennis/inputs.ts', 'simulator/src/sports/tennis/espn.ts', 'simulator/src/sports/tennis/config.ts', 'simulator/data/tennis_elo_study.json', 'simulator/data/tennis_backtest.json'];
 export function codeIdentity(): Record<string, string> {
@@ -267,7 +267,7 @@ export async function buildTennisSnapshots(opt: { offline?: boolean; log?: (s: s
       for (const m of main) {
         const lv = level.get(m.round!.trim())!, w = winnerId(m);
         if (lv < first || !decidedMatch(m) || !w || !pos.has(w)) continue;
-        results.push({ level: lv, index: pos.get(w)! >> (lv - first + 1), winner: w, match_id: String(m.id), walkover: m.status === 'walkover', retired: m.result === 'retirement' });
+        results.push({ level: lv, index: pos.get(w)! >> (lv - first + 1), winner: w, loser: (w === sideId(m, 'a') ? sideId(m, 'b') : sideId(m, 'a')) || null, match_id: String(m.id), walkover: m.status === 'walkover', retired: m.result === 'retirement' });
       }
       const seedOf = new Map<string, string | null>();
       for (const m of main) { if (sideId(m, 'a')) seedOf.set(sideId(m, 'a')!, m.a_seed || seedOf.get(sideId(m, 'a')!) || null); if (sideId(m, 'b')) seedOf.set(sideId(m, 'b')!, m.b_seed || seedOf.get(sideId(m, 'b')!) || null); }

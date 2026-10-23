@@ -35,7 +35,7 @@ const quiet = () => {};
   T.throws('a seed with a space', () => planRuns('workflow_dispatch', { ...ok, seed: '1 2' }), /seed must be/);
   T.throws('a seed beyond 64 bits', () => planRuns('workflow_dispatch', { ...ok, seed: '18446744073709551616' }));
   T.throws('a season other than the configured one', () => planRuns('workflow_dispatch', { ...ok, season: '2025' }), /season must be 2026/);
-  T.throws('a sport without a module', () => planRuns('workflow_dispatch', { ...ok, sport: 'tennis' }), /no simulation module/);
+  T.throws('a sport without a module', () => planRuns('workflow_dispatch', { ...ok, sport: 'college_baseball' }), /no simulation module/);
   T.throws('publish must be a boolean', () => planRuns('workflow_dispatch', { ...ok, publish: 'yes' }), /publish must be/);
   const blocked = sportRegistry().map((r) => r.key === 'nfl' ? { ...r, status: 'BLOCKED' as const, blockers: ['TEST: an unverified fact'] } : r);
   T.throws('publishing a BLOCKED sport is refused before anything runs', () => planRuns('workflow_dispatch', { ...ok, publish: 'true' }, blocked), /BLOCKED/);
@@ -45,7 +45,7 @@ const quiet = () => {};
     T.throws('...but never with fewer than 100,000 runs', () => planRuns('workflow_dispatch', { ...ok, runs: '99999', publish: 'true' }), /at least 100000/);
   }
   const sch = planRuns('schedule', {}, undefined, new Date('2026-11-09T10:17:00Z'));
-  T.chk('the schedule plans the nightly sports at 100,000 runs, publishing only an ACTIVE one (MLB and the WNBA after their seasons\' windows: not planned; the UFC every night; golf inside its window)', sch.map((r) => r.sport).join() === 'nfl,cfb,nhl,ufc,golf' && sch.every((r) => r.runs === '100000' && r.publish === (r.status === 'ACTIVE')));
+  T.chk('the schedule plans the nightly sports at 100,000 runs, publishing only an ACTIVE one (MLB and the WNBA after their seasons\' windows: not planned; the UFC every night; golf and tennis inside their windows)', sch.map((r) => r.sport).join() === 'nfl,cfb,nhl,ufc,golf,tennis' && sch.every((r) => r.runs === '100000' && r.publish === (r.status === 'ACTIVE')));
   T.eq('after its window (2026-12-20) golf is not planned either', planRuns('schedule', {}, undefined, new Date('2026-12-21T10:17:00Z')).map((r) => r.sport).join(), 'nfl,cfb,nhl,ufc');
   T.eq('college football plans its configured season, and a dispatch can name it', [sch[1].season, planRuns('workflow_dispatch', { ...ok, sport: 'cfb' })[0].sport], ['2026', 'cfb']);
   T.eq('the NHL is planned under its end-year season key', sch.find((r) => r.sport === 'nhl')!.season, '2027');

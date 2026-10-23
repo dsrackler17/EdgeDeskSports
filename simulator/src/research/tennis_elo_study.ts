@@ -36,7 +36,7 @@ import { readFeed, loadMatches, walk, setFromBo3, bo5FromSet, STUDY_FILE, ELO_53
 import { streamFor } from '../core/prng.ts';
 import { sha256Hex } from '../core/canonical.ts';
 
-export const STUDY_SCHEMA = 'edgedesk_sim_tennis_elo_study_v1';
+import { STUDY_SCHEMA } from '../sports/tennis/activation.ts';
 const QUICK = process.argv.includes('--quick');
 export const TUNE_FROM = Date.parse('2023-01-01T00:00:00Z'), HOLD_FROM = Date.parse('2025-01-01T00:00:00Z');
 const BOOT = QUICK ? 200 : 1000;

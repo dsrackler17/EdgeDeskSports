@@ -27,23 +27,25 @@ import { NBA_2026_27 } from '../sports/nba/config.ts';
 import { WNBA_2026 } from '../sports/wnba/config.ts';
 import { UFC_2026 } from '../sports/ufc/config.ts';
 import { GOLF_2026 } from '../sports/golf/config.ts';
+import { TENNIS_2026 } from '../sports/tennis/config.ts';
 import fs from 'node:fs';
 
 /** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season (the NHL and the NBA by their end year: 2027 = 2026-27) */
-export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, nhl: NHL_2027.season, cfb: CFB_2026.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season, nba: NBA_2026_27.season, ufc: UFC_2026.season, golf: GOLF_2026.season };
+export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, nhl: NHL_2027.season, cfb: CFB_2026.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season, nba: NBA_2026_27.season, ufc: UFC_2026.season, golf: GOLF_2026.season, tennis: TENNIS_2026.season };
 /** the nightly schedule: college football runs nightly, dry until it is ACTIVE (a night with unchanged inputs
     reuses the published run: the idempotency key); MLB runs only inside its season's nightly window
     (inSeason: through the World Series); college basketball joins only once its official bracket file
     exists (inputsReady); the UFC runs every night of the year (its feeds are refreshed daily at 09:41 UTC by the
     Simulator sports-data job, before this run). The NBA runs on its own schedule (NBA_CRON), late enough in the day that the
     previous night's results are in the data (results.current); golf runs every tour's current event each night through its
-    configured window (a night between events simulates nothing and says so) */
-export const NIGHTLY = ['nfl', 'cfb', 'nhl', 'mlb', 'ncaam', 'wnba', 'ufc', 'golf'];
+    configured window (a night between events simulates nothing and says so); tennis runs every singles main draw whose order
+    is known, and the day's matches, each night through its configured window (its scoreboard is re-read live at run time) */
+export const NIGHTLY = ['nfl', 'cfb', 'nhl', 'mlb', 'ncaam', 'wnba', 'ufc', 'golf', 'tennis'];
 export const NBA_CRON = '47 15 * * *';
 /** the sports a scheduled run plans: the NBA's own cron plans the NBA, any other the nightly list */
 export function scheduledSports(cron: string | undefined): string[] { return (cron || '').trim() === NBA_CRON ? ['nba'] : NIGHTLY; }
 /** the last date (UTC) a sport's configured season is run nightly; absent = every night */
-const NIGHTLY_THROUGH: Record<string, string> = { mlb: MLB_2026.nightly_through, wnba: WNBA_2026.nightly_through, golf: GOLF_2026.nightly_through };
+const NIGHTLY_THROUGH: Record<string, string> = { mlb: MLB_2026.nightly_through, wnba: WNBA_2026.nightly_through, golf: GOLF_2026.nightly_through, tennis: TENNIS_2026.nightly_through };
 export function inSeason(sport: string, now: Date): { ready: boolean; reason: string } {
   const until = NIGHTLY_THROUGH[sport];
   return !until || now.toISOString().slice(0, 10) <= until ? { ready: true, reason: '' } : { ready: false, reason: 'the configured season ran nightly through ' + until };
