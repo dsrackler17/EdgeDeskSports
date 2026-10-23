@@ -131,6 +131,8 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
       lf5: logit(v.finish_5), cum, k: { tf: 'tf_' + v.key, ch: 'tfch_' + v.key, un: 'tfu_' + v.key, none: 'tfnone_' + v.key, fin: 'tffin_' + v.key } };
   });
   const DI = new Map(D.map((x, i) => [x.key, i]));
+  /* each fighter's title-path division (the sum-rule group) */
+  const group = d.fighters.map((f) => f.division);
   for (const x of D) if (x.champion == null) throw new Error('division ' + x.key + ' has no champion among the entities');
   /* per-run working state, reset at the start of every run */
   const rating = new Float64Array(nE), last = new Float64Array(nE), res = new Uint8Array(nE), wins = new Uint8Array(nE);
@@ -165,13 +167,19 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
       if (aWins ? b.next.a : b.next.b) { marks.mark(w, oNext); marks.mark(w, fin ? oFin : oDec); }
       regress(w, b.t); regress(l, b.t);
       last[w] = b.t; last[l] = b.t; res[w] = 1; res[l] = 2; wins[w]++;
-      if (b.title) {
-        const j = DI.get(b.title.division)!;
+      /* a booked title fight whose champion already lost the belt in this run (a second booked title fight in the
+         division) is no longer for the title: it is simulated as a bout and counted */
+      const tj = b.title ? DI.get(b.title.division)! : -1;
+      if (b.title && champ[tj] !== b.a && champ[tj] !== b.b) marks.diag('title_void_' + b.title.division);
+      if (b.title && (champ[tj] === b.a || champ[tj] === b.b)) {
+        const j = tj;
         const c = champ[j], ch = c === w ? l : w;
         marks.mark(c, oShot); marks.mark(ch, oShot);
         marks.diag(D[j].k.tf);
         if (w !== c) { marks.mark(w, oWin); champ[j] = w; marks.diag(D[j].k.ch); const ord = order[j]; const pw = ord.indexOf(w); if (pw >= 0) ord.splice(pw, 1); ord.unshift(c); }
-      } else if (b.division != null && DI.has(b.division)) {
+      } else if (b.division != null && DI.has(b.division) && group[w] === b.division) {
+        /* only a fighter of this division moves in its order: a champion of another division booked here (a
+           superfight) wins the bout but never enters this division's title path */
         moveAhead(order[DI.get(b.division)!], w, l);
       }
       if (marks.tracing) marks.trace({ ev: 'bout', id: b.id, winner: entities[w].id, finish: fin, round });

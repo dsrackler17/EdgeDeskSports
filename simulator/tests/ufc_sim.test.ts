@@ -61,7 +61,7 @@ function synth(): UfcInputData {
     bout('B2', '2026-11-01T01:00:00Z', 'U1', 'U2', 0.62, LW),
     bout('B3', '2026-11-08T01:00:00Z', 'W3', 'W1', 0.7, WF),          // #3 v #1: the rank rule
     bout('B4', '2026-11-15T01:00:00Z', 'L3', 'M1', 0.5, LW),
-    bout('B5', '2026-11-22T01:00:00Z', 'WC', 'L2', 0.5, 'Catch Weight', { division: null, weight_class: 'Catch Weight' })
+    bout('B5', '2026-11-22T01:00:00Z', 'WC', 'L2', 0.5, LW)          // another division's champion booked here: never enters this title path
   ];
   const rate = (division: string, n: number) => ({ division, window: { from: '2021-10-18', to: '2026-10-18', years: 5 }, title_fights: n, per_year: n / 5, interim_fights: 0, last_title_fight: '2026-06-01', incumbent: null, incumbent_since: null, champion_fights: n, champion_won: n, champion_lost: 0, draws_nc: 0 });
   const div = (key: string, champion: string, contenders: string[], booked: string | null, start: string, minGap: number, n: number) => ({ key, label: key, champion, contenders, moved_out: [], rate: rate(key, n),
@@ -110,7 +110,7 @@ for (const b of d0.bouts) {
   K.chk('SYNTHETIC: both title-fight fighters always get a shot (the booked title fight)', cnt('LC', 'title_shot') === N && cnt('L1', 'title_shot') === N);
   K.eq('SYNTHETIC: no title won without a shot; nobody unranked and never booked into contention wins a title', [m.entities.every((e) => cnt(e.id, 'win_title') <= cnt(e.id, 'title_shot')), cnt('U2', 'title_shot')], [true, 0]);
   K.eq('SYNTHETIC: a contender coming off a loss with no booked bout never gets a shot (L4)', cnt('L4', 'title_shot'), 0);
-  K.chk('SYNTHETIC: a contender coming off a loss gets a shot only by winning a booked bout first (L2: shots <= wins of its catchweight bout)', cnt('L2', 'title_shot') <= cnt('L2', 'win_next_bout') && cnt('L2', 'title_shot') > 0);
+  K.chk('SYNTHETIC: a contender coming off a loss gets a shot only by winning a booked bout first (L2: shots <= wins of its booked bout)', cnt('L2', 'title_shot') <= cnt('L2', 'win_next_bout') && cnt('L2', 'title_shot') > 0);
 }
 
 /* ---- the invariants run by run, from full traces ---- */
@@ -138,6 +138,7 @@ for (const b of d0.bouts) {
         const t = Date.parse(x.date + 'T00:00:00Z'), dv = d0.divisions.find((y) => y.key === x.division)!;
         if (x.champion !== champ[x.division]) bad.push('run ' + r + ': ' + x.division + ' title fight with ' + x.champion + ' while ' + champ[x.division] + ' reigns');
         if (res[x.challenger] !== 'W') bad.push('run ' + r + ': challenger ' + x.challenger + ' not coming off a win');
+        if (d0.fighters.find((f) => f.id === x.challenger)!.division !== x.division) bad.push('run ' + r + ': challenger ' + x.challenger + ' is not of the ' + x.division + ' division');
         if (t + DAY - last[x.challenger] < minRest) bad.push('run ' + r + ': challenger ' + x.challenger + ' rested ' + Math.round((t - last[x.challenger]) / DAY) + ' days');
         if (t > horizon + DAY) bad.push('run ' + r + ': title fight after the horizon');
         if (t + DAY < Date.parse(dv.renewal.start + 'T00:00:00Z') + dv.renewal.min_gap_days * DAY) bad.push('run ' + r + ': title fight before the renewal\'s earliest date');
@@ -158,7 +159,7 @@ for (const b of d0.bouts) {
     for (const f of d0.fighters) if (hit.has(f.id + ':win_title') && !hit.has(f.id + ':title_shot')) bad.push('run ' + r + ': ' + f.id + ' won a title without a shot');
     if (bad.length > 5) break;
   }
-  K.chk('per run (3,000 traced runs): one holder per division, the replayed champion; a champion who loses is not champion; every title fight\'s champion reigns, its challenger comes off a win and rested the minimum, inside the renewal window and the horizon', !bad.length, bad.slice(0, 5));
+  K.chk('per run (3,000 traced runs): one holder per division, the replayed champion; a champion who loses is not champion; every title fight\'s champion reigns, its challenger is of the division (never another division\'s champion booked there), comes off a win and rested the minimum, inside the renewal window and the horizon', !bad.length, bad.slice(0, 5));
   K.chk('the rank rule: when #3 beats #1 (and has rested), #3 takes the next shot (' + w3First + ' of ' + w3Won + ' runs)', w3Won > 100 && w3First === w3Won, { w3First, w3Won });
 }
 
