@@ -29,3 +29,27 @@ const KEEP=['game_id','season','week','season_type','start_date','completed',
 
 The suites read this only when `football/fbs/.cache/` is absent, so a local
 run after `npm run cfb:fbs` still exercises the live feed.
+
+## `game_context_2026_wk07.json.gz`
+
+The **real** inputs `tools/football/build_game_research.js` read on
+2026-10-22 (commit `0743e51f`), trimmed to the games
+`game_context.test.js` asserts on: the NFL's Thursday game, NE at CHI (its
+referee, its trip and its consensus line), and two FBS games that between
+them carry every edge signal the test looks for (Colorado State v San Diego
+State, Michigan v Indiana). A game is kept or left out whole; nothing in a
+kept game is edited.
+
+It exists because the test used to build from the live slates, which roll
+forward every week. Once NE at CHI was played it left
+`football/nfl/slate.json` and the suite failed on every pull request.
+
+Regenerate it, or move it to another week by changing the revision and the
+game lists at the top of the script:
+
+```sh
+node tools/football/game_context_fixture.js --rev 0743e51f
+```
+
+The script reads the files with `git show`, so the revision must be in your
+clone (`git fetch --unshallow` in a shallow one).

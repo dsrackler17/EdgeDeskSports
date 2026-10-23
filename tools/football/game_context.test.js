@@ -11,6 +11,7 @@ const GC = require(path.join(ROOT, 'lib', 'edgedesk_game_context.js'));
 const CTX = require(path.join(__dirname, 'game_context.js'));
 const GS = require(path.join(ROOT, 'lib', 'edgedesk_game_snapshot.js'));
 const B = require(path.join(__dirname, 'build_game_research.js'));
+const FX = require(path.join(__dirname, 'game_context_fixture.js'));
 
 let pass = 0, fail = 0;
 function chk(name, ok, detail) { if (ok) pass++; else { fail++; console.log('  FAIL ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 400) : '')); } }
@@ -56,7 +57,10 @@ chk('college: the home conference’s crews against all FBS crews (tiny samples 
 chk('college: an assigned referee with numbers wins over the conference', GC.cfbCrew({ conference: 'SEC', baselines: base, season: 2026, referee: { referee: 'Jane Doe', flags_pg: 9, games: 20 } }).referee === 'Jane Doe');
 
 /* ---------------------------------------------------------------- snapshots */
-const R = B.build({ now: '2026-10-22T13:00:00Z', history: {}, previous: null });
+/* the slates as committed on 2026-10-22 (tools/football/game_context_fixture.js), not the live ones: those roll
+   forward every week, and NE at CHI left them once it was played */
+const fx = FX.load();
+const R = B.build(Object.assign({ now: fx.source.now, history: {}, previous: null }, fx.inputs));
 const ne = R.current.games.find((g) => g.game_key === 'nfl|2026_07_NE_CHI');
 chk('snapshot: NE at CHI carries its referee, its trip and the consensus line, apart from the model', ne && ne.officials && ne.officials.referee === 'Alan Eck' && ne.travel && ne.travel.away.miles > 800 && ne.consensus && ne.consensus.home_line === -3, ne && [ne.officials, ne.consensus]);
 chk('…the NFL referee always earns a place in What to watch for', R.current.games.filter((g) => g.league === 'nfl' && g.officials && g.officials.known && g.model.available).every((g) => g.insights.some((i) => i.family === 'officials')));
@@ -66,8 +70,8 @@ chk('snapshot: college games carry the edge signals the slate measures (altitude
 chk('snapshot: college games carry their conference crews and travel', cfb.filter((g) => g.officials).length > cfb.length / 2 && cfb.filter((g) => g.travel).length > cfb.length / 2);
 chk('snapshot: the insight list never repeats a family and holds at most six', R.current.games.every((g) => g.insights.length <= 6 && new Set(g.insights.map((i) => i.family)).size === g.insights.length));
 chk('snapshot: the reserve flag is internal, never published', R.current.games.every((g) => g.insights.every((i) => !('reserve' in i))));
-const sp = GS.graphicSpec(ne);
-chk('graphic spec: carries the consensus line for the edge strip', sp.consensus && sp.consensus.total === 50.5);
+const sp = ne ? GS.graphicSpec(ne) : null;
+chk('graphic spec: carries the consensus line for the edge strip', !!(sp && sp.consensus && sp.consensus.total === 50.5), sp && sp.consensus);
 
 console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | game context (referees, travel, rest) | ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
