@@ -43,6 +43,8 @@ function main() {
   const H = estimateHazards(D, EST);
   /* holdout evaluation */
   const rows: Array<{ season: number; g: number; m: number; p: number; y: number }> = [];
+  /* return within the rest of the regular season, by as-of point, carried or in-season, minutes tier */
+  const cls: Record<string, { n: number; p: number; y: number }> = {};
   for (const S of HOLDOUT) {
     const log = teamGameLog(D, [S - 1, S]);
     for (const g of POINTS) {
@@ -63,6 +65,8 @@ function main() {
         for (const a of scan.absent(team, S)) {
           const d = returnDistribution(H, a, reg, 'holdout');
           const nx = next.get(a.p); const at = nx && nx.team === team ? nx.j : Infinity;
+          const ck = 'g' + g + '|' + (a.carried ? 'carried' : 'in_season') + '|' + (a.exp_min >= 24 ? '24+' : '10-24');
+          const cc = cls[ck] || (cls[ck] = { n: 0, p: 0, y: 0 }); cc.n++; cc.p += 1 - d.out_for_season; cc.y += at <= reg ? 1 : 0;
           for (const m of WITHIN) {
             if (m > reg) continue;
             const p = d.periods.filter((q) => q.period <= m).reduce((u, q) => u + q.probability, 0);
@@ -84,7 +88,8 @@ function main() {
   const out = { schema: 'edgedesk_nba_return_hazards_v1', generated_at: new Date().toISOString(),
     definition: 'tracked absence: last appearance (minutes played) for the club in the current or previous season, not in its latest game, expected minutes (player-model EWM, half-life 8 games) >= ' + prod.min_minutes + '; hazard = share of at-risk club games in which he played, by (carried from an earlier season, minutes tier, games missed so far)',
     estimation_seasons: EST, holdout_seasons: HOLDOUT, as_of_points: POINTS,
-    holdout: { rows: rows.length, by_within: summary, note: 'brier_never_returns is the served frozen projection\'s implicit assumption (a missing player never comes back); brier_holdout_base_rate is an oracle constant equal to the holdout\'s own observed rate (not available ahead of time)' },
+    holdout: { rows: rows.length, by_within: summary,
+      by_class: Object.entries(cls).sort().map(([k, c]) => { const [g, kind, tier] = k.split('|'); return { as_of_games: Number(g.slice(1)), kind, minutes: tier, n: c.n, predicted_return_this_season: round(c.p / c.n), observed: round(c.y / c.n) }; }), note: 'brier_never_returns is the served frozen projection\'s implicit assumption (a missing player never comes back); brier_holdout_base_rate is an oracle constant equal to the holdout\'s own observed rate (not available ahead of time)' },
     production: prod,
     code_sha256: { 'simulator/src/sports/nba/availability.ts': sha256Hex(fs.readFileSync(path.join(REPO, 'simulator', 'src', 'sports', 'nba', 'availability.ts'))) } };
   fs.writeFileSync(HAZARD_FILE, JSON.stringify(out, null, 1) + '\n');
