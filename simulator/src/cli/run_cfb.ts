@@ -38,9 +38,14 @@ export async function executeCfb(args: CliArgs, log: (s: string) => void = conso
   const { agg, module, workers } = await runPlan({ sport: 'cfb', data: d, seed, runs: args.runs, workers: args.workers, traceRuns: args.traceRuns });
   clearInterval(sampler); peak = Math.max(peak, process.memoryUsage().rss);
   const status = cfbMathStatus(d);
-  const rec: Record<string, { w: number; l: number }> = {};
-  d.teams.forEach((t) => { rec[t.id] = { w: 0, l: 0 }; });
-  for (const g of d.games) if (g.done) {
+  /* games: every regular-season game on the team's schedule, played or not (the games its wins histogram counts),
+     so the reader can turn the histogram into a projected record and an unbeaten regular season */
+  const rec: Record<string, { w: number; l: number; games: number }> = {};
+  d.teams.forEach((t) => { rec[t.id] = { w: 0, l: 0, games: 0 }; });
+  for (const g of d.games) {
+    if (g.home >= 0) rec[d.teams[g.home].id].games++;
+    if (g.away >= 0) rec[d.teams[g.away].id].games++;
+    if (!g.done) continue;
     const hw = (g.home_points as number) > (g.away_points as number);
     if (g.home >= 0) rec[d.teams[g.home].id][hw ? 'w' : 'l']++;
     if (g.away >= 0) rec[d.teams[g.away].id][hw ? 'l' : 'w']++;
