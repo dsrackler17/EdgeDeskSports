@@ -1,0 +1,345 @@
+{
+ "schema": "edgedesk_sim_mlb_strength_uncertainty_v1",
+ "built_at": "2026-10-23T13:00:19.400Z",
+ "served_model": {
+  "version": "1.1.0",
+  "config_sha256": "cb577719f58a849f80a6b2d9778805e914fb645e15ac30a0171b039f424a4286"
+ },
+ "inputs": {
+  "data_sha256": {
+   "mlb/history/data/2010.csv": "bc3c4b8039be18ea83553d21fb5aa33da01015169c2a02d845cdc2eb4cd28f8d",
+   "mlb/history/data/2011.csv": "a64ecde5cafcf3dd9e5f5ad5ad33243b7bd6e1a6143ba1cef8773dee6f56d825",
+   "mlb/history/data/2012.csv": "5fb017c4b002946f870354f67ad8e99241fb6833f25b76875c6db95755086a83",
+   "mlb/history/data/2013.csv": "2946b5750d8ebaf1097960c6090918d8409aa5b5927d6f4e33dbec149b06a2f0",
+   "mlb/history/data/2014.csv": "15576f6e59b6a83efa42e4fd7208f5081e9b1a959f0d58df8b446c0c4c6e40d0",
+   "mlb/history/data/2015.csv": "b40eaae8ec3311ba44c31e9cdca9d61b9c76b88a7fe66e40220be6c21a0c1120",
+   "mlb/history/data/2016.csv": "9774d6a3f153000fc78771de59ed7d35b19a40c48fca777ac041e98ddebaa5cb",
+   "mlb/history/data/2017.csv": "cdfc777fbb9e8151447906abf1331aa08e569b1659a7444ce2f14ccb77587dde",
+   "mlb/history/data/2018.csv": "f5e4cddbbed78ce13f2f2c957321ea693fa87d0a1d988d5e8ac3add0d0481107",
+   "mlb/history/data/2019.csv": "52f24c0be016aedbd0529d621090be43cfc50ab98c78aaa5fc148ddf7ec3394d",
+   "mlb/history/data/2020.csv": "98488f1322cd2d50f72d56da23de0226391abed8fe433ff7340ea21e5d9ebc49",
+   "mlb/history/data/2021.csv": "710b4479af29806af4a5ef21d109b44d69c87978e9361efa0ce139edf4110f64",
+   "mlb/history/data/2022.csv": "ff2d85185d25b9b3e87652d19aa95f365c78cfcf43c3e9f7ef599baa67a97a40",
+   "mlb/history/data/2023.csv": "b887b44564d648f85db61d75e2139a18d736b0d6319a5aadc0a0e52bf1d7f333",
+   "mlb/history/data/2024.csv": "969a22ff47e4d6533966feba0b15f4c42dd878f16d321606f2f1301aa63ff084",
+   "mlb/history/data/2025.csv": "bc982f2f7bdafaa84d5d25ab59336779bb538002bed3ad43133f8e7dddcb3dec"
+  },
+  "rotation_study_sha256": "9cdc6a79ac821665d9aa4c743036bdeea9745d24749bf814de80ae77a2049f89",
+  "model_sha256": "df7f846f40fee2779df665520860f927de708979d6e476d0e3116c14474ec57f"
+ },
+ "units": "log runs: theta_t moves a club's runs scored by exp(theta/2) and runs allowed by exp(-theta/2); phi_p moves the runs a starter's opponents score by exp(-phi)",
+ "sigma_sp": {
+  "value": 0.066721,
+  "ci95": [
+   0.045263,
+   0.082442
+  ],
+  "holdout_2025": 0,
+  "method": "within-pitcher minus within-club covariance of relative run residuals, remaining starts, ESTIMATION seasons",
+  "covariances": {
+   "same_pitcher": 0.012392,
+   "same_club_other_pitcher": 0.007941
+  },
+  "by_season": {
+   "2012": {
+    "same_pitcher": 0.007363,
+    "same_club_other_pitcher": 0.005765,
+    "pairs": 126945
+   },
+   "2013": {
+    "same_pitcher": 0.012145,
+    "same_club_other_pitcher": 0.005562,
+    "pairs": 126413
+   },
+   "2014": {
+    "same_pitcher": 0.013679,
+    "same_club_other_pitcher": 0.0039,
+    "pairs": 130125
+   },
+   "2015": {
+    "same_pitcher": 0.010135,
+    "same_club_other_pitcher": 0.01173,
+    "pairs": 123006
+   },
+   "2016": {
+    "same_pitcher": 0.016067,
+    "same_club_other_pitcher": 0.008356,
+    "pairs": 121153
+   },
+   "2017": {
+    "same_pitcher": 0.012077,
+    "same_club_other_pitcher": 0.01293,
+    "pairs": 118952
+   },
+   "2018": {
+    "same_pitcher": 0.008729,
+    "same_club_other_pitcher": 0.001489,
+    "pairs": 120791
+   },
+   "2019": {
+    "same_pitcher": 0.014735,
+    "same_club_other_pitcher": 0.011377,
+    "pairs": 119280
+   },
+   "2021": {
+    "same_pitcher": 0.017638,
+    "same_club_other_pitcher": 0.010664,
+    "pairs": 111639
+   },
+   "2022": {
+    "same_pitcher": 0.014126,
+    "same_club_other_pitcher": 0.00479,
+    "pairs": 116630
+   },
+   "2023": {
+    "same_pitcher": 0.010176,
+    "same_club_other_pitcher": 0.010647,
+    "pairs": 113822
+   },
+   "2025": {
+    "same_pitcher": 0.006372,
+    "same_club_other_pitcher": 0.006482,
+    "pairs": 115922
+   }
+  }
+ },
+ "replacement_starter": {
+  "s": -0.036488,
+  "starts": 66044,
+  "runs_over_lambda_at_s0": 1.037162,
+  "rotation_members_runs_over_lambda": 1.0035,
+  "member_starts": 139166
+ },
+ "sigma_team_by_stage": {
+  "20": {
+   "sigma_team": 0.136979,
+   "ci95": [
+    0.124639,
+    0.150108
+   ],
+   "estimation": {
+    "seasons": [
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023
+    ],
+    "club_seasons": 330,
+    "remaining_games": 23365,
+    "msd_over_simulated_variance_at_sigma0": 2.33437
+   },
+   "holdout_2025": {
+    "msd": 42.547469,
+    "simulated_variance_at_sigma0": 35.736169,
+    "sigma_matching_2025": 0.052723
+   }
+  },
+  "40": {
+   "sigma_team": 0.135766,
+   "ci95": [
+    0.11703,
+    0.154778
+   ],
+   "estimation": {
+    "seasons": [
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023
+    ],
+    "club_seasons": 330,
+    "remaining_games": 20058,
+    "msd_over_simulated_variance_at_sigma0": 2.179887
+   },
+   "holdout_2025": {
+    "msd": 44.480395,
+    "simulated_variance_at_sigma0": 30.555604,
+    "sigma_matching_2025": 0.084414
+   }
+  },
+  "60": {
+   "sigma_team": 0.134891,
+   "ci95": [
+    0.106869,
+    0.161459
+   ],
+   "estimation": {
+    "seasons": [
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023
+    ],
+    "club_seasons": 330,
+    "remaining_games": 16778,
+    "msd_over_simulated_variance_at_sigma0": 1.953384
+   },
+   "holdout_2025": {
+    "msd": 52.663997,
+    "simulated_variance_at_sigma0": 25.458263,
+    "sigma_matching_2025": 0.150145
+   }
+  },
+  "81": {
+   "sigma_team": 0.149978,
+   "ci95": [
+    0.113538,
+    0.184391
+   ],
+   "estimation": {
+    "seasons": [
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023
+    ],
+    "club_seasons": 330,
+    "remaining_games": 13306,
+    "msd_over_simulated_variance_at_sigma0": 1.919298
+   },
+   "holdout_2025": {
+    "msd": 36.580127,
+    "simulated_variance_at_sigma0": 20.017194,
+    "sigma_matching_2025": 0.142014
+   }
+  },
+  "100": {
+   "sigma_team": 0.146967,
+   "ci95": [
+    0.115072,
+    0.182075
+   ],
+   "estimation": {
+    "seasons": [
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023
+    ],
+    "club_seasons": 330,
+    "remaining_games": 10145,
+    "msd_over_simulated_variance_at_sigma0": 1.683863
+   },
+   "holdout_2025": {
+    "msd": 18.258056,
+    "simulated_variance_at_sigma0": 15.299354,
+    "sigma_matching_2025": 0.077894
+   }
+  },
+  "120": {
+   "sigma_team": 0.135373,
+   "ci95": [
+    0.09332,
+    0.176739
+   ],
+   "estimation": {
+    "seasons": [
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023
+    ],
+    "club_seasons": 330,
+    "remaining_games": 6851,
+    "msd_over_simulated_variance_at_sigma0": 1.408508
+   },
+   "holdout_2025": {
+    "msd": 10.169898,
+    "simulated_variance_at_sigma0": 10.155508,
+    "sigma_matching_2025": 0.010495
+   }
+  },
+  "140": {
+   "sigma_team": 0.109744,
+   "ci95": [
+    0,
+    0.164383
+   ],
+   "estimation": {
+    "seasons": [
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2023
+    ],
+    "club_seasons": 330,
+    "remaining_games": 3569,
+    "msd_over_simulated_variance_at_sigma0": 1.143231
+   },
+   "holdout_2025": {
+    "msd": 8.913047,
+    "simulated_variance_at_sigma0": 5.338705,
+    "sigma_matching_2025": 0.257967
+   }
+  }
+ },
+ "postseason": {
+  "sigma_team": "the stage-140 value",
+  "note": "no remaining regular-season games exist after the season to calibrate against; the last stage's sigma is carried, not tested"
+ },
+ "method": {
+  "grid": "0 to 0.30 by 0.01",
+  "draws_per_cell": 200,
+  "common_random_numbers": true,
+  "bootstrap": "1000 season resamples (seed 20261023)",
+  "rotation": "simulator_parameters of simulator/data/mlb_rotation_study.json",
+  "stages": [
+   20,
+   40,
+   60,
+   81,
+   100,
+   120,
+   140
+  ]
+ }
+}

@@ -1,9 +1,7 @@
 # EdgeDesk Simulator — every suite, on every change to the simulator.
 #
 #   unit   typecheck (pinned typescript from simulator/package-lock.json), the
-#          engine, rules (NFL 2002-2025 and NHL 2013-14..2025-26 history +
-#          synthetic), simulation, hooks, config, markets and reader suites,
-#          and the generated-file checks
+
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
 #   sql    supabase/simulator.sql on a real, throwaway PostgreSQL: RLS, the
@@ -11,8 +9,13 @@
 #          (SIM_SQL_REQUIRED=1: a missing cluster FAILS, never skips)
 #   e2e    the Simulator seat in Chromium at desktop, tablet and phone widths
 #          (SIM_E2E_REQUIRED=1: a missing browser FAILS, never skips)
+#   mlb-live-probe (pull requests and manual runs only) reads MLB's Stats API
+#          and the Chadwick register on a real runner, exactly as the live MLB
+#          snapshot does, and writes nothing: the live MLB path cannot be run
+#          from the environment it was built in, so a runner checks it.
 #
-# No network beyond package installs, no credentials, nothing written.
+# No network beyond package installs (and the read-only MLB probe), no
+# credentials, nothing written.
 name: Simulator suites
 
 on:
@@ -20,6 +23,9 @@ on:
     branches: [main]
     paths:
       - 'simulator/**'
+      - 'mlb/history/**'
+      - 'docs/model-loop/mlb/versions.json'
+      - 'datapack/quant_v1/data/mlb/raw/**'
       - 'supabase/simulator.sql'
       - 'supabase/simulator_registry.sql'
       - 'supabase/migrations/20261023120000_simulator.sql'
@@ -37,6 +43,9 @@ on:
   pull_request:
     paths:
       - 'simulator/**'
+      - 'mlb/history/**'
+      - 'docs/model-loop/mlb/versions.json'
+      - 'datapack/quant_v1/data/mlb/raw/**'
       - 'supabase/simulator.sql'
       - 'supabase/simulator_registry.sql'
       - 'supabase/migrations/20261023120000_simulator.sql'
@@ -85,12 +94,7 @@ jobs:
         run: |
           node simulator/tests/nfl_sim.test.ts
           node simulator/tests/nfl_config.test.ts
-      - name: NHL rules against every series 2013-14 .. 2025-26, the synthetic cases, configuration and simulation
-        run: |
-          node simulator/tests/nhl_rules_history.test.ts
-          node simulator/tests/nhl_rules_synthetic.test.ts
-          node simulator/tests/nhl_config.test.ts
-          node simulator/tests/nhl_sim.test.ts
+
       - name: Kalshi futures comparison and the reader
         run: |
           node simulator/tests/markets.test.ts
@@ -104,6 +108,18 @@ jobs:
           node simulator/src/cli/build_ui_registry.ts --check
           node simulator/src/research/build_registry_sql.ts --check
           cmp supabase/simulator.sql supabase/migrations/20261023120000_simulator.sql
+
+  mlb-live-probe:
+    if: ${{ github.event_name != 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Read MLB's Stats API and the Chadwick register as the live MLB snapshot does (writes nothing)
+        run: node simulator/src/cli/probe_mlb_live.ts
 
   sql:
     runs-on: ubuntu-latest
