@@ -83,8 +83,8 @@ export function validateUfcInputs(snap: UfcSnapshot, nowMs: number = Date.now())
   return out;
 }
 
-/** a probability from counts, as the reader shows it */
-const P = (k: number, n: number) => { const s = outcomeStat(k, n); return { count: k, probability: s.probability, mcse: s.mcse }; };
+/** a share from counts, as the reader shows it (rounded: the count is exact, the summary rides in validation_summary) */
+const P = (k: number, n: number) => { const s = outcomeStat(k, n); return { count: k, probability: Math.round(s.probability * 1e6) / 1e6, mcse: Math.round(s.mcse * 1e7) / 1e7 }; };
 
 /** what the reader shows beside the per-fighter outcomes: the cards bout by bout, each division's title path, the model's record */
 export function readerSummary(d: UfcInputData, results: ResultsDoc, diags: Record<string, number>, n: number) {
@@ -101,7 +101,7 @@ export function readerSummary(d: UfcInputData, results: ResultsDoc, diags: Recor
     c.bouts.push({ bout_id: b.bout_id, start: b.start, order: b.order, weight_class: b.weight_class, division: b.division, rounds: b.rounds, title: b.title,
       a: side(b.a), b: side(b.b), served_p_a: b.p_a, published_p_a: b.p_a_published, basis: b.basis,
       a_win: P(aw, n), b_win: P(n - aw, n), a_finish: P(sa, n), a_decision: P(aw - sa, n), b_finish: P(sb, n), b_decision: P(n - aw - sb, n),
-      finish: P(sa + sb, n), decision: P(n - sa - sb, n), finish_rounds: fa.map((x, k) => P(x + fb[k], n)), a_finish_rounds: fa.map((x) => P(x, n)), b_finish_rounds: fb.map((x) => P(x, n)),
+      finish: P(sa + sb, n), decision: P(n - sa - sb, n), finish_rounds: fa.map((x, k) => P(x + fb[k], n)),
       new_champion: b.title ? P(b.title.champion === b.a ? n - aw : aw, n) : null });
   }
   for (const c of cards.values()) c.bouts.sort((x: any, y: any) => (x.order ?? 99) - (y.order ?? 99) || (x.start < y.start ? 1 : -1));
