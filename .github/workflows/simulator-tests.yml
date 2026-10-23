@@ -35,8 +35,7 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
-      - 'hockey/model/**'
-      - 'hockey/data/teams.json'
+
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -55,8 +54,7 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
-      - 'hockey/model/**'
-      - 'hockey/data/teams.json'
+
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -103,6 +101,15 @@ jobs:
         run: node simulator/tests/cli.test.ts
       - name: The publisher's client side (bounded retries, key redaction, call order, failure handling)
         run: node simulator/tests/publish.test.ts
+      - name: NBA rules against every postseason 2006-07..2025-26, and the synthetic cases
+        run: |
+          node simulator/tests/nba_rules_history.test.ts
+          node simulator/tests/nba_rules_synthetic.test.ts
+      - name: NBA configuration, the served model, availability and the simulation (committed snapshots)
+        run: |
+          node simulator/tests/nba_config.test.ts
+          node simulator/tests/nba_model.test.ts
+          node simulator/tests/nba_sim.test.ts
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check

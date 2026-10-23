@@ -2,6 +2,8 @@
 import type { SimModule } from '../core/engine.ts';
 import { nflModule } from './nfl/module.ts';
 import type { NflInputData } from './nfl/inputs.ts';
+import { nbaModule } from './nba/module.ts';
+import type { NbaInputData } from './nba/inputs.ts';
 
 
 export function buildModule(sport: string, data: unknown, opt: { seed: bigint; sigma?: number }): SimModule {

@@ -21,8 +21,7 @@
      --out DIR                local output directory (default simulator/out/<sport>-<season>-<stamp>)
      --trace-runs 0,1,2       runs to trace in full (at most 5)
      --allow-unreconciled     dry run only: proceed when the standings source is unavailable
-     --as-of YYYY-MM-DD       MLB: the morning to simulate from (history seasons: required; live: default today)
-     --confirm-through DATE   MLB history only: games before DATE (from --as-of) carry their actual starters as Confirmed
+
    Exit codes: 0 ok, 1 a gate blocked (nothing published), 2 invalid inputs or arguments, 3 publish failed.
    =========================================================================== */
 import fs from 'node:fs';
@@ -43,11 +42,12 @@ const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export interface CliArgs {
   sport: string; season: number; runs: number; seed: string | null; workers: number; snapshot: string | null; offline: boolean;
   publish: boolean; out: string | null; traceRuns: number[]; allowUnreconciled: boolean; maxUnsupportedFraction: number;
-  asOf: string | null; confirmThrough: string | null;
+
 }
+/** each sport's configured season (the NBA's is its end year: 2027 = 2026-27) */
+export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nba: NBA_2026_27.season };
 export function parseArgs(argv: string[]): CliArgs {
-  const a: CliArgs = { sport: 'nfl', season: NFL_2026.season, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
-    publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4, asOf: null, confirmThrough: null };
+
   const need = (i: number) => { if (argv[i + 1] == null || argv[i + 1].startsWith('--')) throw new Error(argv[i] + ' needs a value'); return argv[i + 1]; };
   let seasonGiven = false;
   for (let i = 0; i < argv.length; i++) {
@@ -66,10 +66,14 @@ export function parseArgs(argv: string[]): CliArgs {
       case '--trace-runs': a.traceRuns = need(i).split(',').filter(Boolean).map(Number); i++; break;
       case '--allow-unreconciled': a.allowUnreconciled = true; break;
       case '--as-of': a.asOf = need(i); i++; break;
-      case '--confirm-through': a.confirmThrough = need(i); i++; break;
+
       default: throw new Error('unknown option ' + k);
     }
   }
+  if (Number.isNaN(a.season)) a.season = SEASON_DEFAULT[a.sport] != null ? SEASON_DEFAULT[a.sport] : NFL_2026.season;
+  if (a.asOf != null && !(Number.isFinite(Date.parse(a.asOf)) && /^\d{4}-\d{2}-\d{2}/.test(a.asOf))) throw new Error('--as-of needs an ISO time');
+  if (a.publish && (a.asOf != null || a.allowIncompleteSchedule)) throw new Error('--as-of and --allow-incomplete-schedule are for dry runs only');
+  if ((a.asOf != null || a.allowIncompleteSchedule) && a.sport !== 'nba') throw new Error('--as-of and --allow-incomplete-schedule apply to the NBA only');
   if (!sportRegistry().some((s) => s.key === a.sport)) throw new Error('unknown sport ' + a.sport);
   if (a.sport === 'nhl' && !seasonGiven) a.season = NHL_2027.season;
   if (!Number.isInteger(a.season) || a.season < 2000 || a.season > 2100) throw new Error('bad season ' + a.season);
@@ -138,10 +142,6 @@ function writeOut(args: CliArgs, startedAt: string, snap: NflSnapshot | NhlSnaps
 }
 
 
-}
-
-function printSummary(o: RunOutcome, log: (s: string) => void) {
-  if (o.results.run.sport === 'mlb') return printMlbSummary(o, log);
   const r = o.results;
   log('runs ' + r.run.n_sims + ' · ' + (r.run.runtime_ms / 1000).toFixed(1) + ' s · ' + r.run.workers + ' worker(s) · peak RSS ' + r.run.peak_rss_mb + ' MB · ' + r.run.platform + ' ' + r.run.node);
   const pp = (o: any) => (100 * o.probability).toFixed(1).padStart(5) + '±' + (100 * 1.96 * o.mcse).toFixed(1);
