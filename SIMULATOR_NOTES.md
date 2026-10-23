@@ -362,7 +362,9 @@ reach divisional round, reach conference final, win conference, win Super Bowl.
   running run only) → `sim_publish_run`: one transaction under an advisory lock
   on `hashtextextended('sim:'||sport||':'||competition||':'||season, 0)` that
   re-checks every row count, every probability against its count, every format
-  sum and every gate, then marks the run completed and moves the pointer —
+  sum (except a group the rule itself skips, as the engine's check does:
+  college football's teams outside any title game) and every gate, then
+  marks the run completed and moves the pointer —
   unless a newer input is already published, in which case the run is
   recorded `superseded`. `sim_fail_run` records a failure; **a failed run never
   replaces the published one**.
