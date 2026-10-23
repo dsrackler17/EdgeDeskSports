@@ -30,7 +30,7 @@ const OUT = get('--out') || path.join('simulator', 'out', 'sources');
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
-const PAGES: Array<{ id: string; url: string; links?: RegExp }> = [
+const PAGES: Array<{ id: string; url: string; links?: RegExp; grep?: RegExp }> = [
   /* the NFL's published tiebreaking procedures (operations.nfl.com/the-rules/nfl-tiebreaking-procedures answered 404 on 2026-10-23) */
   { id: 'nfl_standings_tiebreaking', url: 'https://www.nfl.com/standings/tie-breaking-procedures' },
   /* what changed for 2026: the league's own list of adopted rules, bylaws and resolutions, and the proposals before the vote */
@@ -43,8 +43,11 @@ const PAGES: Array<{ id: string; url: string; links?: RegExp }> = [
   /* Super Bowl LXI: site, and the rule that names the designated home team (it alternates between the conferences) */
   { id: 'nfl_super_bowl_lxi', url: 'https://www.nfl.com/news/sofi-stadium-approved-to-host-super-bowl-lxi-in-2027' },
   { id: 'nfl_super_bowl_home_rule', url: 'https://www.nfl.com/news/bengals-not-rams-are-official-home-team-for-super-bowl-lvi-at-sofi-stadium' },
-  /* Kalshi's fee schedule */
-  { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' }
+  /* Kalshi's fee schedule, and the API documentation of fee types, multipliers and rounding */
+  { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' },
+  { id: 'kalshi_docs_fee_rounding', url: 'https://docs.kalshi.com/getting_started/fee_rounding' },
+  { id: 'kalshi_docs_series_fee_changes', url: 'https://docs.kalshi.com/api-reference/exchange/get-series-fee-changes' },
+  { id: 'kalshi_openapi_fee_lines', url: 'https://docs.kalshi.com/openapi.yaml', grep: /fee/i }
 ];
 
 /** page text: scripts and styles dropped, block ends as newlines, entities decoded */
@@ -96,7 +99,7 @@ async function fetchPage(p: (typeof PAGES)[number]) {
       console.log('-- links matching ' + p.links + ':\n' + links.map((l) => '  ' + l).join('\n'));
     }
   }
-  text = text.split('\n').filter((l) => l.replace(/^[-\s]+/, '').length > 3).join('\n');
+  text = text.split('\n').filter((l) => l.replace(/^[-\s]+/, '').length > 3 && (!p.grep || p.grep.test(l))).join('\n');
   fs.writeFileSync(path.join(OUT, p.id + '.txt'), text);
   SUMMARY.push(p.id + ': ' + head + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
   console.log('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):\n' + text.slice(0, 60000));
@@ -110,10 +113,10 @@ const NOT_FUTURES = /game|spread|total|points|yards|touchdown|TD|MVP|player|quar
 async function kalshi() {
   section('SOURCE kalshi_api  public REST, no key');
   const c = kalshiClient();
-  const match = /\bNFL\b|Super Bowl|Pro Football|American Football Conference|National Football Conference|^KXNFL|^KXSB|^KXAFC$|^KXNFC$/i, notNfl = /NCAA|College|AFCON|Fantasy|NBA|FCS/i;
+  const match = /\bNFL\b|Super Bowl|Pro Football|American Football Conference|National Football Conference|^KXNFL|^KXSB|^KXAFC$|^KXNFC$/i, notNfl = /NCAA|College|AFCON|Fantasy|NBA|\bFCS\b/i;
   let s: any;
   try { s = await c.get('/series', { category: 'Sports' }); } catch (e) { console.log('KALSHI FAILED: ' + String((e as Error).message || e)); SUMMARY.push('kalshi: FAILED ' + String((e as Error).message || e)); return; }
-  const series = ((s && s.series) || []).filter((x: any) => x && x.ticker && (match.test(String(x.title || '')) || match.test(String(x.ticker))) && !notNfl.test(String(x.title || '') + ' ' + String(x.ticker)) && !/GAME$/.test(x.ticker));
+  const series = ((s && s.series) || []).filter((x: any) => x && x.ticker && (match.test(String(x.title || '')) || match.test(String(x.ticker))) && !notNfl.test(String(x.title || '')) && !/GAME$/.test(x.ticker));
   const futures = series.filter((x: any) => FUTURES.test(String(x.title || '')) && !NOT_FUTURES.test(String(x.title || '')));
   console.log('host ' + c.host + ' · ' + ((s && s.series) || []).length + ' Sports series · ' + series.length + ' name the NFL · ' + futures.length + ' look like season futures');
   console.log('-- every NFL-named series (ticker | title | fee_type | fee_multiplier):');
