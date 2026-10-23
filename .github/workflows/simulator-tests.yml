@@ -2,7 +2,8 @@
 #
 #   unit   typecheck (pinned typescript from simulator/package-lock.json), the
 #          engine, rules (2002-2025 history + synthetic), simulation, hooks,
-#          config, markets and reader suites, and the generated-file checks
+#          config, markets and reader suites, the NCAAM bracket module and its
+#          tabs, and the generated-file checks
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
 #   sql    supabase/simulator.sql on a real, throwaway PostgreSQL: RLS, the
@@ -28,6 +29,8 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
+      - 'basketball/ncaam_forecast/dist.js'
+      - 'basketball/ncaam_forecast/config/live.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -43,6 +46,8 @@ on:
       - 'football/nfl_model.js'
       - 'football/nfl_params_v2.js'
       - 'football/engine.js'
+      - 'basketball/ncaam_forecast/dist.js'
+      - 'basketball/ncaam_forecast/config/live.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -88,10 +93,15 @@ jobs:
         run: node simulator/tests/cli.test.ts
       - name: The publisher's client side (bounded retries, key redaction, call order, failure handling)
         run: node simulator/tests/publish.test.ts
+      - name: College basketball (NCAAM) bracket simulation and its reader tabs
+        run: |
+          node simulator/tests/ncaam_sim.test.ts
+          node simulator/tests/ncaam_ui.test.ts
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check
           node simulator/src/research/build_registry_sql.ts --check
+          node simulator/src/research/build_ncaam_registry_sql.ts --check
           cmp supabase/simulator.sql supabase/migrations/20261023120000_simulator.sql
 
   sql:
@@ -124,4 +134,7 @@ jobs:
       - name: The Simulator seat in a real browser
         env:
           SIM_E2E_REQUIRED: '1'
-        run: node simulator/tests/ui.e2e.ts
+          NCAAM_E2E_REQUIRED: '1'
+        run: |
+          node simulator/tests/ui.e2e.ts
+          node simulator/tests/ncaam_ui.e2e.ts

@@ -19,16 +19,28 @@ import { sportRegistry } from '../sports/registry.ts';
 import { parseSeed } from '../core/prng.ts';
 import { PRODUCTION_RUNS } from '../core/results.ts';
 import { NFL_2026 } from '../sports/nfl/config.ts';
+import { NCAAM_2027 } from '../sports/ncaam/config.ts';
+import fs from 'node:fs';
 
 /** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season */
-export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season };
+export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, ncaam: NCAAM_2027.season };
+
+/* NCAAM has valid inputs only once the official bracket file exists (after
+   Selection Sunday): the nightly schedule skips it until then instead of
+   failing every night or inventing a field */
+const REPO_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+export function inputsReady(sport: string): { ready: boolean; reason: string } {
+  if (sport !== 'ncaam') return { ready: true, reason: '' };
+  const f = path.join(REPO_ROOT, 'basketball', 'ncaam_forecast', 'config', 'brackets', NCAAM_2027.season + '.json');
+  return fs.existsSync(f) ? { ready: true, reason: '' } : { ready: false, reason: 'no official ' + NCAAM_2027.season + ' bracket file yet (basketball/ncaam_forecast/config/brackets/' + NCAAM_2027.season + '.json); pre-selection forecasts are disabled' };
+}
 
 export interface PlannedRun { sport: string; season: string; runs: string; seed: string; publish: boolean; status: string; blockers: string[] }
 
 export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }): PlannedRun[] {
   const reg = sportRegistry();
   if (event === 'schedule') {
-    return Object.keys(RUNNABLE).map((k) => {
+    return Object.keys(RUNNABLE).filter((k) => inputsReady(k).ready).map((k) => {
       const s = reg.find((r) => r.key === k)!;
       return { sport: k, season: String(RUNNABLE[k]), runs: String(PRODUCTION_RUNS), seed: '', publish: s.status === 'ACTIVE', status: s.status, blockers: s.blockers };
     });
@@ -43,6 +55,8 @@ export function planRuns(event: string, inp: { sport?: string; season?: string; 
   if (!/^\d{1,8}$/.test(runs) || Number(runs) < 1000 || Number(runs) > 10000000) throw new Error('runs must be an integer from 1000 to 10000000');
   if (seed !== '') { if (!/^(\d{1,20}|0x[0-9a-fA-F]{1,16})$/.test(seed)) throw new Error('seed must be a decimal or 0x-hex unsigned 64-bit integer, or empty'); parseSeed(seed); }
   if (publish !== 'true' && publish !== 'false') throw new Error('publish must be true or false');
+  const ready = inputsReady(sport);
+  if (!ready.ready) throw new Error(s.label + ': ' + ready.reason);
   if (publish === 'true' && s.status !== 'ACTIVE') throw new Error(s.label + ' is ' + s.status + ', so nothing can be published: ' + s.blockers.join(' | '));
   if (publish === 'true' && Number(runs) < PRODUCTION_RUNS) throw new Error('publication needs at least ' + PRODUCTION_RUNS + ' runs');
   return [{ sport, season, runs, seed, publish: publish === 'true', status: s.status, blockers: s.blockers }];

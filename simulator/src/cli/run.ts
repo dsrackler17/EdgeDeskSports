@@ -20,6 +20,13 @@
      --out DIR                local output directory (default simulator/out/<sport>-<season>-<stamp>)
      --trace-runs 0,1,2       runs to trace in full (at most 5)
      --allow-unreconciled     dry run only: proceed when the standings source is unavailable
+   NCAAM only (--sport ncaam):
+     --mode official|historical   the official bracket file (default) or an exact
+                                  reconstruction of a past season (backtest, never published)
+     --model champion|selection   the registry's champion (default; required to publish)
+                                  or the frozen development selection (dry runs, backtests)
+     --bracket FILE               an official bracket file other than config/brackets/<season>.json
+     --as-of ISO                  the moment the model artifact is built as of
    Exit codes: 0 ok, 1 a gate blocked (nothing published), 2 invalid inputs or arguments, 3 publish failed.
    =========================================================================== */
 import fs from 'node:fs';
@@ -33,22 +40,29 @@ import { validateNflInputs, nflMathStatus, type Gate } from '../sports/nfl/valid
 import { sportRegistry } from '../sports/registry.ts';
 import { NFL_2026 } from '../sports/nfl/config.ts';
 import { sha256Hex } from '../core/canonical.ts';
+import { NCAAM_2027 } from '../sports/ncaam/config.ts';
+import { executeNcaam, printNcaamSummary } from '../sports/ncaam/run.ts';
 
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export interface CliArgs {
   sport: string; season: number; runs: number; seed: string | null; workers: number; snapshot: string | null; offline: boolean;
   publish: boolean; out: string | null; traceRuns: number[]; allowUnreconciled: boolean; maxUnsupportedFraction: number;
+  mode: 'official' | 'historical'; model: 'champion' | 'selection'; bracket: string | null; asOf: string | null; seasonGiven: boolean;
 }
 export function parseArgs(argv: string[]): CliArgs {
   const a: CliArgs = { sport: 'nfl', season: NFL_2026.season, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
-    publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4 };
+    publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4, mode: 'official', model: 'champion', bracket: null, asOf: null, seasonGiven: false };
   const need = (i: number) => { if (argv[i + 1] == null || argv[i + 1].startsWith('--')) throw new Error(argv[i] + ' needs a value'); return argv[i + 1]; };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     switch (k) {
       case '--sport': a.sport = need(i); i++; break;
-      case '--season': a.season = Number(need(i)); i++; break;
+      case '--season': a.season = Number(need(i)); a.seasonGiven = true; i++; break;
+      case '--mode': { const v = need(i); if (v !== 'official' && v !== 'historical') throw new Error('--mode must be official or historical'); a.mode = v; i++; break; }
+      case '--model': { const v = need(i); if (v !== 'champion' && v !== 'selection') throw new Error('--model must be champion or selection'); a.model = v; i++; break; }
+      case '--bracket': a.bracket = need(i); i++; break;
+      case '--as-of': { const v = need(i); if (!Number.isFinite(Date.parse(v))) throw new Error('--as-of must be an ISO time'); a.asOf = v; i++; break; }
       case '--runs': a.runs = Number(need(i)); i++; break;
       case '--seed': a.seed = need(i); i++; break;
       case '--workers': a.workers = Number(need(i)); i++; break;
@@ -69,12 +83,19 @@ export function parseArgs(argv: string[]): CliArgs {
   if (a.seed != null) parseSeed(a.seed);
   if (a.traceRuns.length > 5 || a.traceRuns.some((r) => !Number.isInteger(r) || r < 0)) throw new Error('--trace-runs: at most 5 non-negative run indices');
   if (a.publish && a.allowUnreconciled) throw new Error('--allow-unreconciled is for dry runs only');
+  if (a.sport === 'ncaam' && !a.seasonGiven) a.season = NCAAM_2027.season;
+  if (a.sport !== 'ncaam' && (a.mode !== 'official' || a.model !== 'champion' || a.bracket || a.asOf)) throw new Error('--mode, --model, --bracket and --as-of apply to --sport ncaam only');
+  if (a.publish && a.sport === 'ncaam' && (a.mode !== 'official' || a.model !== 'champion')) throw new Error('an NCAAM run is published only from the official bracket with the champion model');
   return a;
 }
 
 export interface RunOutcome { results: ResultsDoc; gates: Gate[]; snapshot: NflSnapshot; outDir: string; publishable: boolean }
 
 export async function execute(args: CliArgs, log: (s: string) => void = console.log): Promise<RunOutcome> {
+  if (args.sport === 'ncaam') {
+    return executeNcaam({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns,
+      mode: args.mode, modelSource: args.model, bracketFile: args.bracket, asOf: args.asOf }, log) as unknown as RunOutcome;
+  }
   if (args.sport !== 'nfl') throw Object.assign(new Error('sport ' + args.sport + ' has no simulation module: ' + (sportRegistry().find((s) => s.key === args.sport) as any).blockers.join(' | ')), { exitCode: 2 });
   if (args.season !== NFL_2026.season) throw Object.assign(new Error('no NFL season config for ' + args.season), { exitCode: 2 });
   /* 1 inputs: build (network, before any simulation) or replay */
@@ -146,7 +167,7 @@ if (isMain) {
     try { args = parseArgs(process.argv.slice(2)); } catch (e) { console.error('error: ' + (e as Error).message); process.exit(2); }
     try {
       const o = await execute(args);
-      printSummary(o, console.log);
+      if (args.sport === 'ncaam') printNcaamSummary(o as any, console.log); else printSummary(o, console.log);
       if (args.publish) {
         if (!o.publishable) { console.error('nothing published: a gate failed (see gates.json)'); process.exit(1); }
         const { publishRun } = await import('../publish/publish.ts');

@@ -11,6 +11,11 @@
 #                              (its 2026 rules facts await human verification:
 #                              SIMULATOR_NOTES.md), so the nightly job is a dry
 #                              run that keeps the whole pipeline exercised.
+#                              College basketball (ncaam) joins the nightly
+#                              plan only once its official bracket file exists
+#                              (basketball/ncaam_forecast/config/brackets/<season>.json,
+#                              after Selection Sunday); it stays BLOCKED (dry
+#                              run) until its season facts are verified.
 #   workflow_dispatch          one sport; inputs validated by
 #                              simulator/src/cli/plan.ts before anything runs.
 #
@@ -44,10 +49,10 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl]
+        options: [nfl, ncaam]
         default: nfl
       season:
-        description: 'Season (must equal the sport''s configured season)'
+        description: 'Season (must equal the sport''s configured season: nfl 2026, ncaam 2027)'
         type: string
         default: '2026'
       runs:
@@ -126,6 +131,7 @@ jobs:
           node simulator/tests/nfl_rules_synthetic.test.ts
           node simulator/tests/nfl_sim.test.ts
           node simulator/tests/nfl_config.test.ts
+          node simulator/tests/ncaam_sim.test.ts
       - name: Status
         env:
           STATUS: ${{ matrix.status }}

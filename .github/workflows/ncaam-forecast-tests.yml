@@ -1,0 +1,138 @@
+# EdgeDesk college basketball forecast — every suite, on every change to it.
+#
+#   unit   the model (distribution coherence, fit recovery, data quality,
+#          point-in-time artifacts, Upset Watch, live model, promotion gates,
+#          registry), the live writer, the simulator's NCAAM module and reader,
+#          and the generated-file checks (frozen selection and validation
+#          records, the research-registry SQL, the migration being a byte copy)
+#   sql    supabase/ncaam_forecast.sql (after supabase/simulator.sql) on a real,
+#          throwaway PostgreSQL: RLS, the premium entitlement failing closed,
+#          atomic publication, immutability, the champion pointer, the live
+#          gate, the research registration (NCAAM_SQL_REQUIRED=1: a missing
+#          cluster FAILS, never skips)
+#   ops    failure injection on the real weekly run (ingest, train, evaluate,
+#          store, promote): the champion never moves and every failure is
+#          recorded; an inconsistent registry stops weekly and refresh
+#   e2e    the College Basketball tabs in Chromium at desktop, tablet and phone
+#
+# No network beyond package installs, no credentials, nothing written.
+name: NCAAM forecast suites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'basketball/ncaam_forecast/**'
+      - '!basketball/ncaam_forecast/data/**'
+      - '!basketball/ncaam_forecast/registry/**'
+      - '!basketball/ncaam_forecast/reports/**'
+      - 'basketball/ncaam_research/team_model.js'
+      - 'basketball/ncaam_research/lib/**'
+      - 'simulator/src/sports/ncaam/**'
+      - 'simulator/tests/ncaam_*'
+      - 'supabase/ncaam_forecast.sql'
+      - 'supabase/ncaam_forecast_registry.sql'
+      - 'supabase/migrations/20261023180000_ncaam_forecast.sql'
+      - 'lib/edgedesk_simulator*.js'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/ncaam-*.yml'
+  pull_request:
+    paths:
+      - 'basketball/ncaam_forecast/**'
+      - 'basketball/ncaam_research/team_model.js'
+      - 'basketball/ncaam_research/lib/**'
+      - 'simulator/src/sports/ncaam/**'
+      - 'simulator/tests/ncaam_*'
+      - 'supabase/ncaam_forecast.sql'
+      - 'supabase/ncaam_forecast_registry.sql'
+      - 'supabase/migrations/20261023180000_ncaam_forecast.sql'
+      - 'lib/edgedesk_simulator*.js'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/ncaam-*.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ncaam-forecast-tests-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Install the pinned typechecker (dev only; the runtime has no dependencies)
+        run: npm ci --prefix simulator --no-audit --no-fund
+      - name: Typecheck the simulator (the NCAAM module included)
+        run: npm run --prefix simulator typecheck
+      - name: The forecast model, data quality, gates and registry
+        run: node --max-old-space-size=6144 basketball/ncaam_forecast/tests/model.test.js
+      - name: The live writer (ships disabled)
+        run: node basketball/ncaam_forecast/tests/live_writer.test.js
+      - name: The simulator's NCAAM module and the College Basketball reader
+        run: |
+          node simulator/tests/ncaam_sim.test.ts
+          node simulator/tests/ncaam_ui.test.ts
+      - name: Frozen records and generated files are current
+        run: |
+          node basketball/ncaam_forecast/select.js --check
+          node basketball/ncaam_forecast/validate.js --check
+          node basketball/ncaam_forecast/registry.js verify
+          node simulator/src/research/build_ncaam_registry_sql.ts --check
+          node simulator/src/cli/build_ui_registry.ts --check
+          cmp supabase/ncaam_forecast.sql supabase/migrations/20261023180000_ncaam_forecast.sql
+
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: supabase/ncaam_forecast.sql on a real PostgreSQL
+        env:
+          NCAAM_SQL_REQUIRED: '1'
+        run: node basketball/ncaam_forecast/tests/sql.test.js
+
+  ops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: Failure injection on the real weekly run
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: node basketball/ncaam_forecast/tests/ops.test.js
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Install Playwright (pinned) and Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The College Basketball tabs in a real browser
+        env:
+          NCAAM_E2E_REQUIRED: '1'
+        run: node simulator/tests/ncaam_ui.e2e.ts

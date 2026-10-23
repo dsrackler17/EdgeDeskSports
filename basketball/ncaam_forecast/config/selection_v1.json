@@ -1,0 +1,470 @@
+{
+ "schema": "edgedesk_ncaam_fc_selection_v1",
+ "frozen_at": "2026-10-23T12:42:49.317Z",
+ "protocol": {
+  "burn_in": [
+   2010,
+   2011
+  ],
+  "development": [
+   2012,
+   2019
+  ],
+  "confirmation": [
+   2020,
+   2026
+  ],
+  "tournament_holdout": [
+   2024,
+   2025,
+   2026
+  ]
+ },
+ "rule": "coordinate descent over lambda, carry, half_life, blowout_weight, new_program_quantile, scale on development D1-v-D1 margin CRPS (integer grid), tempo on total CRPS; a value is taken only if it improves by >= 0.002; seasons after 2019 are removed before the engine runs",
+ "chosen": {
+  "lambda": 300,
+  "lambda_tempo": 2,
+  "kMu": 3000,
+  "kEta": 6000,
+  "sweeps": 6,
+  "half_life": null,
+  "carry": 0.9,
+  "carry_tempo": 0.9,
+  "continuity_slope": 0,
+  "continuity_ref": 0.45,
+  "transfer_beta": 0,
+  "blowout_margin": 30,
+  "blowout_weight": 1,
+  "scale": "additive",
+  "new_program_quantile": 0.25,
+  "nond1_lambda": 400,
+  "poss_coef": null
+ },
+ "calibration": {
+  "refit_days": 7,
+  "window_seasons": 3,
+  "min_rows": {
+   "D1_D1": 300,
+   "D1_OTHER": 100
+  },
+  "kappa": "fit",
+  "variance": {
+   "margin": "v1",
+   "total": "v2"
+  },
+  "parameter_variance": "stable"
+ },
+ "variance_evidence": "development 2012-2019, research-engine parameters, D1-v-D1 n = 43,886: log loss v1 engine variance 0.51936, v1 stabilised 0.51907, v2 0.51921; margin CRPS 6.1850 / 6.1826 / 6.1834; total CRPS 9.6414 / 9.6395 / 9.6383 -> margin v1 stabilised, total v2",
+ "development_score": {
+  "margin_crps": 6.1701,
+  "total_crps": 9.5902,
+  "log_loss": 0.51782,
+  "n": 43886
+ },
+ "configurations_evaluated": 35,
+ "log": [
+  {
+   "params": {
+    "lambda": 600,
+    "lambda_tempo": 4,
+    "kMu": 3000,
+    "kEta": 6000,
+    "sweeps": 6,
+    "half_life": null,
+    "carry": 0.7,
+    "carry_tempo": 0.7,
+    "continuity_slope": 0,
+    "continuity_ref": 0.45,
+    "transfer_beta": 0,
+    "blowout_margin": 30,
+    "blowout_weight": 1,
+    "scale": "additive",
+    "new_program_quantile": 0.25,
+    "nond1_lambda": 400,
+    "poss_coef": null
+   },
+   "score": {
+    "margin_crps": 6.2099,
+    "total_crps": 9.5734,
+    "log_loss": 0.52041,
+    "n": 43886
+   },
+   "step": "start"
+  },
+  {
+   "params": {
+    "lambda": 50
+   },
+   "score": {
+    "margin_crps": 6.2774,
+    "total_crps": 9.7383,
+    "log_loss": 0.52609,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda": 100
+   },
+   "score": {
+    "margin_crps": 6.235,
+    "total_crps": 9.6832,
+    "log_loss": 0.52255,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda": 150
+   },
+   "score": {
+    "margin_crps": 6.2144,
+    "total_crps": 9.6519,
+    "log_loss": 0.52084,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda": 300
+   },
+   "score": {
+    "margin_crps": 6.1949,
+    "total_crps": 9.6046,
+    "log_loss": 0.5192,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda": 600
+   },
+   "score": {
+    "margin_crps": 6.2099,
+    "total_crps": 9.5734,
+    "log_loss": 0.52041,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry": 0.6
+   },
+   "score": {
+    "margin_crps": 6.2191,
+    "total_crps": 9.6046,
+    "log_loss": 0.52075,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry": 0.8
+   },
+   "score": {
+    "margin_crps": 6.1784,
+    "total_crps": 9.6059,
+    "log_loss": 0.51821,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry": 0.9
+   },
+   "score": {
+    "margin_crps": 6.1696,
+    "total_crps": 9.6086,
+    "log_loss": 0.51778,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry": 1
+   },
+   "score": {
+    "margin_crps": 6.1681,
+    "total_crps": 9.6126,
+    "log_loss": 0.51786,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "half_life": 365
+   },
+   "score": {
+    "margin_crps": 6.169,
+    "total_crps": 9.6005,
+    "log_loss": 0.51769,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "half_life": 180
+   },
+   "score": {
+    "margin_crps": 6.1697,
+    "total_crps": 9.5933,
+    "log_loss": 0.5177,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "half_life": 90
+   },
+   "score": {
+    "margin_crps": 6.1752,
+    "total_crps": 9.583,
+    "log_loss": 0.51807,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "blowout_weight": 0.7
+   },
+   "score": {
+    "margin_crps": 6.1711,
+    "total_crps": 9.6092,
+    "log_loss": 0.51783,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "blowout_weight": 0.4
+   },
+   "score": {
+    "margin_crps": 6.1818,
+    "total_crps": 9.6128,
+    "log_loss": 0.51856,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "new_program_quantile": 0.1
+   },
+   "score": {
+    "margin_crps": 6.1694,
+    "total_crps": 9.6086,
+    "log_loss": 0.51775,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "new_program_quantile": 0.4
+   },
+   "score": {
+    "margin_crps": 6.1704,
+    "total_crps": 9.6086,
+    "log_loss": 0.51785,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "scale": "log"
+   },
+   "score": {
+    "margin_crps": 6.1759,
+    "total_crps": 9.6088,
+    "log_loss": 0.5185,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda": 50
+   },
+   "score": {
+    "margin_crps": 6.2557,
+    "total_crps": 9.7383,
+    "log_loss": 0.52481,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda": 100
+   },
+   "score": {
+    "margin_crps": 6.2098,
+    "total_crps": 9.6837,
+    "log_loss": 0.52107,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda": 150
+   },
+   "score": {
+    "margin_crps": 6.188,
+    "total_crps": 9.6531,
+    "log_loss": 0.51929,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda": 600
+   },
+   "score": {
+    "margin_crps": 6.1918,
+    "total_crps": 9.582,
+    "log_loss": 0.51961,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry": 0.6
+   },
+   "score": {
+    "margin_crps": 6.2191,
+    "total_crps": 9.6046,
+    "log_loss": 0.52075,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry": 0.7
+   },
+   "score": {
+    "margin_crps": 6.1949,
+    "total_crps": 9.6046,
+    "log_loss": 0.5192,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry": 0.8
+   },
+   "score": {
+    "margin_crps": 6.1784,
+    "total_crps": 9.6059,
+    "log_loss": 0.51821,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry": 1
+   },
+   "score": {
+    "margin_crps": 6.1681,
+    "total_crps": 9.6126,
+    "log_loss": 0.51786,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "half_life": 365
+   },
+   "score": {
+    "margin_crps": 6.169,
+    "total_crps": 9.6005,
+    "log_loss": 0.51769,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "half_life": 180
+   },
+   "score": {
+    "margin_crps": 6.1697,
+    "total_crps": 9.5933,
+    "log_loss": 0.5177,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "half_life": 90
+   },
+   "score": {
+    "margin_crps": 6.1752,
+    "total_crps": 9.583,
+    "log_loss": 0.51807,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda_tempo": 2
+   },
+   "score": {
+    "margin_crps": 6.1699,
+    "total_crps": 9.595,
+    "log_loss": 0.51782,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda_tempo": 4
+   },
+   "score": {
+    "margin_crps": 6.1696,
+    "total_crps": 9.6086,
+    "log_loss": 0.51778,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda_tempo": 8
+   },
+   "score": {
+    "margin_crps": 6.1693,
+    "total_crps": 9.6462,
+    "log_loss": 0.51773,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "lambda_tempo": 16
+   },
+   "score": {
+    "margin_crps": 6.1692,
+    "total_crps": 9.7139,
+    "log_loss": 0.51769,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry_tempo": 0.5
+   },
+   "score": {
+    "margin_crps": 6.1698,
+    "total_crps": 9.6047,
+    "log_loss": 0.51782,
+    "n": 43886
+   }
+  },
+  {
+   "params": {
+    "carry_tempo": 0.9
+   },
+   "score": {
+    "margin_crps": 6.1701,
+    "total_crps": 9.5902,
+    "log_loss": 0.51782,
+    "n": 43886
+   }
+  }
+ ],
+ "hash": "7807a94ff33649c647752ba1ecfe05e64339ccf3b66e7c388f04a83f5be68757"
+}

@@ -1,0 +1,54 @@
+{
+  "schema": "edgedesk_research_registration_v1",
+  "model_key": "SIM-NCAAM-TOURNAMENT",
+  "name": "EdgeDesk Simulator — NCAA men's tournament (correlated bracket simulation)",
+  "version": "0.1.0",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3",
+  "provenance_label": "EdgeDesk research model (T3)",
+  "sport": "NCAAM",
+  "registered_at": "2026-10-23",
+  "hypothesis": "Simulating the official bracket 100,000 times from the NCAAM pregame forecast, with one persistent latent strength draw per team per run (variance measured from frozen-rating residual covariance) and each game drawn from the same coherent distribution, gives calibrated probabilities of reaching each round and winning the title.",
+  "objective": "Calibrated advancement probabilities after the official field is announced; never a recommendation and never a bracket-pool pick.",
+  "primary_metric": "Brier score of reach-R32, Sweet 16, Elite 8, Final Four, title game and title probabilities over every entrant of the holdout tournaments, frozen before the First Four; log loss clipped at max(1e-6, 0.5/N).",
+  "unit": "One tournament (season). The 64-68 entrants and 63-67 games of one tournament are NOT independent: every interval is a season bootstrap.",
+  "baseline": "The same simulator with V = 0 (no persistent strength draw); and, where captured, same-time futures prices.",
+  "training_window": "Strength variance from frozen-rating residuals of 2012-2025 (validation/strength_uncertainty.json, 2024-2026 NCAA tournament games excluded).",
+  "validation_window": "Development tournaments 2011-2019 and 2021-2023 (validation/tournament_backtest.json), descriptive.",
+  "holdout_window": "Tournaments 2027, 2028 and 2029, each frozen before its First Four and scored once after its final. The 2024-2026 tournaments were scored once on 2026-10-23 (V vs V = 0, reported) and are not used to choose anything.",
+  "machine": {
+    "window_dates": { "training": ["2011-11-01", "2025-04-15"], "validation": ["2010-11-01", "2023-04-15"], "holdout": ["2027-03-01", "2029-04-15"] },
+    "window_note": "[from, to): dates of the seasons inside each window",
+    "minimum_sample": 3,
+    "version": "0.1.0",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3"
+  },
+  "minimum_sample": {
+    "holdout_tournaments": 3,
+    "note": "One tournament is very little evidence; below three holdout tournaments the record is descriptive and no result row is written."
+  },
+  "promotion_criteria": {
+    "decision_rule": "passed = true only if every criterion holds on the holdout tournaments. A criterion that cannot be evaluated is not met.",
+    "criteria": [
+      { "id": "C1_BRIER_VS_NO_PERSISTENCE", "rule": "Pooled advancement Brier no worse than the V = 0 simulator by more than 0.0005 (season bootstrap upper bound)." },
+      { "id": "C2_CALIBRATION", "rule": "Every probability band with n >= 30 within 0.08 of its observed rate, pooled over holdout tournaments." },
+      { "id": "C3_MARKET_REFERENCE", "rule": "Same-time futures comparison on >= 100 matched outcomes, interval below 0 (NOT EVALUABLE until futures quotes are captured)." }
+    ],
+    "family_correction": "All three are required."
+  },
+  "forking_paths": {
+    "candidates_tried": [ { "version": "0.1.0", "strength": "one persistent normal offset per team, V from 1 March frozen-rating residual covariance", "evaluated_against_outcomes": "the backtest compares V and V = 0 descriptively; V was not tuned to tournament outcomes" } ],
+    "alternatives_considered_not_tried": [ "V from a freeze at Selection Sunday (horizon-matched; too few post-freeze games per team for a stable estimate — the documented next study)", "a hot-form carry-over between rounds (no validation evidence: not built)", "proximity/travel effects (no owned venue-distance data)" ],
+    "data_already_seen": "every NCAA tournament 2010-2026",
+    "comparisons_made": 1,
+    "stopping_rule": "Fixed horizon: three prospective tournaments."
+  },
+  "spec": {
+    "engine": "simulator/src/core (xoshiro128** seeded by SplitMix64; per-run streams)",
+    "module": "simulator/src/sports/ncaam/module.ts over bracket.ts slots (First Four, fixed paths, no reseeding)",
+    "runs": 100000,
+    "known_limitations": [ "no player availability", "every tournament game neutral; proximity not modelled", "no pre-selection forecast (no selection proxy)", "conference tournaments not simulated without verified formats" ]
+  },
+  "result": null
+}
