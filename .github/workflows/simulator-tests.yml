@@ -142,15 +142,17 @@ jobs:
         run: node simulator/tests/cli.test.ts
       - name: The publisher's client side (bounded retries, key redaction, call order, failure handling)
         run: node simulator/tests/publish.test.ts
-      - name: NBA rules against every postseason 2006-07..2025-26, and the synthetic cases
+      - name: NBA rules against every postseason 2006-07..2025-26, the NBA Cups 2023-24..2025-26, and the synthetic cases
         run: |
           node simulator/tests/nba_rules_history.test.ts
           node simulator/tests/nba_rules_synthetic.test.ts
+          node simulator/tests/nba_cup.test.ts
       - name: NBA configuration, the served model, availability and the simulation (committed snapshots)
         run: |
           node simulator/tests/nba_config.test.ts
           node simulator/tests/nba_model.test.ts
           node simulator/tests/nba_sim.test.ts
+          node simulator/tests/nba_cup_sim.test.ts
       - name: College basketball (NCAAM) bracket simulation and its reader tabs
         run: |
           node simulator/tests/ncaam_sim.test.ts

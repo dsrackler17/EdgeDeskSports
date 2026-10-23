@@ -19,7 +19,8 @@ production readiness or a deployment: §16 states exactly what exists.
 |---|---|---|
 | NBA rules (standings, tiebreakers, division titles, seeding, play-in, bracket, best-of-seven) | Implemented; replays **every play-in and playoff game 2006-07..2025-26** (except 2019-20) exactly | `simulator/tests/nba_rules_history.test.ts` (105 assertions, 4 mutants) |
 | Synthetic rule cases (every tiebreak step, complete and partial breaks, play-in paths, home order, four-win end) | Implemented, tested | `simulator/tests/nba_rules_synthetic.test.ts` (118) |
-| The six 2026-27 rules facts | **VERIFIED** 2026-10-23 from the league's own text (archived nba.com and NBA Communications pages read by the Simulator source check, run 39996632843) | §5.5 |
+| The seven 2026-27 rules facts (the six, and the NBA Cup format) | **VERIFIED** 2026-10-23 from the league's own text (archived nba.com and NBA Communications pages read by the Simulator source check, run 39996632843) | §5.5, §5.6 |
+| The NBA Cup (Group Play, the knockout rounds, the 30 games it decides) | Implemented: played inside every run; reproduces every quarterfinal pairing and host (12) and semifinal pairing (6) of 2023-24..2025-26 from Group Play; the 30 Cup-dependent games are simulated until the league schedules them (the unpublished parts Estimated, each held to the same three Cups) | `simulator/tests/nba_cup.test.ts`, `nba_cup_sim.test.ts`, §5.6 |
 | Game model | The served NBA model (`edgedesk_nba_v1:E_ridge_P`), no new model; the simulator's mean for every game on the published slate equals the slate's baseline (max difference 0 over 27 games) | §4, `nba_sim.test.ts` §7 |
 | Strength uncertainty (persistent per-club draws) | Calibrated on frozen out-of-sample forecasts, 15 seasons x 5 as-of points | `simulator/data/nba_strength_uncertainty.json`, §7 |
 | Player availability (projected rotation + return trajectories) | Implemented; return hazards validated on a 2023-24..2025-26 holdout | `simulator/data/nba_return_hazards.json`, §8 |
@@ -27,7 +28,7 @@ production readiness or a deployment: §16 states exactly what exists.
 | Postseason rotations | **Not modelled** beyond the model's own learned postseason term; audited, no boost invented | `simulator/data/nba_postseason_audit.json`, §9 |
 | Completed games, current series | Fixed exactly; series resume from their real score at the right venue | §6, `nba_sim.test.ts` §5 |
 | Futures mapping | Every outcome has its own settlement semantic; a market can map to one outcome only | §10 |
-| Publication | **BLOCKED**: 30 NBA Cup-dependent games not on the schedule (the six facts are verified) | §12 |
+| Publication | **ACTIVE** (2026-10-23): every fact verified; the Cup-dependent games simulated; the NBA's own daily schedule in `simulator.yml` (15:47 UTC) | §12, §16 |
 
 ---
 
@@ -69,6 +70,9 @@ production readiness or a deployment: §16 states exactly what exists.
 | Postseason rotations | **no**: the player layer uses the same minutes rule in April and June; the model's own learned `playoff` term applies (the ridge coefficient: +1.69 points of home margin before the calibration, which scales it by 1.00-1.20 with the season stage). The audit (§9) finds a calibration slope of 1.16 (95% CI 0.99-1.34) in playoff games — suggestive of tighter rotations favouring the better club, not significant — so no boost is added | Research / audit |
 | Recovery across playoff dates | rest from real dates where scheduled, Estimated medians otherwise; return trajectories keep counting club games through the play-in and playoffs | Estimated |
 | In-season rating updates (drift) | **no**: ratings stay frozen; drift OFF | — |
+| NBA Cup Group Play, knockout field and hosts | **yes**: the league's rules on the run's Group Play results (§5.6) | Research |
+| The 30 Cup-dependent games, until scheduled | **yes, simulated**: pairings from the run's Cup (the non-advancing clubs' pairings by an Estimated stand-in for the league's formula), Estimated dates, rest and travel from each club's own schedule | Estimated |
+| Overtime and regulation points of a simulated Group Play game (the Cup's differential and points tiebreakers) | yes: drawn from the served model given the margin (its total mean, sd and end-game slope) | Research |
 
 ---
 
@@ -231,11 +235,116 @@ artifact keeps the files for 30 days.
 | Home court | NBA Communications 2015: a division winner "did not receive home-court advantage if its playoff opponent had a better record"; head-to-head is "the first criterion to break ties for playoff seeding and home-court advantage" | yes (by record and those criteria, not by seed) |
 | NBA Cup | nba.com Cup 101 and FAQ (2026 editions, captured 2026-10-10): every Cup game counts toward the standings except the Championship; 82 games each; the two games after Group Play (22 + 2 + 4 + 2 = 30); the schedule release: "defined dates and opponents for 80 of each team's 82 games" | yes |
 
+A seventh fact, **the NBA Cup format** (`nba_cup_format`), is VERIFIED from
+the same Cup 101 and FAQ pages and the schedule release (§5.6 quotes it).
+
 Each fact's `source` carries its URL, capture time and text sha256. Each
-season the check is run again and compared (`verify_by`). One change the
-pages announce does not touch the simulator: from 2026-27 the Cup semifinals
-are hosted by the higher seed in NBA team markets, not in Las Vegas. Those
-games are among the 30 that are not yet scheduled.
+season the check is run again and compared (`verify_by`). From 2026-27 the
+Cup semifinals are hosted by the higher seed in NBA team markets, not in Las
+Vegas: `cup.ts` plays them there.
+
+### 5.6 The NBA Cup and its 30 dependent games (`simulator/src/sports/nba/cup.ts`)
+
+Each club plays 82 games, but only 80 are on the 2026-27 schedule: the other
+two depend on the Cup's Group Play (Oct. 30 - Nov. 27) and are scheduled by
+the league after it (Dec. 4-10). The simulator plays the Cup inside every run
+instead of waiting for them.
+
+**The league's rules (VERIFIED, `nba_cup_format`).** The Cup 101 page:
+- Group Play: six groups of five within each conference, one game against
+  each group rival (two home, two away) on the seven Cup Nights, "the only
+  NBA games played on Cup Nights".
+- Group standings by Group Play record. Ties: head-to-head in Group Play,
+  point differential, total points (overtime never counts: an overtime game's
+  differential is 0 and its overtime points are dropped), the 2025-26 record,
+  a random drawing.
+- The knockout field: six group winners plus one wild card per conference
+  (the best record among the runners-up; the same protocol without
+  head-to-head).
+- Hosts: in each conference the two best group winners host the
+  quarterfinals (Dec. 4-5), the best one hosting the wild card. The
+  semifinals (Dec. 8/9) are at the higher seed's arena. The Championship
+  (Dec. 11, Indianapolis) is not a regular-season game.
+- The 22 clubs that do not advance play two games each "by a formulaic
+  approach" on the Group Play standings: two cross-conference games between
+  bottom finishers "subject to travel constraints", the rest within
+  conference between clubs "otherwise scheduled to play each other three
+  times ... wherever possible". The two quarterfinal losers of each
+  conference play each other.
+
+**The groups are read off the schedule, never recalled.** The 60 games on the
+seven Cup Nights form six complete groups of five (`cupStructure` throws
+otherwise): East {ATL, BOS, CHA, CHI, WSH}, {BKN, DET, MIL, ORL, TOR},
+{CLE, IND, MIA, NY, PHI}; West {DAL, DEN, HOU, PHX, UTAH}, {GS, LAL, POR, SA,
+SAC}, {LAC, MEM, MIN, NO, OKC}. They are numbered 1-3 because the league's
+letters are not in the data. The committed schedule has no game from Dec. 4
+to 10, and every club has 40 home games of its 80.
+
+**Held against the league's own Cups** (`nba_cup.test.ts`, 2023-24..2025-26).
+The groups the Cup Nights form, then the real Group Play results through the
+rules above:
+
+| What | Reproduced |
+|---|---|
+| Quarterfinal pairings and hosts | 12 of 12 |
+| Semifinal pairings | 6 of 6 |
+| Non-advancing clubs: 22 games, two each, one at home | every season |
+| Their within-conference games: clubs otherwise scheduled three times | 60 of 60 |
+
+**What the league does not publish is Estimated** (`cup_dependent_schedule`,
+labelled in the reader). Each stand-in is held to the same three Cups:
+- **Cross-conference pairs:** the same Group Play place in both conferences,
+  from the bottom up, the first two whose arenas are within 2,500 km. This
+  matches 6 of 6 pairs (2023-24: 14th and 15th; 2024-25: 14th and 12th;
+  2025-26: 14th and 11th; the skipped places were all 3,000 km or more
+  apart). The conference places 5-15 rank the non-advancing clubs by record,
+  then the wild-card protocol across groups. They are not each group's own
+  order: that order matched only 5 of 6.
+- **Within-conference pairings:** drawn at random in each run among the
+  clubs otherwise scheduled three times. Each club plays its remaining
+  games, no pairing twice. Any conference pairing is used only if none
+  completes it (counted).
+- **Home and away:** each non-advancing club hosts one of its two. The
+  quarterfinal losers' game goes to the loser that was away in its
+  quarterfinal; if both or neither were, to the higher seed (6 of 6).
+- **Dates and rest:** quarterfinals Dec. 4; the first non-advancing games
+  Dec. 6; semifinals Dec. 8; the second non-advancing games and the losers'
+  games Dec. 9; the Championship Dec. 11 (never before tomorrow). Rest and
+  travel come from the club's own schedule, or from its own arena after an
+  Estimated Cup game.
+- **Overtime and points of a simulated Group Play game** (Research, the
+  served model's own): overtime is drawn given the margin, and its mean
+  equals the served P(overtime) within 0.004. The regulation total is drawn
+  as the model's joint distribution draws it: a normal of mean
+  mu_t + gamma (|r| - E|r|) and the season's sd_t, on the integers of the
+  regulation margin's parity (r = 0 after overtime). That gives the two
+  clubs' regulation points, so the differential and total-points steps read
+  a simulated game as they would a real one. A tie that still reaches the
+  total-points step without a game's points (no served total) goes to the
+  2025-26 record, counted by `run.cup_tiebreaks`; on the live snapshot that
+  happens 0 times.
+
+**In each run** (`module.ts`), in date order:
+1. After the last Cup Night: the Group Play standings, the field and the
+   quarterfinals.
+2. On the Estimated dates: the non-advancing clubs' games, the semifinals,
+   the losers' games and the Championship.
+3. Every simulated game is priced from the snapshot's schedule-shaped rows
+   for that slot (2,805 pairings on the same served pass), with the run's
+   strength offsets and availability.
+4. The quarterfinals, semifinals and the other 26 games enter the standings
+   (head-to-head, division and conference records). The Championship enters
+   none.
+
+A game the league has put on the schedule is played as it is, and only the
+rest are simulated. The `cup.structure` gate checks a scheduled game against
+the real Group Play results: no Cup-dependent game before Group Play is
+over, no knockout club against a non-advancing one, no knockout game before
+the quarterfinals. Every run ends with 82 games per club and 30 Cup games
+used, or it throws.
+
+Outcomes (§10): win the group, reach the knockout rounds, win a
+quarterfinal, reach the Championship, win the Cup.
 
 ---
 
@@ -406,6 +515,11 @@ the first thing a playoff-specific model would have to beat.
 | `reach_conference_finals` | wins the conference semifinals | `win_conference_semifinal_series` | 2 per conference |
 | `win_conference` | **conference playoff champion** (reaches the Finals) | `conference_playoff_championship` | 1 per conference |
 | `win_title` | NBA champion | `nba_championship` | 1 |
+| `cup_win_group` | wins its NBA Cup group | `nba_cup_group_winner` | 1 per Cup group |
+| `cup_knockout` | reaches the Cup's knockout rounds (a group winner or the wild card) | `nba_cup_knockout_qualification` | 4 per conference |
+| `cup_semifinal` | wins a Cup quarterfinal | `nba_cup_quarterfinal_win` | 2 per conference |
+| `cup_final` | wins a Cup semifinal (plays in the Championship) | `nba_cup_championship_appearance` | 1 per conference |
+| `cup_champion` | wins the NBA Cup | `nba_cup_champion` | 1 |
 
 The four outcomes that are easy to conflate — conference first place, the
 conference title, play-in participation, playoff qualification — are four
@@ -420,8 +534,12 @@ champion" market mapped to `finish_1`, or a play-in market mapped to
 
 ## 11. Gates (`simulator/src/sports/nba/validate.ts`)
 
-Block the simulation: `schedule.complete` (1,230 games, 82 per club; with
-`--allow-incomplete-schedule`, a dry-run-only WARN that blocks publication),
+Block the simulation: `schedule.complete` (1,230 games, 82 per club, counting
+the Cup-dependent games the run simulates: 1,200 on the schedule + 30 today;
+with `--allow-incomplete-schedule`, a dry-run-only WARN that blocks
+publication), `cup.structure` (six groups of five off the Cup Nights; a
+scheduled Cup-dependent game only after Group Play and fitting its real
+result), `model.cup_pairs` (2,805 Cup pairings priced),
 `schedule.alignment`, `schedule.teams`, `results.completed`,
 `model.every_remaining_game`, `model.postseason_pairs` (13,230),
 `strength.calibrated`, `availability.trajectories` (unit masses, subset
@@ -430,24 +548,28 @@ publication: `results.integrity` (schedule finals vs team box points),
 `results.current` (a game more than 6 h past its start and not final), the
 run gates (`run.sum_rules`, `run.finite`, `run.count` >= 100,000) and
 `sport.active`. `run.random_drawings` reports how many runs needed the
-league's random drawing (a rule, seeded; never blocking).
+league's random drawing (a rule, seeded; never blocking); `run.cup_tiebreaks`
+how many reached the Cup's total-points step with a simulated game (decided
+by the 2025-26 record) or the Cup's random drawing.
 
 ---
 
 ## 12. What blocks publication
 
+Nothing standing: the NBA is **ACTIVE**.
 1. ~~Six 2026-27 facts unverified~~: verified 2026-10-23 from the league's
-   text (§5.5).
-2. **The schedule**: 1,200 of 1,230 regular-season games are on it; the 30
-   that depend on the NBA Cup group stage (two per club) are scheduled after
-   it (early December 2026). Until then `schedule.complete` refuses the
-   season; the registry carries the blocker.
-3. Data freshness: the committed results lag (two 2026-10-22 games not yet
-   final in the data on 2026-10-23): `results.current` WARN.
+   text (§5.5); the seventh, the Cup format, likewise (§5.6).
+2. ~~The schedule~~: 1,200 of 1,230 regular-season games are on it. The 30
+   that depend on the Cup are simulated from its format (§5.6) until the
+   league schedules them; each one it schedules replaces its stand-in.
+3. Each run still has to pass its own gates. `results.current` blocks a
+   publication while a game more than 6 h past its start is not final in
+   the data. The NBA's daily run (15:47 UTC) re-reads the season from hoopR
+   first.
 
-To activate: the Cup games on the schedule (from Dec. 4, 2026); lift the
-schedule blocker in `simulator/src/sports/registry.ts`; the nightly workflow's
-NBA step (runbook); a first 100,000-run publication by hand.
+Each season: re-run the Simulator source check, re-verify the facts, and
+write the new Cup format (`config.ts` `cup`: Cup Nights, window, dates) in a
+reviewed commit.
 
 ---
 
@@ -457,14 +579,22 @@ NBA step (runbook); a first 100,000-run publication by hand.
 |---|---|---|
 | `simulator/tests/nba_rules_history.test.ts` (every postseason 2006-07..2025-26 replayed; 4 mutants) | 105 | pass |
 | `simulator/tests/nba_rules_synthetic.test.ts` (SYNTHETIC: every tiebreak step, complete and partial breaks (L.2.c), division titles, the 2006-07 seed block, the four play-in paths, 2-2-1-1-1, four-win end over 4,000 random series, resumed series, fixed bracket, home court by place) | 118 | pass |
-| `simulator/tests/nba_config.test.ts` (alignment derived from the schedules, team identity across the NBA tables, 2026-27 schedule, the six facts VERIFIED with their sources, registry) | 79 | pass |
+| `simulator/tests/nba_cup.test.ts` (the Cups 2023-24..2025-26: groups off the Cup Nights, 12 quarterfinal pairings and hosts, 6 semifinal pairings, the losers' hosts, the cross-conference and within-conference stand-ins; the 2026-27 structure; SYNTHETIC: every Group Play tiebreak step, overtime counting 0, the wild card, 200 random filler schedules) | 60 | pass |
+| `simulator/tests/nba_config.test.ts` (alignment derived from the schedules, team identity across the NBA tables, 2026-27 schedule, the seven facts VERIFIED with their sources, the Estimated inputs, registry ACTIVE) | 81 | pass |
 | `simulator/tests/nba_model.test.ts` (live parameters unchanged, distribution vs the served `marginals()`, margin draws, appearance scan, hazards and their holdout, return draws, sigma by as-of point) | 52 | pass |
-| `simulator/tests/nba_sim.test.ts` (committed snapshots: zero offset, reproducibility, 1 vs 3 workers, persistent offsets incl. the playoffs, sum rules and qualified-club totals, the 2025-26 first-round replay, return trajectories, the slate equivalence, fail-closed gates, the CLI, futures semantics) | 58 | pass |
-| `simulator/tests/ui.test.ts` and `ui.e2e.ts` (the reader's NBA views on real simulations of the committed fixture; Chromium at 390 and 1440 px) | 64 / 57 (whole suites) | pass |
+| `simulator/tests/nba_sim.test.ts` (committed snapshots: zero offset, reproducibility, 1 vs 3 workers, persistent offsets through the Cup and the playoffs, sum rules and qualified-club totals, the 2025-26 first-round replay, return trajectories, the slate equivalence, fail-closed gates, the CLI and `run.configured_season`, futures semantics) | 60 | pass |
+| `simulator/tests/nba_cup_sim.test.ts` (the Cup in the simulation: the gates, every run's 31 Cup games and 82 per club, home and away, the Cup outcomes' totals and nesting, workers, overtime and regulation points against the served model, SYNTHETIC later stages with the quarterfinals and non-advancing games scheduled, refusals) | 33 | pass |
+| `simulator/tests/ui.test.ts` and `ui.e2e.ts` (the reader's NBA views, the NBA Cup tab included, on real simulations of the committed fixture; Chromium at 390 and 1440 px) | 71 / 61 (whole suites) | pass |
 | typecheck (`tsc --noEmit`, strict) | — | clean |
 | generated files (`npm run sim:check`), migration byte-identical | — | current |
-| every simulator suite (`npm run sim:test`: core, hooks, NFL, NHL, MLB, college football, NBA, markets, reader, CLI, publisher), SQL on PostgreSQL 16, reader in Chromium — re-run on 2026-10-23 with the verification and the L.2.c correction | 1,776 + 82 + 57 | pass |
-| `.github/workflows/simulator-tests.yml` | — | actionlint 1.7.7 clean |
+| every simulator suite (`npm run sim:test`), SQL on PostgreSQL 16, reader in Chromium | see the PR | pass |
+| `.github/workflows/simulator.yml`, `simulator-tests.yml` | — | actionlint 1.7.7 clean |
+
+The Cup rows do not move any other price: a control snapshot built on the
+same data without them agrees on all 1,184 remaining games (875 after the
+Cup window) and all 13,230 postseason pairings to 4e-15 (the served pass
+prices a scheduled game from the frozen states; the Kalman clock's split
+advances are linear).
 
 The NBA suites need no network and no work tables (`simulator/fixtures/nba_2027_snapshot.json.gz`,
 `nba_2026_r1_snapshot.json.gz`, the committed `nba/data` and `nba/params`); they run in CI on every simulator change.
@@ -473,22 +603,20 @@ The NBA suites need no network and no work tables (`simulator/fixtures/nba_2027_
 
 ## 14. Benchmark
 
-`node simulator/src/cli/run.ts --snapshot simulator/out/nba-live/snapshot.json --runs 100000 --workers 4 --dry-run --allow-incomplete-schedule`
+`node --max-old-space-size=8000 simulator/src/cli/run.ts --snapshot <the live 2026-27 snapshot> --runs 100000 --workers 4 --dry-run`
 
 | Measure | Value |
 |---|---|
-| Inputs | 2026-27 as of 2026-10-23T15:37:52Z (0.93 games per club), 1,186 remaining games, input hash `cffd6988d71f…` (the committed live fixture), sigma 3.111 |
-| Snapshot build (served pass to the as-of time + 13,230 postseason pairings) | 559 s, single thread |
-| Simulation | **100,000 runs in 44.3 s** on 4 workers (2 workers: 89.6 s); peak RSS 498 MB |
-| Worker independence | every outcome count identical at 2 and 4 workers (same snapshot and seed) |
-| Tiebreaks | 3.53 tied groups per run in the conference standings; the point-differential step reached 89 times, the other-conference step 300; **1 run** of 100,000 needed the random drawing |
-| Postseason games priced from the Estimated context | 8,915,834 (no 2026-27 postseason game is scheduled yet) |
-| Gates | NOT PUBLISHABLE: `schedule.complete` WARN (1,200 of 1,230 games), `results.current` WARN (two 2026-10-22 games not final in the data), `sport.active` FAIL (BLOCKED) |
-| 2025-26 replay (frozen 2026-04-25) | 100,000 runs in 29.9 s on 2 workers; all gates pass but `sport.active` |
+| Inputs | 2026-27 as of 2026-10-23T20:02:52Z, 1,184 remaining games + the 30 Cup-dependent games, input hash `4f0feec0825d…` (the committed live fixture), sigma 3.107 |
+| Snapshot build (served pass to the as-of time + 13,230 postseason pairings + 2,805 Cup pairings) | 514 s, single thread |
+| Simulation | **100,000 runs in 54.4 s** on 4 workers; peak RSS 514 MB |
+| The Cup | each run plays 4 quarterfinals, 22 non-advancing games, 2 semifinals, 2 losers' games and the Championship, all simulated (nothing posted yet). The total-points step decided 4,663 wild-card and 3,849 seeding ties (two of each per run), the 2025-26 record 88 and 65; 25 runs reached the Cup's random drawing. A non-advancing pairing outside the clubs otherwise scheduled three times: 918 runs |
+| Tiebreaks (standings) | **0 runs** of 100,000 needed the league's random drawing |
+| Gates | **PUBLISHABLE**: all 21 pass (dry run: nothing published) |
 
-Top title probabilities in that dry run (Research, not published; 80-game
-schedules, no publication allowed): OKC 28.5%, SA 21.0%, NY 11.3%, BOS
-11.1%. Benchmark output, not a forecast EdgeDesk publishes.
+Top probabilities in that dry run (Research, a dry run, not a published
+forecast): the NBA title OKC 29.6%, SA 20.6%, NY 11.0%, BOS 10.9%, DET 7.5%;
+the NBA Cup OKC 20.2%, SA 13.6%, BOS 11.0%, NY 9.2%, DET 8.2%.
 
 ---
 
@@ -505,6 +633,10 @@ schedules, no publication allowed): OKC 28.5%, SA 21.0%, NY 11.3%, BOS
 | The snapshot builder would abort on a scheduled postseason game whose clubs are placeholders (TBD) | such rows are skipped and counted (`integrity.placeholder_postseason`); a completed game with an unknown club still aborts |
 | The sigma label read "as-of points 1-61 (linear)" for an as-of before the first calibrated point (the value was right); the first fix then sent an exact interior point (10 games) to the last point | flat outside 1-61, linear between bracketing points, exact points taken as they are; unit-tested at 0.93, 1, 5.5, 10, 61 and 82 games |
 | Synthetic test expectations miscounted fixtures (the 7th place, the best non-division winner, a player's games missed) | the fixtures' expectations corrected; the engine was right in each case |
+| The Cup's conference places 5-15 first kept each group's own order across groups; the league's 2025-26 cross-conference pairs (BKN-DAL, the 11th places by record and differential) did not follow it | record, then the wild-card protocol across groups: 6 of 6 cross-conference pairs reproduced |
+| The first Cup run skipped the total-points step for any tie that needed a simulated game's points: the 2025-26 record then decided 4,691 wild-card picks and 4,000 group-winner orders in 100,000 runs (two of each per run), favouring last season's better clubs | each simulated Group Play game's regulation points drawn from the served total given its margin; the step reads them (0 runs skip it) |
+| The browser test's database mock ignored `limit`/`offset`: the reader's paging read the same 1,050 NBA rows a hundred times | the mock pages as PostgREST does |
+| A replayed 2025-26 snapshot could pass every gate once the NBA was ACTIVE | `run.configured_season`: only 2026-27 is published |
 
 ---
 
@@ -520,30 +652,51 @@ plus Estimated returns (reason unknown; no new absences, no roster moves);
 Estimated postseason rest for unscheduled games; no playoff rotation change
 (the audit's slope 1.16 is not used); the playoff-teams tiebreak definition
 and the cross-conference Finals tiebreak are not identified by history;
-Monte Carlo ± is simulation noise only.
+until the league schedules them, the 30 Cup-dependent games are simulated
+with Estimated pairings for the non-advancing clubs (the league's formula is
+not published; within-conference pairs drawn at random among the clubs
+otherwise scheduled three times), Estimated dates and rest; Monte Carlo ± is
+simulation noise only.
 
 **Deployment status, exactly:**
-- Code, tests, studies and fixtures: on `main` (#703, #704, #709). The rules
-  verification, the L.2.c tiebreak correction and the reader's NBA views are
-  on `claude/edgedesk-nba-simulator-q1ktpg` (draft PR, after #712 merged the source-check hosts).
-- Database: nothing new; the existing `supabase/simulator.sql` is
-  sport-agnostic (sum rules come with each run). Nothing published.
-- GitHub Actions: `simulator-tests.yml` runs the NBA suites (no network, no
-  work tables: the committed snapshots); the nightly `simulator.yml` still
-  plans the NFL only — the NBA needs its work-table step first (runbook).
-- Reader: the Simulator seat shows the NBA's status, blockers and
-  limitations (generated registry) and, once the NBA is ACTIVE, its own
-  views (`lib/edgedesk_simulator.js`):
+- Code, tests, studies and fixtures: on `main` (#703, #704, #709, #712, #714).
+  The NBA Cup and the activation are on `claude/edgedesk-nba-simulator-q1ktpg`
+  (draft PR).
+- Database: nothing new. The existing `supabase/simulator.sql` is
+  sport-agnostic (sum rules come with each run; the season label `2026-27`
+  fits its check). Nothing is published until the first scheduled or
+  dispatched NBA run passes every gate.
+- GitHub Actions:
+  - `simulator-tests.yml` runs every NBA suite, the Cup's included (no
+    network, no work tables: the committed snapshots).
+  - The nightly `simulator.yml` gets an NBA leg on its own cron (15:47 UTC,
+    `plan.ts` `NBA_CRON`). The leg:
+    1. runs the NBA suites;
+    2. installs pyarrow;
+    3. restores the NBA build's `nba-work-` cache, read only;
+    4. re-reads the season in progress from hoopR;
+    5. builds the snapshot with an 8 GB heap;
+    6. publishes 100,000 runs when every gate passes.
+  - A failed gate fails the leg, records an alert and never moves the
+    published pointer.
+  - A dispatch (sport `nba`, season `2027`) can run it by hand.
+- Reader: the Simulator seat shows the NBA's views (`lib/edgedesk_simulator.js`):
   - Division: W-L, projected wins, division title, play-in and playoffs.
   - Conference: regular-season first place, play-in, playoffs, both rounds,
-    the playoff conference title, then seeds 1-8. Each is its own column, with
-    a note that these are four different outcomes.
-  - Title: the NBA title, with the regular-season places on their own line.
+    the playoff conference title, then seeds 1-8. Each is its own column,
+    with a note that these are four different outcomes.
+  - Title: the NBA title (the Finals winner), with the regular-season places
+    on their own line.
+  - **NBA Cup**: one card per group with win group, knockout, semifinal,
+    Championship and win the Cup, fair odds, and the note on the Estimated
+    Cup-dependent games.
 
   Tested on real simulations of the committed fixture: `ui.test.ts`, and
-  `ui.e2e.ts` in Chromium at 390 and 1440 px, with the NBA served ACTIVE for
-  that scenario only.
-- Kalshi: no NBA mapping.
+  `ui.e2e.ts` in Chromium at 390 and 1440 px. The e2e mock now pages results
+  as PostgREST does: an NBA run publishes 1,050 result rows, more than one
+  page.
+- Kalshi: no NBA mapping (the markets step reports "unavailable"; nothing is
+  fetched).
 - Nothing is "production-ready", "deployed" or a "validated edge".
 
 ---

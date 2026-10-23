@@ -175,6 +175,17 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
   const meta = UI.renderMeta({ key: 'nba', label: 'NBA' }, { n_sims: 100000, input_snapshot_at: '2026-10-23T05:00:00Z', published_at: '2026-10-23T06:00:00Z', model_version: 'm', rules_version: 'r', seed: '1', validation_summary: { flags: { tiebreak_random_drawing: 3 } } }, { stale: false, notes: [] }, Date.parse('2026-10-23T12:00:00Z'));
   T.chk('NBA run notes count random drawings (a league rule), not the NFL\'s points model', /3 runs reached the random drawing/.test(meta) && !/points-ranking/.test(meta));
   T.eq('the reader asks the database for the NBA\'s season label', REG.nba.season, '2026-27');
+  /* the NBA Cup tab */
+  const cup = UI.renderCupNba(M);
+  T.eq('NBA Cup tab: one card per group, five clubs each', [(cup.match(/<div class="sm-h">(East|West) group [123] \(/g) || []).length, (cup.match(/<tr><td><b>/g) || []).length], [6, 30]);
+  T.chk('NBA Cup tab: win group, knockout, semifinal, Championship, the Cup and fair odds', ['Win group', 'Knockout', 'Semifinal', 'Championship', 'Win Cup', 'Fair odds'].every((h) => cup.includes('>' + h + '<')));
+  const cupTop = M.clubs.slice().sort((a: any, b: any) => b.outcomes.cup_champion.probability - a.outcomes.cup_champion.probability)[0];
+  T.chk('NBA Cup tab: each column is its own outcome', cup.includes(['cup_win_group', 'cup_knockout', 'cup_semifinal', 'cup_final', 'cup_champion'].map((k) => UI.cell(cupTop.outcomes[k])).join('')));
+  T.chk('NBA Cup tab: the Championship counts in no standings; the Cup-dependent games are Estimated until scheduled', /the Championship does not/.test(cup) && /sm-estimated/.test(cup) && /unpublished formula/.test(cup));
+  T.chk('NBA Cup tab: a run without the Cup says so', /carries no NBA Cup/.test(UI.renderCupNba(UI.buildModel({ sport: 'nba' }, res.filter((r: any) => !/^cup_/.test(r.outcome)).map((r: any) => ({ ...r, entity_groups: { conference: r.entity_groups.conference, division: r.entity_groups.division } })), ents.map((e: any) => ({ ...e, entity_groups: { conference: e.entity_groups.conference, division: e.entity_groups.division } })), []))));
+  const cupMeta = UI.renderMeta({ key: 'nba', label: 'NBA' }, { n_sims: 100000, input_snapshot_at: '2026-10-23T05:00:00Z', published_at: '2026-10-23T06:00:00Z', model_version: 'm', rules_version: 'r', seed: '1', validation_summary: { flags: { cup_total_points_unmodelled: 12, cup_random_drawing: 1 } } }, { stale: false, notes: [] }, Date.parse('2026-10-23T12:00:00Z'));
+  T.chk('NBA run notes count the Cup\'s total-points fallback (Estimated) and its random drawing', /12 runs reached the NBA Cup’s total-points tiebreaker without a game’s points/.test(cupMeta) && /1 run reached the NBA Cup’s random drawing/.test(cupMeta));
+  T.chk('the registry gives the NBA its Cup tab, labelled', (REG.sports.find((s: any) => s.key === 'nba') as any).tabs.includes('cup'));
 }
 /* the MLB view, from a real (short) simulation of the committed 2025 World Series snapshot through the publisher's row mapping */
 {

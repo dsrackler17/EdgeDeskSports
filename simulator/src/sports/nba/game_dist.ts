@@ -18,6 +18,7 @@
    Tables are built lazily and cached per worker.
    =========================================================================== */
 import { nbaModules, marginTable } from './model_adapter.ts';
+import { normalQuantile } from '../../core/normal.ts';
 
 const P_STEP = 0.01, M_STEP = 0.1, LIM = 60;
 
@@ -43,6 +44,53 @@ export class NbaGameDist {
     const x = Math.max(-LIM, Math.min(LIM, mu)) / P_STEP, i = Math.floor(x), w = x - i;
     const a = this.pAt(i);
     return w === 0 ? a : a + w * (this.pAt(i + 1) - a);
+  }
+  private otGrid = new Map<number, { lo: number; p: Float64Array }>();
+  /** the served P(the game went to overtime | its final margin) at a mean (the mean rounded to 0.1 point, as for the margin):
+      the final pmf less the regulation-decided pmf, over the final pmf. Only the NBA Cup's point-differential step reads it */
+  pOvertime(mu: number, margin: number): number {
+    const c = Math.max(-LIM, Math.min(LIM, mu));
+    const k = c >= 0 ? Math.floor(c / M_STEP + 0.5) : -Math.floor(-c / M_STEP + 0.5);
+    let t = this.otGrid.get(k);
+    if (!t) {
+      const { DIST } = nbaModules();
+      const mg = DIST.marginals(this.params(k * M_STEP));
+      const fin: Float64Array = mg.margin.pmf, reg: Float64Array = mg.reg.pmf;
+      if (mg.reg.lo !== mg.margin.lo || reg.length !== fin.length) throw new Error('the served regulation and final margin tables do not align');
+      const p = new Float64Array(fin.length);
+      for (let i = 0; i < fin.length; i++) p[i] = fin[i] > 1e-15 ? Math.min(1, Math.max(0, (fin[i] - (i === -mg.margin.lo ? 0 : reg[i])) / fin[i])) : 0;
+      t = { lo: mg.margin.lo, p }; this.otGrid.set(k, t); this.builds++;
+    }
+    const i = margin - t.lo;
+    return i >= 0 && i < t.p.length ? t.p[i] : 0;
+  }
+  private emGrid = new Map<number, number>();
+  /** E|regulation margin| at a mean (the served joint's end-game term reads it) */
+  private expAbsReg(k: number): number {
+    let v = this.emGrid.get(k);
+    if (v === undefined) {
+      const { DIST } = nbaModules();
+      const reg: Float64Array = DIST.marginals(this.params(k * M_STEP)).reg.pmf, lo = -((reg.length - 1) / 2);
+      let s = 0, e = 0; for (let i = 0; i < reg.length; i++) { s += reg[i]; e += Math.abs(i + lo) * reg[i]; }
+      v = e / s; this.emGrid.set(k, v); this.builds++;
+    }
+    return v;
+  }
+  /** the two clubs' REGULATION points of a game, given its final margin and whether it went to overtime, from u in (0,1):
+      the served joint (nba/model/distribution.js joint()) draws the regulation total given the regulation margin r from a
+      normal of mean mu_t + gamma (|r| - E|r|) and sd sd_t, discretised on the integers of r's parity; an overtime game was
+      level after regulation (r = 0). Only the NBA Cup's total-points step reads it. */
+  regulationPoints(mu: number, margin: number, ot: boolean, tot: { mu_t: number; sd_t: number; gamma: number }, u: number): [number, number] {
+    const c = Math.max(-LIM, Math.min(LIM, mu));
+    const k = c >= 0 ? Math.floor(c / M_STEP + 0.5) : -Math.floor(-c / M_STEP + 0.5);
+    const r = ot ? 0 : margin, par = ((r % 2) + 2) % 2;
+    const x = tot.mu_t + tot.gamma * (Math.abs(r) - this.expAbsReg(k)) + tot.sd_t * normalQuantile(u);
+    /* the integer of r's parity whose bin [v - 1, v + 1) holds x: discNormal(mean, sd, lo, hi, parity) exactly, but its tails beyond 120-340 */
+    let T = 2 * Math.floor((x - par + 1) / 2) + par;
+    const lo = 120 + par, hi = 340 - par;
+    T = Math.max(lo, Math.min(hi, T));
+    if (T < Math.abs(r)) T = Math.abs(r);
+    return [(T + r) / 2, (T - r) / 2];
   }
   /** a final margin given the winner, from u in (0,1) */
   drawMargin(mu: number, homeWins: boolean, u: number): number {

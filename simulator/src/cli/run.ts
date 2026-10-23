@@ -60,7 +60,7 @@ import { MLB_2026 } from '../sports/mlb/config.ts';
 import { buildMlbHistorySnapshot, readSnapshot as readMlbSnapshot, writeSnapshot as writeMlbSnapshot, type MlbSnapshot } from '../sports/mlb/inputs.ts';
 import { validateMlbInputs, mlbMathStatus } from '../sports/mlb/validate.ts';
 import { NBA_2026_27 } from '../sports/nba/config.ts';
-import { buildNbaSnapshot, readSnapshot as readNbaSnapshot, writeSnapshot as writeNbaSnapshot, NBA_INPUT_SCHEMA, type NbaSnapshot } from '../sports/nba/inputs.ts';
+import { buildNbaSnapshot, readSnapshot as readNbaSnapshot, writeSnapshot as writeNbaSnapshot, NBA_READABLE_SCHEMAS, type NbaSnapshot } from '../sports/nba/inputs.ts';
 import { validateNbaInputs, nbaMathStatus } from '../sports/nba/validate.ts';
 import { NBA_OUTCOME_SEMANTICS } from '../sports/nba/module.ts';
 import { sha256Hex } from '../core/canonical.ts';
@@ -140,7 +140,7 @@ export interface RunOutcome { results: ResultsDoc; gates: Gate[]; snapshot: NflS
 
 export async function execute(args: CliArgs, log: (s: string) => void = console.log): Promise<RunOutcome> {
   /* an NBA replay takes its sport and season from the snapshot itself */
-  if (args.snapshot && snapshotSchema(args.snapshot) === NBA_INPUT_SCHEMA) args = { ...args, sport: 'nba' };
+  if (args.snapshot && NBA_READABLE_SCHEMAS.includes(snapshotSchema(args.snapshot) || '')) args = { ...args, sport: 'nba' };
   if (args.sport === 'nba') return executeNba(args, log);
   if (args.allowIncompleteSchedule) throw Object.assign(new Error('--allow-incomplete-schedule applies to the NBA only'), { exitCode: 2 });
   if (args.sport === 'nhl') return executeNhl(args, log);
@@ -285,8 +285,11 @@ async function executeNba(args: CliArgs, log: (s: string) => void): Promise<RunO
   (results as any).outcome_semantics = NBA_OUTCOME_SEMANTICS;
   /* 3 gates */
   const draws = agg.flags.tiebreak_random_drawing || 0, frac = draws / agg.n;
+  const cupPts = agg.flags.cup_total_points_unmodelled || 0, cupDraws = agg.flags.cup_random_drawing || 0;
   const gates = inputGates.concat(runGates(results, agg.n, 'nba', [
-    { id: 'run.random_drawings', status: frac <= args.maxUnsupportedFraction ? 'PASS' : 'WARN', blocks: 'none', detail: draws + ' of ' + agg.n + ' runs reached the random drawing of the tiebreaker (a rule of the league, seeded here, not an unsupported input)' }
+    { id: 'run.random_drawings', status: frac <= args.maxUnsupportedFraction ? 'PASS' : 'WARN', blocks: 'none', detail: draws + ' of ' + agg.n + ' runs reached the random drawing of the tiebreaker (a rule of the league, seeded here, not an unsupported input)' },
+    { id: 'run.configured_season', status: d.season === NBA_2026_27.season ? 'PASS' : 'FAIL', blocks: d.season === NBA_2026_27.season ? 'none' : 'publication', detail: 'the snapshot is season ' + d.season_label + (d.season === NBA_2026_27.season ? ', the configured season' : '; only ' + NBA_2026_27.label + ' is published (a past season is a replay)') },
+    ...(d.cup ? [{ id: 'run.cup_tiebreaks', status: 'PASS' as const, blocks: 'none' as const, detail: cupPts + ' of ' + agg.n + ' runs reached the NBA Cup\'s total-points step without a game\'s points (the next step, the 2025-26 record, decided it; 0 when every simulated Group Play game has its served total); ' + cupDraws + ' reached the Cup\'s random drawing (a rule of the league, seeded)' }] : [])
   ]));
   return writeOut(args, startedAt, snap, results, gates, (f) => writeNbaSnapshot(f, snap));
 }
