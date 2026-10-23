@@ -38,6 +38,8 @@
 --   sc_current(keys)           the current version of known keys (the worker's
 --                              material-update decision)
 --   sc_prior_divergences()     active divergences, for convergence
+--   sc_active(cats) / sc_graphics_due(tv)   what to re-verify; what still needs
+--                              a graphic at this template version
 --   sc_ingest(run, items)      idempotent upsert by signal_key; a new version
 --                              only for a new version_hash; per-key advisory
 --                              lock; supersession and expiry; the publication
@@ -486,6 +488,35 @@ language sql stable security definer set search_path = public, pg_temp as $$
   select v.payload from public.sc_signals s join public.sc_signal_versions v on v.version_id = s.current_version_id
    where s.category = 'MARKET_DIVERGENCE' and s.lifecycle = 'ACTIVE' and s.verification_state = 'VERIFIED' and (s.event_at is null or s.event_at > now())
    order by s.signal_id desc limit 2000;
+$$;
+
+-- active signals of the given categories, for the worker's re-verification of
+-- their source records (a record that disappears invalidates the signal)
+create or replace function public.sc_active(p_categories text[], p_limit integer default 2000)
+returns table (signal_key text, payload jsonb)
+language sql stable security definer set search_path = public, pg_temp as $$
+  select s.signal_key, v.payload from public.sc_signals s join public.sc_signal_versions v on v.version_id = s.current_version_id
+   where s.lifecycle = 'ACTIVE' and s.category = any (p_categories) and s.verification_state = 'VERIFIED'
+   order by s.signal_id desc limit greatest(1, least(coalesce(p_limit, 2000), 5000));
+$$;
+
+-- the current versions that still need a graphic at this template version
+-- (verified, not withdrawn, at or above sc_config.graphics.min_label), and any
+-- an operator asked to regenerate since its newest graphic; highest score first
+create or replace function public.sc_graphics_due(p_template_version text, p_limit integer default 150)
+returns table (version_id bigint, signal_id bigint, version integer, payload_sha256 text, payload jsonb)
+language sql stable security definer set search_path = public, pg_temp as $$
+  select v.version_id, s.signal_id, v.version, v.payload_sha256, v.payload
+    from public.sc_signals s join public.sc_signal_versions v on v.version_id = s.current_version_id
+   where coalesce((public.sc_cfg('graphics')->>'auto')::boolean, true)
+     and s.verification_state = 'VERIFIED' and s.publication <> 'WITHDRAWN' and s.lifecycle in ('ACTIVE', 'EXPIRED')
+     and s.category in ('FORECAST_SHIFT', 'MARKET_DIVERGENCE', 'MARKET_CONVERGENCE', 'LINE_MOVEMENT', 'INJURY_IMPACT', 'SIMULATION_SHIFT', 'MODEL_RELIABILITY_WARNING')
+     and public.sc_label_rank(s.label) >= public.sc_label_rank(coalesce(public.sc_cfg('graphics')->>'min_label', 'Notable'))
+     and (not exists (select 1 from public.sc_graphics g where g.version_id = v.version_id and g.template_version = p_template_version)
+          or exists (select 1 from public.sc_signal_events e where e.signal_id = s.signal_id and e.kind = 'regenerate_requested'
+                      and e.at > coalesce((select max(g.generated_at) from public.sc_graphics g where g.signal_id = s.signal_id), '-infinity')))
+   order by (s.lifecycle = 'ACTIVE') desc, s.score desc, s.signal_id desc
+   limit greatest(1, least(coalesce(p_limit, 150), 500));
 $$;
 
 -- the server's own check of a simulator signal: both runs' numbers must be the
@@ -1174,6 +1205,7 @@ declare f text;
 begin
   -- the job's doors: service_role only
   foreach f in array array['public.sc_begin_run(jsonb)', 'public.sc_require_run(uuid)', 'public.sc_current(text[])', 'public.sc_prior_divergences()', 'public.sc_check_simulation(jsonb)',
+    'public.sc_active(text[],integer)', 'public.sc_graphics_due(text,integer)',
     'public.sc_ingest_one(uuid,jsonb,text,text,jsonb,text,boolean)', 'public.sc_ingest(uuid,jsonb)', 'public.sc_put_graphics(uuid,jsonb)', 'public.sc_put_dna(uuid,jsonb)',
     'public.sc_fail(uuid,jsonb)', 'public.sc_expire()', 'public.sc_finish_run(uuid,text,jsonb,jsonb)', 'public.sc_notify(uuid)', 'public.sc_event(bigint,text,text,uuid,jsonb)',
     'public.sc_user_entitled(uuid)', 'public.sc_cfg(text)', 'public.sc_item(public.sc_signals,boolean)',
