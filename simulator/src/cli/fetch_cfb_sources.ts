@@ -35,8 +35,10 @@ const ONLY = (get('--only') || '').split(',').filter(Boolean);
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
-type Kind = 'rules' | 'discover' | 'rankings';
-interface Source { id: string; kind: Kind; url: string; links?: RegExp; max?: number }
+type Kind = 'rules' | 'discover' | 'rankings' | 'tables';
+/** links: print matching hrefs · snippet: print raw HTML windows around a pattern (lists a text dump loses) ·
+    nextData: print the long strings of an embedded __NEXT_DATA__ JSON that match (script-rendered articles) */
+interface Source { id: string; kind: Kind; url: string; links?: RegExp; max?: number; snippet?: RegExp; nextData?: RegExp }
 const LINKS = /tie-?break|tiebreak|championship|eligib|playoff|protocol|selection|format|2026/i;
 
 export const CFB_SOURCES: Source[] = [
@@ -48,18 +50,26 @@ export const CFB_SOURCES: Source[] = [
   { id: 'ncaa_cfp_explainer_2026', kind: 'rules', url: 'https://www.ncaa.com/news/football/article/2026-08-11/how-college-football-playoff-works-schedule-selections-rankings-byes-and-more' },
   /* conference championship-game tiebreakers */
   { id: 'acc_2026_tiebreaker', kind: 'rules', url: 'https://theacc.com/news/2026/7/15/acc-announces-new-football-championship-tiebreaker-policy.aspx', links: LINKS },
-  { id: 'sec_tiebreaker_2024', kind: 'rules', url: 'https://www.secsports.com/news/2024/08/sec-announces-football-tie-breaking-process', links: LINKS },
-  { id: 'sec_fbtiebreaker', kind: 'rules', url: 'https://www.secsports.com/FBtiebreaker', links: LINKS },
-  { id: 'big_ten_tiebreaker', kind: 'rules', url: 'https://bigten.org/fb/article/58967/', links: LINKS },
+  { id: 'sec_tiebreaker_2024', kind: 'rules', url: 'https://www.secsports.com/news/2024/08/sec-announces-football-tie-breaking-process', links: LINKS, nextData: /tie|scoring margin|head-to-head|common/i },
+  { id: 'sec_football_news', kind: 'discover', url: 'https://www.secsports.com/sport/football', links: LINKS },
+  { id: 'big_ten_tiebreaker_2024_pdf', kind: 'rules', url: 'https://nextgen.bigten.org/api/media/file/f142aa7f-aa37-430b-bf09-8988a6952c0c-2024_Big_Ten_Football_Tiebreaker_-_FINAL_10__72_.pdf' },
+  { id: 'big_ten_tiebreaker_2024_release', kind: 'rules', url: 'https://bigten.org/fb/article/blt6104802d94ebe1ab/', links: LINKS, nextData: /tie|seed|championship/i },
   { id: 'big_ten_fcg', kind: 'rules', url: 'https://bigten.org/FCG', links: LINKS },
   { id: 'big12_tiebreaker_pdf', kind: 'rules', url: 'https://s3.amazonaws.com/big12sports.com/documents/2025/11/4/Big_12_Football_2024_Tiebreaker_Policy.pdf' },
   { id: 'aac_tiebreaker_2025', kind: 'rules', url: 'https://theamerican.org/news/2025/11/23/FOOTBALL_Tiebreaker.aspx', links: LINKS },
-  { id: 'sun_belt_tiebreakers', kind: 'rules', url: 'https://sunbeltsports.org/sports/2018/8/30/FB_Tie-Breakers.aspx', links: LINKS },
+  { id: 'aac_tiebreaker_2025_pdf', kind: 'rules', url: 'https://theamerican.org/documents/2025/10/29/25_FB_Tiebreakers.pdf' },
+  { id: 'sun_belt_tiebreakers', kind: 'rules', url: 'https://sunbeltsports.org/sports/2018/8/30/FB_Tie-Breakers.aspx', links: LINKS, snippet: /two divisions are/i },
   { id: 'mac_tiebreaker', kind: 'rules', url: 'https://getsomemaction.com/sports/2025/11/12/FB_1112255434.aspx', links: LINKS },
   { id: 'mac_sacramento_state', kind: 'rules', url: 'https://getsomemaction.com/news/2026/8/28/football-sacramento-state.aspx', links: LINKS },
   { id: 'pac12_2026_schedule', kind: 'rules', url: 'https://gobulldogs.com/news/2026/2/11/football-pac-12-announces-2026-football-schedule', links: LINKS },
   { id: 'cusa_2026_schedule', kind: 'rules', url: 'https://conferenceusa.com/news/2026/4/29/fb-cusa-releases-revised-2026-football-schedule.aspx', links: LINKS },
   { id: 'ndsu_eligibility_report', kind: 'rules', url: 'https://www.kfyrtv.com/2026/06/24/north-dakota-state-football-earns-immediate-postseason-eligibility/', links: LINKS },
+  { id: 'ndsu_mw_title_vote_report', kind: 'rules', url: 'https://nevadasportsnet.com/news/reporters/north-dakota-state-footballs-ability-to-play-for-2026-mw-title-to-be-voted-on-this-week' },
+  { id: 'ncaa_di_cabinet_2026_06_24', kind: 'rules', url: 'https://ncaa.org/news/2026/6/24/media-center-di-cabinet-remands-two-semester-mens-soccer-proposal-to-oversight-committee-for-further-review.aspx' },
+  { id: 'sac_state_mac_ap_report', kind: 'rules', url: 'https://wtop.com/ncaa-football/2026/02/sacramento-state-mens-football-to-join-fbs-mid-american-conference-in-july/' },
+  { id: 'cfp_bracket_2026_27_pdf', kind: 'rules', url: 'https://collegefootballplayoff.com/documents/2026/7/14/2027_StandardizedBracket_2_R1.pdf' },
+  { id: 'cfp_rankings_history', kind: 'tables', url: 'https://collegefootballplayoff.com/sports/2026/8/9/rankings-history.aspx', links: /rank|history|20\d\d/i },
+  { id: 'cfp_rankings_week_by_week', kind: 'tables', url: 'https://collegefootballplayoff.com/sports/2026/8/9/wk-x-wk-rankings.aspx', links: /rank|week|20\d\d/i },
   /* where the 2026 documents live when the URL is not known yet */
   { id: 'mw_football', kind: 'discover', url: 'https://themw.com/sports/football', links: LINKS },
   { id: 'mw_news', kind: 'discover', url: 'https://themw.com/news', links: LINKS },
@@ -68,9 +78,10 @@ export const CFB_SOURCES: Source[] = [
   { id: 'pac12_football', kind: 'discover', url: 'https://pac-12.com/football', links: LINKS },
   { id: 'sun_belt_football', kind: 'discover', url: 'https://sunbeltsports.org/sports/football', links: LINKS },
   { id: 'mac_football', kind: 'discover', url: 'https://getsomemaction.com/sports/football', links: LINKS },
-  { id: 'ncaa_reclassification', kind: 'discover', url: 'https://www.ncaa.org/news', links: /reclass|fcs|fbs|postseason|eligib/i },
+  ...['themw.com', 'conferenceusa.com', 'pac-12.com', 'theamerican.org', 'getsomemaction.com', 'sunbeltsports.org'].map((h): Source =>
+    ({ id: 'search_' + h.split('.')[0].replace(/-/g, ''), kind: 'discover', url: 'https://' + h + '/search?query=football%20tiebreaker', links: /tie-?break|championship|documents\/|\.pdf/i })),
   /* historical committee rankings (Wikipedia, CC BY-SA): the CFP table only */
-  ...Array.from({ length: 13 }, (_, i): Source => {
+  ...Array.from({ length: 12 }, (_, i): Source => {
     const y = 2014 + i;
     return { id: 'wiki_rankings_' + y, kind: 'rankings', url: 'https://en.wikipedia.org/wiki/' + y + '_NCAA_Division_I_FBS_football_rankings' };
   })
@@ -167,10 +178,30 @@ async function fetchSource(s: Source) {
     catch (e) { console.log('pdftotext unavailable or failed: ' + String((e as Error).message).slice(0, 200)); SUMMARY.push(s.id + ': ' + head + ' · PDF not converted'); return; }
   } else text = htmlText(html);
   if (!isPdf && s.links) {
-    const links = [...new Set([...html.matchAll(/href="([^"#]+)"[^>]*>([\s\S]{0,200}?)<\/a>/gi)]
+    const links = [...new Set([...html.matchAll(/href=["']([^"'#]+)["'][^>]*>([\s\S]{0,600}?)<\/a>/gi)]
       .map((m) => [m[1], decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim()])
-      .filter(([h, t]) => s.links!.test(h) || s.links!.test(t)).map(([h, t]) => h + '  «' + t.slice(0, 90) + '»'))].slice(0, 120);
-    console.log('-- links matching ' + s.links + ' (' + links.length + '):\n' + links.map((l) => '  ' + l).join('\n'));
+      .filter(([h, t]) => s.links!.test(h) || s.links!.test(t) || /\/documents\/|\.pdf(\?|$)/i.test(h)).map(([h, t]) => h + '  «' + t.slice(0, 90) + '»'))].slice(0, 150);
+    console.log('-- links matching ' + s.links + ' or naming a document (' + links.length + '):\n' + links.map((l) => '  ' + l).join('\n'));
+  }
+  if (!isPdf && s.snippet) {
+    const re = new RegExp(s.snippet.source, 'gi');
+    let m: RegExpExecArray | null, k = 0;
+    while ((m = re.exec(html)) && k++ < 3) console.log('-- raw html around ' + s.snippet + ':\n' + html.slice(m.index, m.index + 2500));
+  }
+  if (!isPdf && s.nextData) {
+    const nd = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+    const found: string[] = [];
+    const walk = (v: unknown) => { if (typeof v === 'string') { if (v.length > 150 && s.nextData!.test(v)) found.push(v); } else if (v && typeof v === 'object') for (const x of Object.values(v as object)) walk(x); };
+    if (nd) { try { walk(JSON.parse(nd[1])); } catch (e) { console.log('__NEXT_DATA__ unparsable: ' + String((e as Error).message).slice(0, 120)); } }
+    /* other frameworks inline the article as a JSON string in a script */
+    for (const sc of html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || []) if (s.nextData.test(sc) && /tie-?break/i.test(sc) && !/__NEXT_DATA__/.test(sc)) found.push(sc.slice(0, 30000));
+    console.log('-- embedded article strings (' + found.length + '):');
+    for (const f of [...new Set(found)].slice(0, 12)) console.log('>>> ' + htmlText(f.replace(/\\u003c/g, '<').replace(/\\u003e/g, '>').replace(/\\n/g, '\n').replace(/\\"/g, '"')).slice(0, 20000));
+  }
+  if (s.kind === 'tables') {
+    const tabs = (html.match(/<table\b[\s\S]*?<\/table>/gi) || []).map(tableRows);
+    console.log('-- tables: ' + tabs.length);
+    tabs.forEach((t, i) => { console.log('-- table ' + i + ' (' + t.length + ' rows)'); for (const r of t.slice(0, 40)) console.log('ROW\t' + r.join('\t')); });
   }
   fs.writeFileSync(path.join(OUT, s.id + '.txt'), text);
   SUMMARY.push(s.id + ': ' + head + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
