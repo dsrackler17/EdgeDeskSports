@@ -23,8 +23,8 @@ export interface SportEntry {
   key: string;
   label: string;
   status: SportStatus;
-  structure: 'season' | 'tournament' | 'series' | 'none';
-  tabs: Array<'division' | 'conference' | 'title' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health'>;
+  structure: 'season' | 'tournament' | 'series' | 'events' | 'none';
+  tabs: Array<'division' | 'conference' | 'title' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health' | 'fights' | 'title_path' | 'leaderboard' | 'finishes'>;
   blockers: string[];
   limitations: string[];
   /** what would have to exist for this sport to be activated */

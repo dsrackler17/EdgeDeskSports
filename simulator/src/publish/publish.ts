@@ -43,6 +43,13 @@ function cfbSummary(results: unknown): { cfb?: unknown } {
   return c ? { cfb: { cfp_mode: c.cfp_mode, cfp_mode_reason: c.cfp_mode_reason, uncertainty_layers: c.uncertainty_layers, conferences: c.conferences } } : {};
 }
 
+/** a sport's own reader summary (results.sport_summary: per-game probabilities of a series, a card's bouts,
+    a tournament's state), carried in validation_summary so the reader needs no table of its own */
+function sportSummary(results: unknown): { sport_summary?: unknown } {
+  const x = (results as { sport_summary?: unknown }).sport_summary;
+  return x != null ? { sport_summary: x } : {};
+}
+
 /** one sim_entity_summary row per club; the NHL's projected points travel inside the record
     (sim_entity_summary has a wins column, not a points one) */
 export function entityRows(o: Pick<RunOutcome, 'results'>): Array<Record<string, unknown>> {
@@ -64,7 +71,7 @@ export async function publishRun(o: RunOutcome, opt: PublishOptions = {}): Promi
     n_sims: r.n_sims, model_version: r.model_version, engine_version: r.engine_version, source_commit: r.source_commit || '', rules_version: r.rules_version,
     config_hash: r.config_hash, input_snapshot_at: r.input_snapshot_at, input_ref: 'db:sim_input_snapshots/' + r.input_hash, input_hash: r.input_hash,
     expected: { entities: o.results.entities.length, outcomes: o.results.outcomes.length, sum_rules: o.results.sum_rules },
-    gates: o.gates, validation_summary: { checks: o.results.checks, flags: o.results.flags, ...cfbSummary(o.results) },
+    gates: o.gates, validation_summary: { checks: o.results.checks, flags: o.results.flags, ...cfbSummary(o.results), ...sportSummary(o.results) },
     diagnostics: o.results.diagnostics, limitations: reg ? reg.limitations : [],
     runtime: { runtime_ms: r.runtime_ms, workers: r.workers, peak_rss_mb: r.peak_rss_mb, node: r.node, platform: r.platform },
     started_at: r.started_at, finished_at: r.finished_at
