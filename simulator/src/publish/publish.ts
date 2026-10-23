@@ -43,6 +43,14 @@ function cfbSummary(results: unknown): { cfb?: unknown } {
   return c ? { cfb: { cfp_mode: c.cfp_mode, cfp_mode_reason: c.cfp_mode_reason, uncertainty_layers: c.uncertainty_layers, conferences: c.conferences } } : {};
 }
 
+/** one sim_entity_summary row per club; the NHL's projected points travel inside the record
+    (sim_entity_summary has a wins column, not a points one) */
+export function entityRows(o: Pick<RunOutcome, 'results'>): Array<Record<string, unknown>> {
+  return (o.results.entities as any[]).map((e) => ({ entity_id: e.entity_id, entity_name: e.entity_name, entity_groups: e.groups,
+    record: e.mean_points != null ? { ...(e.record || {}), mean_points: e.mean_points } : e.record || null,
+    mean_wins: e.mean_wins ?? null, wins_hist_x2: e.wins_hist_x2 ?? null, math_status: e.math_status || null }));
+}
+
 export interface PublishOptions { db?: SimDb; log?: (s: string) => void; chunk?: number }
 export interface PublishResult { run_id: string; status: string; existing: boolean; published: boolean; detail?: unknown }
 
@@ -70,9 +78,7 @@ export async function publishRun(o: RunOutcome, opt: PublishOptions = {}): Promi
     await db.rpc('sim_put_snapshot', { p: { input_hash: o.snapshot.input_hash, sport: r.sport, schema: o.snapshot.schema, data: o.snapshot.data, meta: { built_at: o.snapshot.meta.built_at, feeds: 'feeds' in o.snapshot.meta ? o.snapshot.meta.feeds : [] } } });
     const rows = resultRows(o);
     for (let i = 0; i < rows.length; i += chunk) await db.rpc('sim_put_results', { p_run: runId, p_rows: rows.slice(i, i + chunk) });
-    const ents = (o.results.entities as any[]).map((e) => ({ entity_id: e.entity_id, entity_name: e.entity_name, entity_groups: e.groups, record: e.record || null,
-      mean_wins: e.mean_wins ?? null, wins_hist_x2: e.wins_hist_x2 ?? null, math_status: e.math_status || null }));
-    await db.rpc('sim_put_entities', { p_run: runId, p_rows: ents });
+    await db.rpc('sim_put_entities', { p_run: runId, p_rows: entityRows(o) });
     const tr = o.results.traces.slice(0, 5).map((t) => ({ run_index: t.run, trace: { events: t.events } })).filter((t) => JSON.stringify(t.trace).length <= 65536);
     if (tr.length) await db.rpc('sim_put_traces', { p_run: runId, p_rows: tr });
     const pub = await db.rpc('sim_publish_run', { p_run: runId }) as { published: boolean; status: string; errors?: unknown };

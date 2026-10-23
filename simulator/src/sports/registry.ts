@@ -35,12 +35,9 @@ export interface SportEntry {
 function nflStatus(): { status: SportStatus; blockers: string[] } {
   return factStatus([['2026 tiebreaking procedures', NFL_2026.rules], ['2026 playoff format', NFL_2026.playoff_format], ['Super Bowl LXI venue and designated home team', NFL_2026.super_bowl]]);
 }
-/** NHL: engine, rules, studies and tests are complete; the 2026-27 rules facts await
-    human verification against the NHL's own pages, and the reader has no NHL view */
+/** NHL: ACTIVE once its three 2026-27 rules facts are verified against the NHL's own pages */
 function nhlStatus(): { status: SportStatus; blockers: string[] } {
-  const f = factStatus([['2026-27 tie-breaking procedure', NHL_2027.rules], ['2026-27 playoff format', NHL_2027.playoff_format], ['2026-27 playoff home-ice rule', NHL_2027.home_ice]], 'the NHL\'s official source');
-  const blockers = f.blockers.concat(['The reader (lib/edgedesk_simulator.js) renders the NFL outcome set only (seeds 1-7, Super Bowl); an NHL view (D1-D3, wild cards, Presidents\' Trophy, Stanley Cup) must exist before NHL numbers can be shown.']);
-  return { status: 'BLOCKED', blockers };
+  return factStatus([['2026-27 tie-breaking procedure', NHL_2027.rules], ['2026-27 playoff format', NHL_2027.playoff_format], ['2026-27 playoff home-ice rule', NHL_2027.home_ice]], 'the NHL\'s official source');
 }
 type Fact = { verification: string; affects_results: boolean; verify_by: string; verified_by: string | null; verified_at: string | null };
 /** a fact counts as verified only with VERIFIED, a named verifier and a date */
@@ -141,7 +138,7 @@ export function sportRegistry(): SportEntry[] {
       activation_path: 'Verify the six 2026-27 facts in simulator/src/sports/nba/config.ts against the NBA\'s official pages (VERIFIED with verified_by/verified_at in a reviewed commit), wait for the NBA Cup-dependent games on the schedule, then a 100,000-run publication.' },
     { key: 'nhl', label: 'NHL', status: nhl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],
       blockers: nhl.blockers, limitations: NHL_LIMITS,
-      activation_path: 'Verify the three 2026-27 facts in simulator/src/sports/nhl/config.ts against the NHL\'s official pages (VERIFIED with verified_by/verified_at in a reviewed commit), build the reader\'s NHL view, add the NHL (with a pyarrow step) to the nightly workflow plan, apply supabase/simulator.sql.' },
+      activation_path: 'Each season: re-run the Simulator source check, compare the NHL.com tie-breaking and playoff-format pages with NHL_SIMULATOR_NOTES.md, and re-verify the three facts in simulator/src/sports/nhl/config.ts in a reviewed commit.' },
     { key: 'mlb', label: 'MLB', status: mlb.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: mlb.blockers, limitations: MLB_LIMITS,
       activation_path: 'Build the live 2026 snapshot once on a runner that reaches statsapi.mlb.com and check it against MLB\'s standings; verify the 2026 facts in simulator/src/sports/mlb/config.ts against MLB\'s pages; set each VERIFIED with verified_by/verified_at in a reviewed commit; apply supabase/simulator.sql.' },
     { key: 'cbb', label: 'College Basketball', status: 'COMING_SOON', structure: 'tournament', tabs: ['conference', 'tournament', 'futures'],

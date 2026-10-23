@@ -20,6 +20,7 @@ import { codeHashes, writeNhlSnapshot, readNhlSnapshot, type NhlInputData } from
 import { loadHockeyGames } from '../src/sports/nhl/history.ts';
 import { parseArgs, execute } from '../src/cli/run.ts';
 import { sportRegistry } from '../src/sports/registry.ts';
+import { entityRows } from '../src/publish/publish.ts';
 
 const T = kit('NHL simulation');
 const snap = nhlFixture();
@@ -239,11 +240,14 @@ const O: Record<string, number> = {}; NHL_OUTCOMES.forEach((o, i) => { O[o.key] 
     T.chk('1 worker and 3 workers give identical results', canonicalJson(a.results.entities) === canonicalJson(b.results.entities));
     T.chk('results carry mean regular-season points and their histogram (not wins)', (a.results.entities as any[]).every((e) => Number.isFinite(e.mean_points) && Array.isArray(e.points_hist) && e.mean_wins === undefined));
     const gate = (id: string) => a.gates.find((g) => g.id === id)!;
-    T.chk('a BLOCKED sport can never be published (sport.active blocks publication)', gate('sport.active').status === 'FAIL' && gate('sport.active').blocks === 'publication' && !a.publishable);
+    T.chk('the NHL is ACTIVE (sport.active passes), yet 1,500 runs can never be published (run.count blocks publication)', gate('sport.active').status === 'PASS' && gate('run.count').blocks === 'publication' && !a.publishable);
     T.chk('no unsupported tiebreak and no clamped rate in the replay', gate('run.unsupported_tiebreaks').status === 'PASS' && gate('run.lambda_range').status === 'PASS');
     T.eq('a dry run writes the snapshot, results, gates and manifest locally', fs.readdirSync(path.join(tmp, 'a')).sort(), ['gates.json', 'manifest.json', 'results.json', 'snapshot.json']);
     const reg = sportRegistry().find((x) => x.key === 'nhl')!;
-    T.chk('the registry says BLOCKED, naming the unverified 2026-27 facts and the missing reader view', reg.status === 'BLOCKED' && reg.blockers.some((x) => /tie-breaking/.test(x)) && reg.blockers.some((x) => /home-ice/.test(x)) && reg.blockers.some((x) => /reader/.test(x)));
+    T.chk('the registry says ACTIVE with no blocker once the three 2026-27 facts are verified', reg.status === 'ACTIVE' && reg.blockers.length === 0);
+    const rows = entityRows({ results: a.results });
+    T.chk('published entity rows carry the NHL record (W-L-OTL, points, RW, ROW) with the projected points inside it, and no wins columns',
+      rows.length === 32 && rows.every((r: any) => Number.isFinite(r.record.mean_points) && Number.isInteger(r.record.pts) && Number.isInteger(r.record.otl) && r.mean_wins === null && r.wins_hist_x2 === null));
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 process.exit(T.done());

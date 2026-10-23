@@ -26,7 +26,7 @@ deployment: §16 states exactly what exists and what does not.
 | Reader (Simulator seat in `app.html`) | Implemented, tested in Chromium at three widths | `lib/edgedesk_simulator.js`, §13 |
 | GitHub Actions | Linted (actionlint 1.7.7); *Deploy simulator SQL* and *Simulator source check* have run on GitHub; the first *Simulator* publication runs from `main` | `.github/workflows/simulator*.yml`, `deploy-simulator.yml` |
 | 100,000-run benchmark | Executed: 15.7 s on 4 workers | §14 |
-| NHL season and Stanley Cup simulation | Implemented, tested (202 assertions; reproduces all 165 playoff series 2013-14..2025-26); **BLOCKED for publication** | [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) |
+| NHL season and Stanley Cup simulation | Implemented, tested (reproduces all 165 playoff series 2013-14..2025-26); 2026-27 facts verified from NHL.com; **ACTIVE**, published nightly | [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) |
 | MLB season and postseason | Implemented, tested, studies committed; **BLOCKED for publication** (six 2026 facts unverified, live feed never run from the build environment) | [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) |
 | College football (season, title games, CFP) | Implemented, tested; **ACTIVE**: every conference procedure, the 2026 CFP format and North Dakota State's eligibility verified from the governing bodies' text on 2026-10-23; Sacramento State's eligibility measured per run | [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) |
 | NBA season, play-in and playoffs | Implemented, tested; **BLOCKED for publication** (six 2026-27 facts unverified, NBA Cup-dependent games not scheduled) | [`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md) |
@@ -112,7 +112,7 @@ it is stale.
 | **NFL** | **ACTIVE** (verified 2026-10-23, §7.5) | season | served model `football/nfl_model.js`; schedule/results/standings from nflverse; rules engine reproduces 2002–2025 | 2026 tiebreaking procedures, 2026 playoff format and Super Bowl LXI venue/designated home not verified against the NFL's official pages (unreachable from the build environment) — §7.5 |
 | **College football** | **ACTIVE** (verified 2026-10-23, CFB_SIMULATOR_NOTES.md §4) | season | `football/cfb_p4` engine replayed over the 2026 feed; ten conference procedures from their own text; 2026 CFP rules; an Estimated committee proxy — all in [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) | none standing; Sacramento State's MAC eligibility (no MAC statement) is measured each run and holds publication if any run depended on it |
 | NBA | BLOCKED (Implementable — implemented — blocked on verification and the schedule) | season | the served `nba/` model (`edgedesk_nba_v1:E_ridge_P`, equal to the published slate); rules replay every postseason 2006-07..2025-26; strength and return-hazard studies — **[`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md)** | six 2026-27 rules facts unverified (nba.com unreachable from the build environment); 30 regular-season games depend on the NBA Cup group stage and are not scheduled until early December 2026 |
-| NHL | BLOCKED (Implementable — implemented — blocked on verification) | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | 2026-27 tie-breaking procedure, playoff format and home-ice rule not verified against NHL.com (unreachable from the build environment); the reader has no NHL view; not in the nightly workflow (needs a pyarrow step) |
+| **NHL** | **ACTIVE** | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | none (2026-27 tie-breaking, playoff format and home ice verified from NHL.com, 2026-10-23); no Kalshi NHL futures mapped yet |
 | WNBA | BLOCKED | series | — | no series simulator or uncertainty study; the 2026 Finals end by 2026-10-31 |
 | **MLB** | **BLOCKED** (implemented — blocked on verification) | season | served lab brain `mlb/history/model.js` replayed point-in-time; Retrosheet 2010–2025 (+ postseason 2012–2025); live 2026 from MLB's Stats API; rules reproduce every 2012–2025 postseason pairing and host | 2026 alignment, postseason format, tiebreaker procedure, World Series home field and extra-inning rules not verified against MLB's pages (unreachable); the live 2026 feed never run from the build environment — [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) §15 |
 | College basketball | COMING SOON | tournament | `basketball/` | the 2026-27 season has not started; partial schedule with placeholder times; no conference membership, conference-tournament formats or NCAA selection/seed/bracket data |
@@ -581,11 +581,11 @@ rest; Monte Carlo ± is simulation noise only.
 §7, regenerate the Kalshi mappings (`build_kalshi_mappings.ts`), then verify
 in a reviewed commit (docs/simulator/README.md, "Deployment sequence").
 
-**The NHL** (season and Stanley Cup simulator, command line only) has its own
-record: [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) — the
+**The NHL** (season and Stanley Cup simulator, ACTIVE, a second leg of the
+nightly workflow) has its own record: [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) — the
 regulation/OT/shootout model check, the goal-distribution validation, the
 strength study, the rules and their history evidence, goalie and overtime
-limitations, and what blocks publication.
+limitations, and its verification.
 
 ---
 
