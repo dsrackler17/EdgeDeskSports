@@ -3,7 +3,7 @@
    activation gates name, from somewhere that can reach them (GitHub's
    runners: .github/workflows/simulator-sources.yml), and print them whole.
 
-     node simulator/src/cli/fetch_sources.ts [--out simulator/out/sources]
+     node simulator/src/cli/fetch_sources.ts --sport nfl|nhl|nba [--out simulator/out/sources]
 
    Read-only. No credential, no database, nothing written outside --out.
    Prints, for each source: the URL asked and the URL answered, the HTTP
@@ -14,10 +14,16 @@
 
    NFL: the tiebreaking procedures and playoff seeding page, the Super Bowl
    LXI site announcement, the rules index (its playoff / rulebook links).
-   Kalshi: every Sports series whose title names the NFL, Super Bowl, AFC or
-   NFC (with the series' own fee_type / fee_multiplier), every open market in
-   them with its FULL settlement rules and their sha256 (the hash
-   simulator/src/markets/kalshi.ts computes), and Kalshi's fee schedule.
+   NHL: the league's tie-breaking procedure and playoff format pages, and from
+   its own API the season's format flags, the current standings (alignment,
+   points, regulation and regulation-plus-overtime wins, goals) and every
+   club's 2026-27 schedule, one line per game.
+   NBA: the standings page (its tiebreaker paragraph), the play-in and NBA Cup
+   explainers, and the league's 2026-27 schedule file, one line per game.
+   Kalshi (each sport): every Sports series whose title names the league or
+   its championship (with the series' own fee_type / fee_multiplier), every
+   open market in them with its FULL settlement rules and their sha256 (the
+   hash simulator/src/markets/kalshi.ts computes), and Kalshi's fee schedule.
    =========================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,10 +33,13 @@ import { sha256Hex } from '../core/canonical.ts';
 
 const a = process.argv.slice(2), get = (k: string) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
 const OUT = get('--out') || path.join('simulator', 'out', 'sources');
+const SPORT = get('--sport') || 'nfl';
+if (!['nfl', 'nhl', 'nba'].includes(SPORT)) { console.error('usage: --sport nfl|nhl|nba [--out DIR]'); process.exit(2); }
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
-const PAGES: Array<{ id: string; url: string; links?: RegExp; grep?: RegExp }> = [
+type Page = { id: string; url: string; links?: RegExp; grep?: RegExp };
+const NFL_PAGES: Page[] = [
   /* the NFL's published tiebreaking procedures (operations.nfl.com/the-rules/nfl-tiebreaking-procedures answered 404 on 2026-10-23) */
   { id: 'nfl_standings_tiebreaking', url: 'https://www.nfl.com/standings/tie-breaking-procedures' },
   /* what changed for 2026: the league's own list of adopted rules, bylaws and resolutions, and the proposals before the vote */
@@ -42,7 +51,20 @@ const PAGES: Array<{ id: string; url: string; links?: RegExp; grep?: RegExp }> =
   { id: 'nfl_support_playoff_schedule', url: 'https://support.nfl.com/hc/en-us/articles/35869712287508-Schedule' },
   /* Super Bowl LXI: site, and the rule that names the designated home team (it alternates between the conferences) */
   { id: 'nfl_super_bowl_lxi', url: 'https://www.nfl.com/news/sofi-stadium-approved-to-host-super-bowl-lxi-in-2027' },
-  { id: 'nfl_super_bowl_home_rule', url: 'https://www.nfl.com/news/bengals-not-rams-are-official-home-team-for-super-bowl-lvi-at-sofi-stadium' },
+  { id: 'nfl_super_bowl_home_rule', url: 'https://www.nfl.com/news/bengals-not-rams-are-official-home-team-for-super-bowl-lvi-at-sofi-stadium' }
+];
+const NHL_PAGES: Page[] = [
+  /* the league's own statement of the standings tiebreakers and the playoff format */
+  { id: 'nhl_tie_breaking_procedure', url: 'https://www.nhl.com/info/standings-info/tie-breaking-procedure' },
+  { id: 'nhl_playoff_format', url: 'https://www.nhl.com/info/standings-info/playoff-format' }
+];
+const NBA_PAGES: Page[] = [
+  /* the standings page carries the league's tiebreaker paragraph; the play-in and NBA Cup explainers */
+  { id: 'nba_standings', url: 'https://www.nba.com/standings' },
+  { id: 'nba_play_in', url: 'https://www.nba.com/news/nba-play-in-tournament' },
+  { id: 'nba_cup_101', url: 'https://www.nba.com/news/nba-cup-101' }
+];
+const KALSHI_FEE_PAGES: Page[] = [
   /* Kalshi's fee schedule, and the API documentation of fee types, multipliers and rounding */
   { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' },
   { id: 'kalshi_docs_fee_rounding', url: 'https://docs.kalshi.com/getting_started/fee_rounding' },
@@ -71,18 +93,34 @@ export function htmlText(html: string): string {
 function section(title: string) { console.log('\n' + '='.repeat(100) + '\n== ' + title + '\n' + '='.repeat(100)); }
 const SUMMARY: string[] = [];
 
-async function fetchPage(p: (typeof PAGES)[number]) {
-  section('SOURCE ' + p.id + '  ' + p.url);
-  let res: Response;
-  try {
-    for (let attempt = 0; ; attempt++) {
-      res = await fetch(p.url, { headers: { 'user-agent': UA, accept: 'text/html,application/xhtml+xml,application/pdf;q=0.9,*/*;q=0.8' }, redirect: 'follow' });
-      if ((res.status === 429 || res.status >= 500) && attempt < 3) { await new Promise((r) => setTimeout(r, 4000 * 2 ** attempt)); continue; }
-      break;
-    }
+/** the readable text inside a page's embedded JSON (a client-rendered page ships its copy there, not in the markup) */
+export function embeddedText(html: string): string {
+  const out: string[] = [];
+  for (const m of html.matchAll(/<script\b[^>]*type="application\/(?:ld\+)?json"[^>]*>([\s\S]*?)<\/script>/gi)) {
+    let j: unknown; try { j = JSON.parse(m[1]); } catch (_) { continue; }
+    const walk = (v: unknown) => {
+      if (typeof v === 'string') { if (v.length > 60 && /[a-z] [a-z]/i.test(v)) out.push(/<[a-z][\s\S]*>/i.test(v) ? htmlText(v) : v.trim()); }
+      else if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+    };
+    walk(j);
   }
+  return [...new Set(out)].join('\n');
+}
+
+async function fetchRaw(url: string, accept: string): Promise<{ res: Response; body: Buffer }> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, { headers: { 'user-agent': UA, accept }, redirect: 'follow' });
+    if ((res.status === 429 || res.status >= 500) && attempt < 3) { await new Promise((r) => setTimeout(r, 4000 * 2 ** attempt)); continue; }
+    return { res, body: Buffer.from(await res.arrayBuffer()) };
+  }
+}
+
+async function fetchPage(p: Page) {
+  section('SOURCE ' + p.id + '  ' + p.url);
+  let res: Response, body: Buffer;
+  try { ({ res, body } = await fetchRaw(p.url, 'text/html,application/xhtml+xml,application/pdf;q=0.9,*/*;q=0.8')); }
   catch (e) { console.log('FETCH FAILED: ' + String((e as Error).message || e)); SUMMARY.push(p.id + ': FETCH FAILED ' + String((e as Error).message || e)); return; }
-  const body = Buffer.from(await res.arrayBuffer());
   const head = 'status ' + res.status + ' · final url ' + res.url + ' · ' + body.length + ' bytes · sha256 ' + sha256Hex(body) + ' · fetched_at ' + new Date().toISOString();
   console.log(head);
   const isPdf = /\.pdf($|\?)/i.test(res.url) || (res.headers.get('content-type') || '').includes('pdf');
@@ -94,6 +132,8 @@ async function fetchPage(p: (typeof PAGES)[number]) {
   } else {
     const html = body.toString('utf8');
     text = htmlText(html);
+    const emb = embeddedText(html);
+    if (emb) text += '\n\n-- text inside the page\'s embedded JSON:\n' + emb;
     if (p.links) {
       const links = [...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map((m) => m[1]).filter((h) => p.links!.test(h)))].slice(0, 80);
       console.log('-- links matching ' + p.links + ':\n' + links.map((l) => '  ' + l).join('\n'));
@@ -105,21 +145,96 @@ async function fetchPage(p: (typeof PAGES)[number]) {
   console.log('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):\n' + text.slice(0, 60000));
 }
 
+/** a JSON feed: status, sha256 of the body, the parsed value (null when it is not JSON) */
+async function fetchJson(id: string, url: string): Promise<any> {
+  try {
+    const { res, body } = await fetchRaw(url, 'application/json');
+    fs.writeFileSync(path.join(OUT, id + '.json'), body);
+    const head = 'status ' + res.status + ' · ' + url + ' · ' + body.length + ' bytes · sha256 ' + sha256Hex(body);
+    console.log('FEED ' + id + ' ' + head);
+    SUMMARY.push(id + ': ' + head);
+    if (!res.ok) return null;
+    try { return JSON.parse(body.toString('utf8')); } catch (_) { console.log('  not JSON'); return null; }
+  } catch (e) { console.log('FEED ' + id + ' FAILED ' + String((e as Error).message || e)); SUMMARY.push(id + ': FAILED ' + String((e as Error).message || e)); return null; }
+}
+
+/* NHL: the league's own API (api-web.nhle.com, the feed nhl.com's standings and schedule pages read) */
+const NHL_SEASON_ID = '20262027';
+async function nhlApi() {
+  section('SOURCE nhl_api  https://api-web.nhle.com/v1 (the NHL\'s public API)');
+  const ss = await fetchJson('nhl_standings_season', 'https://api-web.nhle.com/v1/standings-season');
+  for (const x of (ss && ss.seasons) || []) if (Number(x.id) >= 20132014) console.log('  SEASONFMT ' + JSON.stringify(x));
+  const st = await fetchJson('nhl_standings_now', 'https://api-web.nhle.com/v1/standings/now');
+  const rows = (st && st.standings) || [];
+  console.log('  standings date ' + (st && st.standingsDateTimeUtc) + ' · ' + rows.length + ' clubs');
+  console.log('  (abbrev | conference | division | GP W L OTL PTS | RW ROW | GF GA | wildcardSequence | clinch | seasonId)');
+  for (const r of rows) console.log('  STANDING ' + [r.teamAbbrev && r.teamAbbrev.default, r.conferenceName, r.divisionName, [r.gamesPlayed, r.wins, r.losses, r.otLosses, r.points].join(' '),
+    [r.regulationWins, r.regulationPlusOtWins].join(' '), [r.goalFor, r.goalAgainst].join(' '), r.wildcardSequence, r.clinchIndicator || '', r.seasonId].join(' | '));
+  const clubs = rows.map((r: any) => r.teamAbbrev && r.teamAbbrev.default).filter(Boolean).sort();
+  const games = new Map<number, any>();
+  for (const c of clubs) {
+    const j = await fetchJson('nhl_schedule_' + c, 'https://api-web.nhle.com/v1/club-schedule-season/' + c + '/' + NHL_SEASON_ID);
+    for (const g of (j && j.games) || []) games.set(Number(g.id), g);
+  }
+  const all = [...games.values()].sort((p, q) => String(p.startTimeUTC).localeCompare(String(q.startTimeUTC)) || p.id - q.id);
+  const byType: Record<string, number> = {};
+  for (const g of all) byType[g.gameType] = (byType[g.gameType] || 0) + 1;
+  console.log('\n-- 2026-27 schedule: ' + all.length + ' distinct games by gameType ' + JSON.stringify(byType) + ' (1 preseason, 2 regular season, 3 playoffs)');
+  console.log('  (id | date | startTimeUTC | gameType | away | home | gameState | away score | home score | lastPeriodType | neutralSite | venue)');
+  const lines: string[] = [];
+  for (const g of all) {
+    if (Number(g.gameType) === 1) continue;
+    const ln = [g.id, g.gameDate, g.startTimeUTC, g.gameType, g.awayTeam && g.awayTeam.abbrev, g.homeTeam && g.homeTeam.abbrev, g.gameState,
+      g.awayTeam && g.awayTeam.score != null ? g.awayTeam.score : '', g.homeTeam && g.homeTeam.score != null ? g.homeTeam.score : '',
+      (g.gameOutcome && g.gameOutcome.lastPeriodType) || '', g.neutralSite ? 1 : 0, (g.venue && g.venue.default) || ''].join('|');
+    lines.push(ln); console.log('  NHLGAME ' + ln);
+  }
+  fs.writeFileSync(path.join(OUT, 'nhl_schedule_' + NHL_SEASON_ID + '.psv'), lines.join('\n') + '\n');
+  SUMMARY.push('nhl schedule: ' + lines.length + ' regular-season and playoff games · sha256 of the lines ' + sha256Hex(lines.join('\n') + '\n'));
+}
+
+/* NBA: the league's season schedule file (cdn.nba.com, what nba.com/schedule reads) */
+async function nbaApi() {
+  section('SOURCE nba_schedule  https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json');
+  const j = await fetchJson('nba_schedule', 'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json');
+  const ls = (j && j.leagueSchedule) || {};
+  console.log('  seasonYear ' + ls.seasonYear + ' · leagueId ' + ls.leagueId);
+  const lines: string[] = [];
+  const labels: Record<string, number> = {};
+  for (const d of ls.gameDates || []) for (const g of d.games || []) {
+    const lab = [g.gameLabel, g.gameSubLabel, g.gameSubtype].filter(Boolean).join(' / ');
+    labels[lab || '(none)'] = (labels[lab || '(none)'] || 0) + 1;
+    const ln = [g.gameId, g.gameDateUTC || g.gameDateEst, g.gameDateTimeUTC, g.weekNumber, g.awayTeam && g.awayTeam.teamTricode, g.homeTeam && g.homeTeam.teamTricode,
+      g.gameStatus, g.awayTeam && g.awayTeam.score, g.homeTeam && g.homeTeam.score, lab, g.isNeutral ? 1 : 0, g.arenaName || ''].join('|');
+    lines.push(ln);
+  }
+  console.log('  games by label ' + JSON.stringify(labels));
+  console.log('  (gameId | date | dateTimeUTC | week | away | home | status | away score | home score | label | neutral | arena)');
+  for (const ln of lines) console.log('  NBAGAME ' + ln);
+  fs.writeFileSync(path.join(OUT, 'nba_schedule.psv'), lines.join('\n') + '\n');
+  SUMMARY.push('nba schedule: ' + lines.length + ' games · sha256 of the lines ' + sha256Hex(lines.join('\n') + '\n'));
+}
+
 /* season futures: a series whose title names a champion, conference, division, playoff berth or seed.
    Per-game, per-player and in-season prop series (thousands of markets) are listed by name and count only. */
-const FUTURES = /Super Bowl|champion|conference|AFC|NFC|division|playoff|seed/i;
-const NOT_FUTURES = /game|spread|total|points|yards|touchdown|TD|MVP|player|quarter|half|draft|coach|week|rookie|award|passing|rushing|receiving|sack|score|margin|first|anytime/i;
+const FUTURES = /Super Bowl|Stanley Cup|Presidents|champion|conference|AFC|NFC|Eastern|Western|division|Atlantic|Metropolitan|Central|Pacific|playoff|play-in|seed|Finals|NBA Cup/i;
+const NOT_FUTURES = /game|spread|total|points|yards|touchdown|TD|MVP|player|quarter|half|draft|coach|week|rookie|award|passing|rushing|receiving|sack|score|margin|first|anytime|goal|assist|save|rebound|three|triple|double/i;
+const KALSHI_MATCH: Record<string, { match: RegExp; not: RegExp }> = {
+  nfl: { match: /\bNFL\b|Super Bowl|Pro Football|American Football Conference|National Football Conference|^KXNFL|^KXSB|^KXAFC$|^KXNFC$/i, not: /NCAA|College|AFCON|Fantasy|NBA|\bFCS\b/i },
+  nhl: { match: /\bNHL\b|Stanley Cup|Pro Hockey|National Hockey League|Presidents.? Trophy|^KXNHL|^KXSTANLEY/i, not: /NCAA|College|AHL|KHL|PWHL|Fantasy|Olympic|World Championship|4 Nations|Four Nations/i },
+  nba: { match: /\bNBA\b|Pro Basketball|National Basketball Association|NBA Cup|^KXNBA/i, not: /WNBA|NCAA|College|G League|Fantasy|Olympic|EuroLeague/i }
+};
 
 async function kalshi() {
-  section('SOURCE kalshi_api  public REST, no key');
+  section('SOURCE kalshi_api  public REST, no key · ' + SPORT.toUpperCase());
   const c = kalshiClient();
-  const match = /\bNFL\b|Super Bowl|Pro Football|American Football Conference|National Football Conference|^KXNFL|^KXSB|^KXAFC$|^KXNFC$/i, notNfl = /NCAA|College|AFCON|Fantasy|NBA|\bFCS\b/i;
+  const { match, not: notThis } = KALSHI_MATCH[SPORT];
   let s: any;
   try { s = await c.get('/series', { category: 'Sports' }); } catch (e) { console.log('KALSHI FAILED: ' + String((e as Error).message || e)); SUMMARY.push('kalshi: FAILED ' + String((e as Error).message || e)); return; }
-  const series = ((s && s.series) || []).filter((x: any) => x && x.ticker && (match.test(String(x.title || '')) || match.test(String(x.ticker))) && !notNfl.test(String(x.title || '')) && !/GAME$/.test(x.ticker));
+  const series = ((s && s.series) || []).filter((x: any) => x && x.ticker && (match.test(String(x.title || '')) || match.test(String(x.ticker))) && !notThis.test(String(x.title || '')) && !/GAME$/.test(x.ticker));
   const futures = series.filter((x: any) => FUTURES.test(String(x.title || '')) && !NOT_FUTURES.test(String(x.title || '')));
-  console.log('host ' + c.host + ' · ' + ((s && s.series) || []).length + ' Sports series · ' + series.length + ' name the NFL · ' + futures.length + ' look like season futures');
-  console.log('-- every NFL-named series (ticker | title | fee_type | fee_multiplier):');
+  console.log('host ' + c.host + ' · ' + ((s && s.series) || []).length + ' Sports series · ' + series.length + ' name the ' + SPORT.toUpperCase() + ' · ' + futures.length + ' look like season futures');
+  console.log('-- every ' + SPORT.toUpperCase() + '-named series (ticker | title | fee_type | fee_multiplier):');
   for (const x of series) console.log('  ' + x.ticker + ' | ' + x.title + ' | ' + x.fee_type + ' | ' + x.fee_multiplier + (futures.includes(x) ? '   <- futures' : ''));
   const all: any[] = [];
   for (const x of futures) {
@@ -158,11 +273,15 @@ async function kalshi() {
     console.log('  FEECHANGES total ' + (Array.isArray(list) ? list.length : 'n/a') + ' · keys ' + JSON.stringify(Object.keys(fc || {})));
     for (const x of Array.isArray(list) ? list : []) if (mine.has(x.series_ticker)) console.log('  FEECHANGE ' + JSON.stringify(x));
   } catch (err) { console.log('  FEECHANGES FAILED ' + String((err as Error).message).slice(0, 160)); }
-  fs.writeFileSync(path.join(OUT, 'kalshi_candidates.json'), JSON.stringify({ fetched_at: new Date().toISOString(), host: c.host, series, futures: futures.map((x: any) => x.ticker), markets: all }, null, 1));
-  SUMMARY.push('kalshi: host ' + c.host + ' · ' + series.length + ' NFL-named series · ' + futures.length + ' futures series · ' + all.length + ' open futures markets');
+  /* the NFL's file keeps the name build_kalshi_mappings.ts was first run on */
+  const file = SPORT === 'nfl' ? 'kalshi_candidates.json' : 'kalshi_candidates_' + SPORT + '.json';
+  fs.writeFileSync(path.join(OUT, file), JSON.stringify({ fetched_at: new Date().toISOString(), host: c.host, sport: SPORT, series, futures: futures.map((x: any) => x.ticker), markets: all }, null, 1));
+  SUMMARY.push('kalshi: host ' + c.host + ' · ' + series.length + ' ' + SPORT.toUpperCase() + '-named series · ' + futures.length + ' futures series · ' + all.length + ' open futures markets');
 }
 
 await kalshi();
-for (const p of PAGES) await fetchPage(p);
+if (SPORT === 'nhl') await nhlApi();
+if (SPORT === 'nba') await nbaApi();
+for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : NBA_PAGES) await fetchPage(p);
 section('SUMMARY');
 console.log(SUMMARY.join('\n') + '\nwritten to ' + OUT);
