@@ -1,18 +1,22 @@
 /* ===========================================================================
-   edgedesk-sim build-kalshi-mappings — write simulator/config/kalshi_futures.json
-   from the markets the source check read (kalshi_candidates.json, the
-   artifact of .github/workflows/simulator-sources.yml).
+   edgedesk-sim build-kalshi-mappings — write one sport's part of
+   simulator/config/kalshi_futures.json from the markets the source check read
+   (kalshi_candidates[_mlb].json, the artifact of
+   .github/workflows/simulator-sources.yml, or the job's log itself).
 
-     node simulator/src/cli/build_kalshi_mappings.ts --candidates <kalshi_candidates.json> --run <actions run id> [--check]
+     node simulator/src/cli/build_kalshi_mappings.ts [--sport nfl|mlb] --candidates <kalshi_candidates.json> --run <actions run id> [--check]
+     node simulator/src/cli/build_kalshi_mappings.ts --sport mlb --log <the fetch (mlb) job's log> --run <actions run id>
 
    A market is mapped ONLY when every check passes:
-     - its series is one of SERIES below, whose settlement wording names
-       exactly one simulated outcome;
+     - its series is one of SERIES (NFL) or MLB_SERIES below, whose
+       settlement wording names exactly one simulated outcome;
      - its rules text matches that series' template word for word, and the
-       club it names is the market's own label;
+       club it names is the market's own label (MLB: the label Kalshi gives
+       the club its ticker names; the season the rules name is the event
+       ticker's, and the mapping is that season's);
      - its secondary rules are nothing but Kalshi's standard disclaimer;
-     - its ticker names a club of the configured alignment, in the conference
-       or division the series (or the rules) names;
+     - its ticker names a club of the configured alignment, in the conference,
+       league or division the series (or the rules) names;
      - its series is the quadratic fee type with multiplier 1 (the fee formula
        the comparison applies).
    Anything else is left out and listed. A set of markets becomes an outcome
@@ -25,7 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NFL_TEAMS_2026 } from '../sports/nfl/config.ts';
-import { MLB_TEAMS, teamsFor, type League } from '../sports/mlb/config.ts';
+import { MLB_TEAMS, DIVISIONS, teamsFor, type League } from '../sports/mlb/config.ts';
 import type { FuturesConfig, Mapping, OutcomeSet } from '../markets/compare.ts';
 import { FUTURES_CONFIG } from './markets.ts';
 
@@ -114,16 +118,38 @@ export function buildMappings(markets: Candidate[], series: SeriesInfo[], verifi
 /** Kalshi ticker suffix -> Retrosheet franchise key (the simulator's MLB entity id); every other suffix is the same */
 export const KALSHI_TO_RETRO: Record<string, string> = { ATH: 'OAK', AZ: 'ARI', CHC: 'CHN', CWS: 'CHA', KC: 'KCA', LAA: 'ANA', LAD: 'LAN', NYM: 'NYN', NYY: 'NYA',
   SD: 'SDN', SF: 'SFN', STL: 'SLN', TB: 'TBA', WSH: 'WAS' };
-/** the label (yes_sub_title) Kalshi gives each club: the ticker and the label must name the same club */
-export const KALSHI_LABEL: Record<string, string> = { MIL: 'Milwaukee', TBA: 'Tampa Bay' };
+/** the label (yes_sub_title) Kalshi gives each club, by Retrosheet key: the ticker and the label must name the same
+    club. One label per club across every MLB futures market Kalshi listed, open or settled (run 40019030435). */
+export const KALSHI_LABEL: Record<string, string> = {
+  BAL: 'Baltimore', BOS: 'Boston', NYA: 'New York Y', TBA: 'Tampa Bay', TOR: 'Toronto',
+  CHA: 'Chicago WS', CLE: 'Cleveland', DET: 'Detroit', KCA: 'Kansas City', MIN: 'Minnesota',
+  ANA: 'Los Angeles A', HOU: 'Houston', OAK: 'A\'s', SEA: 'Seattle', TEX: 'Texas',
+  ATL: 'Atlanta', MIA: 'Miami', NYN: 'New York M', PHI: 'Philadelphia', WAS: 'Washington',
+  CHN: 'Chicago C', CIN: 'Cincinnati', MIL: 'Milwaukee', PIT: 'Pittsburgh', SLN: 'St. Louis',
+  ARI: 'Arizona', COL: 'Colorado', LAN: 'Los Angeles D', SDN: 'San Diego', SFN: 'San Francisco'
+};
 
 interface MlbSeriesRule { outcome: string; league?: League; div?: string; re: RegExp; basis: string }
-/* each template captures the club (1) and the season (2); the season must be the event ticker's (KXMLB-26: 2026), so
-   next season's markets map to next season's run as soon as Kalshi lists them */
+/* Kalshi's wording, from the 2026 markets (run 40019030435: the World Series open, every other series settled).
+   Each template captures the club (1) and the season (2); the season must be the event ticker's (KXMLB-26: 2026),
+   so next season's markets map to next season's run as soon as Kalshi lists them. Not mapped: the league or
+   division of the champion, exact World Series matchups, the champion's seed, win totals, awards and props (no
+   club's simulated outcome settles on them), and Kalshi's older series under other tickers (KXMLBWS, KXWSAL,
+   KXWSNL, KXMLBDIVWINNER, KXMBLNLEAST), which listed no market in 2026. */
 export const MLB_SERIES: Record<string, MlbSeriesRule> = {
   KXMLB: { outcome: 'win_world_series', re: /^If (.+) wins the (\d{4}) Pro Baseball Championship, then the market resolves to Yes\.$/,
-    basis: 'wins the season\'s Pro Baseball Championship (the World Series) = win_world_series' }
+    basis: 'wins the season\'s Pro Baseball Championship (the World Series) = win_world_series' },
+  KXMLBAL: { outcome: 'win_pennant', league: 'AL', re: /^If (.+) win the (\d{4}) Pro Baseball American League Championship, then the market resolves to Yes\.$/,
+    basis: 'wins the American League Championship (the pennant: reaches the World Series) = win_pennant' },
+  KXMLBNL: { outcome: 'win_pennant', league: 'NL', re: /^If (.+) win the (\d{4}) Pro Baseball National League Championship, then the market resolves to Yes\.$/,
+    basis: 'wins the National League Championship (the pennant: reaches the World Series) = win_pennant' },
+  KXMLBPLAYOFFS: { outcome: 'make_playoffs', re: /^If (.+) is one of the (\d{4}) Pro Baseball Playoff Qualifiers, then the market resolves to Yes\.$/,
+    basis: 'is one of the season\'s playoff qualifiers = make_playoffs' }
 };
+for (const d of DIVISIONS)
+  MLB_SERIES['KXMLB' + d.replace(' ', '').replace('Central', 'Cent').toUpperCase()] = { outcome: 'win_division', div: d,
+    re: new RegExp('^If (.+) is the (\\d{4}) Pro Baseball ' + d + ' Division Winner, then the market resolves to Yes\\.$'),
+    basis: 'is the ' + d + ' Division Winner (the season\'s tiebreak procedure decides a tie) = win_division' };
 
 export function buildMlbMappings(markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }) {
   const mappings: Mapping[] = [], left: Array<{ market_ticker: string; why: string[] }> = [];
@@ -179,11 +205,11 @@ export function buildMlbMappings(markets: Candidate[], series: SeriesInfo[], ver
 /** the candidates file read back from the source check's job log, for when its artifact cannot be downloaded:
     every series row (with its fee fields) and every open market line, each with the rules sha256 the runner
     computed on the raw text. The log prints the rules with whitespace squashed, which is how the templates read
-    them anyway. SETTLED lines (a series' wording between seasons) are never candidates. */
-export function candidatesFromLog(text: string): { fetched_at: string; series: SeriesInfo[]; markets: Candidate[] } {
-  const series: SeriesInfo[] = [], markets: Candidate[] = [];
+    them anyway. SETTLED lines (a series' wording between seasons) are read apart and are never candidates. */
+export function candidatesFromLog(text: string): { fetched_at: string; series: SeriesInfo[]; markets: Candidate[]; settled: Candidate[] } {
+  const series: SeriesInfo[] = [], markets: Candidate[] = [], settled: Candidate[] = [];
   let at = '', current = '';
-  for (const raw of text.split(/\r?\n/)) {
+  for (const raw of text.replace(/^\uFEFF/, '').split(/\r?\n/)) {
     const ts = raw.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+Z) /);
     if (ts && !at) at = ts[1];
     const line = ts ? raw.slice(ts[0].length) : raw;
@@ -191,10 +217,11 @@ export function candidatesFromLog(text: string): { fetched_at: string; series: S
     if (m) { current = m[1]; continue; }
     m = line.match(/^ {2}(KX[A-Z0-9-]+) \| .* \| (\S+) \| (\S+?)(?: {3}<- futures)?$/);
     if (m) { series.push({ ticker: m[1], fee_type: m[2], fee_multiplier: m[3] }); continue; }
-    m = line.match(/^ {2}- (\S+) \| event (\S+) \| (.*?) \| close \S+ \| bid .*? \| rules_sha256 (\S+) \| RULES: (.*?)(?: \| RULES2: (.*))?$/);
-    if (m && current) markets.push({ series_ticker: current, event_ticker: m[2], market_ticker: m[1], yes_sub_title: m[3], rules_primary: m[5], rules_secondary: m[6] ?? null, rules_sha256: m[4] });
+    m = line.match(/^ {2}(-|~ SETTLED) (\S+) \| event (\S+) \| (.*?) \| close \S+ \| .*? \| rules_sha256 (\S+) \| RULES: (.*?)(?: \| RULES2: (.*))?$/);
+    if (m && current) (m[1] === '-' ? markets : settled).push({ series_ticker: current, event_ticker: m[3], market_ticker: m[2], yes_sub_title: m[4],
+      rules_primary: m[6], rules_secondary: m[7] ?? null, rules_sha256: m[5] });
   }
-  return { fetched_at: at, series, markets };
+  return { fetched_at: at, series, markets, settled };
 }
 
 /** the config's mapping_version names the source check each sport's mappings came from ('nfl <date>.run<id>; mlb ...');
