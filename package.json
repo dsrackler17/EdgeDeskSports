@@ -589,6 +589,12 @@
     "ncaam:fc:test": "node basketball/ncaam_forecast/tests/model.test.js && node basketball/ncaam_forecast/tests/live_writer.test.js && node basketball/ncaam_forecast/tests/sql.test.js && node simulator/tests/ncaam_sim.test.ts && node simulator/tests/ncaam_ui.test.ts",
     "ncaam:fc:test:ops": "node basketball/ncaam_forecast/tests/ops.test.js",
     "ncaam:fc:e2e": "node simulator/tests/ncaam_ui.e2e.ts",
-    "ncaam:fc:bench": "node simulator/src/cli/run.ts --sport ncaam --season 2026 --mode historical --model champion --runs 100000 --workers 4 --dry-run"
+    "ncaam:fc:bench": "node simulator/src/cli/run.ts --sport ncaam --season 2026 --mode historical --model champion --runs 100000 --workers 4 --dry-run",
+    "market-intel:test": "node tools/market_intel/validation_lab.test.js && node tools/market_intel/market_intel.test.js && node tools/market_intel/replay.test.js",
+    "market-intel:validate": "node tools/market_intel/validation_report.js --write",
+    "market-intel:backtest": "node tools/market_intel/market_intel_backtest.js --write",
+    "market-intel:registry": "node tools/market_intel/model_registry.js --write",
+    "market-intel:report": "npm run market-intel:validate && npm run market-intel:backtest && npm run market-intel:registry",
+    "market-intel:replay": "node tools/market_intel/replay.js"
   }
 }

@@ -190,6 +190,16 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   T.eq('extra secondary rules are left out', b([ok({ rules_secondary: DISCLAIMER + ' If the season is shortened, the market resolves to No.' })]).left.length, 1);
   T.eq('a club outside the division is left out', b([ok({ market_ticker: 'KXNFLAFCEAST-27-KC', yes_sub_title: 'Kansas City', rules_primary: 'If Kansas City wins the Pro Football AFC East Division, then the market resolves to Yes.' })]).left.length, 1);
   T.eq('rules naming another club than the label are left out', b([ok({ yes_sub_title: 'Miami' })]).left.length, 1);
+  T.eq('next season\'s market (event -28) is left out: the division rules name no season', b([ok({ event_ticker: 'KXNFLAFCEAST-28', market_ticker: 'KXNFLAFCEAST-28-BUF' })]).left.map((x) => x.why.some((w) => /not the 2026 season/.test(w))), [true]);
+  T.eq('the #1-seed series names the season by its first year (-AFC26) and maps', b([ok({ series_ticker: 'KXNFL1SEED', event_ticker: 'KXNFL1SEED-AFC26', market_ticker: 'KXNFL1SEED-AFC26-BUF',
+    rules_primary: 'If Buffalo is the #1 seed in the American Football Conference at the conclusion of the 2026-2027 Pro Football regular season, then the market resolves to Yes.' })],
+    [{ ticker: 'KXNFL1SEED', fee_type: 'quadratic', fee_multiplier: 1 }]).mappings.map((m) => m.outcome), ['seed_1']);
+  T.eq('a #1-seed market from the next season (-AFC27) is left out', b([ok({ series_ticker: 'KXNFL1SEED', event_ticker: 'KXNFL1SEED-AFC27', market_ticker: 'KXNFL1SEED-AFC27-BUF',
+    rules_primary: 'If Buffalo is the #1 seed in the American Football Conference at the conclusion of the 2026-2027 Pro Football regular season, then the market resolves to Yes.' })],
+    [{ ticker: 'KXNFL1SEED', fee_type: 'quadratic', fee_multiplier: 1 }]).left.length, 1);
+  T.eq('the seed-k series (-27AFC2) is the 2026 season', b([ok({ series_ticker: 'KXNFLSEED', event_ticker: 'KXNFLSEED-27AFC2', market_ticker: 'KXNFLSEED-27AFC2-BUF',
+    rules_primary: 'If Buffalo is the #2 seed in the American Football Conference in the 2026-27 Pro Football playoffs, then the market resolves to Yes.' })],
+    [{ ticker: 'KXNFLSEED', fee_type: 'quadratic', fee_multiplier: 1 }]).mappings.map((m) => m.outcome), ['seed_2']);
   T.eq('a flat or multiplied fee type is left out', [b([ok()], [{ ticker: 'KXNFLAFCEAST', fee_type: 'flat', fee_multiplier: 1 }]).left.length, b([ok()], [{ ticker: 'KXNFLAFCEAST', fee_type: 'quadratic', fee_multiplier: 2 }]).left.length], [1, 1]);
   T.eq('Kalshi suffixes map to nflverse codes (JAC -> JAX, LAR -> LA)', b([ok({ series_ticker: 'KXSB', event_ticker: 'KXSB-27', market_ticker: 'KXSB-27-JAC', yes_sub_title: 'Jacksonville', rules_primary: 'If Jacksonville wins the 2027 Pro Football Championship, then the market resolves to Yes.' })],
     [{ ticker: 'KXSB', fee_type: 'quadratic', fee_multiplier: 1 }]).mappings.map((m) => m.entity_id), ['JAX']);

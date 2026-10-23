@@ -1,0 +1,521 @@
+{
+ "schema": "edgedesk_model_registry_v1",
+ "season": 2026,
+ "lab": "edgedesk_validation_lab_v1",
+ "what": "Every model identity on a committed 2026 forecast, the labels it was written under, and the live pairs that can be compared on the same games. engine/registry.json holds each sport's design; this holds what was published.",
+ "graded_record": {
+  "model versus market": "docs/market-intelligence/VALIDATION.md",
+  "CFB Lab live record": "football/cfb_lab/ledger/2026/evaluations.jsonl",
+  "historical champion / challenger (CFB)": "docs/cfb-v2/CHAMPION_CHALLENGER.md"
+ },
+ "identities": [
+  {
+   "sport": "cfb",
+   "model": "edgedesk_cfb_v2.0.0",
+   "labels": {
+    "edgedesk_cfb_v2.0.0": 2258
+   },
+   "sources": {
+    "football/cfb_lab/ledger/2026/predictions": 2258
+   },
+   "modes": {
+    "BACKTEST (CFB Lab replay)": 215,
+    "LIVE (CFB Lab)": 2043
+   },
+   "first_published": "2026-08-25T12:00:00.000Z",
+   "last_published": "2026-10-23T21:07:43.000Z",
+   "forecasts": 2258,
+   "events": 490
+  },
+  {
+   "sport": "cfb",
+   "model": "edgedesk_cfb_p4_v1.0.0",
+   "labels": {
+    "edgedesk_cfb_p4_v1.0.0": 3796,
+    "edgedesk_cfb_p4_v1.0.0 · edgedesk_fbs_universe_v1.0.0": 276
+   },
+   "sources": {
+    "performance/ledger/forecasts/cfb-2026.jsonl": 1205,
+    "record/football/cfb_2026.json": 879,
+    "football/cfb_lab/ledger/2026/predictions": 1988
+   },
+   "modes": {
+    "LIVE_RECONSTRUCTED (imported, import:football_record)": 813,
+    "LIVE_RECONSTRUCTED (imported, import:projections_ledger)": 116,
+    "LIVE (performance ledger, verified)": 276,
+    "LIVE (football record)": 879,
+    "LIVE_RECONSTRUCTED (CFB Lab, GIT_RECONSTRUCTED)": 295,
+    "LIVE (CFB Lab)": 1693
+   },
+   "first_published": "2026-09-11T22:25:41.545Z",
+   "last_published": "2026-10-23T21:07:43.000Z",
+   "forecasts": 4072,
+   "events": 522
+  },
+  {
+   "sport": "cfb",
+   "model": "edgedesk_cfb_v2.1.0",
+   "labels": {
+    "edgedesk_cfb_v2.1.0": 2043
+   },
+   "sources": {
+    "football/cfb_lab/ledger/2026/predictions": 2043
+   },
+   "modes": {
+    "LIVE (CFB Lab)": 2043
+   },
+   "first_published": "2026-09-27T15:07:15.000Z",
+   "last_published": "2026-10-23T21:07:43.000Z",
+   "forecasts": 2043,
+   "events": 275
+  },
+  {
+   "sport": "cfb",
+   "model": "edgedesk_cfb_p4_v1.0.1",
+   "labels": {
+    "edgedesk_cfb_p4_v1.0.1 · edgedesk_fbs_universe_v1.0.0": 154,
+    "edgedesk_cfb_p4_v1.0.1": 165
+   },
+   "sources": {
+    "performance/ledger/forecasts/cfb-2026.jsonl": 154,
+    "record/football/cfb_2026.json": 165
+   },
+   "modes": {
+    "LIVE (performance ledger, verified)": 154,
+    "LIVE (football record)": 165
+   },
+   "first_published": "2026-10-19T02:01:31.477Z",
+   "last_published": "2026-10-22T18:01:00.601Z",
+   "forecasts": 319,
+   "events": 112
+  },
+  {
+   "sport": "cfb",
+   "model": "edgedesk_cfb_loop_v2.0.0",
+   "labels": {
+    "edgedesk_cfb_loop_v2.0.0": 267
+   },
+   "sources": {
+    "football/cfb_lab/ledger/2026/predictions": 267
+   },
+   "modes": {
+    "LIVE (CFB Lab)": 267
+   },
+   "first_published": "2026-10-21T12:07:45.000Z",
+   "last_published": "2026-10-23T21:07:43.000Z",
+   "forecasts": 267,
+   "events": 109
+  },
+  {
+   "sport": "nba",
+   "model": "edgedesk_nba_v1:G_stack_P",
+   "labels": {
+    "edgedesk_nba_v1:G_stack_P": 70,
+    "edgedesk_nba_v1:G_stack_P · edgedesk_nba_dist_v1": 35
+   },
+   "sources": {
+    "performance/ledger/forecasts/nba-2026.jsonl": 105
+   },
+   "modes": {
+    "LIVE_RECONSTRUCTED (imported, import:nba_ledger)": 56,
+    "LIVE_RECONSTRUCTED (imported, import:projections_ledger)": 14,
+    "LIVE (performance ledger, verified)": 35
+   },
+   "first_published": "2026-10-14T03:47:51.134Z",
+   "last_published": "2026-10-21T05:04:19.377Z",
+   "forecasts": 105,
+   "events": 28
+  },
+  {
+   "sport": "nba",
+   "model": "edgedesk_nba_v1:E_ridge_P",
+   "labels": {
+    "edgedesk_nba_v1:E_ridge_P · edgedesk_nba_dist_v1": 95
+   },
+   "sources": {
+    "performance/ledger/forecasts/nba-2026.jsonl": 95
+   },
+   "modes": {
+    "LIVE (performance ledger, verified)": 95
+   },
+   "first_published": "2026-10-21T18:20:13.024Z",
+   "last_published": "2026-10-23T11:52:26.624Z",
+   "forecasts": 95,
+   "events": 40
+  },
+  {
+   "sport": "nfl",
+   "model": "edgedesk_football_v1.0.0",
+   "labels": {
+    "edgedesk_football_v1.0.0": 366,
+    "edgedesk_football_v1.0.0 · nfl_fv1": 125
+   },
+   "sources": {
+    "performance/ledger/forecasts/nfl-2026.jsonl": 311,
+    "record/football/nfl_2026.json": 180
+   },
+   "modes": {
+    "LIVE_RECONSTRUCTED (imported, import:football_record)": 156,
+    "LIVE_RECONSTRUCTED (imported, import:projections_ledger)": 30,
+    "LIVE (performance ledger, verified)": 125,
+    "LIVE (football record)": 180
+   },
+   "first_published": "2026-09-16T04:09:11.781Z",
+   "last_published": "2026-10-23T17:54:05.578Z",
+   "forecasts": 491,
+   "events": 105
+  },
+  {
+   "sport": "nfl",
+   "model": "edgedesk_nfl_v2.0.0",
+   "labels": {
+    "edgedesk_nfl_v2.0.0": 1
+   },
+   "sources": {
+    "record/football/nfl_2026.json": 1
+   },
+   "modes": {
+    "LIVE (football record)": 1
+   },
+   "first_published": "2026-10-21T02:43:15.665Z",
+   "last_published": "2026-10-21T02:43:15.665Z",
+   "forecasts": 1,
+   "events": 1
+  },
+  {
+   "sport": "nfl",
+   "model": "edgedesk_nfl_v2.1.0",
+   "labels": {
+    "edgedesk_nfl_v2.1.0": 29
+   },
+   "sources": {
+    "record/football/nfl_2026.json": 29
+   },
+   "modes": {
+    "LIVE (football record)": 29
+   },
+   "first_published": "2026-10-21T03:55:13.172Z",
+   "last_published": "2026-10-23T17:54:05.578Z",
+   "forecasts": 29,
+   "events": 28
+  },
+  {
+   "sport": "nhl",
+   "model": "edgedesk_nhl_v1:xg_no_goalie",
+   "labels": {
+    "edgedesk_nhl_v1:xg_no_goalie": 29
+   },
+   "sources": {
+    "performance/ledger/forecasts/nhl-2026.jsonl": 29
+   },
+   "modes": {
+    "LIVE_RECONSTRUCTED (imported, import:nhl_ledger)": 29
+   },
+   "first_published": "2026-10-13T04:52:38.440Z",
+   "last_published": "2026-10-13T04:52:38.440Z",
+   "forecasts": 29,
+   "events": 29
+  },
+  {
+   "sport": "nhl",
+   "model": "edgedesk_nhl_v1:xg_core",
+   "labels": {
+    "edgedesk_nhl_v1:xg_core": 133,
+    "edgedesk_nhl_v1:xg_core · xg_core": 223
+   },
+   "sources": {
+    "performance/ledger/forecasts/nhl-2026.jsonl": 356
+   },
+   "modes": {
+    "LIVE_RECONSTRUCTED (imported, import:nhl_ledger)": 52,
+    "LIVE_RECONSTRUCTED (imported, import:projections_ledger)": 81,
+    "LIVE (performance ledger, verified)": 223
+   },
+   "first_published": "2026-10-14T05:21:43.459Z",
+   "last_published": "2026-10-23T12:03:21.462Z",
+   "forecasts": 356,
+   "events": 93
+  },
+  {
+   "sport": "wnba",
+   "model": "edgedesk_bb_points_v1:points",
+   "labels": {
+    "edgedesk_bb_points_v1:points": 1,
+    "edgedesk_bb_points_v1:points · points": 2
+   },
+   "sources": {
+    "performance/ledger/forecasts/wnba-2026.jsonl": 3
+   },
+   "modes": {
+    "LIVE_RECONSTRUCTED (imported, import:projections_ledger)": 1,
+    "LIVE (performance ledger, verified)": 2
+   },
+   "first_published": "2026-10-15T14:11:16.132Z",
+   "last_published": "2026-10-17T12:58:32.123Z",
+   "forecasts": 3,
+   "events": 2
+  },
+  {
+   "sport": "wnba",
+   "model": "edgedesk_bb_points_v1:points+bb_cal_v2_home_intercept",
+   "labels": {
+    "edgedesk_bb_points_v1:points+bb_cal_v2_home_intercept · points+bb_cal_v2_home_intercept": 5
+   },
+   "sources": {
+    "performance/ledger/forecasts/wnba-2026.jsonl": 5
+   },
+   "modes": {
+    "LIVE (performance ledger, verified)": 5
+   },
+   "first_published": "2026-10-19T16:27:56.040Z",
+   "last_published": "2026-10-22T14:32:02.657Z",
+   "forecasts": 5,
+   "events": 3
+  }
+ ],
+ "label_issues": [
+  {
+   "issue": "the performance ledger's model.version field means the model version on one capture path and a feature, artifact or distribution version on another; model.id is consistent, so it is the identity here",
+   "severity": "minor",
+   "models": [
+    {
+     "sport": "cfb",
+     "model": "edgedesk_cfb_p4_v1.0.0",
+     "labels": {
+      "edgedesk_cfb_p4_v1.0.0": 3796,
+      "edgedesk_cfb_p4_v1.0.0 · edgedesk_fbs_universe_v1.0.0": 276
+     }
+    },
+    {
+     "sport": "cfb",
+     "model": "edgedesk_cfb_p4_v1.0.1",
+     "labels": {
+      "edgedesk_cfb_p4_v1.0.1 · edgedesk_fbs_universe_v1.0.0": 154,
+      "edgedesk_cfb_p4_v1.0.1": 165
+     }
+    },
+    {
+     "sport": "nfl",
+     "model": "edgedesk_football_v1.0.0",
+     "labels": {
+      "edgedesk_football_v1.0.0": 366,
+      "edgedesk_football_v1.0.0 · nfl_fv1": 125
+     }
+    },
+    {
+     "sport": "nba",
+     "model": "edgedesk_nba_v1:G_stack_P",
+     "labels": {
+      "edgedesk_nba_v1:G_stack_P": 70,
+      "edgedesk_nba_v1:G_stack_P · edgedesk_nba_dist_v1": 35
+     }
+    },
+    {
+     "sport": "nhl",
+     "model": "edgedesk_nhl_v1:xg_core",
+     "labels": {
+      "edgedesk_nhl_v1:xg_core": 133,
+      "edgedesk_nhl_v1:xg_core · xg_core": 223
+     }
+    },
+    {
+     "sport": "wnba",
+     "model": "edgedesk_bb_points_v1:points",
+     "labels": {
+      "edgedesk_bb_points_v1:points": 1,
+      "edgedesk_bb_points_v1:points · points": 2
+     }
+    }
+   ]
+  },
+  {
+   "sport": "nfl",
+   "model": "edgedesk_nfl_v2.1.0",
+   "severity": "major",
+   "issue": "performance-ledger forecasts made after the record first names edgedesk_nfl_v2.1.0 (2026-10-21T03:55:13.172Z) carry the slate header's edgedesk_football_v1.0.0; fixed forward in lib/edgedesk_projections.js (2026-10-23); the ledger is append-only, so these rows keep their label and this entry is the correction",
+   "rows": 47,
+   "first": "2026-10-21T04:05:54.849Z",
+   "last": "2026-10-23T17:54:05.578Z"
+  }
+ ],
+ "comparisons": {
+  "checkpoint": "T24",
+  "models": [
+   "edgedesk_cfb_loop_v2.0.0",
+   "edgedesk_cfb_p4_v1.0.0",
+   "edgedesk_cfb_v2.0.0",
+   "edgedesk_cfb_v2.1.0"
+  ],
+  "pairs": [
+   {
+    "checkpoint": "T24",
+    "a": "edgedesk_cfb_loop_v2.0.0",
+    "b": "edgedesk_cfb_p4_v1.0.0",
+    "common_games": 3,
+    "clusters": 1,
+    "mae_a": 12.49,
+    "mae_b": 12.843,
+    "mae_diff_a_minus_b": {
+     "est": -0.353,
+     "ci": [
+      null,
+      null
+     ],
+     "n": 3,
+     "clusters": 1,
+     "draws": 0,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "why": "fewer than 4 clusters (1): no interval"
+    },
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "error_correlation": 0.974
+   },
+   {
+    "checkpoint": "T24",
+    "a": "edgedesk_cfb_loop_v2.0.0",
+    "b": "edgedesk_cfb_v2.0.0",
+    "common_games": 3,
+    "clusters": 1,
+    "mae_a": 12.49,
+    "mae_b": 11.293,
+    "mae_diff_a_minus_b": {
+     "est": 1.197,
+     "ci": [
+      null,
+      null
+     ],
+     "n": 3,
+     "clusters": 1,
+     "draws": 0,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "why": "fewer than 4 clusters (1): no interval"
+    },
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "error_correlation": 0.989
+   },
+   {
+    "checkpoint": "T24",
+    "a": "edgedesk_cfb_loop_v2.0.0",
+    "b": "edgedesk_cfb_v2.1.0",
+    "common_games": 3,
+    "clusters": 1,
+    "mae_a": 12.49,
+    "mae_b": 11.213,
+    "mae_diff_a_minus_b": {
+     "est": 1.277,
+     "ci": [
+      null,
+      null
+     ],
+     "n": 3,
+     "clusters": 1,
+     "draws": 0,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "why": "fewer than 4 clusters (1): no interval"
+    },
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "error_correlation": 0.986
+   },
+   {
+    "checkpoint": "T24",
+    "a": "edgedesk_cfb_p4_v1.0.0",
+    "b": "edgedesk_cfb_v2.0.0",
+    "common_games": 180,
+    "clusters": 4,
+    "mae_a": 12.164,
+    "mae_b": 12.284,
+    "mae_diff_a_minus_b": {
+     "est": -0.12,
+     "ci": [
+      -0.59,
+      0.472
+     ],
+     "n": 180,
+     "clusters": 4,
+     "draws": 2000,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "se": 0.276,
+     "few_clusters": true,
+     "leave_one_out": {
+      "min": -0.429,
+      "max": 0.142,
+      "sign_stable": false
+     }
+    },
+    "verdict": "NO_DIFFERENCE_DEMONSTRATED",
+    "error_correlation": 0.964
+   },
+   {
+    "checkpoint": "T24",
+    "a": "edgedesk_cfb_p4_v1.0.0",
+    "b": "edgedesk_cfb_v2.1.0",
+    "common_games": 180,
+    "clusters": 4,
+    "mae_a": 12.164,
+    "mae_b": 12.257,
+    "mae_diff_a_minus_b": {
+     "est": -0.093,
+     "ci": [
+      -0.603,
+      0.588
+     ],
+     "n": 180,
+     "clusters": 4,
+     "draws": 2000,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "se": 0.314,
+     "few_clusters": true,
+     "leave_one_out": {
+      "min": -0.454,
+      "max": 0.187,
+      "sign_stable": false
+     }
+    },
+    "verdict": "NO_DIFFERENCE_DEMONSTRATED",
+    "error_correlation": 0.963
+   },
+   {
+    "checkpoint": "T24",
+    "a": "edgedesk_cfb_v2.0.0",
+    "b": "edgedesk_cfb_v2.1.0",
+    "common_games": 180,
+    "clusters": 4,
+    "mae_a": 12.284,
+    "mae_b": 12.257,
+    "mae_diff_a_minus_b": {
+     "est": 0.027,
+     "ci": [
+      -0.037,
+      0.117
+     ],
+     "n": 180,
+     "clusters": 4,
+     "draws": 2000,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "se": 0.043,
+     "few_clusters": true,
+     "leave_one_out": {
+      "min": -0.024,
+      "max": 0.056,
+      "sign_stable": false
+     }
+    },
+    "verdict": "NO_DIFFERENCE_DEMONSTRATED",
+    "error_correlation": 1
+   }
+  ],
+  "note": "Live CFB Lab predictions at the T24 checkpoint, each model's latest pregame number per game, graded on the CFB Lab results ledger. An error correlation near 1 means the two models make the same mistakes: averaging them would add little."
+ }
+}

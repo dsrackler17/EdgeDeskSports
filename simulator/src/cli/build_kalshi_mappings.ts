@@ -38,7 +38,12 @@ export const DISCLAIMER = 'Kalshi is not affiliated, associated, authorized, end
 /** Kalshi ticker suffix -> nflverse code (the simulator's entity id); every other suffix is the same */
 export const KALSHI_TO_NFLVERSE: Record<string, string> = { JAC: 'JAX', LAR: 'LA' };
 
-interface SeriesRule { outcome: string; conf?: 'AFC' | 'NFC'; div?: string; re: RegExp; basis: string }
+/* The season token in a 2026-season event ticker: Kalshi names the season by the year it ends
+   (KXSB-27, KXNFLAFCEAST-27, KXNFLSEED-27AFC2) except the #1-seed series, which uses the year it
+   starts (KXNFL1SEED-AFC26). The conference, division and playoff rules name no season, so without
+   this check next season's -28 markets would map onto this season's simulation (2026-10-23 audit). */
+export const NFL_EVENT_YEAR = '27';
+interface SeriesRule { outcome: string; conf?: 'AFC' | 'NFC'; div?: string; re: RegExp; basis: string; event_year?: string }
 const DIVS = ['East', 'North', 'South', 'West'];
 export const SERIES: Record<string, SeriesRule> = {
   KXSB: { outcome: 'win_super_bowl', re: /^If (.+) wins the 2027 Pro Football Championship, then the market resolves to Yes\.$/,
@@ -49,7 +54,7 @@ export const SERIES: Record<string, SeriesRule> = {
     basis: 'wins the NFC Championship = win_conference (reaches the Super Bowl)' },
   KXNFLPLAYOFF: { outcome: 'make_playoffs', re: /^If (.+) is one of the Pro Football playoff qualifiers, then the market resolves to Yes\.$/,
     basis: 'is one of the playoff qualifiers = make_playoffs' },
-  KXNFL1SEED: { outcome: 'seed_1', re: /^If (.+) is the #1 seed in the (American|National) Football Conference at the conclusion of the 2026-2027 Pro Football regular season ?, then the market resolves to Yes\.$/,
+  KXNFL1SEED: { outcome: 'seed_1', event_year: '26', re: /^If (.+) is the #1 seed in the (American|National) Football Conference at the conclusion of the 2026-2027 Pro Football regular season ?, then the market resolves to Yes\.$/,
     basis: 'is the #1 seed in its conference at the end of the 2026 regular season = seed_1' },
   KXNFLSEED: { outcome: 'seed_k', re: /^If (.+) is the #([1-7]) seed in the (American|National) Football Conference in the 2026-27 Pro Football playoffs, then the market resolves to Yes\.$/,
     basis: 'is the #k seed in its conference in the 2026-27 playoffs = seed_k' }
@@ -79,6 +84,8 @@ export function buildMappings(markets: Candidate[], series: SeriesInfo[], verifi
     else if (m[1] !== squash(k.yes_sub_title)) why.push('rules name "' + m[1] + '" but the market is labelled "' + k.yes_sub_title + '"');
     if (squash(k.rules_secondary) !== DISCLAIMER) why.push('secondary rules carry more than the standard disclaimer');
     if (!/^[0-9a-f]{64}$/.test(k.rules_sha256 || '')) why.push('no rules sha256');
+    const yy = rule.event_year || NFL_EVENT_YEAR;
+    if (!new RegExp('^' + k.series_ticker + '-(?:AFC|NFC)?' + yy + '(?![0-9])').test(k.event_ticker)) why.push('event ' + k.event_ticker + ' is not the 2026 season (expected season token ' + yy + ')');
     let outcome = rule.outcome;
     if (team && rule.conf && team.conference !== rule.conf) why.push(team.code + ' is not in the ' + rule.conf);
     if (team && rule.div && team.division !== rule.div) why.push(team.code + ' is not in the ' + rule.div);
