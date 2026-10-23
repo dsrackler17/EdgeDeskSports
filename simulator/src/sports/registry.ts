@@ -18,6 +18,10 @@ import { NBA_2026_27 } from './nba/config.ts';
 import { cfbFacts, isCfbVerified } from './cfb/config.ts';
 import { NCAAM_2027 } from './ncaam/config.ts';
 import { WNBA_2026 } from './wnba/config.ts';
+import { UFC_2026 } from './ufc/config.ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export type SportStatus = 'ACTIVE' | 'BLOCKED' | 'COMING_SOON';
 export interface SportEntry {
@@ -157,12 +161,41 @@ const WNBA_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
+/** UFC: active while the model loop serves its Elo and the four feeds the run reads are in the repository; every
+    fact a result depends on is read in each run and gated (simulator/src/sports/ufc/run.ts), and the matchmaking
+    rule is Estimated and labelled, not a fact to verify */
+const REPO_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+function ufcStatus(): { status: SportStatus; blockers: string[] } {
+  const blockers: string[] = [];
+  try {
+    const v = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'docs', 'model-loop', 'ufc', 'versions.json'), 'utf8'));
+    const cur = (v.versions || []).find((x: { version: string }) => x.version === v.current);
+    if (!cur || !/^SERVED/.test(String(cur.status))) blockers.push('The model loop serves no UFC Elo (docs/model-loop/ufc/versions.json).');
+  } catch (_) { blockers.push('docs/model-loop/ufc/versions.json is missing.'); }
+  const f = UFC_2026.feeds;
+  for (const [label, rel] of [['the ESPN schedule', f.bouts], ['the ufc.com rankings', f.rankings], ['the saved rankings page', f.rankings_html], ['Wikipedia\'s title history', f.title_history]]) {
+    if (!fs.existsSync(path.join(REPO_ROOT, rel))) blockers.push('Feed missing: ' + label + ' (' + rel + '); run the Simulator sports-data job (fetch_sports_data.ts --what ufc).');
+  }
+  const facts = factStatus([['UFC champions and rankings', UFC_2026.champions], ['UFC title-fight rate', UFC_2026.title_rate], ['UFC matchmaking rule', UFC_2026.matchmaking]], 'its source');
+  return { status: blockers.length || facts.blockers.length ? 'BLOCKED' : 'ACTIVE', blockers: blockers.concat(facts.blockers) };
+}
+const UFC_LIMITS = [
+  'Who wins comes from the served UFC Elo (the model loop\'s EXPERIMENTAL version): every booked bout keeps its published price exactly. Its edge over a coin flip is modest (validation 2021-2024 log loss 0.676 against a coin\'s 0.693; 2025 holdout 0.666) and it has never been compared with closing prices.',
+  'Finish or decision, and the round of a finish, are measured from every UFC bout since 2014: the division, the scheduled rounds and each fighter\'s own finish record, shrunk toward the division. The data carry no method, so KO/TKO and submission are not told apart. Draws and no contests (under 2% of bouts) are not simulated: every simulated fight has a winner.',
+  'Title Path numbers are Estimated. Title fights not yet booked come at each division\'s measured rate (undisputed title fights over the last five years, from Wikipedia\'s title history), never on a card already announced. The challenger is the highest-ranked contender coming off a win and rested at least the measured minimum: EdgeDesk\'s rule, not the UFC\'s, which books title fights at its discretion.',
+  'Rankings move only through booked bouts (a winner takes a higher-ranked loser\'s place); bouts not yet on the schedule are not simulated. Interim titles, vacated or stripped titles, retirements, injuries and withdrawals are not modelled; a contender booked in another division is treated as having moved there.',
+  'Since 2014 champions have won more title fights than the Elo expected (Model Health shows the count), so the Title Path likely understates a champion\'s chance to keep the belt.',
+  'Ratings are frozen at the last result: a simulated win does not raise a rating (the served layoff rule still applies at a fight\'s date).',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
 export function sportRegistry(): SportEntry[] {
   const nfl = nflStatus(), nhl = nhlStatus(), cfb = cfbStatus();
   const mlb = mlbStatus();
   const nba = nbaStatus();
   const ncaam = ncaamStatus();
   const wnba = wnbaStatus();
+  const ufc = ufcStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
@@ -186,9 +219,8 @@ export function sportRegistry(): SportEntry[] {
     { key: 'golf', label: 'Golf', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
       blockers: ['No golf model, field data, round-score distribution or cut rules exist in the repository.'],
       limitations: [], activation_path: 'A per-player round-score model with a shared round effect, fields and cut rules.' },
-    { key: 'ufc', label: 'UFC', status: 'COMING_SOON', structure: 'none', tabs: [],
-      blockers: ['UFC has no season or division championship structure to simulate.'],
-      limitations: [], activation_path: 'None planned: no artificial season simulator.' },
+    { key: 'ufc', label: 'UFC', status: ufc.status, structure: 'events', tabs: ['fights', 'title_path', 'model_health'], blockers: ufc.blockers, limitations: UFC_LIMITS,
+      activation_path: 'Active: every booked bout from the served UFC Elo (model_loop/adapters/ufc, reproduced in every run by simulator/src/sports/ufc/elo.ts), champions and rankings from ufc.com, the schedule from ESPN and the title history from Wikipedia, refreshed by the Simulator sports-data job (fetch_sports_data.ts --what ufc). UFC_SIMULATOR_NOTES.md.' },
     { key: 'college_baseball', label: 'College Baseball', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
       blockers: ['Out of season until February 2027; no 2027 schedule; release gates G11, G12 and G15 fail.'],
       limitations: [], activation_path: 'The 2027 schedule and passing release gates.' }

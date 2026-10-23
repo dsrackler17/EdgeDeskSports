@@ -12,9 +12,10 @@
      node simulator/src/cli/run.ts --sport mlb --season 2026 --dry-run                 (live: MLB Stats API)
      node simulator/src/cli/run.ts --sport mlb --season 2025 --as-of 2025-10-27 --dry-run   (history replay, 2022-2025)
      node simulator/src/cli/run.ts --sport nba --workers 4 --dry-run --allow-incomplete-schedule   (2026-27; NBA season keys are end years)
+     node simulator/src/cli/run.ts --sport ufc --season 2026 --workers 4 --dry-run     (every booked bout and each division's title path)
 
    Options
-     --sport nfl|nhl|nba|mlb|cfb|ncaam|wnba  the sport (simulator/src/sports/registry.ts)
+     --sport nfl|nhl|nba|mlb|cfb|ncaam|wnba|ufc  the sport (simulator/src/sports/registry.ts)
      --season 2026            must match the sport's season config (default: it; NHL and NBA keys are end years, 2027 = 2026-27)
      --runs N                 default 100000 (production); fewer only for a dry run
      --seed S                 decimal or 0x-hex u64; default: derived from the input hash
@@ -70,6 +71,9 @@ import { executeNcaam, printNcaamSummary } from '../sports/ncaam/run.ts';
 import { WNBA_2026 } from '../sports/wnba/config.ts';
 import { executeWnba, printWnbaSummary } from '../sports/wnba/run.ts';
 import { WNBA_INPUT_SCHEMA } from '../sports/wnba/inputs.ts';
+import { UFC_2026 } from '../sports/ufc/config.ts';
+import { executeUfc, printUfcSummary } from '../sports/ufc/run.ts';
+import { UFC_INPUT_SCHEMA } from '../sports/ufc/inputs.ts';
 
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -81,7 +85,7 @@ export interface CliArgs {
   mode: 'official' | 'historical'; model: 'champion' | 'selection'; bracket: string | null;
 }
 /** each sport's configured season (the NHL's and the NBA's are end years: 2027 = 2026-27) */
-export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, mlb: MLB_2026.season, nba: NBA_2026_27.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season };
+export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, mlb: MLB_2026.season, nba: NBA_2026_27.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season, ufc: UFC_2026.season };
 export function parseArgs(argv: string[]): CliArgs {
   const a: CliArgs = { sport: 'nfl', season: NaN, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
     publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4, asOf: null, confirmThrough: null, allowIncompleteSchedule: false,
@@ -145,8 +149,11 @@ export async function execute(args: CliArgs, log: (s: string) => void = console.
   /* an NBA replay takes its sport and season from the snapshot itself */
   if (args.snapshot && NBA_READABLE_SCHEMAS.includes(snapshotSchema(args.snapshot) || '')) args = { ...args, sport: 'nba' };
   if (args.snapshot && snapshotSchema(args.snapshot) === WNBA_INPUT_SCHEMA) args = { ...args, sport: 'wnba' };
+  if (args.snapshot && snapshotSchema(args.snapshot) === UFC_INPUT_SCHEMA) args = { ...args, sport: 'ufc' };
   if (args.sport === 'nba') return executeNba(args, log);
   if (args.sport === 'wnba') return executeWnba({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns, offline: args.offline }, log) as unknown as RunOutcome;
+  /* the UFC reads only committed files (the feeds and the model loop's data): --offline changes nothing */
+  if (args.sport === 'ufc') return executeUfc({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns }, log) as unknown as RunOutcome;
   if (args.allowIncompleteSchedule) throw Object.assign(new Error('--allow-incomplete-schedule applies to the NBA only'), { exitCode: 2 });
   if (args.sport === 'nhl') return executeNhl(args, log);
   if (args.sport === 'mlb') return executeMlb(args, log);
@@ -438,6 +445,7 @@ if (isMain) {
       if (args.sport === 'cfb') printCfbSummary(o as unknown as CfbRunOutcome, console.log);
       else if (args.sport === 'ncaam') printNcaamSummary(o as any, console.log);
       else if (o.results.run.sport === 'wnba') printWnbaSummary(o as any, console.log);
+      else if (o.results.run.sport === 'ufc') printUfcSummary(o as any, console.log);
       else printSummary(o, console.log);
       if (args.publish) {
         if (!o.publishable) { console.error('nothing published: a gate failed (see gates.json)'); process.exit(1); }

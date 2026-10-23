@@ -27,7 +27,7 @@ export interface OutcomeDef {
   key: string;
   label: string;
   /** the tab the outcome belongs to in the reader */
-  category: 'division' | 'conference' | 'title' | 'playoffs' | 'seed' | 'round' | 'regular_season' | 'cup';
+  category: 'division' | 'conference' | 'title' | 'playoffs' | 'seed' | 'round' | 'regular_season' | 'cup' | 'fights' | 'title_path';
   /** provenance of the number: simulated probabilities are Research; a probability that passes
       through an Estimated input (a committee proxy) is Estimated; a fact already decided is Observed */
   provenance: 'Research' | 'Estimated' | 'Observed';
