@@ -195,6 +195,7 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
   T.eq('MLB title cards: one per club', (title.match(/class="sm-club"/g) || []).length, 30);
   const ws = ents.map((e: any) => (results.entities as any[]).find((x) => x.entity_id === e.entity_id).outcomes.win_world_series.probability);
   T.chk('... and its World Series column sums to one champion', Math.abs(ws.reduce((a: number, b: number) => a + b, 0) - 1) < 1e-9);
+  T.eq('the reader asks the database for MLB\'s season', REG.mlb.season, '2026');
   T.eq('the league view is labelled League for MLB, Conference elsewhere', [UI.tabLabel({ key: 'mlb' }, 'conference'), UI.tabLabel({ key: 'nfl' }, 'conference')], ['League', 'Conference']);
 }
 process.exit(T.done());

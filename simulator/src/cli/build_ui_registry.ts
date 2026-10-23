@@ -11,6 +11,7 @@ import { NFL_2026 } from '../sports/nfl/config.ts';
 import { NHL_2027 } from '../sports/nhl/config.ts';
 import { NBA_2026_27 } from '../sports/nba/config.ts';
 import { NCAAM_2027 } from '../sports/ncaam/config.ts';
+import { MLB_2026 } from '../sports/mlb/config.ts';
 
 const OUT = path.join(REPO, 'lib', 'edgedesk_simulator_sports.js');
 export function uiRegistrySource(): string {
@@ -23,6 +24,7 @@ export function uiRegistrySource(): string {
     nhl: { season: NHL_2027.season_label, competition: NHL_2027.competition, rules_version: NHL_2027.rules_version },
     /* the NBA's too (sim_runs.season '2026-27') */
     nba: { season: NBA_2026_27.label, competition: NBA_2026_27.competition, rules_version: NBA_2026_27.rules_version },
+    mlb: { season: String(MLB_2026.season), competition: MLB_2026.competition, rules_version: MLB_2026.rules_version },
     ncaam: { season: String(NCAAM_2027.season), competition: NCAAM_2027.competition, rules_version: NCAAM_2027.rules_version,
       pre_selection: NCAAM_2027.pre_selection, conference_tournaments: NCAAM_2027.conference_tournaments, venue: NCAAM_2027.venue,
       live: (() => { const l = JSON.parse(fs.readFileSync(path.join(REPO, 'basketball', 'ncaam_forecast', 'config', 'live.json'), 'utf8')); return { enabled: l.enabled === true, blockers: l.blockers }; })() }

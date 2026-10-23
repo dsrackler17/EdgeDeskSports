@@ -1,8 +1,9 @@
 # EdgeDesk Simulator — the nightly season simulation, and the Kalshi futures
 # comparison as a SEPARATE job.
 #
-#   schedule 10:17 UTC daily   the NFL, college football and the NHL (plan.ts
-#                              NIGHTLY), 100,000 runs.
+#   schedule 10:17 UTC daily   the NFL, college football, the NHL and, through
+#                              the World Series, MLB (plan.ts NIGHTLY), 100,000
+#                              runs.
 #                              (10:17 UTC = 06:17 New York in daylight time,
 #                              05:17 in standard time: after the last Monday
 #                              night game is final and nflverse's games.csv has
@@ -19,11 +20,9 @@
 #                              run) until its season facts are verified.
 #   workflow_dispatch          one sport; inputs validated by
 #                              simulator/src/cli/plan.ts before anything runs.
-#                              MLB runs only from here (not nightly): its live
-#                              2026 inputs come from MLB's Stats API, which the
-#                              build environment could not reach, so the first
-#                              dispatched dry run is the check the registry's
-#                              live_inputs fact asks a person to make.
+#                              MLB's nightly leg ends with its season's window
+#                              (mlb/config.ts nightly_through); a dispatch can
+#                              still name it.
 #
 # FAILURE SEPARATION. simulate: a gate that blocks, an invalid input or a
 # failed publication fails THIS job, records a FAILURE in public.sim_alerts

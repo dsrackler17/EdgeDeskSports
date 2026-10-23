@@ -43,6 +43,9 @@ export interface SeasonFact<V> {
   /** who checked it against the official source, and when (YYYY-MM-DD); both required for VERIFIED to count */
   verified_by: string | null;
   verified_at: string | null;
+  /** an unverified rule every run measures instead: while unverified it is no standing blocker, and a run in
+      which it decided a reported place is refused publication (MLB: run.tiebreak_measured) */
+  measured?: boolean;
 }
 
 export interface NflSeasonConfig {

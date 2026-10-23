@@ -24,10 +24,13 @@
    refused, not approximated.
 
    Everything below that is a FACT ABOUT THE 2026 SEASON carries its source
-   and a verification status. mlb.com was not reachable from the build
-   environment (the egress policy refuses it), so no 2026 fact could be read
-   from MLB's own pages: each is UNVERIFIED and the registry keeps MLB
-   BLOCKED until a person verifies them (simulator/src/sports/registry.ts).
+   and a verification status. mlb.com and MLB's Stats API refuse the build
+   environment but answer GitHub's runners: the Simulator source check (job
+   fetch (mlb)) read MLB's 2026 standings and postseason schedule and the 2026
+   Official Baseball Rules, and a dispatched dry run built the live snapshot
+   there (2026-10-23). Each fact cites what was read. The tiebreak procedure's
+   text was not found: it is MEASURED in every run instead (run.tiebreak_measured),
+   which the final 2026 standings allow (no equal record at any decided place).
    =========================================================================== */
 import type { SeasonFact } from '../nfl/config.ts';
 
@@ -120,6 +123,8 @@ export interface MlbSeasonConfig {
   season: number;
   regular_season_games_per_club: number;
   rules_version: 'MLB-2022';
+  /** the last date (UTC) the nightly workflow runs this season (simulator/src/cli/plan.ts NIGHTLY) */
+  nightly_through: string;
   alignment: SeasonFact<string>;
   format: SeasonFact<string>;
   tiebreakers: SeasonFact<string>;
@@ -141,48 +146,49 @@ export interface MlbSeasonConfig {
   availability: { mode: 'off'; fixed_assumption: string };
 }
 
-const MLB_UNREACHABLE = 'mlb.com was not reachable from the build environment (egress policy), so no MLB page was opened for this fact';
-
 export const MLB_2026: MlbSeasonConfig = {
   sport: 'mlb',
   competition: 'MLB',
   season: 2026,
   regular_season_games_per_club: 162,
   rules_version: 'MLB-2022',
+  /* World Series game 7 is scheduled for 2026-10-31 (MLB's Stats API, Actions run 39995723592); a week's
+     margin for postponements, then MLB leaves the nightly schedule until a 2027 configuration exists */
+  nightly_through: '2026-11-07',
   alignment: {
     value: 'six divisions as in MLB_TEAMS (unchanged since 2013)',
-    source: 'Unchanged 2013-2025 in the committed game logs (division rivals meet 13+ times); the 2026 schedule is checked the same way when the live snapshot is built',
-    retrieved: '2026-10-23', verification: 'UNVERIFIED',
-    verify_by: 'Confirm the 2026 divisional alignment on MLB\'s standings page. ' + MLB_UNREACHABLE + '.',
-    affects_results: true, verified_by: null, verified_at: null
+    source: 'MLB\'s Stats API, the 2026 regular-season standings (https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=2026&standingsTypes=regularSeason&hydrate=team, HTTP 200, body sha256 347b1eda907483ad73ec8d6ab6db41308deaef2d9d1e0b37f498522760690ba6, and its divisions, sha256 94142c6567341a0f13efdb004090f67dc069283be6123c9988673022c763121c), the feed mlb.com\'s standings page reads: AL East TB NYY BOS BAL TOR; AL Central CLE CWS MIN DET KC; AL West HOU TEX SEA ATH LAA; NL East ATL PHI MIA WSH NYM; NL Central MIL CHC PIT STL CIN; NL West LAD SD AZ SF COL. Club by club the divisions of MLB_TEAMS (MLB\'s abbreviations; ATH = the Athletics, OAK here). The live snapshot\'s schedule.alignment gate checks the same on the 2026 schedule',
+    retrieved: '2026-10-23', verification: 'VERIFIED',
+    verify_by: 'Each season: re-run .github/workflows/simulator-sources.yml (job fetch (mlb)) and compare its MLBSTANDING lines with MLB_TEAMS.',
+    affects_results: true, verified_by: 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request (2026-10-23), from the standings fetched by GitHub Actions run 39995723592 (Simulator source check, job fetch (mlb), 2026-10-23T17:31Z)', verified_at: '2026-10-23'
   },
   format: {
     value: '12 clubs: per league the three division winners seeded 1-3 by record and three wild cards seeded 4-6; seeds 1-2 receive byes. Wild Card Series best of 3, every game at the higher seed (3 v 6, 4 v 5). Division Series best of 5, 2-2-1 (1 v winner of 4/5, 2 v winner of 3/6), no reseeding. LCS best of 7, 2-3-2 at the higher seed. World Series best of 7, 2-3-2 (home field: see world_series_home).',
-    source: 'Recalled from the 2022 collective bargaining agreement\'s postseason format; every 2022-2025 pairing and game host in the Retrosheet postseason logs agrees with it (simulator/tests/mlb_rules_history.test.ts)',
-    retrieved: '2026-10-23', verification: 'UNVERIFIED',
-    verify_by: 'Confirm the 2026 postseason format on mlb.com/postseason. ' + MLB_UNREACHABLE + '.',
-    affects_results: true, verified_by: null, verified_at: null
+    source: 'MLB\'s Stats API, the 2026 postseason as scheduled and played (https://statsapi.mlb.com/api/v1/schedule/postseason?sportId=1&season=2026&hydrate=team, HTTP 200, body sha256 b10ed8c9380f84ec489365bf45109884fb31ba0e4e675091d4ce0a49c89f3bdb, 43 games), with the final standings (see alignment). Per league the three division winners seeded 1-3 by record (AL: TB 98-64, CLE 85-77, HOU 81-81 - HOU third above three wild cards with better records; NL: MIL 103-59, LAD 100-62, ATL 94-68), three wild cards 4-6 (AL NYY, BOS, CWS; NL SD, CHC, PHI). Wild Card Series gamesInSeries 3, every game at the higher seed (HOU-CWS at Daikin Park, NYY-BOS at Yankee Stadium, ATL-PHI at Truist Park, SD-CHC at Petco Park). Division Series of 5, seed 1 against the 4/5 winner and seed 2 against the 3/6 winner (TB-NYY, CLE-CWS, MIL-SD, LAD-ATL), games 1-2 and 5 at the higher seed. LCS and World Series of 7, games 1-2 and 6-7 at the club with home field (ALCS at TB, NLCS at MIL, World Series at MIL). mlb.com/postseason (HTTP 200, page sha256 8e3db2883f30dd7efc8d9963af54abd705b3a959032b3aa6c9bc74b34700b6a1) shows the same bracket; it states no rule in words. Every 2022-2025 pairing and game host in the Retrosheet postseason logs agrees too (simulator/tests/mlb_rules_history.test.ts)',
+    retrieved: '2026-10-23', verification: 'VERIFIED',
+    verify_by: 'Each season: re-run .github/workflows/simulator-sources.yml (job fetch (mlb)) and compare its MLBPOSTGAME lines with this format once the postseason is scheduled.',
+    affects_results: true, verified_by: 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request (2026-10-23), from the 2026 postseason schedule and the final standings fetched by GitHub Actions run 39995723592 (Simulator source check, job fetch (mlb), 2026-10-23T17:31Z)', verified_at: '2026-10-23'
   },
   tiebreakers: {
     value: 'No tiebreaker games. A tie for a division title, a wild card or a seed is broken by (1) head-to-head winning percentage (combined among the tied clubs), (2) winning percentage in intradivision games, (3) winning percentage in interdivision games within the league, (4) winning percentage in the last half of intraleague games, (5) the last half plus one intraleague game not between the tied clubs, adding one game at a time. When a step separates the best club(s) from the rest without naming one, the procedure restarts among the best. Each place is decided this way, then the rest revert to step 1.',
-    source: 'Recalled (MLB\'s mathematical tiebreakers since 2022); it reproduces every 2022-2025 division winner and seed, including the three-club tie of 2024 (NL wild cards), from the game logs alone',
+    source: 'Recalled (MLB\'s mathematical tiebreakers since 2022); it reproduces every 2022-2025 division winner and seed, including the three-club tie of 2024 (NL wild cards), from the game logs alone. MLB\'s text was not found: mlb.com/glossary/transactions/TIEBREAKER (HTTP 200, Simulator source check run 39995723592) is a generic glossary page, and the Internet Archive\'s index of mlb.com timed out. MEASURED instead: MLB\'s 2026 final standings (Stats API, same run) hold no equal record at any place a tiebreaker decides (the only equal records, DET/SEA 76-86 and WSH/STL 77-85, are in different divisions and out of the wild-card places), so no 2026 place depends on it; every run counts the ties it breaks at a reported place and run.tiebreak_measured refuses publication if there is one',
     retrieved: '2026-10-23', verification: 'UNVERIFIED',
-    verify_by: 'Compare MLB_SIMULATOR_NOTES.md §Tiebreakers with MLB\'s published tiebreaker procedure for 2026; steps 3-5 were never needed by a 2022-2025 tie, so the history replay does not test them. ' + MLB_UNREACHABLE + '.',
-    affects_results: true, verified_by: null, verified_at: null
+    verify_by: 'Compare MLB_SIMULATOR_NOTES.md §Tiebreakers with MLB\'s published tiebreaker procedure; steps 3-5 were never needed by a 2022-2025 tie, so the history replay does not test them. Required before any season whose standings are not final (2027).',
+    affects_results: true, verified_by: null, verified_at: null, measured: true
   },
   world_series_home: {
     value: 'The pennant winner with the better regular-season winning percentage hosts games 1, 2, 6 and 7; an equal record is broken by the same procedure as a seeding tie (head-to-head first).',
-    source: 'Recalled (the rule since 2017); every 2017-2025 World Series host in the Retrosheet logs agrees. The equal-record step is recalled only: no 2017-2025 World Series had equal records',
-    retrieved: '2026-10-23', verification: 'UNVERIFIED',
-    verify_by: 'Confirm the 2026 World Series home-field rule on mlb.com. ' + MLB_UNREACHABLE + '.',
-    affects_results: true, verified_by: null, verified_at: null
+    source: 'MLB\'s Stats API, the 2026 World Series schedule (https://statsapi.mlb.com/api/v1/schedule/postseason?sportId=1&season=2026&hydrate=team, HTTP 200, body sha256 b10ed8c9380f84ec489365bf45109884fb31ba0e4e675091d4ce0a49c89f3bdb): Milwaukee (103-59, .636) hosts games 1, 2, 6 and 7 at American Family Field, Tampa Bay (98-64, .605) games 3-5 at Tropicana Field - the better record hosts, as here. The rule\'s wording was not found on mlb.com (Simulator source check runs 39995723592, 39998698766); what the simulation uses, the 2026 hosts, is MLB\'s own schedule. The equal-record step is recalled only and does not apply in 2026 (it is counted by run.tiebreak_measured). Every 2017-2025 World Series host in the Retrosheet logs agrees',
+    retrieved: '2026-10-23', verification: 'VERIFIED',
+    verify_by: 'Each season: compare the World Series hosts in the Simulator source check\'s MLBPOSTGAME lines with the pennant winners\' records.',
+    affects_results: true, verified_by: 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request (2026-10-23), from the 2026 World Series schedule fetched by GitHub Actions run 39995723592 (Simulator source check, job fetch (mlb))', verified_at: '2026-10-23'
   },
   extra_innings: {
     value: { regular_season: 'automatic_runner', postseason: 'standard' },
-    source: 'Recalled: the automatic runner on second base in extra innings (regular season since 2020, permanent since 2023); postseason games are played under the standard rule. The simulator never models innings: the rule only selects which measured extra-inning home-win rate a tied regulation draw resolves with (simulator/data/mlb_game_model_study.json)',
-    retrieved: '2026-10-23', verification: 'UNVERIFIED',
-    verify_by: 'Confirm in the 2026 Official Baseball Rules / MLB regulations that the automatic runner applies to regular-season games only. ' + MLB_UNREACHABLE + '.',
-    affects_results: true, verified_by: null, verified_at: null
+    source: 'MLB, 2026 Official Baseball Rules (https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf, HTTP 200, 1,316,921 bytes, sha256 f85860f3b754dfb5e07269e9d3a86c77c89b856376f6e3ba8345af36db997859; Rules 7.01-7.02 as printed, text sha256 a6e8ce49ce3a3d25f710042f4a97b37fe9278441eec4b60f57ba1ba9a965f6ee). Rule 7.01(b)(2): "Each half-inning following the ninth inning will begin with a runner on second base". Rule 7.02(g): "The Major Leagues have determined that Rule 7.01(b)(2) (runner on second base in Extra Innings) does not apply to any Wild Card Series, Division Series, League Championship Series or World Series games." The simulator never models innings: the rule only selects which measured extra-inning home-win rate a tied regulation draw resolves with (simulator/data/mlb_game_model_study.json)',
+    retrieved: '2026-10-23', verification: 'VERIFIED',
+    verify_by: 'Each season: re-run .github/workflows/simulator-sources.yml (job fetch (mlb)) and read Rules 7.01(b) and 7.02(g) of that season\'s Official Baseball Rules.',
+    affects_results: true, verified_by: 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request (2026-10-23), from the 2026 Official Baseball Rules fetched by GitHub Actions run 40000336884 (Simulator source check, job fetch (mlb), 2026-10-23T18:05Z)', verified_at: '2026-10-23'
   },
   postseason_calendar: {
     /* the 2025 postseason calendar (Retrosheet), as day offsets from the last regular-season
@@ -195,10 +201,10 @@ export const MLB_2026: MlbSeasonConfig = {
   },
   live_inputs: {
     value: 'schedule (officialDate, doubleheaders, postponements, cancellations, series game numbers, announced probables) and box-score starters from statsapi.mlb.com; MLBAM ids mapped to Retrosheet ids by the Chadwick register',
-    source: 'simulator/src/sports/mlb/statsapi.ts; the parser is tested on the real 2024 schedule response and box scores in datapack/quant_v1/data/mlb/raw (simulator/tests/mlb_statsapi.test.ts), never on the live 2026 feed: statsapi.mlb.com is refused by the build environment\'s egress policy',
-    retrieved: '2026-10-23', verification: 'UNVERIFIED',
-    verify_by: 'Build the live snapshot once from a runner that reaches statsapi.mlb.com (Actions -> Simulator, sport mlb, dry run) and check its gates and every club\'s record and seed against MLB\'s published 2026 standings and postseason results.',
-    affects_results: true, verified_by: null, verified_at: null
+    source: 'simulator/src/sports/mlb/statsapi.ts; the parser is tested on the real 2024 schedule response and box scores in datapack/quant_v1/data/mlb/raw (simulator/tests/mlb_statsapi.test.ts). The live 2026 snapshot was built on GitHub\'s runners by Actions run 39994766921 (Simulator, sport mlb, dry run, 2026-10-23T17:26Z; inputs 0b150e7725f2, as of 2026-10-23, 7 scheduled games): every gate passed but sport.active, with one WARN (schedule.full_162: NYY and BAL 161 games, a game MLB never made up). All 30 clubs\' W-L equal MLB\'s 2026 standings (Simulator source check run 39995723592, standings body sha256 347b1eda907483ad73ec8d6ab6db41308deaef2d9d1e0b37f498522760690ba6); the six division winners, the 12 postseason clubs, the four byes, the LCS clubs and both pennant winners are the ones MLB\'s postseason schedule shows (postseason.consistent passed); World Series games 1-2 are Confirmed with MLB\'s announced starters',
+    retrieved: '2026-10-23', verification: 'VERIFIED',
+    verify_by: 'Each season: dispatch Actions -> Simulator (sport mlb, dry run) and compare every club\'s record and seed with MLB\'s standings and postseason schedule (the Simulator source check prints both).',
+    affects_results: true, verified_by: 'Claude Code (EdgeDesk simulator session), at the repository owner\'s request (2026-10-23), from Actions runs 39994766921 (the live dry run) and 39995723592 (MLB\'s standings and postseason schedule)', verified_at: '2026-10-23'
   },
   rotation: { mode: 'projected', min_rest_days: 5, postseason_rotation_size: 4 },
   bullpen: { mode: 'off', reason: 'No owned data records bullpen usage: the Retrosheet game logs carry starters and decisions only, and the live bullpen flags (mlb_bullpen_taxed) exist only in the database and have no history to validate against. Relief innings are inside each club\'s run-prevention rating; fatigue is not modelled.' },

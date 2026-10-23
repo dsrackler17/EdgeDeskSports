@@ -40,9 +40,9 @@ production readiness or a deployment: §15 states exactly what exists.
 | Bullpen usage / fatigue | **Not modelled** (no owned data) | §9 |
 | Season simulation, postseason game by game | Implemented, tested on committed 2025 snapshots | `mlb_sim.test.ts` (46), §10 |
 | Season backtest (2022, 2023, 2025) | Run, descriptive only | `simulator/data/mlb_backtest.json`, §11 |
-| Live 2026 inputs (MLB Stats API) | Written; **never run against the live API** (refused by this environment's egress policy); a PR-time probe job checks it on a GitHub runner | `statsapi.ts`, `src/cli/probe_mlb_live.ts`, §5.2 |
-| Registry status | **BLOCKED**: six 2026 facts await human verification | `src/sports/registry.ts`, §15 |
-| Publication | **None.** Nothing applied to any database, nothing published | §15 |
+| Live 2026 inputs (MLB Stats API) | Run on a GitHub runner (Simulator run 39994766921, 2026-10-23): every gate but `sport.active` passed; all 30 records equal MLB's standings | `statsapi.ts`, §5.2, §15 |
+| Registry status | **ACTIVE** (facts read from MLB on GitHub's runners) | `src/sports/registry.ts`, §15 |
+| Publication | Nightly through the World Series, or by dispatch; the first runs from `main` after the merge | §15 |
 
 ---
 
@@ -114,7 +114,7 @@ replay of history never meets one; a simulated MLB-2012 season would have
 to play it, and the engine refuses (`UnsupportedTie`) instead of inventing
 one. The simulation module runs MLB-2022 only.
 
-### 4.2 Tiebreaks (MLB-2022; **UNVERIFIED** against MLB's text)
+### 4.2 Tiebreaks (MLB-2022; **UNVERIFIED** against MLB's text, MEASURED in every run: §15)
 
 1. head-to-head winning percentage, combined among the tied clubs;
 2. winning percentage in intradivision games;
@@ -477,31 +477,37 @@ starts rarer than in history; Monte Carlo ± is simulation noise only.
 
 ---
 
-## 15. Deployment status and what blocks MLB
+## 15. Deployment status (2026-10-23)
 
-**Blocked by** (`simulator/src/sports/registry.ts`, each UNVERIFIED with a
-`verify_by`): the 2026 divisional alignment; the 2026 postseason format; the
-2026 tiebreaker procedure; the 2026 World Series home-field rule; the 2026
-extra-inning rules (regular season vs postseason); the live 2026 inputs
-(MLB Stats API, never run from the build environment).
+**ACTIVE for the 2026 World Series.** mlb.com and MLB's Stats API answer
+GitHub's runners (this environment cannot reach them), so the *Simulator
+source check* gained an MLB job and every fact was read there:
 
-**Exactly what exists:** code, studies, fixtures, tests and docs committed
-on branch `claude/mlb-season-postseason-simulator` (draft PR); not merged;
-no database change (`supabase/simulator.sql` has no sport-specific
-column or check and its publication re-checks read each run's own sum
-rules, but it has not been exercised with an MLB run); nothing published; the nightly workflow does not run MLB
-(dispatch only); `simulator/research/registration_mlb.json` is written but
-not generated into `supabase/simulator_registry.sql` (that generator is
-single-model); no Kalshi MLB futures mapping.
+| Fact | Status | Evidence |
+|---|---|---|
+| 2026 divisional alignment | **VERIFIED** | MLB's 2026 standings (Stats API), club by club = `MLB_TEAMS`; source check run 39995723592 |
+| 2026 postseason format | **VERIFIED** | MLB's 2026 postseason schedule (43 games): seeds, byes, series lengths and every host as `MLB-2022`; same run |
+| Live 2026 inputs | **VERIFIED** | the live dry run on a runner (Simulator run 39994766921): every gate but `sport.active` passed; all 30 records equal MLB's standings; `postseason.consistent` passed |
+| 2026 World Series home field | **VERIFIED** (its 2026 application) | MLB's 2026 World Series schedule: Milwaukee (103-59) hosts games 1, 2, 6, 7; Tampa Bay (98-64) games 3–5. The rule's wording was not found on mlb.com; the equal-record step does not apply in 2026 and is counted by `run.tiebreak_measured` |
+| 2026 extra-inning rules | **VERIFIED** | 2026 Official Baseball Rules (PDF sha256 `f85860f3…`): Rule 7.01(b)(2), every half-inning after the ninth begins with a runner on second; Rule 7.02(g), it "does not apply to any Wild Card Series, Division Series, League Championship Series or World Series games"; source check run 40000336884 |
+| 2026 tiebreaker procedure | **MEASURED** (unverified) | MLB's text was not found (the glossary page is generic; the Internet Archive's index timed out). MLB's 2026 final standings hold no equal record at any place a tiebreaker decides, so no 2026 place depends on it; every run counts the ties it breaks at a reported place (`tiebreak:groups`, `tiebreak:world_series_home`) and `run.tiebreak_measured` refuses publication if there is one. Must be verified before a season whose standings are not final |
 
-**To activate:** dispatch Actions → Simulator with sport `mlb` (a dry run
-builds the live 2026 snapshot on a runner that reaches MLB) and check its
-gates and every club's record and seed against MLB's published standings →
-verify the five 2026 rules facts on mlb.com → set each `VERIFIED` with
-`verified_by` and `verified_at` in a reviewed commit → regenerate the
-reader registry → first manual publication. The 2026 World Series ends
-within days of this note; after it the 2026 season has nothing left to
-simulate, so the first useful publication is likely the 2027 season.
+**Nightly.** MLB is a leg of the nightly *Simulator* workflow through
+`nightly_through` (2026-11-07: World Series game 7 is scheduled 2026-10-31,
+plus a week for postponements), then leaves the schedule until a 2027
+configuration exists. A dispatch can name it at any time.
+
+**Exactly what exists:** the engine, studies, fixtures and tests (§12); the
+reader's MLB view (League tab: seeds 1–6 with the byes, Division Series,
+LCS, pennant; Title tab: the World Series); no Kalshi MLB futures mapping
+yet (35 MLB futures series and 365 open markets were listed by the source
+check, none verified), so the Futures tab says unavailable;
+`simulator/research/registration_mlb.json` is not generated into
+`supabase/simulator_registry.sql` (that generator is single-model). The
+database layer needs no MLB change: the run carries its own sum rules.
+
+**Next season:** re-run the source check and an MLB dry run, re-verify each
+fact in a reviewed commit, and set the new season's `nightly_through`.
 
 **Commands** (PowerShell or bash, from the repository root):
 
