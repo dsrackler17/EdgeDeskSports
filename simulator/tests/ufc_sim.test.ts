@@ -75,7 +75,8 @@ function synth(): UfcInputData {
     gaps: { shape: 4.5, cv: 0.47, n: 200, from: '2014-01-01' }, matchmaking: { rule: 'SYNTHETIC', min_rest_days: 100 },
     finish: { m: 10, c: null, holdout_log_loss: 0.66, base_only_log_loss: 0.68, constant_log_loss: 0.69, n_holdout: 0, rounds_holdout: { chosen: 0, format_only: 0 }, base: { all: { n: 0, finishes: 0, rate: 0.5 }, by_rounds: {}, by_division: {} },
       no_winner: { finals: 0, draws: 0, no_contests: 0, rate: 0, recent_rate: 0, recent_from: '2021-01-01' }, by_rounds: {} },
-    title_record: { from: '2014-01-01', matched: 0, unmatched: [], decided: 0, champion_won: 0, elo_expected_champion_wins: 0, log_loss: 0, coin_log_loss: 0.693147, challengers: { n: 0, coming_off_win: 0, coming_off_loss: 0, coming_off_draw: 0, rest_days: { p10: 100, median: 190, p90: 400 } } },
+    title_record: { from: '2014-01-01', matched: 0, unmatched: [], decided: 0, champion_won: 0, elo_expected_champion_wins: 0, log_loss: 0, coin_log_loss: 0.693147, periods: [], challengers: { n: 0, coming_off_win: 0, coming_off_loss: 0, coming_off_draw: 0, rest_days: { p10: 100, median: 190, p90: 400 } } },
+    champion_term: null,
     rankings: { url: 'SYNTHETIC', fetched_at: '2026-10-23T00:00:00Z', page_sha256: 'synthetic', html_sha256: 'synthetic', groupings: 2, divisions: 2, deduped: 0, pound_for_pound: 0 },
     title_history: { sha256: 'synthetic', unparsed: [], window_years: 5 }, cross_checks: { wikipedia: [], espn: [] }, name_matching: { matched: 0, unmatched: [], aliases: [], ambiguous: [] },
     data_checks: { finals_csv: 0, finals_feed_only: 0, scheduled_feed: 5, csv_scheduled_dropped: [], late: [], double_booked: [] }, health: { windows: [], market: 'SYNTHETIC', record_graded: 0 }, code: {},
@@ -163,6 +164,17 @@ for (const b of d0.bouts) {
   K.chk('the rank rule: when #3 beats #1 (and has rested), #3 takes the next shot (' + w3First + ' of ' + w3Won + ' runs)', w3Won > 100 && w3First === w3Won, { w3First, w3Won });
 }
 
+/* ---- the served champion term in unbooked title fights ---- */
+{
+  const withTerm = (cb: number) => { const x = synth(); x.elo.config = { ...x.elo.config, champ_bonus: cb }; return x; };
+  const base = runRange(ufcModule(d0, { seed }), { start: 0, end: 4000 });
+  const zero = runRange(ufcModule(withTerm(0), { seed }), { start: 0, end: 4000 });
+  const on = runRange(ufcModule(withTerm(200), { seed }), { start: 0, end: 4000 });
+  const held = (a: typeof base, id: string) => a.counts[m.entities.findIndex((e) => e.id === id) * OUTCOMES.length + OUTCOMES.findIndex((o) => o.key === 'champion_at_horizon')];
+  K.eq('champion term 0: the same draws as a config without it', [zero.counts, zero.diags], [base.counts, base.diags]);
+  K.chk('champion term +200: the W Flyweight champion (no booked bout, unbooked title fights only) holds the title more often (' + held(base, 'WC') + ' -> ' + held(on, 'WC') + ' of 4000)', held(on, 'WC') > held(base, 'WC') + 100, [held(base, 'WC'), held(on, 'WC')]);
+}
+
 /* ---- determinism and workers ---- */
 {
   const a1 = runRange(m, { start: 0, end: 3000 }), a2 = runRange(ufcModule(synth(), { seed }), { start: 0, end: 3000 });
@@ -243,6 +255,6 @@ K.eq('gate: a result the feed has not delivered blocks publication', gate(mutate
 /* ---- registry and plan ---- */
 const reg = sportRegistry().find((s) => s.key === 'ufc')!;
 K.eq('registry: the UFC is ACTIVE with Fights, Title Path and Model Health', [reg.status, reg.tabs.join(), reg.blockers.length], ['ACTIVE', 'fights,title_path,model_health', 0]);
-K.chk('registry: the limitations state the modest edge over a coin, the Estimated title path and the champions\' record, and never the word "probability"', reg.limitations.some((l) => /coin flip/.test(l)) && reg.limitations.some((l) => /Estimated/.test(l)) && reg.limitations.some((l) => /champions have won more title fights than the Elo expected/.test(l)) && !/probability/i.test(JSON.stringify(reg)));
+K.chk('registry: the limitations state the modest edge over a coin, the Estimated title path and the champions\' record, and never the word "probability"', reg.limitations.some((l) => /coin flip/.test(l)) && reg.limitations.some((l) => /Estimated/.test(l)) && reg.limitations.some((l) => /without a champion term/.test(l) && /since 2021/.test(l)) && !/probability/i.test(JSON.stringify(reg)));
 K.chk('plan: the UFC runs every night and can be dispatched', planRuns('schedule', {}, undefined, new Date('2027-03-01T10:17:00Z')).some((r) => r.sport === 'ufc' && r.publish) && planRuns('workflow_dispatch', { sport: 'ufc', season: '2026', runs: '100000', publish: 'true' })[0].sport === 'ufc');
 process.exit(K.done());

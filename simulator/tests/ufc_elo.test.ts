@@ -5,11 +5,13 @@
    - the committed data: every p_a the loop published (model_loop/published/ufc/current.json) reproduced to
      its four decimals, with the same fighters and bout counts, and no bout in the published window missing
    - when python3 with pandas is available: model.py walk() itself, every bout's full-precision price and
-     every rating equal to the port's (difference at the last floating-point digit at most)
+     every rating equal to the port's (difference at the last floating-point digit at most), served and
+     with the champion term on (champ_bonus 100, the loop's weekly candidate)
+   - the champion term: off (0) changes nothing; on, the champion going in gets the points on either side
      node simulator/tests/ufc_elo.test.ts */
 import { execFileSync } from 'node:child_process';
 import { kit } from './_kit.ts';
-import { walk, rating, expectA, parseBoutsCsv, emptyState, loadServedBouts, servedVersion, checkReproduction, loadCurrent, round4, REPO, ELO_DEFAULTS, type EloConfig } from '../src/sports/ufc/elo.ts';
+import { walk, rating, expectA, parseBoutsCsv, emptyState, attachChampions, loadServedBouts, servedVersion, checkReproduction, loadCurrent, round4, REPO, ELO_DEFAULTS, type EloConfig } from '../src/sports/ufc/elo.ts';
 
 const K = kit('UFC Elo port');
 const cfg: EloConfig = { ...ELO_DEFAULTS, k: 64, k_new_mult: 1.5, new_bouts: 3, layoff_days: 365, layoff_regress: 0.25 };
@@ -48,6 +50,18 @@ K.near('SYNTHETIC: ...and B, regressed from 1452 to 1464, wins with k 96', state
   K.near('rating(): a never-seen fighter is 1500 (the debut price: an average fighter)', rating(S, cfg, 'new', 0), 1500, 0);
 }
 
+/* ---- the champion term (model.py champ_bonus) ---- */
+{
+  const tb = parseBoutsCsv(head + [row('1', '2020-01-01T00:00Z', 'A', 'B', 'True', 'False'), row('2', '2020-06-01T00:00Z', 'C', 'D', 'False', 'True'), row('3', '2020-07-01T00:00Z', 'E', 'F', 'True', 'False')].join('\n') + '\n');
+  attachChampions(tb, new Map([['1', 'A'], ['2', 'D'], ['3', 'nobody']]));
+  const on = walk(tb, { ...cfg, champ_bonus: 100 }), off = walk(tb, { ...cfg, champ_bonus: 0 }), plain = walk(parseBoutsCsv(head + [row('1', '2020-01-01T00:00Z', 'A', 'B', 'True', 'False'), row('2', '2020-06-01T00:00Z', 'C', 'D', 'False', 'True'), row('3', '2020-07-01T00:00Z', 'E', 'F', 'True', 'False')].join('\n') + '\n'), cfg);
+  K.eq('champion term off (0): every price and rating as with no title flags', [off.rows.map((r) => r.p), [...off.state.R.entries()]], [plain.rows.map((r) => r.p), [...plain.state.R.entries()]]);
+  K.near('champion term on: the champion as fighter a gets +100 (1600 v 1500)', on.rows[0].p, expectA(cfg, 1600, 1500), 1e-15);
+  K.near('champion term on: the champion as fighter b gets it too (a priced at 1400 v 1500)', on.rows[1].p, expectA(cfg, 1400, 1500), 1e-15);
+  K.near('champion term on: a flag naming neither fighter adds nothing', on.rows[2].p, 0.5, 1e-15);
+  K.near('champion term on: the update uses the adjusted expectation (A wins, moves by 96 x (1 - e))', on.state.R.get('A') as number, 1500 + 96 * (1 - expectA(cfg, 1600, 1500)), 1e-9);
+}
+
 /* ---- the committed data against the published file ---- */
 const sv = servedVersion();
 K.eq('the served version is 1.1.0 with k 64, new-fighter step x1.5, layoff 365 days / 25%, no calibration', [sv.version, sv.config.k, sv.config.k_new_mult, sv.config.layoff_days, sv.config.layoff_regress, sv.config.calibration], ['1.1.0', 64, 1.5, 365, 0.25, 'none']);
@@ -59,18 +73,26 @@ K.chk('no scheduled bout in the published 14-day window is missing from the file
 K.chk('the largest difference from a published value is rounding only (< 0.00005)', chk.max_abs_diff < 0.00005, chk.max_abs_diff);
 K.eq('round4 is Python round(x, 4), which rounds the exact binary value (0.40035 is just below the half)', [round4(0.56244999), round4(0.40035), round4(0.12345), round4(0.98765)], [0.5624, 0.4003, 0.1235, 0.9877]);
 
-/* ---- the Python walk itself, when it can be run ---- */
-let py: { p: Record<string, number[]>; ratings: Record<string, number> } | null = null;
-try {
-  const code = 'import json,sys\nfrom model_loop.adapters.ufc import model as U\nd=U.load("model_loop/data/ufc/bouts.csv")\ncfg=json.load(open("docs/model-loop/ufc/versions.json"))\ncur=[v for v in cfg["versions"] if v["version"]==cfg["current"]][0]["config"]\nrows,st=U.walk(d,cur)\njson.dump({"p":{r.bout_id:[float(r.p_raw),int(r.a_bouts),int(r.b_bouts)] for r in rows.itertuples()},"ratings":st["ratings"]},sys.stdout)';
-  py = JSON.parse(execFileSync('python3', ['-c', code], { cwd: REPO, maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'ignore'] }).toString());
-} catch (_) { py = null; }
-if (py) {
+/* ---- the Python walk itself, when it can be run: served, and with the champion term on ---- */
+const code = 'import json,sys\nfrom model_loop.adapters.ufc import model as U\nd=U.load("model_loop/data/ufc/bouts.csv")\ncfg=json.load(open("docs/model-loop/ufc/versions.json"))\ncur=[v for v in cfg["versions"] if v["version"]==cfg["current"]][0]["config"]\nif len(sys.argv)>1: cur=dict(cur,champ_bonus=float(sys.argv[1]))\nrows,st=U.walk(d,cur)\njson.dump({"p":{r.bout_id:[float(r.p_raw),int(r.a_bouts),int(r.b_bouts)] for r in rows.itertuples()},"ratings":st["ratings"]},sys.stdout)';
+const pyWalk = (args: string[]): { p: Record<string, number[]>; ratings: Record<string, number> } | null => {
+  try { return JSON.parse(execFileSync('python3', ['-c', code, ...args], { cwd: REPO, maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'ignore'] }).toString()); } catch (_) { return null; }
+};
+const compare = (label: string, py: { p: Record<string, number[]>; ratings: Record<string, number> }, Wx: ReturnType<typeof walk>) => {
   let dp = 0, dc = 0, dr = 0;
-  for (const r of W.rows) { const q = py.p[r.bout.bout_id]; if (!q) { dc++; continue; } dp = Math.max(dp, Math.abs(q[0] - r.p)); if (q[1] !== r.a_bouts || q[2] !== r.b_bouts) dc++; }
-  for (const [f, v] of Object.entries(py.ratings)) dr = Math.max(dr, Math.abs((W.state.R.get(f) ?? NaN) - v));
-  K.chk('model.py walk(): every one of ' + W.rows.length + ' bouts priced the same to the last digits (max difference ' + dp + ')', dp < 1e-12 && Object.keys(py.p).length === W.rows.length, dp);
-  K.chk('model.py walk(): the same bout counts for every bout', dc === 0, dc);
-  K.chk('model.py walk(): every rating equal (max difference ' + dr + ')', dr < 1e-9 && Object.keys(py.ratings).length === W.state.R.size, dr);
+  for (const r of Wx.rows) { const q = py.p[r.bout.bout_id]; if (!q) { dc++; continue; } dp = Math.max(dp, Math.abs(q[0] - r.p)); if (q[1] !== r.a_bouts || q[2] !== r.b_bouts) dc++; }
+  for (const [f, v] of Object.entries(py.ratings)) dr = Math.max(dr, Math.abs((Wx.state.R.get(f) ?? NaN) - v));
+  K.chk(label + ': every one of ' + Wx.rows.length + ' bouts priced the same to the last digits (max difference ' + dp + ')', dp < 1e-12 && Object.keys(py.p).length === Wx.rows.length, dp);
+  K.chk(label + ': the same bout counts for every bout', dc === 0, dc);
+  K.chk(label + ': every rating equal (max difference ' + dr + ')', dr < 1e-9 && Object.keys(py.ratings).length === Wx.state.R.size, dr);
+};
+const py = pyWalk([]);
+if (py) {
+  compare('model.py walk()', py, W);
+  const pyOn = pyWalk(['100']);
+  const Won = walk(all, { ...sv.config, champ_bonus: 100 });
+  const moved = Won.rows.filter((r, i) => r.p !== W.rows[i].p).length;
+  K.chk('the champion term moves the prices of the title fights and of the champions\' later bouts (' + moved + ' bouts)', moved > 150, moved);
+  if (pyOn) compare('model.py walk() with champ_bonus 100', pyOn, Won);
 }
 process.exit(K.done(py ? 'model.py walk() compared at full precision' : 'python3 with pandas not available: the full-precision comparison with model.py was skipped (the published file was checked)'));

@@ -12,7 +12,9 @@
 #
 # Nothing is published until the tuned Elo clears the preregistered rule
 # (validation 2021-2024 beats the coin flip with its 95% interval below zero,
-# and the 2025 holdout is below it too). ESPN answers GitHub's runners (the
+# and the 2025 holdout is below it too). The weekly research tests a champion
+# term too (model.py champ_bonus, title flags regenerated in the run).
+# ESPN answers GitHub's runners (the
 # UFC sync job already reads it every six hours); nothing logs in or pays.
 name: Model loop UFC (per event)
 
@@ -47,6 +49,9 @@ jobs:
           python-version: '3.12'
       - name: Python deps (pinned)
         run: pip install --quiet -r model_loop/requirements.txt
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
       - name: Core guarantees before anything is published
         run: python3 -m unittest discover -s model_loop/tests -t .
       # finished months never change: cache them; the month in progress is always refetched
@@ -64,8 +69,15 @@ jobs:
           fi
           echo "mode=$m" >> "$GITHUB_OUTPUT"
           echo "mode: $m"
+      # the champion term's title flags (model_loop/data/ufc/title_bouts.csv): Wikipedia's title history and
+      # ufc.com's champions (simulator/data/feeds, refreshed daily) matched to the bouts on file, before the run
+      # (its research and pricing read them) and again after it (the bouts it fetched; committed with them)
+      - name: Title flags for the champion term
+        run: node simulator/src/research/ufc_title_bouts.ts
       - name: Run the loop
-        run: python3 -m model_loop.adapters.ufc.loop ${{ steps.mode.outputs.mode }}
+        run: |
+          python3 -m model_loop.adapters.ufc.loop ${{ steps.mode.outputs.mode }}
+          node simulator/src/research/ufc_title_bouts.ts
       - name: The published file is symmetric and complete
         run: |
           python3 - <<'EOF'

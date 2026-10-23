@@ -128,7 +128,9 @@ export function readerSummary(d: UfcInputData, results: ResultsDoc, diags: Recor
     matchmaking: { rule: d.matchmaking.rule, min_rest_days: d.matchmaking.min_rest_days, challengers: d.title_record.challengers },
     model_health: { elo: { version: d.elo.version, status: d.elo.status, promoted_at: d.elo.promoted_at, config: d.elo.config, reproduced: d.elo.reproduction.reproduced, published: d.elo.reproduction.published },
       windows: d.health.windows, market: d.health.market, title_record: { matched: d.title_record.matched, unmatched: d.title_record.unmatched.length, decided: d.title_record.decided, champion_won: d.title_record.champion_won,
-        elo_expected: d.title_record.elo_expected_champion_wins, log_loss: d.title_record.log_loss, coin: d.title_record.coin_log_loss },
+        elo_expected: d.title_record.elo_expected_champion_wins, log_loss: d.title_record.log_loss, coin: d.title_record.coin_log_loss,
+        periods: (d.title_record.periods || []).map((x) => ({ from: x.from, to: x.to, decided: x.decided, champion_won: x.champion_won, elo_expected: x.elo_expected_champion_wins })) },
+      champion_term: { served_bonus: d.elo.config.champ_bonus || 0, last_test: d.champion_term },
       finish: { m: d.finish.m, c: d.finish.c, holdout_log_loss: d.finish.holdout_log_loss, base_only_log_loss: d.finish.base_only_log_loss, constant_log_loss: d.finish.constant_log_loss, n_holdout: d.finish.n_holdout,
         rate_3: d.finish.base.by_rounds['3'] ? d.finish.base.by_rounds['3'].rate : null, rate_5: d.finish.base.by_rounds['5'] ? d.finish.base.by_rounds['5'].rate : null, no_winner: d.finish.no_winner },
       gaps: d.gaps, rankings: { fetched_at: d.rankings.fetched_at, page_sha256: d.rankings.page_sha256, url: d.rankings.url } }
