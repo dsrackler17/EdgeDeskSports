@@ -171,10 +171,10 @@ export function embeddedText(html: string): string {
   return [...new Set(out)].join('\n');
 }
 
-async function fetchRaw(url: string, accept: string): Promise<{ res: Response; body: Buffer }> {
+async function fetchRaw(url: string, accept: string, timeoutMs = 90_000): Promise<{ res: Response; body: Buffer }> {
   for (let attempt = 0; ; attempt++) {
     /* bounded: the Internet Archive can hold a request for minutes; a page that takes longer fails on its own line */
-    const res = await fetch(url, { headers: { 'user-agent': UA, accept }, redirect: 'follow', signal: AbortSignal.timeout(90_000) });
+    const res = await fetch(url, { headers: { 'user-agent': UA, accept }, redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
     if ((res.status === 429 || res.status >= 500) && attempt < 3) { await new Promise((r) => setTimeout(r, 4000 * 2 ** attempt)); continue; }
     return { res, body: Buffer.from(await res.arrayBuffer()) };
   }
@@ -349,7 +349,8 @@ async function mlbDiscover(): Promise<Array<[string, string]>> {
   for (const [id, url] of [['mlb_cdx_glossary', CDX + '&url=mlb.com/glossary/&limit=5000'] as [string, string]]
     .concat(MLB_SLUGS.map((x): [string, string] => ['mlb_cdx_' + x.replace(/[^a-z0-9]+/gi, '_'), CDX + '&url=mlb.com/' + x + '&from=2022&limit=200']))) {
     try {
-      const { res, body } = await fetchRaw(url, 'text/plain');
+      /* the archive's index is slow: 30 s each, so 25 queries stay inside the job's timeout */
+      const { res, body } = await fetchRaw(url, 'text/plain', 30_000);
       const rows = body.toString('utf8').split('\n').filter(Boolean);
       console.log('INDEX ' + id + ' status ' + res.status + ' · ' + rows.length + ' urls');
       for (const r of rows) keep(r);
@@ -438,8 +439,9 @@ await kalshi();
 if (SPORT === 'nhl') await nhlApi();
 if (SPORT === 'nba') await nbaApi();
 if (SPORT === 'mlb') await mlbApi();
-const MLB_PAGES = SPORT === 'mlb' ? mlbPages(MLB_ARTICLES.concat(await mlbDiscover())).concat([MLB_RULES_PDF]) : [];
-for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : SPORT === 'mlb' ? MLB_PAGES : NBA_PAGES) await fetchPage(p);
+/* MLB: the rulebook and the known pages first, the archive's slow index last */
+for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : SPORT === 'mlb' ? [MLB_RULES_PDF].concat(mlbPages(MLB_ARTICLES)) : NBA_PAGES) await fetchPage(p);
+if (SPORT === 'mlb') for (const p of mlbPages(await mlbDiscover())) await fetchPage(p);
 section('SUMMARY');
 console.log(SUMMARY.join('\n') + '\nwritten to ' + OUT);
 if (EXCERPTS.length) { section('EXCERPTS (the paragraphs of each page read above that name the rules; the whole text is above and in the artifact)'); console.log(EXCERPTS.join('\n\n')); }
