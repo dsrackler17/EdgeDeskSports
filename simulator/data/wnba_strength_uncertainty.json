@@ -1,0 +1,60 @@
+{
+ "schema": "edgedesk_sim_wnba_strength_uncertainty_v1",
+ "generated_at": "2026-10-23T19:56:41.717Z",
+ "model": {
+  "league": "wnba",
+  "model": "points",
+  "params": {
+   "half_life_days": 365,
+   "prior_games": 4,
+   "carry": 0.8,
+   "sweeps": 3,
+   "k_mu": 40,
+   "k_h": 150
+  },
+  "method": "basketball/walkforward.js pass + score (served configuration, point-in-time)"
+ },
+ "windows": {
+  "estimation": [
+   2010,
+   2024
+  ],
+  "holdout": 2025,
+  "late_season_days": 30
+ },
+ "club_error": {
+  "sigma_points": 1.9031,
+  "pairs": 10128,
+  "method": "mean product of one club's residuals in two late-regular-season games against different opponents"
+ },
+ "production": {
+  "tau_points": 2.6914,
+  "ci95": [
+   1.5955,
+   3.5563
+  ],
+  "method": "tau = sqrt(2) x sigma_club: the error in the difference of two independent clubs' ratings, in points of final margin",
+  "carve_out_sd_margin": 11.9355,
+  "conditional_game_sd": 11.6281,
+  "note": "Carved out of the served margin distribution: each game keeps exactly its served probability on average; tau only makes a series' games move together."
+ },
+ "postseason_check": {
+  "tau_points": 2.3108,
+  "ci95": [
+   0,
+   4.2369
+  ],
+  "pairs": 294,
+  "games": 271,
+  "method": "mean product of two games' residuals within one playoff series, from the same club's side"
+ },
+ "holdout_2025": {
+  "club_pairs": 870,
+  "tau_points": 4.7728,
+  "series_pairs": 32,
+  "postseason_tau_points": 0
+ },
+ "source_files": {
+  "data_manifest_sha256": "064f2b91cdb44abc542796232a4632a6025b325a61cc34b31143e8661811fe00"
+ }
+}

@@ -42,12 +42,18 @@ T.chk('a mapping without verification is rejected', validateFuturesConfig(cfg({ 
 T.chk('a mapping without the settlement rules hash is rejected', validateFuturesConfig(cfg({ mappings: [map('BUF', { settlement: { basis: 'x', rules_sha256: '' } })] }), run).some((e) => /rules text sha256/.test(e)));
 T.chk('the same market mapped twice is rejected', validateFuturesConfig(cfg({ mappings: [map('BUF'), map('BUF', { mapping_id: 'dup' })] }), run).some((e) => /mapped twice/.test(e)));
 {
-  /* one config holds every sport's mappings: a run sees only its own sport's (another season of its sport is still an error) */
+  /* one config holds every sport's mappings: a run sees only its own sport's (an earlier season of its sport is still an error) */
   const cfbRun: RunView = { sport: 'cfb', competition: 'NCAA FBS', season: '2026', entities: [{ entity_id: 'alabama', outcomes: { national_champion: { probability: 0.05, mcse: 0.0007 } } }] };
   const mixed = cfg({ mappings: [map('BUF'), map('KC', { season: '2025' })] });
   T.eq('a college football run sees none of the NFL mappings (and no NFL outcome set)', [configForSport(mixed, cfbRun).mappings.length, configForSport(mixed, cfbRun).outcome_sets.length], [0, 0]);
   T.eq('... so it validates instead of failing on another sport\'s markets', validateFuturesConfig(configForSport(mixed, cfbRun), cfbRun), []);
   T.chk('an NFL run still rejects its own wrong-season mapping', validateFuturesConfig(configForSport(mixed, run), run).some((e) => /the run is nfl\/NFL\/2026/.test(e)));
+  /* next season's futures open before this season ends (MLB's 2027 markets during the 2026 World Series): not this run's */
+  const next = cfg({ mappings: [map('BUF'), map('KC', { season: '2027' })] });
+  T.eq('a later season of its own sport is left out of the run (next season\'s futures)', configForSport(next, run).mappings.map((m) => m.entity_id), ['BUF']);
+  T.eq('so it validates', validateFuturesConfig(configForSport(next, run), run), []);
+  const nhlLike: RunView = { ...run, season: '2026-27' };
+  T.eq('a season key with a second year is ordered by its first (2027-28 is later than 2026-27)', configForSport(cfg({ mappings: [map('BUF', { season: '2026-27' }), map('KC', { season: '2027-28' })] }), nhlLike).mappings.map((m) => m.entity_id), ['BUF']);
 }
 T.chk('a verified fee schedule must name its source', validateFuturesConfig(cfg({ fees: { ...cfg().fees, verified: true } }), run).some((e) => /verified fee schedule/.test(e)));
 T.throws('an invalid mapping refuses to compare at all', () => compareFutures(cfg({ mappings: [map('BUF', { season: '2025' })] }), run, Q(q('BUF')), now), /mapping is invalid/);

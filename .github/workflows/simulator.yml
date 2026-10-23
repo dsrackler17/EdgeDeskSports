@@ -2,15 +2,7 @@
 # comparison as a SEPARATE job.
 #
 #   schedule 10:17 UTC daily   the NFL, college football, the NHL and, through
-#                              the World Series, MLB (plan.ts NIGHTLY), 100,000
-#                              runs.
-#   schedule 15:47 UTC daily   the NBA (plan.ts NBA_CRON), 100,000 runs: late
-#                              enough that hoopR has the previous night's
-#                              results (the results.current gate), before
-#                              the day's first tip. The leg re-reads the
-#                              season in progress from hoopR (the history
-#                              from the NBA build's cache) and runs the
-#                              served pass for the snapshot (about 10 min).
+
 #                              (10:17 UTC = 06:17 New York in daylight time,
 #                              05:17 in standard time: after the last Monday
 #                              night game is final and nflverse's games.csv has
@@ -62,10 +54,7 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, nhl, mlb, cfb, ncaam, nba]
-        default: nfl
-      season:
-        description: 'Season (must equal the sport''s configured season: NFL, MLB and CFB 2026; NHL and NBA 2027 = 2026-27; NCAAM 2027)'
+
         type: string
         default: '2026'
       runs:
@@ -154,9 +143,12 @@ jobs:
       - name: The NHL suites, before an NHL run
         if: ${{ matrix.sport == 'nhl' }}
         run: npm run sim:test:nhl
-      - name: pyarrow (the NHL schedule is a parquet, read by hockey/tools/parquet_select.py)
-        if: ${{ matrix.sport == 'nhl' }}
+      - name: pyarrow (the NHL and WNBA schedules are parquets, read by hockey/tools/parquet_select.py)
+        if: ${{ matrix.sport == 'nhl' || matrix.sport == 'wnba' }}
         run: pip install --quiet pyarrow
+      - name: The WNBA suites, before a WNBA run
+        if: ${{ matrix.sport == 'wnba' }}
+        run: npm run sim:wnba:test
       - name: The college basketball (NCAAM) bracket suite, before an NCAAM run
         if: ${{ matrix.sport == 'ncaam' }}
         run: node simulator/tests/ncaam_sim.test.ts

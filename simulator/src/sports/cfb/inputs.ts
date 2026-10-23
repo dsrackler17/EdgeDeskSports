@@ -8,6 +8,9 @@
                          who is FBS and in which conference THIS season, every
                          game (FCS opponents included), neutral flags, final
                          scores of completed games
+     late finals         ESPN's public scoreboard, for games the schedule feed
+                         has not yet marked completed (finals.ts: event id and
+                         both team ids must match; recorded in results_overlay)
      game model          football/cfb_p4 engine, its state replayed cold from
                          the feeds (2018 onward, the walk-forward the calibration
                          study validated: simulator/data/cfb_calibration.json),
@@ -30,6 +33,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { REPO, loadCfbEngine, loadSeasonFeed, feedRows, priceBare, cfbCodeIdentity, type FeedGame, type PriceInjury } from './engine_adapter.ts';
 import { CFB_2026, type CfbSeasonConfig } from './config.ts';
+import { overlayFinals, describeFinals, type ResultsOverlay } from './finals.ts';
 import type { CfbTeam, CfbGame } from './rules.ts';
 import { hashCanonical, sha256Hex } from '../../core/canonical.ts';
 
@@ -57,6 +61,8 @@ export interface CfbInputData {
   postseason_feed: PostseasonFeedGame[];
   as_of_week: number;
   latest_result_kickoff: string | null;
+  /** finals taken from ESPN where the schedule feed lagged, games not played, and started games neither settles (finals.ts) */
+  results_overlay: ResultsOverlay;
   model: { model_version: string; trained_through: number; replay_from: number; pricing_week: number; sigma_total: number; fcs_rating: number };
   /** postseason pairs: [i * T + j] = team i (home/designated) v team j */
   pairs: { neutral_fair: number[]; neutral_sigma: number[]; home_fair: number[]; home_sigma: number[] };
@@ -89,7 +95,7 @@ export function tauFor(doc: any, asOf: number): { tau: number; ci: [number, numb
   return { tau: e.tau, ci: e.tau_ci95, week: w };
 }
 
-export async function buildCfbSnapshot(opt: { offline?: boolean; season?: number; config?: CfbSeasonConfig } = {}): Promise<CfbSnapshot> {
+export async function buildCfbSnapshot(opt: { offline?: boolean; season?: number; config?: CfbSeasonConfig; now?: number; fetch?: (url: string, init?: any) => Promise<Response> } = {}): Promise<CfbSnapshot> {
   const cfg = opt.config || CFB_2026, season = opt.season || cfg.season, offline = !!opt.offline;
   const eng = loadCfbEngine(), E = eng.E, P = eng.P;
   const replayFrom = season - 8;
@@ -104,6 +110,11 @@ export async function buildCfbSnapshot(opt: { offline?: boolean; season?: number
     all.push(...rows);
   }
   const notes: string[] = [];
+  /* 0 finals the schedule feed has not caught up on, settled in place before the replay reads them */
+  const fin = await overlayFinals(cur.filter((g) => g.home_division === 'fbs' || g.away_division === 'fbs'), { now: opt.now ?? Date.now(), offline, fetch: opt.fetch });
+  feeds.push(...fin.reads.map((r) => ({ url: r.url, sha256: r.sha256, bytes: r.bytes })));
+  if (fin.overlay.applied.length) notes.push(fin.overlay.applied.length + ' final(s) the schedule feed had not yet carried were taken from ESPN: ' + describeFinals(fin.overlay) + '.');
+  if (fin.overlay.not_played.length) notes.push('Reported postponed or canceled by ESPN, still simulated as scheduled: ' + fin.overlay.not_played.map((g) => g.away + ' @ ' + g.home + ' (' + g.status + ')').join('; ') + '.');
   /* 1 the FBS universe of THIS season, from its own feed */
   const confOf = new Map<string, string>(), nameOf = new Map<string, string>();
   for (const g of cur) for (const side of ['home', 'away'] as const) {
@@ -213,7 +224,7 @@ export async function buildCfbSnapshot(opt: { offline?: boolean; season?: number
   if (pac12Flex.length) notes.push('Pac-12 Week 13 flex games are not in the feed yet (' + pac12Flex.length + ' teams: opponents set at least six days before): not simulated; they never count in the Pac-12 standings, but they are missing from those teams\' overall records.');
   const data: CfbInputData = {
     schema: CFB_INPUT_SCHEMA, sport: 'cfb', competition: cfg.competition, season, config: cfg, teams, games, postseason_feed: postseason,
-    as_of_week: asOf, latest_result_kickoff: latest,
+    as_of_week: asOf, latest_result_kickoff: latest, results_overlay: fin.overlay,
     model: { model_version: eng.model_version, trained_through: eng.trained_through, replay_from: replayFrom, pricing_week: week, sigma_total: Number(P.distributions.sigma_total), fcs_rating: Number(P.rating.hyperparams.fcs_rating) },
     pairs: { neutral_fair: nf, neutral_sigma: ns, home_fair: hf, home_sigma: hs },
     strength: { distribution: 'normal', tau_points: tf.tau, tau_ci95: tf.ci, as_of_week_used: tf.week, decomposition: sdoc.production.model, source: 'simulator/data/cfb_strength_uncertainty.json', source_sha256: sha256Hex(fs.readFileSync(STRENGTH)) },

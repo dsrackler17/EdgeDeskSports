@@ -52,6 +52,10 @@ on:
       - 'football/matchup/inputs.js'
       - 'basketball/ncaam_forecast/dist.js'
       - 'basketball/ncaam_forecast/config/live.json'
+      - 'basketball/model.js'
+      - 'basketball/walkforward.js'
+      - 'basketball/data/wnba/**'
+      - 'basketball/params/wnba_live.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -80,6 +84,10 @@ on:
       - 'football/matchup/inputs.js'
       - 'basketball/ncaam_forecast/dist.js'
       - 'basketball/ncaam_forecast/config/live.json'
+      - 'basketball/model.js'
+      - 'basketball/walkforward.js'
+      - 'basketball/data/wnba/**'
+      - 'basketball/params/wnba_live.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -157,6 +165,8 @@ jobs:
         run: |
           node simulator/tests/ncaam_sim.test.ts
           node simulator/tests/ncaam_ui.test.ts
+      - name: WNBA postseason simulation (series, the shared offset, the served model on the committed data) and its reader tabs
+        run: npm run sim:wnba:test
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check

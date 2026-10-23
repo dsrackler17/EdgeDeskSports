@@ -44,8 +44,8 @@ const quiet = () => {};
     T.chk('an ACTIVE sport plans a publication at 100,000 runs', planRuns('workflow_dispatch', { ...ok, publish: 'true' })[0].publish === true);
     T.throws('...but never with fewer than 100,000 runs', () => planRuns('workflow_dispatch', { ...ok, runs: '99999', publish: 'true' }), /at least 100000/);
   }
-  const sch = planRuns('schedule', {}, undefined, new Date('2026-11-08T10:17:00Z'));
-  T.chk('the schedule plans the nightly sports at 100,000 runs, publishing only an ACTIVE one (MLB after its season\'s window: not planned)', sch.map((r) => r.sport).join() === 'nfl,cfb,nhl' && sch.every((r) => r.runs === '100000' && r.publish === (r.status === 'ACTIVE')));
+  const sch = planRuns('schedule', {}, undefined, new Date('2026-11-09T10:17:00Z'));
+  T.chk('the schedule plans the nightly sports at 100,000 runs, publishing only an ACTIVE one (MLB and the WNBA after their seasons\' windows: not planned)', sch.map((r) => r.sport).join() === 'nfl,cfb,nhl' && sch.every((r) => r.runs === '100000' && r.publish === (r.status === 'ACTIVE')));
   T.eq('college football plans its configured season, and a dispatch can name it', [sch[1].season, planRuns('workflow_dispatch', { ...ok, sport: 'cfb' })[0].sport], ['2026', 'cfb']);
   T.eq('the NHL is planned under its end-year season key', sch.find((r) => r.sport === 'nhl')!.season, '2027');
   T.eq('a valid NHL dispatch', planRuns('workflow_dispatch', { ...ok, sport: 'nhl', season: '2027' }).map((r) => [r.sport, r.season]), [['nhl', '2027']]);
