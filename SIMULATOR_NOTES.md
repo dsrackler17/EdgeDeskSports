@@ -31,6 +31,7 @@ deployment: §16 states exactly what exists and what does not.
 | College football (season, title games, CFP) | Implemented, tested; **ACTIVE**: every conference procedure, the 2026 CFP format and North Dakota State's eligibility verified from the governing bodies' text on 2026-10-23; Sacramento State's eligibility measured per run | [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) |
 | NBA season, NBA Cup, play-in and playoffs | Implemented, tested; **ACTIVE** (2026-27 facts verified; the NBA Cup played in every run and its 30 dependent games simulated until scheduled) | [`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md) |
 | WNBA postseason (open series, game by game) | Implemented, tested; **ACTIVE** for the 2026 Finals: the served basketball walk-forward replayed (equal to the served ratings file), a measured shared series offset carved out of the served distribution, formats and hosts measured from the schedule; nightly through 2026-11-08 | [`WNBA_SIMULATOR_NOTES.md`](WNBA_SIMULATOR_NOTES.md) |
+| UFC fights and title path | Implemented, tested; **ACTIVE**: every booked bout 100,000 times from the model loop's served Elo 1.1.0 (ported; reproduces all 25 published prices), finish/decision and round measured from every bout since 2014; each division's title path over 12 months at its measured title-fight pace with an **Estimated** matchmaking rule; champions from ufc.com; nightly | [`UFC_SIMULATOR_NOTES.md`](UFC_SIMULATOR_NOTES.md) |
 | Other sports | Not active: BLOCKED or COMING SOON with named blockers | §4 |
 
 ---
@@ -119,7 +120,7 @@ it is stale.
 | College basketball | COMING SOON | tournament | `basketball/` | the 2026-27 season has not started; partial schedule with placeholder times; no conference membership, conference-tournament formats or NCAA selection/seed/bracket data |
 | Tennis | COMING SOON | tournament | `tools/tennis/` | retired from coverage (2026-09-27); ratings only in the database; no owned draw structure; no validated point-level model |
 | Golf | COMING SOON | tournament | — | no golf model, field data, round-score distribution or cut rules in the repository |
-| UFC | COMING SOON | none | `tools/ufc/` (fight research) | no season or division championship structure to simulate; none will be invented |
+| **UFC** | **ACTIVE** (fights and title path) | events | the model loop's served UFC Elo (`model_loop/adapters/ufc/model.py`, 1.1.0 EXPERIMENTAL) ported in `simulator/src/sports/ufc/elo.ts` and checked against `current.json` every run; schedule from ESPN, champions and ranks from ufc.com, title history from Wikipedia (`simulator/data/feeds/ufc_*`) — [`UFC_SIMULATOR_NOTES.md`](UFC_SIMULATOR_NOTES.md) | none standing; every fact is read and gated each run (rankings no older than 8 days); the title path's matchmaking rule is Estimated and labelled; no season is invented: the horizon is 12 months |
 | College baseball | COMING SOON | tournament | `college_baseball/` | out of season until February 2027; no 2027 schedule; release gates G11, G12, G15 fail |
 
 "Active-ready" today: **none**. Accuracy took priority over the number of
@@ -137,7 +138,9 @@ active sports, as instructed.
 - **PRNG.** xoshiro128** 1.1, seeded by SplitMix64 from (master seed, run
   index, stream id) — `PRNG_VERSION = xoshiro128starstar-1.1/splitmix64-seed/v1`.
   `Math.random` is never used. Streams: strength 1, games 2, postseason 3,
-  coin 4, overtime 5, points 6, availability 7, drift 8. Each run's result
+  coin 4, overtime 5, points 6, availability 7, drift 8, rotation 9, pitcher
+  10, committee 11, method 12 and schedule 13 (UFC: how a fight ends, when an
+  unbooked title fight happens). Each run's result
   depends only on (seed, run), so the worker count never changes a number
   (tested: 1 vs 3 workers byte-identical).
 - **Normal quantile.** Wichura AS241 (`simulator/src/core/normal.ts`).
