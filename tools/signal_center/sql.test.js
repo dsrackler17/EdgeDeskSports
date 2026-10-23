@@ -80,6 +80,7 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     const BH = fs.readFileSync(F('billing_hardening.sql'), 'utf8');
     const slice = (src, start, end) => { const i0 = src.indexOf(start); if (i0 < 0) throw new Error('not found: ' + start); return src.slice(i0, src.indexOf(end, i0) + end.length); };
     const PR = fs.readFileSync(F('personal_research.sql'), 'utf8');
+    const FU = fs.readFileSync(F('funnel.sql'), 'utf8');
     db.sql(`create table public.subscriptions (user_id uuid, status text, price_id text, current_period_end timestamptz);
       ${slice(BH, 'create or replace function public.billing_row_grants_access(', '$$;')}
       ${slice(BH, 'create or replace function public.billing_is_admin()', '$$;')}
@@ -87,14 +88,16 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
         select exists (select 1 from public.subscriptions s where s.user_id = p_user and public.billing_row_grants_access(s.status, s.price_id, s.current_period_end, now())); $b$;
       ${slice(PR, 'create or replace function public.edp_copy_ok(p text)', '$$;')}
       ${slice(PR, 'create table if not exists public.user_alerts (', 'grant select on public.user_alerts to authenticated;')}
+      ${slice(FU, 'create table if not exists public.user_event_kinds (', '\n);')}
       insert into auth.users (id, email) values (${lit(SUB)}, 'sub@x'), (${lit(NOSUB)}, 'free@x'), (${lit(LAPSED)}, 'lapsed@x'), (${lit(ADMIN)}, 'op@x');
       insert into public.subscriptions values (${lit(SUB)}, 'active', 'price_x', now() + interval '20 days'), (${lit(LAPSED)}, 'canceled', 'price_x', now() - interval '30 days');`);
 
     /* ---- apply ---- */
     let out = db.applyFile(SQLF);
-    chk('applies, and every report row is ok', (out.match(/\|ok/g) || []).length === 10 && !/CHECK THIS/.test(out), out.slice(-1500));
+    chk('applies, and every report row is ok', (out.match(/\|ok/g) || []).length === 11 && !/CHECK THIS/.test(out), out.slice(-1500));
     out = db.applyFile(SQLF);
-    chk('applies again identically (idempotent)', (out.match(/\|ok/g) || []).length === 10 && !/CHECK THIS/.test(out));
+    chk('applies again identically (idempotent)', (out.match(/\|ok/g) || []).length === 11 && !/CHECK THIS/.test(out));
+    chk('the Signal Center seat is registered as a client event, once', +db.sql(`select count(*) from public.user_event_kinds where event_name = 'primary_nav_signals' and source = 'client';`) === 1);
     /* the SQL editor sends the file as ONE raw string */
     const sh = path.join(db.home, 'editor.sh');
     fs.writeFileSync(path.join(db.home, 'editor.sql'), text);
@@ -323,10 +326,12 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     chk('the subscriber who asked gets notices', n1.sent >= 1 && subAlerts === n1.sent, n1);
     chk('the non-subscriber gets none (fail closed)', +db.sql("select count(*) from public.user_alerts where user_id = " + lit(NOSUB) + ';').trim() === 0);
     chk('…deduplicated by the existing user_alerts_once key', db.sql("select count(*) = count(distinct dedupe_key) from public.user_alerts;").trim() === 't');
+    chk('a reader gets at most five notices from one fan-out', subAlerts <= 5, subAlerts);
     const n2 = svc('public.sc_notify(' + lit(r4.run_id) + '::uuid)');
-    chk('a second fan-out sends nothing new', n2.sent === 0);
-    chk('the unread count is the reader’s Signal Center notices', as(SUB, 'public.sc_unread_count()') === subAlerts);
-    chk('notices open in Signal Center', +db.sql("select count(*) from public.user_alerts where payload->>'href' like '#signals/s/%';").trim() === subAlerts);
+    const subAlerts2 = +db.sql("select count(*) from public.user_alerts where user_id = " + lit(SUB) + " and payload->>'source' = 'signal_center';").trim();
+    chk('a second fan-out sends nothing new: what the cap held back stays held', n2.sent === 0 && subAlerts2 === subAlerts, { subAlerts, n2 });
+    chk('the unread count is the reader’s Signal Center notices', as(SUB, 'public.sc_unread_count()') === subAlerts2);
+    chk('notices open in Signal Center', +db.sql("select count(*) from public.user_alerts where payload->>'href' like '#signals/s/%';").trim() === subAlerts2);
     /* cooldown: a second signal about a subject just notified is held back */
     const notified = J(db.sql("select to_jsonb(x) from (select s.subject_key from public.sc_notification_log l join public.sc_signals s using (signal_id) where l.user_id = " + lit(SUB) + " limit 1) x;"));
     const sameSubject = JSON.parse(JSON.stringify(q6)); sameSubject.identity.extra = 'second'; sameSubject.signal_key = E.signalKey(sameSubject.identity);
@@ -403,6 +408,27 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     chk('latency at 5,000 signals stays under a second per call (round trip included)', firstMs < 1000 && filtMs < 1000 && pulseMs < 1000 && prevMs < 1000 && deep.items.length > 0, { firstMs, filtMs, pulseMs, prevMs });
     const plan = db.sql("explain select signal_id from public.sc_signals where publication = 'PUBLISHED' order by first_detected_at desc, signal_id desc limit 26;");
     chk('the recent feed is served by its index', /sc_signals_feed_idx/.test(plan), plan);
+
+    /* ---- rollback: removes every piece, leaves the rest of the project, and the file applies again ---- */
+    const RB = F('signal_center_rollback.sql');
+    const rbText = fs.readFileSync(RB, 'utf8');
+    chk('the rollback has no psql meta-commands', !/^\\/m.test(rbText));
+    chk('the rollback drops every function the file creates', [...text.matchAll(/create or replace function public\.(sc_[a-z_]+)\(/g)].map((x) => x[1])
+      .every((fn) => new RegExp('drop function if exists public\\.' + fn + '\\(').test(rbText)));
+    const notices = +db.sql("select count(*) from public.user_alerts where payload->>'source' = 'signal_center';");
+    const others = +db.sql("select count(*) from public.user_alerts where coalesce(payload->>'source', '') <> 'signal_center';");
+    let rb = db.applyFile(RB);
+    chk('the rollback reports ok', /Signal Center is removed\|ok/.test(rb), rb.slice(-400));
+    chk('no sc_ table or function is left', +db.sql("select count(*) from pg_class where relnamespace = 'public'::regnamespace and relname like 'sc\\_%';") === 0
+      && +db.sql("select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname like 'sc\\_%';") === 0);
+    chk('the Signal Center notices go, every other notice stays', notices > 0 && +db.sql("select count(*) from public.user_alerts where payload->>'source' = 'signal_center';") === 0
+      && +db.sql('select count(*) from public.user_alerts;') === others, { notices, others });
+    chk('the project rules it read are untouched', !!db.sql("select to_regprocedure('public.community_is_entitled(uuid)')").trim() && !!db.sql("select to_regprocedure('public.billing_is_admin()')").trim());
+    chk('the seat event kind goes with it', +db.sql("select count(*) from public.user_event_kinds where event_name = 'primary_nav_signals';") === 0);
+    rb = db.applyFile(RB);
+    chk('the rollback runs twice safely', /Signal Center is removed\|ok/.test(rb));
+    out = db.applyFile(SQLF);
+    chk('and the file applies again after a rollback', (out.match(/\|ok/g) || []).length === 11 && !/CHECK THIS/.test(out), out.slice(-800));
   } catch (e) {
     chk('the suite ran to the end', false, String(e && e.stack || e).slice(0, 1500));
   } finally {

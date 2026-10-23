@@ -81,7 +81,8 @@ const SURFACES = [
   ['lib/edgedesk_public.js', false], ['lib/edgedesk_track.js', false],
   ['lib/edgedesk_home.js', false], ['lib/edgedesk_flags.js', false], ['lib/edgedesk_plans.js', false],
   ['lib/edgedesk_odds_tools.js', false], ['lib/edgedesk_nav.js', false], ['lib/edgedesk_home_free.js', false],
-  ['lib/edgedesk_games.js', false], ['lib/edgedesk_games_ui.js', false], ['lib/edgedesk_home_model.js', false]
+  ['lib/edgedesk_games.js', false], ['lib/edgedesk_games_ui.js', false], ['lib/edgedesk_home_model.js', false],
+  ['signals/index.html', false]
 ];
 function doorsIn(src) {
   const out = [];

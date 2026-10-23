@@ -2922,6 +2922,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
 <link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261014bs2">
 <link rel="stylesheet" href="/lib/edgedesk_simulator.css?v=20261023cfb2">
+<link rel="stylesheet" href="/lib/edgedesk_signal_center.css?v=20261024sc1">
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
@@ -3209,6 +3210,8 @@ body.focus .dk-focusnote{display:block}
 
   <!-- SIMULATOR — the published season simulations (lib/edgedesk_simulator.js). Premium
        numbers are read through supabase/simulator.sql's row-level security only. -->
+  <!-- SIGNAL CENTER: what changed, why, and whether the evidence supports it (lib/edgedesk_signal_center.js, docs/signal-center/README.md) -->
+  <section id="v-signals" class="view hide"><div id="scHost"><div class="empty">Loading&hellip;</div></div></section>
   <section id="v-simulator" class="view hide"><div id="simHost"><div class="empty">Loading&hellip;</div></div></section>
 
 
@@ -3955,6 +3958,11 @@ window.mcRefresh=function(){
        in More, so nobody reads it as their own P&L. Every old route still lands
        (show() aliases, #playerprops, #research/…). A sixth seat needs evidence: the
        primary_nav_* events (lib/edgedesk_track.js) are how that evidence is kept. -->
+  <!-- SIGNAL CENTER (owner request, 2026-10-24): the research-discovery seat, first because it
+       answers the first question a returning reader has, "what changed?" (lib/edgedesk_signal_center.js,
+       docs/signal-center/README.md). Research keeps the markup's resting state: a new reader lands
+       on Signal Center only once it is live (boot, below; scOpen hands off to Research until then). -->
+  <button data-v="signals" aria-label="Signal Center"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h3.5l2.5-6 4 12 2.5-6H21"/></svg>Signals</button>
   <button data-v="research" class="on" aria-current="page" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
   <button data-v="card" aria-label="EdgeDesk Card"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M14 15.5l2 2 3.5-4"/></svg>Card</button>
   <button data-v="portfolio" aria-label="Portfolio"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M3 12.5h18"/></svg>Portfolio</button>
@@ -3976,6 +3984,10 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_simulator.js?v=20261023wnba1"></script>
 <script src="/lib/edgedesk_simulator_ncaam.js?v=20261023wnba1"></script>
 <script src="/lib/edgedesk_simulator_wnba.js?v=20261023wnba1"></script>
+<!-- SIGNAL CENTER: the per-sport capability registry (it reads the Simulator's registry above)
+     and the reader. The engine and the graphic renderer load on demand (Method, a graphic). -->
+<script src="/lib/edgedesk_signal_registry.js?v=20261024sc1"></script>
+<script src="/lib/edgedesk_signal_center.js?v=20261024sc1"></script>
 <!-- The MLB historical pitching query layer. The SAME file the import
      pipeline validates with and the AI function carries inlined, so a
      pitcher's K-BB% is one number rather than three that agree. -->
@@ -4000,14 +4012,14 @@ window.mcRefresh=function(){
      tools/app/portfolio_process.test.js. -->
 <script src="/lib/edgedesk_positions.js?v=20261004b"></script>
 <script src="/lib/edgedesk_process.js?v=20261004b"></script>
-<script src="/lib/edgedesk_workspace_ui.js?v=20261005dr1"></script>
+<script src="/lib/edgedesk_workspace_ui.js?v=20261024sc1"></script>
 <script src="/lib/edgedesk_share_card.js?v=20261001a"></script>
 <script src="/lib/edgedesk_pricing.js?v=20261004a"></script>
 <!-- the one access decision (public.my_billing_access) and the server
      reconciliation the paywall asks for before it locks anybody out -->
 <script src="/lib/edgedesk_access.js?v=20261004a"></script>
 <!-- the funnel's one client (supabase/funnel.sql ed_track); configured below with the session token -->
-<script src="/lib/edgedesk_track.js?v=20261005pf3"></script>
+<script src="/lib/edgedesk_track.js?v=20261024sc1"></script>
 <!-- The CFB research view: what a reader sees first on the college board
      (the fair line with its side, the market gap, the research label, the
      reasons, the best available line, the projection's own history), read off
@@ -5572,14 +5584,14 @@ function edSafeUrl(u){
      social, discipline  hidden since before this change; land on Edges */
 var NAV_ALIAS={ledger:'portfolio',bets:'portfolio',records:'record',performance:'record',coach:'process'};
 /* the destinations "remember last tab" may return a reader to */
-var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1,simulator:1};
+var NAV_PRIMARY={signals:1,research:1,card:1,portfolio:1,process:1,simulator:1};
 /* views with no seat light the seat that owns them, so a reader never loses
    their place: everything reached through More reads as More */
 var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more',games:'research'};
 /* a game's research page (#game/<league>/<id>) belongs to the Research seat too */
 NAV_OWNER.game='research';
 /* views that carry their own #hash, so a destination can be linked to */
-var NAV_HASH_RE=/^#(card|portfolio|process|simulator|more)(\/[a-z_]+)?$/;
+var NAV_HASH_RE=/^#(signals|card|portfolio|process|simulator|more)(\/[a-z_]+)?$/;
 function navPaint(on){var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){var x=b[j].dataset.v===on;b[j].classList.toggle('on',x);if(x)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}}
 /* NAVIGATION EVIDENCE. Which destinations people actually open is the only
    honest argument for giving one more room or less; these are the events that
@@ -5615,7 +5627,7 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
      #receipt=… and anything else belongs to another view and is left alone. */
   try{var _h=location.hash||'',_mine=NAV_HASH_RE.test('#'+v)?'#'+v:null;
     if(_mine){if(_h.split('/')[0]!==_mine)history.replaceState(null,'',location.pathname+location.search+_mine);}
-    else if(/^#research\//.test(_h)||/^#playerprops/.test(_h)||NAV_HASH_RE.test(_h))history.replaceState(null,'',location.pathname+location.search);
+    else if(/^#research\//.test(_h)||/^#playerprops/.test(_h)||/^#signals\//.test(_h)||NAV_HASH_RE.test(_h))history.replaceState(null,'',location.pathname+location.search);
   }catch(_){}
   var s=document.querySelectorAll('.view');for(var i=0;i<s.length;i++)s[i].classList.toggle('hide',s[i].id!=='v-'+v);
   navPaint(NAV_OWNER[v]||v);window.scrollTo(0,0);
@@ -5626,6 +5638,7 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
   if(v==='portfolio'){try{if(window.pfOpen)window.pfOpen();}catch(_){}}   /* settles, refreshes live CLV and paints (lib/edgedesk_workspace_ui.js) */
   if(v==='process'){try{if(window.pcOpen)window.pcOpen();}catch(_){}}
   if(v==='simulator'){try{if(window.EDSimUI)window.EDSimUI.open($('simHost'));}catch(_){}}   /* lib/edgedesk_simulator.js */
+  if(v==='signals')scOpen(null);   /* lib/edgedesk_signal_center.js */
   if(v==='setup'){try{if(window.setupOpen)window.setupOpen();}catch(_){}}
   if(v==='games'){try{if(window.gmShowPage)window.gmShowPage(location.hash);}catch(_){}}
   plStop();}
@@ -5633,7 +5646,7 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
    the ones the five destinations add (#portfolio[/tab], #process, #more), plus
    the names readers and old emails use for places that moved (#ledger,
    #record, #pnl, #edges, #props, #settings …). Returns true when it routed. */
-var NAV_HASH_MAP={card:'card',portfolio:'portfolio',process:'process',simulator:'simulator',more:'more',setup:'setup',ledger:'portfolio',bets:'portfolio',
+var NAV_HASH_MAP={signals:'signals',card:'card',portfolio:'portfolio',process:'process',simulator:'simulator',more:'more',setup:'setup',ledger:'portfolio',bets:'portfolio',
   record:'record',records:'record',pnl:'record',performance:'record',edges:'edges',props:'pprops',settings:'settings',faults:'faults',
   news:'news',collective:'collective',terms:'terms',ai:'ai'};
 function navHashRoute(h){
@@ -5641,6 +5654,11 @@ function navHashRoute(h){
   if(/^#receipt=/.test(h)){var rv=$('v-record');if(rv&&rv.classList.contains('hide'))show('record');return true;}
   /* Today's Games: #games[/<sport>[/<date>]][?status=…&q=…] (lib/edgedesk_games.js parseState) */
   if(/^#games(?:[\/?]|$)/.test(h)){if($('v-games').classList.contains('hide'))show('games');else{try{window.gmShowPage(h);}catch(_){}}return true;}
+  /* Signal Center: #signals[/<sport>|/s/<id>|/dna[/<sport>]|/coverage|/alerts|/method];
+     #signal-center[/…] is the same place under its long name */
+  if(/^#signal-center(?:\/|$)/.test(h)){h='#signals'+h.slice(14);try{history.replaceState(null,'',location.pathname+location.search+h);}catch(_){}}
+  if(/^#signals(?:\/|$)/.test(h)){var _sr=window.EDSignalCenter&&window.EDSignalCenter.parseHash(h);if(!_sr)return false;
+    if($('v-signals').classList.contains('hide')){SC_ROUTE=_sr;show('signals');}else scOpen(_sr);return true;}
   /* Game research: #game/<nfl|cfb>/<game_id>[?f=portrait] (lib/edgedesk_game_view.js) */
   if(/^#game\/(nfl|cfb)\//.test(h)){if($('v-game').classList.contains('hide'))show('game');try{window.gvShowPage(h);}catch(_){}return true;}
   var m=h.match(/^#([a-z]+)(?:\/([a-z_]+))?$/);if(!m||!NAV_HASH_MAP[m[1]])return false;
@@ -5659,6 +5677,20 @@ function navHashRoute(h){
   return true;
 }
 window.navHashRoute=navHashRoute;
+/* Signal Center opens on the route it was sent to (a hash) or its feed. A
+   LANDING open (boot, a reader with no remembered tab) hands the reader on to
+   Research when Signal Center has nothing to show them yet: its database is
+   not deployed, it cannot be read, or it is still in shadow mode for anyone
+   who is not an operator. It never strands anyone on an empty page. */
+var SC_ROUTE=null,SC_LANDING=false;
+function scOpen(route){
+  var r=route||SC_ROUTE;SC_ROUTE=null;var landing=SC_LANDING;SC_LANDING=false;
+  try{if(window.EDSignalCenter)window.EDSignalCenter.open($('scHost'),{route:r||window.EDSignalCenter.parseHash(location.hash)||{view:'feed'},
+    landing:landing,onHandoff:function(){if(!$('v-signals').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');}});
+    else if(landing)researchGo(prefs().lastResearchSub||'football');}
+  catch(_){if(landing)researchGo(prefs().lastResearchSub||'football');}
+}
+window.scOpen=scOpen;
 window.addEventListener('hashchange',function(){
   var h=location.hash||'';
   /* Player Props owns #playerprops/…; a link to it from inside the running app
@@ -20026,7 +20058,7 @@ function renderSetEdge(){
            one that is still honoured but no longer offered (Faults, Record…) is
            shown as itself, so the setting never misreports what boot will do */
         var cur={pprops:'research',edges:'research',ledger:'portfolio'}[p.defaultTab]||p.defaultTab;
-        var opts=[['research','Research'],['card','Card'],['portfolio','Portfolio'],['process','Process'],['simulator','Simulator']];
+        var opts=[['signals','Signal Center'],['research','Research'],['card','Card'],['portfolio','Portfolio'],['process','Process'],['simulator','Simulator']];
         if(cur&&!opts.some(function(o){return o[0]===cur;}))opts.push([cur,({record:'Model performance'}[cur]||cur.charAt(0).toUpperCase()+cur.slice(1))+' (earlier choice)']);
         return opts;
       })().map(function(t){
@@ -21101,7 +21133,7 @@ try{applyPrefs();renderAvatar();loadSubStatus();
   var _u=edUser();if(_u){var _n=$('avName'),_m=$('avMail');
     if(_n)_n.textContent=(_u.user_metadata&&_u.user_metadata.display_name)||(_u.email||'Account').split('@')[0];
     if(_m)_m.textContent=_u.email||'';}
-  var _p=prefs();
+  var _p=prefs(),_fresh=false;try{_fresh=!localStorage.getItem('edgedesk_prefs');}catch(__){}
   /* "remember last tab" returns a reader to a DESTINATION: a lastTab saved before
      the five destinations (ledger, record, faults …) is read through the aliases,
      and one that is not a destination or a research panel is not remembered. An
@@ -21125,6 +21157,10 @@ try{applyPrefs();renderAvatar();loadSubStatus();
       w.then(function(){if(rm&&rm.openEntity&&(!rm.entityOpen||!rm.entityOpen()))rm.openEntity(ent);}).catch(function(){});
     })(RESEARCH_MODULES[_rh.sub],_rh.entity);}
   }
+  /* a reader with no saved preferences at all is new here: Signal Center is
+     where research discovery starts, once it is live (scOpen hands off to
+     Research until then) */
+  else if(_fresh){SC_LANDING=true;show('signals');}
   else if(_t==='research')researchGo(_p.lastResearchSub||'football');
   /* The markup now rests on Research -> Football, so EVERY other remembered tab
      has to be routed explicitly. Before this, 'edges' was the resting state and
@@ -65234,7 +65270,7 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20261016g1"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20261024sc1"></script>
 <!-- first run ("Here's what EdgeDesk found today") and the funnel's in-app steps,
      over the landing page's own view model (lib/edgedesk_home.js) -->
 <script src="/lib/edgedesk_home.js?v=20260930c"></script>

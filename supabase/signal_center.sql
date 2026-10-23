@@ -191,7 +191,7 @@ insert into public.sc_config (key, value) values
   ('live_sports', '["nfl","cfb"]'),
   ('publish', '{"min_label":"Routine"}'),
   ('free', '{"feed_limit":3,"max_age_hours":72,"min_label":"Notable","categories":["FORECAST_SHIFT","MARKET_DIVERGENCE","INJURY_IMPACT","MODEL_RELIABILITY_WARNING","DATA_QUALITY_WARNING"],"example_graphics":2,"example_min_age_hours":72}'),
-  ('notify', '{"min_label":"Notable","cooldown_hours":6,"max_per_run":500,"window_hours":24}'),
+  ('notify', '{"min_label":"Notable","cooldown_hours":6,"max_per_run":500,"window_hours":24,"max_per_reader_run":5,"max_per_reader_day":20}'),
   ('graphics', '{"auto":true,"min_label":"Notable","formats":["square","landscape","portrait"]}'),
   ('lease_minutes', '45'),
   ('allow_fixtures', 'false')
@@ -367,8 +367,11 @@ create table if not exists public.sc_notification_log (
   subject_key  text not null,
   sent_at      timestamptz not null default now(),
   alert_id     bigint,
+  -- true: considered and held back by the per-reader cap, never sent and never retried
+  held         boolean not null default false,
   primary key (user_id, signal_id)
 );
+alter table public.sc_notification_log add column if not exists held boolean not null default false;
 create index if not exists sc_notification_log_cool_idx on public.sc_notification_log (user_id, subject_key, sent_at desc);
 
 create table if not exists public.sc_failures (
@@ -772,6 +775,7 @@ end $$;
 create or replace function public.sc_notify(p_run uuid)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare cfg jsonb := coalesce(public.sc_cfg('notify'), '{}'::jsonb); s record; u record; n integer := 0; skipped integer := 0; v_alert bigint; v_kind text; v_sev text; v_max integer;
+  v_run_cap integer := greatest(1, coalesce((cfg->>'max_per_reader_run')::integer, 5)); v_day_cap integer := greatest(1, coalesce((cfg->>'max_per_reader_day')::integer, 20));
 begin
   perform public.sc_require_run(p_run);
   if to_regclass('public.user_alerts') is null then return jsonb_build_object('sent', 0, 'note', 'public.user_alerts is not installed: no notices'); end if;
@@ -790,8 +794,17 @@ begin
               order by p.user_id loop
       if n >= v_max then exit; end if;
       if not public.sc_user_entitled(u.user_id) then skipped := skipped + 1; continue; end if;
-      if exists (select 1 from public.sc_notification_log l where l.user_id = u.user_id and l.subject_key = s.subject_key
+      if exists (select 1 from public.sc_notification_log l where l.user_id = u.user_id and l.subject_key = s.subject_key and not l.held
                   and l.sent_at > now() - make_interval(hours => coalesce((cfg->>'cooldown_hours')::integer, 6))) then skipped := skipped + 1; continue; end if;
+      -- a reader hears about the most important few, never a flood: at most
+      -- max_per_reader_run in this call (one transaction, so sent_at = now()) and
+      -- max_per_reader_day in 24 hours, highest score first. What the cap holds
+      -- back is logged as held, so no later run drips it out hours late
+      if (select count(*) from public.sc_notification_log l where l.user_id = u.user_id and not l.held and l.sent_at = now()) >= v_run_cap
+         or (select count(*) from public.sc_notification_log l where l.user_id = u.user_id and not l.held and l.sent_at > now() - interval '24 hours') >= v_day_cap then
+        insert into public.sc_notification_log (user_id, signal_id, subject_key, alert_id, held) values (u.user_id, s.signal_id, s.subject_key, null, true) on conflict do nothing;
+        skipped := skipped + 1; continue;
+      end if;
       v_kind := case s.category when 'FORECAST_SHIFT' then 'fair_move' when 'SIMULATION_SHIFT' then 'fair_move' when 'MARKET_DIVERGENCE' then 'diverge'
                   when 'MARKET_CONVERGENCE' then 'converge' when 'LINE_MOVEMENT' then 'market_move' when 'INJURY_IMPACT' then 'injury_change' else 'reliability_change' end;
       v_sev := case when s.category in ('MODEL_RELIABILITY_WARNING', 'DATA_QUALITY_WARNING') then 'caution' when s.label = 'Major' then 'notable' else 'info' end;
@@ -985,7 +998,7 @@ begin
     return jsonb_build_object('found', true, 'access', 'locked', 'reason', case when auth.uid() is null then 'signed_out' else 'not_entitled' end);
   end if;
   return jsonb_build_object('found', true, 'access', 'full', 'admin', adm,
-    'item', public.sc_item(s, true),
+    'item', public.sc_item(s, true) || case when adm then jsonb_build_object('public_preview', s.public_preview, 'publication_by', s.publication_by) else '{}'::jsonb end,
     'payload', (select payload from public.sc_signal_versions where version_id = s.current_version_id),
     'payload_sha256', (select payload_sha256 from public.sc_signal_versions where version_id = s.current_version_id),
     'versions', (select coalesce(jsonb_agg(jsonb_build_object('version', v.version, 'version_hash', v.version_hash, 'reason', v.reason, 'created_at', v.created_at,
@@ -1234,6 +1247,18 @@ grant execute on function public.sc_pulse(integer) to anon, authenticated;
 grant execute on function public.sc_status() to anon, authenticated;
 grant execute on function public.sc_feed(jsonb,text,integer) to authenticated;
 
+-- ---------------------------------------------------------------- navigation evidence
+-- The Signal Center seat's taps (app.html edNavTrack → lib/edgedesk_track.js),
+-- registered here so deploying Signal Center needs no re-run of funnel.sql
+-- (which carries the same row for a fresh install). Skipped without the funnel.
+do $nav$ begin
+  if to_regclass('public.user_event_kinds') is not null then
+    insert into public.user_event_kinds (event_name, source, dedupe, stage, signed_in, description)
+    values ('primary_nav_signals', 'client', 'session', 60, true, 'The Signal Center seat in the primary navigation was tapped.')
+    on conflict (event_name) do nothing;
+  end if;
+end $nav$;
+
 commit;
 
 notify pgrst, 'reload schema';
@@ -1263,4 +1288,9 @@ union all select 9, 'mode',
        case when (public.sc_cfg('mode'))#>>'{}' = 'shadow' then 'ok: shadow (nothing is published until an operator switches to live)'
             when (public.sc_cfg('mode'))#>>'{}' = 'live' then 'ok: live for ' || (public.sc_cfg('live_sports'))::text else 'CHECK THIS' end
 union all select 10, 'notices',
-       case when to_regclass('public.user_alerts') is not null then 'ok' else 'pending: public.user_alerts (supabase/personal_research.sql) is not installed — notices are skipped' end;
+       case when to_regclass('public.user_alerts') is not null then 'ok' else 'pending: public.user_alerts (supabase/personal_research.sql) is not installed — notices are skipped' end
+union all select 11, 'the Signal Center seat is counted',
+       case when to_regclass('public.user_event_kinds') is null then 'pending: supabase/funnel.sql is not installed — seat taps are not kept'
+            -- read dynamically: a plain reference would fail to parse where the funnel is not installed
+            when (xpath('/row/n/text()', query_to_xml('select count(*) as n from public.user_event_kinds where event_name = ''primary_nav_signals''', false, true, '')))[1]::text = '1'
+            then 'ok' else 'CHECK THIS' end;

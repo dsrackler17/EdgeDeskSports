@@ -51,7 +51,7 @@ function serve() {
         + '</head><body style="background:#000"></body></html>');
       return;
     }
-    const f = path.join(ROOT, u);
+    const f = path.join(ROOT, u.endsWith('/') ? u + 'index.html' : u);
     if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); res.end(); return; }
     res.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' });
     fs.createReadStream(f).pipe(res);
