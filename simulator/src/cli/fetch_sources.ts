@@ -140,6 +140,24 @@ async function kalshi() {
       if (!cursor) break;
     }
   }
+  /* fees can be overridden per event and changed on a schedule: print both for the futures events */
+  console.log('\n-- event fee fields (fee_type_override / fee_multiplier_override; absent or null = the series\' own):');
+  for (const ev of [...new Set(all.map((k) => k.event_ticker))].sort()) {
+    try {
+      const e = await c.get('/events/' + encodeURIComponent(ev), {});
+      const o = (e && e.event) || e || {};
+      const fee = Object.fromEntries(Object.entries(o).filter(([k]) => /fee/i.test(k)));
+      console.log('  EVENTFEE ' + ev + ' ' + JSON.stringify(fee));
+    } catch (err) { console.log('  EVENTFEE ' + ev + ' FAILED ' + String((err as Error).message).slice(0, 120)); }
+  }
+  console.log('\n-- scheduled series fee changes touching these series (/series/fee_changes):');
+  try {
+    const fc = await c.get('/series/fee_changes', { show_historical: 'false' });
+    const list = (fc && (fc.series_fee_change_arr || fc.fee_changes || fc.series_fee_changes)) || [];
+    const mine = new Set(futures.map((x: any) => x.ticker));
+    console.log('  FEECHANGES total ' + (Array.isArray(list) ? list.length : 'n/a') + ' · keys ' + JSON.stringify(Object.keys(fc || {})));
+    for (const x of Array.isArray(list) ? list : []) if (mine.has(x.series_ticker)) console.log('  FEECHANGE ' + JSON.stringify(x));
+  } catch (err) { console.log('  FEECHANGES FAILED ' + String((err as Error).message).slice(0, 160)); }
   fs.writeFileSync(path.join(OUT, 'kalshi_candidates.json'), JSON.stringify({ fetched_at: new Date().toISOString(), host: c.host, series, futures: futures.map((x: any) => x.ticker), markets: all }, null, 1));
   SUMMARY.push('kalshi: host ' + c.host + ' · ' + series.length + ' NFL-named series · ' + futures.length + ' futures series · ' + all.length + ' open futures markets');
 }
