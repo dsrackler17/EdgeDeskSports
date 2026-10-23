@@ -37,6 +37,7 @@ import { NHL_2027 } from '../sports/nhl/config.ts';
 import { buildNhlSnapshot, readNhlSnapshot, writeNhlSnapshot, type NhlSnapshot } from '../sports/nhl/inputs.ts';
 import { validateNhlInputs } from '../sports/nhl/validate.ts';
 import { sha256Hex } from '../core/canonical.ts';
+import { executeCfb, printCfbSummary, type CfbRunOutcome } from './run_cfb.ts';
 
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -82,6 +83,7 @@ export interface RunOutcome { results: ResultsDoc; gates: Gate[]; snapshot: NflS
 
 export async function execute(args: CliArgs, log: (s: string) => void = console.log): Promise<RunOutcome> {
   if (args.sport === 'nhl') return executeNhl(args, log);
+  if (args.sport === 'cfb') return (await executeCfb(args, log)) as unknown as RunOutcome;
   if (args.sport !== 'nfl') throw Object.assign(new Error('sport ' + args.sport + ' has no simulation module: ' + (sportRegistry().find((s) => s.key === args.sport) as any).blockers.join(' | ')), { exitCode: 2 });
   if (args.season !== NFL_2026.season) throw Object.assign(new Error('no NFL season config for ' + args.season), { exitCode: 2 });
   /* 1 inputs: build (network, before any simulation) or replay */
@@ -209,7 +211,7 @@ if (isMain) {
     try { args = parseArgs(process.argv.slice(2)); } catch (e) { console.error('error: ' + (e as Error).message); process.exit(2); }
     try {
       const o = await execute(args);
-      printSummary(o, console.log);
+      if (args.sport === 'cfb') printCfbSummary(o as unknown as CfbRunOutcome, console.log); else printSummary(o, console.log);
       if (args.publish) {
         if (!o.publishable) { console.error('nothing published: a gate failed (see gates.json)'); process.exit(1); }
         const { publishRun } = await import('../publish/publish.ts');

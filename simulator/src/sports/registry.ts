@@ -13,6 +13,7 @@
    =========================================================================== */
 import { NFL_2026 } from './nfl/config.ts';
 import { NHL_2027 } from './nhl/config.ts';
+import { cfbFacts, isCfbVerified } from './cfb/config.ts';
 
 export type SportStatus = 'ACTIVE' | 'BLOCKED' | 'COMING_SOON';
 export interface SportEntry {
@@ -48,6 +49,23 @@ export function factStatus(facts: Array<[string, Fact]>, league = 'NFL'): { stat
   return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
 }
 
+/** CFB: the engine, rules, committee proxy and tests are complete; publication waits on the facts
+    whose governing text could not be read or does not yet exist for 2026 (config.ts). */
+function cfbStatus(): { status: SportStatus; blockers: string[] } {
+  const blockers = cfbFacts().filter(([, f]) => f.affects_results && !isCfbVerified(f))
+    .map(([label, f]) => label + ': ' + f.label + ' is ' + f.verification + '; the title-game, CFP and national-title outputs it feeds stay unpublished until it is verified (simulator/src/sports/cfb/config.ts lists the source to verify against)');
+  return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
+}
+const CFB_LIMITS = [
+  'Game outcomes come from the served edgedesk_cfb_p4 engine replayed over the feed (the path its calibration was validated on, 2014-2025); every game keeps the engine\'s own margin distribution. The engine does not beat the closing line.',
+  'Strength uncertainty: one persistent normal offset per team (tau calibrated so the spread of simulated remaining wins matches 2014-2023; 2024-2025 held out), carved out of the engine sigma so no single game is flattened.',
+  'FCS opponents are the engine\'s single floor rating (its win rates are calibrated in aggregate on 2014-2025 FBS-vs-FCS games); Pac-12 Week 13 flex games are not in the feed and are not simulated.',
+  'Quarterback availability moves a price only for a sourced primary-QB absence, through the engine\'s trained coefficient; no return dates or new injuries are simulated. Ratings are frozen at the as-of date.',
+  'Conference tiebreaker steps that name an external ranking (SportSource Analytics, computer composites, CFP rankings) are resolved by an Estimated surrogate (the run\'s latent strength), and counted per conference.',
+  'CFP selection and seeding come from an Estimated committee proxy (a Plackett-Luce model of the committee\'s final rankings 2014-2025, validated chronologically); a simulated record never decides the ranking by itself. Once the bracket is announced, the observed bracket replaces it.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy or committee uncertainty.'
+];
+
 const NFL_LIMITS = [
   'Strength uncertainty: one persistent normal offset per club (sigma calibrated on 2006-2024 frozen forecasts so the spread of simulated remaining wins matches history); the 2025 holdout season was more volatile than that calibration.',
   'Game outcomes come from the served edgedesk_nfl_v2 margin distribution, including its own tie mass. The model does not beat the closing line in its walk-forward record.',
@@ -69,14 +87,13 @@ const NHL_LIMITS = [
 ];
 
 export function sportRegistry(): SportEntry[] {
-  const nfl = nflStatus(), nhl = nhlStatus();
+  const nfl = nflStatus(), nhl = nhlStatus(), cfb = cfbStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
-    { key: 'cfb', label: 'College Football', status: 'BLOCKED', structure: 'season', tabs: ['conference', 'title', 'futures'],
-      blockers: ['No conference title-game qualification rules or tiebreakers for 2026 in the repository (9 FBS conferences, each with its own).', 'No 2026 CFP format, seeding or selection data, and no committee-ranking proxy inputs (no CFP/AP rankings are committed).', 'No neutral-site flags for the remaining 2026 schedule and no committed full schedule (football/fbs/.cache is gitignored).'],
-      limitations: ['The production game model (football/cfb_p4 engine) can price any rated FBS pairing offline; everything else above is missing.'],
-      activation_path: 'Commit a versioned 2026 conference-rules table with sources, a CFP bracket config, an explicitly Estimated committee proxy, and the full schedule with neutral flags.' },
+    { key: 'cfb', label: 'College Football', status: cfb.status, structure: 'season', tabs: ['conference', 'title', 'futures'],
+      blockers: cfb.blockers, limitations: CFB_LIMITS,
+      activation_path: 'Read each blocked conference\'s 2026 tiebreaker text (and the two eligibility statements) from the governing body, update simulator/src/sports/cfb/config.ts (VERIFIED with verified_by/verified_at, procedure fixed if it differs) in a reviewed commit, regenerate the reader registry, run 100,000 runs. CFB_SIMULATOR_NOTES.md §9.' },
     { key: 'nba', label: 'NBA', status: 'BLOCKED', structure: 'season', tabs: ['conference', 'title', 'futures'],
       blockers: ['No 2026-27 conference/division table in the repository.', '30 regular-season games (2 per club) depend on NBA Cup results and are not yet scheduled.', 'No standings, tiebreaker, play-in or series code; no strength-uncertainty study.', 'The chosen model (E_ridge_P) needs the network-built .cache/nba_work tables to price offline.'],
       limitations: ['The roster/injury layer has statuses but no return dates.'],
