@@ -76,7 +76,7 @@ export const UFC_2026: UfcConfig = {
     affects_results: true, verified_by: null, verified_at: null, measured: true
   },
   matchmaking: {
-    value: 'ESTIMATED. At each title fight not yet booked, the champion meets the highest-ranked contender who is coming off a win and has rested at least the measured minimum since his last fight. The order starts from ufc.com\'s ranks; a booked bout moves its winner to the loser\'s place when the loser was ranked higher; a fighter booked in another division leaves his ranked division (the schedule shows the move); a champion who loses is no longer champion and, coming off a loss, waits',
+    value: 'ESTIMATED. At each title fight not yet booked, the champion meets the highest-ranked contender who is coming off a win and has rested at least the measured minimum since their last fight. The order starts from ufc.com\'s ranks; a booked bout moves its winner to the loser\'s place when the loser was ranked higher; a fighter booked in another division leaves their ranked division (the schedule shows the move); a champion who loses is no longer champion and, coming off a loss, waits',
     source: 'EdgeDesk\'s rule, stated; the share of challengers coming off a win and their rest are measured from every title fight since 2014 (title history matched to the bouts)',
     retrieved: '2026-10-23', verification: 'NOT_APPLICABLE', verify_by: 'not verifiable: the UFC books title fights at its discretion; every number it moves is labelled Estimated',
     affects_results: true, verified_by: null, verified_at: null, measured: true, estimated: true
