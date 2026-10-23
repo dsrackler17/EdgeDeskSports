@@ -24,6 +24,9 @@ import { runRange } from '../src/core/engine.ts';
 import { buildResults } from '../src/core/results.ts';
 import { resultRows, entityRows } from '../src/publish/publish.ts';
 import { nflMathStatus } from '../src/sports/nfl/validate.ts';
+import { nbaFixture } from './_nba_fixture.ts';
+import { nbaModule } from '../src/sports/nba/module.ts';
+import { nbaMathStatus } from '../src/sports/nba/validate.ts';
 
 const require = createRequire(import.meta.url);
 const T = kit('Simulator seat (browser)');
@@ -72,6 +75,21 @@ const NHL_RUN_ID = '66666666-7777-8888-9999-000000000000';
 const nrun = { ...run, run_id: NHL_RUN_ID, sport: 'nhl', season: '2026-27', n_sims: 1000, seed: '2027', model_version: nresults.run.model_version, rules_version: nresults.run.rules_version, comparison_id: null, validation_summary: { flags: { tiebreak_goals: 2 } } };
 const nrows = resultRows({ results: nresults } as any), nents = entityRows({ results: nresults } as any);
 
+/* the NBA: a REAL 500-run simulation of the committed 2026-27 snapshot, through the publisher's row mapping.
+   TEST ONLY: the NBA is BLOCKED; one scenario serves the registry with it ACTIVE so its views can be exercised */
+const bsnap = nbaFixture('live');
+const bm = nbaModule(bsnap.data, { seed: 2027n });
+const bagg = runRange(bm, { start: 0, end: 500 });
+const bmath = nbaMathStatus(bsnap.data);
+const brec: Record<string, { w: number; l: number }> = {};
+bsnap.data.teams.forEach((t) => { brec[t.code] = { w: 0, l: 0 }; });
+bsnap.data.games.filter((g) => g.done).forEach((g) => { const hw = (g.home_score as number) > (g.away_score as number); brec[hw ? g.home : g.away].w++; brec[hw ? g.away : g.home].l++; });
+const bresults = buildResults({ module: bm, agg: bagg, seed: 2027n, runs: 500, workers: 1, input_hash: bsnap.input_hash, input_snapshot_at: new Date(Date.now() - 2 * 3600e3).toISOString(),
+  model_version: bsnap.data.model.model_version, config: bsnap.data.config, rules_version: bsnap.data.rules_version, started_at: '', finished_at: '', runtime_ms: 1, peak_rss_mb: 1,
+  entityExtras: (id) => ({ record: brec[id], math_status: bmath[id] }) });
+const NBA_RUN_ID = '77777777-8888-9999-aaaa-bbbbbbbbbbbb';
+const brun = { ...run, run_id: NBA_RUN_ID, sport: 'nba', season: '2026-27', n_sims: 500, seed: '2027', model_version: bresults.run.model_version, rules_version: bresults.run.rules_version, comparison_id: null, validation_summary: { flags: bresults.flags } };
+const brows = resultRows({ results: bresults } as any), bents = entityRows({ results: bresults } as any);
 const EVIL = '<img src=x onerror="window.__xss=1">';
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 
@@ -93,7 +111,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
   try { browser = await pw.chromium.launch({ headless: true }); }
   catch (_) { const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'; if (fs.existsSync(exe)) browser = await pw.chromium.launch({ headless: true, executablePath: exe }); else { srv.close(); skip('no Chromium'); } }
 
-  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean }
+  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean; nbaActive?: boolean }
   async function open(viewport: { width: number; height: number }, hash: string, sc: Scenario) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript(() => {
@@ -109,17 +127,25 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     const status = { sport: 'nfl', competition: 'NFL', season: '2026', published_run_id: sc.published ? RUN_ID : null, published_at: sc.published ? run.published_at : null, input_snapshot_at: run.input_snapshot_at,
       n_sims: 3000, model_version: run.model_version, last_attempt_status: 'completed', last_attempt_at: run.completed_at, comparison_status: 'completed', comparison_at: run.completed_at };
     const nstatus = { ...status, sport: 'nhl', competition: 'NHL', season: '2026-27', published_run_id: sc.published ? NHL_RUN_ID : null, n_sims: 1000, model_version: nrun.model_version, comparison_status: null, comparison_at: null };
+    const bstatus = { ...status, sport: 'nba', competition: 'NBA', season: '2026-27', published_run_id: sc.published ? NBA_RUN_ID : null, n_sims: 500, model_version: brun.model_version, comparison_status: null, comparison_at: null };
     const isNhl = (u: string) => u.includes(encodeURIComponent(NHL_RUN_ID)) || u.includes(NHL_RUN_ID) || /sport=eq\.nhl/.test(u);
-    await ctx.route('**/*', (route: any) => {
+    const isNba = (u: string) => u.includes(encodeURIComponent(NBA_RUN_ID)) || u.includes(NBA_RUN_ID) || /sport=eq\.nba/.test(u);
+    await ctx.route('**/*', async (route: any) => {
       const u = route.request().url();
-      if (u.startsWith('http://127.0.0.1')) return route.continue();
+      if (u.startsWith('http://127.0.0.1')) {
+        if (!sc.nbaActive || !/\/lib\/edgedesk_simulator_sports\.js/.test(u)) return route.continue();
+        /* TEST ONLY: this scenario's registry has the NBA ACTIVE */
+        const r = await route.fetch(), b = (await r.text()).replace(/("key": "nba",\s*"label": "NBA",\s*"status": )"BLOCKED"/, '$1"ACTIVE"');
+        if (!/"key": "nba",\s*"label": "NBA",\s*"status": "ACTIVE"/.test(b)) throw new Error('the NBA is neither ACTIVE nor overridable to ACTIVE');
+        return route.fulfill({ response: r, body: b });
+      }
       if (/supabase\.co/.test(u)) {
         const J = (b: unknown, st = 200) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(b) });
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus]); }
+        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
-        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [isNhl(u) ? nrun : run] : []);
-        if (/sim_current_results/.test(u)) return J(sc.entitled ? (isNhl(u) ? nrows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
-        if (/sim_current_entities/.test(u)) return J(sc.entitled ? (isNhl(u) ? nents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
+        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [isNhl(u) ? nrun : isNba(u) ? brun : run] : []);
+        if (/sim_current_results/.test(u)) return J(sc.entitled ? (isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
+        if (/sim_current_entities/.test(u)) return J(sc.entitled ? (isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
         if (/sim_current_edges/.test(u)) return J(sc.entitled ? edges : []);
         if (/subscriptions/.test(u)) return J([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]);
         /* an onboarded reader: without it the personal desk's first-run walkthrough opens over the page once it is quiet */
@@ -207,6 +233,28 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       T.chk(W + ': NHL conference view: D1-D3, wild cards and rounds per conference', (await page.locator('#simHost .sm-seeds').count()) === 2 && /WC2/.test(t) && /Conf\. final/.test(t) && !/\(bye\)/.test(t));
       await shot(page, 'sim-nhl-conference-' + W);
       T.eq(W + ': NHL: no page errors', errors, []);
+      await ctx.close();
+    }
+    /* the NBA view (its registry served ACTIVE for this scenario only) */
+    for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width;
+      const { ctx, page, errors } = await open(vp, '#simulator/nba', { entitled: true, published: true, nbaActive: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/nba')); await page.waitForTimeout(500);
+      let t = await text(page);
+      T.chk(W + ': NBA title view: 30 NBA-title cards, the playoff conference title and the regular-season places apart, 500 simulated seasons', (await page.locator('#simHost .sm-club').count()) === 30 && /win NBA title/.test(t) && /Conference title \(playoffs\)/.test(t) && /Regular season: 1st in the/.test(t) && /500 simulated seasons/.test(t) && !/Super Bowl|Stanley Cup/.test(t));
+      T.chk(W + ': NBA: no market is mapped, shown as unavailable (not zero)', /Market: unavailable/.test(t));
+      T.chk(W + ': NBA: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-nba-title-' + W);
+      await page.click('#simHost [data-sim-tab="division"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': NBA division view: 6 divisions of 5 with W-L, projected wins, the play-in and the playoffs', (await page.locator('#simHost .sm-card .sm-tbl').count()) === 6 && (await page.locator('#simHost .sm-card .sm-tbl tbody tr').count()) === 30 && /Proj\. wins/.test(t) && /Play-in/.test(t) && /Make playoffs/.test(t));
+      await shot(page, 'sim-nba-division-' + W);
+      await page.click('#simHost [data-sim-tab="conference"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': NBA conference view: first place, play-in, playoffs, seeds 1-8, rounds and the conference title per conference', (await page.locator('#simHost .sm-seeds').count()) === 2 && /1st \(reg\. season\)/.test(t) && /Conf\. finals/.test(t) && /Win East/.test(t) && /Win West/.test(t) && /Four different outcomes/.test(t));
+      T.chk(W + ': NBA conference view: no horizontal page scroll (the table scrolls in its card)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-nba-conference-' + W);
+      T.eq(W + ': NBA: no page errors', errors, []);
       await ctx.close();
     }
     {
