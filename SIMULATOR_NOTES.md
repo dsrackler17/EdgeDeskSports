@@ -28,7 +28,7 @@ deployment: §16 states exactly what exists and what does not.
 | 100,000-run benchmark | Executed: 15.7 s on 4 workers | §14 |
 | NHL season and Stanley Cup simulation | Implemented, tested (202 assertions; reproduces all 165 playoff series 2013-14..2025-26); **BLOCKED for publication** | [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) |
 | MLB season and postseason | Implemented, tested, studies committed; **BLOCKED for publication** (six 2026 facts unverified, live feed never run from the build environment) | [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) |
-| College football (season, title games, CFP) | Implemented, tested; **BLOCKED for publication** (eight 2026 facts not VERIFIED) | [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) |
+| College football (season, title games, CFP) | Implemented, tested; **ACTIVE**: every conference procedure, the 2026 CFP format and North Dakota State's eligibility verified from the governing bodies' text on 2026-10-23; Sacramento State's eligibility measured per run | [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) |
 | Other sports | Not active: BLOCKED or COMING SOON with named blockers | §4 |
 
 ---
@@ -109,7 +109,7 @@ it is stale.
 | Sport | Status | Structure | Owned model / data (evidence) | Exact blockers |
 |---|---|---|---|---|
 | **NFL** | **ACTIVE** (verified 2026-10-23, §7.5) | season | served model `football/nfl_model.js`; schedule/results/standings from nflverse; rules engine reproduces 2002–2025 | 2026 tiebreaking procedures, 2026 playoff format and Super Bowl LXI venue/designated home not verified against the NFL's official pages (unreachable from the build environment) — §7.5 |
-| College football | BLOCKED (implemented — blocked on verification) | season | `football/cfb_p4` engine replayed over the 2026 feed; ten conference procedures; 2026 CFP rules; an Estimated committee proxy — all in [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) | six conference tiebreakers (SEC, Big Ten, American, Mountain West, Conference USA, Pac-12) and two eligibility facts (North Dakota State, Sacramento State) not VERIFIED for 2026 — CFB_SIMULATOR_NOTES.md §4, §16 |
+| **College football** | **ACTIVE** (verified 2026-10-23, CFB_SIMULATOR_NOTES.md §4) | season | `football/cfb_p4` engine replayed over the 2026 feed; ten conference procedures from their own text; 2026 CFP rules; an Estimated committee proxy — all in [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) | none standing; Sacramento State's MAC eligibility (no MAC statement) is measured each run and holds publication if any run depended on it |
 | NBA | BLOCKED | season | `nba/` model and injury layer | no 2026-27 conference/division table; 30 regular-season games (2 per club) depend on NBA Cup results and are not yet scheduled; no standings/tiebreaker/play-in/series code; no uncertainty study; the chosen model needs network-built `.cache/nba_work` tables |
 | NHL | BLOCKED (Implementable — implemented — blocked on verification) | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | 2026-27 tie-breaking procedure, playoff format and home-ice rule not verified against NHL.com (unreachable from the build environment); the reader has no NHL view; not in the nightly workflow (needs a pyarrow step) |
 | WNBA | BLOCKED | series | — | no series simulator or uncertainty study; the 2026 Finals end by 2026-10-31 |

@@ -76,9 +76,11 @@ Exit codes: `0` ok · `1` a gate blocked publication (nothing published) ·
 
 The CFB season, conference championship and CFP simulator is documented in
 [`CFB_SIMULATOR_NOTES.md`](../../CFB_SIMULATOR_NOTES.md) (sources, rules,
-calibration, the committee proxy and its limitations). It is **BLOCKED for
-publication** until the six unverified conference tiebreakers and two
-eligibility facts are verified (§4, §16 there).
+calibration, the committee proxy and its limitations). It is **ACTIVE**: every
+conference procedure, the 2026 CFP format and North Dakota State's eligibility
+are verified from the governing bodies' own text (§4 there), and the nightly
+workflow runs and publishes it with the NFL. Sacramento State's MAC eligibility
+is measured in every run (§5.6 there).
 
 ```powershell
 npm run sim:cfb:test                             # the seven CFB suites (also part of sim:test)
