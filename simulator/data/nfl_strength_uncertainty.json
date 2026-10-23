@@ -1,0 +1,3452 @@
+{
+ "schema": "edgedesk_sim_nfl_strength_uncertainty_v1",
+ "generated_at": "2026-10-23T06:27:35.700Z",
+ "served_model": {
+  "model_version": "edgedesk_nfl_v2.1.0",
+  "config_sha": "6c79095675f8a223"
+ },
+ "method": "frozen-forecast residual covariance (simulator/src/research/nfl_strength_uncertainty.ts header)",
+ "estimation_seasons": [
+  2006,
+  2024
+ ],
+ "holdout_season": 2025,
+ "bootstrap": {
+  "resamples": 2000,
+  "unit": "season",
+  "seed": "20261023"
+ },
+ "distribution": "normal, mean 0, variance var_e (selected) per club per simulated season",
+ "code_sha256": {
+  "football/nfl_params_v2.js": "6466bf3a68aceb898a6f0bd81327292b14ba22b5016d4acfcbdc0b91f4b17b1d",
+  "football/nfl_model.js": "225457856ac9f898021cd315a904e6248a298a4cbfe800bbe636945a9dc6b58f",
+  "football/engine.js": "9950eaec5be1e0aca8992a337514314d382edd1c792476b31efeaab3a5c0981d",
+  "football/research/nfl_v2/backtest.js": "f35c2f5ff5ebdbef230a450b615c12fc85fae44640ebb283ad536f329555cccb",
+  "football/research/nfl_v2/data.js": "e535ac53b01e7404fb8b0ae72821f939039f623dc2abf892558c5eb8e7caa1fa"
+ },
+ "data_sha256": {
+  "games_csv": "f6348f17597a06b3bc9bd6eada96475991f67ce1b8fc560c11e7c8ef5b8d7597"
+ },
+ "by_week": [
+  {
+   "as_of_week": 1,
+   "raw": {
+    "var_e": 19.087496,
+    "n_pairs": 73152,
+    "n_games": 4927
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 1,2",
+    "var_e": 18.500443,
+    "sigma_e": 4.301214,
+    "var_e_ci95": [
+     16.173353,
+     21.02891
+    ],
+    "sigma_e_ci95": [
+     4.021611,
+     4.585729
+    ],
+    "n_pairs": 137306,
+    "n_games": 9551
+   },
+   "consistency": {
+    "mse_frozen_residual": 199.056802,
+    "served_pmf_variance": 179.783164,
+    "excess": 19.273638,
+    "two_var_e": 37.000886,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 23.219711,
+    "n_pairs": 8016,
+    "mse": 193.547326,
+    "pmf_var": 179.720728
+   },
+   "win_total_calibration": {
+    "sigma": 4.445227,
+    "sigma_ci95": [
+     3.896684,
+     4.970669
+    ],
+    "smoothing": "pooled over as-of weeks 1,2",
+    "empirical_msd": 7.37121,
+    "simulated_var": 7.37121,
+    "simulated_var_at_zero": 3.452356,
+    "empirical_msd_at_zero": 7.436152,
+    "n_club_cells": 1216,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 10.082107,
+     "simulated_var": 7.894888,
+     "simulated_var_at_zero": 3.610273,
+     "n_club_cells": 64
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 2,
+   "raw": {
+    "var_e": 17.831052,
+    "n_pairs": 64154,
+    "n_games": 4624
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 1,2,3",
+    "var_e": 17.956364,
+    "sigma_e": 4.237495,
+    "var_e_ci95": [
+     15.368671,
+     20.528357
+    ],
+    "sigma_e_ci95": [
+     3.92029,
+     4.530823
+    ],
+    "n_pairs": 193062,
+    "n_games": 13872
+   },
+   "consistency": {
+    "mse_frozen_residual": 198.911466,
+    "served_pmf_variance": 179.769111,
+    "excess": 19.142355,
+    "two_var_e": 35.912729,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 24.173592,
+    "n_pairs": 11308,
+    "mse": 195.876719,
+    "pmf_var": 179.604052
+   },
+   "win_total_calibration": {
+    "sigma": 4.415364,
+    "sigma_ci95": [
+     3.824113,
+     4.962257
+    ],
+    "smoothing": "pooled over as-of weeks 1,2,3",
+    "empirical_msd": 6.976871,
+    "simulated_var": 6.976871,
+    "simulated_var_at_zero": 3.34096,
+    "empirical_msd_at_zero": 7.033343,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 10.140604,
+     "simulated_var": 7.474464,
+     "simulated_var_at_zero": 3.4869,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 3,
+   "raw": {
+    "var_e": 16.616505,
+    "n_pairs": 55756,
+    "n_games": 4321
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 2,3,4",
+    "var_e": 17.009219,
+    "sigma_e": 4.124223,
+    "var_e_ci95": [
+     13.9622,
+     20.01555
+    ],
+    "sigma_e_ci95": [
+     3.736603,
+     4.473874
+    ],
+    "n_pairs": 167846,
+    "n_games": 12964
+   },
+   "consistency": {
+    "mse_frozen_residual": 197.780087,
+    "served_pmf_variance": 179.752343,
+    "excess": 18.027745,
+    "two_var_e": 34.018437,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 25.913633,
+    "n_pairs": 9908,
+    "mse": 196.648646,
+    "pmf_var": 179.468746
+   },
+   "win_total_calibration": {
+    "sigma": 4.308304,
+    "sigma_ci95": [
+     3.742637,
+     4.886286
+    ],
+    "smoothing": "pooled over as-of weeks 2,3,4",
+    "empirical_msd": 6.16044,
+    "simulated_var": 6.16044,
+    "simulated_var_at_zero": 3.116297,
+    "empirical_msd_at_zero": 6.206206,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 9.892894,
+     "simulated_var": 6.601655,
+     "simulated_var_at_zero": 3.256897,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 4,
+   "raw": {
+    "var_e": 16.366117,
+    "n_pairs": 47936,
+    "n_games": 4019
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 3,4,5",
+    "var_e": 16.371192,
+    "sigma_e": 4.046133,
+    "var_e_ci95": [
+     12.960484,
+     19.887316
+    ],
+    "sigma_e_ci95": [
+     3.600067,
+     4.45952
+    ],
+    "n_pairs": 144896,
+    "n_games": 12076
+   },
+   "consistency": {
+    "mse_frozen_residual": 197.359102,
+    "served_pmf_variance": 179.704756,
+    "excess": 17.654346,
+    "two_var_e": 32.742385,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 24.861699,
+    "n_pairs": 8594,
+    "mse": 194.123408,
+    "pmf_var": 179.304263
+   },
+   "win_total_calibration": {
+    "sigma": 4.299242,
+    "sigma_ci95": [
+     3.665744,
+     4.927268
+    ],
+    "smoothing": "pooled over as-of weeks 3,4,5",
+    "empirical_msd": 5.511355,
+    "simulated_var": 5.511355,
+    "simulated_var_at_zero": 2.895546,
+    "empirical_msd_at_zero": 5.534661,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 8.930865,
+     "simulated_var": 5.943211,
+     "simulated_var_at_zero": 3.026212,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 5,
+   "raw": {
+    "var_e": 16.045148,
+    "n_pairs": 41204,
+    "n_games": 3736
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 4,5,6",
+    "var_e": 15.826566,
+    "sigma_e": 3.978262,
+    "var_e_ci95": [
+     12.250614,
+     19.503149
+    ],
+    "sigma_e_ci95": [
+     3.500088,
+     4.416237
+    ],
+    "n_pairs": 124328,
+    "n_games": 11219
+   },
+   "consistency": {
+    "mse_frozen_residual": 196.08759,
+    "served_pmf_variance": 179.679977,
+    "excess": 16.407612,
+    "two_var_e": 31.653132,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 22.634734,
+    "n_pairs": 7416,
+    "mse": 187.534483,
+    "pmf_var": 179.315463
+   },
+   "win_total_calibration": {
+    "sigma": 4.210712,
+    "sigma_ci95": [
+     3.540589,
+     4.85254
+    ],
+    "smoothing": "pooled over as-of weeks 4,5,6",
+    "empirical_msd": 4.853686,
+    "simulated_var": 4.853686,
+    "simulated_var_at_zero": 2.682862,
+    "empirical_msd_at_zero": 4.864782,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 7.524061,
+     "simulated_var": 5.257978,
+     "simulated_var_at_zero": 2.821156,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 6,
+   "raw": {
+    "var_e": 14.835594,
+    "n_pairs": 35188,
+    "n_games": 3464
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 5,6,7",
+    "var_e": 15.4211,
+    "sigma_e": 3.926971,
+    "var_e_ci95": [
+     11.822495,
+     19.029534
+    ],
+    "sigma_e_ci95": [
+     3.438386,
+     4.362285
+    ],
+    "n_pairs": 106138,
+    "n_games": 10396
+   },
+   "consistency": {
+    "mse_frozen_residual": 195.182311,
+    "served_pmf_variance": 179.653249,
+    "excess": 15.529062,
+    "two_var_e": 30.8422,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 20.533057,
+    "n_pairs": 6344,
+    "mse": 184.800276,
+    "pmf_var": 179.420823
+   },
+   "win_total_calibration": {
+    "sigma": 4.13751,
+    "sigma_ci95": [
+     3.43176,
+     4.830121
+    ],
+    "smoothing": "pooled over as-of weeks 5,6,7",
+    "empirical_msd": 4.284651,
+    "simulated_var": 4.284651,
+    "simulated_var_at_zero": 2.482153,
+    "empirical_msd_at_zero": 4.279393,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 6.256207,
+     "simulated_var": 4.68672,
+     "simulated_var_at_zero": 2.63201,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 7,
+   "raw": {
+    "var_e": 15.249296,
+    "n_pairs": 29746,
+    "n_games": 3196
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 6,7,8",
+    "var_e": 14.82446,
+    "sigma_e": 3.850255,
+    "var_e_ci95": [
+     11.475186,
+     18.340879
+    ],
+    "sigma_e_ci95": [
+     3.387504,
+     4.282625
+    ],
+    "n_pairs": 89759,
+    "n_games": 9591
+   },
+   "consistency": {
+    "mse_frozen_residual": 193.464257,
+    "served_pmf_variance": 179.661179,
+    "excess": 13.803078,
+    "two_var_e": 29.64892,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 20.651865,
+    "n_pairs": 5382,
+    "mse": 182.540769,
+    "pmf_var": 179.528719
+   },
+   "win_total_calibration": {
+    "sigma": 3.987787,
+    "sigma_ci95": [
+     3.215976,
+     4.637105
+    ],
+    "smoothing": "pooled over as-of weeks 6,7,8",
+    "empirical_msd": 3.723804,
+    "simulated_var": 3.723804,
+    "simulated_var_at_zero": 2.286224,
+    "empirical_msd_at_zero": 3.714865,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 5.603181,
+     "simulated_var": 4.080308,
+     "simulated_var_at_zero": 2.439323,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 8,
+   "raw": {
+    "var_e": 14.299629,
+    "n_pairs": 24825,
+    "n_games": 2931
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 7,8,9",
+    "var_e": 14.737836,
+    "sigma_e": 3.838989,
+    "var_e_ci95": [
+     11.516474,
+     18.03557
+    ],
+    "sigma_e_ci95": [
+     3.393593,
+     4.246831
+    ],
+    "n_pairs": 74836,
+    "n_games": 8791
+   },
+   "consistency": {
+    "mse_frozen_residual": 192.742979,
+    "served_pmf_variance": 179.642718,
+    "excess": 13.100261,
+    "two_var_e": 29.475672,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 23.37526,
+    "n_pairs": 4512,
+    "mse": 181.885116,
+    "pmf_var": 179.485739
+   },
+   "win_total_calibration": {
+    "sigma": 4.009435,
+    "sigma_ci95": [
+     3.220324,
+     4.747246
+    ],
+    "smoothing": "pooled over as-of weeks 7,8,9",
+    "empirical_msd": 3.304114,
+    "simulated_var": 3.304114,
+    "simulated_var_at_zero": 2.091903,
+    "empirical_msd_at_zero": 3.29454,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 5.409809,
+     "simulated_var": 3.636024,
+     "simulated_var_at_zero": 2.233823,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 9,
+   "raw": {
+    "var_e": 14.523901,
+    "n_pairs": 20265,
+    "n_games": 2664
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 8,9,10",
+    "var_e": 14.502504,
+    "sigma_e": 3.808215,
+    "var_e_ci95": [
+     11.521812,
+     17.684666
+    ],
+    "sigma_e_ci95": [
+     3.39438,
+     4.205314
+    ],
+    "n_pairs": 61383,
+    "n_games": 8001
+   },
+   "consistency": {
+    "mse_frozen_residual": 192.436387,
+    "served_pmf_variance": 179.611505,
+    "excess": 12.824882,
+    "two_var_e": 29.005009,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 26.358684,
+    "n_pairs": 3736,
+    "mse": 180.076553,
+    "pmf_var": 179.297245
+   },
+   "win_total_calibration": {
+    "sigma": 4.1035,
+    "sigma_ci95": [
+     3.298127,
+     4.921029
+    ],
+    "smoothing": "pooled over as-of weeks 8,9,10",
+    "empirical_msd": 2.932662,
+    "simulated_var": 2.932662,
+    "simulated_var_at_zero": 1.898663,
+    "empirical_msd_at_zero": 2.931365,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 5.018531,
+     "simulated_var": 3.225388,
+     "simulated_var_at_zero": 2.019914,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 10,
+   "raw": {
+    "var_e": 14.785006,
+    "n_pairs": 16293,
+    "n_games": 2406
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 9,10,11",
+    "var_e": 14.024959,
+    "sigma_e": 3.744991,
+    "var_e_ci95": [
+     10.86168,
+     16.981856
+    ],
+    "sigma_e_ci95": [
+     3.295706,
+     4.120905
+    ],
+    "n_pairs": 49186,
+    "n_games": 7207
+   },
+   "consistency": {
+    "mse_frozen_residual": 191.584084,
+    "served_pmf_variance": 179.558031,
+    "excess": 12.026053,
+    "two_var_e": 28.049918,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 31.237577,
+    "n_pairs": 3050,
+    "mse": 181.081228,
+    "pmf_var": 179.121969
+   },
+   "win_total_calibration": {
+    "sigma": 4.009755,
+    "sigma_ci95": [
+     3.218279,
+     4.863487
+    ],
+    "smoothing": "pooled over as-of weeks 9,10,11",
+    "empirical_msd": 2.510877,
+    "simulated_var": 2.510877,
+    "simulated_var_at_zero": 1.706576,
+    "empirical_msd_at_zero": 2.507366,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 4.585072,
+     "simulated_var": 2.761123,
+     "simulated_var_at_zero": 1.819073,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 11,
+   "raw": {
+    "var_e": 12.243639,
+    "n_pairs": 12628,
+    "n_games": 2137
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 10,11,12",
+    "var_e": 12.93184,
+    "sigma_e": 3.596087,
+    "var_e_ci95": [
+     9.827214,
+     16.060455
+    ],
+    "sigma_e_ci95": [
+     3.134839,
+     4.00755
+    ],
+    "n_pairs": 38267,
+    "n_games": 6403
+   },
+   "consistency": {
+    "mse_frozen_residual": 190.109875,
+    "served_pmf_variance": 179.50751,
+    "excess": 10.602364,
+    "two_var_e": 25.86368,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 33.128976,
+    "n_pairs": 2408,
+    "mse": 182.630596,
+    "pmf_var": 179.004585
+   },
+   "win_total_calibration": {
+    "sigma": 3.812637,
+    "sigma_ci95": [
+     2.926354,
+     4.713194
+    ],
+    "smoothing": "pooled over as-of weeks 10,11,12",
+    "empirical_msd": 2.089209,
+    "simulated_var": 2.089209,
+    "simulated_var_at_zero": 1.511365,
+    "empirical_msd_at_zero": 2.083137,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 3.878561,
+     "simulated_var": 2.304305,
+     "simulated_var_at_zero": 1.620008,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 12,
+   "raw": {
+    "var_e": 10.631066,
+    "n_pairs": 9346,
+    "n_games": 1860
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 11,12,13",
+    "var_e": 11.102996,
+    "sigma_e": 3.332116,
+    "var_e_ci95": [
+     7.711712,
+     14.670044
+    ],
+    "sigma_e_ci95": [
+     2.776997,
+     3.830149
+    ],
+    "n_pairs": 28384,
+    "n_games": 5563
+   },
+   "consistency": {
+    "mse_frozen_residual": 189.093082,
+    "served_pmf_variance": 179.447619,
+    "excess": 9.645463,
+    "two_var_e": 22.205992,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 37.769814,
+    "n_pairs": 1842,
+    "mse": 188.270455,
+    "pmf_var": 178.939091
+   },
+   "win_total_calibration": {
+    "sigma": 3.453084,
+    "sigma_ci95": [
+     2.364606,
+     4.60212
+    ],
+    "smoothing": "pooled over as-of weeks 11,12,13",
+    "empirical_msd": 1.672025,
+    "simulated_var": 1.672025,
+    "simulated_var_at_zero": 1.307672,
+    "empirical_msd_at_zero": 1.668843,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 3.432923,
+     "simulated_var": 1.871547,
+     "simulated_var_at_zero": 1.425888,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 13,
+   "raw": {
+    "var_e": 9.543965,
+    "n_pairs": 6410,
+    "n_games": 1566
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 12,13,14",
+    "var_e": 10.466555,
+    "sigma_e": 3.235206,
+    "var_e_ci95": [
+     6.31892,
+     14.940966
+    ],
+    "sigma_e_ci95": [
+     2.513746,
+     3.865355
+    ],
+    "n_pairs": 19770,
+    "n_games": 4696
+   },
+   "consistency": {
+    "mse_frozen_residual": 190.990755,
+    "served_pmf_variance": 179.367549,
+    "excess": 11.623206,
+    "two_var_e": 20.933111,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 41.461771,
+    "n_pairs": 1336,
+    "mse": 193.199383,
+    "pmf_var": 179.008181
+   },
+   "win_total_calibration": {
+    "sigma": 3.697323,
+    "sigma_ci95": [
+     2.598707,
+     4.784322
+    ],
+    "smoothing": "pooled over as-of weeks 12,13,14",
+    "empirical_msd": 1.384818,
+    "simulated_var": 1.384818,
+    "simulated_var_at_zero": 1.097989,
+    "empirical_msd_at_zero": 1.382068,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 2.87114,
+     "simulated_var": 1.603133,
+     "simulated_var_at_zero": 1.229428,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 14,
+   "raw": {
+    "var_e": 11.55681,
+    "n_pairs": 4014,
+    "n_games": 1270
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 13,14,15",
+    "var_e": 10.327603,
+    "sigma_e": 3.213659,
+    "var_e_ci95": [
+     5.755886,
+     15.224337
+    ],
+    "sigma_e_ci95": [
+     2.399143,
+     3.901838
+    ],
+    "n_pairs": 12602,
+    "n_games": 3811
+   },
+   "consistency": {
+    "mse_frozen_residual": 192.958953,
+    "served_pmf_variance": 179.216338,
+    "excess": 13.742615,
+    "two_var_e": 20.655205,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 46.339392,
+    "n_pairs": 922,
+    "mse": 195.293715,
+    "pmf_var": 179.044225
+   },
+   "win_total_calibration": {
+    "sigma": 4.060852,
+    "sigma_ci95": [
+     2.926393,
+     5.105031
+    ],
+    "smoothing": "pooled over as-of weeks 13,14,15",
+    "empirical_msd": 1.102791,
+    "simulated_var": 1.102791,
+    "simulated_var_at_zero": 0.88518,
+    "empirical_msd_at_zero": 1.103901,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 2.27053,
+     "simulated_var": 1.350988,
+     "simulated_var_at_zero": 1.040642,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 15,
+   "raw": {
+    "var_e": 10.368502,
+    "n_pairs": 2178,
+    "n_games": 975
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 14,15,16",
+    "var_e": 10.516932,
+    "sigma_e": 3.242982,
+    "var_e_ci95": [
+     4.142587,
+     17.665004
+    ],
+    "sigma_e_ci95": [
+     2.035334,
+     4.202976
+    ],
+    "n_pairs": 7044,
+    "n_games": 2916
+   },
+   "consistency": {
+    "mse_frozen_residual": 194.75341,
+    "served_pmf_variance": 178.997814,
+    "excess": 15.755597,
+    "two_var_e": 21.033864,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 47.558646,
+    "n_pairs": 572,
+    "mse": 191.009004,
+    "pmf_var": 179.19077
+   },
+   "win_total_calibration": {
+    "sigma": 4.616167,
+    "sigma_ci95": [
+     3.408284,
+     5.899111
+    ],
+    "smoothing": "pooled over as-of weeks 14,15,16",
+    "empirical_msd": 0.826378,
+    "simulated_var": 0.826378,
+    "simulated_var_at_zero": 0.670736,
+    "empirical_msd_at_zero": 0.8285,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 1.590782,
+     "simulated_var": 1.089827,
+     "simulated_var_at_zero": 0.844018,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 16,
+   "raw": {
+    "var_e": 5.997226,
+    "n_pairs": 852,
+    "n_games": 671
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 15,16,17",
+    "var_e": 7.802941,
+    "sigma_e": 2.793375,
+    "var_e_ci95": [
+     -0.223374,
+     17.136164
+    ],
+    "sigma_e_ci95": [
+     0,
+     4.139585
+    ],
+    "n_pairs": 3156,
+    "n_games": 2013
+   },
+   "consistency": {
+    "mse_frozen_residual": 193.860743,
+    "served_pmf_variance": 178.783106,
+    "excess": 15.077638,
+    "two_var_e": 15.605883,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 43.348441,
+    "n_pairs": 312,
+    "mse": 178.31943,
+    "pmf_var": 179.120817
+   },
+   "win_total_calibration": {
+    "sigma": 4.433723,
+    "sigma_ci95": [
+     2.492549,
+     6.320797
+    ],
+    "smoothing": "pooled over as-of weeks 15,16,17",
+    "empirical_msd": 0.529351,
+    "simulated_var": 0.529351,
+    "simulated_var_at_zero": 0.457824,
+    "empirical_msd_at_zero": 0.531281,
+    "n_club_cells": 1824,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 0.969135,
+     "simulated_var": 0.768852,
+     "simulated_var_at_zero": 0.640097,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  },
+  {
+   "as_of_week": 17,
+   "raw": {
+    "var_e": -24.334526,
+    "n_pairs": 126,
+    "n_games": 367
+   },
+   "selected": {
+    "smoothing": "pooled over as-of weeks 16,17,18",
+    "var_e": 2.089454,
+    "sigma_e": 1.445494,
+    "var_e_ci95": [
+     -11.874058,
+     21.278468
+    ],
+    "sigma_e_ci95": [
+     0,
+     4.612859
+    ],
+    "n_pairs": 978,
+    "n_games": 1102
+   },
+   "consistency": {
+    "mse_frozen_residual": 192.022777,
+    "served_pmf_variance": 178.629436,
+    "excess": 13.393341,
+    "two_var_e": 4.178909,
+    "note": "excess = mse - pmf variance; it equals 2 var_e when the persistent error explains all forecast error beyond the served distribution"
+   },
+   "holdout_2025": {
+    "var_e": 47.97088,
+    "n_pairs": 124,
+    "mse": 164.83737,
+    "pmf_var": 179.051371
+   },
+   "win_total_calibration": {
+    "sigma": 3.473872,
+    "sigma_ci95": [
+     0,
+     5.829241
+    ],
+    "smoothing": "pooled over as-of weeks 16,17,18",
+    "empirical_msd": 0.36022,
+    "simulated_var": 0.36022,
+    "simulated_var_at_zero": 0.335988,
+    "empirical_msd_at_zero": 0.360043,
+    "n_club_cells": 1344,
+    "holdout": {
+     "season": 2025,
+     "empirical_msd": 0.529001,
+     "simulated_var": 0.459719,
+     "simulated_var_at_zero": 0.420808,
+     "n_club_cells": 96
+    },
+    "draws_per_cell": 400,
+    "sigma_grid": "0 to 8 by 0.1, linear interpolation",
+    "bootstrap": "2000 season resamples"
+   }
+  }
+ ],
+ "per_cell": {
+  "2006:1": {
+   "sum_prod": 52725.395928,
+   "n_pairs": 3744,
+   "sum_r2": 51619.166496,
+   "n": 256,
+   "sum_pmf_var": 46060.138763
+  },
+  "2006:2": {
+   "sum_prod": 14337.846075,
+   "n_pairs": 3274,
+   "sum_r2": 45637.540408,
+   "n": 240,
+   "sum_pmf_var": 43159.096952
+  },
+  "2006:3": {
+   "sum_prod": -482.66431,
+   "n_pairs": 2848,
+   "sum_r2": 42883.835586,
+   "n": 224,
+   "sum_pmf_var": 40256.905146
+  },
+  "2006:4": {
+   "sum_prod": -3874.359542,
+   "n_pairs": 2502,
+   "sum_r2": 41186.857796,
+   "n": 210,
+   "sum_pmf_var": 37696.512518
+  },
+  "2006:5": {
+   "sum_prod": -7262.610728,
+   "n_pairs": 2164,
+   "sum_r2": 37116.148244,
+   "n": 196,
+   "sum_pmf_var": 35139.653373
+  },
+  "2006:6": {
+   "sum_prod": -7166.891938,
+   "n_pairs": 1860,
+   "sum_r2": 34658.729164,
+   "n": 182,
+   "sum_pmf_var": 32652.666406
+  },
+  "2006:7": {
+   "sum_prod": -6230.009705,
+   "n_pairs": 1594,
+   "sum_r2": 32249.521695,
+   "n": 169,
+   "sum_pmf_var": 30328.338129
+  },
+  "2006:8": {
+   "sum_prod": 1932.284429,
+   "n_pairs": 1348,
+   "sum_r2": 30727.42757,
+   "n": 156,
+   "sum_pmf_var": 27945.670246
+  },
+  "2006:9": {
+   "sum_prod": 2790.697379,
+   "n_pairs": 1102,
+   "sum_r2": 28601.774408,
+   "n": 142,
+   "sum_pmf_var": 25431.123158
+  },
+  "2006:10": {
+   "sum_prod": -443.628277,
+   "n_pairs": 882,
+   "sum_r2": 25396.550828,
+   "n": 128,
+   "sum_pmf_var": 22945.366318
+  },
+  "2006:11": {
+   "sum_prod": -2543.47127,
+   "n_pairs": 662,
+   "sum_r2": 23243.671416,
+   "n": 112,
+   "sum_pmf_var": 20108.904192
+  },
+  "2006:12": {
+   "sum_prod": -2257.324173,
+   "n_pairs": 478,
+   "sum_r2": 20055.20049,
+   "n": 96,
+   "sum_pmf_var": 17222.402295
+  },
+  "2006:13": {
+   "sum_prod": -650.799844,
+   "n_pairs": 320,
+   "sum_r2": 16995.03239,
+   "n": 80,
+   "sum_pmf_var": 14353.688663
+  },
+  "2006:14": {
+   "sum_prod": -1384.193161,
+   "n_pairs": 192,
+   "sum_r2": 14378.981689,
+   "n": 64,
+   "sum_pmf_var": 11472.719705
+  },
+  "2006:15": {
+   "sum_prod": 1352.773516,
+   "n_pairs": 96,
+   "sum_r2": 10230.605666,
+   "n": 48,
+   "sum_pmf_var": 8573.65459
+  },
+  "2006:16": {
+   "sum_prod": 314.005637,
+   "n_pairs": 32,
+   "sum_r2": 5770.714758,
+   "n": 32,
+   "sum_pmf_var": 5748.424097
+  },
+  "2006:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2765.042257,
+   "n": 16,
+   "sum_pmf_var": 2853.362701
+  },
+  "2007:1": {
+   "sum_prod": 102776.118186,
+   "n_pairs": 3744,
+   "sum_r2": 54505.231436,
+   "n": 256,
+   "sum_pmf_var": 46179.554753
+  },
+  "2007:2": {
+   "sum_prod": 80490.784331,
+   "n_pairs": 3276,
+   "sum_r2": 50249.976161,
+   "n": 240,
+   "sum_pmf_var": 43248.023428
+  },
+  "2007:3": {
+   "sum_prod": 58151.216624,
+   "n_pairs": 2844,
+   "sum_r2": 46153.527943,
+   "n": 224,
+   "sum_pmf_var": 40397.199438
+  },
+  "2007:4": {
+   "sum_prod": 40264.058667,
+   "n_pairs": 2438,
+   "sum_r2": 42115.439833,
+   "n": 208,
+   "sum_pmf_var": 37516.77569
+  },
+  "2007:5": {
+   "sum_prod": 28772.484712,
+   "n_pairs": 2118,
+   "sum_r2": 38678.919068,
+   "n": 194,
+   "sum_pmf_var": 34995.365237
+  },
+  "2007:6": {
+   "sum_prod": 20026.276578,
+   "n_pairs": 1814,
+   "sum_r2": 35143.314429,
+   "n": 180,
+   "sum_pmf_var": 32475.655433
+  },
+  "2007:7": {
+   "sum_prod": 16956.814949,
+   "n_pairs": 1552,
+   "sum_r2": 32993.452635,
+   "n": 167,
+   "sum_pmf_var": 30103.488484
+  },
+  "2007:8": {
+   "sum_prod": 12954.527516,
+   "n_pairs": 1298,
+   "sum_r2": 31367.481088,
+   "n": 153,
+   "sum_pmf_var": 27567.678884
+  },
+  "2007:9": {
+   "sum_prod": 9206.350049,
+   "n_pairs": 1074,
+   "sum_r2": 28798.625087,
+   "n": 140,
+   "sum_pmf_var": 25200.541217
+  },
+  "2007:10": {
+   "sum_prod": 12291.036509,
+   "n_pairs": 858,
+   "sum_r2": 25109.336756,
+   "n": 126,
+   "sum_pmf_var": 22635.927247
+  },
+  "2007:11": {
+   "sum_prod": 5930.022906,
+   "n_pairs": 666,
+   "sum_r2": 21826.615443,
+   "n": 112,
+   "sum_pmf_var": 20055.609415
+  },
+  "2007:12": {
+   "sum_prod": 4018.236009,
+   "n_pairs": 478,
+   "sum_r2": 19118.763184,
+   "n": 96,
+   "sum_pmf_var": 17182.252642
+  },
+  "2007:13": {
+   "sum_prod": 1536.282788,
+   "n_pairs": 320,
+   "sum_r2": 15928.189643,
+   "n": 80,
+   "sum_pmf_var": 14303.306294
+  },
+  "2007:14": {
+   "sum_prod": 945.465627,
+   "n_pairs": 192,
+   "sum_r2": 12374.29813,
+   "n": 64,
+   "sum_pmf_var": 11406.966989
+  },
+  "2007:15": {
+   "sum_prod": 1597.118903,
+   "n_pairs": 96,
+   "sum_r2": 8968.757521,
+   "n": 48,
+   "sum_pmf_var": 8510.40333
+  },
+  "2007:16": {
+   "sum_prod": 4.445944,
+   "n_pairs": 32,
+   "sum_r2": 6617.681035,
+   "n": 32,
+   "sum_pmf_var": 5673.248659
+  },
+  "2007:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2531.919523,
+   "n": 16,
+   "sum_pmf_var": 2851.197625
+  },
+  "2008:1": {
+   "sum_prod": 88590.516887,
+   "n_pairs": 3744,
+   "sum_r2": 54855.257797,
+   "n": 256,
+   "sum_pmf_var": 46047.079495
+  },
+  "2008:2": {
+   "sum_prod": 59611.237459,
+   "n_pairs": 3280,
+   "sum_r2": 49418.680599,
+   "n": 240,
+   "sum_pmf_var": 43189.956773
+  },
+  "2008:3": {
+   "sum_prod": 45410.023625,
+   "n_pairs": 2876,
+   "sum_r2": 46497.990996,
+   "n": 225,
+   "sum_pmf_var": 40425.263945
+  },
+  "2008:4": {
+   "sum_prod": 34247.25255,
+   "n_pairs": 2468,
+   "sum_r2": 42684.630942,
+   "n": 209,
+   "sum_pmf_var": 37585.51132
+  },
+  "2008:5": {
+   "sum_prod": 26878.024918,
+   "n_pairs": 2168,
+   "sum_r2": 40536.411348,
+   "n": 196,
+   "sum_pmf_var": 35219.194956
+  },
+  "2008:6": {
+   "sum_prod": 15470.931281,
+   "n_pairs": 1858,
+   "sum_r2": 36998.761358,
+   "n": 182,
+   "sum_pmf_var": 32675.585874
+  },
+  "2008:7": {
+   "sum_prod": 24649.120047,
+   "n_pairs": 1570,
+   "sum_r2": 34548.403954,
+   "n": 168,
+   "sum_pmf_var": 30181.112804
+  },
+  "2008:8": {
+   "sum_prod": 18364.024693,
+   "n_pairs": 1308,
+   "sum_r2": 30764.115885,
+   "n": 154,
+   "sum_pmf_var": 27680.473254
+  },
+  "2008:9": {
+   "sum_prod": 19564.339585,
+   "n_pairs": 1068,
+   "sum_r2": 28931.997482,
+   "n": 140,
+   "sum_pmf_var": 25157.420696
+  },
+  "2008:10": {
+   "sum_prod": 8672.89092,
+   "n_pairs": 854,
+   "sum_r2": 25728.446988,
+   "n": 126,
+   "sum_pmf_var": 22674.110151
+  },
+  "2008:11": {
+   "sum_prod": 6508.393069,
+   "n_pairs": 666,
+   "sum_r2": 22889.434503,
+   "n": 112,
+   "sum_pmf_var": 20090.444414
+  },
+  "2008:12": {
+   "sum_prod": 10129.977598,
+   "n_pairs": 480,
+   "sum_r2": 21278.412079,
+   "n": 96,
+   "sum_pmf_var": 17251.729887
+  },
+  "2008:13": {
+   "sum_prod": 7775.894603,
+   "n_pairs": 320,
+   "sum_r2": 15913.420068,
+   "n": 80,
+   "sum_pmf_var": 14346.329005
+  },
+  "2008:14": {
+   "sum_prod": 4683.563781,
+   "n_pairs": 192,
+   "sum_r2": 10817.433592,
+   "n": 64,
+   "sum_pmf_var": 11494.003199
+  },
+  "2008:15": {
+   "sum_prod": 1488.681439,
+   "n_pairs": 96,
+   "sum_r2": 9047.546691,
+   "n": 48,
+   "sum_pmf_var": 8602.019823
+  },
+  "2008:16": {
+   "sum_prod": 1111.050314,
+   "n_pairs": 32,
+   "sum_r2": 7064.217201,
+   "n": 32,
+   "sum_pmf_var": 5712.722521
+  },
+  "2008:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 3615.258613,
+   "n": 16,
+   "sum_pmf_var": 2855.576855
+  },
+  "2009:1": {
+   "sum_prod": 51300.009437,
+   "n_pairs": 3744,
+   "sum_r2": 55940.854015,
+   "n": 256,
+   "sum_pmf_var": 45956.569145
+  },
+  "2009:2": {
+   "sum_prod": 47371.825507,
+   "n_pairs": 3278,
+   "sum_r2": 53118.102013,
+   "n": 240,
+   "sum_pmf_var": 43051.371991
+  },
+  "2009:3": {
+   "sum_prod": 37042.151516,
+   "n_pairs": 2844,
+   "sum_r2": 50362.788446,
+   "n": 224,
+   "sum_pmf_var": 40210.064078
+  },
+  "2009:4": {
+   "sum_prod": 28525.641665,
+   "n_pairs": 2436,
+   "sum_r2": 47396.987217,
+   "n": 208,
+   "sum_pmf_var": 37276.873108
+  },
+  "2009:5": {
+   "sum_prod": 24728.77839,
+   "n_pairs": 2112,
+   "sum_r2": 44608.543961,
+   "n": 194,
+   "sum_pmf_var": 34719.891395
+  },
+  "2009:6": {
+   "sum_prod": 34270.979472,
+   "n_pairs": 1806,
+   "sum_r2": 40823.85028,
+   "n": 180,
+   "sum_pmf_var": 32217.514863
+  },
+  "2009:7": {
+   "sum_prod": 26482.157834,
+   "n_pairs": 1530,
+   "sum_r2": 35303.635774,
+   "n": 166,
+   "sum_pmf_var": 29679.727806
+  },
+  "2009:8": {
+   "sum_prod": 19596.963754,
+   "n_pairs": 1288,
+   "sum_r2": 30087.203687,
+   "n": 153,
+   "sum_pmf_var": 27297.574315
+  },
+  "2009:9": {
+   "sum_prod": 8632.47809,
+   "n_pairs": 1066,
+   "sum_r2": 26529.691461,
+   "n": 140,
+   "sum_pmf_var": 24969.04587
+  },
+  "2009:10": {
+   "sum_prod": 11836.520418,
+   "n_pairs": 868,
+   "sum_r2": 25489.522476,
+   "n": 127,
+   "sum_pmf_var": 22661.512229
+  },
+  "2009:11": {
+   "sum_prod": 11755.573179,
+   "n_pairs": 658,
+   "sum_r2": 24135.164524,
+   "n": 112,
+   "sum_pmf_var": 19961.033902
+  },
+  "2009:12": {
+   "sum_prod": 9660.106058,
+   "n_pairs": 472,
+   "sum_r2": 22259.839728,
+   "n": 96,
+   "sum_pmf_var": 17100.590511
+  },
+  "2009:13": {
+   "sum_prod": 5091.073535,
+   "n_pairs": 318,
+   "sum_r2": 19337.689941,
+   "n": 80,
+   "sum_pmf_var": 14275.856556
+  },
+  "2009:14": {
+   "sum_prod": 7951.406847,
+   "n_pairs": 192,
+   "sum_r2": 17366.363761,
+   "n": 64,
+   "sum_pmf_var": 11422.940529
+  },
+  "2009:15": {
+   "sum_prod": 3540.060205,
+   "n_pairs": 96,
+   "sum_r2": 13697.90958,
+   "n": 48,
+   "sum_pmf_var": 8542.360867
+  },
+  "2009:16": {
+   "sum_prod": 4038.331935,
+   "n_pairs": 32,
+   "sum_r2": 11072.802763,
+   "n": 32,
+   "sum_pmf_var": 5699.411666
+  },
+  "2009:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 5604.734259,
+   "n": 16,
+   "sum_pmf_var": 2870.040417
+  },
+  "2010:1": {
+   "sum_prod": 81463.743634,
+   "n_pairs": 3744,
+   "sum_r2": 56312.322546,
+   "n": 256,
+   "sum_pmf_var": 45931.374216
+  },
+  "2010:2": {
+   "sum_prod": 70285.513693,
+   "n_pairs": 3278,
+   "sum_r2": 53296.087946,
+   "n": 240,
+   "sum_pmf_var": 43093.899153
+  },
+  "2010:3": {
+   "sum_prod": 47392.27491,
+   "n_pairs": 2836,
+   "sum_r2": 49297.750521,
+   "n": 224,
+   "sum_pmf_var": 40194.235284
+  },
+  "2010:4": {
+   "sum_prod": 41685.714334,
+   "n_pairs": 2432,
+   "sum_r2": 45350.579065,
+   "n": 208,
+   "sum_pmf_var": 37319.955649
+  },
+  "2010:5": {
+   "sum_prod": 34841.829626,
+   "n_pairs": 2114,
+   "sum_r2": 42530.721127,
+   "n": 194,
+   "sum_pmf_var": 34814.351154
+  },
+  "2010:6": {
+   "sum_prod": 21645.665214,
+   "n_pairs": 1804,
+   "sum_r2": 37910.451902,
+   "n": 180,
+   "sum_pmf_var": 32331.812261
+  },
+  "2010:7": {
+   "sum_prod": 29553.918895,
+   "n_pairs": 1522,
+   "sum_r2": 37021.046399,
+   "n": 166,
+   "sum_pmf_var": 29817.262631
+  },
+  "2010:8": {
+   "sum_prod": 25431.175655,
+   "n_pairs": 1266,
+   "sum_r2": 32368.946485,
+   "n": 152,
+   "sum_pmf_var": 27318.058558
+  },
+  "2010:9": {
+   "sum_prod": 11076.117587,
+   "n_pairs": 1042,
+   "sum_r2": 28668.556795,
+   "n": 139,
+   "sum_pmf_var": 24942.927814
+  },
+  "2010:10": {
+   "sum_prod": 11475.354514,
+   "n_pairs": 844,
+   "sum_r2": 25808.466205,
+   "n": 126,
+   "sum_pmf_var": 22609.154709
+  },
+  "2010:11": {
+   "sum_prod": 6751.486362,
+   "n_pairs": 656,
+   "sum_r2": 21839.009685,
+   "n": 112,
+   "sum_pmf_var": 20117.069384
+  },
+  "2010:12": {
+   "sum_prod": 2194.243703,
+   "n_pairs": 468,
+   "sum_r2": 17612.137636,
+   "n": 96,
+   "sum_pmf_var": 17234.675968
+  },
+  "2010:13": {
+   "sum_prod": 2288.366298,
+   "n_pairs": 312,
+   "sum_r2": 15212.979601,
+   "n": 80,
+   "sum_pmf_var": 14351.734982
+  },
+  "2010:14": {
+   "sum_prod": -311.014155,
+   "n_pairs": 186,
+   "sum_r2": 11571.595374,
+   "n": 64,
+   "sum_pmf_var": 11463.572895
+  },
+  "2010:15": {
+   "sum_prod": -281.397316,
+   "n_pairs": 96,
+   "sum_r2": 8301.759754,
+   "n": 48,
+   "sum_pmf_var": 8574.343973
+  },
+  "2010:16": {
+   "sum_prod": 856.499474,
+   "n_pairs": 32,
+   "sum_r2": 6657.947686,
+   "n": 32,
+   "sum_pmf_var": 5692.095976
+  },
+  "2010:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 3379.593949,
+   "n": 16,
+   "sum_pmf_var": 2840.389585
+  },
+  "2011:1": {
+   "sum_prod": 65670.667533,
+   "n_pairs": 3744,
+   "sum_r2": 51995.305631,
+   "n": 256,
+   "sum_pmf_var": 45978.662594
+  },
+  "2011:2": {
+   "sum_prod": 49065.675288,
+   "n_pairs": 3280,
+   "sum_r2": 46831.701731,
+   "n": 240,
+   "sum_pmf_var": 43096.033494
+  },
+  "2011:3": {
+   "sum_prod": 43379.454299,
+   "n_pairs": 2832,
+   "sum_r2": 43698.446861,
+   "n": 224,
+   "sum_pmf_var": 40176.842111
+  },
+  "2011:4": {
+   "sum_prod": 41616.682417,
+   "n_pairs": 2432,
+   "sum_r2": 42414.111322,
+   "n": 208,
+   "sum_pmf_var": 37335.459731
+  },
+  "2011:5": {
+   "sum_prod": 34232.189351,
+   "n_pairs": 2048,
+   "sum_r2": 41079.470399,
+   "n": 192,
+   "sum_pmf_var": 34471.143103
+  },
+  "2011:6": {
+   "sum_prod": 20118.524128,
+   "n_pairs": 1770,
+   "sum_r2": 37010.964045,
+   "n": 179,
+   "sum_pmf_var": 32110.244218
+  },
+  "2011:7": {
+   "sum_prod": 22842.129371,
+   "n_pairs": 1514,
+   "sum_r2": 35535.426786,
+   "n": 166,
+   "sum_pmf_var": 29786.349652
+  },
+  "2011:8": {
+   "sum_prod": 9771.562946,
+   "n_pairs": 1274,
+   "sum_r2": 29554.675993,
+   "n": 153,
+   "sum_pmf_var": 27421.895659
+  },
+  "2011:9": {
+   "sum_prod": 19338.084257,
+   "n_pairs": 1054,
+   "sum_r2": 27460.521419,
+   "n": 140,
+   "sum_pmf_var": 25107.760104
+  },
+  "2011:10": {
+   "sum_prod": 12796.328427,
+   "n_pairs": 838,
+   "sum_r2": 24483.957567,
+   "n": 126,
+   "sum_pmf_var": 22597.895649
+  },
+  "2011:11": {
+   "sum_prod": 8512.655641,
+   "n_pairs": 628,
+   "sum_r2": 18717.700324,
+   "n": 110,
+   "sum_pmf_var": 19697.302522
+  },
+  "2011:12": {
+   "sum_prod": 7191.272779,
+   "n_pairs": 468,
+   "sum_r2": 17290.957556,
+   "n": 96,
+   "sum_pmf_var": 17180.555515
+  },
+  "2011:13": {
+   "sum_prod": 7430.735162,
+   "n_pairs": 310,
+   "sum_r2": 16308.349931,
+   "n": 80,
+   "sum_pmf_var": 14329.853584
+  },
+  "2011:14": {
+   "sum_prod": 3399.912979,
+   "n_pairs": 188,
+   "sum_r2": 12418.689423,
+   "n": 64,
+   "sum_pmf_var": 11438.165051
+  },
+  "2011:15": {
+   "sum_prod": 2191.232714,
+   "n_pairs": 96,
+   "sum_r2": 9921.845424,
+   "n": 48,
+   "sum_pmf_var": 8593.888183
+  },
+  "2011:16": {
+   "sum_prod": 605.464325,
+   "n_pairs": 32,
+   "sum_r2": 5475.044404,
+   "n": 32,
+   "sum_pmf_var": 5738.64442
+  },
+  "2011:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 1565.810423,
+   "n": 16,
+   "sum_pmf_var": 2873.64341
+  },
+  "2012:1": {
+   "sum_prod": 111047.783256,
+   "n_pairs": 3744,
+   "sum_r2": 60563.040321,
+   "n": 256,
+   "sum_pmf_var": 46002.289364
+  },
+  "2012:2": {
+   "sum_prod": 92375.61172,
+   "n_pairs": 3276,
+   "sum_r2": 56719.651496,
+   "n": 240,
+   "sum_pmf_var": 43131.586615
+  },
+  "2012:3": {
+   "sum_prod": 79605.49738,
+   "n_pairs": 2836,
+   "sum_r2": 53658.046804,
+   "n": 224,
+   "sum_pmf_var": 40244.67164
+  },
+  "2012:4": {
+   "sum_prod": 76710.59416,
+   "n_pairs": 2424,
+   "sum_r2": 50427.279011,
+   "n": 208,
+   "sum_pmf_var": 37400.625215
+  },
+  "2012:5": {
+   "sum_prod": 49113.363879,
+   "n_pairs": 2082,
+   "sum_r2": 44777.838068,
+   "n": 193,
+   "sum_pmf_var": 34653.838226
+  },
+  "2012:6": {
+   "sum_prod": 43168.627982,
+   "n_pairs": 1774,
+   "sum_r2": 41322.476223,
+   "n": 179,
+   "sum_pmf_var": 32097.254603
+  },
+  "2012:7": {
+   "sum_prod": 32018.987299,
+   "n_pairs": 1490,
+   "sum_r2": 37171.080708,
+   "n": 165,
+   "sum_pmf_var": 29677.022496
+  },
+  "2012:8": {
+   "sum_prod": 35344.223259,
+   "n_pairs": 1258,
+   "sum_r2": 36458.112362,
+   "n": 152,
+   "sum_pmf_var": 27344.812143
+  },
+  "2012:9": {
+   "sum_prod": 27784.590335,
+   "n_pairs": 1024,
+   "sum_r2": 32973.897608,
+   "n": 138,
+   "sum_pmf_var": 24830.347656
+  },
+  "2012:10": {
+   "sum_prod": 25685.245572,
+   "n_pairs": 808,
+   "sum_r2": 31166.388932,
+   "n": 124,
+   "sum_pmf_var": 22290.835356
+  },
+  "2012:11": {
+   "sum_prod": 15734.886187,
+   "n_pairs": 622,
+   "sum_r2": 25786.898127,
+   "n": 110,
+   "sum_pmf_var": 19760.863045
+  },
+  "2012:12": {
+   "sum_prod": 10160.914455,
+   "n_pairs": 462,
+   "sum_r2": 22632.686974,
+   "n": 96,
+   "sum_pmf_var": 17286.296398
+  },
+  "2012:13": {
+   "sum_prod": 7816.32506,
+   "n_pairs": 314,
+   "sum_r2": 20272.066382,
+   "n": 80,
+   "sum_pmf_var": 14366.171033
+  },
+  "2012:14": {
+   "sum_prod": 5734.026497,
+   "n_pairs": 190,
+   "sum_r2": 18744.066284,
+   "n": 64,
+   "sum_pmf_var": 11491.280024
+  },
+  "2012:15": {
+   "sum_prod": 3119.288171,
+   "n_pairs": 94,
+   "sum_r2": 14783.999318,
+   "n": 48,
+   "sum_pmf_var": 8593.116446
+  },
+  "2012:16": {
+   "sum_prod": -558.906642,
+   "n_pairs": 32,
+   "sum_r2": 6950.345627,
+   "n": 32,
+   "sum_pmf_var": 5700.140086
+  },
+  "2012:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2885.513408,
+   "n": 16,
+   "sum_pmf_var": 2848.814666
+  },
+  "2013:1": {
+   "sum_prod": 95997.322419,
+   "n_pairs": 3744,
+   "sum_r2": 49052.606409,
+   "n": 256,
+   "sum_pmf_var": 46007.510374
+  },
+  "2013:2": {
+   "sum_prod": 66041.664259,
+   "n_pairs": 3276,
+   "sum_r2": 45096.967751,
+   "n": 240,
+   "sum_pmf_var": 43176.111143
+  },
+  "2013:3": {
+   "sum_prod": 62037.445247,
+   "n_pairs": 2842,
+   "sum_r2": 43613.188679,
+   "n": 224,
+   "sum_pmf_var": 40330.834425
+  },
+  "2013:4": {
+   "sum_prod": 54419.768031,
+   "n_pairs": 2430,
+   "sum_r2": 39254.11942,
+   "n": 208,
+   "sum_pmf_var": 37441.300171
+  },
+  "2013:5": {
+   "sum_prod": 51939.311335,
+   "n_pairs": 2078,
+   "sum_r2": 35964.455477,
+   "n": 193,
+   "sum_pmf_var": 34691.544247
+  },
+  "2013:6": {
+   "sum_prod": 41316.785341,
+   "n_pairs": 1774,
+   "sum_r2": 32876.249443,
+   "n": 179,
+   "sum_pmf_var": 32166.966369
+  },
+  "2013:7": {
+   "sum_prod": 21032.093615,
+   "n_pairs": 1474,
+   "sum_r2": 28668.438704,
+   "n": 164,
+   "sum_pmf_var": 29461.05738
+  },
+  "2013:8": {
+   "sum_prod": 23223.911605,
+   "n_pairs": 1206,
+   "sum_r2": 27749.419116,
+   "n": 149,
+   "sum_pmf_var": 26758.652469
+  },
+  "2013:9": {
+   "sum_prod": 16960.805617,
+   "n_pairs": 996,
+   "sum_r2": 25070.168936,
+   "n": 136,
+   "sum_pmf_var": 24417.640313
+  },
+  "2013:10": {
+   "sum_prod": 12596.77846,
+   "n_pairs": 804,
+   "sum_r2": 22721.135828,
+   "n": 123,
+   "sum_pmf_var": 22083.243467
+  },
+  "2013:11": {
+   "sum_prod": 7234.626388,
+   "n_pairs": 620,
+   "sum_r2": 18737.593537,
+   "n": 109,
+   "sum_pmf_var": 19532.818233
+  },
+  "2013:12": {
+   "sum_prod": 3748.600401,
+   "n_pairs": 448,
+   "sum_r2": 16910.048123,
+   "n": 94,
+   "sum_pmf_var": 16837.736114
+  },
+  "2013:13": {
+   "sum_prod": 671.195266,
+   "n_pairs": 314,
+   "sum_r2": 14250.156404,
+   "n": 80,
+   "sum_pmf_var": 14352.455363
+  },
+  "2013:14": {
+   "sum_prod": 1234.505845,
+   "n_pairs": 190,
+   "sum_r2": 12270.409096,
+   "n": 64,
+   "sum_pmf_var": 11482.2479
+  },
+  "2013:15": {
+   "sum_prod": 742.942208,
+   "n_pairs": 96,
+   "sum_r2": 8592.034303,
+   "n": 48,
+   "sum_pmf_var": 8616.212617
+  },
+  "2013:16": {
+   "sum_prod": 2511.29487,
+   "n_pairs": 32,
+   "sum_r2": 6405.764899,
+   "n": 32,
+   "sum_pmf_var": 5724.258857
+  },
+  "2013:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 1056.01774,
+   "n": 16,
+   "sum_pmf_var": 2853.723715
+  },
+  "2014:1": {
+   "sum_prod": 36482.817957,
+   "n_pairs": 3744,
+   "sum_r2": 56507.265163,
+   "n": 256,
+   "sum_pmf_var": 46059.912114
+  },
+  "2014:2": {
+   "sum_prod": 54758.426417,
+   "n_pairs": 3274,
+   "sum_r2": 55008.833055,
+   "n": 240,
+   "sum_pmf_var": 43219.063906
+  },
+  "2014:3": {
+   "sum_prod": 43001.093359,
+   "n_pairs": 2832,
+   "sum_r2": 51211.817658,
+   "n": 224,
+   "sum_pmf_var": 40311.751067
+  },
+  "2014:4": {
+   "sum_prod": 44656.494886,
+   "n_pairs": 2428,
+   "sum_r2": 47605.158649,
+   "n": 208,
+   "sum_pmf_var": 37389.25506
+  },
+  "2014:5": {
+   "sum_prod": 23205.493178,
+   "n_pairs": 2122,
+   "sum_r2": 41586.813754,
+   "n": 195,
+   "sum_pmf_var": 35056.171298
+  },
+  "2014:6": {
+   "sum_prod": 11726.552773,
+   "n_pairs": 1790,
+   "sum_r2": 38361.460043,
+   "n": 180,
+   "sum_pmf_var": 32338.637064
+  },
+  "2014:7": {
+   "sum_prod": 14224.288504,
+   "n_pairs": 1496,
+   "sum_r2": 35172.904761,
+   "n": 165,
+   "sum_pmf_var": 29630.654841
+  },
+  "2014:8": {
+   "sum_prod": 6937.928324,
+   "n_pairs": 1224,
+   "sum_r2": 32275.223691,
+   "n": 150,
+   "sum_pmf_var": 26977.930302
+  },
+  "2014:9": {
+   "sum_prod": 6406.200807,
+   "n_pairs": 980,
+   "sum_r2": 29268.266731,
+   "n": 135,
+   "sum_pmf_var": 24299.354221
+  },
+  "2014:10": {
+   "sum_prod": 8357.117399,
+   "n_pairs": 786,
+   "sum_r2": 26195.799938,
+   "n": 122,
+   "sum_pmf_var": 21956.049052
+  },
+  "2014:11": {
+   "sum_prod": 9010.723969,
+   "n_pairs": 616,
+   "sum_r2": 23153.076192,
+   "n": 109,
+   "sum_pmf_var": 19570.688374
+  },
+  "2014:12": {
+   "sum_prod": 5653.941848,
+   "n_pairs": 454,
+   "sum_r2": 19316.051823,
+   "n": 95,
+   "sum_pmf_var": 17065.443737
+  },
+  "2014:13": {
+   "sum_prod": 5182.2967,
+   "n_pairs": 308,
+   "sum_r2": 17403.068069,
+   "n": 80,
+   "sum_pmf_var": 14378.731414
+  },
+  "2014:14": {
+   "sum_prod": 4909.237413,
+   "n_pairs": 188,
+   "sum_r2": 12923.884924,
+   "n": 64,
+   "sum_pmf_var": 11479.757137
+  },
+  "2014:15": {
+   "sum_prod": 601.14508,
+   "n_pairs": 96,
+   "sum_r2": 8212.772991,
+   "n": 48,
+   "sum_pmf_var": 8595.101148
+  },
+  "2014:16": {
+   "sum_prod": -700.432104,
+   "n_pairs": 32,
+   "sum_r2": 5965.690414,
+   "n": 32,
+   "sum_pmf_var": 5710.043394
+  },
+  "2014:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2971.219963,
+   "n": 16,
+   "sum_pmf_var": 2847.99742
+  },
+  "2015:1": {
+   "sum_prod": 72078.839196,
+   "n_pairs": 3744,
+   "sum_r2": 46811.462963,
+   "n": 256,
+   "sum_pmf_var": 45938.22078
+  },
+  "2015:2": {
+   "sum_prod": 70391.598583,
+   "n_pairs": 3270,
+   "sum_r2": 44631.146104,
+   "n": 240,
+   "sum_pmf_var": 43054.861296
+  },
+  "2015:3": {
+   "sum_prod": 41714.806357,
+   "n_pairs": 2832,
+   "sum_r2": 40128.080511,
+   "n": 224,
+   "sum_pmf_var": 40214.596639
+  },
+  "2015:4": {
+   "sum_prod": 29590.995107,
+   "n_pairs": 2428,
+   "sum_r2": 35524.452896,
+   "n": 208,
+   "sum_pmf_var": 37302.920947
+  },
+  "2015:5": {
+   "sum_prod": 34462.486178,
+   "n_pairs": 2080,
+   "sum_r2": 34315.638053,
+   "n": 193,
+   "sum_pmf_var": 34611.62518
+  },
+  "2015:6": {
+   "sum_prod": 32026.486173,
+   "n_pairs": 1776,
+   "sum_r2": 32954.923943,
+   "n": 179,
+   "sum_pmf_var": 32164.476094
+  },
+  "2015:7": {
+   "sum_prod": 30358.103256,
+   "n_pairs": 1498,
+   "sum_r2": 30982.922396,
+   "n": 165,
+   "sum_pmf_var": 29587.322702
+  },
+  "2015:8": {
+   "sum_prod": 24548.29963,
+   "n_pairs": 1242,
+   "sum_r2": 29636.734675,
+   "n": 151,
+   "sum_pmf_var": 27093.626012
+  },
+  "2015:9": {
+   "sum_prod": 24294.158129,
+   "n_pairs": 1016,
+   "sum_r2": 26983.323387,
+   "n": 137,
+   "sum_pmf_var": 24563.069659
+  },
+  "2015:10": {
+   "sum_prod": 22996.215118,
+   "n_pairs": 818,
+   "sum_r2": 25900.679366,
+   "n": 124,
+   "sum_pmf_var": 22271.42328
+  },
+  "2015:11": {
+   "sum_prod": 10222.414777,
+   "n_pairs": 634,
+   "sum_r2": 21540.122825,
+   "n": 110,
+   "sum_pmf_var": 19808.783492
+  },
+  "2015:12": {
+   "sum_prod": 9254.999261,
+   "n_pairs": 472,
+   "sum_r2": 18505.377462,
+   "n": 96,
+   "sum_pmf_var": 17224.107426
+  },
+  "2015:13": {
+   "sum_prod": 2195.697303,
+   "n_pairs": 312,
+   "sum_r2": 15292.17948,
+   "n": 80,
+   "sum_pmf_var": 14319.969996
+  },
+  "2015:14": {
+   "sum_prod": 1739.712046,
+   "n_pairs": 190,
+   "sum_r2": 11380.501723,
+   "n": 64,
+   "sum_pmf_var": 11451.371579
+  },
+  "2015:15": {
+   "sum_prod": 1446.081671,
+   "n_pairs": 96,
+   "sum_r2": 7309.303604,
+   "n": 48,
+   "sum_pmf_var": 8574.514511
+  },
+  "2015:16": {
+   "sum_prod": -227.70806,
+   "n_pairs": 32,
+   "sum_r2": 5764.139,
+   "n": 32,
+   "sum_pmf_var": 5716.392306
+  },
+  "2015:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2249.93113,
+   "n": 16,
+   "sum_pmf_var": 2876.864658
+  },
+  "2016:1": {
+   "sum_prod": 60852.43165,
+   "n_pairs": 3744,
+   "sum_r2": 41052.088713,
+   "n": 256,
+   "sum_pmf_var": 45914.758554
+  },
+  "2016:2": {
+   "sum_prod": 62190.248076,
+   "n_pairs": 3272,
+   "sum_r2": 39282.720251,
+   "n": 240,
+   "sum_pmf_var": 43041.741501
+  },
+  "2016:3": {
+   "sum_prod": 65521.66512,
+   "n_pairs": 2838,
+   "sum_r2": 38043.964076,
+   "n": 224,
+   "sum_pmf_var": 40165.526228
+  },
+  "2016:4": {
+   "sum_prod": 50516.209149,
+   "n_pairs": 2430,
+   "sum_r2": 33451.548005,
+   "n": 208,
+   "sum_pmf_var": 37345.174669
+  },
+  "2016:5": {
+   "sum_prod": 48470.561047,
+   "n_pairs": 2082,
+   "sum_r2": 30944.709816,
+   "n": 193,
+   "sum_pmf_var": 34661.313026
+  },
+  "2016:6": {
+   "sum_prod": 33692.747742,
+   "n_pairs": 1778,
+   "sum_r2": 28540.995838,
+   "n": 179,
+   "sum_pmf_var": 32132.727013
+  },
+  "2016:7": {
+   "sum_prod": 23145.726095,
+   "n_pairs": 1482,
+   "sum_r2": 25609.066889,
+   "n": 164,
+   "sum_pmf_var": 29419.040646
+  },
+  "2016:8": {
+   "sum_prod": 16628.205453,
+   "n_pairs": 1214,
+   "sum_r2": 23863.6095,
+   "n": 149,
+   "sum_pmf_var": 26769.383182
+  },
+  "2016:9": {
+   "sum_prod": 13523.669821,
+   "n_pairs": 1002,
+   "sum_r2": 22527.089257,
+   "n": 136,
+   "sum_pmf_var": 24436.616213
+  },
+  "2016:10": {
+   "sum_prod": 7677.565801,
+   "n_pairs": 814,
+   "sum_r2": 20621.03903,
+   "n": 123,
+   "sum_pmf_var": 22115.348595
+  },
+  "2016:11": {
+   "sum_prod": 7358.469108,
+   "n_pairs": 626,
+   "sum_r2": 18452.218133,
+   "n": 109,
+   "sum_pmf_var": 19582.495916
+  },
+  "2016:12": {
+   "sum_prod": 6810.752035,
+   "n_pairs": 462,
+   "sum_r2": 17551.77343,
+   "n": 95,
+   "sum_pmf_var": 17069.914376
+  },
+  "2016:13": {
+   "sum_prod": 2355.559189,
+   "n_pairs": 310,
+   "sum_r2": 15712.493791,
+   "n": 79,
+   "sum_pmf_var": 14216.363152
+  },
+  "2016:14": {
+   "sum_prod": 2084.000459,
+   "n_pairs": 190,
+   "sum_r2": 11102.640407,
+   "n": 64,
+   "sum_pmf_var": 11496.042987
+  },
+  "2016:15": {
+   "sum_prod": -636.517489,
+   "n_pairs": 96,
+   "sum_r2": 8910.499599,
+   "n": 48,
+   "sum_pmf_var": 8622.772251
+  },
+  "2016:16": {
+   "sum_prod": 274.879313,
+   "n_pairs": 32,
+   "sum_r2": 6143.183942,
+   "n": 32,
+   "sum_pmf_var": 5747.873857
+  },
+  "2016:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 3114.373988,
+   "n": 16,
+   "sum_pmf_var": 2860.967048
+  },
+  "2017:1": {
+   "sum_prod": 83889.450596,
+   "n_pairs": 3744,
+   "sum_r2": 53976.471554,
+   "n": 256,
+   "sum_pmf_var": 46057.313453
+  },
+  "2017:2": {
+   "sum_prod": 49185.163707,
+   "n_pairs": 3308,
+   "sum_r2": 47289.927226,
+   "n": 241,
+   "sum_pmf_var": 43403.588733
+  },
+  "2017:3": {
+   "sum_prod": 64149.091423,
+   "n_pairs": 2864,
+   "sum_r2": 46327.650084,
+   "n": 225,
+   "sum_pmf_var": 40477.419937
+  },
+  "2017:4": {
+   "sum_prod": 54459.334144,
+   "n_pairs": 2456,
+   "sum_r2": 41562.213583,
+   "n": 209,
+   "sum_pmf_var": 37631.197966
+  },
+  "2017:5": {
+   "sum_prod": 63847.394639,
+   "n_pairs": 2084,
+   "sum_r2": 38677.905346,
+   "n": 193,
+   "sum_pmf_var": 34711.769669
+  },
+  "2017:6": {
+   "sum_prod": 54081.153054,
+   "n_pairs": 1778,
+   "sum_r2": 36542.804476,
+   "n": 179,
+   "sum_pmf_var": 32172.386398
+  },
+  "2017:7": {
+   "sum_prod": 45552.436703,
+   "n_pairs": 1500,
+   "sum_r2": 34017.622808,
+   "n": 165,
+   "sum_pmf_var": 29734.573249
+  },
+  "2017:8": {
+   "sum_prod": 32877.293248,
+   "n_pairs": 1228,
+   "sum_r2": 29123.863435,
+   "n": 150,
+   "sum_pmf_var": 27025.258804
+  },
+  "2017:9": {
+   "sum_prod": 27352.717439,
+   "n_pairs": 1014,
+   "sum_r2": 26071.172097,
+   "n": 137,
+   "sum_pmf_var": 24671.053636
+  },
+  "2017:10": {
+   "sum_prod": 15113.64653,
+   "n_pairs": 822,
+   "sum_r2": 22297.877078,
+   "n": 124,
+   "sum_pmf_var": 22281.975847
+  },
+  "2017:11": {
+   "sum_prod": 5930.298927,
+   "n_pairs": 632,
+   "sum_r2": 18279.279983,
+   "n": 110,
+   "sum_pmf_var": 19732.929551
+  },
+  "2017:12": {
+   "sum_prod": 440.955155,
+   "n_pairs": 468,
+   "sum_r2": 15093.530795,
+   "n": 96,
+   "sum_pmf_var": 17208.762914
+  },
+  "2017:13": {
+   "sum_prod": 2694.296058,
+   "n_pairs": 314,
+   "sum_r2": 14006.580957,
+   "n": 80,
+   "sum_pmf_var": 14360.169398
+  },
+  "2017:14": {
+   "sum_prod": 2498.995622,
+   "n_pairs": 188,
+   "sum_r2": 11444.915054,
+   "n": 64,
+   "sum_pmf_var": 11486.198261
+  },
+  "2017:15": {
+   "sum_prod": -480.662037,
+   "n_pairs": 94,
+   "sum_r2": 7988.352799,
+   "n": 48,
+   "sum_pmf_var": 8599.759824
+  },
+  "2017:16": {
+   "sum_prod": 687.377166,
+   "n_pairs": 32,
+   "sum_r2": 4867.454943,
+   "n": 32,
+   "sum_pmf_var": 5682.074204
+  },
+  "2017:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2051.35605,
+   "n": 16,
+   "sum_pmf_var": 2848.524915
+  },
+  "2018:1": {
+   "sum_prod": 62191.961956,
+   "n_pairs": 3744,
+   "sum_r2": 49519.743539,
+   "n": 256,
+   "sum_pmf_var": 46054.082697
+  },
+  "2018:2": {
+   "sum_prod": 63498.771786,
+   "n_pairs": 3272,
+   "sum_r2": 45062.877971,
+   "n": 240,
+   "sum_pmf_var": 43192.424466
+  },
+  "2018:3": {
+   "sum_prod": 57411.780458,
+   "n_pairs": 2840,
+   "sum_r2": 42912.324674,
+   "n": 224,
+   "sum_pmf_var": 40302.479975
+  },
+  "2018:4": {
+   "sum_prod": 50573.912448,
+   "n_pairs": 2428,
+   "sum_r2": 40361.417295,
+   "n": 208,
+   "sum_pmf_var": 37486.323729
+  },
+  "2018:5": {
+   "sum_prod": 38622.211674,
+   "n_pairs": 2078,
+   "sum_r2": 36764.852981,
+   "n": 193,
+   "sum_pmf_var": 34763.896558
+  },
+  "2018:6": {
+   "sum_prod": 28532.075574,
+   "n_pairs": 1756,
+   "sum_r2": 34384.367548,
+   "n": 178,
+   "sum_pmf_var": 32070.008545
+  },
+  "2018:7": {
+   "sum_prod": 24879.698228,
+   "n_pairs": 1458,
+   "sum_r2": 31256.716043,
+   "n": 163,
+   "sum_pmf_var": 29349.393164
+  },
+  "2018:8": {
+   "sum_prod": 7781.402533,
+   "n_pairs": 1206,
+   "sum_r2": 25388.312278,
+   "n": 149,
+   "sum_pmf_var": 26818.984646
+  },
+  "2018:9": {
+   "sum_prod": 2767.612669,
+   "n_pairs": 976,
+   "sum_r2": 23856.271833,
+   "n": 135,
+   "sum_pmf_var": 24267.627257
+  },
+  "2018:10": {
+   "sum_prod": 2879.78242,
+   "n_pairs": 784,
+   "sum_r2": 20921.515891,
+   "n": 122,
+   "sum_pmf_var": 21945.025025
+  },
+  "2018:11": {
+   "sum_prod": -2530.841067,
+   "n_pairs": 604,
+   "sum_r2": 15388.635236,
+   "n": 108,
+   "sum_pmf_var": 19431.903548
+  },
+  "2018:12": {
+   "sum_prod": -1229.944596,
+   "n_pairs": 456,
+   "sum_r2": 13572.006628,
+   "n": 95,
+   "sum_pmf_var": 17055.488314
+  },
+  "2018:13": {
+   "sum_prod": -3037.448767,
+   "n_pairs": 310,
+   "sum_r2": 11758.02308,
+   "n": 80,
+   "sum_pmf_var": 14307.374688
+  },
+  "2018:14": {
+   "sum_prod": -1300.39652,
+   "n_pairs": 190,
+   "sum_r2": 10065.283078,
+   "n": 64,
+   "sum_pmf_var": 11453.303793
+  },
+  "2018:15": {
+   "sum_prod": -733.096602,
+   "n_pairs": 94,
+   "sum_r2": 8528.333425,
+   "n": 48,
+   "sum_pmf_var": 8584.887949
+  },
+  "2018:16": {
+   "sum_prod": -1797.167518,
+   "n_pairs": 32,
+   "sum_r2": 6359.610493,
+   "n": 32,
+   "sum_pmf_var": 5728.320222
+  },
+  "2018:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 4691.582291,
+   "n": 16,
+   "sum_pmf_var": 2859.17463
+  },
+  "2019:1": {
+   "sum_prod": 69417.337259,
+   "n_pairs": 3744,
+   "sum_r2": 50649.518138,
+   "n": 256,
+   "sum_pmf_var": 46011.531937
+  },
+  "2019:2": {
+   "sum_prod": 36284.111637,
+   "n_pairs": 3274,
+   "sum_r2": 44115.924992,
+   "n": 240,
+   "sum_pmf_var": 43145.817834
+  },
+  "2019:3": {
+   "sum_prod": 22153.617396,
+   "n_pairs": 2840,
+   "sum_r2": 40510.979518,
+   "n": 224,
+   "sum_pmf_var": 40242.874334
+  },
+  "2019:4": {
+   "sum_prod": 25621.953711,
+   "n_pairs": 2428,
+   "sum_r2": 39543.870973,
+   "n": 208,
+   "sum_pmf_var": 37355.697018
+  },
+  "2019:5": {
+   "sum_prod": 34175.21458,
+   "n_pairs": 2080,
+   "sum_r2": 37184.019814,
+   "n": 193,
+   "sum_pmf_var": 34620.891586
+  },
+  "2019:6": {
+   "sum_prod": 29629.318343,
+   "n_pairs": 1756,
+   "sum_r2": 34358.809657,
+   "n": 178,
+   "sum_pmf_var": 31925.714765
+  },
+  "2019:7": {
+   "sum_prod": 34305.024327,
+   "n_pairs": 1478,
+   "sum_r2": 33682.935249,
+   "n": 164,
+   "sum_pmf_var": 29442.229183
+  },
+  "2019:8": {
+   "sum_prod": 30090.192307,
+   "n_pairs": 1228,
+   "sum_r2": 29729.50202,
+   "n": 150,
+   "sum_pmf_var": 26897.245105
+  },
+  "2019:9": {
+   "sum_prod": 24808.751028,
+   "n_pairs": 976,
+   "sum_r2": 27191.803689,
+   "n": 135,
+   "sum_pmf_var": 24221.65925
+  },
+  "2019:10": {
+   "sum_prod": 19647.645726,
+   "n_pairs": 770,
+   "sum_r2": 25250.618853,
+   "n": 121,
+   "sum_pmf_var": 21719.983464
+  },
+  "2019:11": {
+   "sum_prod": 14979.84658,
+   "n_pairs": 604,
+   "sum_r2": 22954.572696,
+   "n": 108,
+   "sum_pmf_var": 19392.040213
+  },
+  "2019:12": {
+   "sum_prod": 5064.662055,
+   "n_pairs": 448,
+   "sum_r2": 18820.082926,
+   "n": 94,
+   "sum_pmf_var": 16908.522293
+  },
+  "2019:13": {
+   "sum_prod": 3337.785955,
+   "n_pairs": 312,
+   "sum_r2": 15090.304568,
+   "n": 80,
+   "sum_pmf_var": 14379.135493
+  },
+  "2019:14": {
+   "sum_prod": 1071.418915,
+   "n_pairs": 186,
+   "sum_r2": 11961.63487,
+   "n": 64,
+   "sum_pmf_var": 11466.398896
+  },
+  "2019:15": {
+   "sum_prod": 2786.42095,
+   "n_pairs": 94,
+   "sum_r2": 9462.475939,
+   "n": 48,
+   "sum_pmf_var": 8597.024385
+  },
+  "2019:16": {
+   "sum_prod": 562.730418,
+   "n_pairs": 32,
+   "sum_r2": 5839.095349,
+   "n": 32,
+   "sum_pmf_var": 5733.262763
+  },
+  "2019:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2634.700967,
+   "n": 16,
+   "sum_pmf_var": 2855.755484
+  },
+  "2020:1": {
+   "sum_prod": 69285.221391,
+   "n_pairs": 3744,
+   "sum_r2": 49165.446108,
+   "n": 256,
+   "sum_pmf_var": 45970.961307
+  },
+  "2020:2": {
+   "sum_prod": 57775.276608,
+   "n_pairs": 3282,
+   "sum_r2": 47158.846994,
+   "n": 240,
+   "sum_pmf_var": 43063.518579
+  },
+  "2020:3": {
+   "sum_prod": 46026.207465,
+   "n_pairs": 2846,
+   "sum_r2": 44932.727335,
+   "n": 224,
+   "sum_pmf_var": 40241.887147
+  },
+  "2020:4": {
+   "sum_prod": 31277.057012,
+   "n_pairs": 2430,
+   "sum_r2": 41011.919562,
+   "n": 208,
+   "sum_pmf_var": 37352.208057
+  },
+  "2020:5": {
+   "sum_prod": 25164.761258,
+   "n_pairs": 2070,
+   "sum_r2": 39402.553133,
+   "n": 193,
+   "sum_pmf_var": 34638.255282
+  },
+  "2020:6": {
+   "sum_prod": 19293.359178,
+   "n_pairs": 1770,
+   "sum_r2": 35352.474102,
+   "n": 179,
+   "sum_pmf_var": 32166.785585
+  },
+  "2020:7": {
+   "sum_prod": 18454.350512,
+   "n_pairs": 1494,
+   "sum_r2": 31181.535796,
+   "n": 165,
+   "sum_pmf_var": 29651.733528
+  },
+  "2020:8": {
+   "sum_prod": 16110.921146,
+   "n_pairs": 1242,
+   "sum_r2": 28221.517738,
+   "n": 151,
+   "sum_pmf_var": 27117.022104
+  },
+  "2020:9": {
+   "sum_prod": 15923.195869,
+   "n_pairs": 1014,
+   "sum_r2": 26873.594226,
+   "n": 137,
+   "sum_pmf_var": 24598.384563
+  },
+  "2020:10": {
+   "sum_prod": 9634.069304,
+   "n_pairs": 806,
+   "sum_r2": 23932.472269,
+   "n": 123,
+   "sum_pmf_var": 22093.203605
+  },
+  "2020:11": {
+   "sum_prod": 7230.290864,
+   "n_pairs": 626,
+   "sum_r2": 21923.099288,
+   "n": 109,
+   "sum_pmf_var": 19549.755968
+  },
+  "2020:12": {
+   "sum_prod": 4647.252645,
+   "n_pairs": 462,
+   "sum_r2": 20147.903574,
+   "n": 95,
+   "sum_pmf_var": 17019.774827
+  },
+  "2020:13": {
+   "sum_prod": 4064.049648,
+   "n_pairs": 306,
+   "sum_r2": 16778.065172,
+   "n": 79,
+   "sum_pmf_var": 14135.321997
+  },
+  "2020:14": {
+   "sum_prod": 7700.001158,
+   "n_pairs": 190,
+   "sum_r2": 13424.190743,
+   "n": 64,
+   "sum_pmf_var": 11461.427301
+  },
+  "2020:15": {
+   "sum_prod": 3245.421823,
+   "n_pairs": 94,
+   "sum_r2": 9450.67717,
+   "n": 48,
+   "sum_pmf_var": 8589.0014
+  },
+  "2020:16": {
+   "sum_prod": 773.177829,
+   "n_pairs": 32,
+   "sum_r2": 6988.189725,
+   "n": 32,
+   "sum_pmf_var": 5716.27474
+  },
+  "2020:17": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2478.415811,
+   "n": 16,
+   "sum_pmf_var": 2860.353432
+  },
+  "2021:1": {
+   "sum_prod": 54673.975837,
+   "n_pairs": 4256,
+   "sum_r2": 57367.475525,
+   "n": 272,
+   "sum_pmf_var": 48907.66927
+  },
+  "2021:2": {
+   "sum_prod": 52071.215299,
+   "n_pairs": 3748,
+   "sum_r2": 52458.088924,
+   "n": 256,
+   "sum_pmf_var": 46015.207883
+  },
+  "2021:3": {
+   "sum_prod": 32897.834185,
+   "n_pairs": 3280,
+   "sum_r2": 48477.049766,
+   "n": 240,
+   "sum_pmf_var": 43132.043122
+  },
+  "2021:4": {
+   "sum_prod": 28368.584278,
+   "n_pairs": 2840,
+   "sum_r2": 45458.833875,
+   "n": 224,
+   "sum_pmf_var": 40198.134636
+  },
+  "2021:5": {
+   "sum_prod": 26071.556639,
+   "n_pairs": 2432,
+   "sum_r2": 43141.290313,
+   "n": 208,
+   "sum_pmf_var": 37302.999382
+  },
+  "2021:6": {
+   "sum_prod": 21359.071304,
+   "n_pairs": 2058,
+   "sum_r2": 41163.213415,
+   "n": 192,
+   "sum_pmf_var": 34473.835819
+  },
+  "2021:7": {
+   "sum_prod": 15536.920172,
+   "n_pairs": 1756,
+   "sum_r2": 37518.585418,
+   "n": 178,
+   "sum_pmf_var": 31888.728847
+  },
+  "2021:8": {
+   "sum_prod": 8793.289454,
+   "n_pairs": 1494,
+   "sum_r2": 32905.218676,
+   "n": 165,
+   "sum_pmf_var": 29589.565358
+  },
+  "2021:9": {
+   "sum_prod": 6589.16286,
+   "n_pairs": 1220,
+   "sum_r2": 30894.693383,
+   "n": 150,
+   "sum_pmf_var": 26879.368037
+  },
+  "2021:10": {
+   "sum_prod": 15711.791909,
+   "n_pairs": 988,
+   "sum_r2": 28938.54971,
+   "n": 136,
+   "sum_pmf_var": 24360.239762
+  },
+  "2021:11": {
+   "sum_prod": 4557.524339,
+   "n_pairs": 784,
+   "sum_r2": 22017.051963,
+   "n": 122,
+   "sum_pmf_var": 21862.527372
+  },
+  "2021:12": {
+   "sum_prod": 1499.12522,
+   "n_pairs": 592,
+   "sum_r2": 18540.3384,
+   "n": 107,
+   "sum_pmf_var": 19170.474865
+  },
+  "2021:13": {
+   "sum_prod": 1123.966764,
+   "n_pairs": 426,
+   "sum_r2": 15555.082734,
+   "n": 92,
+   "sum_pmf_var": 16479.106661
+  },
+  "2021:14": {
+   "sum_prod": -1212.465811,
+   "n_pairs": 296,
+   "sum_r2": 13557.011079,
+   "n": 78,
+   "sum_pmf_var": 13957.673263
+  },
+  "2021:15": {
+   "sum_prod": -724.341801,
+   "n_pairs": 186,
+   "sum_r2": 11503.413299,
+   "n": 64,
+   "sum_pmf_var": 11398.886052
+  },
+  "2021:16": {
+   "sum_prod": -2388.546952,
+   "n_pairs": 94,
+   "sum_r2": 9226.113904,
+   "n": 48,
+   "sum_pmf_var": 8536.934652
+  },
+  "2021:17": {
+   "sum_prod": -1344.46917,
+   "n_pairs": 32,
+   "sum_r2": 5421.74343,
+   "n": 32,
+   "sum_pmf_var": 5687.674182
+  },
+  "2021:18": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2704.288592,
+   "n": 16,
+   "sum_pmf_var": 2861.580787
+  },
+  "2022:1": {
+   "sum_prod": 60278.577134,
+   "n_pairs": 4224,
+   "sum_r2": 41392.306042,
+   "n": 271,
+   "sum_pmf_var": 48702.333451
+  },
+  "2022:2": {
+   "sum_prod": 61215.655355,
+   "n_pairs": 3726,
+   "sum_r2": 38997.033137,
+   "n": 255,
+   "sum_pmf_var": 45832.585233
+  },
+  "2022:3": {
+   "sum_prod": 34972.606765,
+   "n_pairs": 3258,
+   "sum_r2": 35063.142436,
+   "n": 239,
+   "sum_pmf_var": 42934.366478
+  },
+  "2022:4": {
+   "sum_prod": 36572.490645,
+   "n_pairs": 2826,
+   "sum_r2": 32746.371733,
+   "n": 223,
+   "sum_pmf_var": 40118.776547
+  },
+  "2022:5": {
+   "sum_prod": 21227.157212,
+   "n_pairs": 2420,
+   "sum_r2": 30741.339571,
+   "n": 207,
+   "sum_pmf_var": 37203.812773
+  },
+  "2022:6": {
+   "sum_prod": 21009.331263,
+   "n_pairs": 2050,
+   "sum_r2": 28233.683444,
+   "n": 191,
+   "sum_pmf_var": 34314.038093
+  },
+  "2022:7": {
+   "sum_prod": 22427.642158,
+   "n_pairs": 1750,
+   "sum_r2": 26593.681153,
+   "n": 177,
+   "sum_pmf_var": 31843.257446
+  },
+  "2022:8": {
+   "sum_prod": 26330.863418,
+   "n_pairs": 1471,
+   "sum_r2": 24066.486081,
+   "n": 163,
+   "sum_pmf_var": 29334.163722
+  },
+  "2022:9": {
+   "sum_prod": 20159.208845,
+   "n_pairs": 1203,
+   "sum_r2": 21740.140763,
+   "n": 148,
+   "sum_pmf_var": 26632.277947
+  },
+  "2022:10": {
+   "sum_prod": 17571.144776,
+   "n_pairs": 991,
+   "sum_r2": 20432.994299,
+   "n": 135,
+   "sum_pmf_var": 24281.056841
+  },
+  "2022:11": {
+   "sum_prod": 19185.074479,
+   "n_pairs": 782,
+   "sum_r2": 18780.467094,
+   "n": 121,
+   "sum_pmf_var": 21785.954493
+  },
+  "2022:12": {
+   "sum_prod": 15706.671937,
+   "n_pairs": 598,
+   "sum_r2": 15829.087747,
+   "n": 107,
+   "sum_pmf_var": 19257.458577
+  },
+  "2022:13": {
+   "sum_prod": 9530.575287,
+   "n_pairs": 416,
+   "sum_r2": 14077.398162,
+   "n": 91,
+   "sum_pmf_var": 16376.589237
+  },
+  "2022:14": {
+   "sum_prod": 6560.691241,
+   "n_pairs": 280,
+   "sum_r2": 12104.048374,
+   "n": 76,
+   "sum_pmf_var": 13651.322916
+  },
+  "2022:15": {
+   "sum_prod": 3029.330217,
+   "n_pairs": 186,
+   "sum_r2": 9425.549978,
+   "n": 63,
+   "sum_pmf_var": 11306.096383
+  },
+  "2022:16": {
+   "sum_prod": 711.176433,
+   "n_pairs": 92,
+   "sum_r2": 8308.040228,
+   "n": 47,
+   "sum_pmf_var": 8433.412541
+  },
+  "2022:17": {
+   "sum_prod": -776.3045,
+   "n_pairs": 30,
+   "sum_r2": 5181.298392,
+   "n": 31,
+   "sum_pmf_var": 5562.343078
+  },
+  "2022:18": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 1787.435609,
+   "n": 16,
+   "sum_pmf_var": 2855.212011
+  },
+  "2023:1": {
+   "sum_prod": 57736.223473,
+   "n_pairs": 4256,
+   "sum_r2": 51532.393319,
+   "n": 272,
+   "sum_pmf_var": 49083.787279
+  },
+  "2023:2": {
+   "sum_prod": 42843.382487,
+   "n_pairs": 3760,
+   "sum_r2": 47488.615056,
+   "n": 256,
+   "sum_pmf_var": 46141.574806
+  },
+  "2023:3": {
+   "sum_prod": 36152.694662,
+   "n_pairs": 3292,
+   "sum_r2": 45856.003482,
+   "n": 240,
+   "sum_pmf_var": 43217.557842
+  },
+  "2023:4": {
+   "sum_prod": 34803.177331,
+   "n_pairs": 2848,
+   "sum_r2": 40883.248781,
+   "n": 224,
+   "sum_pmf_var": 40293.014288
+  },
+  "2023:5": {
+   "sum_prod": 20242.399527,
+   "n_pairs": 2446,
+   "sum_r2": 35343.326938,
+   "n": 208,
+   "sum_pmf_var": 37402.229128
+  },
+  "2023:6": {
+   "sum_prod": 11715.536691,
+   "n_pairs": 2114,
+   "sum_r2": 31003.219497,
+   "n": 194,
+   "sum_pmf_var": 34930.726393
+  },
+  "2023:7": {
+   "sum_prod": 10889.699295,
+   "n_pairs": 1786,
+   "sum_r2": 29638.852993,
+   "n": 179,
+   "sum_pmf_var": 32234.820064
+  },
+  "2023:8": {
+   "sum_prod": 9181.410111,
+   "n_pairs": 1530,
+   "sum_r2": 27656.623832,
+   "n": 166,
+   "sum_pmf_var": 29955.405017
+  },
+  "2023:9": {
+   "sum_prod": 12720.170484,
+   "n_pairs": 1232,
+   "sum_r2": 25890.567433,
+   "n": 150,
+   "sum_pmf_var": 27063.421405
+  },
+  "2023:10": {
+   "sum_prod": 9390.740101,
+   "n_pairs": 998,
+   "sum_r2": 22919.18527,
+   "n": 136,
+   "sum_pmf_var": 24512.866897
+  },
+  "2023:11": {
+   "sum_prod": 7707.993705,
+   "n_pairs": 786,
+   "sum_r2": 21112.017878,
+   "n": 122,
+   "sum_pmf_var": 21982.21591
+  },
+  "2023:12": {
+   "sum_prod": 1789.044978,
+   "n_pairs": 602,
+   "sum_r2": 19142.656358,
+   "n": 108,
+   "sum_pmf_var": 19458.520233
+  },
+  "2023:13": {
+   "sum_prod": 1096.807826,
+   "n_pairs": 430,
+   "sum_r2": 16959.523722,
+   "n": 92,
+   "sum_pmf_var": 16557.563159
+  },
+  "2023:14": {
+   "sum_prod": 930.362449,
+   "n_pairs": 304,
+   "sum_r2": 15019.673703,
+   "n": 79,
+   "sum_pmf_var": 14196.969074
+  },
+  "2023:15": {
+   "sum_prod": 838.274254,
+   "n_pairs": 186,
+   "sum_r2": 12572.034667,
+   "n": 64,
+   "sum_pmf_var": 11489.559207
+  },
+  "2023:16": {
+   "sum_prod": 162.540617,
+   "n_pairs": 92,
+   "sum_r2": 8711.668451,
+   "n": 48,
+   "sum_pmf_var": 8570.933034
+  },
+  "2023:17": {
+   "sum_prod": 641.674278,
+   "n_pairs": 32,
+   "sum_r2": 6458.183233,
+   "n": 32,
+   "sum_pmf_var": 5713.677807
+  },
+  "2023:18": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2603.279186,
+   "n": 16,
+   "sum_pmf_var": 2863.301559
+  },
+  "2024:1": {
+   "sum_prod": 119830.110272,
+   "n_pairs": 4256,
+   "sum_r2": 54354.230403,
+   "n": 272,
+   "sum_pmf_var": 48940.077229
+  },
+  "2024:2": {
+   "sum_prod": 114139.297941,
+   "n_pairs": 3750,
+   "sum_r2": 52156.608849,
+   "n": 256,
+   "sum_pmf_var": 46048.705282
+  },
+  "2024:3": {
+   "sum_prod": 109933.035859,
+   "n_pairs": 3276,
+   "sum_r2": 48479.019483,
+   "n": 240,
+   "sum_pmf_var": 43171.588088
+  },
+  "2024:4": {
+   "sum_prod": 84490.618349,
+   "n_pairs": 2832,
+   "sum_r2": 42914.345628,
+   "n": 224,
+   "sum_pmf_var": 40310.378626
+  },
+  "2024:5": {
+   "sum_prod": 82391.654027,
+   "n_pairs": 2426,
+   "sum_r2": 39911.843811,
+   "n": 208,
+   "sum_pmf_var": 37432.487683
+  },
+  "2024:6": {
+   "sum_prod": 70118.344965,
+   "n_pairs": 2102,
+   "sum_r2": 37065.733585,
+   "n": 194,
+   "sum_pmf_var": 34946.10083
+  },
+  "2024:7": {
+   "sum_prod": 46526.454115,
+   "n_pairs": 1802,
+   "sum_r2": 31956.186625,
+   "n": 180,
+   "sum_pmf_var": 32385.490245
+  },
+  "2024:8": {
+   "sum_prod": 29089.800034,
+   "n_pairs": 1500,
+   "sum_r2": 27762.711762,
+   "n": 165,
+   "sum_pmf_var": 29652.224941
+  },
+  "2024:9": {
+   "sum_prod": 24428.53351,
+   "n_pairs": 1206,
+   "sum_r2": 25262.166637,
+   "n": 149,
+   "sum_pmf_var": 26782.264253
+  },
+  "2024:10": {
+   "sum_prod": 17001.859658,
+   "n_pairs": 960,
+   "sum_r2": 23067.486827,
+   "n": 134,
+   "sum_pmf_var": 23998.902356
+  },
+  "2024:11": {
+   "sum_prod": 11076.707546,
+   "n_pairs": 756,
+   "sum_r2": 19993.519259,
+   "n": 120,
+   "sum_pmf_var": 21545.369873
+  },
+  "2024:12": {
+   "sum_prod": 4874.459063,
+   "n_pairs": 578,
+   "sum_r2": 16444.499997,
+   "n": 106,
+   "sum_pmf_var": 19049.051877
+  },
+  "2024:13": {
+   "sum_prod": 674.156153,
+   "n_pairs": 438,
+   "sum_r2": 14182.707453,
+   "n": 93,
+   "sum_pmf_var": 16724.913722
+  },
+  "2024:14": {
+   "sum_prod": -846.194999,
+   "n_pairs": 290,
+   "sum_r2": 12812.299169,
+   "n": 77,
+   "sum_pmf_var": 13839.25595
+  },
+  "2024:15": {
+   "sum_prod": -540.159277,
+   "n_pairs": 190,
+   "sum_r2": 11687.46622,
+   "n": 64,
+   "sum_pmf_var": 11503.608105
+  },
+  "2024:16": {
+   "sum_prod": -1830.576414,
+   "n_pairs": 94,
+   "sum_r2": 9379.980768,
+   "n": 48,
+   "sum_pmf_var": 8614.327736
+  },
+  "2024:17": {
+   "sum_prod": -1587.05086,
+   "n_pairs": 32,
+   "sum_r2": 7421.957661,
+   "n": 32,
+   "sum_pmf_var": 5724.303139
+  },
+  "2024:18": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 2867.758146,
+   "n": 16,
+   "sum_pmf_var": 2846.363349
+  },
+  "2025:1": {
+   "sum_prod": 91195.868555,
+   "n_pairs": 4256,
+   "sum_r2": 51929.005109,
+   "n": 272,
+   "sum_pmf_var": 48888.059212
+  },
+  "2025:2": {
+   "sum_prod": 94933.333245,
+   "n_pairs": 3760,
+   "sum_r2": 50263.982833,
+   "n": 256,
+   "sum_pmf_var": 46004.485268
+  },
+  "2025:3": {
+   "sum_prod": 87225.781477,
+   "n_pairs": 3292,
+   "sum_r2": 48240.331956,
+   "n": 240,
+   "sum_pmf_var": 43043.36722
+  },
+  "2025:4": {
+   "sum_prod": 74593.162019,
+   "n_pairs": 2856,
+   "sum_r2": 43082.710232,
+   "n": 224,
+   "sum_pmf_var": 40169.644796
+  },
+  "2025:5": {
+   "sum_prod": 51842.494159,
+   "n_pairs": 2446,
+   "sum_r2": 39127.888092,
+   "n": 208,
+   "sum_pmf_var": 37279.452996
+  },
+  "2025:6": {
+   "sum_prod": 41423.529996,
+   "n_pairs": 2114,
+   "sum_r2": 35185.987922,
+   "n": 194,
+   "sum_pmf_var": 34802.381792
+  },
+  "2025:7": {
+   "sum_prod": 36995.686755,
+   "n_pairs": 1784,
+   "sum_r2": 33055.084454,
+   "n": 179,
+   "sum_pmf_var": 32161.663422
+  },
+  "2025:8": {
+   "sum_prod": 32729.122147,
+   "n_pairs": 1484,
+   "sum_r2": 29783.320361,
+   "n": 164,
+   "sum_pmf_var": 29442.876932
+  },
+  "2025:9": {
+   "sum_prod": 35744.36572,
+   "n_pairs": 1244,
+   "sum_r2": 27012.842331,
+   "n": 151,
+   "sum_pmf_var": 27061.414925
+  },
+  "2025:10": {
+   "sum_prod": 30002.55394,
+   "n_pairs": 1008,
+   "sum_r2": 24598.439244,
+   "n": 137,
+   "sum_pmf_var": 24538.063086
+  },
+  "2025:11": {
+   "sum_prod": 29527.688759,
+   "n_pairs": 798,
+   "sum_r2": 22813.10333,
+   "n": 123,
+   "sum_pmf_var": 22019.65111
+  },
+  "2025:12": {
+   "sum_prod": 20244.331603,
+   "n_pairs": 602,
+   "sum_r2": 19796.516627,
+   "n": 108,
+   "sum_pmf_var": 19315.973105
+  },
+  "2025:13": {
+   "sum_prod": 19799.97789,
+   "n_pairs": 442,
+   "sum_r2": 18578.277779,
+   "n": 94,
+   "sum_pmf_var": 16819.580521
+  },
+  "2025:14": {
+   "sum_prod": 15348.616856,
+   "n_pairs": 292,
+   "sum_r2": 15721.032828,
+   "n": 78,
+   "sum_pmf_var": 13986.737001
+  },
+  "2025:15": {
+   "sum_prod": 7576.32429,
+   "n_pairs": 188,
+   "sum_r2": 11790.006247,
+   "n": 64,
+   "sum_pmf_var": 11448.119483
+  },
+  "2025:16": {
+   "sum_prod": 4278.604226,
+   "n_pairs": 92,
+   "sum_r2": 8780.671746,
+   "n": 48,
+   "sum_pmf_var": 8611.389876
+  },
+  "2025:17": {
+   "sum_prod": 1669.78495,
+   "n_pairs": 32,
+   "sum_r2": 5107.319961,
+   "n": 32,
+   "sum_pmf_var": 5733.888352
+  },
+  "2025:18": {
+   "sum_prod": 0,
+   "n_pairs": 0,
+   "sum_r2": 1936.395859,
+   "n": 16,
+   "sum_pmf_var": 2843.653389
+  }
+ }
+}
