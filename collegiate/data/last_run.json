@@ -1,5 +1,5 @@
 {
- "today": "2026-10-22",
+ "today": "2026-10-23",
  "steps": [
   {
    "step": "hosts",
@@ -117,7 +117,7 @@
   {
    "step": "backfill",
    "id": "baseball-rosters-2013-2026",
-   "ok": 14,
+   "ok": 0,
    "misses_by_reason": {
     "REFUSED": 6,
     "HTTP": 479,
@@ -125,6 +125,18 @@
     "SEASON_MISMATCH": 56,
     "EMPTY_ROSTER": 2,
     "PLATFORM_NOT_READ": 4
+   }
+  },
+  {
+   "step": "backfill",
+   "id": "baseball-schedules-2013-2026",
+   "ok": 132,
+   "misses_by_reason": {
+    "PLATFORM_NOT_READ": 44,
+    "SEASON_MISMATCH": 81,
+    "NO_SCHEDULE": 337,
+    "EMPTY_SCHEDULE": 8,
+    "SPORT_MISMATCH": 2
    }
   },
   {
@@ -137,11 +149,11 @@
    "id": "baseball-boxscores-2013-2026",
    "planned": 93616,
    "unjoinable": 2978,
-   "ok": 10279,
-   "left": 55371,
+   "ok": 9904,
+   "left": 45467,
    "misses_by_reason": {
-    "NO_BOXSCORE": 11,
-    "HTTP": 1
+    "NO_BOXSCORE": 22,
+    "HTTP": 2
    }
   },
   {
@@ -307,5 +319,6 @@
   "rosters:mens-soccer": "2026-10-21",
   "rosters:womens-soccer": "2026-10-21",
   "schedules:baseball": "2026-10-21"
- }
+ },
+ "backfill_read_at": "2026-10-23"
 }

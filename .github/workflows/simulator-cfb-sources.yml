@@ -1,0 +1,50 @@
+# EdgeDesk Simulator — the primary sources the college football simulator's
+# rules config names, read from GitHub's runners (the build environment cannot
+# reach them).
+#
+# Read-only: no secret, no database, nothing committed. The job prints each
+# source whole (URL, HTTP status, sha256, text) and keeps the files as an
+# artifact, so the reviewed commit that marks a rule VERIFIED in
+# simulator/src/sports/cfb/config.ts can cite exactly what was read:
+#   - the College Football Playoff's 2026 format and selection protocol
+#   - each FBS conference's championship-game tiebreaker procedure
+#   - eligibility notices for programs reclassifying from the FCS
+#   - Wikipedia's historical CFP committee ranking tables (committee proxy inputs)
+# Runs on a pull request that changes it, or by hand.
+name: Simulator CFB source check
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/simulator-cfb-sources.yml'
+      - 'simulator/src/cli/fetch_cfb_sources.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: simulator-cfb-sources-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Install pdftotext (for PDF procedures)
+        run: (sudo apt-get update -qq >/dev/null 2>&1 && sudo apt-get install -y -qq poppler-utils >/dev/null 2>&1 && pdftotext -v 2>&1 | head -1) || echo "::warning::poppler-utils did not install; PDFs will be kept but not printed"
+      - name: Fetch and print the sources
+        run: node simulator/src/cli/fetch_cfb_sources.ts --out simulator/out/cfb_sources
+      - name: Keep the fetched files
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulator-cfb-sources-${{ github.run_id }}
+          path: simulator/out/cfb_sources
+          if-no-files-found: ignore
+          retention-days: 30

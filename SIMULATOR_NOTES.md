@@ -17,16 +17,16 @@ deployment: §16 states exactly what exists and what does not.
 |---|---|---|
 | Shared engine (PRNG, runner, aggregation, statistics, hooks) | Implemented, tested | `simulator/src/core/`, §12 |
 | NFL rules (tiebreakers, seeding, bracket) | Implemented; reproduces every division rank and seed 2002–2025 | `simulator/tests/nfl_rules_history.test.ts` (242 assertions) |
-| NFL season simulation | Implemented, tested; **BLOCKED for publication** | three 2026 facts unverified (§7.5) |
+| NFL season simulation | Implemented, tested; **ACTIVE** — its three 2026 facts verified against the NFL's pages on 2026-10-23 | §7.5 |
 | Strength uncertainty | Calibrated from frozen-forecast residuals | `simulator/data/nfl_strength_uncertainty.json`, §6.2 |
-| Database layer | Written, tested on a real PostgreSQL 16; **not applied to production** | `supabase/simulator.sql`, §9 |
-| Kalshi futures comparison | Implemented, tested on synthetic markets; **unavailable** (no verified mapping, fee schedule unverified) | `simulator/config/kalshi_futures.json`, §10 |
-| Research registration | Generated SQL, EXPERIMENTAL / T3; **not applied** | `supabase/simulator_registry.sql`, §11 |
+| Database layer | Tested on a real PostgreSQL 16; **applied to production** 2026-10-23 (*Deploy simulator SQL* run 39947585888, every report row `ok`) | `supabase/simulator.sql`, §9 |
+| Kalshi futures comparison | **352 markets mapped** exactly (Super Bowl, conference, division, playoffs, seeds 1–7); fee schedule verified from Kalshi's docs and API | `simulator/config/kalshi_futures.json`, §10 |
+| Research registration | EXPERIMENTAL / T3; **applied** 2026-10-23 (same run) | `supabase/simulator_registry.sql`, §11 |
 | Backtest 2010–2025 | Run (16 seasons × 4 as-of weeks × 2,000 runs) | `simulator/data/nfl_backtest.json`, §11.2 |
 | Reader (Simulator seat in `app.html`) | Implemented, tested in Chromium at three widths | `lib/edgedesk_simulator.js`, §13 |
-| GitHub Actions | Written, linted (actionlint 1.7.7); **never run on GitHub** | `.github/workflows/simulator*.yml`, `deploy-simulator.yml` |
+| GitHub Actions | Linted (actionlint 1.7.7); *Deploy simulator SQL* and *Simulator source check* have run on GitHub; the first *Simulator* publication runs from `main` | `.github/workflows/simulator*.yml`, `deploy-simulator.yml` |
 | 100,000-run benchmark | Executed: 15.7 s on 4 workers | §14 |
-| MLB season and postseason | Implemented, tested, studies committed; **BLOCKED for publication** (six 2026 facts unverified, live feed never run from the build environment) | [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) |
+
 | Other sports | Not active: BLOCKED or COMING SOON with named blockers | §4 |
 
 ---
@@ -48,7 +48,7 @@ deployment: §16 states exactly what exists and what does not.
 | `raw.githubusercontent.com`, `github.com` releases (nflverse) | yes | schedule, results, standings, the tiebreaker procedure transcription |
 | `registry.npmjs.org` | yes | the pinned dev-only typechecker |
 | `operations.nfl.com`, `www.nfl.com` | **no** (blocked by policy) | 2026 rules facts cannot be verified from the official pages |
-| `api.elections.kalshi.com`, `external-api.kalshi.com`, `kalshi.com` | **no** | no market's settlement rules could be read; fee schedule unverified |
+| `api.elections.kalshi.com`, `external-api.kalshi.com`, `kalshi.com` | **no** (from the build container) | read instead from GitHub's runners by `.github/workflows/simulator-sources.yml` (§7.5, §10) |
 | `en.wikipedia.org`, ESPN | **no** | no secondary confirmation of the Super Bowl LXI venue/date |
 | Supabase project | no credentials in the environment | nothing applied, nothing published |
 
@@ -106,10 +106,10 @@ it is stale.
 
 | Sport | Status | Structure | Owned model / data (evidence) | Exact blockers |
 |---|---|---|---|---|
-| **NFL** | **BLOCKED** (Implementable — implemented — blocked on verification) | season | served model `football/nfl_model.js`; schedule/results/standings from nflverse; rules engine reproduces 2002–2025 | 2026 tiebreaking procedures, 2026 playoff format and Super Bowl LXI venue/designated home not verified against the NFL's official pages (unreachable from the build environment) — §7.5 |
+| **NFL** | **ACTIVE** (verified 2026-10-23, §7.5) | season | served model `football/nfl_model.js`; schedule/results/standings from nflverse; rules engine reproduces 2002–2025 | 2026 tiebreaking procedures, 2026 playoff format and Super Bowl LXI venue/designated home not verified against the NFL's official pages (unreachable from the build environment) — §7.5 |
 | College football | BLOCKED (Implementable but blocked) | season | `football/cfb_p4` engine prices any rated FBS pairing offline | no 2026 conference title-game qualification rules/tiebreakers (9 FBS conferences); no 2026 CFP format/seeding/selection data or committee proxy; no neutral-site flags or committed full schedule (`football/fbs/.cache` is gitignored) |
 | NBA | BLOCKED | season | `nba/` model and injury layer | no 2026-27 conference/division table; 30 regular-season games (2 per club) depend on NBA Cup results and are not yet scheduled; no standings/tiebreaker/play-in/series code; no uncertainty study; the chosen model needs network-built `.cache/nba_work` tables |
-| NHL | BLOCKED | season | `hockey/` model (regulation/OT/shootout) | no committed full 2026-27 schedule (`hockey/build_slate.js` downloads into a gitignored cache); no alignment table; no points/regulation-wins/wild-card/series code; no uncertainty study; 60-minute draw under-priced (PROVISIONAL) |
+| NHL | BLOCKED (Implementable — implemented — blocked on verification) | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | 2026-27 tie-breaking procedure, playoff format and home-ice rule not verified against NHL.com (unreachable from the build environment); the reader has no NHL view; not in the nightly workflow (needs a pyarrow step) |
 | WNBA | BLOCKED | series | — | no series simulator or uncertainty study; the 2026 Finals end by 2026-10-31 |
 | **MLB** | **BLOCKED** (implemented — blocked on verification) | season | served lab brain `mlb/history/model.js` replayed point-in-time; Retrosheet 2010–2025 (+ postseason 2012–2025); live 2026 from MLB's Stats API; rules reproduce every 2012–2025 postseason pairing and host | 2026 alignment, postseason format, tiebreaker procedure, World Series home field and extra-inning rules not verified against MLB's pages (unreachable); the live 2026 feed never run from the build environment — [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) §15 |
 | College basketball | COMING SOON | tournament | `basketball/` | the 2026-27 season has not started; partial schedule with placeholder times; no conference membership, conference-tournament formats or NCAA selection/seed/bracket data |
@@ -226,15 +226,16 @@ started, replay code identity.
 ## 7. NFL rules (`simulator/src/sports/nfl/rules.ts`)
 
 ### 7.1 Source
-Procedure text: *NFL tiebreaking procedures* as transcribed verbatim from
-NFL.com / operations.nfl.com in the nflverse **nflseedR** vignette
-`vignettes/articles/tiebreaker.Rmd` (dated 2023-12-20),
-<https://raw.githubusercontent.com/nflverse/nflseedR/master/vignettes/articles/tiebreaker.Rmd>,
-retrieved 2026-10-23, applied to the **2026 season** as rules version
-`NFL-TB-2020` (2020–2026) and `NFL-TB-2002` (2002–2019, 6-club field, for the
-history tests). Official page to verify against:
-<https://operations.nfl.com/the-rules/nfl-tiebreaking-procedures/> (not
-reachable from the build environment). **Verification status: UNVERIFIED.**
+Procedure text: NFL.com, *NFL Tiebreaking Procedures*,
+<https://www.nfl.com/standings/tie-breaking-procedures>, fetched 2026-10-23 by
+GitHub Actions run 39950435701 (*Simulator source check*; HTTP 200, page sha256
+`268595de…`, text sha256 `876ae864…`), applied to the **2026 season** as rules
+version `NFL-TB-2020` (2020–2026) and `NFL-TB-2002` (2002–2019, 6-club field,
+for the history tests). The engine was first written from the same text as
+transcribed in the nflverse **nflseedR** vignette
+(<https://raw.githubusercontent.com/nflverse/nflseedR/master/vignettes/articles/tiebreaker.Rmd>).
+`operations.nfl.com/the-rules/nfl-tiebreaking-procedures` answered 404 on
+2026-10-23. **Verification status: VERIFIED (2026-10-23, §7.5).**
 
 ### 7.2 Procedure as implemented
 Ties count half a win and half a loss.
@@ -282,20 +283,47 @@ test uses an independent reference with per-season convention detection.
 
 ### 7.4 Super Bowl designated home
 The served model reads the designated home club's context terms even at a
-neutral site. Owned data: nflverse lists the NFC club as home in every
-odd-numbered Super Bowl and the AFC club in every even-numbered one, 24 of 24
-(XXXVII–LX, 2002–2025; re-derived by `nfl_config.test.ts`). LXI (2026 season)
-is odd → **NFC**. (An earlier draft said AFC from memory; the owned data
-contradicted it and won — repair log §15.) Venue SoFi Stadium (dome, per the
-stadium table) and date 2027-02-14 are **recalled, not verified**.
+neutral site (flipping the designation moves Super Bowl margins by up to 0.33
+points; measured). NFL.com, *Bengals, not Rams, are official home team for
+Super Bowl LVI at SoFi Stadium*: "The home team designation for the Super Bowl
+alternates each year between the AFC and NFC champions." LVI was AFC (the
+Bengals), so LVII NFC, LVIII AFC, LIX NFC, LX AFC, **LXI NFC** — the same
+alternation nflverse shows for every Super Bowl 2002–2025 (24 of 24, re-derived
+by `nfl_config.test.ts`). (An earlier draft said AFC from memory; the owned
+data contradicted it and won — repair log §15.) Venue: NFL.com, *SoFi Stadium
+approved to host Super Bowl LXI in 2027*: "Super Bowl LXI in February 2027 will
+be played at SoFi Stadium in Inglewood" (dome, per the stadium table). Date:
+not asserted (`null`) — the NFL text says February 2027, and no Super Bowl
+price depends on the date (all 256 pairs unchanged with the date set, moved a
+week, or absent; measured).
 
-### 7.5 What blocks publication
-Three facts in `simulator/src/sports/nfl/config.ts`, each `affects_results:
-true`, `verification: 'UNVERIFIED'`, `verified_by: null`: the 2026 tiebreaking
-procedures, the 2026 playoff format, and Super Bowl LXI's venue/designated
-home. A fact counts as verified only with `VERIFIED`, a named verifier and a
-date. Postseason rest (bye and Super Bowl clubs 14 days; others the model's
-7-day default) is an **Estimated** input, labelled as such.
+### 7.5 Verification (2026-10-23)
+The build container cannot reach the NFL's sites, so
+`.github/workflows/simulator-sources.yml` reads them from GitHub's runners and
+prints each page whole with its sha256 (`simulator/src/cli/fetch_sources.ts`;
+read-only, no secret). From run 39950435701:
+
+- **Tiebreaking procedures** — the NFL.com text matches `rules.ts` step for
+  step (§7.2) and in every "other procedure".
+- **Playoff format** — the same page: three Wild-Card clubs per conference; the
+  selection-meeting order has 18 non-playoff clubs, 6 Wild Card losers,
+  4 Divisional losers and 2 Conference Championship losers (14 clubs, one bye
+  per conference); home-field priority among division winners by the Wild Card
+  tiebreakers. Seeding order and reseeding: the 2020–2025 postseasons in
+  nflverse, reproduced by `nfl_rules_history.test.ts`.
+- **Nothing changed for 2026** — the league's *Approved 2026 Playing Rules,
+  Bylaws and Resolutions* (media.nfl.com, adopted March 31, 2026 in Phoenix:
+  five playing rules on kickoffs, onside kicks, disqualification review and
+  officiating; three roster and calendar bylaws; one free-agency resolution)
+  and the 2026 proposals contain no tiebreaking, seeding or playoff change.
+- **Super Bowl LXI** — §7.4.
+
+Each fact in `simulator/src/sports/nfl/config.ts` is `VERIFIED` with its
+sources, their sha256, `verified_by` (this session, at the owner's request,
+naming the Actions run) and `verified_at: 2026-10-23`; the registry and the
+publisher read them, so the NFL is **ACTIVE**. Postseason rest (bye and Super
+Bowl clubs 14 days; others the model's 7-day default) remains an **Estimated**
+input, labelled as such. Re-verify each season: re-run the source check.
 
 ---
 
@@ -348,19 +376,35 @@ reach divisional round, reach conference final, win conference, win Super Bowl.
 
 ## 10. Kalshi futures (`simulator/src/markets/`, `simulator/config/kalshi_futures.json`)
 
-- **Exact mapping only.** A market is compared only when a person mapped it to
-  one simulated outcome after reading its settlement rules (rules sha256,
-  `verified_by`, `verified_at`). `kalshi_discover.ts` lists candidates to
-  `simulator/out/` and never writes the config. **Mappings today: none.**
+- **Exact mapping only.** 352 markets, generated by
+  `simulator/src/cli/build_kalshi_mappings.ts` from the markets Kalshi's API
+  returned to *Simulator source check* run 39952027751: Super Bowl (KXSB, 32),
+  AFC/NFC champion (16 + 16), the eight division winners (4 each), playoff
+  qualifiers (32), #1 seed (32) and seeds 2–7 (192). A market is mapped only
+  when its rules match its series' template word for word, name the club its
+  ticker and label name, carry nothing beyond Kalshi's standard disclaimer, and
+  its series is the quadratic fee type with multiplier 1; each mapping stores
+  the rules sha256, and a market whose wording later changes is excluded until
+  it is mapped again. Exact division order, Super Bowl matchups, seed
+  over/unders and other series with no simulated outcome are not mapped.
+  25 complete, mutually exclusive sets (Super Bowl, each conference champion,
+  each division, each conference's seed k) may be normalised; playoff
+  qualifiers never are.
 - **Reference vs executable, separately.** Reference = YES bid/ask midpoint,
   only when two-sided and the spread ≤ 0.06 (`kalshi_rule('max_spread')`);
   the midpoint is never executable. Executable = the YES ask at the configured
   quantity (10), only with displayed size at that quantity.
 - **Normalization** only across a complete, mutually exclusive outcome set
   with every quote inside a 10-minute skew; otherwise none.
-- **Fees.** Formula recorded (`ceil_to_cent(rate × contracts × P × (1 − P))`,
-  rate 0.07, taker) but **unverified**: until verified with a source URL and
-  date, every executable figure is labelled pre-fee and nothing is flagged.
+- **Fees** (verified 2026-10-23). Kalshi's quadratic taker fee
+  0.07 × M × C × P × (1 − P): the docs' worked example (a $0.00363825 model fee
+  on a $0.055 buy = 0.07 × 0.055 × 0.945) and the OpenAPI fee types; every
+  mapped series is quadratic (or quadratic with maker fees, which changes only
+  the maker side) with M = 1; no mapped event overrides it and no change is
+  scheduled. The comparison rounds the order's fee up to the cent: exact on a
+  $0.01 (FCM-cleared) balance grid, an upper bound by under $0.01 per order on a
+  direct member's $0.0001 grid. The fee schedule PDF itself answered the runner
+  with a 429 challenge page.
 - **Flags** need a fresh (≤ 30 min) quote, a verified mapping, size, verified
   fees, an executable edge ≥ 3 points and ≥ 4 Monte Carlo SEs. A stale or
   ambiguous input blocks the flag with a reason. Flag snapshots are immutable.
@@ -516,22 +560,29 @@ are the served model's (which does not beat the closing line in its
 walk-forward record); no injury return sampling and no new injuries; ratings
 frozen at the as-of date and no drift; Estimated points for points-ranking
 ties and coin tosses for net-touchdown ties (counted); Estimated postseason
-rest and Super Bowl context; Monte Carlo ± is simulation noise only.
+rest; Monte Carlo ± is simulation noise only.
 
-**Deployment status, exactly:**
-- Code, SQL, workflows, docs and tests: committed on
-  `claude/simulator-monte-carlo-engine-nl41wq` (draft PR); **not merged**.
+**Deployment status, exactly (2026-10-23):**
+- Code, SQL, workflows, docs and tests: merged to `main` (#695, #696); the
+  verification, the Kalshi mappings and the source check land with #697.
 - Database: `supabase/simulator.sql` and `supabase/simulator_registry.sql`
-  **not applied** to any Supabase project (no credentials here; applying is a
-  manual step).
-- Publication: **none**. The NFL is BLOCKED; the publisher and the workflow's
-  plan step both refuse it.
-- GitHub Actions: workflows written and linted, **never executed on GitHub**.
-- Kalshi: **no mapping, fee schedule unverified** → comparison unavailable.
-- Nothing is "production-ready", "deployed" or a "validated edge".
+  **applied to production** by *Deploy simulator SQL* run 39947585888; every
+  report row `ok` (the entitlement gate finds `community_is_entitled`).
+- NFL: **ACTIVE** (§7.5). The first 100,000-run publication is made from `main`
+  by the *Simulator* workflow; the nightly job (10:17 UTC) publishes after it.
+- Kalshi: 352 markets mapped, fees verified; compared after each publication by
+  the *markets* job. A flag still needs every condition in this section.
+- Nothing here is a "validated edge": the model is EXPERIMENTAL (§11).
 
-**To activate the NFL:** §7.5 verification → apply the SQL → first manual
-publication → nightly (docs/simulator/README.md, "Deployment sequence").
+**Each season:** re-run *Simulator source check*, compare the NFL's pages with
+§7, regenerate the Kalshi mappings (`build_kalshi_mappings.ts`), then verify
+in a reviewed commit (docs/simulator/README.md, "Deployment sequence").
+
+**The NHL** (season and Stanley Cup simulator, command line only) has its own
+record: [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) — the
+regulation/OT/shootout model check, the goal-distribution validation, the
+strength study, the rules and their history evidence, goalie and overtime
+limitations, and what blocks publication.
 
 ---
 
@@ -549,7 +600,7 @@ simulator/src/sports/factory.ts
 simulator/src/sports/nfl/                  config, rules, model_adapter, points_model, inputs, validate, module
 simulator/src/markets/                     compare.ts, kalshi.ts
 simulator/src/publish/                     db.ts, publish.ts
-simulator/src/cli/                         run, markets, kalshi_discover, plan, alert, build_ui_registry, build_fixture
+simulator/src/cli/                         run, markets, kalshi_discover, fetch_sources, build_kalshi_mappings, plan, alert, build_ui_registry, build_fixture
 simulator/src/research/                    nfl_replay, nfl_strength_uncertainty, nfl_backtest, build_nfl_history_fixture, build_registry_sql
 simulator/research/registration.json
 simulator/config/kalshi_futures.json
@@ -558,7 +609,7 @@ simulator/fixtures/                        nfl_history.json.gz, nfl_2026_wk7_sna
 simulator/tests/                           12 suites + _kit.ts, _fixture.ts
 supabase/simulator.sql, supabase/migrations/20261023120000_simulator.sql, supabase/simulator_registry.sql
 lib/edgedesk_simulator.js, lib/edgedesk_simulator.css, lib/edgedesk_simulator_sports.js (generated)
-.github/workflows/simulator.yml, simulator-tests.yml, deploy-simulator.yml
+.github/workflows/simulator.yml, simulator-tests.yml, deploy-simulator.yml, simulator-sources.yml
 modified: app.html, lib/edgedesk_workspace_ui.js, package.json (sim:* scripts), .env.example, .gitignore, README.md, supabase/README.md,
           tools/app/navigation.test.js, tools/app/navigation.e2e.js, tools/portfolio/portfolio_ui.test.js
 ```

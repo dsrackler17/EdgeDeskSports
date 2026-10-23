@@ -10,6 +10,7 @@ import { parseArgs, execute } from '../src/cli/run.ts';
 import { planRuns } from '../src/cli/plan.ts';
 import { writeSnapshot, readSnapshot, codeHashes } from '../src/sports/nfl/inputs.ts';
 import { hashCanonical, canonicalJson } from '../src/core/canonical.ts';
+import { sportRegistry } from '../src/sports/registry.ts';
 
 const T = kit('simulator command line');
 const quiet = () => {};
@@ -36,7 +37,13 @@ const quiet = () => {};
   T.throws('a season other than the configured one', () => planRuns('workflow_dispatch', { ...ok, season: '2025' }), /season must be 2026/);
   T.throws('a sport without a module', () => planRuns('workflow_dispatch', { ...ok, sport: 'nba' }), /no simulation module/);
   T.throws('publish must be a boolean', () => planRuns('workflow_dispatch', { ...ok, publish: 'yes' }), /publish must be/);
-  T.throws('publishing a BLOCKED sport is refused before anything runs', () => planRuns('workflow_dispatch', { ...ok, publish: 'true' }), /BLOCKED/);
+  const blocked = sportRegistry().map((r) => r.key === 'nfl' ? { ...r, status: 'BLOCKED' as const, blockers: ['TEST: an unverified fact'] } : r);
+  T.throws('publishing a BLOCKED sport is refused before anything runs', () => planRuns('workflow_dispatch', { ...ok, publish: 'true' }, blocked), /BLOCKED/);
+  const nfl = sportRegistry().find((r) => r.key === 'nfl')!;
+  if (nfl.status === 'ACTIVE') {
+    T.chk('an ACTIVE sport plans a publication at 100,000 runs', planRuns('workflow_dispatch', { ...ok, publish: 'true' })[0].publish === true);
+    T.throws('...but never with fewer than 100,000 runs', () => planRuns('workflow_dispatch', { ...ok, runs: '99999', publish: 'true' }), /at least 100000/);
+  }
   const sch = planRuns('schedule', {});
   T.chk('the schedule plans every runnable sport at 100,000 runs, publishing only an ACTIVE one', sch.length === 1 && sch[0].runs === '100000' && sch[0].publish === (sch[0].status === 'ACTIVE'));
   T.throws('an unknown event', () => planRuns('push', {}), /unsupported event/);
@@ -69,7 +76,8 @@ try {
   T.chk('every format sum holds in the replay', a.results.checks.sum_rule_errors.length === 0 && a.results.checks.finite_and_bounded);
   const gate = (o: typeof a, id: string) => o.gates.find((g) => g.id === id)!;
   T.chk('3,000 runs can never be published (run.count blocks publication)', gate(a, 'run.count').blocks === 'publication' && !a.publishable);
-  T.chk('a BLOCKED sport can never be published (sport.active blocks publication)', gate(a, 'sport.active').status === 'FAIL' && gate(a, 'sport.active').blocks === 'publication');
+  const st = sportRegistry().find((r) => r.key === 'nfl')!.status;
+  T.chk('the sport.active gate follows the registry: it blocks publication unless the sport is ACTIVE', gate(a, 'sport.active').status === (st === 'ACTIVE' ? 'PASS' : 'FAIL') && gate(a, 'sport.active').blocks === (st === 'ACTIVE' ? 'none' : 'publication'));
   const files = fs.readdirSync(path.join(tmp, 'a')).sort();
   T.eq('a dry run writes the snapshot, results, gates and manifest locally, and no publish record', files, ['gates.json', 'manifest.json', 'results.json', 'snapshot.json']);
   const man = JSON.parse(fs.readFileSync(path.join(tmp, 'a', 'manifest.json'), 'utf8'));

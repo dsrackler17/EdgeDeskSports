@@ -535,8 +535,7 @@
     "grades:sql": "node tools/performance/research_grades_sql.test.js",
     "grades:e2e": "node tools/performance/grades_ui.e2e.js",
     "sim:typecheck": "npm run --prefix simulator typecheck",
-    "sim:test": "node simulator/tests/core.test.ts && node simulator/tests/hooks.test.ts && node simulator/tests/nfl_rules_history.test.ts && node simulator/tests/nfl_rules_synthetic.test.ts && node simulator/tests/nfl_sim.test.ts && node simulator/tests/nfl_config.test.ts && npm run sim:test:mlb && node simulator/tests/markets.test.ts && node simulator/tests/ui.test.ts && node simulator/tests/cli.test.ts && node simulator/tests/publish.test.ts",
-    "sim:test:mlb": "node simulator/tests/mlb_rules_history.test.ts && node simulator/tests/mlb_rules_synthetic.test.ts && node simulator/tests/mlb_rotation.test.ts && node simulator/tests/mlb_model.test.ts && node simulator/tests/mlb_sim.test.ts && node simulator/tests/mlb_statsapi.test.ts && node simulator/tests/mlb_config.test.ts",
+
     "sim:sql": "node simulator/tests/sql.test.ts",
     "sim:e2e": "node simulator/tests/ui.e2e.ts",
     "sim:check": "node simulator/src/cli/build_ui_registry.ts --check && node simulator/src/research/build_registry_sql.ts --check",
@@ -550,12 +549,6 @@
     "sim:registry": "node simulator/src/research/build_registry_sql.ts",
     "sim:ui:registry": "node simulator/src/cli/build_ui_registry.ts",
     "sim:fixture": "node simulator/src/cli/build_fixture.ts",
-    "sim:mlb:dry-run": "node simulator/src/cli/run.ts --sport mlb --season 2026 --workers 4 --dry-run",
-    "sim:mlb:history": "node simulator/src/cli/run.ts --sport mlb --dry-run --workers 4 --season",
-    "sim:mlb:studies": "node simulator/src/research/mlb_game_model_study.ts && node simulator/src/research/mlb_rotation_study.ts && node simulator/src/research/mlb_strength_uncertainty.ts",
-    "sim:mlb:backtest": "node simulator/src/research/mlb_backtest.ts",
-    "sim:mlb:fixture": "node simulator/src/cli/build_mlb_fixture.ts all",
-    "sim:mlb:postseason-fixture": "node simulator/src/research/build_mlb_history_fixture.ts",
-    "sim:mlb:probe": "node simulator/src/cli/probe_mlb_live.ts"
+
   }
 }

@@ -1,0 +1,610 @@
+{
+ "schema": "edgedesk_sim_cfb_strength_uncertainty_v1",
+ "generated_by": "simulator/src/research/cfb_strength_uncertainty.ts",
+ "model_version": "edgedesk_cfb_p4_v1.0.1",
+ "replay": {
+  "from": 2014,
+  "to": 2025,
+  "asOfWeeks": [
+   4,
+   7,
+   10
+  ],
+  "replay_from": 2006,
+  "method": "cfb_replay.ts: football/cfb_p4 engine cold walk-forward (backtest_engine.js), frozen after regular-season week K",
+  "rows": 23698,
+  "refused": {
+   "pre:INSUFFICIENT_DATA": 17
+  }
+ },
+ "method": "win-total calibration: tau where pooled simulated variance of remaining wins equals pooled mean squared deviation of actual remaining wins from the simulated mean; 400 offset draws per cell (common random numbers), tau grid 0-8 by 0.1, linear interpolation; season bootstrap 2000",
+ "estimation_seasons": [
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2021,
+  2022,
+  2023
+ ],
+ "holdout_seasons": [
+  2024,
+  2025
+ ],
+ "excluded": {
+  "2020": "shortened, irregular season (cancellations, conference-only schedules)"
+ },
+ "by_as_of_week": {
+  "4": {
+   "tau": 6.284621,
+   "tau_ci95": [
+    5.504982,
+    6.931456
+   ],
+   "estimation": {
+    "at_tau": {
+     "emp": 2.68141,
+     "sim": 2.68141,
+     "n": 1168
+    },
+    "at_zero": {
+     "emp": 2.679275,
+     "sim": 1.576792,
+     "n": 1168
+    }
+   },
+   "holdout": {
+    "seasons": [
+     2024,
+     2025
+    ],
+    "at_tau": {
+     "emp": 2.807638,
+     "sim": 2.777657,
+     "n": 270
+    },
+    "at_zero": {
+     "emp": 2.819851,
+     "sim": 1.625418,
+     "n": 270
+    },
+    "tau_fitted_on_holdout_for_reference_only": 6.364335
+   },
+   "per_season_tau": {
+    "2014": 4.007968,
+    "2015": 6.67311,
+    "2016": 7.9763,
+    "2017": 6.513382,
+    "2018": 4.43795,
+    "2019": 6.521137,
+    "2021": 6.540981,
+    "2022": 5.649792,
+    "2023": 7.066621,
+    "2024": 6.520326,
+    "2025": 6.212467
+   },
+   "additive_alternative": {
+    "tau": 6.779055,
+    "note": "tau stacked on top of sigma (rejected: per-game probabilities become underconfident)"
+   }
+  },
+  "7": {
+   "tau": 5.144162,
+   "tau_ci95": [
+    4.55307,
+    5.67436
+   ],
+   "estimation": {
+    "at_tau": {
+     "emp": 1.383549,
+     "sim": 1.383549,
+     "n": 1168
+    },
+    "at_zero": {
+     "emp": 1.380902,
+     "sim": 1.054154,
+     "n": 1168
+    }
+   },
+   "holdout": {
+    "seasons": [
+     2024,
+     2025
+    ],
+    "at_tau": {
+     "emp": 1.531048,
+     "sim": 1.500153,
+     "n": 270
+    },
+    "at_zero": {
+     "emp": 1.537327,
+     "sim": 1.131909,
+     "n": 270
+    },
+    "tau_fitted_on_holdout_for_reference_only": 5.351867
+   },
+   "per_season_tau": {
+    "2014": 6.066842,
+    "2015": 4.75927,
+    "2016": 4.987188,
+    "2017": 4.67634,
+    "2018": 3.106209,
+    "2019": 4.828055,
+    "2021": 6.647716,
+    "2022": 5.154891,
+    "2023": 5.11828,
+    "2024": 5.999397,
+    "2025": 4.606908
+   },
+   "additive_alternative": {
+    "tau": 5.166671,
+    "note": "tau stacked on top of sigma (rejected: per-game probabilities become underconfident)"
+   }
+  },
+  "10": {
+   "tau": 5.209619,
+   "tau_ci95": [
+    2.812584,
+    6.763432
+   ],
+   "estimation": {
+    "at_tau": {
+     "emp": 0.636413,
+     "sim": 0.636413,
+     "n": 1168
+    },
+    "at_zero": {
+     "emp": 0.637331,
+     "sim": 0.555974,
+     "n": 1168
+    }
+   },
+   "holdout": {
+    "seasons": [
+     2024,
+     2025
+    ],
+    "at_tau": {
+     "emp": 0.814631,
+     "sim": 0.748995,
+     "n": 270
+    },
+    "at_zero": {
+     "emp": 0.810047,
+     "sim": 0.642002,
+     "n": 270
+    },
+    "tau_fitted_on_holdout_for_reference_only": 6.636339
+   },
+   "per_season_tau": {
+    "2014": 7.699864,
+    "2015": 2.42839,
+    "2016": 4.155678,
+    "2017": 0,
+    "2018": 5.365579,
+    "2019": 3.772876,
+    "2021": 4.562861,
+    "2022": 8,
+    "2023": 7.793908,
+    "2024": 7.291539,
+    "2025": 5.917403
+   },
+   "additive_alternative": {
+    "tau": 4.631004,
+    "note": "tau stacked on top of sigma (rejected: per-game probabilities become underconfident)"
+   }
+  }
+ },
+ "production": {
+  "model": "margin = fair + d_home - d_away + e; d ~ Normal(0, tau^2) per team per run; e ~ Normal(0, sigma^2 - k tau^2) per game (k FBS sides)",
+  "as_of_week_rule": "the nearest studied as-of week at or below the snapshot's as-of week (4, 7, 10)",
+  "distribution": "normal",
+  "fcs_offset": "none (FCS opponents are priced at the engine's single FCS floor rating)"
+ },
+ "per_game_calibration": {
+  "note": "frozen forecasts 2014-2025 (2020 excluded), favourite perspective. The decomposed simulator's per-game probability equals the engine's (exact for a normal margin), so `simulator` is the engine column; `additive_alternative` is Phi(f / sqrt(sigma^2 + k tau_add^2)) with the additive fit's week-7 tau",
+  "simulator_fbs": [
+   {
+    "bucket": [
+     0.5,
+     0.6
+    ],
+    "n": 3143,
+    "predicted": 0.550362,
+    "won": 0.547248,
+    "wilson95": [
+     0.529799,
+     0.564582
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.6,
+     0.7
+    ],
+    "n": 3036,
+    "predicted": 0.649068,
+    "won": 0.642292,
+    "wilson95": [
+     0.625072,
+     0.659153
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.7,
+     0.8
+    ],
+    "n": 2627,
+    "predicted": 0.748629,
+    "won": 0.745337,
+    "wilson95": [
+     0.728327,
+     0.76163
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.8,
+     0.9
+    ],
+    "n": 2244,
+    "predicted": 0.847959,
+    "won": 0.848039,
+    "wilson95": [
+     0.832592,
+     0.862297
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.9,
+     0.95
+    ],
+    "n": 777,
+    "predicted": 0.923204,
+    "won": 0.918919,
+    "wilson95": [
+     0.897602,
+     0.936114
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.95,
+     0.98
+    ],
+    "n": 345,
+    "predicted": 0.964142,
+    "won": 0.962319,
+    "wilson95": [
+     0.936607,
+     0.977849
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.98,
+     1
+    ],
+    "n": 125,
+    "predicted": 0.988068,
+    "won": 0.984,
+    "wilson95": [
+     0.943537,
+     0.995601
+    ],
+    "verdict": "within interval"
+   }
+  ],
+  "simulator_fcs": [
+   {
+    "bucket": [
+     0.5,
+     0.6
+    ],
+    "n": 1,
+    "predicted": 0.506971,
+    "won": 1,
+    "wilson95": [
+     0.206549,
+     1
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.6,
+     0.7
+    ],
+    "n": 8,
+    "predicted": 0.671466,
+    "won": 0.5,
+    "wilson95": [
+     0.215216,
+     0.784784
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.7,
+     0.8
+    ],
+    "n": 19,
+    "predicted": 0.756068,
+    "won": 0.947368,
+    "wilson95": [
+     0.753613,
+     0.990648
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.8,
+     0.9
+    ],
+    "n": 39,
+    "predicted": 0.855922,
+    "won": 0.897436,
+    "wilson95": [
+     0.764211,
+     0.959387
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.9,
+     0.95
+    ],
+    "n": 38,
+    "predicted": 0.927108,
+    "won": 0.921053,
+    "wilson95": [
+     0.792006,
+     0.972785
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.95,
+     0.98
+    ],
+    "n": 94,
+    "predicted": 0.967003,
+    "won": 0.978723,
+    "wilson95": [
+     0.92571,
+     0.994146
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.98,
+     1
+    ],
+    "n": 152,
+    "predicted": 0.993205,
+    "won": 1,
+    "wilson95": [
+     0.97535,
+     1
+    ],
+    "verdict": "within interval"
+   }
+  ],
+  "additive_alternative_tau": 5.166671,
+  "additive_alternative_fbs": [
+   {
+    "bucket": [
+     0.5,
+     0.6
+    ],
+    "n": 3519,
+    "predicted": 0.550484,
+    "won": 0.556408,
+    "wilson95": [
+     0.539941,
+     0.572752
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.6,
+     0.7
+    ],
+    "n": 3215,
+    "predicted": 0.648633,
+    "won": 0.649145,
+    "wilson95": [
+     0.632479,
+     0.665454
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.7,
+     0.8
+    ],
+    "n": 2695,
+    "predicted": 0.747745,
+    "won": 0.773284,
+    "wilson95": [
+     0.757093,
+     0.788696
+    ],
+    "verdict": "UNDERCONFIDENT"
+   },
+   {
+    "bucket": [
+     0.8,
+     0.9
+    ],
+    "n": 2038,
+    "predicted": 0.845699,
+    "won": 0.873405,
+    "wilson95": [
+     0.858263,
+     0.887143
+    ],
+    "verdict": "UNDERCONFIDENT"
+   },
+   {
+    "bucket": [
+     0.9,
+     0.95
+    ],
+    "n": 564,
+    "predicted": 0.92324,
+    "won": 0.934397,
+    "wilson95": [
+     0.910884,
+     0.952033
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.95,
+     0.98
+    ],
+    "n": 219,
+    "predicted": 0.963776,
+    "won": 0.990868,
+    "wilson95": [
+     0.96732,
+     0.997492
+    ],
+    "verdict": "UNDERCONFIDENT"
+   },
+   {
+    "bucket": [
+     0.98,
+     1
+    ],
+    "n": 47,
+    "predicted": 0.987865,
+    "won": 1,
+    "wilson95": [
+     0.924442,
+     1
+    ],
+    "verdict": "within interval"
+   }
+  ],
+  "additive_alternative_fcs": [
+   {
+    "bucket": [
+     0.5,
+     0.6
+    ],
+    "n": 1,
+    "predicted": 0.506574,
+    "won": 1,
+    "wilson95": [
+     0.206549,
+     1
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.6,
+     0.7
+    ],
+    "n": 10,
+    "predicted": 0.668056,
+    "won": 0.5,
+    "wilson95": [
+     0.236593,
+     0.763407
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.7,
+     0.8
+    ],
+    "n": 24,
+    "predicted": 0.762596,
+    "won": 0.916667,
+    "wilson95": [
+     0.741512,
+     0.976841
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.8,
+     0.9
+    ],
+    "n": 39,
+    "predicted": 0.860132,
+    "won": 0.948718,
+    "wilson95": [
+     0.831144,
+     0.985822
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.9,
+     0.95
+    ],
+    "n": 56,
+    "predicted": 0.931454,
+    "won": 0.946429,
+    "wilson95": [
+     0.853927,
+     0.981614
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.95,
+     0.98
+    ],
+    "n": 91,
+    "predicted": 0.966891,
+    "won": 0.978022,
+    "wilson95": [
+     0.923368,
+     0.993952
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.98,
+     1
+    ],
+    "n": 130,
+    "predicted": 0.992689,
+    "won": 1,
+    "wilson95": [
+     0.971298,
+     1
+    ],
+    "verdict": "within interval"
+   }
+  ]
+ }
+}
