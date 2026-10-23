@@ -31,6 +31,7 @@ import { executeWnba } from '../src/sports/wnba/run.ts';
 import { buildWnbaSnapshot } from '../src/sports/wnba/inputs.ts';
 import { executeUfc } from '../src/sports/ufc/run.ts';
 import { buildUfcSnapshot } from '../src/sports/ufc/inputs.ts';
+import { executeGolf } from '../src/sports/golf/run.ts';
 import os from 'node:os';
 
 const require = createRequire(import.meta.url);
@@ -111,6 +112,15 @@ const UFC_RUN_ID = 'dddddddd-eeee-ffff-0000-111111111111';
 const urun = { ...run, run_id: UFC_RUN_ID, sport: 'ufc', season: '2026', n_sims: 3000, seed: '9', model_version: uout.results.run.model_version, rules_version: uout.results.run.rules_version, comparison_id: null,
   validation_summary: { flags: uout.results.flags, sport_summary: (uout.results as any).sport_summary } };
 const urows = resultRows(uout as any), uents = entityRows(uout as any);
+/* golf: the committed current tour events, simulated offline (3,000 runs each), one competition per event, through
+   the publisher's row builders */
+const gout = await executeGolf({ season: 2026, runs: 3000, seed: '5', workers: 1, snapshot: null, out: fs.mkdtempSync(path.join(os.tmpdir(), 'golf-e2e-')), traceRuns: [], offline: true }, () => {});
+const golf = gout.runs.map((r, i) => {
+  const id = 'eeeeeeee-0000-0000-0000-00000000000' + i, comp = r.results.run.competition;
+  return { id, comp, run: { ...run, run_id: id, sport: 'golf', competition: comp, season: '2026', n_sims: 3000, seed: '5', model_version: r.results.run.model_version, rules_version: r.results.run.rules_version, comparison_id: null,
+    validation_summary: { flags: r.results.flags, sport_summary: (r.results as any).sport_summary } }, rows: resultRows(r as any), ents: entityRows(r as any) };
+});
+const golfOf = (u: string) => golf.find((g) => u.includes(g.id) || u.includes(encodeURIComponent(g.id)) || u.includes('competition=eq.' + encodeURIComponent(g.comp))) || null;
 const EVIL = '<img src=x onerror="window.__xss=1">';
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 
@@ -162,11 +172,13 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         const J = (b: unknown, st = 200) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(b) });
         /* PostgREST pages: limit and offset, as the reader asks (an NBA run publishes 1,050 result rows, a UFC run about 1,500) */
         const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus]); }
+        const gstatus = golf.map((g) => ({ ...status, sport: 'golf', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
+        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, ...gstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
-        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [isUfc(u) ? urun : isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run] : []);
-        if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(isUfc(u) ? urows : isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
-        if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(isUfc(u) ? uents : isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
+        const g = /sport=eq\.golf|eeeeeeee-/.test(u) ? golfOf(u) : null;
+        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? (g ? [g.run] : /sport=eq\.golf/.test(u) ? [] : [isUfc(u) ? urun : isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run]) : []);
+        if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(g ? g.rows : isUfc(u) ? urows : isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
+        if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(g ? g.ents : isUfc(u) ? uents : isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
         if (/sim_current_edges/.test(u)) return J(sc.entitled ? edges : []);
         if (/subscriptions/.test(u)) return J([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]);
         /* an onboarded reader: without it the personal desk's first-run walkthrough opens over the page once it is quiet */
@@ -327,6 +339,42 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       T.chk(W + ': UFC Model Health: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
       await shot(page, 'sim-ufc-health-' + W);
       T.eq(W + ': UFC: no page errors', errors, []);
+      await ctx.close();
+    }
+    /* golf (its own adapter: Leaderboard, Finishes, Model Health; one competition per tour event, a tour picker) */
+    if (golf.length) for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width;
+      const { ctx, page, errors } = await open(vp, '#simulator/golf', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/golf')); await page.waitForTimeout(600);
+      let t = await text(page);
+      T.chk(W + ': golf: the tabs are Leaderboard, Finishes and Model Health, Leaderboard open', /Finishes/.test(await page.locator('#simHost .sm-tabs').innerText()) && /Model Health/.test(await page.locator('#simHost .sm-tabs').innerText()) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Leaderboard');
+      T.chk(W + ': golf Leaderboard: the event, the field with win/top 5/10/20, fair odds and the dead-heat note', /3,000 simulated tournaments/.test(t) && /Top 10/.test(t) && /dead-heat expectation/.test(t) && (await page.locator('#simHost .sm-tbl tbody tr').count()) > 50);
+      if (golf.length > 1) T.chk(W + ': golf: a tour picker with every tour\'s event', (await page.locator('#simHost [data-sim-act="tour"]').count()) === golf.length);
+      T.chk(W + ': golf Leaderboard: no horizontal page scroll (the table scrolls in its card)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1), await page.evaluate(() => [document.scrollingElement!.scrollWidth, window.innerWidth]));
+      await shot(page, 'sim-golf-leaderboard-' + W);
+      /* the table scrolls in its card under a sticky player column: bring the header into the open part first, as a reader would */
+      await page.evaluate(() => { const b = document.querySelector('#simHost [data-sim-act="sort"][data-sim-val="top_20"]') as HTMLElement, sc = b.closest('.sm-scroll') as HTMLElement, th = sc.querySelector('th') as HTMLElement;
+        sc.scrollLeft += b.getBoundingClientRect().left - sc.getBoundingClientRect().left - th.getBoundingClientRect().width - 8; });
+      await page.click('#simHost [data-sim-act="sort"][data-sim-val="top_20"]'); await page.waitForTimeout(150);
+      T.chk(W + ': golf Leaderboard: a column header sorts the table', (await page.locator('#simHost .sm-sort.on').innerText()).startsWith('Top 20'));
+      await page.click('#simHost [data-sim-tab="finishes"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': golf Finishes: the most likely winners, where each player finishes, fair odds, the winning score', (await page.locator('#simHost .sm-club').count()) === 6 && /Where each player finishes/.test(t) && /Win American/.test(t) && /The winning score/.test(t));
+      T.chk(W + ': golf Finishes: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-golf-finishes-' + W);
+      await page.click('#simHost [data-sim-tab="model_health"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': golf Model Health: the backtest in plain words and what the model does not know', /Does it work\?/.test(t) && /What the model does not know/.test(t));
+      T.chk(W + ': golf Model Health: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-golf-health-' + W);
+      if (golf.length > 1) {
+        const other = golf.find((x) => !x.comp.startsWith('pga-')) || golf[1], tr = other.comp.split('-')[0];
+        await page.click('#simHost [data-sim-act="tour"][data-sim-val="' + tr + '"]'); await page.waitForTimeout(500);
+        await page.click('#simHost [data-sim-tab="leaderboard"]'); await page.waitForTimeout(150);
+        T.chk(W + ': golf: switching tour shows that tour\'s event', (await text(page)).includes((other.run.validation_summary as any).sport_summary.event.name));
+        await shot(page, 'sim-golf-' + tr + '-' + W);
+      }
+      T.eq(W + ': golf: no page errors', errors, []);
       await ctx.close();
     }
     {

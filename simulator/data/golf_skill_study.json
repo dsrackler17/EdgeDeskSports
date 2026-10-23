@@ -1,0 +1,1978 @@
+{
+ "schema": "edgedesk_sim_golf_skill_study_v1",
+ "generated_at": "2026-10-23T21:36:10.682Z",
+ "data": {
+  "file": "simulator/data/feeds/golf_events.json.gz",
+  "fetched_at": "2026-10-23T20:27:16.550Z",
+  "sha256": "105fad0248e7313eda1fbed6a00a791353a5fe1887b4a54db04019820c468327",
+  "events": 412,
+  "excluded": [
+   {
+    "key": "pga:401465511",
+    "name": "Zurich Classic of New Orleans",
+    "reason": "team event (competitors are pairs)"
+   },
+   {
+    "key": "pga:401546052",
+    "name": "The Match",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "pga:401465540",
+    "name": "Barracuda Championship",
+    "reason": "not stroke play (round values are points: modified Stableford)"
+   },
+   {
+    "key": "pga:401552863",
+    "name": "Ryder Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "pga:401580361",
+    "name": "Barracuda Championship",
+    "reason": "not stroke play (round values are points: modified Stableford)"
+   },
+   {
+    "key": "pga:401656722",
+    "name": "Presidents Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "pga:401734787",
+    "name": "Crypto.com Showdown",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "pga:401703507",
+    "name": "Zurich Classic of New Orleans",
+    "reason": "team event (competitors are pairs)"
+   },
+   {
+    "key": "pga:401703522",
+    "name": "Barracuda Championship",
+    "reason": "not stroke play (round values are points: modified Stableford)"
+   },
+   {
+    "key": "pga:401734110",
+    "name": "Ryder Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "pga:401811943",
+    "name": "Zurich Classic of New Orleans",
+    "reason": "team event (competitors are pairs)"
+   },
+   {
+    "key": "pga:401824815",
+    "name": "Presidents Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "lpga:401507053",
+    "name": "Hanwha LIFEPLUS International Crown",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "lpga:401507076",
+    "name": "Solheim Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "lpga:401618423",
+    "name": "Solheim Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "lpga:401745905",
+    "name": "Hanwha LIFEPLUS International Crown",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "lpga:401835169",
+    "name": "Solheim Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "eur:401503451",
+    "name": "Hero Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   },
+   {
+    "key": "eur:401734026",
+    "name": "Team Cup",
+    "reason": "fewer than 10 competitors (a team match or exhibition)"
+   }
+  ]
+ },
+ "windows": {
+  "tuning": [
+   2024
+  ],
+  "holdout": [
+   2025,
+   2026
+  ],
+  "window_days": 1500,
+  "few_max": 24
+ },
+ "joint": {
+  "chosen": [
+   [
+    "pga",
+    "eur"
+   ]
+  ],
+  "rule": "joint only if it lowers the tuning MSE of both tours",
+  "pga": {
+   "tuning_mse_joint": 7.7935,
+   "tuning_mse_separate": 7.8212,
+   "holdout_mse_joint": 7.7228,
+   "holdout_mse_separate": 7.7459
+  },
+  "eur": {
+   "tuning_mse_joint": 8.6116,
+   "tuning_mse_separate": 8.6908,
+   "holdout_mse_joint": 8.8698,
+   "holdout_mse_separate": 8.9399
+  }
+ },
+ "tours": {
+  "pga": {
+   "fit_tours": [
+    "pga",
+    "eur"
+   ],
+   "params": {
+    "half_life_days": 300,
+    "kappa": 4,
+    "nu0": 100,
+    "window_days": 1500,
+    "prior_shift_few": 0.6003,
+    "prior_shift_new": 1.3203,
+    "few_max": 24
+   },
+   "tuning_grid": [
+    {
+     "half_life_days": 120,
+     "kappa": 1.5,
+     "mse": 8.1601,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 2,
+     "mse": 8.156,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 3,
+     "mse": 8.1533,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 4,
+     "mse": 8.1542,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 6,
+     "mse": 8.1608,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 8,
+     "mse": 8.1699,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 10,
+     "mse": 8.1798,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 14,
+     "mse": 8.1999,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 20,
+     "mse": 8.2279,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 1.5,
+     "mse": 8.1491,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 2,
+     "mse": 8.1439,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 3,
+     "mse": 8.14,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 4,
+     "mse": 8.1402,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 6,
+     "mse": 8.1453,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 8,
+     "mse": 8.1528,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 10,
+     "mse": 8.1612,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 14,
+     "mse": 8.1783,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 20,
+     "mse": 8.2029,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 1.5,
+     "mse": 8.1497,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 2,
+     "mse": 8.1431,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 3,
+     "mse": 8.1376,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 4,
+     "mse": 8.1367,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 6,
+     "mse": 8.1403,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 8,
+     "mse": 8.1466,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 10,
+     "mse": 8.1539,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 14,
+     "mse": 8.1691,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 20,
+     "mse": 8.1912,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 1.5,
+     "mse": 8.1527,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 2,
+     "mse": 8.1451,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 3,
+     "mse": 8.1382,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 4,
+     "mse": 8.1364,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 6,
+     "mse": 8.1388,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 8,
+     "mse": 8.1442,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 10,
+     "mse": 8.1507,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 14,
+     "mse": 8.1645,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 20,
+     "mse": 8.1849,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 1.5,
+     "mse": 8.1563,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 2,
+     "mse": 8.1478,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 3,
+     "mse": 8.1398,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 4,
+     "mse": 8.1372,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 6,
+     "mse": 8.1386,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 8,
+     "mse": 8.1433,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 10,
+     "mse": 8.1491,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 14,
+     "mse": 8.1619,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 20,
+     "mse": 8.181,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 1.5,
+     "mse": 8.1604,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 2,
+     "mse": 8.1511,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 3,
+     "mse": 8.142,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 4,
+     "mse": 8.1388,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 6,
+     "mse": 8.1391,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 8,
+     "mse": 8.143,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 10,
+     "mse": 8.1483,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 14,
+     "mse": 8.1601,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 20,
+     "mse": 8.1781,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 1.5,
+     "mse": 8.1639,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 2,
+     "mse": 8.1541,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 3,
+     "mse": 8.1442,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 4,
+     "mse": 8.1403,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 6,
+     "mse": 8.1399,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 8,
+     "mse": 8.1433,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 10,
+     "mse": 8.1481,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 14,
+     "mse": 8.1592,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 20,
+     "mse": 8.1762,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 1.5,
+     "mse": 8.1692,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 2,
+     "mse": 8.1587,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 3,
+     "mse": 8.1477,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 4,
+     "mse": 8.143,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 6,
+     "mse": 8.1415,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 8,
+     "mse": 8.1441,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 10,
+     "mse": 8.1483,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 14,
+     "mse": 8.1584,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 20,
+     "mse": 8.1743,
+     "n": 30792
+    }
+   ],
+   "out_of_sample": {
+    "tuning": {
+     "seasons": [
+      2024
+     ],
+     "rounds": 17904,
+     "mse": 7.7913,
+     "mse_no_skill": 8.3426
+    },
+    "holdout": {
+     "seasons": [
+      2025,
+      2026
+     ],
+     "rounds": 32142,
+     "mse": 7.7239,
+     "mse_no_skill": 8.3093
+    },
+    "note": "mean squared residual of a pre-event prediction; mse_no_skill: every player equal (the field mean of the round)"
+   },
+   "tournament_variance": {
+    "c2": 0.6223,
+    "W1": 0.3553,
+    "W2": 0,
+    "method": "per player per tournament, offsets drawn once: delta ~ N(0, c2 x var_post) in every round (c2 = the cross-half mean product E[r_i r_j], i in rounds 1-2, j in rounds 3-4, over the mean var_post of the same pairs: what persists through the week), omega1 ~ N(0, W1) in rounds 1-2 and omega2 ~ N(0, W2) in rounds 3-4 (what the two rounds of a half share beyond it: the round-1-2 and round-3-4 mean products minus c2 x their mean var_post)",
+    "cross_half": {
+     "mean": 0.1241,
+     "ci95": [
+      0.051,
+      0.1954
+     ],
+     "pairs": 37184,
+     "events": 132,
+     "mean_var_post": 0.1994,
+     "tuning": 0.1546,
+     "holdout": 0.1074
+    },
+    "rounds_1_2": {
+     "mean": 0.5126,
+     "ci95": [
+      0.3735,
+      0.6582
+     ],
+     "pairs": 15657,
+     "events": 132,
+     "mean_var_post": 0.2528,
+     "tuning": 0.6659,
+     "holdout": 0.4265,
+     "note": "every starter; includes the shared tee-time draw (morning and afternoon waves swap between the two days) and the course rotation of multi-course events"
+    },
+    "rounds_3_4": {
+     "mean": -0.0977,
+     "ci95": [
+      -0.2786,
+      0.0807
+     ],
+     "pairs": 9119,
+     "events": 131,
+     "mean_var_post": 0.1975,
+     "note": "players who made the cut only (a selected sample)"
+    },
+    "check_rounds_3_4": {
+     "predicted_mean_square": 7.6119,
+     "observed_mean_square": 7.321,
+     "note": "E[r^2] on rounds 3-4 predicted by c2 var_post + W2 + sigma_eps^2 against the observed"
+    },
+    "note": "the cross-half pairs are played by those who made the cut: selection on rounds 1-2 makes them a slightly different sample from the field"
+   },
+   "round_noise": {
+    "sigma_eps": 2.7364,
+    "method": "sqrt(E[r^2] - E[r1 r2]) on rounds 1-2",
+    "sigma_eps_weekend": 2.6827,
+    "method_weekend": "sqrt(E[r^2] - c2 var_post - W2) on rounds 3-4 (players who made the cut)",
+    "nu0_grid": [
+     {
+      "nu0": "one sd for the tour",
+      "loglik": -2.4442
+     },
+     {
+      "nu0": 200,
+      "loglik": -2.4432
+     },
+     {
+      "nu0": 100,
+      "loglik": -2.4429
+     },
+     {
+      "nu0": 50,
+      "loglik": -2.4429
+     },
+     {
+      "nu0": 25,
+      "loglik": -2.4432
+     }
+    ],
+    "nu0": 100
+   },
+   "newcomers": {
+    "tuning": [
+     {
+      "rounds_in_window": "0 (on the prior)",
+      "n": 618,
+      "mean_residual": -0.0365,
+      "se": 0.1377
+     },
+     {
+      "rounds_in_window": "1-8",
+      "n": 850,
+      "mean_residual": -0.0455,
+      "se": 0.107
+     },
+     {
+      "rounds_in_window": "9-24",
+      "n": 964,
+      "mean_residual": -0.0623,
+      "se": 0.0926
+     },
+     {
+      "rounds_in_window": "25-60",
+      "n": 2018,
+      "mean_residual": -0.0221,
+      "se": 0.0638
+     },
+     {
+      "rounds_in_window": "61+",
+      "n": 13454,
+      "mean_residual": 0.0123,
+      "se": 0.0234
+     }
+    ],
+    "holdout": [
+     {
+      "rounds_in_window": "0 (on the prior)",
+      "n": 672,
+      "mean_residual": 0.2134,
+      "se": 0.1229
+     },
+     {
+      "rounds_in_window": "1-8",
+      "n": 966,
+      "mean_residual": 0.2128,
+      "se": 0.1
+     },
+     {
+      "rounds_in_window": "9-24",
+      "n": 1170,
+      "mean_residual": -0.2389,
+      "se": 0.0879
+     },
+     {
+      "rounds_in_window": "25-60",
+      "n": 2292,
+      "mean_residual": -0.014,
+      "se": 0.0574
+     },
+     {
+      "rounds_in_window": "61+",
+      "n": 27042,
+      "mean_residual": -0.0014,
+      "se": 0.0167
+     }
+    ]
+   }
+  },
+  "lpga": {
+   "fit_tours": [
+    "lpga"
+   ],
+   "params": {
+    "half_life_days": 180,
+    "kappa": 6,
+    "nu0": 100,
+    "window_days": 1500,
+    "prior_shift_few": 0.7592,
+    "prior_shift_new": 1.9567,
+    "few_max": 24
+   },
+   "tuning_grid": [
+    {
+     "half_life_days": 120,
+     "kappa": 1.5,
+     "mse": 8.2163,
+     "n": 11867
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 2,
+     "mse": 8.2048,
+     "n": 11867
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 3,
+     "mse": 8.193,
+     "n": 11867
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 4,
+     "mse": 8.1889,
+     "n": 11867
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 6,
+     "mse": 8.1911,
+     "n": 11867
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 8,
+     "mse": 8.1994,
+     "n": 11867
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 10,
+     "mse": 8.2103,
+     "n": 11867
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 14,
+     "mse": 8.2346,
+     "n": 11867
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 20,
+     "mse": 8.2709,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 1.5,
+     "mse": 8.2253,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 2,
+     "mse": 8.2122,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 3,
+     "mse": 8.1977,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 4,
+     "mse": 8.191,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 6,
+     "mse": 8.1884,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 8,
+     "mse": 8.1922,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 10,
+     "mse": 8.1991,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 14,
+     "mse": 8.2164,
+     "n": 11867
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 20,
+     "mse": 8.2448,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 1.5,
+     "mse": 8.2367,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 2,
+     "mse": 8.2227,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 3,
+     "mse": 8.2063,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 4,
+     "mse": 8.198,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 6,
+     "mse": 8.1924,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 8,
+     "mse": 8.1937,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 10,
+     "mse": 8.1982,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 14,
+     "mse": 8.2114,
+     "n": 11867
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 20,
+     "mse": 8.2348,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 1.5,
+     "mse": 8.2462,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 2,
+     "mse": 8.2316,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 3,
+     "mse": 8.214,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 4,
+     "mse": 8.2047,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 6,
+     "mse": 8.1972,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 8,
+     "mse": 8.1968,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 10,
+     "mse": 8.1998,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 14,
+     "mse": 8.2104,
+     "n": 11867
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 20,
+     "mse": 8.2305,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 1.5,
+     "mse": 8.2542,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 2,
+     "mse": 8.2392,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 3,
+     "mse": 8.2208,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 4,
+     "mse": 8.2107,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 6,
+     "mse": 8.2019,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 8,
+     "mse": 8.2003,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 10,
+     "mse": 8.2021,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 14,
+     "mse": 8.2107,
+     "n": 11867
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 20,
+     "mse": 8.2285,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 1.5,
+     "mse": 8.2622,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 2,
+     "mse": 8.2468,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 3,
+     "mse": 8.2277,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 4,
+     "mse": 8.2169,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 6,
+     "mse": 8.2068,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 8,
+     "mse": 8.2041,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 10,
+     "mse": 8.205,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 14,
+     "mse": 8.2119,
+     "n": 11867
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 20,
+     "mse": 8.2276,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 1.5,
+     "mse": 8.2684,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 2,
+     "mse": 8.2528,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 3,
+     "mse": 8.2332,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 4,
+     "mse": 8.2218,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 6,
+     "mse": 8.2109,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 8,
+     "mse": 8.2074,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 10,
+     "mse": 8.2076,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 14,
+     "mse": 8.2133,
+     "n": 11867
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 20,
+     "mse": 8.2274,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 1.5,
+     "mse": 8.2771,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 2,
+     "mse": 8.2613,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 3,
+     "mse": 8.241,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 4,
+     "mse": 8.229,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 6,
+     "mse": 8.2169,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 8,
+     "mse": 8.2124,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 10,
+     "mse": 8.2117,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 14,
+     "mse": 8.2158,
+     "n": 11867
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 20,
+     "mse": 8.2278,
+     "n": 11867
+    }
+   ],
+   "out_of_sample": {
+    "tuning": {
+     "seasons": [
+      2024
+     ],
+     "rounds": 11867,
+     "mse": 8.1883,
+     "mse_no_skill": 8.9562
+    },
+    "holdout": {
+     "seasons": [
+      2025,
+      2026
+     ],
+     "rounds": 20311,
+     "mse": 8.1514,
+     "mse_no_skill": 9.1495
+    },
+    "note": "mean squared residual of a pre-event prediction; mse_no_skill: every player equal (the field mean of the round)"
+   },
+   "tournament_variance": {
+    "c2": 1.0521,
+    "W1": 0.5142,
+    "W2": 0.1865,
+    "method": "per player per tournament, offsets drawn once: delta ~ N(0, c2 x var_post) in every round (c2 = the cross-half mean product E[r_i r_j], i in rounds 1-2, j in rounds 3-4, over the mean var_post of the same pairs: what persists through the week), omega1 ~ N(0, W1) in rounds 1-2 and omega2 ~ N(0, W2) in rounds 3-4 (what the two rounds of a half share beyond it: the round-1-2 and round-3-4 mean products minus c2 x their mean var_post)",
+    "cross_half": {
+     "mean": 0.2661,
+     "ci95": [
+      0.1598,
+      0.3837
+     ],
+     "pairs": 22822,
+     "events": 86,
+     "mean_var_post": 0.2529,
+     "tuning": 0.1898,
+     "holdout": 0.3113
+    },
+    "rounds_1_2": {
+     "mean": 0.8412,
+     "ci95": [
+      0.6303,
+      1.0626
+     ],
+     "pairs": 10343,
+     "events": 86,
+     "mean_var_post": 0.3108,
+     "tuning": 0.74,
+     "holdout": 0.8999,
+     "note": "every starter; includes the shared tee-time draw (morning and afternoon waves swap between the two days) and the course rotation of multi-course events"
+    },
+    "rounds_3_4": {
+     "mean": 0.4491,
+     "ci95": [
+      0.1787,
+      0.7108
+     ],
+     "pairs": 5392,
+     "events": 77,
+     "mean_var_post": 0.2496,
+     "note": "players who made the cut only (a selected sample)"
+    },
+    "check_rounds_3_4": {
+     "predicted_mean_square": 8.0264,
+     "observed_mean_square": 7.71,
+     "note": "E[r^2] on rounds 3-4 predicted by c2 var_post + W2 + sigma_eps^2 against the observed"
+    },
+    "note": "the cross-half pairs are played by those who made the cut: selection on rounds 1-2 makes them a slightly different sample from the field"
+   },
+   "round_noise": {
+    "sigma_eps": 2.7521,
+    "method": "sqrt(E[r^2] - E[r1 r2]) on rounds 1-2",
+    "sigma_eps_weekend": 2.694,
+    "method_weekend": "sqrt(E[r^2] - c2 var_post - W2) on rounds 3-4 (players who made the cut)",
+    "nu0_grid": [
+     {
+      "nu0": "one sd for the tour",
+      "loglik": -2.4686
+     },
+     {
+      "nu0": 200,
+      "loglik": -2.4679
+     },
+     {
+      "nu0": 100,
+      "loglik": -2.4677
+     },
+     {
+      "nu0": 50,
+      "loglik": -2.4677
+     },
+     {
+      "nu0": 25,
+      "loglik": -2.4681
+     }
+    ],
+    "nu0": 100
+   },
+   "newcomers": {
+    "tuning": [
+     {
+      "rounds_in_window": "0 (on the prior)",
+      "n": 379,
+      "mean_residual": 0.0048,
+      "se": 0.1963
+     },
+     {
+      "rounds_in_window": "1-8",
+      "n": 790,
+      "mean_residual": -0.0067,
+      "se": 0.1138
+     },
+     {
+      "rounds_in_window": "9-24",
+      "n": 864,
+      "mean_residual": -0.0809,
+      "se": 0.0963
+     },
+     {
+      "rounds_in_window": "25-60",
+      "n": 1989,
+      "mean_residual": 0.1775,
+      "se": 0.0621
+     },
+     {
+      "rounds_in_window": "61+",
+      "n": 7845,
+      "mean_residual": -0.0356,
+      "se": 0.0316
+     }
+    ],
+    "holdout": [
+     {
+      "rounds_in_window": "0 (on the prior)",
+      "n": 557,
+      "mean_residual": 0.0781,
+      "se": 0.153
+     },
+     {
+      "rounds_in_window": "1-8",
+      "n": 916,
+      "mean_residual": 0.3276,
+      "se": 0.1084
+     },
+     {
+      "rounds_in_window": "9-24",
+      "n": 1297,
+      "mean_residual": -0.3402,
+      "se": 0.0866
+     },
+     {
+      "rounds_in_window": "25-60",
+      "n": 1963,
+      "mean_residual": 0.0665,
+      "se": 0.065
+     },
+     {
+      "rounds_in_window": "61+",
+      "n": 15578,
+      "mean_residual": -0.0021,
+      "se": 0.0222
+     }
+    ]
+   }
+  },
+  "eur": {
+   "fit_tours": [
+    "pga",
+    "eur"
+   ],
+   "params": {
+    "half_life_days": 300,
+    "kappa": 4,
+    "nu0": 200,
+    "window_days": 1500,
+    "prior_shift_few": 0.6003,
+    "prior_shift_new": 1.7576,
+    "few_max": 24
+   },
+   "tuning_grid": [
+    {
+     "half_life_days": 120,
+     "kappa": 1.5,
+     "mse": 8.1601,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 2,
+     "mse": 8.156,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 3,
+     "mse": 8.1533,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 4,
+     "mse": 8.1542,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 6,
+     "mse": 8.1608,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 8,
+     "mse": 8.1699,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 10,
+     "mse": 8.1798,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 14,
+     "mse": 8.1999,
+     "n": 30792
+    },
+    {
+     "half_life_days": 120,
+     "kappa": 20,
+     "mse": 8.2279,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 1.5,
+     "mse": 8.1491,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 2,
+     "mse": 8.1439,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 3,
+     "mse": 8.14,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 4,
+     "mse": 8.1402,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 6,
+     "mse": 8.1453,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 8,
+     "mse": 8.1528,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 10,
+     "mse": 8.1612,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 14,
+     "mse": 8.1783,
+     "n": 30792
+    },
+    {
+     "half_life_days": 180,
+     "kappa": 20,
+     "mse": 8.2029,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 1.5,
+     "mse": 8.1497,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 2,
+     "mse": 8.1431,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 3,
+     "mse": 8.1376,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 4,
+     "mse": 8.1367,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 6,
+     "mse": 8.1403,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 8,
+     "mse": 8.1466,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 10,
+     "mse": 8.1539,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 14,
+     "mse": 8.1691,
+     "n": 30792
+    },
+    {
+     "half_life_days": 240,
+     "kappa": 20,
+     "mse": 8.1912,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 1.5,
+     "mse": 8.1527,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 2,
+     "mse": 8.1451,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 3,
+     "mse": 8.1382,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 4,
+     "mse": 8.1364,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 6,
+     "mse": 8.1388,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 8,
+     "mse": 8.1442,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 10,
+     "mse": 8.1507,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 14,
+     "mse": 8.1645,
+     "n": 30792
+    },
+    {
+     "half_life_days": 300,
+     "kappa": 20,
+     "mse": 8.1849,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 1.5,
+     "mse": 8.1563,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 2,
+     "mse": 8.1478,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 3,
+     "mse": 8.1398,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 4,
+     "mse": 8.1372,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 6,
+     "mse": 8.1386,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 8,
+     "mse": 8.1433,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 10,
+     "mse": 8.1491,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 14,
+     "mse": 8.1619,
+     "n": 30792
+    },
+    {
+     "half_life_days": 365,
+     "kappa": 20,
+     "mse": 8.181,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 1.5,
+     "mse": 8.1604,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 2,
+     "mse": 8.1511,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 3,
+     "mse": 8.142,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 4,
+     "mse": 8.1388,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 6,
+     "mse": 8.1391,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 8,
+     "mse": 8.143,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 10,
+     "mse": 8.1483,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 14,
+     "mse": 8.1601,
+     "n": 30792
+    },
+    {
+     "half_life_days": 450,
+     "kappa": 20,
+     "mse": 8.1781,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 1.5,
+     "mse": 8.1639,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 2,
+     "mse": 8.1541,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 3,
+     "mse": 8.1442,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 4,
+     "mse": 8.1403,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 6,
+     "mse": 8.1399,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 8,
+     "mse": 8.1433,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 10,
+     "mse": 8.1481,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 14,
+     "mse": 8.1592,
+     "n": 30792
+    },
+    {
+     "half_life_days": 540,
+     "kappa": 20,
+     "mse": 8.1762,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 1.5,
+     "mse": 8.1692,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 2,
+     "mse": 8.1587,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 3,
+     "mse": 8.1477,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 4,
+     "mse": 8.143,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 6,
+     "mse": 8.1415,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 8,
+     "mse": 8.1441,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 10,
+     "mse": 8.1483,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 14,
+     "mse": 8.1584,
+     "n": 30792
+    },
+    {
+     "half_life_days": 730,
+     "kappa": 20,
+     "mse": 8.1743,
+     "n": 30792
+    }
+   ],
+   "out_of_sample": {
+    "tuning": {
+     "seasons": [
+      2024
+     ],
+     "rounds": 12888,
+     "mse": 8.6091,
+     "mse_no_skill": 9.242
+    },
+    "holdout": {
+     "seasons": [
+      2025,
+      2026
+     ],
+     "rounds": 24223,
+     "mse": 8.8653,
+     "mse_no_skill": 9.6674
+    },
+    "note": "mean squared residual of a pre-event prediction; mse_no_skill: every player equal (the field mean of the round)"
+   },
+   "tournament_variance": {
+    "c2": 0.7665,
+    "W1": 0.6915,
+    "W2": 0,
+    "method": "per player per tournament, offsets drawn once: delta ~ N(0, c2 x var_post) in every round (c2 = the cross-half mean product E[r_i r_j], i in rounds 1-2, j in rounds 3-4, over the mean var_post of the same pairs: what persists through the week), omega1 ~ N(0, W1) in rounds 1-2 and omega2 ~ N(0, W2) in rounds 3-4 (what the two rounds of a half share beyond it: the round-1-2 and round-3-4 mean products minus c2 x their mean var_post)",
+    "cross_half": {
+     "mean": 0.2007,
+     "ci95": [
+      0.0995,
+      0.3061
+     ],
+     "pairs": 24908,
+     "events": 88,
+     "mean_var_post": 0.2619,
+     "tuning": 0.26,
+     "holdout": 0.168
+    },
+    "rounds_1_2": {
+     "mean": 0.9684,
+     "ci95": [
+      0.7494,
+      1.1769
+     ],
+     "pairs": 12249,
+     "events": 88,
+     "mean_var_post": 0.3613,
+     "tuning": 1.1433,
+     "holdout": 0.8769,
+     "note": "every starter; includes the shared tee-time draw (morning and afternoon waves swap between the two days) and the course rotation of multi-course events"
+    },
+    "rounds_3_4": {
+     "mean": 0.1636,
+     "ci95": [
+      -0.0766,
+      0.3929
+     ],
+     "pairs": 5934,
+     "events": 84,
+     "mean_var_post": 0.2553,
+     "note": "players who made the cut only (a selected sample)"
+    },
+    "check_rounds_3_4": {
+     "predicted_mean_square": 8.2726,
+     "observed_mean_square": 8.2536,
+     "note": "E[r^2] on rounds 3-4 predicted by c2 var_post + W2 + sigma_eps^2 against the observed"
+    },
+    "note": "the cross-half pairs are played by those who made the cut: selection on rounds 1-2 makes them a slightly different sample from the field"
+   },
+   "round_noise": {
+    "sigma_eps": 2.8411,
+    "method": "sqrt(E[r^2] - E[r1 r2]) on rounds 1-2",
+    "sigma_eps_weekend": 2.8378,
+    "method_weekend": "sqrt(E[r^2] - c2 var_post - W2) on rounds 3-4 (players who made the cut)",
+    "nu0_grid": [
+     {
+      "nu0": "one sd for the tour",
+      "loglik": -2.4933
+     },
+     {
+      "nu0": 200,
+      "loglik": -2.4927
+     },
+     {
+      "nu0": 100,
+      "loglik": -2.4926
+     },
+     {
+      "nu0": 50,
+      "loglik": -2.4928
+     },
+     {
+      "nu0": 25,
+      "loglik": -2.4933
+     }
+    ],
+    "nu0": 200
+   },
+   "newcomers": {
+    "tuning": [
+     {
+      "rounds_in_window": "0 (on the prior)",
+      "n": 691,
+      "mean_residual": 0.0303,
+      "se": 0.1467
+     },
+     {
+      "rounds_in_window": "1-8",
+      "n": 1051,
+      "mean_residual": 0.0732,
+      "se": 0.0957
+     },
+     {
+      "rounds_in_window": "9-24",
+      "n": 1083,
+      "mean_residual": -0.2883,
+      "se": 0.091
+     },
+     {
+      "rounds_in_window": "25-60",
+      "n": 1896,
+      "mean_residual": 0.0048,
+      "se": 0.0687
+     },
+     {
+      "rounds_in_window": "61+",
+      "n": 8167,
+      "mean_residual": 0.0251,
+      "se": 0.0309
+     }
+    ],
+    "holdout": [
+     {
+      "rounds_in_window": "0 (on the prior)",
+      "n": 748,
+      "mean_residual": 0.2642,
+      "se": 0.1405
+     },
+     {
+      "rounds_in_window": "1-8",
+      "n": 1545,
+      "mean_residual": 0.2967,
+      "se": 0.0885
+     },
+     {
+      "rounds_in_window": "9-24",
+      "n": 1741,
+      "mean_residual": -0.0327,
+      "se": 0.0729
+     },
+     {
+      "rounds_in_window": "25-60",
+      "n": 2510,
+      "mean_residual": -0.0944,
+      "se": 0.0601
+     },
+     {
+      "rounds_in_window": "61+",
+      "n": 17679,
+      "mean_residual": -0.0205,
+      "se": 0.0216
+     }
+    ]
+   }
+  }
+ },
+ "quick": false,
+ "runtime_s": 293
+}

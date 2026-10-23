@@ -3,9 +3,13 @@
 #
 #   schedule 10:17 UTC daily   the NFL, college football, the NHL and, through
 #                              the World Series, MLB, through the WNBA Finals,
-#                              the WNBA, and every night the UFC (its feeds are
+#                              the WNBA, every night the UFC (its feeds are
 #                              refreshed at 09:41 UTC by Simulator sports data)
-#                              (plan.ts NIGHTLY), 100,000 runs.
+#                              and through 2026-12-20 golf (every PGA Tour,
+#                              LPGA and DP World Tour event in play, each
+#                              published as its own competition; the live ESPN
+#                              leaderboard is read here, the committed feed if
+#                              it fails) (plan.ts NIGHTLY), 100,000 runs.
 #   schedule 15:47 UTC daily   the NBA (plan.ts NBA_CRON), 100,000 runs: late
 #                              enough that hoopR has the previous night's
 #                              results (the results.current gate), before
@@ -64,10 +68,10 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, nhl, mlb, cfb, ncaam, wnba, nba, ufc]
+        options: [nfl, nhl, mlb, cfb, ncaam, wnba, nba, ufc, golf]
         default: nfl
       season:
-        description: 'Season (must equal the sport''s configured season: NFL, MLB, CFB, WNBA and UFC 2026; NHL and NBA 2027 = 2026-27; NCAAM 2027)'
+        description: 'Season (must equal the sport''s configured season: NFL, MLB, CFB, WNBA, UFC and golf 2026; NHL and NBA 2027 = 2026-27; NCAAM 2027)'
         type: string
         default: '2026'
       runs:
@@ -165,6 +169,9 @@ jobs:
       - name: The UFC suites, before a UFC run (the Elo port must reproduce the served prices)
         if: ${{ matrix.sport == 'ufc' }}
         run: npm run sim:ufc:test
+      - name: The golf suites, before a golf run
+        if: ${{ matrix.sport == 'golf' }}
+        run: npm run sim:golf:test
       - name: The college basketball (NCAAM) bracket suite, before an NCAAM run
         if: ${{ matrix.sport == 'ncaam' }}
         run: node simulator/tests/ncaam_sim.test.ts
