@@ -28,7 +28,7 @@ const EXPECT: Record<number, string[]> = {
 };
 for (const season of [2024, 2025]) {
   /* the ranking order over every FBS team: the committee's 25, then the rest (their order beyond 25 never matters here) */
-  const f = seasonFrame(season, 7, {}, HIST.seasons[season].ranking, HIST.seasons[season].final_column);
+  const f = seasonFrame(season, 7, {}, HIST.seasons[season].ranking, HIST.seasons[season].final_column, history().filter((g) => g.season === season));
   const order = f.order.concat(f.teams.map((_, i) => i).filter((i) => !f.order.includes(i)));
   const feed = history().filter((g) => g.season === season);
   const confOf = new Map<string, string>();

@@ -62,9 +62,11 @@ const ALIAS: Record<string, string> = { miamifl: 'miami', miamioh: 'miamioh', pi
 
 export interface SeasonFrame { season: number; teams: string[]; resumes: Resume[]; order: number[]; ranked: number; rankingDate: string; unmatched: string[] }
 
-export function seasonFrame(season: number, K: number, ratings: Record<string, number>, ranking: Array<[number, string, number, number]>, header: string): SeasonFrame {
+export function seasonFrame(season: number, K: number, ratings: Record<string, number>, ranking: Array<[number, string, number, number]>, header: string,
+  rows?: FeedGame[]): SeasonFrame {
   const E = loadCfbEngine().E, P = loadCfbEngine().P;
-  const feed = loadSeasonFeedSync(season);
+  /* rows: the season's games (every game with an FBS team), e.g. the committed fixture; default the cached feed */
+  const feed = rows ?? loadSeasonFeedSync(season);
   const m = /(Dec|Jan)\.?\s*(\d{1,2})/.exec(header);
   if (!m) throw new Error('no ranking date in ' + header);
   const rankingDate = (m[1] === 'Jan' ? season + 1 : season) + '-' + (m[1] === 'Jan' ? '01' : '12') + '-' + String(m[2]).padStart(2, '0');

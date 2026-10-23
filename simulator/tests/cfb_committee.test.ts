@@ -23,7 +23,7 @@ const PROXY = JSON.parse(fs.readFileSync(path.join(DATA, 'cfb_committee_proxy.js
 /* 1 the rankings data against the feed */
 T.eq('final rankings for every season 2014-2025, 25 teams each', Object.keys(HIST.seasons).map((s) => HIST.seasons[s].ranking.length), new Array(12).fill(25));
 for (let season = 2014; season <= 2025; season++) {
-  const f = seasonFrame(season, 7, {}, HIST.seasons[season].ranking, HIST.seasons[season].final_column);
+  const f = seasonFrame(season, 7, {}, HIST.seasons[season].ranking, HIST.seasons[season].final_column, history().filter((g) => g.season === season));
   T.eq(season + ': every ranked team matches a feed team', f.unmatched, []);
   const rows = history().filter((g) => g.season === season);
   const cfp = rows.filter((g) => /college football playoff|cfp/i.test(g.notes || '') && !/national championship/i.test(g.notes || ''));
