@@ -33,13 +33,13 @@
      --allow-incomplete-schedule
                               NBA, dry run only: simulate a season whose NBA Cup-dependent games are
                               not on the schedule yet (WARN: never publishable)
-   NCAAM only (--sport ncaam):
+   NCAAM only (--sport ncaam; season 2027 = 2026-27 by default):
      --mode official|historical   the official bracket file (default) or an exact
                                   reconstruction of a past season (backtest, never published)
      --model champion|selection   the registry's champion (default; required to publish)
                                   or the frozen development selection (dry runs, backtests)
      --bracket FILE               an official bracket file other than config/brackets/<season>.json
-     --as-of ISO                  the moment the model artifact is built as of
+     --as-of ISO                  the moment the model artifact and the frozen results are as of
    Exit codes: 0 ok, 1 a gate blocked (nothing published), 2 invalid inputs or arguments, 3 publish failed.
    =========================================================================== */
 import fs from 'node:fs';
@@ -104,6 +104,9 @@ export function parseArgs(argv: string[]): CliArgs {
       case '--as-of': a.asOf = need(i); i++; break;
       case '--confirm-through': a.confirmThrough = need(i); i++; break;
       case '--allow-incomplete-schedule': a.allowIncompleteSchedule = true; break;
+      case '--mode': { const v = need(i); if (v !== 'official' && v !== 'historical') throw new Error('--mode must be official or historical'); a.mode = v; i++; break; }
+      case '--model': { const v = need(i); if (v !== 'champion' && v !== 'selection') throw new Error('--model must be champion or selection'); a.model = v; i++; break; }
+      case '--bracket': a.bracket = need(i); i++; break;
       default: throw new Error('unknown option ' + k);
     }
   }

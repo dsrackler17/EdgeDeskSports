@@ -7,7 +7,7 @@
    Prints {"include":[...]} for a job matrix. Every value a later step puts on
    a command line is checked here against a strict pattern, so nothing a
    person types into the Run workflow form reaches a shell unvalidated.
-   Schedule: every sport in NIGHTLY (the NFL), at the production run
+   Schedule: every sport in NIGHTLY whose inputs exist, at the production run
    count; an ACTIVE sport publishes, any other runs dry and its blockers are
    printed as warnings. Dispatch: the requested sport; publishing is refused
    up front for a sport that is not ACTIVE or for fewer than 100,000 runs.
