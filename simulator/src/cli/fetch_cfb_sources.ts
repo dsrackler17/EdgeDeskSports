@@ -51,7 +51,12 @@ export const CFB_SOURCES: Source[] = [
   /* conference championship-game tiebreakers */
   { id: 'acc_2026_tiebreaker', kind: 'rules', url: 'https://theacc.com/news/2026/7/15/acc-announces-new-football-championship-tiebreaker-policy.aspx', links: LINKS },
   { id: 'sec_tiebreaker_2024', kind: 'rules', url: 'https://www.secsports.com/news/2024/08/sec-announces-football-tie-breaking-process', links: LINKS, nextData: /tie|scoring margin|head-to-head|common/i },
-  { id: 'sec_football_news', kind: 'discover', url: 'https://www.secsports.com/sport/football', links: LINKS },
+  /* secondary reports of procedures whose official page a script renders or refuses (labelled secondary in config.ts) */
+  { id: 'sec_tiebreaker_espn_2024', kind: 'rules', url: 'https://www.espn.com/college-football/story/_/id/40944783/sec-reveals-tiebreaking-procedures-conference-title-game' },
+  { id: 'sec_tiebreaker_cbs', kind: 'rules', url: 'https://www.cbssports.com/college-football/news/sec-football-tiebreakers-heres-how-the-conference-will-circumvent-identical-records-in-divisionless-format/' },
+  { id: 'big_ten_tiebreaker_espn_2024', kind: 'rules', url: 'https://www.espn.com/college-football/story/_/id/41003007/big-ten-reveals-football-tiebreakers-18-team-conference' },
+  { id: 'big_ten_tiebreaker_cbs', kind: 'rules', url: 'https://www.cbssports.com/college-football/news/big-ten-football-tiebreakers-how-conference-will-decide-championship-game-matchup-with-divisions-gone-away/' },
+  { id: 'mw_tiebreaker_pfn', kind: 'rules', url: 'https://www.profootballnetwork.com/cfb/mountain-west-tiebreakers-everything-to-know/' },
   { id: 'big_ten_tiebreaker_2024_pdf', kind: 'rules', url: 'https://nextgen.bigten.org/api/media/file/f142aa7f-aa37-430b-bf09-8988a6952c0c-2024_Big_Ten_Football_Tiebreaker_-_FINAL_10__72_.pdf' },
   { id: 'big_ten_tiebreaker_2024_release', kind: 'rules', url: 'https://bigten.org/fb/article/blt6104802d94ebe1ab/', links: LINKS, nextData: /tie|seed|championship/i },
   { id: 'big_ten_fcg', kind: 'rules', url: 'https://bigten.org/FCG', links: LINKS },

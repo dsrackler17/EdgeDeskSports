@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: '22.22.0'
       - name: Install pdftotext (for PDF procedures)
-        run: sudo apt-get install -y -qq poppler-utils >/dev/null 2>&1 || echo "::warning::poppler-utils did not install; PDFs will be kept but not printed"
+        run: (sudo apt-get update -qq >/dev/null 2>&1 && sudo apt-get install -y -qq poppler-utils >/dev/null 2>&1 && pdftotext -v 2>&1 | head -1) || echo "::warning::poppler-utils did not install; PDFs will be kept but not printed"
       - name: Fetch and print the sources
         run: node simulator/src/cli/fetch_cfb_sources.ts --out simulator/out/cfb_sources
       - name: Keep the fetched files
