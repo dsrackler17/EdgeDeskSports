@@ -53,48 +53,63 @@ export interface NbaSeasonConfig {
   availability: { mode: 'off' | 'return_hazards'; fixed_assumption: string };
 }
 
-const UNV = { verification: 'UNVERIFIED' as const, affects_results: true, verified_by: null, verified_at: null, retrieved: '2026-10-23' };
-const NBA_PAGES = 'nba.com (the league\'s tiebreaker procedures and playoff format for 2026-27); nba.com, official.nba.com and cdn.nba.com were not reachable from the build environment (proxy policy)';
+/* Verified 2026-10-23 from the league's own text, read by the Simulator source check (GitHub Actions run 39996632843,
+   .github/workflows/simulator-sources.yml): nba.com, api-hub.nba.com and pr.nba.com answer the runners 403, so each page
+   is the Internet Archive's copy as published (web.archive.org/web/<capture>id_/, the archived bytes); text sha256 as
+   the run printed it. */
+const VERIFIED_BY = 'Claude Code (EdgeDesk NBA simulator session), at the repository owner\'s request (2026-10-23), from the official text fetched by GitHub Actions run 39996632843 (Simulator source check)';
+const OK = { verification: 'VERIFIED' as const, affects_results: true, verified_by: VERIFIED_BY, verified_at: '2026-10-23', retrieved: '2026-10-23' };
+const SRC = {
+  standings: 'nba.com/standings, "Play-In and Playoff Tie-Break Procedures" (Paragraph L.2), as captured 2026-10-13 11:39 UTC (https://web.archive.org/web/20261013113932id_/https://www.nba.com/standings; text sha256 9ccf2926d0697806f09bc9bbd92d03fc864fea02cdc03001f2e7022f55db3a86)',
+  play_in: 'nba.com, "Everything to know about 2026 SoFi NBA Play-In Tournament", as captured 2026-10-05 (https://web.archive.org/web/20261005095017id_/https://www.nba.com/news/nba-play-in-tournament; text sha256 d232b79436ae3e0398f63d78298189f1f55d40973f3a3cdfe96cff2bd7c77a24)',
+  release: 'nba.com, "NBA announces schedule for 2026-27 season", as captured 2026-10-07 (https://web.archive.org/web/20261007105723id_/https://www.nba.com/news/2026-27-nba-regular-season-schedule; text sha256 551e774563ec6a308dc227e65373075d2909df36d27d529854d72c81dee34dd7)',
+  key_dates: 'nba.com, "Key dates for 2026-27 NBA season", as captured 2026-10-15 (https://web.archive.org/web/20261015010039id_/https://www.nba.com/news/key-dates; text sha256 414a3878a38e5f9d949bec5c1efeeb3623b0524be1ede0acf8b85a28e896bb79)',
+  cup_101: 'nba.com, "Emirates NBA Cup 101", as captured 2026-10-10 (https://web.archive.org/web/20261010210309id_/https://www.nba.com/news/nba-cup-101; text sha256 6e8e2975b05c5f38a2c4a60733264b2db2d2e269b942a5cb4a87ca29845a6069)',
+  cup_faq: 'nba.com, "Emirates NBA Cup: Frequently Asked Questions", as captured 2026-10-10 (https://web.archive.org/web/20261010210310id_/https://www.nba.com/news/nba-cup-frequently-asked-questions; text sha256 0d3006f37ccb1cdc9b349ec6a8bb34271e8089c842f3bdfdbcb84858defbe7f0)',
+  seeding_2015: 'NBA Communications, "NBA to seed conference playoff teams by record" (2015), as captured 2025-12-13 (https://web.archive.org/web/20251213072511id_/https://pr.nba.com/nba-playoff-seeding-changes/; text sha256 d6c7af45132cce09baa0cd2de67d2c9eb01ba2db1c713906754457344fa48217)',
+  finals_2014: 'NBA Communications, "NBA Board of Governors unanimously approves format change for The Finals" (2014), as captured 2025-12-09 (https://web.archive.org/web/20251209175338id_/https://pr.nba.com/nba-finals-format-change-2014/; text sha256 70b38db449e4f6574f0bb9b9043a8d97be3a5308527b48bc5b97de57f8626d0b)'
+};
+const RECHECK = 'Each season: re-run .github/workflows/simulator-sources.yml (the NBA job) and compare the pages it prints with NBA_SIMULATOR_NOTES.md §5 and simulator/src/sports/nba/rules.ts.';
 
 export const NBA_2026_27: NbaSeasonConfig = {
   sport: 'nba', competition: 'NBA', season: 2027, label: '2026-27',
   regular_season_games_per_club: 82,
   rules_version: 'NBA-2021',
   tiebreakers: {
-    ...UNV,
-    value: 'Two clubs: head-to-head; division winner; division record (same division); conference record; record vs playoff clubs of own conference; vs playoff clubs of the other conference; point differential; random drawing. Three or more: division winner; record in games among the tied clubs; division record (all in one division); conference record; vs playoff clubs of own conference; point differential; random drawing. A step that separates clubs eliminates the rest; the remaining clubs (and, below them, the eliminated) start again from step 1. Division ties are broken first.',
-    source: 'The NBA tiebreaker procedure as recalled (no official text could be read from the build environment). Evidence: simulator/tests/nba_rules_history.test.ts replays every season 2006-07 to 2025-26 (except 2019-20) from the committed results and reproduces every play-in pairing and host, every playoff pairing, the host of every postseason game and every series length — including the 2008-09 three-way tie (DEN, POR, SA at 54-28) that fixes the elimination rule.',
-    verify_by: 'Compare NBA_SIMULATOR_NOTES.md §Rules and simulator/src/sports/nba/rules.ts with ' + NBA_PAGES + '.'
+    ...OK,
+    value: 'Two clubs: head-to-head; division winner; division record (same division only); conference record; record vs postseason-eligible clubs of own conference; vs those of the other conference; point differential; random drawing. Three or more: division winner; record in games among the tied clubs; division record (all in one division only); conference record; vs postseason-eligible clubs of own conference; point differential; random drawing. Division ties first, their result used only for the division title. The first criterion that tells the clubs apart orders the levels it separates (a complete break orders all of them); each group still level starts again from the first criterion with the two-club or multi-club list (Paragraph L.2.c).',
+    source: SRC.standings + ': L.2.a (two teams, 7 criteria), L.2.b (more than two, 6 criteria), L.2.c (division ties first and used only for the division winner; complete and partial breaks; a group still tied after a partial break starts again from the beginning; a random drawing when nothing breaks the tie). Compared step by step with rules.ts: both lists and their order match. The page\'s complete/partial-break rule differed from the code (which ranked only the best level and restarted everyone below it): rules.ts was corrected on 2026-10-23 (nba_rules_synthetic.test.ts holds a case that tells them apart). Every season 2006-07..2025-26 (except 2019-20) reproduces under the corrected rule (nba_rules_history.test.ts).',
+    verify_by: RECHECK
   },
   playoff_clubs_for_tiebreakers: {
-    ...UNV,
+    ...OK,
     value: { place: 10 },
-    source: 'Recalled: with the play-in, "playoff teams" for tiebreak steps 5-6 are the clubs at or above the record of the 10th place (play-in clubs included, ties included). The history test cannot tell 6, 8, 10 or 12 apart: one tie in 2020-21..2025-26 reached that step, and every definition orders it the same way.',
-    verify_by: 'Confirm the definition of playoff teams for the tiebreaker with ' + NBA_PAGES + '.'
+    source: SRC.standings + ': the steps against "teams eligible for the postseason" in own / opposite conference include "teams that finished the Regular Season tied for one of the best 10 records in their conference" — the clubs at or above the record of the 10th place, ties included, as rules.ts counts them.',
+    verify_by: RECHECK
   },
   play_in: {
-    ...UNV,
+    ...OK,
     value: '7th hosts 8th, the winner is the 7 seed; 9th hosts 10th, the loser is out; the loser of 7-8 hosts the winner of 9-10, the winner is the 8 seed. Single games; places by the regular-season standings after tiebreakers.',
-    source: 'The format in force since 2020-21 (recalled); reproduced against every play-in game 2020-21..2025-26 in nba/data/games (36 games: pairings and hosts).',
-    verify_by: 'Confirm the 2026-27 play-in format with ' + NBA_PAGES + '.'
+    source: SRC.play_in + ': "Each conference\'s No. 7 team in the standings will host the No. 8 team. The winners secure the No. 7 seed ... Each conference\'s No. 9 team in the standings will host the No. 10 team ... The losers are eliminated. The losers of the No. 7 vs. No. 8 matchups will host the winners of the No. 9 vs. No. 10 matchups. The winners secure the No. 8 seed." For 2026-27: ' + SRC.release + ': "all six games of the SoFi NBA Play-In Tournament 2027 ... Teams seeded seventh through 10th in each conference will compete for the final two playoff berths"; ' + SRC.key_dates + ': "April 13-16: SoFi NBA Play-In Tournament". Reproduced against every play-in game 2020-21..2025-26 (36 games).',
+    verify_by: RECHECK
   },
   playoff_format: {
-    ...UNV,
+    ...OK,
     value: '8 clubs per conference; fixed bracket, no reseeding: 1-8 and 4-5 meet in the semifinals, 2-7 and 3-6; best of seven every round, 2-2-1-1-1 (games 1, 2, 5, 7 at the club with home court).',
-    source: 'Recalled; reproduced against every postseason game 2006-07..2025-26 (except 2019-20) in nba/data/games (the Finals were 2-3-2 through 2012-13).',
-    verify_by: 'Confirm the 2026-27 playoff format with ' + NBA_PAGES + '.'
+    source: 'Field: ' + SRC.seeding_2015 + ': "the eight playoff teams in each conference will be seeded in order of their regular-season record"; seeds 7 and 8 from the play-in (' + SRC.release + '). Series: ' + SRC.finals_2014 + ': "a 2-2-1-1-1 schedule, where the team with home-court advantage will host Games 1, 2, 5 and 7 ... aligns The Finals format with every other round of the NBA Playoffs". The fixed bracket (1-8 v 4-5, 2-7 v 3-6, no reseeding) is stated on none of the pages read; as with the NFL\'s seeding, it rests on every playoff pairing and every game\'s host 2006-07..2025-26 (except 2019-20) in nba/data/games, reproduced by nba_rules_history.test.ts (the Finals were 2-3-2 through 2012-13). The 2026 Finals in the key dates page (games 1, 2 and 5 in San Antonio, 3 and 4 in New York) follow it.',
+    verify_by: RECHECK + ' A league statement of the bracket (or of any reseeding) would replace the history evidence.'
   },
   home_court: {
-    ...UNV,
+    ...OK,
     value: 'The club with the better regular-season record has home court in every series (within a conference: the better place in the standings, which for a play-in qualifier is not its seed); the Finals: better record, then the two-club tiebreaker across conferences.',
-    source: 'Recalled; every series host 2006-07..2025-26 reproduced. A tie in record between the two Finals clubs has not occurred in the replayed seasons, so the cross-conference step is untested by history.',
-    verify_by: 'Confirm home-court rules with ' + NBA_PAGES + '.'
+    source: SRC.seeding_2015 + ': a division winner "did not receive home-court advantage if its playoff opponent had a better record"; "Head-to-head results have become the first criterion to break ties for playoff seeding and home-court advantage between two teams with identical regular-season records; the second criterion is whether a team won its division" — the two-club list of ' + SRC.standings + '. Home court therefore goes by record, then those criteria, not by seed: for two play-in qualifiers (a seed-7 v seed-8 conference final, which has not happened) the better place hosts. Every series host 2006-07..2025-26 reproduced.',
+    verify_by: RECHECK
   },
   nba_cup: {
-    ...UNV,
+    ...OK,
     value: 'Every NBA Cup game counts in the standings except the championship game (nba/data scope nba_cup_final, excluded). 30 regular-season games (two per club: the knockout games and the games scheduled for the clubs that do not advance) are fixed only after the group stage; until they are on the schedule the season cannot be simulated for publication.',
-    source: 'The data\'s scope column (nba/ingest/season.js: nba_cup_final apart from the regular season) and the committed 2026-27 schedule: 1,200 of 1,230 regular-season games, 80 per club.',
-    verify_by: 'Confirm with ' + NBA_PAGES + ' and wait for the 30 Cup-dependent games on the schedule (after the group stage, early December 2026).'
+    source: SRC.cup_101 + ': "All 67 games across both stages of the Emirates NBA Cup will count toward the regular-season standings except the Championship. Each team will continue to play 82 regular-season games in the 2026-27 season"; Quarterfinals and Semifinals "will count as regular-season games for all purposes" and are hosted in NBA team markets by the higher seed; "the 22 teams that do not qualify for the Knockout Rounds will each play two regular-season games"; "The four losing teams in the Quarterfinals ... will play each other in a regular-season game" — 4 + 2 + 2 + 22 = 30 games. ' + SRC.release + ': "defined dates and opponents for 80 of each team\'s 82 games". ' + SRC.cup_faq + '. The committed 2026-27 schedule has 1,200 of 1,230 regular-season games, 80 per club.',
+    verify_by: 'Each season: as above, and wait for the 30 Cup-dependent games on the schedule (after the group stage: from Dec. 4, 2026).'
   },
   postseason_schedule: {
     value: 'Estimated: a postseason game not yet on the schedule takes the median rest of its round and game number in the 2021-22..2025-26 postseasons (nba/data/games), travel between the two arenas in the 2-2-1-1-1 order, no back-to-back, and each club arriving for a series opener from its own arena. A game on the schedule uses its real date and venue.',

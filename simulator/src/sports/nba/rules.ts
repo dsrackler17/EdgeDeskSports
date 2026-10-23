@@ -29,15 +29,16 @@
    tie is broken. A step a club cannot be measured on (no games against the
    set) is skipped for the whole tied group.
 
-   ELIMINATION AND RESTART. The first step that separates the tied clubs
-   splits them into the best (one club, or a group still level on that step)
-   and the rest, who are ELIMINATED from the tie: every club still in it ranks
-   above every eliminated club. The best group starts again from step 1, and
-   the eliminated clubs, for the places below, start again from step 1 too —
-   each with the two-club or the multi-club procedure as its size dictates.
-   (Reproduces 2008-09: DEN, POR and SA at 54-28; the division-winner step
-   eliminates POR, DEN beats SA head-to-head, and POR is fourth although it
-   beat SA head-to-head — the order the league seeded them in.) Division
+   COMPLETE AND PARTIAL BREAKS (the league's Paragraph L.2.c, nba.com's
+   standings page). The criteria apply in order until the first that tells
+   the tied clubs apart. A complete break (every club a different value)
+   orders them by it. A partial break orders the levels it separates — any
+   club that did better ranks above any that did worse — and each group still
+   level starts again from the first criterion, with the two-club or the
+   multi-club procedure as its size dictates. (Reproduces 2008-09: DEN, POR
+   and SA at 54-28; the division-winner step puts POR below both, DEN beats SA
+   head-to-head, and POR is fourth although it beat SA head-to-head — the order
+   the league seeded them in.) Division
    titles are decided first, by the same procedure among the clubs tied for
    the lead (the division-winner step cannot separate them).
 
@@ -214,36 +215,41 @@ export class Standings {
     ];
   }
 
-  /** first value-discriminating step for a tied set: the best group and the rest, or null when no step separates them */
-  private split(S: number[], mode: string): { step: string; best: number[]; rest: number[] } | null {
+  /** the first step that tells a tied set apart: its clubs grouped by their value on that step, the best
+      level first (a complete break when every group is one club), or null when no step separates them */
+  private split(S: number[], mode: string): { step: string; levels: number[][] } | null {
     for (const st of this.steps(S)) {
-      let best: number[];
+      let cmp: (i: number, j: number) => number;
       if (st.frac) {
         const v = S.map((t) => st.frac!(t));
         if (v.some((x) => x == null || x.g === 0)) continue;   /* not measurable for the whole group: skipped */
-        let top = v[0] as Frac; for (const x of v) if (cmpFrac(x as Frac, top) > 0) top = x as Frac;
-        best = S.filter((_, i) => cmpFrac(v[i] as Frac, top) === 0);
+        cmp = (i, j) => cmpFrac(v[j] as Frac, v[i] as Frac);
       } else {
-        const v = S.map((t) => st.int!(t)); const top = Math.max(...v);
-        best = S.filter((_, i) => v[i] === top);
+        const v = S.map((t) => st.int!(t));
+        cmp = (i, j) => v[j] - v[i];
       }
-      if (best.length === S.length) continue;
+      const order = S.map((_, i) => i).sort((i, j) => cmp(i, j) || i - j);
+      const levels: number[][] = [];
+      for (let k = 0; k < order.length; k++) {
+        if (k > 0 && cmp(order[k - 1], order[k]) === 0) levels[levels.length - 1].push(S[order[k]]);
+        else levels.push([S[order[k]]]);
+      }
+      if (levels.length === 1) continue;
       this.ctx.diag('tb:' + mode + ':' + (S.length === 2 ? '2' : '3+') + ':' + st.id);
-      return { step: st.id, best, rest: S.filter((t) => !best.includes(t)) };
+      return { step: st.id, levels };
     }
     return null;
   }
-  /** rank a set of clubs tied on record. A step that separates the best club(s) from the rest
-      ELIMINATES the rest: every club still in the tie ranks above every eliminated club. The best
-      group (two or more) starts again from step 1, and so do the eliminated clubs for the places
-      below it, each with the two-club or multi-club procedure as its size dictates. */
+  /** rank a set of clubs tied on record (Paragraph L.2.c). The first step that tells them apart orders the
+      levels it separates; each group still level on it starts again from step 1, with the two-club or the
+      multi-club procedure as its size dictates. */
   rankTied(set: number[], mode: string): number[] {
     if (set.length <= 1) return set.slice();
     const sp = this.split(set, mode);
     const code = (xs: number[]) => xs.map((x) => this.L.teams[x].code);
     if (sp) {
-      this.ctx.trace({ type: sp.best.length === 1 ? 'tiebreak' : 'tiebreak_eliminate', mode, step: sp.step, clubs: code(set), ahead: code(sp.best), eliminated: code(sp.rest) });
-      return this.rankTied(sp.best, mode).concat(this.rankTied(sp.rest, mode));
+      this.ctx.trace({ type: sp.levels.length === set.length ? 'tiebreak' : 'tiebreak_partial', mode, step: sp.step, clubs: code(set), levels: sp.levels.map(code) });
+      return sp.levels.flatMap((g) => this.rankTied(g, mode));
     }
     /* random drawing: one place at a time, seeded */
     const i = this.ctx.rng.nextInt(set.length);

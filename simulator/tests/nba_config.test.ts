@@ -75,11 +75,12 @@ const byId: Record<string, any> = {}; NBA_TEAMS.forEach((t) => { byId[t.id] = t;
   T.eq('the config names its rules version', NBA_2026_27.rules_version, 'NBA-2021');
   const facts = [NBA_2026_27.tiebreakers, NBA_2026_27.playoff_clubs_for_tiebreakers, NBA_2026_27.play_in, NBA_2026_27.playoff_format, NBA_2026_27.home_court, NBA_2026_27.nba_cup];
   T.chk('every fact that moves a number names a source and how to verify it', facts.every((f) => f.affects_results && f.source.length > 40 && f.verify_by.length > 40));
-  T.chk('none is verified (the official pages were not reachable)', facts.every((f) => !isVerified(f)));
+  T.chk('all six are VERIFIED, each with a named verifier and a date, from the source check run that read them', facts.every((f) => isVerified(f) && /run 39996632843/.test(f.verified_by || '') && f.verified_at === '2026-10-23'));
+  T.chk('... and each cites the league\'s page it was read from (URL, capture, text sha256)', facts.every((f) => /web\.archive\.org\/web\/\d{14}id_\/https:\/\/(www|pr)\.nba\.com/.test(f.source) && /sha256 [0-9a-f]{64}/.test(f.source)));
   T.eq('the postseason schedule input is Estimated, not a fact to verify', NBA_2026_27.postseason_schedule.verification, 'NOT_APPLICABLE');
   const nba = sportRegistry().find((s) => s.key === 'nba')!;
   T.eq('the NBA is BLOCKED', nba.status, 'BLOCKED');
-  T.chk('its blockers: the six facts and the NBA Cup schedule', nba.blockers.length === 7 && nba.blockers.some((b) => /NBA Cup group stage/.test(b)), nba.blockers);
+  T.chk('its one blocker: the NBA Cup schedule (the facts are verified)', nba.blockers.length === 1 && /NBA Cup group stage/.test(nba.blockers[0]), nba.blockers);
   T.chk('the registry text carries no simulated number', !/probab|\d\.\d{3,}/.test(JSON.stringify(nba)));
   T.eq('drift is OFF; availability is the return-hazard plan', [NBA_2026_27.drift.mode, NBA_2026_27.availability.mode], ['off', 'return_hazards']);
 }
