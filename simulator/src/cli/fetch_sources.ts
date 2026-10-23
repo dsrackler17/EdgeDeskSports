@@ -3,7 +3,7 @@
    activation gates name, from somewhere that can reach them (GitHub's
    runners: .github/workflows/simulator-sources.yml), and print them whole.
 
-     node simulator/src/cli/fetch_sources.ts --sport nfl|nhl|nba [--out simulator/out/sources]
+     node simulator/src/cli/fetch_sources.ts --sport nfl|nhl|nba|mlb [--out simulator/out/sources]
 
    Read-only. No credential, no database, nothing written outside --out.
    Prints, for each source: the URL asked and the URL answered, the HTTP
@@ -23,6 +23,12 @@
    2026-27 schedule file, one line per game; each page from nba.com, from
    api-hub.nba.com and as the Internet Archive keeps it (nba.com refuses the
    runners), the schedule release also from pr.nba.com.
+   MLB: from the league's own Stats API the 2026 alignment and final
+   standings (division, wild-card and league ranks, one line per club) and
+   every 2026 postseason game (series, game number, hosts, scores, one line
+   per game); the postseason, tiebreaker and extra-inning pages on mlb.com
+   (live and as the Internet Archive keeps them), the archive's list of
+   mlb.com pages that name them, and the 2026 Official Baseball Rules.
    Kalshi (each sport): every Sports series whose title names the league or
    its championship (with the series' own fee_type / fee_multiplier), every
    open market in them with its FULL settlement rules and their sha256 (the
@@ -37,7 +43,7 @@ import { sha256Hex } from '../core/canonical.ts';
 const a = process.argv.slice(2), get = (k: string) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
 const OUT = get('--out') || path.join('simulator', 'out', 'sources');
 const SPORT = get('--sport') || 'nfl';
-if (!['nfl', 'nhl', 'nba'].includes(SPORT)) { console.error('usage: --sport nfl|nhl|nba [--out DIR]'); process.exit(2); }
+if (!['nfl', 'nhl', 'nba', 'mlb'].includes(SPORT)) { console.error('usage: --sport nfl|nhl|nba|mlb [--out DIR]'); process.exit(2); }
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -82,6 +88,22 @@ const NBA_PAGES: Page[] = NBA_ARTICLES.flatMap(([id, url]): Page[] => [
   { id: id + '_apihub', url: url.replace('https://www.nba.com/', 'https://api-hub.nba.com/') },
   { id: id + '_archive', url: NBA_ARCHIVE + url }
 ]).concat([{ id: 'nba_2026_27_schedule_release_pr', url: 'https://pr.nba.com/2026-27-nba-regular-season-schedule/' }]);
+/* MLB: the postseason landing page and the official-information page (its links name the rulebook PDFs);
+   the explainers for the format, the tiebreakers and the extra-inning runner are found, not guessed: the
+   archive's index of mlb.com and mlb.com's own sitemap are searched for them (mlbDiscover). Every page is
+   also read as the Internet Archive keeps it, in case mlb.com refuses the runners as nba.com does. */
+const MLB_ARCHIVE = 'https://web.archive.org/web/20261023000000id_/';
+const MLB_TOPICS = /tie-?break|postseason-format|playoff-format|postseason-bracket|playoff-bracket|automatic-runner|extra-inning|runner-on-second|home-field/i;
+const MLB_ARTICLES: Array<[string, string, RegExp?]> = [
+  ['mlb_postseason', 'https://www.mlb.com/postseason'],
+  ['mlb_official_information', 'https://www.mlb.com/official-information', /\.pdf|rules/i]
+];
+const mlbPages = (list: Array<[string, string, RegExp?]>): Page[] => list.flatMap(([id, url, links]): Page[] => [
+  { id, url, links }, { id: id + '_archive', url: MLB_ARCHIVE + url, links }
+]);
+/* the rulebook: only its extra-inning and tiebreak lines are printed */
+const MLB_RULES_PDF: Page = { id: 'mlb_official_baseball_rules_2026_pdf', url: 'https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf',
+  grep: /extra inning|runner (on|at|to) second|automatic runner|tie-?break|7\.01|regulation game/i };
 const KALSHI_FEE_PAGES: Page[] = [
   /* Kalshi's fee schedule, and the API documentation of fee types, multipliers and rounding */
   { id: 'kalshi_fee_schedule_pdf', url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf' },
@@ -128,7 +150,8 @@ export function embeddedText(html: string): string {
 
 async function fetchRaw(url: string, accept: string): Promise<{ res: Response; body: Buffer }> {
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(url, { headers: { 'user-agent': UA, accept }, redirect: 'follow' });
+    /* bounded: the Internet Archive can hold a request for minutes; a page that takes longer fails on its own line */
+    const res = await fetch(url, { headers: { 'user-agent': UA, accept }, redirect: 'follow', signal: AbortSignal.timeout(90_000) });
     if ((res.status === 429 || res.status >= 500) && attempt < 3) { await new Promise((r) => setTimeout(r, 4000 * 2 ** attempt)); continue; }
     return { res, body: Buffer.from(await res.arrayBuffer()) };
   }
@@ -236,14 +259,97 @@ async function nbaApi() {
   SUMMARY.push('nba schedule: ' + lines.length + ' games · sha256 of the lines ' + sha256Hex(lines.join('\n') + '\n'));
 }
 
+/* MLB: the league's Stats API (statsapi.mlb.com, what mlb.com's standings and schedule pages read) */
+const MLB_API = 'https://statsapi.mlb.com/api/v1/';
+const MLB_SEASON = 2026;
+async function mlbApi() {
+  section('SOURCE mlb_api  ' + MLB_API + ' (MLB\'s Stats API)');
+  const dv = await fetchJson('mlb_divisions', MLB_API + 'divisions?sportId=1&season=' + MLB_SEASON);
+  const divName = new Map<number, string>(((dv && dv.divisions) || []).map((d: any) => [Number(d.id), String(d.nameShort || d.name)]));
+  const st = await fetchJson('mlb_standings', MLB_API + 'standings?leagueId=103,104&season=' + MLB_SEASON + '&standingsTypes=regularSeason&hydrate=team');
+  const league = (id: unknown) => Number(id) === 103 ? 'AL' : Number(id) === 104 ? 'NL' : String(id);
+  const clubs: Array<{ abbr: string; lg: string; w: number; l: number; line: string }> = [];
+  for (const rec of (st && st.records) || []) for (const t of rec.teamRecords || []) {
+    const abbr = String((t.team && (t.team.abbreviation || t.team.name)) || '?');
+    const lg = league(rec.league && rec.league.id);
+    const line = [abbr, lg, divName.get(Number(rec.division && rec.division.id)) || String(rec.division && rec.division.id), [t.wins, t.losses, t.winningPercentage].join(' '),
+      [t.divisionRank, t.wildCardRank, t.leagueRank].join(' '), [t.gamesBack, t.wildCardGamesBack].join(' '), t.clinchIndicator || '', t.divisionChamp ? 1 : 0].join(' | ');
+    clubs.push({ abbr, lg, w: Number(t.wins), l: Number(t.losses), line });
+  }
+  console.log('  ' + clubs.length + ' clubs · (club | league | division | W L pct | divisionRank wildCardRank leagueRank | GB WCGB | clinch | divisionChamp)');
+  for (const c of clubs) console.log('  MLBSTANDING ' + c.line);
+  /* equal records in a league: the only places a tiebreaker can have decided */
+  for (const lg of ['AL', 'NL']) {
+    const byRec = new Map<string, string[]>();
+    for (const c of clubs.filter((x) => x.lg === lg)) byRec.set(c.w + '-' + c.l, (byRec.get(c.w + '-' + c.l) || []).concat(c.abbr));
+    for (const [r, xs] of byRec) if (xs.length > 1) console.log('  MLBTIE ' + lg + ' ' + r + ' ' + xs.join(' '));
+  }
+  SUMMARY.push('mlb standings: ' + clubs.length + ' clubs');
+  /* the 2026 postseason as played and scheduled, one line per game */
+  let ps = await fetchJson('mlb_postseason', MLB_API + 'schedule/postseason?sportId=1&season=' + MLB_SEASON + '&hydrate=team');
+  let games: any[] = ((ps && ps.dates) || []).flatMap((d: any) => d.games || []);
+  if (!games.length) {
+    ps = await fetchJson('mlb_postseason_schedule', MLB_API + 'schedule?sportId=1&season=' + MLB_SEASON + '&gameType=F,D,L,W&hydrate=team');
+    games = ((ps && ps.dates) || []).flatMap((d: any) => d.games || []);
+  }
+  if (games[0]) console.log('  fields of a game: ' + JSON.stringify(Object.keys(games[0])) + ' · of a side: ' + JSON.stringify(Object.keys((games[0].teams && games[0].teams.home) || {})));
+  console.log('  ' + games.length + ' postseason games · (gamePk | officialDate | gameType | series | game/of | away | home | state | away score | home score | winner | ifNecessary | venue)');
+  const ab = (s: any) => (s && s.team && (s.team.abbreviation || s.team.name)) || '';
+  const lines: string[] = [];
+  for (const g of games) {
+    const ln = [g.gamePk, g.officialDate, g.gameType, g.seriesDescription || '', g.seriesGameNumber + '/' + g.gamesInSeries, ab(g.teams && g.teams.away), ab(g.teams && g.teams.home),
+      (g.status && g.status.detailedState) || '', g.teams && g.teams.away && g.teams.away.score != null ? g.teams.away.score : '', g.teams && g.teams.home && g.teams.home.score != null ? g.teams.home.score : '',
+      g.teams && g.teams.away && g.teams.away.isWinner ? ab(g.teams.away) : g.teams && g.teams.home && g.teams.home.isWinner ? ab(g.teams.home) : '', g.ifNecessary || '', (g.venue && g.venue.name) || ''].join('|');
+    lines.push(ln); console.log('  MLBPOSTGAME ' + ln);
+  }
+  fs.writeFileSync(path.join(OUT, 'mlb_postseason_' + MLB_SEASON + '.psv'), lines.join('\n') + '\n');
+  SUMMARY.push('mlb postseason: ' + lines.length + ' games · sha256 of the lines ' + sha256Hex(lines.join('\n') + '\n'));
+}
+
+/* mlb.com pages on the postseason format, the tiebreakers and the extra-inning runner, from the archive's
+   index of mlb.com (glossary and news) and mlb.com's sitemap; each one found is then read (mlbPages) */
+async function mlbDiscover(): Promise<Array<[string, string]>> {
+  section('SOURCE mlb_discovery  the mlb.com pages that name the format, the tiebreakers or the extra-inning runner');
+  const found = new Set<string>();
+  const keep = (u: string) => {
+    const m = /^(?:https?:\/\/)?(?:www\.)?mlb\.com(?::\d+)?(\/[^?#\s]*)/i.exec(u.trim());
+    if (m && MLB_TOPICS.test(m[1])) found.add('https://www.mlb.com' + m[1].replace(/\/+$/, ''));
+  };
+  const CDX = 'https://web.archive.org/cdx/search/cdx?collapse=urlkey&fl=original&filter=statuscode:200&matchType=prefix';
+  for (const [id, url] of [
+    ['mlb_cdx_glossary', CDX + '&url=mlb.com/glossary/&limit=5000'],
+    ['mlb_cdx_news', CDX + '&url=mlb.com/news/&from=2022&limit=300&filter=original:.*(tiebreak|postseason-format|playoff-format|automatic-runner|extra-inning|home-field).*']
+  ]) {
+    try {
+      const { res, body } = await fetchRaw(url, 'text/plain');
+      const rows = body.toString('utf8').split('\n').filter(Boolean);
+      console.log('INDEX ' + id + ' status ' + res.status + ' · ' + rows.length + ' urls');
+      for (const r of rows) keep(r);
+    } catch (e) { console.log('INDEX ' + id + ' FAILED ' + String((e as Error).message || e)); }
+  }
+  try {
+    const { res, body } = await fetchRaw('https://www.mlb.com/sitemap.xml', 'application/xml,text/xml');
+    const locs = [...body.toString('utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    console.log('SITEMAP status ' + res.status + ' · ' + locs.length + ' entries:\n' + locs.slice(0, 120).map((l) => '  ' + l).join('\n'));
+    for (const l of locs) keep(l);
+  } catch (e) { console.log('SITEMAP FAILED ' + String((e as Error).message || e)); }
+  const list = [...found].sort();
+  console.log('-- ' + list.length + ' mlb.com pages on these topics:\n' + list.map((u) => '  MLBPAGE ' + u).join('\n'));
+  SUMMARY.push('mlb discovery: ' + list.length + ' pages');
+  /* the 16 shortest paths first: an explainer's slug is short, a dated game recap's long */
+  return list.sort((p, q) => p.length - q.length || p.localeCompare(q)).slice(0, 16)
+    .map((u): [string, string] => ['mlb_found_' + u.replace('https://www.mlb.com/', '').replace(/[^a-z0-9]+/gi, '_').slice(0, 70), u]);
+}
+
 /* season futures: a series whose title names a champion, conference, division, playoff berth or seed.
    Per-game, per-player and in-season prop series (thousands of markets) are listed by name and count only. */
-const FUTURES = /Super Bowl|Stanley Cup|President.?s|champion|conference|AFC|NFC|Eastern|Western|division|Atlantic|Metropolitan|Central|Pacific|playoff|play-in|seed|Finals|NBA Cup/i;
+const FUTURES = /Super Bowl|Stanley Cup|President.?s|champion|conference|AFC|NFC|Eastern|Western|division|Atlantic|Metropolitan|Central|Pacific|playoff|play-in|seed|Finals|NBA Cup|World Series|pennant|American League|National League/i;
 const NOT_FUTURES = /game|spread|total|points|yards|touchdown|TD|MVP|player|quarter|half|draft|coach|week|rookie|award|passing|rushing|receiving|sack|score|margin|first|anytime|goal|assist|save|rebound|three|triple|double/i;
 const KALSHI_MATCH: Record<string, { match: RegExp; not: RegExp }> = {
   nfl: { match: /\bNFL\b|Super Bowl|Pro Football|American Football Conference|National Football Conference|^KXNFL|^KXSB|^KXAFC$|^KXNFC$/i, not: /NCAA|College|AFCON|Fantasy|NBA|\bFCS\b/i },
   nhl: { match: /\bNHL\b|Stanley Cup|Pro Hockey|National Hockey League|President.?s Trophy|^KXNHL|^KXSTANLEY/i, not: /NCAA|College|AHL|KHL|PWHL|Fantasy|Olympic|World Championship|4 Nations|Four Nations/i },
-  nba: { match: /\bNBA\b|Pro Basketball|National Basketball Association|NBA Cup|^KXNBA/i, not: /WNBA|NCAA|College|G League|Fantasy|Olympic|EuroLeague/i }
+  nba: { match: /\bNBA\b|Pro Basketball|National Basketball Association|NBA Cup|^KXNBA/i, not: /WNBA|NCAA|College|G League|Fantasy|Olympic|EuroLeague/i },
+  mlb: { match: /\bMLB\b|World Series|Pro Baseball|Major League Baseball|American League|National League|^KXMLB/i, not: /NCAA|College|Little League|KBO|NPB|Fantasy|World Baseball Classic|WBC|Caribbean|Softball/i }
 };
 
 async function kalshi() {
@@ -303,6 +409,8 @@ async function kalshi() {
 await kalshi();
 if (SPORT === 'nhl') await nhlApi();
 if (SPORT === 'nba') await nbaApi();
-for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : NBA_PAGES) await fetchPage(p);
+if (SPORT === 'mlb') await mlbApi();
+const MLB_PAGES = SPORT === 'mlb' ? mlbPages(MLB_ARTICLES.concat(await mlbDiscover())).concat([MLB_RULES_PDF]) : [];
+for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : SPORT === 'mlb' ? MLB_PAGES : NBA_PAGES) await fetchPage(p);
 section('SUMMARY');
 console.log(SUMMARY.join('\n') + '\nwritten to ' + OUT);
