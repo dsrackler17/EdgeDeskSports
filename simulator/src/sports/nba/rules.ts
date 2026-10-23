@@ -124,6 +124,14 @@ export class League {
       if (g.done && !(Number.isInteger(g.home_score) && Number.isInteger(g.away_score) && g.home_score !== g.away_score)) throw new Error('completed game without a decisive score: ' + g.game_id);
     });
   }
+  /** set a game's two clubs: an NBA Cup game not yet on the schedule takes the run's own pairing */
+  setPair(k: number, home: number, away: number): void {
+    if (!(k >= 0 && k < this.G) || this.games[k].done) throw new Error('setPair: game ' + k + ' is not an open slot');
+    if (!(home >= 0 && home < this.T && away >= 0 && away < this.T) || home === away) throw new Error('setPair: bad teams for game ' + this.games[k].game_id);
+    this.gHome[k] = home; this.gAway[k] = away;
+    this.gSameConf[k] = this.conf[home] === this.conf[away] ? 1 : 0;
+    this.gSameDiv[k] = this.div[home] === this.div[away] ? 1 : 0;
+  }
 }
 
 export interface TieContext {

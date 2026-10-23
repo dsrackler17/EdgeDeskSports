@@ -145,8 +145,15 @@ from the run page):
 
 ```powershell
 node simulator/src/cli/build_kalshi_mappings.ts --candidates C:/Downloads/kalshi_candidates.json --run <run id>
+node simulator/src/cli/build_kalshi_mappings.ts --sport mlb --candidates C:/Downloads/kalshi_candidates_mlb.json --run <run id>
+node simulator/src/cli/build_kalshi_mappings.ts --sport nhl --candidates C:/Downloads/kalshi_candidates_nhl.json --run <run id>
 npm run sim:test
 ```
+
+Each command rebuilds one sport's mappings and keeps the others'. Without the
+artifact, `--log <the fetch job's log>` (timestamps kept) reads the same
+series and open markets from the job's printed lines. The templates and the
+next-season steps: `MLB_SIMULATOR_NOTES.md` §15.1, `NHL_SIMULATOR_NOTES.md` §16.
 
 
 ```powershell
@@ -233,13 +240,19 @@ PowerShell, to check what a step will do before running it in CI:
 $env:SIM_EVENT='workflow_dispatch'; $env:SIM_SPORT='nfl'; $env:SIM_SEASON='2026'; $env:SIM_RUNS='100000'; $env:SIM_SEED=''; $env:SIM_PUBLISH='true'; node simulator/src/cli/plan.ts
 ```
 
-## NBA (2026-27): blocked, runnable as a dry run
+## NBA (2026-27): active
 
 Design, evidence and what is and is not modelled:
 [`NBA_SIMULATOR_NOTES.md`](../../NBA_SIMULATOR_NOTES.md). The NBA is
-**BLOCKED**: six 2026-27 rules facts await verification against nba.com
-(unreachable from the build environment), and 30 regular-season games depend
-on the NBA Cup group stage and are not on the schedule until early December.
+**ACTIVE**: the 2026-27 rules facts are VERIFIED from the league's text, and
+the 30 regular-season games that depend on the NBA Cup are simulated from the
+Cup's format until the league schedules them (each one it schedules replaces
+its stand-in; the notes §5.6). It publishes from its own daily schedule in
+`simulator.yml` (15:47 UTC: `plan.ts` `NBA_CRON`), 100,000 runs. That leg
+re-reads the season in progress from hoopR, takes the history from the NBA
+build's cache, runs the NBA suites and builds the snapshot (about 10 minutes).
+A dispatched run: Actions → *Simulator* → Run workflow, sport `nba`, season
+`2027`.
 
 The NBA snapshot prices every game with the served NBA model, which needs the
 NBA work tables (`.cache/nba_work`, rebuilt from the public hoopR feeds; about
@@ -248,9 +261,9 @@ eight minutes and 0.5 GB the first time) and `pyarrow`:
 ```powershell
 pip install pyarrow
 node --max-old-space-size=6144 nba/ingest/season.js --season all      # the work tables (the committed nba/data files may change: git checkout nba/data keeps the committed ones)
-npm run sim:nba:test                                                    # NBA rules (2006-07..2025-26 postseasons), synthetic cases, config, model, simulation
-npm run sim:nba:dry-run -- --runs 100000                                # the 2026-27 season as committed; --allow-incomplete-schedule is a WARN that blocks publication
-node --max-old-space-size=8000 simulator/src/cli/run.ts --sport nba --season 2026 --as-of 2026-04-25T00:00:00Z --dry-run --runs 20000 --workers 4   # a historical replay: 2025-26 frozen in the first round
+npm run sim:nba:test                                                    # NBA rules (2006-07..2025-26 postseasons), the NBA Cups 2023-24..2025-26, synthetic cases, config, model, simulation, the Cup in the simulation
+npm run sim:nba:dry-run -- --runs 100000                                # the 2026-27 season as committed (the Cup-dependent games simulated)
+node --max-old-space-size=8000 simulator/src/cli/run.ts --sport nba --season 2026 --as-of 2026-04-25T00:00:00Z --dry-run --runs 20000 --workers 4   # a historical replay: 2025-26 frozen in the first round (never published: run.configured_season)
 npm run sim:replay -- simulator/out/<dir>/snapshot.json                 # replay an NBA snapshot (sport and season come from the file)
 ```
 
@@ -264,15 +277,11 @@ npm run sim:nba:audit                    # simulator/data/nba_postseason_audit.j
 npm run sim:nba:fixture                  # simulator/fixtures/nba_2027_snapshot.json.gz and nba_2026_r1_snapshot.json.gz (the test snapshots)
 ```
 
-**To activate the NBA:** verify the six facts in
-`simulator/src/sports/nba/config.ts` (VERIFIED, `verified_by`, `verified_at`)
-in a reviewed commit; once the NBA Cup-dependent games are on the schedule
-(`schedule.complete` passes) remove the schedule blocker in
-`simulator/src/sports/registry.ts`; regenerate the reader registry
-(`node simulator/src/cli/build_ui_registry.ts`); add `nba` to `RUNNABLE` in
-`simulator/src/cli/plan.ts` and an NBA work-table step to
-`.github/workflows/simulator.yml` (restore the `nba-work-` cache the NBA build
-keeps, as `nba-build.yml` does); then a first 100,000-run publication by hand.
+**Each new season:** re-run the Simulator source check and re-verify the
+facts in `simulator/src/sports/nba/config.ts`. Write the season's Cup format
+(`cup`: the Cup Nights, the window that holds only Cup-dependent games, the
+Estimated dates, the Championship city) in a reviewed commit, then rebuild
+the fixtures (`npm run sim:nba:fixture`).
 
 ## Disable and recover
 

@@ -1,0 +1,54 @@
+# EdgeDesk — market intelligence and the validation lab (docs/market-intelligence).
+#
+# The statistics checked against answers known in advance, every market-
+# intelligence finding kind against its eligibility rule, the replay's time
+# rules on every committed football game, and the three generated reports
+# rebuilt from the committed ledgers (they must run; their numbers move as the
+# ledgers grow, so they are not compared byte for byte).
+#
+# Offline: no network, no credentials, nothing written outside the checkout.
+name: Market intelligence tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_validation_lab.js'
+      - 'lib/edgedesk_market_intel.js'
+      - 'lib/edgedesk_replay.js'
+      - 'lib/edgedesk_market_state.js'
+      - 'lib/edgedesk_calc.js'
+      - 'lib/research_core.js'
+      - 'lib/edgedesk_validation.js'
+      - 'tools/market_intel/**'
+      - 'docs/market-intelligence/hypotheses.json'
+      - '.github/workflows/market-intelligence-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-intelligence-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The validation lab (cluster bootstrap, information test, calibration, multiplicity, point-in-time benchmark, folds, hypotheses)
+        run: node tools/market_intel/validation_lab.test.js
+      - name: The market intelligence engine (nine kinds, eligibility, explanations, wording)
+        run: node tools/market_intel/market_intel.test.js
+      - name: Replay (nothing after the replay time; the result withheld)
+        run: node tools/market_intel/replay.test.js
+      - name: The reports rebuild from the committed ledgers, and every hypothesis is well formed
+        run: |
+          node tools/market_intel/validation_report.js --json > /tmp/validation.json
+          node -e "const r=require('/tmp/validation.json'); const bad=r.hypotheses.filter(h=>h.status===null); if(bad.length){console.error(JSON.stringify(bad));process.exit(1)} console.log(r.hypotheses.length+' hypotheses judged')"
+          node tools/market_intel/market_intel_backtest.js > /dev/null
+          node tools/market_intel/model_registry.js > /dev/null

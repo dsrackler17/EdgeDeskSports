@@ -82,6 +82,32 @@ class EloTest(unittest.TestCase):
         r2, _ = U.walk(sw, {"k": 32, "k_new_mult": 2.0, "layoff_regress": 0.25})
         self.assertTrue(np.allclose(r1.p_raw.values, 1 - r2.p_raw.values))
 
+    def test_champion_term_is_off_at_zero_and_follows_the_champion(self):
+        flagged = self.bouts.copy()
+        flagged["champ"] = ""
+        flagged.loc[flagged.index[::7], "champ"] = flagged.fighter_a_id[::7]
+        flagged.loc[flagged.index[3::7], "champ"] = flagged.fighter_b_id[3::7]
+        base, _ = U.walk(self.bouts, {"k": 32})
+        off, _ = U.walk(flagged, {"k": 32, "champ_bonus": 0.0})
+        self.assertTrue(np.array_equal(base.p_raw.values, off.p_raw.values))
+        on, _ = U.walk(flagged, {"k": 32, "champ_bonus": 100.0})
+        self.assertFalse(np.allclose(base.p_raw.values, on.p_raw.values))
+        sw = flagged.copy()
+        sw[["fighter_a_id", "fighter_b_id"]] = flagged[["fighter_b_id", "fighter_a_id"]].values
+        sw["y"] = 1 - flagged.y
+        on_sw, _ = U.walk(sw, {"k": 32, "champ_bonus": 100.0})
+        self.assertTrue(np.allclose(on.p_raw.values, 1 - on_sw.p_raw.values))
+        first = on.iloc[0]
+        self.assertAlmostEqual(first.p_raw, 1.0 / (1.0 + 10 ** (-100.0 / 400.0)))
+
+    def test_title_flags_are_read_beside_the_bouts(self):
+        b = self.bouts.iloc[0]
+        with open(os.path.join(self.d, "title_bouts.csv"), "w") as f:
+            f.write("bout_id,champion_id,champion,division,date,source\n%s,%s,x,Lightweight,2016-01-01,wikipedia\n" % (b.bout_id, b.fighter_b_id))
+        d = U.load(os.path.join(self.d, "bouts.csv"))
+        self.assertEqual(d.champ.iloc[0], b.fighter_b_id)
+        self.assertEqual((d.champ != "").sum(), 1)
+
     def test_slope_calibration_is_symmetric_and_fitted_only_on_earlier_seasons(self):
         r, _ = U.walk(self.bouts, {"k": 32})
         c, fits = U.calibrate(r, {"calibration": "slope"}, 2016)

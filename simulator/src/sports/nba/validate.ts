@@ -2,7 +2,8 @@
    NBA input validation (blocks the simulation) and publication gates (block
    publishing). Every check returns PASS / FAIL / WARN with its evidence.
    =========================================================================== */
-import { codeHashes, MAX_POSTSEASON_GAMES, type NbaInputData, type NbaSnapshot } from './inputs.ts';
+import { codeHashes, MAX_POSTSEASON_GAMES, CUP_SLOTS, type NbaInputData, type NbaSnapshot } from './inputs.ts';
+import { cupStandings, quarterfinals, type CupStructure } from './cup.ts';
 import { NBA_TEAMS } from './config.ts';
 import { League, Standings, seedConferences, playPostseason, rulesFor, type NbaGame, type PlayedGame } from './rules.ts';
 import { contextKeys, contextKey } from './postseason_context.ts';
@@ -23,16 +24,63 @@ export function validateNbaInputs(snap: NbaSnapshot, opt: { allowIncompleteSched
   const per: Record<string, number> = {}, pair: Record<string, number> = {}; const ids = new Set<string>();
   for (const x of d.games) { per[x.home] = (per[x.home] || 0) + 1; per[x.away] = (per[x.away] || 0) + 1; ids.add(x.game_id); const k = [x.home, x.away].sort().join('-'); pair[k] = (pair[k] || 0) + 1; }
   const n = d.config.regular_season_games_per_club;
-  const complete = d.games.length === NBA_REGULAR_SEASON_GAMES && ids.size === d.games.length && [...codes].every((c) => per[c] === n);
+  /* the NBA Cup: the games it decides that are not on the schedule yet are simulated from its format (cup.ts) */
+  const cup = d.cup || null, cupOk = !!cup && !cup.error;
+  const postedPer: Record<string, number> = {}; for (const c of codes) postedPer[c] = 0;
+  if (cup) for (const id of cup.posted) { const x = d.games.find((y) => y.game_id === id); if (x) { postedPer[x.home]++; postedPer[x.away]++; } }
+  const virtual = cupOk ? 30 - cup!.posted.length : 0;
+  const complete = d.games.length + virtual === NBA_REGULAR_SEASON_GAMES && ids.size === d.games.length
+    && [...codes].every((c) => (cupOk ? per[c] - postedPer[c] === n - 2 && postedPer[c] <= 2 : per[c] === n));
   g('schedule.complete', complete,
-    d.games.length + ' regular-season games on the schedule (' + NBA_REGULAR_SEASON_GAMES + ' expected, ' + n + ' per club)' + (complete ? '' : ': the NBA Cup-dependent games are not scheduled yet — ' + JSON.stringify(per)),
+    d.games.length + ' regular-season games on the schedule' + (cupOk ? ' + ' + virtual + ' NBA Cup-dependent games simulated from the Cup\'s format until the league schedules them' : '') + ' (' + NBA_REGULAR_SEASON_GAMES + ' expected, ' + n + ' per club)' + (complete ? '' : ': ' + (cup ? 'the Cup could not account for them' : 'the NBA Cup-dependent games are not scheduled yet') + ' — ' + JSON.stringify(per)),
     opt.allowIncompleteSchedule ? 'publication' : 'simulation', !!opt.allowIncompleteSchedule);
+  if (cup) {
+    /* the Cup off the schedule; a posted Cup-dependent game only after Group Play, and fitting its real result */
+    const why: string[] = [];
+    if (cup.error) why.push(cup.error);
+    if (cup.groups.length !== 6 || cup.groups.some((x) => x.length !== 5) || cup.group_games.length !== 60) why.push('not six groups of five with 60 Group Play games');
+    const byId = new Map(d.games.map((x) => [x.game_id, x]));
+    const gpDone = cup.group_games.every((id) => byId.get(id) && byId.get(id)!.done);
+    if (cup.posted.some((id) => { const x = byId.get(id); return !x || x.date < cup.format.window[0] || x.date > cup.format.window[1]; })) why.push('a posted Cup-dependent game outside the window');
+    if (cup.posted.length > 30) why.push(cup.posted.length + ' games in the window (30 at most)');
+    if (cup.posted.length && !gpDone) why.push('Cup-dependent games on the schedule before Group Play is over: ' + cup.posted.slice(0, 4).join(', '));
+    if (cup.group_games.some((id) => byId.get(id) && byId.get(id)!.done && !cup.group_results[id])) why.push('a completed Group Play game without regulation scores');
+    if (!cup.error && gpDone && (cup.posted.length || cup.championship)) {
+      const ix: Record<string, number> = {}; d.teams.forEach((t, i) => { ix[t.code] = i; });
+      const groups = cup.groups.map((x) => x.map((c) => ix[c]));
+      const groupOf = new Array(d.teams.length).fill(-1); groups.forEach((x, i) => x.forEach((t) => { groupOf[t] = i; }));
+      const st: CupStructure = { groups, groupOf, groupConf: groups.map((x) => (d.teams[x[0]].conference === 'East' ? 0 : 1)) };
+      let drawn = false;
+      const cs = cupStandings(st, d.teams.length, cup.group_games.map((id) => { const x = byId.get(id)!, r = cup.group_results[id]; return { home: ix[x.home], away: ix[x.away], margin: (x.home_score as number) - (x.away_score as number), ot: r.ot, regHome: r.reg_home, regAway: r.reg_away }; }),
+        d.teams.map((t) => cup.prior_record[t.code]), { rng: streamFor(0n, 0, STREAM.cup), diag() {}, flag(k) { if (k === 'cup_random_drawing') drawn = true; } });
+      const ko = new Set(cs.seeds.flat().map((t) => d.teams[t].code));
+      const qf = new Set(quarterfinals(cs).map((q) => [d.teams[q.home].code, d.teams[q.away].code].sort().join('|')));
+      for (const id of cup.posted) {
+        const x = byId.get(id)!, k = [x.home, x.away].sort().join('|');
+        if (ko.has(x.home) !== ko.has(x.away)) why.push(id + ' (' + x.away + ' at ' + x.home + ') pairs a knockout club with one that did not advance');
+        else if (ko.has(x.home) && d.teams[ix[x.home]].conference !== d.teams[ix[x.away]].conference) why.push(id + ' pairs knockout clubs of the two conferences');
+        else if (ko.has(x.home) && !qf.has(k) && !cup.posted.some((q) => qf.has([byId.get(q)!.home, byId.get(q)!.away].sort().join('|')))) why.push(id + ' is a knockout game before the quarterfinals are on the schedule');
+      }
+      if (drawn) why.push('the real Group Play standings need the league\'s random drawing: the posted games cannot be checked');
+    }
+    g('cup.structure', why.length === 0, why.length ? why.join('; ') : 'six groups of five off the ' + cup.format.cup_nights.length + ' Cup Nights (' + cup.groups.map((x) => x.join(' ')).join(' | ') + '); ' + cup.posted.length + ' Cup-dependent games on the schedule' + (cup.posted.length ? ', fitting the real Group Play results' : '') + '; the Championship ' + (cup.championship ? 'on the schedule' : 'not yet scheduled'));
+    /* the prices of every pairing a game not on the schedule can produce */
+    let nCup = 0, cupBad = 0;
+    const need = virtual > 0 || !cup.championship;
+    if (need) for (const slot of CUP_SLOTS) for (const h of d.teams) for (const a of d.teams) {
+      if (h.code === a.code || ((slot === 'quarterfinal' || slot === 'semifinal') && h.conference !== a.conference) || (slot === 'championship' && !(h.conference === 'East' && a.conference === 'West'))) continue;
+      const e = cup.pairs[slot] && cup.pairs[slot][h.code] && cup.pairs[slot][h.code][a.code]; nCup++;
+      if (!e || ![e.mu, e.pace, e.s_plr, e.s_adj].every(Number.isFinite) || Math.abs(e.mu) > 40) cupBad++;
+    }
+    const champOk = !cup.championship || cup.championship.done || (!!cup.championship.model && Number.isFinite(cup.championship.model.mu));
+    g('model.cup_pairs', cupBad === 0 && (!need || nCup === 2 * 420 + 2 * 870 + 225) && champOk, need ? nCup + ' NBA Cup pairings priced (quarterfinals and semifinals within each conference, the two non-advancing dates, the Championship East v West)' + (cupBad ? '; ' + cupBad + ' missing' : '') : 'every Cup-dependent game is on the schedule');
+  }
   /* the alignment against the schedule: a division rival at least three times so far (four when complete), a conference rival at least three, the other conference two */
   let bad: string[] = [];
   for (const a of d.teams) for (const b of d.teams) {
     if (a.code >= b.code) continue;
     const c = pair[[a.code, b.code].sort().join('-')] || 0;
-    const want = div[a.code] === div[b.code] ? (complete ? 4 : 3) : conf[a.code] === conf[b.code] ? 3 : 2;
+    const want = div[a.code] === div[b.code] ? (complete && !virtual ? 4 : 3) : conf[a.code] === conf[b.code] ? 3 : 2;
     if (c < want || (conf[a.code] !== conf[b.code] && c > 3)) bad.push(a.code + '-' + b.code + ' ' + c);
   }
   g('schedule.alignment', bad.length === 0, 'game counts agree with the configured conferences and divisions' + (bad.length ? '; disagree: ' + bad.slice(0, 8).join(', ') : ''));

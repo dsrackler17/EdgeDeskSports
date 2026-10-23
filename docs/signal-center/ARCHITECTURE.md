@@ -125,7 +125,7 @@ candidates. Every other sport stays in shadow until an operator adds it to
 |---|---|---|---|---|---|---|---|---|---|
 | NFL | live candidate | operational | operational | operational | experimental | **blocked** | operational | operational | operational |
 | College football | live candidate | operational | experimental | operational | experimental | operational (QB) | operational | operational | experimental |
-| NBA | shadow | operational | experimental | experimental | blocked | experimental | operational | operational | experimental |
+| NBA | shadow | operational | experimental | experimental | experimental | experimental | operational | operational | experimental |
 | NHL | shadow | operational | experimental | experimental | experimental | blocked | operational | operational | experimental |
 | MLB | shadow | — | — | — | experimental | — | — | operational | — |
 | WNBA | shadow | operational | — | — | experimental | — | operational | — | — |
@@ -133,14 +133,17 @@ candidates. Every other sport stays in shadow until an operator adds it to
 | UFC | shadow | coming soon | — | — | — | — | — | — | — |
 | College baseball | shadow | coming soon | — | — | coming soon | — | — | — | — |
 | Women's college basketball | shadow | — | — | — | — | — | — | — | — |
-| Tennis, golf | unavailable | — | — | — | coming soon | — | — | — | — |
+| Tennis | unavailable | — | — | — | coming soon | — | — | — | — |
+| Golf | unavailable | — | — | — | — | — | — | — | — |
 
 Blockers worth knowing:
 
 - **NFL injuries are blocked.** No NFL injury source carries a per-row publication time, and a designation
   without one cannot be ordered against a forecast snapshot.
-- **The NBA simulator is blocked** by the Simulator itself (NBA Cup group-stage games are not yet on the schedule).
-  Signal Center never overrides the Simulator's word.
+- **Simulator changes follow the Simulator's own registry** (`lib/edgedesk_simulator_sports.js`) and never override
+  it. They also need outcome definitions in the engine (`E.SIM_OUTCOMES`: NFL, college football, NHL, NBA, MLB,
+  WNBA). Golf and UFC run in the Simulator, but their tournament and fight results are not season standings, so
+  Signal Center does not compare them yet.
 - **MLB has no forecast history to compare.**
 - **Not supported anywhere yet:** roster movement (no source-dated transaction feed), model disagreement (no
   independent models published side by side), historical anomaly (the ledgers start in 2026). The Coverage view

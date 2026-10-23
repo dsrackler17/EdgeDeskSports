@@ -71,9 +71,14 @@ SIM.sports.forEach((x) => {
   if (!mine) return;
   const st = mine.signals.SIMULATION_SHIFT.state;
   chk(x.key + ': simulator shifts follow the Simulator (' + x.status + ' → ' + st + ')',
-    x.status === 'ACTIVE' ? st === 'EXPERIMENTAL' : (x.status === 'BLOCKED' ? st === 'BLOCKED' : !OK(st)), { sim: x.status, mine: st });
+    x.status === 'ACTIVE' ? (R.SIM_OUTCOME_SPORTS.indexOf(x.key) >= 0 ? st === 'EXPERIMENTAL' : !OK(st)) : (x.status === 'BLOCKED' ? st === 'BLOCKED' : !OK(st)), { sim: x.status, mine: st });
 });
 chk('a sport the Simulator does not know has no simulator shift', !OK(R.simulator('golf_doesnotexist').state));
+chk('the registry\'s simulator outcome sports are the engine\'s, exactly', JSON.stringify(R.SIM_OUTCOME_SPORTS.slice().sort()) === JSON.stringify(Object.keys(E.SIM_OUTCOMES).sort()), [R.SIM_OUTCOME_SPORTS, Object.keys(E.SIM_OUTCOMES)]);
+sports.forEach((s) => {
+  if (OK(s.signals.SIMULATION_SHIFT.state)) chk(s.key + ': a publishable simulator shift has outcome definitions in the engine', !!E.SIM_OUTCOMES[s.key]);
+});
+chk('UFC is the Simulator\'s ufc', R.sport('mma').capabilities.simulator.detail !== 'The Simulator has no module for this sport.' || !SIM.sports.some((x) => x.key === 'ufc'));
 chk('the CFB simulator capability says selection is Estimated, never known', /Estimated \(committee proxy\), never known/.test(R.sport('cfb').capabilities.simulator.detail) || R.sport('cfb').capabilities.simulator.state !== 'EXPERIMENTAL');
 
 /* ---- categories ---- */
@@ -95,7 +100,7 @@ chk('NFL injuries stay BLOCKED: no per-row publication time', R.sport('nfl').sig
 chk('NFL and college football forecast shifts are operational', R.eligible('nfl', 'FORECAST_SHIFT').ok && R.eligible('cfb', 'FORECAST_SHIFT').ok);
 chk('MLB has no forecast history to compare', R.eligible('mlb', 'FORECAST_SHIFT').ok === false);
 chk('NBA and NHL divergences are experimental, not operational', R.sport('nba').signals.MARKET_DIVERGENCE.state === 'EXPERIMENTAL' && R.sport('nhl').signals.MARKET_DIVERGENCE.state === 'EXPERIMENTAL');
-chk('every publishable state for tennis and golf is absent', ['tennis', 'golf'].every((k) => !R.sport(k) || Object.values(R.sport(k).signals).every((c) => !OK(c.state))));
+chk('tennis and golf publish nothing (no model; their Simulator results have no outcome definition here)', ['tennis', 'golf'].every((k) => !R.sport(k) || Object.values(R.sport(k).signals).every((c) => !OK(c.state))));
 
 console.log((fail ? 'FAILED' : 'ALL GREEN') + ' signal center registry — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

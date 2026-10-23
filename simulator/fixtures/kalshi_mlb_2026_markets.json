@@ -1,0 +1,885 @@
+{
+ "note": "REAL Kalshi markets: every MLB club market of the series build_kalshi_mappings.ts maps, as the Simulator source check printed them (GitHub Actions run 40019030435, job fetch (mlb), 2026-10-23): the 2026 World Series markets still open, every 2026 pennant, division and playoff-qualifier market settled. Rules text as printed (whitespace squashed); rules_sha256 as the runner computed it on the raw text (each equals sha256(rules_primary + newline + rules_secondary) here). Regression evidence for the MLB templates (simulator/tests/markets.test.ts); never a mapping source.",
+ "series": [
+  {
+   "ticker": "KXMLB",
+   "fee_type": "quadratic_with_maker_fees",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBAL",
+   "fee_type": "quadratic_with_maker_fees",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBALCENT",
+   "fee_type": "quadratic",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBALEAST",
+   "fee_type": "quadratic",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBALWEST",
+   "fee_type": "quadratic",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBNL",
+   "fee_type": "quadratic_with_maker_fees",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBNLCENT",
+   "fee_type": "quadratic",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBNLEAST",
+   "fee_type": "quadratic",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBNLWEST",
+   "fee_type": "quadratic",
+   "fee_multiplier": 1
+  },
+  {
+   "ticker": "KXMLBPLAYOFFS",
+   "fee_type": "quadratic",
+   "fee_multiplier": 1
+  }
+ ],
+ "markets": [
+  {
+   "series_ticker": "KXMLB",
+   "event_ticker": "KXMLB-26",
+   "market_ticker": "KXMLB-26-MIL",
+   "yes_sub_title": "Milwaukee",
+   "rules_primary": "If Milwaukee wins the 2026 Pro Baseball Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "f3f3ca2d78e00e10224cef377700b1c05b131a219e4b78fc5387342189abc8ef"
+  },
+  {
+   "series_ticker": "KXMLB",
+   "event_ticker": "KXMLB-26",
+   "market_ticker": "KXMLB-26-TB",
+   "yes_sub_title": "Tampa Bay",
+   "rules_primary": "If Tampa Bay wins the 2026 Pro Baseball Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "5ed09edd1c64fe525cbe29f858f060b2880deaa0a93e03d66a83e0981fc17a58"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-ATH",
+   "yes_sub_title": "A's",
+   "rules_primary": "If A's win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "d64035a09e089b6d57fe6eacc9eb61182dd01d2e1c26c4207bff6301c806249a"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-BAL",
+   "yes_sub_title": "Baltimore",
+   "rules_primary": "If Baltimore win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "031a01d9b00e936fb2378fcdd5cd9f6025f9771c145c27214cb77f20b59fc84b"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-BOS",
+   "yes_sub_title": "Boston",
+   "rules_primary": "If Boston win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "93f3c48ec55861a973aade5dc749ace522e4d9e10afedb638ffe8d62c85329d4"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-CLE",
+   "yes_sub_title": "Cleveland",
+   "rules_primary": "If Cleveland win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "1a5e846886400d4fc9e3f498c4c7fcc6c7981953e69d0e919734d67455288cfc"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-CWS",
+   "yes_sub_title": "Chicago WS",
+   "rules_primary": "If Chicago WS win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "6b7e92d60207ffb4afc055515fe34ed204e778dc09e0e0d43eb9035b8fdc62ba"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-DET",
+   "yes_sub_title": "Detroit",
+   "rules_primary": "If Detroit win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "1ffc764893a0e51e4ef40c8564e6a6f47aa50608b9e62ef7ae27276c1dd8fc9c"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-HOU",
+   "yes_sub_title": "Houston",
+   "rules_primary": "If Houston win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "758fdd8bd5543d85a52ed3a2eb4e82a5b613b09c08ec29e48659057819f2e4cd"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-KC",
+   "yes_sub_title": "Kansas City",
+   "rules_primary": "If Kansas City win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "97b7b26a80a04c2d3e6e42edf48dafb646c152a16b16b42f7e187e3e2f61d339"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-LAA",
+   "yes_sub_title": "Los Angeles A",
+   "rules_primary": "If Los Angeles A win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "d1f8b2ce84d55d99beda937e7dbb0c0f308b90eca58efdf16fb57af32b5094d8"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-MIN",
+   "yes_sub_title": "Minnesota",
+   "rules_primary": "If Minnesota win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "a0c239d7a6c2cd610bef0bfa4e55e92a9ed3a3ec01e4044db8543143d7235c76"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-NYY",
+   "yes_sub_title": "New York Y",
+   "rules_primary": "If New York Y win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "9ce4b5ee0ad8f8be0f63cd473a60da871f148466f78231a91d94d6686833d7a8"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-SEA",
+   "yes_sub_title": "Seattle",
+   "rules_primary": "If Seattle win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "bbf4432e8743aab30e828403db53b2778f526ba56d264add54e9a2dfd20fdd48"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-TB",
+   "yes_sub_title": "Tampa Bay",
+   "rules_primary": "If Tampa Bay win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "e96097786a28bfe75cd4fe5679c180eac1f50585af892d0dd15a2bb332c02e95"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-TEX",
+   "yes_sub_title": "Texas",
+   "rules_primary": "If Texas win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "047e310797440ca4d00d961182a140fd6b5b5341607ac17f892528d519999a54"
+  },
+  {
+   "series_ticker": "KXMLBAL",
+   "event_ticker": "KXMLBAL-26",
+   "market_ticker": "KXMLBAL-26-TOR",
+   "yes_sub_title": "Toronto",
+   "rules_primary": "If Toronto win the 2026 Pro Baseball American League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "61fc1fab7e538060877a22cd172878047f8a2fddc3269afa1bfd9293326101cf"
+  },
+  {
+   "series_ticker": "KXMLBALCENT",
+   "event_ticker": "KXMLBALCENT-26",
+   "market_ticker": "KXMLBALCENT-26-CLE",
+   "yes_sub_title": "Cleveland",
+   "rules_primary": "If Cleveland is the 2026 Pro Baseball AL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "6d995b2c8c629b66c84acec4516d74ba4b5d7488f6aeaed15f959d3c263c5cbe"
+  },
+  {
+   "series_ticker": "KXMLBALCENT",
+   "event_ticker": "KXMLBALCENT-26",
+   "market_ticker": "KXMLBALCENT-26-CWS",
+   "yes_sub_title": "Chicago WS",
+   "rules_primary": "If Chicago WS is the 2026 Pro Baseball AL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "764f1819148adfa5d62e72d9179d3ed332027122804a84692c4766292089b862"
+  },
+  {
+   "series_ticker": "KXMLBALCENT",
+   "event_ticker": "KXMLBALCENT-26",
+   "market_ticker": "KXMLBALCENT-26-DET",
+   "yes_sub_title": "Detroit",
+   "rules_primary": "If Detroit is the 2026 Pro Baseball AL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "44c83027bc1b02d5a091d4394074a30a070290c71448290c84f90d20075674cb"
+  },
+  {
+   "series_ticker": "KXMLBALCENT",
+   "event_ticker": "KXMLBALCENT-26",
+   "market_ticker": "KXMLBALCENT-26-KC",
+   "yes_sub_title": "Kansas City",
+   "rules_primary": "If Kansas City is the 2026 Pro Baseball AL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "f10a99fb8212eedbc31a059742430a95d9e082280f1ad879b9374d76002d2235"
+  },
+  {
+   "series_ticker": "KXMLBALCENT",
+   "event_ticker": "KXMLBALCENT-26",
+   "market_ticker": "KXMLBALCENT-26-MIN",
+   "yes_sub_title": "Minnesota",
+   "rules_primary": "If Minnesota is the 2026 Pro Baseball AL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "facbb9932f403e2f04c92a134599a02da17d6f359635268d98d7b3292a1fa353"
+  },
+  {
+   "series_ticker": "KXMLBALEAST",
+   "event_ticker": "KXMLBALEAST-26",
+   "market_ticker": "KXMLBALEAST-26-BAL",
+   "yes_sub_title": "Baltimore",
+   "rules_primary": "If Baltimore is the 2026 Pro Baseball AL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "3bf79de0d8acc3b748096ebed1acd874bc630154ad91a89e79a834bce8c84267"
+  },
+  {
+   "series_ticker": "KXMLBALEAST",
+   "event_ticker": "KXMLBALEAST-26",
+   "market_ticker": "KXMLBALEAST-26-BOS",
+   "yes_sub_title": "Boston",
+   "rules_primary": "If Boston is the 2026 Pro Baseball AL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "bb4beb97ae216a258d4f63a42d8def3f15cd007ec387d7ec53fe397900af1f13"
+  },
+  {
+   "series_ticker": "KXMLBALEAST",
+   "event_ticker": "KXMLBALEAST-26",
+   "market_ticker": "KXMLBALEAST-26-NYY",
+   "yes_sub_title": "New York Y",
+   "rules_primary": "If New York Y is the 2026 Pro Baseball AL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "3f016a3e72d39382f8575f516983bee035906c16a26065364322413d02111d91"
+  },
+  {
+   "series_ticker": "KXMLBALEAST",
+   "event_ticker": "KXMLBALEAST-26",
+   "market_ticker": "KXMLBALEAST-26-TB",
+   "yes_sub_title": "Tampa Bay",
+   "rules_primary": "If Tampa Bay is the 2026 Pro Baseball AL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "a1def27414a42b5c28a0ffc147f92b8cdbb889da4356260eff29cfd41c3ceab0"
+  },
+  {
+   "series_ticker": "KXMLBALEAST",
+   "event_ticker": "KXMLBALEAST-26",
+   "market_ticker": "KXMLBALEAST-26-TOR",
+   "yes_sub_title": "Toronto",
+   "rules_primary": "If Toronto is the 2026 Pro Baseball AL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "575bc03fbb40fcb39fb26c64dc07661a31dd443795e970b1bafad35d01f0f44e"
+  },
+  {
+   "series_ticker": "KXMLBALWEST",
+   "event_ticker": "KXMLBALWEST-26",
+   "market_ticker": "KXMLBALWEST-26-ATH",
+   "yes_sub_title": "A's",
+   "rules_primary": "If A's is the 2026 Pro Baseball AL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "7f5b06a941203f9db43c27efb4054906f70184c26c4e6f336edc62361be32170"
+  },
+  {
+   "series_ticker": "KXMLBALWEST",
+   "event_ticker": "KXMLBALWEST-26",
+   "market_ticker": "KXMLBALWEST-26-HOU",
+   "yes_sub_title": "Houston",
+   "rules_primary": "If Houston is the 2026 Pro Baseball AL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "836b35592efac250eb42229a92af0c326cc23366ba3e341b745404d37c15a627"
+  },
+  {
+   "series_ticker": "KXMLBALWEST",
+   "event_ticker": "KXMLBALWEST-26",
+   "market_ticker": "KXMLBALWEST-26-LAA",
+   "yes_sub_title": "Los Angeles A",
+   "rules_primary": "If Los Angeles A is the 2026 Pro Baseball AL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "682bd4c22edc02daca7943de19e2343f07254335dbda5dfcfeda972adf44bd29"
+  },
+  {
+   "series_ticker": "KXMLBALWEST",
+   "event_ticker": "KXMLBALWEST-26",
+   "market_ticker": "KXMLBALWEST-26-SEA",
+   "yes_sub_title": "Seattle",
+   "rules_primary": "If Seattle is the 2026 Pro Baseball AL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "98ec86a6dd413b23f53921cdb1eed33234584d62fd5e4f3852c2e4f7d25e5181"
+  },
+  {
+   "series_ticker": "KXMLBALWEST",
+   "event_ticker": "KXMLBALWEST-26",
+   "market_ticker": "KXMLBALWEST-26-TEX",
+   "yes_sub_title": "Texas",
+   "rules_primary": "If Texas is the 2026 Pro Baseball AL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "577857a79e952d661b962f51b498e7aa263c34b86146782e856908e692c18849"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-ATL",
+   "yes_sub_title": "Atlanta",
+   "rules_primary": "If Atlanta win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "55ee0771639c23f93694b2fd2c32b112951f068cf6460fa13755617370c5192c"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-AZ",
+   "yes_sub_title": "Arizona",
+   "rules_primary": "If Arizona win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "7bd8c6a31443120dbb8a35d6bb1e7e9313116175922393575abe02dd17db33c2"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-CHC",
+   "yes_sub_title": "Chicago C",
+   "rules_primary": "If Chicago C win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "f8303242358eec6f6fb14ed2388b06f71e8b5e59e1211d6c4d28ca770993b79a"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-CIN",
+   "yes_sub_title": "Cincinnati",
+   "rules_primary": "If Cincinnati win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "24e8773462a74eb6607f577bee1edfdd6f986690230a2b5063e4560f2f055a1f"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-COL",
+   "yes_sub_title": "Colorado",
+   "rules_primary": "If Colorado win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "603c3df5b55c714a4a3058ccd628e7098a376a20f1ae8a7acf3203561e08f089"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-LAD",
+   "yes_sub_title": "Los Angeles D",
+   "rules_primary": "If Los Angeles D win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "8c9e31e88622274524d79e936008d4f438b6c7b5efbea00a645ce84ea7f04a9d"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-MIA",
+   "yes_sub_title": "Miami",
+   "rules_primary": "If Miami win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "315dbc04e14e838a99b36a7c29747b40cd81ff28f8d10bb03b570e859a22056b"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-MIL",
+   "yes_sub_title": "Milwaukee",
+   "rules_primary": "If Milwaukee win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "431c9fff46cee1181d5b1e082d262aa63c84d4580bbfa5c57fc89acc4b1a255d"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-NYM",
+   "yes_sub_title": "New York M",
+   "rules_primary": "If New York M win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "881fbb7706c545a412e51bce80d983d866ac5d30a245f5646c5ed964041a29b7"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-PHI",
+   "yes_sub_title": "Philadelphia",
+   "rules_primary": "If Philadelphia win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "5e14a28706d22ec374197e05b6fa72516fe71b9bb14e085229becff0d11871f6"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-PIT",
+   "yes_sub_title": "Pittsburgh",
+   "rules_primary": "If Pittsburgh win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "e9adf5c1763f402ad426d4a572bb1462993e709bdadfc5eed84fe97e3e419213"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-SD",
+   "yes_sub_title": "San Diego",
+   "rules_primary": "If San Diego win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "079f508d39ff5be88beb3aa7ef0441cea8586d73b0085f66d90f886b86d15d67"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-SF",
+   "yes_sub_title": "San Francisco",
+   "rules_primary": "If San Francisco win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "cf280cd404b2591069fd6192a373d86dc0f97c5f95cb060ccbfba1e00bc88299"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-STL",
+   "yes_sub_title": "St. Louis",
+   "rules_primary": "If St. Louis win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "d19ac83a18719740a7576571f01c78ede5aebd66c212341c3ac0fbbc305236ef"
+  },
+  {
+   "series_ticker": "KXMLBNL",
+   "event_ticker": "KXMLBNL-26",
+   "market_ticker": "KXMLBNL-26-WSH",
+   "yes_sub_title": "Washington",
+   "rules_primary": "If Washington win the 2026 Pro Baseball National League Championship, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "926638eb70f18fe333078a0c4ec562f4df987bbb92c99ec96ec001cc3a8060f7"
+  },
+  {
+   "series_ticker": "KXMLBNLCENT",
+   "event_ticker": "KXMLBNLCENT-26",
+   "market_ticker": "KXMLBNLCENT-26-CHC",
+   "yes_sub_title": "Chicago C",
+   "rules_primary": "If Chicago C is the 2026 Pro Baseball NL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "92b8dd1b937e42472a47d580b73ea1ee0c26f57d1d50d648a381ce2537401a19"
+  },
+  {
+   "series_ticker": "KXMLBNLCENT",
+   "event_ticker": "KXMLBNLCENT-26",
+   "market_ticker": "KXMLBNLCENT-26-CIN",
+   "yes_sub_title": "Cincinnati",
+   "rules_primary": "If Cincinnati is the 2026 Pro Baseball NL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "f6d319c0346dac8d4d0d474c8caf02aebefc9e95b804e2e27b06c297262078aa"
+  },
+  {
+   "series_ticker": "KXMLBNLCENT",
+   "event_ticker": "KXMLBNLCENT-26",
+   "market_ticker": "KXMLBNLCENT-26-MIL",
+   "yes_sub_title": "Milwaukee",
+   "rules_primary": "If Milwaukee is the 2026 Pro Baseball NL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "a0a63711a116536ed18fd886d6dac90fffe654db17cc4377151c816cf5f1bcd2"
+  },
+  {
+   "series_ticker": "KXMLBNLCENT",
+   "event_ticker": "KXMLBNLCENT-26",
+   "market_ticker": "KXMLBNLCENT-26-PIT",
+   "yes_sub_title": "Pittsburgh",
+   "rules_primary": "If Pittsburgh is the 2026 Pro Baseball NL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "fa19cf3dafe36fdf887d7a5e67b1e1941c017ca728e4ce16473512bb1fb91353"
+  },
+  {
+   "series_ticker": "KXMLBNLCENT",
+   "event_ticker": "KXMLBNLCENT-26",
+   "market_ticker": "KXMLBNLCENT-26-STL",
+   "yes_sub_title": "St. Louis",
+   "rules_primary": "If St. Louis is the 2026 Pro Baseball NL Central Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "049a3b33b1798181ba943d090c7665a1af75c1feb96b303e479ee70cc344f888"
+  },
+  {
+   "series_ticker": "KXMLBNLEAST",
+   "event_ticker": "KXMLBNLEAST-26",
+   "market_ticker": "KXMLBNLEAST-26-ATL",
+   "yes_sub_title": "Atlanta",
+   "rules_primary": "If Atlanta is the 2026 Pro Baseball NL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "0e0122b4d622a8708096bfbf56dfec4656a1f65d46810622280cf8455b8c2b84"
+  },
+  {
+   "series_ticker": "KXMLBNLEAST",
+   "event_ticker": "KXMLBNLEAST-26",
+   "market_ticker": "KXMLBNLEAST-26-MIA",
+   "yes_sub_title": "Miami",
+   "rules_primary": "If Miami is the 2026 Pro Baseball NL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "b839b5446b9b2fb3da2892bb1f0759aa8514efa35eaaec639cd447b3d6d9c3b0"
+  },
+  {
+   "series_ticker": "KXMLBNLEAST",
+   "event_ticker": "KXMLBNLEAST-26",
+   "market_ticker": "KXMLBNLEAST-26-NYM",
+   "yes_sub_title": "New York M",
+   "rules_primary": "If New York M is the 2026 Pro Baseball NL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "21efc4c71170fdc886de94212cec290eb0fa0edc9a9c630574a8715b5abeb681"
+  },
+  {
+   "series_ticker": "KXMLBNLEAST",
+   "event_ticker": "KXMLBNLEAST-26",
+   "market_ticker": "KXMLBNLEAST-26-PHI",
+   "yes_sub_title": "Philadelphia",
+   "rules_primary": "If Philadelphia is the 2026 Pro Baseball NL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "c61bc65855a05a9820b3c5814aa758a73faee14db42a81c327959dcb4ca7438c"
+  },
+  {
+   "series_ticker": "KXMLBNLEAST",
+   "event_ticker": "KXMLBNLEAST-26",
+   "market_ticker": "KXMLBNLEAST-26-WSH",
+   "yes_sub_title": "Washington",
+   "rules_primary": "If Washington is the 2026 Pro Baseball NL East Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "da7fed743a7aeea24b9ec524e3a074953e33ca0607d9403027fb862f06d6da9b"
+  },
+  {
+   "series_ticker": "KXMLBNLWEST",
+   "event_ticker": "KXMLBNLWEST-26",
+   "market_ticker": "KXMLBNLWEST-26-AZ",
+   "yes_sub_title": "Arizona",
+   "rules_primary": "If Arizona is the 2026 Pro Baseball NL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "a92f8fee3b421b26671f70506e1389d11fc3749e1c08b9fd9da4fbfac941a80a"
+  },
+  {
+   "series_ticker": "KXMLBNLWEST",
+   "event_ticker": "KXMLBNLWEST-26",
+   "market_ticker": "KXMLBNLWEST-26-COL",
+   "yes_sub_title": "Colorado",
+   "rules_primary": "If Colorado is the 2026 Pro Baseball NL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "82bc843032e47cdc066caf1787da172b2d3de69f1469b092d4938283fa1f2bf3"
+  },
+  {
+   "series_ticker": "KXMLBNLWEST",
+   "event_ticker": "KXMLBNLWEST-26",
+   "market_ticker": "KXMLBNLWEST-26-LAD",
+   "yes_sub_title": "Los Angeles D",
+   "rules_primary": "If Los Angeles D is the 2026 Pro Baseball NL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "fda3bfbf50a8f3fe3c03386f1634e203eca3b8d3d87086dd0aa49ebbfd943d49"
+  },
+  {
+   "series_ticker": "KXMLBNLWEST",
+   "event_ticker": "KXMLBNLWEST-26",
+   "market_ticker": "KXMLBNLWEST-26-SD",
+   "yes_sub_title": "San Diego",
+   "rules_primary": "If San Diego is the 2026 Pro Baseball NL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "ff6d42fc25597ce665f7f2b03a9563bd38200add750beeba9197116cae3ab502"
+  },
+  {
+   "series_ticker": "KXMLBNLWEST",
+   "event_ticker": "KXMLBNLWEST-26",
+   "market_ticker": "KXMLBNLWEST-26-SF",
+   "yes_sub_title": "San Francisco",
+   "rules_primary": "If San Francisco is the 2026 Pro Baseball NL West Division Winner, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "3b54f99cd81238abb74ce31f377cd3bb7890dbad124831196fee37facffd2f5c"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-ATH",
+   "yes_sub_title": "A's",
+   "rules_primary": "If A's is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "559f753ba7c18c1665c442f605cabfc5214a0f1b4ffea812669d5f16484f0150"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-ATL",
+   "yes_sub_title": "Atlanta",
+   "rules_primary": "If Atlanta is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "ecd69ee20cd611d488f9efd2daaffa59edd406748b0b54eb591ceafc2fba258c"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-AZ",
+   "yes_sub_title": "Arizona",
+   "rules_primary": "If Arizona is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "e4d8f3bd6b325447258b37d280105b61c82972431d8941c604f43d9287056693"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-BAL",
+   "yes_sub_title": "Baltimore",
+   "rules_primary": "If Baltimore is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "a58d8372720d8fd2be82dcf459a23bcc22f41760995ace52e72e8ba4067e2dc7"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-BOS",
+   "yes_sub_title": "Boston",
+   "rules_primary": "If Boston is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "23e6ad3518954aa398e5350906033e5b004b51752a7f99f0654422c262bbb827"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-CHC",
+   "yes_sub_title": "Chicago C",
+   "rules_primary": "If Chicago C is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "2de860dde4c612a5c7f8ccb7fe772d6234e07e50acd4a24bb21120dd21cc338e"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-CIN",
+   "yes_sub_title": "Cincinnati",
+   "rules_primary": "If Cincinnati is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "ffe91d342a262baff11f27baad51c6fb616db09d534df92f91c2461af2e3dfe1"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-CLE",
+   "yes_sub_title": "Cleveland",
+   "rules_primary": "If Cleveland is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "d96164185c03f0838d241b5f8eafde182135009fb80196b089fdfa2745b574f1"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-COL",
+   "yes_sub_title": "Colorado",
+   "rules_primary": "If Colorado is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "d3f2807afa83cfaa8d3e5a2c9ca0764ee708faa2e89b23f85456ee877364ef20"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-CWS",
+   "yes_sub_title": "Chicago WS",
+   "rules_primary": "If Chicago WS is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "31bc65a42f981ed18949bac7a096f0c0fdb2a408801d72a809bf6f491adbc564"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-DET",
+   "yes_sub_title": "Detroit",
+   "rules_primary": "If Detroit is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "dcbcf53daa411842dcf2c79438740712c6b578692c33616c789bd2bb72ab065d"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-HOU",
+   "yes_sub_title": "Houston",
+   "rules_primary": "If Houston is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "4e7f86f65deb23af602df133a171080933e53b9561517811c9c5d146a2f424ab"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-KC",
+   "yes_sub_title": "Kansas City",
+   "rules_primary": "If Kansas City is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "e05943d1b49ab796ef8424aca4acd7624db193441316b232ac9864faba3a9ee7"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-LAA",
+   "yes_sub_title": "Los Angeles A",
+   "rules_primary": "If Los Angeles A is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "de0128ff20e38066deee6afa85b1fe85e3dbe1116ea56351e82bab86630a085f"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-LAD",
+   "yes_sub_title": "Los Angeles D",
+   "rules_primary": "If Los Angeles D is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "3233968fa557a420a9c3439682601f31c2d63e61297f38d339f6d585c357a246"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-MIA",
+   "yes_sub_title": "Miami",
+   "rules_primary": "If Miami is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "d1ca89d7a2201c135e928fe1c275b618fcdcb7ca2304d2bf2e4a8ddcc6909336"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-MIL",
+   "yes_sub_title": "Milwaukee",
+   "rules_primary": "If Milwaukee is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "0edd9b0efd904419bd215b0fdcae71af70f93ac360c342e99c642964ba107b36"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-MIN",
+   "yes_sub_title": "Minnesota",
+   "rules_primary": "If Minnesota is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "3a8d6ad6e134009c1b6654d33e07c57c0b993f9ae03e3b193acfdef4f2395cad"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-NYM",
+   "yes_sub_title": "New York M",
+   "rules_primary": "If New York M is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "b86d1bd9887ed9f060e977cb5b75b65c1ea89d1e47746df6dcd58618748c905e"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-NYY",
+   "yes_sub_title": "New York Y",
+   "rules_primary": "If New York Y is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "c217061fd7259d7a65641f480fd20edecd6397cd7600bc059e703f126cbbf644"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-PHI",
+   "yes_sub_title": "Philadelphia",
+   "rules_primary": "If Philadelphia is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "6975d2f338df47fe65a521a9d0ac42b1eb4d944975b0954a1d245db90b7527b0"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-PIT",
+   "yes_sub_title": "Pittsburgh",
+   "rules_primary": "If Pittsburgh is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "a5e8d8dee29b6efebb56635b2a411d0d960cb3810a198194026797729fbd7073"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-SD",
+   "yes_sub_title": "San Diego",
+   "rules_primary": "If San Diego is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "d264a73458d1ce3f0c7f3729d4d5caf1dac7ee34b5897b592f69dd044160fc82"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-SEA",
+   "yes_sub_title": "Seattle",
+   "rules_primary": "If Seattle is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "52cf8b2272c5e84a03cab7516d849f50188d393bf98fc3dc6ae606c0cb87bf6b"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-SF",
+   "yes_sub_title": "San Francisco",
+   "rules_primary": "If San Francisco is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "b75bf1fd0a3fa49e3b737da41ffa7746a315cacfe3b6bc7cbfd5d4298e62ccc5"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-STL",
+   "yes_sub_title": "St. Louis",
+   "rules_primary": "If St. Louis is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "cb6bfbc34e2fbeb75b80890102a1289e60a09f2238eed6d5a9b2372a7158a970"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-TB",
+   "yes_sub_title": "Tampa Bay",
+   "rules_primary": "If Tampa Bay is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "c1e6dc37093c3e7357f770994e72516c7e2e909e67240128d410bdc55a039fe8"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-TEX",
+   "yes_sub_title": "Texas",
+   "rules_primary": "If Texas is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "5b405ff6730490f70c46a636f635639c9dda8bd82b95a2e6392ccd01d66d413c"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-TOR",
+   "yes_sub_title": "Toronto",
+   "rules_primary": "If Toronto is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "e82a8b62ad7f7f87613f48cfde970842401654c3570df0d721eb7c300c49307b"
+  },
+  {
+   "series_ticker": "KXMLBPLAYOFFS",
+   "event_ticker": "KXMLBPLAYOFFS-26",
+   "market_ticker": "KXMLBPLAYOFFS-26-WSH",
+   "yes_sub_title": "Washington",
+   "rules_primary": "If Washington is one of the 2026 Pro Baseball Playoff Qualifiers, then the market resolves to Yes.",
+   "rules_secondary": "Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.",
+   "rules_sha256": "3e5e64a41018cf1e490a5b0bfa4569490c01763afb02bd1a9bed9c1cf8a56c72"
+  }
+ ]
+}

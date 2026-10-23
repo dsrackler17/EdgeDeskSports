@@ -3,7 +3,20 @@
 #
 #   schedule 10:17 UTC daily   the NFL, college football, the NHL and, through
 #                              the World Series, MLB, through the WNBA Finals,
-#                              the WNBA (plan.ts NIGHTLY), 100,000 runs.
+#                              the WNBA, every night the UFC (its feeds are
+#                              refreshed at 09:41 UTC by Simulator sports data)
+#                              and through 2026-12-20 golf (every PGA Tour,
+#                              LPGA and DP World Tour event in play, each
+#                              published as its own competition; the live ESPN
+#                              leaderboard is read here, the committed feed if
+#                              it fails) (plan.ts NIGHTLY), 100,000 runs.
+#   schedule 15:47 UTC daily   the NBA (plan.ts NBA_CRON), 100,000 runs: late
+#                              enough that hoopR has the previous night's
+#                              results (the results.current gate), before
+#                              the day's first tip. The leg re-reads the
+#                              season in progress from hoopR (the history
+#                              from the NBA build's cache) and runs the
+#                              served pass for the snapshot (about 10 min).
 #                              (10:17 UTC = 06:17 New York in daylight time,
 #                              05:17 in standard time: after the last Monday
 #                              night game is final and nflverse's games.csv has
@@ -49,15 +62,16 @@ name: Simulator
 on:
   schedule:
     - cron: '17 10 * * *'
+    - cron: '47 15 * * *'
   workflow_dispatch:
     inputs:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, nhl, mlb, cfb, ncaam, wnba]
+        options: [nfl, nhl, mlb, cfb, ncaam, wnba, nba, ufc, golf]
         default: nfl
       season:
-        description: 'Season (must equal the sport''s configured season: NFL, MLB, CFB and WNBA 2026; NHL 2027 = 2026-27; NCAAM 2027)'
+        description: 'Season (must equal the sport''s configured season: NFL, MLB, CFB, WNBA, UFC and golf 2026; NHL and NBA 2027 = 2026-27; NCAAM 2027)'
         type: string
         default: '2026'
       runs:
@@ -96,6 +110,7 @@ jobs:
         id: plan
         env:
           SIM_EVENT: ${{ github.event_name }}
+          SIM_CRON: ${{ github.event.schedule }}
           SIM_SPORT: ${{ inputs.sport }}
           SIM_SEASON: ${{ inputs.season }}
           SIM_RUNS: ${{ inputs.runs }}
@@ -151,9 +166,41 @@ jobs:
       - name: The WNBA suites, before a WNBA run
         if: ${{ matrix.sport == 'wnba' }}
         run: npm run sim:wnba:test
+      - name: The UFC suites, before a UFC run (the Elo port must reproduce the served prices)
+        if: ${{ matrix.sport == 'ufc' }}
+        run: npm run sim:ufc:test
+      - name: The golf suites, before a golf run
+        if: ${{ matrix.sport == 'golf' }}
+        run: npm run sim:golf:test
       - name: The college basketball (NCAAM) bracket suite, before an NCAAM run
         if: ${{ matrix.sport == 'ncaam' }}
         run: node simulator/tests/ncaam_sim.test.ts
+      - name: The NBA suites, before an NBA run
+        if: ${{ matrix.sport == 'nba' }}
+        run: npm run sim:nba:test
+      - name: Python and pyarrow (the NBA ingest reads hoopR's parquet files)
+        if: ${{ matrix.sport == 'nba' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: pyarrow
+        if: ${{ matrix.sport == 'nba' }}
+        run: pip install --quiet pyarrow
+      - name: The NBA work tables (the NBA build's cache, read only)
+        if: ${{ matrix.sport == 'nba' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .cache/nba_src
+            .cache/nba_work
+          key: nba-work-none
+          restore-keys: nba-work-
+      - name: The NBA season in progress from hoopR, the history from the cache
+        if: ${{ matrix.sport == 'nba' }}
+        run: |
+          S=$(node -e "console.log(require('./nba/config.js').CURRENT_SEASON)")
+          node --max-old-space-size=6144 nba/ingest/season.js --season "$((S-1)),$S"
+          node --max-old-space-size=6144 nba/ingest/season.js --season all --offline || node --max-old-space-size=6144 nba/ingest/season.js --season all
       - name: Status
         env:
           STATUS: ${{ matrix.status }}
@@ -181,6 +228,7 @@ jobs:
           PUBLISH: ${{ matrix.publish }}
           SB_URL: ${{ matrix.publish && secrets.SB_URL || '' }}
           SB_SERVICE_ROLE: ${{ matrix.publish && secrets.SB_SERVICE_ROLE || '' }}
+          NODE_OPTIONS: ${{ matrix.sport == 'nba' && '--max-old-space-size=8000' || '' }}
         run: |
           set +e
           out="simulator/out/$SPORT-$SEASON-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"

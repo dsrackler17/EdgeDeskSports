@@ -37298,7 +37298,9 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
       out.push(base(sp, {
         event_id: g.game_id, event_key: 'NFL|' + g.game_id, start_utc: g.kickoff, venue: g.venue,
         home: team(g.home_team, g.home_code, g.home_team_id), away: team(g.away_team, g.away_code, g.away_team_id),
-        model: { id: eng.model_version || 'edgedesk_football_v1', version: eng.feature_version || null, artifact: 'football/nfl/slate.json', artifact_generated_at: iso(s.generated_at), predicted_at: iso(s.generated_at), params_generated_at: iso(eng.built_at), trained_through: eng.trained_through || null },
+        /* the game's own model_version: the engine routes each game (football/engine.js), and since
+           2026-10-21 the slate header still names v1.0.0 while every game is priced by v2.1.0 */
+        model: { id: str(g.model_version) || eng.model_version || 'edgedesk_football_v1', version: eng.feature_version || null, artifact: 'football/nfl/slate.json', artifact_generated_at: iso(s.generated_at), predicted_at: iso(s.generated_at), params_generated_at: iso(eng.built_at), trained_through: eng.trained_through || null },
         outcome: { p_home: num(g.model_home_win_prob), p_away: r4(1 - num(g.model_home_win_prob)), p_draw: null, settles: 'includes overtime (a tie grades by house rule)' },
         fair: { moneyline: { home: num(g.model_fair_home_ml), away: num(g.model_fair_away_ml) }, spread: { home_line: num(g.model_home_line) }, total: { line: num(g.model_fair_total), expected: num(g.model_fair_total) } },
         projected_score: { home: num(g.model_fair_total) != null && num(g.model_home_margin) != null ? r2((num(g.model_fair_total) + num(g.model_home_margin)) / 2) : null, away: num(g.model_fair_total) != null && num(g.model_home_margin) != null ? r2((num(g.model_fair_total) - num(g.model_home_margin)) / 2) : null, margin: num(g.model_home_margin), total: num(g.model_fair_total), basis: 'the engine\'s fair margin and fair total' },
@@ -37324,7 +37326,8 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
         _sensitivity: sens
       }));
     });
-    return { projections: out, error: null, model: { id: eng.model_version, generated_at: s.generated_at }, starters_read: !!starters };
+    var ids = out.map(function (p) { return p.model && p.model.id; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+    return { projections: out, error: null, model: { id: ids.length === 1 ? ids[0] : eng.model_version, ids: ids, generated_at: s.generated_at }, starters_read: !!starters };
   };
 
   /* the CFB engine's own additive terms (cfb_disagreement/1 components: rating,

@@ -8,7 +8,9 @@
 #          MLB's real 2024 responses, configuration), the college football suites
 #          (conference ties, the 2024-2025 title games and brackets, the committee
 #          proxy, favourite calibration), the NCAAM bracket module and its tabs,
-#          and the generated-file checks
+#          the WNBA series and the golf tournament simulations and their tabs
+#          (golf's history, study and backtest are committed under simulator/data:
+#          'simulator/**' covers them), and the generated-file checks
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
 #   sql    supabase/simulator.sql on a real, throwaway PostgreSQL: RLS, the
@@ -56,6 +58,10 @@ on:
       - 'basketball/walkforward.js'
       - 'basketball/data/wnba/**'
       - 'basketball/params/wnba_live.json'
+      - 'model_loop/adapters/ufc/**'
+      - 'model_loop/data/ufc/bouts.csv'
+      - 'model_loop/published/ufc/**'
+      - 'docs/model-loop/ufc/versions.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -88,6 +94,10 @@ on:
       - 'basketball/walkforward.js'
       - 'basketball/data/wnba/**'
       - 'basketball/params/wnba_live.json'
+      - 'model_loop/adapters/ufc/**'
+      - 'model_loop/data/ufc/bouts.csv'
+      - 'model_loop/published/ufc/**'
+      - 'docs/model-loop/ufc/versions.json'
       - 'tools/personal/_pg.js'
       - '.github/workflows/simulator-tests.yml'
       - '.github/workflows/simulator.yml'
@@ -150,21 +160,27 @@ jobs:
         run: node simulator/tests/cli.test.ts
       - name: The publisher's client side (bounded retries, key redaction, call order, failure handling)
         run: node simulator/tests/publish.test.ts
-      - name: NBA rules against every postseason 2006-07..2025-26, and the synthetic cases
+      - name: NBA rules against every postseason 2006-07..2025-26, the NBA Cups 2023-24..2025-26, and the synthetic cases
         run: |
           node simulator/tests/nba_rules_history.test.ts
           node simulator/tests/nba_rules_synthetic.test.ts
+          node simulator/tests/nba_cup.test.ts
       - name: NBA configuration, the served model, availability and the simulation (committed snapshots)
         run: |
           node simulator/tests/nba_config.test.ts
           node simulator/tests/nba_model.test.ts
           node simulator/tests/nba_sim.test.ts
+          node simulator/tests/nba_cup_sim.test.ts
       - name: College basketball (NCAAM) bracket simulation and its reader tabs
         run: |
           node simulator/tests/ncaam_sim.test.ts
           node simulator/tests/ncaam_ui.test.ts
       - name: WNBA postseason simulation (series, the shared offset, the served model on the committed data) and its reader tabs
         run: npm run sim:wnba:test
+      - name: UFC fights and title path (the Elo port against the served prices, sum rules, title-path invariants, workers) and its reader tabs
+        run: npm run sim:ufc:test
+      - name: Golf tournament simulation (cut rules measured from history, conditioning, sum rules, dead heats, the playoff, worker-count independence) and its reader tabs
+        run: npm run sim:golf:test
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check

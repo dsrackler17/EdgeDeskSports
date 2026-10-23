@@ -21,6 +21,25 @@ A new first seat in the terminal, **Signals** (`app.html#signals`, alias `#signa
 
 Tests: `engine.test.js` (113), `registry.test.js` (177), `ui.test.js` (89), `graphics.test.js` (268), `sql.test.js` (139, PostgreSQL 16, including the rollback), `worker.test.js` (28), `graphics.e2e.js` (200), `ui.e2e.js` (119) and `pages.e2e.js` (58), all in `tools/signal_center/`. The navigation suites (`tools/app/navigation.test.js` 263, `navigation.e2e.js` 172) cover the seventh seat. CI: `.github/workflows/signal-center-tests.yml`.
 
+## 2026-10-23 — Market intelligence and model validation: the audit, the lab, and four data-integrity fixes
+
+A program to find out, with evidence, whether EdgeDesk's forecasts carry information the market does not (`docs/market-intelligence/MASTER_PLAN.md`). Nothing reader-facing changes; no model, migration, job or paid call is added.
+
+- **The audit** (`docs/market-intelligence/AUDIT.md`): every sport's model, the market data pipeline, the alert, graphics and entitlement layers, and the simulators. The odds arithmetic is verified across seven implementations (0 mismatches on 9,802 prices).
+- **The validation lab** (`lib/edgedesk_validation_lab.js`): week- and day-clustered bootstrap intervals with a leave-one-cluster-out check, paired model-vs-market differences, the information test (does the model's disagreement with the close predict the final?), the calibration fit, Benjamini–Hochberg/Holm, a point-in-time benchmark that never reads a later quote, walk-forward folds with an embargo, and pre-registered hypotheses that keep their rejections (`docs/market-intelligence/hypotheses.json`).
+- **Model vs market on every committed live ledger** (`docs/market-intelligence/VALIDATION.md`, generated): the CFB model is behind the DraftKings close on spreads (MAE +1.44 [0.66, 2.22], n 417) and on win probability (Brier +0.016 [0.009, 0.028]); its disagreement carries no information (slope −0.03 [−0.25, 0.22]); its probabilities are not overconfident (slope 0.97 [0.68, 1.22]). It prices FBS-vs-FCS favourites 7.8 points short of the close [−12.0, −6.6]; the cause is the ±35 margin cap the ratings learn under with one shared FCS floor.
+- **Market intelligence engine** (`lib/edgedesk_market_intel.js`): nine finding kinds with written eligibility rules, a seven-part explanation built only from computed numbers, and a wording guard. Backtested as of an hour before every 2026 football kickoff (`docs/market-intelligence/MARKET_INTEL_BACKTEST.md`). Not wired to reader alerts: no kind has shown value yet.
+- **Replay** (`lib/edgedesk_replay.js`, `npm run market-intel:replay`): what EdgeDesk and the market knew at a moment, nothing after it, the result withheld unless asked.
+- **Model registry** (`docs/market-intelligence/model_registry.json`): every model identity on a published forecast, label problems, and live same-game comparisons.
+
+Fixed:
+- **One sportsbook counted as two.** `lib/edgedesk_market_state.js` keyed books on the lowercased name, so ESPN's "DraftKings" and "Draft Kings" were two independent books and a lone DraftKings line was VERIFIED. Now the canonical key of `lib/edgedesk_market.js`.
+- **NFL v2.1.0 forecasts labelled v1.0.0.** `lib/edgedesk_projections.js` named the slate header's model; it now names the game's own `model_version` (and the inlined copy in `edgedesk_ai/index.ts` is regenerated). The 47 ledger rows already written keep their label; `model_registry.json` records the correction.
+- **A close taken in play.** `supabase/functions/close/index.ts` could price a row from a board observed after its game started. `closeRoute()` now sends such a row to the last tick before the start. Needs a deploy of `close`.
+- **Kalshi NFL mappings had no season check.** `simulator/src/cli/build_kalshi_mappings.ts` now requires the 2026 season's event ticker (`-27`; `-AFC26` for the #1 seed).
+
+Tests: `npm run market-intel:test` (validation lab 64, engine 49, replay 16); `tools/resilience/resilience.test.js` (120, was 117); `tools/resilience/quota_guard.test.js` (72, was 67); `tools/intelligence/multisport.test.js` (128, was 126); `simulator/tests/markets.test.ts` (92, was 88). Each fix's new test fails on the old code.
+
 ## 2026-10-22 — The landing page's matchup graphics carry Kalshi, as the research page's do
 
 The landing page's **Real games, the way subscribers see them** (`index.html` #model, `lib/edgedesk_home_model.js`) drew each featured game's graphic model only. The research page's graphic for the same game sets **EdgeDesk vs Kalshi** beside the model. The landing page now draws that same graphic.

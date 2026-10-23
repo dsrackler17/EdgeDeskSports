@@ -151,7 +151,19 @@ and its group (model or market). The range and the number of independent groups 
 references are correlated, and the page says so instead of averaging them. No synthetic model is ever built to fill
 the table.
 
-## 10. Copy
+## 10. Relationship to the market-intelligence program
+
+`docs/market-intelligence/` (a separate program, merged to `main` on 2026-10-23) asks whether EdgeDesk's forecasts
+carry information the market does not. It keeps its market-intelligence *findings* out of subscriber alerts until a
+finding kind shows value (its Phase 6 is "BLOCKED by evidence"). Signal Center does not consume those findings.
+It reports **changes** in EdgeDesk's own records and makes no value claim. A model–market disagreement here is a
+question to research, never evidence of an advantage, and that framing agrees with that program's result: in the
+CFB live record, model–market disagreement carries no information beyond the close (its hypothesis H-001).
+Model DNA shows the same thing from the grading: the CFB model is behind the market on the same games. CFB
+divergences are EXPERIMENTAL in the registry. If that program later validates a finding kind, the integration point
+is the same `sc_` store and the same doors.
+
+## 11. Copy
 
 Every headline, summary and graphic string passes the copy rule (`E.copyOk`). It refuses betting-recommendation
 language ("bet this", "lock", "guarantee", "edge", "+EV", "profitable", "value play" …). The public headline

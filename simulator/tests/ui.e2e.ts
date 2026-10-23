@@ -27,6 +27,12 @@ import { nflMathStatus } from '../src/sports/nfl/validate.ts';
 import { nbaFixture } from './_nba_fixture.ts';
 import { nbaModule } from '../src/sports/nba/module.ts';
 import { nbaMathStatus } from '../src/sports/nba/validate.ts';
+import { executeWnba } from '../src/sports/wnba/run.ts';
+import { buildWnbaSnapshot } from '../src/sports/wnba/inputs.ts';
+import { executeUfc } from '../src/sports/ufc/run.ts';
+import { buildUfcSnapshot } from '../src/sports/ufc/inputs.ts';
+import { executeGolf } from '../src/sports/golf/run.ts';
+import os from 'node:os';
 
 const require = createRequire(import.meta.url);
 const T = kit('Simulator seat (browser)');
@@ -75,8 +81,8 @@ const NHL_RUN_ID = '66666666-7777-8888-9999-000000000000';
 const nrun = { ...run, run_id: NHL_RUN_ID, sport: 'nhl', season: '2026-27', n_sims: 1000, seed: '2027', model_version: nresults.run.model_version, rules_version: nresults.run.rules_version, comparison_id: null, validation_summary: { flags: { tiebreak_goals: 2 } } };
 const nrows = resultRows({ results: nresults } as any), nents = entityRows({ results: nresults } as any);
 
-/* the NBA: a REAL 500-run simulation of the committed 2026-27 snapshot, through the publisher's row mapping.
-   TEST ONLY: the NBA is BLOCKED; one scenario serves the registry with it ACTIVE so its views can be exercised */
+/* the NBA: a REAL 500-run simulation of the committed 2026-27 snapshot (its NBA Cup simulated), through the
+   publisher's row mapping */
 const bsnap = nbaFixture('live');
 const bm = nbaModule(bsnap.data, { seed: 2027n });
 const bagg = runRange(bm, { start: 0, end: 500 });
@@ -90,6 +96,31 @@ const bresults = buildResults({ module: bm, agg: bagg, seed: 2027n, runs: 500, w
 const NBA_RUN_ID = '77777777-8888-9999-aaaa-bbbbbbbbbbbb';
 const brun = { ...run, run_id: NBA_RUN_ID, sport: 'nba', season: '2026-27', n_sims: 500, seed: '2027', model_version: bresults.run.model_version, rules_version: bresults.run.rules_version, comparison_id: null, validation_summary: { flags: bresults.flags } };
 const brows = resultRows({ results: bresults } as any), bents = entityRows({ results: bresults } as any);
+if (brows.length !== 30 * 35) throw new Error('the NBA run should publish 1,050 result rows (30 clubs x 35 outcomes: more than one page), not ' + brows.length);
+/* the WNBA: a real (short) postseason run on the committed 2026 data, through the publisher's row builders */
+const wsnap = await buildWnbaSnapshot({ offline: true });
+const WNBA_OPEN = wsnap.data.remaining.length > 0;
+const wout = WNBA_OPEN ? await executeWnba({ season: 2026, runs: 3000, seed: '5', workers: 1, snapshot: null, out: fs.mkdtempSync(path.join(os.tmpdir(), 'wnba-e2e-')), traceRuns: [], offline: true, nowMs: Date.parse(wsnap.data.as_of + 'T12:00:00Z') }, () => {}) : null;
+const WNBA_RUN_ID = 'cccccccc-dddd-eeee-ffff-000000000000';
+const wrun = wout ? { ...run, run_id: WNBA_RUN_ID, sport: 'wnba', season: '2026', n_sims: 3000, seed: '5', model_version: wout.results.run.model_version, rules_version: wout.results.run.rules_version, comparison_id: null,
+  validation_summary: { flags: wout.results.flags, sport_summary: (wout.results as any).sport_summary } } : null;
+const wrows = wout ? resultRows(wout as any) : [], wents = wout ? entityRows(wout as any) : [];
+/* the UFC: a real (short) run of every booked bout and each division's title path on the committed data */
+const usnap = buildUfcSnapshot();
+const uout = await executeUfc({ season: 2026, runs: 3000, seed: '9', workers: 1, snapshot: null, out: fs.mkdtempSync(path.join(os.tmpdir(), 'ufc-e2e-')), traceRuns: [], nowMs: Date.parse(usnap.data.rankings.fetched_at) + 3600e3 }, () => {});
+const UFC_RUN_ID = 'dddddddd-eeee-ffff-0000-111111111111';
+const urun = { ...run, run_id: UFC_RUN_ID, sport: 'ufc', season: '2026', n_sims: 3000, seed: '9', model_version: uout.results.run.model_version, rules_version: uout.results.run.rules_version, comparison_id: null,
+  validation_summary: { flags: uout.results.flags, sport_summary: (uout.results as any).sport_summary } };
+const urows = resultRows(uout as any), uents = entityRows(uout as any);
+/* golf: the committed current tour events, simulated offline (3,000 runs each), one competition per event, through
+   the publisher's row builders */
+const gout = await executeGolf({ season: 2026, runs: 3000, seed: '5', workers: 1, snapshot: null, out: fs.mkdtempSync(path.join(os.tmpdir(), 'golf-e2e-')), traceRuns: [], offline: true }, () => {});
+const golf = gout.runs.map((r, i) => {
+  const id = 'eeeeeeee-0000-0000-0000-00000000000' + i, comp = r.results.run.competition;
+  return { id, comp, run: { ...run, run_id: id, sport: 'golf', competition: comp, season: '2026', n_sims: 3000, seed: '5', model_version: r.results.run.model_version, rules_version: r.results.run.rules_version, comparison_id: null,
+    validation_summary: { flags: r.results.flags, sport_summary: (r.results as any).sport_summary } }, rows: resultRows(r as any), ents: entityRows(r as any) };
+});
+const golfOf = (u: string) => golf.find((g) => u.includes(g.id) || u.includes(encodeURIComponent(g.id)) || u.includes('competition=eq.' + encodeURIComponent(g.comp))) || null;
 const EVIL = '<img src=x onerror="window.__xss=1">';
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 
@@ -111,7 +142,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
   try { browser = await pw.chromium.launch({ headless: true }); }
   catch (_) { const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'; if (fs.existsSync(exe)) browser = await pw.chromium.launch({ headless: true, executablePath: exe }); else { srv.close(); skip('no Chromium'); } }
 
-  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean; nbaActive?: boolean }
+  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean }
   async function open(viewport: { width: number; height: number }, hash: string, sc: Scenario) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript(() => {
@@ -128,24 +159,26 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       n_sims: 3000, model_version: run.model_version, last_attempt_status: 'completed', last_attempt_at: run.completed_at, comparison_status: 'completed', comparison_at: run.completed_at };
     const nstatus = { ...status, sport: 'nhl', competition: 'NHL', season: '2026-27', published_run_id: sc.published ? NHL_RUN_ID : null, n_sims: 1000, model_version: nrun.model_version, comparison_status: null, comparison_at: null };
     const bstatus = { ...status, sport: 'nba', competition: 'NBA', season: '2026-27', published_run_id: sc.published ? NBA_RUN_ID : null, n_sims: 500, model_version: brun.model_version, comparison_status: null, comparison_at: null };
+    const wstatus = { ...status, sport: 'wnba', competition: 'WNBA Playoffs', season: '2026', published_run_id: sc.published && wrun ? WNBA_RUN_ID : null, n_sims: 3000, model_version: wrun ? wrun.model_version : '', comparison_status: null, comparison_at: null };
+    const isWnba = (u: string) => u.includes(encodeURIComponent(WNBA_RUN_ID)) || u.includes(WNBA_RUN_ID) || /sport=eq\.wnba/.test(u);
+    const ustatus = { ...status, sport: 'ufc', competition: 'UFC Fights and Title Path', season: '2026', published_run_id: sc.published ? UFC_RUN_ID : null, n_sims: 3000, model_version: urun.model_version, comparison_status: null, comparison_at: null };
+    const isUfc = (u: string) => u.includes(encodeURIComponent(UFC_RUN_ID)) || u.includes(UFC_RUN_ID) || /sport=eq\.ufc/.test(u);
     const isNhl = (u: string) => u.includes(encodeURIComponent(NHL_RUN_ID)) || u.includes(NHL_RUN_ID) || /sport=eq\.nhl/.test(u);
     const isNba = (u: string) => u.includes(encodeURIComponent(NBA_RUN_ID)) || u.includes(NBA_RUN_ID) || /sport=eq\.nba/.test(u);
     await ctx.route('**/*', async (route: any) => {
       const u = route.request().url();
-      if (u.startsWith('http://127.0.0.1')) {
-        if (!sc.nbaActive || !/\/lib\/edgedesk_simulator_sports\.js/.test(u)) return route.continue();
-        /* TEST ONLY: this scenario's registry has the NBA ACTIVE */
-        const r = await route.fetch(), b = (await r.text()).replace(/("key": "nba",\s*"label": "NBA",\s*"status": )"BLOCKED"/, '$1"ACTIVE"');
-        if (!/"key": "nba",\s*"label": "NBA",\s*"status": "ACTIVE"/.test(b)) throw new Error('the NBA is neither ACTIVE nor overridable to ACTIVE');
-        return route.fulfill({ response: r, body: b });
-      }
+      if (u.startsWith('http://127.0.0.1')) return route.continue();
       if (/supabase\.co/.test(u)) {
         const J = (b: unknown, st = 200) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(b) });
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus]); }
+        /* PostgREST pages: limit and offset, as the reader asks (an NBA run publishes 1,050 result rows, a UFC run about 1,500) */
+        const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
+        const gstatus = golf.map((g) => ({ ...status, sport: 'golf', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
+        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, ...gstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
-        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [isNhl(u) ? nrun : isNba(u) ? brun : run] : []);
-        if (/sim_current_results/.test(u)) return J(sc.entitled ? (isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
-        if (/sim_current_entities/.test(u)) return J(sc.entitled ? (isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
+        const g = /sport=eq\.golf|eeeeeeee-/.test(u) ? golfOf(u) : null;
+        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? (g ? [g.run] : /sport=eq\.golf/.test(u) ? [] : [isUfc(u) ? urun : isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run]) : []);
+        if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(g ? g.rows : isUfc(u) ? urows : isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
+        if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(g ? g.ents : isUfc(u) ? uents : isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
         if (/sim_current_edges/.test(u)) return J(sc.entitled ? edges : []);
         if (/subscriptions/.test(u)) return J([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]);
         /* an onboarded reader: without it the personal desk's first-run walkthrough opens over the page once it is quiet */
@@ -235,10 +268,10 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       T.eq(W + ': NHL: no page errors', errors, []);
       await ctx.close();
     }
-    /* the NBA view (its registry served ACTIVE for this scenario only) */
+    /* the NBA view (the NBA is ACTIVE in the real registry) */
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
-      const { ctx, page, errors } = await open(vp, '#simulator/nba', { entitled: true, published: true, nbaActive: true });
+      const { ctx, page, errors } = await open(vp, '#simulator/nba', { entitled: true, published: true });
       await page.evaluate(() => (window as any).navHashRoute('#simulator/nba')); await page.waitForTimeout(500);
       let t = await text(page);
       T.chk(W + ': NBA title view: 30 NBA-title cards, the playoff conference title and the regular-season places apart, 500 simulated seasons', (await page.locator('#simHost .sm-club').count()) === 30 && /win NBA title/.test(t) && /Conference title \(playoffs\)/.test(t) && /Regular season: 1st in the/.test(t) && /500 simulated seasons/.test(t) && !/Super Bowl|Stanley Cup/.test(t));
@@ -254,15 +287,102 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       T.chk(W + ': NBA conference view: first place, play-in, playoffs, seeds 1-8, rounds and the conference title per conference', (await page.locator('#simHost .sm-seeds').count()) === 2 && /1st \(reg\. season\)/.test(t) && /Conf\. finals/.test(t) && /Win East/.test(t) && /Win West/.test(t) && /Four different outcomes/.test(t));
       T.chk(W + ': NBA conference view: no horizontal page scroll (the table scrolls in its card)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
       await shot(page, 'sim-nba-conference-' + W);
+      await page.click('#simHost [data-sim-tab="cup"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': NBA Cup view: six groups of five, win group to win the Cup, the Estimated note', (await page.locator('#simHost .sm-card .sm-tbl').count()) === 6 && (await page.locator('#simHost .sm-card .sm-tbl tbody tr').count()) === 30 && /Win group/.test(t) && /Win Cup/.test(t) && /East group 1/.test(t) && /West group 3/.test(t) && /unpublished formula/.test(t));
+      T.chk(W + ': NBA Cup view: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-nba-cup-' + W);
       T.eq(W + ': NBA: no page errors', errors, []);
       await ctx.close();
     }
+    /* the WNBA postseason (its own adapter: Finals, Games, Model Health) */
+    if (WNBA_OPEN) for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width;
+      const { ctx, page, errors } = await open(vp, '#simulator/wnba', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/wnba')); await page.waitForTimeout(500);
+      let t = await text(page);
+      T.chk(W + ': WNBA: the tabs are Finals, Games and Model Health, Finals open', /Finals/.test(await page.locator('#simHost .sm-tabs').innerText()) && /Model Health/.test(await page.locator('#simHost .sm-tabs').innerText()) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Finals');
+      T.chk(W + ': WNBA Finals: the series state, two title cards with fair odds, the exact results and the bracket', /(leads|tied)/.test(t) && (await page.locator('#simHost .sm-club').count()) === 2 && /fair \d+\.\d\d \([+-]\d+\)/.test(t) && /Exact series result/.test(t) && /First round:/.test(t) && /3,000 simulated postseasons/.test(t));
+      T.chk(W + ': WNBA Finals: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-wnba-finals-' + W);
+      await page.click('#simHost [data-sim-tab="games"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': WNBA Games: the games left with how often each is played, and every played game with the model\'s chance', /Games left/.test(t) && /Board price/.test(t) && /Played/.test(t) && /Favourite won/.test(t));
+      T.chk(W + ': WNBA Games: no horizontal page scroll (tables scroll in their cards)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-wnba-games-' + W);
+      await page.click('#simHost [data-sim-tab="model_health"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': WNBA Model Health: the record windows, calibration and the shared offset', /The served model/.test(t) && /Calibration, playoff games since 2010/.test(t) && /shared offset/.test(t));
+      await shot(page, 'sim-wnba-health-' + W);
+      T.eq(W + ': WNBA: no page errors', errors, []);
+      await ctx.close();
+    }
+    /* the UFC (its own adapter: Fights, Title Path, Model Health) */
+    for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width;
+      const { ctx, page, errors } = await open(vp, '#simulator/ufc', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/ufc')); await page.waitForTimeout(500);
+      let t = await text(page);
+      const tabs = await page.locator('#simHost .sm-tabs').innerText();
+      T.chk(W + ': UFC: the tabs are Fights, Title Path and Model Health, Fights open', /Fights/.test(tabs) && /Title Path/.test(tabs) && /Model Health/.test(tabs) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Fights');
+      T.chk(W + ': UFC Fights: the cards by date, title fights badged, fair decimal and American odds, finish and rounds', /UFC 333: Volkanovski vs\. Evloev/.test(t) && /Featherweight title/.test(t) && /New champion:/.test(t) && /Finish by round: R1/.test(t) && /[+-]\d{2,4}/.test(t) && /3,000 simulated runs/.test(t));
+      T.chk(W + ': UFC Fights: no horizontal page scroll (tables scroll in their cards)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-ufc-fights-' + W);
+      await page.click('#simHost [data-sim-tab="title_path"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': UFC Title Path: the rule in plain words, eleven divisions, Estimated', /Who becomes champion by/.test(t) && /EdgeDesk’s rule, not the UFC’s/.test(t) && (await page.locator('#simHost .sm-card .sm-h .sm-estimated').count()) >= 12 && /Women’s Bantamweight/.test(t));
+      T.chk(W + ': UFC Title Path: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-ufc-title-path-' + W);
+      await page.click('#simHost [data-sim-tab="model_health"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': UFC Model Health: the served Elo, its record beside a coin, champions against it, the finish model', /The served fight model/.test(t) && /better than a coin flip, but not by much/.test(t) && /Champions against the Elo/.test(t) && /How fights end/.test(t));
+      T.chk(W + ': UFC Model Health: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-ufc-health-' + W);
+      T.eq(W + ': UFC: no page errors', errors, []);
+      await ctx.close();
+    }
+    /* golf (its own adapter: Leaderboard, Finishes, Model Health; one competition per tour event, a tour picker) */
+    if (golf.length) for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width;
+      const { ctx, page, errors } = await open(vp, '#simulator/golf', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/golf')); await page.waitForTimeout(600);
+      let t = await text(page);
+      T.chk(W + ': golf: the tabs are Leaderboard, Finishes and Model Health, Leaderboard open', /Finishes/.test(await page.locator('#simHost .sm-tabs').innerText()) && /Model Health/.test(await page.locator('#simHost .sm-tabs').innerText()) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Leaderboard');
+      T.chk(W + ': golf Leaderboard: the event, the field with win/top 5/10/20, fair odds and the dead-heat note', /3,000 simulated tournaments/.test(t) && /Top 10/.test(t) && /dead-heat expectation/.test(t) && (await page.locator('#simHost .sm-tbl tbody tr').count()) > 50);
+      if (golf.length > 1) T.chk(W + ': golf: a tour picker with every tour\'s event', (await page.locator('#simHost [data-sim-act="tour"]').count()) === golf.length);
+      T.chk(W + ': golf Leaderboard: no horizontal page scroll (the table scrolls in its card)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1), await page.evaluate(() => [document.scrollingElement!.scrollWidth, window.innerWidth]));
+      await shot(page, 'sim-golf-leaderboard-' + W);
+      /* the table scrolls in its card under a sticky player column: bring the header into the open part first, as a reader would */
+      await page.evaluate(() => { const b = document.querySelector('#simHost [data-sim-act="sort"][data-sim-val="top_20"]') as HTMLElement, sc = b.closest('.sm-scroll') as HTMLElement, th = sc.querySelector('th') as HTMLElement;
+        sc.scrollLeft += b.getBoundingClientRect().left - sc.getBoundingClientRect().left - th.getBoundingClientRect().width - 8; });
+      await page.click('#simHost [data-sim-act="sort"][data-sim-val="top_20"]'); await page.waitForTimeout(150);
+      T.chk(W + ': golf Leaderboard: a column header sorts the table', (await page.locator('#simHost .sm-sort.on').innerText()).startsWith('Top 20'));
+      await page.click('#simHost [data-sim-tab="finishes"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': golf Finishes: the most likely winners, where each player finishes, fair odds, the winning score', (await page.locator('#simHost .sm-club').count()) === 6 && /Where each player finishes/.test(t) && /Win American/.test(t) && /The winning score/.test(t));
+      T.chk(W + ': golf Finishes: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-golf-finishes-' + W);
+      await page.click('#simHost [data-sim-tab="model_health"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': golf Model Health: the backtest in plain words and what the model does not know', /Does it work\?/.test(t) && /What the model does not know/.test(t));
+      T.chk(W + ': golf Model Health: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-golf-health-' + W);
+      if (golf.length > 1) {
+        const other = golf.find((x) => !x.comp.startsWith('pga-')) || golf[1], tr = other.comp.split('-')[0];
+        await page.click('#simHost [data-sim-act="tour"][data-sim-val="' + tr + '"]'); await page.waitForTimeout(500);
+        await page.click('#simHost [data-sim-tab="leaderboard"]'); await page.waitForTimeout(150);
+        T.chk(W + ': golf: switching tour shows that tour\'s event', (await text(page)).includes((other.run.validation_summary as any).sport_summary.event.name));
+        await shot(page, 'sim-golf-' + tr + '-' + W);
+      }
+      T.eq(W + ': golf: no page errors', errors, []);
+      await ctx.close();
+    }
     {
-      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/nba', { entitled: true, published: true });
-      await page.evaluate(() => (window as any).navHashRoute('#simulator/nba')); await page.waitForTimeout(300);
+      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/tennis', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/tennis')); await page.waitForTimeout(300);
       const t = await text(page);
-      T.chk('a blocked sport (#simulator/nba) shows its blockers and no number', /Blocked/.test(t) && /NBA Cup/.test(t) && !/\d+\.\d%/.test(t));
-      await shot(page, 'sim-blocked-nba-390'); await ctx.close();
+      T.chk('a sport that is not ACTIVE (#simulator/tennis) shows its blockers and no number', /Coming Soon/.test(t) && /Retired from coverage/.test(t) && !/\d+\.\d%/.test(t));
+      await shot(page, 'sim-blocked-tennis-390'); await ctx.close();
     }
     {
       const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failSecond: true });

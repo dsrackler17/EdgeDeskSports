@@ -1,0 +1,758 @@
+{
+ "schema": "edgedesk_market_intel_backtest_v1",
+ "engine": "edgedesk_market_intel_v1",
+ "lab": "edgedesk_validation_lab_v1",
+ "season": 2026,
+ "as_of_minutes_before_kickoff": 60,
+ "rules": {
+  "stale_minutes": 180,
+  "movement_min_hours": 1,
+  "move_threshold": {
+   "spread": 1,
+   "total": 1,
+   "moneyline": 0.03
+  },
+  "disagreement_threshold": {
+   "spread": 1,
+   "total": 1.5,
+   "moneyline": 0.03
+  },
+  "disagreement_window_minutes": 30,
+  "unusual_percentile": 0.95,
+  "unusual_min_history": 100,
+  "derivative_z": 3,
+  "derivative_min_fit": 200,
+  "markets": [
+   "spread",
+   "total",
+   "moneyline"
+  ]
+ },
+ "sports": {
+  "cfb": {
+   "games_analyzed": 181,
+   "single_source_games": 181,
+   "median_history_n": 70,
+   "by_type": {
+    "MARKET_CONVERGENCE": {
+     "findings": 85,
+     "games": 59,
+     "share_of_games": 0.326,
+     "markets": {
+      "spread": {
+       "findings": 39,
+       "market_improvement": {
+        "est": 0.346,
+        "ci": [
+         -0.167,
+         0.692
+        ],
+        "n": 39,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.22,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": 0.065,
+         "max": 0.5,
+         "sign_stable": true
+        }
+       },
+       "model_vs_market": {
+        "est": -0.471,
+        "ci": [
+         -2.28,
+         -0.058
+        ],
+        "n": 39,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.536,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": -0.82,
+         "max": -0.188,
+         "sign_stable": true
+        }
+       },
+       "examples": [
+        "draftkings via espn moved from home -25.5 to home -24.5 between 2026-10-03 13:56Z and 2026-10-03 15:36Z: 1 points closer to EdgeDesk's number.",
+        "draftkings via espn moved from home +2.5 to home +1.5 between 2026-10-03 13:56Z and 2026-10-03 15:36Z: 1 points closer to EdgeDesk's number."
+       ]
+      },
+      "total": {
+       "findings": 24,
+       "market_improvement": {
+        "est": -0.042,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 24,
+        "clusters": 3,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (3): no interval"
+       },
+       "model_vs_market": {
+        "est": -0.45,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 24,
+        "clusters": 3,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (3): no interval"
+       },
+       "examples": [
+        "draftkings via espn moved from total 51.5 to total 52.5 between 2026-10-03 13:56Z and 2026-10-03 16:44Z: 1 points closer to EdgeDesk's number.",
+        "draftkings via espn moved from total 62.5 to total 61.5 between 2026-10-03 13:56Z and 2026-10-03 16:31Z: 1 points closer to EdgeDesk's number."
+       ]
+      },
+      "moneyline": {
+       "findings": 22,
+       "market_improvement": {
+        "est": 0.008,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 22,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "model_vs_market": {
+        "est": 0.011,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 22,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "examples": [
+        "draftkings via espn moved from home 59.3% (no-vig) to home 68.1% (no-vig) between 2026-10-03 23:55Z and 2026-10-07 22:17Z: 8.7 percentage points closer to EdgeDesk's number.",
+        "draftkings via espn moved from home 71.8% (no-vig) to home 66.9% (no-vig) between 2026-10-04 15:11Z and 2026-10-08 22:28Z: 4.9 percentage points closer to EdgeDesk's number."
+       ]
+      }
+     }
+    },
+    "MARKET_DIVERGENCE": {
+     "findings": 143,
+     "games": 99,
+     "share_of_games": 0.547,
+     "markets": {
+      "spread": {
+       "findings": 51,
+       "market_improvement": {
+        "est": 0.314,
+        "ci": [
+         -0.056,
+         0.654
+        ],
+        "n": 51,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.215,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": 0.05,
+         "max": 0.537,
+         "sign_stable": true
+        }
+       },
+       "model_vs_market": {
+        "est": -2.288,
+        "ci": [
+         -4.752,
+         -1.42
+        ],
+        "n": 51,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.84,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": -2.924,
+         "max": -1.868,
+         "sign_stable": true
+        }
+       },
+       "examples": [
+        "draftkings via espn moved from home -2.5 to home -1.5 between 2026-10-03 13:56Z and 2026-10-03 16:31Z: 1 points further from EdgeDesk's number.",
+        "draftkings via espn moved from home -11.5 to home -10.5 between 2026-10-03 13:56Z and 2026-10-03 16:31Z: 1 points further from EdgeDesk's number."
+       ]
+      },
+      "total": {
+       "findings": 73,
+       "market_improvement": {
+        "est": 0.425,
+        "ci": [
+         -0.6,
+         0.552
+        ],
+        "n": 73,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.259,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": 0.282,
+         "max": 0.471,
+         "sign_stable": true
+        }
+       },
+       "model_vs_market": {
+        "est": -1.019,
+        "ci": [
+         -1.47,
+         -0.425
+        ],
+        "n": 73,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.316,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": -1.356,
+         "max": -0.628,
+         "sign_stable": true
+        }
+       },
+       "examples": [
+        "draftkings via espn moved from total 57.5 to total 56.5 between 2026-10-03 13:56Z and 2026-10-03 16:31Z: 1 points further from EdgeDesk's number.",
+        "draftkings via espn moved from total 43.5 to total 41.5 between 2026-10-03 13:56Z and 2026-10-03 16:44Z: 2 points further from EdgeDesk's number."
+       ]
+      },
+      "moneyline": {
+       "findings": 19,
+       "market_improvement": {
+        "est": -0.006,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 19,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "model_vs_market": {
+        "est": 0.015,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 19,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "examples": [
+        "draftkings via espn moved from home 67.5% (no-vig) to home 62.2% (no-vig) between 2026-10-04 08:34Z and 2026-10-09 21:18Z: 5.3 percentage points further from EdgeDesk's number.",
+        "draftkings via espn moved from home 50.4% (no-vig) to home 58.3% (no-vig) between 2026-10-03 13:56Z and 2026-10-09 22:45Z: 7.9 percentage points further from EdgeDesk's number."
+       ]
+      }
+     }
+    },
+    "UNUSUAL_PRICE_MOVEMENT": {
+     "findings": 11,
+     "games": 7,
+     "share_of_games": 0.039,
+     "markets": {
+      "spread": {
+       "findings": 4,
+       "market_improvement": {
+        "est": 2.75,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 4,
+        "clusters": 1,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (1): no interval"
+       },
+       "model_vs_market": null,
+       "examples": [
+        "draftkings via espn moved from home -12.5 (2026-10-07 23:12Z) to home -17.5 (2026-10-17 14:50Z).",
+        "draftkings via espn moved from home -9.5 (2026-10-07 23:12Z) to home -3.5 (2026-10-17 14:26Z)."
+       ]
+      },
+      "total": {
+       "findings": 3,
+       "market_improvement": {
+        "est": 6.667,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 3,
+        "clusters": 1,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (1): no interval"
+       },
+       "model_vs_market": null,
+       "examples": [
+        "draftkings via espn moved from total 56.5 (2026-10-07 23:12Z) to total 50.5 (2026-10-17 17:33Z).",
+        "draftkings via espn moved from total 49.5 (2026-10-07 23:12Z) to total 42.5 (2026-10-17 21:45Z)."
+       ]
+      },
+      "moneyline": {
+       "findings": 4,
+       "market_improvement": {
+        "est": -0.064,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 4,
+        "clusters": 1,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (1): no interval"
+       },
+       "model_vs_market": null,
+       "examples": [
+        "draftkings via espn moved from home 74.4% (no-vig) (2026-10-07 23:12Z) to home 60.9% (no-vig) (2026-10-17 14:26Z).",
+        "draftkings via espn moved from home 61.6% (no-vig) (2026-10-11 19:01Z) to home 71.0% (no-vig) (2026-10-17 15:44Z)."
+       ]
+      }
+     }
+    },
+    "SOURCE_DISAGREEMENT": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "DERIVATIVE_RELATIONSHIP_ANOMALY": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "MODEL_CALIBRATION_WARNING": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "RULE_DEFINITION_CONFLICT": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "STALE_MARKET_DATA": {
+     "findings": 35,
+     "games": 35,
+     "share_of_games": 0.193,
+     "markets": {
+      "game": {
+       "findings": 35,
+       "market_improvement": null,
+       "model_vs_market": null,
+       "examples": [
+        "No new quote has been captured for 242 minutes.",
+        "No new quote has been captured for 189 minutes."
+       ]
+      }
+     }
+    },
+    "INCOMPLETE_MARKET_DATA": {
+     "findings": 8,
+     "games": 8,
+     "share_of_games": 0.044,
+     "markets": {
+      "game": {
+       "findings": 8,
+       "market_improvement": null,
+       "model_vs_market": null,
+       "examples": [
+        "Part of the market is missing or failed a check.",
+        "Part of the market is missing or failed a check."
+       ]
+      }
+     }
+    }
+   },
+   "not_eligible": {
+    "SOURCE_DISAGREEMENT — one source only (draftkings)": 536,
+    "MODEL_CALIBRATION_WARNING — no validation result supplied for this sport": 181,
+    "UNUSUAL_PRICE_MOVEMENT — history of # earlier moneyline moves (needs #)": 118,
+    "UNUSUAL_PRICE_MOVEMENT — history of # earlier total moves (needs #)": 114,
+    "UNUSUAL_PRICE_MOVEMENT — history of # earlier spread moves (needs #)": 110,
+    "DERIVATIVE_RELATIONSHIP_ANOMALY — the spread–moneyline relationship was fitted on # earlier pairs (needs #)": 54,
+    "MARKET_CONVERGENCE — one moneyline quote only": 27,
+    "MARKET_CONVERGENCE — one total quote only": 25,
+    "MARKET_CONVERGENCE — one spread quote only": 20,
+    "MARKET_CONVERGENCE — quotes # h apart (needs # h)": 11,
+    "MARKET_CONVERGENCE — no valid pregame moneyline quote": 7,
+    "UNUSUAL_PRICE_MOVEMENT — no valid pregame moneyline quote": 7
+   }
+  },
+  "nfl": {
+   "games_analyzed": 45,
+   "single_source_games": 45,
+   "median_history_n": 17,
+   "by_type": {
+    "MARKET_CONVERGENCE": {
+     "findings": 19,
+     "games": 14,
+     "share_of_games": 0.311,
+     "markets": {
+      "spread": {
+       "findings": 5,
+       "market_improvement": {
+        "est": -1.4,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 5,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "model_vs_market": {
+        "est": -0.866,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 5,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "examples": [
+        "draftkings via espn moved from home -3 to home -7.5 between 2026-10-03 13:56Z and 2026-10-10 18:52Z: 1.3 points closer to EdgeDesk's number, crossing it.",
+        "draftkings via espn moved from home -2.5 to home +1.5 between 2026-10-03 13:56Z and 2026-10-11 15:58Z: 4 points closer to EdgeDesk's number, crossing it."
+       ]
+      },
+      "total": {
+       "findings": 6,
+       "market_improvement": {
+        "est": 0.833,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 6,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "model_vs_market": {
+        "est": 0.407,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 6,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "examples": [
+        "draftkings via espn moved from total 47.5 to total 48.5 between 2026-10-03 13:56Z and 2026-10-08 22:28Z: 1 points closer to EdgeDesk's number.",
+        "draftkings via espn moved from total 44.5 to total 41.5 between 2026-10-03 13:56Z and 2026-10-11 15:58Z: 3 points closer to EdgeDesk's number."
+       ]
+      },
+      "moneyline": {
+       "findings": 8,
+       "market_improvement": {
+        "est": 0.007,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 8,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "model_vs_market": {
+        "est": -0.043,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 8,
+        "clusters": 2,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (2): no interval"
+       },
+       "examples": [
+        "draftkings via espn moved from home 57.2% (no-vig) to home 76.6% (no-vig) between 2026-10-03 13:56Z and 2026-10-10 23:42Z: 8 percentage points closer to EdgeDesk's number, crossing it.",
+        "draftkings via espn moved from home 55.1% (no-vig) to home 46.8% (no-vig) between 2026-10-03 13:56Z and 2026-10-11 15:58Z: 8.4 percentage points closer to EdgeDesk's number."
+       ]
+      }
+     }
+    },
+    "MARKET_DIVERGENCE": {
+     "findings": 38,
+     "games": 27,
+     "share_of_games": 0.6,
+     "markets": {
+      "spread": {
+       "findings": 9,
+       "market_improvement": {
+        "est": -0.389,
+        "ci": [
+         -1.821,
+         1.667
+        ],
+        "n": 9,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.942,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": -1,
+         "max": 1,
+         "sign_stable": false
+        }
+       },
+       "model_vs_market": {
+        "est": 0.058,
+        "ci": [
+         -1.326,
+         0.623
+        ],
+        "n": 9,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.5,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": -0.512,
+         "max": 0.369,
+         "sign_stable": false
+        }
+       },
+       "examples": [
+        "draftkings via espn moved from home +3.5 to home +4.5 between 2026-10-03 13:56Z and 2026-10-04 23:18Z: 1 points further from EdgeDesk's number.",
+        "draftkings via espn moved from home -2.5 to home -1.5 between 2026-10-03 13:56Z and 2026-10-05 22:46Z: 1 points further from EdgeDesk's number."
+       ]
+      },
+      "total": {
+       "findings": 22,
+       "market_improvement": {
+        "est": 0.5,
+        "ci": [
+         0.091,
+         1
+        ],
+        "n": 22,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.22,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": 0.333,
+         "max": 0.733,
+         "sign_stable": true
+        }
+       },
+       "model_vs_market": {
+        "est": -1.091,
+        "ci": [
+         -3.036,
+         -0.493
+        ],
+        "n": 22,
+        "clusters": 4,
+        "draws": 2000,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "se": 0.636,
+        "few_clusters": true,
+        "leave_one_out": {
+         "min": -1.477,
+         "max": -0.784,
+         "sign_stable": true
+        }
+       },
+       "examples": [
+        "draftkings via espn moved from total 47.5 to total 46.5 between 2026-10-03 13:56Z and 2026-10-04 08:34Z: 1 points further from EdgeDesk's number.",
+        "draftkings via espn moved from total 39.5 to total 38.5 between 2026-10-03 13:56Z and 2026-10-04 15:11Z: 1 points further from EdgeDesk's number."
+       ]
+      },
+      "moneyline": {
+       "findings": 7,
+       "market_improvement": {
+        "est": -0.004,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 7,
+        "clusters": 3,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (3): no interval"
+       },
+       "model_vs_market": {
+        "est": -0.026,
+        "ci": [
+         null,
+         null
+        ],
+        "n": 7,
+        "clusters": 3,
+        "draws": 0,
+        "seed": 20261023,
+        "alpha": 0.05,
+        "method": "cluster_bootstrap_percentile",
+        "why": "fewer than 4 clusters (3): no interval"
+       },
+       "examples": [
+        "draftkings via espn moved from home 51.7% (no-vig) to home 55.1% (no-vig) between 2026-10-04 22:23Z and 2026-10-11 15:58Z: 3.4 percentage points further from EdgeDesk's number.",
+        "draftkings via espn moved from home 55.1% (no-vig) to home 59.3% (no-vig) between 2026-10-04 22:32Z and 2026-10-11 15:58Z: 4.2 percentage points further from EdgeDesk's number."
+       ]
+      }
+     }
+    },
+    "UNUSUAL_PRICE_MOVEMENT": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "SOURCE_DISAGREEMENT": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "DERIVATIVE_RELATIONSHIP_ANOMALY": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "MODEL_CALIBRATION_WARNING": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "RULE_DEFINITION_CONFLICT": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    },
+    "STALE_MARKET_DATA": {
+     "findings": 2,
+     "games": 2,
+     "share_of_games": 0.044,
+     "markets": {
+      "game": {
+       "findings": 2,
+       "market_improvement": null,
+       "model_vs_market": null,
+       "examples": [
+        "No new quote has been captured for 236 minutes.",
+        "No new quote has been captured for 767 minutes."
+       ]
+      }
+     }
+    },
+    "INCOMPLETE_MARKET_DATA": {
+     "findings": 0,
+     "games": 0,
+     "share_of_games": 0,
+     "markets": {}
+    }
+   },
+   "not_eligible": {
+    "SOURCE_DISAGREEMENT — one source only (draftkings)": 135,
+    "UNUSUAL_PRICE_MOVEMENT — history of # earlier spread moves (needs #)": 45,
+    "UNUSUAL_PRICE_MOVEMENT — history of # earlier total moves (needs #)": 45,
+    "UNUSUAL_PRICE_MOVEMENT — history of # earlier moneyline moves (needs #)": 45,
+    "MODEL_CALIBRATION_WARNING — no validation result supplied for this sport": 45,
+    "DERIVATIVE_RELATIONSHIP_ANOMALY — the spread–moneyline relationship was fitted on # earlier pairs (needs #)": 14
+   }
+  }
+ }
+}

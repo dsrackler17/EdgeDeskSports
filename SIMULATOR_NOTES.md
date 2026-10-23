@@ -20,7 +20,7 @@ deployment: §16 states exactly what exists and what does not.
 | NFL season simulation | Implemented, tested; **ACTIVE** — its three 2026 facts verified against the NFL's pages on 2026-10-23 | §7.5 |
 | Strength uncertainty | Calibrated from frozen-forecast residuals | `simulator/data/nfl_strength_uncertainty.json`, §6.2 |
 | Database layer | Tested on a real PostgreSQL 16; **applied to production** 2026-10-23 (*Deploy simulator SQL* run 39947585888, every report row `ok`) | `supabase/simulator.sql`, §9 |
-| Kalshi futures comparison | **352 markets mapped** exactly (Super Bowl, conference, division, playoffs, seeds 1–7); fee schedule verified from Kalshi's docs and API | `simulator/config/kalshi_futures.json`, §10 |
+| Kalshi futures comparison | **352 NFL markets mapped** exactly (Super Bowl, conference, division, playoffs, seeds 1–7); MLB: the World Series, pennants, divisions and playoff qualifiers by Kalshi's own wording (2 open 2026 markets mapped; 2027 not listed yet: `MLB_SIMULATOR_NOTES.md` §15.1); **160 NHL 2026-27 markets** (Stanley Cup, playoff conference titles, divisions, Presidents' Trophy, playoff qualifiers: `NHL_SIMULATOR_NOTES.md` §16); fee schedule verified from Kalshi's docs and API | `simulator/config/kalshi_futures.json`, §10 |
 | Research registration | EXPERIMENTAL / T3; **applied** 2026-10-23 (same run) | `supabase/simulator_registry.sql`, §11 |
 | Backtest 2010–2025 | Run (16 seasons × 4 as-of weeks × 2,000 runs) | `simulator/data/nfl_backtest.json`, §11.2 |
 | Reader (Simulator seat in `app.html`) | Implemented, tested in Chromium at three widths | `lib/edgedesk_simulator.js`, §13 |
@@ -29,7 +29,10 @@ deployment: §16 states exactly what exists and what does not.
 | NHL season and Stanley Cup simulation | Implemented, tested (reproduces all 165 playoff series 2013-14..2025-26); 2026-27 facts verified from NHL.com; **ACTIVE**, published nightly | [`NHL_SIMULATOR_NOTES.md`](NHL_SIMULATOR_NOTES.md) |
 | MLB season and postseason | Implemented, tested, studies committed; **ACTIVE** for the 2026 World Series: its facts read from MLB's Stats API, mlb.com and the 2026 Official Baseball Rules on GitHub's runners (2026-10-23); nightly through 2026-11-07 | [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) §15 |
 | College football (season, title games, CFP) | Implemented, tested; **ACTIVE**: every conference procedure, the 2026 CFP format and North Dakota State's eligibility verified from the governing bodies' text on 2026-10-23; Sacramento State's eligibility measured per run | [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) |
-| NBA season, play-in and playoffs | Implemented, tested; **BLOCKED for publication** (six 2026-27 facts unverified, NBA Cup-dependent games not scheduled) | [`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md) |
+| NBA season, NBA Cup, play-in and playoffs | Implemented, tested; **ACTIVE** (2026-27 facts verified; the NBA Cup played in every run and its 30 dependent games simulated until scheduled) | [`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md) |
+| WNBA postseason (open series, game by game) | Implemented, tested; **ACTIVE** for the 2026 Finals: the served basketball walk-forward replayed (equal to the served ratings file), a measured shared series offset carved out of the served distribution, formats and hosts measured from the schedule; nightly through 2026-11-08 | [`WNBA_SIMULATOR_NOTES.md`](WNBA_SIMULATOR_NOTES.md) |
+| UFC fights and title path | Implemented, tested; **ACTIVE**: every booked bout 100,000 times from the model loop's served Elo 1.1.0 (ported; reproduces all 25 published prices), finish/decision and round measured from every bout since 2014; each division's title path over 12 months at its measured title-fight pace with an **Estimated** matchmaking rule; champions from ufc.com; nightly | [`UFC_SIMULATOR_NOTES.md`](UFC_SIMULATOR_NOTES.md) |
+| Golf tournaments (PGA Tour, LPGA, DP World Tour; one competition per event) | Implemented, tested; **ACTIVE**: a new point-in-time skill model (PGA Tour + DP World Tour on one scale), a measured per-tournament draw, cut rules and round counts measured per event from 2023-2026 history; the 2025-2026 walk-forward backtest beats the field-size baseline on every tour and outcome and meets every activation condition; nightly through 2026-12-20 | [`GOLF_SIMULATOR_NOTES.md`](GOLF_SIMULATOR_NOTES.md) |
 | Other sports | Not active: BLOCKED or COMING SOON with named blockers | §4 |
 
 ---
@@ -111,14 +114,14 @@ it is stale.
 |---|---|---|---|---|
 | **NFL** | **ACTIVE** (verified 2026-10-23, §7.5) | season | served model `football/nfl_model.js`; schedule/results/standings from nflverse; rules engine reproduces 2002–2025 | 2026 tiebreaking procedures, 2026 playoff format and Super Bowl LXI venue/designated home not verified against the NFL's official pages (unreachable from the build environment) — §7.5 |
 | **College football** | **ACTIVE** (verified 2026-10-23, CFB_SIMULATOR_NOTES.md §4) | season | `football/cfb_p4` engine replayed over the 2026 feed; ten conference procedures from their own text; 2026 CFP rules; an Estimated committee proxy — all in [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) | none standing; Sacramento State's MAC eligibility (no MAC statement) is measured each run and holds publication if any run depended on it |
-| NBA | BLOCKED (Implementable — implemented — blocked on verification and the schedule) | season | the served `nba/` model (`edgedesk_nba_v1:E_ridge_P`, equal to the published slate); rules replay every postseason 2006-07..2025-26; strength and return-hazard studies — **[`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md)** | six 2026-27 rules facts unverified (nba.com unreachable from the build environment); 30 regular-season games depend on the NBA Cup group stage and are not scheduled until early December 2026 |
-| **NHL** | **ACTIVE** | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | none (2026-27 tie-breaking, playoff format and home ice verified from NHL.com, 2026-10-23); no Kalshi NHL futures mapped yet |
-| WNBA | BLOCKED | series | — | no series simulator or uncertainty study; the 2026 Finals end by 2026-10-31 |
+| NBA | ACTIVE | season | the served `nba/` model (`edgedesk_nba_v1:E_ridge_P`, equal to the published slate); rules replay every postseason 2006-07..2025-26 and every NBA Cup knockout field 2023-24..2025-26; strength and return-hazard studies — **[`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md)** | none standing; the Cup-dependent games' pairings the league does not publish are Estimated (labelled) |
+| **NHL** | **ACTIVE** | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | none (2026-27 tie-breaking, playoff format and home ice verified from NHL.com, 2026-10-23); 160 Kalshi NHL futures mapped |
+| **WNBA** | **ACTIVE** (2026 postseason) | series | served `basketball/` walk-forward (points ratings + season calibration) replayed point-in-time; schedule and results from wehoop; shared series offset `simulator/data/wnba_strength_uncertainty.json` — [`WNBA_SIMULATOR_NOTES.md`](WNBA_SIMULATOR_NOTES.md) | none standing; formats and hosts are measured from the schedule each run; a round not yet paired is refused (2027 needs the bracket rule) |
 | **MLB** | **ACTIVE** (verified 2026-10-23, MLB_SIMULATOR_NOTES.md §15) | season | served lab brain `mlb/history/model.js` replayed point-in-time; Retrosheet 2010–2025 (+ postseason 2012–2025); live 2026 from MLB's Stats API; rules reproduce every 2012–2025 postseason pairing and host | none standing; the tiebreak procedure is measured in every run (`run.tiebreak_measured` refuses a run in which a tie decided a reported place) — [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) §15 |
 | College basketball | COMING SOON | tournament | `basketball/` | the 2026-27 season has not started; partial schedule with placeholder times; no conference membership, conference-tournament formats or NCAA selection/seed/bracket data |
 | Tennis | COMING SOON | tournament | `tools/tennis/` | retired from coverage (2026-09-27); ratings only in the database; no owned draw structure; no validated point-level model |
-| Golf | COMING SOON | tournament | — | no golf model, field data, round-score distribution or cut rules in the repository |
-| UFC | COMING SOON | none | `tools/ufc/` (fight research) | no season or division championship structure to simulate; none will be invented |
+| **Golf** | **ACTIVE** (2026 tour events) | events | new skill model `simulator/src/sports/golf/model.ts` on ESPN's 2023-2026 PGA Tour, LPGA and DP World Tour rounds (`simulator/data/feeds/golf_events.json.gz`), study `simulator/data/golf_skill_study.json`, backtest `simulator/data/golf_backtest.json` — [`GOLF_SIMULATOR_NOTES.md`](GOLF_SIMULATOR_NOTES.md) | none standing; each event's cut and round count are measured per run, an undetermined rule is refused; ESPN's stated tournament fields arrive with the next refetch |
+| **UFC** | **ACTIVE** (fights and title path) | events | the model loop's served UFC Elo (`model_loop/adapters/ufc/model.py`, 1.1.0 EXPERIMENTAL) ported in `simulator/src/sports/ufc/elo.ts` and checked against `current.json` every run; schedule from ESPN, champions and ranks from ufc.com, title history from Wikipedia (`simulator/data/feeds/ufc_*`) — [`UFC_SIMULATOR_NOTES.md`](UFC_SIMULATOR_NOTES.md) | none standing; every fact is read and gated each run (rankings no older than 8 days); the title path's matchmaking rule is Estimated and labelled; no season is invented: the horizon is 12 months |
 | College baseball | COMING SOON | tournament | `college_baseball/` | out of season until February 2027; no 2027 schedule; release gates G11, G12, G15 fail |
 
 "Active-ready" today: **none**. Accuracy took priority over the number of
@@ -136,7 +139,9 @@ active sports, as instructed.
 - **PRNG.** xoshiro128** 1.1, seeded by SplitMix64 from (master seed, run
   index, stream id) — `PRNG_VERSION = xoshiro128starstar-1.1/splitmix64-seed/v1`.
   `Math.random` is never used. Streams: strength 1, games 2, postseason 3,
-  coin 4, overtime 5, points 6, availability 7, drift 8. Each run's result
+  coin 4, overtime 5, points 6, availability 7, drift 8, rotation 9, pitcher
+  10, committee 11, cup 12 (the NBA Cup), method 13 and schedule 14 (UFC: how a
+  fight ends, when an unbooked title fight happens). Each run's result
   depends only on (seed, run), so the worker count never changes a number
   (tested: 1 vs 3 workers byte-identical).
 - **Normal quantile.** Wichura AS241 (`simulator/src/core/normal.ts`).
@@ -381,7 +386,7 @@ reach divisional round, reach conference final, win conference, win Super Bowl.
 
 ## 10. Kalshi futures (`simulator/src/markets/`, `simulator/config/kalshi_futures.json`)
 
-- **Exact mapping only.** 352 markets, generated by
+- **Exact mapping only.** NFL: 352 markets, generated by
   `simulator/src/cli/build_kalshi_mappings.ts` from the markets Kalshi's API
   returned to *Simulator source check* run 39952027751: Super Bowl (KXSB, 32),
   AFC/NFC champion (16 + 16), the eight division winners (4 each), playoff
@@ -395,6 +400,16 @@ reach divisional round, reach conference final, win conference, win Super Bowl.
   25 complete, mutually exclusive sets (Super Bowl, each conference champion,
   each division, each conference's seed k) may be normalised; playoff
   qualifiers never are.
+- **MLB** (`build_kalshi_mappings.ts --sport mlb`): the World Series, pennants,
+  divisions and playoff qualifiers, by Kalshi's own 2026 wording with the
+  season read from the rules and checked against the event ticker; the 2
+  open 2026 World Series markets are mapped, 2027's are not listed yet
+  (`MLB_SIMULATOR_NOTES.md` §15.1).
+- **NHL** (`--sport nhl`): 160 markets of 2026-27, the Stanley Cup (32), the
+  Eastern and Western Conference Finals (the playoff titles, `win_conference`;
+  16 + 16), the four division winners (regular season, 8 each), the
+  Presidents' Trophy (32: its stated tiebreakers are the simulator's) and
+  playoff qualifiers (32); 8 complete sets (`NHL_SIMULATOR_NOTES.md` §16).
 - **Reference vs executable, separately.** Reference = YES bid/ask midpoint,
   only when two-sided and the spread ≤ 0.06 (`kalshi_rule('max_spread')`);
   the midpoint is never executable. Executable = the YES ask at the configured
@@ -575,8 +590,10 @@ rest; Monte Carlo ± is simulation noise only.
   report row `ok` (the entitlement gate finds `community_is_entitled`).
 - NFL: **ACTIVE** (§7.5). The first 100,000-run publication is made from `main`
   by the *Simulator* workflow; the nightly job (10:17 UTC) publishes after it.
-- Kalshi: 352 markets mapped, fees verified; compared after each publication by
-  the *markets* job. A flag still needs every condition in this section.
+- Kalshi: 352 NFL markets, the 2 open 2026 MLB World Series markets and 160
+  NHL 2026-27 markets mapped, fees verified; compared after each publication by the *markets* job. A
+  mapping for a later season than the run's is not that run's (next season's
+  futures listed while this one finishes); an earlier season's is an error. A flag still needs every condition in this section.
 - Nothing here is a "validated edge": the model is EXPERIMENTAL (§11).
 
 **Each season:** re-run *Simulator source check*, compare the NFL's pages with

@@ -18,6 +18,11 @@ import { NBA_2026_27 } from './nba/config.ts';
 import { cfbFacts, isCfbVerified } from './cfb/config.ts';
 import { NCAAM_2027 } from './ncaam/config.ts';
 import { WNBA_2026 } from './wnba/config.ts';
+import { golfActivation } from './golf/activation.ts';
+import { UFC_2026 } from './ufc/config.ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export type SportStatus = 'ACTIVE' | 'BLOCKED' | 'COMING_SOON';
 export interface SportEntry {
@@ -25,7 +30,7 @@ export interface SportEntry {
   label: string;
   status: SportStatus;
   structure: 'season' | 'tournament' | 'series' | 'events' | 'none';
-  tabs: Array<'division' | 'conference' | 'title' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health' | 'fights' | 'title_path' | 'leaderboard' | 'finishes'>;
+  tabs: Array<'division' | 'conference' | 'title' | 'cup' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health' | 'fights' | 'title_path' | 'leaderboard' | 'finishes'>;
   blockers: string[];
   limitations: string[];
   /** what would have to exist for this sport to be activated */
@@ -89,14 +94,13 @@ const MLB_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
-/** NBA: rules, inputs, studies and tests are complete, and the six 2026-27 facts are VERIFIED from the league's text
-    (2026-10-23); the season cannot be simulated for publication until the NBA Cup-dependent games are on the schedule */
+/** NBA: rules, inputs, studies and tests are complete, and the 2026-27 facts are VERIFIED from the league's text
+    (2026-10-23). The 30 NBA Cup-dependent games the league schedules after Group Play are simulated from the Cup's
+    published format until they are on the schedule (cup.ts; the unpublished parts Estimated and labelled) */
 function nbaStatus(): { status: SportStatus; blockers: string[] } {
   const c = NBA_2026_27;
-  const f = factStatus([['2026-27 tiebreaker procedure', c.tiebreakers], ['2026-27 definition of playoff teams for the tiebreaker', c.playoff_clubs_for_tiebreakers], ['2026-27 play-in format', c.play_in],
-    ['2026-27 playoff format', c.playoff_format], ['2026-27 home-court rules', c.home_court], ['2026-27 NBA Cup standings rules', c.nba_cup]], 'the NBA\'s official source');
-  const blockers = f.blockers.concat(['The 30 regular-season games that depend on the NBA Cup group stage (two per club) are not on the schedule yet; until they are, the schedule.complete gate refuses the season (expected after the group stage, early December 2026).']);
-  return { status: 'BLOCKED', blockers };
+  return factStatus([['2026-27 tiebreaker procedure', c.tiebreakers], ['2026-27 definition of playoff teams for the tiebreaker', c.playoff_clubs_for_tiebreakers], ['2026-27 play-in format', c.play_in],
+    ['2026-27 playoff format', c.playoff_format], ['2026-27 home-court rules', c.home_court], ['2026-27 NBA Cup standings rules', c.nba_cup], ['2026-27 NBA Cup format', c.nba_cup_format]], 'the NBA\'s official source');
 }
 
 /** NCAAM: the bracket engine, model and tests are complete; publication waits
@@ -141,6 +145,7 @@ const NBA_LIMITS = [
   'Availability: the projected rotation is who played in the club\'s latest game; a rotation player missing since an earlier game returns at a game drawn from empirical return hazards (Estimated, reason for the absence unknown). No new absences are simulated; roster moves after the as-of time are not.',
   'Rest, back-to-backs and travel come from the schedule for every regular-season game; a postseason game not yet scheduled carries the median rest of its round and game number (Estimated). The model\'s own learned postseason term applies; no playoff rotation change is assumed.',
   'Ratings are frozen at the as-of time: simulated results do not update them. Within-season drift is OFF.',
+  'NBA Cup: Group Play, the knockout field and its hosts follow the league\'s rules (reproduced on every Cup 2023-24..2025-26). Until the league schedules them, the 30 regular-season games the Cup decides are simulated: the non-advancing clubs\' pairings by an Estimated stand-in for the league\'s unpublished formula (cross-conference pairs and every within-conference pairing type reproduced on 2023-24..2025-26, the exact within-conference pairs drawn at random), Estimated dates and rest. A simulated Group Play game\'s overtime and regulation points (the Cup\'s differential and points tiebreakers) are drawn from the served model given its margin.',
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
@@ -157,20 +162,62 @@ const WNBA_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
+/** UFC: active while the model loop serves its Elo and the four feeds the run reads are in the repository; every
+    fact a result depends on is read in each run and gated (simulator/src/sports/ufc/run.ts), and the matchmaking
+    rule is Estimated and labelled, not a fact to verify */
+const REPO_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+function ufcStatus(): { status: SportStatus; blockers: string[] } {
+  const blockers: string[] = [];
+  try {
+    const v = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'docs', 'model-loop', 'ufc', 'versions.json'), 'utf8'));
+    const cur = (v.versions || []).find((x: { version: string }) => x.version === v.current);
+    if (!cur || !/^SERVED/.test(String(cur.status))) blockers.push('The model loop serves no UFC Elo (docs/model-loop/ufc/versions.json).');
+  } catch (_) { blockers.push('docs/model-loop/ufc/versions.json is missing.'); }
+  const f = UFC_2026.feeds;
+  for (const [label, rel] of [['the ESPN schedule', f.bouts], ['the ufc.com rankings', f.rankings], ['the saved rankings page', f.rankings_html], ['Wikipedia\'s title history', f.title_history]]) {
+    if (!fs.existsSync(path.join(REPO_ROOT, rel))) blockers.push('Feed missing: ' + label + ' (' + rel + '); run the Simulator sports-data job (fetch_sports_data.ts --what ufc).');
+  }
+  const facts = factStatus([['UFC champions and rankings', UFC_2026.champions], ['UFC title-fight rate', UFC_2026.title_rate], ['UFC matchmaking rule', UFC_2026.matchmaking]], 'its source');
+  return { status: blockers.length || facts.blockers.length ? 'BLOCKED' : 'ACTIVE', blockers: blockers.concat(facts.blockers) };
+}
+const UFC_LIMITS = [
+  'Who wins comes from the served UFC Elo (the model loop\'s EXPERIMENTAL version): every booked bout keeps its published price exactly. Its edge over a coin flip is modest (in the loop\'s preregistered test, log loss about 2.5% below a coin\'s over 2021-2024 and 4% below it in the 2025 holdout; its favourites won 56% of the 2021-2024 bouts) and it has never been compared with closing prices.',
+  'Finish or decision, and the round of a finish, are measured from every UFC bout since 2014: the division, the scheduled rounds and each fighter\'s own finish record, shrunk toward the division. The data carry no method, so KO/TKO and submission are not told apart. Draws and no contests (under 2% of bouts) are not simulated: every simulated fight has a winner.',
+  'Title Path numbers are Estimated. Title fights not yet booked come at each division\'s measured rate (undisputed title fights over the last five years, from Wikipedia\'s title history), never on a card already announced. The challenger is the highest-ranked contender coming off a win and rested at least the measured minimum: EdgeDesk\'s rule, not the UFC\'s, which books title fights at its discretion.',
+  'Rankings move only through booked bouts (a winner takes a higher-ranked loser\'s place); bouts not yet on the schedule are not simulated. Interim titles, vacated or stripped titles, retirements, injuries and withdrawals are not modelled; a contender booked in another division is treated as having moved there.',
+  'Title fights are priced by the served Elo without a champion term: champions beat its expectations from 2014 to 2020 but have matched them since 2021 (Model Health shows both periods); the model loop tests a champion term every week and adopts it only if it clears the preregistered rule.',
+  'Ratings are frozen at the last result: a simulated win does not raise a rating (the served layoff rule still applies at a fight\'s date).',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
+/** Golf: ACTIVE only while the committed skill study and backtest exist and the backtest's activation conditions
+    hold on its holdout seasons (simulator/src/sports/golf/activation.ts); every format fact is measured per event (run.ts) */
+const GOLF_LIMITS = [
+  'Player skill: strokes per round against the field in the same round (so the course and the weather cancel), from every PGA Tour, LPGA and DP World Tour round since 2023, weighted toward recent rounds and shrunk toward a measured prior. The PGA Tour and the DP World Tour are fitted on one scale (their shared players link them; it predicted both tours better).',
+  'A player with few or no rounds in that history (a Monday qualifier, an amateur, a LIV Golf or Korn Ferry Tour regular) is set near the measured newcomer level, which is well below the average tour player: a strong player from outside these three tours is underrated.',
+  'Each player\'s week is drawn once per simulated tournament (what is wrong with his skill estimate and what is different this week), sized from how much one player\'s rounds in the same event move together (2024-2026); rounds already played update it, by exactly as much as those measurements say.',
+  'Not modelled: course fit and course history, the weather and the morning or afternoon tee-time wave (only its average effect on the first two rounds is inside the per-player draw), injuries and news, and withdrawals after the leaderboard was read.',
+  'The cut is measured, never assumed: Observed once made; otherwise read from the event\'s previous editions and the tour\'s 2023-2026 cuts (top 65 and ties on all three tours); an event whose rule cannot be read is not simulated, and an interval the editions cannot narrow is labelled Estimated.',
+  'A tie for the lead goes to a sudden-death playoff decided hole by hole from the players\' skills: an approximation (the feed holds no hole-by-hole history; aggregate playoffs are treated as sudden death). Top 5, 10 and 20 break ties at random, which equals a dead-heat settlement on average.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
 export function sportRegistry(): SportEntry[] {
   const nfl = nflStatus(), nhl = nhlStatus(), cfb = cfbStatus();
   const mlb = mlbStatus();
   const nba = nbaStatus();
   const ncaam = ncaamStatus();
   const wnba = wnbaStatus();
+  const golf = golfActivation();
+  const ufc = ufcStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
     { key: 'cfb', label: 'College Football', status: cfb.status, structure: 'season', tabs: ['conference', 'title', 'futures'],
       blockers: cfb.blockers, limitations: CFB_LIMITS,
       activation_path: 'Active: every conference procedure, the 2026 CFP format and North Dakota State\'s eligibility are VERIFIED from the governing bodies\' own text (simulator/src/sports/cfb/config.ts); Sacramento State\'s MAC eligibility is measured in every run and holds publication if any run depended on it. A new season, or a changed procedure, means re-reading the sources (Simulator CFB source check) and re-verifying in a reviewed commit. CFB_SIMULATOR_NOTES.md §4, §16.' },
-    { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
-      activation_path: 'The six 2026-27 facts in simulator/src/sports/nba/config.ts are VERIFIED from the league\'s own text (2026-10-23; re-checked each season by the Simulator source check). Wait for the 30 NBA Cup-dependent games on the schedule (from Dec. 4, 2026), lift the schedule blocker in simulator/src/sports/registry.ts in a reviewed commit, add the NBA to the nightly plan, then a 100,000-run publication.' },
+    { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'cup', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
+      activation_path: 'Active: the 2026-27 facts in simulator/src/sports/nba/config.ts are VERIFIED from the league\'s own text (2026-10-23), and the NBA Cup-dependent games are simulated from the Cup\'s format until the league schedules them (each one it schedules replaces its simulated stand-in). Each season: re-run the Simulator source check, re-verify the facts, and update the Cup format (config.ts cup) in a reviewed commit.' },
     { key: 'nhl', label: 'NHL', status: nhl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],
       blockers: nhl.blockers, limitations: NHL_LIMITS,
       activation_path: 'Each season: re-run the Simulator source check, compare the NHL.com tie-breaking and playoff-format pages with NHL_SIMULATOR_NOTES.md, and re-verify the three facts in simulator/src/sports/nhl/config.ts in a reviewed commit.' },
@@ -183,12 +230,10 @@ export function sportRegistry(): SportEntry[] {
     { key: 'tennis', label: 'Tennis', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
       blockers: ['Retired from coverage (2026-09-27).', 'Fitted ratings live only in the database; no owned draw structure; no validated point-level serve/return model.'],
       limitations: [], activation_path: 'Draw data, a validated point-level model, and the coverage decision reversed.' },
-    { key: 'golf', label: 'Golf', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
-      blockers: ['No golf model, field data, round-score distribution or cut rules exist in the repository.'],
-      limitations: [], activation_path: 'A per-player round-score model with a shared round effect, fields and cut rules.' },
-    { key: 'ufc', label: 'UFC', status: 'COMING_SOON', structure: 'none', tabs: [],
-      blockers: ['UFC has no season or division championship structure to simulate.'],
-      limitations: [], activation_path: 'None planned: no artificial season simulator.' },
+    { key: 'golf', label: 'Golf', status: golf.status, structure: 'events', tabs: ['leaderboard', 'finishes', 'model_health'], blockers: golf.blockers, limitations: GOLF_LIMITS,
+      activation_path: 'Active while the committed backtest (simulator/data/golf_backtest.json, walk-forward over 2025-2026) meets its activation conditions; each event\'s cut, rounds and field are measured per run. Each season: let the feeds refresh, re-run the skill study and the backtest, and set the new season and nightly_through in simulator/src/sports/golf/config.ts. GOLF_SIMULATOR_NOTES.md.' },
+    { key: 'ufc', label: 'UFC', status: ufc.status, structure: 'events', tabs: ['fights', 'title_path', 'model_health'], blockers: ufc.blockers, limitations: UFC_LIMITS,
+      activation_path: 'Active: every booked bout from the served UFC Elo (model_loop/adapters/ufc, reproduced in every run by simulator/src/sports/ufc/elo.ts), champions and rankings from ufc.com, the schedule from ESPN and the title history from Wikipedia, refreshed by the Simulator sports-data job (fetch_sports_data.ts --what ufc). UFC_SIMULATOR_NOTES.md.' },
     { key: 'college_baseball', label: 'College Baseball', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
       blockers: ['Out of season until February 2027; no 2027 schedule; release gates G11, G12 and G15 fail.'],
       limitations: [], activation_path: 'The 2027 schedule and passing release gates.' }

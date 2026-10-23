@@ -185,6 +185,20 @@ const rq = (qs) => new Request('https://fn.test/capture' + (qs || ''), { headers
     ['denied_breaker', 'denied_no_budget', 'denied_cooldown', 'provider_http_429', 'provider_http_401'].every((d) => M.gatewayRunStop(d))
     && ['cache_hit', 'denied_daily_budget', 'denied_reserve', 'provider_http_503', 'provider_timeout', 'gateway_unreachable'].every((d) => M.gatewayRunStop(d) === null));
 
+  /* Q9b — a board observed after the start never closes a row (2026-10-23 audit):
+     the pending window reaches GRACE_MIN past the start and the sport board is
+     not filtered to upcoming events, so its price there is in-play */
+  const T0 = Date.parse('2026-10-24T19:00:00Z'), MIN = 60000;
+  chk('Q9b a board observed before the start closes the row live', C.closeRoute('2026-10-24T19:00:00Z', true, T0 - 10 * MIN, T0 - 5 * MIN) === 'live');
+  chk('Q9b a board observed at or after the start is in-play: the row takes the tick route', C.closeRoute('2026-10-24T19:00:00Z', true, T0 + 40 * MIN, T0 + 41 * MIN) === 'tick'
+    && C.closeRoute('2026-10-24T19:00:00Z', true, T0, T0) === 'tick');
+  chk('Q9b a board bought before the start but read after it is still a pregame board', C.closeRoute('2026-10-24T19:00:00Z', true, T0 - MIN, T0 + 20 * MIN) === 'live');
+  chk('Q9b no live board: a started game takes the tick route, an upcoming one waits', C.closeRoute('2026-10-24T19:00:00Z', false, null, T0 + MIN) === 'tick'
+    && C.closeRoute('2026-10-24T19:00:00Z', false, null, T0 - MIN) === 'defer');
+  const closeSrc = fs.readFileSync(path.join(__dirname, '..', '..', 'supabase', 'functions', 'close', 'index.ts'), 'utf8');
+  chk('Q9b the run loop and the tick lookup both route through closeRoute', /const stranded = pending\.filter\(\(p\) => routeOf\(p\) === "tick"\)/.test(closeSrc)
+    && /if \(routeOf\(p\) !== "live"\)/.test(closeSrc) && /boardAt\.set\(sport, asOf\)/.test(closeSrc));
+
   /* Q10 — diagnostics never buy ladders */
   ENV.CAPTURE_SPORTS = 'americanfootball_nfl';
   reset();

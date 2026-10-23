@@ -12,9 +12,12 @@
      node simulator/src/cli/run.ts --sport mlb --season 2026 --dry-run                 (live: MLB Stats API)
      node simulator/src/cli/run.ts --sport mlb --season 2025 --as-of 2025-10-27 --dry-run   (history replay, 2022-2025)
      node simulator/src/cli/run.ts --sport nba --workers 4 --dry-run --allow-incomplete-schedule   (2026-27; NBA season keys are end years)
+     node simulator/src/cli/run.ts --sport ufc --season 2026 --workers 4 --dry-run     (every booked bout and each division's title path)
+     node simulator/src/cli/run.ts --sport golf --workers 4 --dry-run                  (every tour's current event: live ESPN leaderboard, else the committed feed)
+     node simulator/src/cli/run.ts --sport golf --tour pga --offline --dry-run         (one tour, from the committed feed)
 
    Options
-     --sport nfl|nhl|nba|mlb|cfb|ncaam|wnba  the sport (simulator/src/sports/registry.ts)
+     --sport nfl|nhl|nba|mlb|cfb|ncaam|wnba|ufc|golf  the sport (simulator/src/sports/registry.ts)
      --season 2026            must match the sport's season config (default: it; NHL and NBA keys are end years, 2027 = 2026-27)
      --runs N                 default 100000 (production); fewer only for a dry run
      --seed S                 decimal or 0x-hex u64; default: derived from the input hash
@@ -33,6 +36,8 @@
      --allow-incomplete-schedule
                               NBA, dry run only: simulate a season whose NBA Cup-dependent games are
                               not on the schedule yet (WARN: never publishable)
+   Golf only (--sport golf; one competition per tour event, each published on its own):
+     --tour pga,lpga,eur          the tours to simulate (default: all three)
    NCAAM only (--sport ncaam; season 2027 = 2026-27 by default):
      --mode official|historical   the official bracket file (default) or an exact
                                   reconstruction of a past season (backtest, never published)
@@ -60,7 +65,7 @@ import { MLB_2026 } from '../sports/mlb/config.ts';
 import { buildMlbHistorySnapshot, readSnapshot as readMlbSnapshot, writeSnapshot as writeMlbSnapshot, type MlbSnapshot } from '../sports/mlb/inputs.ts';
 import { validateMlbInputs, mlbMathStatus } from '../sports/mlb/validate.ts';
 import { NBA_2026_27 } from '../sports/nba/config.ts';
-import { buildNbaSnapshot, readSnapshot as readNbaSnapshot, writeSnapshot as writeNbaSnapshot, NBA_INPUT_SCHEMA, type NbaSnapshot } from '../sports/nba/inputs.ts';
+import { buildNbaSnapshot, readSnapshot as readNbaSnapshot, writeSnapshot as writeNbaSnapshot, NBA_READABLE_SCHEMAS, type NbaSnapshot } from '../sports/nba/inputs.ts';
 import { validateNbaInputs, nbaMathStatus } from '../sports/nba/validate.ts';
 import { NBA_OUTCOME_SEMANTICS } from '../sports/nba/module.ts';
 import { sha256Hex } from '../core/canonical.ts';
@@ -70,6 +75,13 @@ import { executeNcaam, printNcaamSummary } from '../sports/ncaam/run.ts';
 import { WNBA_2026 } from '../sports/wnba/config.ts';
 import { executeWnba, printWnbaSummary } from '../sports/wnba/run.ts';
 import { WNBA_INPUT_SCHEMA } from '../sports/wnba/inputs.ts';
+import { UFC_2026 } from '../sports/ufc/config.ts';
+import { executeUfc, printUfcSummary } from '../sports/ufc/run.ts';
+import { UFC_INPUT_SCHEMA } from '../sports/ufc/inputs.ts';
+import { GOLF_2026 } from '../sports/golf/config.ts';
+import { executeGolf, printGolfSummary, publishGolf, type GolfOutcome } from '../sports/golf/run.ts';
+import { GOLF_INPUT_SCHEMA } from '../sports/golf/inputs.ts';
+import type { Tour } from '../sports/golf/model.ts';
 
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -79,13 +91,15 @@ export interface CliArgs {
   asOf: string | null; confirmThrough: string | null; allowIncompleteSchedule: boolean;
   /** NCAAM only: the bracket source, the model source and an official bracket file other than the default */
   mode: 'official' | 'historical'; model: 'champion' | 'selection'; bracket: string | null;
+  /** golf only: the tours to simulate (default all) */
+  tours: string[] | null;
 }
 /** each sport's configured season (the NHL's and the NBA's are end years: 2027 = 2026-27) */
-export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, mlb: MLB_2026.season, nba: NBA_2026_27.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season };
+export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, mlb: MLB_2026.season, nba: NBA_2026_27.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season, ufc: UFC_2026.season, golf: GOLF_2026.season };
 export function parseArgs(argv: string[]): CliArgs {
   const a: CliArgs = { sport: 'nfl', season: NaN, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
     publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4, asOf: null, confirmThrough: null, allowIncompleteSchedule: false,
-    mode: 'official', model: 'champion', bracket: null };
+    mode: 'official', model: 'champion', bracket: null, tours: null };
   const need = (i: number) => { if (argv[i + 1] == null || argv[i + 1].startsWith('--')) throw new Error(argv[i] + ' needs a value'); return argv[i + 1]; };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
@@ -108,6 +122,7 @@ export function parseArgs(argv: string[]): CliArgs {
       case '--as-of': a.asOf = need(i); i++; break;
       case '--confirm-through': a.confirmThrough = need(i); i++; break;
       case '--allow-incomplete-schedule': a.allowIncompleteSchedule = true; break;
+      case '--tour': a.tours = need(i).split(',').filter(Boolean); i++; break;
       case '--mode': { const v = need(i); if (v !== 'official' && v !== 'historical') throw new Error('--mode must be official or historical'); a.mode = v; i++; break; }
       case '--model': { const v = need(i); if (v !== 'champion' && v !== 'selection') throw new Error('--model must be champion or selection'); a.model = v; i++; break; }
       case '--bracket': a.bracket = need(i); i++; break;
@@ -136,6 +151,7 @@ export function parseArgs(argv: string[]): CliArgs {
   if (a.sport === 'ncaam' && a.asOf != null && !Number.isFinite(Date.parse(a.asOf))) throw new Error('--as-of must be an ISO time');
   if (a.sport !== 'ncaam' && (a.mode !== 'official' || a.model !== 'champion' || a.bracket)) throw new Error('--mode, --model and --bracket apply to --sport ncaam only');
   if (a.publish && a.sport === 'ncaam' && (a.mode !== 'official' || a.model !== 'champion')) throw new Error('an NCAAM run is published only from the official bracket with the champion model');
+  if (a.tours && (a.sport !== 'golf' || !a.tours.length || a.tours.some((t) => !(GOLF_2026.tours as string[]).includes(t)))) throw new Error('--tour applies to --sport golf only, with tours from ' + GOLF_2026.tours.join(','));
   return a;
 }
 
@@ -143,10 +159,16 @@ export interface RunOutcome { results: ResultsDoc; gates: Gate[]; snapshot: NflS
 
 export async function execute(args: CliArgs, log: (s: string) => void = console.log): Promise<RunOutcome> {
   /* an NBA replay takes its sport and season from the snapshot itself */
-  if (args.snapshot && snapshotSchema(args.snapshot) === NBA_INPUT_SCHEMA) args = { ...args, sport: 'nba' };
+  if (args.snapshot && NBA_READABLE_SCHEMAS.includes(snapshotSchema(args.snapshot) || '')) args = { ...args, sport: 'nba' };
   if (args.snapshot && snapshotSchema(args.snapshot) === WNBA_INPUT_SCHEMA) args = { ...args, sport: 'wnba' };
+  if (args.snapshot && snapshotSchema(args.snapshot) === UFC_INPUT_SCHEMA) args = { ...args, sport: 'ufc' };
+  if (args.snapshot && snapshotSchema(args.snapshot) === GOLF_INPUT_SCHEMA) args = { ...args, sport: 'golf' };
   if (args.sport === 'nba') return executeNba(args, log);
+  /* golf runs one competition per tour event: the outcome carries each event's run (printGolfSummary, publishGolf) */
+  if (args.sport === 'golf') return executeGolf({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns, offline: args.offline, tours: (args.tours as Tour[] | null) || undefined }, log) as unknown as RunOutcome;
   if (args.sport === 'wnba') return executeWnba({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns, offline: args.offline }, log) as unknown as RunOutcome;
+  /* the UFC reads only committed files (the feeds and the model loop's data): --offline changes nothing */
+  if (args.sport === 'ufc') return executeUfc({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns }, log) as unknown as RunOutcome;
   if (args.allowIncompleteSchedule) throw Object.assign(new Error('--allow-incomplete-schedule applies to the NBA only'), { exitCode: 2 });
   if (args.sport === 'nhl') return executeNhl(args, log);
   if (args.sport === 'mlb') return executeMlb(args, log);
@@ -290,8 +312,11 @@ async function executeNba(args: CliArgs, log: (s: string) => void): Promise<RunO
   (results as any).outcome_semantics = NBA_OUTCOME_SEMANTICS;
   /* 3 gates */
   const draws = agg.flags.tiebreak_random_drawing || 0, frac = draws / agg.n;
+  const cupPts = agg.flags.cup_total_points_unmodelled || 0, cupDraws = agg.flags.cup_random_drawing || 0;
   const gates = inputGates.concat(runGates(results, agg.n, 'nba', [
-    { id: 'run.random_drawings', status: frac <= args.maxUnsupportedFraction ? 'PASS' : 'WARN', blocks: 'none', detail: draws + ' of ' + agg.n + ' runs reached the random drawing of the tiebreaker (a rule of the league, seeded here, not an unsupported input)' }
+    { id: 'run.random_drawings', status: frac <= args.maxUnsupportedFraction ? 'PASS' : 'WARN', blocks: 'none', detail: draws + ' of ' + agg.n + ' runs reached the random drawing of the tiebreaker (a rule of the league, seeded here, not an unsupported input)' },
+    { id: 'run.configured_season', status: d.season === NBA_2026_27.season ? 'PASS' : 'FAIL', blocks: d.season === NBA_2026_27.season ? 'none' : 'publication', detail: 'the snapshot is season ' + d.season_label + (d.season === NBA_2026_27.season ? ', the configured season' : '; only ' + NBA_2026_27.label + ' is published (a past season is a replay)') },
+    ...(d.cup ? [{ id: 'run.cup_tiebreaks', status: 'PASS' as const, blocks: 'none' as const, detail: cupPts + ' of ' + agg.n + ' runs reached the NBA Cup\'s total-points step without a game\'s points (the next step, the 2025-26 record, decided it; 0 when every simulated Group Play game has its served total); ' + cupDraws + ' reached the Cup\'s random drawing (a rule of the league, seeded)' }] : [])
   ]));
   return writeOut(args, startedAt, snap, results, gates, (f) => writeNbaSnapshot(f, snap));
 }
@@ -432,9 +457,16 @@ if (isMain) {
     try { args = parseArgs(process.argv.slice(2)); } catch (e) { console.error('error: ' + (e as Error).message); process.exit(2); }
     try {
       const o = await execute(args);
+      if ((o as unknown as GolfOutcome).sport === 'golf') {
+        const g = o as unknown as GolfOutcome;
+        printGolfSummary(g, console.log);
+        if (!g.runs.length && g.refused.length) process.exit(2);
+        process.exit(args.publish ? await publishGolf(g, console.log) : 0);
+      }
       if (args.sport === 'cfb') printCfbSummary(o as unknown as CfbRunOutcome, console.log);
       else if (args.sport === 'ncaam') printNcaamSummary(o as any, console.log);
       else if (o.results.run.sport === 'wnba') printWnbaSummary(o as any, console.log);
+      else if (o.results.run.sport === 'ufc') printUfcSummary(o as any, console.log);
       else printSummary(o, console.log);
       if (args.publish) {
         if (!o.publishable) { console.error('nothing published: a gate failed (see gates.json)'); process.exit(1); }

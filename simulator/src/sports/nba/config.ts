@@ -21,6 +21,7 @@
    =========================================================================== */
 import type { NbaTeam } from './rules.ts';
 import type { SeasonFact } from '../nfl/config.ts';
+import type { CupFormat } from './cup.ts';
 
 const ROW: Array<[string, string, string, string]> = [
   ['2', 'BOS', 'Boston Celtics', 'Atlantic'], ['17', 'BKN', 'Brooklyn Nets', 'Atlantic'], ['18', 'NY', 'New York Knicks', 'Atlantic'], ['20', 'PHI', 'Philadelphia 76ers', 'Atlantic'], ['28', 'TOR', 'Toronto Raptors', 'Atlantic'],
@@ -47,6 +48,12 @@ export interface NbaSeasonConfig {
   playoff_format: SeasonFact<string>;
   home_court: SeasonFact<string>;
   nba_cup: SeasonFact<string>;
+  /** the Cup's Group Play, standings, knockout and the non-advancing clubs' games (the league's text) */
+  nba_cup_format: SeasonFact<string>;
+  /** Estimated: what the league does not publish about the Cup-dependent games (pairings formula, a host, dates) */
+  cup_dependent_schedule: SeasonFact<string>;
+  /** the machine-readable Cup format the simulation runs (simulator/src/sports/nba/cup.ts) */
+  cup: { format: CupFormat };
   /** Estimated: how rest and travel are set for a postseason game that is not on the schedule yet */
   postseason_schedule: SeasonFact<string>;
   drift: { mode: 'off' };
@@ -107,9 +114,31 @@ export const NBA_2026_27: NbaSeasonConfig = {
   },
   nba_cup: {
     ...OK,
-    value: 'Every NBA Cup game counts in the standings except the championship game (nba/data scope nba_cup_final, excluded). 30 regular-season games (two per club: the knockout games and the games scheduled for the clubs that do not advance) are fixed only after the group stage; until they are on the schedule the season cannot be simulated for publication.',
+    value: 'Every NBA Cup game counts in the standings except the Championship (nba/data scope nba_cup_final, excluded). 30 regular-season games (two per club: the knockout games and the games scheduled for the clubs that do not advance) are fixed only after Group Play; until the league puts them on the schedule they are simulated from the Cup format (nba_cup_format, cup_dependent_schedule).',
     source: SRC.cup_101 + ': "All 67 games across both stages of the Emirates NBA Cup will count toward the regular-season standings except the Championship. Each team will continue to play 82 regular-season games in the 2026-27 season"; Quarterfinals and Semifinals "will count as regular-season games for all purposes" and are hosted in NBA team markets by the higher seed; "the 22 teams that do not qualify for the Knockout Rounds will each play two regular-season games"; "The four losing teams in the Quarterfinals ... will play each other in a regular-season game" — 4 + 2 + 2 + 22 = 30 games. ' + SRC.release + ': "defined dates and opponents for 80 of each team\'s 82 games". ' + SRC.cup_faq + '. The committed 2026-27 schedule has 1,200 of 1,230 regular-season games, 80 per club.',
-    verify_by: 'Each season: as above, and wait for the 30 Cup-dependent games on the schedule (after the group stage: from Dec. 4, 2026).'
+    verify_by: RECHECK
+  },
+  nba_cup_format: {
+    ...OK,
+    value: 'Group Play: six groups of five within each conference, one game against each group rival (two home, two away) on the Cup Nights (Oct. 30, Nov. 6, 13, 20, 24, 25, 27), the only games played on them. Group standings by Group Play record; ties: head-to-head in Group Play, point differential in Group Play, total points in Group Play (overtime never counts: an overtime game\'s differential is 0, its overtime points dropped), the 2025-26 regular-season record, a random drawing. Knockout: the six group winners and one wild card per conference (the best Group Play record among the group runners-up; the same protocol without head-to-head; ties within groups broken first). In each conference the two group winners with the best Group Play records host the quarterfinals (Dec. 4-5), the best against the wild card; the semifinals (Dec. 8 and/or 9) at the higher seed\'s arena; the Championship (Dec. 11, Hinkle Fieldhouse, Indianapolis) is not a regular-season game. The 22 clubs that do not advance play two regular-season games each (Dec. 6-7 and 9-10) by a formula on the Group Play standings (5th-15th): two cross-conference games between bottom-finishing clubs subject to travel, no club more than one; the other 20 within conference between clubs otherwise scheduled three times wherever possible. The two quarterfinal losers of each conference play each other (Dec. 7, 9 or 10). The groups are read off the schedule: the 60 Cup Night games form them.',
+    source: SRC.cup_101 + ': "All 30 teams have been randomly drawn into groups of five within their conference ... each team will play four designated Group Play games on \u201cCup Nights\u201d \u2013 one game against each opponent in its group, with two games at home and two on the road"; "\u201cCup Nights\u201d will take place every Friday from Oct. 30 \u2013 Nov. 27, with additional Cup Nights on Tuesday, Nov. 24 and Wednesday, Nov. 25. The only NBA games played on Cup Nights will be Group Play games"; tiebreakers "Head-to-head record in Group Play; Point differential in Group Play; Total points scored in Group Play; Record from the 2025-26 NBA regular season; Random drawing", "Overtime scoring will not count toward the point differential and total points tiebreakers"; "the team with the best standing in Group Play games in each of the six groups and one wild card team from each conference ... the team from each conference with the best record in Group Play games that finished second in its group", wild-card ties by "the same tiebreaker protocol ... (with the exception of the head-to-head record in Group Play). Ties within groups will be broken before the calculation of wild card tiebreakers"; "Quarterfinal games will be hosted by the two teams with the best record in Group Play games, and the team with the best record in Group Play games will host the wild card team. The Semifinal games will be played at the home arena of the higher-seeded team in each conference"; "The Championship will not be counted as a regular-season game"; "During the Knockout Rounds on days when Emirates NBA Cup games are not scheduled (Dec. 6-7 and Dec. 9-10), the 22 teams that do not qualify for the Knockout Rounds will each play two regular-season games. A formulaic approach will determine the matchups for these games using the Group Play standings in each conference (5th-15th). Two of the 22 games will be scheduled cross-conference ... between bottom-finishing teams in the Group Play stage subject to travel constraints, and no team will play more than one of its two games cross-conference. The other 20 games will be scheduled within conference featuring teams that are otherwise scheduled to play each other three times over the course of the season wherever possible"; "The four losing teams in the Quarterfinals in each conference will play each other in a regular-season game on Dec. 7, 9 or 10." ' + SRC.cup_faq + ': "Group Play nights include Oct. 30, Nov. 6, Nov. 13, Nov. 20, Nov. 24, Nov. 25 and Nov. 27"; "Quarterfinals (Dec. 4-5), Semifinals (Dec. 8 and/or Dec. 9) and Championship (Dec. 11)". ' + SRC.release + ': "The two unassigned games for each team, to be played from Friday, Dec. 4 through Thursday, Dec. 10". Held against the league\'s 2023-24..2025-26 Cups by simulator/tests/nba_cup.test.ts: the groups the Cup Nights form, all 12 quarterfinal pairings and hosts and all 6 semifinal pairings reproduced from the Group Play results; the committed 2026-27 schedule has the 60 Group Play games on the seven Cup Nights and no game Dec. 4-10.',
+    verify_by: RECHECK
+  },
+  cup_dependent_schedule: {
+    value: 'Estimated, until the league puts the games on the schedule (a game on the schedule is always used as it is): cross-conference, the same Group Play place in both conferences from the bottom up, the first two whose arenas are within 2,500 km; within conference, a random pairing among the clubs otherwise scheduled three times (each club its remaining games, never a pairing twice; any conference pairing only if none completes it); each non-advancing club hosts one of its two games (every club has 40 home games of its 80); the quarterfinal losers\' game is hosted by the loser that was away in its quarterfinal (if both or neither, the higher seed). Dates and rest: quarterfinals Dec. 4, the first non-advancing games Dec. 6, semifinals Dec. 8, the second non-advancing games and the losers\' games Dec. 9, the Championship Dec. 11; rest and travel from the club\'s own schedule before Dec. 4, and from its own arena after a Cup game. A simulated Group Play game\'s overtime and its regulation points are drawn from the served model given its margin (the served total: mean, sd and end-game slope, as the model\'s joint distribution draws the regulation total), so the differential and points steps read them as they would a real result.',
+    source: 'simulator/src/sports/nba/cup.ts; reproduced against 2023-24..2025-26 by simulator/tests/nba_cup.test.ts: the cross-conference rule picks all 6 cross-conference pairs the league scheduled, every one of the 60 within-conference games was between clubs otherwise scheduled three times, every non-advancing club hosted one of its two, and the losers\' host rule matches all 6 losers\' games.',
+    retrieved: '2026-10-23', verification: 'NOT_APPLICABLE', verify_by: 'Estimated input, labelled Estimated in the reader; replaced game by game as the league schedules them.', affects_results: true, verified_by: null, verified_at: null
+  },
+  cup: {
+    format: {
+      cup_nights: ['2026-10-30', '2026-11-06', '2026-11-13', '2026-11-20', '2026-11-24', '2026-11-25', '2026-11-27'],
+      prior_season: 2026,
+      window: ['2026-12-04', '2026-12-10'],
+      dates: { quarterfinal: '2026-12-04', filler_1: '2026-12-06', semifinal: '2026-12-08', filler_2: '2026-12-09', championship: '2026-12-11' },
+      semifinal_site: 'higher_seed',
+      championship_city: 'Indianapolis',
+      cross_conference_max_km: 2500
+    }
   },
   postseason_schedule: {
     value: 'Estimated: a postseason game not yet on the schedule takes the median rest of its round and game number in the 2021-22..2025-26 postseasons (nba/data/games), travel between the two arenas in the 2-2-1-1-1 order, no back-to-back, and each club arriving for a series opener from its own arena. A game on the schedule uses its real date and venue.',

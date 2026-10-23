@@ -731,6 +731,22 @@ export function entryPrice(p: {
  * database or a provider. Returns the CLV to store (or null) and the reason it
  * was excluded (or null). It NEVER returns a number it cannot justify.
  */
+/* WHICH PRICE MAY CLOSE A ROW (2026-10-23 audit). A pending row's game can have
+   started up to GRACE_MIN ago, and the sport-level board is not filtered to
+   upcoming events, so a board observed AFTER the start can carry an in-play
+   price. That is never a close. Such a row takes the same route as a row whose
+   provider failed: its last observed tick at or before the start (or it waits).
+     "live"  the board was observed before the start: price the row from it
+     "tick"  the game has started and the board cannot close it: last tick at or
+             before the start, else defer
+     "defer" no live board and the game has not started: retry next run */
+export function closeRoute(commenceIso: string, sportPricedLive: boolean, boardObservedMs: number | null, nowMs: number): "live" | "tick" | "defer" {
+  const start = Date.parse(String(commenceIso));
+  if (!sportPricedLive) return Number.isFinite(start) && start < nowMs ? "tick" : "defer";
+  if (!Number.isFinite(start)) return "live";
+  return (boardObservedMs ?? nowMs) >= start ? "tick" : "live";
+}
+
 export function decideClose(
   entryDec: number | null | undefined,
   o: any | null,
@@ -1219,6 +1235,7 @@ Deno.serve(async (req) => {
   const sports = [...new Set(pending.map((p) => p.sport_key))];
   const fresh = new Map<string, any>();
   const fetchOk = new Set<string>();
+  const boardAt = new Map<string, number>();   // sport -> when its board was observed
   const providers: Record<string, any> = {};
   /* THE RUN'S QUOTA VIEW. Every request goes through odds_gateway, which
      holds the one shared budget (supabase/odds_api_gateway.sql); this only
@@ -1243,6 +1260,7 @@ Deno.serve(async (req) => {
       let priced = 0;
       for (const ev of data) for (const o of priceEvent(ev, METHOD, REFERENCE_BOOKS, asOf)) { fresh.set(sigKey(o), o); priced++; }
       fetchOk.add(sport);
+      boardAt.set(sport, asOf);
       providers[sport] = { ok: true, events: data.length, priced, source, decision, cost, observed_at: new Date(asOf).toISOString() };
     } catch (e) {
       providers[sport] = { ok: false, reason: String(e).slice(0, 200) };
@@ -1260,15 +1278,18 @@ Deno.serve(async (req) => {
   /* Rows whose sport could not be priced live AND whose event has already
      started are never going to get a live close — the key is gone. Reach for
      the tick series before giving up on them. A row whose event is still ahead
-     is deferred as before: the market may well be back next run. */
-  const stranded = pending.filter((p) =>
-    !fetchOk.has(p.sport_key) && Date.parse(String(p.commence_time)) < now);
+     is deferred as before: the market may well be back next run. A row whose
+     sport WAS priced, but from a board observed at or after its start, takes
+     the same route: that board's price is in-play, not a close (closeRoute). */
+  const routeOf = (p: { sport_key: string; commence_time: string }) =>
+    closeRoute(String(p.commence_time), fetchOk.has(p.sport_key), boardAt.get(p.sport_key) ?? null, now);
+  const stranded = pending.filter((p) => routeOf(p) === "tick");
   const tickClose = stranded.length ? await lastTickCloses(stranded) : new Map<string, TickClose>();
   let fromTick = recoveredStale;
 
   for (const p of pending) {
-    // Provider failed for this sport.
-    if (!fetchOk.has(p.sport_key)) {
+    // Provider failed for this sport, or its board was observed after the start (an in-play board).
+    if (routeOf(p) !== "live") {
       const t = tickClose.get(p.sig_key);
       if (!t) { deferred++; continue; }           // still upcoming, or no ticks: retry next run
       /* A real observed price, just not a live one. */

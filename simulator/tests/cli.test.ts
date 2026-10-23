@@ -7,7 +7,7 @@ import path from 'node:path';
 import { kit } from './_kit.ts';
 import { nflFixture, clone } from './_fixture.ts';
 import { parseArgs, execute } from '../src/cli/run.ts';
-import { planRuns } from '../src/cli/plan.ts';
+import { planRuns, NBA_CRON } from '../src/cli/plan.ts';
 import { writeSnapshot, readSnapshot, codeHashes } from '../src/sports/nfl/inputs.ts';
 import { hashCanonical, canonicalJson } from '../src/core/canonical.ts';
 import { sportRegistry } from '../src/sports/registry.ts';
@@ -35,7 +35,7 @@ const quiet = () => {};
   T.throws('a seed with a space', () => planRuns('workflow_dispatch', { ...ok, seed: '1 2' }), /seed must be/);
   T.throws('a seed beyond 64 bits', () => planRuns('workflow_dispatch', { ...ok, seed: '18446744073709551616' }));
   T.throws('a season other than the configured one', () => planRuns('workflow_dispatch', { ...ok, season: '2025' }), /season must be 2026/);
-  T.throws('a sport without a module', () => planRuns('workflow_dispatch', { ...ok, sport: 'nba' }), /no simulation module/);
+  T.throws('a sport without a module', () => planRuns('workflow_dispatch', { ...ok, sport: 'tennis' }), /no simulation module/);
   T.throws('publish must be a boolean', () => planRuns('workflow_dispatch', { ...ok, publish: 'yes' }), /publish must be/);
   const blocked = sportRegistry().map((r) => r.key === 'nfl' ? { ...r, status: 'BLOCKED' as const, blockers: ['TEST: an unverified fact'] } : r);
   T.throws('publishing a BLOCKED sport is refused before anything runs', () => planRuns('workflow_dispatch', { ...ok, publish: 'true' }, blocked), /BLOCKED/);
@@ -45,12 +45,22 @@ const quiet = () => {};
     T.throws('...but never with fewer than 100,000 runs', () => planRuns('workflow_dispatch', { ...ok, runs: '99999', publish: 'true' }), /at least 100000/);
   }
   const sch = planRuns('schedule', {}, undefined, new Date('2026-11-09T10:17:00Z'));
-  T.chk('the schedule plans the nightly sports at 100,000 runs, publishing only an ACTIVE one (MLB and the WNBA after their seasons\' windows: not planned)', sch.map((r) => r.sport).join() === 'nfl,cfb,nhl' && sch.every((r) => r.runs === '100000' && r.publish === (r.status === 'ACTIVE')));
+  T.chk('the schedule plans the nightly sports at 100,000 runs, publishing only an ACTIVE one (MLB and the WNBA after their seasons\' windows: not planned; the UFC every night; golf inside its window)', sch.map((r) => r.sport).join() === 'nfl,cfb,nhl,ufc,golf' && sch.every((r) => r.runs === '100000' && r.publish === (r.status === 'ACTIVE')));
+  T.eq('after its window (2026-12-20) golf is not planned either', planRuns('schedule', {}, undefined, new Date('2026-12-21T10:17:00Z')).map((r) => r.sport).join(), 'nfl,cfb,nhl,ufc');
   T.eq('college football plans its configured season, and a dispatch can name it', [sch[1].season, planRuns('workflow_dispatch', { ...ok, sport: 'cfb' })[0].sport], ['2026', 'cfb']);
   T.eq('the NHL is planned under its end-year season key', sch.find((r) => r.sport === 'nhl')!.season, '2027');
   T.eq('a valid NHL dispatch', planRuns('workflow_dispatch', { ...ok, sport: 'nhl', season: '2027' }).map((r) => [r.sport, r.season]), [['nhl', '2027']]);
   T.throws('an NHL dispatch with the NFL\'s season is refused', () => planRuns('workflow_dispatch', { ...ok, sport: 'nhl', season: '2026' }), /season must be 2027/);
   T.throws('an unknown event', () => planRuns('push', {}), /unsupported event/);
+  /* the NBA: its own cron, its end-year season key */
+  const nbaSch = planRuns('schedule', { cron: NBA_CRON });
+  T.eq('the NBA\'s cron plans the NBA alone, under its end-year key, at 100,000 runs', nbaSch.map((r) => [r.sport, r.season, r.runs]), [['nba', '2027', '100000']]);
+  T.chk('... publishing exactly when the NBA is ACTIVE', nbaSch[0].publish === (sportRegistry().find((r) => r.key === 'nba')!.status === 'ACTIVE'));
+  T.chk('the nightly cron never plans the NBA', !planRuns('schedule', { cron: '17 10 * * *' }).some((r) => r.sport === 'nba') && !sch.some((r) => r.sport === 'nba'));
+  T.eq('a valid NBA dispatch', planRuns('workflow_dispatch', { ...ok, sport: 'nba', season: '2027' }).map((r) => [r.sport, r.season]), [['nba', '2027']]);
+  T.throws('an NBA dispatch with the start-year season is refused', () => planRuns('workflow_dispatch', { ...ok, sport: 'nba', season: '2026' }), /season must be 2027/);
+  const wf = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', '.github', 'workflows', 'simulator.yml'), 'utf8');
+  T.chk('the workflow schedules the NBA\'s cron and passes it to the plan', wf.includes("- cron: '" + NBA_CRON + "'") && /SIM_CRON: \$\{\{ github\.event\.schedule \}\}/.test(wf));
 }
 /* 3 replay a frozen snapshot through the real command path. The fixture's
    recorded code identity is re-stamped to this checkout (TEST ONLY: this

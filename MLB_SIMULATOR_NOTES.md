@@ -499,15 +499,67 @@ configuration exists. A dispatch can name it at any time.
 
 **Exactly what exists:** the engine, studies, fixtures and tests (§12); the
 reader's MLB view (League tab: seeds 1–6 with the byes, Division Series,
-LCS, pennant; Title tab: the World Series); no Kalshi MLB futures mapping
-yet (35 MLB futures series and 365 open markets were listed by the source
-check, none verified), so the Futures tab says unavailable;
-`simulator/research/registration_mlb.json` is not generated into
+LCS, pennant; Title tab: the World Series); the Kalshi MLB futures mapping
+(§15.1); `simulator/research/registration_mlb.json` is not generated into
 `supabase/simulator_registry.sql` (that generator is single-model). The
 database layer needs no MLB change: the run carries its own sum rules.
 
 **Next season:** re-run the source check and an MLB dry run, re-verify each
-fact in a reviewed commit, and set the new season's `nightly_through`.
+fact in a reviewed commit, set the new season's `nightly_through`, and
+regenerate the Kalshi MLB mappings once Kalshi lists the season's markets
+(§15.1).
+
+### 15.1 Kalshi futures
+
+`simulator/src/cli/build_kalshi_mappings.ts --sport mlb` maps a market only
+when its rules match one of Kalshi's own MLB templates word for word, read
+from Kalshi's 2026 markets (Simulator source check run 40019030435: the World
+Series open, every other series settled):
+
+| Series | Kalshi's wording | Simulated outcome | Outcome set (normalised only when complete) |
+|---|---|---|---|
+| `KXMLB` | If *club* wins the *year* Pro Baseball Championship | `win_world_series` | all 30 clubs |
+| `KXMLBAL`, `KXMLBNL` | If *club* win the *year* Pro Baseball American / National League Championship | `win_pennant` | the league's 15 |
+| `KXMLBALEAST` … `KXMLBNLWEST` | If *club* is the *year* Pro Baseball AL East (…) Division Winner | `win_division` | the division's 5 |
+| `KXMLBPLAYOFFS` | If *club* is one of the *year* Pro Baseball Playoff Qualifiers | `make_playoffs` | never (six per league qualify) |
+
+The season comes from the rules and must be the event ticker's (`KXMLB-27`:
+2027), so a market maps to its own season's run. The ticker's club (Kalshi's
+suffixes `NYY`, `CWS`, `ATH`, `AZ`, … cross to the Retrosheet keys) must
+carry Kalshi's label for that club (`New York Y`, `Chicago WS`, `A's`,
+`Arizona`, …: one label per club across all 92 club markets read), and the
+club must be in the league or division the series names. Not mapped: the
+league or division of the champion, exact World Series matchups, the
+champion's seed (`KXMLBSEEDWIN`: either league's club with that seed), win
+totals, awards and props, and the older series under other tickers
+(`KXMLBWS`, `KXWSAL`, `KXWSNL`, `KXMLBDIVWINNER`, `KXMBLNLEAST`), which listed
+no market in 2026. `simulator/fixtures/kalshi_mlb_2026_markets.json` keeps
+the 92 real markets; `markets.test.ts` maps every one of them (and the same
+wording one year on to 2027), and leaves out each alteration.
+
+**Mapped now (2026-10-23):** the two 2026 World Series markets still open,
+Milwaukee and Tampa Bay (`win_world_series`, not normalised: the other 28
+clubs' markets have closed). They are compared after each MLB publication
+through `nightly_through`. **Kalshi listed no 2027 MLB futures yet.** A
+mapping for a later season than the run's is not that run's
+(`configForSport`), so 2027 mappings can sit beside the 2026 run.
+
+**When Kalshi lists the 2027 markets:** run *Simulator source check*, then
+
+```
+node simulator/src/cli/build_kalshi_mappings.ts --sport mlb --candidates <kalshi_candidates_mlb.json from the run's artifact> --run <run id>
+#   or, from the fetch (mlb) job's log (timestamps kept), when the artifact cannot be downloaded:
+node simulator/src/cli/build_kalshi_mappings.ts --sport mlb --log <job log> --run <run id>
+npm run sim:test
+```
+
+and commit the config: every 2027 market in the 2026 wording maps (World
+Series, pennants and divisions as complete sets), the 2026 ones drop out, and
+it prints every market of a mapped series it left out, with the reason. A
+2026 mapping left in the config once a 2027 run exists is an error the
+*markets* job reports (an earlier season is stale), never a silent miss.
+Kalshi rewording a series leaves its markets out until the template is
+updated from the source check's text.
 
 **Commands** (PowerShell or bash, from the repository root):
 

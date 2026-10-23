@@ -1,0 +1,3241 @@
+{
+ "schema": "edgedesk_model_vs_market_v1",
+ "lab": "edgedesk_validation_lab_v1",
+ "season": 2026,
+ "data_through": "2026-10-23T02:00:00.000Z",
+ "bootstrap": {
+  "draws": 2000,
+  "seed": 20261023,
+  "alpha": 0.05
+ },
+ "minimums": {
+  "n": 30,
+  "clusters": 4,
+  "few_clusters": 10,
+  "calibration_n": 50,
+  "bucket_n": 10
+ },
+ "datasets": {
+  "cfb": {
+   "kind": "football_record",
+   "source": "record/football/cfb_2026.json",
+   "benchmark": "closing line: DraftKings via ESPN; win probability: no-vig closing moneyline",
+   "rows": 417,
+   "excluded": {
+    "no verified final": 105
+   },
+   "versions": {
+    "edgedesk_cfb_p4_v1.0.0": 410,
+    "edgedesk_cfb_p4_v1.0.1": 7
+   },
+   "close_sources": {
+    "espn/DraftKings": 257,
+    "espn/Draft Kings": 160
+   },
+   "quoted": null,
+   "first": "2026-09-11T23:00:00.000Z",
+   "last": "2026-10-22T23:30:00.000Z",
+   "clusters": 7
+  },
+  "nfl": {
+   "kind": "football_record",
+   "source": "record/football/nfl_2026.json",
+   "benchmark": "closing line: nflverse consensus; win probability: no-vig closing moneyline",
+   "rows": 78,
+   "excluded": {
+    "no verified final": 27
+   },
+   "versions": {
+    "edgedesk_football_v1.0.0": 77,
+    "edgedesk_nfl_v2.1.0": 1
+   },
+   "close_sources": {
+    "nflverse/consensus": 78
+   },
+   "quoted": null,
+   "first": "2026-09-18T00:15:00.000Z",
+   "last": "2026-10-23T00:15:00.000Z",
+   "clusters": 6
+  },
+  "nhl": {
+   "kind": "performance_ledger",
+   "source": [
+    "performance/ledger/forecasts/nhl-2026.jsonl",
+    "performance/ledger/quotes/nhl-2026.jsonl",
+    "performance/ledger/results/nhl-2026.jsonl"
+   ],
+   "benchmark": "no-vig DraftKings moneyline (via ESPN), last quote observed before the start",
+   "rows": 76,
+   "excluded": {
+    "no verified final": 33
+   },
+   "versions": {
+    "edgedesk_nhl_v1:xg_no_goalie": 16,
+    "edgedesk_nhl_v1:xg_core": 13,
+    "xg_core": 47
+   },
+   "close_sources": null,
+   "quoted": 47,
+   "first": "2026-10-13T22:00:00.000Z",
+   "last": "2026-10-23T02:00:00.000Z",
+   "clusters": 10
+  },
+  "nba": {
+   "kind": "performance_ledger",
+   "source": [
+    "performance/ledger/forecasts/nba-2026.jsonl",
+    "performance/ledger/quotes/nba-2026.jsonl",
+    "performance/ledger/results/nba-2026.jsonl"
+   ],
+   "benchmark": "no-vig DraftKings moneyline (via ESPN), last quote observed before the start",
+   "rows": 16,
+   "excluded": {
+    "no verified final": 27
+   },
+   "versions": {
+    "edgedesk_nba_dist_v1": 16
+   },
+   "close_sources": null,
+   "quoted": 16,
+   "first": "2026-10-20T19:00:00.000Z",
+   "last": "2026-10-23T01:30:00.000Z",
+   "clusters": 3
+  },
+  "wnba": {
+   "kind": "performance_ledger",
+   "source": [
+    "performance/ledger/forecasts/wnba-2026.jsonl",
+    "performance/ledger/quotes/wnba-2026.jsonl",
+    "performance/ledger/results/wnba-2026.jsonl"
+   ],
+   "benchmark": "no-vig DraftKings moneyline (via ESPN), last quote observed before the start",
+   "rows": 3,
+   "excluded": {
+    "no verified final": 1
+   },
+   "versions": {
+    "points": 1,
+    "points+bb_cal_v2_home_intercept": 2
+   },
+   "close_sources": null,
+   "quoted": 0,
+   "first": "2026-10-17T19:30:00.000Z",
+   "last": "2026-10-22T00:00:00.000Z",
+   "clusters": 3
+  }
+ },
+ "results": {
+  "cfb": {
+   "all": {
+    "n": 417,
+    "state": "MODERATE_EVIDENCE",
+    "tests": {
+     "spread_mae_vs_close": {
+      "n": 417,
+      "clusters": 7,
+      "a_mean": 12.5885,
+      "b_mean": 11.1523,
+      "diff": {
+       "est": 1.4362,
+       "ci": [
+        0.6643,
+        2.2213
+       ],
+       "n": 417,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.4072,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 1.0134,
+        "max": 1.591,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 166,
+      "b_lower": 249,
+      "ties": 2,
+      "verdict": "B_LOWER"
+     },
+     "spread_info_vs_close": {
+      "n": 417,
+      "clusters": 7,
+      "slope": -0.029,
+      "intercept": 0.7029,
+      "se_cluster": 0.1374,
+      "t": -0.2109,
+      "p_normal": 0.8329,
+      "slope_boot": {
+       "est": -0.029,
+       "ci": [
+        -0.2457,
+        0.216
+       ],
+       "n": 417,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1237,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.1524,
+        "max": 0.0921,
+        "sign_stable": false
+       }
+      },
+      "mean_abs_disagreement": 4.993,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_market_moves_toward_model": {
+      "n": 257,
+      "clusters": 5,
+      "slope": 0.0482,
+      "intercept": -0.097,
+      "se_cluster": 0.0435,
+      "t": 1.1079,
+      "p_normal": 0.2679,
+      "slope_boot": {
+       "est": 0.0482,
+       "ci": [
+        -0.0112,
+        0.161
+       ],
+       "n": 257,
+       "clusters": 5,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0431,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0253,
+        "max": 0.0885,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 4.218,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_home_lean_vs_close": {
+      "est": 0.0516,
+      "ci": [
+       -0.5951,
+       0.8016
+      ],
+      "n": 417,
+      "clusters": 7,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.3589,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -0.1445,
+       "max": 0.3239,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "spread_home_result_vs_close": {
+      "est": 0.7014,
+      "ci": [
+       -0.592,
+       1.8315
+      ],
+      "n": 417,
+      "clusters": 7,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.6182,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": 0.256,
+       "max": 1.224,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "total_mae_vs_close": {
+      "n": 344,
+      "clusters": 7,
+      "a_mean": 12.7895,
+      "b_mean": 12.3488,
+      "diff": {
+       "est": 0.4407,
+       "ci": [
+        0.1486,
+        0.7415
+       ],
+       "n": 344,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1515,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.3126,
+        "max": 0.5068,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 155,
+      "b_lower": 187,
+      "ties": 2,
+      "verdict": "B_LOWER"
+     },
+     "total_info_vs_close": {
+      "n": 344,
+      "clusters": 7,
+      "slope": -0.3376,
+      "intercept": 1.2861,
+      "se_cluster": 0.2201,
+      "t": -1.534,
+      "p_normal": 0.125,
+      "slope_boot": {
+       "est": -0.3376,
+       "ci": [
+        -0.7334,
+        0.078
+       ],
+       "n": 344,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.209,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.4518,
+        "max": -0.1417,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 2.872,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_brier_vs_close": {
+      "n": 301,
+      "clusters": 6,
+      "a_mean": 0.1833,
+      "b_mean": 0.1678,
+      "diff": {
+       "est": 0.0156,
+       "ci": [
+        0.0085,
+        0.0276
+       ],
+       "n": 301,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0054,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0096,
+        "max": 0.0174,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 134,
+      "b_lower": 167,
+      "ties": 0,
+      "verdict": "B_LOWER"
+     },
+     "winprob_logloss_vs_close": {
+      "n": 301,
+      "clusters": 6,
+      "a_mean": 0.5456,
+      "b_mean": 0.5024,
+      "diff": {
+       "est": 0.0432,
+       "ci": [
+        0.0269,
+        0.0672
+       ],
+       "n": 301,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0109,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0319,
+        "max": 0.0491,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 134,
+      "b_lower": 167,
+      "ties": 0,
+      "verdict": "B_LOWER"
+     },
+     "winprob_info_vs_close": {
+      "n": 301,
+      "clusters": 6,
+      "slope": -0.3067,
+      "intercept": 0.0157,
+      "se_cluster": 0.2955,
+      "t": -1.038,
+      "p_normal": 0.2993,
+      "slope_boot": {
+       "est": -0.3067,
+       "ci": [
+        -0.8976,
+        0.0655
+       ],
+       "n": 301,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.2675,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.4412,
+        "max": -0.0091,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 0.077,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_calibration": {
+      "n": 332,
+      "mean_p": 0.6447,
+      "observed": 0.6205,
+      "brier": 0.1686,
+      "log_loss": 0.503,
+      "slope": 0.9724,
+      "intercept": -0.135,
+      "citl": -0.1467,
+      "slope_boot": {
+       "est": 0.9724,
+       "ci": [
+        0.6771,
+        1.2224
+       ],
+       "n": 332,
+       "clusters": 6,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1404,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.87,
+        "max": 1.0959,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     },
+     "winprob_market_calibration": {
+      "n": 370,
+      "mean_p": 0.6035,
+      "observed": 0.6135,
+      "brier": 0.1564,
+      "log_loss": 0.4734,
+      "slope": 1.2209,
+      "intercept": 0.0054,
+      "citl": 0.0587,
+      "slope_boot": {
+       "est": 1.2209,
+       "ci": [
+        0.9177,
+        1.5202
+       ],
+       "n": 370,
+       "clusters": 7,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1513,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 1.1421,
+        "max": 1.3411,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     }
+    }
+   },
+   "fbs_vs_fbs": {
+    "n": 344,
+    "state": "MODERATE_EVIDENCE",
+    "tests": {
+     "spread_mae_vs_close": {
+      "n": 344,
+      "clusters": 7,
+      "a_mean": 11.9616,
+      "b_mean": 11.032,
+      "diff": {
+       "est": 0.9296,
+       "ci": [
+        0.3798,
+        1.563
+       ],
+       "n": 344,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.3071,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.7059,
+        "max": 1.063,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 138,
+      "b_lower": 204,
+      "ties": 2,
+      "verdict": "B_LOWER"
+     },
+     "spread_info_vs_close": {
+      "n": 344,
+      "clusters": 7,
+      "slope": -0.0902,
+      "intercept": 0.6262,
+      "se_cluster": 0.2395,
+      "t": -0.3766,
+      "p_normal": 0.7065,
+      "slope_boot": {
+       "est": -0.0902,
+       "ci": [
+        -0.5354,
+        0.3144
+       ],
+       "n": 344,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.2225,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.3069,
+        "max": 0.0663,
+        "sign_stable": false
+       }
+      },
+      "mean_abs_disagreement": 4.004,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_market_moves_toward_model": {
+      "n": 238,
+      "clusters": 5,
+      "slope": 0.1133,
+      "intercept": -0.2826,
+      "se_cluster": 0.0422,
+      "t": 2.6826,
+      "p_normal": 0.0073,
+      "slope_boot": {
+       "est": 0.1133,
+       "ci": [
+        0.0507,
+        0.2095
+       ],
+       "n": 238,
+       "clusters": 5,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0393,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0885,
+        "max": 0.1428,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 3.683,
+      "verdict": "INFORMATIVE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_home_lean_vs_close": {
+      "est": 1.3997,
+      "ci": [
+       0.982,
+       1.7193
+      ],
+      "n": 344,
+      "clusters": 7,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.1907,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": 1.2634,
+       "max": 1.5133,
+       "sign_stable": true
+      },
+      "verdict": "ABOVE_ZERO"
+     },
+     "spread_home_result_vs_close": {
+      "est": 0.5,
+      "ci": [
+       -0.5383,
+       1.5176
+      ],
+      "n": 344,
+      "clusters": 7,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.527,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": 0.0903,
+       "max": 0.9493,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "total_mae_vs_close": {
+      "n": 344,
+      "clusters": 7,
+      "a_mean": 12.7895,
+      "b_mean": 12.3488,
+      "diff": {
+       "est": 0.4407,
+       "ci": [
+        0.1486,
+        0.7415
+       ],
+       "n": 344,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1515,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.3126,
+        "max": 0.5068,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 155,
+      "b_lower": 187,
+      "ties": 2,
+      "verdict": "B_LOWER"
+     },
+     "total_info_vs_close": {
+      "n": 344,
+      "clusters": 7,
+      "slope": -0.3376,
+      "intercept": 1.2861,
+      "se_cluster": 0.2201,
+      "t": -1.534,
+      "p_normal": 0.125,
+      "slope_boot": {
+       "est": -0.3376,
+       "ci": [
+        -0.7334,
+        0.078
+       ],
+       "n": 344,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.209,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.4518,
+        "max": -0.1417,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 2.872,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_brier_vs_close": {
+      "n": 287,
+      "clusters": 6,
+      "a_mean": 0.1919,
+      "b_mean": 0.1757,
+      "diff": {
+       "est": 0.0162,
+       "ci": [
+        0.0087,
+        0.0302
+       ],
+       "n": 287,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.006,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0098,
+        "max": 0.0183,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 126,
+      "b_lower": 161,
+      "ties": 0,
+      "verdict": "B_LOWER"
+     },
+     "winprob_logloss_vs_close": {
+      "n": 287,
+      "clusters": 6,
+      "a_mean": 0.569,
+      "b_mean": 0.5239,
+      "diff": {
+       "est": 0.0451,
+       "ci": [
+        0.0274,
+        0.0722
+       ],
+       "n": 287,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0121,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0329,
+        "max": 0.0518,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 126,
+      "b_lower": 161,
+      "ties": 0,
+      "verdict": "B_LOWER"
+     },
+     "winprob_info_vs_close": {
+      "n": 287,
+      "clusters": 6,
+      "slope": -0.3086,
+      "intercept": 0.0136,
+      "se_cluster": 0.2989,
+      "t": -1.0327,
+      "p_normal": 0.3017,
+      "slope_boot": {
+       "est": -0.3086,
+       "ci": [
+        -0.9122,
+        0.0632
+       ],
+       "n": 287,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.2712,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.4379,
+        "max": -0.0101,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 0.078,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_calibration": {
+      "n": 295,
+      "mean_p": 0.6064,
+      "observed": 0.5763,
+      "brier": 0.1867,
+      "log_loss": 0.5537,
+      "slope": 0.9143,
+      "intercept": -0.1366,
+      "citl": -0.1678,
+      "slope_boot": {
+       "est": 0.9143,
+       "ci": [
+        0.6352,
+        1.1916
+       ],
+       "n": 295,
+       "clusters": 6,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1447,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.8056,
+        "max": 1.0463,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     },
+     "winprob_market_calibration": {
+      "n": 333,
+      "mean_p": 0.5704,
+      "observed": 0.5766,
+      "brier": 0.1722,
+      "log_loss": 0.5154,
+      "slope": 1.1503,
+      "intercept": 0.0047,
+      "citl": 0.0339,
+      "slope_boot": {
+       "est": 1.1503,
+       "ci": [
+        0.8706,
+        1.4546
+       ],
+       "n": 333,
+       "clusters": 7,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1471,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 1.0673,
+        "max": 1.2635,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     }
+    }
+   },
+   "fbs_vs_fcs": {
+    "n": 73,
+    "state": "EARLY_SIGNAL",
+    "tests": {
+     "spread_mae_vs_close": {
+      "n": 73,
+      "clusters": 5,
+      "a_mean": 15.5429,
+      "b_mean": 11.7192,
+      "diff": {
+       "est": 3.8237,
+       "ci": [
+        2.5866,
+        4.3798
+       ],
+       "n": 73,
+       "clusters": 5,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.4501,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 3.4649,
+        "max": 4.2023,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 28,
+      "b_lower": 45,
+      "ties": 0,
+      "verdict": "B_LOWER"
+     },
+     "spread_info_vs_close": {
+      "n": 73,
+      "clusters": 5,
+      "slope": 0.0892,
+      "intercept": 2.2128,
+      "se_cluster": 0.1005,
+      "t": 0.8873,
+      "p_normal": 0.3749,
+      "slope_boot": {
+       "est": 0.0892,
+       "ci": [
+        -0.1066,
+        0.2426
+       ],
+       "n": 73,
+       "clusters": 5,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.154,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0447,
+        "max": 0.1677,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 9.653,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_market_moves_toward_model": {
+      "n": 19,
+      "clusters": 3,
+      "slope": 0.0096,
+      "intercept": 0.6798,
+      "se_cluster": 0.0639,
+      "t": 0.1499,
+      "p_normal": 0.8808,
+      "slope_boot": {
+       "est": 0.0096,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 19,
+       "clusters": 3,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (3): no interval"
+      },
+      "mean_abs_disagreement": 10.921,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
+      "why": "below the minimum sample (30 games in 4 clusters)"
+     },
+     "spread_home_lean_vs_close": {
+      "est": -6.301,
+      "ci": [
+       -12.0172,
+       -4.1565
+      ],
+      "n": 73,
+      "clusters": 5,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 2.0968,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -9.1595,
+       "max": -5.641,
+       "sign_stable": true
+      },
+      "verdict": "BELOW_ZERO"
+     },
+     "spread_home_result_vs_close": {
+      "est": 1.6507,
+      "ci": [
+       -3.26,
+       4.0194
+      ],
+      "n": 73,
+      "clusters": 5,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 2.098,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -1.4595,
+       "max": 2.5333,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "total_mae_vs_close": {
+      "n": 0,
+      "clusters": 0,
+      "a_mean": null,
+      "b_mean": null,
+      "diff": {
+       "est": null,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 0,
+       "clusters": 0,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "the statistic is undefined on these rows"
+      },
+      "a_lower": 0,
+      "b_lower": 0,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "total_info_vs_close": {
+      "n": 0,
+      "clusters": 0,
+      "slope": null,
+      "intercept": null,
+      "se_cluster": null,
+      "t": null,
+      "p_normal": null,
+      "slope_boot": null,
+      "mean_abs_disagreement": null,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
+      "why": "no variation in the disagreement"
+     },
+     "winprob_brier_vs_close": {
+      "n": 14,
+      "clusters": 3,
+      "a_mean": 0.0074,
+      "b_mean": 0.0045,
+      "diff": {
+       "est": 0.0029,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 14,
+       "clusters": 3,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (3): no interval"
+      },
+      "a_lower": 8,
+      "b_lower": 6,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "winprob_logloss_vs_close": {
+      "n": 14,
+      "clusters": 3,
+      "a_mean": 0.0673,
+      "b_mean": 0.0628,
+      "diff": {
+       "est": 0.0045,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 14,
+       "clusters": 3,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (3): no interval"
+      },
+      "a_lower": 8,
+      "b_lower": 6,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "winprob_info_vs_close": {
+      "n": 14,
+      "clusters": 3,
+      "slope": 0.1856,
+      "intercept": 0.0609,
+      "se_cluster": 0.1651,
+      "t": 1.1238,
+      "p_normal": 0.2611,
+      "slope_boot": {
+       "est": 0.1856,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 14,
+       "clusters": 3,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (3): no interval"
+      },
+      "mean_abs_disagreement": 0.05,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
+      "why": "below the minimum sample (30 games in 4 clusters)"
+     },
+     "winprob_calibration": {
+      "n": 37,
+      "mean_p": 0.9496,
+      "observed": 0.973,
+      "brier": 0.0237,
+      "log_loss": 0.0986,
+      "slope": null,
+      "intercept": null,
+      "citl": null,
+      "slope_boot": null,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast",
+      "why": "below 50 graded forecasts"
+     },
+     "winprob_market_calibration": {
+      "n": 37,
+      "mean_p": 0.9011,
+      "observed": 0.9459,
+      "brier": 0.0144,
+      "log_loss": 0.0955,
+      "slope": null,
+      "intercept": null,
+      "citl": null,
+      "slope_boot": null,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast",
+      "why": "below 50 graded forecasts"
+     }
+    }
+   },
+   "cfb_v1_0_0": {
+    "n": 410,
+    "state": "MODERATE_EVIDENCE",
+    "tests": {
+     "spread_mae_vs_close": {
+      "n": 410,
+      "clusters": 6,
+      "a_mean": 12.5994,
+      "b_mean": 11.139,
+      "diff": {
+       "est": 1.4604,
+       "ci": [
+        0.6979,
+        2.2838
+       ],
+       "n": 410,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.4069,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 1.0347,
+        "max": 1.6222,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 161,
+      "b_lower": 247,
+      "ties": 2,
+      "verdict": "B_LOWER"
+     },
+     "spread_info_vs_close": {
+      "n": 410,
+      "clusters": 6,
+      "slope": -0.0292,
+      "intercept": 0.7048,
+      "se_cluster": 0.14,
+      "t": -0.2084,
+      "p_normal": 0.8349,
+      "slope_boot": {
+       "est": -0.0292,
+       "ci": [
+        -0.2474,
+        0.2114
+       ],
+       "n": 410,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1249,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.1536,
+        "max": 0.0931,
+        "sign_stable": false
+       }
+      },
+      "mean_abs_disagreement": 5.038,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_market_moves_toward_model": {
+      "n": 250,
+      "clusters": 4,
+      "slope": 0.0462,
+      "intercept": -0.1,
+      "se_cluster": 0.0451,
+      "t": 1.0249,
+      "p_normal": 0.3054,
+      "slope_boot": {
+       "est": 0.0462,
+       "ci": [
+        -0.0133,
+        0.1549
+       ],
+       "n": 250,
+       "clusters": 4,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0417,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0226,
+        "max": 0.0862,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 4.25,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_home_lean_vs_close": {
+      "est": 0.082,
+      "ci": [
+       -0.5753,
+       0.8195
+      ],
+      "n": 410,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.3659,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -0.1129,
+       "max": 0.3681,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "spread_home_result_vs_close": {
+      "est": 0.7024,
+      "ci": [
+       -0.5235,
+       1.7983
+      ],
+      "n": 410,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.6083,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": 0.2477,
+       "max": 1.236,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "total_mae_vs_close": {
+      "n": 337,
+      "clusters": 6,
+      "a_mean": 12.6831,
+      "b_mean": 12.23,
+      "diff": {
+       "est": 0.4531,
+       "ci": [
+        0.1614,
+        0.7537
+       ],
+       "n": 337,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.149,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.3244,
+        "max": 0.5229,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 152,
+      "b_lower": 183,
+      "ties": 2,
+      "verdict": "B_LOWER"
+     },
+     "total_info_vs_close": {
+      "n": 337,
+      "clusters": 6,
+      "slope": -0.3542,
+      "intercept": 1.2453,
+      "se_cluster": 0.23,
+      "t": -1.5396,
+      "p_normal": 0.1236,
+      "slope_boot": {
+       "est": -0.3542,
+       "ci": [
+        -0.7737,
+        0.053
+       ],
+       "n": 337,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.2123,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.4731,
+        "max": -0.1511,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 2.876,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_brier_vs_close": {
+      "n": 294,
+      "clusters": 5,
+      "a_mean": 0.1803,
+      "b_mean": 0.1652,
+      "diff": {
+       "est": 0.0152,
+       "ci": [
+        0.0081,
+        0.027
+       ],
+       "n": 294,
+       "clusters": 5,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0054,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0089,
+        "max": 0.017,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 132,
+      "b_lower": 162,
+      "ties": 0,
+      "verdict": "B_LOWER"
+     },
+     "winprob_logloss_vs_close": {
+      "n": 294,
+      "clusters": 5,
+      "a_mean": 0.5373,
+      "b_mean": 0.4961,
+      "diff": {
+       "est": 0.0412,
+       "ci": [
+        0.0241,
+        0.0647
+       ],
+       "n": 294,
+       "clusters": 5,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0108,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0291,
+        "max": 0.0469,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 132,
+      "b_lower": 162,
+      "ties": 0,
+      "verdict": "B_LOWER"
+     },
+     "winprob_info_vs_close": {
+      "n": 294,
+      "clusters": 5,
+      "slope": -0.2678,
+      "intercept": 0.0132,
+      "se_cluster": 0.3039,
+      "t": -0.8811,
+      "p_normal": 0.3783,
+      "slope_boot": {
+       "est": -0.2678,
+       "ci": [
+        -0.8103,
+        0.1051
+       ],
+       "n": 294,
+       "clusters": 5,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.263,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.389,
+        "max": 0.0484,
+        "sign_stable": false
+       }
+      },
+      "mean_abs_disagreement": 0.078,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_calibration": {
+      "n": 325,
+      "mean_p": 0.6485,
+      "observed": 0.6215,
+      "brier": 0.1655,
+      "log_loss": 0.4946,
+      "slope": 1.0166,
+      "intercept": -0.1715,
+      "citl": -0.1642,
+      "slope_boot": {
+       "est": 1.0166,
+       "ci": [
+        0.7541,
+        1.2809
+       ],
+       "n": 325,
+       "clusters": 5,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1411,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.918,
+        "max": 1.1657,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     },
+     "winprob_market_calibration": {
+      "n": 363,
+      "mean_p": 0.6055,
+      "observed": 0.6143,
+      "brier": 0.1541,
+      "log_loss": 0.4677,
+      "slope": 1.25,
+      "intercept": -0.0109,
+      "citl": 0.0515,
+      "slope_boot": {
+       "est": 1.25,
+       "ci": [
+        0.9636,
+        1.5782
+       ],
+       "n": 363,
+       "clusters": 6,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1545,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 1.1733,
+        "max": 1.385,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     }
+    }
+   },
+   "cfb_v1_0_1": {
+    "n": 7,
+    "state": "DESCRIPTIVE_ONLY",
+    "tests": {
+     "spread_mae_vs_close": {
+      "n": 7,
+      "clusters": 1,
+      "a_mean": 11.9514,
+      "b_mean": 11.9286,
+      "diff": {
+       "est": 0.0229,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 7,
+       "clusters": 1,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (1): no interval"
+      },
+      "a_lower": 5,
+      "b_lower": 2,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "spread_info_vs_close": {
+      "n": 7,
+      "clusters": 1,
+      "slope": 0.0146,
+      "intercept": 0.668,
+      "se_cluster": null,
+      "t": null,
+      "p_normal": null,
+      "slope_boot": {
+       "est": 0.0146,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 7,
+       "clusters": 1,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (1): no interval"
+      },
+      "mean_abs_disagreement": 2.349,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
+      "why": "below the minimum sample (30 games in 4 clusters)"
+     },
+     "spread_market_moves_toward_model": {
+      "n": 7,
+      "clusters": 1,
+      "slope": 0.2086,
+      "intercept": -0.0347,
+      "se_cluster": null,
+      "t": null,
+      "p_normal": null,
+      "slope_boot": {
+       "est": 0.2086,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 7,
+       "clusters": 1,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (1): no interval"
+      },
+      "mean_abs_disagreement": 3.083,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
+      "why": "below the minimum sample (30 games in 4 clusters)"
+     },
+     "spread_home_lean_vs_close": {
+      "est": -1.7286,
+      "ci": [
+       null,
+       null
+      ],
+      "n": 7,
+      "clusters": 1,
+      "draws": 0,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "why": "fewer than 4 clusters (1): no interval",
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "spread_home_result_vs_close": {
+      "est": 0.6429,
+      "ci": [
+       null,
+       null
+      ],
+      "n": 7,
+      "clusters": 1,
+      "draws": 0,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "why": "fewer than 4 clusters (1): no interval",
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "total_mae_vs_close": {
+      "n": 7,
+      "clusters": 1,
+      "a_mean": 17.9143,
+      "b_mean": 18.0714,
+      "diff": {
+       "est": -0.1571,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 7,
+       "clusters": 1,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (1): no interval"
+      },
+      "a_lower": 3,
+      "b_lower": 4,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "total_info_vs_close": {
+      "n": 7,
+      "clusters": 1,
+      "slope": 4.387,
+      "intercept": 16.7182,
+      "se_cluster": null,
+      "t": null,
+      "p_normal": null,
+      "slope_boot": {
+       "est": 4.387,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 7,
+       "clusters": 1,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (1): no interval"
+      },
+      "mean_abs_disagreement": 2.7,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
+      "why": "below the minimum sample (30 games in 4 clusters)"
+     },
+     "winprob_brier_vs_close": {
+      "n": 7,
+      "clusters": 1,
+      "a_mean": 0.3099,
+      "b_mean": 0.2774,
+      "diff": {
+       "est": 0.0325,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 7,
+       "clusters": 1,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (1): no interval"
+      },
+      "a_lower": 2,
+      "b_lower": 5,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "winprob_logloss_vs_close": {
+      "n": 7,
+      "clusters": 1,
+      "a_mean": 0.8947,
+      "b_mean": 0.7684,
+      "diff": {
+       "est": 0.1263,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 7,
+       "clusters": 1,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (1): no interval"
+      },
+      "a_lower": 2,
+      "b_lower": 5,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "winprob_info_vs_close": {
+      "n": 7,
+      "clusters": 1,
+      "slope": -6.8691,
+      "intercept": -0.1401,
+      "se_cluster": null,
+      "t": null,
+      "p_normal": null,
+      "slope_boot": {
+       "est": -6.8691,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 7,
+       "clusters": 1,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (1): no interval"
+      },
+      "mean_abs_disagreement": 0.038,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
+      "why": "below the minimum sample (30 games in 4 clusters)"
+     },
+     "winprob_calibration": {
+      "n": 7,
+      "mean_p": 0.4644,
+      "observed": 0.5714,
+      "brier": 0.3099,
+      "log_loss": 0.8947,
+      "slope": null,
+      "intercept": null,
+      "citl": null,
+      "slope_boot": null,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast",
+      "why": "below 50 graded forecasts"
+     },
+     "winprob_market_calibration": {
+      "n": 7,
+      "mean_p": 0.4958,
+      "observed": 0.5714,
+      "brier": 0.2774,
+      "log_loss": 0.7684,
+      "slope": null,
+      "intercept": null,
+      "citl": null,
+      "slope_boot": null,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast",
+      "why": "below 50 graded forecasts"
+     }
+    }
+   },
+   "favourites": [
+    {
+     "slice": "fav_0_3",
+     "n": 76,
+     "lean": {
+      "est": -0.8278,
+      "ci": [
+       -2.8914,
+       0.5287
+      ],
+      "n": 76,
+      "clusters": 7,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.8886,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -1.1969,
+       "max": -0.0256,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "result": {
+      "est": -0.3553,
+      "ci": [
+       -3.9086,
+       3.544
+      ],
+      "n": 76,
+      "clusters": 7,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 1.9502,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -1.541,
+       "max": 1.1349,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "model_mae": 11.98,
+     "close_mae": 10.75
+    },
+    {
+     "slice": "fav_3_7",
+     "n": 88,
+     "lean": {
+      "est": -0.4378,
+      "ci": [
+       -1.6771,
+       0.6475
+      ],
+      "n": 88,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.5818,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -0.9135,
+       "max": 0.0075,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "result": {
+      "est": 0.2841,
+      "ci": [
+       -2.3226,
+       3.1914
+      ],
+      "n": 88,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 1.4809,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -0.5694,
+       "max": 1.3841,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "model_mae": 11.92,
+     "close_mae": 10.65
+    },
+    {
+     "slice": "fav_7_14",
+     "n": 90,
+     "lean": {
+      "est": -0.1197,
+      "ci": [
+       -1.0393,
+       1.3094
+      ],
+      "n": 90,
+      "clusters": 7,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.5908,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -0.4199,
+       "max": 0.3424,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "result": {
+      "est": 1.4389,
+      "ci": [
+       -0.8753,
+       3.8486
+      ],
+      "n": 90,
+      "clusters": 7,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 1.2076,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": 0.162,
+       "max": 1.9577,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "model_mae": 11.84,
+     "close_mae": 11.03
+    },
+    {
+     "slice": "fav_14_21",
+     "n": 59,
+     "lean": {
+      "est": 0.1458,
+      "ci": [
+       -0.8972,
+       1.3371
+      ],
+      "n": 59,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.5866,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -0.4646,
+       "max": 0.6293,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "result": {
+      "est": 2.2203,
+      "ci": [
+       -0.959,
+       6.3393
+      ],
+      "n": 59,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 1.8588,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": 0.78,
+       "max": 3.098,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "model_mae": 13.42,
+     "close_mae": 12.68
+    },
+    {
+     "slice": "fav_21_plus",
+     "n": 104,
+     "lean": {
+      "est": -5.9813,
+      "ci": [
+       -7.6467,
+       -4.68
+      ],
+      "n": 104,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.7372,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -6.4725,
+       "max": -5.613,
+       "sign_stable": true
+      },
+      "verdict": "BELOW_ZERO"
+     },
+     "result": {
+      "est": 0.5192,
+      "ci": [
+       -1.6299,
+       2.7692
+      ],
+      "n": 104,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 1.1108,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -0.3594,
+       "max": 1.2534,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "model_mae": 13.77,
+     "close_mae": 11.12
+    }
+   ]
+  },
+  "nfl": {
+   "all": {
+    "n": 78,
+    "state": "EARLY_SIGNAL",
+    "tests": {
+     "spread_mae_vs_close": {
+      "n": 78,
+      "clusters": 6,
+      "a_mean": 9.0945,
+      "b_mean": 8.8205,
+      "diff": {
+       "est": 0.274,
+       "ci": [
+        -0.2508,
+        0.9363
+       ],
+       "n": 78,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.3047,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0147,
+        "max": 0.521,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 37,
+      "b_lower": 41,
+      "ties": 0,
+      "verdict": "NO_DIFFERENCE_DEMONSTRATED"
+     },
+     "spread_info_vs_close": {
+      "n": 78,
+      "clusters": 6,
+      "slope": 0.5666,
+      "intercept": -1.855,
+      "se_cluster": 0.2603,
+      "t": 2.1763,
+      "p_normal": 0.0295,
+      "slope_boot": {
+       "est": 0.5666,
+       "ci": [
+        -0.0117,
+        0.9935
+       ],
+       "n": 78,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.2597,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.4289,
+        "max": 0.742,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 2.87,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_market_moves_toward_model": {
+      "n": 76,
+      "clusters": 6,
+      "slope": 0.145,
+      "intercept": -0.2116,
+      "se_cluster": 0.0514,
+      "t": 2.8224,
+      "p_normal": 0.0048,
+      "slope_boot": {
+       "est": 0.145,
+       "ci": [
+        0.0502,
+        0.2429
+       ],
+       "n": 76,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0509,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.1031,
+        "max": 0.1838,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 2.942,
+      "verdict": "INFORMATIVE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "spread_home_lean_vs_close": {
+      "est": 0.8301,
+      "ci": [
+       -0.4558,
+       2.0295
+      ],
+      "n": 78,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.6275,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": 0.2823,
+       "max": 1.2995,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "spread_home_result_vs_close": {
+      "est": -1.3846,
+      "ci": [
+       -2.9167,
+       0.599
+      ],
+      "n": 78,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.9121,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -2.2823,
+       "max": -0.7339,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "total_mae_vs_close": {
+      "n": 78,
+      "clusters": 6,
+      "a_mean": 10.8023,
+      "b_mean": 10.2821,
+      "diff": {
+       "est": 0.5203,
+       "ci": [
+        -0.1086,
+        1.334
+       ],
+       "n": 78,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.3871,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.126,
+        "max": 0.7427,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 33,
+      "b_lower": 44,
+      "ties": 1,
+      "verdict": "NO_DIFFERENCE_DEMONSTRATED"
+     },
+     "total_info_vs_close": {
+      "n": 78,
+      "clusters": 6,
+      "slope": -0.3399,
+      "intercept": 0.4551,
+      "se_cluster": 0.4092,
+      "t": -0.8306,
+      "p_normal": 0.4062,
+      "slope_boot": {
+       "est": -0.3399,
+       "ci": [
+        -0.9976,
+        0.2646
+       ],
+       "n": 78,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.3523,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.5572,
+        "max": 0.1153,
+        "sign_stable": false
+       }
+      },
+      "mean_abs_disagreement": 2.364,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_brier_vs_close": {
+      "n": 77,
+      "clusters": 6,
+      "a_mean": 0.2386,
+      "b_mean": 0.2367,
+      "diff": {
+       "est": 0.0018,
+       "ci": [
+        -0.0158,
+        0.0167
+       ],
+       "n": 77,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0083,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.0024,
+        "max": 0.0101,
+        "sign_stable": false
+       }
+      },
+      "a_lower": 39,
+      "b_lower": 38,
+      "ties": 0,
+      "verdict": "NO_DIFFERENCE_DEMONSTRATED"
+     },
+     "winprob_logloss_vs_close": {
+      "n": 77,
+      "clusters": 6,
+      "a_mean": 0.6661,
+      "b_mean": 0.6683,
+      "diff": {
+       "est": -0.0021,
+       "ci": [
+        -0.0376,
+        0.027
+       ],
+       "n": 77,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0165,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.0105,
+        "max": 0.0147,
+        "sign_stable": false
+       }
+      },
+      "a_lower": 39,
+      "b_lower": 38,
+      "ties": 0,
+      "verdict": "NO_DIFFERENCE_DEMONSTRATED"
+     },
+     "winprob_info_vs_close": {
+      "n": 77,
+      "clusters": 6,
+      "slope": 0.6059,
+      "intercept": -0.0738,
+      "se_cluster": 0.38,
+      "t": 1.5944,
+      "p_normal": 0.1108,
+      "slope_boot": {
+       "est": 0.6059,
+       "ci": [
+        -0.2798,
+        1.0464
+       ],
+       "n": 77,
+       "clusters": 6,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.3626,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.1651,
+        "max": 0.7357,
+        "sign_stable": true
+       }
+      },
+      "mean_abs_disagreement": 0.089,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_calibration": {
+      "n": 77,
+      "mean_p": 0.5788,
+      "observed": 0.4935,
+      "brier": 0.2386,
+      "log_loss": 0.6662,
+      "slope": 0.8241,
+      "intercept": -0.3274,
+      "citl": -0.3897,
+      "slope_boot": {
+       "est": 0.8241,
+       "ci": [
+        0.512,
+        1.1723
+       ],
+       "n": 77,
+       "clusters": 6,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.169,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.7007,
+        "max": 0.9743,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     },
+     "winprob_market_calibration": {
+      "n": 77,
+      "mean_p": 0.5497,
+      "observed": 0.4935,
+      "brier": 0.2368,
+      "log_loss": 0.6683,
+      "slope": 0.7371,
+      "intercept": -0.1952,
+      "citl": -0.2558,
+      "slope_boot": {
+       "est": 0.7371,
+       "ci": [
+        0.4416,
+        1.1576
+       ],
+       "n": 77,
+       "clusters": 6,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.1935,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.652,
+        "max": 0.9699,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     }
+    }
+   },
+   "favourites": [
+    {
+     "slice": "fav_0_3",
+     "n": 31,
+     "lean": {
+      "est": -1.7597,
+      "ci": [
+       -2.3737,
+       -1.2111
+      ],
+      "n": 31,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.3065,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -2.0571,
+       "max": -1.5812,
+       "sign_stable": true
+      },
+      "verdict": "BELOW_ZERO"
+     },
+     "result": {
+      "est": -0.6452,
+      "ci": [
+       -4.1047,
+       3.1528
+      ],
+      "n": 31,
+      "clusters": 6,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 1.9296,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -1.9792,
+       "max": 1.25,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "model_mae": 9.42,
+     "close_mae": 8.58
+    },
+    {
+     "slice": "fav_3_7",
+     "n": 33,
+     "lean": {
+      "est": 0.3409,
+      "ci": [
+       -0.6984,
+       1.4567
+      ],
+      "n": 33,
+      "clusters": 5,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.5515,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": 0.05,
+       "max": 0.9468,
+       "sign_stable": true
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "result": {
+      "est": -0.303,
+      "ci": [
+       -6.2812,
+       3.7561
+      ],
+      "n": 33,
+      "clusters": 5,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 2.6979,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -2.06,
+       "max": 2.0741,
+       "sign_stable": false
+      },
+      "verdict": "ZERO_NOT_EXCLUDED"
+     },
+     "model_mae": 9.29,
+     "close_mae": 9.39
+    },
+    {
+     "slice": "fav_7_14",
+     "n": 14,
+     "lean": {
+      "est": -2.6036,
+      "ci": [
+       -4.3,
+       -0.8479
+      ],
+      "n": 14,
+      "clusters": 5,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 0.96,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -3.714,
+       "max": -2.0336,
+       "sign_stable": true
+      },
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "result": {
+      "est": -4.8571,
+      "ci": [
+       -7.9583,
+       -2.8056
+      ],
+      "n": 14,
+      "clusters": 5,
+      "draws": 2000,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "se": 1.4128,
+      "few_clusters": true,
+      "leave_one_out": {
+       "min": -6,
+       "max": -3.75,
+       "sign_stable": true
+      },
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "model_mae": 7.92,
+     "close_mae": 8
+    },
+    {
+     "slice": "fav_14_21",
+     "n": 0,
+     "lean": {
+      "est": null,
+      "ci": [
+       null,
+       null
+      ],
+      "n": 0,
+      "clusters": 0,
+      "draws": 0,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "why": "the statistic is undefined on these rows",
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "result": {
+      "est": null,
+      "ci": [
+       null,
+       null
+      ],
+      "n": 0,
+      "clusters": 0,
+      "draws": 0,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "why": "the statistic is undefined on these rows",
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "model_mae": null,
+     "close_mae": null
+    },
+    {
+     "slice": "fav_21_plus",
+     "n": 0,
+     "lean": {
+      "est": null,
+      "ci": [
+       null,
+       null
+      ],
+      "n": 0,
+      "clusters": 0,
+      "draws": 0,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "why": "the statistic is undefined on these rows",
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "result": {
+      "est": null,
+      "ci": [
+       null,
+       null
+      ],
+      "n": 0,
+      "clusters": 0,
+      "draws": 0,
+      "seed": 20261023,
+      "alpha": 0.05,
+      "method": "cluster_bootstrap_percentile",
+      "why": "the statistic is undefined on these rows",
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "model_mae": null,
+     "close_mae": null
+    }
+   ]
+  },
+  "nhl": {
+   "all": {
+    "n": 76,
+    "state": "EARLY_SIGNAL",
+    "tests": {
+     "winprob_brier_vs_close": {
+      "n": 47,
+      "clusters": 7,
+      "a_mean": 0.2399,
+      "b_mean": 0.236,
+      "diff": {
+       "est": 0.004,
+       "ci": [
+        -0.0101,
+        0.009
+       ],
+       "n": 47,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0051,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0015,
+        "max": 0.0067,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 18,
+      "b_lower": 29,
+      "ties": 0,
+      "verdict": "NO_DIFFERENCE_DEMONSTRATED"
+     },
+     "winprob_logloss_vs_close": {
+      "n": 47,
+      "clusters": 7,
+      "a_mean": 0.6725,
+      "b_mean": 0.6641,
+      "diff": {
+       "est": 0.0084,
+       "ci": [
+        -0.0207,
+        0.0193
+       ],
+       "n": 47,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0109,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0028,
+        "max": 0.0142,
+        "sign_stable": true
+       }
+      },
+      "a_lower": 18,
+      "b_lower": 29,
+      "ties": 0,
+      "verdict": "NO_DIFFERENCE_DEMONSTRATED"
+     },
+     "winprob_brier_vs_at_forecast": {
+      "n": 18,
+      "clusters": 4,
+      "a_mean": 0.232,
+      "b_mean": 0.234,
+      "diff": {
+       "est": -0.002,
+       "ci": [
+        -0.0302,
+        0.0048
+       ],
+       "n": 18,
+       "clusters": 4,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.0099,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -0.0086,
+        "max": 0.0018,
+        "sign_stable": false
+       }
+      },
+      "a_lower": 7,
+      "b_lower": 11,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "winprob_info_vs_close": {
+      "n": 47,
+      "clusters": 7,
+      "slope": -0.3683,
+      "intercept": 0.1521,
+      "se_cluster": 1.3072,
+      "t": -0.2818,
+      "p_normal": 0.7781,
+      "slope_boot": {
+       "est": -0.3683,
+       "ci": [
+        -2.447,
+        3.6172
+       ],
+       "n": 47,
+       "clusters": 7,
+       "draws": 2000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 1.5111,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -1.2212,
+        "max": 0.4264,
+        "sign_stable": false
+       }
+      },
+      "mean_abs_disagreement": 0.036,
+      "verdict": "NOT_DEMONSTRATED",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way"
+     },
+     "winprob_calibration": {
+      "n": 76,
+      "mean_p": 0.5302,
+      "observed": 0.6316,
+      "brier": 0.2393,
+      "log_loss": 0.6712,
+      "slope": 0.8905,
+      "intercept": 0.4386,
+      "citl": 0.4274,
+      "slope_boot": {
+       "est": 0.8905,
+       "ci": [
+        -0.464,
+        2.1186
+       ],
+       "n": 76,
+       "clusters": 10,
+       "draws": 1000,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "se": 0.6317,
+       "few_clusters": false,
+       "leave_one_out": {
+        "min": 0.3487,
+        "max": 1.1706,
+        "sign_stable": true
+       }
+      },
+      "verdict": "CONSISTENT_WITH_CALIBRATED",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast"
+     },
+     "winprob_market_calibration": {
+      "n": 47,
+      "mean_p": 0.5277,
+      "observed": 0.6809,
+      "brier": 0.236,
+      "log_loss": 0.6641,
+      "slope": null,
+      "intercept": null,
+      "citl": null,
+      "slope_boot": null,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast",
+      "why": "below 50 graded forecasts"
+     }
+    }
+   }
+  },
+  "nba": {
+   "all": {
+    "n": 16,
+    "state": "DESCRIPTIVE_ONLY",
+    "tests": {
+     "winprob_brier_vs_close": {
+      "n": 16,
+      "clusters": 3,
+      "a_mean": 0.2321,
+      "b_mean": 0.192,
+      "diff": {
+       "est": 0.04,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 16,
+       "clusters": 3,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (3): no interval"
+      },
+      "a_lower": 4,
+      "b_lower": 12,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "winprob_logloss_vs_close": {
+      "n": 16,
+      "clusters": 3,
+      "a_mean": 0.6547,
+      "b_mean": 0.5692,
+      "diff": {
+       "est": 0.0854,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 16,
+       "clusters": 3,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (3): no interval"
+      },
+      "a_lower": 4,
+      "b_lower": 12,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "winprob_info_vs_close": {
+      "n": 16,
+      "clusters": 3,
+      "slope": -0.7651,
+      "intercept": 0.0038,
+      "se_cluster": 0.6885,
+      "t": -1.1112,
+      "p_normal": 0.2665,
+      "slope_boot": {
+       "est": -0.7651,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 16,
+       "clusters": 3,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "fewer than 4 clusters (3): no interval"
+      },
+      "mean_abs_disagreement": 0.101,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
+      "why": "below the minimum sample (30 games in 4 clusters)"
+     },
+     "winprob_calibration": {
+      "n": 16,
+      "mean_p": 0.5461,
+      "observed": 0.625,
+      "brier": 0.2321,
+      "log_loss": 0.6547,
+      "slope": null,
+      "intercept": null,
+      "citl": null,
+      "slope_boot": null,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast",
+      "why": "below 50 graded forecasts"
+     }
+    }
+   }
+  },
+  "wnba": {
+   "all": {
+    "n": 3,
+    "state": "DESCRIPTIVE_ONLY",
+    "tests": {
+     "winprob_brier_vs_close": {
+      "n": 0,
+      "clusters": 0,
+      "a_mean": null,
+      "b_mean": null,
+      "diff": {
+       "est": null,
+       "ci": [
+        null,
+        null
+       ],
+       "n": 0,
+       "clusters": 0,
+       "draws": 0,
+       "seed": 20261023,
+       "alpha": 0.05,
+       "method": "cluster_bootstrap_percentile",
+       "why": "the statistic is undefined on these rows"
+      },
+      "a_lower": 0,
+      "b_lower": 0,
+      "ties": 0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+     },
+     "winprob_calibration": {
+      "n": 3,
+      "mean_p": 0.5693,
+      "observed": 0.6667,
+      "brier": 0.2264,
+      "log_loss": 0.6455,
+      "slope": null,
+      "intercept": null,
+      "citl": null,
+      "slope_boot": null,
+      "verdict": "INSUFFICIENT_EVIDENCE",
+      "reads": "slope 1 = calibrated spread of probabilities; < 1 = overconfident (too far from 50%); > 1 = underconfident. citl > 0 = outcomes happened more often than forecast",
+      "why": "below 50 graded forecasts"
+     }
+    }
+   }
+  }
+ },
+ "information_family": [
+  {
+   "key": "cfb.all.spread_info_vs_close",
+   "p": 0.8329,
+   "p_bh": 0.8329
+  },
+  {
+   "key": "cfb.all.spread_market_moves_toward_model",
+   "p": 0.2679,
+   "p_bh": 0.4694
+  },
+  {
+   "key": "cfb.all.total_info_vs_close",
+   "p": 0.125,
+   "p_bh": 0.2917
+  },
+  {
+   "key": "cfb.all.winprob_info_vs_close",
+   "p": 0.2993,
+   "p_bh": 0.4694
+  },
+  {
+   "key": "cfb.fbs_vs_fbs.spread_info_vs_close",
+   "p": 0.7065,
+   "p_bh": 0.8242
+  },
+  {
+   "key": "cfb.fbs_vs_fbs.spread_market_moves_toward_model",
+   "p": 0.0073,
+   "p_bh": 0.0511
+  },
+  {
+   "key": "cfb.fbs_vs_fbs.total_info_vs_close",
+   "p": 0.125,
+   "p_bh": 0.2917
+  },
+  {
+   "key": "cfb.fbs_vs_fbs.winprob_info_vs_close",
+   "p": 0.3017,
+   "p_bh": 0.4694
+  },
+  {
+   "key": "cfb.fbs_vs_fcs.spread_info_vs_close",
+   "p": 0.3749,
+   "p_bh": 0.517
+  },
+  {
+   "key": "nfl.all.spread_info_vs_close",
+   "p": 0.0295,
+   "p_bh": 0.1378
+  },
+  {
+   "key": "nfl.all.spread_market_moves_toward_model",
+   "p": 0.0048,
+   "p_bh": 0.0511
+  },
+  {
+   "key": "nfl.all.total_info_vs_close",
+   "p": 0.4062,
+   "p_bh": 0.517
+  },
+  {
+   "key": "nfl.all.winprob_info_vs_close",
+   "p": 0.1108,
+   "p_bh": 0.2917
+  },
+  {
+   "key": "nhl.all.winprob_info_vs_close",
+   "p": 0.7781,
+   "p_bh": 0.8329
+  }
+ ],
+ "hypotheses": [
+  {
+   "id": "H-001",
+   "kind": "EXPLORATORY",
+   "statement": "Where the CFB model's last pregame spread disagrees with the close, the disagreement predicts the final margin beyond the close",
+   "status": "REJECTED",
+   "why": "acceptance rule verdict_in not met",
+   "result": {
+    "est": -0.029,
+    "ci": [
+     -0.2457,
+     0.216
+    ],
+    "verdict": "NOT_DEMONSTRATED",
+    "n": 417,
+    "clusters": 7,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": -0.1524,
+     "max": 0.0921,
+     "sign_stable": false
+    },
+    "why": null
+   }
+  },
+  {
+   "id": "H-002",
+   "kind": "CONFIRMATORY",
+   "statement": "Same as H-001, on CFB games played after registration",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "clusters": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  },
+  {
+   "id": "H-003",
+   "kind": "EXPLORATORY",
+   "statement": "The CFB model prices FBS-vs-FCS games short of the close: the closing favourite's margin (the FBS team in 71 of the 73 games to date) is lower in the model than in the market",
+   "status": "ACCEPTED",
+   "why": "acceptance rule ci_upper_below met",
+   "result": {
+    "est": -7.7615,
+    "ci": [
+     -12.0172,
+     -6.6362
+    ],
+    "verdict": "BELOW_ZERO",
+    "n": 73,
+    "clusters": 5,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": -9.1595,
+     "max": -7.418,
+     "sign_stable": true
+    },
+    "why": null
+   }
+  },
+  {
+   "id": "H-004",
+   "kind": "CONFIRMATORY",
+   "statement": "Same as H-003, on FBS-vs-FCS games played after registration",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "est": null,
+    "ci": [
+     null,
+     null
+    ],
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "clusters": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  },
+  {
+   "id": "H-005",
+   "kind": "EXPLORATORY",
+   "statement": "The market moves toward the CFB model after EdgeDesk first publishes beside a quote (the close is nearer the model than the first quote was)",
+   "status": "REJECTED",
+   "why": "acceptance rule verdict_in not met",
+   "result": {
+    "est": 0.0482,
+    "ci": [
+     -0.0112,
+     0.161
+    ],
+    "verdict": "NOT_DEMONSTRATED",
+    "n": 257,
+    "clusters": 5,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": 0.0253,
+     "max": 0.0885,
+     "sign_stable": true
+    },
+    "why": null
+   }
+  },
+  {
+   "id": "H-006",
+   "kind": "EXPLORATORY",
+   "statement": "The CFB model's win probability scores better (lower Brier) than the no-vig closing moneyline on the same games",
+   "status": "REJECTED",
+   "why": "acceptance rule ci_upper_below not met",
+   "result": {
+    "est": 0.0156,
+    "ci": [
+     0.0085,
+     0.0276
+    ],
+    "verdict": "B_LOWER",
+    "n": 301,
+    "clusters": 6,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": 0.0096,
+     "max": 0.0174,
+     "sign_stable": true
+    },
+    "why": null
+   }
+  },
+  {
+   "id": "H-007",
+   "kind": "EXPLORATORY",
+   "statement": "The CFB model's win probabilities are overconfident (calibration slope below 1)",
+   "status": "REJECTED",
+   "why": "acceptance rule verdict_in not met",
+   "result": {
+    "est": 0.9724,
+    "ci": [
+     0.6771,
+     1.2224
+    ],
+    "verdict": "CONSISTENT_WITH_CALIBRATED",
+    "n": 332,
+    "clusters": 6,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": 0.87,
+     "max": 1.0959,
+     "sign_stable": true
+    },
+    "why": null
+   }
+  },
+  {
+   "id": "H-008",
+   "kind": "EXPLORATORY",
+   "statement": "Where the NFL model's last pregame spread disagrees with the close, the disagreement predicts the final margin beyond the close",
+   "status": "REJECTED",
+   "why": "acceptance rule verdict_in not met",
+   "result": {
+    "est": 0.5666,
+    "ci": [
+     -0.0117,
+     0.9935
+    ],
+    "verdict": "NOT_DEMONSTRATED",
+    "n": 78,
+    "clusters": 6,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": 0.4289,
+     "max": 0.742,
+     "sign_stable": true
+    },
+    "why": null
+   }
+  },
+  {
+   "id": "H-009",
+   "kind": "CONFIRMATORY",
+   "statement": "The NHL model's win probability scores better (lower Brier) than the no-vig DraftKings moneyline last observed before the start",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "est": null,
+    "ci": [
+     null,
+     null
+    ],
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "clusters": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  },
+  {
+   "id": "H-010",
+   "kind": "CONFIRMATORY",
+   "statement": "The NBA model's win probability scores better (lower Brier) than the no-vig DraftKings moneyline last observed before the start",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "est": null,
+    "ci": [
+     null,
+     null
+    ],
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "clusters": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  },
+  {
+   "id": "H-011",
+   "kind": "CONFIRMATORY",
+   "statement": "In FBS-vs-FBS games, the close moves toward the CFB model's number from the first quote EdgeDesk recorded beside it",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "clusters": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  },
+  {
+   "id": "H-012",
+   "kind": "CONFIRMATORY",
+   "statement": "The NFL close moves toward the NFL model's number from the first quote EdgeDesk recorded beside it",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "clusters": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  },
+  {
+   "id": "H-013",
+   "kind": "CONFIRMATORY",
+   "statement": "After the 2026-10-19 home-field change (edgedesk_cfb_p4_v1.0.1, one 2.8-point home field), the CFB model's home lean against the close in FBS-vs-FBS games is under one point",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "est": null,
+    "ci": [
+     null,
+     null
+    ],
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "clusters": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  }
+ ]
+}
