@@ -18,6 +18,7 @@ import { NBA_2026_27 } from './nba/config.ts';
 import { cfbFacts, isCfbVerified } from './cfb/config.ts';
 import { NCAAM_2027 } from './ncaam/config.ts';
 import { WNBA_2026 } from './wnba/config.ts';
+import { golfActivation } from './golf/activation.ts';
 import { UFC_2026 } from './ufc/config.ts';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -189,12 +190,25 @@ const UFC_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
+/** Golf: ACTIVE only while the committed skill study and backtest exist and the backtest's activation conditions
+    hold on its holdout seasons (simulator/src/sports/golf/activation.ts); every format fact is measured per event (run.ts) */
+const GOLF_LIMITS = [
+  'Player skill: strokes per round against the field in the same round (so the course and the weather cancel), from every PGA Tour, LPGA and DP World Tour round since 2023, weighted toward recent rounds and shrunk toward a measured prior. The PGA Tour and the DP World Tour are fitted on one scale (their shared players link them; it predicted both tours better).',
+  'A player with few or no rounds in that history (a Monday qualifier, an amateur, a LIV Golf or Korn Ferry Tour regular) is set near the measured newcomer level, which is well below the average tour player: a strong player from outside these three tours is underrated.',
+  'Each player\'s week is drawn once per simulated tournament (what is wrong with his skill estimate and what is different this week), sized from how much one player\'s rounds in the same event move together (2024-2026); rounds already played update it, by exactly as much as those measurements say.',
+  'Not modelled: course fit and course history, the weather and the morning or afternoon tee-time wave (only its average effect on the first two rounds is inside the per-player draw), injuries and news, and withdrawals after the leaderboard was read.',
+  'The cut is measured, never assumed: Observed once made; otherwise read from the event\'s previous editions and the tour\'s 2023-2026 cuts (top 65 and ties on all three tours); an event whose rule cannot be read is not simulated, and an interval the editions cannot narrow is labelled Estimated.',
+  'A tie for the lead goes to a sudden-death playoff decided hole by hole from the players\' skills: an approximation (the feed holds no hole-by-hole history; aggregate playoffs are treated as sudden death). Top 5, 10 and 20 break ties at random, which equals a dead-heat settlement on average.',
+  'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
+];
+
 export function sportRegistry(): SportEntry[] {
   const nfl = nflStatus(), nhl = nhlStatus(), cfb = cfbStatus();
   const mlb = mlbStatus();
   const nba = nbaStatus();
   const ncaam = ncaamStatus();
   const wnba = wnbaStatus();
+  const golf = golfActivation();
   const ufc = ufcStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
@@ -216,9 +230,8 @@ export function sportRegistry(): SportEntry[] {
     { key: 'tennis', label: 'Tennis', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
       blockers: ['Retired from coverage (2026-09-27).', 'Fitted ratings live only in the database; no owned draw structure; no validated point-level serve/return model.'],
       limitations: [], activation_path: 'Draw data, a validated point-level model, and the coverage decision reversed.' },
-    { key: 'golf', label: 'Golf', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
-      blockers: ['No golf model, field data, round-score distribution or cut rules exist in the repository.'],
-      limitations: [], activation_path: 'A per-player round-score model with a shared round effect, fields and cut rules.' },
+    { key: 'golf', label: 'Golf', status: golf.status, structure: 'events', tabs: ['leaderboard', 'finishes', 'model_health'], blockers: golf.blockers, limitations: GOLF_LIMITS,
+      activation_path: 'Active while the committed backtest (simulator/data/golf_backtest.json, walk-forward over 2025-2026) meets its activation conditions; each event\'s cut, rounds and field are measured per run. Each season: let the feeds refresh, re-run the skill study and the backtest, and set the new season and nightly_through in simulator/src/sports/golf/config.ts. GOLF_SIMULATOR_NOTES.md.' },
     { key: 'ufc', label: 'UFC', status: ufc.status, structure: 'events', tabs: ['fights', 'title_path', 'model_health'], blockers: ufc.blockers, limitations: UFC_LIMITS,
       activation_path: 'Active: every booked bout from the served UFC Elo (model_loop/adapters/ufc, reproduced in every run by simulator/src/sports/ufc/elo.ts), champions and rankings from ufc.com, the schedule from ESPN and the title history from Wikipedia, refreshed by the Simulator sports-data job (fetch_sports_data.ts --what ufc). UFC_SIMULATOR_NOTES.md.' },
     { key: 'college_baseball', label: 'College Baseball', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],

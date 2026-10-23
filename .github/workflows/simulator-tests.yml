@@ -8,7 +8,9 @@
 #          MLB's real 2024 responses, configuration), the college football suites
 #          (conference ties, the 2024-2025 title games and brackets, the committee
 #          proxy, favourite calibration), the NCAAM bracket module and its tabs,
-#          and the generated-file checks
+#          the WNBA series and the golf tournament simulations and their tabs
+#          (golf's history, study and backtest are committed under simulator/data:
+#          'simulator/**' covers them), and the generated-file checks
 #          (the reader's sport registry, the research-registry SQL, and the
 #          migration being a byte copy of supabase/simulator.sql)
 #   sql    supabase/simulator.sql on a real, throwaway PostgreSQL: RLS, the
@@ -177,6 +179,8 @@ jobs:
         run: npm run sim:wnba:test
       - name: UFC fights and title path (the Elo port against the served prices, sum rules, title-path invariants, workers) and its reader tabs
         run: npm run sim:ufc:test
+      - name: Golf tournament simulation (cut rules measured from history, conditioning, sum rules, dead heats, the playoff, worker-count independence) and its reader tabs
+        run: npm run sim:golf:test
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check

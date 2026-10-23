@@ -1,0 +1,6755 @@
+{
+ "schema": "edgedesk_sim_golf_backtest_v1",
+ "generated_at": "2026-10-23T21:40:55.399Z",
+ "method": "walk-forward replay of the production simulation (simulator/src/research/golf_backtest.ts): tuning 2024, holdout 2025-2026; see the file header",
+ "data": {
+  "history_sha256": "105fad0248e7313eda1fbed6a00a791353a5fe1887b4a54db04019820c468327",
+  "history_fetched_at": "2026-10-23T20:27:16.550Z",
+  "study_sha256": "86b0f4fdd7b7d53450f0a67d08400c505254d0df600bb015da35b18b3ed18167"
+ },
+ "production": {
+  "scale_by_tour": {
+   "pga": 1,
+   "lpga": 1,
+   "eur": 1
+  },
+  "method": "each tour's tuning-season check (2024, before round 1, summed log loss of win, top 10, top 20 and the cut over scales 0, 0.5, 1, 1.5, 2): the measured variances (1) unless another scale beats them with a bootstrap 95% interval below zero"
+ },
+ "tours": {
+  "pga": {
+   "label": "PGA Tour",
+   "runs_per_event": 4000,
+   "scale": {
+    "chosen": 1,
+    "lowest_on_tuning": 0.5,
+    "lowest_vs_scale_1": {
+     "diff": -0.00048,
+     "ci95": [
+      -0.00208,
+      0.00117
+     ]
+    },
+    "rule": "scale 1 (the measured variances) unless the lowest beats it with a bootstrap 95% interval below zero",
+    "tuning": [
+     {
+      "scale": 0,
+      "log_loss": [
+       0.04361,
+       0.24848,
+       0.3923,
+       0.62056
+      ],
+      "sum": 1.30494
+     },
+     {
+      "scale": 0.5,
+      "log_loss": [
+       0.0429,
+       0.24761,
+       0.39051,
+       0.61996
+      ],
+      "sum": 1.30099
+     },
+     {
+      "scale": 1,
+      "log_loss": [
+       0.043,
+       0.2477,
+       0.39072,
+       0.62005
+      ],
+      "sum": 1.30147
+     },
+     {
+      "scale": 1.5,
+      "log_loss": [
+       0.04339,
+       0.24759,
+       0.39096,
+       0.61988
+      ],
+      "sum": 1.30182
+     },
+     {
+      "scale": 2,
+      "log_loss": [
+       0.04334,
+       0.24796,
+       0.39105,
+       0.62003
+      ],
+      "sum": 1.30238
+     }
+    ],
+    "tuning_events": 46
+   },
+   "tuning": {
+    "pre": {
+     "win": {
+      "model": {
+       "log_loss": 0.043,
+       "brier": 0.00777,
+       "player_events": 5687
+      },
+      "point": {
+       "log_loss": 0.04361,
+       "brier": 0.00778,
+       "player_events": 5687
+      },
+      "uniform": {
+       "log_loss": 0.0465,
+       "brier": 0.00801,
+       "player_events": 5687
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.00349,
+       "ci95": [
+        -0.00722,
+        0.00011
+       ],
+       "brier": -0.00024,
+       "events": 46
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00061,
+       "ci95": [
+        -0.00167,
+        0.00034
+       ],
+       "brier": -0.00001,
+       "events": 46
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 3025,
+        "mean_p": 0.00213,
+        "observed": 0.00298
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 1286,
+        "mean_p": 0.00725,
+        "observed": 0.00778
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 890,
+        "mean_p": 0.01397,
+        "observed": 0.01573
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 400,
+        "mean_p": 0.02827,
+        "observed": 0.0075
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 59,
+        "mean_p": 0.06558,
+        "observed": 0.05085
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 25,
+        "mean_p": 0.14204,
+        "observed": 0.28
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 2,
+        "mean_p": 0.24163,
+        "observed": 0
+       }
+      ]
+     },
+     "top_5": {
+      "model": {
+       "log_loss": 0.15108,
+       "brier": 0.03348,
+       "player_events": 5687
+      },
+      "point": {
+       "log_loss": 0.15126,
+       "brier": 0.03352,
+       "player_events": 5687
+      },
+      "uniform": {
+       "log_loss": 0.1672,
+       "brier": 0.03548,
+       "player_events": 5687
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.01613,
+       "ci95": [
+        -0.02093,
+        -0.01144
+       ],
+       "brier": -0.00199,
+       "events": 46
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00018,
+       "ci95": [
+        -0.00096,
+        0.00059
+       ],
+       "brier": -0.00004,
+       "events": 46
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 617,
+        "mean_p": 0.00248,
+        "observed": 0.00324
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 521,
+        "mean_p": 0.00748,
+        "observed": 0.00886
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 1057,
+        "mean_p": 0.01472,
+        "observed": 0.01537
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 1956,
+        "mean_p": 0.03334,
+        "observed": 0.03385
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 1125,
+        "mean_p": 0.06965,
+        "observed": 0.07404
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 328,
+        "mean_p": 0.12887,
+        "observed": 0.10645
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 61,
+        "mean_p": 0.24524,
+        "observed": 0.19317
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 19,
+        "mean_p": 0.41586,
+        "observed": 0.47982
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 3,
+        "mean_p": 0.54281,
+        "observed": 0.93333
+       }
+      ]
+     },
+     "top_10": {
+      "model": {
+       "log_loss": 0.2477,
+       "brier": 0.06339,
+       "player_events": 5687
+      },
+      "point": {
+       "log_loss": 0.24848,
+       "brier": 0.06348,
+       "player_events": 5687
+      },
+      "uniform": {
+       "log_loss": 0.27557,
+       "brier": 0.06834,
+       "player_events": 5687
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.02787,
+       "ci95": [
+        -0.03333,
+        -0.02236
+       ],
+       "brier": -0.00495,
+       "events": 46
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00077,
+       "ci95": [
+        -0.00184,
+        0.00024
+       ],
+       "brier": -0.0001,
+       "events": 46
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 233,
+        "mean_p": 0.00285,
+        "observed": 0.00429
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 258,
+        "mean_p": 0.00755,
+        "observed": 0.00388
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 461,
+        "mean_p": 0.01498,
+        "observed": 0.01515
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 1436,
+        "mean_p": 0.03467,
+        "observed": 0.03223
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 1655,
+        "mean_p": 0.07303,
+        "observed": 0.07414
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 1310,
+        "mean_p": 0.13852,
+        "observed": 0.1466
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 262,
+        "mean_p": 0.25087,
+        "observed": 0.21368
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 48,
+        "mean_p": 0.40578,
+        "observed": 0.36285
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 23,
+        "mean_p": 0.59139,
+        "observed": 0.72101
+       },
+       {
+        "bin": "0.7-0.9",
+        "n": 1,
+        "mean_p": 0.76487,
+        "observed": 1
+       }
+      ]
+     },
+     "top_20": {
+      "model": {
+       "log_loss": 0.39072,
+       "brier": 0.11328,
+       "player_events": 5687
+      },
+      "point": {
+       "log_loss": 0.3923,
+       "brier": 0.1135,
+       "player_events": 5687
+      },
+      "uniform": {
+       "log_loss": 0.42956,
+       "brier": 0.12375,
+       "player_events": 5687
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.03884,
+       "ci95": [
+        -0.04672,
+        -0.03113
+       ],
+       "brier": -0.01047,
+       "events": 46
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00157,
+       "ci95": [
+        -0.00379,
+        0.00026
+       ],
+       "brier": -0.00022,
+       "events": 46
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 40,
+        "mean_p": 0.0035,
+        "observed": 0
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 95,
+        "mean_p": 0.00758,
+        "observed": 0.01053
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 206,
+        "mean_p": 0.01517,
+        "observed": 0.01949
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 587,
+        "mean_p": 0.03515,
+        "observed": 0.03864
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 1138,
+        "mean_p": 0.0744,
+        "observed": 0.07765
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 1906,
+        "mean_p": 0.1466,
+        "observed": 0.14511
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 1331,
+        "mean_p": 0.26232,
+        "observed": 0.26727
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 258,
+        "mean_p": 0.40402,
+        "observed": 0.38157
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 95,
+        "mean_p": 0.57458,
+        "observed": 0.49655
+       },
+       {
+        "bin": "0.7-0.9",
+        "n": 29,
+        "mean_p": 0.77331,
+        "observed": 0.86207
+       },
+       {
+        "bin": "0.9-1",
+        "n": 2,
+        "mean_p": 0.93078,
+        "observed": 1
+       }
+      ]
+     },
+     "make_cut": {
+      "model": {
+       "log_loss": 0.62005,
+       "brier": 0.21556,
+       "player_events": 5230
+      },
+      "point": {
+       "log_loss": 0.62056,
+       "brier": 0.21542,
+       "player_events": 5230
+      },
+      "uniform": {
+       "log_loss": 0.66789,
+       "brier": 0.23921,
+       "player_events": 5230
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.04785,
+       "ci95": [
+        -0.05897,
+        -0.03712
+       ],
+       "brier": -0.02365,
+       "events": 40
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00051,
+       "ci95": [
+        -0.00289,
+        0.00135
+       ],
+       "brier": 0.00014,
+       "events": 40
+      },
+      "calibration": [
+       {
+        "bin": "0.02-0.05",
+        "n": 1,
+        "mean_p": 0.04523,
+        "observed": 1
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 8,
+        "mean_p": 0.0824,
+        "observed": 0.125
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 214,
+        "mean_p": 0.15831,
+        "observed": 0.21495
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 611,
+        "mean_p": 0.28401,
+        "observed": 0.31424
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 1418,
+        "mean_p": 0.4342,
+        "observed": 0.45769
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 2138,
+        "mean_p": 0.58886,
+        "observed": 0.61366
+       },
+       {
+        "bin": "0.7-0.9",
+        "n": 445,
+        "mean_p": 0.76933,
+        "observed": 0.79326
+       },
+       {
+        "bin": "0.9-1",
+        "n": 395,
+        "mean_p": 0.95343,
+        "observed": 0.9038
+       }
+      ]
+     }
+    }
+   },
+   "holdout": {
+    "seasons": [
+     2025,
+     2026
+    ],
+    "pre": {
+     "events": 81,
+     "player_events": 9863,
+     "metrics": {
+      "win": {
+       "model": {
+        "log_loss": 0.04218,
+        "brier": 0.00789,
+        "player_events": 9863
+       },
+       "point": {
+        "log_loss": 0.04244,
+        "brier": 0.00789,
+        "player_events": 9863
+       },
+       "uniform": {
+        "log_loss": 0.0471,
+        "brier": 0.00813,
+        "player_events": 9863
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.00492,
+        "ci95": [
+         -0.00704,
+         -0.00272
+        ],
+        "brier": -0.00025,
+        "events": 81
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00026,
+        "ci95": [
+         -0.00103,
+         0.00036
+        ],
+        "brier": -0.00001,
+        "events": 81
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 4992,
+         "mean_p": 0.00214,
+         "observed": 0.002
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 2392,
+         "mean_p": 0.00717,
+         "observed": 0.00794
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 1703,
+         "mean_p": 0.01381,
+         "observed": 0.01585
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 671,
+         "mean_p": 0.02858,
+         "observed": 0.0149
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 63,
+         "mean_p": 0.06161,
+         "observed": 0.09524
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 29,
+         "mean_p": 0.16068,
+         "observed": 0.13793
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 13,
+         "mean_p": 0.24251,
+         "observed": 0.38462
+        }
+       ]
+      },
+      "top_5": {
+       "model": {
+        "log_loss": 0.15334,
+        "brier": 0.03356,
+        "player_events": 9863
+       },
+       "point": {
+        "log_loss": 0.15387,
+        "brier": 0.03356,
+        "player_events": 9863
+       },
+       "uniform": {
+        "log_loss": 0.16863,
+        "brier": 0.03554,
+        "player_events": 9863
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.01528,
+        "ci95": [
+         -0.01852,
+         -0.01223
+        ],
+        "brier": -0.00198,
+        "events": 81
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00053,
+        "ci95": [
+         -0.00146,
+         0.00021
+        ],
+        "brier": 0,
+        "events": 81
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 968,
+         "mean_p": 0.00256,
+         "observed": 0.00069
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 933,
+         "mean_p": 0.00744,
+         "observed": 0.0119
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 1633,
+         "mean_p": 0.01494,
+         "observed": 0.01545
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 3552,
+         "mean_p": 0.03378,
+         "observed": 0.03642
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 2095,
+         "mean_p": 0.06834,
+         "observed": 0.06119
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 580,
+         "mean_p": 0.13051,
+         "observed": 0.12991
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 61,
+         "mean_p": 0.2321,
+         "observed": 0.19957
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 27,
+         "mean_p": 0.42744,
+         "observed": 0.46914
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 14,
+         "mean_p": 0.55302,
+         "observed": 0.73333
+        }
+       ]
+      },
+      "top_10": {
+       "model": {
+        "log_loss": 0.25312,
+        "brier": 0.0646,
+        "player_events": 9863
+       },
+       "point": {
+        "log_loss": 0.25382,
+        "brier": 0.06464,
+        "player_events": 9863
+       },
+       "uniform": {
+        "log_loss": 0.27823,
+        "brier": 0.06921,
+        "player_events": 9863
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.02511,
+        "ci95": [
+         -0.02938,
+         -0.02108
+        ],
+        "brier": -0.00461,
+        "events": 81
+       },
+       "diff_vs_point": {
+        "log_loss": -0.0007,
+        "ci95": [
+         -0.0017,
+         0.00008
+        ],
+        "brier": -0.00005,
+        "events": 81
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 341,
+         "mean_p": 0.00278,
+         "observed": 0
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 418,
+         "mean_p": 0.00746,
+         "observed": 0.00837
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 818,
+         "mean_p": 0.01506,
+         "observed": 0.01618
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 2273,
+         "mean_p": 0.03492,
+         "observed": 0.03374
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 3065,
+         "mean_p": 0.07389,
+         "observed": 0.07765
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 2366,
+         "mean_p": 0.13545,
+         "observed": 0.12657
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 490,
+         "mean_p": 0.24845,
+         "observed": 0.26649
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 50,
+         "mean_p": 0.39869,
+         "observed": 0.377
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 37,
+         "mean_p": 0.61509,
+         "observed": 0.66667
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 5,
+         "mean_p": 0.77523,
+         "observed": 1
+        }
+       ]
+      },
+      "top_20": {
+       "model": {
+        "log_loss": 0.39271,
+        "brier": 0.11368,
+        "player_events": 9863
+       },
+       "point": {
+        "log_loss": 0.39322,
+        "brier": 0.11373,
+        "player_events": 9863
+       },
+       "uniform": {
+        "log_loss": 0.43352,
+        "brier": 0.12484,
+        "player_events": 9863
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.0408,
+        "ci95": [
+         -0.04679,
+         -0.0355
+        ],
+        "brier": -0.01115,
+        "events": 81
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00051,
+        "ci95": [
+         -0.00135,
+         0.00027
+        ],
+        "brier": -0.00005,
+        "events": 81
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 56,
+         "mean_p": 0.00295,
+         "observed": 0.01786
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 163,
+         "mean_p": 0.00739,
+         "observed": 0
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 288,
+         "mean_p": 0.01517,
+         "observed": 0.01727
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 1054,
+         "mean_p": 0.03514,
+         "observed": 0.03266
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 1782,
+         "mean_p": 0.07596,
+         "observed": 0.07286
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 3409,
+         "mean_p": 0.14825,
+         "observed": 0.149
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 2459,
+         "mean_p": 0.2564,
+         "observed": 0.25217
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 475,
+         "mean_p": 0.40507,
+         "observed": 0.43992
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 121,
+         "mean_p": 0.57803,
+         "observed": 0.54356
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 54,
+         "mean_p": 0.78751,
+         "observed": 0.83333
+        },
+        {
+         "bin": "0.9-1",
+         "n": 2,
+         "mean_p": 0.96663,
+         "observed": 1
+        }
+       ]
+      },
+      "make_cut": {
+       "model": {
+        "log_loss": 0.6385,
+        "brier": 0.22439,
+        "player_events": 8803
+       },
+       "point": {
+        "log_loss": 0.63823,
+        "brier": 0.22421,
+        "player_events": 8803
+       },
+       "uniform": {
+        "log_loss": 0.69139,
+        "brier": 0.24958,
+        "player_events": 8803
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.05288,
+        "ci95": [
+         -0.05979,
+         -0.04563
+        ],
+        "brier": -0.02519,
+        "events": 66
+       },
+       "diff_vs_point": {
+        "log_loss": 0.00027,
+        "ci95": [
+         -0.00062,
+         0.00111
+        ],
+        "brier": 0.00018,
+        "events": 66
+       },
+       "calibration": [
+        {
+         "bin": "0.02-0.05",
+         "n": 1,
+         "mean_p": 0.04861,
+         "observed": 0
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 29,
+         "mean_p": 0.08342,
+         "observed": 0.10345
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 312,
+         "mean_p": 0.15556,
+         "observed": 0.16987
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 1032,
+         "mean_p": 0.28803,
+         "observed": 0.33333
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 2285,
+         "mean_p": 0.43448,
+         "observed": 0.46389
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 4192,
+         "mean_p": 0.59225,
+         "observed": 0.62214
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 862,
+         "mean_p": 0.75614,
+         "observed": 0.76334
+        },
+        {
+         "bin": "0.9-1",
+         "n": 90,
+         "mean_p": 0.93489,
+         "observed": 0.98889
+        }
+       ]
+      }
+     }
+    },
+    "r2": {
+     "events": 82,
+     "player_events": 5787,
+     "metrics": {
+      "win": {
+       "model": {
+        "log_loss": 0.0491,
+        "brier": 0.01201,
+        "player_events": 5787
+       },
+       "point": {
+        "log_loss": 0.0498,
+        "brier": 0.01206,
+        "player_events": 5787
+       },
+       "uniform": {
+        "log_loss": 0.07408,
+        "brier": 0.01396,
+        "player_events": 5787
+       },
+       "scores_only": {
+        "log_loss": 0.05224,
+        "brier": 0.01237,
+        "player_events": 5787
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.02498,
+        "ci95": [
+         -0.03021,
+         -0.02003
+        ],
+        "brier": -0.00195,
+        "events": 82
+       },
+       "diff_vs_point": {
+        "log_loss": -0.0007,
+        "ci95": [
+         -0.00138,
+         -0.00017
+        ],
+        "brier": -0.00005,
+        "events": 82
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.00314,
+        "ci95": [
+         -0.00517,
+         -0.001
+        ],
+        "brier": -0.00036,
+        "events": 82
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 3933,
+         "mean_p": 0.00119,
+         "observed": 0.00127
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 580,
+         "mean_p": 0.0071,
+         "observed": 0.00345
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 453,
+         "mean_p": 0.01415,
+         "observed": 0.00662
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 423,
+         "mean_p": 0.03173,
+         "observed": 0.03783
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 228,
+         "mean_p": 0.06971,
+         "observed": 0.09211
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 98,
+         "mean_p": 0.13703,
+         "observed": 0.13265
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 49,
+         "mean_p": 0.2615,
+         "observed": 0.26531
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 14,
+         "mean_p": 0.42729,
+         "observed": 0.21429
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 6,
+         "mean_p": 0.58819,
+         "observed": 0.66667
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 2,
+         "mean_p": 0.73782,
+         "observed": 0.5
+        },
+        {
+         "bin": "0.9-1",
+         "n": 1,
+         "mean_p": 0.93439,
+         "observed": 1
+        }
+       ]
+      },
+      "top_5": {
+       "model": {
+        "log_loss": 0.17701,
+        "brier": 0.04344,
+        "player_events": 5787
+       },
+       "point": {
+        "log_loss": 0.17766,
+        "brier": 0.04361,
+        "player_events": 5787
+       },
+       "uniform": {
+        "log_loss": 0.2542,
+        "brier": 0.05917,
+        "player_events": 5787
+       },
+       "scores_only": {
+        "log_loss": 0.18506,
+        "brier": 0.04504,
+        "player_events": 5787
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.07719,
+        "ci95": [
+         -0.08602,
+         -0.06898
+        ],
+        "brier": -0.01574,
+        "events": 82
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00065,
+        "ci95": [
+         -0.00155,
+         0.00016
+        ],
+        "brier": -0.00017,
+        "events": 82
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.00805,
+        "ci95": [
+         -0.01115,
+         -0.00499
+        ],
+        "brier": -0.00161,
+        "events": 82
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 1210,
+         "mean_p": 0.00201,
+         "observed": 0.00165
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 732,
+         "mean_p": 0.0073,
+         "observed": 0.00717
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 821,
+         "mean_p": 0.01428,
+         "observed": 0.01628
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 1110,
+         "mean_p": 0.03272,
+         "observed": 0.02739
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 747,
+         "mean_p": 0.07132,
+         "observed": 0.0579
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 589,
+         "mean_p": 0.1408,
+         "observed": 0.15687
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 336,
+         "mean_p": 0.2652,
+         "observed": 0.27198
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 126,
+         "mean_p": 0.41362,
+         "observed": 0.42184
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 80,
+         "mean_p": 0.59204,
+         "observed": 0.60833
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 29,
+         "mean_p": 0.80484,
+         "observed": 0.7977
+        },
+        {
+         "bin": "0.9-1",
+         "n": 7,
+         "mean_p": 0.95324,
+         "observed": 1
+        }
+       ]
+      },
+      "top_10": {
+       "model": {
+        "log_loss": 0.28754,
+        "brier": 0.0781,
+        "player_events": 5787
+       },
+       "point": {
+        "log_loss": 0.28821,
+        "brier": 0.07821,
+        "player_events": 5787
+       },
+       "uniform": {
+        "log_loss": 0.40448,
+        "brier": 0.11193,
+        "player_events": 5787
+       },
+       "scores_only": {
+        "log_loss": 0.29975,
+        "brier": 0.08142,
+        "player_events": 5787
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.11694,
+        "ci95": [
+         -0.12888,
+         -0.10496
+        ],
+        "brier": -0.03383,
+        "events": 82
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00067,
+        "ci95": [
+         -0.00166,
+         0.00014
+        ],
+        "brier": -0.0001,
+        "events": 82
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.01221,
+        "ci95": [
+         -0.01583,
+         -0.00834
+        ],
+        "brier": -0.00332,
+        "events": 82
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 396,
+         "mean_p": 0.00185,
+         "observed": 0.00455
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 279,
+         "mean_p": 0.00738,
+         "observed": 0.01344
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 541,
+         "mean_p": 0.01498,
+         "observed": 0.01602
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 1213,
+         "mean_p": 0.03335,
+         "observed": 0.02485
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 1013,
+         "mean_p": 0.07246,
+         "observed": 0.06388
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 983,
+         "mean_p": 0.14329,
+         "observed": 0.13275
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 685,
+         "mean_p": 0.26479,
+         "observed": 0.26935
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 314,
+         "mean_p": 0.41474,
+         "observed": 0.48795
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 227,
+         "mean_p": 0.5794,
+         "observed": 0.58453
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 108,
+         "mean_p": 0.78691,
+         "observed": 0.76877
+        },
+        {
+         "bin": "0.9-1",
+         "n": 28,
+         "mean_p": 0.95686,
+         "observed": 0.96429
+        }
+       ]
+      },
+      "top_20": {
+       "model": {
+        "log_loss": 0.43752,
+        "brier": 0.12758,
+        "player_events": 5787
+       },
+       "point": {
+        "log_loss": 0.43839,
+        "brier": 0.12778,
+        "player_events": 5787
+       },
+       "uniform": {
+        "log_loss": 0.58728,
+        "brier": 0.1854,
+        "player_events": 5787
+       },
+       "scores_only": {
+        "log_loss": 0.45824,
+        "brier": 0.13532,
+        "player_events": 5787
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.14976,
+        "ci95": [
+         -0.16266,
+         -0.13795
+        ],
+        "brier": -0.05781,
+        "events": 82
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00087,
+        "ci95": [
+         -0.00181,
+         -0.00004
+        ],
+        "brier": -0.0002,
+        "events": 82
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.02072,
+        "ci95": [
+         -0.02506,
+         -0.01602
+        ],
+        "brier": -0.00774,
+        "events": 82
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 142,
+         "mean_p": 0.00189,
+         "observed": 0
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 45,
+         "mean_p": 0.00712,
+         "observed": 0
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 117,
+         "mean_p": 0.01525,
+         "observed": 0.00321
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 407,
+         "mean_p": 0.03513,
+         "observed": 0.02897
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 843,
+         "mean_p": 0.07541,
+         "observed": 0.06535
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 1257,
+         "mean_p": 0.14577,
+         "observed": 0.14126
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 1178,
+         "mean_p": 0.26829,
+         "observed": 0.26071
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 703,
+         "mean_p": 0.42061,
+         "observed": 0.42916
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 614,
+         "mean_p": 0.59072,
+         "observed": 0.62757
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 350,
+         "mean_p": 0.79327,
+         "observed": 0.81142
+        },
+        {
+         "bin": "0.9-1",
+         "n": 131,
+         "mean_p": 0.95229,
+         "observed": 0.89357
+        }
+       ]
+      }
+     }
+    }
+   },
+   "playoffs": {
+    "simulated_share_mean": 0.18208,
+    "events": 81,
+    "events_with_playoff_in_feed": 11,
+    "note": "the simulated share of runs ending in a playoff (scale 1) against the share of holdout events the feed shows a playoff for (the PGA Tour's feed records playoffs; the LPGA's and DP World Tour's mostly do not)"
+   },
+   "events": {
+    "pre": [
+     {
+      "key": "pga:401703489",
+      "name": "2025 The Sentry",
+      "players": 59,
+      "winner_p": 0.03787
+     },
+     {
+      "key": "pga:401703490",
+      "name": "2025 Sony Open in Hawaii",
+      "players": 143,
+      "winner_p": 0.00512
+     },
+     {
+      "key": "pga:401703491",
+      "name": "2025 The American Express",
+      "players": 156,
+      "winner_p": 0.01162
+     },
+     {
+      "key": "pga:401703492",
+      "name": "2025 Farmers Insurance Open",
+      "players": 155,
+      "winner_p": 0.00687
+     },
+     {
+      "key": "pga:401703493",
+      "name": "2025 AT&T Pebble Beach Pro-Am",
+      "players": 80,
+      "winner_p": 0.05761
+     },
+     {
+      "key": "pga:401703494",
+      "name": "2025 WM Phoenix Open",
+      "players": 132,
+      "winner_p": 0.00712
+     },
+     {
+      "key": "pga:401703495",
+      "name": "2025 The Genesis Invitational",
+      "players": 72,
+      "winner_p": 0.03537
+     },
+     {
+      "key": "pga:401703496",
+      "name": "2025 Mexico Open at VidantaWorld",
+      "players": 132,
+      "winner_p": 0.00812
+     },
+     {
+      "key": "pga:401703497",
+      "name": "2025 Cognizant Classic in The Palm Beaches",
+      "players": 144,
+      "winner_p": 0.00662
+     },
+     {
+      "key": "pga:401703498",
+      "name": "2025 Arnold Palmer Invitational pres. by Mastercard",
+      "players": 72,
+      "winner_p": 0.01987
+     },
+     {
+      "key": "pga:401703499",
+      "name": "2025 Puerto Rico Open",
+      "players": 132,
+      "winner_p": 0.00487
+     },
+     {
+      "key": "pga:401703500",
+      "name": "2025 THE PLAYERS Championship",
+      "players": 144,
+      "winner_p": 0.05736
+     },
+     {
+      "key": "pga:401703501",
+      "name": "2025 Valspar Championship",
+      "players": 154,
+      "winner_p": 0.02737
+     },
+     {
+      "key": "pga:401703502",
+      "name": "2025 Texas Children's Houston Open",
+      "players": 153,
+      "winner_p": 0.01337
+     },
+     {
+      "key": "pga:401703503",
+      "name": "2025 Valero Texas Open",
+      "players": 144,
+      "winner_p": 0.01312
+     },
+     {
+      "key": "pga:401703504",
+      "name": "2025 Masters Tournament",
+      "players": 95,
+      "winner_p": 0.05611
+     },
+     {
+      "key": "pga:401703505",
+      "name": "2025 RBC Heritage",
+      "players": 72,
+      "winner_p": 0.03412
+     },
+     {
+      "key": "pga:401703506",
+      "name": "2025 Corales Puntacana Championship",
+      "players": 132,
+      "winner_p": 0.00712
+     },
+     {
+      "key": "pga:401703508",
+      "name": "2025 THE CJ CUP Byron Nelson",
+      "players": 156,
+      "winner_p": 0.21382
+     },
+     {
+      "key": "pga:401703510",
+      "name": "2025 ONEflight Myrtle Beach Classic",
+      "players": 132,
+      "winner_p": 0.01687
+     },
+     {
+      "key": "pga:401703511",
+      "name": "2025 PGA Championship",
+      "players": 156,
+      "winner_p": 0.13409
+     },
+     {
+      "key": "pga:401703512",
+      "name": "2025 Charles Schwab Challenge",
+      "players": 135,
+      "winner_p": 0.00762
+     },
+     {
+      "key": "pga:401703513",
+      "name": "2025 the Memorial Tournament pres. by Workday",
+      "players": 72,
+      "winner_p": 0.19333
+     },
+     {
+      "key": "pga:401703514",
+      "name": "2025 RBC Canadian Open",
+      "players": 156,
+      "winner_p": 0.01012
+     },
+     {
+      "key": "pga:401703515",
+      "name": "2025 U.S. Open",
+      "players": 156,
+      "winner_p": 0.00662
+     },
+     {
+      "key": "pga:401703516",
+      "name": "2025 Travelers Championship",
+      "players": 72,
+      "winner_p": 0.01487
+     },
+     {
+      "key": "pga:401703517",
+      "name": "2025 Rocket Classic",
+      "players": 156,
+      "winner_p": 0.00137
+     },
+     {
+      "key": "pga:401703518",
+      "name": "2025 John Deere Classic",
+      "players": 156,
+      "winner_p": 0.00512
+     },
+     {
+      "key": "pga:401703519",
+      "name": "2025 Genesis Scottish Open",
+      "players": 156,
+      "winner_p": 0.00237
+     },
+     {
+      "key": "pga:401703520",
+      "name": "2025 ISCO Championship",
+      "players": 156,
+      "winner_p": 0.00612
+     },
+     {
+      "key": "pga:401703521",
+      "name": "2025 The Open",
+      "players": 156,
+      "winner_p": 0.15609
+     },
+     {
+      "key": "pga:401703523",
+      "name": "2025 3M Open",
+      "players": 156,
+      "winner_p": 0.01537
+     },
+     {
+      "key": "pga:401703524",
+      "name": "2025 Wyndham Championship",
+      "players": 156,
+      "winner_p": 0.01137
+     },
+     {
+      "key": "pga:401703525",
+      "name": "2025 FedEx St. Jude Championship",
+      "players": 69,
+      "winner_p": 0.00962
+     },
+     {
+      "key": "pga:401703530",
+      "name": "2025 BMW Championship",
+      "players": 49,
+      "winner_p": 0.21882
+     },
+     {
+      "key": "pga:401703531",
+      "name": "2025 TOUR Championship",
+      "players": 30,
+      "winner_p": 0.05011
+     },
+     {
+      "key": "pga:401738553",
+      "name": "2025 Procore Championship",
+      "players": 144,
+      "winner_p": 0.3053
+     },
+     {
+      "key": "pga:401738554",
+      "name": "2025 Sanderson Farms Championship",
+      "players": 132,
+      "winner_p": 0.00662
+     },
+     {
+      "key": "pga:401738556",
+      "name": "2025 Bank of Utah Championship",
+      "players": 132,
+      "winner_p": 0.00112
+     },
+     {
+      "key": "pga:401738557",
+      "name": "2025 World Wide Technology Championship",
+      "players": 120,
+      "winner_p": 0.04611
+     },
+     {
+      "key": "pga:401738558",
+      "name": "2025 Butterfield Bermuda Championship",
+      "players": 120,
+      "winner_p": 0.00612
+     },
+     {
+      "key": "pga:401738559",
+      "name": "2025 The RSM Classic",
+      "players": 156,
+      "winner_p": 0.01587
+     },
+     {
+      "key": "pga:401833647",
+      "name": "2025 PGA TOUR Q-School presented by Korn Ferry",
+      "players": 174,
+      "winner_p": 0.00462
+     },
+     {
+      "key": "pga:401811928",
+      "name": "2026 Sony Open in Hawaii",
+      "players": 120,
+      "winner_p": 0.01012
+     },
+     {
+      "key": "pga:401811929",
+      "name": "2026 The American Express",
+      "players": 156,
+      "winner_p": 0.23107
+     },
+     {
+      "key": "pga:401811930",
+      "name": "2026 Farmers Insurance Open",
+      "players": 147,
+      "winner_p": 0.01237
+     },
+     {
+      "key": "pga:401811931",
+      "name": "2026 WM Phoenix Open",
+      "players": 123,
+      "winner_p": 0.00762
+     },
+     {
+      "key": "pga:401811932",
+      "name": "2026 AT&T Pebble Beach Pro-Am",
+      "players": 80,
+      "winner_p": 0.01887
+     },
+     {
+      "key": "pga:401811933",
+      "name": "2026 The Genesis Invitational",
+      "players": 72,
+      "winner_p": 0.00537
+     },
+     {
+      "key": "pga:401811934",
+      "name": "2026 Cognizant Classic in The Palm Beaches",
+      "players": 123,
+      "winner_p": 0.01562
+     },
+     {
+      "key": "pga:401811935",
+      "name": "2026 Arnold Palmer Invitational pres. by Mastercard",
+      "players": 72,
+      "winner_p": 0.01087
+     },
+     {
+      "key": "pga:401811936",
+      "name": "2026 Puerto Rico Open",
+      "players": 120,
+      "winner_p": 0.01637
+     },
+     {
+      "key": "pga:401811937",
+      "name": "2026 THE PLAYERS Championship",
+      "players": 123,
+      "winner_p": 0.01312
+     },
+     {
+      "key": "pga:401811938",
+      "name": "2026 Valspar Championship",
+      "players": 135,
+      "winner_p": 0.03737
+     },
+     {
+      "key": "pga:401811939",
+      "name": "2026 Texas Children's Houston Open",
+      "players": 135,
+      "winner_p": 0.00262
+     },
+     {
+      "key": "pga:401811940",
+      "name": "2026 Valero Texas Open",
+      "players": 132,
+      "winner_p": 0.01762
+     },
+     {
+      "key": "pga:401811941",
+      "name": "2026 Masters Tournament",
+      "players": 91,
+      "winner_p": 0.06311
+     },
+     {
+      "key": "pga:401811942",
+      "name": "2026 RBC Heritage",
+      "players": 82,
+      "winner_p": 0.02312
+     },
+     {
+      "key": "pga:401811945",
+      "name": "2026 Truist Championship",
+      "players": 72,
+      "winner_p": 0.01587
+     },
+     {
+      "key": "pga:401811946",
+      "name": "2026 ONEflight Myrtle Beach Classic",
+      "players": 123,
+      "winner_p": 0.00512
+     },
+     {
+      "key": "pga:401811947",
+      "name": "2026 PGA Championship",
+      "players": 156,
+      "winner_p": 0.00437
+     },
+     {
+      "key": "pga:401811948",
+      "name": "2026 THE CJ CUP Byron Nelson",
+      "players": 147,
+      "winner_p": 0.01462
+     },
+     {
+      "key": "pga:401811949",
+      "name": "2026 Charles Schwab Challenge",
+      "players": 132,
+      "winner_p": 0.05636
+     },
+     {
+      "key": "pga:401811950",
+      "name": "2026 the Memorial Tournament pres. by Workday",
+      "players": 72,
+      "winner_p": 0.00237
+     },
+     {
+      "key": "pga:401811951",
+      "name": "2026 RBC Canadian Open",
+      "players": 147,
+      "winner_p": 0.00862
+     },
+     {
+      "key": "pga:401811952",
+      "name": "2026 U.S. Open",
+      "players": 156,
+      "winner_p": 0.01112
+     },
+     {
+      "key": "pga:401811953",
+      "name": "2026 Travelers Championship",
+      "players": 72,
+      "winner_p": 0.01662
+     },
+     {
+      "key": "pga:401811954",
+      "name": "2026 John Deere Classic",
+      "players": 143,
+      "winner_p": 0.02937
+     },
+     {
+      "key": "pga:401811955",
+      "name": "2026 Genesis Scottish Open",
+      "players": 156,
+      "winner_p": 0.00537
+     },
+     {
+      "key": "pga:401811956",
+      "name": "2026 ISCO Championship",
+      "players": 144,
+      "winner_p": 0.01137
+     },
+     {
+      "key": "pga:401811957",
+      "name": "2026 The Open",
+      "players": 156,
+      "winner_p": 0.00387
+     },
+     {
+      "key": "pga:401811958",
+      "name": "2026 Corales Puntacana Championship",
+      "players": 144,
+      "winner_p": 0.00362
+     },
+     {
+      "key": "pga:401811959",
+      "name": "2026 3M Open",
+      "players": 143,
+      "winner_p": 0.01812
+     },
+     {
+      "key": "pga:401811960",
+      "name": "2026 Rocket Classic",
+      "players": 146,
+      "winner_p": 0.01437
+     },
+     {
+      "key": "pga:401811961",
+      "name": "2026 Wyndham Championship",
+      "players": 147,
+      "winner_p": 0.01062
+     },
+     {
+      "key": "pga:401811962",
+      "name": "2026 FedEx St. Jude Championship",
+      "players": 69,
+      "winner_p": 0.15934
+     },
+     {
+      "key": "pga:401811963",
+      "name": "2026 BMW Championship",
+      "players": 50,
+      "winner_p": 0.02212
+     },
+     {
+      "key": "pga:401811964",
+      "name": "2026 TOUR Championship",
+      "players": 30,
+      "winner_p": 0.21907
+     },
+     {
+      "key": "pga:401850914",
+      "name": "2026 Biltmore Championship Asheville",
+      "players": 132,
+      "winner_p": 0.03412
+     },
+     {
+      "key": "pga:401850915",
+      "name": "2026 Bank of Utah Championship",
+      "players": 119,
+      "winner_p": 0.00537
+     },
+     {
+      "key": "pga:401850916",
+      "name": "2026 Baycurrent Classic",
+      "players": 72,
+      "winner_p": 0.01962
+     }
+    ],
+    "r2": [
+     {
+      "key": "pga:401703489",
+      "name": "2025 The Sentry",
+      "players": 59,
+      "winner_p": 0.24531
+     },
+     {
+      "key": "pga:401703490",
+      "name": "2025 Sony Open in Hawaii",
+      "players": 76,
+      "winner_p": 0.00837
+     },
+     {
+      "key": "pga:401703492",
+      "name": "2025 Farmers Insurance Open",
+      "players": 70,
+      "winner_p": 0.03162
+     },
+     {
+      "key": "pga:401703493",
+      "name": "2025 AT&T Pebble Beach Pro-Am",
+      "players": 79,
+      "winner_p": 0.04661
+     },
+     {
+      "key": "pga:401703494",
+      "name": "2025 WM Phoenix Open",
+      "players": 77,
+      "winner_p": 0.19633
+     },
+     {
+      "key": "pga:401703495",
+      "name": "2025 The Genesis Invitational",
+      "players": 54,
+      "winner_p": 0.06111
+     },
+     {
+      "key": "pga:401703496",
+      "name": "2025 Mexico Open at VidantaWorld",
+      "players": 77,
+      "winner_p": 0.0931
+     },
+     {
+      "key": "pga:401703497",
+      "name": "2025 Cognizant Classic in The Palm Beaches",
+      "players": 68,
+      "winner_p": 0.00187
+     },
+     {
+      "key": "pga:401703498",
+      "name": "2025 Arnold Palmer Invitational pres. by Mastercard",
+      "players": 51,
+      "winner_p": 0.05786
+     },
+     {
+      "key": "pga:401703499",
+      "name": "2025 Puerto Rico Open",
+      "players": 78,
+      "winner_p": 0.03612
+     },
+     {
+      "key": "pga:401703500",
+      "name": "2025 THE PLAYERS Championship",
+      "players": 72,
+      "winner_p": 0.18033
+     },
+     {
+      "key": "pga:401703501",
+      "name": "2025 Valspar Championship",
+      "players": 78,
+      "winner_p": 0.11185
+     },
+     {
+      "key": "pga:401703502",
+      "name": "2025 Texas Children's Houston Open",
+      "players": 69,
+      "winner_p": 0.0911
+     },
+     {
+      "key": "pga:401703503",
+      "name": "2025 Valero Texas Open",
+      "players": 66,
+      "winner_p": 0.39628
+     },
+     {
+      "key": "pga:401703504",
+      "name": "2025 Masters Tournament",
+      "players": 53,
+      "winner_p": 0.16808
+     },
+     {
+      "key": "pga:401703505",
+      "name": "2025 RBC Heritage",
+      "players": 72,
+      "winner_p": 0.29805
+     },
+     {
+      "key": "pga:401703506",
+      "name": "2025 Corales Puntacana Championship",
+      "players": 71,
+      "winner_p": 0.05936
+     },
+     {
+      "key": "pga:401703508",
+      "name": "2025 THE CJ CUP Byron Nelson",
+      "players": 70,
+      "winner_p": 0.93439
+     },
+     {
+      "key": "pga:401703509",
+      "name": "2025 Truist Championship",
+      "players": 72,
+      "winner_p": 0.12309
+     },
+     {
+      "key": "pga:401703510",
+      "name": "2025 ONEflight Myrtle Beach Classic",
+      "players": 69,
+      "winner_p": 0.03662
+     },
+     {
+      "key": "pga:401703511",
+      "name": "2025 PGA Championship",
+      "players": 74,
+      "winner_p": 0.26106
+     },
+     {
+      "key": "pga:401703512",
+      "name": "2025 Charles Schwab Challenge",
+      "players": 79,
+      "winner_p": 0.27856
+     },
+     {
+      "key": "pga:401703513",
+      "name": "2025 the Memorial Tournament pres. by Workday",
+      "players": 57,
+      "winner_p": 0.3078
+     },
+     {
+      "key": "pga:401703514",
+      "name": "2025 RBC Canadian Open",
+      "players": 68,
+      "winner_p": 0.03512
+     },
+     {
+      "key": "pga:401703515",
+      "name": "2025 U.S. Open",
+      "players": 67,
+      "winner_p": 0.13659
+     },
+     {
+      "key": "pga:401703516",
+      "name": "2025 Travelers Championship",
+      "players": 70,
+      "winner_p": 0.01962
+     },
+     {
+      "key": "pga:401703517",
+      "name": "2025 Rocket Classic",
+      "players": 86,
+      "winner_p": 0.02287
+     },
+     {
+      "key": "pga:401703518",
+      "name": "2025 John Deere Classic",
+      "players": 65,
+      "winner_p": 0.06136
+     },
+     {
+      "key": "pga:401703519",
+      "name": "2025 Genesis Scottish Open",
+      "players": 80,
+      "winner_p": 0.14534
+     },
+     {
+      "key": "pga:401703520",
+      "name": "2025 ISCO Championship",
+      "players": 68,
+      "winner_p": 0.00137
+     },
+     {
+      "key": "pga:401703521",
+      "name": "2025 The Open",
+      "players": 70,
+      "winner_p": 0.65496
+     },
+     {
+      "key": "pga:401703523",
+      "name": "2025 3M Open",
+      "players": 77,
+      "winner_p": 0.00337
+     },
+     {
+      "key": "pga:401703524",
+      "name": "2025 Wyndham Championship",
+      "players": 75,
+      "winner_p": 0.36428
+     },
+     {
+      "key": "pga:401703525",
+      "name": "2025 FedEx St. Jude Championship",
+      "players": 69,
+      "winner_p": 0.07161
+     },
+     {
+      "key": "pga:401703530",
+      "name": "2025 BMW Championship",
+      "players": 49,
+      "winner_p": 0.34304
+     },
+     {
+      "key": "pga:401703531",
+      "name": "2025 TOUR Championship",
+      "players": 30,
+      "winner_p": 0.3068
+     },
+     {
+      "key": "pga:401738553",
+      "name": "2025 Procore Championship",
+      "players": 72,
+      "winner_p": 0.08285
+     },
+     {
+      "key": "pga:401738554",
+      "name": "2025 Sanderson Farms Championship",
+      "players": 67,
+      "winner_p": 0.02562
+     },
+     {
+      "key": "pga:401738555",
+      "name": "2025 Baycurrent Classic",
+      "players": 78,
+      "winner_p": 0.17033
+     },
+     {
+      "key": "pga:401738556",
+      "name": "2025 Bank of Utah Championship",
+      "players": 67,
+      "winner_p": 0.1031
+     },
+     {
+      "key": "pga:401738557",
+      "name": "2025 World Wide Technology Championship",
+      "players": 75,
+      "winner_p": 0.12884
+     },
+     {
+      "key": "pga:401738558",
+      "name": "2025 Butterfield Bermuda Championship",
+      "players": 70,
+      "winner_p": 0.04836
+     },
+     {
+      "key": "pga:401738559",
+      "name": "2025 The RSM Classic",
+      "players": 73,
+      "winner_p": 0.08485
+     },
+     {
+      "key": "pga:401833647",
+      "name": "2025 PGA TOUR Q-School presented by Korn Ferry",
+      "players": 172,
+      "winner_p": 0.06161
+     },
+     {
+      "key": "pga:401811928",
+      "name": "2026 Sony Open in Hawaii",
+      "players": 74,
+      "winner_p": 0.08285
+     },
+     {
+      "key": "pga:401811930",
+      "name": "2026 Farmers Insurance Open",
+      "players": 74,
+      "winner_p": 0.59348
+     },
+     {
+      "key": "pga:401811931",
+      "name": "2026 WM Phoenix Open",
+      "players": 73,
+      "winner_p": 0.05986
+     },
+     {
+      "key": "pga:401811932",
+      "name": "2026 AT&T Pebble Beach Pro-Am",
+      "players": 80,
+      "winner_p": 0.00362
+     },
+     {
+      "key": "pga:401811933",
+      "name": "2026 The Genesis Invitational",
+      "players": 51,
+      "winner_p": 0.15709
+     },
+     {
+      "key": "pga:401811934",
+      "name": "2026 Cognizant Classic in The Palm Beaches",
+      "players": 67,
+      "winner_p": 0.09335
+     },
+     {
+      "key": "pga:401811935",
+      "name": "2026 Arnold Palmer Invitational pres. by Mastercard",
+      "players": 52,
+      "winner_p": 0.0891
+     },
+     {
+      "key": "pga:401811936",
+      "name": "2026 Puerto Rico Open",
+      "players": 68,
+      "winner_p": 0.08435
+     },
+     {
+      "key": "pga:401811937",
+      "name": "2026 THE PLAYERS Championship",
+      "players": 73,
+      "winner_p": 0.09185
+     },
+     {
+      "key": "pga:401811938",
+      "name": "2026 Valspar Championship",
+      "players": 74,
+      "winner_p": 0.08285
+     },
+     {
+      "key": "pga:401811939",
+      "name": "2026 Texas Children's Houston Open",
+      "players": 75,
+      "winner_p": 0.26781
+     },
+     {
+      "key": "pga:401811940",
+      "name": "2026 Valero Texas Open",
+      "players": 70,
+      "winner_p": 0.01337
+     },
+     {
+      "key": "pga:401811941",
+      "name": "2026 Masters Tournament",
+      "players": 54,
+      "winner_p": 0.75194
+     },
+     {
+      "key": "pga:401811942",
+      "name": "2026 RBC Heritage",
+      "players": 82,
+      "winner_p": 0.38603
+     },
+     {
+      "key": "pga:401811944",
+      "name": "2026 Cadillac Championship",
+      "players": 72,
+      "winner_p": 0.55349
+     },
+     {
+      "key": "pga:401811945",
+      "name": "2026 Truist Championship",
+      "players": 72,
+      "winner_p": 0.03787
+     },
+     {
+      "key": "pga:401811946",
+      "name": "2026 ONEflight Myrtle Beach Classic",
+      "players": 76,
+      "winner_p": 0.07211
+     },
+     {
+      "key": "pga:401811947",
+      "name": "2026 PGA Championship",
+      "players": 82,
+      "winner_p": 0.00912
+     },
+     {
+      "key": "pga:401811948",
+      "name": "2026 THE CJ CUP Byron Nelson",
+      "players": 70,
+      "winner_p": 0.03787
+     },
+     {
+      "key": "pga:401811949",
+      "name": "2026 Charles Schwab Challenge",
+      "players": 75,
+      "winner_p": 0.0906
+     },
+     {
+      "key": "pga:401811950",
+      "name": "2026 the Memorial Tournament pres. by Workday",
+      "players": 53,
+      "winner_p": 0.3163
+     },
+     {
+      "key": "pga:401811951",
+      "name": "2026 RBC Canadian Open",
+      "players": 75,
+      "winner_p": 0.03687
+     },
+     {
+      "key": "pga:401811952",
+      "name": "2026 U.S. Open",
+      "players": 72,
+      "winner_p": 0.33329
+     },
+     {
+      "key": "pga:401811953",
+      "name": "2026 Travelers Championship",
+      "players": 72,
+      "winner_p": 0.1146
+     },
+     {
+      "key": "pga:401811954",
+      "name": "2026 John Deere Classic",
+      "players": 79,
+      "winner_p": 0.04536
+     },
+     {
+      "key": "pga:401811955",
+      "name": "2026 Genesis Scottish Open",
+      "players": 71,
+      "winner_p": 0.06236
+     },
+     {
+      "key": "pga:401811956",
+      "name": "2026 ISCO Championship",
+      "players": 67,
+      "winner_p": 0.12859
+     },
+     {
+      "key": "pga:401811957",
+      "name": "2026 The Open",
+      "players": 78,
+      "winner_p": 0.00062
+     },
+     {
+      "key": "pga:401811958",
+      "name": "2026 Corales Puntacana Championship",
+      "players": 82,
+      "winner_p": 0.01112
+     },
+     {
+      "key": "pga:401811959",
+      "name": "2026 3M Open",
+      "players": 66,
+      "winner_p": 0.09335
+     },
+     {
+      "key": "pga:401811960",
+      "name": "2026 Rocket Classic",
+      "players": 73,
+      "winner_p": 0.02587
+     },
+     {
+      "key": "pga:401811961",
+      "name": "2026 Wyndham Championship",
+      "players": 81,
+      "winner_p": 0.03962
+     },
+     {
+      "key": "pga:401811962",
+      "name": "2026 FedEx St. Jude Championship",
+      "players": 68,
+      "winner_p": 0.66146
+     },
+     {
+      "key": "pga:401811963",
+      "name": "2026 BMW Championship",
+      "players": 50,
+      "winner_p": 0.26556
+     },
+     {
+      "key": "pga:401811964",
+      "name": "2026 TOUR Championship",
+      "players": 29,
+      "winner_p": 0.22907
+     },
+     {
+      "key": "pga:401850914",
+      "name": "2026 Biltmore Championship Asheville",
+      "players": 76,
+      "winner_p": 0.04086
+     },
+     {
+      "key": "pga:401850915",
+      "name": "2026 Bank of Utah Championship",
+      "players": 70,
+      "winner_p": 0.21757
+     },
+     {
+      "key": "pga:401850916",
+      "name": "2026 Baycurrent Classic",
+      "players": 72,
+      "winner_p": 0.02437
+     }
+    ]
+   },
+   "skipped": [
+    {
+     "key": "pga:401693956",
+     "name": "2024 Hero World Challenge",
+     "stage": "pre",
+     "reason": "field under 30"
+    },
+    {
+     "key": "pga:401703509",
+     "name": "2025 Truist Championship",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 72: whether there is a)"
+    },
+    {
+     "key": "pga:401738555",
+     "name": "2025 Baycurrent Classic",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 78: whether there is a)"
+    },
+    {
+     "key": "pga:401738560",
+     "name": "2025 Hero World Challenge",
+     "stage": "pre",
+     "reason": "field under 30"
+    },
+    {
+     "key": "pga:401811944",
+     "name": "2026 Cadillac Championship",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 72: whether there is a)"
+    },
+    {
+     "key": "pga:401703491",
+     "name": "2025 The American Express",
+     "stage": "r2",
+     "reason": "cut after round 3"
+    },
+    {
+     "key": "pga:401738560",
+     "name": "2025 Hero World Challenge",
+     "stage": "r2",
+     "reason": "field under 30"
+    },
+    {
+     "key": "pga:401811929",
+     "name": "2026 The American Express",
+     "stage": "r2",
+     "reason": "cut after round 3"
+    }
+   ]
+  },
+  "lpga": {
+   "label": "LPGA Tour",
+   "runs_per_event": 4000,
+   "scale": {
+    "chosen": 1,
+    "lowest_on_tuning": 0.5,
+    "lowest_vs_scale_1": {
+     "diff": -0.00021,
+     "ci95": [
+      -0.00256,
+      0.00269
+     ]
+    },
+    "rule": "scale 1 (the measured variances) unless the lowest beats it with a bootstrap 95% interval below zero",
+    "tuning": [
+     {
+      "scale": 0,
+      "log_loss": [
+       0.04085,
+       0.24875,
+       0.39393,
+       0.64382
+      ],
+      "sum": 1.32736
+     },
+     {
+      "scale": 0.5,
+      "log_loss": [
+       0.04099,
+       0.24869,
+       0.39196,
+       0.64361
+      ],
+      "sum": 1.32524
+     },
+     {
+      "scale": 1,
+      "log_loss": [
+       0.04145,
+       0.24859,
+       0.39124,
+       0.64417
+      ],
+      "sum": 1.32546
+     },
+     {
+      "scale": 1.5,
+      "log_loss": [
+       0.04151,
+       0.24936,
+       0.39144,
+       0.64462
+      ],
+      "sum": 1.32692
+     },
+     {
+      "scale": 2,
+      "log_loss": [
+       0.04206,
+       0.24976,
+       0.3918,
+       0.64542
+      ],
+      "sum": 1.32903
+     }
+    ],
+    "tuning_events": 28
+   },
+   "tuning": {
+    "pre": {
+     "win": {
+      "model": {
+       "log_loss": 0.04145,
+       "brier": 0.00813,
+       "player_events": 3341
+      },
+      "point": {
+       "log_loss": 0.04085,
+       "brier": 0.00811,
+       "player_events": 3341
+      },
+      "uniform": {
+       "log_loss": 0.04794,
+       "brier": 0.0083,
+       "player_events": 3341
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.00648,
+       "ci95": [
+        -0.00917,
+        -0.00346
+       ],
+       "brier": -0.00017,
+       "events": 28
+      },
+      "diff_vs_point": {
+       "log_loss": 0.0006,
+       "ci95": [
+        0.00016,
+        0.00105
+       ],
+       "brier": 0.00002,
+       "events": 28
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 1869,
+        "mean_p": 0.00202,
+        "observed": 0.00107
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 590,
+        "mean_p": 0.0071,
+        "observed": 0.00847
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 465,
+        "mean_p": 0.0141,
+        "observed": 0.01505
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 357,
+        "mean_p": 0.02948,
+        "observed": 0.02521
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 59,
+        "mean_p": 0.0623,
+        "observed": 0.08475
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 1,
+        "mean_p": 0.1027,
+        "observed": 0
+       }
+      ]
+     },
+     "top_5": {
+      "model": {
+       "log_loss": 0.14792,
+       "brier": 0.03486,
+       "player_events": 3341
+      },
+      "point": {
+       "log_loss": 0.14781,
+       "brier": 0.03487,
+       "player_events": 3341
+      },
+      "uniform": {
+       "log_loss": 0.17141,
+       "brier": 0.03729,
+       "player_events": 3341
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.02349,
+       "ci95": [
+        -0.0288,
+        -0.01775
+       ],
+       "brier": -0.00243,
+       "events": 28
+      },
+      "diff_vs_point": {
+       "log_loss": 0.00011,
+       "ci95": [
+        -0.001,
+        0.00104
+       ],
+       "brier": -0.00001,
+       "events": 28
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 366,
+        "mean_p": 0.00272,
+        "observed": 0.00091
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 403,
+        "mean_p": 0.0076,
+        "observed": 0.00868
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 658,
+        "mean_p": 0.01461,
+        "observed": 0.01076
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 978,
+        "mean_p": 0.03263,
+        "observed": 0.02522
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 563,
+        "mean_p": 0.07167,
+        "observed": 0.08481
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 326,
+        "mean_p": 0.13435,
+        "observed": 0.12474
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 47,
+        "mean_p": 0.23479,
+        "observed": 0.34043
+       }
+      ]
+     },
+     "top_10": {
+      "model": {
+       "log_loss": 0.24859,
+       "brier": 0.06289,
+       "player_events": 3341
+      },
+      "point": {
+       "log_loss": 0.24875,
+       "brier": 0.06284,
+       "player_events": 3341
+      },
+      "uniform": {
+       "log_loss": 0.28257,
+       "brier": 0.06885,
+       "player_events": 3341
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.03398,
+       "ci95": [
+        -0.04146,
+        -0.02652
+       ],
+       "brier": -0.00596,
+       "events": 28
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00016,
+       "ci95": [
+        -0.00211,
+        0.00149
+       ],
+       "brier": 0.00004,
+       "events": 28
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 100,
+        "mean_p": 0.00315,
+        "observed": 0
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 179,
+        "mean_p": 0.00739,
+        "observed": 0
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 322,
+        "mean_p": 0.0152,
+        "observed": 0.01411
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 936,
+        "mean_p": 0.03397,
+        "observed": 0.03733
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 799,
+        "mean_p": 0.07228,
+        "observed": 0.06541
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 687,
+        "mean_p": 0.14288,
+        "observed": 0.1538
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 282,
+        "mean_p": 0.25481,
+        "observed": 0.23331
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 34,
+        "mean_p": 0.39933,
+        "observed": 0.49412
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 2,
+        "mean_p": 0.51474,
+        "observed": 0
+       }
+      ]
+     },
+     "top_20": {
+      "model": {
+       "log_loss": 0.39124,
+       "brier": 0.11374,
+       "player_events": 3341
+      },
+      "point": {
+       "log_loss": 0.39393,
+       "brier": 0.11373,
+       "player_events": 3341
+      },
+      "uniform": {
+       "log_loss": 0.4397,
+       "brier": 0.12761,
+       "player_events": 3341
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.04846,
+       "ci95": [
+        -0.05868,
+        -0.03806
+       ],
+       "brier": -0.01388,
+       "events": 28
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00269,
+       "ci95": [
+        -0.00594,
+        0.00038
+       ],
+       "brier": 0.00001,
+       "events": 28
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 12,
+        "mean_p": 0.00312,
+        "observed": 0
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 27,
+        "mean_p": 0.00795,
+        "observed": 0.03704
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 140,
+        "mean_p": 0.01496,
+        "observed": 0.02286
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 384,
+        "mean_p": 0.03566,
+        "observed": 0.03034
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 777,
+        "mean_p": 0.07436,
+        "observed": 0.07496
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 926,
+        "mean_p": 0.14399,
+        "observed": 0.13364
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 716,
+        "mean_p": 0.26686,
+        "observed": 0.28011
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 274,
+        "mean_p": 0.41079,
+        "observed": 0.40577
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 75,
+        "mean_p": 0.56361,
+        "observed": 0.57441
+       },
+       {
+        "bin": "0.7-0.9",
+        "n": 10,
+        "mean_p": 0.75072,
+        "observed": 0.73333
+       }
+      ]
+     },
+     "make_cut": {
+      "model": {
+       "log_loss": 0.64417,
+       "brier": 0.22644,
+       "player_events": 2794
+      },
+      "point": {
+       "log_loss": 0.64382,
+       "brier": 0.22596,
+       "player_events": 2794
+      },
+      "uniform": {
+       "log_loss": 0.71102,
+       "brier": 0.25861,
+       "player_events": 2794
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.06684,
+       "ci95": [
+        -0.07874,
+        -0.05414
+       ],
+       "brier": -0.03217,
+       "events": 20
+      },
+      "diff_vs_point": {
+       "log_loss": 0.00035,
+       "ci95": [
+        -0.00258,
+        0.00268
+       ],
+       "brier": 0.00048,
+       "events": 20
+      },
+      "calibration": [
+       {
+        "bin": "0.05-0.1",
+        "n": 4,
+        "mean_p": 0.07409,
+        "observed": 0.25
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 141,
+        "mean_p": 0.16161,
+        "observed": 0.20567
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 546,
+        "mean_p": 0.29054,
+        "observed": 0.34249
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 874,
+        "mean_p": 0.42813,
+        "observed": 0.4714
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 975,
+        "mean_p": 0.58916,
+        "observed": 0.63179
+       },
+       {
+        "bin": "0.7-0.9",
+        "n": 254,
+        "mean_p": 0.75637,
+        "observed": 0.77165
+       }
+      ]
+     }
+    }
+   },
+   "holdout": {
+    "seasons": [
+     2025,
+     2026
+    ],
+    "pre": {
+     "events": 54,
+     "player_events": 6601,
+     "metrics": {
+      "win": {
+       "model": {
+        "log_loss": 0.0377,
+        "brier": 0.00772,
+        "player_events": 6601
+       },
+       "point": {
+        "log_loss": 0.03776,
+        "brier": 0.0077,
+        "player_events": 6601
+       },
+       "uniform": {
+        "log_loss": 0.04705,
+        "brier": 0.0081,
+        "player_events": 6601
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.00935,
+        "ci95": [
+         -0.01183,
+         -0.00683
+        ],
+        "brier": -0.00039,
+        "events": 54
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00006,
+        "ci95": [
+         -0.00084,
+         0.00053
+        ],
+        "brier": 0.00002,
+        "events": 54
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 4028,
+         "mean_p": 0.00192,
+         "observed": 0.00099
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 1057,
+         "mean_p": 0.00712,
+         "observed": 0.00662
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 807,
+         "mean_p": 0.0141,
+         "observed": 0.01239
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 573,
+         "mean_p": 0.02959,
+         "observed": 0.02792
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 106,
+         "mean_p": 0.06761,
+         "observed": 0.09434
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 29,
+         "mean_p": 0.13076,
+         "observed": 0.2069
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 1,
+         "mean_p": 0.27031,
+         "observed": 1
+        }
+       ]
+      },
+      "top_5": {
+       "model": {
+        "log_loss": 0.14164,
+        "brier": 0.03242,
+        "player_events": 6601
+       },
+       "point": {
+        "log_loss": 0.14134,
+        "brier": 0.03233,
+        "player_events": 6601
+       },
+       "uniform": {
+        "log_loss": 0.16862,
+        "brier": 0.0355,
+        "player_events": 6601
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.02698,
+        "ci95": [
+         -0.03062,
+         -0.02341
+        ],
+        "brier": -0.00308,
+        "events": 54
+       },
+       "diff_vs_point": {
+        "log_loss": 0.0003,
+        "ci95": [
+         -0.00132,
+         0.00157
+        ],
+        "brier": 0.00009,
+        "events": 54
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 788,
+         "mean_p": 0.00267,
+         "observed": 0.00483
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 892,
+         "mean_p": 0.00743,
+         "observed": 0.00168
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 1406,
+         "mean_p": 0.01471,
+         "observed": 0.01287
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 1805,
+         "mean_p": 0.03236,
+         "observed": 0.0312
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 1038,
+         "mean_p": 0.07117,
+         "observed": 0.06577
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 543,
+         "mean_p": 0.13498,
+         "observed": 0.14723
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 109,
+         "mean_p": 0.25273,
+         "observed": 0.31804
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 18,
+         "mean_p": 0.39485,
+         "observed": 0.35556
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 2,
+         "mean_p": 0.54849,
+         "observed": 0.5
+        }
+       ]
+      },
+      "top_10": {
+       "model": {
+        "log_loss": 0.23615,
+        "brier": 0.06159,
+        "player_events": 6601
+       },
+       "point": {
+        "log_loss": 0.23786,
+        "brier": 0.06159,
+        "player_events": 6601
+       },
+       "uniform": {
+        "log_loss": 0.27852,
+        "brier": 0.06957,
+        "player_events": 6601
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.04237,
+        "ci95": [
+         -0.04758,
+         -0.03693
+        ],
+        "brier": -0.00798,
+        "events": 54
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00171,
+        "ci95": [
+         -0.00451,
+         0.00059
+        ],
+        "brier": 0.00001,
+        "events": 54
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 250,
+         "mean_p": 0.00326,
+         "observed": 0.00903
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 300,
+         "mean_p": 0.00745,
+         "observed": 0.00667
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 764,
+         "mean_p": 0.01517,
+         "observed": 0.01521
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 1912,
+         "mean_p": 0.03389,
+         "observed": 0.02478
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 1542,
+         "mean_p": 0.07178,
+         "observed": 0.06517
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 1216,
+         "mean_p": 0.14147,
+         "observed": 0.14683
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 495,
+         "mean_p": 0.25236,
+         "observed": 0.2828
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 97,
+         "mean_p": 0.40555,
+         "observed": 0.43521
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 23,
+         "mean_p": 0.55737,
+         "observed": 0.58696
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 2,
+         "mean_p": 0.73044,
+         "observed": 1
+        }
+       ]
+      },
+      "top_20": {
+       "model": {
+        "log_loss": 0.36785,
+        "brier": 0.10682,
+        "player_events": 6601
+       },
+       "point": {
+        "log_loss": 0.3686,
+        "brier": 0.10652,
+        "player_events": 6601
+       },
+       "uniform": {
+        "log_loss": 0.43492,
+        "brier": 0.12691,
+        "player_events": 6601
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.06707,
+        "ci95": [
+         -0.0744,
+         -0.05934
+        ],
+        "brier": -0.02009,
+        "events": 54
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00075,
+        "ci95": [
+         -0.00297,
+         0.00118
+        ],
+        "brier": 0.0003,
+        "events": 54
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 23,
+         "mean_p": 0.00266,
+         "observed": 0.04348
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 97,
+         "mean_p": 0.00806,
+         "observed": 0
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 241,
+         "mean_p": 0.01452,
+         "observed": 0.02798
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 856,
+         "mean_p": 0.03648,
+         "observed": 0.0337
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 1561,
+         "mean_p": 0.07416,
+         "observed": 0.05537
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 1848,
+         "mean_p": 0.14382,
+         "observed": 0.12586
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 1280,
+         "mean_p": 0.26445,
+         "observed": 0.28078
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 493,
+         "mean_p": 0.40884,
+         "observed": 0.48183
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 166,
+         "mean_p": 0.57657,
+         "observed": 0.58802
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 35,
+         "mean_p": 0.76399,
+         "observed": 0.82381
+        },
+        {
+         "bin": "0.9-1",
+         "n": 1,
+         "mean_p": 0.92414,
+         "observed": 1
+        }
+       ]
+      },
+      "make_cut": {
+       "model": {
+        "log_loss": 0.62473,
+        "brier": 0.21781,
+        "player_events": 5648
+       },
+       "point": {
+        "log_loss": 0.62431,
+        "brier": 0.21764,
+        "player_events": 5648
+       },
+       "uniform": {
+        "log_loss": 0.69029,
+        "brier": 0.24858,
+        "player_events": 5648
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.06556,
+        "ci95": [
+         -0.07288,
+         -0.05839
+        ],
+        "brier": -0.03077,
+        "events": 41
+       },
+       "diff_vs_point": {
+        "log_loss": 0.00043,
+        "ci95": [
+         -0.00078,
+         0.00148
+        ],
+        "brier": 0.00016,
+        "events": 41
+       },
+       "calibration": [
+        {
+         "bin": "0.05-0.1",
+         "n": 10,
+         "mean_p": 0.08053,
+         "observed": 0.2
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 209,
+         "mean_p": 0.15776,
+         "observed": 0.15311
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 759,
+         "mean_p": 0.29393,
+         "observed": 0.2556
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 1764,
+         "mean_p": 0.42995,
+         "observed": 0.43027
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 2133,
+         "mean_p": 0.59237,
+         "observed": 0.60197
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 756,
+         "mean_p": 0.76419,
+         "observed": 0.78704
+        },
+        {
+         "bin": "0.9-1",
+         "n": 17,
+         "mean_p": 0.91873,
+         "observed": 0.94118
+        }
+       ]
+      }
+     }
+    },
+    "r2": {
+     "events": 54,
+     "player_events": 3759,
+     "metrics": {
+      "win": {
+       "model": {
+        "log_loss": 0.03886,
+        "brier": 0.01044,
+        "player_events": 3759
+       },
+       "point": {
+        "log_loss": 0.03869,
+        "brier": 0.01046,
+        "player_events": 3759
+       },
+       "uniform": {
+        "log_loss": 0.07506,
+        "brier": 0.01415,
+        "player_events": 3759
+       },
+       "scores_only": {
+        "log_loss": 0.04358,
+        "brier": 0.01116,
+        "player_events": 3759
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.03621,
+        "ci95": [
+         -0.04086,
+         -0.03176
+        ],
+        "brier": -0.00372,
+        "events": 54
+       },
+       "diff_vs_point": {
+        "log_loss": 0.00016,
+        "ci95": [
+         -0.00038,
+         0.00065
+        ],
+        "brier": -0.00003,
+        "events": 54
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.00473,
+        "ci95": [
+         -0.00702,
+         -0.00261
+        ],
+        "brier": -0.00072,
+        "events": 54
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 2725,
+         "mean_p": 0.00095,
+         "observed": 0
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 295,
+         "mean_p": 0.0071,
+         "observed": 0.00339
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 250,
+         "mean_p": 0.01395,
+         "observed": 0
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 229,
+         "mean_p": 0.03157,
+         "observed": 0.02183
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 128,
+         "mean_p": 0.07056,
+         "observed": 0.08594
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 83,
+         "mean_p": 0.13886,
+         "observed": 0.20482
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 27,
+         "mean_p": 0.27031,
+         "observed": 0.25926
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 12,
+         "mean_p": 0.41877,
+         "observed": 0.33333
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 9,
+         "mean_p": 0.58956,
+         "observed": 0.88889
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 1,
+         "mean_p": 0.88215,
+         "observed": 1
+        }
+       ]
+      },
+      "top_5": {
+       "model": {
+        "log_loss": 0.15487,
+        "brier": 0.0386,
+        "player_events": 3759
+       },
+       "point": {
+        "log_loss": 0.15524,
+        "brier": 0.03875,
+        "player_events": 3759
+       },
+       "uniform": {
+        "log_loss": 0.25753,
+        "brier": 0.06039,
+        "player_events": 3759
+       },
+       "scores_only": {
+        "log_loss": 0.1667,
+        "brier": 0.04109,
+        "player_events": 3759
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.10266,
+        "ci95": [
+         -0.11034,
+         -0.0949
+        ],
+        "brier": -0.02179,
+        "events": 54
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00038,
+        "ci95": [
+         -0.00198,
+         0.00092
+        ],
+        "brier": -0.00014,
+        "events": 54
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.01183,
+        "ci95": [
+         -0.01558,
+         -0.00812
+        ],
+        "brier": -0.00249,
+        "events": 54
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 1139,
+         "mean_p": 0.00186,
+         "observed": 0.00088
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 421,
+         "mean_p": 0.00725,
+         "observed": 0.00594
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 421,
+         "mean_p": 0.01436,
+         "observed": 0.00509
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 622,
+         "mean_p": 0.03257,
+         "observed": 0.02614
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 423,
+         "mean_p": 0.07163,
+         "observed": 0.05755
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 325,
+         "mean_p": 0.14093,
+         "observed": 0.12827
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 204,
+         "mean_p": 0.26419,
+         "observed": 0.29912
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 108,
+         "mean_p": 0.4133,
+         "observed": 0.49422
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 58,
+         "mean_p": 0.56817,
+         "observed": 0.57184
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 30,
+         "mean_p": 0.79503,
+         "observed": 0.88333
+        },
+        {
+         "bin": "0.9-1",
+         "n": 8,
+         "mean_p": 0.93523,
+         "observed": 1
+        }
+       ]
+      },
+      "top_10": {
+       "model": {
+        "log_loss": 0.26058,
+        "brier": 0.07072,
+        "player_events": 3759
+       },
+       "point": {
+        "log_loss": 0.26212,
+        "brier": 0.07094,
+        "player_events": 3759
+       },
+       "uniform": {
+        "log_loss": 0.40974,
+        "brier": 0.11435,
+        "player_events": 3759
+       },
+       "scores_only": {
+        "log_loss": 0.27859,
+        "brier": 0.07596,
+        "player_events": 3759
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.14915,
+        "ci95": [
+         -0.16001,
+         -0.13851
+        ],
+        "brier": -0.04363,
+        "events": 54
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00154,
+        "ci95": [
+         -0.00382,
+         0.00037
+        ],
+        "brier": -0.00022,
+        "events": 54
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.01801,
+        "ci95": [
+         -0.02315,
+         -0.0127
+        ],
+        "brier": -0.00524,
+        "events": 54
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 389,
+         "mean_p": 0.00196,
+         "observed": 0
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 288,
+         "mean_p": 0.00738,
+         "observed": 0.0026
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 402,
+         "mean_p": 0.01477,
+         "observed": 0.01368
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 656,
+         "mean_p": 0.03287,
+         "observed": 0.02511
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 559,
+         "mean_p": 0.07241,
+         "observed": 0.06689
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 586,
+         "mean_p": 0.14388,
+         "observed": 0.13065
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 382,
+         "mean_p": 0.2643,
+         "observed": 0.25476
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 212,
+         "mean_p": 0.41968,
+         "observed": 0.43614
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 174,
+         "mean_p": 0.59353,
+         "observed": 0.67698
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 76,
+         "mean_p": 0.77648,
+         "observed": 0.80154
+        },
+        {
+         "bin": "0.9-1",
+         "n": 35,
+         "mean_p": 0.94093,
+         "observed": 0.99524
+        }
+       ]
+      },
+      "top_20": {
+       "model": {
+        "log_loss": 0.40595,
+        "brier": 0.11905,
+        "player_events": 3759
+       },
+       "point": {
+        "log_loss": 0.40702,
+        "brier": 0.11909,
+        "player_events": 3759
+       },
+       "uniform": {
+        "log_loss": 0.59511,
+        "brier": 0.19161,
+        "player_events": 3759
+       },
+       "scores_only": {
+        "log_loss": 0.43824,
+        "brier": 0.13048,
+        "player_events": 3759
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.18916,
+        "ci95": [
+         -0.20449,
+         -0.17469
+        ],
+        "brier": -0.07256,
+        "events": 54
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00107,
+        "ci95": [
+         -0.00301,
+         0.00081
+        ],
+        "brier": -0.00005,
+        "events": 54
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.03229,
+        "ci95": [
+         -0.03888,
+         -0.02536
+        ],
+        "brier": -0.01143,
+        "events": 54
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 99,
+         "mean_p": 0.00122,
+         "observed": 0
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 39,
+         "mean_p": 0.0073,
+         "observed": 0.01709
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 115,
+         "mean_p": 0.01542,
+         "observed": 0.00522
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 388,
+         "mean_p": 0.03496,
+         "observed": 0.02405
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 545,
+         "mean_p": 0.07323,
+         "observed": 0.06926
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 702,
+         "mean_p": 0.14608,
+         "observed": 0.12924
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 659,
+         "mean_p": 0.27152,
+         "observed": 0.25978
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 447,
+         "mean_p": 0.4222,
+         "observed": 0.44244
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 361,
+         "mean_p": 0.59413,
+         "observed": 0.62588
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 290,
+         "mean_p": 0.79693,
+         "observed": 0.80408
+        },
+        {
+         "bin": "0.9-1",
+         "n": 114,
+         "mean_p": 0.95393,
+         "observed": 0.98977
+        }
+       ]
+      }
+     }
+    }
+   },
+   "playoffs": {
+    "simulated_share_mean": 0.17307,
+    "events": 54,
+    "events_with_playoff_in_feed": 2,
+    "note": "the simulated share of runs ending in a playoff (scale 1) against the share of holdout events the feed shows a playoff for (the PGA Tour's feed records playoffs; the LPGA's and DP World Tour's mostly do not)"
+   },
+   "events": {
+    "pre": [
+     {
+      "key": "lpga:401734753",
+      "name": "2025 Hilton Grand Vacations Tournament of Champions",
+      "players": 32,
+      "winner_p": 0.01737
+     },
+     {
+      "key": "lpga:401734754",
+      "name": "2025 Founders Cup pres. by U.S. Virgin Islands",
+      "players": 120,
+      "winner_p": 0.00962
+     },
+     {
+      "key": "lpga:401734755",
+      "name": "2025 Honda LPGA Thailand",
+      "players": 72,
+      "winner_p": 0.03487
+     },
+     {
+      "key": "lpga:401734756",
+      "name": "2025 HSBC Women's World Championship",
+      "players": 66,
+      "winner_p": 0.04236
+     },
+     {
+      "key": "lpga:401734757",
+      "name": "2025 Blue Bay LPGA",
+      "players": 107,
+      "winner_p": 0.04436
+     },
+     {
+      "key": "lpga:401734759",
+      "name": "2025 Ford Championship pres. by Wild Horse Pass",
+      "players": 143,
+      "winner_p": 0.01112
+     },
+     {
+      "key": "lpga:401734762",
+      "name": "2025 JM Eagle LA Championship pres. by Plastpro",
+      "players": 144,
+      "winner_p": 0.00362
+     },
+     {
+      "key": "lpga:401734763",
+      "name": "2025 The Chevron Championship",
+      "players": 132,
+      "winner_p": 0.01087
+     },
+     {
+      "key": "lpga:401734764",
+      "name": "2025 Black Desert Championship",
+      "players": 144,
+      "winner_p": 0.05461
+     },
+     {
+      "key": "lpga:401734765",
+      "name": "2025 Mizuho Americas Open",
+      "players": 120,
+      "winner_p": 0.08735
+     },
+     {
+      "key": "lpga:401734766",
+      "name": "2025 MEXICO Riviera Maya Open at Mayakoba",
+      "players": 141,
+      "winner_p": 0.02512
+     },
+     {
+      "key": "lpga:401734767",
+      "name": "2025 U.S. Women's Open pres. by Ally",
+      "players": 156,
+      "winner_p": 0.00262
+     },
+     {
+      "key": "lpga:401734768",
+      "name": "2025 ShopRite LPGA Classic pres. by Acer",
+      "players": 144,
+      "winner_p": 0.01087
+     },
+     {
+      "key": "lpga:401734769",
+      "name": "2025 Meijer LPGA Classic for Simply Give",
+      "players": 144,
+      "winner_p": 0.02237
+     },
+     {
+      "key": "lpga:401734770",
+      "name": "2025 KPMG Women's PGA Championship",
+      "players": 156,
+      "winner_p": 0.02587
+     },
+     {
+      "key": "lpga:401734772",
+      "name": "2025 The Amundi Evian Championship",
+      "players": 132,
+      "winner_p": 0.00387
+     },
+     {
+      "key": "lpga:401734773",
+      "name": "2025 ISPS HANDA Women's Scottish Open",
+      "players": 144,
+      "winner_p": 0.01612
+     },
+     {
+      "key": "lpga:401734774",
+      "name": "2025 AIG Women's Open",
+      "players": 144,
+      "winner_p": 0.01937
+     },
+     {
+      "key": "lpga:401734775",
+      "name": "2025 The Standard Portland Classic",
+      "players": 144,
+      "winner_p": 0.03462
+     },
+     {
+      "key": "lpga:401734776",
+      "name": "2025 CPKC Women's Open",
+      "players": 156,
+      "winner_p": 0.00987
+     },
+     {
+      "key": "lpga:401734777",
+      "name": "2025 FM Championship",
+      "players": 144,
+      "winner_p": 0.00737
+     },
+     {
+      "key": "lpga:401734778",
+      "name": "2025 Kroger Queen City Championship pres by P&G",
+      "players": 144,
+      "winner_p": 0.03512
+     },
+     {
+      "key": "lpga:401734780",
+      "name": "2025 LOTTE Championship pres. by Hoakalei",
+      "players": 120,
+      "winner_p": 0.00637
+     },
+     {
+      "key": "lpga:401734781",
+      "name": "2025 Buick LPGA Shanghai",
+      "players": 82,
+      "winner_p": 0.15609
+     },
+     {
+      "key": "lpga:401734782",
+      "name": "2025 BMW Ladies Championship",
+      "players": 78,
+      "winner_p": 0.02712
+     },
+     {
+      "key": "lpga:401734783",
+      "name": "2025 Maybank Championship",
+      "players": 78,
+      "winner_p": 0.05486
+     },
+     {
+      "key": "lpga:401734784",
+      "name": "2025 TOTO Japan Classic",
+      "players": 78,
+      "winner_p": 0.05036
+     },
+     {
+      "key": "lpga:401734785",
+      "name": "2025 The ANNIKA driven by Gainbridge at Pelican",
+      "players": 108,
+      "winner_p": 0.01612
+     },
+     {
+      "key": "lpga:401734786",
+      "name": "2025 CME Group Tour Championship",
+      "players": 60,
+      "winner_p": 0.1106
+     },
+     {
+      "key": "lpga:401835135",
+      "name": "2026 Hilton Grand Vacations Tournament of Champions",
+      "players": 39,
+      "winner_p": 0.0871
+     },
+     {
+      "key": "lpga:401835136",
+      "name": "2026 Honda LPGA Thailand",
+      "players": 72,
+      "winner_p": 0.14884
+     },
+     {
+      "key": "lpga:401835137",
+      "name": "2026 HSBC Women's World Championship",
+      "players": 72,
+      "winner_p": 0.01387
+     },
+     {
+      "key": "lpga:401835138",
+      "name": "2026 Blue Bay LPGA",
+      "players": 108,
+      "winner_p": 0.02262
+     },
+     {
+      "key": "lpga:401835152",
+      "name": "2026 Fortinet Founders Cup",
+      "players": 144,
+      "winner_p": 0.02837
+     },
+     {
+      "key": "lpga:401835140",
+      "name": "2026 Ford Championship pres. by Wild Horse Pass",
+      "players": 144,
+      "winner_p": 0.04011
+     },
+     {
+      "key": "lpga:401835143",
+      "name": "2026 Aramco Championship",
+      "players": 120,
+      "winner_p": 0.00687
+     },
+     {
+      "key": "lpga:401835146",
+      "name": "2026 JM Eagle LA Championship pres. by Plastpro",
+      "players": 144,
+      "winner_p": 0.01587
+     },
+     {
+      "key": "lpga:401835149",
+      "name": "2026 The Chevron Championship",
+      "players": 132,
+      "winner_p": 0.0971
+     },
+     {
+      "key": "lpga:401835150",
+      "name": "2026 Riviera Maya Open at Mayakoba",
+      "players": 123,
+      "winner_p": 0.27031
+     },
+     {
+      "key": "lpga:401835151",
+      "name": "2026 Mizuho Americas Open",
+      "players": 120,
+      "winner_p": 0.0806
+     },
+     {
+      "key": "lpga:401835154",
+      "name": "2026 Kroger Queen City Championship pres by P&G",
+      "players": 144,
+      "winner_p": 0.01962
+     },
+     {
+      "key": "lpga:401835157",
+      "name": "2026 ShopRite LPGA Classic powered by Wakefern",
+      "players": 143,
+      "winner_p": 0.03012
+     },
+     {
+      "key": "lpga:401835158",
+      "name": "2026 U.S. Women's Open pres. by Ally",
+      "players": 156,
+      "winner_p": 0.13134
+     },
+     {
+      "key": "lpga:401835160",
+      "name": "2026 Meijer LPGA Classic for Simply Give",
+      "players": 144,
+      "winner_p": 0.05011
+     },
+     {
+      "key": "lpga:401835161",
+      "name": "2026 KPMG Women's PGA Championship",
+      "players": 156,
+      "winner_p": 0.02912
+     },
+     {
+      "key": "lpga:401835162",
+      "name": "2026 The Amundi Evian Championship",
+      "players": 132,
+      "winner_p": 0.03962
+     },
+     {
+      "key": "lpga:401835163",
+      "name": "2026 ISPS HANDA Women's Scottish Open",
+      "players": 144,
+      "winner_p": 0.00587
+     },
+     {
+      "key": "lpga:401835164",
+      "name": "2026 AIG Women's Open",
+      "players": 144,
+      "winner_p": 0.00612
+     },
+     {
+      "key": "lpga:401835165",
+      "name": "2026 The Standard Portland Classic",
+      "players": 144,
+      "winner_p": 0.11885
+     },
+     {
+      "key": "lpga:401835166",
+      "name": "2026 CPKC Women's Open",
+      "players": 156,
+      "winner_p": 0.05286
+     },
+     {
+      "key": "lpga:401835167",
+      "name": "2026 FM Championship",
+      "players": 143,
+      "winner_p": 0.02637
+     },
+     {
+      "key": "lpga:401835170",
+      "name": "2026 Walmart NW Arkansas Championship pres. by P&G",
+      "players": 144,
+      "winner_p": 0.00387
+     },
+     {
+      "key": "lpga:401835171",
+      "name": "2026 LOTTE Championship pres. by Hoakalei",
+      "players": 120,
+      "winner_p": 0.11635
+     },
+     {
+      "key": "lpga:401835172",
+      "name": "2026 Buick LPGA Shanghai",
+      "players": 80,
+      "winner_p": 0.06311
+     }
+    ],
+    "r2": [
+     {
+      "key": "lpga:401734753",
+      "name": "2025 Hilton Grand Vacations Tournament of Champions",
+      "players": 32,
+      "winner_p": 0.3008
+     },
+     {
+      "key": "lpga:401734754",
+      "name": "2025 Founders Cup pres. by U.S. Virgin Islands",
+      "players": 67,
+      "winner_p": 0.08585
+     },
+     {
+      "key": "lpga:401734755",
+      "name": "2025 Honda LPGA Thailand",
+      "players": 72,
+      "winner_p": 0.22482
+     },
+     {
+      "key": "lpga:401734756",
+      "name": "2025 HSBC Women's World Championship",
+      "players": 66,
+      "winner_p": 0.16858
+     },
+     {
+      "key": "lpga:401734757",
+      "name": "2025 Blue Bay LPGA",
+      "players": 74,
+      "winner_p": 0.18708
+     },
+     {
+      "key": "lpga:401734759",
+      "name": "2025 Ford Championship pres. by Wild Horse Pass",
+      "players": 74,
+      "winner_p": 0.00962
+     },
+     {
+      "key": "lpga:401734762",
+      "name": "2025 JM Eagle LA Championship pres. by Plastpro",
+      "players": 73,
+      "winner_p": 0.0921
+     },
+     {
+      "key": "lpga:401734763",
+      "name": "2025 The Chevron Championship",
+      "players": 81,
+      "winner_p": 0.07786
+     },
+     {
+      "key": "lpga:401734764",
+      "name": "2025 Black Desert Championship",
+      "players": 69,
+      "winner_p": 0.47201
+     },
+     {
+      "key": "lpga:401734765",
+      "name": "2025 Mizuho Americas Open",
+      "players": 56,
+      "winner_p": 0.16783
+     },
+     {
+      "key": "lpga:401734766",
+      "name": "2025 MEXICO Riviera Maya Open at Mayakoba",
+      "players": 66,
+      "winner_p": 0.03512
+     },
+     {
+      "key": "lpga:401734767",
+      "name": "2025 U.S. Women's Open pres. by Ally",
+      "players": 60,
+      "winner_p": 0.02437
+     },
+     {
+      "key": "lpga:401734768",
+      "name": "2025 ShopRite LPGA Classic pres. by Acer",
+      "players": 68,
+      "winner_p": 0.12184
+     },
+     {
+      "key": "lpga:401734769",
+      "name": "2025 Meijer LPGA Classic for Simply Give",
+      "players": 77,
+      "winner_p": 0.11735
+     },
+     {
+      "key": "lpga:401734770",
+      "name": "2025 KPMG Women's PGA Championship",
+      "players": 78,
+      "winner_p": 0.1071
+     },
+     {
+      "key": "lpga:401734772",
+      "name": "2025 The Amundi Evian Championship",
+      "players": 74,
+      "winner_p": 0.0836
+     },
+     {
+      "key": "lpga:401734773",
+      "name": "2025 ISPS HANDA Women's Scottish Open",
+      "players": 71,
+      "winner_p": 0.3133
+     },
+     {
+      "key": "lpga:401734774",
+      "name": "2025 AIG Women's Open",
+      "players": 71,
+      "winner_p": 0.58123
+     },
+     {
+      "key": "lpga:401734775",
+      "name": "2025 The Standard Portland Classic",
+      "players": 66,
+      "winner_p": 0.13634
+     },
+     {
+      "key": "lpga:401734776",
+      "name": "2025 CPKC Women's Open",
+      "players": 78,
+      "winner_p": 0.02462
+     },
+     {
+      "key": "lpga:401734777",
+      "name": "2025 FM Championship",
+      "players": 75,
+      "winner_p": 0.08835
+     },
+     {
+      "key": "lpga:401734778",
+      "name": "2025 Kroger Queen City Championship pres by P&G",
+      "players": 77,
+      "winner_p": 0.14034
+     },
+     {
+      "key": "lpga:401734780",
+      "name": "2025 LOTTE Championship pres. by Hoakalei",
+      "players": 73,
+      "winner_p": 0.33254
+     },
+     {
+      "key": "lpga:401734781",
+      "name": "2025 Buick LPGA Shanghai",
+      "players": 82,
+      "winner_p": 0.19808
+     },
+     {
+      "key": "lpga:401734782",
+      "name": "2025 BMW Ladies Championship",
+      "players": 78,
+      "winner_p": 0.35554
+     },
+     {
+      "key": "lpga:401734783",
+      "name": "2025 Maybank Championship",
+      "players": 78,
+      "winner_p": 0.05636
+     },
+     {
+      "key": "lpga:401734784",
+      "name": "2025 TOTO Japan Classic",
+      "players": 76,
+      "winner_p": 0.2953
+     },
+     {
+      "key": "lpga:401734785",
+      "name": "2025 The ANNIKA driven by Gainbridge at Pelican",
+      "players": 69,
+      "winner_p": 0.15084
+     },
+     {
+      "key": "lpga:401734786",
+      "name": "2025 CME Group Tour Championship",
+      "players": 60,
+      "winner_p": 0.57673
+     },
+     {
+      "key": "lpga:401835135",
+      "name": "2026 Hilton Grand Vacations Tournament of Champions",
+      "players": 39,
+      "winner_p": 0.06761
+     },
+     {
+      "key": "lpga:401835136",
+      "name": "2026 Honda LPGA Thailand",
+      "players": 72,
+      "winner_p": 0.31655
+     },
+     {
+      "key": "lpga:401835137",
+      "name": "2026 HSBC Women's World Championship",
+      "players": 72,
+      "winner_p": 0.05436
+     },
+     {
+      "key": "lpga:401835138",
+      "name": "2026 Blue Bay LPGA",
+      "players": 75,
+      "winner_p": 0.26681
+     },
+     {
+      "key": "lpga:401835152",
+      "name": "2026 Fortinet Founders Cup",
+      "players": 65,
+      "winner_p": 0.39603
+     },
+     {
+      "key": "lpga:401835140",
+      "name": "2026 Ford Championship pres. by Wild Horse Pass",
+      "players": 76,
+      "winner_p": 0.18158
+     },
+     {
+      "key": "lpga:401835143",
+      "name": "2026 Aramco Championship",
+      "players": 73,
+      "winner_p": 0.64546
+     },
+     {
+      "key": "lpga:401835146",
+      "name": "2026 JM Eagle LA Championship pres. by Plastpro",
+      "players": 65,
+      "winner_p": 0.02437
+     },
+     {
+      "key": "lpga:401835149",
+      "name": "2026 The Chevron Championship",
+      "players": 72,
+      "winner_p": 0.88215
+     },
+     {
+      "key": "lpga:401835150",
+      "name": "2026 Riviera Maya Open at Mayakoba",
+      "players": 75,
+      "winner_p": 0.58073
+     },
+     {
+      "key": "lpga:401835151",
+      "name": "2026 Mizuho Americas Open",
+      "players": 58,
+      "winner_p": 0.59173
+     },
+     {
+      "key": "lpga:401835154",
+      "name": "2026 Kroger Queen City Championship pres by P&G",
+      "players": 77,
+      "winner_p": 0.10585
+     },
+     {
+      "key": "lpga:401835157",
+      "name": "2026 ShopRite LPGA Classic powered by Wakefern",
+      "players": 75,
+      "winner_p": 0.08435
+     },
+     {
+      "key": "lpga:401835158",
+      "name": "2026 U.S. Women's Open pres. by Ally",
+      "players": 68,
+      "winner_p": 0.16558
+     },
+     {
+      "key": "lpga:401835160",
+      "name": "2026 Meijer LPGA Classic for Simply Give",
+      "players": 66,
+      "winner_p": 0.02362
+     },
+     {
+      "key": "lpga:401835161",
+      "name": "2026 KPMG Women's PGA Championship",
+      "players": 71,
+      "winner_p": 0.0826
+     },
+     {
+      "key": "lpga:401835162",
+      "name": "2026 The Amundi Evian Championship",
+      "players": 66,
+      "winner_p": 0.14334
+     },
+     {
+      "key": "lpga:401835163",
+      "name": "2026 ISPS HANDA Women's Scottish Open",
+      "players": 65,
+      "winner_p": 0.54174
+     },
+     {
+      "key": "lpga:401835164",
+      "name": "2026 AIG Women's Open",
+      "players": 68,
+      "winner_p": 0.11685
+     },
+     {
+      "key": "lpga:401835165",
+      "name": "2026 The Standard Portland Classic",
+      "players": 65,
+      "winner_p": 0.13834
+     },
+     {
+      "key": "lpga:401835166",
+      "name": "2026 CPKC Women's Open",
+      "players": 69,
+      "winner_p": 0.69145
+     },
+     {
+      "key": "lpga:401835167",
+      "name": "2026 FM Championship",
+      "players": 67,
+      "winner_p": 0.10585
+     },
+     {
+      "key": "lpga:401835170",
+      "name": "2026 Walmart NW Arkansas Championship pres. by P&G",
+      "players": 70,
+      "winner_p": 0.54249
+     },
+     {
+      "key": "lpga:401835171",
+      "name": "2026 LOTTE Championship pres. by Hoakalei",
+      "players": 72,
+      "winner_p": 0.38753
+     },
+     {
+      "key": "lpga:401835172",
+      "name": "2026 Buick LPGA Shanghai",
+      "players": 77,
+      "winner_p": 0.0846
+     }
+    ]
+   },
+   "skipped": [
+    {
+     "key": "lpga:401618403",
+     "name": "2024 Blue Bay LPGA",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 107: whether there is )"
+    },
+    {
+     "key": "lpga:401618405",
+     "name": "2024 Ford Championship pres. by KCC",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 144: whether there is )"
+    },
+    {
+     "key": "lpga:401652866",
+     "name": "2024 T-Mobile Match Play pres. by MGM Rewards",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 96: whether there is a)"
+    },
+    {
+     "key": "lpga:401618421",
+     "name": "2024 FM Championship",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 143: whether there is )"
+    },
+    {
+     "key": "lpga:401734779",
+     "name": "2025 Walmart NW Arkansas Championship pres. by P&G",
+     "stage": "pre",
+     "reason": "no winner in the feed"
+    },
+    {
+     "key": "lpga:401734779",
+     "name": "2025 Walmart NW Arkansas Championship pres. by P&G",
+     "stage": "r2",
+     "reason": "no winner in the feed"
+    }
+   ]
+  },
+  "eur": {
+   "label": "DP World Tour",
+   "runs_per_event": 4000,
+   "scale": {
+    "chosen": 1,
+    "lowest_on_tuning": 1,
+    "lowest_vs_scale_1": null,
+    "rule": "scale 1 (the measured variances) unless the lowest beats it with a bootstrap 95% interval below zero",
+    "tuning": [
+     {
+      "scale": 0,
+      "log_loss": [
+       0.03796,
+       0.23465,
+       0.36969,
+       0.63472
+      ],
+      "sum": 1.27702
+     },
+     {
+      "scale": 0.5,
+      "log_loss": [
+       0.03759,
+       0.23325,
+       0.36934,
+       0.63414
+      ],
+      "sum": 1.27433
+     },
+     {
+      "scale": 1,
+      "log_loss": [
+       0.0378,
+       0.23282,
+       0.3685,
+       0.63413
+      ],
+      "sum": 1.27326
+     },
+     {
+      "scale": 1.5,
+      "log_loss": [
+       0.0378,
+       0.23306,
+       0.36871,
+       0.63436
+      ],
+      "sum": 1.27393
+     },
+     {
+      "scale": 2,
+      "log_loss": [
+       0.03782,
+       0.23287,
+       0.36939,
+       0.63508
+      ],
+      "sum": 1.27516
+     }
+    ],
+    "tuning_events": 28
+   },
+   "tuning": {
+    "pre": {
+     "win": {
+      "model": {
+       "log_loss": 0.0378,
+       "brier": 0.00695,
+       "player_events": 3916
+      },
+      "point": {
+       "log_loss": 0.03796,
+       "brier": 0.00695,
+       "player_events": 3916
+      },
+      "uniform": {
+       "log_loss": 0.04227,
+       "brier": 0.0071,
+       "player_events": 3916
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.00446,
+       "ci95": [
+        -0.00731,
+        -0.00174
+       ],
+       "brier": -0.00015,
+       "events": 28
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00016,
+       "ci95": [
+        -0.00162,
+        0.00124
+       ],
+       "brier": 0,
+       "events": 28
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 2139,
+        "mean_p": 0.00211,
+        "observed": 0.00234
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 837,
+        "mean_p": 0.00723,
+        "observed": 0.00717
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 652,
+        "mean_p": 0.01407,
+        "observed": 0.01227
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 262,
+        "mean_p": 0.02793,
+        "observed": 0.01908
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 21,
+        "mean_p": 0.06386,
+        "observed": 0.09524
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 5,
+        "mean_p": 0.11409,
+        "observed": 0.4
+       }
+      ]
+     },
+     "top_5": {
+      "model": {
+       "log_loss": 0.1358,
+       "brier": 0.02979,
+       "player_events": 3916
+      },
+      "point": {
+       "log_loss": 0.13677,
+       "brier": 0.02983,
+       "player_events": 3916
+      },
+      "uniform": {
+       "log_loss": 0.15323,
+       "brier": 0.03165,
+       "player_events": 3916
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.01744,
+       "ci95": [
+        -0.02182,
+        -0.01307
+       ],
+       "brier": -0.00186,
+       "events": 28
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00097,
+       "ci95": [
+        -0.00237,
+        0.00055
+       ],
+       "brier": -0.00004,
+       "events": 28
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 444,
+        "mean_p": 0.00296,
+        "observed": 0.0027
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 444,
+        "mean_p": 0.00737,
+        "observed": 0.00676
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 739,
+        "mean_p": 0.01486,
+        "observed": 0.01585
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 1315,
+        "mean_p": 0.03292,
+        "observed": 0.02954
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 758,
+        "mean_p": 0.0691,
+        "observed": 0.06904
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 196,
+        "mean_p": 0.125,
+        "observed": 0.11939
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 19,
+        "mean_p": 0.2532,
+        "observed": 0.44737
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 1,
+        "mean_p": 0.36407,
+        "observed": 1
+       }
+      ]
+     },
+     "top_10": {
+      "model": {
+       "log_loss": 0.23282,
+       "brier": 0.05777,
+       "player_events": 3916
+      },
+      "point": {
+       "log_loss": 0.23465,
+       "brier": 0.05779,
+       "player_events": 3916
+      },
+      "uniform": {
+       "log_loss": 0.25548,
+       "brier": 0.06194,
+       "player_events": 3916
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.02265,
+       "ci95": [
+        -0.02828,
+        -0.01589
+       ],
+       "brier": -0.00417,
+       "events": 28
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00182,
+       "ci95": [
+        -0.00428,
+        0.00044
+       ],
+       "brier": -0.00002,
+       "events": 28
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 88,
+        "mean_p": 0.00291,
+        "observed": 0.01136
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 232,
+        "mean_p": 0.00763,
+        "observed": 0.01329
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 441,
+        "mean_p": 0.01444,
+        "observed": 0.0189
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 1029,
+        "mean_p": 0.03487,
+        "observed": 0.03474
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 1125,
+        "mean_p": 0.0721,
+        "observed": 0.06876
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 846,
+        "mean_p": 0.13676,
+        "observed": 0.12746
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 140,
+        "mean_p": 0.2383,
+        "observed": 0.25464
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 13,
+        "mean_p": 0.40997,
+        "observed": 0.69231
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 2,
+        "mean_p": 0.52949,
+        "observed": 1
+       }
+      ]
+     },
+     "top_20": {
+      "model": {
+       "log_loss": 0.3685,
+       "brier": 0.10342,
+       "player_events": 3916
+      },
+      "point": {
+       "log_loss": 0.36969,
+       "brier": 0.10328,
+       "player_events": 3916
+      },
+      "uniform": {
+       "log_loss": 0.40582,
+       "brier": 0.1137,
+       "player_events": 3916
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.03732,
+       "ci95": [
+        -0.04464,
+        -0.02961
+       ],
+       "brier": -0.01028,
+       "events": 28
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00119,
+       "ci95": [
+        -0.00374,
+        0.0009
+       ],
+       "brier": 0.00014,
+       "events": 28
+      },
+      "calibration": [
+       {
+        "bin": "0-0.005",
+        "n": 14,
+        "mean_p": 0.00296,
+        "observed": 0
+       },
+       {
+        "bin": "0.005-0.01",
+        "n": 29,
+        "mean_p": 0.00819,
+        "observed": 0.03448
+       },
+       {
+        "bin": "0.01-0.02",
+        "n": 127,
+        "mean_p": 0.01606,
+        "observed": 0.02384
+       },
+       {
+        "bin": "0.02-0.05",
+        "n": 577,
+        "mean_p": 0.03241,
+        "observed": 0.03941
+       },
+       {
+        "bin": "0.05-0.1",
+        "n": 848,
+        "mean_p": 0.07552,
+        "observed": 0.07327
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 1318,
+        "mean_p": 0.14505,
+        "observed": 0.14008
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 847,
+        "mean_p": 0.25725,
+        "observed": 0.24467
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 129,
+        "mean_p": 0.3955,
+        "observed": 0.45149
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 26,
+        "mean_p": 0.56829,
+        "observed": 0.76923
+       },
+       {
+        "bin": "0.7-0.9",
+        "n": 1,
+        "mean_p": 0.77636,
+        "observed": 1
+       }
+      ]
+     },
+     "make_cut": {
+      "model": {
+       "log_loss": 0.63413,
+       "brier": 0.22285,
+       "player_events": 3698
+      },
+      "point": {
+       "log_loss": 0.63472,
+       "brier": 0.22308,
+       "player_events": 3698
+      },
+      "uniform": {
+       "log_loss": 0.68433,
+       "brier": 0.24677,
+       "player_events": 3698
+      },
+      "diff_vs_uniform": {
+       "log_loss": -0.05019,
+       "ci95": [
+        -0.06471,
+        -0.03796
+       ],
+       "brier": -0.02392,
+       "events": 26
+      },
+      "diff_vs_point": {
+       "log_loss": -0.00058,
+       "ci95": [
+        -0.00266,
+        0.00176
+       ],
+       "brier": -0.00023,
+       "events": 26
+      },
+      "calibration": [
+       {
+        "bin": "0.05-0.1",
+        "n": 1,
+        "mean_p": 0.06672,
+        "observed": 0
+       },
+       {
+        "bin": "0.1-0.2",
+        "n": 105,
+        "mean_p": 0.17191,
+        "observed": 0.15238
+       },
+       {
+        "bin": "0.2-0.35",
+        "n": 632,
+        "mean_p": 0.27523,
+        "observed": 0.30538
+       },
+       {
+        "bin": "0.35-0.5",
+        "n": 1083,
+        "mean_p": 0.43196,
+        "observed": 0.42936
+       },
+       {
+        "bin": "0.5-0.7",
+        "n": 1613,
+        "mean_p": 0.58839,
+        "observed": 0.60384
+       },
+       {
+        "bin": "0.7-0.9",
+        "n": 197,
+        "mean_p": 0.74756,
+        "observed": 0.79695
+       },
+       {
+        "bin": "0.9-1",
+        "n": 67,
+        "mean_p": 0.94534,
+        "observed": 1
+       }
+      ]
+     }
+    }
+   },
+   "holdout": {
+    "seasons": [
+     2025,
+     2026
+    ],
+    "pre": {
+     "events": 57,
+     "player_events": 8154,
+     "metrics": {
+      "win": {
+       "model": {
+        "log_loss": 0.03836,
+        "brier": 0.00688,
+        "player_events": 8154
+       },
+       "point": {
+        "log_loss": 0.03863,
+        "brier": 0.00688,
+        "player_events": 8154
+       },
+       "uniform": {
+        "log_loss": 0.04153,
+        "brier": 0.00694,
+        "player_events": 8154
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.00317,
+        "ci95": [
+         -0.00496,
+         -0.00144
+        ],
+        "brier": -0.00006,
+        "events": 57
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00027,
+        "ci95": [
+         -0.00099,
+         0.00033
+        ],
+        "brier": 0,
+        "events": 57
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 4376,
+         "mean_p": 0.00218,
+         "observed": 0.00206
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 2033,
+         "mean_p": 0.00713,
+         "observed": 0.00935
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 1256,
+         "mean_p": 0.01371,
+         "observed": 0.01115
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 423,
+         "mean_p": 0.02846,
+         "observed": 0.02364
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 56,
+         "mean_p": 0.06311,
+         "observed": 0.07143
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 10,
+         "mean_p": 0.11877,
+         "observed": 0.1
+        }
+       ]
+      },
+      "top_5": {
+       "model": {
+        "log_loss": 0.1342,
+        "brier": 0.0291,
+        "player_events": 8154
+       },
+       "point": {
+        "log_loss": 0.13392,
+        "brier": 0.02904,
+        "player_events": 8154
+       },
+       "uniform": {
+        "log_loss": 0.15088,
+        "brier": 0.03058,
+        "player_events": 8154
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.01667,
+        "ci95": [
+         -0.01941,
+         -0.01377
+        ],
+        "brier": -0.00148,
+        "events": 57
+       },
+       "diff_vs_point": {
+        "log_loss": 0.00029,
+        "ci95": [
+         -0.00073,
+         0.00115
+        ],
+        "brier": 0.00006,
+        "events": 57
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 829,
+         "mean_p": 0.00287,
+         "observed": 0.0006
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 804,
+         "mean_p": 0.00747,
+         "observed": 0.00352
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 1661,
+         "mean_p": 0.01486,
+         "observed": 0.01409
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 3015,
+         "mean_p": 0.03304,
+         "observed": 0.03098
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 1476,
+         "mean_p": 0.06714,
+         "observed": 0.0711
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 326,
+         "mean_p": 0.13191,
+         "observed": 0.13926
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 40,
+         "mean_p": 0.24921,
+         "observed": 0.34375
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 3,
+         "mean_p": 0.39661,
+         "observed": 0.25
+        }
+       ]
+      },
+      "top_10": {
+       "model": {
+        "log_loss": 0.22489,
+        "brier": 0.05622,
+        "player_events": 8154
+       },
+       "point": {
+        "log_loss": 0.22485,
+        "brier": 0.05614,
+        "player_events": 8154
+       },
+       "uniform": {
+        "log_loss": 0.25196,
+        "brier": 0.06035,
+        "player_events": 8154
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.02707,
+        "ci95": [
+         -0.03164,
+         -0.02215
+        ],
+        "brier": -0.00413,
+        "events": 57
+       },
+       "diff_vs_point": {
+        "log_loss": 0.00004,
+        "ci95": [
+         -0.00118,
+         0.00125
+        ],
+        "brier": 0.00007,
+        "events": 57
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 207,
+         "mean_p": 0.00294,
+         "observed": 0.00386
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 440,
+         "mean_p": 0.00756,
+         "observed": 0.00812
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 722,
+         "mean_p": 0.01482,
+         "observed": 0.01
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 2278,
+         "mean_p": 0.03455,
+         "observed": 0.02953
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 2633,
+         "mean_p": 0.07245,
+         "observed": 0.06847
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 1584,
+         "mean_p": 0.13211,
+         "observed": 0.1411
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 256,
+         "mean_p": 0.24712,
+         "observed": 0.28349
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 30,
+         "mean_p": 0.39883,
+         "observed": 0.42619
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 4,
+         "mean_p": 0.56855,
+         "observed": 0.5
+        }
+       ]
+      },
+      "top_20": {
+       "model": {
+        "log_loss": 0.36393,
+        "brier": 0.10255,
+        "player_events": 8154
+       },
+       "point": {
+        "log_loss": 0.36533,
+        "brier": 0.1025,
+        "player_events": 8154
+       },
+       "uniform": {
+        "log_loss": 0.40142,
+        "brier": 0.11221,
+        "player_events": 8154
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.03749,
+        "ci95": [
+         -0.04326,
+         -0.03118
+        ],
+        "brier": -0.00966,
+        "events": 57
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00139,
+        "ci95": [
+         -0.00321,
+         0.00022
+        ],
+        "brier": 0.00005,
+        "events": 57
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 46,
+         "mean_p": 0.00289,
+         "observed": 0.00725
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 55,
+         "mean_p": 0.00786,
+         "observed": 0.01818
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 334,
+         "mean_p": 0.01546,
+         "observed": 0.02196
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 954,
+         "mean_p": 0.03479,
+         "observed": 0.03993
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 1866,
+         "mean_p": 0.07529,
+         "observed": 0.06598
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 3066,
+         "mean_p": 0.14642,
+         "observed": 0.14266
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 1557,
+         "mean_p": 0.25141,
+         "observed": 0.26037
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 225,
+         "mean_p": 0.40583,
+         "observed": 0.42698
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 46,
+         "mean_p": 0.56171,
+         "observed": 0.61413
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 5,
+         "mean_p": 0.75939,
+         "observed": 0.6
+        }
+       ]
+      },
+      "make_cut": {
+       "model": {
+        "log_loss": 0.65271,
+        "brier": 0.23025,
+        "player_events": 7804
+       },
+       "point": {
+        "log_loss": 0.65376,
+        "brier": 0.23032,
+        "player_events": 7804
+       },
+       "uniform": {
+        "log_loss": 0.69916,
+        "brier": 0.25294,
+        "player_events": 7804
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.04646,
+        "ci95": [
+         -0.05358,
+         -0.0389
+        ],
+        "brier": -0.02269,
+        "events": 53
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00105,
+        "ci95": [
+         -0.00334,
+         0.00059
+        ],
+        "brier": -0.00007,
+        "events": 53
+       },
+       "calibration": [
+        {
+         "bin": "0.01-0.02",
+         "n": 1,
+         "mean_p": 0.01762,
+         "observed": 0
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 1,
+         "mean_p": 0.04461,
+         "observed": 0
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 21,
+         "mean_p": 0.08445,
+         "observed": 0.42857
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 271,
+         "mean_p": 0.16535,
+         "observed": 0.21033
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 1118,
+         "mean_p": 0.28163,
+         "observed": 0.28712
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 2440,
+         "mean_p": 0.43287,
+         "observed": 0.44754
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 3586,
+         "mean_p": 0.58255,
+         "observed": 0.59007
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 365,
+         "mean_p": 0.74737,
+         "observed": 0.77808
+        },
+        {
+         "bin": "0.9-1",
+         "n": 1,
+         "mean_p": 0.9069,
+         "observed": 1
+        }
+       ]
+      }
+     }
+    },
+    "r2": {
+     "events": 55,
+     "player_events": 3981,
+     "metrics": {
+      "win": {
+       "model": {
+        "log_loss": 0.04981,
+        "brier": 0.01217,
+        "player_events": 3981
+       },
+       "point": {
+        "log_loss": 0.0499,
+        "brier": 0.0122,
+        "player_events": 3981
+       },
+       "uniform": {
+        "log_loss": 0.07271,
+        "brier": 0.01362,
+        "player_events": 3981
+       },
+       "scores_only": {
+        "log_loss": 0.05108,
+        "brier": 0.01234,
+        "player_events": 3981
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.0229,
+        "ci95": [
+         -0.02733,
+         -0.0176
+        ],
+        "brier": -0.00145,
+        "events": 55
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00009,
+        "ci95": [
+         -0.00068,
+         0.00046
+        ],
+        "brier": -0.00003,
+        "events": 55
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.00128,
+        "ci95": [
+         -0.00323,
+         0.00074
+        ],
+        "brier": -0.00017,
+        "events": 55
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 2577,
+         "mean_p": 0.0013,
+         "observed": 0.00039
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 412,
+         "mean_p": 0.00711,
+         "observed": 0.00728
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 371,
+         "mean_p": 0.01419,
+         "observed": 0.01078
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 362,
+         "mean_p": 0.03195,
+         "observed": 0.02486
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 143,
+         "mean_p": 0.06959,
+         "observed": 0.0979
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 74,
+         "mean_p": 0.139,
+         "observed": 0.16216
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 34,
+         "mean_p": 0.25577,
+         "observed": 0.26471
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 7,
+         "mean_p": 0.41938,
+         "observed": 0.42857
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 1,
+         "mean_p": 0.50975,
+         "observed": 0
+        }
+       ]
+      },
+      "top_5": {
+       "model": {
+        "log_loss": 0.17428,
+        "brier": 0.04341,
+        "player_events": 3981
+       },
+       "point": {
+        "log_loss": 0.17409,
+        "brier": 0.04344,
+        "player_events": 3981
+       },
+       "uniform": {
+        "log_loss": 0.25037,
+        "brier": 0.05809,
+        "player_events": 3981
+       },
+       "scores_only": {
+        "log_loss": 0.18434,
+        "brier": 0.04554,
+        "player_events": 3981
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.07609,
+        "ci95": [
+         -0.08388,
+         -0.06883
+        ],
+        "brier": -0.01468,
+        "events": 55
+       },
+       "diff_vs_point": {
+        "log_loss": 0.00019,
+        "ci95": [
+         -0.00074,
+         0.00096
+        ],
+        "brier": -0.00003,
+        "events": 55
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.01006,
+        "ci95": [
+         -0.01268,
+         -0.00748
+        ],
+        "brier": -0.00213,
+        "events": 55
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 696,
+         "mean_p": 0.00228,
+         "observed": 0.00431
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 515,
+         "mean_p": 0.0074,
+         "observed": 0.00243
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 616,
+         "mean_p": 0.01465,
+         "observed": 0.00877
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 793,
+         "mean_p": 0.03236,
+         "observed": 0.0235
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 538,
+         "mean_p": 0.07141,
+         "observed": 0.05223
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 446,
+         "mean_p": 0.14163,
+         "observed": 0.1772
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 228,
+         "mean_p": 0.25588,
+         "observed": 0.27083
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 87,
+         "mean_p": 0.40933,
+         "observed": 0.39751
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 44,
+         "mean_p": 0.58944,
+         "observed": 0.6572
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 18,
+         "mean_p": 0.771,
+         "observed": 0.7963
+        }
+       ]
+      },
+      "top_10": {
+       "model": {
+        "log_loss": 0.29271,
+        "brier": 0.08007,
+        "player_events": 3981
+       },
+       "point": {
+        "log_loss": 0.29269,
+        "brier": 0.08011,
+        "player_events": 3981
+       },
+       "uniform": {
+        "log_loss": 0.39973,
+        "brier": 0.10962,
+        "player_events": 3981
+       },
+       "scores_only": {
+        "log_loss": 0.30832,
+        "brier": 0.08391,
+        "player_events": 3981
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.10702,
+        "ci95": [
+         -0.1177,
+         -0.09492
+        ],
+        "brier": -0.02954,
+        "events": 55
+       },
+       "diff_vs_point": {
+        "log_loss": 0.00003,
+        "ci95": [
+         -0.00126,
+         0.00123
+        ],
+        "brier": -0.00003,
+        "events": 55
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.01561,
+        "ci95": [
+         -0.0192,
+         -0.01146
+        ],
+        "brier": -0.00384,
+        "events": 55
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 181,
+         "mean_p": 0.00195,
+         "observed": 0
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 170,
+         "mean_p": 0.00747,
+         "observed": 0.01176
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 399,
+         "mean_p": 0.01495,
+         "observed": 0.01304
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 848,
+         "mean_p": 0.03394,
+         "observed": 0.02005
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 745,
+         "mean_p": 0.07182,
+         "observed": 0.05898
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 718,
+         "mean_p": 0.14321,
+         "observed": 0.15092
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 481,
+         "mean_p": 0.26509,
+         "observed": 0.28554
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 238,
+         "mean_p": 0.41433,
+         "observed": 0.45611
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 135,
+         "mean_p": 0.57879,
+         "observed": 0.54222
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 56,
+         "mean_p": 0.78724,
+         "observed": 0.79286
+        },
+        {
+         "bin": "0.9-1",
+         "n": 10,
+         "mean_p": 0.93162,
+         "observed": 1
+        }
+       ]
+      },
+      "top_20": {
+       "model": {
+        "log_loss": 0.44965,
+        "brier": 0.1316,
+        "player_events": 3981
+       },
+       "point": {
+        "log_loss": 0.45206,
+        "brier": 0.13243,
+        "player_events": 3981
+       },
+       "uniform": {
+        "log_loss": 0.5851,
+        "brier": 0.18441,
+        "player_events": 3981
+       },
+       "scores_only": {
+        "log_loss": 0.46627,
+        "brier": 0.13712,
+        "player_events": 3981
+       },
+       "diff_vs_uniform": {
+        "log_loss": -0.13546,
+        "ci95": [
+         -0.14952,
+         -0.12112
+        ],
+        "brier": -0.05282,
+        "events": 55
+       },
+       "diff_vs_point": {
+        "log_loss": -0.00241,
+        "ci95": [
+         -0.00446,
+         -0.00058
+        ],
+        "brier": -0.00084,
+        "events": 55
+       },
+       "diff_vs_scores_only": {
+        "log_loss": -0.01662,
+        "ci95": [
+         -0.02133,
+         -0.01195
+        ],
+        "brier": -0.00552,
+        "events": 55
+       },
+       "calibration": [
+        {
+         "bin": "0-0.005",
+         "n": 57,
+         "mean_p": 0.00103,
+         "observed": 0
+        },
+        {
+         "bin": "0.005-0.01",
+         "n": 21,
+         "mean_p": 0.0074,
+         "observed": 0.01587
+        },
+        {
+         "bin": "0.01-0.02",
+         "n": 67,
+         "mean_p": 0.01465,
+         "observed": 0.02985
+        },
+        {
+         "bin": "0.02-0.05",
+         "n": 260,
+         "mean_p": 0.03561,
+         "observed": 0.03513
+        },
+        {
+         "bin": "0.05-0.1",
+         "n": 606,
+         "mean_p": 0.07521,
+         "observed": 0.07234
+        },
+        {
+         "bin": "0.1-0.2",
+         "n": 935,
+         "mean_p": 0.1462,
+         "observed": 0.1227
+        },
+        {
+         "bin": "0.2-0.35",
+         "n": 838,
+         "mean_p": 0.2695,
+         "observed": 0.26841
+        },
+        {
+         "bin": "0.35-0.5",
+         "n": 498,
+         "mean_p": 0.41923,
+         "observed": 0.44303
+        },
+        {
+         "bin": "0.5-0.7",
+         "n": 433,
+         "mean_p": 0.58962,
+         "observed": 0.63329
+        },
+        {
+         "bin": "0.7-0.9",
+         "n": 208,
+         "mean_p": 0.78286,
+         "observed": 0.75134
+        },
+        {
+         "bin": "0.9-1",
+         "n": 58,
+         "mean_p": 0.94373,
+         "observed": 0.9296
+        }
+       ]
+      }
+     }
+    }
+   },
+   "playoffs": {
+    "simulated_share_mean": 0.17877,
+    "events": 57,
+    "events_with_playoff_in_feed": 0,
+    "note": "the simulated share of runs ending in a playoff (scale 1) against the share of holdout events the feed shows a playoff for (the PGA Tour's feed records playoffs; the LPGA's and DP World Tour's mostly do not)"
+   },
+   "events": {
+    "pre": [
+     {
+      "key": "eur:401734047",
+      "name": "2025 Hero Dubai Desert Classic",
+      "players": 126,
+      "winner_p": 0.05461
+     },
+     {
+      "key": "eur:401734048",
+      "name": "2025 Ras al Khaimah Championship",
+      "players": 137,
+      "winner_p": 0.00737
+     },
+     {
+      "key": "eur:401734049",
+      "name": "2025 Bapco Energies Bahrain Championship",
+      "players": 130,
+      "winner_p": 0.03212
+     },
+     {
+      "key": "eur:401734074",
+      "name": "2025 Commercial Bank Qatar Masters",
+      "players": 140,
+      "winner_p": 0.01162
+     },
+     {
+      "key": "eur:401734050",
+      "name": "2025 Magical Kenya Open",
+      "players": 150,
+      "winner_p": 0.00712
+     },
+     {
+      "key": "eur:401734051",
+      "name": "2025 Investec SA Open Championship",
+      "players": 156,
+      "winner_p": 0.00287
+     },
+     {
+      "key": "eur:401734052",
+      "name": "2025 Joburg Open",
+      "players": 156,
+      "winner_p": 0.01312
+     },
+     {
+      "key": "eur:401734053",
+      "name": "2025 Porsche Singapore Classic",
+      "players": 132,
+      "winner_p": 0.01112
+     },
+     {
+      "key": "eur:401734054",
+      "name": "2025 Hero Indian Open",
+      "players": 138,
+      "winner_p": 0.00762
+     },
+     {
+      "key": "eur:401734055",
+      "name": "2025 Volvo China Open",
+      "players": 156,
+      "winner_p": 0.00412
+     },
+     {
+      "key": "eur:401734075",
+      "name": "2025 Hainan Classic",
+      "players": 156,
+      "winner_p": 0.00787
+     },
+     {
+      "key": "eur:401734056",
+      "name": "2025 Turkish Airlines Open",
+      "players": 156,
+      "winner_p": 0.02487
+     },
+     {
+      "key": "eur:401734057",
+      "name": "2025 Soudal Open",
+      "players": 156,
+      "winner_p": 0.00912
+     },
+     {
+      "key": "eur:401734058",
+      "name": "2025 Austrian Alpine Open pres. by SalzburgerLand",
+      "players": 154,
+      "winner_p": 0.00162
+     },
+     {
+      "key": "eur:401734059",
+      "name": "2025 KLM Open",
+      "players": 156,
+      "winner_p": 0.00687
+     },
+     {
+      "key": "eur:401734060",
+      "name": "2025 Italian Open",
+      "players": 156,
+      "winner_p": 0.01237
+     },
+     {
+      "key": "eur:401734061",
+      "name": "2025 BMW International Open",
+      "players": 156,
+      "winner_p": 0.00812
+     },
+     {
+      "key": "eur:401734062",
+      "name": "2025 Nexo Championship",
+      "players": 155,
+      "winner_p": 0.00812
+     },
+     {
+      "key": "eur:401734063",
+      "name": "2025 Danish Golf Championship",
+      "players": 156,
+      "winner_p": 0.02212
+     },
+     {
+      "key": "eur:401734064",
+      "name": "2025 Betfred British Masters hosted by Sir Nick Faldo",
+      "players": 156,
+      "winner_p": 0.03212
+     },
+     {
+      "key": "eur:401734065",
+      "name": "2025 Omega European Masters",
+      "players": 156,
+      "winner_p": 0.00962
+     },
+     {
+      "key": "eur:401734066",
+      "name": "2025 Amgen Irish Open",
+      "players": 156,
+      "winner_p": 0.10535
+     },
+     {
+      "key": "eur:401734067",
+      "name": "2025 BMW PGA Championship",
+      "players": 137,
+      "winner_p": 0.01987
+     },
+     {
+      "key": "eur:401734068",
+      "name": "2025 FedEx Open de France",
+      "players": 156,
+      "winner_p": 0.01912
+     },
+     {
+      "key": "eur:401734069",
+      "name": "2025 Alfred Dunhill Links Championship",
+      "players": 168,
+      "winner_p": 0.02787
+     },
+     {
+      "key": "eur:401734073",
+      "name": "2025 Open de España pres. by Madrid",
+      "players": 132,
+      "winner_p": 0.02437
+     },
+     {
+      "key": "eur:401734076",
+      "name": "2025 DP World India Championship",
+      "players": 137,
+      "winner_p": 0.09235
+     },
+     {
+      "key": "eur:401734070",
+      "name": "2025 Genesis Championship",
+      "players": 125,
+      "winner_p": 0.00562
+     },
+     {
+      "key": "eur:401734071",
+      "name": "2025 Abu Dhabi HSBC Championship",
+      "players": 72,
+      "winner_p": 0.01637
+     },
+     {
+      "key": "eur:401734072",
+      "name": "2025 DP World Tour Championship",
+      "players": 52,
+      "winner_p": 0.03362
+     },
+     {
+      "key": "eur:401822677",
+      "name": "2026 Dubai Invitational",
+      "players": 59,
+      "winner_p": 0.00587
+     },
+     {
+      "key": "eur:401822678",
+      "name": "2026 Hero Dubai Desert Classic",
+      "players": 126,
+      "winner_p": 0.01987
+     },
+     {
+      "key": "eur:401822681",
+      "name": "2026 Bahrain Championship",
+      "players": 138,
+      "winner_p": 0.00162
+     },
+     {
+      "key": "eur:401822682",
+      "name": "2026 Qatar Masters",
+      "players": 144,
+      "winner_p": 0.05511
+     },
+     {
+      "key": "eur:401822684",
+      "name": "2026 Magical Kenya Open",
+      "players": 144,
+      "winner_p": 0.01062
+     },
+     {
+      "key": "eur:401822685",
+      "name": "2026 Investec SA Open Championship",
+      "players": 156,
+      "winner_p": 0.00912
+     },
+     {
+      "key": "eur:401822686",
+      "name": "2026 Joburg Open",
+      "players": 156,
+      "winner_p": 0.00662
+     },
+     {
+      "key": "eur:401822687",
+      "name": "2026 Hainan Classic pres. by MAEXTRO",
+      "players": 120,
+      "winner_p": 0.00337
+     },
+     {
+      "key": "eur:401822688",
+      "name": "2026 Hero Indian Open",
+      "players": 138,
+      "winner_p": 0.02062
+     },
+     {
+      "key": "eur:401822689",
+      "name": "2026 Volvo China Open",
+      "players": 156,
+      "winner_p": 0.00862
+     },
+     {
+      "key": "eur:401822690",
+      "name": "2026 Turkish Airlines Open",
+      "players": 155,
+      "winner_p": 0.01137
+     },
+     {
+      "key": "eur:401822691",
+      "name": "2026 Estrella Damm Catalunya Championship",
+      "players": 156,
+      "winner_p": 0.00262
+     },
+     {
+      "key": "eur:401822692",
+      "name": "2026 Soudal Open",
+      "players": 156,
+      "winner_p": 0.00612
+     },
+     {
+      "key": "eur:401822693",
+      "name": "2026 Austrian Alpine Open pres. by Kitzbühel Tirol",
+      "players": 156,
+      "winner_p": 0.01587
+     },
+     {
+      "key": "eur:401822694",
+      "name": "2026 KLM Open",
+      "players": 155,
+      "winner_p": 0.01787
+     },
+     {
+      "key": "eur:401822695",
+      "name": "2026 DS Automobiles 83° Open d'Italia",
+      "players": 156,
+      "winner_p": 0.01612
+     },
+     {
+      "key": "eur:401822696",
+      "name": "2026 BMW International Open",
+      "players": 156,
+      "winner_p": 0.00237
+     },
+     {
+      "key": "eur:401822697",
+      "name": "2026 Danish Golf Championship",
+      "players": 144,
+      "winner_p": 0.00712
+     },
+     {
+      "key": "eur:401822698",
+      "name": "2026 Nexo Championship",
+      "players": 137,
+      "winner_p": 0.00187
+     },
+     {
+      "key": "eur:401822699",
+      "name": "2026 Husqvarna British Masters hosted by Sir Nick Faldo",
+      "players": 156,
+      "winner_p": 0.00587
+     },
+     {
+      "key": "eur:401822700",
+      "name": "2026 Omega European Masters",
+      "players": 154,
+      "winner_p": 0.00887
+     },
+     {
+      "key": "eur:401822701",
+      "name": "2026 Amgen Irish Open",
+      "players": 138,
+      "winner_p": 0.02337
+     },
+     {
+      "key": "eur:401822702",
+      "name": "2026 BMW PGA Championship",
+      "players": 143,
+      "winner_p": 0.01787
+     },
+     {
+      "key": "eur:401822703",
+      "name": "2026 FedEx Open de France",
+      "players": 144,
+      "winner_p": 0.06436
+     },
+     {
+      "key": "eur:401822704",
+      "name": "2026 Alfred Dunhill Links Championship",
+      "players": 167,
+      "winner_p": 0.00687
+     },
+     {
+      "key": "eur:401822705",
+      "name": "2026 Open de España pres. by Madrid",
+      "players": 131,
+      "winner_p": 0.00437
+     },
+     {
+      "key": "eur:401822706",
+      "name": "2026 DP World India Championship",
+      "players": 144,
+      "winner_p": 0.02537
+     }
+    ],
+    "r2": [
+     {
+      "key": "eur:401734047",
+      "name": "2025 Hero Dubai Desert Classic",
+      "players": 79,
+      "winner_p": 0.14034
+     },
+     {
+      "key": "eur:401734048",
+      "name": "2025 Ras al Khaimah Championship",
+      "players": 73,
+      "winner_p": 0.11135
+     },
+     {
+      "key": "eur:401734049",
+      "name": "2025 Bapco Energies Bahrain Championship",
+      "players": 68,
+      "winner_p": 0.05361
+     },
+     {
+      "key": "eur:401734074",
+      "name": "2025 Commercial Bank Qatar Masters",
+      "players": 66,
+      "winner_p": 0.06911
+     },
+     {
+      "key": "eur:401734050",
+      "name": "2025 Magical Kenya Open",
+      "players": 67,
+      "winner_p": 0.02062
+     },
+     {
+      "key": "eur:401734051",
+      "name": "2025 Investec SA Open Championship",
+      "players": 70,
+      "winner_p": 0.06711
+     },
+     {
+      "key": "eur:401734052",
+      "name": "2025 Joburg Open",
+      "players": 78,
+      "winner_p": 0.00537
+     },
+     {
+      "key": "eur:401734053",
+      "name": "2025 Porsche Singapore Classic",
+      "players": 67,
+      "winner_p": 0.07261
+     },
+     {
+      "key": "eur:401734054",
+      "name": "2025 Hero Indian Open",
+      "players": 68,
+      "winner_p": 0.12134
+     },
+     {
+      "key": "eur:401734055",
+      "name": "2025 Volvo China Open",
+      "players": 72,
+      "winner_p": 0.00037
+     },
+     {
+      "key": "eur:401734075",
+      "name": "2025 Hainan Classic",
+      "players": 75,
+      "winner_p": 0.01987
+     },
+     {
+      "key": "eur:401734056",
+      "name": "2025 Turkish Airlines Open",
+      "players": 66,
+      "winner_p": 0.35204
+     },
+     {
+      "key": "eur:401734057",
+      "name": "2025 Soudal Open",
+      "players": 66,
+      "winner_p": 0.02287
+     },
+     {
+      "key": "eur:401734058",
+      "name": "2025 Austrian Alpine Open pres. by SalzburgerLand",
+      "players": 66,
+      "winner_p": 0.07811
+     },
+     {
+      "key": "eur:401734059",
+      "name": "2025 KLM Open",
+      "players": 74,
+      "winner_p": 0.11535
+     },
+     {
+      "key": "eur:401734060",
+      "name": "2025 Italian Open",
+      "players": 82,
+      "winner_p": 0.07111
+     },
+     {
+      "key": "eur:401734061",
+      "name": "2025 BMW International Open",
+      "players": 68,
+      "winner_p": 0.05411
+     },
+     {
+      "key": "eur:401734062",
+      "name": "2025 Nexo Championship",
+      "players": 69,
+      "winner_p": 0.21832
+     },
+     {
+      "key": "eur:401734063",
+      "name": "2025 Danish Golf Championship",
+      "players": 66,
+      "winner_p": 0.22957
+     },
+     {
+      "key": "eur:401734064",
+      "name": "2025 Betfred British Masters hosted by Sir Nick Faldo",
+      "players": 70,
+      "winner_p": 0.03712
+     },
+     {
+      "key": "eur:401734065",
+      "name": "2025 Omega European Masters",
+      "players": 67,
+      "winner_p": 0.08935
+     },
+     {
+      "key": "eur:401734066",
+      "name": "2025 Amgen Irish Open",
+      "players": 72,
+      "winner_p": 0.17583
+     },
+     {
+      "key": "eur:401734068",
+      "name": "2025 FedEx Open de France",
+      "players": 77,
+      "winner_p": 0.03987
+     },
+     {
+      "key": "eur:401734069",
+      "name": "2025 Alfred Dunhill Links Championship",
+      "players": 167,
+      "winner_p": 0.22257
+     },
+     {
+      "key": "eur:401734073",
+      "name": "2025 Open de España pres. by Madrid",
+      "players": 73,
+      "winner_p": 0.15909
+     },
+     {
+      "key": "eur:401734076",
+      "name": "2025 DP World India Championship",
+      "players": 66,
+      "winner_p": 0.34929
+     },
+     {
+      "key": "eur:401734070",
+      "name": "2025 Genesis Championship",
+      "players": 74,
+      "winner_p": 0.03862
+     },
+     {
+      "key": "eur:401734071",
+      "name": "2025 Abu Dhabi HSBC Championship",
+      "players": 72,
+      "winner_p": 0.17583
+     },
+     {
+      "key": "eur:401734072",
+      "name": "2025 DP World Tour Championship",
+      "players": 52,
+      "winner_p": 0.01587
+     },
+     {
+      "key": "eur:401822677",
+      "name": "2026 Dubai Invitational",
+      "players": 58,
+      "winner_p": 0.08385
+     },
+     {
+      "key": "eur:401822678",
+      "name": "2026 Hero Dubai Desert Classic",
+      "players": 70,
+      "winner_p": 0.26531
+     },
+     {
+      "key": "eur:401822681",
+      "name": "2026 Bahrain Championship",
+      "players": 66,
+      "winner_p": 0.07736
+     },
+     {
+      "key": "eur:401822682",
+      "name": "2026 Qatar Masters",
+      "players": 67,
+      "winner_p": 0.33304
+     },
+     {
+      "key": "eur:401822684",
+      "name": "2026 Magical Kenya Open",
+      "players": 69,
+      "winner_p": 0.12784
+     },
+     {
+      "key": "eur:401822685",
+      "name": "2026 Investec SA Open Championship",
+      "players": 78,
+      "winner_p": 0.01412
+     },
+     {
+      "key": "eur:401822686",
+      "name": "2026 Joburg Open",
+      "players": 74,
+      "winner_p": 0.01937
+     },
+     {
+      "key": "eur:401822687",
+      "name": "2026 Hainan Classic pres. by MAEXTRO",
+      "players": 69,
+      "winner_p": 0.20407
+     },
+     {
+      "key": "eur:401822688",
+      "name": "2026 Hero Indian Open",
+      "players": 67,
+      "winner_p": 0.16233
+     },
+     {
+      "key": "eur:401822689",
+      "name": "2026 Volvo China Open",
+      "players": 67,
+      "winner_p": 0.15309
+     },
+     {
+      "key": "eur:401822690",
+      "name": "2026 Turkish Airlines Open",
+      "players": 79,
+      "winner_p": 0.06086
+     },
+     {
+      "key": "eur:401822691",
+      "name": "2026 Estrella Damm Catalunya Championship",
+      "players": 77,
+      "winner_p": 0.07236
+     },
+     {
+      "key": "eur:401822692",
+      "name": "2026 Soudal Open",
+      "players": 76,
+      "winner_p": 0.04336
+     },
+     {
+      "key": "eur:401822693",
+      "name": "2026 Austrian Alpine Open pres. by Kitzbühel Tirol",
+      "players": 66,
+      "winner_p": 0.13034
+     },
+     {
+      "key": "eur:401822694",
+      "name": "2026 KLM Open",
+      "players": 75,
+      "winner_p": 0.02512
+     },
+     {
+      "key": "eur:401822695",
+      "name": "2026 DS Automobiles 83° Open d'Italia",
+      "players": 76,
+      "winner_p": 0.07086
+     },
+     {
+      "key": "eur:401822696",
+      "name": "2026 BMW International Open",
+      "players": 66,
+      "winner_p": 0.03712
+     },
+     {
+      "key": "eur:401822697",
+      "name": "2026 Danish Golf Championship",
+      "players": 82,
+      "winner_p": 0.00712
+     },
+     {
+      "key": "eur:401822698",
+      "name": "2026 Nexo Championship",
+      "players": 71,
+      "winner_p": 0.04611
+     },
+     {
+      "key": "eur:401822699",
+      "name": "2026 Husqvarna British Masters hosted by Sir Nick Faldo",
+      "players": 71,
+      "winner_p": 0.00812
+     },
+     {
+      "key": "eur:401822700",
+      "name": "2026 Omega European Masters",
+      "players": 70,
+      "winner_p": 0.20657
+     },
+     {
+      "key": "eur:401822701",
+      "name": "2026 Amgen Irish Open",
+      "players": 69,
+      "winner_p": 0.45151
+     },
+     {
+      "key": "eur:401822702",
+      "name": "2026 BMW PGA Championship",
+      "players": 72,
+      "winner_p": 0.05486
+     },
+     {
+      "key": "eur:401822703",
+      "name": "2026 FedEx Open de France",
+      "players": 66,
+      "winner_p": 0.42152
+     },
+     {
+      "key": "eur:401822705",
+      "name": "2026 Open de España pres. by Madrid",
+      "players": 73,
+      "winner_p": 0.1176
+     },
+     {
+      "key": "eur:401822706",
+      "name": "2026 DP World India Championship",
+      "players": 77,
+      "winner_p": 0.21932
+     }
+    ]
+   },
+   "skipped": [
+    {
+     "key": "eur:401602815",
+     "name": "2024 Dubai Invitational",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 60: whether there is a)"
+    },
+    {
+     "key": "eur:401602818",
+     "name": "2024 Bahrain Championship",
+     "stage": "pre",
+     "reason": "cut rule undetermined (no previous edition in the history and a limited field of 132: whether there is )"
+    },
+    {
+     "key": "eur:401602824",
+     "name": "2024 ISPS HANDA - CHAMPIONSHIP",
+     "stage": "pre",
+     "reason": "cut rule undetermined (the previous editions had a cut, but none reproducible as top N and ties (2023))"
+    },
+    {
+     "key": "eur:401734067",
+     "name": "2025 BMW PGA Championship",
+     "stage": "r2",
+     "reason": "cut after round 3"
+    },
+    {
+     "key": "eur:401822704",
+     "name": "2026 Alfred Dunhill Links Championship",
+     "stage": "r2",
+     "reason": "cut after round 3"
+    }
+   ]
+  }
+ }
+}

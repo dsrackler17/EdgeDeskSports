@@ -106,7 +106,7 @@ for (const b of d0.bouts) {
   const tot = per.reduce((s, x) => s + x, 0);
   K.chk('SYNTHETIC: the round of a finish follows the measured distribution (five rounds, within 4 SE each)', per.every((x, k) => Math.abs(x / tot - b.round_dist[k]) < 4 * Math.sqrt(b.round_dist[k] * (1 - b.round_dist[k]) / tot)), per);
   K.eq('SYNTHETIC: finish + decision = wins, for every fighter', m.entities.every((e) => cnt(e.id, 'win_next_finish') + cnt(e.id, 'win_next_decision') === cnt(e.id, 'win_next_bout')), true);
-  K.near('SYNTHETIC: the booked title fight\'s challenger wins the title at least as often as he wins that bout', cnt('L1', 'win_title') / N, Math.max(cnt('L1', 'win_title') / N, (N - (agg.diags.bB1_a || 0)) / N), 1e-12);
+  K.near('SYNTHETIC: the booked title fight\'s challenger wins the title at least as often as they win that bout', cnt('L1', 'win_title') / N, Math.max(cnt('L1', 'win_title') / N, (N - (agg.diags.bB1_a || 0)) / N), 1e-12);
   K.chk('SYNTHETIC: both title-fight fighters always get a shot (the booked title fight)', cnt('LC', 'title_shot') === N && cnt('L1', 'title_shot') === N);
   K.eq('SYNTHETIC: no title won without a shot; nobody unranked and never booked into contention wins a title', [m.entities.every((e) => cnt(e.id, 'win_title') <= cnt(e.id, 'title_shot')), cnt('U2', 'title_shot')], [true, 0]);
   K.eq('SYNTHETIC: a contender coming off a loss with no booked bout never gets a shot (L4)', cnt('L4', 'title_shot'), 0);

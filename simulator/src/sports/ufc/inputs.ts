@@ -54,7 +54,7 @@ export const DIVISION_LABEL: Record<string, string> = Object.fromEntries(Object.
 
 export interface UfcFighter {
   id: string; name: string;
-  /** the division whose title this fighter can win in a run (sum-rule group): the ranked one, the booked bout's when he moved, else 'Other' */
+  /** the division whose title this fighter can win in a run (sum-rule group): the ranked one, the booked bout's after a move, else 'Other' */
   division: string;
   ranked_division: string | null; rank: number | null; champion: boolean;
   /** ranked in one division, booked in another (the schedule shows the move) */
@@ -346,7 +346,7 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
       order: (feedById.get(b.bout_id) || ({} as FeedBout)).order ?? null, a: fa.id, b: fb.id,
       p_a: pr ? r6(pr.p) : NaN, p_a_published: pub ? pub.p_a : null, basis: pr && Math.min(pr.a_bouts, pr.b_bouts) === 0 ? 'debut' : 'elo', title,
       finish_if_a: pFinish(division || '', R, fa.id, fb.id), finish_if_b: pFinish(division || '', R, fb.id, fa.id), round_dist: studyRoundDist(study, division || '', R) });
-    /* a ranked contender booked in another division has moved: he can win only that division's title in this run */
+    /* a ranked contender booked in another division has moved: they can win only that division's title in this run */
     for (const f of [fa, fb]) if (division && f.ranked_division && f.ranked_division !== division && !f.champion) { f.moved_from = f.ranked_division; f.division = division; }
     for (const f of [fa, fb]) if (division && f.division === 'Other') f.division = division;
   }

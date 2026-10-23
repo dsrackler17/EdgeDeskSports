@@ -14,7 +14,7 @@
       its winner leaves as champion.
    2. RANKINGS MOVE ONLY THROUGH BOOKED BOUTS (Estimated). A winner takes the
       loser's place in the division's contender order when the loser was
-      ahead of him; a champion who loses goes to the front of the order,
+      ahead of the winner; a champion who loses goes to the front of the order,
       coming off a loss.
    3. TITLE FIGHTS NOT YET BOOKED (the schedule MEASURED, the matchmaking
       ESTIMATED). Each division's next title fight comes a gamma-distributed
@@ -25,7 +25,7 @@
       and has rested at least the measured minimum; the winner is drawn from
       the served Elo on the ratings frozen at the as-of time, with the served
       layoff rule at the fight's date (a fighter idle 365 days or more loses
-      25% of his distance from 1500, and keeps the loss). A simulated fight
+      25% of their distance from 1500, and keeps the loss). A simulated fight
       never moves a rating.
    Outcomes per fighter: the next booked bout won (by finish, by decision);
    a title shot, a title won and the title held at the horizon (Estimated:
