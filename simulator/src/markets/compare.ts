@@ -51,6 +51,14 @@ export interface RunView { sport: string; competition: string; season: string; e
   /** outcome key -> what it settles on (e.g. regular-season conference first place vs the conference playoff title) */
   outcome_semantics?: Record<string, string> }
 
+/** the part of the shared config that belongs to the run's sport: another sport's mappings, and the outcome
+    sets only they use, are not this run's to validate or compare (a wrong season within the sport still is) */
+export function configForSport(cfg: FuturesConfig, run: RunView): FuturesConfig {
+  const mappings = cfg.mappings.filter((m) => m.sport === run.sport);
+  const used = new Set(mappings.map((m) => m.outcome_set).filter(Boolean));
+  return { ...cfg, mappings, outcome_sets: cfg.outcome_sets.filter((s) => used.has(s.id)) };
+}
+
 /** structural validation of the config against a run: wrong season, entity or outcome is rejected */
 export function validateFuturesConfig(cfg: FuturesConfig, run: RunView): string[] {
   const errs: string[] = [];

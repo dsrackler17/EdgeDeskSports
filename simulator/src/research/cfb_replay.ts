@@ -32,10 +32,12 @@ export const REPLAY_CACHE = path.join(REPO, 'simulator', '.cache', 'cfb_replay_r
 /** [season, kind 0=pre 1=frozen, asOfWeek, week, home, away, homeFbs, awayFbs, neutral, fair, sigma, pHome, margin, homeConf, awayConf, gameId, postseason] */
 export type ReplayRow = [number, 0 | 1, number, number, string, string, 0 | 1, 0 | 1, 0 | 1, number, number, number, number, string, string, string, 0 | 1];
 
-export interface ReplayOptions { from: number; to: number; replayFrom?: number; asOfWeeks: number[] }
+export interface ReplayOptions { from: number; to: number; replayFrom?: number; asOfWeeks: number[]; captureRatings?: boolean }
+/** frozen ratings, keyed 'season:asOfWeek' -> feed team name -> the engine's blended rating at the freeze */
+export type FrozenRatings = Record<string, Record<string, number>>;
 export const isCcg = (g: FeedGame) => !!g.notes && /championship/i.test(g.notes) && !/playoff|bowl/i.test(g.notes);
 
-export function replayCfb(o: ReplayOptions, log: (s: string) => void = () => {}): { rows: ReplayRow[]; model_version: string; refused: Record<string, number> } {
+export function replayCfb(o: ReplayOptions, log: (s: string) => void = () => {}): { rows: ReplayRow[]; model_version: string; refused: Record<string, number>; ratings: FrozenRatings } {
   const eng = loadCfbEngine(), E = eng.E, P = eng.P;
   const replayFrom = o.replayFrom ?? o.from - 8;
   const games: FeedGame[] = [];
@@ -46,7 +48,7 @@ export function replayCfb(o: ReplayOptions, log: (s: string) => void = () => {})
   st.scoring = {}; st.gamesThisSeason = {}; st.eff = {}; st.effMean = {};
   st.lmeanPts = P.rating.league_mean_pts;
   st.season = replayFrom;
-  const rows: ReplayRow[] = [], refused: Record<string, number> = {};
+  const rows: ReplayRow[] = [], refused: Record<string, number> = {}, ratings: FrozenRatings = {};
   const isFbs = (d: string) => d === 'fbs';
   const bySeason = new Map<number, FeedGame[]>();
   for (const g of games) { let a = bySeason.get(g.season); if (!a) { a = []; bySeason.set(g.season, a); } a.push(g); }
@@ -57,6 +59,15 @@ export function replayCfb(o: ReplayOptions, log: (s: string) => void = () => {})
     if (frozenDone.has(key)) return;
     frozenDone.add(key);
     const snap = structuredClone(st);
+    if (o.captureRatings) {
+      const r: Record<string, number> = {};
+      for (const g of bySeason.get(S) || []) for (const [t, d] of [[g.home, g.home_division], [g.away, g.away_division]] as Array<[string, string]>) {
+        if (d !== 'fbs' || t in r) continue;
+        const b = E.strength.blendedRating(snap, E.normKey(t), true, K + 1, null);
+        if (b && Number.isFinite(b.value)) r[t] = Math.round(b.value * 1e4) / 1e4;
+      }
+      ratings[S + ':' + K] = r;
+    }
     for (const g of bySeason.get(S) || []) {
       if (g.season_type !== 'regular' || g.week <= K || !g.completed || isCcg(g)) continue;
       if (!isFbs(g.home_division) && !isFbs(g.away_division)) continue;
@@ -85,10 +96,10 @@ export function replayCfb(o: ReplayOptions, log: (s: string) => void = () => {})
     }
     E.ingest.absorbGame(st, { home: g.home, away: g.away, home_fbs: hf, away_fbs: af, neutral_site: g.neutral, home_points: g.home_points, away_points: g.away_points, team_stats: null });
   }
-  return { rows, model_version: eng.model_version, refused };
+  return { rows, model_version: eng.model_version, refused, ratings };
 }
 
-export function cachedReplay(o: ReplayOptions, log: (s: string) => void = () => {}): { rows: ReplayRow[]; model_version: string; refused: Record<string, number> } {
+export function cachedReplay(o: ReplayOptions, log: (s: string) => void = () => {}): { rows: ReplayRow[]; model_version: string; refused: Record<string, number>; ratings: FrozenRatings } {
   const key = JSON.stringify(o);
   if (fs.existsSync(REPLAY_CACHE)) {
     const c = JSON.parse(fs.readFileSync(REPLAY_CACHE, 'utf8'));

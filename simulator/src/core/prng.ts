@@ -116,7 +116,8 @@ export const STREAM = {
   availability: 7,  // injury return draws (reserved: no sport samples availability today)
   drift: 8,         // within-season strength drift (reserved: OFF, see config)
   rotation: 9,      // starting-rotation draws: departures, spot starts (MLB)
-  pitcher: 10       // persistent per-starter strength offsets (MLB)
+  pitcher: 10,      // persistent per-starter strength offsets (MLB)
+  committee: 11     // the CFB committee proxy: its parameter draw and ranking noise
 } as const;
 
 /** The generator for (master seed, run index, stream id). */

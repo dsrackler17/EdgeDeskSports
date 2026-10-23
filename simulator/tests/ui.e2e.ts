@@ -169,11 +169,11 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       await ctx.close();
     }
     {
-      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/cfb', { entitled: true, published: true });
-      await page.evaluate(() => (window as any).navHashRoute('#simulator/cfb')); await page.waitForTimeout(300);
+      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/nba', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/nba')); await page.waitForTimeout(300);
       const t = await text(page);
-      T.chk('a blocked sport (#simulator/cfb) shows its blockers and no number', /Blocked/.test(t) && /CFP/.test(t) && !/\d+\.\d%/.test(t));
-      await shot(page, 'sim-blocked-cfb-390'); await ctx.close();
+      T.chk('a blocked sport (#simulator/nba) shows its blockers and no number', /Blocked/.test(t) && /NBA Cup/.test(t) && !/\d+\.\d%/.test(t));
+      await shot(page, 'sim-blocked-nba-390'); await ctx.close();
     }
     {
       const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failSecond: true });

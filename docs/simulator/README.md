@@ -36,7 +36,7 @@ npm ci --prefix simulator --no-audit --no-fund   # the pinned typechecker (dev o
 
 ```powershell
 npm run sim:typecheck                            # tsc --noEmit, strict
-npm run sim:test                                 # engine, hooks; NFL, NHL, MLB and NBA rules (history + synthetic), simulation, config; markets, reader, CLI, publisher
+npm run sim:test                                 # engine, hooks; NFL, NHL, MLB, college football and NBA rules (history + synthetic), simulation, config; markets, reader, CLI, publisher
 npm run sim:check                                # generated files are current
 npm run sim:sql                                  # supabase/simulator.sql on a throwaway PostgreSQL (skips without one)
 npm install --no-save playwright@1.49.1; npx playwright install chromium; npm run sim:e2e   # the Simulator seat in Chromium
@@ -71,6 +71,40 @@ with `sport.active` failing is the expected state today.
 Exit codes: `0` ok · `1` a gate blocked publication (nothing published) ·
 `2` invalid inputs or arguments (nothing simulated) · `3` publication failed
 (the previously published run is unchanged).
+
+## College football
+
+The CFB season, conference championship and CFP simulator is documented in
+[`CFB_SIMULATOR_NOTES.md`](../../CFB_SIMULATOR_NOTES.md) (sources, rules,
+calibration, the committee proxy and its limitations). It is **ACTIVE**: every
+conference procedure, the 2026 CFP format and North Dakota State's eligibility
+are verified from the governing bodies' own text (§4 there), and the nightly
+workflow runs and publishes it with the NFL. Sacramento State's MAC eligibility
+is measured in every run (§5.6 there).
+
+```powershell
+npm run sim:cfb:test                             # the seven CFB suites (also part of sim:test)
+npm run sim:cfb:dry-run                          # build the snapshot from the feeds, 100,000 runs, 4 workers
+node simulator/src/cli/run.ts --sport cfb --season 2026 --runs 20000 --workers 4 --offline --dry-run   # cached feeds only
+node simulator/src/cli/run.ts --sport cfb --season 2026 --snapshot simulator/fixtures/cfb_2026_wk7_snapshot.json.gz --runs 2000 --dry-run   # replay the committed snapshot
+npm run sim:cfb:calibration                      # simulator/data/cfb_calibration.json (needs the schedules cache)
+npm run sim:cfb:uncertainty                      # simulator/data/cfb_strength_uncertainty.json
+npm run sim:cfb:committee                        # simulator/data/cfb_committee_proxy.json (fit, chronological validation)
+npm run sim:cfb:fixture -- --offline             # rebuild the test snapshot
+```
+
+The research scripts read the 2006-2025 schedules from `simulator/.cache/feeds/cfb`
+(gitignored); a snapshot build without `--offline` downloads and caches them.
+The primary rule sources are read by the *Simulator CFB source check* workflow
+(GitHub's runners can reach the conference and CFP sites; this environment cannot).
+
+After Selection Day (Dec. 6), put the announced bracket in
+`simulator/config/cfb_cfp_bracket.json` with `status: "observed"`, its
+`source_url` and `announced_at`: the committee proxy is then never used and
+completed playoff games come from the feed. A hypothetical bracket is
+`status: "scenario"` with its assumptions listed; its outputs are labelled
+CONDITIONAL. A primary-quarterback absence goes in
+`simulator/config/cfb_availability.json` with its source.
 
 ## Replay and reproducibility
 

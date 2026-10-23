@@ -13,7 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compareFutures, validateFuturesConfig, type FuturesConfig, type RunView } from '../markets/compare.ts';
+import { compareFutures, validateFuturesConfig, configForSport, type FuturesConfig, type RunView } from '../markets/compare.ts';
 import { kalshiClient, fetchQuotes } from '../markets/kalshi.ts';
 import { postgrestDb, type SimDb } from '../publish/db.ts';
 
@@ -28,8 +28,8 @@ export function runView(results: any): RunView {
 
 export async function marketStep(opt: { results: any; runId: string | null; publish: boolean; cfg?: FuturesConfig; db?: SimDb; fetchImpl?: typeof fetch; log?: (s: string) => void; now?: Date }) {
   const log = opt.log || console.log;
-  const cfg = opt.cfg || JSON.parse(fs.readFileSync(FUTURES_CONFIG, 'utf8')) as FuturesConfig;
   const run = runView(opt.results);
+  const cfg = configForSport(opt.cfg || JSON.parse(fs.readFileSync(FUTURES_CONFIG, 'utf8')) as FuturesConfig, run);
   const errs = validateFuturesConfig(cfg, run);
   if (errs.length) throw Object.assign(new Error('invalid futures mapping: ' + errs.join('; ')), { exitCode: 2 });
   const live = cfg.mappings.filter((m) => m.status === 'verified');

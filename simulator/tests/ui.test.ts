@@ -8,6 +8,10 @@ import { execFileSync } from 'node:child_process';
 import { kit } from './_kit.ts';
 import { REPO } from '../src/sports/nfl/model_adapter.ts';
 import { sportRegistry } from '../src/sports/registry.ts';
+import os from 'node:os';
+import { execute, parseArgs } from '../src/cli/run.ts';
+import { resultRows } from '../src/publish/publish.ts';
+import { CFB_FIXTURE } from './_cfb.ts';
 
 const require = createRequire(import.meta.url);
 const UI = require(path.join(REPO, 'lib', 'edgedesk_simulator.js'));
@@ -75,5 +79,38 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
     reference_prob: null, normalized_ref_prob: null, reference_edge_pp: null, exec_price: 0.14, exec_cost_prob: 0.14, exec_edge_pp: 6, quote_age_minutes: 5, fee_verified: false, stale: false, actionable: false, block_reasons: [evil] }]), { kind: 'ok' }, { key: 'exec_edge_pp', dir: 'desc' });
   T.chk('the futures table escapes block reasons and states pre-fee', !/<img/i.test(fut) && /before fees/.test(fut) && /never a recommendation/.test(fut));
   T.chk('the futures table separates reference and executable edges, with no combined score', /Ref edge/.test(fut) && /Exec edge/.test(fut) && !/edge score/i.test(fut));
+}
+/* college football: the conference and CFP views from a real (small) run of the committed snapshot, as the database returns it */
+{
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'edgedesk-ui-cfb-'));
+  const o = await execute(parseArgs(['--sport', 'cfb', '--snapshot', CFB_FIXTURE, '--runs', '400', '--workers', '2', '--dry-run', '--out', out]), () => {});
+  const rows = resultRows(o) as any[];
+  const ents = (o.results.entities as any[]).map((e) => ({ entity_id: e.entity_id, entity_name: e.entity_name, entity_groups: e.groups, record: e.record, mean_wins: e.mean_wins, math_status: e.math_status }));
+  const cfb = (o.results as any).cfb;
+  const run = { comparison_id: null, validation_summary: { checks: o.results.checks, flags: o.results.flags, cfb: { cfp_mode: cfb.cfp_mode, cfp_mode_reason: cfb.cfp_mode_reason, conferences: cfb.conferences } } };
+  const M = UI.buildModel(run, rows, ents, []);
+  const conf = UI.renderCfbConference(M), cfp = UI.renderCfbPlayoff(M);
+  const confs = [...new Set(ents.map((e) => e.entity_groups.conference))].filter((c) => c !== 'FBS Independents');
+  T.eq('conference tab: one card per conference with a title game, none for the independents', (conf.match(/class="sm-card"/g) || []).length, confs.length);
+  T.chk('... each with title-game, No. 1 seed and conference-title columns', /Title game/.test(conf) && /No\. 1 seed/.test(conf) && /Win SEC/.test(conf) && !/Notre Dame/.test(conf));
+  T.chk('... and the Estimated-ranking exposure where a conference has it', /Estimated/.test(conf) && /outside ranking/.test(conf));
+  T.chk('CFP tab: labelled Estimated, says the proxy is not the committee, and that a record never fixes the ranking', /sm-badge sm-estimated/.test(cfp) && /not the committee/.test(cfp) && /never fixes its ranking/.test(cfp));
+  T.chk('... lists the rounds through the national title, with Notre Dame eligible', ['Make CFP', 'Bye', 'Quarterfinal', 'Semifinal', 'Final', 'Champion'].every((h) => cfp.includes(h)) && /Notre Dame/.test(cfp));
+  T.chk('... and no NFL vocabulary', !/Super Bowl|seed 7|Playoffs<\/th>/.test(conf + cfp));
+  const off = UI.buildModel({ validation_summary: { cfb: { cfp_mode: 'off', cfp_mode_reason: 'no defensible selection proxy' } } }, rows.filter((r) => !/^(cfp|reach|national)/.test(r.outcome)), ents, []);
+  T.chk('with the CFP layer off, the tab says no CFP probability is published, and why', /No CFP or national-title probability is published/.test(UI.renderCfbPlayoff(off)) && /no defensible selection proxy/.test(UI.renderCfbPlayoff(off)));
+  T.chk('... and the conference tab drops the Make CFP column', !/Make CFP/.test(UI.renderCfbConference(off)));
+  const evilRows = rows.filter((r) => r.entity_id === 'alabama').map((r) => ({ ...r, entity_name: '<img src=x onerror=alert(1)>' }));
+  const evil = UI.buildModel(run, evilRows, [{ ...ents.find((e) => e.entity_id === 'alabama'), entity_name: '<img src=x onerror=alert(1)>', entity_groups: { conference: '<b>SEC</b>', ccg: 'SEC', division: '-' } }], []);
+  T.chk('team and conference names are escaped in both views', !/<img|<b>SEC/.test(UI.renderCfbConference(evil) + UI.renderCfbPlayoff(evil)));
+  T.eq('the reader opens a sport on its title view (CFP & Title for college football)', [UI.defaultTab({ tabs: ['conference', 'title', 'futures'] }), UI.defaultTab({ tabs: ['division', 'conference', 'title', 'futures'] }), UI.defaultTab({ tabs: ['tournament'] })], ['title', 'title', 'tournament']);
+  fs.rmSync(out, { recursive: true, force: true });
+}
+/* PostgREST answers at most max-rows per request: the reader pages until a short page */
+{
+  const asked: string[] = [];
+  const get = async (q: string) => { asked.push(q); const off = Number(/offset=(\d+)/.exec(q)![1]); return Array.from({ length: off < 3000 ? 1000 : 213 }, (_, i) => ({ i: off + i })); };
+  const all = await UI.getAll(get, 'sim_current_results?run_id=eq.x&order=entity_id,outcome');
+  T.eq('3,213 rows read in pages of 1,000 (college football publishes about 3,200)', [all.length, asked.length, asked.map((q) => /offset=(\d+)/.exec(q)![1]).join()], [3213, 4, '0,1000,2000,3000']);
 }
 process.exit(T.done());
