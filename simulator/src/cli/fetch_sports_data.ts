@@ -4,7 +4,7 @@
    .github/workflows/simulator-sports-data.yml) and written as committed,
    hashed files under simulator/data/feeds/.
 
-     node simulator/src/cli/fetch_sports_data.ts --what golf|ufc|all [--out simulator/data/feeds]
+     node simulator/src/cli/fetch_sports_data.ts --what golf|ufc|tennis|all [--out simulator/data/feeds] [--tennis-from 2022-01]
                                                  [--golf-seasons 2023,2024,2025,2026] [--golf-leagues pga]
 
    GOLF (ESPN's public golf scoreboard): every event of each season's
@@ -47,6 +47,10 @@ const OUT = opt('--out') || path.join(REPO, 'simulator', 'data', 'feeds');
 const GOLF_SEASONS = (opt('--golf-seasons') || '2023,2024,2025,2026').split(',').map(Number).filter(Boolean);
 const GOLF_LEAGUES = (opt('--golf-leagues') || 'pga,lpga,eur').split(',').filter(Boolean);
 const CURRENT_LEAGUES = ['pga', 'lpga', 'eur'];
+const espnTennis = require(path.join(REPO, 'tools', 'tennis', 'espn.js')) as {
+  scoreboardRangeUrl: (tour: string, fromMs: number, toMs: number) => string; scoreboardPlainUrl: (tour: string) => string; summaryUrl: (tour: string, id: string) => string;
+  parseScoreboard: (j: unknown, tour: string) => Array<Record<string, any>>; rankingsUrls: (tour: string) => string[]; parseRankings: (j: unknown) => unknown };
+const TENNIS_FROM = opt('--tennis-from') || '2022-01';
 const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
 type Req = { url: string; status: number | string; bytes: number; ms: number; note?: string };
@@ -260,14 +264,71 @@ export function parseUfcRankings(html: string) {
   return out;
 }
 
+/* ------------------------------------------------------------------ tennis */
+/** one singles match, as the tennis simulation reads it (side a = the feed's first competitor) */
+function tennisMatchRow(m: Record<string, any>, t: Record<string, any>) {
+  return {
+    id: m.provider_match_id, tid: t.provider_tournament_id, tournament: t.name, level: t.level, surface: t.surface, start: t.start_date, end: t.end_date, draw_size: t.draw_size,
+    tour: m.tour, grouping: m.grouping, round: m.round, best_of: m.best_of, at: m.scheduled_at, order: m.match_order,
+    a_id: m.home_provider_id, a: m.home_name, a_seed: m.home_seed, a_rank: m.home_rank,
+    b_id: m.away_provider_id, b: m.away_name, b_seed: m.away_seed, b_rank: m.away_rank,
+    status: m.status, result: m.result_type, detail: m.status_detail, winner: m.winner_side === 'home' ? 'a' : m.winner_side === 'away' ? 'b' : null,
+    sets: (m.set_scores || []).map((x: any) => [x.home, x.away, x.home_tb, x.away_tb])
+  };
+}
+async function fetchTennis() {
+  const [y0, m0] = TENNIS_FROM.split('-').map(Number);
+  const now = new Date(), rows = new Map<string, any>(), tournaments = new Map<string, any>(), windows: string[] = [], unread: string[] = [];
+  /* half-month windows: a slam fortnight carries hundreds of competitions per tour, and a request answers at most 900 */
+  for (let y = y0, m = m0; Date.UTC(y, m - 1, 1) <= now.getTime() + 31 * 864e5; m === 12 ? (y++, m = 1) : m++) {
+    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    for (const [a, b] of [[1, 15], [16, last]]) {
+      for (const tour of ['atp', 'wta']) {
+        const from = Date.UTC(y, m - 1, a), to = Date.UTC(y, m - 1, b), key = tour + ':' + new Date(from).toISOString().slice(0, 10);
+        const j = await fetchJson(espnTennis.scoreboardRangeUrl(tour, from, to));
+        if (!j) { unread.push(key); continue; }
+        windows.push(key);
+        for (const t of espnTennis.parseScoreboard(j, tour)) {
+          const prev = tournaments.get(t.provider_tournament_id);
+          tournaments.set(t.provider_tournament_id, { id: t.provider_tournament_id, name: t.name, tour: prev && prev.tour !== t.tour ? 'MIXED' : t.tour, level: t.level, surface: t.surface, start: t.start_date, end: t.end_date, draw_size: t.draw_size, venue: t.venue, city: t.city, country: t.country, groupings: t.groupings });
+          for (const m of t.matches) if (!m.is_doubles && m.provider_match_id) rows.set(m.provider_match_id, tennisMatchRow(m, t));
+        }
+        await sleep(100);
+      }
+    }
+  }
+  const matches = [...rows.values()].sort((a, b) => String(a.at).localeCompare(String(b.at)) || String(a.id).localeCompare(String(b.id)));
+  const histHash = writeGz('tennis_matches.json.gz', { schema: 'edgedesk_feed_tennis_matches_v1', fetched_at: new Date().toISOString(), source: 'ESPN public tennis scoreboard, half-month ranges (tools/tennis/espn.js parseScoreboard); singles only', windows, unread, tournaments: [...tournaments.values()], matches });
+  /* the tournaments in progress or starting within two weeks: ESPN's summary document whole (its draw / bracket shape is read in the repository) */
+  const soon = [...tournaments.values()].filter((t) => t.end && t.start && Date.parse(t.end + 'T23:59:59Z') >= now.getTime() - 864e5 && Date.parse(t.start + 'T00:00:00Z') <= now.getTime() + 14 * 864e5);
+  const summaries: Record<string, unknown> = {};
+  for (const t of soon.slice(0, 12)) {
+    const tour = t.tour === 'WTA' ? 'wta' : 'atp';
+    summaries[t.id] = { tournament: t, summary: await fetchJson(espnTennis.summaryUrl(tour, t.id)) };
+  }
+  const current: Record<string, unknown> = {};
+  for (const tour of ['atp', 'wta']) current[tour] = await fetchJson(espnTennis.scoreboardPlainUrl(tour));
+  writeGz('tennis_current.json.gz', { schema: 'edgedesk_feed_tennis_current_v1', fetched_at: new Date().toISOString(), tournaments: soon, summaries, scoreboards: current });
+  /* the tours' rankings (seeding and a prior for players the history barely knows) */
+  const rankings: Record<string, unknown> = {};
+  for (const tour of ['atp', 'wta']) {
+    for (const u of espnTennis.rankingsUrls(tour)) { const j = await fetchJson(u); if (j) { rankings[tour] = { url: u, parsed: espnTennis.parseRankings(j) }; break; } }
+  }
+  writeJson('tennis_rankings.json', { schema: 'edgedesk_feed_tennis_rankings_v1', fetched_at: new Date().toISOString(), rankings });
+  const done = matches.filter((m) => m.winner).length;
+  report.summary.tennis = { matches: matches.length, decided: done, tournaments: tournaments.size, windows: windows.length, unread, current_tournaments: soon.map((t) => t.tour + ' ' + t.name), matches_sha256: histHash };
+  console.log('tennis: ' + matches.length + ' singles matches (' + done + ' decided) in ' + tournaments.size + ' tournaments from ' + windows.length + ' windows; unread ' + (unread.join(',') || 'none') + '; current ' + soon.map((t) => t.tour + ' ' + t.name + ' (' + t.start + '..' + t.end + ')').join(' | '));
+}
+
 /* ------------------------------------------------------------------ main */
 const isMain = !!process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
   (async () => {
-    if (!['golf', 'ufc', 'all'].includes(WHAT)) { console.error('usage: --what golf|ufc|all [--out DIR]'); process.exit(2); }
+    if (!['golf', 'ufc', 'tennis', 'all'].includes(WHAT)) { console.error('usage: --what golf|ufc|tennis|all [--out DIR]'); process.exit(2); }
     fs.mkdirSync(OUT, { recursive: true });
     if (WHAT === 'golf' || WHAT === 'all') await fetchGolf();
     if (WHAT === 'ufc' || WHAT === 'all') await fetchUfc();
+    if (WHAT === 'tennis' || WHAT === 'all') await fetchTennis();
     report.finished_at = new Date().toISOString();
     const byStatus = report.requests.reduce((a: Record<string, number>, r) => { a[String(r.status)] = (a[String(r.status)] || 0) + 1; return a; }, {});
     report.summary.requests = byStatus;
