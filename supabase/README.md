@@ -111,6 +111,15 @@ Run in that order (`.github/workflows/deploy-kalshi.yml` does it, tests first). 
 
 Tested against a real PostgreSQL by `tools/kalshi/kalshi_sql.test.js`.
 
+### `simulator.sql` + `simulator_registry.sql` — the EdgeDesk Simulator (season probabilities, Kalshi futures)
+
+Run in that order (`.github/workflows/deploy-simulator.yml` does it, the SQL suite first). Requires `community_is_entitled(uuid)` (`community_posts.sql` / `billing_hardening.sql`): without it nobody can read a result (fail closed; report row 5 says CHECK THIS). `SIMULATOR_NOTES.md` §9 is the narrative; `docs/simulator/README.md` the runbook.
+
+- **`simulator.sql`** (mirrored in `migrations/20261023120000_simulator.sql`, byte-identical, CI checks it) adds `sim_runs`, `sim_input_snapshots`, `sim_team_results`, `sim_entity_summary`, `sim_trace_samples`, `sim_published` (the one pointer per sport/competition/season), `sim_market_comparisons`, `sim_futures_quotes`, `sim_futures_edges`, `sim_flag_snapshots`, `sim_closing_observations`, `sim_alerts`, `sim_config`; the service-role functions `sim_begin_run` → `sim_put_*` → `sim_publish_run` (one transaction under an advisory lock that re-checks every count, probability, format sum and gate before moving the pointer; a failed or older run never replaces the published one), the comparison and close-grading functions; the reader views `sim_current_runs/results/entities/edges` and `sim_public_status()`. RLS on every table; readers see completed, published rows only when `sim_viewer_entitled()`; anon sees statuses and blockers, never a number; evidence tables refuse UPDATE/DELETE/TRUNCATE. Ends in a report; every row should say ok.
+- **`simulator_registry.sql`** (generated from `simulator/research/registration.json`; do not edit) registers SIM-NFL-SEASON v0.1.0 as EXPERIMENTAL, T3, with its promotion criteria, before any result. It writes no result and promotes nothing.
+
+Tested against a real PostgreSQL by `simulator/tests/sql.test.ts`.
+
 ### `nfl_ref_flags.sql` — NFL referee flag tendencies on the game card (display only)
 
 Mirrored in `migrations/20261022100000_nfl_ref_flags.sql`. T0 counts from nflverse play-by-play, shown in the Officiating block of the NFL card's Market Structure → Observed section. Nothing here feeds a projection, spread, total, probability, EV, grade, ranking or the CLV record. The data, the build and the weekly sync are in `data/refs/README.md`.
