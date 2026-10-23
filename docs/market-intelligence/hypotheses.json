@@ -1,0 +1,352 @@
+{
+ "schema": "edgedesk_hypotheses_v1",
+ "what": "Pre-registered research hypotheses for the model-versus-market program. Each names its test (tools/market_intel/validation_report.js TESTS), its data and its acceptance rule before it is judged. The report never edits this file. A REJECTED hypothesis stays here with its result; RETIRED is set by a person, with a reason.",
+ "registration_note": "Every hypothesis was in this file by 2026-10-23T21:08:19Z (the time recorded on each). H-001 to H-010 were written before tools/market_intel/validation_report.js first ran; H-011 to H-013 were written after its exploratory results were read, which is why their windows start on 2026-10-24. Amendments are listed on the hypothesis they changed.",
+ "kinds": {
+  "EXPLORATORY": "Formed after the data in its window had been looked at (seen_before_registration: true). Its result describes that data and confirms nothing.",
+  "CONFIRMATORY": "Registered before any game in its window was played. The only kind whose ACCEPTED status is evidence."
+ },
+ "hypotheses": [
+  {
+   "id": "H-001",
+   "kind": "EXPLORATORY",
+   "statement": "Where the CFB model's last pregame spread disagrees with the close, the disagreement predicts the final margin beyond the close",
+   "mechanism": "An independent rating that sees efficiency and personnel the market under-weights would leave the close systematically wrong in the direction of the model",
+   "metric": "information slope of (final - close) on (model - close), cluster bootstrap by week",
+   "data": {
+    "sport": "cfb",
+    "slice": "all",
+    "test": "spread_info_vs_close"
+   },
+   "window": {
+    "from": "2026-08-01T00:00:00Z",
+    "to": "2026-10-24T00:00:00Z"
+   },
+   "acceptance": {
+    "rule": "verdict_in",
+    "values": [
+     "INFORMATIVE"
+    ]
+   },
+   "failure_mode": "The close already contains the model's inputs; the residual disagreement is model error",
+   "seen_before_registration": true,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-002",
+   "kind": "CONFIRMATORY",
+   "statement": "Same as H-001, on CFB games played after registration",
+   "mechanism": "As H-001",
+   "metric": "As H-001",
+   "data": {
+    "sport": "cfb",
+    "slice": "all",
+    "test": "spread_info_vs_close"
+   },
+   "window": {
+    "from": "2026-10-24T00:00:00Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "verdict_in",
+    "values": [
+     "INFORMATIVE"
+    ]
+   },
+   "failure_mode": "As H-001",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-003",
+   "kind": "EXPLORATORY",
+   "statement": "The CFB model prices FBS-vs-FCS games short of the close: the closing favourite's margin (the FBS team in 71 of the 73 games to date) is lower in the model than in the market",
+   "mechanism": "Every FCS team is priced from one shared floor rating (football/cfb_p4/params.js fcs_rating -28) and ratings are learned on margins clamped at +/-35 (football/cfb_p4/engine.js), so a mismatch whose real margin often exceeds 35 is fitted to a capped expectation",
+   "metric": "mean of (model - close) in FBS-team points (home-signed margin times the sign of the closing favourite), cluster bootstrap by week",
+   "data": {
+    "sport": "cfb",
+    "slice": "fbs_vs_fcs",
+    "test": "spread_favourite_lean_vs_close"
+   },
+   "window": {
+    "from": "2026-08-01T00:00:00Z",
+    "to": "2026-10-24T00:00:00Z"
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": 0
+   },
+   "failure_mode": "The shortfall is a handful of extreme games (an FCS opponent missing its roster) rather than a systematic offset",
+   "seen_before_registration": true,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED",
+   "amendments": [
+    {
+     "at": "2026-10-23T21:08:19Z",
+     "what": "statement reworded to say the test is signed by the closing favourite (the FBS team in 71 of 73 games); the test, slice, window and acceptance rule are unchanged",
+     "after_result_seen": true
+    }
+   ]
+  },
+  {
+   "id": "H-004",
+   "kind": "CONFIRMATORY",
+   "statement": "Same as H-003, on FBS-vs-FCS games played after registration",
+   "mechanism": "As H-003",
+   "metric": "As H-003",
+   "data": {
+    "sport": "cfb",
+    "slice": "fbs_vs_fcs",
+    "test": "spread_favourite_lean_vs_close"
+   },
+   "window": {
+    "from": "2026-10-24T00:00:00Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": 0
+   },
+   "failure_mode": "Few FBS-vs-FCS games remain in a season after October; the window may never reach the minimum before the 2027 season",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-005",
+   "kind": "EXPLORATORY",
+   "statement": "The market moves toward the CFB model after EdgeDesk first publishes beside a quote (the close is nearer the model than the first quote was)",
+   "mechanism": "If the model sees information before the market prices it, later prices drift toward the model; this is closing-line movement, not profit",
+   "metric": "information slope of (close - first quote) on (model - first quote)",
+   "data": {
+    "sport": "cfb",
+    "slice": "all",
+    "test": "spread_market_moves_toward_model"
+   },
+   "window": {
+    "from": "2026-08-01T00:00:00Z",
+    "to": "2026-10-24T00:00:00Z"
+   },
+   "acceptance": {
+    "rule": "verdict_in",
+    "values": [
+     "INFORMATIVE"
+    ]
+   },
+   "failure_mode": "Movement toward the model is the market moving toward its own consensus, which the model also tracks (shared inputs), not information the model added",
+   "seen_before_registration": true,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-006",
+   "kind": "EXPLORATORY",
+   "statement": "The CFB model's win probability scores better (lower Brier) than the no-vig closing moneyline on the same games",
+   "mechanism": "An independent probability that is better calibrated than the close",
+   "metric": "paired Brier difference model - market, cluster bootstrap by week",
+   "data": {
+    "sport": "cfb",
+    "slice": "all",
+    "test": "winprob_brier_vs_close"
+   },
+   "window": {
+    "from": "2026-08-01T00:00:00Z",
+    "to": "2026-10-24T00:00:00Z"
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": 0
+   },
+   "failure_mode": "The close is the stronger forecaster; the model's Brier is worse",
+   "seen_before_registration": true,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-007",
+   "kind": "EXPLORATORY",
+   "statement": "The CFB model's win probabilities are overconfident (calibration slope below 1)",
+   "mechanism": "Earlier EdgeDesk analysis reported excessive confidence in large favourites; a margin-to-probability spread that is too narrow would show as a slope below 1",
+   "metric": "logistic calibration slope with a cluster bootstrap interval",
+   "data": {
+    "sport": "cfb",
+    "slice": "all",
+    "test": "winprob_calibration"
+   },
+   "window": {
+    "from": "2026-08-01T00:00:00Z",
+    "to": "2026-10-24T00:00:00Z"
+   },
+   "acceptance": {
+    "rule": "verdict_in",
+    "values": [
+     "OVERCONFIDENT"
+    ]
+   },
+   "failure_mode": "The earlier finding was fixed (or was a backtest artifact); 2026 live probabilities are consistent with calibration",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-008",
+   "kind": "EXPLORATORY",
+   "statement": "Where the NFL model's last pregame spread disagrees with the close, the disagreement predicts the final margin beyond the close",
+   "mechanism": "As H-001, for the NFL engine",
+   "metric": "information slope, cluster bootstrap by week",
+   "data": {
+    "sport": "nfl",
+    "slice": "all",
+    "test": "spread_info_vs_close"
+   },
+   "window": {
+    "from": "2026-08-01T00:00:00Z",
+    "to": "2026-10-24T00:00:00Z"
+   },
+   "acceptance": {
+    "rule": "verdict_in",
+    "values": [
+     "INFORMATIVE"
+    ]
+   },
+   "failure_mode": "Six weeks of one season is too few games to tell",
+   "seen_before_registration": true,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-009",
+   "kind": "CONFIRMATORY",
+   "statement": "The NHL model's win probability scores better (lower Brier) than the no-vig DraftKings moneyline last observed before the start",
+   "mechanism": "An xG-based team model that sees goaltending and shot quality the market under-weights",
+   "metric": "paired Brier difference model - market, cluster bootstrap by slate day",
+   "data": {
+    "sport": "nhl",
+    "slice": "all",
+    "test": "winprob_brier_vs_close"
+   },
+   "window": {
+    "from": "2026-10-24T00:00:00Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": 0
+   },
+   "failure_mode": "The market is the stronger forecaster in hockey, where per-game signal is small",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-010",
+   "kind": "CONFIRMATORY",
+   "statement": "The NBA model's win probability scores better (lower Brier) than the no-vig DraftKings moneyline last observed before the start",
+   "mechanism": "A roster-aware team model",
+   "metric": "paired Brier difference model - market, cluster bootstrap by slate day",
+   "data": {
+    "sport": "nba",
+    "slice": "all",
+    "test": "winprob_brier_vs_close"
+   },
+   "window": {
+    "from": "2026-10-24T00:00:00Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": 0
+   },
+   "failure_mode": "Early-season NBA ratings carry little information; the market prices late injury news the model may not see",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-011",
+   "kind": "CONFIRMATORY",
+   "statement": "In FBS-vs-FBS games, the close moves toward the CFB model's number from the first quote EdgeDesk recorded beside it",
+   "mechanism": "The exploratory 2026 data showed a slope of about 0.11 in this slice only (not pre-registered; BH-adjusted p about 0.05); if the model sees information early, later prices drift toward it",
+   "metric": "information slope of (close - first quote) on (model - first quote), cluster bootstrap by week, robust to dropping any one week",
+   "data": {
+    "sport": "cfb",
+    "slice": "fbs_vs_fbs",
+    "test": "spread_market_moves_toward_model"
+   },
+   "window": {
+    "from": "2026-10-24T00:00:00Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "verdict_in",
+    "values": [
+     "INFORMATIVE"
+    ]
+   },
+   "failure_mode": "The first quote is a noisy opener that reverts to a consensus the model also tracks; movement toward the model is shared inputs, not information the model added. Movement is not profit either way",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-012",
+   "kind": "CONFIRMATORY",
+   "statement": "The NFL close moves toward the NFL model's number from the first quote EdgeDesk recorded beside it",
+   "mechanism": "As H-011; the exploratory NFL slope was about 0.14 (BH-adjusted p about 0.05)",
+   "metric": "As H-011",
+   "data": {
+    "sport": "nfl",
+    "slice": "all",
+    "test": "spread_market_moves_toward_model"
+   },
+   "window": {
+    "from": "2026-10-24T00:00:00Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "verdict_in",
+    "values": [
+     "INFORMATIVE"
+    ]
+   },
+   "failure_mode": "As H-011",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-013",
+   "kind": "CONFIRMATORY",
+   "statement": "After the 2026-10-19 home-field change (edgedesk_cfb_p4_v1.0.1, one 2.8-point home field), the CFB model's home lean against the close in FBS-vs-FBS games is under one point",
+   "mechanism": "v1.0.0 learned 3.2 and projected 4.082 points of home field and leaned 1.4 points home of the close, in its 2022-2025 replay and again live in 2026; one 2.8-point home field should remove most of that lean",
+   "metric": "mean of (model margin - close margin), home-signed, cluster bootstrap by week, robust to dropping any one week",
+   "data": {
+    "sport": "cfb",
+    "slice": "cfb_v1_0_1_fbs_vs_fbs",
+    "test": "spread_home_lean_vs_close"
+   },
+   "window": {
+    "from": "2026-10-24T00:00:00Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": 1.0
+   },
+   "failure_mode": "The lean came from something other than the home-field constant (the seed ratings, neutral-site handling), so it persists under v1.0.1",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-23T21:08:19Z",
+   "status": "PREREGISTERED",
+   "amendments": [
+    {
+     "at": "2026-10-23T21:08:19Z",
+     "what": "slice narrowed from every v1.0.1 game to FBS-vs-FBS v1.0.1 games, because FBS-vs-FCS games (H-003) would pull a home lean down for a reason unrelated to the home field",
+     "after_result_seen": false,
+     "note": "no game in the window (from 2026-10-24) had been played"
+    }
+   ]
+  }
+ ]
+}
