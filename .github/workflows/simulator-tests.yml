@@ -1,0 +1,127 @@
+# EdgeDesk Simulator — every suite, on every change to the simulator.
+#
+#   unit   typecheck (pinned typescript from simulator/package-lock.json), the
+#          engine, rules (2002-2025 history + synthetic), simulation, hooks,
+#          config, markets and reader suites, and the generated-file checks
+#          (the reader's sport registry, the research-registry SQL, and the
+#          migration being a byte copy of supabase/simulator.sql)
+#   sql    supabase/simulator.sql on a real, throwaway PostgreSQL: RLS, the
+#          premium entitlement, atomic publication, immutability, idempotency
+#          (SIM_SQL_REQUIRED=1: a missing cluster FAILS, never skips)
+#   e2e    the Simulator seat in Chromium at desktop, tablet and phone widths
+#          (SIM_E2E_REQUIRED=1: a missing browser FAILS, never skips)
+#
+# No network beyond package installs, no credentials, nothing written.
+name: Simulator suites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'simulator/**'
+      - 'supabase/simulator.sql'
+      - 'supabase/simulator_registry.sql'
+      - 'supabase/migrations/20261023120000_simulator.sql'
+      - 'lib/edgedesk_simulator*.js'
+      - 'lib/edgedesk_simulator.css'
+      - 'app.html'
+      - 'football/nfl_model.js'
+      - 'football/nfl_params_v2.js'
+      - 'football/engine.js'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/simulator-tests.yml'
+      - '.github/workflows/simulator.yml'
+  pull_request:
+    paths:
+      - 'simulator/**'
+      - 'supabase/simulator.sql'
+      - 'supabase/simulator_registry.sql'
+      - 'supabase/migrations/20261023120000_simulator.sql'
+      - 'lib/edgedesk_simulator*.js'
+      - 'lib/edgedesk_simulator.css'
+      - 'app.html'
+      - 'football/nfl_model.js'
+      - 'football/nfl_params_v2.js'
+      - 'football/engine.js'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/simulator-tests.yml'
+      - '.github/workflows/simulator.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: simulator-tests-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Install the pinned typechecker (dev only; the runtime has no dependencies)
+        run: npm ci --prefix simulator --no-audit --no-fund
+      - name: Typecheck
+        run: npm run --prefix simulator typecheck
+      - name: Engine, statistics, PRNG and hooks
+        run: |
+          node simulator/tests/core.test.ts
+          node simulator/tests/hooks.test.ts
+      - name: NFL rules against every season 2002-2025, and the synthetic cases
+        run: |
+          node simulator/tests/nfl_rules_history.test.ts
+          node simulator/tests/nfl_rules_synthetic.test.ts
+      - name: NFL simulation and configuration
+        run: |
+          node simulator/tests/nfl_sim.test.ts
+          node simulator/tests/nfl_config.test.ts
+      - name: Kalshi futures comparison and the reader
+        run: |
+          node simulator/tests/markets.test.ts
+          node simulator/tests/ui.test.ts
+      - name: The command line, the workflow plan, replay and worker-count independence
+        run: node simulator/tests/cli.test.ts
+      - name: The publisher's client side (bounded retries, key redaction, call order, failure handling)
+        run: node simulator/tests/publish.test.ts
+      - name: Generated files are current
+        run: |
+          node simulator/src/cli/build_ui_registry.ts --check
+          node simulator/src/research/build_registry_sql.ts --check
+          cmp supabase/simulator.sql supabase/migrations/20261023120000_simulator.sql
+
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: supabase/simulator.sql on a real PostgreSQL (RLS, entitlement, atomic publication)
+        env:
+          SIM_SQL_REQUIRED: '1'
+        run: node simulator/tests/sql.test.ts
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Install Playwright (pinned) and Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The Simulator seat in a real browser
+        env:
+          SIM_E2E_REQUIRED: '1'
+        run: node simulator/tests/ui.e2e.ts
