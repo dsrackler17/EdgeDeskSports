@@ -1,5 +1,6 @@
 /* Kalshi futures comparison over SYNTHETIC markets (invented tickers, prices
-   and rules: no real Kalshi market is represented here).
+   and rules), except where a block says REAL: Kalshi's own 2026 MLB wording
+   (simulator/fixtures/kalshi_mlb_2026_markets.json) and the committed config.
    node simulator/tests/markets.test.ts */
 import { kit } from './_kit.ts';
 import { compareFutures, validateFuturesConfig, configForSport, feePerContract, type FuturesConfig, type Quote, type RunView, type Mapping } from '../src/markets/compare.ts';
@@ -10,7 +11,9 @@ import { marketStep } from '../src/cli/markets.ts';
 import type { SimDb } from '../src/publish/db.ts';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMappings, DISCLAIMER, type Candidate } from '../src/cli/build_kalshi_mappings.ts';
+import { buildMappings, buildMlbMappings, candidatesFromLog, versionWith, DISCLAIMER, KALSHI_TO_RETRO, KALSHI_LABEL, type Candidate, type SeriesInfo } from '../src/cli/build_kalshi_mappings.ts';
+import { MLB_TEAMS, formatFor } from '../src/sports/mlb/config.ts';
+import { mlbOutcomes } from '../src/sports/mlb/module.ts';
 import { NFL_TEAMS_2026 } from '../src/sports/nfl/config.ts';
 import { NFL_OUTCOMES } from '../src/sports/nfl/module.ts';
 
@@ -193,21 +196,97 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   const four = b(['BUF:Buffalo', 'MIA:Miami', 'NE:New England', 'NYJ:New York J'].map((x) => { const [c, n] = x.split(':'); return ok({ market_ticker: 'KXNFLAFCEAST-27-' + c, yes_sub_title: n, rules_primary: 'If ' + n + ' wins the Pro Football AFC East Division, then the market resolves to Yes.' }); }));
   T.chk('a complete division is one mutually exclusive, exhaustive set', four.sets.length === 1 && four.sets[0].entities.length === 4 && four.mappings.every((m) => m.outcome_set === 'nfl2026:win_division:AFC East'));
 }
+/* ---- the candidates read back from a source check's job log (SYNTHETIC lines in its print format) ---- */
+{
+  const ts = '2026-10-23T20:20:47.1459895Z ';
+  const log = [
+    'irrelevant runner line',
+    ts + '  KXSYNWS | Synthetic World Series | quadratic_with_maker_fees | 1   <- futures',
+    ts + '  KXSYNWINS-NYY | Synthetic wins New York Y | quadratic | 1',
+    ts + '## SERIES KXSYNWS | Synthetic World Series | fee_type quadratic_with_maker_fees | fee_multiplier 1 | frequency custom | settlement_sources []',
+    ts + '  - KXSYNWS-27-NYY | event KXSYNWS-27 | New York Y | close 2027-11-05T04:00:00Z | bid 0.1000 ask 0.1100 size 10.00 | rules_sha256 ' + 'c'.repeat(64) + ' | RULES: If New York Y wins. | RULES2: ' + DISCLAIMER,
+    ts + '  - KXSYNWS-27-SF | event KXSYNWS-27 | San Francisco | close 2027-11-05T04:00:00Z | bid 0.0100 ask 0.0200 size 5.00 | rules_sha256 ' + 'd'.repeat(64) + ' | RULES: If San Francisco wins.',
+    ts + '  ~ SETTLED KXSYNWS-26-MIL | event KXSYNWS-26 | Milwaukee | close 2026-11-01T04:00:00Z | settled yes | rules_sha256 ' + 'e'.repeat(64) + ' | RULES: If Milwaukee wins.'
+  ].join('\n');
+  const c = candidatesFromLog(log);
+  T.eq('the fetch date is the first timestamp', c.fetched_at.slice(0, 10), '2026-10-23');
+  T.eq('series rows keep their fee fields (dashed tickers included)', c.series.map((s) => [s.ticker, s.fee_type, Number(s.fee_multiplier)]), [['KXSYNWS', 'quadratic_with_maker_fees', 1], ['KXSYNWINS-NYY', 'quadratic', 1]]);
+  T.eq('open markets are read with their series, label, rules and the runner\'s hash; a settled market never is', c.markets.map((k) => [k.series_ticker, k.market_ticker, k.yes_sub_title, k.rules_primary, k.rules_secondary, k.rules_sha256[0]]),
+    [['KXSYNWS', 'KXSYNWS-27-NYY', 'New York Y', 'If New York Y wins.', DISCLAIMER, 'c'], ['KXSYNWS', 'KXSYNWS-27-SF', 'San Francisco', 'If San Francisco wins.', null, 'd']]);
+  T.eq('mapping_version names each sport\'s source check (a version without a sport is the NFL\'s)', [versionWith('2026-10-23.run1', 'mlb', '2026-10-23.run2'), versionWith('mlb 2026-10-23.run2; nfl 2026-10-23.run1', 'mlb', '2027-03-01.run3')],
+    ['mlb 2026-10-23.run2; nfl 2026-10-23.run1', 'mlb 2027-03-01.run3; nfl 2026-10-23.run1']);
+}
+/* ---- MLB: Kalshi's own 2026 wording (REAL markets: simulator/fixtures/kalshi_mlb_2026_markets.json) ---- */
+{
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const fx = JSON.parse(fs.readFileSync(path.join(here, '..', 'fixtures', 'kalshi_mlb_2026_markets.json'), 'utf8')) as { series: SeriesInfo[]; markets: Candidate[] };
+  const by = { by: 'test', at: '2026-10-23' };
+  T.chk('the fixture is the text the runner hashed', fx.markets.every((k) => sha256Hex(k.rules_primary + '\n' + (k.rules_secondary || '')) === k.rules_sha256));
+  const r = buildMlbMappings(fx.markets, fx.series, by);
+  const n = (o: string) => r.mappings.filter((m) => m.outcome === o).length;
+  T.eq('every 2026 club market maps (World Series, pennants, divisions, playoff qualifiers)', [r.left.length, n('win_world_series'), n('win_pennant'), n('win_division'), n('make_playoffs')], [0, 2, 30, 30, 30]);
+  T.chk('each maps to the club its ticker and its label name, in 2026', r.mappings.every((m) => m.season === '2026' && KALSHI_LABEL[m.entity_id] === fx.markets.find((k) => k.market_ticker === m.market_ticker)!.yes_sub_title));
+  T.eq('pennants and divisions are complete sets; a World Series down to two clubs and the playoff field are never normalised', r.sets.map((s) => s.id + ' ' + s.entities.length),
+    ['mlb2026:win_division:AL Central 5', 'mlb2026:win_division:AL East 5', 'mlb2026:win_division:AL West 5', 'mlb2026:win_division:NL Central 5', 'mlb2026:win_division:NL East 5', 'mlb2026:win_division:NL West 5',
+      'mlb2026:win_pennant:AL 15', 'mlb2026:win_pennant:NL 15']);
+  /* next season: the same wording one year on maps to that season's run (and a full 30-club World Series is a set) */
+  const on = (k: Candidate): Candidate => ({ ...k, event_ticker: k.event_ticker.replace('-26', '-27'), market_ticker: k.market_ticker.replace('-26-', '-27-'), rules_primary: k.rules_primary.replace('2026', '2027') });
+  const wsAll = MLB_TEAMS.map((t) => { const sfx = Object.keys(KALSHI_TO_RETRO).find((x) => KALSHI_TO_RETRO[x] === t.code) || t.code, lab = KALSHI_LABEL[t.code];
+    return { ...fx.markets.find((k) => k.market_ticker === 'KXMLB-26-MIL')!, market_ticker: 'KXMLB-26-' + sfx, yes_sub_title: lab, rules_primary: 'If ' + lab + ' wins the 2026 Pro Baseball Championship, then the market resolves to Yes.' }; });
+  const r27 = buildMlbMappings([...fx.markets.filter((k) => k.series_ticker !== 'KXMLB'), ...wsAll].map(on), fx.series, by);
+  T.chk('next season\'s markets in the same wording map to next season', r27.left.length === 0 && r27.mappings.length === 120 && r27.mappings.every((m) => m.season === '2027' && m.mapping_id.startsWith('mlb2027:')), r27.left);
+  T.chk('a World Series with every club listed is one complete set', r27.sets.some((s) => s.id === 'mlb2027:win_world_series' && s.entities.length === 30));
+  /* exact or nothing (one real market, altered) */
+  const ws = fx.markets.find((k) => k.market_ticker === 'KXMLB-26-MIL')!, al = fx.markets.find((k) => k.market_ticker === 'KXMLBAL-26-NYY')!, div = fx.markets.find((k) => k.market_ticker === 'KXMLBALEAST-26-NYY')!;
+  const one = (k: Candidate) => buildMlbMappings([k], fx.series, by);
+  T.eq('a season that is not the event ticker\'s is left out', one({ ...ws, rules_primary: ws.rules_primary.replace('2026', '2027') }).left.length, 1);
+  T.eq('a label that is not the ticker\'s club is left out, even with rules to match', one({ ...ws, yes_sub_title: 'Chicago C', rules_primary: ws.rules_primary.replace('Milwaukee', 'Chicago C') }).left.length, 1);
+  T.eq('a club of the other league is left out of a pennant', one({ ...al, market_ticker: 'KXMLBAL-26-NYM', yes_sub_title: 'New York M', rules_primary: al.rules_primary.replace('New York Y', 'New York M') }).left.length, 1);
+  T.eq('a club outside the division is left out', one({ ...div, market_ticker: 'KXMLBALEAST-26-DET', yes_sub_title: 'Detroit', rules_primary: div.rules_primary.replace('New York Y', 'Detroit') }).left.length, 1);
+  T.eq('extra secondary rules are left out', one({ ...ws, rules_secondary: ws.rules_secondary + ' If the season is shortened, the market resolves to No.' }).left.length, 1);
+  T.eq('other wording is left out', one({ ...ws, rules_primary: ws.rules_primary.replace('wins the', 'reaches the') }).left.length, 1);
+  T.eq('an older series under another ticker is not a candidate at all', [one({ ...ws, series_ticker: 'KXMLBWS' }).mappings.length, one({ ...ws, series_ticker: 'KXMLBWS' }).left.length], [0, 0]);
+  T.chk('every Kalshi suffix names a club and every club has one label', MLB_TEAMS.every((t) => !!KALSHI_LABEL[t.code]) && Object.values(KALSHI_TO_RETRO).every((c) => MLB_TEAMS.some((t) => t.code === c)) && new Set(Object.values(KALSHI_LABEL)).size === 30);
+}
 /* ---- the committed config (real Kalshi markets, generated by build_kalshi_mappings.ts) ---- */
 {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const real = JSON.parse(fs.readFileSync(path.join(here, '..', 'config', 'kalshi_futures.json'), 'utf8')) as FuturesConfig;
   const nflRun: RunView = { sport: 'nfl', competition: 'NFL', season: '2026',
     entities: NFL_TEAMS_2026.map((t) => ({ entity_id: t.code, outcomes: Object.fromEntries(NFL_OUTCOMES.map((o) => [o.key, { probability: 0, mcse: 0 }])) })) };
-  T.eq('the committed futures config validates against a full NFL 2026 run', validateFuturesConfig(real, nflRun), []);
+  T.eq('the committed futures config validates against a full NFL 2026 run', validateFuturesConfig(configForSport(real, nflRun), nflRun), []);
+  /* each MLB season mapped validates against a full MLB run of that season (a later one is never that run's) */
+  const mlbSeasons = [...new Set(real.mappings.filter((m) => m.sport === 'mlb').map((m) => m.season))];
+  for (const season of mlbSeasons) {
+    const mlbRun: RunView = { sport: 'mlb', competition: 'MLB', season,
+      entities: MLB_TEAMS.map((t) => ({ entity_id: t.code, outcomes: Object.fromEntries(mlbOutcomes(formatFor(Number(season))).map((o) => [o.key, { probability: 0, mcse: 0 }])) })) };
+    T.eq('the committed MLB ' + season + ' mappings validate against a full MLB ' + season + ' run', validateFuturesConfig(configForSport(real, mlbRun), mlbRun), []);
+  }
+  {
+    /* the market step on an MLB 2026 run against the committed config: Kalshi answers with the two World Series markets'
+       own rules (REAL text from the fixture), so their hashes are what the runner hashed */
+    const fx = JSON.parse(fs.readFileSync(path.join(here, '..', 'fixtures', 'kalshi_mlb_2026_markets.json'), 'utf8')) as { markets: Candidate[] };
+    const results = { run: { sport: 'mlb', competition: 'MLB', season: '2026' }, entities: MLB_TEAMS.map((t) => ({ entity_id: t.code,
+      outcomes: Object.fromEntries(mlbOutcomes(formatFor(2026)).map((o) => [o.key, { probability: o.key === 'win_world_series' ? (t.code === 'MIL' ? 0.636 : t.code === 'TBA' ? 0.364 : 0) : 0, mcse: 0.0015 }])) })) };
+    const asked: string[] = [];
+    const kalshi = (async (u: string) => { const url = new URL(u); asked.push(url.searchParams.get('tickers') || '');
+      const markets = (url.searchParams.get('tickers') || '').split(',').map((tk) => fx.markets.find((k) => k.market_ticker === tk)).filter(Boolean).map((k) => ({ ticker: k!.market_ticker, event_ticker: k!.event_ticker,
+        series_ticker: k!.series_ticker, status: 'active', yes_bid_dollars: '0.6390', yes_ask_dollars: '0.6510', yes_ask_size_fp: '250.00', close_time: '2028-10-31T04:00:00Z', rules_primary: k!.rules_primary, rules_secondary: k!.rules_secondary }));
+      return new Response(JSON.stringify({ markets }), { status: 200, headers: { 'content-type': 'application/json' } }); }) as unknown as typeof fetch;
+    const step = await marketStep({ results, runId: null, publish: false, cfg: real, fetchImpl: kalshi, log: () => {}, now: new Date() });
+    T.chk('an MLB 2026 run compares the two mapped World Series markets (rules hashes match, both eligible)', step.status === 'compared' && step.rows.length === 2 && step.rows.every((r) => r.eligible) && /KXMLB-26-MIL/.test(asked.join()) && !/KXSB/.test(asked.join()),
+      { status: step.status, rows: step.rows.map((r) => [r.market_ticker, r.eligible, r.block_reasons]), asked });
+  }
   T.chk('the fee schedule is verified only with a verifier, a date and an https source', !real.fees.verified || (!!real.fees.verified_by && /^\d{4}-\d{2}-\d{2}$/.test(real.fees.verified_at || '') && /^https:\/\//.test(real.fees.source)));
   T.chk('every mapping is verified, dated and carries its rules sha256', real.mappings.every((m) => m.status === 'verified' && /^[0-9a-f]{64}$/.test(m.settlement.rules_sha256) && !!m.verified_by && /^\d{4}-\d{2}-\d{2}$/.test(m.verified_at || '')));
-  const clubs = (scope: string) => NFL_TEAMS_2026.filter((t) => !scope || t.conference === scope || t.division === scope).map((t) => t.code).sort();
+  const clubs = (id: string) => { const [sport, , scope] = id.split(':');
+    const teams: Array<{ code: string; groups: string[] }> = sport.startsWith('mlb') ? MLB_TEAMS.map((t) => ({ code: t.code, groups: [t.league, t.division] })) : NFL_TEAMS_2026.map((t) => ({ code: t.code, groups: [t.conference, t.division] }));
+    return teams.filter((t) => !scope || t.groups.includes(scope)).map((t) => t.code).sort(); };
   T.chk('every outcome set is exactly the clubs that can win it, each with one mapped market', real.outcome_sets.every((s) => {
     const members = real.mappings.filter((m) => m.outcome_set === s.id);
-    return s.mutually_exclusive && s.exhaustive && JSON.stringify(s.entities) === JSON.stringify(clubs(s.id.split(':')[2] || '')) && members.length === s.entities.length && members.every((m) => m.outcome === s.outcome);
+    return s.mutually_exclusive && s.exhaustive && JSON.stringify(s.entities) === JSON.stringify(clubs(s.id)) && members.length === s.entities.length && members.every((m) => m.outcome === s.outcome);
   }));
-  T.chk('make_playoffs is never normalised (seven clubs per conference qualify)', real.mappings.filter((m) => m.outcome === 'make_playoffs').every((m) => m.outcome_set == null));
-  T.chk('each club and outcome is mapped at most once', new Set(real.mappings.map((m) => m.entity_id + '|' + m.outcome)).size === real.mappings.length);
+  T.chk('make_playoffs is never normalised (several clubs qualify)', real.mappings.filter((m) => m.outcome === 'make_playoffs').every((m) => m.outcome_set == null));
+  T.chk('each club and outcome is mapped at most once per sport and season', new Set(real.mappings.map((m) => m.sport + '|' + m.season + '|' + m.entity_id + '|' + m.outcome)).size === real.mappings.length);
 }
 process.exit(T.done());

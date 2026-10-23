@@ -145,8 +145,14 @@ from the run page):
 
 ```powershell
 node simulator/src/cli/build_kalshi_mappings.ts --candidates C:/Downloads/kalshi_candidates.json --run <run id>
+node simulator/src/cli/build_kalshi_mappings.ts --sport mlb --candidates C:/Downloads/kalshi_candidates_mlb.json --run <run id>
 npm run sim:test
 ```
+
+Each command rebuilds one sport's mappings and keeps the others'. Without the
+artifact, `--log <the fetch job's log>` (timestamps kept) reads the same
+series and open markets from the job's printed lines. MLB's templates and the
+next-season steps: `MLB_SIMULATOR_NOTES.md` §15.1.
 
 
 ```powershell
