@@ -418,10 +418,11 @@ async function kalshi() {
       if (!cursor) break;
     }
     /* a series with no open market (between seasons) shows the wording it last settled on, so its template can be
-       written before the next season's markets list: printed as SETTLED and kept apart, never a mapping candidate */
-    if (!all.some((k) => k.series_ticker === x.ticker)) {
+       written before the next season's markets list: printed as SETTLED and kept apart, never a mapping candidate
+       (one status per request: Kalshi answers 'closed,settled' with a 400) */
+    if (!all.some((k) => k.series_ticker === x.ticker)) for (const status of ['settled', 'closed']) {
       let m: any;
-      try { m = await c.get('/markets', { series_ticker: x.ticker, status: 'closed,settled', limit: 200 }); } catch (e) { console.log('  settled markets failed: ' + String((e as Error).message)); continue; }
+      try { m = await c.get('/markets', { series_ticker: x.ticker, status, limit: 200 }); } catch (e) { console.log('  ' + status + ' markets failed: ' + String((e as Error).message)); continue; }
       for (const k of (m && m.markets) || []) {
         const rules_sha256 = k.rules_primary ? sha256Hex(String(k.rules_primary) + '\n' + String(k.rules_secondary || '')) : null;
         settled.push({ series_ticker: x.ticker, event_ticker: k.event_ticker, market_ticker: k.ticker, title: k.title, yes_sub_title: k.yes_sub_title, close_time: k.close_time,
