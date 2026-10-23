@@ -391,7 +391,9 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
   const recJson = JSON.parse(fs.readFileSync(path.join(REPO, 'model_loop', 'published', 'ufc', 'record.json'), 'utf8'));
   const win = (x: any, label: string) => ({ label, n: x.n, log_loss: x.log_loss, coin: x.coin_flip_log_loss, brier: x.brier ?? null, favourite_p: x.favourite_mean_p ?? null, favourite_won: x.favourite_won ?? null });
   const health: UfcInputData['health'] = {
-    windows: [win(val.result.confirmation, 'validation 2021-2024'), win(val.result.holdout_2025, 'holdout 2025'), ...(val.result.live_served ? [win(val.result.live_served, '2026 so far (served ' + val.result.live_served.version + ')')] : [])],
+    /* the preregistered validation and holdout scored the tuned configuration (1.0.0); the served version changed only
+       the first bouts' step (versions.json) and is scored clean on the live season */
+    windows: [win(val.result.confirmation, 'validation 2021-2024 (tuned 1.0.0)'), win(val.result.holdout_2025, 'holdout 2025 (tuned 1.0.0)'), ...(val.result.live_served ? [win(val.result.live_served, '2026 so far (served ' + val.result.live_served.version + ')')] : [])],
     market: (val.markets && val.markets.moneyline && val.markets.moneyline.market_reason) || 'no closing-price archive',
     record_graded: (recJson.bouts || []).length
   };

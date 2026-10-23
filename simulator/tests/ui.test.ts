@@ -32,7 +32,7 @@ T.chk('lib/edgedesk_simulator_sports.js is current with simulator/src/sports/reg
 T.eq('every covered sport is listed, active or not', REG.sports.map((s: any) => s.key), sportRegistry().map((s) => s.key));
 T.chk('the registry carries no probability', !/probab|"p":|\d\.\d{3,}/.test(fs.readFileSync(path.join(REPO, 'lib', 'edgedesk_simulator_sports.js'), 'utf8').replace(/max_reference_spread|0\.06/g, '')));
 T.chk('every inactive sport names its blockers', REG.sports.filter((s: any) => s.status !== 'ACTIVE').every((s: any) => s.blockers.length > 0));
-T.eq('UFC is Coming Soon (no artificial season)', REG.sports.find((s: any) => s.key === 'ufc').status, 'COMING_SOON');
+T.eq('UFC is ACTIVE: every booked bout and each division\'s title path, not a season (Fights, Title Path, Model Health)', [REG.sports.find((s: any) => s.key === 'ufc').status, REG.sports.find((s: any) => s.key === 'ufc').tabs.join()], ['ACTIVE', 'fights,title_path,model_health']);
 
 /* formatting: zero, all, tiny, not applicable */
 const o = (k: number, n = 100000) => { const p = k / n; return { applicable: true, outcome_count: k, n_sims: n, probability: p, mcse: Math.sqrt(p * (1 - p) / n), wilson_lo: Math.max(0, p - 0.01), wilson_hi: Math.min(1, p + 0.01) }; };
