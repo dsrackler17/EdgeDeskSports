@@ -94,18 +94,65 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'edgedesk-ui-cfb-'));
   const o = await execute(parseArgs(['--sport', 'cfb', '--snapshot', CFB_FIXTURE, '--runs', '400', '--workers', '2', '--dry-run', '--out', out]), () => {});
   const rows = resultRows(o) as any[];
-  const ents = (o.results.entities as any[]).map((e) => ({ entity_id: e.entity_id, entity_name: e.entity_name, entity_groups: e.groups, record: e.record, mean_wins: e.mean_wins, math_status: e.math_status }));
+  const ents = (o.results.entities as any[]).map((e) => ({ entity_id: e.entity_id, entity_name: e.entity_name, entity_groups: e.groups, record: e.record, mean_wins: e.mean_wins, wins_hist_x2: e.wins_hist_x2, math_status: e.math_status }));
   const cfb = (o.results as any).cfb;
-  const run = { comparison_id: null, validation_summary: { checks: o.results.checks, flags: o.results.flags, cfb: { cfp_mode: cfb.cfp_mode, cfp_mode_reason: cfb.cfp_mode_reason, conferences: cfb.conferences } } };
+  const run = { comparison_id: null, rules_version: o.results.run.rules_version, validation_summary: { checks: o.results.checks, flags: o.results.flags, cfb: { cfp_mode: cfb.cfp_mode, cfp_mode_reason: cfb.cfp_mode_reason, conferences: cfb.conferences } } };
   const M = UI.buildModel(run, rows, ents, []);
-  const conf = UI.renderCfbConference(M), cfp = UI.renderCfbPlayoff(M);
+  const conf: string = UI.renderCfbConference(M), cfp: string = UI.renderCfbPlayoff(M);
   const confs = [...new Set(ents.map((e) => e.entity_groups.conference))].filter((c) => c !== 'FBS Independents');
-  T.eq('conference tab: one card per conference with a title game, none for the independents', (conf.match(/class="sm-card"/g) || []).length, confs.length);
-  T.chk('... each with title-game, No. 1 seed and conference-title columns', /Title game/.test(conf) && /No\. 1 seed/.test(conf) && /Win SEC/.test(conf) && !/Notre Dame/.test(conf));
+  const cards = conf.split('<div class="sm-card">').slice(1), indCard = cards.find((c) => /FBS Independents/.test(c)) || '';
+  T.eq('conference tab: one card per conference with a title game, then one for the independents', [cards.length, cards.filter((c) => /Title game/.test(c)).length], [confs.length + 1, confs.length]);
+  T.chk('... each with title-game, No. 1 seed and conference-title columns', /Title game/.test(conf) && /No\. 1 seed/.test(conf) && /Win SEC/.test(conf));
+  T.chk('... the independents with no title-game column, Notre Dame among them with its top-12 rule', /Notre Dame/.test(indCard) && !/Title game|No\. 1 seed/.test(indCard) && /ranked in the top 12/.test(indCard) && /Make CFP/.test(indCard));
+  T.chk('... the regular season: projected record, six wins and an unbeaten season', ['Proj. record', '6+ wins', 'Unbeaten'].every((h) => cards.every((c) => c.includes(h))));
   T.chk('... and the Estimated-ranking exposure where a conference has it', /Estimated/.test(conf) && /outside ranking/.test(conf));
+  T.chk('every team publishes its schedule length, and its wins histogram covers it', ents.every((e) => e.record.games >= e.record.w + e.record.l && e.record.games > 0 && e.wins_hist_x2.length >= 2 * e.record.games + 1
+    && e.wins_hist_x2.reduce((a: number, b: number) => a + b, 0) === 400 && e.wins_hist_x2.every((n: number, i: number) => i >= 2 * e.record.w && i <= 2 * (e.record.games - e.record.l) || n === 0)));
+  {
+    /* the regular-season cells, read straight from the histogram, against counts done here */
+    const row = (name: string) => conf.split('<tr>').find((r) => r.includes('<b>' + UI.esc(name) + '</b>')) || '';
+    const live = ents.find((e) => e.record.w < 6 && e.record.w + (e.record.games - e.record.w - e.record.l) >= 6 && e.wins_hist_x2.slice(12).some((n: number) => n > 0) && e.wins_hist_x2.slice(0, 12).some((n: number) => n > 0))!;
+    const six = live.wins_hist_x2.slice(12).reduce((a: number, b: number) => a + b, 0);
+    T.chk('6+ wins is the share of runs with six or more regular-season wins (' + live.entity_name + ': ' + six + ' of 400)', new RegExp('title="' + six + ' of 400 simulated seasons').test(row(live.entity_name)));
+    const done6 = ents.find((e) => e.record.w >= 6)!, out6 = ents.find((e) => e.record.w + (e.record.games - e.record.w - e.record.l) < 6)!;
+    T.chk('... "reached" once a team has six wins and "out" once it cannot, never "all N" or "0 in N"', />reached</.test(row(done6.entity_name)) && />out</.test(row(out6.entity_name)));
+    const unbeaten = ents.find((e) => e.record.l === 0 && e.record.games > e.record.w)!, lost = ents.find((e) => e.record.l > 0)!;
+    const ub = unbeaten.wins_hist_x2[2 * unbeaten.record.games];
+    T.chk('Unbeaten is the share of runs winning every regular-season game (' + unbeaten.entity_name + ': ' + ub + ' of 400); a team that has lost shows a dash', new RegExp('title="' + ub + ' of 400 simulated seasons').test(row(unbeaten.entity_name)) && /title="Has lost a game">—</.test(row(lost.entity_name)));
+    const proj = (e: any) => e.mean_wins.toFixed(1) + '-' + (e.record.games - e.mean_wins).toFixed(1);
+    T.chk('... and the projected record is mean wins against the schedule length (' + live.entity_name + ' ' + proj(live) + ')', row(live.entity_name).includes('>' + proj(live) + '<'));
+  }
   T.chk('CFP tab: labelled Estimated, says the proxy is not the committee, and that a record never fixes the ranking', /sm-badge sm-estimated/.test(cfp) && /not the committee/.test(cfp) && /never fixes its ranking/.test(cfp));
-  T.chk('... lists the rounds through the national title, with Notre Dame eligible', ['Make CFP', 'Bye', 'Quarterfinal', 'Semifinal', 'Final', 'Champion'].every((h) => cfp.includes(h)) && /Notre Dame/.test(cfp));
-  T.chk('... and no NFL vocabulary', !/Super Bowl|seed 7|Playoffs<\/th>/.test(conf + cfp));
+  T.chk('... lists the rounds through the national title, with Notre Dame eligible', ['Make CFP', 'Bye', 'Quarterfinal', 'Semifinal', 'Final', 'Win title', 'Win conf.', 'Proj. record'].every((h) => cfp.includes(h)) && /Notre Dame/.test(cfp));
+  T.chk('... states the 2026 selection rules: four power champions, the best Group of Six team, Notre Dame top 12, byes and campus first round', /ACC, Big Ten, Big 12 and SEC champions qualify automatically/.test(cfp) && /highest-ranked team from the American/.test(cfp) && /Notre Dame is in if it is ranked in the top 12/.test(cfp) && /5 v 12/.test(cfp));
+  {
+    const main = cfp.split('<div class="sm-card">')[1], made = [...main.matchAll(/<tr><td><b>([^<]+)<\/b>[\s\S]*?<\/tr>/g)].map((m) => m[1]);
+    const pf = (name: string) => M.clubs.find((c: any) => UI.esc(c.name) === name).outcomes.cfp_field.probability;
+    T.chk('... sorted by playoff probability (the projected field first, then the bubble)', made.length > 12 && made.every((n, i) => i === 0 || pf(made[i - 1]) >= pf(n)));
+    const heads = [...main.matchAll(/<th[^>]*>([^<]+)<\/th>/g)].map((m) => m[1]);
+    T.eq('... Make CFP and the title lead the row, right after the team (on a phone they stay on screen)', heads.slice(0, 3), ['Team', 'Make CFP', 'Win title']);
+  }
+  {
+    const g6 = cfp.split('<div class="sm-card">').find((c) => /Group of Six bid/.test(c)) || '';
+    const g6Teams = [...g6.matchAll(/<tr><td><b>([^<]+)<\/b> <span class="sm-dim sm-sub">([^<]+)</g)].map((m) => m[2]);
+    const g6Sum = M.clubs.filter((c: any) => !['ACC', 'Big Ten', 'Big 12', 'SEC', 'FBS Independents'].includes(c.groups.conference)).reduce((a: number, c: any) => a + c.outcomes.cfp_field.outcome_count, 0);
+    T.chk('a Group of Six card lists only teams from the six other conferences (' + g6Teams.length + ' teams)', g6Teams.length > 0 && g6Teams.every((cf) => !['ACC', 'Big Ten', 'Big 12', 'SEC', 'FBS Independents'].includes(cf)));
+    T.chk('... whose Make CFP sums to at least every run (one of them is always in): ' + g6Sum + ' of 400', g6Sum >= 400);
+  }
+  {
+    const seeds = cfp.split('<div class="sm-card">').find((c) => /CFP seeds/.test(c)) || '';
+    T.chk('a CFP seeds card: 12 seed columns, byes 1-4 and hosts 5-8 marked', (seeds.match(/<th title="CFP seed \d+/g) || []).length === 12 && /4 \(bye\)/.test(seeds) && /8 \(host\)/.test(seeds) && !/9 \(/.test(seeds));
+  }
+  T.chk('... and no NFL vocabulary', !/Super Bowl|Playoffs<\/th>|AFC|NFC/.test(conf + cfp));
+  {
+    /* a run published before the schedule length and the histogram were read: no unbeaten column, no invented numbers */
+    const oldEnts = ents.map((e) => ({ ...e, record: { w: e.record.w, l: e.record.l }, wins_hist_x2: undefined }));
+    const oldM = UI.buildModel({ ...run }, rows, oldEnts, []), oldConf: string = UI.renderCfbConference(oldM);
+    const tds = (name: string) => [...(oldConf.split('<tr>').find((r) => r.includes('<b>' + UI.esc(name) + '</b>')) || '').matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) => m[1]);
+    const open = ents.find((e) => e.record.w < 6)!, done = ents.find((e) => e.record.w >= 6)!;
+    T.chk('an older run: projected wins only, no Unbeaten column, and 6+ wins a dash unless already reached', /Proj\. wins/.test(oldConf) && !/Unbeaten|Proj\. record/.test(oldConf)
+      && tds(open.entity_name)[2] === open.mean_wins.toFixed(1) && tds(open.entity_name)[3] === '—' && tds(done.entity_name)[3] === 'reached');
+  }
   const off = UI.buildModel({ validation_summary: { cfb: { cfp_mode: 'off', cfp_mode_reason: 'no defensible selection proxy' } } }, rows.filter((r) => !/^(cfp|reach|national)/.test(r.outcome)), ents, []);
   T.chk('with the CFP layer off, the tab says no CFP probability is published, and why', /No CFP or national-title probability is published/.test(UI.renderCfbPlayoff(off)) && /no defensible selection proxy/.test(UI.renderCfbPlayoff(off)));
   T.chk('... and the conference tab drops the Make CFP column', !/Make CFP/.test(UI.renderCfbConference(off)));
