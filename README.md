@@ -1536,6 +1536,32 @@ outcome it settles on.
   [`docs/simulator/README.md`](docs/simulator/README.md).
 - **Run it:** `npm run sim:test`, then `npm run sim:dry-run` (no credentials).
 
+## Signal Center — what changed, why, and whether the evidence supports it
+
+The first seat in the terminal (`app.html#signals`). It watches EdgeDesk's own
+records (game-research snapshots, the forecast and quote ledgers, dated
+availability reports, published Simulator runs) and reports the material
+changes. Each signal carries its evidence class (confirmed cause, supported
+association, observed, unexplained, model version change), its timing as
+separate facts, the model's record (Model DNA) and a documented rules-based
+importance score that is not a probability. Research, not picks.
+
+- **Status (2026-10-23): built and tested, not deployed.** The migration is not
+  applied, the hourly run is off (`SIGNAL_CENTER_WORKER`), and Signal Center
+  starts in shadow mode. NFL and college football are the first live candidates.
+  Every other sport is shadow, blocked or unavailable, with its reason
+  (the Coverage view).
+- **Server-enforced access:** Full Access readers get the numbers through
+  security-definer doors that check entitlement (fail closed). Everyone else gets
+  number-free previews, and operators are checked by the database.
+- **Where:** `lib/edgedesk_signal_*.js`, `lib/edgedesk_model_dna.js`,
+  `tools/signal_center/`, `supabase/signal_center.sql` (+ rollback), `/signals/`
+  (public preview), `/admin/signals/` (operators),
+  `.github/workflows/signal-center*.yml`. Docs:
+  [`docs/signal-center/README.md`](docs/signal-center/README.md).
+- **Run it:** `npm run sc:test`, `npm run sc:sql`, `npm run sc:e2e`, then
+  `npm run sc:dry-run` (no credentials).
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means

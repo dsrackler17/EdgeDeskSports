@@ -191,6 +191,7 @@ insert into public.user_event_kinds (event_name, source, dedupe, stage, signed_i
   ('primary_nav_portfolio',   'client', 'session',        60, true,  'The Portfolio seat in the primary navigation was tapped.'),
   ('primary_nav_process',     'client', 'session',        60, true,  'The Process seat in the primary navigation was tapped.'),
   ('primary_nav_more',        'client', 'session',        60, true,  'The More seat in the primary navigation was tapped.'),
+  ('primary_nav_signals',     'client', 'session',        60, true,  'The Signal Center seat in the primary navigation was tapped.'),
   ('secondary_nav_opened',    'client', 'session_entity', 61, true,  'A destination inside a primary one was opened (props.entity names it).'),
   -- Portfolio time to value (lib/edgedesk_portfolio_ui.js): from the first
   -- look at setting up a portfolio to a portfolio with real history in it.

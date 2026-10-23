@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-23 — Signal Center: what changed in EdgeDesk's research, why, and whether the evidence supports it
+
+A new first seat in the terminal, **Signals** (`app.html#signals`, alias `#signal-center`). It is backed by a detection engine, an additive database layer, a graphics template family, a public preview and an operator console. **Nothing is deployed:** the migration is not applied, the hourly run is off, and Signal Center starts in shadow mode (docs/signal-center/DEPLOYMENT.md).
+
+- **The engine** (`lib/edgedesk_signal_engine.js`) compares only comparable numbers: the same event, outcome, model identity and market definition, oriented by team and ordered in time. It detects forecast shifts, model–market disagreements and convergence, market movement, Simulator changes (|z| ≥ 4 on both runs' Monte Carlo errors), availability changes, model reliability warnings and data freshness warnings.
+  - **The evidence ladder:** a cause is claimed only when an input was isolated. Otherwise a change is a supported association, observed, unexplained, or a model version change.
+  - **The importance score** (`sc_importance_v1`) is documented and rules-based. It is not a probability.
+  - **Model DNA** (`lib/edgedesk_model_dna.js`) gives each model's out-of-sample and live record. It never shows raw win rate as quality.
+- **Capabilities per sport** (`lib/edgedesk_signal_registry.js`): a signal exists only where a dated source does. NFL injuries are blocked (no per-row publication time). MLB has no forecast history. The Simulator's own registry decides simulator signals.
+- **The database** (`supabase/signal_center.sql` = `migrations/20261024120000_signal_center.sql`) adds `sc_` tables only: append-only versions, events and Model DNA; immutable graphics; preferences; a notice log; dead letters.
+  - Readers, operators and the job each reach it through their own doors. Full Access is checked inside the doors (fail closed); everyone else gets number-free previews.
+  - Feed paging uses keysets; a page takes about 40 ms at 5,000 signals.
+  - Notices go to the existing bell, deduplicated, cooled down and capped at 5 per run and 20 per day per reader.
+  - `supabase/signal_center_rollback.sql` removes it all.
+- **The worker** (`tools/signal_center/run.js`, `.github/workflows/signal-center.yml`, off until `SIGNAL_CENTER_WORKER` = on) reads the committed sources and the Simulator, NBA injury and Kalshi tables. It writes only through the job doors, re-verifies active signals and withdraws any whose source vanished. It calls no odds provider and posts nowhere.
+- **Graphics** (`lib/edgedesk_signal_graphic.js`): six templates (probability shift, market disagreement, availability, Simulator, reliability, weekly recap) in 1080×1080, 1200×675 and 1080×1350. They are drawn on the matchup renderer, whose existing layouts are byte-identical. A newer version makes older graphics OUTDATED (stamped) and revokes any approval. Approval for external publication is a record only.
+- **The terminal seat:** Research Pulse, the feed with filters, sorts and history, "Why did this change?", Model DNA, Coverage, Alerts and Method. A new reader lands here only once it is live; otherwise they are handed to Research. A bell notice opens its signal.
+- **`/signals/`** is the public preview: three anonymous doors, no current number, noindex until live. **`/admin/signals/`** is the operator console: mode, queue, hold, publish, withdraw, the preview pin, graphic review and download, the weekly recap, runs and failures.
+
+Tests: `engine.test.js` (113), `registry.test.js` (177), `ui.test.js` (89), `graphics.test.js` (268), `sql.test.js` (139, PostgreSQL 16, including the rollback), `worker.test.js` (28), `graphics.e2e.js` (200), `ui.e2e.js` (119) and `pages.e2e.js` (58), all in `tools/signal_center/`. The navigation suites (`tools/app/navigation.test.js` 263, `navigation.e2e.js` 172) cover the seventh seat. CI: `.github/workflows/signal-center-tests.yml`.
+
 ## 2026-10-23 — Market intelligence and model validation: the audit, the lab, and four data-integrity fixes
 
 A program to find out, with evidence, whether EdgeDesk's forecasts carry information the market does not (`docs/market-intelligence/MASTER_PLAN.md`). Nothing reader-facing changes; no model, migration, job or paid call is added.
