@@ -1,0 +1,1311 @@
+{
+ "schema": "edgedesk_sim_cfb_calibration_v1",
+ "generated_by": "simulator/src/research/cfb_calibration.ts",
+ "model_version": "edgedesk_cfb_p4_v1.0.1",
+ "buckets": "favourite probability max(p, 1 - p); won = the favourite won; Wilson 95% interval on the win rate; OVERCONFIDENT = predicted above the interval",
+ "replay": {
+  "method": "cfb_replay.ts cold walk-forward of football/cfb_p4/engine.js, 2014-2025 (replay from 2006), frozen after weeks 4/7/10; frozen excludes 2020 and conference championship games; pre is regular season and conference championships",
+  "pre_fbs_2014_2021": {
+   "table": [
+    {
+     "bucket": [
+      0.5,
+      0.6
+     ],
+     "n": 1281,
+     "predicted": 0.550603,
+     "won": 0.54879,
+     "wilson95": [
+      0.521435,
+      0.575854
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.6,
+      0.7
+     ],
+     "n": 1225,
+     "predicted": 0.650025,
+     "won": 0.644898,
+     "wilson95": [
+      0.617685,
+      0.671205
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.7,
+      0.8
+     ],
+     "n": 1146,
+     "predicted": 0.750481,
+     "won": 0.748691,
+     "wilson95": [
+      0.722775,
+      0.772946
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.8,
+      0.9
+     ],
+     "n": 1070,
+     "predicted": 0.848437,
+     "won": 0.845794,
+     "wilson95": [
+      0.822922,
+      0.866193
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.9,
+      0.95
+     ],
+     "n": 468,
+     "predicted": 0.924029,
+     "won": 0.933761,
+     "wilson95": [
+      0.907513,
+      0.952946
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.95,
+      0.98
+     ],
+     "n": 281,
+     "predicted": 0.964419,
+     "won": 0.964413,
+     "wilson95": [
+      0.935742,
+      0.980557
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.98,
+      1
+     ],
+     "n": 126,
+     "predicted": 0.989741,
+     "won": 0.984127,
+     "wilson95": [
+      0.943971,
+      0.995636
+     ],
+     "verdict": "within interval"
+    }
+   ],
+   "n": 5597,
+   "brier": 0.176107,
+   "log_loss": 0.523562
+  },
+  "pre_fbs_2022_2025": {
+   "table": [
+    {
+     "bucket": [
+      0.5,
+      0.6
+     ],
+     "n": 716,
+     "predicted": 0.549986,
+     "won": 0.536313,
+     "wilson95": [
+      0.499689,
+      0.572549
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.6,
+      0.7
+     ],
+     "n": 725,
+     "predicted": 0.649478,
+     "won": 0.657931,
+     "wilson95": [
+      0.622647,
+      0.69155
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.7,
+      0.8
+     ],
+     "n": 626,
+     "predicted": 0.749075,
+     "won": 0.731629,
+     "wilson95": [
+      0.695582,
+      0.764851
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.8,
+      0.9
+     ],
+     "n": 521,
+     "predicted": 0.848756,
+     "won": 0.848369,
+     "wilson95": [
+      0.815028,
+      0.876609
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.9,
+      0.95
+     ],
+     "n": 221,
+     "predicted": 0.923416,
+     "won": 0.918552,
+     "wilson95": [
+      0.874941,
+      0.947861
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.95,
+      0.98
+     ],
+     "n": 129,
+     "predicted": 0.965011,
+     "won": 0.96124,
+     "wilson95": [
+      0.912472,
+      0.983332
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.98,
+      1
+     ],
+     "n": 55,
+     "predicted": 0.989735,
+     "won": 0.981818,
+     "wilson95": [
+      0.903942,
+      0.996783
+     ],
+     "verdict": "within interval"
+    }
+   ],
+   "n": 2993,
+   "brier": 0.18471,
+   "log_loss": 0.545103
+  },
+  "pre_fcs_2014_2025": {
+   "table": [
+    {
+     "bucket": [
+      0.5,
+      0.6
+     ],
+     "n": 2,
+     "predicted": 0.533578,
+     "won": 0.5,
+     "wilson95": [
+      0.094531,
+      0.905469
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.6,
+      0.7
+     ],
+     "n": 6,
+     "predicted": 0.666222,
+     "won": 1,
+     "wilson95": [
+      0.609666,
+      1
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.7,
+      0.8
+     ],
+     "n": 50,
+     "predicted": 0.758239,
+     "won": 0.86,
+     "wilson95": [
+      0.738138,
+      0.930492
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.8,
+      0.9
+     ],
+     "n": 181,
+     "predicted": 0.862647,
+     "won": 0.823204,
+     "wilson95": [
+      0.761082,
+      0.871893
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.9,
+      0.95
+     ],
+     "n": 247,
+     "predicted": 0.929174,
+     "won": 0.919028,
+     "wilson95": [
+      0.878249,
+      0.946974
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.95,
+      0.98
+     ],
+     "n": 403,
+     "predicted": 0.967703,
+     "won": 0.962779,
+     "wilson95": [
+      0.939503,
+      0.977316
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.98,
+      1
+     ],
+     "n": 395,
+     "predicted": 0.989993,
+     "won": 0.987342,
+     "wilson95": [
+      0.970714,
+      0.994581
+     ],
+     "verdict": "within interval"
+    }
+   ],
+   "n": 1284,
+   "brier": 0.05576,
+   "log_loss": 0.209492
+  },
+  "frozen_fbs_2014_2021": {
+   "table": [
+    {
+     "bucket": [
+      0.5,
+      0.6
+     ],
+     "n": 1963,
+     "predicted": 0.550093,
+     "won": 0.534896,
+     "wilson95": [
+      0.512784,
+      0.556871
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.6,
+      0.7
+     ],
+     "n": 1858,
+     "predicted": 0.648928,
+     "won": 0.6507,
+     "wilson95": [
+      0.628731,
+      0.672046
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.7,
+      0.8
+     ],
+     "n": 1623,
+     "predicted": 0.748925,
+     "won": 0.747998,
+     "wilson95": [
+      0.726306,
+      0.768517
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.8,
+      0.9
+     ],
+     "n": 1485,
+     "predicted": 0.848185,
+     "won": 0.854545,
+     "wilson95": [
+      0.835699,
+      0.871562
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.9,
+      0.95
+     ],
+     "n": 519,
+     "predicted": 0.923038,
+     "won": 0.922929,
+     "wilson95": [
+      0.89675,
+      0.942892
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.95,
+      0.98
+     ],
+     "n": 250,
+     "predicted": 0.964449,
+     "won": 0.964,
+     "wilson95": [
+      0.93301,
+      0.980947
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.98,
+      1
+     ],
+     "n": 90,
+     "predicted": 0.98825,
+     "won": 0.977778,
+     "wilson95": [
+      0.922555,
+      0.993885
+     ],
+     "verdict": "within interval"
+    }
+   ],
+   "n": 7788,
+   "brier": 0.18528,
+   "log_loss": 0.54736
+  },
+  "frozen_fbs_2022_2025": {
+   "table": [
+    {
+     "bucket": [
+      0.5,
+      0.6
+     ],
+     "n": 1180,
+     "predicted": 0.55081,
+     "won": 0.567797,
+     "wilson95": [
+      0.539357,
+      0.595796
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.6,
+      0.7
+     ],
+     "n": 1178,
+     "predicted": 0.649289,
+     "won": 0.629032,
+     "wilson95": [
+      0.601069,
+      0.656157
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.7,
+      0.8
+     ],
+     "n": 1004,
+     "predicted": 0.748149,
+     "won": 0.741036,
+     "wilson95": [
+      0.713056,
+      0.767178
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.8,
+      0.9
+     ],
+     "n": 759,
+     "predicted": 0.847519,
+     "won": 0.83531,
+     "wilson95": [
+      0.807247,
+      0.859995
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.9,
+      0.95
+     ],
+     "n": 258,
+     "predicted": 0.923538,
+     "won": 0.910853,
+     "wilson95": [
+      0.869788,
+      0.939862
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.95,
+      0.98
+     ],
+     "n": 95,
+     "predicted": 0.963333,
+     "won": 0.957895,
+     "wilson95": [
+      0.896691,
+      0.983506
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.98,
+      1
+     ],
+     "n": 35,
+     "predicted": 0.987601,
+     "won": 1,
+     "wilson95": [
+      0.901099,
+      1
+     ],
+     "verdict": "within interval"
+    }
+   ],
+   "n": 4509,
+   "brier": 0.195822,
+   "log_loss": 0.572926
+  },
+  "frozen_fcs_2014_2025": {
+   "table": [
+    {
+     "bucket": [
+      0.5,
+      0.6
+     ],
+     "n": 1,
+     "predicted": 0.506971,
+     "won": 1,
+     "wilson95": [
+      0.206549,
+      1
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.6,
+      0.7
+     ],
+     "n": 8,
+     "predicted": 0.671466,
+     "won": 0.5,
+     "wilson95": [
+      0.215216,
+      0.784784
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.7,
+      0.8
+     ],
+     "n": 19,
+     "predicted": 0.756068,
+     "won": 0.947368,
+     "wilson95": [
+      0.753613,
+      0.990648
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.8,
+      0.9
+     ],
+     "n": 38,
+     "predicted": 0.854993,
+     "won": 0.894737,
+     "wilson95": [
+      0.758695,
+      0.958297
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.9,
+      0.95
+     ],
+     "n": 33,
+     "predicted": 0.927439,
+     "won": 0.969697,
+     "wilson95": [
+      0.846813,
+      0.994631
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.95,
+      0.98
+     ],
+     "n": 83,
+     "predicted": 0.968087,
+     "won": 0.975904,
+     "wilson95": [
+      0.916337,
+      0.993367
+     ],
+     "verdict": "within interval"
+    },
+    {
+     "bucket": [
+      0.98,
+      1
+     ],
+     "n": 139,
+     "predicted": 0.993583,
+     "won": 1,
+     "wilson95": [
+      0.973107,
+      1
+     ],
+     "verdict": "within interval"
+    }
+   ],
+   "n": 321,
+   "brier": 0.03315,
+   "log_loss": 0.128405
+  },
+  "frozen_fbs_by_horizon": {
+   "weeks_1_2": {
+    "table": [
+     {
+      "bucket": [
+       0.5,
+       0.6
+      ],
+      "n": 875,
+      "predicted": 0.550907,
+      "won": 0.521143,
+      "wilson95": [
+       0.488023,
+       0.554078
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.6,
+       0.7
+      ],
+      "n": 865,
+      "predicted": 0.651732,
+      "won": 0.663584,
+      "wilson95": [
+       0.631435,
+       0.694286
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.7,
+       0.8
+      ],
+      "n": 781,
+      "predicted": 0.748197,
+      "won": 0.745198,
+      "wilson95": [
+       0.713489,
+       0.774507
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.8,
+       0.9
+      ],
+      "n": 675,
+      "predicted": 0.847311,
+      "won": 0.857778,
+      "wilson95": [
+       0.829401,
+       0.882106
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.9,
+       0.95
+      ],
+      "n": 253,
+      "predicted": 0.92259,
+      "won": 0.936759,
+      "wilson95": [
+       0.899752,
+       0.960701
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.95,
+       0.98
+      ],
+      "n": 134,
+      "predicted": 0.96488,
+      "won": 0.947761,
+      "wilson95": [
+       0.896097,
+       0.974468
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.98,
+       1
+      ],
+      "n": 51,
+      "predicted": 0.988468,
+      "won": 1,
+      "wilson95": [
+       0.929953,
+       1
+      ],
+      "verdict": "within interval"
+     }
+    ],
+    "n": 3634,
+    "brier": 0.181903,
+    "log_loss": 0.538366
+   },
+   "weeks_3_5": {
+    "table": [
+     {
+      "bucket": [
+       0.5,
+       0.6
+      ],
+      "n": 1211,
+      "predicted": 0.550931,
+      "won": 0.564822,
+      "wilson95": [
+       0.536738,
+       0.592497
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.6,
+       0.7
+      ],
+      "n": 1154,
+      "predicted": 0.647764,
+      "won": 0.65078,
+      "wilson95": [
+       0.622816,
+       0.677744
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.7,
+       0.8
+      ],
+      "n": 984,
+      "predicted": 0.748914,
+      "won": 0.742886,
+      "wilson95": [
+       0.714671,
+       0.769212
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.8,
+       0.9
+      ],
+      "n": 879,
+      "predicted": 0.848503,
+      "won": 0.840728,
+      "wilson95": [
+       0.815062,
+       0.863429
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.9,
+       0.95
+      ],
+      "n": 289,
+      "predicted": 0.924327,
+      "won": 0.910035,
+      "wilson95": [
+       0.871446,
+       0.937866
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.95,
+       0.98
+      ],
+      "n": 135,
+      "predicted": 0.964263,
+      "won": 0.97037,
+      "wilson95": [
+       0.926294,
+       0.988419
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.98,
+       1
+      ],
+      "n": 45,
+      "predicted": 0.988411,
+      "won": 0.977778,
+      "wilson95": [
+       0.884333,
+       0.996066
+      ],
+      "verdict": "within interval"
+     }
+    ],
+    "n": 4697,
+    "brier": 0.189384,
+    "log_loss": 0.558082
+   },
+   "weeks_6_11": {
+    "table": [
+     {
+      "bucket": [
+       0.5,
+       0.6
+      ],
+      "n": 1056,
+      "predicted": 0.54926,
+      "won": 0.549242,
+      "wilson95": [
+       0.519108,
+       0.57902
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.6,
+       0.7
+      ],
+      "n": 1016,
+      "predicted": 0.648309,
+      "won": 0.614173,
+      "wilson95": [
+       0.583864,
+       0.643622
+      ],
+      "verdict": "OVERCONFIDENT"
+     },
+     {
+      "bucket": [
+       0.7,
+       0.8
+      ],
+      "n": 861,
+      "predicted": 0.748713,
+      "won": 0.747967,
+      "wilson95": [
+       0.717908,
+       0.775824
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.8,
+       0.9
+      ],
+      "n": 690,
+      "predicted": 0.847901,
+      "won": 0.847826,
+      "wilson95": [
+       0.819105,
+       0.872696
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.9,
+       0.95
+      ],
+      "n": 235,
+      "predicted": 0.922486,
+      "won": 0.910638,
+      "wilson95": [
+       0.867258,
+       0.940809
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.95,
+       0.98
+      ],
+      "n": 76,
+      "predicted": 0.962623,
+      "won": 0.973684,
+      "wilson95": [
+       0.909034,
+       0.992753
+      ],
+      "verdict": "within interval"
+     },
+     {
+      "bucket": [
+       0.98,
+       1
+      ],
+      "n": 29,
+      "predicted": 0.986832,
+      "won": 0.965517,
+      "wilson95": [
+       0.828245,
+       0.993887
+      ],
+      "verdict": "within interval"
+     }
+    ],
+    "n": 3963,
+    "brier": 0.195517,
+    "log_loss": 0.572003
+   }
+  }
+ },
+ "live_2026": {
+  "source": "record/football/cfb_2026.json",
+  "source_sha256": "b8650842c449af5758d2060b43d4785c7cf4468d9add6377a251dbf6694c25ce",
+  "record_updated_at": "2026-10-23T11:16:55.515Z",
+  "note": "the probability published at the pick (last pregame number); market = no-vig closing moneyline (benchmark only)",
+  "fbs": {
+   "table": [
+    {
+     "bucket": [
+      0.5,
+      0.6
+     ],
+     "n": 67,
+     "predicted": 0.549873,
+     "won": 0.58209,
+     "wilson95": [
+      0.462699,
+      0.692577
+     ],
+     "verdict": "within interval",
+     "market_n": 67,
+     "market_no_vig": 0.539168
+    },
+    {
+     "bucket": [
+      0.6,
+      0.7
+     ],
+     "n": 67,
+     "predicted": 0.653018,
+     "won": 0.537313,
+     "wilson95": [
+      0.419165,
+      0.651416
+     ],
+     "verdict": "OVERCONFIDENT",
+     "market_n": 67,
+     "market_no_vig": 0.619823
+    },
+    {
+     "bucket": [
+      0.7,
+      0.8
+     ],
+     "n": 67,
+     "predicted": 0.744387,
+     "won": 0.776119,
+     "wilson95": [
+      0.66293,
+      0.859363
+     ],
+     "verdict": "within interval",
+     "market_n": 67,
+     "market_no_vig": 0.718584
+    },
+    {
+     "bucket": [
+      0.8,
+      0.9
+     ],
+     "n": 48,
+     "predicted": 0.854835,
+     "won": 0.9375,
+     "wilson95": [
+      0.831646,
+      0.978517
+     ],
+     "verdict": "within interval",
+     "market_n": 48,
+     "market_no_vig": 0.828928
+    },
+    {
+     "bucket": [
+      0.9,
+      0.95
+     ],
+     "n": 23,
+     "predicted": 0.915978,
+     "won": 0.73913,
+     "wilson95": [
+      0.5353,
+      0.874514
+     ],
+     "verdict": "OVERCONFIDENT",
+     "market_n": 23,
+     "market_no_vig": 0.872658
+    },
+    {
+     "bucket": [
+      0.95,
+      0.98
+     ],
+     "n": 13,
+     "predicted": 0.966215,
+     "won": 0.923077,
+     "wilson95": [
+      0.66686,
+      0.98629
+     ],
+     "verdict": "within interval",
+     "market_n": 12,
+     "market_no_vig": 0.919297
+    },
+    {
+     "bucket": [
+      0.98,
+      1
+     ],
+     "n": 10,
+     "predicted": 0.99275,
+     "won": 1,
+     "wilson95": [
+      0.722467,
+      1
+     ],
+     "verdict": "within interval",
+     "market_n": 3,
+     "market_no_vig": 0.948907
+    }
+   ],
+   "n": 295,
+   "brier": 0.186712,
+   "log_loss": 0.553727,
+   "market": {
+    "n": 287,
+    "brier": 0.175738,
+    "log_loss": 0.523893
+   }
+  },
+  "fcs": {
+   "table": [
+    {
+     "bucket": [
+      0.5,
+      0.6
+     ],
+     "n": 0
+    },
+    {
+     "bucket": [
+      0.6,
+      0.7
+     ],
+     "n": 0
+    },
+    {
+     "bucket": [
+      0.7,
+      0.8
+     ],
+     "n": 0
+    },
+    {
+     "bucket": [
+      0.8,
+      0.9
+     ],
+     "n": 6,
+     "predicted": 0.844983,
+     "won": 0.833333,
+     "wilson95": [
+      0.436497,
+      0.969947
+     ],
+     "verdict": "within interval",
+     "market_n": 3,
+     "market_no_vig": 0.944777
+    },
+    {
+     "bucket": [
+      0.9,
+      0.95
+     ],
+     "n": 6,
+     "predicted": 0.929167,
+     "won": 1,
+     "wilson95": [
+      0.609666,
+      1
+     ],
+     "verdict": "within interval",
+     "market_n": 3,
+     "market_no_vig": 0.92068
+    },
+    {
+     "bucket": [
+      0.95,
+      0.98
+     ],
+     "n": 10,
+     "predicted": 0.96331,
+     "won": 1,
+     "wilson95": [
+      0.722467,
+      1
+     ],
+     "verdict": "within interval",
+     "market_n": 3,
+     "market_no_vig": 0.949836
+    },
+    {
+     "bucket": [
+      0.98,
+      1
+     ],
+     "n": 15,
+     "predicted": 0.990513,
+     "won": 1,
+     "wilson95": [
+      0.796117,
+      1
+     ],
+     "verdict": "within interval",
+     "market_n": 5,
+     "market_no_vig": 0.941806
+    }
+   ],
+   "n": 37,
+   "brier": 0.023739,
+   "log_loss": 0.098589
+  },
+  "fbs_90_plus": {
+   "n": 46,
+   "predicted": 0.946865,
+   "won": 0.847826,
+   "wilson95": [
+    0.717759,
+    0.924277
+   ]
+  }
+ },
+ "live_vs_replay_2026": {
+  "games": 288,
+  "logit_slope_live_on_replay": 1.15404,
+  "mean_logit_live_minus_replay": 0.17937,
+  "at_90_plus": {
+   "live": 45,
+   "replay": 29
+  },
+  "replay_table": [
+   {
+    "bucket": [
+     0.5,
+     0.6
+    ],
+    "n": 75,
+    "predicted": 0.543618,
+    "won": 0.56,
+    "wilson95": [
+     0.447468,
+     0.666685
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.6,
+     0.7
+    ],
+    "n": 77,
+    "predicted": 0.651884,
+    "won": 0.636364,
+    "wilson95": [
+     0.524822,
+     0.734946
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.7,
+     0.8
+    ],
+    "n": 54,
+    "predicted": 0.742315,
+    "won": 0.759259,
+    "wilson95": [
+     0.630525,
+     0.853557
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.8,
+     0.9
+    ],
+    "n": 53,
+    "predicted": 0.844646,
+    "won": 0.90566,
+    "wilson95": [
+     0.797463,
+     0.959027
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.9,
+     0.95
+    ],
+    "n": 13,
+    "predicted": 0.920565,
+    "won": 0.769231,
+    "wilson95": [
+     0.497436,
+     0.918205
+    ],
+    "verdict": "OVERCONFIDENT"
+   },
+   {
+    "bucket": [
+     0.95,
+     0.98
+    ],
+    "n": 10,
+    "predicted": 0.963821,
+    "won": 1,
+    "wilson95": [
+     0.722467,
+     1
+    ],
+    "verdict": "within interval"
+   },
+   {
+    "bucket": [
+     0.98,
+     1
+    ],
+    "n": 6,
+    "predicted": 0.991299,
+    "won": 1,
+    "wilson95": [
+     0.609666,
+     1
+    ],
+    "verdict": "within interval"
+   }
+  ],
+  "replay_summary": {
+   "n": 288,
+   "brier": 0.186027,
+   "log_loss": 0.547587
+  },
+  "live_summary": {
+   "n": 288,
+   "brier": 0.183718,
+   "log_loss": 0.545441
+  }
+ },
+ "decision": [
+  "The simulator prices every remaining 2026 game from the replay path these tables validate (the served engine and parameters, state replayed from the 2026 feed), not from the live board, whose 2026 numbers are more extreme than the replay on the same games (logit slope above 1) and fell short of their predicted rate in the 90%+ bucket.",
+  "Per-game probabilities are kept exactly (the strength offset is carved out of the engine sigma, simulator/data/cfb_strength_uncertainty.json), so no flattening or sharpening is applied on top of a calibrated input.",
+  "FCS opponents keep the engine's single FCS floor rating; its win probabilities are calibrated in aggregate on the FBS-vs-FCS rows above (its margins are not: FBS teams beat the floor by more than projected, which affects no win-loss outcome)."
+ ]
+}
