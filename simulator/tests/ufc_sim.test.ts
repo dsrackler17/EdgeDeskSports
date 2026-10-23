@@ -181,9 +181,9 @@ for (const b of d0.bouts) {
   K.eq('reader summary: a bout\'s win counts are the fighters\' next-bout wins; a new champion = the challenger\'s wins', [bt.a_win.count, bt.b_win.count, bt.new_champion.count], [ent.get('LC').outcomes.win_next_bout.count, ent.get('L1').outcomes.win_next_bout.count, ent.get('L1').outcomes.win_next_bout.count]);
   K.eq('reader summary: finish + decision = 100% and the rounds sum to the finishes', [bt.finish.count + bt.decision.count, bt.finish_rounds.reduce((s: number, x: any) => s + x.count, 0)], [3000, bt.finish.count]);
   K.chk('reader summary: cards in date order, the main event first on its card', S.cards[0].date <= S.cards[S.cards.length - 1].date && S.cards.find((c: any) => c.bouts.some((x: any) => x.bout_id === 'B1')).bouts[0].bout_id === 'B1');
-  const lw = S.divisions.find((x: any) => x.key === 'Lightweight');
-  const l1 = lw.people.find((p: any) => p.id === 'L1');
-  K.near('reader summary: beat the champion if given the shot = titles won / shots', l1.beat_champion_given_shot.probability, ent.get('L1').outcomes.win_title.count / ent.get('L1').outcomes.title_shot.count, 1e-12);
+  const lw = S.divisions.find((x: any) => x.key === 'Lightweight')!;
+  const l1 = lw.people.find((p: any) => p.id === 'L1')!;
+  K.near('reader summary: beat the champion if given the shot = titles won / shots', l1.beat_champion_given_shot!.probability, ent.get('L1').outcomes.win_title.count / ent.get('L1').outcomes.title_shot.count, 1e-12);
 }
 
 /* ---- the committed data ---- */
