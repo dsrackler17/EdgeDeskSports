@@ -7,8 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { kit } from './_kit.ts';
-import { cfbFixture } from './_cfb.ts';
+import { cfbFixture, clone } from './_cfb.ts';
 import { CFB_2026, cfbFacts, isCfbVerified } from '../src/sports/cfb/config.ts';
+import { validateCfbInputs, cfbRunGates } from '../src/sports/cfb/validate.ts';
 import { PROCEDURES } from '../src/sports/cfb/rules.ts';
 import { CFP_RULES } from '../src/sports/cfb/cfp.ts';
 import { sportRegistry } from '../src/sports/registry.ts';
@@ -17,6 +18,9 @@ import { loadCfbEngine, priceBare } from '../src/sports/cfb/engine_adapter.ts';
 const T = kit('CFB season configuration');
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const snap = cfbFixture(), D = snap.data;
+/** the committed snapshot with the current config in place (the snapshot embeds the config it was built with) */
+const fixtureWith = (c: typeof CFB_2026) => { const x = clone(snap); x.data.config = c as any; return x; };
+const VERIFIED_TODAY = ['ACC', 'American Athletic', 'Big 12', 'Big Ten', 'CFP', 'Conference USA', 'Mid-American', 'Mountain West', 'North Dakota State', 'Pac-12', 'SEC', 'Sun Belt'];
 
 T.chk('every conference rule names a procedure that exists', CFB_2026.conferences.every((c) => !!PROCEDURES[c.procedure]));
 T.chk('the CFP rules id exists', !!CFP_RULES[CFB_2026.cfp.rules]);
@@ -32,11 +36,18 @@ T.chk('a fact marked VERIFIED without a verifier is not verified', !isCfbVerifie
 T.chk('a fact marked VERIFIED without a date is not verified', !isCfbVerified({ ...CFB_2026.cfp.fact, verified_at: 'soon' }));
 T.eq('the 2026 CFP format is VERIFIED from the CFP\'s own protocol', CFB_2026.cfp.fact.verification, 'VERIFIED');
 const verified = cfbFacts().filter(([, f]) => isCfbVerified(f)).map(([l]) => l).sort();
-T.eq('verified today: the CFP and four conferences (ACC, Big 12, MAC, Sun Belt)', verified, ['ACC', 'Big 12', 'CFP', 'Mid-American', 'Sun Belt']);
+T.eq('verified today: the CFP, every conference procedure and North Dakota State\'s eligibility', verified, VERIFIED_TODAY);
 const reg = sportRegistry().find((s) => s.key === 'cfb')!;
-const unverified = cfbFacts().filter(([, f]) => f.affects_results && !isCfbVerified(f)).map(([l]) => l);
-T.eq('the registry keeps CFB BLOCKED', reg.status, 'BLOCKED');
-T.eq('... with one blocker per unverified fact, naming it', reg.blockers.map((b) => b.split(':')[0]).sort(), unverified.sort());
+const standing = cfbFacts().filter(([, f]) => f.affects_results && !f.measured && !isCfbVerified(f)).map(([l]) => l);
+T.eq('the registry status follows the standing (unmeasured, unverified) facts', [reg.status, reg.blockers.map((b) => b.split(':')[0]).sort()], [standing.length ? 'BLOCKED' : 'ACTIVE', standing.sort()]);
+T.eq('Sacramento State\'s eligibility is the one MEASURED assumption: no standing blocker, decided run by run', cfbFacts().filter(([, f]) => f.measured).map(([l, f]) => [l, isCfbVerified(f)]), [['Sacramento State', false]]);
+{
+  /* a measured fact never passes silently: its input gate warns, and the run gate holds publication when any run depended on it */
+  const g = validateCfbInputs(fixtureWith(CFB_2026)).find((x) => x.id === 'rules.Sacramento_State')!;
+  T.eq('... its input gate is a WARN that names the run gate, blocking nothing by itself', [g.status, g.blocks, /MEASURED/.test(g.detail)], ['WARN', 'none', true]);
+  const run = (sens: number) => cfbRunGates(fixtureWith(CFB_2026).data, { 'eligibility_sensitive:Sacramento State': sens }, 100000).find((x) => x.id === 'run.eligibility_sensitive:Sacramento State')!;
+  T.eq('... and the run gate passes at 0 dependent runs, holds publication at 1', [run(0).blocks, run(1).blocks], ['none', 'publication']);
+}
 T.chk('the reader\'s limitations say the CFP outputs are Estimated', reg.limitations.some((l) => /CFP/.test(l) && /Estimated/.test(l)));
 /* Sun Belt divisions: the schedule's unique round-robin split, the same East the official page lists */
 const east = D.teams.filter((t) => t.division === 'East').map((t) => t.name).sort();
@@ -45,7 +56,7 @@ T.chk('the official page\'s East list (before its text was truncated) is the sam
 T.eq('only the Sun Belt has divisions', [...new Set(D.teams.filter((t) => t.division).map((t) => t.conference))], ['Sun Belt']);
 /* eligibility */
 T.chk('every eligibility entry is a 2026 FBS team', CFB_2026.eligibility.every((e) => D.teams.some((t) => t.name === e.team)));
-T.eq('Sacramento State is not title-game eligible in the snapshot; North Dakota State is', [D.teams.find((t) => t.name === 'Sacramento State')!.ccg_eligible, D.teams.find((t) => t.name === 'North Dakota State')!.ccg_eligible], [false, true]);
+T.eq('Sacramento State and North Dakota State are both title-game eligible in the snapshot (the NCAA removed the transition restriction)', [D.teams.find((t) => t.name === 'Sacramento State')!.ccg_eligible, D.teams.find((t) => t.name === 'North Dakota State')!.ccg_eligible], [true, true]);
 /* the two config files the snapshot reads */
 const av = JSON.parse(fs.readFileSync(path.join(SIM, 'config', 'cfb_availability.json'), 'utf8'));
 T.chk('availability config: no entry without a source (none today)', Array.isArray(av.entries) && av.entries.every((e: any) => /^https?:\/\//.test(e.source_url)));

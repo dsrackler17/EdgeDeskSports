@@ -36,7 +36,7 @@
 import type { SimModule, RunMarks, OutcomeDef, SumRule, EntityDef } from '../../core/engine.ts';
 import { streamFor, STREAM } from '../../core/prng.ts';
 import { normalQuantile } from '../../core/normal.ts';
-import { CfbLeague, ConfTable, type SeasonResults, type CfbGame } from './rules.ts';
+import { CfbLeague, ConfTable, ESTIMATED_RANKING_STEPS, type SeasonResults, type CfbGame } from './rules.ts';
 import { CFP_RULES, selectField, playBracket, type CfpRules } from './cfp.ts';
 import { resumes, scores, noisyOrder, type ProxyFit } from './committee.ts';
 import { cfbFacts, isCfbVerified } from './config.ts';
@@ -201,7 +201,7 @@ export function cfbModule(data: CfbInputData, opt: CfbModuleOptions): SimModule 
         /* counted when they decided a BERTH, or the host of a title game the No. 1 seed hosts (a neutral-site seed order changes nothing) */
         const hosted = site.get(c.name) === 'home_of_seed_1';
         const mattered = tab.decisions.filter((x) => x.purpose === 'berth' || hosted);
-        if (mattered.some((x) => x.step === 'metric')) marks.flag('ccg_metric:' + c.name);
+        if (mattered.some((x) => ESTIMATED_RANKING_STEPS.has(x.step))) marks.flag('ccg_metric:' + c.name);
         if (mattered.some((x) => x.step === 'draw')) marks.flag('ccg_draw:' + c.name);
         if (mattered.some((x) => x.step === 'scoring_margin')) marks.flag('ccg_estimated_points:' + c.name);
         if (tab.pointsUnavailable) marks.flag('ccg_points_unavailable:' + c.name);

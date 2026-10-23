@@ -166,4 +166,51 @@ for (const [id, p] of Object.entries(PROCEDURES)) {
   const grp = s.table().groups([s.ix.get('A')!, s.ix.get('B')!])[0];
   T.eq('win percentages compared as exact fractions: 2/3 and 4/6 are tied', s.names(grp).sort(), ['A', 'B']);
 }
+/* Pac-12 2026 and Conference USA: the same league, two orders. A and B tie for second at 2-2 and never met.
+   Their common opponents are X (first), C and D: against all three, B is 2-1 and A 1-2; against X alone, A 1-0 and B 0-1.
+   The Pac-12 checks the next-highest placed common opponent first (A), Conference USA all common opponents first (B). */
+{
+  const teams = ['X', 'A', 'B', 'C', 'D', 'E', 'G'];
+  const games = [W('A', 'X'), W('X', 'B'), W('X', 'C'), W('X', 'D'), W('X', 'E'), W('X', 'G'), W('C', 'A'), W('D', 'A'), W('A', 'E'), W('B', 'C'), W('B', 'D'), W('G', 'B'), W('E', 'G')];
+  const pac = synth('Pac-12', 'PAC12-2026', teams, games), cusa = synth('Conference USA', 'CUSA-2024', teams, games);
+  const tp = pac.table(), tc = cusa.table();
+  T.eq('Pac-12 2026: X first; A second through the next-highest common opponent (X), before all common opponents', [pac.names(tp.participants().seeds), steps(tp)], [['X', 'A'], ['next_common']]);
+  T.eq('Conference USA: X first; B second through all common opponents, before the best common opponent', [cusa.names(tc.participants().seeds), steps(tc)], [['X', 'B'], ['common_pct']]);
+}
+{
+  /* Pac-12 three-way for second with no sweep step: A, B, C 1-1 in a cycle, all met; common opponent D beaten by all;
+     the multi list goes head-to-head (equal), common opponents (equal), next placed (equal), schedule strength (equal),
+     then SportSource (the surrogate: C highest) */
+  const s = synth('Pac-12', 'PAC12-2026', ['X', 'A', 'B', 'C', 'D'], [W('X', 'A'), W('X', 'B'), W('X', 'C'), W('X', 'D'), W('A', 'B'), W('B', 'C'), W('C', 'A'), W('A', 'D'), W('B', 'D'), W('C', 'D')], { surrogate: { A: 1, B: 2, C: 3 } });
+  const tab = s.table(), p = tab.participants();
+  T.eq('Pac-12 three-way cycle for second: the SportSource step (Estimated surrogate) picks C', [s.names(p.seeds), steps(tab).includes('metric')], [['X', 'C'], true]);
+  T.chk('Pac-12 multi-team list has no sweep step (the release names none)', !PROCEDURES['PAC12-2026'].multi.some((x) => x.kind === 'h2h_sweep'));
+}
+/* Mountain West 2026: CFP-ranked team tiebreaker immunity. A and B tie for first at 2-0 and never met; A is the
+   higher-ranked (surrogate) team and wins its final game, played after Nov. 24: A is immune, both qualify, A hosts.
+   With A's final game lost, there is no immunity and the two-team list decides (no head-to-head -> the composite). */
+{
+  const lateWin = (h: string, a: string, m: number) => ({ h, a, m, conf: false, fcs: true });
+  const base = [W('A', 'C'), W('A', 'D'), W('B', 'C'), W('B', 'D'), W('C', 'D')];
+  const mk = (aFinal: number, sur: Record<string, number>) => {
+    const s = synth('Mountain West', 'MW-2026', ['A', 'B', 'C', 'D'], [...base, lateWin('A', 'X1', aFinal), lateWin('B', 'X2', 7)], { surrogate: sur });
+    /* the two non-conference games are each team's final game, after the ranking date */
+    for (const g of s.L.games) g.kickoff = g.conf ? '2026-10-01' : '2026-11-28';
+    return s;
+  };
+  /* every other FBS team in a synthetic league is one of these four, so the top surrogate is ranked */
+  const s1 = mk(7, { A: 9, B: 1 }), t1 = s1.table(), p1 = t1.participants();
+  T.eq('MW 2026: the ranked tied team that won its final game is immune and hosts (seed 1)', [s1.names(p1.seeds), t1.decisions.map((d: any) => d.purpose + ':' + d.step)], [['A', 'B'], ['seed:cfp_immunity']]);
+  const s2 = mk(-7, { A: 9, B: 1 }), t2 = s2.table(), p2 = t2.participants();
+  T.chk('MW 2026: an immune candidate that loses its final game gets no immunity (the composite decides instead)', !t2.decisions.some((d: any) => d.step === 'cfp_immunity') && t2.decisions.some((d: any) => d.step === 'metric'), t2.decisions);
+  T.eq('... and the same team still hosts through the composite here (higher surrogate)', s2.names(p2.seeds), ['A', 'B']);
+}
+{
+  /* MW 2026 mini round robin applies even when all met: A, B and C tie for second and all met; A beat both others and
+     advances under step 1 (no immunity: no final game after Nov. 24 in this league) */
+  /* X 4-0; A 2-2 (beat B, C; lost X, D), B 2-2 (beat C, D; lost A, X), C 2-2 (beat D, E; lost A, B); D 1-3, E 0-2 */
+  const s = synth('Mountain West', 'MW-2026', ['X', 'A', 'B', 'C', 'D', 'E'], [W('X', 'A'), W('X', 'B'), W('X', 'D'), W('X', 'E'), W('A', 'B'), W('A', 'C'), W('D', 'A'), W('B', 'C'), W('B', 'D'), W('C', 'D'), W('C', 'E')]);
+  const tab = s.table(), p = tab.participants();
+  T.eq('MW 2026 three-way, all met: the team that beat both others advances by the round-robin sweep', [s.names(p.seeds), steps(tab)], [['X', 'A'], ['h2h_sweep']]);
+}
 process.exitCode = T.done();

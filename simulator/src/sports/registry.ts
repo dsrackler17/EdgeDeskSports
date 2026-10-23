@@ -54,7 +54,8 @@ export function factStatus(facts: Array<[string, Fact]>, source = 'the NFL\'s of
 /** CFB: the engine, rules, committee proxy and tests are complete; publication waits on the facts
     whose governing text could not be read or does not yet exist for 2026 (config.ts). */
 function cfbStatus(): { status: SportStatus; blockers: string[] } {
-  const blockers = cfbFacts().filter(([, f]) => f.affects_results && !isCfbVerified(f))
+  /* a measured assumption is the run's to decide (run.eligibility_sensitive), not a standing blocker */
+  const blockers = cfbFacts().filter(([, f]) => f.affects_results && !f.measured && !isCfbVerified(f))
     .map(([label, f]) => label + ': ' + f.label + ' is ' + f.verification + '; the title-game, CFP and national-title outputs it feeds stay unpublished until it is verified (simulator/src/sports/cfb/config.ts lists the source to verify against)');
   return { status: blockers.length ? 'BLOCKED' : 'ACTIVE', blockers };
 }
@@ -135,7 +136,7 @@ export function sportRegistry(): SportEntry[] {
       activation_path: 'Verify the three 2026 facts in simulator/src/sports/nfl/config.ts against the NFL\'s official pages, set verification VERIFIED with verified_by/verified_at in a reviewed commit, apply supabase/simulator.sql.' },
     { key: 'cfb', label: 'College Football', status: cfb.status, structure: 'season', tabs: ['conference', 'title', 'futures'],
       blockers: cfb.blockers, limitations: CFB_LIMITS,
-      activation_path: 'Read each blocked conference\'s 2026 tiebreaker text (and the two eligibility statements) from the governing body, update simulator/src/sports/cfb/config.ts (VERIFIED with verified_by/verified_at, procedure fixed if it differs) in a reviewed commit, regenerate the reader registry, run 100,000 runs. CFB_SIMULATOR_NOTES.md §9.' },
+      activation_path: 'Active: every conference procedure, the 2026 CFP format and North Dakota State\'s eligibility are VERIFIED from the governing bodies\' own text (simulator/src/sports/cfb/config.ts); Sacramento State\'s MAC eligibility is measured in every run and holds publication if any run depended on it. A new season, or a changed procedure, means re-reading the sources (Simulator CFB source check) and re-verifying in a reviewed commit. CFB_SIMULATOR_NOTES.md §4, §16.' },
     { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
       activation_path: 'Verify the six 2026-27 facts in simulator/src/sports/nba/config.ts against the NBA\'s official pages (VERIFIED with verified_by/verified_at in a reviewed commit), wait for the NBA Cup-dependent games on the schedule, then a 100,000-run publication.' },
     { key: 'nhl', label: 'NHL', status: nhl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],

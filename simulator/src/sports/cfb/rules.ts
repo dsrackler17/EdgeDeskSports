@@ -81,8 +81,16 @@ export interface CfbGame {
 }
 
 export type StepKind = 'h2h' | 'h2h_group' | 'h2h_sweep' | 'common_pct' | 'next_common' | 'opp_conf_pct' | 'div_pct' | 'next_div'
-  | 'common_nondiv_pct' | 'total_wins_12' | 'fbs_pct' | 'scoring_margin' | 'metric' | 'draw';
-export interface Step { kind: StepKind; label: string; eliminate_swept?: boolean; metric?: string }
+  | 'common_nondiv_pct' | 'total_wins_12' | 'fbs_pct' | 'overall_pct' | 'overall_pct_fcs1' | 'scoring_margin' | 'cfp_immunity' | 'metric' | 'draw';
+/** steps whose input is an external ranking, resolved by the Estimated surrogate (counted per conference) */
+export const ESTIMATED_RANKING_STEPS: ReadonlySet<StepKind> = new Set<StepKind>(['metric', 'cfp_immunity']);
+export interface Step {
+  kind: StepKind; label: string; eliminate_swept?: boolean; metric?: string;
+  /** h2h_sweep: apply even when every tied team played every other (the Mountain West's mini round robin) */
+  always?: boolean;
+  /** cfp_immunity: the date of the CFP ranking that counts, and the final regular-season game must come after it */
+  ranking_date?: string;
+}
 export interface Procedure {
   id: string;
   two: Step[];
@@ -142,7 +150,38 @@ export const PROCEDURES: Record<string, Procedure> = {
   'MW-2024': { id: 'MW-2024',
     two: [H2H, metric('CFP ranking, else composite (SP+, ESPN SOR, KPI, SportSource)'), S('fbs_pct', 'overall win percentage'), DRAW],
     multi: [GROUP, SWEEP, metric('CFP ranking, else composite (SP+, ESPN SOR, KPI, SportSource)'), S('fbs_pct', 'overall win percentage'), DRAW] },
-  /* No published 2026 procedure found (Conference USA, Pac-12): a PROVISIONAL procedure, labelled so */
+  /* Conference USA Football Regulations, championship-game tiebreaker (official PDF, posted 2024-09-19, no season limit):
+     multi-team ties restart at step 1 once broken; "head-to-head" among three or more is read as the record among them */
+  'CUSA-2024': { id: 'CUSA-2024',
+    two: [H2H, COMMON, S('next_common', 'record against the common opponent(s) with the best conference record, proceeding downward'), metric('average of Connelly SP+, SportSource Analytics, ESPN SOR and KPI rankings'), SOS, S('draw', 'coin toss')],
+    multi: [GROUP, SWEEP, COMMON, S('next_common', 'record against the common opponent(s) with the best conference record, proceeding downward'), metric('average of Connelly SP+, SportSource Analytics, ESPN SOR and KPI rankings'), SOS, S('draw', 'coin toss')] },
+  /* Pac-12 2026 football championship game tiebreakers (official release, 2026-09-03; eight members, seven conference games:
+     a full round robin, so two tied teams always met) */
+  'PAC12-2026': { id: 'PAC12-2026',
+    two: [H2H, NEXT, COMMON, metric('highest CFP ranking on the Tuesday before week 13'), metric('SportSource Analytics Team Rating Score'), S('draw', 'coin toss')],
+    multi: [GROUP, COMMON, NEXT, SOS, metric('SportSource Analytics Team Rating Score'), S('draw', 'coin toss')] },
+  /* Mountain West Football Championship Tiebreaking Procedures (official PDF, posted 2026-10-12). CFP-Ranked Team
+     Tiebreaker Immunity first, once, for the original standings tie only: the highest-ranked tied team in the
+     2026-11-24 CFP ranking advances if it wins its final regular-season game after that ranking (Estimated: the
+     surrogate's top 25 among FBS teams stands in for the ranking) */
+  'MW-2026': { id: 'MW-2026',
+    two: [S('cfp_immunity', 'CFP-ranked team tiebreaker immunity (Estimated ranking)', { ranking_date: '2026-11-24' }), H2H,
+      metric('highest CFP ranking among tied teams that won their final game, else composite of Connelly SP+, ESPN SOR, KPI and SportSource'),
+      S('overall_pct_fcs1', 'overall winning percentage (at most one FCS win counted)'), S('next_common', 'record against the next highest-placed conference team or tied group, proceeding down the standings'), COMMON, S('draw', 'coin toss')],
+    multi: [S('cfp_immunity', 'CFP-ranked team tiebreaker immunity (Estimated ranking)', { ranking_date: '2026-11-24' }),
+      S('h2h_sweep', 'mini round robin: a team that beat all other tied teams advances, one that lost to all is eliminated', { eliminate_swept: true, always: true }),
+      metric('CFP ranking among tied teams that won their final game, then composite of Connelly SP+, ESPN SOR, KPI and SportSource'),
+      S('overall_pct_fcs1', 'overall winning percentage (at most one FCS win counted)'), S('next_common', 'record against the next highest-placed conference team or tied group, proceeding down the standings'), COMMON, S('draw', 'drawing')] },
+  /* The American's 2026 Tiebreaker Policies (official PDF, posted 2026-09-30; Section 10). Two teams: head-to-head;
+     then CFP-ranked conditions or a composite of computer metrics (Connelly SP+, SportSource TR116 Team Strength
+     Ranking, ESPN SOR, KPI); common conference opponents; overall winning percentage without exempt games; coin toss.
+     Three or more: a mini round robin if all met, else a team that beat all the others; the same steps; a drawing. */
+  'AAC-2026': { id: 'AAC-2026',
+    two: [H2H, metric('CFP ranking if the ranked team does not lose its final conference game, else composite (Connelly SP+, SportSource TR116 Team Strength Ranking, ESPN SOR, KPI)'),
+      COMMON, S('overall_pct', 'overall winning percentage, exempt games excluded'), S('draw', 'coin toss')],
+    multi: [GROUP, SWEEP, metric('CFP ranking if the ranked team wins its final conference game, else composite (Connelly SP+, SportSource TR116 Team Strength Ranking, ESPN SOR, KPI)'),
+      COMMON, S('overall_pct', 'overall winning percentage, exempt games excluded'), S('draw', 'drawing')] },
+  /* No published 2026 procedure found: a PROVISIONAL procedure, labelled so (kept for a conference without one) */
   'PROVISIONAL': { id: 'PROVISIONAL',
     two: [H2H, COMMON, metric('unpublished procedure (provisional)'), DRAW],
     multi: [GROUP, SWEEP, COMMON, metric('unpublished procedure (provisional)'), DRAW] }
@@ -225,7 +264,7 @@ export class ConfTable {
   /** every step that separated teams, and what for: a title-game berth, or only the seed order of teams already in */
   readonly decisions: Array<{ purpose: 'berth' | 'seed'; step: StepKind }> = [];
   /** the Estimated / random inputs that decided something, by purpose (e.g. 'berth:metric', 'seed:draw') */
-  get estimated(): string[] { return this.decisions.filter((d) => d.step === 'metric' || d.step === 'draw' || d.step === 'scoring_margin').map((d) => d.purpose + ':' + d.step); }
+  get estimated(): string[] { return this.decisions.filter((d) => ESTIMATED_RANKING_STEPS.has(d.step) || d.step === 'draw' || d.step === 'scoring_margin').map((d) => d.purpose + ':' + d.step); }
   /** a scoring-margin step that found no Estimated scores to use */
   pointsUnavailable = false;
   constructor(L: CfbLeague, ci: number, R: SeasonResults, ctx: TbContext) {
@@ -278,7 +317,7 @@ export class ConfTable {
       case 'h2h_sweep': {
         let allPlayed = true;
         for (const a of tied) for (const b of tied) if (a < b && !this.played(a, b)) allPlayed = false;
-        if (allPlayed) return null;
+        if (allPlayed && !step.always) return null;
         /* swept / sweeper among the tied teams it actually played */
         const v = tied.map((a) => {
           const others = tied.filter((b) => b !== a);
@@ -334,6 +373,18 @@ export class ConfTable {
         return tied.map((a): Frac => [this.totalWins12(a), 1]);
       case 'fbs_pct':
         return tied.map((a): Frac => this.fbsPct(a));
+      case 'overall_pct':
+        return tied.map((a): Frac => this.overallPct(a));
+      case 'overall_pct_fcs1':
+        return tied.map((a): Frac => this.overallPctFcs1(a));
+      case 'cfp_immunity': {
+        /* the original standings tie only: every eligible member at this conference win percentage */
+        const orig = this.info.members.filter((t) => this.L.teams[t].ccg_eligible && cmp(this.pct(t), this.pct(tied[0])) === 0);
+        if (orig.length !== tied.length || !tied.every((t) => orig.includes(t))) return null;
+        const top = tied.slice().sort((a, b) => this.R.surrogate(b) - this.R.surrogate(a) || a - b)[0];
+        if (!this.rankedTop25(top) || !this.wonFinalAfter(top, step.ranking_date as string)) return null;
+        return tied.map((a): Frac => [a === top ? 1 : 0, 1]);
+      }
       case 'scoring_margin': {
         const pts = this.R.points();
         if (!pts) { this.pointsUnavailable = true; return null; }
@@ -377,6 +428,41 @@ export class ConfTable {
       n++; if (home ? this.R.margin[k] > 0 : this.R.margin[k] < 0) w++;
     }
     return n ? [w, n] : [0, 1];
+  }
+  /** overall winning percentage, conference and non-conference, the visitor's exempt game excluded (the American) */
+  overallPct(a: number): Frac {
+    let w = 0, n = 0;
+    for (const k of this.L.teamGames[a]) {
+      const g = this.L.games[k], home = g.home === a;
+      if (!home && g.exempt_for_visitor) continue;
+      n++; if (home ? this.R.margin[k] > 0 : this.R.margin[k] < 0) w++;
+    }
+    return n ? [w, n] : [0, 1];
+  }
+  /** overall winning percentage with at most one FCS win counted (the extra FCS wins leave the record) */
+  overallPctFcs1(a: number): Frac {
+    let w = 0, n = 0, fcsWins = 0;
+    for (const k of this.L.teamGames[a]) {
+      const g = this.L.games[k], home = g.home === a, opp = home ? g.away : g.home, won = home ? this.R.margin[k] > 0 : this.R.margin[k] < 0;
+      if (opp < 0 && won && fcsWins++ >= 1) continue;
+      n++; if (won) w++;
+    }
+    return n ? [w, n] : [0, 1];
+  }
+  /** Estimated stand-in for "ranked in the CFP Top 25": the surrogate places the team among the 25 best FBS teams */
+  rankedTop25(a: number): boolean {
+    const s = this.R.surrogate(a);
+    let above = 0;
+    for (let t = 0; t < this.L.T; t++) if (t !== a && this.R.surrogate(t) > s) above++;
+    return above < 25;
+  }
+  /** won its final regular-season game, played after the ranking date (a bye or an earlier final game does not count) */
+  wonFinalAfter(a: number, date: string): boolean {
+    let last = -1;
+    for (const k of this.L.teamGames[a]) if (last < 0 || this.L.games[k].kickoff > this.L.games[last].kickoff) last = k;
+    if (last < 0 || !(this.L.games[last].kickoff.slice(0, 10) > date)) return false;
+    const g = this.L.games[last];
+    return g.home === a ? this.R.margin[last] > 0 : this.R.margin[last] < 0;
   }
   /** the SEC's capped relative scoring margin: offense capped at 42, defense at 48, over conference games */
   cappedMargin(a: number, pts: { home: Float64Array; away: Float64Array }): number {

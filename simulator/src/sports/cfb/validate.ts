@@ -47,6 +47,12 @@ export function validateCfbInputs(snap: CfbSnapshot, opt: { ignoreCodeDrift?: bo
   for (const [label, f] of cfbFacts(d.config)) {
     if (!f.affects_results) continue;
     const ok = isCfbVerified(f);
+    if (!ok && f.measured) {
+      /* an assumption the run measures: each season is replayed under the opposite assumption, and run.eligibility_sensitive
+         holds publication if any run's title-game pair differs */
+      g('rules.' + label.replace(/\s+/g, '_'), false, f.label + ': ' + f.verification + ', MEASURED in every run (run.eligibility_sensitive decides publication) — ' + f.note.slice(0, 160), 'none', true);
+      continue;
+    }
     g('rules.' + label.replace(/\s+/g, '_'), ok, f.label + ': ' + f.verification + (ok ? ' (' + f.sources[0].url + ')' : ' — ' + f.note.slice(0, 220)), 'publication');
   }
   const cm = cfpMode(d);

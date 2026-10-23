@@ -9,6 +9,7 @@ import { cfbFixture, clone, CFB_FIXTURE } from './_cfb.ts';
 import { cfbModule, cfpMode } from '../src/sports/cfb/module.ts';
 import { cfbMathStatus } from '../src/sports/cfb/status.ts';
 import { validateCfbInputs } from '../src/sports/cfb/validate.ts';
+import { isCfbVerified } from '../src/sports/cfb/config.ts';
 import { runRange, summarise } from '../src/core/engine.ts';
 import { runPlan } from '../src/core/runner.ts';
 import { normalCdf } from '../src/core/normal.ts';
@@ -164,8 +165,9 @@ T.chk('an ineligible team can still be ranked and play in the CFP field (cfp_eli
   const o: any = await execute(args, () => {});
   T.eq('cli: the replayed run simulates every run', o.results.run.n_sims, 400);
   T.chk('cli: the code identity of the snapshot matches the engine', o.gates.find((g: any) => g.id === 'replay.code_identity').status === 'PASS');
-  T.chk('cli: CFB is not publishable while facts are unverified (sport.active and the per-conference gates block)', !o.publishable && o.gates.find((g: any) => g.id === 'sport.active').status === 'FAIL');
-  T.eq('cli: every conference carries its rules status', o.results.cfb.conferences.map((c: any) => c.status).sort().filter((x: string, i: number, a: string[]) => a.indexOf(x) === i), ['PROVISIONAL_RULES', 'UNVERIFIED_RULES', 'VERIFIED_RULES']);
+  T.eq('cli: with every standing fact VERIFIED the sport is ACTIVE, and a 400-run replay is held only by the 100,000-run minimum', [o.gates.find((g: any) => g.id === 'sport.active').status, o.publishable, o.gates.filter((g: any) => g.blocks !== 'none').map((g: any) => g.id)], ['PASS', false, ['run.count']]);
+  T.eq('cli: every conference carries its rules status, as its config states it', o.results.cfb.conferences.map((c: any) => [c.conference, c.status]),
+    D.config.conferences.map((c) => [c.conference, isCfbVerified(c.fact) ? 'VERIFIED_RULES' : c.fact.verification === 'UNKNOWN' ? 'PROVISIONAL_RULES' : 'UNVERIFIED_RULES']));
   T.chk('cli: the three uncertainty layers are stated separately', ['game_results', 'conference_qualification', 'committee'].every((k) => typeof o.results.cfb.uncertainty_layers[k] === 'string'));
   T.chk('cli: CFP outcomes are Estimated in the results document', o.results.entities[0].outcomes.cfp_field.provenance === 'Estimated' && o.results.entities[0].outcomes.conf_champion.provenance === 'Research');
 }
