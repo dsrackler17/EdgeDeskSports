@@ -53,7 +53,7 @@ fs.mkdirSync(OUT, { recursive: true });
 type Kind = 'rules' | 'discover' | 'rankings' | 'tables';
 /** links: print matching hrefs · snippet: print raw HTML windows around a pattern (lists a text dump loses) ·
     nextData: print the long strings of an embedded __NEXT_DATA__ JSON that match (script-rendered articles) */
-interface Source { id: string; kind: Kind; url: string; links?: RegExp; max?: number; snippet?: RegExp; nextData?: RegExp; render?: boolean }
+interface Source { id: string; kind: Kind; url: string; links?: RegExp; max?: number; snippet?: RegExp; nextData?: RegExp; render?: boolean; find?: RegExp }
 const LINKS = /tie-?break|tiebreak|championship|eligib|playoff|protocol|selection|format|2026/i;
 
 export const CFB_SOURCES: Source[] = [
@@ -82,6 +82,16 @@ export const CFB_SOURCES: Source[] = [
   { id: 'big12_tiebreaker_pdf', kind: 'rules', url: 'https://s3.amazonaws.com/big12sports.com/documents/2025/11/4/Big_12_Football_2024_Tiebreaker_Policy.pdf' },
   { id: 'aac_tiebreaker_2025', kind: 'rules', url: 'https://theamerican.org/news/2025/11/23/FOOTBALL_Tiebreaker.aspx', links: LINKS },
   { id: 'aac_tiebreaker_2025_pdf', kind: 'rules', url: 'https://theamerican.org/documents/2025/10/29/25_FB_Tiebreakers.pdf' },
+  { id: 'aac_tiebreaker_2026_pdf', kind: 'rules', url: 'https://theamerican.org/documents/2026/9/30/26_FB_Tiebreakers.pdf' },
+  { id: 'aac_weekly_release_wk8_pdf', kind: 'rules', url: 'https://theamerican.org/documents/2026/10/22/2026_release_week_8.pdf', find: /tie-?break|championship game|eligib/ },
+  { id: 'mw_tiebreaker_2026_pdf', kind: 'rules', url: 'https://themw.com/documents/2026/10/12/MW_Football_Championship_Tiebreaking_Procedures.pdf' },
+  { id: 'mw_weekly_release_wk8_pdf', kind: 'rules', url: 'https://themw.com/documents/2026/10/20/2026_MWFB_Weekly_Release_Week_8.pdf', find: /tie-?break|championship game|eligib/ },
+  { id: 'mw_media_guide_2026_pdf', kind: 'rules', url: 'https://themw.com/documents/2026/8/18/2026_MW_Football_Media_Guide.pdf', find: /tie-?break|eligib/ },
+  { id: 'big_ten_media_guide_2026_pdf', kind: 'rules', url: 'https://bigten.org/documents/2026/10/13/2026_B1G_FB_MG_0728.pdf', find: /tie-?break/ },
+  { id: 'big_ten_week7_release_pdf', kind: 'rules', url: 'https://bigten.org/documents/2026/10/14//2026_FB_Week_7_Release.pdf?id=15302', find: /tie-?break|championship game/ },
+  { id: 'mac_week8_release_pdf', kind: 'rules', url: 'https://getsomemaction.com/documents/2026/10/21//2026_FB_Release_Week_8.pdf', find: /tie-?break|championship game|eligib|Sacramento/ },
+  { id: 'mac_week8_release_b_pdf', kind: 'rules', url: 'https://getsomemaction.com/documents/2026/10/21//2026_FB_Release_Week_Eight.pdf', find: /tie-?break|championship game|eligib|Sacramento/ },
+  { id: 'sec_standings_2026', kind: 'rules', url: 'https://www.secsports.com/sport/football/standings', render: true, find: /tie-?break|championship/ },
   { id: 'aac_standings_2026', kind: 'discover', url: 'https://theamerican.org/standings.aspx?standings=133', links: LINKS, render: true },
   { id: 'aac_2026_pairings', kind: 'rules', url: 'https://theamerican.org/news/2025/10/14/american-announces-2026-football-schedule-pairings.aspx', links: LINKS },
   { id: 'cusa_tiebreaker_policy_pdf', kind: 'rules', url: 'https://conferenceusa.com/documents/2024/9/19/CUSA_FB_Championship_Game_Tiebreaker_Policy.pdf' },
@@ -299,6 +309,16 @@ async function fetchSource(s: Source) {
   fs.writeFileSync(path.join(OUT, s.id + '.txt'), text);
   SUMMARY.push(s.id + ': ' + head + rendered + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
   if (s.kind === 'discover') return;
+  if (s.find) {
+    /* a long document (a media guide, a weekly release): the passages around each match, merged */
+    const spans: Array<[number, number]> = [];
+    for (const m of text.matchAll(new RegExp(s.find.source, 'gi'))) {
+      const a = Math.max(0, m.index! - 1500), b = Math.min(text.length, m.index! + 3500), last = spans[spans.length - 1];
+      if (last && a <= last[1]) last[1] = b; else spans.push([a, b]);
+    }
+    out('-- passages matching ' + s.find + ' (' + spans.length + ', text ' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):', spans.slice(0, 15).map(([a, b]) => '[' + a + '..' + b + '] ' + text.slice(a, b)));
+    return;
+  }
   out('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):', text.slice(0, s.max || 40000));
 }
 
