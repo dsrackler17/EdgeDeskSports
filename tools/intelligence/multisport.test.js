@@ -376,6 +376,27 @@ function quote(p, o) {
   ok('FAIR LINES: the NHL spread publishes no fair LINE (the engine prices the fixed ±1.5 puck line)', VGK.fair.spread.home_line === null && VGK.fair.spread.priced_line.home_line === -1.5 && !/EdgeDesk fair lines: home -1\.5/.test(r0.answer));
 }
 
+/* ═══ MODEL IDENTITY (2026-10-23 audit) ══════════════════════════════════════
+   The NFL engine routes each game (football/engine.js) and writes the version
+   that priced it on the game. From 2026-10-21 the slate header still named
+   edgedesk_football_v1.0.0 while every game was priced by edgedesk_nfl_v2.1.0,
+   and every projection — and so every performance-ledger forecast — carried
+   the header's name. The projection now carries the game's own version. */
+{
+  const arts = A();
+  const nfl = JSON.parse(JSON.stringify(arts['football/nfl/slate.json']));
+  nfl.engine = Object.assign({}, nfl.engine, { model_version: 'edgedesk_football_v1.0.0' });
+  nfl.games.forEach((g) => { g.model_version = 'edgedesk_nfl_v2.1.0'; });
+  arts['football/nfl/slate.json'] = nfl;
+  const ps = P.buildAll(arts, { now: NOW }).projections.filter((p) => p.sport === 'nfl');
+  ok('MODEL IDENTITY: an NFL projection names the version that priced the game, not the slate header', ps.length > 0 && ps.every((p) => p.model.id === 'edgedesk_nfl_v2.1.0'), ps.map((p) => p.model.id));
+  const old = JSON.parse(JSON.stringify(arts['football/nfl/slate.json']));
+  old.games.forEach((g) => { delete g.model_version; });
+  arts['football/nfl/slate.json'] = old;
+  const ps2 = P.buildAll(arts, { now: NOW }).projections.filter((p) => p.sport === 'nfl');
+  ok('MODEL IDENTITY: a game with no version of its own falls back to the slate header', ps2.length > 0 && ps2.every((p) => p.model.id === 'edgedesk_football_v1.0.0'), ps2.map((p) => p.model.id));
+}
+
 /* ═══ THE REGISTRY ══════════════════════════════════════════════════════════ */
 {
   const cm = P.capabilityMatrix(P.buildAll(A(), { now: NOW }), { now: NOW });

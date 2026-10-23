@@ -115,6 +115,21 @@ section('S1 live market, valid');
 }
 
 /* ═══ S2 — odds API timeout ═══════════════════════════════════════════════ */
+/* ═══ one book, two spellings (2026-10-23 audit) ══════════════════════════
+   ESPN prints DraftKings both as "DraftKings" and "Draft Kings". Two
+   spellings of one sportsbook must count as ONE book: otherwise a lone
+   DraftKings line reaches min_verified_books = 2 and the market is VERIFIED,
+   which opens betting validation on a single source. */
+section('S1b one sportsbook spelled two ways is one book');
+{
+  const line = plain.market_state.spread.value != null ? plain.market_state.spread.value : -3;
+  const two = snap(plain, [q('DraftKings', line, 20, { source: 'espn_scoreboard' }), q('Draft Kings', line, 15, { source: 'espn_core' })], 'OK');
+  chk('S1b "DraftKings" and "Draft Kings" are one book', two.spread.books === 1, [two.spread.books, two.spread.sources]);
+  chk('S1b a single sportsbook, however spelled, never verifies the market', two.verified === false, two.verified);
+  const real = snap(plain, [q('DraftKings', line, 20), q('FanDuel', line, 15)], 'OK');
+  chk('S1b two different sportsbooks still count as two', real.spread.books === 2, real.spread.books);
+}
+
 section('S2 odds API timeout');
 {
   const s = snap(OSU, [q('draftkings', -10.5, 240), tq('draftkings', 53.5, 240)], 'TIMEOUT');
