@@ -55,7 +55,12 @@ $env:SIM_E2E_REQUIRED = '1'; npm run sim:e2e; Remove-Item Env:SIM_E2E_REQUIRED
 npm run sim:dry-run                              # builds the snapshot from the live feeds, 100,000 runs, 4 workers
 node simulator/src/cli/run.ts --sport nfl --season 2026 --runs 20000 --workers 4 --dry-run --out simulator/out/try
 node simulator/src/cli/run.ts --sport nfl --season 2026 --offline --dry-run      # cached feeds only (simulator/.cache/feeds)
+npm run sim:nhl:dry-run                          # NHL 2026-27 (season key 2027); needs python3 + pyarrow for the schedule parquet
 ```
+
+The NHL runs from the command line only (it is not in the nightly
+workflow); its record, studies and limitations are in
+[`NHL_SIMULATOR_NOTES.md`](../../NHL_SIMULATOR_NOTES.md).
 
 Each run writes `snapshot.json` (the frozen, content-hashed inputs),
 `results.json`, `gates.json` and `manifest.json` to `simulator/out/<dir>/`
