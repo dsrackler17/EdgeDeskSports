@@ -25,7 +25,7 @@ export interface SportEntry {
   label: string;
   status: SportStatus;
   structure: 'season' | 'tournament' | 'series' | 'events' | 'none';
-  tabs: Array<'division' | 'conference' | 'title' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health' | 'fights' | 'title_path' | 'leaderboard' | 'finishes'>;
+  tabs: Array<'division' | 'conference' | 'title' | 'cup' | 'futures' | 'tournament' | 'games' | 'upset_watch' | 'model_health' | 'fights' | 'title_path' | 'leaderboard' | 'finishes'>;
   blockers: string[];
   limitations: string[];
   /** what would have to exist for this sport to be activated */
@@ -89,14 +89,13 @@ const MLB_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
-/** NBA: rules, inputs, studies and tests are complete, and the six 2026-27 facts are VERIFIED from the league's text
-    (2026-10-23); the season cannot be simulated for publication until the NBA Cup-dependent games are on the schedule */
+/** NBA: rules, inputs, studies and tests are complete, and the 2026-27 facts are VERIFIED from the league's text
+    (2026-10-23). The 30 NBA Cup-dependent games the league schedules after Group Play are simulated from the Cup's
+    published format until they are on the schedule (cup.ts; the unpublished parts Estimated and labelled) */
 function nbaStatus(): { status: SportStatus; blockers: string[] } {
   const c = NBA_2026_27;
-  const f = factStatus([['2026-27 tiebreaker procedure', c.tiebreakers], ['2026-27 definition of playoff teams for the tiebreaker', c.playoff_clubs_for_tiebreakers], ['2026-27 play-in format', c.play_in],
-    ['2026-27 playoff format', c.playoff_format], ['2026-27 home-court rules', c.home_court], ['2026-27 NBA Cup standings rules', c.nba_cup]], 'the NBA\'s official source');
-  const blockers = f.blockers.concat(['The 30 regular-season games that depend on the NBA Cup group stage (two per club) are not on the schedule yet; until they are, the schedule.complete gate refuses the season (expected after the group stage, early December 2026).']);
-  return { status: 'BLOCKED', blockers };
+  return factStatus([['2026-27 tiebreaker procedure', c.tiebreakers], ['2026-27 definition of playoff teams for the tiebreaker', c.playoff_clubs_for_tiebreakers], ['2026-27 play-in format', c.play_in],
+    ['2026-27 playoff format', c.playoff_format], ['2026-27 home-court rules', c.home_court], ['2026-27 NBA Cup standings rules', c.nba_cup], ['2026-27 NBA Cup format', c.nba_cup_format]], 'the NBA\'s official source');
 }
 
 /** NCAAM: the bracket engine, model and tests are complete; publication waits
@@ -141,6 +140,7 @@ const NBA_LIMITS = [
   'Availability: the projected rotation is who played in the club\'s latest game; a rotation player missing since an earlier game returns at a game drawn from empirical return hazards (Estimated, reason for the absence unknown). No new absences are simulated; roster moves after the as-of time are not.',
   'Rest, back-to-backs and travel come from the schedule for every regular-season game; a postseason game not yet scheduled carries the median rest of its round and game number (Estimated). The model\'s own learned postseason term applies; no playoff rotation change is assumed.',
   'Ratings are frozen at the as-of time: simulated results do not update them. Within-season drift is OFF.',
+  'NBA Cup: Group Play, the knockout field and its hosts follow the league\'s rules (reproduced on every Cup 2023-24..2025-26). Until the league schedules them, the 30 regular-season games the Cup decides are simulated: the non-advancing clubs\' pairings by an Estimated stand-in for the league\'s unpublished formula (cross-conference pairs and every within-conference pairing type reproduced on 2023-24..2025-26, the exact within-conference pairs drawn at random), Estimated dates and rest. A simulated Group Play game\'s overtime and regulation points (the Cup\'s differential and points tiebreakers) are drawn from the served model given its margin.',
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
@@ -169,8 +169,8 @@ export function sportRegistry(): SportEntry[] {
     { key: 'cfb', label: 'College Football', status: cfb.status, structure: 'season', tabs: ['conference', 'title', 'futures'],
       blockers: cfb.blockers, limitations: CFB_LIMITS,
       activation_path: 'Active: every conference procedure, the 2026 CFP format and North Dakota State\'s eligibility are VERIFIED from the governing bodies\' own text (simulator/src/sports/cfb/config.ts); Sacramento State\'s MAC eligibility is measured in every run and holds publication if any run depended on it. A new season, or a changed procedure, means re-reading the sources (Simulator CFB source check) and re-verifying in a reviewed commit. CFB_SIMULATOR_NOTES.md §4, §16.' },
-    { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
-      activation_path: 'The six 2026-27 facts in simulator/src/sports/nba/config.ts are VERIFIED from the league\'s own text (2026-10-23; re-checked each season by the Simulator source check). Wait for the 30 NBA Cup-dependent games on the schedule (from Dec. 4, 2026), lift the schedule blocker in simulator/src/sports/registry.ts in a reviewed commit, add the NBA to the nightly plan, then a 100,000-run publication.' },
+    { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'cup', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
+      activation_path: 'Active: the 2026-27 facts in simulator/src/sports/nba/config.ts are VERIFIED from the league\'s own text (2026-10-23), and the NBA Cup-dependent games are simulated from the Cup\'s format until the league schedules them (each one it schedules replaces its simulated stand-in). Each season: re-run the Simulator source check, re-verify the facts, and update the Cup format (config.ts cup) in a reviewed commit.' },
     { key: 'nhl', label: 'NHL', status: nhl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],
       blockers: nhl.blockers, limitations: NHL_LIMITS,
       activation_path: 'Each season: re-run the Simulator source check, compare the NHL.com tie-breaking and playoff-format pages with NHL_SIMULATOR_NOTES.md, and re-verify the three facts in simulator/src/sports/nhl/config.ts in a reviewed commit.' },

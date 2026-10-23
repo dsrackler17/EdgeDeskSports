@@ -1,14 +1,14 @@
 /* ===========================================================================
    edgedesk-sim plan — the workflow's validated run list (.github/workflows/simulator.yml).
 
-     SIM_EVENT=schedule node simulator/src/cli/plan.ts
+     SIM_EVENT=schedule [SIM_CRON='47 15 * * *'] node simulator/src/cli/plan.ts
      SIM_EVENT=workflow_dispatch SIM_SPORT=nfl SIM_SEASON=2026 SIM_RUNS=100000 SIM_SEED= SIM_PUBLISH=false node simulator/src/cli/plan.ts
 
    Prints {"include":[...]} for a job matrix. Every value a later step puts on
    a command line is checked here against a strict pattern, so nothing a
    person types into the Run workflow form reaches a shell unvalidated.
-   Schedule: every sport in NIGHTLY whose inputs exist, at the production run
-   count; an ACTIVE sport publishes, any other runs dry and its blockers are
+   Schedule: every sport in NIGHTLY whose inputs exist (the NBA's own cron:
+   the NBA), at the production run count; an ACTIVE sport publishes, any other runs dry and its blockers are
    printed as warnings. Dispatch: the requested sport; publishing is refused
    up front for a sport that is not ACTIVE or for fewer than 100,000 runs.
    Exit 2 on any invalid input.
@@ -23,16 +23,21 @@ import { MLB_2026 } from '../sports/mlb/config.ts';
 import { CFB_2026 } from '../sports/cfb/config.ts';
 import { NHL_2027 } from '../sports/nhl/config.ts';
 import { NCAAM_2027 } from '../sports/ncaam/config.ts';
+import { NBA_2026_27 } from '../sports/nba/config.ts';
 import { WNBA_2026 } from '../sports/wnba/config.ts';
 import fs from 'node:fs';
 
-/** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season (the NHL by its end year: 2027 = 2026-27) */
-export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, nhl: NHL_2027.season, cfb: CFB_2026.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season };
+/** sports with a simulation module (simulator/src/sports/factory.ts) and their configured season (the NHL and the NBA by their end year: 2027 = 2026-27) */
+export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB_2026.season, nhl: NHL_2027.season, cfb: CFB_2026.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season, nba: NBA_2026_27.season };
 /** the nightly schedule: college football runs nightly, dry until it is ACTIVE (a night with unchanged inputs
     reuses the published run: the idempotency key); MLB runs only inside its season's nightly window
     (inSeason: through the World Series); college basketball joins only once its official bracket file
-    exists (inputsReady) */
+    exists (inputsReady). The NBA runs on its own schedule (NBA_CRON), late enough in the day that the
+    previous night's results are in the data (results.current) */
 export const NIGHTLY = ['nfl', 'cfb', 'nhl', 'mlb', 'ncaam', 'wnba'];
+export const NBA_CRON = '47 15 * * *';
+/** the sports a scheduled run plans: the NBA's own cron plans the NBA, any other the nightly list */
+export function scheduledSports(cron: string | undefined): string[] { return (cron || '').trim() === NBA_CRON ? ['nba'] : NIGHTLY; }
 /** the last date (UTC) a sport's configured season is run nightly; absent = every night */
 const NIGHTLY_THROUGH: Record<string, string> = { mlb: MLB_2026.nightly_through, wnba: WNBA_2026.nightly_through };
 export function inSeason(sport: string, now: Date): { ready: boolean; reason: string } {
@@ -52,9 +57,9 @@ export function inputsReady(sport: string): { ready: boolean; reason: string } {
 
 export interface PlannedRun { sport: string; season: string; runs: string; seed: string; publish: boolean; status: string; blockers: string[] }
 
-export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }, reg: SportEntry[] = sportRegistry(), now: Date = new Date()): PlannedRun[] {
+export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string; cron?: string }, reg: SportEntry[] = sportRegistry(), now: Date = new Date()): PlannedRun[] {
   if (event === 'schedule') {
-    return NIGHTLY.filter((k) => inputsReady(k).ready && inSeason(k, now).ready).map((k) => {
+    return scheduledSports(inp.cron).filter((k) => inputsReady(k).ready && inSeason(k, now).ready).map((k) => {
       const s = reg.find((r) => r.key === k)!;
       return { sport: k, season: String(RUNNABLE[k]), runs: String(PRODUCTION_RUNS), seed: '', publish: s.status === 'ACTIVE', status: s.status, blockers: s.blockers };
     });
@@ -80,7 +85,7 @@ const isMain = !!process.argv[1] && fileURLToPath(import.meta.url) === path.reso
 if (isMain) {
   try {
     const e = process.env;
-    const include = planRuns(e.SIM_EVENT || '', { sport: e.SIM_SPORT, season: e.SIM_SEASON, runs: e.SIM_RUNS, seed: e.SIM_SEED, publish: e.SIM_PUBLISH });
+    const include = planRuns(e.SIM_EVENT || '', { sport: e.SIM_SPORT, season: e.SIM_SEASON, runs: e.SIM_RUNS, seed: e.SIM_SEED, publish: e.SIM_PUBLISH, cron: e.SIM_CRON });
     process.stdout.write(JSON.stringify({ include }) + '\n');
   } catch (err) {
     console.error('::error::' + (err as Error).message);

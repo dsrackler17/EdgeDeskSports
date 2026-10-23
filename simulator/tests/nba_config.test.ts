@@ -1,6 +1,6 @@
 /* NBA 2026-27 configuration: the alignment derived from the committed schedules (not recalled),
    the clubs against every other NBA table in the repository, the 2026-27 schedule against the
-   alignment and the NBA Cup, the facts and the registry status they produce. */
+   alignment and the NBA Cup, the facts and the registry status they produce (the Cup itself: nba_cup.test.ts). */
 import { createRequire } from 'node:module';
 import { kit } from './_kit.ts';
 import { NBA_TEAMS, NBA_2026_27 } from '../src/sports/nba/config.ts';
@@ -73,14 +73,16 @@ const byId: Record<string, any> = {}; NBA_TEAMS.forEach((t) => { byId[t.id] = t;
 {
   T.eq('2026-27 runs under NBA-2021 (play-in, six direct seeds, 2-2-1-1-1)', [rulesFor(2027).id, rulesFor(2027).play_in, rulesFor(2027).direct_seeds, rulesFor(2027).home_games.finals], [NBA_2021.id, true, 6, [1, 2, 5, 7]]);
   T.eq('the config names its rules version', NBA_2026_27.rules_version, 'NBA-2021');
-  const facts = [NBA_2026_27.tiebreakers, NBA_2026_27.playoff_clubs_for_tiebreakers, NBA_2026_27.play_in, NBA_2026_27.playoff_format, NBA_2026_27.home_court, NBA_2026_27.nba_cup];
+  const facts = [NBA_2026_27.tiebreakers, NBA_2026_27.playoff_clubs_for_tiebreakers, NBA_2026_27.play_in, NBA_2026_27.playoff_format, NBA_2026_27.home_court, NBA_2026_27.nba_cup, NBA_2026_27.nba_cup_format];
   T.chk('every fact that moves a number names a source and how to verify it', facts.every((f) => f.affects_results && f.source.length > 40 && f.verify_by.length > 40));
-  T.chk('all six are VERIFIED, each with a named verifier and a date, from the source check run that read them', facts.every((f) => isVerified(f) && /run 39996632843/.test(f.verified_by || '') && f.verified_at === '2026-10-23'));
+  T.chk('all seven are VERIFIED, each with a named verifier and a date, from the source check run that read them', facts.every((f) => isVerified(f) && /run 39996632843/.test(f.verified_by || '') && f.verified_at === '2026-10-23'));
   T.chk('... and each cites the league\'s page it was read from (URL, capture, text sha256)', facts.every((f) => /web\.archive\.org\/web\/\d{14}id_\/https:\/\/(www|pr)\.nba\.com/.test(f.source) && /sha256 [0-9a-f]{64}/.test(f.source)));
-  T.eq('the postseason schedule input is Estimated, not a fact to verify', NBA_2026_27.postseason_schedule.verification, 'NOT_APPLICABLE');
+  T.eq('the postseason schedule and the Cup-dependent schedule are Estimated inputs, not facts to verify', [NBA_2026_27.postseason_schedule.verification, NBA_2026_27.cup_dependent_schedule.verification], ['NOT_APPLICABLE', 'NOT_APPLICABLE']);
+  T.chk('the Cup format quotes the league\'s tiebreakers, wild card, hosts and the non-advancing clubs\' formula', ['Head-to-head record in Group Play', 'Total points scored in Group Play', 'with the exception of the head-to-head', 'home arena of the higher-seeded team', 'otherwise scheduled to play each other three times'].every((q) => NBA_2026_27.nba_cup_format.source.includes(q)));
   const nba = sportRegistry().find((s) => s.key === 'nba')!;
-  T.eq('the NBA is BLOCKED', nba.status, 'BLOCKED');
-  T.chk('its one blocker: the NBA Cup schedule (the facts are verified)', nba.blockers.length === 1 && /NBA Cup group stage/.test(nba.blockers[0]), nba.blockers);
+  T.eq('the NBA is ACTIVE, with no blocker (the facts are verified; the Cup-dependent games are simulated)', [nba.status, nba.blockers], ['ACTIVE', []]);
+  T.chk('its limitations name the NBA Cup\'s Estimated parts', nba.limitations.some((l) => /NBA Cup/.test(l) && /Estimated/.test(l)));
+  T.chk('... and the reader has an NBA Cup tab', nba.tabs.includes('cup'));
   T.chk('the registry text carries no simulated number', !/probab|\d\.\d{3,}/.test(JSON.stringify(nba)));
   T.eq('drift is OFF; availability is the return-hazard plan', [NBA_2026_27.drift.mode, NBA_2026_27.availability.mode], ['off', 'return_hazards']);
 }

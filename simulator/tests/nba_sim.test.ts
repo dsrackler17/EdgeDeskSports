@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { kit } from './_kit.ts';
 import { nbaFixture } from './_nba_fixture.ts';
-import { nbaModule, NBA_OUTCOMES, NBA_OUTCOME_SEMANTICS } from '../src/sports/nba/module.ts';
+import { nbaModule, NBA_OUTCOMES, NBA_CUP_OUTCOMES, NBA_OUTCOME_SEMANTICS } from '../src/sports/nba/module.ts';
 import { runRange, checkAggregateSums, summarise } from '../src/core/engine.ts';
 import { runPlan } from '../src/core/runner.ts';
 import { validateNbaInputs, nbaMathStatus } from '../src/sports/nba/validate.ts';
@@ -63,11 +63,12 @@ const rehash = (s: NbaSnapshot): NbaSnapshot => ({ ...s, input_hash: hashCanonic
   const base = new Map(d.games.filter((g) => !g.done).map((g) => [g.game_id, g.model!.mu]));
   const ix: Record<string, number> = {}; d.teams.forEach((t, i) => { ix[t.code] = i; });
   const rel: Array<Map<string, number>> = [];
-  let bad = 0, post = 0;
+  let bad = 0, post = 0, cupN = 0;
   const m = nbaModule(d, { seed: 21n, sigma: SIG, observe: (ev) => {
     const r = rel[ev.run] || (rel[ev.run] = new Map());
     let res: number;
     if (ev.phase === 'regular') res = ev.mu - base.get(ev.game)!;
+    else if (ev.phase === 'cup') { const tab = (d.cup!.pairs as any)[ev.source!]; res = ev.mu - tab[d.teams[ev.home].code][d.teams[ev.away].code].mu; cupN++; }
     else { const tab = d.postseason_pairs[ev.game]; res = ev.mu - tab[d.teams[ev.home].code][d.teams[ev.away].code].mu; post++; }
     const k = ev.home + ':' + ev.away, prev = r.get(k);
     if (prev != null && Math.abs(prev - res) > 1e-9) bad++;
@@ -86,7 +87,7 @@ const rehash = (s: NbaSnapshot): NbaSnapshot => ({ ...s, input_hash: hashCanonic
       tri++; if (Math.abs(x + y - z) > 1e-9) bad++;
     }
   }
-  T.chk('a club\'s offset is the same in every game of a run, the postseason included (' + tri + ' triangles, ' + post + ' postseason games)', bad === 0 && tri > 1000 && post > 1000, bad);
+  T.chk('a club\'s offset is the same in every game of a run, the NBA Cup and the postseason included (' + tri + ' triangles, ' + cupN + ' Cup games, ' + post + ' postseason games)', bad === 0 && tri > 1000 && post > 1000 && cupN === 40 * 31, bad);
 }
 
 /* 4 sum rules, qualified-club totals */
@@ -103,7 +104,8 @@ const rehash = (s: NbaSnapshot): NbaSnapshot => ({ ...s, input_hash: hashCanonic
   T.chk('a play-in club\'s finish is 7-10; direct qualifiers finish 1-6', res.every((e) => e.outcomes.play_in.count === ['finish_7', 'finish_8', 'finish_9', 'finish_10'].reduce((u, k) => u + e.outcomes[k].count, 0)));
   T.chk('playoffs = finish 1-6 + play-in qualifiers: seed 7 and 8 come only from the play-in', res.every((e) => e.outcomes.seed_7.count + e.outcomes.seed_8.count <= e.outcomes.play_in.count));
   T.chk('regular-season first place and the conference title are different outcomes (some club has one without the other)', res.some((e) => e.outcomes.finish_1.count !== e.outcomes.win_conference.count));
-  T.eq('every outcome has its own settlement semantic', new Set(Object.values(NBA_OUTCOME_SEMANTICS)).size, NBA_OUTCOMES.length);
+  T.eq('every outcome has its own settlement semantic, the NBA Cup\'s included', [new Set(Object.values(NBA_OUTCOME_SEMANTICS)).size, Object.keys(NBA_OUTCOME_SEMANTICS).length], [NBA_OUTCOMES.length + NBA_CUP_OUTCOMES.length, NBA_OUTCOMES.length + NBA_CUP_OUTCOMES.length]);
+  T.chk('... and the live run carries all of them', m.outcomes.every((o) => NBA_OUTCOME_SEMANTICS[o.key]) && m.outcomes.length === NBA_OUTCOMES.length + NBA_CUP_OUTCOMES.length);
   T.chk('... conference first place, the conference title, the play-in and playoff qualification are four', new Set(['finish_1', 'win_conference', 'play_in', 'make_playoffs'].map((k) => NBA_OUTCOME_SEMANTICS[k])).size === 4);
 }
 
@@ -197,9 +199,11 @@ const rehash = (s: NbaSnapshot): NbaSnapshot => ({ ...s, input_hash: hashCanonic
   const blocked = (gs: ReturnType<typeof ok>, id: string) => gs.some((g) => g.id === id && g.status === 'FAIL' && g.blocks === 'simulation');
   T.chk('the replay fixture passes every input gate but the facts (it has a calibrated sigma, a complete season)', ok(R).every((g) => g.status === 'PASS'), ok(R).filter((g) => g.status !== 'PASS'));
   const live = ok(L);
-  T.chk('live: the incomplete schedule blocks the simulation', blocked(live, 'schedule.complete'));
-  const liveDry = ok(L, { allowIncompleteSchedule: true }).find((g) => g.id === 'schedule.complete')!;
-  T.eq('live, --allow-incomplete-schedule: a WARN that blocks publication', [liveDry.status, liveDry.blocks], ['WARN', 'publication']);
+  T.chk('live: every input gate passes, the schedule complete with the 30 Cup-dependent games simulated', live.every((g) => g.status === 'PASS' || g.id === 'results.current'), live.filter((g) => g.status !== 'PASS'));
+  const noCup = clone(L); noCup.data.cup = null;
+  T.chk('live without its Cup: the incomplete schedule blocks the simulation', blocked(ok(rehash(noCup)), 'schedule.complete'));
+  const liveDry = ok(rehash(noCup), { allowIncompleteSchedule: true }).find((g) => g.id === 'schedule.complete')!;
+  T.eq('... with --allow-incomplete-schedule: a WARN that blocks publication', [liveDry.status, liveDry.blocks], ['WARN', 'publication']);
   let s = clone(R); s.data.games.find((g) => g.done)!.home_score = s.data.games.find((g) => g.done)!.away_score;
   T.chk('a completed game without a winner blocks', blocked(ok(rehash(s)), 'results.completed'));
   s = clone(L); s.data.games.find((g) => !g.done)!.model = null;
@@ -215,11 +219,11 @@ const rehash = (s: NbaSnapshot): NbaSnapshot => ({ ...s, input_hash: hashCanonic
   const fresh = clone(R); fresh.data.code_sha256 = codeHashes();
   writeSnapshot(path.join(tmp, 's.json'), rehash(fresh)); const raw = JSON.parse(fs.readFileSync(path.join(tmp, 's.json'), 'utf8')); raw.data.games[0].home_score += 1; fs.writeFileSync(path.join(tmp, 'bad.json'), JSON.stringify(raw));
   T.throws('a snapshot edited after it was built is refused', () => readSnapshot(path.join(tmp, 'bad.json')), /hash mismatch/);
-  /* the command line, on the replay fixture: a dry run that is never publishable while the sport is BLOCKED */
+  /* the command line, on the replay fixture: a dry run, never publishable (a past season, too few runs) */
   const quiet = () => {};
   const o = await execute(parseArgs(['--snapshot', path.join(tmp, 's.json'), '--runs', '2000', '--workers', '2', '--dry-run', '--out', path.join(tmp, 'out')]), quiet);
   T.chk('CLI replay dry run: results, gates and manifest written', ['results.json', 'gates.json', 'manifest.json', 'snapshot.json'].every((f) => fs.existsSync(path.join(tmp, 'out', f))));
-  T.chk('CLI: NOT publishable (sport.active and run.count block publication)', !o.publishable && o.gates.some((g) => g.id === 'sport.active' && g.blocks === 'publication') && o.gates.some((g) => g.id === 'run.count' && g.blocks === 'publication'));
+  T.chk('CLI: NOT publishable (a past season and too few runs block publication; the sport itself is ACTIVE)', !o.publishable && o.gates.some((g) => g.id === 'run.configured_season' && g.blocks === 'publication') && o.gates.some((g) => g.id === 'run.count' && g.blocks === 'publication') && o.gates.some((g) => g.id === 'sport.active' && g.status === 'PASS'));
   T.chk('CLI: the results carry each outcome\'s settlement semantic', (o.results as any).outcome_semantics && (o.results as any).outcome_semantics.win_conference === 'conference_playoff_championship');
   T.throws('CLI: --as-of with --publish is refused', () => parseArgs(['--sport', 'nba', '--publish', '--as-of', '2026-04-25']), /dry runs only/);
   T.throws('CLI: --allow-incomplete-schedule for the NFL is refused', () => parseArgs(['--sport', 'nfl', '--allow-incomplete-schedule']), /NBA only/);

@@ -541,7 +541,7 @@
     "sim:wnba:test": "node simulator/tests/wnba_sim.test.ts && node simulator/tests/wnba_ui.test.ts",
     "sim:wnba:dry-run": "node simulator/src/cli/run.ts --sport wnba --season 2026 --workers 4 --dry-run",
     "sim:wnba:uncertainty": "node simulator/src/research/wnba_strength_uncertainty.ts",
-    "sim:nba:test": "node simulator/tests/nba_rules_history.test.ts && node simulator/tests/nba_rules_synthetic.test.ts && node simulator/tests/nba_config.test.ts && node simulator/tests/nba_model.test.ts && node simulator/tests/nba_sim.test.ts",
+    "sim:nba:test": "node simulator/tests/nba_rules_history.test.ts && node simulator/tests/nba_rules_synthetic.test.ts && node simulator/tests/nba_cup.test.ts && node simulator/tests/nba_config.test.ts && node simulator/tests/nba_model.test.ts && node simulator/tests/nba_sim.test.ts && node simulator/tests/nba_cup_sim.test.ts",
     "sim:nba:dry-run": "node --max-old-space-size=8000 simulator/src/cli/run.ts --sport nba --workers 4 --dry-run --allow-incomplete-schedule",
     "sim:nba:frozen": "node --max-old-space-size=8000 simulator/src/research/nba_frozen_forecasts.ts --all --parallel 3",
     "sim:nba:uncertainty": "node --max-old-space-size=8000 simulator/src/research/nba_strength_uncertainty.ts",

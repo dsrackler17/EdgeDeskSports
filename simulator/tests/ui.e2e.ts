@@ -78,8 +78,8 @@ const NHL_RUN_ID = '66666666-7777-8888-9999-000000000000';
 const nrun = { ...run, run_id: NHL_RUN_ID, sport: 'nhl', season: '2026-27', n_sims: 1000, seed: '2027', model_version: nresults.run.model_version, rules_version: nresults.run.rules_version, comparison_id: null, validation_summary: { flags: { tiebreak_goals: 2 } } };
 const nrows = resultRows({ results: nresults } as any), nents = entityRows({ results: nresults } as any);
 
-/* the NBA: a REAL 500-run simulation of the committed 2026-27 snapshot, through the publisher's row mapping.
-   TEST ONLY: the NBA is BLOCKED; one scenario serves the registry with it ACTIVE so its views can be exercised */
+/* the NBA: a REAL 500-run simulation of the committed 2026-27 snapshot (its NBA Cup simulated), through the
+   publisher's row mapping */
 const bsnap = nbaFixture('live');
 const bm = nbaModule(bsnap.data, { seed: 2027n });
 const bagg = runRange(bm, { start: 0, end: 500 });
@@ -93,6 +93,7 @@ const bresults = buildResults({ module: bm, agg: bagg, seed: 2027n, runs: 500, w
 const NBA_RUN_ID = '77777777-8888-9999-aaaa-bbbbbbbbbbbb';
 const brun = { ...run, run_id: NBA_RUN_ID, sport: 'nba', season: '2026-27', n_sims: 500, seed: '2027', model_version: bresults.run.model_version, rules_version: bresults.run.rules_version, comparison_id: null, validation_summary: { flags: bresults.flags } };
 const brows = resultRows({ results: bresults } as any), bents = entityRows({ results: bresults } as any);
+if (brows.length !== 30 * 35) throw new Error('the NBA run should publish 1,050 result rows (30 clubs x 35 outcomes: more than one page), not ' + brows.length);
 /* the WNBA: a real (short) postseason run on the committed 2026 data, through the publisher's row builders */
 const wsnap = await buildWnbaSnapshot({ offline: true });
 const WNBA_OPEN = wsnap.data.remaining.length > 0;
@@ -122,7 +123,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
   try { browser = await pw.chromium.launch({ headless: true }); }
   catch (_) { const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'; if (fs.existsSync(exe)) browser = await pw.chromium.launch({ headless: true, executablePath: exe }); else { srv.close(); skip('no Chromium'); } }
 
-  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean; nbaActive?: boolean }
+  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean }
   async function open(viewport: { width: number; height: number }, hash: string, sc: Scenario) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript(() => {
@@ -145,20 +146,16 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     const isNba = (u: string) => u.includes(encodeURIComponent(NBA_RUN_ID)) || u.includes(NBA_RUN_ID) || /sport=eq\.nba/.test(u);
     await ctx.route('**/*', async (route: any) => {
       const u = route.request().url();
-      if (u.startsWith('http://127.0.0.1')) {
-        if (!sc.nbaActive || !/\/lib\/edgedesk_simulator_sports\.js/.test(u)) return route.continue();
-        /* TEST ONLY: this scenario's registry has the NBA ACTIVE */
-        const r = await route.fetch(), b = (await r.text()).replace(/("key": "nba",\s*"label": "NBA",\s*"status": )"BLOCKED"/, '$1"ACTIVE"');
-        if (!/"key": "nba",\s*"label": "NBA",\s*"status": "ACTIVE"/.test(b)) throw new Error('the NBA is neither ACTIVE nor overridable to ACTIVE');
-        return route.fulfill({ response: r, body: b });
-      }
+      if (u.startsWith('http://127.0.0.1')) return route.continue();
       if (/supabase\.co/.test(u)) {
         const J = (b: unknown, st = 200) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(b) });
+        /* PostgREST pages: limit and offset, as the reader asks (an NBA run publishes 1,050 result rows) */
+        const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
         if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
         if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run] : []);
-        if (/sim_current_results/.test(u)) return J(sc.entitled ? (isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
-        if (/sim_current_entities/.test(u)) return J(sc.entitled ? (isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
+        if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
+        if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
         if (/sim_current_edges/.test(u)) return J(sc.entitled ? edges : []);
         if (/subscriptions/.test(u)) return J([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]);
         /* an onboarded reader: without it the personal desk's first-run walkthrough opens over the page once it is quiet */
@@ -248,10 +245,10 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       T.eq(W + ': NHL: no page errors', errors, []);
       await ctx.close();
     }
-    /* the NBA view (its registry served ACTIVE for this scenario only) */
+    /* the NBA view (the NBA is ACTIVE in the real registry) */
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
-      const { ctx, page, errors } = await open(vp, '#simulator/nba', { entitled: true, published: true, nbaActive: true });
+      const { ctx, page, errors } = await open(vp, '#simulator/nba', { entitled: true, published: true });
       await page.evaluate(() => (window as any).navHashRoute('#simulator/nba')); await page.waitForTimeout(500);
       let t = await text(page);
       T.chk(W + ': NBA title view: 30 NBA-title cards, the playoff conference title and the regular-season places apart, 500 simulated seasons', (await page.locator('#simHost .sm-club').count()) === 30 && /win NBA title/.test(t) && /Conference title \(playoffs\)/.test(t) && /Regular season: 1st in the/.test(t) && /500 simulated seasons/.test(t) && !/Super Bowl|Stanley Cup/.test(t));
@@ -267,6 +264,11 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       T.chk(W + ': NBA conference view: first place, play-in, playoffs, seeds 1-8, rounds and the conference title per conference', (await page.locator('#simHost .sm-seeds').count()) === 2 && /1st \(reg\. season\)/.test(t) && /Conf\. finals/.test(t) && /Win East/.test(t) && /Win West/.test(t) && /Four different outcomes/.test(t));
       T.chk(W + ': NBA conference view: no horizontal page scroll (the table scrolls in its card)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
       await shot(page, 'sim-nba-conference-' + W);
+      await page.click('#simHost [data-sim-tab="cup"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': NBA Cup view: six groups of five, win group to win the Cup, the Estimated note', (await page.locator('#simHost .sm-card .sm-tbl').count()) === 6 && (await page.locator('#simHost .sm-card .sm-tbl tbody tr').count()) === 30 && /Win group/.test(t) && /Win Cup/.test(t) && /East group 1/.test(t) && /West group 3/.test(t) && /unpublished formula/.test(t));
+      T.chk(W + ': NBA Cup view: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-nba-cup-' + W);
       T.eq(W + ': NBA: no page errors', errors, []);
       await ctx.close();
     }
@@ -293,11 +295,11 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       await ctx.close();
     }
     {
-      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/nba', { entitled: true, published: true });
-      await page.evaluate(() => (window as any).navHashRoute('#simulator/nba')); await page.waitForTimeout(300);
+      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/tennis', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/tennis')); await page.waitForTimeout(300);
       const t = await text(page);
-      T.chk('a blocked sport (#simulator/nba) shows its blockers and no number', /Blocked/.test(t) && /NBA Cup/.test(t) && !/\d+\.\d%/.test(t));
-      await shot(page, 'sim-blocked-nba-390'); await ctx.close();
+      T.chk('a sport that is not ACTIVE (#simulator/tennis) shows its blockers and no number', /Coming Soon/.test(t) && /Retired from coverage/.test(t) && !/\d+\.\d%/.test(t));
+      await shot(page, 'sim-blocked-tennis-390'); await ctx.close();
     }
     {
       const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failSecond: true });

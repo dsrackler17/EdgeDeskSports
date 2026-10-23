@@ -117,7 +117,8 @@ export const STREAM = {
   drift: 8,         // within-season strength drift (reserved: OFF, see config)
   rotation: 9,      // starting-rotation draws: departures, spot starts (MLB)
   pitcher: 10,      // persistent per-starter strength offsets (MLB)
-  committee: 11     // the CFB committee proxy: its parameter draw and ranking noise
+  committee: 11,    // the CFB committee proxy: its parameter draw and ranking noise
+  cup: 12           // the NBA Cup: overtime in simulated Group Play games, its random drawings, the Estimated filler schedule
 } as const;
 
 /** The generator for (master seed, run index, stream id). */
