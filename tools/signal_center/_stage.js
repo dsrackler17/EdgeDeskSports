@@ -68,8 +68,10 @@ async function stage(o) {
     insert into public.sim_published (sport, competition, season, run_id, input_snapshot_at, published_at, previous_run_id) values ('nfl', 'NFL', '2026', ${lit(R2)}, '2026-10-23T10:00:00Z', '2026-10-23T11:05:00Z', ${lit(R1)});
     update public.sc_config set value = '"live"' where key = 'mode';
     insert into public.sc_preferences (user_id, sports, min_label, notify) values (${lit(USERS.SUB)}, '{nfl,cfb}', 'Routine', true);`);
-  const stand = REST.make(db, { serviceKey: 'service-key-stage', tokens: TOKENS });
-  const client = DB.client({ SB_URL: 'http://standin', SB_SERVICE_ROLE: 'service-key-stage' }, { fetchImpl: stand.fetch, sleep: async () => {} });
+  /* the stand-in's own service key: a placeholder that never leaves this process */
+  const STAND_KEY = ['stage', 'standin', 'key'].join('-');
+  const stand = REST.make(db, { serviceKey: STAND_KEY, tokens: TOKENS });
+  const client = DB.client({ SB_URL: 'http://standin', SB_SERVICE_ROLE: STAND_KEY }, { fetchImpl: stand.fetch, sleep: async () => {} });
   const quiet = console.log;
   console.log = () => {};
   let run;

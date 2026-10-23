@@ -1,0 +1,86 @@
+# EdgeDesk — the Signal Center evaluation run (tools/signal_center/run.js;
+# docs/signal-center/DEPLOYMENT.md).
+#
+# OFF UNTIL SWITCHED ON. The schedule does nothing unless the repository
+# variable SIGNAL_CENTER_WORKER is "on" (Settings > Secrets and variables >
+# Actions > Variables), so merging this file starts no job and spends no
+# Actions minutes. A manual run (workflow_dispatch) is always allowed.
+#
+# WHAT A RUN DOES
+#   reads the COMMITTED sources (game research history, the performance
+#   ledgers, the model audit, availability reports) and, through the service
+#   role, the published Simulator runs, NBA injury snapshots and Kalshi mids;
+#   evaluates; writes ONLY through Signal Center's job doors (sc_begin_run …
+#   sc_finish_run): signals and their versions, graphics drawn in Chromium
+#   from the stored payloads, Model DNA, in-app notices (public.user_alerts),
+#   dead letters. It calls no odds provider, posts nowhere outside EdgeDesk,
+#   sends no email or text, and changes no capture cadence.
+#
+#   Publication follows sc_config: in "shadow" mode (the default after the
+#   migration) nothing is published; an operator switches to "live" in
+#   /admin/signals/ once the shadow review is done.
+#
+# SECRETS: SB_URL, SB_SERVICE_ROLE (the ones the other jobs already use).
+# DISABLE: set SIGNAL_CENTER_WORKER to anything but "on". Readers keep the
+# last evaluation, and the status bar says how old it is.
+name: Signal Center run
+run-name: Signal Center run · ${{ github.event_name }}
+
+on:
+  schedule:
+    # hourly, off the top of the hour (the minute most jobs crowd onto)
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Evaluate only (write nothing; the result is an artifact)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signal-center-run
+  cancel-in-progress: false
+
+jobs:
+  run:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.SIGNAL_CENTER_WORKER == 'on' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The engine's checks pass before anything is written
+        run: |
+          node tools/signal_center/engine.test.js
+          node tools/signal_center/registry.test.js
+      - name: Playwright and Chromium (the graphics are drawn here, from the stored payloads)
+        if: ${{ !inputs.dry_run }}
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Dry run
+        if: ${{ inputs.dry_run }}
+        run: node tools/signal_center/run.js --dry-run
+      - name: Evaluate and write through the job doors
+        if: ${{ !inputs.dry_run }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          # Presence only. No value is ever printed (db.js scrubs the key from every error).
+          if [ -z "$SB_URL" ] || [ -z "$SB_SERVICE_ROLE" ]; then echo "::error::SB_URL and SB_SERVICE_ROLE are needed for a live run"; exit 1; fi
+          node tools/signal_center/run.js
+      - name: Keep the dry-run result
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: signal-center-dry-run
+          path: .cache/signal_center/run.json
+          retention-days: 7

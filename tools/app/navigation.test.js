@@ -9,7 +9,7 @@
         Center · Research · Card · Portfolio · Process · Simulator · More —
         and no eighth one, including the one the AI drawer used to append at
         runtime (the Simulator seat was added on the owner's request,
-        2026-10-23: docs/simulator/README.md; Signal Center on 2026-10-24:
+        2026-10-23: docs/simulator/README.md; Signal Center on 2026-10-23:
         docs/signal-center/README.md);
      2  Props and Edges are Research panels, AI is contextual, the Ledger
         merged into Portfolio, and Record is EdgeDesk's MODEL performance in

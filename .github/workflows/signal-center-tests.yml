@@ -1,0 +1,127 @@
+# EdgeDesk — Signal Center's checks (docs/signal-center/README.md).
+#
+#   suites     the detection engine, Model DNA and the capability registry over
+#              the COMMITTED sources; the reader's pure renderers; the graphic
+#              layouts and their copy rule — offline.
+#   database   supabase/signal_center.sql applied twice to a throwaway
+#              PostgreSQL (and as the SQL editor sends it), attacked as anon,
+#              as a reader without Full Access, as a subscriber and as an
+#              operator; 5,000 signals for latency and paging; the rollback;
+#              then the worker end to end through a PostgREST stand-in.
+#   browser    the graphics drawn in Chromium and re-measured; the terminal's
+#              Signal Center seat, /signals/ and /admin/signals/ against the
+#              shipped doors on PostgreSQL; the terminal's navigation.
+#
+# Nothing here deploys, writes to production or posts anywhere.
+name: Signal Center tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_signal_*.js'
+      - 'lib/edgedesk_signal_center.css'
+      - 'lib/edgedesk_model_dna.js'
+      - 'lib/edgedesk_game_graphic.js'
+      - 'lib/edgedesk_calc.js'
+      - 'lib/edgedesk_simulator_sports.js'
+      - 'lib/edgedesk_personal_ui.js'
+      - 'lib/edgedesk_plans.js'
+      - 'lib/edgedesk_track.js'
+      - 'app.html'
+      - 'signals/**'
+      - 'admin/signals/**'
+      - 'supabase/signal_center*.sql'
+      - 'supabase/migrations/20261024120000_signal_center.sql'
+      - 'supabase/simulator.sql'
+      - 'supabase/personal_research.sql'
+      - 'supabase/billing_hardening.sql'
+      - 'tools/signal_center/**'
+      - 'tools/personal/_pg.js'
+      - 'tools/billing/_pgrest.js'
+      - 'football/game_research/history/**'
+      - 'performance/ledger/**'
+      - 'performance/data/summary.json'
+      - 'engine/registry.json'
+      - '.github/workflows/signal-center-tests.yml'
+      - '.github/workflows/signal-center.yml'
+      - '.github/workflows/deploy-signal-center.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_signal_*.js'
+      - 'supabase/signal_center*.sql'
+      - 'tools/signal_center/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signal-center-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The engine — comparability, the evidence ladder, scoring, identity and versioning, no fabricated cause
+        run: node tools/signal_center/engine.test.js
+      - name: The capability registry — every publishable signal has a dated source; the Simulator decides its own state
+        run: node tools/signal_center/registry.test.js
+      - name: The reader's renderers — the preview carries no number; the evidence, timing and Model DNA as stored
+        run: node tools/signal_center/ui.test.js
+      - name: The graphic layouts and their copy rule
+        run: node tools/signal_center/graphics.test.js
+      - name: A dry run over the committed sources (writes nothing outside .cache)
+        run: node tools/signal_center/run.js --dry-run
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL
+        run: sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+      - name: The migration on PostgreSQL — roles, the paywall in the doors, versions, notices, latency, the rollback
+        env: { SC_SQL_REQUIRED: '1' }
+        run: node tools/signal_center/sql.test.js
+      - name: The worker end to end — runs, graphics, Model DNA, notices, idempotency, outages, invalidation
+        env: { SC_SQL_REQUIRED: '1' }
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+          node tools/signal_center/worker.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL, Playwright and Chromium
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The graphics drawn and re-measured in Chromium (every template, every format)
+        run: node tools/signal_center/graphics.e2e.js
+      - name: The Signal Center seat in the terminal, at 1440 · 768 · 390 · 320
+        env: { SC_SQL_REQUIRED: '1' }
+        run: node tools/signal_center/ui.e2e.js
+      - name: /signals/ and /admin/signals/
+        env: { SC_SQL_REQUIRED: '1' }
+        run: node tools/signal_center/pages.e2e.js
+      - name: The terminal's navigation (seven seats, every old route)
+        run: |
+          node tools/app/navigation.test.js
+          node tools/app/navigation.e2e.js

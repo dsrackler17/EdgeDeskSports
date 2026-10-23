@@ -1,0 +1,82 @@
+# Deploy the Signal Center database: supabase/signal_center.sql
+# (docs/signal-center/DEPLOYMENT.md).
+#
+# MANUAL ON PURPOSE (workflow_dispatch). Applying SQL to production is a
+# decision a person makes.
+#
+# WHAT IT DOES, IN ORDER, STOPPING AT THE FIRST PROBLEM
+#   1. the SQL suite against a throwaway PostgreSQL (tools/signal_center/
+#      sql.test.js: the file applied twice and as the SQL editor sends it,
+#      every door attacked as anon, a non-subscriber, a subscriber and an
+#      operator, 5,000 signals, the rollback) and the worker suite;
+#   2. checks the migration mirror is byte-identical to the file;
+#   3. applies supabase/signal_center.sql in ONE transaction with
+#      ON_ERROR_STOP. The file is additive (new sc_ tables, new sc_ functions,
+#      one funnel event kind) and idempotent; it ends in a report, and a row
+#      that reads CHECK THIS fails the run.
+#   Nothing else is written. Signal Center starts in SHADOW mode: nothing is
+#   published until an operator switches it to live in /admin/signals/.
+#   The evaluation job (signal-center.yml) stays off until the repository
+#   variable SIGNAL_CENTER_WORKER is "on".
+#
+# ROLLBACK: the soft one is shadow mode (select public.sc_admin_set_mode
+# ('shadow', null); as an operator). supabase/signal_center_rollback.sql
+# removes everything; it is never run by a workflow.
+#
+# SECRETS (the one the other deploy workflows already use):
+#   SB_DB_URL   the pooled Postgres connection string
+name: Deploy Signal Center schema
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-signal-center
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The SQL must pass against a throwaway PostgreSQL before it touches production
+        env:
+          SC_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
+          node tools/signal_center/sql.test.js
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+          node tools/signal_center/worker.test.js
+
+      - name: The migration mirror is the file, byte for byte
+        run: cmp supabase/signal_center.sql supabase/migrations/20261024120000_signal_center.sql
+
+      - name: Check the credential exists before claiming anything
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set. Add it in Settings > Secrets and variables > Actions, or paste supabase/signal_center.sql into the SQL editor."; exit 1; fi
+
+      - name: Apply supabase/signal_center.sql (one transaction)
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/signal_center.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/signal_center.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -14
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/signal_center.sql: a report row says CHECK THIS"; exit 1; fi
