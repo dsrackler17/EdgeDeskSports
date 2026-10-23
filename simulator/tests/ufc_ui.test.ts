@@ -69,7 +69,7 @@ T.chk('Title Path: the booked title fights named, the others say none is booked'
 T.chk('Title Path: every contender row with hold, win, shot and beat-the-champion columns', /Champion at horizon/.test(tp) && /Beats the champion if given the shot/.test(tp) && /Movsar Evloev/.test(tp));
 T.chk('Title Path: contenders with no shot in any simulated year are listed apart with the reason', /No title shot in any simulated year:<\/b> [^<]*Alexandre Pantoja \(#1, coming off a loss\)/.test(tp));
 T.chk('Title Path: the champions-v-Elo caveat and what is not modelled', /understate a champion’s chance to keep the belt/.test(tp) && /Interim belts/.test(tp));
-T.chk('Title Path: a contender who moved divisions is named under the division he left', /booked in another division \(counted there\): [^<]*Diego Lopes \(Lightweight\)/.test(tp));
+T.chk('Title Path: a contender who moved divisions is named under the division they left', /booked in another division \(counted there\): [^<]*Diego Lopes \(Lightweight\)/.test(tp));
 /* Model Health */
 const h = paint(cache(), 'model_health');
 T.chk('Model Health: the reproduction check and the three windows beside a coin', /reproduces every price the loop published: 25 of 25/.test(h) && (h.match(/<tr><td>(validation|holdout|2026)/g) || []).length === 3 && /0\.693/.test(h));
