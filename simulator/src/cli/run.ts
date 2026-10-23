@@ -14,7 +14,7 @@
      node simulator/src/cli/run.ts --sport nba --workers 4 --dry-run --allow-incomplete-schedule   (2026-27; NBA season keys are end years)
 
    Options
-     --sport nfl|nhl|nba|mlb|cfb  the sport (simulator/src/sports/registry.ts)
+     --sport nfl|nhl|nba|mlb|cfb|ncaam  the sport (simulator/src/sports/registry.ts)
      --season 2026            must match the sport's season config (default: it; NHL and NBA keys are end years, 2027 = 2026-27)
      --runs N                 default 100000 (production); fewer only for a dry run
      --seed S                 decimal or 0x-hex u64; default: derived from the input hash
