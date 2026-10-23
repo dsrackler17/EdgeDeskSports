@@ -1,13 +1,20 @@
 {
  "schema": "edgedesk_cbase_board_index_v1",
- "generated_at": "2026-10-19T19:06:12.268Z",
+ "generated_at": "2026-10-23T23:56:46.692Z",
  "mode": "REPLAY",
  "season": 2026,
  "point_in_time": "RETROSPECTIVE",
  "mode_note": "No upcoming Division I games are published by the source (the 2026 schedule is not out). This is a RETROSPECTIVE replay of 2026: each price is what the model would have said before the game, from final data; results are shown as postgame information.",
  "model_version": "cbase_v1.0.0",
  "value_claims": "DISABLED",
- "value_reason": "no authorised college-baseball market feed; release gates not passed",
+ "value_reason": "no college baseball price has been captured with a model number yet (CBASE-H1 not started); release gates not passed (G11, G12, G15); the board is a replay",
+ "market_test": {
+  "experiment": "CBASE-H1",
+  "status": "NOT_TESTED",
+  "n_bets": 0,
+  "read_at": null,
+  "frozen_config_sha256": null
+ },
  "counts": {
   "games": 8793,
   "priced": 8333,
@@ -24,9 +31,9 @@
   "construction": "reweighted_raw"
  },
  "latency_ms": {
-  "p50": 15,
-  "p95": 18,
-  "total_s": 190
+  "p50": 12,
+  "p95": 17,
+  "total_s": 161
  },
  "dates": [
   {
@@ -616,7 +623,7 @@
   }
  ],
  "freshness": {
-  "warehouse_built": "2026-10-14T01:09:07.618Z",
+  "warehouse_built": "2026-10-23T23:56:27.236Z",
   "source": "sportsdataverse/baseballr-data (stats.ncaa.org derived)"
  }
 }

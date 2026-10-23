@@ -315,14 +315,14 @@ VALIDATION 2023-2024, n 11,950; full hierarchical model log loss 0.59705. Positi
 | G10 Probability calibration verified | PASS | moneyline OUTCOME_VALIDATED |
 | G11 Scoring distribution consistency verified | FAIL | audit TAILS FAIL; 80% total interval coverage 0.8295 |
 | G12 Market settlement verified | FAIL | no sportsbook settlement rules verified and no authorised baseball_ncaa feed; pushes and conditional prices are unit-tested, but settlement against a real book is unverified |
-| G13 Stress tests | PASS | 400 synthetic games priced coherently, 11 ms each; degenerate games blocked |
+| G13 Stress tests | PASS | 400 synthetic games priced coherently, 7 ms each; degenerate games blocked |
 | G14 Frontend and API tests | PASS | college-baseball suite pass; UI pass (at 2026-10-22T18:58:18.679Z) |
 | G15 Existing EdgeDesk sports still work | FAIL | 13/14 existing suites pass |
 | G16 Deployment and rollback documented | PASS | docs/college-baseball/DEPLOYMENT.md has Deploy and Rollback sections |
 
 ## 11. Batch inference and the board
 
-Mode: **REPLAY** (RETROSPECTIVE) — No upcoming Division I games are published by the source (the 2026 schedule is not out). This is a RETROSPECTIVE replay of 2026: each price is what the model would have said before the game, from final data; results are shown as postgame information. Season 2026: 8,793 games, 8,333 priced (8,333 provisional), 460 blocked with a stated reason, 0 failures, 0 incoherent price sets. Value claims: DISABLED (no authorised college-baseball market feed; release gates not passed). Latency: {"p50":15,"p95":18,"total_s":190}.
+Mode: **REPLAY** (RETROSPECTIVE) — No upcoming Division I games are published by the source (the 2026 schedule is not out). This is a RETROSPECTIVE replay of 2026: each price is what the model would have said before the game, from final data; results are shown as postgame information. Season 2026: 8,793 games, 8,333 priced (8,333 provisional), 460 blocked with a stated reason, 0 failures, 0 incoherent price sets. Value claims: DISABLED (no college baseball price has been captured with a model number yet (CBASE-H1 not started); release gates not passed (G11, G12, G15); the board is a replay). Latency: {"p50":12,"p95":17,"total_s":161}.
 
 ## 12. Experiment registry
 
