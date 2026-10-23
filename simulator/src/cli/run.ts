@@ -9,10 +9,11 @@
      node simulator/src/cli/run.ts --sport nhl --season 2027 --workers 4 --dry-run   (2026-27; NHL season keys are end years)
      node simulator/src/cli/run.ts --sport mlb --season 2026 --dry-run                 (live: MLB Stats API)
      node simulator/src/cli/run.ts --sport mlb --season 2025 --as-of 2025-10-27 --dry-run   (history replay, 2022-2025)
+     node simulator/src/cli/run.ts --sport nba --workers 4 --dry-run --allow-incomplete-schedule   (2026-27; NBA season keys are end years)
 
    Options
-     --sport nfl|nhl          the sport (simulator/src/sports/registry.ts)
-     --season 2026            must match the sport's season config (NHL: 2027 = 2026-27, the default for --sport nhl)
+     --sport nfl|nhl|mlb|nba|cfb  the sport (simulator/src/sports/registry.ts)
+     --season 2026            must match the sport's season config (NHL and NBA: 2027 = 2026-27, their default)
      --runs N                 default 100000 (production); fewer only for a dry run
      --seed S                 decimal or 0x-hex u64; default: derived from the input hash
      --workers K              worker threads (results identical for any K)
@@ -300,6 +301,7 @@ function snapshotSchema(file: string): string | null {
 
 /** the NBA run: the same stages, the NBA snapshot, validation and gates */
 async function executeNba(args: CliArgs, log: (s: string) => void): Promise<RunOutcome> {
+  if (args.snapshot && args.asOf != null) throw Object.assign(new Error('--as-of builds a snapshot; a replayed snapshot carries its own as-of time'), { exitCode: 2 });
   const snap = args.snapshot ? readNbaSnapshot(args.snapshot) : await buildNbaSnapshot({ season: args.season, asOf: args.asOf, log });
   if (!args.snapshot && snap.data.season !== args.season) throw Object.assign(new Error('the snapshot is season ' + snap.data.season + ', the run asks for ' + args.season), { exitCode: 2 });
   args = { ...args, season: snap.data.season };
