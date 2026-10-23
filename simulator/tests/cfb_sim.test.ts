@@ -8,6 +8,7 @@ import { kit } from './_kit.ts';
 import { cfbFixture, clone, CFB_FIXTURE } from './_cfb.ts';
 import { cfbModule, cfpMode } from '../src/sports/cfb/module.ts';
 import { cfbMathStatus } from '../src/sports/cfb/status.ts';
+import { validateCfbInputs } from '../src/sports/cfb/validate.ts';
 import { runRange, summarise } from '../src/core/engine.ts';
 import { runPlan } from '../src/core/runner.ts';
 import { normalCdf } from '../src/core/normal.ts';
@@ -145,6 +146,9 @@ T.chk('an ineligible team can still be ranked and play in the CFP field (cfp_eli
   const sc: CfbInputData = clone(ob); sc.cfp_bracket.status = 'scenario'; sc.cfp_bracket.label = 'chalk'; sc.cfp_bracket.assumptions = ['the twelve teams ranked as listed'];
   const msc = cfbModule(sc, { seed });
   T.chk('scenario bracket: every CFP outcome is labelled CONDITIONAL on the stated assumptions', msc.outcomes.filter((o) => o.key.startsWith('cfp') || o.key.startsWith('reach') || o.key === 'national_champion').every((o) => /assumptions: the twelve teams/.test(o.conditional_on || '')));
+  const scSnap = clone(snap); scSnap.data = sc;
+  T.eq('... and a scenario run is never published (the database tables cannot carry its condition)', validateCfbInputs(scSnap).filter((g) => g.id === 'cfp.scenario_not_published').map((g) => [g.status, g.blocks]), [['FAIL', 'publication']]);
+  T.eq('the proxy and observed modes are not held by that gate', [validateCfbInputs(snap).find((g) => g.id === 'cfp.scenario_not_published')!.status], ['PASS']);
 }
 /* 8 an observed conference title game fixes its participants and result */
 {

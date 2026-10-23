@@ -51,6 +51,8 @@ export function validateCfbInputs(snap: CfbSnapshot, opt: { ignoreCodeDrift?: bo
   }
   const cm = cfpMode(d);
   g('cfp.mode', cm.mode !== 'off', cm.mode === 'off' ? 'no unconditional CFP or national-title probability: ' + cm.reason : 'CFP outputs from ' + cm.reason + (cm.mode === 'proxy' ? ' (Estimated)' : cm.mode === 'scenario' ? ' (CONDITIONAL)' : ''), 'none', true);
+  /* the published tables carry a provenance per outcome but no condition: a scenario's numbers would read as unconditional */
+  g('cfp.scenario_not_published', cm.mode !== 'scenario', 'a conditional bracket scenario (' + cm.reason + ') is research for its stated assumptions; the published tables cannot carry the condition, so it is never published', 'publication');
   g('availability.sourced', d.availability.entries.every((a) => /^https?:\/\//.test(a.source_url) && !!a.reported_at && !!a.recorded_by),
     d.availability.entries.length + ' sourced primary-QB absences applied; football/availability carried reports for ' + d.availability.live_layer.teams_with_records + ' teams');
   const drift = Object.entries(cfbCodeIdentity()).filter(([f, h]) => d.code_sha256[f] !== h).map(([f]) => f);

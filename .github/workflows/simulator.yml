@@ -1,7 +1,7 @@
 # EdgeDesk Simulator — the nightly season simulation, and the Kalshi futures
 # comparison as a SEPARATE job.
 #
-#   schedule 10:17 UTC daily   every sport with a simulation module, 100,000 runs.
+#   schedule 10:17 UTC daily   the NFL and college football (plan.ts NIGHTLY), 100,000 runs.
 #                              (10:17 UTC = 06:17 New York in daylight time,
 #                              05:17 in standard time: after the last Monday
 #                              night game is final and nflverse's games.csv has
@@ -49,7 +49,7 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, mlb]
+        options: [nfl, mlb, cfb]
         default: nfl
       season:
         description: 'Season (must equal the sport''s configured season)'
@@ -69,150 +69,11 @@ on:
         type: boolean
         default: false
       markets:
-        description: 'After a publication, compare with Kalshi futures'
-        type: boolean
-        default: true
-
-permissions:
-  contents: read
-
-jobs:
-  plan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      matrix: ${{ steps.plan.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22.22.0'
-      - name: Validate the inputs and plan the runs
-        id: plan
-        env:
-          SIM_EVENT: ${{ github.event_name }}
-          SIM_SPORT: ${{ inputs.sport }}
-          SIM_SEASON: ${{ inputs.season }}
-          SIM_RUNS: ${{ inputs.runs }}
-          SIM_SEED: ${{ inputs.seed }}
-          SIM_PUBLISH: ${{ inputs.publish }}
-        run: |
-          set -euo pipefail
-          m=$(node simulator/src/cli/plan.ts)
-          echo "matrix=$m" >> "$GITHUB_OUTPUT"
-          echo "$m"
-
-  simulate:
-    needs: plan
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    concurrency:
-      group: simulator-${{ matrix.sport }}
-      cancel-in-progress: false
-    outputs:
-      run_id: ${{ steps.result.outputs.run_id }}
-      out: ${{ steps.run.outputs.out }}
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22.22.0'
-      - name: Install the pinned typechecker (dev only)
-        run: npm ci --prefix simulator --no-audit --no-fund
-      - name: The engine and the rules must pass before they are allowed to publish
-        run: |
-          npm run --prefix simulator typecheck
-          node simulator/tests/core.test.ts
-          node simulator/tests/hooks.test.ts
-          node simulator/tests/nfl_rules_history.test.ts
-          node simulator/tests/nfl_rules_synthetic.test.ts
-          node simulator/tests/nfl_sim.test.ts
-          node simulator/tests/nfl_config.test.ts
-      - name: The MLB suites, before an MLB run
-        if: ${{ matrix.sport == 'mlb' }}
-        run: npm run sim:test:mlb
-      - name: Status
-        env:
-          STATUS: ${{ matrix.status }}
-          SPORT: ${{ matrix.sport }}
-          BLOCKERS: ${{ toJSON(matrix.blockers) }}
-          PUBLISH: ${{ matrix.publish }}
-        run: |
-          echo "$SPORT: $STATUS, publish $PUBLISH"
-          if [ "$STATUS" != "ACTIVE" ]; then
-            node -e 'for (const b of JSON.parse(process.env.BLOCKERS)) console.log("::warning::" + process.env.SPORT + " is " + process.env.STATUS + " (dry run, nothing published): " + b.replace(/[\r\n]+/g, " "))'
-          fi
-      - name: Feed cache (raw schedule, results and standings; every snapshot records each feed's sha256)
-        uses: actions/cache@v4
-        with:
-          path: simulator/.cache
-          key: simulator-feeds-${{ matrix.sport }}-${{ github.run_id }}
-          restore-keys: simulator-feeds-${{ matrix.sport }}-
-      - name: Simulate
-        id: run
-        env:
-          SPORT: ${{ matrix.sport }}
-          SEASON: ${{ matrix.season }}
-          RUNS: ${{ matrix.runs }}
-          SEED: ${{ matrix.seed }}
-          PUBLISH: ${{ matrix.publish }}
-          SB_URL: ${{ matrix.publish && secrets.SB_URL || '' }}
-          SB_SERVICE_ROLE: ${{ matrix.publish && secrets.SB_SERVICE_ROLE || '' }}
-        run: |
-          set +e
-          out="simulator/out/$SPORT-$SEASON-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-          echo "out=$out" >> "$GITHUB_OUTPUT"
-          args=(--sport "$SPORT" --season "$SEASON" --runs "$RUNS" --workers 4 --out "$out")
-          [ -n "$SEED" ] && args+=(--seed "$SEED")
-          if [ "$PUBLISH" = "true" ]; then args+=(--publish); else args+=(--dry-run); fi
-          node simulator/src/cli/run.ts "${args[@]}"
-          rc=$?
-          echo "rc=$rc" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Result
-        id: result
-        env:
-          RC: ${{ steps.run.outputs.rc }}
-          OUT: ${{ steps.run.outputs.out }}
-          SPORT: ${{ matrix.sport }}
-          PUBLISH: ${{ matrix.publish }}
-          SB_URL: ${{ secrets.SB_URL }}
-          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
-          SIM_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          case "$RC" in
-            0) msg="" ;;
-            1) msg="a gate blocked publication (nothing published; $OUT/gates.json)"; code=sim.gate_blocked ;;
-            2) msg="invalid inputs or arguments: nothing simulated"; code=sim.invalid_inputs ;;
-            3) msg="publication failed; the previously published run is unchanged"; code=sim.publish_failed ;;
-            *) msg="run.ts exited $RC"; code=sim.run_crashed ;;
-          esac
-          if [ -n "$msg" ]; then
-            echo "::error::$SPORT simulation: $msg"
-            if [ "$PUBLISH" = "true" ]; then node simulator/src/cli/alert.ts --severity FAILURE --code "$code" --sport "$SPORT" --message "$SPORT simulation: $msg" || true; fi
-            exit 1
-          fi
-          if [ -f "$OUT/publish.json" ]; then
-            id=$(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).run_id || ""))' "$OUT/publish.json")
-            echo "run_id=$id" >> "$GITHUB_OUTPUT"
-            echo "published run $id"
-          fi
-      - name: Keep the run's evidence (snapshot, results, gates, manifest; no credentials are ever written there)
-        if: ${{ always() && steps.run.outputs.out != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: simulator-${{ matrix.sport }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ steps.run.outputs.out }}
-          if-no-files-found: ignore
-          retention-days: 30
-
-  markets:
-    # after a successful PUBLICATION only; its failure never touches the simulation
+    # after each PUBLICATION, for the run that sport published (a sport that only ran dry leaves no
+    # publish.json); a comparison's failure never touches the simulation. Each run is compared with its
+    # own results: the matrix has several sports, and one job output cannot say which run is whose.
     needs: simulate
-    if: ${{ needs.simulate.result == 'success' && needs.simulate.outputs.run_id != '' && (github.event_name == 'schedule' || inputs.markets) }}
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.markets) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -224,19 +85,27 @@ jobs:
         with:
           pattern: simulator-*-${{ github.run_id }}-${{ github.run_attempt }}
           path: simulator/out/downloaded
-      - name: Compare with Kalshi futures
+      - name: Compare each published run with Kalshi futures
         env:
-          RUN_ID: ${{ needs.simulate.outputs.run_id }}
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
           SIM_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set +e
-          res=$(ls simulator/out/downloaded/*/results.json | head -1)
-          node simulator/src/cli/markets.ts --results "$res" --run-id "$RUN_ID" --publish
-          rc=$?
-          if [ "$rc" != "0" ]; then
-            echo "::error::Kalshi futures comparison failed (exit $rc); the simulation stays published and no old quote is shown as fresh"
-            node simulator/src/cli/alert.ts --severity DEGRADED --code sim.market_failed --run-id "$RUN_ID" --message "Kalshi futures comparison failed (exit $rc)" || true
-            exit 1
-          fi
+          shopt -s nullglob
+          status=0; n=0
+          for pub in simulator/out/downloaded/*/publish.json; do
+            dir=$(dirname "$pub")
+            id=$(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).run_id || ""))' "$pub")
+            [ -n "$id" ] && [ -f "$dir/results.json" ] || continue
+            n=$((n + 1))
+            node simulator/src/cli/markets.ts --results "$dir/results.json" --run-id "$id" --publish
+            rc=$?
+            if [ "$rc" != "0" ]; then
+              echo "::error::Kalshi futures comparison failed for run $id (exit $rc); the simulation stays published and no old quote is shown as fresh"
+              node simulator/src/cli/alert.ts --severity DEGRADED --code sim.market_failed --run-id "$id" --message "Kalshi futures comparison failed (exit $rc)" || true
+              status=1
+            fi
+          done
+          [ "$n" -gt 0 ] || echo "no run was published in this workflow run: nothing to compare"
+          exit $status
