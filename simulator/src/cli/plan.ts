@@ -31,7 +31,7 @@ export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season, mlb: MLB
     simulator/src/sports/mlb/config.ts live_inputs); college football runs nightly, dry until it is ACTIVE
     (a night with unchanged inputs reuses the published run: the idempotency key); college basketball joins
     only once its official bracket file exists (inputsReady) */
-export const NIGHTLY = ['nfl', 'nhl', 'cfb', 'ncaam'];
+export const NIGHTLY = ['nfl', 'cfb', 'nhl', 'ncaam'];
 
 /* NCAAM has valid inputs only once the official bracket file exists (after
    Selection Sunday): the nightly schedule skips it until then instead of

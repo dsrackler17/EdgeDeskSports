@@ -58,8 +58,8 @@ node simulator/src/cli/run.ts --sport nfl --season 2026 --offline --dry-run     
 npm run sim:nhl:dry-run                          # NHL 2026-27 (season key 2027); needs python3 + pyarrow for the schedule parquet
 ```
 
-The NHL (season key 2027 = 2026-27) is a second leg of the nightly
-*Simulator* workflow; by hand: Actions → Simulator → Run workflow with sport
+The NHL (season key 2027 = 2026-27) is a leg of the nightly *Simulator*
+workflow, beside the NFL and college football; by hand: Actions → Simulator → Run workflow with sport
 `nhl` and season `2027`. Its record, studies, verification and limitations
 are in [`NHL_SIMULATOR_NOTES.md`](../../NHL_SIMULATOR_NOTES.md).
 

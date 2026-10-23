@@ -503,12 +503,14 @@ because `sim_entity_summary` has a wins column and no points column. No SQL
 change was needed: publication checks the run's own sum rules and gates.
 
 **Nightly** (`.github/workflows/simulator.yml`):
-- The NHL is a second leg of the plan (`plan.ts` `RUNNABLE`, season key
-  2027), with a pyarrow step and the NHL suites in the pre-publication test
-  gate. One leg's failure never stops the other.
-- The markets job now compares each published sport's run against that
-  sport's own Kalshi mappings (`forSport`). The NHL has none yet, so its
-  comparison reads "unavailable": not mapped, not zero.
+- The NHL is a leg of the plan (`plan.ts` `RUNNABLE` and `NIGHTLY`, season
+  key 2027), beside the NFL and college football, with a pyarrow step and
+  the NHL suites in the pre-publication test gate. One leg's failure never
+  stops another.
+- The markets job compares each published sport's run against that sport's
+  own Kalshi mappings (`configForSport`, simulator/src/markets/compare.ts).
+  The NHL has none yet, so its comparison reads "unavailable": not mapped,
+  not zero.
 - The weekly NHL walk-forward re-run (`nhl-validate.yml`) rewrites
   `live.json`'s `generated_at` only. The snapshot's guard therefore compares
   the parameters without that stamp (`liveParamsHash`, recorded by the
