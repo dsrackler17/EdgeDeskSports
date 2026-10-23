@@ -139,8 +139,8 @@ active sports, as instructed.
   index, stream id) — `PRNG_VERSION = xoshiro128starstar-1.1/splitmix64-seed/v1`.
   `Math.random` is never used. Streams: strength 1, games 2, postseason 3,
   coin 4, overtime 5, points 6, availability 7, drift 8, rotation 9, pitcher
-  10, committee 11, method 12 and schedule 13 (UFC: how a fight ends, when an
-  unbooked title fight happens). Each run's result
+  10, committee 11, cup 12 (the NBA Cup), method 13 and schedule 14 (UFC: how a
+  fight ends, when an unbooked title fight happens). Each run's result
   depends only on (seed, run), so the worker count never changes a number
   (tested: 1 vs 3 workers byte-identical).
 - **Normal quantile.** Wichura AS241 (`simulator/src/core/normal.ts`).

@@ -86,8 +86,8 @@ One run = every booked bout, then each division's title path to the horizon.
 3. **Title fights not yet booked** (§5) at the division's measured pace, the
    challenger by the Estimated rule, each priced by the served Elo.
 
-Streams (fixed numbers, `core/prng.ts`): booked winners 2 (games), endings 12
-(method), title-fight dates 13 (schedule), title-fight winners 3 (postseason).
+Streams (fixed numbers, `core/prng.ts`): booked winners 2 (games), endings 13
+(method), title-fight dates 14 (schedule), title-fight winners 3 (postseason).
 Each run depends only on (seed, run): 1 and 3 workers give byte-identical
 aggregates (tested).
 
