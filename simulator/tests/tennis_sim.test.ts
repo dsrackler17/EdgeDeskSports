@@ -22,6 +22,7 @@ import { tennisModule, matchesModule, exactReach, OUTCOMES, type TennisModuleDat
 import { tennisActivation } from '../src/sports/tennis/activation.ts';
 import { validateTennisInputs, executeTennis } from '../src/sports/tennis/run.ts';
 import { runRange, summarise } from '../src/core/engine.ts';
+import { fixtureSnapshots } from './_tennis_fixture.ts';
 import { runPlan } from '../src/core/runner.ts';
 import { sportRegistry } from '../src/sports/registry.ts';
 import { planRuns, NIGHTLY, RUNNABLE } from '../src/cli/plan.ts';
@@ -186,13 +187,19 @@ K.chk('the activation conditions bite: a study no better than FiveThirtyEight\'s
 K.chk('the activation conditions bite: a calibration error above 0.03 blocks tennis', tennisActivation({ ...study, ece_bins_30: 0.05 }).status === 'BLOCKED');
 const built = await buildTennisSnapshots({ offline: true });
 const draws = built.snapshots.filter((s) => s.data.kind === 'draw');
-K.chk('committed data: at least one draw builds offline, each with its order\'s source', draws.length >= 1 && draws.every((s) => ['wikipedia', 'espn_late_rounds'].includes((s.data as TennisDrawData).order.source)), built.skipped);
+/* the committed feeds are refreshed daily: some days no draw's order can be confirmed yet, so these hold for whatever builds */
+K.chk('committed data: every draw that builds offline names its order\'s source (' + draws.length + ' today)', draws.every((s) => ['wikipedia', 'espn_late_rounds'].includes((s.data as TennisDrawData).order.source)), built.skipped);
 K.chk('committed data: every draw passes its simulation gates', draws.every((s) => validateTennisInputs(s, Date.parse(s.data.as_of) + 3600e3).filter((g) => g.blocks === 'simulation').length === 0));
 K.chk('committed data: every skipped draw says why', built.skipped.every((x) => x.reason.length > 5));
 K.chk('committed data: a draw\'s exact title chances sum to 1', draws.every((s) => Math.abs(Object.values((s.data as TennisDrawData).exact).reduce((a, v) => a + v[7], 0) - 1) < 1e-4));
 {
+  const fx = fixtureSnapshots().filter((s) => s.data.kind === 'draw');
+  K.chk('the frozen fixture (2026-10-23): its draws pass their simulation gates and their exact title chances sum to 1', fx.length >= 1 && fx.every((s) => validateTennisInputs(s).filter((g) => g.blocks === 'simulation').length === 0
+    && Math.abs(Object.values((s.data as TennisDrawData).exact).reduce((a, v) => a + v[7], 0) - 1) < 1e-4));
+}
+{
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'tennis-sim-'));
-  const o = await executeTennis({ season: 2026, runs: 4000, seed: '9', workers: 1, snapshot: null, out, traceRuns: [], offline: true, nowMs: Date.parse(built.snapshots[0].data.as_of) + 3600e3 }, () => {});
+  const o = await executeTennis({ season: 2026, runs: 4000, seed: '9', workers: 1, snapshot: null, out, traceRuns: [], offline: true, nowMs: built.snapshots.length ? Date.parse(built.snapshots[0].data.as_of) + 3600e3 : Date.now() }, () => {});
   K.chk('committed data: the run simulates every snapshot, its sum rules hold, only the run count blocks publication', o.runs.length === built.snapshots.length && o.runs.every((r) => r.gates.filter((g) => g.status === 'FAIL').every((g) => g.id === 'run.count')), o.runs.map((r) => r.gates.filter((g) => g.status === 'FAIL').map((g) => g.id + ': ' + g.detail)));
   K.chk('committed data: the run writes snapshot, results, gates and manifest per competition', o.runs.every((r) => ['snapshot.json', 'results.json', 'gates.json', 'manifest.json'].every((f) => fs.existsSync(path.join(r.outDir, f)))));
 }

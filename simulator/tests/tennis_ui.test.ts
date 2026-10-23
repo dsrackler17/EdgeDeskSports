@@ -7,12 +7,10 @@
      node simulator/tests/tennis_ui.test.ts
    =========================================================================== */
 import path from 'node:path';
-import fs from 'node:fs';
-import os from 'node:os';
 import { createRequire } from 'node:module';
 import { kit } from './_kit.ts';
 import { REPO } from '../src/sports/tennis/elo.ts';
-import { executeTennis } from '../src/sports/tennis/run.ts';
+import { tennisRuns } from './_tennis_fixture.ts';
 import { resultRows, entityRows } from '../src/publish/publish.ts';
 
 const req = createRequire(import.meta.url);
@@ -28,8 +26,8 @@ T.eq('the adapter names the tabs Draws, Matches, Model Health', [W.adapter.tabLa
 T.eq('fair odds: 60% is 1.67 decimal and -150 American', [W.decimal(0.6), W.american(0.6), W.american(0.4)], ['1.67', '-150', '+150']);
 T.chk('the public registry text never says "probability"', !/probability/i.test(JSON.stringify(sport)));
 
-const out = fs.mkdtempSync(path.join(os.tmpdir(), 'tennis-ui-'));
-const o = await executeTennis({ season: 2026, runs: 4000, seed: '3', workers: 1, snapshot: null, out, traceRuns: [], offline: true, nowMs: Date.now() }, () => {});
+/* the committed feeds' draws and matches, or the frozen fixture on a day the feeds give no draw (_tennis_fixture.ts) */
+const o = await tennisRuns(4000, '3');
 const now = Date.parse(o.runs[0].snapshot.data.as_of) + 7200e3;
 const pub = (r: any, i: number) => {
   const run = { run_id: 'r' + i, sport: 'tennis', competition: r.results.run.competition, season: '2026', n_sims: 4000, seed: '3', model_version: r.results.run.model_version, rules_version: r.results.run.rules_version,
@@ -38,7 +36,7 @@ const pub = (r: any, i: number) => {
     entitled: true, run, results: resultRows(r), entities: entityRows(r) };
 };
 const drawRuns = o.runs.filter((r) => r.results.run.competition !== 'matches'), matchRun = o.runs.find((r) => r.results.run.competition === 'matches');
-T.chk('the committed data give at least one draw and the day\'s matches', drawRuns.length >= 1 && !!matchRun);
+T.chk('runs from ' + o.source + ': at least one draw and the day\'s matches', drawRuns.length >= 1 && !!matchRun);
 const P = drawRuns.map(pub), M = matchRun ? pub(matchRun, 99) : null;
 const S0 = (P[0].run.validation_summary as any).sport_summary;
 const cache = (x: any = {}) => Object.assign({}, P[0], { comp: P[0].run.competition, draws: P.map((p) => ({ competition: p.run.competition, name: (p.run.validation_summary as any).sport_summary.tournament.name, tour: (p.run.validation_summary as any).sport_summary.tour })), matches: M, edges: [] }, x);

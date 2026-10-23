@@ -32,7 +32,7 @@ import { buildWnbaSnapshot } from '../src/sports/wnba/inputs.ts';
 import { executeUfc } from '../src/sports/ufc/run.ts';
 import { buildUfcSnapshot } from '../src/sports/ufc/inputs.ts';
 import { executeGolf } from '../src/sports/golf/run.ts';
-import { executeTennis } from '../src/sports/tennis/run.ts';
+import { tennisRuns } from './_tennis_fixture.ts';
 import os from 'node:os';
 
 const require = createRequire(import.meta.url);
@@ -123,7 +123,7 @@ const golf = gout.runs.map((r, i) => {
 });
 const golfOf = (u: string) => golf.find((g) => u.includes(g.id) || u.includes(encodeURIComponent(g.id)) || u.includes('competition=eq.' + encodeURIComponent(g.comp))) || null;
 /* tennis: every draw whose order the committed feeds give, and the day's matches, simulated offline (3,000 runs each) */
-const tout = await executeTennis({ season: 2026, runs: 3000, seed: '5', workers: 1, snapshot: null, out: fs.mkdtempSync(path.join(os.tmpdir(), 'tennis-e2e-')), traceRuns: [], offline: true }, () => {});
+const tout = await tennisRuns(3000, '5');   /* the committed feeds, or the frozen fixture on a day they give no draw */
 const tennis = tout.runs.map((r, i) => {
   const id = 'ffffffff-0000-0000-0000-00000000000' + i, comp = r.results.run.competition;
   return { id, comp, run: { ...run, run_id: id, sport: 'tennis', competition: comp, season: '2026', n_sims: 3000, seed: '5', model_version: r.results.run.model_version, rules_version: r.results.run.rules_version, comparison_id: null,
