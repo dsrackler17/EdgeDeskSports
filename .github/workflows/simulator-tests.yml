@@ -60,6 +60,9 @@ on:
       - 'basketball/params/wnba_live.json'
       - 'model_loop/adapters/ufc/**'
       - 'model_loop/data/ufc/bouts.csv'
+      - 'model_loop/data/ufc/title_bouts.csv'
+      - 'docs/model-loop/ufc/candidates.jsonl'
+      - 'tools/tennis/espn.js'
       - 'model_loop/published/ufc/**'
       - 'docs/model-loop/ufc/versions.json'
       - 'tools/personal/_pg.js'
@@ -96,6 +99,9 @@ on:
       - 'basketball/params/wnba_live.json'
       - 'model_loop/adapters/ufc/**'
       - 'model_loop/data/ufc/bouts.csv'
+      - 'model_loop/data/ufc/title_bouts.csv'
+      - 'docs/model-loop/ufc/candidates.jsonl'
+      - 'tools/tennis/espn.js'
       - 'model_loop/published/ufc/**'
       - 'docs/model-loop/ufc/versions.json'
       - 'tools/personal/_pg.js'
@@ -181,6 +187,8 @@ jobs:
         run: npm run sim:ufc:test
       - name: Golf tournament simulation (cut rules measured from history, conditioning, sum rules, dead heats, the playoff, worker-count independence) and its reader tabs
         run: npm run sim:golf:test
+      - name: Tennis draws and matches (the rating, the draw rebuilt and confirmed against ESPN, the bracket against its exact calculation, sum rules, workers) and its reader tabs
+        run: npm run sim:tennis:test
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check
