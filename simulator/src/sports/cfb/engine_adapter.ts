@@ -106,12 +106,15 @@ export function loadSeasonFeedSync(season: number): FeedGame[] {
 /* --------------------------------------------------------------- pricing */
 export interface Priced { fair: number; sigma: number; p_home: number; status: string; reason?: string }
 /** one game from a state, as the walk-forward backtest asks it (no enrichment) */
-export function priceBare(eng: CfbEngine, st: any, season: number, week: number, g: { home: string; away: string; home_fbs: boolean; away_fbs: boolean; neutral: boolean; home_conference: string; away_conference: string }): Priced {
+export interface PriceInjury { player: string; athlete_id?: string | null; position: string; starter: boolean; status: string; source: string }
+export function priceBare(eng: CfbEngine, st: any, season: number, week: number, g: { home: string; away: string; home_fbs: boolean; away_fbs: boolean; neutral: boolean; home_conference: string; away_conference: string },
+  injuries?: { home?: PriceInjury[]; away?: PriceInjury[] }): Priced & { total: number | null } {
   const out = eng.E.projectGame({
     season, week, state: st,
     game: { home: g.home, away: g.away, home_fbs: g.home_fbs, away_fbs: g.away_fbs, neutral_site: g.neutral },
-    teams: { home: { conference: g.home_conference }, away: { conference: g.away_conference } }
+    teams: { home: { conference: g.home_conference, ...(injuries && injuries.home ? { injuries: injuries.home } : {}) },
+             away: { conference: g.away_conference, ...(injuries && injuries.away ? { injuries: injuries.away } : {}) } }
   });
-  if (out.status !== 'PREDICTED') return { fair: NaN, sigma: NaN, p_home: NaN, status: out.status, reason: out.reason };
-  return { fair: out.model.fair_spread, sigma: out.model.sigma_margin, p_home: out.model.home_win_prob, status: 'PREDICTED' };
+  if (out.status !== 'PREDICTED') return { fair: NaN, sigma: NaN, p_home: NaN, total: null, status: out.status, reason: out.reason };
+  return { fair: out.model.fair_spread, sigma: out.model.sigma_margin, p_home: out.model.home_win_prob, total: Number.isFinite(out.model.fair_total) ? out.model.fair_total : null, status: 'PREDICTED' };
 }
