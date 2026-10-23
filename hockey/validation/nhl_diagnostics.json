@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_diagnostics_v1",
- "generated_at": "2026-10-23T05:18:52.384Z",
+ "generated_at": "2026-10-23T12:03:34.155Z",
  "model": "edgedesk_nhl_v1:xg_core (production)",
  "source": "out-of-sample predictions rebuilt by hockey/lab/base.js (reproduces hockey/validation/nhl_walkforward.json)",
  "windows": {
@@ -25,14 +25,14 @@
    "calibration_slope": 1.064
   },
   "live": {
-   "n": 153,
-   "log_loss": 0.65935,
-   "brier": 0.2335,
-   "auc": 0.6351,
-   "mean_p": 0.5328,
-   "mean_y": 0.5752,
-   "calibration_in_the_large": -0.0424,
-   "calibration_slope": 1.607
+   "n": 165,
+   "log_loss": 0.66228,
+   "brier": 0.23493,
+   "auc": 0.6208,
+   "mean_p": 0.5311,
+   "mean_y": 0.5879,
+   "calibration_in_the_large": -0.0568,
+   "calibration_slope": 1.445
   }
  },
  "by_season": {
@@ -167,14 +167,14 @@
    "calibration_slope": 0.783
   },
   "2027": {
-   "n": 153,
-   "log_loss": 0.65935,
-   "brier": 0.2335,
-   "auc": 0.6351,
-   "mean_p": 0.5328,
-   "mean_y": 0.5752,
-   "calibration_in_the_large": -0.0424,
-   "calibration_slope": 1.607
+   "n": 165,
+   "log_loss": 0.66228,
+   "brier": 0.23493,
+   "auc": 0.6208,
+   "mean_p": 0.5311,
+   "mean_y": 0.5879,
+   "calibration_in_the_large": -0.0568,
+   "calibration_slope": 1.445
   }
  },
  "season_phase": {
@@ -761,9 +761,9 @@
     "rate": 0.6596
    },
    "2027": {
-    "team_games": 306,
-    "projected_started": 194,
-    "rate": 0.634
+    "team_games": 330,
+    "projected_started": 207,
+    "rate": 0.6273
    }
   },
   "note": "projected = the most likely starter from recent usage and the league's back-to-back rule (hockey/model/ratings.js); actual = the box score's starter",
@@ -826,19 +826,19 @@
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
   },
   "live": {
-   "n": 153,
-   "coverage_80": 0.9216,
-   "mean_bias_goals": 0.014,
+   "n": 165,
+   "coverage_80": 0.9212,
+   "mean_bias_goals": -0.013,
    "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
   }
  },
  "drift": {
-  "n": 153,
-  "live_mean_log_loss": 0.65935,
+  "n": 165,
+  "live_mean_log_loss": 0.66228,
   "reference_mean": 0.66286,
   "reference_sd_per_game": 0.232,
-  "z": -0.19,
-  "rolling_100": 0.65745,
+  "z": -0.03,
+  "rolling_100": 0.66474,
   "cusum": 0,
   "cusum_max": 0.411,
   "decision_interval": 1.16,
@@ -869,7 +869,7 @@
     "cusum": 0
    },
    {
-    "n": 153,
+    "n": 165,
     "cusum": 0
    }
   ],
