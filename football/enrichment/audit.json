@@ -1,17 +1,17 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-23T05:03:47.069Z",
+ "generated_at": "2026-10-23T11:15:31.691Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-23T05:03:47.069Z",
-  "reliability_generated_at": "2026-10-23T05:03:47.069Z",
-  "enrichment_generated_at": "2026-10-23T05:03:38.448Z",
+  "at": "2026-10-23T11:15:31.691Z",
+  "reliability_generated_at": "2026-10-23T11:15:31.691Z",
+  "enrichment_generated_at": "2026-10-23T11:15:13.112Z",
   "counts": {
-   "games": 106,
+   "games": 105,
    "mean": 87.4,
    "median": 89,
    "by_band": {
-    "VERY_STRONG": 21,
+    "VERY_STRONG": 20,
     "ADEQUATE": 22,
     "STRONG": 61,
     "CAUTION": 2
@@ -20,10 +20,10 @@
    "qb_conflicts_open": 10,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 22,
-   "unrated_meaningful_absences": 412,
+   "unrated_meaningful_absences": 398,
    "fcs_games_thin_data": 0,
-   "games_under_two_market_sources": 106,
-   "stale_evidence_records": 1,
+   "games_under_two_market_sources": 105,
+   "stale_evidence_records": 4,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -369,7 +369,7 @@
    },
    "401856836": {
     "game": "Colorado @ Oklahoma State",
-    "score": 96,
+    "score": 97,
     "grade": "VERY_STRONG",
     "fam": {
      "attribution": 1.8,
@@ -408,7 +408,7 @@
     "score": 95,
     "grade": "VERY_STRONG",
     "fam": {
-     "attribution": 2.1,
+     "attribution": 2,
      "starters": 1.2,
      "stability": 0.4,
      "player_identity": 0.4,
@@ -1427,24 +1427,6 @@
      "away": "PROVIDER_FAILED"
     }
    },
-   "401862807": {
-    "game": "East Carolina @ Memphis",
-    "score": 97,
-    "grade": "VERY_STRONG",
-    "fam": {
-     "attribution": 2.1,
-     "qb_identity": 0.9,
-     "transfer_turnover": 0.6
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "COMPREHENSIVE_OFFICIAL",
-     "away": "COMPREHENSIVE_OFFICIAL"
-    }
-   },
    "401862808": {
     "game": "Army @ Tulsa",
     "score": 89,
@@ -2229,73 +2211,41 @@
   }
  },
  "previous": {
-  "at": "2026-10-22T21:49:29.744Z",
+  "at": "2026-10-23T05:03:47.069Z",
   "counts": {
-   "games": 108,
-   "mean": 87.3,
+   "games": 106,
+   "mean": 87.4,
    "median": 89,
    "by_band": {
-    "VERY_STRONG": 18,
+    "VERY_STRONG": 21,
     "ADEQUATE": 22,
-    "STRONG": 66,
+    "STRONG": 61,
     "CAUTION": 2
    },
-   "missing_qb_status": 165,
+   "missing_qb_status": 155,
    "qb_conflicts_open": 10,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 24,
-   "unrated_meaningful_absences": 384,
+   "games_lacking_injury_information": 22,
+   "unrated_meaningful_absences": 412,
    "fcs_games_thin_data": 0,
-   "games_under_two_market_sources": 108,
-   "stale_evidence_records": 55,
+   "games_under_two_market_sources": 106,
+   "stale_evidence_records": 1,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "+0.1 mean reliability (87.3 → 87.4)",
-  "-10 QB statuses missing (165 → 155)",
-  "-2 games lacking injury information (24 → 22)",
-  "-2 games under two market sources (108 → 106)",
-  "-54 stale evidence records (55 → 1)",
-  "3 games moved STRONG → VERY STRONG"
+  "-14 unrated meaningful absences (412 → 398)",
+  "-1 games under two market sources (106 → 105)"
  ],
  "what_degraded": [
-  "+28 unrated meaningful absences (384 → 412)"
+  "+3 stale evidence records (1 → 4)"
  ],
  "why": [
-  "the slate itself changed: 0 games entered the window, 2 left it (kicked off or rolled out)",
-  "Syracuse @ North Carolina: STRONG → VERY STRONG (89 → 93); largest change: availability +4.6 pts; away QB EXPECTED → UNCERTAIN, home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "Virginia Tech @ Clemson: STRONG → VERY STRONG (89 → 93); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "East Carolina @ Memphis: STRONG → VERY STRONG (89 → 97); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL"
+  "the slate itself changed: 0 games entered the window, 1 left it (kicked off or rolled out)"
  ],
  "history": [
-  {
-   "at": "2026-10-15T17:14:26.789Z",
-   "counts": {
-    "games": 114,
-    "mean": 86.6,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 16,
-     "LOW": 3,
-     "ADEQUATE": 16,
-     "STRONG": 77,
-     "CAUTION": 2
-    },
-    "missing_qb_status": 184,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 18,
-    "unrated_meaningful_absences": 352,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 114,
-    "stale_evidence_records": 53,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-15T21:35:50.716Z",
    "counts": {
@@ -3701,6 +3651,30 @@
     "fcs_games_thin_data": 0,
     "games_under_two_market_sources": 106,
     "stale_evidence_records": 1,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-23T11:15:31.691Z",
+   "counts": {
+    "games": 105,
+    "mean": 87.4,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 20,
+     "ADEQUATE": 22,
+     "STRONG": 61,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 155,
+    "qb_conflicts_open": 10,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 22,
+    "unrated_meaningful_absences": 398,
+    "fcs_games_thin_data": 0,
+    "games_under_two_market_sources": 105,
+    "stale_evidence_records": 4,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }

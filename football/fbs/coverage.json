@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-23T05:03:47.069Z",
+ "generated_at": "2026-10-23T11:15:31.691Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,21 +119,21 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 106,
+  "total": 105,
   "by_group": {
-   "other": 51,
    "p4": 56,
-   "independent": 3
+   "independent": 3,
+   "other": 50
   },
   "by_matchup": {
-   "conference": 102,
+   "conference": 101,
    "non_conference": 4
   },
   "by_conference": {
-   "american": 11,
    "acc": 15,
    "independents": 3,
    "mac": 9,
+   "american": 10,
    "mwc": 9,
    "sec": 11,
    "big12": 15,
@@ -200,22 +200,24 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 106
+  "PREDICTED": 105
  },
  "weather": {
-  "requested": 101,
-  "answered": 101,
+  "requested": 100,
+  "answered": 93,
   "dome": 3,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 7,
+  "carried": 7,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 429": 7
+  },
   "host": "api.open-meteo.com",
-  "summary": "101 of 101 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "93 of 100 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 7 request(s) failed; 7 carried the last observed forecast forward at its real age (HTTP 429 x7)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 106
+  "NO_MARKET": 105
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -284,12 +286,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 50,
-    "total": 106,
+    "non_power_games": 49,
+    "total": 105,
     "example": [
-     "East Carolina @ Memphis",
      "Massachusetts @ UConn",
-     "Army @ Tulsa"
+     "Army @ Tulsa",
+     "Air Force @ Wyoming"
     ]
    }
   },
@@ -304,7 +306,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 102,
+    "conference_games": 101,
     "wrong": 0
    }
   },
@@ -338,8 +340,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 106,
-    "audit_total": 106
+    "slate": 105,
+    "audit_total": 105
    }
   },
   {
