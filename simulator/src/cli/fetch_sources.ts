@@ -47,7 +47,7 @@ if (!['nfl', 'nhl', 'nba', 'mlb'].includes(SPORT)) { console.error('usage: --spo
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
-type Page = { id: string; url: string; links?: RegExp; grep?: RegExp };
+type Page = { id: string; url: string; links?: RegExp; grep?: RegExp; excerpt?: RegExp };
 const NFL_PAGES: Page[] = [
   /* the NFL's published tiebreaking procedures (operations.nfl.com/the-rules/nfl-tiebreaking-procedures answered 404 on 2026-10-23) */
   { id: 'nfl_standings_tiebreaking', url: 'https://www.nfl.com/standings/tie-breaking-procedures' },
@@ -72,22 +72,27 @@ const NHL_PAGES: Page[] = [
    Internet Archive keeps nba.com's pages as published (id_ = the archived bytes, unmodified; the final URL
    names the capture's time). Each is printed under its own id, so a verification cites which copy it read. */
 const NBA_ARCHIVE = 'https://web.archive.org/web/20261023000000id_/';
-const NBA_ARTICLES: Array<[string, string]> = [
+/* each with the paragraphs a verification reads, printed again after the summary (the whole text stays above) */
+const NBA_RULES = /tie|break|head-to-head|percentage|won-lost|differential|net points|division (winner|leader)|playoff team|play-in|seed|home[- ]court|reseed|best-of-seven|2-2-1-1-1|random|drawing/i;
+const NBA_CUP = /standings|count|regular[- ]season|\b8[0-3]\b|Group Play|Knockout|Quarterfinal|Semifinal|Championship|wild card|tiebreak|host|neutral/i;
+const NBA_SEASON = /play-in|playoff|Finals|Cup|\b8[0-3]\b|standings|format|regular season (ends|concludes|begins|tips)/i;
+const NBA_ARTICLES: Array<[string, string, RegExp]> = [
   /* the standings page carries the league's tiebreaker paragraph */
-  ['nba_standings', 'https://www.nba.com/standings'],
+  ['nba_standings', 'https://www.nba.com/standings', NBA_RULES],
   /* the play-in and NBA Cup explainers, the Cup's questions page */
-  ['nba_play_in', 'https://www.nba.com/news/nba-play-in-tournament'],
-  ['nba_cup_101', 'https://www.nba.com/news/nba-cup-101'],
-  ['nba_cup_faq', 'https://www.nba.com/news/nba-cup-frequently-asked-questions'],
+  ['nba_play_in', 'https://www.nba.com/news/nba-play-in-tournament', NBA_RULES],
+  ['nba_cup_101', 'https://www.nba.com/news/nba-cup-101', NBA_CUP],
+  ['nba_cup_faq', 'https://www.nba.com/news/nba-cup-frequently-asked-questions', NBA_CUP],
   /* the 2026-27 season as the league announced it: the schedule release and the key dates */
-  ['nba_2026_27_schedule_release', 'https://www.nba.com/news/2026-27-nba-regular-season-schedule'],
-  ['nba_2026_27_key_dates', 'https://www.nba.com/news/key-dates']
+  ['nba_2026_27_schedule_release', 'https://www.nba.com/news/2026-27-nba-regular-season-schedule', NBA_SEASON],
+  ['nba_2026_27_key_dates', 'https://www.nba.com/news/key-dates', NBA_SEASON]
 ];
-const NBA_PAGES: Page[] = NBA_ARTICLES.flatMap(([id, url]): Page[] => [
-  { id, url },
-  { id: id + '_apihub', url: url.replace('https://www.nba.com/', 'https://api-hub.nba.com/') },
-  { id: id + '_archive', url: NBA_ARCHIVE + url }
-]).concat([{ id: 'nba_2026_27_schedule_release_pr', url: 'https://pr.nba.com/2026-27-nba-regular-season-schedule/' }]);
+const NBA_PAGES: Page[] = NBA_ARTICLES.flatMap(([id, url, excerpt]): Page[] => [
+  { id, url, excerpt },
+  { id: id + '_apihub', url: url.replace('https://www.nba.com/', 'https://api-hub.nba.com/'), excerpt },
+  { id: id + '_archive', url: NBA_ARCHIVE + url, excerpt }
+]).concat([{ id: 'nba_2026_27_schedule_release_pr', url: 'https://pr.nba.com/2026-27-nba-regular-season-schedule/', excerpt: NBA_SEASON }]);
+const EXCERPTS: string[] = [];
 /* MLB: the postseason landing page and the official-information page (its links name the rulebook PDFs);
    the explainers for the format, the tiebreakers and the extra-inning runner are found, not guessed: the
    archive's index of mlb.com and mlb.com's own sitemap are searched for them (mlbDiscover). Every page is
@@ -184,6 +189,10 @@ async function fetchPage(p: Page) {
   fs.writeFileSync(path.join(OUT, p.id + '.txt'), text);
   SUMMARY.push(p.id + ': ' + head + ' · text ' + text.length + ' chars, sha256 ' + sha256Hex(text));
   console.log('-- text (' + text.length + ' chars, sha256 ' + sha256Hex(text) + '):\n' + text.slice(0, 60000));
+  if (p.excerpt && res.ok) {
+    const hit = [...new Set(text.split('\n').filter((l) => p.excerpt!.test(l)))];
+    EXCERPTS.push('== EXCERPT ' + p.id + '  ' + res.url + '  (text sha256 ' + sha256Hex(text) + '; ' + hit.length + ' paragraphs matching ' + p.excerpt + ')\n' + hit.map((l) => '  ' + l).join('\n'));
+  }
 }
 
 /** a JSON feed: status, sha256 of the body, the parsed value (null when it is not JSON) */
@@ -414,3 +423,4 @@ const MLB_PAGES = SPORT === 'mlb' ? mlbPages(MLB_ARTICLES.concat(await mlbDiscov
 for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : SPORT === 'mlb' ? MLB_PAGES : NBA_PAGES) await fetchPage(p);
 section('SUMMARY');
 console.log(SUMMARY.join('\n') + '\nwritten to ' + OUT);
+if (EXCERPTS.length) { section('EXCERPTS (the paragraphs of each page read above that name the rules; the whole text is above and in the artifact)'); console.log(EXCERPTS.join('\n\n')); }
