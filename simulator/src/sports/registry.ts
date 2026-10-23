@@ -86,8 +86,8 @@ const MLB_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
-/** NBA: rules, inputs, study and tests are complete; the 2026-27 facts await verification, and the
-    season cannot be simulated for publication until the NBA Cup-dependent games are on the schedule */
+/** NBA: rules, inputs, studies and tests are complete, and the six 2026-27 facts are VERIFIED from the league's text
+    (2026-10-23); the season cannot be simulated for publication until the NBA Cup-dependent games are on the schedule */
 function nbaStatus(): { status: SportStatus; blockers: string[] } {
   const c = NBA_2026_27;
   const f = factStatus([['2026-27 tiebreaker procedure', c.tiebreakers], ['2026-27 definition of playoff teams for the tiebreaker', c.playoff_clubs_for_tiebreakers], ['2026-27 play-in format', c.play_in],
@@ -153,7 +153,7 @@ export function sportRegistry(): SportEntry[] {
       blockers: cfb.blockers, limitations: CFB_LIMITS,
       activation_path: 'Active: every conference procedure, the 2026 CFP format and North Dakota State\'s eligibility are VERIFIED from the governing bodies\' own text (simulator/src/sports/cfb/config.ts); Sacramento State\'s MAC eligibility is measured in every run and holds publication if any run depended on it. A new season, or a changed procedure, means re-reading the sources (Simulator CFB source check) and re-verifying in a reviewed commit. CFB_SIMULATOR_NOTES.md §4, §16.' },
     { key: 'nba', label: 'NBA', status: nba.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nba.blockers, limitations: NBA_LIMITS,
-      activation_path: 'Verify the six 2026-27 facts in simulator/src/sports/nba/config.ts against the NBA\'s official pages (VERIFIED with verified_by/verified_at in a reviewed commit), wait for the NBA Cup-dependent games on the schedule, then a 100,000-run publication.' },
+      activation_path: 'The six 2026-27 facts in simulator/src/sports/nba/config.ts are VERIFIED from the league\'s own text (2026-10-23; re-checked each season by the Simulator source check). Wait for the 30 NBA Cup-dependent games on the schedule (from Dec. 4, 2026), lift the schedule blocker in simulator/src/sports/registry.ts in a reviewed commit, add the NBA to the nightly plan, then a 100,000-run publication.' },
     { key: 'nhl', label: 'NHL', status: nhl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'],
       blockers: nhl.blockers, limitations: NHL_LIMITS,
       activation_path: 'Each season: re-run the Simulator source check, compare the NHL.com tie-breaking and playoff-format pages with NHL_SIMULATOR_NOTES.md, and re-verify the three facts in simulator/src/sports/nhl/config.ts in a reviewed commit.' },

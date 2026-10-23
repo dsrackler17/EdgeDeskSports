@@ -18,7 +18,8 @@ production readiness or a deployment: §16 states exactly what exists.
 | Area | State | Evidence |
 |---|---|---|
 | NBA rules (standings, tiebreakers, division titles, seeding, play-in, bracket, best-of-seven) | Implemented; replays **every play-in and playoff game 2006-07..2025-26** (except 2019-20) exactly | `simulator/tests/nba_rules_history.test.ts` (105 assertions, 4 mutants) |
-| Synthetic rule cases (every tiebreak step, restart, play-in paths, home order, four-win end) | Implemented, tested | `simulator/tests/nba_rules_synthetic.test.ts` (116) |
+| Synthetic rule cases (every tiebreak step, complete and partial breaks, play-in paths, home order, four-win end) | Implemented, tested | `simulator/tests/nba_rules_synthetic.test.ts` (118) |
+| The six 2026-27 rules facts | **VERIFIED** 2026-10-23 from the league's own text (archived nba.com and NBA Communications pages read by the Simulator source check, run 39996632843) | §5.5 |
 | Game model | The served NBA model (`edgedesk_nba_v1:E_ridge_P`), no new model; the simulator's mean for every game on the published slate equals the slate's baseline (max difference 0 over 27 games) | §4, `nba_sim.test.ts` §7 |
 | Strength uncertainty (persistent per-club draws) | Calibrated on frozen out-of-sample forecasts, 15 seasons x 5 as-of points | `simulator/data/nba_strength_uncertainty.json`, §7 |
 | Player availability (projected rotation + return trajectories) | Implemented; return hazards validated on a 2023-24..2025-26 holdout | `simulator/data/nba_return_hazards.json`, §8 |
@@ -26,7 +27,7 @@ production readiness or a deployment: §16 states exactly what exists.
 | Postseason rotations | **Not modelled** beyond the model's own learned postseason term; audited, no boost invented | `simulator/data/nba_postseason_audit.json`, §9 |
 | Completed games, current series | Fixed exactly; series resume from their real score at the right venue | §6, `nba_sim.test.ts` §5 |
 | Futures mapping | Every outcome has its own settlement semantic; a market can map to one outcome only | §10 |
-| Publication | **BLOCKED**: six 2026-27 facts unverified; 30 NBA Cup-dependent games not on the schedule | §12 |
+| Publication | **BLOCKED**: 30 NBA Cup-dependent games not on the schedule (the six facts are verified) | §12 |
 
 ---
 
@@ -46,7 +47,7 @@ production readiness or a deployment: §16 states exactly what exists.
 | Host | Reachable | Consequence |
 |---|---|---|
 | `raw.githubusercontent.com` (sportsdataverse/hoopR-nba-data) | yes | the NBA work tables were rebuilt (`node nba/ingest/season.js --season all`: 2003-2027, 102 MB); the committed `nba/data` files were restored afterwards so every number here rests on the committed data |
-| `www.nba.com`, `official.nba.com`, `ak-static.cms.nba.com`, `cdn.nba.com` | **no** (proxy policy, 403 on CONNECT) | no 2026-27 rules fact could be verified from an official page |
+| `www.nba.com`, `official.nba.com`, `ak-static.cms.nba.com`, `cdn.nba.com` | **no** (proxy policy, 403 on CONNECT); from GitHub's runners nba.com, `api-hub.nba.com`, `pr.nba.com` and `cdn.nba.com` answer 403 (Akamai "Access Denied") | the league's pages were read as the Internet Archive keeps them, from the runners (§5.5) |
 | `en.wikipedia.org`, ESPN, basketball-reference | **no** | no secondary confirmation either |
 | Kalshi | **no** | no NBA futures market could be read or mapped |
 
@@ -134,22 +135,36 @@ conference twice. `nba_config.test.ts` derives it and holds the config equal
 | 7 point differential | 7 random drawing (seeded) |
 | 8 random drawing (seeded) | |
 
-- **Elimination and restart.** The first step that separates the tied clubs
-  splits them into the best (one club, or a group level on that step) and the
-  rest, who are eliminated: every club still in the tie ranks above every
-  eliminated club; the best group restarts from step 1 and so, below it, do
-  the eliminated — each with the two-club or multi-club procedure as its size
-  dictates. **History fixes this rule:** in 2008-09 DEN, POR and SA finished
-  54-28; the division-winner step eliminates POR, DEN beats SA head-to-head,
-  and POR is fourth although it beat SA head-to-head — the league's order. A
+- **Complete and partial breaks** (the league's Paragraph L.2.c, read from
+  nba.com's standings page on 2026-10-23, §5.5). The criteria apply in order
+  until the first that tells the tied clubs apart.
+  - A *complete* break (every club a different value) orders them by that
+    criterion, with "no further application of the tie-break criteria".
+  - A *partial* break orders the levels it separates: any club that did better
+    ranks above any that did worse. Each group still level starts again from
+    the first criterion, with the two-club or multi-club procedure as its size
+    dictates.
+
+  Until 2026-10-23 the code ranked only the best level and restarted everyone
+  below it from step 1. That differs when a criterion separates three or more
+  levels: games among three tied clubs 4-2, 3-3, 2-4 with the third beating
+  the second head-to-head. It is now the league's rule, with a synthetic case
+  that fails on the old code. Every season 2006-07..2025-26 reproduces under
+  both: the case never arose.
+
+  **History fixes the restart:** in 2008-09 DEN, POR and SA finished 54-28. The
+  division-winner step puts POR below both, DEN beats SA head-to-head, and POR
+  is fourth although it beat SA head-to-head — the league's order. A
   place-by-place restart (the NFL's) gets 2008-09 wrong and every other season
   right (`nba_rules_history.test.ts` mutant).
 - Division titles are decided first (the division-winner step cannot separate
   the tied leaders). Percentages are compared as integer cross products.
 - **Playoff clubs** for steps 5-6: the clubs at or above the record of the
   10th place (8th before the play-in), ties included. **Not identified by
-  history**: one tie in 2020-21..2025-26 reached that step and 6, 8, 10 and 12
-  all order it the same way; UNVERIFIED.
+  history** (one tie in 2020-21..2025-26 reached that step, and 6, 8, 10 and 12
+  all order it the same way), but stated by the league: "teams eligible for
+  the postseason … including teams that finished the Regular Season tied for
+  one of the best 10 records in their conference" (§5.5).
 - Steps a club cannot be measured on (no games against the set) are skipped
   for the whole group.
 - History exercised (2006-07..2025-26): head-to-head 48 times, conference
@@ -191,14 +206,36 @@ random drawing was needed. Mutants that fail: place-by-place restart
 (every Finals that reached game 5), no division seed block before 2015-16, no
 play-in from 2020-21.
 
-### 5.5 Verification status
-Six facts in `simulator/src/sports/nba/config.ts`, each `affects_results: true`,
-`verification: 'UNVERIFIED'`: the 2026-27 tiebreaker procedure, the definition
-of playoff teams for it, the play-in format, the playoff format, the
-home-court rules, and the NBA Cup standings rules. The history reproduction is
-strong evidence for the first, third, fourth and fifth, not verification: a
-fact counts only as `VERIFIED` with a named verifier and a date, after a
-person compares it with nba.com.
+### 5.5 Verification (2026-10-23)
+The six facts in `simulator/src/sports/nba/config.ts` (each
+`affects_results: true`) are **VERIFIED**. They were compared with the league's
+own text by Claude Code at the repository owner's request, and `verified_by`
+names the run.
+
+**How the text was read.** The Simulator source check
+(`.github/workflows/simulator-sources.yml`, NBA job;
+`simulator/src/cli/fetch_sources.ts`) reads each page from GitHub's runners.
+nba.com, `api-hub.nba.com`, `pr.nba.com` and `cdn.nba.com` all answer the
+runners 403 (Akamai), so each page is the Internet Archive's copy as
+published: `web.archive.org/web/<capture>id_/<url>`, the archived bytes. The
+run prints each page whole, its text sha256, and an excerpt of the paragraphs
+that name the rules. Run 39996632843 (2026-10-23) is the one cited; its
+artifact keeps the files for 30 days.
+
+| Fact | The league's text | Agrees with the code |
+|---|---|---|
+| Tiebreakers | nba.com standings page, "Play-In and Playoff Tie-Break Procedures", Paragraph L.2 (captured 2026-10-13): L.2.a two teams (head-to-head; division winner; division record if same division; conference record; vs own-conference postseason-eligible teams; vs the other conference's; point differential), L.2.b more than two (division winner; games among the tied; division record if all in one division; conference record; vs own-conference postseason-eligible teams; point differential), L.2.c (division ties first and used only for the division winner; complete and partial breaks; a group still tied restarts from the beginning; then a random drawing) | Both lists, step for step. **L.2.c did not:** the code ranked only the best level and restarted everyone below; corrected (§5.2) |
+| Playoff teams for the tiebreaker | the same page: "teams eligible for the postseason … including teams that finished the Regular Season tied for one of the best 10 records in their conference" | yes (`place: 10`, ties included) |
+| Play-in | nba.com play-in explainer (2026 edition, captured 2026-10-05): No. 7 hosts No. 8, the winner is the 7 seed; No. 9 hosts No. 10, the loser is out; the loser of 7-8 hosts the winner of 9-10 for the 8 seed. For 2026-27: the schedule release ("all six games of the SoFi NBA Play-In Tournament 2027 … Teams seeded seventh through 10th … will compete for the final two playoff berths") and the key dates (April 13-16, 2027) | yes |
+| Playoff format | NBA Communications 2015 ("the eight playoff teams in each conference will be seeded in order of their regular-season record") and 2014 ("2-2-1-1-1 … aligns The Finals format with every other round of the NBA Playoffs"). **No page read states the fixed bracket (1-8 v 4-5, 2-7 v 3-6, no reseeding):** as for the NFL's seeding, that part rests on every pairing and host 2006-07..2025-26 (§5.4) | yes |
+| Home court | NBA Communications 2015: a division winner "did not receive home-court advantage if its playoff opponent had a better record"; head-to-head is "the first criterion to break ties for playoff seeding and home-court advantage" | yes (by record and those criteria, not by seed) |
+| NBA Cup | nba.com Cup 101 and FAQ (2026 editions, captured 2026-10-10): every Cup game counts toward the standings except the Championship; 82 games each; the two games after Group Play (22 + 2 + 4 + 2 = 30); the schedule release: "defined dates and opponents for 80 of each team's 82 games" | yes |
+
+Each fact's `source` carries its URL, capture time and text sha256. Each
+season the check is run again and compared (`verify_by`). One change the
+pages announce does not touch the simulator: from 2026-27 the Cup semifinals
+are hosted by the higher seed in NBA team markets, not in Las Vegas. Those
+games are among the 30 that are not yet scheduled.
 
 ---
 
@@ -399,9 +436,8 @@ league's random drawing (a rule, seeded; never blocking).
 
 ## 12. What blocks publication
 
-1. **Six 2026-27 facts unverified** against nba.com (unreachable): the
-   tiebreaker procedure, playoff teams for it, the play-in, the playoff
-   format, home court, the NBA Cup standings rules.
+1. ~~Six 2026-27 facts unverified~~: verified 2026-10-23 from the league's
+   text (§5.5).
 2. **The schedule**: 1,200 of 1,230 regular-season games are on it; the 30
    that depend on the NBA Cup group stage (two per club) are scheduled after
    it (early December 2026). Until then `schedule.complete` refuses the
@@ -409,9 +445,9 @@ league's random drawing (a rule, seeded; never blocking).
 3. Data freshness: the committed results lag (two 2026-10-22 games not yet
    final in the data on 2026-10-23): `results.current` WARN.
 
-To activate: §5.5 verification; the Cup games on the schedule; remove the
-schedule blocker; the nightly workflow's NBA step (runbook); a first
-100,000-run publication by hand.
+To activate: the Cup games on the schedule (from Dec. 4, 2026); lift the
+schedule blocker in `simulator/src/sports/registry.ts`; the nightly workflow's
+NBA step (runbook); a first 100,000-run publication by hand.
 
 ---
 
@@ -420,13 +456,14 @@ schedule blocker; the nightly workflow's NBA step (runbook); a first
 | Suite | Assertions | Result |
 |---|---|---|
 | `simulator/tests/nba_rules_history.test.ts` (every postseason 2006-07..2025-26 replayed; 4 mutants) | 105 | pass |
-| `simulator/tests/nba_rules_synthetic.test.ts` (SYNTHETIC: every tiebreak step, elimination and restart, division titles, the 2006-07 seed block, the four play-in paths, 2-2-1-1-1, four-win end over 4,000 random series, resumed series, fixed bracket, home court by place) | 116 | pass |
-| `simulator/tests/nba_config.test.ts` (alignment derived from the schedules, team identity across the NBA tables, 2026-27 schedule, facts, registry) | 78 | pass |
+| `simulator/tests/nba_rules_synthetic.test.ts` (SYNTHETIC: every tiebreak step, complete and partial breaks (L.2.c), division titles, the 2006-07 seed block, the four play-in paths, 2-2-1-1-1, four-win end over 4,000 random series, resumed series, fixed bracket, home court by place) | 118 | pass |
+| `simulator/tests/nba_config.test.ts` (alignment derived from the schedules, team identity across the NBA tables, 2026-27 schedule, the six facts VERIFIED with their sources, registry) | 79 | pass |
 | `simulator/tests/nba_model.test.ts` (live parameters unchanged, distribution vs the served `marginals()`, margin draws, appearance scan, hazards and their holdout, return draws, sigma by as-of point) | 52 | pass |
-| `simulator/tests/nba_sim.test.ts` (committed snapshots: zero offset, reproducibility, 1 vs 3 workers, persistent offsets incl. the playoffs, sum rules and qualified-club totals, the 2025-26 first-round replay, return trajectories, the slate equivalence, fail-closed gates, the CLI, futures semantics) | 57 | pass |
+| `simulator/tests/nba_sim.test.ts` (committed snapshots: zero offset, reproducibility, 1 vs 3 workers, persistent offsets incl. the playoffs, sum rules and qualified-club totals, the 2025-26 first-round replay, return trajectories, the slate equivalence, fail-closed gates, the CLI, futures semantics) | 58 | pass |
+| `simulator/tests/ui.test.ts` and `ui.e2e.ts` (the reader's NBA views on real simulations of the committed fixture; Chromium at 390 and 1440 px) | 64 / 57 (whole suites) | pass |
 | typecheck (`tsc --noEmit`, strict) | — | clean |
 | generated files (`npm run sim:check`), migration byte-identical | — | current |
-| existing, re-run: core 37, hooks 23, NFL history 242, NFL synthetic 62, NFL simulation 32, NFL config 13, markets 48, reader 34, CLI 33, publisher 18, SQL on PostgreSQL 16 82, reader in Chromium 31 | 655 | pass |
+| every simulator suite (`npm run sim:test`: core, hooks, NFL, NHL, MLB, college football, NBA, markets, reader, CLI, publisher), SQL on PostgreSQL 16, reader in Chromium — re-run on 2026-10-23 with the verification and the L.2.c correction | 1,776 + 82 + 57 | pass |
 | `.github/workflows/simulator-tests.yml` | — | actionlint 1.7.7 clean |
 
 The NBA suites need no network and no work tables (`simulator/fixtures/nba_2027_snapshot.json.gz`,
@@ -486,17 +523,26 @@ and the cross-conference Finals tiebreak are not identified by history;
 Monte Carlo ± is simulation noise only.
 
 **Deployment status, exactly:**
-- Code, tests, studies and fixtures: committed on
-  `claude/edgedesk-nba-simulator-q1ktpg` (draft PR); **not merged**.
+- Code, tests, studies and fixtures: on `main` (#703, #704, #709). The rules
+  verification, the L.2.c tiebreak correction and the reader's NBA views are
+  on `claude/edgedesk-nba-simulator-q1ktpg` (draft PR, after #712 merged the source-check hosts).
 - Database: nothing new; the existing `supabase/simulator.sql` is
   sport-agnostic (sum rules come with each run). Nothing published.
 - GitHub Actions: `simulator-tests.yml` runs the NBA suites (no network, no
   work tables: the committed snapshots); the nightly `simulator.yml` still
   plans the NFL only — the NBA needs its work-table step first (runbook).
 - Reader: the Simulator seat shows the NBA's status, blockers and
-  limitations (generated registry); its result tables are NFL-shaped and need
-  an NBA layout (division, play-in, seeds 1-8, four rounds) before an NBA run
-  is published.
+  limitations (generated registry) and, once the NBA is ACTIVE, its own
+  views (`lib/edgedesk_simulator.js`):
+  - Division: W-L, projected wins, division title, play-in and playoffs.
+  - Conference: regular-season first place, play-in, playoffs, both rounds,
+    the playoff conference title, then seeds 1-8. Each is its own column, with
+    a note that these are four different outcomes.
+  - Title: the NBA title, with the regular-season places on their own line.
+
+  Tested on real simulations of the committed fixture: `ui.test.ts`, and
+  `ui.e2e.ts` in Chromium at 390 and 1440 px, with the NBA served ACTIVE for
+  that scenario only.
 - Kalshi: no NBA mapping.
 - Nothing is "production-ready", "deployed" or a "validated edge".
 

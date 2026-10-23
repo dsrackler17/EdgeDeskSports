@@ -16,6 +16,9 @@ import { nhlFixture } from './_fixture.ts';
 import { nhlModule } from '../src/sports/nhl/module.ts';
 import { runRange } from '../src/core/engine.ts';
 import { buildResults } from '../src/core/results.ts';
+import { nbaFixture } from './_nba_fixture.ts';
+import { nbaModule } from '../src/sports/nba/module.ts';
+import { nbaMathStatus } from '../src/sports/nba/validate.ts';
 
 const require = createRequire(import.meta.url);
 const UI = require(path.join(REPO, 'lib', 'edgedesk_simulator.js'));
@@ -138,5 +141,37 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
   const meta = UI.renderMeta({ key: 'nhl', label: 'NHL' }, { n_sims: 100000, input_snapshot_at: '2026-10-23T05:00:00Z', published_at: '2026-10-23T06:00:00Z', model_version: 'm', rules_version: 'r', seed: '1', validation_summary: { flags: { tiebreak_goals: 155 } } }, { stale: false, notes: [] }, Date.parse('2026-10-23T12:00:00Z'));
   T.chk('NHL run notes count goal-differential tiebreaks and coin tosses (not the NFL\'s points model)', /155 runs reached goal differential/.test(meta) && !/points-ranking/.test(meta));
   T.eq('the reader asks the database for the NHL\'s season label', REG.nhl.season, '2026-27');
+}
+/* the NBA view, from a real (short) NBA simulation of the committed 2026-27 snapshot through the publisher's row mapping */
+{
+  const snap = nbaFixture('live'), d = snap.data;
+  const m = nbaModule(d, { seed: 27n });
+  const agg = runRange(m, { start: 0, end: 300 });
+  const math = nbaMathStatus(d);
+  const rec: Record<string, { w: number; l: number }> = {};
+  d.teams.forEach((t) => { rec[t.code] = { w: 0, l: 0 }; });
+  d.games.filter((g) => g.done).forEach((g) => { const hw = (g.home_score as number) > (g.away_score as number); rec[hw ? g.home : g.away].w++; rec[hw ? g.away : g.home].l++; });
+  const results = buildResults({ module: m, agg, seed: 27n, runs: 300, workers: 1, input_hash: snap.input_hash, input_snapshot_at: snap.meta.built_at, model_version: d.model.model_version, config: d.config, rules_version: d.rules_version,
+    started_at: '2026-10-23T00:00:00Z', finished_at: '2026-10-23T00:00:01Z', runtime_ms: 1, peak_rss_mb: 1, entityExtras: (id) => ({ record: rec[id], math_status: math[id] }) });
+  const res = resultRows({ results }), ents = entityRows({ results });
+  const M = UI.buildModel({ sport: 'nba', comparison_id: null }, res, ents, []);
+  const div = UI.renderDivision(M), conf = UI.renderConference(M), title = UI.renderTitle(M, { kind: 'unavailable' });
+  T.eq('NBA division tab: six divisions of five', [(div.match(/<div class="sm-h">/g) || []).length, (div.match(/<tr><td><b>/g) || []).length], [6, 30]);
+  T.chk('NBA division tab: W-L and projected wins, the play-in apart from the playoffs; no points or ties', />W-L</.test(div) && /Proj\. wins/.test(div) && />Play-in</.test(div) && />Make playoffs</.test(div) && !/>Pts</.test(div) && !/W-L-T|W-L-OTL/.test(div));
+  T.eq('NBA conference tab: one card per conference', (conf.match(/class="sm-card"/g) || []).length, 2);
+  T.chk('NBA conference tab: first place (regular season), play-in, playoffs, seeds 1-8, both rounds and the playoff conference title', ['Eastern Conference', 'Western Conference', '1st (reg. season)', 'Play-in', 'Playoffs', 'Conf. semis', 'Conf. finals', 'Win East', 'Win West', 'Seed 1', 'Seed 8'].every((h) => conf.includes('>' + h + '<')) && !/\(bye\)|WC1|Seed 9/.test(conf));
+  T.chk('... and it says these are four different outcomes, the play-in not a playoff berth, home court by record', /Four different outcomes/.test(conf) && /which is not a playoff berth/.test(conf) && /not the better seed/.test(conf));
+  /* each column reads its own outcome: the top club's row is exactly its cells in the header's order */
+  const top = M.conferences.East.slice().sort((a: any, b: any) => b.outcomes.make_playoffs.probability - a.outcomes.make_playoffs.probability)[0];
+  const want = ['finish_1', 'play_in', 'make_playoffs', 'reach_conference_semifinals', 'reach_conference_finals', 'win_conference', 'seed_1', 'seed_2', 'seed_3', 'seed_4', 'seed_5', 'seed_6', 'seed_7', 'seed_8'].map((k) => UI.cell(top.outcomes[k])).join('');
+  T.chk('NBA conference tab: each column is its own outcome (first place, play-in, playoffs and the conference title never share one)', conf.includes(want));
+  T.eq('NBA title tab: one card per club', (title.match(/class="sm-club"/g) || []).length, 30);
+  T.chk('NBA title tab: the NBA title, the playoff conference title, and the regular-season places on their own line', /win NBA title/.test(title) && /Conference title \(playoffs\)/.test(title) && /Regular season: 1st in the (East|West)/.test(title) && !/Super Bowl|Stanley Cup|Presidents/.test(title));
+  const tag = UI.renderConference(UI.buildModel({ sport: 'nba' }, res.filter((r: any) => r.entity_id === top.id), [{ ...ents.find((e: any) => e.entity_id === top.id), math_status: { division: null, top6: 'clinched', top10: 'clinched' } }], []));
+  const out = UI.renderConference(UI.buildModel({ sport: 'nba' }, res.filter((r: any) => r.entity_id === top.id), [{ ...ents.find((e: any) => e.entity_id === top.id), math_status: { division: 'eliminated', top6: 'eliminated', top10: 'eliminated' } }], []));
+  T.chk('NBA clinch tags: a top-6 place reads "clinched playoffs", out of the top 10 reads "eliminated"', /clinched playoffs/.test(tag) && !/clinched play-in/.test(tag) && /eliminated/.test(out) && !/clinched/.test(out));
+  const meta = UI.renderMeta({ key: 'nba', label: 'NBA' }, { n_sims: 100000, input_snapshot_at: '2026-10-23T05:00:00Z', published_at: '2026-10-23T06:00:00Z', model_version: 'm', rules_version: 'r', seed: '1', validation_summary: { flags: { tiebreak_random_drawing: 3 } } }, { stale: false, notes: [] }, Date.parse('2026-10-23T12:00:00Z'));
+  T.chk('NBA run notes count random drawings (a league rule), not the NFL\'s points model', /3 runs reached the random drawing/.test(meta) && !/points-ranking/.test(meta));
+  T.eq('the reader asks the database for the NBA\'s season label', REG.nba.season, '2026-27');
 }
 process.exit(T.done());

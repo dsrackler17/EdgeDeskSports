@@ -24,10 +24,10 @@ class PlaceByPlace extends Standings {
     if (set.length <= 1) return set.slice();
     let S = set.slice();
     for (;;) {
-      const sp = (this as any).split(S, mode) as { best: number[]; rest: number[] } | null;
+      const sp = (this as any).split(S, mode) as { levels: number[][] } | null;
       if (!sp) { const w = S[0]; return [w].concat(this.rankTied(set.filter((x) => x !== w), mode)); }
-      if (sp.best.length === 1) { const w = sp.best[0]; return [w].concat(this.rankTied(set.filter((x) => x !== w), mode)); }
-      S = sp.best;
+      if (sp.levels[0].length === 1) { const w = sp.levels[0][0]; return [w].concat(this.rankTied(set.filter((x) => x !== w), mode)); }
+      S = sp.levels[0];
     }
   }
 }

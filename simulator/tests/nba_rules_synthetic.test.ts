@@ -1,5 +1,5 @@
 /* NBA rules on SYNTHETIC fixtures: every tiebreak step decides a tie by itself, the
-   elimination-and-restart rule, division titles, the 2006-07 seed block, the play-in
+   complete and partial breaks (Paragraph L.2.c), division titles, the 2006-07 seed block, the play-in
    state machine on every path, the exact 2-2-1-1-1 order, series termination at four
    wins, an in-progress series resumed from its observed games, the fixed bracket, and
    home court by record (not seed). Records are set directly; no fixture feeds production. */
@@ -79,8 +79,8 @@ const rank = (f: Fx, cs: string[]) => codes(f.S.rankTied(cs.map((c) => ix[c]), '
   h2h(f.S, 'BOS', 'CHI', 1, 3); h2h(f.S, 'NY', 'BOS', 3, 1); h2h(f.S, 'NY', 'CHI', 3, 1);
   T.eq('three clubs: the division-winner step eliminates the non-winner, who ranks third', rank(f, ['NY', 'BOS', 'CHI']), ['CHI', 'BOS', 'NY']);
   T.chk('  ... division-winner step (3+), then head-to-head (2)', f.diags['tb:t:3+:division_winner'] === 1 && f.diags['tb:t:2:head_to_head'] === 1, f.diags);
-  /* the eliminated clubs start again from step 1: BOS best among the three; NY and CHI level there; the two-club
-     procedure then puts CHI ahead on head-to-head although NY has the better conference record */
+  /* a partial break: BOS best among the three; NY and CHI level there start again from step 1, and the two-club
+     procedure puts CHI ahead on head-to-head although NY has the better conference record */
   f = fixture(NBA_2021, rec); h2h(f.S, 'BOS', 'NY', 1, 1); h2h(f.S, 'BOS', 'CHI', 2, 0); h2h(f.S, 'NY', 'CHI', 0, 1);
   setConf(f.S, 'NY', 33, 52); setConf(f.S, 'CHI', 30, 52); setConf(f.S, 'BOS', 30, 52);
   T.eq('three clubs: one best club; the other two restart with the two-club procedure', rank(f, ['NY', 'CHI', 'BOS']), ['BOS', 'CHI', 'NY']);
@@ -94,13 +94,20 @@ const rank = (f: Fx, cs: string[]) => codes(f.S.rankTied(cs.map((c) => ix[c]), '
   f = fixture(NBA_2021, { BOS: [41, 41], NY: [41, 41], PHI: [41, 41] }); h2h(f.S, 'BOS', 'NY', 1, 1); h2h(f.S, 'BOS', 'PHI', 1, 1); h2h(f.S, 'NY', 'PHI', 1, 1);
   setDiv(f.S, 'BOS', 9, 16); setDiv(f.S, 'NY', 8, 16); setDiv(f.S, 'PHI', 7, 16);
   T.eq('three clubs of one division: division record', rank(f, ['PHI', 'NY', 'BOS']), ['BOS', 'NY', 'PHI']);
-  T.chk('  ... at that step (3+), then the two-club procedure for NY-PHI', f.diags['tb:t:3+:division_record'] === 1 && f.diags['tb:t:2:division_record'] === 1, f.diags);
+  T.chk('  ... a complete break at that step (3+): no further criterion, no two-club procedure for NY-PHI', f.diags['tb:t:3+:division_record'] === 1 && !Object.keys(f.diags).some((k) => k.startsWith('tb:t:2:')), f.diags);
+  /* a complete break orders all three by that criterion, even where the two-club procedure would not: games among
+     the tied clubs BOS 4-2, CHI 3-3, NY 2-4, while NY beat CHI head-to-head 2-1 (Paragraph L.2.c(a): "no further
+     application of the tie-break criteria will be required") */
+  f = fixture(NBA_2021, { BOS: [41, 41], CHI: [41, 41], NY: [41, 41] }); h2h(f.S, 'BOS', 'CHI', 1, 2); h2h(f.S, 'BOS', 'NY', 3, 0); h2h(f.S, 'CHI', 'NY', 1, 2);
+  T.eq('three clubs, a complete break: ordered by games among the tied clubs although NY beat CHI head-to-head', rank(f, ['NY', 'CHI', 'BOS']), ['BOS', 'CHI', 'NY']);
+  T.chk('  ... and no two-club procedure follows', f.diags['tb:t:3+:games_among_tied'] === 1 && !Object.keys(f.diags).some((k) => k.startsWith('tb:t:2:')), f.diags);
   f = fixture(NBA_2021, { BOS: [41, 41], NY: [41, 41], CHI: [41, 41] }); setDiv(f.S, 'BOS', 1, 16); setDiv(f.S, 'NY', 15, 16); setConf(f.S, 'BOS', 31, 52); setConf(f.S, 'NY', 30, 52); setConf(f.S, 'CHI', 29, 52);
   T.eq('three clubs of different divisions: division record is skipped, conference record decides', rank(f, ['CHI', 'NY', 'BOS']), ['BOS', 'NY', 'CHI']);
-  /* the multi-club procedure has no other-conference step: point differential follows the own conference's playoff clubs */
-  f = fixture(NBA_2021, { BOS: [41, 41], NY: [41, 41], CHI: [41, 41] }); f.S.net[ix.BOS] = 1; f.S.net[ix.NY] = 3; f.S.net[ix.CHI] = 2;
+  /* the multi-club procedure has no other-conference step: point differential follows the own conference's playoff
+     clubs; a partial break there (NY best, BOS and CHI level) sends BOS-CHI to the two-club procedure */
+  f = fixture(NBA_2021, { BOS: [41, 41], NY: [41, 41], CHI: [41, 41] }); f.S.net[ix.BOS] = 2; f.S.net[ix.NY] = 3; f.S.net[ix.CHI] = 2;
   h2h(f.S, 'BOS', 'SA', 2, 0); h2h(f.S, 'NY', 'SA', 0, 2); h2h(f.S, 'CHI', 'SA', 0, 2);
-  T.eq('three clubs: point differential first (the multi-club procedure has no other-conference step), then BOS-CHI on the two-club procedure', rank(f, ['BOS', 'CHI', 'NY']), ['NY', 'BOS', 'CHI']);
+  T.eq('three clubs: point differential first (the multi-club procedure has no other-conference step), then BOS-CHI, level on it, on the two-club procedure', rank(f, ['BOS', 'CHI', 'NY']), ['NY', 'BOS', 'CHI']);
   T.chk('  ... point differential (3+), then the other conference\'s playoff clubs (2)', f.diags['tb:t:3+:point_differential'] === 1 && f.diags['tb:t:2:vs_playoff_other_conference'] === 1 && !f.diags['tb:t:3+:vs_playoff_other_conference'], f.diags);
 }
 
