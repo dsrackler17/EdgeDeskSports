@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-23T00:07:45.000Z",
+ "generated_at": "2026-10-23T01:07:50.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -53,8 +53,8 @@
     "model_version": "edgedesk_cfb_loop_v2.0.0",
     "label": "Loop v2.0.0",
     "role": "challenger",
-    "snapshots": 220,
-    "latest_snapshot_at": "2026-10-23T00:07:45.000Z",
+    "snapshots": 222,
+    "latest_snapshot_at": "2026-10-23T01:07:50.000Z",
     "upcoming_games": 105,
     "avg_confidence_upcoming": null
    },
@@ -62,17 +62,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 1646,
-    "latest_snapshot_at": "2026-10-23T00:07:45.000Z",
+    "snapshots": 1648,
+    "latest_snapshot_at": "2026-10-23T01:07:50.000Z",
     "upcoming_games": 105,
-    "avg_confidence_upcoming": 80.7
+    "avg_confidence_upcoming": 80.6
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1996,
-    "latest_snapshot_at": "2026-10-23T00:07:45.000Z",
+    "snapshots": 1998,
+    "latest_snapshot_at": "2026-10-23T01:07:50.000Z",
     "upcoming_games": 95,
     "avg_confidence_upcoming": 75.6
    },
@@ -80,8 +80,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1996,
-    "latest_snapshot_at": "2026-10-23T00:07:45.000Z",
+    "snapshots": 1998,
+    "latest_snapshot_at": "2026-10-23T01:07:50.000Z",
     "upcoming_games": 95,
     "avg_confidence_upcoming": 75.2
    }
@@ -89,13 +89,13 @@
   "data_quality": {
    "games": 105,
    "counts": {
-    "GREEN": 48,
-    "YELLOW": 57,
+    "GREEN": 47,
+    "YELLOW": 58,
     "RED": 0
    },
    "by_check": {
     "qb_status_freshness": {
-     "YELLOW": 1,
+     "YELLOW": 2,
      "RED": 0
     },
     "odds_freshness": {
@@ -104,6 +104,19 @@
     }
    },
    "not_green": [
+    {
+     "game_id": "401862808",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "qb_status_freshness",
+       "status": "YELLOW",
+       "detail": "QB evidence older than 72 h"
+      }
+     ],
+     "kickoff": "2026-10-24T00:30:00.000Z",
+     "matchup": "Army @ Tulsa"
+    },
     {
      "game_id": "401862810",
      "status": "YELLOW",
@@ -847,8 +860,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-23T00:07:45.000Z",
-    "quotes_total": 22784,
+    "last_quote_at": "2026-10-23T01:07:50.000Z",
+    "quotes_total": 22827,
     "last_result_at": "2026-10-22T04:07:27.000Z"
    }
   },
@@ -882,9 +895,9 @@
    }
   ],
   "ledger": {
-   "predictions": 6368,
-   "live_predictions": 5858,
-   "quotes": 22784,
+   "predictions": 6376,
+   "live_predictions": 5866,
+   "quotes": 22827,
    "lines": 3615,
    "results": 465,
    "evaluations": 5387,
@@ -1112,7 +1125,7 @@
     "current": -1.5,
     "open": -1.5,
     "books": 1,
-    "as_of": "2026-10-21T22:07:51.000Z",
+    "as_of": "2026-10-23T01:07:50.000Z",
     "sources": [
      "espn"
     ],
@@ -1121,16 +1134,16 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-22T01:07:52.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-23T01:07:50.000Z",
      "margin": -6.32,
      "fair": "Army -6.5",
      "p_home": 0.3329,
      "sigma": 14.632,
-     "conf": 89,
-     "dq": "GREEN",
+     "conf": 75,
+     "dq": "YELLOW",
      "decision": "LEAN",
      "status": "LEAN",
      "side": "AWAY",
@@ -1141,18 +1154,18 @@
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-22T01:07:52.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-23T01:07:50.000Z",
      "margin": -4.08,
      "fair": "Army -4.0",
      "p_home": 0.3993,
      "sigma": 16.118,
      "conf": 75,
-     "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "dq": "YELLOW",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "AWAY",
      "gap": -5.58,
      "line": 1.5,
@@ -1165,16 +1178,16 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-22T01:07:52.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-23T01:07:50.000Z",
      "margin": -3.71,
      "fair": "Army -3.5",
      "p_home": 0.4088,
      "sigma": 16.213,
      "conf": 72,
-     "dq": "GREEN",
+     "dq": "YELLOW",
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
@@ -1189,20 +1202,20 @@
     },
     "edgedesk_cfb_loop_v2.0.0": {
      "label": "Loop v2.0.0",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-22T01:07:52.000Z",
-     "margin": 2.97,
+     "official": true,
+     "prediction_ts": "2026-10-23T01:07:50.000Z",
+     "margin": 2.99,
      "fair": "Tulsa -3.0",
-     "p_home": 0.5722,
+     "p_home": 0.5726,
      "sigma": 16.075,
      "conf": null,
-     "dq": "GREEN",
+     "dq": "YELLOW",
      "decision": "PASS",
      "status": "PASS",
      "side": "HOME",
-     "gap": 1.47,
+     "gap": 1.49,
      "line": -1.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
@@ -1219,7 +1232,7 @@
     "current": 5.5,
     "open": 6.5,
     "books": 1,
-    "as_of": "2026-10-21T22:07:51.000Z",
+    "as_of": "2026-10-23T01:07:50.000Z",
     "sources": [
      "espn"
     ],
@@ -1228,15 +1241,15 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-22T01:07:52.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-23T01:07:50.000Z",
      "margin": -8.86,
      "fair": "Air Force -9.0",
      "p_home": 0.2725,
      "sigma": 14.638,
-     "conf": 89,
+     "conf": 87,
      "dq": "GREEN",
      "decision": "LEAN",
      "status": "LEAN",
@@ -1248,18 +1261,18 @@
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-22T01:07:52.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-23T01:07:50.000Z",
      "margin": -9.36,
      "fair": "Air Force -9.5",
      "p_home": 0.2787,
      "sigma": 16.063,
      "conf": 75,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "AWAY",
      "gap": -3.86,
      "line": -5.5,
@@ -1272,18 +1285,18 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-22T01:07:52.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-23T01:07:50.000Z",
      "margin": -9.12,
      "fair": "Air Force -9.0",
      "p_home": 0.2825,
      "sigma": 15.961,
      "conf": 75,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "AWAY",
      "gap": -3.62,
      "line": -5.5,
@@ -1296,13 +1309,13 @@
     },
     "edgedesk_cfb_loop_v2.0.0": {
      "label": "Loop v2.0.0",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-22T01:07:52.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-23T01:07:50.000Z",
      "margin": -6.2,
      "fair": "Air Force -6.0",
-     "p_home": 0.3524,
+     "p_home": 0.3525,
      "sigma": 16.162,
      "conf": null,
      "dq": "GREEN",
@@ -12791,6 +12804,40 @@
    }
   ],
   "audit_tail": [
+   {
+    "event_type": "THRESHOLD_CHANGED",
+    "subject": "edgedesk_cfb_loop_v2.0.0",
+    "before": {
+     "facts": {
+      "feature_version": "edgedesk_model_loop_cfb_current_v1",
+      "calibration_version": "model_loop:2.0.0:af284333f16a",
+      "ensemble_version": "model_loop:2.0.0:af284333f16a",
+      "params_hash": "50370e67dae870f32c6e57548fcc6ba523e9b41863119054747e6fbb069dd58d",
+      "engine_id": "edgedesk_model_loop_cfb",
+      "source": "football/cfb/model_loop/current.json"
+     },
+     "changed": [
+      "params_hash"
+     ]
+    },
+    "after": {
+     "facts": {
+      "feature_version": "edgedesk_model_loop_cfb_current_v1",
+      "calibration_version": "model_loop:2.0.0:af284333f16a",
+      "ensemble_version": "model_loop:2.0.0:af284333f16a",
+      "params_hash": "a1e221d4a13522ae4c10aa7945c07d555940b32af169ca8cc8b65f1c26e3e4a2",
+      "engine_id": "edgedesk_model_loop_cfb",
+      "source": "football/cfb/model_loop/current.json"
+     },
+     "changed": [
+      "params_hash"
+     ]
+    },
+    "reason": "detected by the hourly lab run (params_hash)",
+    "actor": "automation",
+    "created_at": "2026-10-23T01:07:50.000Z",
+    "event_id": "cfbg_0fdac93a5888f81cb9c16b47"
+   },
    {
     "event_type": "THRESHOLD_CHANGED",
     "subject": "edgedesk_cfb_loop_v2.0.0",
