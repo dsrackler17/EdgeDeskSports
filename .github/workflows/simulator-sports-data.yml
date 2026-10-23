@@ -17,9 +17,11 @@
 #   ufc_espn_samples.json.gz   raw ESPN documents (this and next month's
 #                          scoreboard, the next cards' fight centres)
 #   tennis_matches.json.gz ESPN: every ATP and WTA singles match 2022 on (round,
-#                          surface, seeds, ranks, sets, winner), tournaments
+#                          seeds where given, sets, winner), tournaments
 #   tennis_current.json.gz ESPN: tournaments in progress or within two weeks,
-#                          their summary documents whole (the draw), scoreboards
+#                          and today's tour scoreboards whole
+#   tennis_draws.json.gz   ESPN: the draws of those tournaments (bracket pages'
+#                          embedded data; core API events)
 #   tennis_rankings.json   ESPN: the ATP and WTA rankings
 #   fetch_report_*.json    every request's URL, HTTP status and size
 #
@@ -41,6 +43,7 @@ on:
     paths:
       - '.github/workflows/simulator-sports-data.yml'
       - 'simulator/src/cli/fetch_sports_data.ts'
+      - 'tools/tennis/espn.js'
   workflow_dispatch:
 
 permissions:

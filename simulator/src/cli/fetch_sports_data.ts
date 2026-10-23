@@ -49,7 +49,7 @@ const GOLF_LEAGUES = (opt('--golf-leagues') || 'pga,lpga,eur').split(',').filter
 const CURRENT_LEAGUES = ['pga', 'lpga', 'eur'];
 const espnTennis = require(path.join(REPO, 'tools', 'tennis', 'espn.js')) as {
   scoreboardRangeUrl: (tour: string, fromMs: number, toMs: number) => string; scoreboardPlainUrl: (tour: string) => string; summaryUrl: (tour: string, id: string) => string;
-  parseScoreboard: (j: unknown, tour: string) => Array<Record<string, any>>; rankingsUrls: (tour: string) => string[]; parseRankings: (j: unknown) => unknown };
+  parseScoreboard: (j: unknown, tour: string) => Array<Record<string, any>>; rankingsUrls: (tour: string) => Array<{ via: string; url: string }>; parseRankings: (j: unknown) => unknown };
 const TENNIS_FROM = opt('--tennis-from') || '2022-01';
 const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
@@ -276,6 +276,31 @@ function tennisMatchRow(m: Record<string, any>, t: Record<string, any>) {
     sets: (m.set_scores || []).map((x: any) => [x.home, x.away, x.home_tb, x.away_tb])
   };
 }
+/** a page's embedded data: window['__espnfitt__'] = {...}; (ESPN's web pages) */
+function pageData(html: string): any | null {
+  const m = html.indexOf("window['__espnfitt__']");
+  if (m < 0) return null;
+  const a = html.indexOf('{', m), b = html.indexOf(';</script>', a);
+  if (a < 0 || b < 0) return null;
+  try { return JSON.parse(html.slice(a, b)); } catch (_) { return null; }
+}
+/** the paths of every key matching re (depth-limited), to read a page's shape from the committed probe */
+function findKeys(node: any, re: RegExp, at = '', out: string[] = [], depth = 0): string[] {
+  if (!node || typeof node !== 'object' || depth > 9 || out.length > 200) return out;
+  for (const k of Object.keys(node)) {
+    const p = at + (Array.isArray(node) ? '[' + k + ']' : '.' + k);
+    if (re.test(k)) out.push(p);
+    if (!Array.isArray(node) || Number(k) < 2) findKeys(node[k], re, p, out, depth + 1);
+  }
+  return out;
+}
+/** the first object under a key named bracket (the draw), whole */
+function pickBracket(node: any, depth = 0): any | null {
+  if (!node || typeof node !== 'object' || depth > 9) return null;
+  for (const k of Object.keys(node)) if (/^bracket$/i.test(k) && node[k] && typeof node[k] === 'object') return node[k];
+  for (const k of Object.keys(node)) { const x = pickBracket(node[k], depth + 1); if (x) return x; }
+  return null;
+}
 async function fetchTennis() {
   const [y0, m0] = TENNIS_FROM.split('-').map(Number);
   const now = new Date(), rows = new Map<string, any>(), tournaments = new Map<string, any>(), windows: string[] = [], unread: string[] = [];
@@ -299,24 +324,43 @@ async function fetchTennis() {
   }
   const matches = [...rows.values()].sort((a, b) => String(a.at).localeCompare(String(b.at)) || String(a.id).localeCompare(String(b.id)));
   const histHash = writeGz('tennis_matches.json.gz', { schema: 'edgedesk_feed_tennis_matches_v1', fetched_at: new Date().toISOString(), source: 'ESPN public tennis scoreboard, half-month ranges (tools/tennis/espn.js parseScoreboard); singles only', windows, unread, tournaments: [...tournaments.values()], matches });
-  /* the tournaments in progress or starting within two weeks: ESPN's summary document whole (its draw / bracket shape is read in the repository) */
+  /* the tournaments in progress or starting within two weeks, and the tours' scoreboards for today, whole */
   const soon = [...tournaments.values()].filter((t) => t.end && t.start && Date.parse(t.end + 'T23:59:59Z') >= now.getTime() - 864e5 && Date.parse(t.start + 'T00:00:00Z') <= now.getTime() + 14 * 864e5);
-  const summaries: Record<string, unknown> = {};
-  for (const t of soon.slice(0, 12)) {
-    const tour = t.tour === 'WTA' ? 'wta' : 'atp';
-    summaries[t.id] = { tournament: t, summary: await fetchJson(espnTennis.summaryUrl(tour, t.id)) };
-  }
   const current: Record<string, unknown> = {};
   for (const tour of ['atp', 'wta']) current[tour] = await fetchJson(espnTennis.scoreboardPlainUrl(tour));
-  writeGz('tennis_current.json.gz', { schema: 'edgedesk_feed_tennis_current_v1', fetched_at: new Date().toISOString(), tournaments: soon, summaries, scoreboards: current });
+  writeGz('tennis_current.json.gz', { schema: 'edgedesk_feed_tennis_current_v1', fetched_at: new Date().toISOString(), tournaments: soon, scoreboards: current });
+  /* the draws. The scoreboard lists a draw's matches by time, with no position in the draw and TBD for every
+     match not yet scheduled, so the bracket is read from ESPN's bracket page (its embedded page data) and,
+     as a second source, the core API's event and competitions */
+  const draws: Array<Record<string, unknown>> = [];
+  for (const t of soon) {
+    const [tidNum, yr] = String(t.id).split('-');
+    const kinds: Array<[string, number]> = t.tour === 'MIXED' ? [['atp', 1], ['wta', 2]] : t.tour === 'WTA' ? [['wta', 2]] : [['atp', 1]];
+    for (const [tour, type] of kinds) {
+      const url = 'https://www.espn.com/tennis/bracket/_/year/' + yr + '/tournamentId/' + tidNum + '/type/' + type;
+      const r = await fetchText(url, { accept: 'text/html', ua: BROWSER_UA });
+      const page = r && r.status === 200 ? pageData(r.text) : null;
+      const found = page ? findKeys(page, /bracket|draw|matchup/i) : [];
+      draws.push({ tournament: t.id, name: t.name, tour, type, url, status: r ? r.status : 'error', bytes: r ? r.text.length : 0, page_data: !!page, keys: found.slice(0, 40),
+        bracket: page ? pickBracket(page) : null, ...(draws.length < 2 && page ? { page } : {}), ...(draws.length < 2 && r && !page ? { html_head: r.text.slice(0, 200000) } : {}) });
+      await sleep(150);
+    }
+  }
+  const core: Record<string, unknown> = {};
+  for (const t of soon.slice(0, 2)) {
+    const tour = t.tour === 'WTA' ? 'wta' : 'atp', base = 'https://sports.core.api.espn.com/v2/sports/tennis/leagues/' + tour + '/events/' + t.id;
+    core[t.id] = { event: await fetchJson(base + '?lang=en&region=us'), competitions: await fetchJson(base + '/competitions?lang=en&region=us&limit=5') };
+  }
+  writeGz('tennis_draws.json.gz', { schema: 'edgedesk_feed_tennis_draws_v1', fetched_at: new Date().toISOString(), source: 'ESPN bracket pages (embedded page data) and core API events', draws, core });
   /* the tours' rankings (seeding and a prior for players the history barely knows) */
   const rankings: Record<string, unknown> = {};
   for (const tour of ['atp', 'wta']) {
-    for (const u of espnTennis.rankingsUrls(tour)) { const j = await fetchJson(u); if (j) { rankings[tour] = { url: u, parsed: espnTennis.parseRankings(j) }; break; } }
+    for (const u of espnTennis.rankingsUrls(tour)) { const j = await fetchJson(u.url); if (j) { rankings[tour] = { url: u.url, via: u.via, parsed: espnTennis.parseRankings(j) }; break; } }
   }
   writeJson('tennis_rankings.json', { schema: 'edgedesk_feed_tennis_rankings_v1', fetched_at: new Date().toISOString(), rankings });
   const done = matches.filter((m) => m.winner).length;
-  report.summary.tennis = { matches: matches.length, decided: done, tournaments: tournaments.size, windows: windows.length, unread, current_tournaments: soon.map((t) => t.tour + ' ' + t.name), matches_sha256: histHash };
+  report.summary.tennis = { matches: matches.length, decided: done, tournaments: tournaments.size, windows: windows.length, unread, current_tournaments: soon.map((t) => t.tour + ' ' + t.name), matches_sha256: histHash,
+    draws: draws.map((d) => d.tour + ' ' + d.name + ': ' + d.status + (d.page_data ? ' page data' : '') + (d.bracket ? ' bracket' : '')), rankings: Object.keys(rankings) };
   console.log('tennis: ' + matches.length + ' singles matches (' + done + ' decided) in ' + tournaments.size + ' tournaments from ' + windows.length + ' windows; unread ' + (unread.join(',') || 'none') + '; current ' + soon.map((t) => t.tour + ' ' + t.name + ' (' + t.start + '..' + t.end + ')').join(' | '));
 }
 

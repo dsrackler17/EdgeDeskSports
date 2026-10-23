@@ -127,13 +127,19 @@ function sideOf(c) {
   };
 }
 
+/* The competition's own round ("Round 1", "Qualifying Final", "Semifinal")
+   first. A note is read only when it is a round label ("Men's Singles -
+   Quarterfinal"), never the result line the live feed puts there ("A (ITA) bt
+   B (AUT) 6-3 7-6 (7-4)"), which once came out as the round "3 7-6 (7-4)". */
 function roundOf(c) {
+  const own = c.round && (c.round.displayName || c.round.text || c.round.name);
+  if (own && typeof own === 'string' && own.trim()) return own.trim();
   const notes = Array.isArray(c.notes) ? c.notes : [];
   for (const n of notes) {
     const h = str(n && (n.headline || n.text));
-    if (h) return h.replace(/^.*?-\s*/, '').trim() || h.trim();
+    if (h && !/\sbt\s|\sd\.\s|\d-\d/.test(h)) return h.replace(/^.*?-\s*/, '').trim() || h.trim();
   }
-  const cands = [c.round && (c.round.displayName || c.round.text || c.round.name), c.type && c.type.text, c.headline];
+  const cands = [c.type && c.type.text, c.headline];
   for (const x of cands) if (x && typeof x === 'string' && x.trim()) return x.trim();
   return null;
 }
