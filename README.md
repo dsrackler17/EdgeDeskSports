@@ -1510,6 +1510,33 @@ All run in `.github/workflows/ref-flags-tests.yml`.
    `data/refs/manual_assignments.json` and run the workflow (or let Tuesday's run
    pick them up).
 
+## Simulator — season and title probabilities, beside Kalshi futures
+
+A correlated Monte Carlo season simulator: every remaining game drawn from the
+served game model, one persistent strength offset per club per simulated
+season (calibrated from frozen-forecast residuals, so a strong club's luck and
+its rating error are not double counted), the official tiebreakers and
+bracket, 100,000 seeded runs. It answers division, playoff, seed, conference
+and championship probabilities with their Monte Carlo error, and compares them
+with Kalshi futures only where a person has mapped a market to the exact
+outcome it settles on.
+
+- **Status: implemented, tested, not active.** The NFL is BLOCKED for
+  publication until three 2026 facts (tiebreaking procedures, playoff format,
+  Super Bowl LXI venue) are verified against the NFL's own pages; every other
+  sport is Blocked or Coming Soon with its blockers named. No Kalshi futures
+  market is mapped and the fee schedule is unverified, so the comparison
+  reports *unavailable*. Nothing is published.
+- **Research, EXPERIMENTAL (T3).** Registered before validation; the
+  2010–2025 backtest shows no interval that excludes zero. Not an edge claim.
+- **Where:** `simulator/` (engine, NFL rules and model adapter, Kalshi
+  comparison, publisher, research tools, tests), `supabase/simulator.sql`,
+  the Simulator seat in `app.html` (`lib/edgedesk_simulator.js`),
+  `.github/workflows/simulator*.yml`. Engineering record and evidence:
+  [`SIMULATOR_NOTES.md`](SIMULATOR_NOTES.md). Runbook (Windows PowerShell):
+  [`docs/simulator/README.md`](docs/simulator/README.md).
+- **Run it:** `npm run sim:test`, then `npm run sim:dry-run` (no credentials).
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means
