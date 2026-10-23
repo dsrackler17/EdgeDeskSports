@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_auto_promotion_v1",
  "rule": "cfb_auto_promotion_v1",
- "generated_at": "2026-10-23T03:07:48.914Z",
+ "generated_at": "2026-10-23T04:07:48.945Z",
  "enabled": true,
  "dry_run": false,
  "champion_before": "edgedesk_cfb_p4_v1.0.0",
@@ -11,40 +11,40 @@
  "actions": [],
  "considered": [
   {
+   "challenger": "edgedesk_cfb_loop_v2.0.0",
+   "decision": "INSUFFICIENT_SAMPLE",
+   "n": 2,
+   "min_n": 150,
+   "mae_diff": -1.845,
+   "mae_diff_ci": [
+    null,
+    null
+   ],
+   "outcome": "not eligible (INSUFFICIENT_SAMPLE)"
+  },
+  {
    "challenger": "edgedesk_cfb_v2.1.0",
    "decision": "NOT_ELIGIBLE",
-   "n": 177,
+   "n": 179,
    "min_n": 150,
-   "mae_diff": 0.122,
+   "mae_diff": 0.086,
    "mae_diff_ci": [
-    -0.458,
-    0.714
+    -0.501,
+    0.659
    ],
    "outcome": "not eligible (NOT_ELIGIBLE)"
   },
   {
    "challenger": "edgedesk_cfb_v2.0.0",
    "decision": "NOT_ELIGIBLE",
-   "n": 177,
+   "n": 179,
    "min_n": 150,
-   "mae_diff": 0.148,
+   "mae_diff": 0.114,
    "mae_diff_ci": [
-    -0.426,
-    0.72
+    -0.463,
+    0.677
    ],
    "outcome": "not eligible (NOT_ELIGIBLE)"
-  },
-  {
-   "challenger": "edgedesk_cfb_loop_v2.0.0",
-   "decision": "INSUFFICIENT_SAMPLE",
-   "n": 0,
-   "min_n": 150,
-   "mae_diff": null,
-   "mae_diff_ci": [
-    null,
-    null
-   ],
-   "outcome": "not eligible (INSUFFICIENT_SAMPLE)"
   }
  ],
  "note": "no change: no challenger is ELIGIBLE against edgedesk_cfb_p4_v1.0.0"
