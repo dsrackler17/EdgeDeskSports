@@ -36,6 +36,8 @@ import { fileURLToPath } from 'node:url';
 import { sha256Hex } from '../core/canonical.ts';
 /* one parser for the feed and for a golf run's live read (the same record either way) */
 import { ESPN, ESPN_WEB, golfEvent, competitionMeta } from '../sports/golf/espn.ts';
+/* the tennis rows: one parser for this feed and for a tennis run's live read */
+import { espnTennis, tennisMatchRow } from '../sports/tennis/espn.ts';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const require = createRequire(import.meta.url);
@@ -47,9 +49,6 @@ const OUT = opt('--out') || path.join(REPO, 'simulator', 'data', 'feeds');
 const GOLF_SEASONS = (opt('--golf-seasons') || '2023,2024,2025,2026').split(',').map(Number).filter(Boolean);
 const GOLF_LEAGUES = (opt('--golf-leagues') || 'pga,lpga,eur').split(',').filter(Boolean);
 const CURRENT_LEAGUES = ['pga', 'lpga', 'eur'];
-const espnTennis = require(path.join(REPO, 'tools', 'tennis', 'espn.js')) as {
-  scoreboardRangeUrl: (tour: string, fromMs: number, toMs: number) => string; scoreboardPlainUrl: (tour: string) => string; summaryUrl: (tour: string, id: string) => string;
-  parseScoreboard: (j: unknown, tour: string) => Array<Record<string, any>>; rankingsUrls: (tour: string) => Array<{ via: string; url: string }>; parseRankings: (j: unknown) => unknown };
 const TENNIS_FROM = opt('--tennis-from') || '2022-01';
 const WIKI_API = 'https://en.wikipedia.org/w/api.php';
 /* Wikipedia asks API clients to identify themselves */
@@ -268,17 +267,6 @@ export function parseUfcRankings(html: string) {
 }
 
 /* ------------------------------------------------------------------ tennis */
-/** one singles match, as the tennis simulation reads it (side a = the feed's first competitor) */
-function tennisMatchRow(m: Record<string, any>, t: Record<string, any>) {
-  return {
-    id: m.provider_match_id, tid: t.provider_tournament_id, tournament: t.name, level: t.level, surface: t.surface, start: t.start_date, end: t.end_date, draw_size: t.draw_size,
-    tour: m.tour, grouping: m.grouping, round: m.round, best_of: m.best_of, at: m.scheduled_at, order: m.match_order,
-    a_id: m.home_provider_id, a: m.home_name, a_seed: m.home_seed, a_rank: m.home_rank,
-    b_id: m.away_provider_id, b: m.away_name, b_seed: m.away_seed, b_rank: m.away_rank,
-    status: m.status, result: m.result_type, detail: m.status_detail, winner: m.winner_side === 'home' ? 'a' : m.winner_side === 'away' ? 'b' : null,
-    sets: (m.set_scores || []).map((x: any) => [x.home, x.away, x.home_tb, x.away_tb])
-  };
-}
 /** the Wikipedia titles worth reading for a tournament's singles draw: a draw article among the search hits
     ("2026 Swiss Indoors – Singles"; at a combined event "– Men's singles" / "– Women's singles"), this year's
     tournament articles among them with the draw suffix, and ESPN's own name with it. Never qualifying, doubles,
