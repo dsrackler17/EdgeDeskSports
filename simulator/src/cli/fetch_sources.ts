@@ -217,11 +217,11 @@ async function nbaApi() {
 
 /* season futures: a series whose title names a champion, conference, division, playoff berth or seed.
    Per-game, per-player and in-season prop series (thousands of markets) are listed by name and count only. */
-const FUTURES = /Super Bowl|Stanley Cup|Presidents|champion|conference|AFC|NFC|Eastern|Western|division|Atlantic|Metropolitan|Central|Pacific|playoff|play-in|seed|Finals|NBA Cup/i;
+const FUTURES = /Super Bowl|Stanley Cup|President.?s|champion|conference|AFC|NFC|Eastern|Western|division|Atlantic|Metropolitan|Central|Pacific|playoff|play-in|seed|Finals|NBA Cup/i;
 const NOT_FUTURES = /game|spread|total|points|yards|touchdown|TD|MVP|player|quarter|half|draft|coach|week|rookie|award|passing|rushing|receiving|sack|score|margin|first|anytime|goal|assist|save|rebound|three|triple|double/i;
 const KALSHI_MATCH: Record<string, { match: RegExp; not: RegExp }> = {
   nfl: { match: /\bNFL\b|Super Bowl|Pro Football|American Football Conference|National Football Conference|^KXNFL|^KXSB|^KXAFC$|^KXNFC$/i, not: /NCAA|College|AFCON|Fantasy|NBA|\bFCS\b/i },
-  nhl: { match: /\bNHL\b|Stanley Cup|Pro Hockey|National Hockey League|Presidents.? Trophy|^KXNHL|^KXSTANLEY/i, not: /NCAA|College|AHL|KHL|PWHL|Fantasy|Olympic|World Championship|4 Nations|Four Nations/i },
+  nhl: { match: /\bNHL\b|Stanley Cup|Pro Hockey|National Hockey League|President.?s Trophy|^KXNHL|^KXSTANLEY/i, not: /NCAA|College|AHL|KHL|PWHL|Fantasy|Olympic|World Championship|4 Nations|Four Nations/i },
   nba: { match: /\bNBA\b|Pro Basketball|National Basketball Association|NBA Cup|^KXNBA/i, not: /WNBA|NCAA|College|G League|Fantasy|Olympic|EuroLeague/i }
 };
 
