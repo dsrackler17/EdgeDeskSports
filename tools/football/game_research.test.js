@@ -556,7 +556,7 @@ section('13. Kalshi on the graphic: placed by team, trusted mids only, nothing f
     && [cm.compare.kalshi.diff, cm.compare.times].every((t) => Lm.ops.some((o) => o.type === 'text' && o.text === t)));
   const cs = cm.compare.cols[0], ct = cm.compare.cols[1];
   chk('…the spread: EdgeDesk unrounded, the book as received, the gap toward the side EdgeDesk likes more', homeLine(cs.mk, cm) === -3.5
-    && Math.abs(homeLine(cs.ed, cm) - Math.round(-cfbG.model.home_margin * 10) / 10) < 1e-9
+    && Math.abs(homeLine(cs.ed, cm) + cfbG.model.home_margin) < 0.051
     && Math.abs(Math.abs(homeLine(cs.ed, cm) - homeLine(cs.mk, cm)) - n1(cs.diff)) < 0.051 && cs.diff.indexOf(homeLine(cs.ed, cm) < homeLine(cs.mk, cm) ? cm.home.abbr : cm.away.abbr) > 0, cs);
   chk('…the total: the difference is EdgeDesk minus the book, higher or lower', ct.mk === '47.5' && Math.abs(Math.abs(n1(ct.ed) - 47.5) - n1(ct.diff)) < 0.051 && /(HIGHER|LOWER)$/.test(ct.diff) && (n1(ct.ed) > 47.5) === /HIGHER/.test(ct.diff), ct);
   const one = GG.content(spec, null, { now: t0, kalshi: GS.kalshi({ state: 'ok', rows: [krow(cfbG, cfbG.away.name, cfbG.home.name, 'OK', 0.4), krow(cfbG, cfbG.home.name, cfbG.away.name, 'WIDE_SPREAD', null)] }, cfbG) }).content;

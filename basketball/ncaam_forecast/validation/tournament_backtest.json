@@ -1,0 +1,2266 @@
+{
+ "schema": "edgedesk_ncaam_fc_tournament_backtest_v1",
+ "generated_at": "2026-10-23T13:19:59.873Z",
+ "runs_per_arm": 20000,
+ "log_loss_clip": 0.000025,
+ "model": {
+  "source": "config/selection_v1.json (frozen development selection)",
+  "selection_hash": "7807a94ff33649c647752ba1ecfe05e64339ccf3b66e7c388f04a83f5be68757"
+ },
+ "families": [
+  "reach_r32",
+  "reach_s16",
+  "reach_e8",
+  "reach_f4",
+  "reach_nc",
+  "win_title"
+ ],
+ "dependence": "one season = one unit of evidence; intervals bootstrap seasons, never games or teams",
+ "per_season": [
+  {
+   "season": 2011,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2011-03-15T22:00:00.000Z",
+   "input_hash": "6e62bd754f33993ad1b7786745d8730c01397eb761a9c165b7dff5b579182bb6",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 10.107398305000002,
+       "ll": 30.342271952902703,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 9.292451359999996,
+       "ll": 28.89321376670236,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 7.139235940000001,
+       "ll": 24.396213053560835,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 4.401754524999999,
+       "ll": 19.3707505992365,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 2.2433600299999994,
+       "ll": 10.92105814324962,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 1.08210659,
+       "ll": 5.69314904657839,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Duke Blue Devils",
+       0.1749
+      ],
+      [
+       "Kansas Jayhawks",
+       0.1673
+      ],
+      [
+       "Ohio State Buckeyes",
+       0.1633
+      ]
+     ],
+     "champion": {
+      "team": "UConn Huskies",
+      "p_title": 0.0096,
+      "rank": 17
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 10.12471988,
+       "ll": 30.40195640631631,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 9.312440604999999,
+       "ll": 29.071433650906858,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 7.18363002,
+       "ll": 24.72166212872381,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 4.458321865000001,
+       "ll": 20.033120672479026,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 2.27387776,
+       "ll": 11.235267330913382,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 1.0953640799999997,
+       "ll": 5.877063519481531,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Duke Blue Devils",
+       0.1865
+      ],
+      [
+       "Kansas Jayhawks",
+       0.1767
+      ],
+      [
+       "Ohio State Buckeyes",
+       0.1741
+      ]
+     ],
+     "champion": {
+      "team": "UConn Huskies",
+      "p_title": 0.008,
+      "rank": 17
+     }
+    }
+   }
+  },
+  {
+   "season": 2012,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2012-03-13T22:10:00.000Z",
+   "input_hash": "a5fd8b4dcd30b8d734cd59dc89f58b73941bd226c5fd987d99e9fa0e5d484e5f",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 14.358140434999997,
+       "ll": 43.61030926330885,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.796636615,
+       "ll": 24.945161757082545,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 3.9974681750000007,
+       "ll": 13.534866764856503,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.2586109199999997,
+       "ll": 8.290747602160646,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.2651918500000001,
+       "ll": 4.2944029114335125,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.7170275949999999,
+       "ll": 2.4859511789053745,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Kentucky Wildcats",
+       0.1935
+      ],
+      [
+       "Ohio State Buckeyes",
+       0.1777
+      ],
+      [
+       "Kansas Jayhawks",
+       0.115
+      ]
+     ],
+     "champion": {
+      "team": "Kentucky Wildcats",
+      "p_title": 0.1935,
+      "rank": 1
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 14.341812254999997,
+       "ll": 43.58054977780356,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.7605804199999975,
+       "ll": 24.80593153803,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 3.963824295,
+       "ll": 13.385465615917514,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.226371504999999,
+       "ll": 8.187785402920895,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.2467471099999996,
+       "ll": 4.203029819800255,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.7047205950000001,
+       "ll": 2.420668127045898,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Kentucky Wildcats",
+       0.2049
+      ],
+      [
+       "Ohio State Buckeyes",
+       0.191
+      ],
+      [
+       "Kansas Jayhawks",
+       0.1168
+      ]
+     ],
+     "champion": {
+      "team": "Kentucky Wildcats",
+      "p_title": 0.2049,
+      "rank": 1
+     }
+    }
+   }
+  },
+  {
+   "season": 2013,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2013-03-19T22:10:00.000Z",
+   "input_hash": "8b791ec1f7c1cd10c3a01746bb0ed01353f4f6e737ef22610b70bfff9ba7d229",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.7696793,
+       "ll": 36.27136474536947,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.717772035000003,
+       "ll": 26.546060858046587,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 4.859081094999999,
+       "ll": 16.11580736271167,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.56940482,
+       "ll": 12.615855062592837,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.7155139400000003,
+       "ll": 6.15069858309575,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.84731017,
+       "ll": 2.9539877872257145,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Florida Gators",
+       0.2074
+      ],
+      [
+       "Indiana Hoosiers",
+       0.1784
+      ],
+      [
+       "Louisville Cardinals",
+       0.131
+      ]
+     ],
+     "champion": {
+      "team": "Louisville Cardinals",
+      "p_title": 0.131,
+      "rank": 3
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.764663484999996,
+       "ll": 36.24714067761229,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.682363700000002,
+       "ll": 26.524334279224668,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 4.8445447999999995,
+       "ll": 16.051676247867146,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.6046461050000005,
+       "ll": 12.75611901712398,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.7154917199999997,
+       "ll": 6.124056028081815,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.84490984,
+       "ll": 2.914364936218082,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Florida Gators",
+       0.2152
+      ],
+      [
+       "Indiana Hoosiers",
+       0.1875
+      ],
+      [
+       "Louisville Cardinals",
+       0.1361
+      ]
+     ],
+     "champion": {
+      "team": "Louisville Cardinals",
+      "p_title": 0.1361,
+      "rank": 3
+     }
+    }
+   }
+  },
+  {
+   "season": 2014,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2014-03-18T22:10:00.000Z",
+   "input_hash": "e54a6c0cab3b752ff1878f2c2b47c90fdb89033c50d545270dbc0ce1c34b88c8",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 10.214106169999996,
+       "ll": 30.453121452692084,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 8.685844710000001,
+       "ll": 26.52045868979375,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.84614192,
+       "ll": 19.363823738742422,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.670186545,
+       "ll": 12.837570799135987,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 2.1545275549999996,
+       "ll": 9.71357421444137,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 1.0671336850000002,
+       "ll": 5.818021028098,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Louisville Cardinals",
+       0.2076
+      ],
+      [
+       "Arizona Wildcats",
+       0.1168
+      ],
+      [
+       "Florida Gators",
+       0.0877
+      ]
+     ],
+     "champion": {
+      "team": "UConn Huskies",
+      "p_title": 0.0084,
+      "rank": 22
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 10.211379755000003,
+       "ll": 30.426868415176582,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 8.722486640000003,
+       "ll": 26.620887294830105,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.8567914299999995,
+       "ll": 19.465776295726286,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.6916281200000003,
+       "ll": 12.924983897262734,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 2.177936025,
+       "ll": 9.900729090577855,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 1.0756660800000002,
+       "ll": 5.853616623008282,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Louisville Cardinals",
+       0.223
+      ],
+      [
+       "Arizona Wildcats",
+       0.1209
+      ],
+      [
+       "Florida Gators",
+       0.0916
+      ]
+     ],
+     "champion": {
+      "team": "UConn Huskies",
+      "p_title": 0.0081,
+      "rank": 20
+     }
+    }
+   }
+  },
+  {
+   "season": 2015,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2015-03-17T22:10:00.000Z",
+   "input_hash": "afd0d09bed2077b0225551f59d6c686e4b9748782243589acda23c5f20f5417c",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 9.329317285,
+       "ll": 29.173589807290146,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.4114235100000005,
+       "ll": 22.999247430344006,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 3.8698029499999995,
+       "ll": 12.725401055919997,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.340763010000001,
+       "ll": 8.387478916973155,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.5768313550000004,
+       "ll": 5.038042178084682,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.9545294050000002,
+       "ll": 3.4289052157284727,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Kentucky Wildcats",
+       0.2741
+      ],
+      [
+       "Wisconsin Badgers",
+       0.1291
+      ],
+      [
+       "Arizona Wildcats",
+       0.093
+      ]
+     ],
+     "champion": {
+      "team": "Duke Blue Devils",
+      "p_title": 0.0867,
+      "rank": 5
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 9.330685355,
+       "ll": 29.170078375457614,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.4282540599999995,
+       "ll": 22.99214528420374,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 3.8423698399999986,
+       "ll": 12.596610461264577,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.31955035,
+       "ll": 8.359907341148233,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.5873721349999999,
+       "ll": 5.004654445145168,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.962130235,
+       "ll": 3.4091529392258466,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Kentucky Wildcats",
+       0.2932
+      ],
+      [
+       "Wisconsin Badgers",
+       0.1314
+      ],
+      [
+       "Arizona Wildcats",
+       0.0931
+      ]
+     ],
+     "champion": {
+      "team": "Duke Blue Devils",
+      "p_title": 0.089,
+      "rank": 5
+     }
+    }
+   }
+  },
+  {
+   "season": 2016,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2016-03-15T22:10:00.000Z",
+   "input_hash": "7c06fe0457f4f05f4b146def34c5ab4d6a85748e0495f017344e7e66d8584646",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 11.98441152,
+       "ll": 35.73490557457784,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.52569252,
+       "ll": 23.25288221681616,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.006048900000002,
+       "ll": 16.813653746636987,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.1778047750000007,
+       "ll": 11.687168623205821,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.6451320699999998,
+       "ll": 5.7004664999428245,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.93683732,
+       "ll": 3.702996968194955,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Michigan State Spartans",
+       0.1293
+      ],
+      [
+       "Kansas Jayhawks",
+       0.1238
+      ],
+      [
+       "North Carolina Tar Heels",
+       0.0921
+      ]
+     ],
+     "champion": {
+      "team": "Villanova Wildcats",
+      "p_title": 0.0649,
+      "rank": 5
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 11.977327549999998,
+       "ll": 35.722116861772385,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.466413245,
+       "ll": 23.076008520351184,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 4.958259529999999,
+       "ll": 16.707942164223706,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.1704144249999984,
+       "ll": 11.766031187414596,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.6447275099999996,
+       "ll": 5.648290358559836,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.9389798799999999,
+       "ll": 3.6696470326183683,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Michigan State Spartans",
+       0.1371
+      ],
+      [
+       "Kansas Jayhawks",
+       0.1356
+      ],
+      [
+       "North Carolina Tar Heels",
+       0.0993
+      ]
+     ],
+     "champion": {
+      "team": "Villanova Wildcats",
+      "p_title": 0.0673,
+      "rank": 5
+     }
+    }
+   }
+  },
+  {
+   "season": 2017,
+   "split": "development",
+   "entrants": 66,
+   "as_of": "2017-03-15T22:10:00.000Z",
+   "input_hash": "42f17fa55f60cac9a212ce3e64501acfde4740487dfec0b612258add26b784b5",
+   "notes": [
+    "First Four games missing from the source: 2"
+   ],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 6.926183759999999,
+       "ll": 21.958680115602885,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.7303783300000015,
+       "ll": 23.20396053951641,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.341696420000001,
+       "ll": 17.611924585942283,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.8913328550000004,
+       "ll": 11.247606672523734,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.3021296549999997,
+       "ll": 4.520360386113217,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.8139040300000001,
+       "ll": 2.9586696045570595,
+       "n": 66,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Gonzaga Bulldogs",
+       0.1421
+      ],
+      [
+       "North Carolina Tar Heels",
+       0.1278
+      ],
+      [
+       "Villanova Wildcats",
+       0.0949
+      ]
+     ],
+     "champion": {
+      "team": "North Carolina Tar Heels",
+      "p_title": 0.1278,
+      "rank": 2
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 6.949598354999999,
+       "ll": 22.04842329950675,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 7.736493149999998,
+       "ll": 23.18245703987214,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.317492289999999,
+       "ll": 17.555472284073357,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.877036355000001,
+       "ll": 11.285152898668713,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.2725397999999997,
+       "ll": 4.408837208773145,
+       "n": 66,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.797209845,
+       "ll": 2.8654333394004485,
+       "n": 66,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Gonzaga Bulldogs",
+       0.1489
+      ],
+      [
+       "North Carolina Tar Heels",
+       0.1389
+      ],
+      [
+       "Villanova Wildcats",
+       0.0992
+      ]
+     ],
+     "champion": {
+      "team": "North Carolina Tar Heels",
+      "p_title": 0.1389,
+      "rank": 2
+     }
+    }
+   }
+  },
+  {
+   "season": 2018,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2018-03-13T22:10:00.000Z",
+   "input_hash": "ad38d8ba25d75f080462fed30f24838a44c1b47a97d8cf9fa38fdd18621594a1",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 11.518304394999998,
+       "ll": 36.76647038899066,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 10.187150905,
+       "ll": 30.349603785063632,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 6.163639095,
+       "ll": 20.61773399864879,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.3317321850000003,
+       "ll": 12.602596567282523,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.6715326850000003,
+       "ll": 6.077059315361042,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.7810221250000001,
+       "ll": 2.7534575135775325,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Villanova Wildcats",
+       0.1538
+      ],
+      [
+       "Virginia Cavaliers",
+       0.1533
+      ],
+      [
+       "Duke Blue Devils",
+       0.1234
+      ]
+     ],
+     "champion": {
+      "team": "Villanova Wildcats",
+      "p_title": 0.1538,
+      "rank": 1
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 11.565025499999996,
+       "ll": 36.95417262027147,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 10.264562490000001,
+       "ll": 30.58461917540961,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 6.173583845,
+       "ll": 20.720434633357158,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.3418905300000015,
+       "ll": 12.824858418179204,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.6734417899999996,
+       "ll": 6.061318481183254,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.771639035,
+       "ll": 2.6957182300890437,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Virginia Cavaliers",
+       0.1655
+      ],
+      [
+       "Villanova Wildcats",
+       0.1621
+      ],
+      [
+       "Duke Blue Devils",
+       0.1275
+      ]
+     ],
+     "champion": {
+      "team": "Villanova Wildcats",
+      "p_title": 0.1621,
+      "rank": 2
+     }
+    }
+   }
+  },
+  {
+   "season": 2019,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2019-03-19T22:10:00.000Z",
+   "input_hash": "c85651fbfea5e1e05c092f72815060852b6dd0e57ae125fec272dc2d27e62c59",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 10.505031055000002,
+       "ll": 30.14381351205126,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 4.2404773050000015,
+       "ll": 15.549882385154735,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 3.2659926200000013,
+       "ll": 11.13441788808682,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.085637520000001,
+       "ll": 9.736509679941458,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.58987506,
+       "ll": 5.656975060073671,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.7325008599999999,
+       "ll": 2.484809885447633,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Gonzaga Bulldogs",
+       0.1974
+      ],
+      [
+       "Virginia Cavaliers",
+       0.1955
+      ],
+      [
+       "Duke Blue Devils",
+       0.1603
+      ]
+     ],
+     "champion": {
+      "team": "Virginia Cavaliers",
+      "p_title": 0.1955,
+      "rank": 2
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 10.445452275,
+       "ll": 29.9907517439205,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 4.17877953,
+       "ll": 15.350723358720472,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 3.243210255000001,
+       "ll": 11.022951313084638,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.1061056099999997,
+       "ll": 9.750793916049355,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.5821086249999992,
+       "ll": 5.612062211113578,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.7243085050000001,
+       "ll": 2.4377384095695414,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Gonzaga Bulldogs",
+       0.2067
+      ],
+      [
+       "Virginia Cavaliers",
+       0.2039
+      ],
+      [
+       "Duke Blue Devils",
+       0.1668
+      ]
+     ],
+     "champion": {
+      "team": "Virginia Cavaliers",
+      "p_title": 0.2039,
+      "rank": 2
+     }
+    }
+   }
+  },
+  {
+   "season": 2021,
+   "split": "development",
+   "entrants": 67,
+   "as_of": "2021-03-18T20:40:00.000Z",
+   "input_hash": "9f5b98170433a8b7f7c105d29d2e8dffc47f5bd706bb734c363147fd09bab5b9",
+   "notes": [
+    "first-round games missing (walkover/no contest): 1"
+   ],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.21983682,
+       "ll": 35.56940495959092,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 10.041019449999995,
+       "ll": 31.68520814979708,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.3937106800000025,
+       "ll": 19.9631870008022,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.5362995099999996,
+       "ll": 10.519321067938467,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.1648832249999999,
+       "ll": 4.1157239568162725,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.8605019350000003,
+       "ll": 3.0538340312893375,
+       "n": 67,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Gonzaga Bulldogs",
+       0.2338
+      ],
+      [
+       "Baylor Bears",
+       0.1195
+      ],
+      [
+       "Houston Cougars",
+       0.0944
+      ]
+     ],
+     "champion": {
+      "team": "Baylor Bears",
+      "p_title": 0.1195,
+      "rank": 2
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.240946860000008,
+       "ll": 35.58890209513449,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 10.01661431,
+       "ll": 31.699484203591556,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.373530234999999,
+       "ll": 19.993634276929317,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.4986244049999997,
+       "ll": 10.60353827501591,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.1283156449999996,
+       "ll": 3.9862563706505125,
+       "n": 67,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.8583972250000002,
+       "ll": 3.003168386253177,
+       "n": 67,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Gonzaga Bulldogs",
+       0.2505
+      ],
+      [
+       "Baylor Bears",
+       0.1257
+      ],
+      [
+       "Houston Cougars",
+       0.0987
+      ]
+     ],
+     "champion": {
+      "team": "Baylor Bears",
+      "p_title": 0.1257,
+      "rank": 2
+     }
+    }
+   }
+  },
+  {
+   "season": 2022,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2022-03-15T22:10:00.000Z",
+   "input_hash": "2f41e23f3ee6c340f62ecdffe0e9d666640fa25e4e208c197874ff8a016952a6",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.787247465000004,
+       "ll": 37.106966317537044,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 9.703012739999998,
+       "ll": 30.648109087399533,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 7.2372397,
+       "ll": 26.538935171955305,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.6595659100000004,
+       "ll": 12.883197827562176,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.99398994,
+       "ll": 9.196994953357889,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.971785475,
+       "ll": 3.8304872793811584,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Gonzaga Bulldogs",
+       0.2283
+      ],
+      [
+       "Arizona Wildcats",
+       0.0832
+      ],
+      [
+       "Houston Cougars",
+       0.0745
+      ]
+     ],
+     "champion": {
+      "team": "Kansas Jayhawks",
+      "p_title": 0.0584,
+      "rank": 5
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.759419859999998,
+       "ll": 37.03998628101169,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 9.685072475000002,
+       "ll": 30.63916956137877,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 7.279084049999999,
+       "ll": 26.874006889115915,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.6692919500000007,
+       "ll": 12.903840715675658,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 2.0021259650000007,
+       "ll": 9.352486006233,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.97538635,
+       "ll": 3.813487774750795,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Gonzaga Bulldogs",
+       0.2379
+      ],
+      [
+       "Arizona Wildcats",
+       0.089
+      ],
+      [
+       "Baylor Bears",
+       0.0743
+      ]
+     ],
+     "champion": {
+      "team": "Kansas Jayhawks",
+      "p_title": 0.0595,
+      "rank": 5
+     }
+    }
+   }
+  },
+  {
+   "season": 2023,
+   "split": "development",
+   "entrants": 68,
+   "as_of": "2023-03-14T22:10:00.000Z",
+   "input_hash": "162a75180f2fc752037f8c37fd9033a4296a519fa918eb5185200e61808a66ad",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.316770094999997,
+       "ll": 40.39335619553913,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 8.595206979999999,
+       "ll": 27.23978419109135,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 6.889234115000002,
+       "ll": 21.830777979593176,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 4.19068325,
+       "ll": 16.152408163664735,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 2.0254680899999995,
+       "ll": 8.187974900653046,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.989991245,
+       "ll": 4.114678415973297,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Houston Cougars",
+       0.1779
+      ],
+      [
+       "Alabama Crimson Tide",
+       0.1282
+      ],
+      [
+       "Tennessee Volunteers",
+       0.0946
+      ]
+     ],
+     "champion": {
+      "team": "UConn Huskies",
+      "p_title": 0.0443,
+      "rank": 8
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.337762425000003,
+       "ll": 40.557333368020934,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 8.589305125,
+       "ll": 27.1949558640455,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 6.923181960000001,
+       "ll": 21.863223897402,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 4.239514469999999,
+       "ll": 16.305733916193656,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 2.0487295449999996,
+       "ll": 8.264238249124409,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 1.0002572849999998,
+       "ll": 4.15389668339725,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Houston Cougars",
+       0.1875
+      ],
+      [
+       "Alabama Crimson Tide",
+       0.1378
+      ],
+      [
+       "Tennessee Volunteers",
+       0.0969
+      ]
+     ],
+     "champion": {
+      "team": "UConn Huskies",
+      "p_title": 0.0428,
+      "rank": 8
+     }
+    }
+   }
+  },
+  {
+   "season": 2024,
+   "split": "holdout",
+   "entrants": 68,
+   "as_of": "2024-03-19T22:10:00.000Z",
+   "input_hash": "f9f80edabe1eb82f85722ad4e6432390f4b283ffbe5c1fb335e3a16499c11c0a",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.648390044999996,
+       "ll": 36.128880149079755,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 5.9434771500000005,
+       "ll": 19.63463364152989,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.944529375000004,
+       "ll": 19.389217354207776,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.2194222099999994,
+       "ll": 12.355111922064118,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.5074630549999997,
+       "ll": 5.013332788623685,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.848371775,
+       "ll": 3.0180703370959523,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Houston Cougars",
+       0.2115
+      ],
+      [
+       "UConn Huskies",
+       0.1229
+      ],
+      [
+       "Arizona Wildcats",
+       0.1007
+      ]
+     ],
+     "champion": {
+      "team": "UConn Huskies",
+      "p_title": 0.1229,
+      "rank": 2
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 12.636539959999999,
+       "ll": 36.04879230351502,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 5.876607930000001,
+       "ll": 19.449847385900263,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 5.955918925000001,
+       "ll": 19.40717052842484,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 3.223600095,
+       "ll": 12.540558943400315,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.504424395,
+       "ll": 4.949034860351677,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.85474827,
+       "ll": 3.007558741849113,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Houston Cougars",
+       0.2316
+      ],
+      [
+       "UConn Huskies",
+       0.1247
+      ],
+      [
+       "Arizona Wildcats",
+       0.1047
+      ]
+     ],
+     "champion": {
+      "team": "UConn Huskies",
+      "p_title": 0.1247,
+      "rank": 2
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "split": "holdout",
+   "entrants": 68,
+   "as_of": "2025-03-18T22:10:00.000Z",
+   "input_hash": "dc69fcd6bb680cb1d76589c3c83801f7bd4dc249a01d107e413f8f8fd6b8872f",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 7.648195970000002,
+       "ll": 23.736031058984786,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 6.082334455000001,
+       "ll": 20.18229229081107,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 2.8415434700000013,
+       "ll": 10.367411001168595,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 1.6117180799999997,
+       "ll": 5.9671699746291695,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.4746863250000002,
+       "ll": 4.804065018168245,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.9261936650000001,
+       "ll": 3.341004987836453,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Duke Blue Devils",
+       0.2013
+      ],
+      [
+       "Auburn Tigers",
+       0.1727
+      ],
+      [
+       "Houston Cougars",
+       0.153
+      ]
+     ],
+     "champion": {
+      "team": "Florida Gators",
+      "p_title": 0.093,
+      "rank": 4
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 7.622433165000002,
+       "ll": 23.65336731389541,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 6.052073925,
+       "ll": 20.042756801555516,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 2.772598630000002,
+       "ll": 10.142022373440549,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 1.5582024700000001,
+       "ll": 5.801665312889916,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.46782491,
+       "ll": 4.733710948239704,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.9285726949999998,
+       "ll": 3.30549698059902,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Duke Blue Devils",
+       0.2104
+      ],
+      [
+       "Auburn Tigers",
+       0.1817
+      ],
+      [
+       "Houston Cougars",
+       0.1605
+      ]
+     ],
+     "champion": {
+      "team": "Florida Gators",
+      "p_title": 0.0965,
+      "rank": 4
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "split": "holdout",
+   "entrants": 68,
+   "as_of": "2026-03-17T22:10:00.000Z",
+   "input_hash": "b643fbe4f61ee6032657131f2bb99df7a64862939c1ef63b60c3d1175abb8a67",
+   "notes": [],
+   "V": 4.853,
+   "arms": {
+    "V": {
+     "families": {
+      "reach_r32": {
+       "brier": 7.473684569999999,
+       "ll": 22.520555366724455,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 6.0783148350000005,
+       "ll": 19.979072734998685,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 4.195388460000001,
+       "ll": 13.795045607435345,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.6497781700000003,
+       "ll": 8.484690350520253,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.6380646499999993,
+       "ll": 5.868850860163724,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.75715664,
+       "ll": 2.58052828731059,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Duke Blue Devils",
+       0.2263
+      ],
+      [
+       "Michigan Wolverines",
+       0.1805
+      ],
+      [
+       "Arizona Wildcats",
+       0.117
+      ]
+     ],
+     "champion": {
+      "team": "Michigan Wolverines",
+      "p_title": 0.1805,
+      "rank": 2
+     }
+    },
+    "V0": {
+     "families": {
+      "reach_r32": {
+       "brier": 7.500316854999996,
+       "ll": 22.588957796401203,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_s16": {
+       "brier": 6.059697484999999,
+       "ll": 19.962743079452235,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_e8": {
+       "brier": 4.186581290000001,
+       "ll": 13.749183791235556,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_f4": {
+       "brier": 2.640110494999999,
+       "ll": 8.407969732527553,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "reach_nc": {
+       "brier": 1.643116855,
+       "ll": 5.893305699965865,
+       "n": 68,
+       "sum_rule_ok": true
+      },
+      "win_title": {
+       "brier": 0.747650045,
+       "ll": 2.526290972037189,
+       "n": 68,
+       "sum_rule_ok": true
+      }
+     },
+     "top3": [
+      [
+       "Duke Blue Devils",
+       0.2372
+      ],
+      [
+       "Michigan Wolverines",
+       0.1895
+      ],
+      [
+       "Arizona Wildcats",
+       0.1182
+      ]
+     ],
+     "champion": {
+      "team": "Michigan Wolverines",
+      "p_title": 0.1895,
+      "rank": 2
+     }
+    }
+   }
+  }
+ ],
+ "summary": {
+  "development": {
+   "seasons": [
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2023
+   ],
+   "families": {
+    "reach_r32": {
+     "brier_V": 0.1661,
+     "brier_V0": 0.16611,
+     "log_loss_V": 0.50126,
+     "log_loss_V0": 0.50151,
+     "diff_brier_V_minus_V0": -0.000015,
+     "ci95_season_bootstrap": [
+      -0.000224,
+      0.000221
+     ],
+     "seasons": 12
+    },
+    "reach_s16": {
+     "brier_V": 0.12168,
+     "brier_V0": 0.12158,
+     "log_loss_V": 0.38356,
+     "log_loss_V0": 0.38345,
+     "diff_brier_V_minus_V0": 0.000103,
+     "ci95_season_bootstrap": [
+      -0.000229,
+      0.00043
+     ],
+     "seasons": 12
+    },
+    "reach_e8": {
+     "brier_V": 0.07996,
+     "brier_V0": 0.0799,
+     "log_loss_V": 0.2714,
+     "log_loss_V0": 0.27178,
+     "diff_brier_V_minus_V0": 0.000061,
+     "ci95_season_bootstrap": [
+      -0.000195,
+      0.000303
+     ],
+     "seasons": 12
+    },
+    "reach_f4": {
+     "brier_V": 0.04811,
+     "brier_V0": 0.04822,
+     "log_loss_V": 0.17999,
+     "log_loss_V0": 0.18168,
+     "diff_brier_V_minus_V0": -0.00011,
+     "ci95_season_bootstrap": [
+      -0.000361,
+      0.000143
+     ],
+     "seasons": 12
+    },
+    "reach_nc": {
+     "brier_V": 0.02503,
+     "brier_V0": 0.02503,
+     "log_loss_V": 0.09788,
+     "log_loss_V0": 0.09816,
+     "diff_brier_V_minus_V0": -0.000006,
+     "ci95_season_bootstrap": [
+      -0.000166,
+      0.000171
+     ],
+     "seasons": 12
+    },
+    "win_title": {
+     "brier_V": 0.01323,
+     "brier_V0": 0.01322,
+     "log_loss_V": 0.05323,
+     "log_loss_V0": 0.05303,
+     "diff_brier_V_minus_V0": 0.000007,
+     "ci95_season_bootstrap": [
+      -0.000068,
+      0.000086
+     ],
+     "seasons": 12
+    }
+   }
+  },
+  "holdout": {
+   "seasons": [
+    2024,
+    2025,
+    2026
+   ],
+   "families": {
+    "reach_r32": {
+     "brier_V": 0.13613,
+     "brier_V0": 0.13607,
+     "log_loss_V": 0.40385,
+     "log_loss_V0": 0.40339,
+     "diff_brier_V_minus_V0": 0.000054,
+     "ci95_season_bootstrap": [
+      -0.000392,
+      0.000379
+     ],
+     "seasons": 3,
+     "note": "fewer than 5 seasons: the season bootstrap interval is fragile"
+    },
+    "reach_s16": {
+     "brier_V": 0.08875,
+     "brier_V0": 0.08818,
+     "log_loss_V": 0.29312,
+     "log_loss_V0": 0.29145,
+     "diff_brier_V_minus_V0": 0.000567,
+     "ci95_season_bootstrap": [
+      0.000274,
+      0.000983
+     ],
+     "seasons": 3,
+     "note": "fewer than 5 seasons: the season bootstrap interval is fragile"
+    },
+    "reach_e8": {
+     "brier_V": 0.06363,
+     "brier_V0": 0.06331,
+     "log_loss_V": 0.21349,
+     "log_loss_V0": 0.21225,
+     "diff_brier_V_minus_V0": 0.000325,
+     "ci95_season_bootstrap": [
+      -0.000167,
+      0.001014
+     ],
+     "seasons": 3,
+     "note": "fewer than 5 seasons: the season bootstrap interval is fragile"
+    },
+    "reach_f4": {
+     "brier_V": 0.03667,
+     "brier_V0": 0.03638,
+     "log_loss_V": 0.13141,
+     "log_loss_V0": 0.13113,
+     "diff_brier_V_minus_V0": 0.000289,
+     "ci95_season_bootstrap": [
+      -0.000061,
+      0.000787
+     ],
+     "seasons": 3,
+     "note": "fewer than 5 seasons: the season bootstrap interval is fragile"
+    },
+    "reach_nc": {
+     "brier_V": 0.02265,
+     "brier_V0": 0.02262,
+     "log_loss_V": 0.07689,
+     "log_loss_V0": 0.07635,
+     "diff_brier_V_minus_V0": 0.000024,
+     "ci95_season_bootstrap": [
+      -0.000074,
+      0.000101
+     ],
+     "seasons": 3,
+     "note": "fewer than 5 seasons: the season bootstrap interval is fragile"
+    },
+    "win_title": {
+     "brier_V": 0.01241,
+     "brier_V0": 0.01241,
+     "log_loss_V": 0.04382,
+     "log_loss_V0": 0.04333,
+     "diff_brier_V_minus_V0": 0.000004,
+     "ci95_season_bootstrap": [
+      -0.000094,
+      0.00014
+     ],
+     "seasons": 3,
+     "note": "fewer than 5 seasons: the season bootstrap interval is fragile"
+    }
+   }
+  }
+ },
+ "reliability": {
+  "development": [
+   {
+    "band": "0-0.02",
+    "n": 2100,
+    "mean_forecast": 0.0043,
+    "observed": 0.0076
+   },
+   {
+    "band": "0.02-0.05",
+    "n": 565,
+    "mean_forecast": 0.0331,
+    "observed": 0.0389
+   },
+   {
+    "band": "0.05-0.1",
+    "n": 488,
+    "mean_forecast": 0.073,
+    "observed": 0.0656
+   },
+   {
+    "band": "0.1-0.2",
+    "n": 520,
+    "mean_forecast": 0.1436,
+    "observed": 0.1327
+   },
+   {
+    "band": "0.2-0.35",
+    "n": 358,
+    "mean_forecast": 0.2642,
+    "observed": 0.257
+   },
+   {
+    "band": "0.35-0.5",
+    "n": 287,
+    "mean_forecast": 0.4223,
+    "observed": 0.4495
+   },
+   {
+    "band": "0.5-0.65",
+    "n": 247,
+    "mean_forecast": 0.5766,
+    "observed": 0.5628
+   },
+   {
+    "band": "0.65-0.8",
+    "n": 127,
+    "mean_forecast": 0.7161,
+    "observed": 0.6772
+   },
+   {
+    "band": "0.8-0.95",
+    "n": 124,
+    "mean_forecast": 0.8731,
+    "observed": 0.9113
+   },
+   {
+    "band": "0.95-1",
+    "n": 62,
+    "mean_forecast": 0.9752,
+    "observed": 0.9355
+   }
+  ],
+  "holdout": [
+   {
+    "band": "0-0.02",
+    "n": 568,
+    "mean_forecast": 0.0038,
+    "observed": 0.0018
+   },
+   {
+    "band": "0.02-0.05",
+    "n": 130,
+    "mean_forecast": 0.0324,
+    "observed": 0.0154
+   },
+   {
+    "band": "0.05-0.1",
+    "n": 117,
+    "mean_forecast": 0.0709,
+    "observed": 0.0342
+   },
+   {
+    "band": "0.1-0.2",
+    "n": 121,
+    "mean_forecast": 0.1448,
+    "observed": 0.1405
+   },
+   {
+    "band": "0.2-0.35",
+    "n": 76,
+    "mean_forecast": 0.2664,
+    "observed": 0.25
+   },
+   {
+    "band": "0.35-0.5",
+    "n": 64,
+    "mean_forecast": 0.4264,
+    "observed": 0.4844
+   },
+   {
+    "band": "0.5-0.65",
+    "n": 55,
+    "mean_forecast": 0.5709,
+    "observed": 0.5818
+   },
+   {
+    "band": "0.65-0.8",
+    "n": 36,
+    "mean_forecast": 0.7151,
+    "observed": 0.8056
+   },
+   {
+    "band": "0.8-0.95",
+    "n": 34,
+    "mean_forecast": 0.8708,
+    "observed": 0.9118
+   },
+   {
+    "band": "0.95-1",
+    "n": 23,
+    "mean_forecast": 0.9796,
+    "observed": 1
+   }
+  ]
+ },
+ "runtime_s": 92
+}

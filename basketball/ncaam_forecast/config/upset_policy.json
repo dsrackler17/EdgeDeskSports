@@ -1,0 +1,90 @@
+{
+ "schema": "edgedesk_ncaam_fc_upset_policy_v1",
+ "version": 1,
+ "frozen_at": "2026-10-23T12:51:14.267Z",
+ "chosen_on": "development 2012-2019 D1-v-D1 rows (43886)",
+ "rule": "theta = the development 80th percentile of the underdog probability among games with a clear favourite (underdog < 0.45), rounded to 0.01: about one clear-favourite game in five is flagged; sd threshold = the development 90th percentile of the regulation-margin sd",
+ "underdog_basis_order": [
+  "market",
+  "seed",
+  "model"
+ ],
+ "signals": {
+  "upset_probability": {
+   "theta": 0.37,
+   "toss_up": 0.45
+  },
+  "market_disagreement": {
+   "delta": 0.06,
+   "max_quote_age_min": 60,
+   "status": "UNAVAILABLE: no NCAAM quote is captured (the odds gateway does not carry it)"
+  },
+  "high_uncertainty": {
+   "sd_threshold": 11.53,
+   "min_games": 5
+  }
+ },
+ "factor_tests": {
+  "three_point_volume": {
+   "n": 37039,
+   "coef_per_sd": 0.024,
+   "se": 0.0124,
+   "z": 1.93,
+   "logit_slope": 1.035,
+   "verdict": "NOT_SUPPORTED",
+   "bound": 2.638
+  },
+  "turnover_pressure": {
+   "n": 37039,
+   "coef_per_sd": 0.0119,
+   "se": 0.0124,
+   "z": 0.96,
+   "logit_slope": 1.037,
+   "verdict": "NOT_SUPPORTED",
+   "bound": 2.638
+  },
+  "offensive_rebounding": {
+   "n": 37039,
+   "coef_per_sd": -0.0135,
+   "se": 0.0123,
+   "z": -1.1,
+   "logit_slope": 1.036,
+   "verdict": "NOT_SUPPORTED",
+   "bound": 2.638
+  },
+  "free_throw_rate": {
+   "n": 37039,
+   "coef_per_sd": 0.0313,
+   "se": 0.0124,
+   "z": 2.53,
+   "logit_slope": 1.037,
+   "verdict": "NOT_SUPPORTED",
+   "bound": 2.638
+  },
+  "pace": {
+   "n": 37039,
+   "coef_per_sd": 0.0248,
+   "se": 0.0124,
+   "z": 2,
+   "logit_slope": 1.037,
+   "verdict": "NOT_SUPPORTED",
+   "bound": 2.638
+  },
+  "volatile_shooting": {
+   "n": 37039,
+   "coef_per_sd": -0.0044,
+   "se": 0.0124,
+   "z": -0.35,
+   "logit_slope": 1.036,
+   "verdict": "NOT_SUPPORTED",
+   "bound": 2.638
+  }
+ },
+ "selection_counts": {
+  "theta": 0.37,
+  "sd_threshold": 11.53,
+  "development_rows": 43886,
+  "clear_favourite_rows": 38789
+ },
+ "hash": "9bfb69623f4e0fa4e43b9c07b382b571d578923155f683174a9d613c0d6744c7"
+}

@@ -225,6 +225,7 @@ const rehash = (s: NbaSnapshot): NbaSnapshot => ({ ...s, input_hash: hashCanonic
   T.throws('CLI: --allow-incomplete-schedule for the NFL is refused', () => parseArgs(['--sport', 'nfl', '--allow-incomplete-schedule']), /NBA only/);
   T.eq('CLI: the NBA season defaults to its end year (2026-27 = 2027)', parseArgs(['--sport', 'nba']).season, 2027);
   T.chk('CLI: an NBA snapshot replay may carry --allow-incomplete-schedule (the sport comes from the file)', (() => { try { parseArgs(['--snapshot', 'x.json', '--allow-incomplete-schedule', '--dry-run']); return true; } catch (_) { return false; } })());
+  T.chk('CLI: --as-of on a replayed NBA snapshot is refused (the snapshot carries its own as-of time)', await execute(parseArgs(['--sport', 'nba', '--snapshot', path.join(tmp, 's.json'), '--as-of', '2026-04-20', '--runs', '1000', '--dry-run', '--out', path.join(tmp, 'out2')]), quiet).then(() => false, (e: Error & { exitCode?: number }) => /carries its own as-of/.test(e.message) && e.exitCode === 2 && !fs.existsSync(path.join(tmp, 'out2'))));
   fs.rmSync(tmp, { recursive: true, force: true });
 }
 

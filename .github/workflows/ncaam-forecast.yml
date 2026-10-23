@@ -1,0 +1,96 @@
+# EdgeDesk college basketball (NCAA Division I men's) — the DAILY pregame refresh.
+#
+#   schedule 13:37 UTC daily   (09:37 New York in daylight time, 08:37 in
+#                              standard time: after the overnight finals are in
+#                              the hoopR/ESPN schedule and box-score files)
+#     1 ingest the season in progress (basketball/ncaam_forecast/ingest.js:
+#       quarantine, duplicates, D-I membership, a new manifest sha256 per file)
+#     2 the forecast suites must pass on the new data
+#     3 refresh.js: the CHAMPION's ratings rebuilt as of now (no parameter
+#       changes, no promotion: that is the weekly job), forecasts for games
+#       starting in the next 48 hours, Upset Watch, gates (hashes, freshness,
+#       box coverage, finite outputs)
+#     4 publication ONLY when the repository variable NCAAM_FC_PUBLISH is "on"
+#       (and SB_URL / SB_SERVICE_ROLE exist): one transaction swaps the
+#       published pointer; a failed gate or upload leaves the previous
+#       forecasts published and records the failed run
+#     5 the new season file and manifest are committed (tools/ci/push_generated.sh)
+#
+# NOT A REAL-TIME SERVICE. This is a once-a-day pregame refresh; in-game
+# (live) forecasts are disabled (config/live.json) and are never produced by a
+# scheduled workflow (basketball/ncaam_forecast/live_writer.js refuses to run
+# in GitHub Actions).
+#
+# SECRETS: SB_URL, SB_SERVICE_ROLE (only with NCAAM_FC_PUBLISH = on).
+# DISABLE: set NCAAM_FC_PUBLISH to anything but "on" (stops publication, keeps
+# the data current), or Actions -> this workflow -> Disable workflow. Readers
+# keep the last published forecasts, marked stale after 36 hours.
+name: NCAAM forecast (daily)
+
+on:
+  schedule:
+    - cron: '37 13 * * *'
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: 'Forecast horizon in hours (1-168)'
+        type: string
+        default: '48'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ncaam-forecast
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: pyarrow (the hoopR files are Parquet; read by hockey/lib/io.js)
+        run: pip install --quiet pyarrow
+      - name: Ingest the season in progress
+        run: node --max-old-space-size=6144 basketball/ncaam_forecast/ingest.js --season current
+      - name: The forecast suites pass on the new data before anything is built
+        run: |
+          node --max-old-space-size=6144 basketball/ncaam_forecast/tests/model.test.js
+          node basketball/ncaam_forecast/tests/live_writer.test.js
+          node basketball/ncaam_forecast/registry.js verify
+      - name: Refresh (and publish when NCAAM_FC_PUBLISH is on)
+        env:
+          HOURS: ${{ inputs.hours || '48' }}
+          PUBLISH: ${{ vars.NCAAM_FC_PUBLISH == 'on' && 'true' || 'false' }}
+          SB_URL: ${{ vars.NCAAM_FC_PUBLISH == 'on' && secrets.SB_URL || '' }}
+          SB_SERVICE_ROLE: ${{ vars.NCAAM_FC_PUBLISH == 'on' && secrets.SB_SERVICE_ROLE || '' }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$HOURS" =~ ^[0-9]{1,3}$ ]] || [ "$HOURS" -lt 1 ] || [ "$HOURS" -gt 168 ]; then echo "::error::hours must be 1-168"; exit 2; fi
+          args=(--hours "$HOURS")
+          if [ "$PUBLISH" = "true" ]; then args+=(--publish); else echo "::notice::NCAAM_FC_PUBLISH is not on: forecasts are built and kept as an artifact, nothing is published"; fi
+          node --max-old-space-size=6144 basketball/ncaam_forecast/refresh.js "${args[@]}"
+      - name: Keep the forecast document (gates, model key, artifact sha256; no credential is ever written there)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ncaam-forecast-${{ github.run_id }}-${{ github.run_attempt }}
+          path: basketball/ncaam_forecast/out/forecasts
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Commit the season data (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "ncaam forecast: daily data" -- basketball/ncaam_forecast/data

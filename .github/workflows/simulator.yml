@@ -12,6 +12,11 @@
 #                              leg: one sport's failure never stops another.
 #                              The NHL's season key is 2027 (= 2026-27); its
 #                              schedule is a parquet, read with pyarrow.
+#                              College basketball (ncaam) joins the nightly
+#                              plan only once its official bracket file exists
+#                              (basketball/ncaam_forecast/config/brackets/<season>.json,
+#                              after Selection Sunday); it stays BLOCKED (dry
+#                              run) until its season facts are verified.
 #   workflow_dispatch          one sport; inputs validated by
 #                              simulator/src/cli/plan.ts before anything runs.
 #                              MLB runs only from here (not nightly): its live
@@ -50,10 +55,10 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, nhl, mlb, cfb]
+        options: [nfl, nhl, mlb, cfb, ncaam]
         default: nfl
       season:
-        description: 'Season (must equal the sport''s configured season: NFL 2026, CFB 2026, NHL 2027 = 2026-27)'
+        description: 'Season (must equal the sport''s configured season: NFL, MLB and CFB 2026; NHL 2027 = 2026-27; NCAAM 2027)'
         type: string
         default: '2026'
       runs:
@@ -144,6 +149,9 @@ jobs:
       - name: pyarrow (the NHL schedule is a parquet, read by hockey/tools/parquet_select.py)
         if: ${{ matrix.sport == 'nhl' }}
         run: pip install --quiet pyarrow
+      - name: The college basketball (NCAAM) bracket suite, before an NCAAM run
+        if: ${{ matrix.sport == 'ncaam' }}
+        run: node simulator/tests/ncaam_sim.test.ts
       - name: Status
         env:
           STATUS: ${{ matrix.status }}

@@ -1,0 +1,109 @@
+{
+ "schema": "edgedesk_research_registration_v1",
+ "model_key": "NCAAM-FORECAST",
+ "name": "EdgeDesk men's college basketball pregame forecast (adjusted efficiency, coherent score distribution)",
+ "version": "1.0.0",
+ "status": "EXPERIMENTAL",
+ "provenance": "T3",
+ "provenance_label": "EdgeDesk research model (T3)",
+ "sport": "NCAAM",
+ "registered_at": "2026-10-23",
+ "hypothesis": "Opponent-adjusted efficiency and tempo ratings from box scores (the research engine, basketball/ncaam_research/team_model.js, run over 2010+ hoopR box scores with parameters chosen on 2012-2019), turned into ONE discrete regulation-margin distribution with a fitted endgame tie factor and an overtime model, give calibrated win probabilities, margins and totals that beat the served scores-only points model as served.",
+ "objective": "Calibrated pregame probabilities and score distributions for every NCAA Division I men's game, as research; never a recommendation.",
+ "primary_metric": "Log loss of the home-win probability on D1-v-D1 games of the PROSPECTIVE 2026-27 season (each forecast published before tip and logged immutably), probabilities clipped to [1e-6, 1 - 1e-6]; margin CRPS on the integer grid second.",
+ "unit": "One game. Games on one day share conditions: every interval is a game-day cluster bootstrap.",
+ "baseline": "The served scores-only points model (edgedesk_bb_points_v1, docs/model-loop/ncaam/versions.json) as served, on the same games; and, once captured, same-time pregame market prices.",
+ "training_window": "Ratings walk forward from 2010; hyperparameters chosen on 2012-2019 only (config/selection_v1.json); calibration refitted weekly on earlier games inside every walk.",
+ "validation_window": "Confirmation 2020-2026 (validation/ncaam_fc_validation.json), retrospective: results were retrieved after the fact and assumed known 4 hours after tip. Descriptive for this registration: those seasons were also used by the operational promotion gates.",
+ "holdout_window": "The 2026-27 season (2027), scored once after the national championship from the forecasts EdgeDesk published before each tip; the NCAA tournament games of 2024-2026 remain a separate historical tournament holdout.",
+ "machine": {
+  "window_dates": {
+   "training": [
+    "2009-11-01",
+    "2019-04-15"
+   ],
+   "validation": [
+    "2019-11-01",
+    "2026-04-15"
+   ],
+   "holdout": [
+    "2026-11-01",
+    "2027-04-15"
+   ]
+  },
+  "window_note": "[from, to): dates of the seasons inside each window",
+  "minimum_sample": 4000,
+  "version": "1.0.0",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3"
+ },
+ "minimum_sample": {
+  "prospective_d1_games": 4000,
+  "matched_market_quotes_for_market_criterion": 1000,
+  "note": "Below 4,000 prospectively logged D1-v-D1 forecasts the record is descriptive and no result row is written. The market criterion needs same-time quotes EdgeDesk captured itself; none exist for NCAAM before 2026-27, so until enough are captured it is NOT EVALUABLE and the model cannot pass."
+ },
+ "promotion_criteria": {
+  "decision_rule": "passed = true only if every criterion holds on the prospective holdout. A criterion that cannot be evaluated is not met. Passing makes the model eligible; a person promotes it through a validation report. The weekly operational champion pointer is NOT a research result.",
+  "criteria": [
+   {
+    "id": "C1_LOG_LOSS_VS_INCUMBENT",
+    "rule": "Prospective D1-v-D1 log loss below the incumbent as served on the same games, game-day cluster bootstrap 95% upper bound of the difference below 0."
+   },
+   {
+    "id": "C2_CALIBRATION",
+    "rule": "Logistic recalibration slope within [0.9, 1.1], calibration-in-the-large within 0.015, 80% margin and total interval coverage within [0.77, 0.83], every probability decile with n >= 100 within 0.04 of its observed rate."
+   },
+   {
+    "id": "C3_MARKET_REFERENCE",
+    "rule": "Log loss below the same-time market reference (fair two-way price from a quote captured within 60 minutes before the forecast) on >= 1,000 matched games, interval below 0. Closing prices are reported separately and cannot satisfy this criterion."
+   },
+   {
+    "id": "C4_TOURNAMENT_GAMES",
+    "rule": "On the prospective NCAA tournament games, log loss no worse than the incumbent's by more than 0.01 (reported with its interval; 67 games are little evidence)."
+   }
+  ],
+  "family_correction": "All four are required (an intersection test); no criterion is reported as a pass on its own."
+ },
+ "forking_paths": {
+  "candidates_tried": [
+   {
+    "version": "1.0.0",
+    "ratings": "research engine, coordinate descent over 6 parameters + 2 tempo parameters on 2012-2019 (about 30 configurations)",
+    "evaluated_against_outcomes": "development 2012-2019 for every choice; confirmation 2020-2026 scored after the choice"
+   },
+   {
+    "version": "variance law",
+    "ratings": "margin variance s0 + k v (stabilised parameter variance) vs a pace/spread law; total variance with the pace term",
+    "evaluated_against_outcomes": "development window only"
+   },
+   {
+    "version": "calibrator location fit (tie_consistent)",
+    "ratings": "the calibrator's location, spread and kappa solved jointly so the model's own tie-compressed regulation margin matches the data (dist.js fit, location_fit 'tie_consistent'); found by a synthetic-recovery unit test, not by outcomes",
+    "evaluated_against_outcomes": "operational weekly gate on 2020-2026 (reports/weekly/2026-10-23-tie_consistent_fit.json): log loss -0.00008 [-0.00012, -0.00004], slope 1.046 -> 1.038; RETAIN (below the frozen -0.0002 threshold). The registered version keeps the plain fit."
+   }
+  ],
+  "alternatives_considered_not_tried": [
+   "a Student-t regulation margin (the coherent-slope gain is bounded at 0.0004 log loss by a dev-fitted recalibration)",
+   "roster-continuity and transfer priors (no roster data before 2024)",
+   "player availability (no owned feed)",
+   "possession-level simulation (validated possession data exists for 2025-26 only)"
+  ],
+  "data_already_seen": "2010-2026 results and box scores; the 2026-27 season has not started (first game 2026-11-02).",
+  "comparisons_made": 0,
+  "stopping_rule": "Fixed horizon: the 2026-27 season is scored once after the championship game."
+ },
+ "spec": {
+  "ratings": "basketball/ncaam_research/team_model.js runSeason via basketball/ncaam_forecast/model.js",
+  "distribution": "basketball/ncaam_forecast/dist.js (regulation PMF, endgame factor kappa, overtime periods, total mixture)",
+  "selection": "basketball/ncaam_forecast/config/selection_v1.json",
+  "operational_gates": "basketball/ncaam_forecast/config/promotion_v1.json",
+  "known_limitations": [
+   "no player availability or lineup input",
+   "retrospective validation: no historical first-publication times",
+   "no market comparison until NCAAM quotes are captured",
+   "margin kurtosis about 3.3: a normal regulation margin leaves probabilities slightly too timid (slope 1.04-1.07)",
+   "the plain calibrator fit reads the tie-compressed regulation margin as the location (about 4% attenuation near even games); the corrected fit is a catalogue challenger that the frozen gate has not promoted"
+  ]
+ },
+ "result": null
+}

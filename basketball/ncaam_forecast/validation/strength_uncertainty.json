@@ -1,0 +1,136 @@
+{
+ "schema": "edgedesk_ncaam_fc_strength_v1",
+ "generated_at": "2026-10-23T12:44:44.483Z",
+ "selection_hash": "7807a94ff33649c647752ba1ecfe05e64339ccf3b66e7c388f04a83f5be68757",
+ "method": "within-team covariance of frozen-forecast regulation-margin residuals after a 1 March freeze, different opponents only; season bootstrap",
+ "freeze": "1 March 05:00 UTC of each season (an artifact as of that moment)",
+ "excluded": "NCAA tournament games of the 2024-2026 tournament holdout",
+ "seasons": [
+  2012,
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025,
+  2026
+ ],
+ "per_season": {
+  "2012": {
+   "games": 519,
+   "pairs": 1775,
+   "cov": 3.141,
+   "mean_sq_residual": 103.6,
+   "artifact_sha256": "d2cb2ba5c69d024fbb4d9652bb42d710a9e5598ede587236319ff2cb1831a743"
+  },
+  "2013": {
+   "games": 774,
+   "pairs": 3389,
+   "cov": 4.159,
+   "mean_sq_residual": 109.5,
+   "artifact_sha256": "be4319e6a9e7c5ad770638bde33c95da27ab9ba20ac10edb5f200a4937fee3c9"
+  },
+  "2014": {
+   "games": 801,
+   "pairs": 3538,
+   "cov": 4.476,
+   "mean_sq_residual": 114.7,
+   "artifact_sha256": "b4f44044d6c8dc6ed7534d4dd90fcd526cc802a1085f445c755684aa34779b32"
+  },
+  "2015": {
+   "games": 658,
+   "pairs": 2556,
+   "cov": 2.169,
+   "mean_sq_residual": 96.8,
+   "artifact_sha256": "1d039e0445eb9335bee09d570ffb9ac5865aac2e26050e1e90d171c6c7d3a969"
+  },
+  "2016": {
+   "games": 634,
+   "pairs": 2362,
+   "cov": 6.651,
+   "mean_sq_residual": 119.6,
+   "artifact_sha256": "9b009ce7cc204bb2f9e64a5e6b75c51a476839721168e3c5482eb17d3e19429f"
+  },
+  "2017": {
+   "games": 586,
+   "pairs": 2026,
+   "cov": 2.909,
+   "mean_sq_residual": 115.8,
+   "artifact_sha256": "4ceeb8f1c797935c23a3c54627fac0a5242800fd2c3a3cc5bf91f1bd17213cee"
+  },
+  "2018": {
+   "games": 555,
+   "pairs": 1863,
+   "cov": 5.736,
+   "mean_sq_residual": 113.3,
+   "artifact_sha256": "9a4592d11366f0b9bf73f181e421b599bf26c28b7548d57affb420a2bf2ef096"
+  },
+  "2019": {
+   "games": 818,
+   "pairs": 3615,
+   "cov": 3.056,
+   "mean_sq_residual": 123.9,
+   "artifact_sha256": "d5699851aae7f6504977ccc16b1bf18e96dfbefe6d4555f0beb6582050610ae1"
+  },
+  "2021": {
+   "games": 535,
+   "pairs": 1794,
+   "cov": 7.202,
+   "mean_sq_residual": 126.8,
+   "artifact_sha256": "c36a134b83397dd7da6ae0e1b3560ff4d1588fa8edab3d2d8b95fb7b47f4fe0b"
+  },
+  "2022": {
+   "games": 637,
+   "pairs": 2350,
+   "cov": 8.593,
+   "mean_sq_residual": 116.3,
+   "artifact_sha256": "3d0c809b01773ef132c5aec658bfec5eadba64d90f58a2e0fbef178bc551965e"
+  },
+  "2023": {
+   "games": 557,
+   "pairs": 1874,
+   "cov": 8.809,
+   "mean_sq_residual": 130.5,
+   "artifact_sha256": "f8d761b6486e8a8ceb83bdad4bb699517059f5927f41dce6e797fd01dbe3cae8"
+  },
+  "2024": {
+   "games": 739,
+   "pairs": 2643,
+   "cov": 4.825,
+   "mean_sq_residual": 122.3,
+   "artifact_sha256": "f21363db873b9ff3026c879e479875fc591b8bcd0ffb59b8d84560b3b76f9348"
+  },
+  "2025": {
+   "games": 716,
+   "pairs": 2505,
+   "cov": 2.524,
+   "mean_sq_residual": 119.5,
+   "artifact_sha256": "5501420ea7b9262fa395a7683cbc8ba5faa13f2c4b80937f5ef70d99a3c3ce09"
+  },
+  "2026": {
+   "games": 559,
+   "pairs": 1572,
+   "cov": 7.157,
+   "mean_sq_residual": 125.7,
+   "artifact_sha256": "63cd7ec36d9f1e8925fdb9c5415851058bf72ebe92badc22a3385d72913dabca"
+  }
+ },
+ "estimate": {
+  "variance_margin_pts2": 4.853,
+  "sd_margin_pts": 2.203,
+  "ci95": [
+   3.9113,
+   5.9824
+  ],
+  "pairs": 33862,
+  "games": 9088,
+  "mean_sq_residual": 116.95
+ },
+ "use": "the simulator draws d_t ~ Normal(0, V) once per team per run; each game keeps sd^2 - V_a - V_b of the calibrated variance"
+}

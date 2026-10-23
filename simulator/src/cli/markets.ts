@@ -26,6 +26,7 @@ export function runView(results: any): RunView {
     ...(results.outcome_semantics ? { outcome_semantics: results.outcome_semantics } : {}) };
 }
 
+
 export async function marketStep(opt: { results: any; runId: string | null; publish: boolean; cfg?: FuturesConfig; db?: SimDb; fetchImpl?: typeof fetch; log?: (s: string) => void; now?: Date }) {
   const log = opt.log || console.log;
   const run = runView(opt.results);
