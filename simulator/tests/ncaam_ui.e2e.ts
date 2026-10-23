@@ -106,7 +106,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       let t = await text(page);
       T.chk(W + ': the College Basketball tabs are shown although its tournament is blocked', (await page.locator('#simHost [data-sim-tab]').count()) === 4 && /Games/.test(t) && /Upset Watch/.test(t) && /Model Health/.test(t));
       T.chk(W + ': Games opens by default with a card for every published forecast', (await page.locator('#simHost .sm-gc').count()) === FORECASTS.length, await page.locator('#simHost .sm-gc').count());
-      T.chk(W + ': every game card fits inside the viewport', await page.evaluate(() => [...document.querySelectorAll('#simHost .sm-gc')].every((e) => (e as HTMLElement).getBoundingClientRect().right <= window.innerWidth + 1)));
+      T.chk(W + ': every game card fits inside the viewport', await page.evaluate(() => Array.from(document.querySelectorAll('#simHost .sm-gc')).every((e) => (e as HTMLElement).getBoundingClientRect().right <= window.innerWidth + 1)));
       T.chk(W + ': model version, EXPERIMENTAL and freshness are shown', /ncaam_adjeff@1\.0\.0/.test(t) && /EXPERIMENTAL/.test(t) && /forecasts as of/.test(t));
       T.chk(W + ': an unavailable forecast says why', /No forecast: neither team is a rated Division I team/.test(t));
       T.chk(W + ': definitions and availability assumption are on the page', /How to read these numbers/.test(t));
