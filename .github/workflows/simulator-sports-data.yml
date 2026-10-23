@@ -1,4 +1,4 @@
-# EdgeDesk Simulator — the golf and UFC feeds, read from GitHub's runners (the
+# EdgeDesk Simulator — the golf, UFC and tennis feeds, read from GitHub's runners (the
 # build environment cannot reach ESPN or ufc.com) and committed as hashed files
 # under simulator/data/feeds/ (simulator/src/cli/fetch_sports_data.ts).
 #
@@ -16,6 +16,11 @@
 #                          the repository)
 #   ufc_espn_samples.json.gz   raw ESPN documents (this and next month's
 #                          scoreboard, the next cards' fight centres)
+#   tennis_matches.json.gz ESPN: every ATP and WTA singles match 2022 on (round,
+#                          surface, seeds, ranks, sets, winner), tournaments
+#   tennis_current.json.gz ESPN: tournaments in progress or within two weeks,
+#                          their summary documents whole (the draw), scoreboards
+#   tennis_rankings.json   ESPN: the ATP and WTA rankings
 #   fetch_report_*.json    every request's URL, HTTP status and size
 #
 #   schedule 09:41 UTC daily   before the nightly Simulator run (10:17 UTC):
@@ -62,6 +67,8 @@ jobs:
         run: node simulator/src/cli/fetch_sports_data.ts --what golf
       - name: UFC (ESPN, ufc.com)
         run: node simulator/src/cli/fetch_sports_data.ts --what ufc
+      - name: Tennis (ESPN)
+        run: node simulator/src/cli/fetch_sports_data.ts --what tennis
       - name: Commit the feeds
         env:
           EVENT: ${{ github.event_name }}
@@ -70,7 +77,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if [ "$EVENT" = "pull_request" ]; then
-            bash tools/ci/push_generated.sh "$HEAD_REF" "simulator feeds: golf and UFC (ESPN, ufc.com)" -- simulator/data/feeds
+            bash tools/ci/push_generated.sh "$HEAD_REF" "simulator feeds: golf, UFC and tennis (ESPN, ufc.com)" -- simulator/data/feeds
           else
-            bash tools/ci/push_generated.sh main "simulator feeds: golf and UFC (ESPN, ufc.com)" -- simulator/data/feeds
+            bash tools/ci/push_generated.sh main "simulator feeds: golf, UFC and tennis (ESPN, ufc.com)" -- simulator/data/feeds
           fi
