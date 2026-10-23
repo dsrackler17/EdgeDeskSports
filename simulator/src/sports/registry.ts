@@ -46,7 +46,7 @@ const NFL_LIMITS = [
   'No injury return is sampled: future games use the board\'s starter treatment (the club\'s carried quarterback level beyond the current week). No new injuries are simulated.',
   'Ratings are frozen at the as-of date: simulated results do not update ratings. Within-season drift is OFF.',
   'Points-ranking tiebreakers use Estimated scores from the linemaker team-points model, conditioned on the simulated margin. Net-touchdown tiebreakers have no model input: a run that reaches one is resolved by the seeded coin toss and counted.',
-  'Postseason rest and the Super Bowl venue are Estimated inputs from the format; a postseason draw of the model\'s tie mass is resolved 50/50.',
+  'Postseason rest is an Estimated input from the format; a postseason draw of the model\'s tie mass is resolved 50/50.',
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 

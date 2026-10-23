@@ -44,10 +44,12 @@ const FX = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(REPO, 'simulator
   const unverified = facts.filter((f) => f.affects_results && f.verification !== 'VERIFIED').length;
   const nfl = sportRegistry().find((s) => s.key === 'nfl')!;
   T.chk('any unverified result-affecting fact keeps the NFL BLOCKED (and none keeps it ACTIVE)', (unverified > 0) === (nfl.status === 'BLOCKED') && nfl.blockers.length === unverified);
-  const f = (v: Partial<SeasonFact<string>>): [string, SeasonFact<string>] => ['fact', { ...NFL_2026.rules, ...v }];
+  const f = (v: Partial<SeasonFact<string>>): [string, SeasonFact<string>] => ['fact', { ...NFL_2026.rules, verification: 'UNVERIFIED', verified_by: null, verified_at: null, ...v }];
   T.eq('VERIFIED without a verifier or a date still blocks', [factStatus([f({ verification: 'VERIFIED' })]).status, factStatus([f({ verification: 'VERIFIED', verified_by: 'a person' })]).status, factStatus([f({ verification: 'VERIFIED', verified_at: '2026-10-24' })]).status], ['BLOCKED', 'BLOCKED', 'BLOCKED']);
   T.eq('VERIFIED with a verifier and a date unblocks; a fact that moves no number never blocks', [factStatus([f({ verification: 'VERIFIED', verified_by: 'a person', verified_at: '2026-10-24' })]).status, factStatus([f({ affects_results: false })]).status], ['ACTIVE', 'ACTIVE']);
-  T.chk('no fact claims a verifier today', facts.every((x) => x.verified_by === null && x.verified_at === null));
+  T.chk('every VERIFIED fact names its verifier, a date and an https source', facts.filter((x) => x.verification === 'VERIFIED').every((x) => !!x.verified_by && /^\d{4}-\d{2}-\d{2}$/.test(x.verified_at || '') && /https:\/\//.test(x.source)));
+  T.chk('an unverified fact claims no verifier', facts.filter((x) => x.verification !== 'VERIFIED').every((x) => x.verified_by === null && x.verified_at === null));
+  T.eq('the Super Bowl date is not asserted (the NFL text says February 2027; no price depends on it)', NFL_2026.super_bowl.value.date, null);
   T.chk('every fact names its source, its retrieval date and what a person must check', facts.every((f) => f.source.length > 20 && /^\d{4}-\d{2}-\d{2}$/.test(f.retrieved) && f.verify_by.length > 20));
   T.eq('drift is off and availability sampling is off', [NFL_2026.drift.mode, NFL_2026.availability.mode], ['off', 'off']);
   T.chk('the fixed availability assumption is stated', /No injury return is sampled/.test(NFL_2026.availability.fixed_assumption));

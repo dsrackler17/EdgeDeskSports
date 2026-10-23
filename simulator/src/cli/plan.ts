@@ -15,7 +15,7 @@
    =========================================================================== */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { sportRegistry } from '../sports/registry.ts';
+import { sportRegistry, type SportEntry } from '../sports/registry.ts';
 import { parseSeed } from '../core/prng.ts';
 import { PRODUCTION_RUNS } from '../core/results.ts';
 import { NFL_2026 } from '../sports/nfl/config.ts';
@@ -25,8 +25,7 @@ export const RUNNABLE: Record<string, number> = { nfl: NFL_2026.season };
 
 export interface PlannedRun { sport: string; season: string; runs: string; seed: string; publish: boolean; status: string; blockers: string[] }
 
-export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }): PlannedRun[] {
-  const reg = sportRegistry();
+export function planRuns(event: string, inp: { sport?: string; season?: string; runs?: string; seed?: string; publish?: string }, reg: SportEntry[] = sportRegistry()): PlannedRun[] {
   if (event === 'schedule') {
     return Object.keys(RUNNABLE).map((k) => {
       const s = reg.find((r) => r.key === k)!;
