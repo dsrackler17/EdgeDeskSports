@@ -552,13 +552,15 @@ begin
   if not exists (select 1 from public.sim_input_snapshots s where s.input_hash = r.input_hash) and r.input_ref !~ '^(artifact|url):' then
     e := e || jsonb_build_array('no stored input snapshot and no durable input reference');
   end if;
-  -- the competition format's sums, on the stored counts
+  -- the competition format's sums, on the stored counts; a group the rule skips (college football's
+  -- 'none': the teams outside any conference title game) is not checked, as the engine does not check it
   for rule in select * from jsonb_array_elements(coalesce(r.expected -> 'sum_rules', '[]')) loop
     select count(*) into bad from (
       select coalesce(case when rule ->> 'by' = 'league' then 'league' else entity_groups ->> (rule ->> 'by') end, '?') as grp, sum(outcome_count) as s
         from public.sim_team_results where run_id = p_run and outcome = rule ->> 'outcome' and applicable
        group by 1) z
-     where z.s <> (rule ->> 'perGroup')::bigint * r.n_sims or z.grp = '?';
+     where (z.s <> (rule ->> 'perGroup')::bigint * r.n_sims or z.grp = '?')
+       and not (coalesce(rule -> 'skip', '[]'::jsonb) ? z.grp);
     if bad > 0 then e := e || jsonb_build_array('sum rule ' || (rule ->> 'outcome') || ' per ' || (rule ->> 'by') || ' fails in ' || bad || ' group(s)'); end if;
   end loop;
   -- every gate the job recorded must block nothing

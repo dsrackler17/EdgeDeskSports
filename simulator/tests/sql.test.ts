@@ -25,6 +25,9 @@ import { publishRun, idempotencyKey } from '../src/publish/publish.ts';
 import type { SimDb } from '../src/publish/db.ts';
 import type { RunOutcome } from '../src/cli/run.ts';
 import type { Gate } from '../src/sports/nfl/validate.ts';
+import os from 'node:os';
+import { execute, parseArgs } from '../src/cli/run.ts';
+import { CFB_FIXTURE } from './_cfb.ts';
 
 const require = createRequire(import.meta.url);
 const PG = require(path.join(REPO, 'tools', 'personal', '_pg.js'));
@@ -303,6 +306,27 @@ try {
     T.chk('  ... and the subscriber reads no result rows', before !== '0' && asU(SUB, 'select count(*) from public.sim_current_results') === '0', before);
     const rep = db.applyFile(F('simulator.sql'));
     T.chk('  ... and the report says CHECK THIS about the missing entitlement function', /CHECK THIS: public\.community_is_entitled\(uuid\) is not installed/.test(rep), rep.slice(-500));
+  }
+  /* ---- 17 college football: the teams outside any conference title game share the group 'none', which the
+         format's title-game sum rules skip. The database refused every CFB publication until it honoured the
+         skip (Actions run 39994731070, 2026-10-23: "sum rule ccg_appearance per ccg fails in 1 group(s)"). ---- */
+  {
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), 'simsql-cfb-'));
+    const o = await execute(parseArgs(['--sport', 'cfb', '--snapshot', CFB_FIXTURE, '--runs', '400', '--workers', '1', '--dry-run', '--out', out]), () => {});
+    const ccg = (o.results.sum_rules as any[]).filter((r) => r.by === 'ccg');
+    T.chk('the CFB format\'s title-game sum rules skip the group of teams without a title game', ccg.length === 3 && ccg.every((r) => (r.skip || []).includes('none')), ccg);
+    T.chk('  ... and that group exists in the run (independents)', (o.results.entities as any[]).some((e) => e.groups.ccg === 'none'));
+    const p = await publishRun({ ...o, gates: passing, publishable: true }, { db: pgDb() });
+    T.chk('a college football run publishes', p.published && p.status === 'completed', p);
+    T.eq('  ... beside the NFL\'s, each sport with its own pointer', svc("select string_agg(sport, ',' order by sport) from public.sim_published"), 'cfb,nfl');
+    /* the skip covers only the group it names: the same rules without it are refused */
+    const noSkip = clone(o) as RunOutcome;
+    (noSkip.results.run as any).seed = String(BigInt(o.results.run.seed) + 1n);
+    noSkip.results.sum_rules = (noSkip.results.sum_rules as any[]).map((r) => { const { skip, ...rest } = r; return rest; }) as any;
+    let err = '';
+    try { await publishRun({ ...noSkip, gates: passing, publishable: true }, { db: pgDb() }); } catch (e) { err = String((e as Error).message); }
+    T.chk('  ... a run whose rules do not skip that group is still refused for it', /sum rule ccg_appearance per ccg fails in 1 group/.test(err), err.slice(0, 300));
+    T.eq('  ... and the published CFB run is unchanged', svc("select run_id::text from public.sim_published where sport = 'cfb'"), p.run_id);
   }
 } catch (e) {
   const msg = String((e as Error).stack || e);
