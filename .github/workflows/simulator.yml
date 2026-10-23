@@ -7,10 +7,10 @@
 #                              night game is final and nflverse's games.csv has
 #                              its score.) An ACTIVE sport publishes; any other
 #                              sport runs as a DRY RUN and its blockers are
-#                              printed as warnings. Today the NFL is BLOCKED
-#                              (its 2026 rules facts await human verification:
-#                              SIMULATOR_NOTES.md), so the nightly job is a dry
-#                              run that keeps the whole pipeline exercised.
+#                              printed as warnings. The NFL and the NHL (season
+#                              key 2027 = 2026-27; its schedule is a parquet,
+#                              read with pyarrow) each run as their own leg:
+#                              one sport's failure never stops the other.
 #   workflow_dispatch          one sport; inputs validated by
 #                              simulator/src/cli/plan.ts before anything runs.
 #                              MLB runs only from here (not nightly): its live
@@ -49,10 +49,10 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, mlb]
+        options: [nfl, nhl, mlb]
         default: nfl
       season:
-        description: 'Season (must equal the sport''s configured season)'
+        description: 'Season (must equal the sport''s configured season: NFL 2026, NHL 2027 = 2026-27)'
         type: string
         default: '2026'
       runs:
@@ -134,6 +134,12 @@ jobs:
       - name: The MLB suites, before an MLB run
         if: ${{ matrix.sport == 'mlb' }}
         run: npm run sim:test:mlb
+      - name: The NHL suites, before an NHL run
+        if: ${{ matrix.sport == 'nhl' }}
+        run: npm run sim:test:nhl
+      - name: pyarrow (the NHL schedule is a parquet, read by hockey/tools/parquet_select.py)
+        if: ${{ matrix.sport == 'nhl' }}
+        run: pip install --quiet pyarrow
       - name: Status
         env:
           STATUS: ${{ matrix.status }}
@@ -210,9 +216,9 @@ jobs:
           retention-days: 30
 
   markets:
-    # after a successful PUBLICATION only; its failure never touches the simulation
+    # after a successful PUBLICATION only, for each sport that published; its failure never touches the simulation
     needs: simulate
-    if: ${{ needs.simulate.result == 'success' && needs.simulate.outputs.run_id != '' && (github.event_name == 'schedule' || inputs.markets) }}
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.markets) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -224,19 +230,26 @@ jobs:
         with:
           pattern: simulator-*-${{ github.run_id }}-${{ github.run_attempt }}
           path: simulator/out/downloaded
-      - name: Compare with Kalshi futures
+      - name: Compare with Kalshi futures (each published sport, its own mappings)
         env:
-          RUN_ID: ${{ needs.simulate.outputs.run_id }}
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
           SIM_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set +e
-          res=$(ls simulator/out/downloaded/*/results.json | head -1)
-          node simulator/src/cli/markets.ts --results "$res" --run-id "$RUN_ID" --publish
-          rc=$?
-          if [ "$rc" != "0" ]; then
-            echo "::error::Kalshi futures comparison failed (exit $rc); the simulation stays published and no old quote is shown as fresh"
-            node simulator/src/cli/alert.ts --severity DEGRADED --code sim.market_failed --run-id "$RUN_ID" --message "Kalshi futures comparison failed (exit $rc)" || true
-            exit 1
-          fi
+          failed=0; compared=0
+          for dir in simulator/out/downloaded/*/; do
+            [ -f "$dir/publish.json" ] && [ -f "$dir/results.json" ] || continue
+            run_id=$(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).run_id || ""))' "$dir/publish.json")
+            [ -n "$run_id" ] || continue
+            compared=$((compared + 1))
+            node simulator/src/cli/markets.ts --results "$dir/results.json" --run-id "$run_id" --publish
+            rc=$?
+            if [ "$rc" != "0" ]; then
+              failed=1
+              echo "::error::Kalshi futures comparison failed for $dir (exit $rc); the simulation stays published and no old quote is shown as fresh"
+              node simulator/src/cli/alert.ts --severity DEGRADED --code sim.market_failed --run-id "$run_id" --message "Kalshi futures comparison failed (exit $rc)" || true
+            fi
+          done
+          echo "$compared published run(s) compared"
+          exit $failed

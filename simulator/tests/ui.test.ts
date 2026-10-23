@@ -8,6 +8,11 @@ import { execFileSync } from 'node:child_process';
 import { kit } from './_kit.ts';
 import { REPO } from '../src/sports/nfl/model_adapter.ts';
 import { sportRegistry } from '../src/sports/registry.ts';
+import { nhlFixture } from './_fixture.ts';
+import { nhlModule } from '../src/sports/nhl/module.ts';
+import { runRange } from '../src/core/engine.ts';
+import { buildResults } from '../src/core/results.ts';
+import { resultRows, entityRows } from '../src/publish/publish.ts';
 
 const require = createRequire(import.meta.url);
 const UI = require(path.join(REPO, 'lib', 'edgedesk_simulator.js'));
@@ -75,5 +80,27 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
     reference_prob: null, normalized_ref_prob: null, reference_edge_pp: null, exec_price: 0.14, exec_cost_prob: 0.14, exec_edge_pp: 6, quote_age_minutes: 5, fee_verified: false, stale: false, actionable: false, block_reasons: [evil] }]), { kind: 'ok' }, { key: 'exec_edge_pp', dir: 'desc' });
   T.chk('the futures table escapes block reasons and states pre-fee', !/<img/i.test(fut) && /before fees/.test(fut) && /never a recommendation/.test(fut));
   T.chk('the futures table separates reference and executable edges, with no combined score', /Ref edge/.test(fut) && /Exec edge/.test(fut) && !/edge score/i.test(fut));
+}
+/* the NHL view, from a real (short) NHL simulation through the publisher's own row mapping */
+{
+  const snap = nhlFixture();
+  const m = nhlModule(snap.data, { seed: 5n });
+  const agg = runRange(m, { start: 0, end: 300 });
+  const results = buildResults({ module: m, agg, seed: 5n, runs: 300, workers: 1, input_hash: snap.input_hash, input_snapshot_at: snap.meta.built_at, model_version: 'm', config: {}, rules_version: 'NHL-TB-2019',
+    started_at: '2026-10-23T00:00:00Z', finished_at: '2026-10-23T00:00:01Z', runtime_ms: 1, peak_rss_mb: 1,
+    entityExtras: () => ({ record: { gp: 10, w: 6, l: 3, otl: 1, pts: 13, rw: 5, row: 6 }, math_status: null }) });
+  const res = resultRows({ results }), ents = entityRows({ results });
+  const M = UI.buildModel({ sport: 'nhl', comparison_id: null }, res, ents, []);
+  const div = UI.renderDivision(M), conf = UI.renderConference(M), title = UI.renderTitle(M, { kind: 'unavailable' });
+  T.chk('NHL division tab: W-L-OTL, points and projected points (from the record), not wins', /W-L-OTL/.test(div) && />Pts</.test(div) && /Proj\. pts/.test(div) && /6-3-1/.test(div) && !/Proj\. wins/.test(div) && !/W-L-T</.test(div));
+  T.eq('NHL division tab: four divisions of eight', (div.match(/<div class="sm-h">/g) || []).length, 4);
+  const mp = (ents[0] as any).record.mean_points as number;
+  T.chk('the projected points shown are the simulation\'s mean regular-season points', div.includes('>' + mp.toFixed(1) + '<'));
+  T.chk('NHL conference tab: D1-D3, WC1, WC2, round 2, conference final and the playoff conference title; no NFL seeds', ['D1', 'D2', 'D3', 'WC1', 'WC2', 'Round 2', 'Conf. final', 'Win Eastern', 'Win Western'].every((h) => conf.includes('>' + h + '<')) && !/\(bye\)/.test(conf));
+  T.chk('NHL title tab: the Stanley Cup, with the regular-season honours on their own line', /win Stanley Cup/.test(title) && /Regular season: Presidents’ Trophy/.test(title) && !/Super Bowl/.test(title));
+  T.eq('NHL title cards: one per club', (title.match(/class="sm-club"/g) || []).length, 32);
+  const meta = UI.renderMeta({ key: 'nhl', label: 'NHL' }, { n_sims: 100000, input_snapshot_at: '2026-10-23T05:00:00Z', published_at: '2026-10-23T06:00:00Z', model_version: 'm', rules_version: 'r', seed: '1', validation_summary: { flags: { tiebreak_goals: 155 } } }, { stale: false, notes: [] }, Date.parse('2026-10-23T12:00:00Z'));
+  T.chk('NHL run notes count goal-differential tiebreaks and coin tosses (not the NFL\'s points model)', /155 runs reached goal differential/.test(meta) && !/points-ranking/.test(meta));
+  T.eq('the reader asks the database for the NHL\'s season label', REG.nhl.season, '2026-27');
 }
 process.exit(T.done());

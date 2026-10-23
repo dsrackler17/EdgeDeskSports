@@ -1,14 +1,16 @@
 # NHL_SIMULATOR_NOTES — EdgeDesk NHL season and Stanley Cup simulator
 
 The engineering record of the NHL module of the EdgeDesk Simulator: what it
-does, what it stands on, what was measured, and what blocks publication. It
+does, what it stands on, what was measured, and how it was verified. It
 follows the shared simulator conventions in [`SIMULATOR_NOTES.md`](SIMULATOR_NOTES.md)
 (engine, PRNG, snapshot hashing, gates, provenance labels). Dates are UTC;
 "retrieved" means read for this work on 2026-10-23. Seasons are keyed by
 their **end year**, as in `hockey/config.js` (2027 = 2026-27).
 
-Nothing here claims a validated edge, a deployment or a publication. The NHL
-is **BLOCKED** for publication (§13).
+Nothing here claims a validated edge. The NHL is **ACTIVE**: its three
+2026-27 rules facts were verified against NHL.com's own pages (§13), the
+reader has an NHL view, and the nightly *Simulator* workflow publishes it
+(100,000 runs, 10:17 UTC) once this lands on `main`.
 
 ---
 
@@ -25,9 +27,9 @@ is **BLOCKED** for publication (§13).
 | Standings points, tiebreakers, qualification, bracket, home ice, series | Implemented; reproduces all 165 playoff series of 11 seasons | §9 |
 | Playoff overtime without shootouts | Implemented and tested | §6 |
 | Existing postseason state | Kept as played; tested on the real 2025-26 playoffs | §9.6 |
-| Tests | 4 new suites, 202 assertions, all passing | §11 |
+| Tests | 4 NHL suites (203 assertions), plus NHL cases in the reader, browser, command-line and markets suites; all passing | §11 |
 | 100,000-run benchmark | 17.7 s on 4 workers | §12 |
-| Publication | **BLOCKED**: three 2026-27 rules facts unverified; no NHL reader view | §13 |
+| Publication | **ACTIVE**: facts verified from NHL.com (2026-10-23); reader NHL view; nightly workflow leg | §13 |
 
 ---
 
@@ -427,8 +429,8 @@ points distribution from 0 to 168.
 |---|---|---|
 | `simulator/tests/nhl_rules_synthetic.test.ts` (SYNTHETIC) | 59 | points accounting; OT- and shootout-loss treatment (1 point, a loss, no ROW for shootout wins); RW-first vs ROW-first; ROW then wins; head-to-head with the odd game excluded (a case the exclusion flips); three clubs with no restart; goal differential, goals for and the coin; only reported places broken; crossover wild cards; better division winner vs WC2; home ice by placement then record; 2-2-1-1-1; series continuing from 3-0; finished series kept; invalid observed games refused |
 | `simulator/tests/nhl_rules_history.test.ts` | 72 | §9.5 |
-| `simulator/tests/nhl_config.test.ts` | 19 | alignment re-derived from the schedule (112/128/256 pairs meeting 4/3/2 times); club identities; slate re-priced exactly; back-to-back flags from the schedule; facts unverified |
-| `simulator/tests/nhl_sim.test.ts` | 52 | zero offset = the served distribution exactly; table within 1e-4 (measured 3.9e-5); OT split exact; simulated tie/OT frequencies = the model's; reproducibility, range additivity, 1 vs 3 workers identical; persistent offsets in regular season and playoffs; completed games fixed; exact points/RW/ROW accounting; all-shootout override; playoff OT never a shootout; **championship sums** (Cup 1, Final 2, CF 4, R2 8, playoffs 16, Presidents' Trophy 1, best record 2, division winners 4) and nesting; postseason state on the real 2025-26 playoffs; fail-closed validation (incl. a game in progress at build time); the command line |
+| `simulator/tests/nhl_config.test.ts` | 19 | alignment re-derived from the schedule (112/128/256 pairs meeting 4/3/2 times); club identities; slate re-priced exactly; back-to-back flags from the schedule; each fact VERIFIED with its NHL.com URL, page sha256, run, verifier and date |
+| `simulator/tests/nhl_sim.test.ts` | 53 | zero offset = the served distribution exactly; table within 1e-4 (measured 3.9e-5); OT split exact; simulated tie/OT frequencies = the model's; reproducibility, range additivity, 1 vs 3 workers identical; persistent offsets in regular season and playoffs; completed games fixed; exact points/RW/ROW accounting; all-shootout override; playoff OT never a shootout; **championship sums** (Cup 1, Final 2, CF 4, R2 8, playoffs 16, Presidents' Trophy 1, best record 2, division winners 4) and nesting; postseason state on the real 2025-26 playoffs; fail-closed validation (incl. a game in progress at build time); the command line |
 
 **Mutation checks.** Each of these was injected into `rules.ts` and failed the
 synthetic suite; the file was then restored:
@@ -443,7 +445,7 @@ synthetic suite; the file was then restored:
 **Also re-run and passing:** every existing simulator suite (core, hooks, NFL
 history/synthetic/simulation/config, markets, reader, command line, publisher;
 the CLI and publisher were refactored to share the run gates), the reader in
-Chromium (31), `tools/app/navigation.test.js` (256),
+Chromium (31 at first; 43 with the NHL scenario), `tools/app/navigation.test.js` (256),
 `tools/portfolio/portfolio_ui.test.js` (101), typecheck (strict) clean, and the
 generated-file checks current. The SQL suite was not re-run: no SQL changed.
 
@@ -458,7 +460,7 @@ generated-file checks current. The SQL suite was not re-run: no SQL changed.
 | Inputs | `7c2a6196a78f…`; 165 completed, 1,179 remaining; σ 0.1154 |
 | Simulation | **100,000 runs in 17.7 s** on 4 workers; about 1.7 ms per run on one thread |
 | Peak RSS | 521 MB |
-| Gates | all PASS except `sport.active` (BLOCKED, §13) |
+| Gates | all PASS except `sport.active` (BLOCKED at the time; ACTIVE since, §13) |
 | Tiebreak steps deciding reported places | RW 139,473; ROW 12,697; wins 1,981; head-to-head 511; goal differential 159; goals for 3; coin 0 |
 | Simulated rates | 60-minute tie 20.76%; OT share of ties 68.5%; playoff OT 21.1%; 5.73 games per series; league mean 92.8 points |
 
@@ -468,30 +470,55 @@ EdgeDesk publishes.
 
 ---
 
-## 13. What blocks publication
+## 13. Verification and activation (2026-10-23)
 
-`simulator/src/sports/registry.ts` reports the NHL as **BLOCKED**:
-1. **The 2026-27 tie-breaking procedure is not verified** against NHL.com.
-   nhl.com, records.nhl.com and media.nhl.com could not be reached from the
-   build environment. The history test supports it for 2021-22 to 2025-26, but
-   a change for the new 84-game schedule could not be ruled out.
-2. **The 2026-27 playoff format is not verified.**
-3. **The 2026-27 home-ice rule is not verified.** It was derived from 11
-   seasons of owned data, not read from an official page.
-4. **The reader has no NHL view.** `lib/edgedesk_simulator.js` renders the NFL
-   outcome set (seeds 1–7, Super Bowl).
+The three 2026-27 facts in `simulator/src/sports/nhl/config.ts` were checked
+against the NHL's own pages. nhl.com cannot be reached from the build
+environment, so the pages were fetched by GitHub's runners: the *Simulator
+source check* workflow (`.github/workflows/simulator-sources.yml`), run
+39957383090, job `fetch (nhl)`, 2026-10-23 12:59 UTC, HTTP 200.
 
-Each fact needs `verification: 'VERIFIED'` with `verified_by` and
-`verified_at` in a reviewed commit (`simulator/src/sports/nhl/config.ts`).
+| Fact | Page | Page sha256 | Comparison |
+|---|---|---|---|
+| Tie-breaking procedure | https://www.nhl.com/info/standings-info/tie-breaking-procedure | `84f4dced…ff7e61e` (text `0f154a83…b773721e`) | Seven steps, identical to NHL-TB-2019 (§9.2): points percentage, RW, ROW, W, head-to-head points (odd game excluded; a percentage for three or more), goal differential and goals for, both counting OT goals and the shootout credit. The page states no step beyond goals for and no restart. |
+| Playoff format | https://www.nhl.com/info/standings-info/playoff-format | `7ed14691…a346ddf7` (text `af4bc9df…9cf6a218`) | 16 teams; top three per division plus two wild cards per conference regardless of division; the division winner with the best record meets the wild card with the lesser record; second meets third within the division winner's bracket; second round within each bracket; best of seven. Identical to §9.3. |
+| Home ice | the same page | the same | "Through the first two rounds [it] goes to the team that placed higher in the regular-season standings"; in the conference finals and the Final, "the team that had the better regular-season record — regardless of the teams' final standing in their respective divisions." The contrast places rounds 1–2 by divisional standing, which is what all 165 historical series show (§9.4). The 2-2-1-1-1 order is not on the page; it is the order of every one of those series' games. |
 
-**Not wired yet:** the nightly workflow (`.github/workflows/simulator.yml`)
-plans only the NFL. Adding the NHL needs a pyarrow step for the schedule parquet
-and an entry in `simulator/src/cli/plan.ts` `RUNNABLE`. The suites run in
-`.github/workflows/simulator-tests.yml`.
+Each fact is `VERIFIED`, with `verified_by` naming this verification (Claude
+Code, at the repository owner's request, from that run) and `verified_at`
+2026-10-23. The registry reports the NHL **ACTIVE** with no blocker; each
+season the source check is re-run and the facts re-verified.
 
-**Database:** results use the same tables. NHL entities carry `mean_points`,
-and the publisher sends `mean_wins`/`wins_hist_x2` as null for them. No NHL
-row has been written anywhere.
+**Reader.** `lib/edgedesk_simulator.js` renders the NHL's own outcome set; its
+NFL output is byte-identical to before (checked on every view).
+- **Division:** W-L-OTL, points, projected points, win division, make
+  playoffs.
+- **Conference:** playoffs, D1–D3, WC1/WC2, round 2, conference final, and
+  the playoff conference title.
+- **Title:** the Stanley Cup, with the Presidents' Trophy and best conference
+  record on their own "Regular season" line.
+
+Projected points travel inside the published entity `record` (`mean_points`),
+because `sim_entity_summary` has a wins column and no points column. No SQL
+change was needed: publication checks the run's own sum rules and gates.
+
+**Nightly** (`.github/workflows/simulator.yml`):
+- The NHL is a second leg of the plan (`plan.ts` `RUNNABLE`, season key
+  2027), with a pyarrow step and the NHL suites in the pre-publication test
+  gate. One leg's failure never stops the other.
+- The markets job now compares each published sport's run against that
+  sport's own Kalshi mappings (`forSport`). The NHL has none yet, so its
+  comparison reads "unavailable": not mapped, not zero.
+- The weekly NHL walk-forward re-run (`nhl-validate.yml`) rewrites
+  `live.json`'s `generated_at` only. The snapshot's guard therefore compares
+  the parameters without that stamp (`liveParamsHash`, recorded by the
+  strength study). A real refit still stops the NHL leg until the study is
+  re-run.
+
+**Not done:** no Kalshi NHL futures are mapped (the source check lists 417
+open NHL futures markets; mapping them follows the NFL's
+`build_kalshi_mappings.ts` route), and the NHL has no research-registry
+entry. Neither gates publication.
 
 ### Other limitations
 (Goalies §7, overtime §6.)
@@ -510,6 +537,7 @@ row has been written anywhere.
 ```
 pip install pyarrow                                            # the schedule parquet (build only)
 node simulator/src/cli/run.ts --sport nhl --workers 4 --dry-run   # build a snapshot and simulate 100,000 seasons
+# production: the nightly Simulator workflow (10:17 UTC), or Actions -> Simulator -> Run workflow (sport nhl, season 2027, publish)
 node simulator/src/cli/run.ts --sport nhl --snapshot <dir>/snapshot.json --dry-run   # replay a frozen snapshot
 node simulator/src/research/nhl_goal_distribution.ts           # §5 (≈16 s)
 node simulator/src/research/nhl_strength_uncertainty.ts        # §8 (≈2.3 min)

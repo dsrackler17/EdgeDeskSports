@@ -16,12 +16,13 @@ import path from 'node:path';
 import http from 'node:http';
 import { createRequire } from 'node:module';
 import { kit } from './_kit.ts';
-import { nflFixture } from './_fixture.ts';
+import { nflFixture, nhlFixture } from './_fixture.ts';
+import { nhlModule } from '../src/sports/nhl/module.ts';
 import { REPO } from '../src/sports/nfl/model_adapter.ts';
 import { nflModule } from '../src/sports/nfl/module.ts';
 import { runRange } from '../src/core/engine.ts';
 import { buildResults } from '../src/core/results.ts';
-import { resultRows } from '../src/publish/publish.ts';
+import { resultRows, entityRows } from '../src/publish/publish.ts';
 import { nflMathStatus } from '../src/sports/nfl/validate.ts';
 
 const require = createRequire(import.meta.url);
@@ -55,6 +56,21 @@ const edges = ['BUF', 'KC', 'SF', 'DET'].map((id, i) => ({ entity_id: id, outcom
   reference_prob: i === 2 ? null : [0.08, 0.06, 0, 0.05][i], normalized_ref_prob: null, reference_edge_pp: i === 2 ? null : Math.round((sb(id).probability - [0.08, 0.06, 0, 0.05][i]) * 1e4) / 100,
   exec_price: [0.09, 0.07, 0.15, 0.06][i], exec_cost_prob: [0.09, 0.07, 0.15, 0.06][i], exec_edge_pp: Math.round((sb(id).probability - [0.09, 0.07, 0.15, 0.06][i]) * 1e4) / 100,
   quote_age_minutes: [4, 6, 90, 5][i], fee_verified: false, stale: i === 2, actionable: false, block_reasons: ['fee schedule unverified: the executable cost is pre-fee'], quote_at: new Date(Date.now() - [4, 6, 90, 5][i] * 60000).toISOString(), normalization_note: 'not normalised' }));
+
+/* the NHL: a REAL 1,000-run simulation of the committed 2026-27 snapshot, through the publisher's row mapping */
+const nsnap = nhlFixture();
+const nm = nhlModule(nsnap.data, { seed: 2027n });
+const nagg = runRange(nm, { start: 0, end: 1000 });
+const nrec: Record<string, { gp: number; w: number; l: number; otl: number; pts: number; rw: number; row: number }> = {};
+nsnap.data.teams.forEach((t) => { nrec[t.code] = { gp: 0, w: 0, l: 0, otl: 0, pts: 0, rw: 0, row: 0 }; });
+nsnap.data.games.filter((g) => g.done).forEach((g) => { const hw = (g.home_score as number) > (g.away_score as number), w = nrec[hw ? g.home : g.away], l = nrec[hw ? g.away : g.home];
+  w.gp++; l.gp++; w.w++; w.pts += 2; if (g.decided === 'REG') { w.rw++; w.row++; l.l++; } else { if (g.decided === 'OT') w.row++; l.otl++; l.pts++; } });
+const nresults = buildResults({ module: nm, agg: nagg, seed: 2027n, runs: 1000, workers: 1, input_hash: nsnap.input_hash, input_snapshot_at: new Date(Date.now() - 2 * 3600e3).toISOString(),
+  model_version: nsnap.data.model.model_version, config: nsnap.data.config, rules_version: nsnap.data.config.rules_version, started_at: '', finished_at: '', runtime_ms: 1, peak_rss_mb: 1,
+  entityExtras: (id) => ({ record: nrec[id], math_status: null }) });
+const NHL_RUN_ID = '66666666-7777-8888-9999-000000000000';
+const nrun = { ...run, run_id: NHL_RUN_ID, sport: 'nhl', season: '2026-27', n_sims: 1000, seed: '2027', model_version: nresults.run.model_version, rules_version: nresults.run.rules_version, comparison_id: null, validation_summary: { flags: { tiebreak_goals: 2 } } };
+const nrows = resultRows({ results: nresults } as any), nents = entityRows({ results: nresults } as any);
 
 const EVIL = '<img src=x onerror="window.__xss=1">';
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
@@ -92,18 +108,22 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     let statusCalls = 0;
     const status = { sport: 'nfl', competition: 'NFL', season: '2026', published_run_id: sc.published ? RUN_ID : null, published_at: sc.published ? run.published_at : null, input_snapshot_at: run.input_snapshot_at,
       n_sims: 3000, model_version: run.model_version, last_attempt_status: 'completed', last_attempt_at: run.completed_at, comparison_status: 'completed', comparison_at: run.completed_at };
+    const nstatus = { ...status, sport: 'nhl', competition: 'NHL', season: '2026-27', published_run_id: sc.published ? NHL_RUN_ID : null, n_sims: 1000, model_version: nrun.model_version, comparison_status: null, comparison_at: null };
+    const isNhl = (u: string) => u.includes(encodeURIComponent(NHL_RUN_ID)) || u.includes(NHL_RUN_ID) || /sport=eq\.nhl/.test(u);
     await ctx.route('**/*', (route: any) => {
       const u = route.request().url();
       if (u.startsWith('http://127.0.0.1')) return route.continue();
       if (/supabase\.co/.test(u)) {
         const J = (b: unknown, st = 200) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(b) });
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status]); }
+        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
-        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [run] : []);
-        if (/sim_current_results/.test(u)) return J(sc.entitled ? rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r)) : []);
-        if (/sim_current_entities/.test(u)) return J(sc.entitled ? ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e)) : []);
+        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? [isNhl(u) ? nrun : run] : []);
+        if (/sim_current_results/.test(u)) return J(sc.entitled ? (isNhl(u) ? nrows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
+        if (/sim_current_entities/.test(u)) return J(sc.entitled ? (isNhl(u) ? nents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
         if (/sim_current_edges/.test(u)) return J(sc.entitled ? edges : []);
         if (/subscriptions/.test(u)) return J([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]);
+        /* an onboarded reader: without it the personal desk's first-run walkthrough opens over the page once it is quiet */
+        if (/user_preferences/.test(u)) return J([{ persona: null, leagues: [], books: [], interests: [], onboarding_status: 'done' }]);
         return J([], 200);
       }
       return route.fulfill({ status: 204, body: '' });
@@ -166,6 +186,27 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     {
       const { ctx, page } = await open({ width: 390, height: 844 }, '', { entitled: true, published: false });
       T.chk('nothing published: the no-data state', /No simulation has been published/.test(await text(page)));
+      await ctx.close();
+    }
+    /* the NHL view */
+    for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width;
+      const { ctx, page, errors } = await open(vp, '#simulator/nhl', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/nhl')); await page.waitForTimeout(500);
+      let t = await text(page);
+      T.chk(W + ': NHL title view: 32 Stanley Cup cards, the regular-season honours apart, 1,000 simulated seasons', (await page.locator('#simHost .sm-club').count()) === 32 && /win Stanley Cup/.test(t) && /Presidents’ Trophy/.test(t) && /1,000 simulated seasons/.test(t) && !/Super Bowl/.test(t));
+      T.chk(W + ': NHL: no market is mapped, shown as unavailable (not zero)', /Market: unavailable/.test(t));
+      T.chk(W + ': NHL: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-nhl-title-' + W);
+      await page.click('#simHost [data-sim-tab="division"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': NHL division view: 4 divisions of 8 with W-L-OTL, points and projected points', (await page.locator('#simHost .sm-card .sm-tbl').count()) === 4 && (await page.locator('#simHost .sm-card .sm-tbl tbody tr').count()) === 32 && /W-L-OTL/.test(t) && /Proj\. pts/.test(t));
+      await shot(page, 'sim-nhl-division-' + W);
+      await page.click('#simHost [data-sim-tab="conference"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': NHL conference view: D1-D3, wild cards and rounds per conference', (await page.locator('#simHost .sm-seeds').count()) === 2 && /WC2/.test(t) && /Conf\. final/.test(t) && !/\(bye\)/.test(t));
+      await shot(page, 'sim-nhl-conference-' + W);
+      T.eq(W + ': NHL: no page errors', errors, []);
       await ctx.close();
     }
     {

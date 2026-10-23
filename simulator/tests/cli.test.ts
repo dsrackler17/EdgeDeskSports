@@ -45,7 +45,10 @@ const quiet = () => {};
     T.throws('...but never with fewer than 100,000 runs', () => planRuns('workflow_dispatch', { ...ok, runs: '99999', publish: 'true' }), /at least 100000/);
   }
   const sch = planRuns('schedule', {});
-  T.chk('the schedule plans every runnable sport at 100,000 runs, publishing only an ACTIVE one', sch.length === 1 && sch[0].runs === '100000' && sch[0].publish === (sch[0].status === 'ACTIVE'));
+  T.chk('the schedule plans every runnable sport (NFL and NHL) at 100,000 runs, publishing only an ACTIVE one', sch.map((r) => r.sport).join(',') === 'nfl,nhl' && sch.every((r) => r.runs === '100000' && r.publish === (r.status === 'ACTIVE')));
+  T.eq('the NHL is planned under its end-year season key', sch.find((r) => r.sport === 'nhl')!.season, '2027');
+  T.eq('a valid NHL dispatch', planRuns('workflow_dispatch', { ...ok, sport: 'nhl', season: '2027' }).map((r) => [r.sport, r.season]), [['nhl', '2027']]);
+  T.throws('an NHL dispatch with the NFL\'s season is refused', () => planRuns('workflow_dispatch', { ...ok, sport: 'nhl', season: '2026' }), /season must be 2027/);
   T.throws('an unknown event', () => planRuns('push', {}), /unsupported event/);
 }
 /* 3 replay a frozen snapshot through the real command path. The fixture's

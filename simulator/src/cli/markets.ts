@@ -26,10 +26,17 @@ export function runView(results: any): RunView {
     ...(results.outcome_semantics ? { outcome_semantics: results.outcome_semantics } : {}) };
 }
 
+/** the mappings of one sport, and the outcome sets they use: one config file serves every sport's run */
+export function forSport(cfg: FuturesConfig, sport: string): FuturesConfig {
+  const mappings = cfg.mappings.filter((m) => m.sport === sport);
+  const used = new Set(mappings.map((m) => m.outcome_set).filter(Boolean));
+  return { ...cfg, mappings, outcome_sets: cfg.outcome_sets.filter((s) => used.has(s.id)) };
+}
+
 export async function marketStep(opt: { results: any; runId: string | null; publish: boolean; cfg?: FuturesConfig; db?: SimDb; fetchImpl?: typeof fetch; log?: (s: string) => void; now?: Date }) {
   const log = opt.log || console.log;
-  const cfg = opt.cfg || JSON.parse(fs.readFileSync(FUTURES_CONFIG, 'utf8')) as FuturesConfig;
   const run = runView(opt.results);
+  const cfg = forSport(opt.cfg || JSON.parse(fs.readFileSync(FUTURES_CONFIG, 'utf8')) as FuturesConfig, run.sport);
   const errs = validateFuturesConfig(cfg, run);
   if (errs.length) throw Object.assign(new Error('invalid futures mapping: ' + errs.join('; ')), { exitCode: 2 });
   const live = cfg.mappings.filter((m) => m.status === 'verified');
