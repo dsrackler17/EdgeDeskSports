@@ -418,14 +418,31 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
         await C.page.evaluate(() => document.getElementById('free').scrollIntoView({ block: 'start', behavior: 'instant' }));
         await C.page.waitForTimeout(500);
         const f = await C.page.evaluate(() => ({ games: [...document.querySelectorAll('#freeGames li')].map((li) => li.innerText),
-          chips: document.querySelectorAll('#freeGames .st').length, arts: [...document.querySelectorAll('#freeArts a')].map((a) => a.getAttribute('href')),
+          chips: document.querySelectorAll('#freeGames .st').length, chipText: [...document.querySelectorAll('#freeGames .st')].map((x) => x.textContent.trim()), arts: [...document.querySelectorAll('#freeArts a')].map((a) => a.getAttribute('href')),
           links: [...document.querySelectorAll('#free a')].map((a) => a.getAttribute('href')) }));
-        chk(vp.width + ' free: the week\'s games from the board, each with EdgeDesk\'s public read', f.games.length >= 1 && f.games.length <= 4 && f.chips === f.games.length, f);
+        chk(vp.width + ' free: the week\'s games from the board, EdgeDesk\'s public read on those it has one for', f.games.length >= 1 && f.games.length <= 4 && f.chips >= 1 && f.chips <= f.games.length, f);
+        chk(vp.width + ' free: no game in the first section reads DATA INCOMPLETE', f.chipText.every((c) => c !== 'DATA INCOMPLETE') && !f.games.some((t) => /DATA INCOMPLETE/.test(t)), f.chipText);
         const pubUrls = PUB.articles.map((a) => a.url.replace('https://edgedesksports.com', ''));
         chk(vp.width + ' free: the latest research, linked to published articles only', f.arts.length >= 1 && f.arts.every((h) => pubUrls.indexOf(h) >= 0), f.arts);
         ['/today/', '/articles/', '/tools/no-vig-calculator/', '/tools/fair-odds-calculator/', '/tools/model-vs-market/', '/research/sample/', '/newsletter/?from=home_free']
           .forEach((h) => chk(vp.width + ' free: links ' + h, f.links.indexOf(h) >= 0, f.links));
         chk(vp.width + ' free: nothing wider than the screen, no script error', (await overflowing(C.page)).length === 0 && C.errors.length === 0, C.errors);
+        /* #signals: each step of the evidence ladder shows its own sample signal */
+        await C.page.evaluate(() => document.getElementById('sigDemo').scrollIntoView({ block: 'start', behavior: 'instant' }));
+        const shown = () => C.page.evaluate(() => ({ on: [...document.querySelectorAll('#sigDemo .ladder button[aria-pressed="true"]')].map((b) => b.dataset.ev),
+          vis: [...document.querySelectorAll('#sigDemo .sig-v')].filter((v) => !v.hidden && v.offsetHeight > 0).map((v) => v.dataset.ev),
+          h3: (() => { const v = [...document.querySelectorAll('#sigDemo .sig-v')].find((x) => !x.hidden); return v ? v.querySelector('h3').textContent : ''; })() }));
+        const s0 = await shown();
+        chk(vp.width + ' signals: the sample opens on a supported association', s0.on.join() === 'assoc' && s0.vis.join() === 'assoc', s0);
+        const seen = [];
+        for (const k of ['cause', 'obs', 'unex', 'assoc']) {
+          await C.page.click('#sigDemo .ladder button[data-ev="' + k + '"]');
+          const s1 = await shown(); seen.push(s1.h3);
+          chk(vp.width + ' signals: tapping ' + k + ' shows its own sample, and only it', s1.on.join() === k && s1.vis.join() === k && s1.h3.length > 10, s1);
+          chk(vp.width + ' signals: ' + k + ' fits the screen', (await overflowing(C.page)).length === 0, await overflowing(C.page));
+        }
+        chk(vp.width + ' signals: four steps, four different signals', new Set(seen).size === 4, seen);
+        chk(vp.width + ' signals: no script error while switching', C.errors.length === 0, C.errors);
         await C.ctx.close();
       }
     }
@@ -495,8 +512,10 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
       prevTag: document.getElementById('lpPrevTag').textContent, prevLive: document.getElementById('lpPrevTag').classList.contains('live'),
       upd: (() => { const li = document.querySelector('#lpStats li[data-k="updated"]'); return { old: li.classList.contains('old'), text: li.textContent }; })(),
-      research: (() => { const li = document.querySelector('#lpStats li[data-k="research"]'); return li.hidden ? null : li.querySelector('b').textContent; })()
+      research: (() => { const li = document.querySelector('#lpStats li[data-k="research"]'); return li.hidden ? null : li.querySelector('b').textContent; })(),
+      free: [...document.querySelectorAll('#freeGames li')].map((li) => li.innerText)
     }));
+    chk(vp.width + ' stale: #free still lists the slate, and none of it reads DATA INCOMPLETE', r.free.length >= 1 && !r.free.some((t) => /DATA INCOMPLETE/.test(t)), r.free);
     chk(vp.width + ' stale: the preview is not called live', !r.prevLive && /^(Last update|Example)/.test(r.prevTag), r.prevTag);
     chk(vp.width + ' stale: "Last update", not a green "Updated"', r.upd.old && /^Last update/.test(r.upd.text), r.upd);
     chk(vp.width + ' stale: the research-grade count does not count the games it downgraded', r.research === null || +r.research.replace(/,/g, '') < 4, r.research);

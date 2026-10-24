@@ -20,25 +20,27 @@ test (`basketball/ncaam_forecast/tests/model.test.js`, "scope").
 
 *Implemented* = code complete. *Tested* = its suites ran green here (§12). *Activated* = it
 runs and serves without a person doing anything more. *Deployed* = it is in production.
-Nothing in this build is deployed: nothing was pushed to `main`, no SQL was applied to
-production, and no secret or paid service was used.
+**2026-10-24:** the build is on `main`, the daily refresh runs there (first run 2026-10-23,
+40042084100), and the database layer and research registration are applied in production
+(*Deploy NCAAM forecast SQL*, run 40052574063: every report row `ok`). **Nothing is published
+yet:** `NCAAM_FC_PUBLISH` is not set, so the daily run builds forecasts as an artifact only.
 
 | Component | Implemented | Tested | Activated | Deployed | Blocked by |
 |---|---|---|---|---|---|
-| Data: ingest, quality, quarantine, D-I membership, snapshots, hashes (§3) | yes | yes | yes, when `ncaam-forecast.yml` runs on `main` | no | merge |
-| Pregame model: ratings, coherent win probability, margin and total distributions (§4–5) | yes | yes | yes (champion `ncaam_adjeff@1.0.0`) | no | merge |
+| Data: ingest, quality, quarantine, D-I membership, snapshots, hashes (§3) | yes | yes | yes (`ncaam-forecast.yml`, daily on `main`) | yes | — |
+| Pregame model: ratings, coherent win probability, margin and total distributions (§4–5) | yes | yes | yes (champion `ncaam_adjeff@1.0.0`) | yes | — |
 | Validation and baselines, ablations, cohorts (§6) | yes | yes | n/a | n/a | — |
-| Weekly challengers with guarded promotion, rollback, failure injection (§9) | yes | yes | yes, when `ncaam-weekly.yml` runs on `main` | no | merge |
-| Daily refresh and atomic publication (§10, §11) | yes | yes | builds daily; **publishes only with `NCAAM_FC_PUBLISH = on`** | no | SQL deploy + the variable (a person) |
+| Weekly challengers with guarded promotion, rollback, failure injection (§9) | yes | yes | yes (`ncaam-weekly.yml`, Mondays on `main`; first run 2026-10-26) | yes | — |
+| Daily refresh and atomic publication (§10, §11) | yes | yes | builds daily; **publishes only with `NCAAM_FC_PUBLISH = on`** | builds: yes; publishes: **no** | the variable (a person) |
 | Upset Watch: three separate signals, frozen thresholds (§7) | yes | yes | with publication | no | as above |
 | Market-assisted forecast and market-disagreement signal | interfaces only | the "unavailable" state is tested | **no** | no | no NCAAM quotes are captured (§2) |
 | Tournament simulator: official bracket, First Four, correlated strength, 100k runs (§8) | yes | yes, plus a 15-season backtest | **no** | no | the 2027 format and bracket must be VERIFIED after Selection Sunday (§13) |
 | Pre-selection national-title forecasts | disabled state + reason | yes | **no** | no | no defensible selection/seeding proxy exists |
 | Conference-tournament simulation | the slot engine plays any supplied bracket; pre-bracket mode disabled | yes | **no** | no | no verified 2026-27 conference formats |
 | In-game (live) forecasts (§8b) | model, backtest, writer, SQL gate | yes | **no (ships disabled)** | no | no always-on runtime; feed lacks possession and event times |
-| Reader: Games, Upset Watch, Tournament, Model Health tabs (§11) | yes | yes (unit + Chromium at 3 widths) | with publication | no | merge + SQL deploy |
-| Database: `supabase/ncaam_forecast.sql` + migration, RLS, premium gate (§11) | yes | yes (real PostgreSQL) | — | **no** | a person runs `deploy-ncaam-forecast.yml` |
-| Research registration (NCAAM-FORECAST 1.0.0, SIM-NCAAM-TOURNAMENT 0.1.0, EXPERIMENTAL, T3) | yes | yes | — | no | same deploy |
+| Reader: Games, Upset Watch, Tournament, Model Health tabs (§11) | yes | yes (unit + Chromium at 3 widths) | with publication | yes (shows "no forecast published yet") | publication |
+| Database: `supabase/ncaam_forecast.sql` + migration, RLS, premium gate (§11) | yes | yes (real PostgreSQL) | — | **yes** (2026-10-24, run 40052574063) | — |
+| Research registration (NCAAM-FORECAST 1.0.0, SIM-NCAAM-TOURNAMENT 0.1.0, EXPERIMENTAL, T3) | yes | yes | — | **yes** (same run) | — |
 
 ## 2. Discovery (what this stands on)
 
@@ -437,9 +439,10 @@ Node v22.22.0; PostgreSQL 16; Chromium (Playwright 1.56.1); Linux 6.18; 4 vCPU I
 
 Before the season (now):
 
-- [ ] Merge the branch; apply `simulator.sql`, then `ncaam_forecast.sql` and the registration
-  (`deploy-ncaam-forecast.yml`); set `NCAAM_FC_PUBLISH = on`. The first daily run publishes
-  pregame forecasts.
+- [x] Merge the branch; apply `simulator.sql`, then `ncaam_forecast.sql` and the registration
+  (`deploy-ncaam-forecast.yml`, 2026-10-24, run 40052574063).
+- [ ] Set `NCAAM_FC_PUBLISH = on` before the season opens (2026-11-02). The next daily run
+  publishes pregame forecasts.
 - [ ] Owner review of the hoopR/ESPN data terms before NCAAM output is sold.
 
 Weekly through the season:
