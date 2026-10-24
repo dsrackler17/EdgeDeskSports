@@ -24,6 +24,11 @@ Two fixes that follow from the leave-one-term-out record (`docs/cfb-validation/L
   - `tools/football/loto.test.js` has 44 checks: the shadow arithmetic by hand; a real shadow term is VALIDATED and a noise one never is; the record's live split has no last-season part; a shadow term is in the number exactly when its record validates it.
   - `tools/football/game_research.test.js` has 248 checks.
   - The research-card libs' stamps moved (`20261024sr1`), and so did the home page's model stamp.
+- **The simulator's CFB fixture.** `simulator/fixtures/cfb_2026_wk7_snapshot.json.gz` records the hash of `engine.js`, so the simulator refused to replay it.
+  - The simulator prices with no schedule context and no play-level stats, and on that path both engines are identical: 12,240 priced pairings, zero differences in fair margin, sigma, win probability or total.
+  - `simulator/src/cli/build_cfb_fixture.ts --restamp` builds fresh and compares every priced field with the committed fixture of the same as-of week. Only when all of them match does it move the code identity, and it refuses otherwise (a tampered game price was refused).
+  - A fresh build matched the fixture in all 888 games and every postseason pairing, so the fixture keeps its data with only the code identity moved.
+  - Simulator suites: CFB 308, CLI 46, publish 18, reader 101, SQL 88, typecheck clean.
 
 ## 2026-10-24 — College basketball: preseason mode, then the season on its own
 
