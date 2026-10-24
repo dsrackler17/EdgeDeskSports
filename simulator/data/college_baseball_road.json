@@ -1,0 +1,3835 @@
+{
+ "schema": "edgedesk_sim_cbase_road_v1",
+ "generated_at": "2026-10-24T00:46:11.516Z",
+ "model_version": "1.0.0",
+ "sims_per_checkpoint": 5000,
+ "seasons_fitted": [
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2021,
+  2022,
+  2024,
+  2025,
+  2026
+ ],
+ "targets": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2021,
+  2022,
+  2024,
+  2025,
+  2026
+ ],
+ "checkpoints": [
+  {
+   "checkpoint": "preseason",
+   "days": null
+  },
+  {
+   "checkpoint": "d70",
+   "days": 70
+  },
+  {
+   "checkpoint": "d42",
+   "days": 42
+  },
+  {
+   "checkpoint": "d21",
+   "days": 21
+  },
+  {
+   "checkpoint": "d7",
+   "days": 7
+  }
+ ],
+ "summary": {
+  "preseason": {
+   "days": null,
+   "levels": {
+    "field": {
+     "model": 0.3922,
+     "base_rate": 0.5148,
+     "last_season": 0.452,
+     "diff_vs_base_rate": {
+      "mean": -0.1225,
+      "ci95": [
+       -0.1452,
+       -0.1026
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0597,
+      "ci95": [
+       -0.0755,
+       -0.0449
+      ]
+     }
+    },
+    "host": {
+     "model": 0.1252,
+     "base_rate": 0.202,
+     "last_season": 0.1613,
+     "diff_vs_base_rate": {
+      "mean": -0.0768,
+      "ci95": [
+       -0.0896,
+       -0.0633
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0361,
+      "ci95": [
+       -0.0459,
+       -0.0239
+      ]
+     }
+    },
+    "omaha": {
+     "model": 0.0755,
+     "base_rate": 0.1217,
+     "last_season": 0.1023,
+     "diff_vs_base_rate": {
+      "mean": -0.0462,
+      "ci95": [
+       -0.0554,
+       -0.038
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0267,
+      "ci95": [
+       -0.0329,
+       -0.0212
+      ]
+     }
+    },
+    "champion": {
+     "model": 0.0154,
+     "base_rate": 0.0221,
+     "last_season": 0.0178,
+     "diff_vs_base_rate": {
+      "mean": -0.0067,
+      "ci95": [
+       -0.0095,
+       -0.0037
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0024,
+      "ci95": [
+       -0.0048,
+       0.0005
+      ]
+     }
+    }
+   },
+   "field_calibration": [
+    {
+     "bin": "0-0.05",
+     "n": 987,
+     "mean_chance": 0.0188,
+     "made_field": 0.0395
+    },
+    {
+     "bin": "0.05-0.2",
+     "n": 799,
+     "mean_chance": 0.1104,
+     "made_field": 0.1402
+    },
+    {
+     "bin": "0.2-0.4",
+     "n": 405,
+     "mean_chance": 0.282,
+     "made_field": 0.2691
+    },
+    {
+     "bin": "0.4-0.6",
+     "n": 245,
+     "mean_chance": 0.4889,
+     "made_field": 0.4041
+    },
+    {
+     "bin": "0.6-0.8",
+     "n": 167,
+     "mean_chance": 0.6998,
+     "made_field": 0.6287
+    },
+    {
+     "bin": "0.8-0.95",
+     "n": 99,
+     "mean_chance": 0.8707,
+     "made_field": 0.8182
+    },
+    {
+     "bin": "0.95-1",
+     "n": 33,
+     "mean_chance": 0.9733,
+     "made_field": 0.9394
+    }
+   ],
+   "top64_in_field": 36.4444
+  },
+  "d70": {
+   "days": 70,
+   "levels": {
+    "field": {
+     "model": 0.347,
+     "base_rate": 0.5148,
+     "last_season": 0.452,
+     "diff_vs_base_rate": {
+      "mean": -0.1678,
+      "ci95": [
+       -0.192,
+       -0.1447
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.105,
+      "ci95": [
+       -0.1298,
+       -0.0811
+      ]
+     }
+    },
+    "host": {
+     "model": 0.1014,
+     "base_rate": 0.202,
+     "last_season": 0.1613,
+     "diff_vs_base_rate": {
+      "mean": -0.1006,
+      "ci95": [
+       -0.1141,
+       -0.0865
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0599,
+      "ci95": [
+       -0.0738,
+       -0.0461
+      ]
+     }
+    },
+    "omaha": {
+     "model": 0.0731,
+     "base_rate": 0.1217,
+     "last_season": 0.1023,
+     "diff_vs_base_rate": {
+      "mean": -0.0487,
+      "ci95": [
+       -0.0556,
+       -0.0427
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0292,
+      "ci95": [
+       -0.0341,
+       -0.0245
+      ]
+     }
+    },
+    "champion": {
+     "model": 0.0152,
+     "base_rate": 0.0221,
+     "last_season": 0.0178,
+     "diff_vs_base_rate": {
+      "mean": -0.0069,
+      "ci95": [
+       -0.0098,
+       -0.0036
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0026,
+      "ci95": [
+       -0.0056,
+       0.0004
+      ]
+     }
+    }
+   },
+   "field_calibration": [
+    {
+     "bin": "0-0.05",
+     "n": 1130,
+     "mean_chance": 0.018,
+     "made_field": 0.031
+    },
+    {
+     "bin": "0.05-0.2",
+     "n": 725,
+     "mean_chance": 0.1091,
+     "made_field": 0.1448
+    },
+    {
+     "bin": "0.2-0.4",
+     "n": 344,
+     "mean_chance": 0.2846,
+     "made_field": 0.2616
+    },
+    {
+     "bin": "0.4-0.6",
+     "n": 205,
+     "mean_chance": 0.5064,
+     "made_field": 0.4488
+    },
+    {
+     "bin": "0.6-0.8",
+     "n": 125,
+     "mean_chance": 0.6911,
+     "made_field": 0.592
+    },
+    {
+     "bin": "0.8-0.95",
+     "n": 131,
+     "mean_chance": 0.8786,
+     "made_field": 0.8244
+    },
+    {
+     "bin": "0.95-1",
+     "n": 75,
+     "mean_chance": 0.9777,
+     "made_field": 0.96
+    }
+   ],
+   "top64_in_field": 39.7778
+  },
+  "d42": {
+   "days": 42,
+   "levels": {
+    "field": {
+     "model": 0.3143,
+     "base_rate": 0.5148,
+     "last_season": 0.452,
+     "diff_vs_base_rate": {
+      "mean": -0.2004,
+      "ci95": [
+       -0.2292,
+       -0.1678
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.1376,
+      "ci95": [
+       -0.1647,
+       -0.1083
+      ]
+     }
+    },
+    "host": {
+     "model": 0.0878,
+     "base_rate": 0.202,
+     "last_season": 0.1613,
+     "diff_vs_base_rate": {
+      "mean": -0.1142,
+      "ci95": [
+       -0.1254,
+       -0.1013
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0735,
+      "ci95": [
+       -0.086,
+       -0.0609
+      ]
+     }
+    },
+    "omaha": {
+     "model": 0.0704,
+     "base_rate": 0.1217,
+     "last_season": 0.1023,
+     "diff_vs_base_rate": {
+      "mean": -0.0513,
+      "ci95": [
+       -0.0582,
+       -0.0453
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0319,
+      "ci95": [
+       -0.0377,
+       -0.0255
+      ]
+     }
+    },
+    "champion": {
+     "model": 0.0146,
+     "base_rate": 0.0221,
+     "last_season": 0.0178,
+     "diff_vs_base_rate": {
+      "mean": -0.0074,
+      "ci95": [
+       -0.0102,
+       -0.0045
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0031,
+      "ci95": [
+       -0.0063,
+       -0.0002
+      ]
+     }
+    }
+   },
+   "field_calibration": [
+    {
+     "bin": "0-0.05",
+     "n": 1214,
+     "mean_chance": 0.0172,
+     "made_field": 0.0264
+    },
+    {
+     "bin": "0.05-0.2",
+     "n": 681,
+     "mean_chance": 0.1092,
+     "made_field": 0.1322
+    },
+    {
+     "bin": "0.2-0.4",
+     "n": 296,
+     "mean_chance": 0.2849,
+     "made_field": 0.2669
+    },
+    {
+     "bin": "0.4-0.6",
+     "n": 169,
+     "mean_chance": 0.4965,
+     "made_field": 0.4024
+    },
+    {
+     "bin": "0.6-0.8",
+     "n": 150,
+     "mean_chance": 0.6968,
+     "made_field": 0.6933
+    },
+    {
+     "bin": "0.8-0.95",
+     "n": 124,
+     "mean_chance": 0.8768,
+     "made_field": 0.8629
+    },
+    {
+     "bin": "0.95-1",
+     "n": 101,
+     "mean_chance": 0.9827,
+     "made_field": 0.9505
+    }
+   ],
+   "top64_in_field": 43.2222
+  },
+  "d21": {
+   "days": 21,
+   "levels": {
+    "field": {
+     "model": 0.3002,
+     "base_rate": 0.5148,
+     "last_season": 0.452,
+     "diff_vs_base_rate": {
+      "mean": -0.2145,
+      "ci95": [
+       -0.2418,
+       -0.186
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.1517,
+      "ci95": [
+       -0.1787,
+       -0.1237
+      ]
+     }
+    },
+    "host": {
+     "model": 0.0861,
+     "base_rate": 0.202,
+     "last_season": 0.1613,
+     "diff_vs_base_rate": {
+      "mean": -0.1159,
+      "ci95": [
+       -0.1272,
+       -0.1032
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0752,
+      "ci95": [
+       -0.0882,
+       -0.0634
+      ]
+     }
+    },
+    "omaha": {
+     "model": 0.0688,
+     "base_rate": 0.1217,
+     "last_season": 0.1023,
+     "diff_vs_base_rate": {
+      "mean": -0.0529,
+      "ci95": [
+       -0.0594,
+       -0.0462
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0334,
+      "ci95": [
+       -0.039,
+       -0.0272
+      ]
+     }
+    },
+    "champion": {
+     "model": 0.0141,
+     "base_rate": 0.0221,
+     "last_season": 0.0178,
+     "diff_vs_base_rate": {
+      "mean": -0.008,
+      "ci95": [
+       -0.0108,
+       -0.005
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0036,
+      "ci95": [
+       -0.007,
+       -0.0005
+      ]
+     }
+    }
+   },
+   "field_calibration": [
+    {
+     "bin": "0-0.05",
+     "n": 1235,
+     "mean_chance": 0.0164,
+     "made_field": 0.0235
+    },
+    {
+     "bin": "0.05-0.2",
+     "n": 679,
+     "mean_chance": 0.1071,
+     "made_field": 0.1296
+    },
+    {
+     "bin": "0.2-0.4",
+     "n": 270,
+     "mean_chance": 0.2856,
+     "made_field": 0.2667
+    },
+    {
+     "bin": "0.4-0.6",
+     "n": 170,
+     "mean_chance": 0.4912,
+     "made_field": 0.4059
+    },
+    {
+     "bin": "0.6-0.8",
+     "n": 137,
+     "mean_chance": 0.6979,
+     "made_field": 0.6788
+    },
+    {
+     "bin": "0.8-0.95",
+     "n": 126,
+     "mean_chance": 0.8787,
+     "made_field": 0.8968
+    },
+    {
+     "bin": "0.95-1",
+     "n": 118,
+     "mean_chance": 0.9835,
+     "made_field": 0.9492
+    }
+   ],
+   "top64_in_field": 43.5556
+  },
+  "d7": {
+   "days": 7,
+   "levels": {
+    "field": {
+     "model": 0.2841,
+     "base_rate": 0.5148,
+     "last_season": 0.452,
+     "diff_vs_base_rate": {
+      "mean": -0.2307,
+      "ci95": [
+       -0.2594,
+       -0.1968
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.1679,
+      "ci95": [
+       -0.1947,
+       -0.1391
+      ]
+     }
+    },
+    "host": {
+     "model": 0.0788,
+     "base_rate": 0.202,
+     "last_season": 0.1613,
+     "diff_vs_base_rate": {
+      "mean": -0.1232,
+      "ci95": [
+       -0.1347,
+       -0.1118
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0825,
+      "ci95": [
+       -0.095,
+       -0.0704
+      ]
+     }
+    },
+    "omaha": {
+     "model": 0.0677,
+     "base_rate": 0.1217,
+     "last_season": 0.1023,
+     "diff_vs_base_rate": {
+      "mean": -0.0541,
+      "ci95": [
+       -0.0608,
+       -0.0474
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0346,
+      "ci95": [
+       -0.0418,
+       -0.027
+      ]
+     }
+    },
+    "champion": {
+     "model": 0.0143,
+     "base_rate": 0.0221,
+     "last_season": 0.0178,
+     "diff_vs_base_rate": {
+      "mean": -0.0078,
+      "ci95": [
+       -0.0111,
+       -0.0042
+      ]
+     },
+     "diff_vs_last_season": {
+      "mean": -0.0035,
+      "ci95": [
+       -0.0073,
+       0.0002
+      ]
+     }
+    }
+   },
+   "field_calibration": [
+    {
+     "bin": "0-0.05",
+     "n": 1253,
+     "mean_chance": 0.0163,
+     "made_field": 0.0192
+    },
+    {
+     "bin": "0.05-0.2",
+     "n": 673,
+     "mean_chance": 0.108,
+     "made_field": 0.1367
+    },
+    {
+     "bin": "0.2-0.4",
+     "n": 263,
+     "mean_chance": 0.2868,
+     "made_field": 0.2319
+    },
+    {
+     "bin": "0.4-0.6",
+     "n": 165,
+     "mean_chance": 0.4974,
+     "made_field": 0.4485
+    },
+    {
+     "bin": "0.6-0.8",
+     "n": 140,
+     "mean_chance": 0.71,
+     "made_field": 0.7143
+    },
+    {
+     "bin": "0.8-0.95",
+     "n": 117,
+     "mean_chance": 0.8868,
+     "made_field": 0.906
+    },
+    {
+     "bin": "0.95-1",
+     "n": 124,
+     "mean_chance": 0.9854,
+     "made_field": 0.9597
+    }
+   ],
+   "top64_in_field": 45.2222
+  }
+ },
+ "per_season": [
+  {
+   "season": 2016,
+   "prev_season": 2015,
+   "selection": {
+    "k": 5.5,
+    "tau": 0.08,
+    "tau_host": 0.15,
+    "seasons": [
+     2014,
+     2015
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 309,
+     "levels": {
+      "field": {
+       "model": 0.437,
+       "base_rate": 0.5101,
+       "last_season": 0.4711
+      },
+      "host": {
+       "model": 0.1142,
+       "base_rate": 0.2037,
+       "last_season": 0.1558
+      },
+      "omaha": {
+       "model": 0.0716,
+       "base_rate": 0.1202,
+       "last_season": 0.099
+      },
+      "champion": {
+       "model": 0.0241,
+       "base_rate": 0.0218,
+       "last_season": 0.0232
+      }
+     },
+     "champion": {
+      "name": "Coastal Carolina",
+      "p": 0.0016,
+      "rank": 60
+     },
+     "favourites": [
+      {
+       "name": "Vanderbilt",
+       "p": 0.1024
+      },
+      {
+       "name": "Florida",
+       "p": 0.0848
+      },
+      {
+       "name": "UCLA",
+       "p": 0.083
+      }
+     ],
+     "top64_in_field": 35
+    },
+    "d70": {
+     "teams": 309,
+     "levels": {
+      "field": {
+       "model": 0.4054,
+       "base_rate": 0.5101,
+       "last_season": 0.4711
+      },
+      "host": {
+       "model": 0.0916,
+       "base_rate": 0.2037,
+       "last_season": 0.1558
+      },
+      "omaha": {
+       "model": 0.0676,
+       "base_rate": 0.1202,
+       "last_season": 0.099
+      },
+      "champion": {
+       "model": 0.0257,
+       "base_rate": 0.0218,
+       "last_season": 0.0232
+      }
+     },
+     "champion": {
+      "name": "Coastal Carolina",
+      "p": 0.001,
+      "rank": 53
+     },
+     "favourites": [
+      {
+       "name": "TCU",
+       "p": 0.1366
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.1126
+      },
+      {
+       "name": "Louisville",
+       "p": 0.0846
+      }
+     ],
+     "top64_in_field": 38
+    },
+    "d42": {
+     "teams": 309,
+     "levels": {
+      "field": {
+       "model": 0.4193,
+       "base_rate": 0.5101,
+       "last_season": 0.4711
+      },
+      "host": {
+       "model": 0.0923,
+       "base_rate": 0.2037,
+       "last_season": 0.1558
+      },
+      "omaha": {
+       "model": 0.0622,
+       "base_rate": 0.1202,
+       "last_season": 0.099
+      },
+      "champion": {
+       "model": 0.0226,
+       "base_rate": 0.0218,
+       "last_season": 0.0232
+      }
+     },
+     "champion": {
+      "name": "Coastal Carolina",
+      "p": 0.0026,
+      "rank": 35
+     },
+     "favourites": [
+      {
+       "name": "TCU",
+       "p": 0.1524
+      },
+      {
+       "name": "Louisville",
+       "p": 0.1308
+      },
+      {
+       "name": "Texas A&M",
+       "p": 0.111
+      }
+     ],
+     "top64_in_field": 41
+    },
+    "d21": {
+     "teams": 309,
+     "levels": {
+      "field": {
+       "model": 0.3806,
+       "base_rate": 0.5101,
+       "last_season": 0.4711
+      },
+      "host": {
+       "model": 0.0905,
+       "base_rate": 0.2037,
+       "last_season": 0.1558
+      },
+      "omaha": {
+       "model": 0.0613,
+       "base_rate": 0.1202,
+       "last_season": 0.099
+      },
+      "champion": {
+       "model": 0.0197,
+       "base_rate": 0.0218,
+       "last_season": 0.0232
+      }
+     },
+     "champion": {
+      "name": "Coastal Carolina",
+      "p": 0.0064,
+      "rank": 23
+     },
+     "favourites": [
+      {
+       "name": "Louisville",
+       "p": 0.1376
+      },
+      {
+       "name": "Florida",
+       "p": 0.1302
+      },
+      {
+       "name": "TCU",
+       "p": 0.1174
+      }
+     ],
+     "top64_in_field": 42
+    },
+    "d7": {
+     "teams": 309,
+     "levels": {
+      "field": {
+       "model": 0.3809,
+       "base_rate": 0.5101,
+       "last_season": 0.4711
+      },
+      "host": {
+       "model": 0.0805,
+       "base_rate": 0.2037,
+       "last_season": 0.1558
+      },
+      "omaha": {
+       "model": 0.065,
+       "base_rate": 0.1202,
+       "last_season": 0.099
+      },
+      "champion": {
+       "model": 0.0204,
+       "base_rate": 0.0218,
+       "last_season": 0.0232
+      }
+     },
+     "champion": {
+      "name": "Coastal Carolina",
+      "p": 0.0052,
+      "rank": 22
+     },
+     "favourites": [
+      {
+       "name": "Louisville",
+       "p": 0.1802
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.1132
+      },
+      {
+       "name": "Florida",
+       "p": 0.1088
+      }
+     ],
+     "top64_in_field": 42
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.95027,
+     "conf_sd": 0.06596,
+     "team_sd": 0.17429,
+     "end_sd_team": 0.09154,
+     "end_sd_conf": 0.04132,
+     "seasons": [
+      2014,
+      2015
+     ],
+     "checkpoint": "preseason",
+     "days": 107
+    },
+    {
+     "slope": 0.95065,
+     "conf_sd": 0.01206,
+     "team_sd": 0.12462,
+     "end_sd_team": 0.09154,
+     "end_sd_conf": 0.04132,
+     "seasons": [
+      2014,
+      2015
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.97956,
+     "conf_sd": 0.00434,
+     "team_sd": 0.07625,
+     "end_sd_team": 0.09154,
+     "end_sd_conf": 0.04132,
+     "seasons": [
+      2014,
+      2015
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 1.00754,
+     "conf_sd": 0,
+     "team_sd": 0.04528,
+     "end_sd_team": 0.09154,
+     "end_sd_conf": 0.04132,
+     "seasons": [
+      2014,
+      2015
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 1.00023,
+     "conf_sd": 0,
+     "team_sd": 0.01485,
+     "end_sd_team": 0.09154,
+     "end_sd_conf": 0.04132,
+     "seasons": [
+      2014,
+      2015
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  },
+  {
+   "season": 2017,
+   "prev_season": 2016,
+   "selection": {
+    "k": 5.5,
+    "tau": 0.15,
+    "tau_host": 0.15,
+    "seasons": [
+     2014,
+     2015,
+     2016
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 310,
+     "levels": {
+      "field": {
+       "model": 0.4036,
+       "base_rate": 0.5092,
+       "last_season": 0.4763
+      },
+      "host": {
+       "model": 0.1202,
+       "base_rate": 0.2032,
+       "last_season": 0.1783
+      },
+      "omaha": {
+       "model": 0.0487,
+       "base_rate": 0.1198,
+       "last_season": 0.0912
+      },
+      "champion": {
+       "model": 0.0104,
+       "base_rate": 0.0217,
+       "last_season": 0.0131
+      }
+     },
+     "champion": {
+      "name": "Florida",
+      "p": 0.1,
+      "rank": 3
+     },
+     "favourites": [
+      {
+       "name": "Texas A&M",
+       "p": 0.1116
+      },
+      {
+       "name": "Louisville",
+       "p": 0.1054
+      },
+      {
+       "name": "Florida",
+       "p": 0.1
+      }
+     ],
+     "top64_in_field": 35
+    },
+    "d70": {
+     "teams": 310,
+     "levels": {
+      "field": {
+       "model": 0.3183,
+       "base_rate": 0.5092,
+       "last_season": 0.4763
+      },
+      "host": {
+       "model": 0.0857,
+       "base_rate": 0.2032,
+       "last_season": 0.1783
+      },
+      "omaha": {
+       "model": 0.0493,
+       "base_rate": 0.1198,
+       "last_season": 0.0912
+      },
+      "champion": {
+       "model": 0.0161,
+       "base_rate": 0.0217,
+       "last_season": 0.0131
+      }
+     },
+     "champion": {
+      "name": "Florida",
+      "p": 0.0184,
+      "rank": 17
+     },
+     "favourites": [
+      {
+       "name": "Louisville",
+       "p": 0.132
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.0866
+      },
+      {
+       "name": "Texas Tech",
+       "p": 0.064
+      }
+     ],
+     "top64_in_field": 43
+    },
+    "d42": {
+     "teams": 310,
+     "levels": {
+      "field": {
+       "model": 0.2968,
+       "base_rate": 0.5092,
+       "last_season": 0.4763
+      },
+      "host": {
+       "model": 0.0678,
+       "base_rate": 0.2032,
+       "last_season": 0.1783
+      },
+      "omaha": {
+       "model": 0.0471,
+       "base_rate": 0.1198,
+       "last_season": 0.0912
+      },
+      "champion": {
+       "model": 0.0142,
+       "base_rate": 0.0217,
+       "last_season": 0.0131
+      }
+     },
+     "champion": {
+      "name": "Florida",
+      "p": 0.0332,
+      "rank": 11
+     },
+     "favourites": [
+      {
+       "name": "Louisville",
+       "p": 0.1198
+      },
+      {
+       "name": "North Carolina",
+       "p": 0.118
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1022
+      }
+     ],
+     "top64_in_field": 42
+    },
+    "d21": {
+     "teams": 310,
+     "levels": {
+      "field": {
+       "model": 0.2832,
+       "base_rate": 0.5092,
+       "last_season": 0.4763
+      },
+      "host": {
+       "model": 0.0664,
+       "base_rate": 0.2032,
+       "last_season": 0.1783
+      },
+      "omaha": {
+       "model": 0.0486,
+       "base_rate": 0.1198,
+       "last_season": 0.0912
+      },
+      "champion": {
+       "model": 0.0135,
+       "base_rate": 0.0217,
+       "last_season": 0.0131
+      }
+     },
+     "champion": {
+      "name": "Florida",
+      "p": 0.0406,
+      "rank": 9
+     },
+     "favourites": [
+      {
+       "name": "Louisville",
+       "p": 0.1376
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1136
+      },
+      {
+       "name": "North Carolina",
+       "p": 0.1084
+      }
+     ],
+     "top64_in_field": 43
+    },
+    "d7": {
+     "teams": 310,
+     "levels": {
+      "field": {
+       "model": 0.2735,
+       "base_rate": 0.5092,
+       "last_season": 0.4763
+      },
+      "host": {
+       "model": 0.058,
+       "base_rate": 0.2032,
+       "last_season": 0.1783
+      },
+      "omaha": {
+       "model": 0.0487,
+       "base_rate": 0.1198,
+       "last_season": 0.0912
+      },
+      "champion": {
+       "model": 0.013,
+       "base_rate": 0.0217,
+       "last_season": 0.0131
+      }
+     },
+     "champion": {
+      "name": "Florida",
+      "p": 0.0484,
+      "rank": 8
+     },
+     "favourites": [
+      {
+       "name": "Oregon St.",
+       "p": 0.145
+      },
+      {
+       "name": "Louisville",
+       "p": 0.1132
+      },
+      {
+       "name": "North Carolina",
+       "p": 0.1088
+      }
+     ],
+     "top64_in_field": 43
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.95508,
+     "conf_sd": 0.06235,
+     "team_sd": 0.17605,
+     "end_sd_team": 0.0905,
+     "end_sd_conf": 0.04108,
+     "seasons": [
+      2014,
+      2015,
+      2016
+     ],
+     "checkpoint": "preseason",
+     "days": 107
+    },
+    {
+     "slope": 0.95913,
+     "conf_sd": 0.00798,
+     "team_sd": 0.1209,
+     "end_sd_team": 0.0905,
+     "end_sd_conf": 0.04108,
+     "seasons": [
+      2014,
+      2015,
+      2016
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.98445,
+     "conf_sd": 0,
+     "team_sd": 0.07687,
+     "end_sd_team": 0.0905,
+     "end_sd_conf": 0.04108,
+     "seasons": [
+      2014,
+      2015,
+      2016
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 1.00596,
+     "conf_sd": 0,
+     "team_sd": 0.04684,
+     "end_sd_team": 0.0905,
+     "end_sd_conf": 0.04108,
+     "seasons": [
+      2014,
+      2015,
+      2016
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 0.99924,
+     "conf_sd": 0,
+     "team_sd": 0.01617,
+     "end_sd_team": 0.0905,
+     "end_sd_conf": 0.04108,
+     "seasons": [
+      2014,
+      2015,
+      2016
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  },
+  {
+   "season": 2018,
+   "prev_season": 2017,
+   "selection": {
+    "k": 5.5,
+    "tau": 0.15,
+    "tau_host": 0.15,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 297,
+     "levels": {
+      "field": {
+       "model": 0.4163,
+       "base_rate": 0.5211,
+       "last_season": 0.4577
+      },
+      "host": {
+       "model": 0.1519,
+       "base_rate": 0.2001,
+       "last_season": 0.1834
+      },
+      "omaha": {
+       "model": 0.0694,
+       "base_rate": 0.1239,
+       "last_season": 0.0942
+      },
+      "champion": {
+       "model": 0.0103,
+       "base_rate": 0.0225,
+       "last_season": 0.0124
+      }
+     },
+     "champion": {
+      "name": "Oregon St.",
+      "p": 0.1146,
+      "rank": 1
+     },
+     "favourites": [
+      {
+       "name": "Oregon St.",
+       "p": 0.1146
+      },
+      {
+       "name": "North Carolina",
+       "p": 0.0884
+      },
+      {
+       "name": "Louisville",
+       "p": 0.0784
+      }
+     ],
+     "top64_in_field": 33
+    },
+    "d70": {
+     "teams": 297,
+     "levels": {
+      "field": {
+       "model": 0.3544,
+       "base_rate": 0.5211,
+       "last_season": 0.4577
+      },
+      "host": {
+       "model": 0.1111,
+       "base_rate": 0.2001,
+       "last_season": 0.1834
+      },
+      "omaha": {
+       "model": 0.0701,
+       "base_rate": 0.1239,
+       "last_season": 0.0942
+      },
+      "champion": {
+       "model": 0.01,
+       "base_rate": 0.0225,
+       "last_season": 0.0124
+      }
+     },
+     "champion": {
+      "name": "Oregon St.",
+      "p": 0.1256,
+      "rank": 1
+     },
+     "favourites": [
+      {
+       "name": "Oregon St.",
+       "p": 0.1256
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.0968
+      },
+      {
+       "name": "Arkansas",
+       "p": 0.0792
+      }
+     ],
+     "top64_in_field": 40
+    },
+    "d42": {
+     "teams": 297,
+     "levels": {
+      "field": {
+       "model": 0.3086,
+       "base_rate": 0.5211,
+       "last_season": 0.4577
+      },
+      "host": {
+       "model": 0.0992,
+       "base_rate": 0.2001,
+       "last_season": 0.1834
+      },
+      "omaha": {
+       "model": 0.0691,
+       "base_rate": 0.1239,
+       "last_season": 0.0942
+      },
+      "champion": {
+       "model": 0.011,
+       "base_rate": 0.0225,
+       "last_season": 0.0124
+      }
+     },
+     "champion": {
+      "name": "Oregon St.",
+      "p": 0.0974,
+      "rank": 2
+     },
+     "favourites": [
+      {
+       "name": "Florida",
+       "p": 0.1692
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.0974
+      },
+      {
+       "name": "Stanford",
+       "p": 0.0936
+      }
+     ],
+     "top64_in_field": 45
+    },
+    "d21": {
+     "teams": 297,
+     "levels": {
+      "field": {
+       "model": 0.2841,
+       "base_rate": 0.5211,
+       "last_season": 0.4577
+      },
+      "host": {
+       "model": 0.1015,
+       "base_rate": 0.2001,
+       "last_season": 0.1834
+      },
+      "omaha": {
+       "model": 0.0711,
+       "base_rate": 0.1239,
+       "last_season": 0.0942
+      },
+      "champion": {
+       "model": 0.0106,
+       "base_rate": 0.0225,
+       "last_season": 0.0124
+      }
+     },
+     "champion": {
+      "name": "Oregon St.",
+      "p": 0.1104,
+      "rank": 3
+     },
+     "favourites": [
+      {
+       "name": "Stanford",
+       "p": 0.188
+      },
+      {
+       "name": "Florida",
+       "p": 0.1558
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1104
+      }
+     ],
+     "top64_in_field": 45
+    },
+    "d7": {
+     "teams": 297,
+     "levels": {
+      "field": {
+       "model": 0.2629,
+       "base_rate": 0.5211,
+       "last_season": 0.4577
+      },
+      "host": {
+       "model": 0.1,
+       "base_rate": 0.2001,
+       "last_season": 0.1834
+      },
+      "omaha": {
+       "model": 0.0649,
+       "base_rate": 0.1239,
+       "last_season": 0.0942
+      },
+      "champion": {
+       "model": 0.0091,
+       "base_rate": 0.0225,
+       "last_season": 0.0124
+      }
+     },
+     "champion": {
+      "name": "Oregon St.",
+      "p": 0.161,
+      "rank": 1
+     },
+     "favourites": [
+      {
+       "name": "Oregon St.",
+       "p": 0.161
+      },
+      {
+       "name": "Stanford",
+       "p": 0.1404
+      },
+      {
+       "name": "UCLA",
+       "p": 0.1076
+      }
+     ],
+     "top64_in_field": 48
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.95279,
+     "conf_sd": 0.06518,
+     "team_sd": 0.17669,
+     "end_sd_team": 0.08974,
+     "end_sd_conf": 0.04056,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017
+     ],
+     "checkpoint": "preseason",
+     "days": 118
+    },
+    {
+     "slope": 0.97002,
+     "conf_sd": 0.01563,
+     "team_sd": 0.11943,
+     "end_sd_team": 0.08974,
+     "end_sd_conf": 0.04056,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.98898,
+     "conf_sd": 0,
+     "team_sd": 0.07503,
+     "end_sd_team": 0.08974,
+     "end_sd_conf": 0.04056,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 1.00181,
+     "conf_sd": 0,
+     "team_sd": 0.04662,
+     "end_sd_team": 0.08974,
+     "end_sd_conf": 0.04056,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 0.99905,
+     "conf_sd": 0,
+     "team_sd": 0.01723,
+     "end_sd_team": 0.08974,
+     "end_sd_conf": 0.04056,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  },
+  {
+   "season": 2019,
+   "prev_season": 2018,
+   "selection": {
+    "k": 6,
+    "tau": 0.12,
+    "tau_host": 0.12,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.4134,
+       "base_rate": 0.5174,
+       "last_season": 0.4576
+      },
+      "host": {
+       "model": 0.0903,
+       "base_rate": 0.1886,
+       "last_season": 0.1326
+      },
+      "omaha": {
+       "model": 0.0744,
+       "base_rate": 0.1226,
+       "last_season": 0.0873
+      },
+      "champion": {
+       "model": 0.0154,
+       "base_rate": 0.0223,
+       "last_season": 0.0213
+      }
+     },
+     "champion": {
+      "name": "Vanderbilt",
+      "p": 0.027,
+      "rank": 10
+     },
+     "favourites": [
+      {
+       "name": "Oregon St.",
+       "p": 0.1934
+      },
+      {
+       "name": "Stanford",
+       "p": 0.0818
+      },
+      {
+       "name": "UCLA",
+       "p": 0.0752
+      }
+     ],
+     "top64_in_field": 29
+    },
+    "d70": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.3779,
+       "base_rate": 0.5174,
+       "last_season": 0.4576
+      },
+      "host": {
+       "model": 0.0906,
+       "base_rate": 0.1886,
+       "last_season": 0.1326
+      },
+      "omaha": {
+       "model": 0.0726,
+       "base_rate": 0.1226,
+       "last_season": 0.0873
+      },
+      "champion": {
+       "model": 0.0151,
+       "base_rate": 0.0223,
+       "last_season": 0.0213
+      }
+     },
+     "champion": {
+      "name": "Vanderbilt",
+      "p": 0.03,
+      "rank": 8
+     },
+     "favourites": [
+      {
+       "name": "Oregon St.",
+       "p": 0.2366
+      },
+      {
+       "name": "UCLA",
+       "p": 0.1148
+      },
+      {
+       "name": "Stanford",
+       "p": 0.0946
+      }
+     ],
+     "top64_in_field": 36
+    },
+    "d42": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.3387,
+       "base_rate": 0.5174,
+       "last_season": 0.4576
+      },
+      "host": {
+       "model": 0.0676,
+       "base_rate": 0.1886,
+       "last_season": 0.1326
+      },
+      "omaha": {
+       "model": 0.0747,
+       "base_rate": 0.1226,
+       "last_season": 0.0873
+      },
+      "champion": {
+       "model": 0.0113,
+       "base_rate": 0.0223,
+       "last_season": 0.0213
+      }
+     },
+     "champion": {
+      "name": "Vanderbilt",
+      "p": 0.086,
+      "rank": 4
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.1774
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1722
+      },
+      {
+       "name": "Stanford",
+       "p": 0.1052
+      }
+     ],
+     "top64_in_field": 42
+    },
+    "d21": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.3473,
+       "base_rate": 0.5174,
+       "last_season": 0.4576
+      },
+      "host": {
+       "model": 0.0744,
+       "base_rate": 0.1886,
+       "last_season": 0.1326
+      },
+      "omaha": {
+       "model": 0.0663,
+       "base_rate": 0.1226,
+       "last_season": 0.0873
+      },
+      "champion": {
+       "model": 0.0102,
+       "base_rate": 0.0223,
+       "last_season": 0.0213
+      }
+     },
+     "champion": {
+      "name": "Vanderbilt",
+      "p": 0.117,
+      "rank": 4
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.1882
+      },
+      {
+       "name": "Stanford",
+       "p": 0.1192
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1186
+      }
+     ],
+     "top64_in_field": 39
+    },
+    "d7": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.3347,
+       "base_rate": 0.5174,
+       "last_season": 0.4576
+      },
+      "host": {
+       "model": 0.0769,
+       "base_rate": 0.1886,
+       "last_season": 0.1326
+      },
+      "omaha": {
+       "model": 0.0741,
+       "base_rate": 0.1226,
+       "last_season": 0.0873
+      },
+      "champion": {
+       "model": 0.0095,
+       "base_rate": 0.0223,
+       "last_season": 0.0213
+      }
+     },
+     "champion": {
+      "name": "Vanderbilt",
+      "p": 0.143,
+      "rank": 2
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.2232
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.143
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1076
+      }
+     ],
+     "top64_in_field": 42
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.95539,
+     "conf_sd": 0.06085,
+     "team_sd": 0.177,
+     "end_sd_team": 0.08961,
+     "end_sd_conf": 0.04054,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018
+     ],
+     "checkpoint": "preseason",
+     "days": 107
+    },
+    {
+     "slope": 0.97747,
+     "conf_sd": 0.01054,
+     "team_sd": 0.11935,
+     "end_sd_team": 0.08961,
+     "end_sd_conf": 0.04054,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.99046,
+     "conf_sd": 0,
+     "team_sd": 0.07576,
+     "end_sd_team": 0.08961,
+     "end_sd_conf": 0.04054,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 1.00132,
+     "conf_sd": 0,
+     "team_sd": 0.04666,
+     "end_sd_team": 0.08961,
+     "end_sd_conf": 0.04054,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 0.99908,
+     "conf_sd": 0,
+     "team_sd": 0.01708,
+     "end_sd_team": 0.08961,
+     "end_sd_conf": 0.04054,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  },
+  {
+   "season": 2021,
+   "prev_season": 2019,
+   "selection": {
+    "k": 5.5,
+    "tau": 0.15,
+    "tau_host": 0.15,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 302,
+     "levels": {
+      "field": {
+       "model": 0.3926,
+       "base_rate": 0.5165,
+       "last_season": 0.4418
+      },
+      "host": {
+       "model": 0.1326,
+       "base_rate": 0.2072,
+       "last_season": 0.1689
+      },
+      "omaha": {
+       "model": 0.0888,
+       "base_rate": 0.1223,
+       "last_season": 0.1121
+      },
+      "champion": {
+       "model": 0.0188,
+       "base_rate": 0.0222,
+       "last_season": 0.0122
+      }
+     },
+     "champion": {
+      "name": "Mississippi St.",
+      "p": 0.0098,
+      "rank": 24
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.262
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.0734
+      },
+      {
+       "name": "Texas Tech",
+       "p": 0.06
+      }
+     ],
+     "top64_in_field": 38
+    },
+    "d70": {
+     "teams": 302,
+     "levels": {
+      "field": {
+       "model": 0.3691,
+       "base_rate": 0.5165,
+       "last_season": 0.4418
+      },
+      "host": {
+       "model": 0.1076,
+       "base_rate": 0.2072,
+       "last_season": 0.1689
+      },
+      "omaha": {
+       "model": 0.085,
+       "base_rate": 0.1223,
+       "last_season": 0.1121
+      },
+      "champion": {
+       "model": 0.0141,
+       "base_rate": 0.0222,
+       "last_season": 0.0122
+      }
+     },
+     "champion": {
+      "name": "Mississippi St.",
+      "p": 0.039,
+      "rank": 7
+     },
+     "favourites": [
+      {
+       "name": "Vanderbilt",
+       "p": 0.183
+      },
+      {
+       "name": "UCLA",
+       "p": 0.168
+      },
+      {
+       "name": "Florida St.",
+       "p": 0.0508
+      }
+     ],
+     "top64_in_field": 39
+    },
+    "d42": {
+     "teams": 302,
+     "levels": {
+      "field": {
+       "model": 0.3186,
+       "base_rate": 0.5165,
+       "last_season": 0.4418
+      },
+      "host": {
+       "model": 0.0889,
+       "base_rate": 0.2072,
+       "last_season": 0.1689
+      },
+      "omaha": {
+       "model": 0.077,
+       "base_rate": 0.1223,
+       "last_season": 0.1121
+      },
+      "champion": {
+       "model": 0.0146,
+       "base_rate": 0.0222,
+       "last_season": 0.0122
+      }
+     },
+     "champion": {
+      "name": "Mississippi St.",
+      "p": 0.0334,
+      "rank": 8
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.214
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.1142
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.078
+      }
+     ],
+     "top64_in_field": 44
+    },
+    "d21": {
+     "teams": 302,
+     "levels": {
+      "field": {
+       "model": 0.3091,
+       "base_rate": 0.5165,
+       "last_season": 0.4418
+      },
+      "host": {
+       "model": 0.0875,
+       "base_rate": 0.2072,
+       "last_season": 0.1689
+      },
+      "omaha": {
+       "model": 0.0706,
+       "base_rate": 0.1223,
+       "last_season": 0.1121
+      },
+      "champion": {
+       "model": 0.0141,
+       "base_rate": 0.0222,
+       "last_season": 0.0122
+      }
+     },
+     "champion": {
+      "name": "Mississippi St.",
+      "p": 0.0382,
+      "rank": 8
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.1668
+      },
+      {
+       "name": "TCU",
+       "p": 0.105
+      },
+      {
+       "name": "Texas",
+       "p": 0.0896
+      }
+     ],
+     "top64_in_field": 45
+    },
+    "d7": {
+     "teams": 302,
+     "levels": {
+      "field": {
+       "model": 0.2772,
+       "base_rate": 0.5165,
+       "last_season": 0.4418
+      },
+      "host": {
+       "model": 0.0785,
+       "base_rate": 0.2072,
+       "last_season": 0.1689
+      },
+      "omaha": {
+       "model": 0.0647,
+       "base_rate": 0.1223,
+       "last_season": 0.1121
+      },
+      "champion": {
+       "model": 0.0161,
+       "base_rate": 0.0222,
+       "last_season": 0.0122
+      }
+     },
+     "champion": {
+      "name": "Mississippi St.",
+      "p": 0.0216,
+      "rank": 13
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.1392
+      },
+      {
+       "name": "Arkansas",
+       "p": 0.1108
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.098
+      }
+     ],
+     "top64_in_field": 47
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.95193,
+     "conf_sd": 0.05512,
+     "team_sd": 0.17578,
+     "end_sd_team": 0.08919,
+     "end_sd_conf": 0.04033,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019
+     ],
+     "checkpoint": "preseason",
+     "days": 107
+    },
+    {
+     "slope": 0.96861,
+     "conf_sd": 0.01318,
+     "team_sd": 0.11836,
+     "end_sd_team": 0.08919,
+     "end_sd_conf": 0.04033,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.98765,
+     "conf_sd": 0,
+     "team_sd": 0.07439,
+     "end_sd_team": 0.08919,
+     "end_sd_conf": 0.04033,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 0.99998,
+     "conf_sd": 0,
+     "team_sd": 0.04579,
+     "end_sd_team": 0.08919,
+     "end_sd_conf": 0.04033,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 0.99906,
+     "conf_sd": 0,
+     "team_sd": 0.0166,
+     "end_sd_team": 0.08919,
+     "end_sd_conf": 0.04033,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  },
+  {
+   "season": 2022,
+   "prev_season": 2021,
+   "selection": {
+    "k": 5.5,
+    "tau": 0.15,
+    "tau_host": 0.15,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.326,
+       "base_rate": 0.5174,
+       "last_season": 0.4258
+      },
+      "host": {
+       "model": 0.1358,
+       "base_rate": 0.1981,
+       "last_season": 0.1619
+      },
+      "omaha": {
+       "model": 0.0782,
+       "base_rate": 0.1226,
+       "last_season": 0.1106
+      },
+      "champion": {
+       "model": 0.0168,
+       "base_rate": 0.0223,
+       "last_season": 0.0205
+      }
+     },
+     "champion": {
+      "name": "Ole Miss",
+      "p": 0.0172,
+      "rank": 17
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.1214
+      },
+      {
+       "name": "Arkansas",
+       "p": 0.096
+      },
+      {
+       "name": "Texas",
+       "p": 0.0708
+      }
+     ],
+     "top64_in_field": 44
+    },
+    "d70": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.3013,
+       "base_rate": 0.5174,
+       "last_season": 0.4258
+      },
+      "host": {
+       "model": 0.1384,
+       "base_rate": 0.1981,
+       "last_season": 0.1619
+      },
+      "omaha": {
+       "model": 0.0847,
+       "base_rate": 0.1226,
+       "last_season": 0.1106
+      },
+      "champion": {
+       "model": 0.0162,
+       "base_rate": 0.0223,
+       "last_season": 0.0205
+      }
+     },
+     "champion": {
+      "name": "Ole Miss",
+      "p": 0.021,
+      "rank": 14
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.1358
+      },
+      {
+       "name": "Texas",
+       "p": 0.1246
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.1096
+      }
+     ],
+     "top64_in_field": 44
+    },
+    "d42": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.274,
+       "base_rate": 0.5174,
+       "last_season": 0.4258
+      },
+      "host": {
+       "model": 0.1214,
+       "base_rate": 0.1981,
+       "last_season": 0.1619
+      },
+      "omaha": {
+       "model": 0.0793,
+       "base_rate": 0.1226,
+       "last_season": 0.1106
+      },
+      "champion": {
+       "model": 0.0197,
+       "base_rate": 0.0223,
+       "last_season": 0.0205
+      }
+     },
+     "champion": {
+      "name": "Ole Miss",
+      "p": 0.0076,
+      "rank": 23
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.2438
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1052
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.0848
+      }
+     ],
+     "top64_in_field": 45
+    },
+    "d21": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.2606,
+       "base_rate": 0.5174,
+       "last_season": 0.4258
+      },
+      "host": {
+       "model": 0.1125,
+       "base_rate": 0.1981,
+       "last_season": 0.1619
+      },
+      "omaha": {
+       "model": 0.072,
+       "base_rate": 0.1226,
+       "last_season": 0.1106
+      },
+      "champion": {
+       "model": 0.0182,
+       "base_rate": 0.0223,
+       "last_season": 0.0205
+      }
+     },
+     "champion": {
+      "name": "Ole Miss",
+      "p": 0.0118,
+      "rank": 17
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.245
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1442
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.076
+      }
+     ],
+     "top64_in_field": 46
+    },
+    "d7": {
+     "teams": 301,
+     "levels": {
+      "field": {
+       "model": 0.2441,
+       "base_rate": 0.5174,
+       "last_season": 0.4258
+      },
+      "host": {
+       "model": 0.0945,
+       "base_rate": 0.1981,
+       "last_season": 0.1619
+      },
+      "omaha": {
+       "model": 0.0704,
+       "base_rate": 0.1226,
+       "last_season": 0.1106
+      },
+      "champion": {
+       "model": 0.0179,
+       "base_rate": 0.0223,
+       "last_season": 0.0205
+      }
+     },
+     "champion": {
+      "name": "Ole Miss",
+      "p": 0.0132,
+      "rank": 16
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.3054
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.1196
+      },
+      {
+       "name": "Stanford",
+       "p": 0.079
+      }
+     ],
+     "top64_in_field": 48
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.95269,
+     "conf_sd": 0.0561,
+     "team_sd": 0.1755,
+     "end_sd_team": 0.08923,
+     "end_sd_conf": 0.04083,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021
+     ],
+     "checkpoint": "preseason",
+     "days": 105
+    },
+    {
+     "slope": 0.96892,
+     "conf_sd": 0.00387,
+     "team_sd": 0.12091,
+     "end_sd_team": 0.08923,
+     "end_sd_conf": 0.04083,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.98658,
+     "conf_sd": 0,
+     "team_sd": 0.07626,
+     "end_sd_team": 0.08923,
+     "end_sd_conf": 0.04083,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 0.99826,
+     "conf_sd": 0,
+     "team_sd": 0.0472,
+     "end_sd_team": 0.08923,
+     "end_sd_conf": 0.04083,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 0.99908,
+     "conf_sd": 0,
+     "team_sd": 0.01682,
+     "end_sd_team": 0.08923,
+     "end_sd_conf": 0.04083,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  },
+  {
+   "season": 2024,
+   "prev_season": 2022,
+   "selection": {
+    "k": 6,
+    "tau": 0.15,
+    "tau_host": 0.15,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.3767,
+       "base_rate": 0.5137,
+       "last_season": 0.4549
+      },
+      "host": {
+       "model": 0.1638,
+       "base_rate": 0.2057,
+       "last_season": 0.1591
+      },
+      "omaha": {
+       "model": 0.0691,
+       "base_rate": 0.1214,
+       "last_season": 0.106
+      },
+      "champion": {
+       "model": 0.0111,
+       "base_rate": 0.022,
+       "last_season": 0.0195
+      }
+     },
+     "champion": {
+      "name": "Tennessee",
+      "p": 0.0876,
+      "rank": 3
+     },
+     "favourites": [
+      {
+       "name": "Vanderbilt",
+       "p": 0.1048
+      },
+      {
+       "name": "LSU",
+       "p": 0.1046
+      },
+      {
+       "name": "Tennessee",
+       "p": 0.0876
+      }
+     ],
+     "top64_in_field": 39
+    },
+    "d70": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.3292,
+       "base_rate": 0.5137,
+       "last_season": 0.4549
+      },
+      "host": {
+       "model": 0.1273,
+       "base_rate": 0.2057,
+       "last_season": 0.1591
+      },
+      "omaha": {
+       "model": 0.0704,
+       "base_rate": 0.1214,
+       "last_season": 0.106
+      },
+      "champion": {
+       "model": 0.0088,
+       "base_rate": 0.022,
+       "last_season": 0.0195
+      }
+     },
+     "champion": {
+      "name": "Tennessee",
+      "p": 0.1618,
+      "rank": 1
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.1618
+      },
+      {
+       "name": "Vanderbilt",
+       "p": 0.0734
+      },
+      {
+       "name": "Arkansas",
+       "p": 0.0666
+      }
+     ],
+     "top64_in_field": 41
+    },
+    "d42": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.2854,
+       "base_rate": 0.5137,
+       "last_season": 0.4549
+      },
+      "host": {
+       "model": 0.1062,
+       "base_rate": 0.2057,
+       "last_season": 0.1591
+      },
+      "omaha": {
+       "model": 0.0648,
+       "base_rate": 0.1214,
+       "last_season": 0.106
+      },
+      "champion": {
+       "model": 0.0082,
+       "base_rate": 0.022,
+       "last_season": 0.0195
+      }
+     },
+     "champion": {
+      "name": "Tennessee",
+      "p": 0.1866,
+      "rank": 1
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.1866
+      },
+      {
+       "name": "Arkansas",
+       "p": 0.0778
+      },
+      {
+       "name": "Oregon St.",
+       "p": 0.076
+      }
+     ],
+     "top64_in_field": 43
+    },
+    "d21": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.2709,
+       "base_rate": 0.5137,
+       "last_season": 0.4549
+      },
+      "host": {
+       "model": 0.1023,
+       "base_rate": 0.2057,
+       "last_season": 0.1591
+      },
+      "omaha": {
+       "model": 0.0612,
+       "base_rate": 0.1214,
+       "last_season": 0.106
+      },
+      "champion": {
+       "model": 0.008,
+       "base_rate": 0.022,
+       "last_season": 0.0195
+      }
+     },
+     "champion": {
+      "name": "Tennessee",
+      "p": 0.2,
+      "rank": 1
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.2
+      },
+      {
+       "name": "Texas A&M",
+       "p": 0.0974
+      },
+      {
+       "name": "North Carolina",
+       "p": 0.0736
+      }
+     ],
+     "top64_in_field": 44
+    },
+    "d7": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.2483,
+       "base_rate": 0.5137,
+       "last_season": 0.4549
+      },
+      "host": {
+       "model": 0.0991,
+       "base_rate": 0.2057,
+       "last_season": 0.1591
+      },
+      "omaha": {
+       "model": 0.0559,
+       "base_rate": 0.1214,
+       "last_season": 0.106
+      },
+      "champion": {
+       "model": 0.0076,
+       "base_rate": 0.022,
+       "last_season": 0.0195
+      }
+     },
+     "champion": {
+      "name": "Tennessee",
+      "p": 0.2184,
+      "rank": 1
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.2184
+      },
+      {
+       "name": "North Carolina",
+       "p": 0.099
+      },
+      {
+       "name": "Texas A&M",
+       "p": 0.0816
+      }
+     ],
+     "top64_in_field": 46
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.94813,
+     "conf_sd": 0.05279,
+     "team_sd": 0.17561,
+     "end_sd_team": 0.08871,
+     "end_sd_conf": 0.04046,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022
+     ],
+     "checkpoint": "preseason",
+     "days": 105
+    },
+    {
+     "slope": 0.96579,
+     "conf_sd": 0.00696,
+     "team_sd": 0.1208,
+     "end_sd_team": 0.08871,
+     "end_sd_conf": 0.04046,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.98539,
+     "conf_sd": 0,
+     "team_sd": 0.07618,
+     "end_sd_team": 0.08871,
+     "end_sd_conf": 0.04046,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 0.99764,
+     "conf_sd": 0,
+     "team_sd": 0.04762,
+     "end_sd_team": 0.08871,
+     "end_sd_conf": 0.04046,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 0.99884,
+     "conf_sd": 0,
+     "team_sd": 0.01701,
+     "end_sd_team": 0.08871,
+     "end_sd_conf": 0.04046,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  },
+  {
+   "season": 2025,
+   "prev_season": 2024,
+   "selection": {
+    "k": 6,
+    "tau": 0.15,
+    "tau_host": 0.15,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2024
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.3652,
+       "base_rate": 0.5137,
+       "last_season": 0.4511
+      },
+      "host": {
+       "model": 0.1141,
+       "base_rate": 0.2057,
+       "last_season": 0.1585
+      },
+      "omaha": {
+       "model": 0.1,
+       "base_rate": 0.1214,
+       "last_season": 0.1186
+      },
+      "champion": {
+       "model": 0.0137,
+       "base_rate": 0.022,
+       "last_season": 0.019
+      }
+     },
+     "champion": {
+      "name": "LSU",
+      "p": 0.0412,
+      "rank": 7
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.1356
+      },
+      {
+       "name": "Texas A&M",
+       "p": 0.0666
+      },
+      {
+       "name": "Oklahoma St.",
+       "p": 0.0624
+      }
+     ],
+     "top64_in_field": 39
+    },
+    "d70": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.2896,
+       "base_rate": 0.5137,
+       "last_season": 0.4511
+      },
+      "host": {
+       "model": 0.0873,
+       "base_rate": 0.2057,
+       "last_season": 0.1585
+      },
+      "omaha": {
+       "model": 0.0811,
+       "base_rate": 0.1214,
+       "last_season": 0.1186
+      },
+      "champion": {
+       "model": 0.0128,
+       "base_rate": 0.022,
+       "last_season": 0.019
+      }
+     },
+     "champion": {
+      "name": "LSU",
+      "p": 0.0548,
+      "rank": 3
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.2714
+      },
+      {
+       "name": "Arkansas",
+       "p": 0.067
+      },
+      {
+       "name": "LSU",
+       "p": 0.0548
+      }
+     ],
+     "top64_in_field": 43
+    },
+    "d42": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.2495,
+       "base_rate": 0.5137,
+       "last_season": 0.4511
+      },
+      "host": {
+       "model": 0.0794,
+       "base_rate": 0.2057,
+       "last_season": 0.1585
+      },
+      "omaha": {
+       "model": 0.0812,
+       "base_rate": 0.1214,
+       "last_season": 0.1186
+      },
+      "champion": {
+       "model": 0.0118,
+       "base_rate": 0.022,
+       "last_season": 0.019
+      }
+     },
+     "champion": {
+      "name": "LSU",
+      "p": 0.0712,
+      "rank": 3
+     },
+     "favourites": [
+      {
+       "name": "Tennessee",
+       "p": 0.1754
+      },
+      {
+       "name": "Arkansas",
+       "p": 0.1178
+      },
+      {
+       "name": "LSU",
+       "p": 0.0712
+      }
+     ],
+     "top64_in_field": 49
+    },
+    "d21": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.2387,
+       "base_rate": 0.5137,
+       "last_season": 0.4511
+      },
+      "host": {
+       "model": 0.0797,
+       "base_rate": 0.2057,
+       "last_season": 0.1585
+      },
+      "omaha": {
+       "model": 0.0887,
+       "base_rate": 0.1214,
+       "last_season": 0.1186
+      },
+      "champion": {
+       "model": 0.0114,
+       "base_rate": 0.022,
+       "last_season": 0.019
+      }
+     },
+     "champion": {
+      "name": "LSU",
+      "p": 0.0794,
+      "rank": 3
+     },
+     "favourites": [
+      {
+       "name": "Arkansas",
+       "p": 0.162
+      },
+      {
+       "name": "Tennessee",
+       "p": 0.1188
+      },
+      {
+       "name": "LSU",
+       "p": 0.0794
+      }
+     ],
+     "top64_in_field": 51
+    },
+    "d7": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.2282,
+       "base_rate": 0.5137,
+       "last_season": 0.4511
+      },
+      "host": {
+       "model": 0.0676,
+       "base_rate": 0.2057,
+       "last_season": 0.1585
+      },
+      "omaha": {
+       "model": 0.0858,
+       "base_rate": 0.1214,
+       "last_season": 0.1186
+      },
+      "champion": {
+       "model": 0.011,
+       "base_rate": 0.022,
+       "last_season": 0.019
+      }
+     },
+     "champion": {
+      "name": "LSU",
+      "p": 0.089,
+      "rank": 3
+     },
+     "favourites": [
+      {
+       "name": "Arkansas",
+       "p": 0.1318
+      },
+      {
+       "name": "Tennessee",
+       "p": 0.0954
+      },
+      {
+       "name": "LSU",
+       "p": 0.089
+      }
+     ],
+     "top64_in_field": 51
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.93611,
+     "conf_sd": 0.05302,
+     "team_sd": 0.17706,
+     "end_sd_team": 0.08811,
+     "end_sd_conf": 0.04018,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024
+     ],
+     "checkpoint": "preseason",
+     "days": 105
+    },
+    {
+     "slope": 0.96154,
+     "conf_sd": 0.00526,
+     "team_sd": 0.12081,
+     "end_sd_team": 0.08811,
+     "end_sd_conf": 0.04018,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.98443,
+     "conf_sd": 0,
+     "team_sd": 0.07672,
+     "end_sd_team": 0.08811,
+     "end_sd_conf": 0.04018,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 0.99769,
+     "conf_sd": 0,
+     "team_sd": 0.04753,
+     "end_sd_team": 0.08811,
+     "end_sd_conf": 0.04018,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 0.99895,
+     "conf_sd": 0,
+     "team_sd": 0.01658,
+     "end_sd_team": 0.08811,
+     "end_sd_conf": 0.04018,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  },
+  {
+   "season": 2026,
+   "prev_season": 2025,
+   "selection": {
+    "k": 6,
+    "tau": 0.15,
+    "tau_host": 0.15,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2024,
+     2025
+    ]
+   },
+   "checkpoints": {
+    "preseason": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.3992,
+       "base_rate": 0.5137,
+       "last_season": 0.4313
+      },
+      "host": {
+       "model": 0.104,
+       "base_rate": 0.2057,
+       "last_season": 0.1532
+      },
+      "omaha": {
+       "model": 0.0797,
+       "base_rate": 0.1214,
+       "last_season": 0.1015
+      },
+      "champion": {
+       "model": 0.0177,
+       "base_rate": 0.022,
+       "last_season": 0.0186
+      }
+     },
+     "champion": {
+      "name": "Oklahoma",
+      "p": 0.0124,
+      "rank": 24
+     },
+     "favourites": [
+      {
+       "name": "Arkansas",
+       "p": 0.0954
+      },
+      {
+       "name": "North Carolina",
+       "p": 0.0756
+      },
+      {
+       "name": "LSU",
+       "p": 0.0676
+      }
+     ],
+     "top64_in_field": 36
+    },
+    "d70": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.3775,
+       "base_rate": 0.5137,
+       "last_season": 0.4313
+      },
+      "host": {
+       "model": 0.0734,
+       "base_rate": 0.2057,
+       "last_season": 0.1532
+      },
+      "omaha": {
+       "model": 0.0768,
+       "base_rate": 0.1214,
+       "last_season": 0.1015
+      },
+      "champion": {
+       "model": 0.0177,
+       "base_rate": 0.022,
+       "last_season": 0.0186
+      }
+     },
+     "champion": {
+      "name": "Oklahoma",
+      "p": 0.0124,
+      "rank": 22
+     },
+     "favourites": [
+      {
+       "name": "Texas",
+       "p": 0.1466
+      },
+      {
+       "name": "UCLA",
+       "p": 0.0786
+      },
+      {
+       "name": "Auburn",
+       "p": 0.0694
+      }
+     ],
+     "top64_in_field": 34
+    },
+    "d42": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.3382,
+       "base_rate": 0.5137,
+       "last_season": 0.4313
+      },
+      "host": {
+       "model": 0.067,
+       "base_rate": 0.2057,
+       "last_season": 0.1532
+      },
+      "omaha": {
+       "model": 0.0781,
+       "base_rate": 0.1214,
+       "last_season": 0.1015
+      },
+      "champion": {
+       "model": 0.0184,
+       "base_rate": 0.022,
+       "last_season": 0.0186
+      }
+     },
+     "champion": {
+      "name": "Oklahoma",
+      "p": 0.0104,
+      "rank": 19
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.186
+      },
+      {
+       "name": "Georgia Tech",
+       "p": 0.113
+      },
+      {
+       "name": "Texas",
+       "p": 0.094
+      }
+     ],
+     "top64_in_field": 38
+    },
+    "d21": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.3277,
+       "base_rate": 0.5137,
+       "last_season": 0.4313
+      },
+      "host": {
+       "model": 0.0602,
+       "base_rate": 0.2057,
+       "last_season": 0.1532
+      },
+      "omaha": {
+       "model": 0.0797,
+       "base_rate": 0.1214,
+       "last_season": 0.1015
+      },
+      "champion": {
+       "model": 0.0213,
+       "base_rate": 0.022,
+       "last_season": 0.0186
+      }
+     },
+     "champion": {
+      "name": "Oklahoma",
+      "p": 0.0042,
+      "rank": 25
+     },
+     "favourites": [
+      {
+       "name": "UCLA",
+       "p": 0.1424
+      },
+      {
+       "name": "Texas",
+       "p": 0.1112
+      },
+      {
+       "name": "Georgia Tech",
+       "p": 0.0956
+      }
+     ],
+     "top64_in_field": 37
+    },
+    "d7": {
+     "teams": 305,
+     "levels": {
+      "field": {
+       "model": 0.307,
+       "base_rate": 0.5137,
+       "last_season": 0.4313
+      },
+      "host": {
+       "model": 0.0544,
+       "base_rate": 0.2057,
+       "last_season": 0.1532
+      },
+      "omaha": {
+       "model": 0.0795,
+       "base_rate": 0.1214,
+       "last_season": 0.1015
+      },
+      "champion": {
+       "model": 0.0241,
+       "base_rate": 0.022,
+       "last_season": 0.0186
+      }
+     },
+     "champion": {
+      "name": "Oklahoma",
+      "p": 0.0018,
+      "rank": 35
+     },
+     "favourites": [
+      {
+       "name": "Georgia Tech",
+       "p": 0.1264
+      },
+      {
+       "name": "UCLA",
+       "p": 0.111
+      },
+      {
+       "name": "North Carolina",
+       "p": 0.1044
+      }
+     ],
+     "top64_in_field": 40
+    }
+   },
+   "drift": [
+    {
+     "slope": 0.93973,
+     "conf_sd": 0.05226,
+     "team_sd": 0.17844,
+     "end_sd_team": 0.08751,
+     "end_sd_conf": 0.03996,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024,
+      2025
+     ],
+     "checkpoint": "preseason",
+     "days": 105
+    },
+    {
+     "slope": 0.96439,
+     "conf_sd": 0,
+     "team_sd": 0.12106,
+     "end_sd_team": 0.08751,
+     "end_sd_conf": 0.03996,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024,
+      2025
+     ],
+     "checkpoint": "d70",
+     "days": 70
+    },
+    {
+     "slope": 0.98528,
+     "conf_sd": 0,
+     "team_sd": 0.07706,
+     "end_sd_team": 0.08751,
+     "end_sd_conf": 0.03996,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024,
+      2025
+     ],
+     "checkpoint": "d42",
+     "days": 42
+    },
+    {
+     "slope": 0.99773,
+     "conf_sd": 0,
+     "team_sd": 0.04699,
+     "end_sd_team": 0.08751,
+     "end_sd_conf": 0.03996,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024,
+      2025
+     ],
+     "checkpoint": "d21",
+     "days": 21
+    },
+    {
+     "slope": 0.99918,
+     "conf_sd": 0,
+     "team_sd": 0.01624,
+     "end_sd_team": 0.08751,
+     "end_sd_conf": 0.03996,
+     "seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2024,
+      2025
+     ],
+     "checkpoint": "d7",
+     "days": 7
+    }
+   ]
+  }
+ ],
+ "next": {
+  "season": 2027,
+  "drift": [
+   {
+    "slope": 0.93947,
+    "conf_sd": 0.05339,
+    "team_sd": 0.17678,
+    "end_sd_team": 0.08701,
+    "end_sd_conf": 0.03987,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2024,
+     2025,
+     2026
+    ],
+    "checkpoint": "preseason",
+    "days": 105
+   },
+   {
+    "slope": 0.96257,
+    "conf_sd": 0,
+    "team_sd": 0.11997,
+    "end_sd_team": 0.08701,
+    "end_sd_conf": 0.03987,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2024,
+     2025,
+     2026
+    ],
+    "checkpoint": "d70",
+    "days": 70
+   },
+   {
+    "slope": 0.9851,
+    "conf_sd": 0,
+    "team_sd": 0.07642,
+    "end_sd_team": 0.08701,
+    "end_sd_conf": 0.03987,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2024,
+     2025,
+     2026
+    ],
+    "checkpoint": "d42",
+    "days": 42
+   },
+   {
+    "slope": 0.99729,
+    "conf_sd": 0,
+    "team_sd": 0.04653,
+    "end_sd_team": 0.08701,
+    "end_sd_conf": 0.03987,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2024,
+     2025,
+     2026
+    ],
+    "checkpoint": "d21",
+    "days": 21
+   },
+   {
+    "slope": 0.99916,
+    "conf_sd": 0,
+    "team_sd": 0.0159,
+    "end_sd_team": 0.08701,
+    "end_sd_conf": 0.03987,
+    "seasons": [
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2021,
+     2022,
+     2024,
+     2025,
+     2026
+    ],
+    "checkpoint": "d7",
+    "days": 7
+   }
+  ],
+  "select": {
+   "k": 6,
+   "tau": 0.15,
+   "tau_host": 0.15,
+   "seasons": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2024,
+    2025,
+    2026
+   ]
+  },
+  "aq_conferences": [
+   "ACC",
+   "ASUN",
+   "America East",
+   "American",
+   "Atlantic 10",
+   "Big 12",
+   "Big East",
+   "Big South",
+   "Big Ten",
+   "Big West",
+   "CAA",
+   "CUSA",
+   "Horizon",
+   "Ivy League",
+   "MAAC",
+   "MAC",
+   "MVC",
+   "Mountain West",
+   "NEC",
+   "OVC",
+   "Patriot",
+   "SEC",
+   "SWAC",
+   "SoCon",
+   "Southland",
+   "Summit League",
+   "Sun Belt",
+   "WAC",
+   "WCC"
+  ],
+  "calibration": {
+   "a": 0.08111,
+   "b": 1.08402,
+   "n": 25114
+  },
+  "teams": 305
+ }
+}

@@ -147,13 +147,16 @@ from the run page):
 node simulator/src/cli/build_kalshi_mappings.ts --candidates C:/Downloads/kalshi_candidates.json --run <run id>
 node simulator/src/cli/build_kalshi_mappings.ts --sport mlb --candidates C:/Downloads/kalshi_candidates_mlb.json --run <run id>
 node simulator/src/cli/build_kalshi_mappings.ts --sport nhl --candidates C:/Downloads/kalshi_candidates_nhl.json --run <run id>
+node simulator/src/cli/build_kalshi_mappings.ts --sport nba --candidates C:/Downloads/kalshi_candidates_nba.json --run <run id>
 npm run sim:test
 ```
 
 Each command rebuilds one sport's mappings and keeps the others'. Without the
 artifact, `--log <the fetch job's log>` (timestamps kept) reads the same
 series and open markets from the job's printed lines. The templates and the
-next-season steps: `MLB_SIMULATOR_NOTES.md` §15.1, `NHL_SIMULATOR_NOTES.md` §16.
+next-season steps: `MLB_SIMULATOR_NOTES.md` §15.1, `NHL_SIMULATOR_NOTES.md` §16,
+`NBA_SIMULATOR_NOTES.md` §18. The source check prints Kalshi's section last, so
+it stays inside the 5,000 lines GitHub's log API returns.
 
 
 ```powershell

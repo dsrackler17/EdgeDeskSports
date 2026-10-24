@@ -18,6 +18,8 @@ import type { UfcInputData } from './ufc/inputs.ts';
 import { golfModule } from './golf/module.ts';
 import type { GolfInputData } from './golf/types.ts';
 import { tennisModule, matchesModule, type TennisModuleData, type MatchesModuleData } from './tennis/module.ts';
+import { cbaseModule } from './college_baseball/module.ts';
+import type { CbaseRoadData } from './college_baseball/inputs.ts';
 
 export function buildModule(sport: string, data: unknown, opt: { seed: bigint; sigma?: number }): SimModule {
   switch (sport) {
@@ -35,6 +37,7 @@ export function buildModule(sport: string, data: unknown, opt: { seed: bigint; s
     case 'golf': return golfModule(data as GolfInputData, { seed: opt.seed, scale: opt.sigma });
     /* one tennis competition is a draw (kind 'draw') or the day's matches (kind 'matches') */
     case 'tennis': return (data as { kind: string }).kind === 'matches' ? matchesModule(data as MatchesModuleData, { seed: opt.seed }) : tennisModule(data as TennisModuleData, { seed: opt.seed });
+    case 'college_baseball': return cbaseModule(data as CbaseRoadData, { seed: opt.seed });
     default: throw new Error('no simulation module for sport ' + sport + ' (see simulator/src/sports/registry.ts for its status)');
   }
 }
