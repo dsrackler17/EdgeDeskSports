@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T19:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1875,115 +1875,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "rwdtkyi0al40",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Illinois’ pass rush get to Oregon’s quarterback?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Oregon, and its own breakdown accounts for about 0.0 of the 2.1 points, but not the full gap. Input warning: EdgeDesk’s model is built on Katin Houser starting for Illinois, but the availability report lists him as out. It is a research question, not a bet.",
-    "gap": {
-      "points": 2.1,
-      "toward": "Oregon",
-      "other": "Illinois"
-    },
-    "supporting": [
-      "When Oregon has the ball (pass protection against the pass rush): Oregon’s offense has allowed a sack on 3.1% of its dropbacks, and Illinois’ defense sacks the quarterback on 2.7% of opponent dropbacks (FBS average 5.6%).",
-      "In his last two games (Purdue and Michigan State), Houser averaged 6.3 yards per attempt, against 8.5 in his four games before that.",
-      "Dante Moore has completed 70 of 100 passes (70.0%) for 935 yards, 9.4 yards per attempt, 9 touchdowns and no interceptions in four games for Oregon, and has been sacked on 6 of 106 dropbacks.",
-      "In his last two games (portlandstate and USC), Moore averaged 10.8 yards per attempt, against 8.6 in his two games before that."
-    ],
-    "contradicting": [
-      "When Oregon has the ball (big plays on the ground): Oregon’s offense turns 3.0% of its runs into explosive gains, and Illinois’ defense gives up explosive gains on 3.5% of opponent runs (FBS average 6.6%).",
-      "When Illinois has the ball (the line of scrimmage on running plays): Illinois’ offense is stopped at or behind the line on 10.8% of its runs, and Oregon’s defense stops 18.3% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Oregon has the ball (the run game against the run defense): Oregon’s offense averages 4.1 yards per carry, and Illinois’ defense allows 4.3 yards per carry (FBS average 5.1).",
-      "In his last two games (UCLA and Nebraska), Raiola averaged 2.8 yards per attempt, against 11.2 in his two games before that."
-    ],
-    "quarterbacks": [
-      "Katin Houser has completed 122 of 187 passes (65.2%) for 1,440 yards, 7.7 yards per attempt, 12 touchdowns and 4 interceptions in six games for Illinois, and has been sacked on 6 of 193 dropbacks.",
-      "Dante Moore has completed 70 of 100 passes (70.0%) for 935 yards, 9.4 yards per attempt, 9 touchdowns and no interceptions in four games for Oregon, and has been sacked on 6 of 106 dropbacks.",
-      "Dylan Raiola has completed 48 of 74 passes (64.9%) for 515 yards, 7.0 yards per attempt, 6 touchdowns and 2 interceptions in four games for Oregon, and has been sacked on 2 of 76 dropbacks.",
-      "Illinois’ update 2 Big Ten availability report (published Oct. 23) lists quarterback Katin Houser as out.",
-      "Oregon’s update 2 Big Ten availability report (published Oct. 23) lists quarterback Dante Moore as out.",
-      "Brock Thomas does not appear on Oregon’s update 2 availability report.",
-      "EdgeDesk’s model is built on Katin Houser starting for Illinois, but the availability report lists him as out."
-    ],
-    "availability": [
-      "Illinois’ availability report lists receiver Jayshon Platt as questionable.",
-      "Illinois’ availability report lists seven players as out, including offensive linemen Kai Pritchard and TJ McMillen.",
-      "Oregon’s availability report lists ten players as out, including offensive linemen Trent Ferguson, Kawika Rogers and Immanuel Iheanacho."
-    ],
-    "script": {
-      "model": [
-        "Oregon’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.1% of its dropbacks, and Illinois’ defense sacks the quarterback on 2.7% of opponent dropbacks.",
-        "Oregon’s offense has to hold its own on long runs against a defense that gives up explosive gains on 3.5% of opponent runs.",
-        "Oregon’s defense has to slow Illinois at the line of scrimmage — Illinois’ offense is stopped at or behind the line on 10.8% of its runs.",
-        "Oregon’s defense has to come out ahead on third down: it allows opponents to convert 27.9% of their third downs, against an offense that converts 43.7% of its third downs."
-      ],
-      "market": [
-        "Illinois’ defense has to come out ahead on long runs: it gives up explosive gains on 3.5% of opponent runs, against an offense that turns 3.0% of its runs into explosive gains.",
-        "Illinois’ offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 10.8% of its runs, and Oregon’s defense stops 18.3% of opponent runs at or behind the line.",
-        "Illinois’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 2.7% of opponent dropbacks, against an offense that has allowed a sack on 3.1% of its dropbacks."
-      ]
-    },
-    "unknown": [
-      "Illinois’ availability report lists receiver Jayshon Platt as questionable.",
-      "The model expects Katin Houser, but Katin Houser is listed as out.",
-      "EdgeDesk’s own sources disagree on sack rate for Illinois.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "QB_INPUT_CONFLICT",
-        "severity": "high",
-        "text": "EdgeDesk’s model is built on Katin Houser starting for Illinois, but the availability report lists him as out."
-      },
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (Illinois); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "QB_REPLACEMENT_GENERIC",
-        "severity": "medium",
-        "text": "The availability report lists Katin Houser out, and EdgeDesk’s main model subtracts a generic quarterback absence (3.9 points) from Illinois — it does not price the replacement’s own play."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-24T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      },
-      {
-        "label": "EdgeDesk input audit (model starter vs official availability report)",
-        "url": null,
-        "path": null,
-        "observed_at": "2026-10-24T10:07:57.735Z",
-        "verification": "CONFLICTING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T23:07:14.716Z"
   }
 }

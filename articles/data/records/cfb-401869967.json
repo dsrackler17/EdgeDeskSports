@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T21:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1926,93 +1926,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1udcsk8drnnga",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Louisiana take away Southern Miss’ big plays?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Louisiana, and its own breakdown accounts for about 0.0 of the 3.1 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 3.1,
-      "toward": "Louisiana",
-      "other": "Southern Miss"
-    },
-    "supporting": [
-      "When Southern Miss has the ball (big plays on the ground): Southern Miss’ offense turns 4.6% of its runs into explosive gains, and Louisiana’s defense gives up explosive gains on 4.3% of opponent runs (FBS average 6.6%).",
-      "When Southern Miss has the ball (the run game against the run defense): Southern Miss’ offense averages 4.7 yards per carry, and Louisiana’s defense allows 4.1 yards per carry (FBS average 5.1).",
-      "When Southern Miss has the ball (third down): Southern Miss’ offense converts 30.0% of its third downs, and Louisiana’s defense allows opponents to convert 40.3% of their third downs (FBS average 39.7%).",
-      "When Louisiana has the ball (the line of scrimmage on running plays): Louisiana’s offense is stopped at or behind the line on 14.4% of its runs, and Southern Miss’ defense stops 13.7% of opponent runs at or behind the line (FBS average 17.4%)."
-    ],
-    "contradicting": [
-      "When Southern Miss has the ball (pass protection against the pass rush): Southern Miss’ offense has allowed a sack on 4.4% of its dropbacks, and Louisiana’s defense sacks the quarterback on 3.0% of opponent dropbacks (FBS average 5.6%).",
-      "EdgeDesk’s position-group ratings put Southern Miss’ offensive line No. 31 nationally and Louisiana’s No. 80.",
-      "When Louisiana has the ball (the red zone): Louisiana’s offense succeeds on 43.9% of its red-zone plays, and Southern Miss’ defense allows success on 37.1% of opponent red-zone plays (FBS average 43.6%).",
-      "When Louisiana has the ball (big plays through the air): Louisiana’s offense turns 9.0% of its pass plays into explosive gains, and Southern Miss’ defense gives up explosive gains on 11.0% of opponent pass plays (FBS average 10.3%)."
-    ],
-    "quarterbacks": [
-      "Landry Lyddy has completed 81 of 135 passes (60.0%) for 1,032 yards, 7.6 yards per attempt, 7 touchdowns and 4 interceptions in six games for Southern Miss, and has been sacked on 9 of 144 dropbacks.",
-      "Ethan Hampton has completed 45 of 75 passes (60.0%) for 419 yards, 5.6 yards per attempt, 2 touchdowns and 4 interceptions in three games for Southern Miss, and has been sacked on 1 of 76 dropbacks.",
-      "Lunch Winfield has completed 111 of 158 passes (70.3%) for 1,213 yards, 7.7 yards per attempt, 4 touchdowns and 4 interceptions in seven games for Louisiana, and has been sacked on 8 of 166 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Louisiana’s defense has to come out ahead on big pass plays: it gives up explosive gains on 5.8% of opponent pass plays, against an offense that turns 12.8% of its pass plays into explosive gains.",
-        "Louisiana’s defense has to slow Southern Miss in the pass-rush matchup — Southern Miss’ offense has allowed a sack on 4.4% of its dropbacks.",
-        "Louisiana’s offense has to hold its own in the red zone against a defense that allows success on 37.1% of opponent red-zone plays.",
-        "Louisiana’s defense has to come out ahead on long runs: it gives up explosive gains on 4.3% of opponent runs, against an offense that turns 4.6% of its runs into explosive gains."
-      ],
-      "market": [
-        "Southern Miss’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 4.4% of its dropbacks, and Louisiana’s defense sacks the quarterback on 3.0% of opponent dropbacks.",
-        "Southern Miss’ defense has to come out ahead in the red zone: it allows success on 37.1% of opponent red-zone plays, against an offense that succeeds on 43.9% of its red-zone plays.",
-        "Southern Miss’ offense has to keep winning on big pass plays: it turns 12.8% of its pass plays into explosive gains, and Louisiana’s defense gives up explosive gains on 5.8% of opponent pass plays."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed for Southern Miss.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Southern Miss); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Southern Miss: new head coach; returning roster share at the 4th percentile; returning production at the 10th percentile; transfers out at the 76th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-24T04:32:40.639Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T23:07:14.716Z"
   }
 }

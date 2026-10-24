@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T19:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1838,99 +1838,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "wrjqwy1fehxb4",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can UCF contain BYU’s explosive runs?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward BYU, and its own breakdown accounts for about 0.0 of the 4.2 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 4.2,
-      "toward": "BYU",
-      "other": "UCF"
-    },
-    "supporting": [
-      "When UCF has the ball (big plays through the air): UCF’s offense turns 7.7% of its pass plays into explosive gains, and BYU’s defense gives up explosive gains on 5.5% of opponent pass plays (FBS average 10.3%).",
-      "When UCF has the ball (the line of scrimmage on running plays): UCF’s offense is stopped at or behind the line on 22.4% of its runs, and BYU’s defense stops 23.7% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When BYU has the ball (pass protection against the pass rush): BYU’s offense has allowed a sack on 1.9% of its dropbacks, and UCF’s defense sacks the quarterback on 5.5% of opponent dropbacks (FBS average 5.6%).",
-      "When UCF has the ball (the passing game against the pass defense): UCF’s offense averages 6.8 yards per pass attempt, and BYU’s defense allows 5.6 yards per pass attempt (FBS average 7.4)."
-    ],
-    "contradicting": [
-      "When UCF has the ball (pass protection against the pass rush): UCF’s offense has allowed a sack on 4.5% of its dropbacks, and BYU’s defense sacks the quarterback on 5.4% of opponent dropbacks (FBS average 5.6%).",
-      "UCF comes in on 14 days of rest after an open week; BYU has had 7 days."
-    ],
-    "quarterbacks": [
-      "Keyone Jenkins has completed 83 of 118 passes (70.3%) for 809 yards, 6.9 yards per attempt, 8 touchdowns and 3 interceptions in six games for UCF, and has been sacked on 6 of 124 dropbacks.",
-      "Alonza Barnett III has completed 31 of 49 passes (63.3%) for 344 yards, 7.0 yards per attempt, 2 touchdowns and 1 interception in two games for UCF, and has been sacked on 2 of 51 dropbacks.",
-      "Bear Bachmeier has completed 99 of 151 passes (65.6%) for 1,249 yards, 8.3 yards per attempt, 9 touchdowns and 2 interceptions in six games for BYU, and has been sacked on 3 of 154 dropbacks.",
-      "UCF’s update 2 Big 12 availability report (published Oct. 23) lists quarterback Alonza Barnett III as questionable.",
-      "Keyone Jenkins does not appear on UCF’s update 2 availability report.",
-      "Bear Bachmeier does not appear on BYU’s update 2 availability report."
-    ],
-    "availability": [
-      "UCF’s availability report lists seven players as out, including offensive linemen Owen Spell and Tyler Gibson."
-    ],
-    "script": {
-      "model": [
-        "BYU’s offense has to keep winning on long runs: it turns 9.2% of its runs into explosive gains, and UCF’s defense gives up explosive gains on 3.9% of opponent runs.",
-        "BYU’s defense has to slow UCF in the pass-rush matchup — UCF’s offense has allowed a sack on 4.5% of its dropbacks.",
-        "BYU’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 1.9% of its dropbacks, and UCF’s defense sacks the quarterback on 5.5% of opponent dropbacks.",
-        "BYU’s defense has to come out ahead on big pass plays: it gives up explosive gains on 5.5% of opponent pass plays, against an offense that turns 7.7% of its pass plays into explosive gains."
-      ],
-      "market": [
-        "UCF’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 4.5% of its dropbacks, and BYU’s defense sacks the quarterback on 5.4% of opponent dropbacks.",
-        "UCF’s defense has to come out ahead on long runs: it gives up explosive gains on 3.9% of opponent runs, against an offense that turns 9.2% of its runs into explosive gains.",
-        "Jenkins keeps producing at his season rate (70.3% completions, 6.9 yards per attempt, 8 TD, 3 INT)."
-      ]
-    },
-    "unknown": [
-      "UCF’s update 2 Big 12 availability report (published Oct. 23) lists quarterback Alonza Barnett III as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for UCF and BYU.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (UCF), sack rate (UCF), sack rate allowed (BYU) and sack rate (BYU); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Kickoff times of each team’s previous game",
-        "url": null,
-        "path": "record/football/cfb_2026.json",
-        "observed_at": "2026-10-24T07:36:57.070Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big 12 Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-24T02:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T23:07:14.716Z"
   }
 }
