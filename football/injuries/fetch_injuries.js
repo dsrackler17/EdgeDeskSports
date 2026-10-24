@@ -18,6 +18,20 @@
      * The run FAILS rather than committing a wrong-shaped dataset: a
        published season with fewer than 20 teams or under 100 rows.
 
+   THE OBSERVATION LEDGER (football/injuries/history/nfl_<season>.jsonl).
+   nflverse's file carries no per-row publication time, so a designation can
+   be dated only by when EdgeDesk first saw it. Each run appends one row per
+   game designation (Out, Doubtful, Questionable) that is new or changed
+   since the ledger's last row for that player-week, stamped with this run's
+   retrieval time (observed_at). It is append-only: a row is never rewritten.
+     * The first run on a season writes what is already listed as a baseline
+       (baseline: true). EdgeDesk did not see those change, so nothing reads
+       them as news.
+     * A designation that disappears is not recorded: an empty game status
+       is not a clearance.
+     * observed_at is EdgeDesk's time, never the league's: Signal Center
+       prints it as "first seen by EdgeDesk".
+
    Run by .github/workflows/injury-sync.yml (full network).
      node football/injuries/fetch_injuries.js [--season 2026] [--out dir]
    Exit 0 = dataset written or unchanged; exit 1 = fetch failed hard.
@@ -101,6 +115,41 @@ function writeIfChanged(file, ds) {
   fs.writeFileSync(file, JSON.stringify(ds, null, 1) + '\n');
   return true;
 }
+const OBS_SCHEMA = 'edgedesk_nfl_injury_observation_v1';
+const DESIGNATIONS = { out: 'Out', doubtful: 'Doubtful', questionable: 'Questionable' };
+function readLedger(file) {
+  if (!fs.existsSync(file)) return [];
+  return fs.readFileSync(file, 'utf8').split('\n').filter((l) => l.trim()).map((l, i) => {
+    try { return JSON.parse(l); } catch (e) { throw new Error(path.basename(file) + ' line ' + (i + 1) + ' does not parse: the ledger is append-only, so it is never rewritten to repair it'); }
+  });
+}
+/* the rows to append: each designation new or changed since the ledger's last row for its player-week */
+function observations(ledger, ds, observedAt) {
+  if (!ds || !ds.published) return [];
+  const last = new Map();
+  (ledger || []).forEach((r) => { if (r && r.schema === OBS_SCHEMA && r.key) last.set(r.key, r); });
+  const baseline = !(ledger || []).some((r) => r && r.schema === OBS_SCHEMA);
+  const out = [];
+  Object.keys(ds.teams).sort().forEach((team) => {
+    const t = ds.teams[team];
+    (t.players || []).forEach((p) => {
+      const status = DESIGNATIONS[clean(p.status).toLowerCase()];
+      if (!status) return;
+      const key = ds.season + '|' + t.week + '|' + team + '|' + (p.gsis_id || p.name.toLowerCase());
+      const prev = last.get(key);
+      if (prev && prev.status === status) return;
+      out.push({ schema: OBS_SCHEMA, key, season: ds.season, week: t.week, game_type: t.game_type || null, team, gsis_id: p.gsis_id || null, name: p.name, position: p.position || null,
+        status, injury: p.injury || null, previous_status: prev ? prev.status : null, observed_at: observedAt, baseline, source: ds.source });
+    });
+  });
+  return out;
+}
+function appendObservations(file, rows) {
+  if (!rows.length) return 0;
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.appendFileSync(file, rows.map((r) => JSON.stringify(r)).join('\n') + '\n');
+  return rows.length;
+}
 async function fetchText(url) {
   const r = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(60000) });
   if (r.status === 404) return null;
@@ -118,7 +167,11 @@ async function main() {
   const file = path.join(out, `nfl_${season}.json`);
   const changed = writeIfChanged(file, ds);
   console.log(`[injuries] ${season}: ${ds.published ? ds.team_count + ' teams · latest week ' + ds.latest_week + ' · ' + ds.rows + ' rows' : 'not published yet'} · ${changed ? 'written' : 'unchanged'} → ${path.relative(process.cwd(), file)}`);
+  const ledgerFile = path.join(out, 'history', `nfl_${season}.jsonl`);
+  const obs = observations(readLedger(ledgerFile), ds, now);
+  appendObservations(ledgerFile, obs);
+  console.log(`[injuries] ${season}: ${obs.length} designation(s) observed${obs.length && obs[0].baseline ? ' (baseline: already listed when the ledger began)' : ''} → ${path.relative(process.cwd(), ledgerFile)}`);
   return 0;
 }
-module.exports = { parseCsv, build, unpublished, validate, statusRank, teamCode, writeIfChanged, defaultSeason, SCHEMA };
+module.exports = { parseCsv, build, unpublished, validate, statusRank, teamCode, writeIfChanged, defaultSeason, observations, readLedger, appendObservations, SCHEMA, OBS_SCHEMA };
 if (require.main === module) main().then(c => process.exit(c)).catch(e => { console.error('[injuries] ' + e.message); process.exit(1); });

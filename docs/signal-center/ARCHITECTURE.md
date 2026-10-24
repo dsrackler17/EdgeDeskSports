@@ -130,32 +130,47 @@ Generated from `lib/edgedesk_signal_registry.js`. A sport supports a signal
 because a dated source exists, not because it is in a menu. **Operational**:
 sourced and tested. **Experimental**: sourced, but the model or the source is
 not yet proven enough to lead with. Only NFL and college football are live
-candidates. Every other sport stays in shadow until an operator adds it to
-`live_sports`.
+candidates: the Rollout column is the review plan. What production publishes is
+`sc_config.live_sports` (every sport since 2026-10-24, the owner's switch), and
+the terminal's Coverage view shows that column from the database.
 
 | Sport | Rollout | forecast shift | market divergence | line movement | simulation shift | injury impact | reliability warning | data quality | convergence |
 |---|---|---|---|---|---|---|---|---|---|
-| NFL | live candidate | operational | operational | operational | experimental | **blocked** | operational | operational | operational |
+| NFL | live candidate | operational | operational | operational | experimental | experimental (QB, dated by EdgeDesk) | operational | operational | operational |
 | College football | live candidate | operational | experimental | operational | experimental | operational (QB) | operational | operational | experimental |
 | NBA | shadow | operational | experimental | experimental | experimental | experimental | operational | operational | experimental |
-| NHL | shadow | operational | experimental | experimental | experimental | blocked | operational | operational | experimental |
+| NHL | shadow | operational | experimental | experimental | experimental | **blocked** | operational | operational | experimental |
 | MLB | shadow | — | — | — | experimental | — | — | operational | — |
 | WNBA | shadow | operational | — | — | experimental | — | operational | — | — |
-| Men's college basketball | shadow | coming soon | — | — | blocked | — | — | — | — |
-| UFC | shadow | coming soon | — | — | — | — | — | — | — |
-| College baseball | shadow | coming soon | — | — | coming soon | — | — | — | — |
+| Men's college basketball | shadow | operational | — | — | **blocked** | — | — | operational | — |
+| UFC | shadow | coming soon | — | — | experimental | — | — | operational | — |
+| College baseball | shadow | coming soon | — | — | coming soon | — | — | operational | — |
 | Women's college basketball | shadow | — | — | — | — | — | — | — | — |
-| Tennis | unavailable | — | — | — | coming soon | — | — | — | — |
-| Golf | unavailable | — | — | — | — | — | — | — | — |
+| Tennis | shadow | — | — | — | experimental | — | — | — | — |
+| Golf | shadow | — | — | — | experimental | — | — | — | — |
 
 Blockers worth knowing:
 
-- **NFL injuries are blocked.** No NFL injury source carries a per-row publication time, and a designation
-  without one cannot be ordered against a forecast snapshot.
+- **NFL injuries are dated by EdgeDesk, not the league.** nflverse's copy of the official report carries no per-row
+  publication time. The injury sync (every six hours) appends each game designation new or changed since its last
+  row for that player-week to `football/injuries/history/nfl_<season>.jsonl`, stamped with its own retrieval time.
+  Signal Center reads quarterbacks from it, prints the time as "first seen by EdgeDesk" (never "published"), flags
+  `PUBLICATION_TIME_UNKNOWN`, and keeps the category experimental. The first run's rows are a baseline (already
+  listed when the ledger began) and are never news. A designation that disappears is not recorded.
 - **Simulator changes follow the Simulator's own registry** (`lib/edgedesk_simulator_sports.js`) and never override
   it. They also need outcome definitions in the engine (`E.SIM_OUTCOMES`: NFL, college football, NHL, NBA, MLB,
-  WNBA). Golf and UFC run in the Simulator, but their tournament and fight results are not season standings, so
-  Signal Center does not compare them yet.
+  WNBA, golf, tennis, UFC). For golf a run is one tournament (win, top 5/10/20, the cut until it is made); for tennis
+  one draw (title, final, semifinal, quarterfinal); for UFC the title path within the Simulator's horizon
+  (Estimated: matchmaking is modelled). An outcome whose meaning changes between runs is never compared: tennis's
+  "win the next match" and UFC's next-bout outcomes name a different match once one is played. Golfers, players and
+  fighters are people, so their signals are about a player and their graphics use initials in neutral colours.
+  Men's college basketball's Simulator module is blocked by the Simulator itself (the 2027 tournament format is
+  not verified).
+- **Men's college basketball forecast shifts** read the published daily runs (`ncaam_fc_runs` with status
+  `completed`, the runs that took the published pointer, and their `ncaam_fc_forecasts`), D-I against D-I, for games
+  not yet started. A run that lost the race (`superseded`) was never shown and is never read. A game rated in between
+  two runs is the shift's source-dated support; availability is not modelled, and every signal carries the
+  forecast's data-quality flags.
 - **MLB has no forecast history to compare.**
 - **Not supported anywhere yet:** roster movement (no source-dated transaction feed), model disagreement (no
   independent models published side by side), historical anomaly (the ledgers start in 2026). The Coverage view

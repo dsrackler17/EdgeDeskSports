@@ -18,7 +18,7 @@
      anything else (anon key)   -> anon
 
    Only the PostgREST features the functions use are implemented: select=,
-   eq./gt./lt./is.null/not.is.null filters, order=, limit=, on_conflict= with
+   eq./gt./lt./in.()/is.null/not.is.null filters, order=, limit=, on_conflict= with
    merge-duplicates, PATCH and DELETE with filters, and /rpc with named arguments.
    =========================================================================== */
 const PG = require('../personal/_pg.js');
@@ -47,6 +47,8 @@ function typedFilters(params, types) {
     if (['select', 'limit', 'order', 'on_conflict', 'offset'].indexOf(k) >= 0) continue;
     const col = ident(k);
     if (v === 'not.is.null') { where.push(col + ' is not null'); continue; }
+    const inl = /^in\.\((.*)\)$/.exec(v);
+    if (inl) { where.push(col + ' in (' + inl[1].split(',').map((x) => lit(x.replace(/^"|"$/g, '')) + '::' + (types[k] || 'text')).join(', ') + ')'); continue; }
     const m = /^(eq|neq|gt|gte|lt|lte|is)\.(.*)$/.exec(v);
     if (!m) throw new Error('unsupported filter ' + k + '=' + v);
     if (m[1] === 'is') { where.push(col + (m[2] === 'null' ? ' is null' : ' is not null')); continue; }

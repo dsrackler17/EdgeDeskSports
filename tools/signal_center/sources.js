@@ -14,6 +14,8 @@
      performance/data/summary.json                   the live graded record
      engine/registry.json                            the backtest evidence
      football/availability/reports/*.json            CFB availability reports
+     football/injuries/history/nfl_<season>.jsonl    NFL designations, dated
+                                                     by EdgeDesk's first sight
      today/slate.json                                feed health per sport
    =========================================================================== */
 'use strict';
@@ -266,7 +268,45 @@ function cfbAvailability(root, games) {
   return rows;
 }
 
+/* ------------------------------------------------ NFL injury observations
+   football/injuries/fetch_injuries.js appends each game designation new or
+   changed since its last row for that player-week. nflverse's copy of the
+   league's report carries no publication time, so the row is dated by the
+   sync's own retrieval (observed_at): Signal Center says "first seen by
+   EdgeDesk", never "published". The game is the team's game that week. */
+const NFL_STATUS = { Out: 'OUT', Doubtful: 'DOUBTFUL', Questionable: 'QUESTIONABLE' };
+const NFL_OBS_NOTE = 'The time shown is when EdgeDesk’s injury sync (every six hours) first saw the designation in nflverse’s copy of the league’s official report, not when the team published it.';
+function nflInjuries(root, games) {
+  root = root || ROOT;
+  const dir = path.join(root, 'football', 'injuries', 'history');
+  /* the team's game in a week: game research names it <season>_<week>_<away>_<home> */
+  const byTeamWeek = new Map();
+  (games || []).forEach((g) => {
+    const m = /^nfl\|(\d{4})_(\d{2})_([A-Z]{2,3})_([A-Z]{2,3})$/.exec(g.game.event_key || '');
+    if (!m) return;
+    [m[3], m[4]].forEach((t) => byTeamWeek.set(m[1] + '|' + (+m[2]) + '|' + t, g.game));
+  });
+  const rows = [];
+  listFiles(dir, /^nfl_\d{4}\.jsonl$/).forEach((f) => readJsonl(f).forEach((r) => {
+    if (r.schema !== 'edgedesk_nfl_injury_observation_v1' || !NFL_STATUS[r.status] || !r.observed_at) return;
+    const g = byTeamWeek.get(r.season + '|' + r.week + '|' + r.team) || null;
+    const side = g ? (g.home.abbr === r.team ? 'home' : 'away') : null;
+    rows.push({
+      sport: 'nfl', season: r.season, team: { name: g ? g[side].name : r.team, abbr: r.team },
+      player: { id: r.gsis_id || null, name: r.name, position: r.position || null },
+      status: NFL_STATUS[r.status],
+      report: { id: 'nfl-obs:' + r.key + ':' + r.observed_at, type: 'NFL official injury', published_at: null, observed_at: r.observed_at, retrieved_at: r.observed_at, baseline: r.baseline === true,
+        source_url: 'https://github.com/nflverse/nflverse-data/releases/tag/injuries', source: 'NFL official injury report (nflverse copy)', observed_note: NFL_OBS_NOTE },
+      game: { event_key: g ? g.event_key : null, event_at: g ? g.event_at : null, label: g ? g.away.name + ' at ' + g.home.name : null, home: g ? g.home : null, away: g ? g.away : null, research_href: g ? g.research_href : null }
+    });
+  }));
+  return rows;
+}
+
 /* ------------------------------------------------ source freshness */
+/* the slate's key for a sport where Signal Center's differs, and the name a reader knows */
+const SLATE_SPORT = { ncaabase: 'college_baseball' };
+const SLATE_LABEL = { ncaabase: 'college baseball', ncaam: 'men’s college basketball', mma: 'UFC' };
 function sourceStates(root, now) {
   const out = [];
   const cur = readJson('football/game_research/current.json', root);
@@ -276,11 +316,11 @@ function sourceStates(root, now) {
   const slate = readJson('today/slate.json', root);
   if (slate && slate.sports) {
     Object.keys(slate.sports).forEach((k) => {
-      const s = slate.sports[k];
-      if (s.state !== 'ok') out.push({ id: 'slate_' + k, label: 'Today’s ' + k.toUpperCase() + ' schedule feed', sport: k, state: s.state, generated_at: s.last_success_at || null, max_age_minutes: 120, note: s.note || null, ref: 'today/slate.json' });
+      const s = slate.sports[k], sport = SLATE_SPORT[k] || k;
+      if (s.state !== 'ok') out.push({ id: 'slate_' + k, label: 'Today’s ' + (SLATE_LABEL[k] || k.toUpperCase()) + ' schedule feed', sport, state: s.state, generated_at: s.last_success_at || null, max_age_minutes: 120, note: s.note || null, ref: 'today/slate.json' });
     });
   }
   return out;
 }
 
-module.exports = { ROOT, readJson, readJsonl, footballGames, footballCurrent, footballLedgerGames, perfForecastGames, perfQuotes, footballRecordQuotes, allQuotes, perfKeyFor, slateTeams, audits, cfbAvailability, sourceStates, PERF_SPORTS, FOOTBALL_SETTLES };
+module.exports = { ROOT, readJson, readJsonl, footballGames, footballCurrent, footballLedgerGames, perfForecastGames, perfQuotes, footballRecordQuotes, allQuotes, perfKeyFor, slateTeams, audits, cfbAvailability, nflInjuries, sourceStates, PERF_SPORTS, FOOTBALL_SETTLES };

@@ -154,6 +154,12 @@ chk('no anon grant on a reader door that returns numbers',!/grant execute on fun
     chk('four new signals', ig.inserted === 4 && ig.rejected === 0, ig);
     chk('shadow mode publishes nothing', ig.published === 0 && ig.items.every((i) => i.publication === 'SHADOW'));
     chk('a signal for a started event is stored EXPIRED', ig.items.find((i) => i.signal_key === p4.signal_key).lifecycle === 'EXPIRED');
+    chk('…saying the event had started', db.sql('select lifecycle_reason from public.sc_signals where signal_key = ' + lit(p4.signal_key) + ';').trim() === 'the event had started when the signal was detected');
+    /* a tournament (season kind) whose end has passed: it ended, nothing "started" */
+    const p5 = JSON.parse(JSON.stringify(p4)); p5.event_kind = 'season'; p5.identity = Object.assign({}, p5.identity, { t: 'tournament' }); p5.signal_key = E.signalKey(p5.identity); p5.version_hash = E.versionHash(p5);
+    const ig5 = ingest(r1.run_id, [p5]);
+    chk('a tournament signal detected after its competition ended is EXPIRED, saying it ended', ig5.items[0].lifecycle === 'EXPIRED'
+      && db.sql('select lifecycle_reason from public.sc_signals where signal_key = ' + lit(p5.signal_key) + ';').trim() === 'the competition had ended when the signal was detected', ig5);
     ig = ingest(r1.run_id, [p1, p2]);
     chk('the same payloads again: unchanged, no new row (idempotent)', ig.unchanged === 2 && ig.inserted === 0 && ig.versioned === 0);
     const bad = [Object.assign({}, p1, { signal_key: 'nope' }), Object.assign({}, p2, { headline: 'Lock of the week' }), Object.assign({}, p3, { fixture: true }), Object.assign({}, p1, { schema: 'x' })];
@@ -192,6 +198,13 @@ chk('no anon grant on a reader door that returns numbers',!/grant execute on fun
     db.sql("update public.sc_runs set started_at = now() - interval '2 hours' where status = 'running';");
     let r3 = begin('k4');
     chk('a run older than the lease is failed and a new one begins', r3.busy === false && +db.sql("select count(*) from public.sc_runs where status = 'failed' and error->>'reason' like 'lease expired%';").trim() === 1);
+
+    /* ---- a shared source's warning publishes with the sports it serves ---- */
+    const sl = (live, sport) => db.sql("select public.sc_sport_live('" + JSON.stringify(live) + "'::jsonb, " + lit(sport) + ');').trim();
+    chk('sport_live: a sport is live when listed', sl(['nfl'], 'nfl') === 't' && sl(['nfl'], 'cfb') === 'f');
+    chk('sport_live: "football" is live when NFL or college football is', sl(['cfb'], 'football') === 't' && sl(['nba'], 'football') === 'f');
+    chk('sport_live: "all" is live when any sport is, never with none', sl(['golf'], 'all') === 't' && sl([], 'all') === 'f');
+    chk('sport_live: a malformed list is never live', db.sql("select public.sc_sport_live('{}'::jsonb, 'all') is not true and public.sc_sport_live(null, 'nfl') is not true;").trim() === 't');
 
     /* ---- live ---- */
     /* history stored in shadow: a verified change recorded before a game that has since started */
@@ -311,6 +324,7 @@ chk('no anon grant on a reader door that returns numbers',!/grant execute on fun
     db.sql("update public.sc_signals set event_at = now() - interval '1 minute' where signal_id = " + q5id + ';');
     const fin = finish(r3.run_id);
     chk('finishing a run expires signals whose event has started', fin.expired >= 1 && lc(q5.signal_key) === 'EXPIRED', fin);
+    chk('…a game saying the event started', db.sql('select lifecycle_reason from public.sc_signals where signal_id = ' + q5id + ';').trim() === 'the event started');
 
     /* ---- simulator: the server re-checks ---- */
     db.sql(`create table public.sim_runs (run_id uuid primary key, status text);

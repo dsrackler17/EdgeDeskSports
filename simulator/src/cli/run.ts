@@ -16,9 +16,10 @@
      node simulator/src/cli/run.ts --sport golf --workers 4 --dry-run                  (every tour's current event: live ESPN leaderboard, else the committed feed)
      node simulator/src/cli/run.ts --sport golf --tour pga --offline --dry-run         (one tour, from the committed feed)
      node simulator/src/cli/run.ts --sport tennis --workers 4 --dry-run                (every singles main draw whose order is known, and the day's matches)
+     node simulator/src/cli/run.ts --sport college_baseball --workers 4 --dry-run      (the 2027 Road to Omaha, from the committed warehouse)
 
    Options
-     --sport nfl|nhl|nba|mlb|cfb|ncaam|wnba|ufc|golf|tennis  the sport (simulator/src/sports/registry.ts)
+     --sport nfl|nhl|nba|mlb|cfb|ncaam|wnba|ufc|golf|tennis|college_baseball  the sport (simulator/src/sports/registry.ts)
      --season 2026            must match the sport's season config (default: it; NHL and NBA keys are end years, 2027 = 2026-27)
      --runs N                 default 100000 (production); fewer only for a dry run
      --seed S                 decimal or 0x-hex u64; default: derived from the input hash
@@ -86,6 +87,9 @@ import type { Tour } from '../sports/golf/model.ts';
 import { TENNIS_2026 } from '../sports/tennis/config.ts';
 import { executeTennis, printTennisSummary, publishTennis, type TennisOutcome } from '../sports/tennis/run.ts';
 import { TENNIS_INPUT_SCHEMA } from '../sports/tennis/inputs.ts';
+import { CBASE_2027 } from '../sports/college_baseball/config.ts';
+import { executeCbase, printCbaseSummary, publishCbase, type CbaseOutcome } from '../sports/college_baseball/run.ts';
+import { CBASE_INPUT_SCHEMA } from '../sports/college_baseball/inputs.ts';
 
 const SIM = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -99,7 +103,7 @@ export interface CliArgs {
   tours: string[] | null;
 }
 /** each sport's configured season (the NHL's and the NBA's are end years: 2027 = 2026-27) */
-export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, mlb: MLB_2026.season, nba: NBA_2026_27.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season, ufc: UFC_2026.season, golf: GOLF_2026.season, tennis: TENNIS_2026.season };
+export const SEASON_DEFAULT: Record<string, number> = { nfl: NFL_2026.season, nhl: NHL_2027.season, mlb: MLB_2026.season, nba: NBA_2026_27.season, ncaam: NCAAM_2027.season, wnba: WNBA_2026.season, ufc: UFC_2026.season, golf: GOLF_2026.season, tennis: TENNIS_2026.season, college_baseball: CBASE_2027.season };
 export function parseArgs(argv: string[]): CliArgs {
   const a: CliArgs = { sport: 'nfl', season: NaN, runs: PRODUCTION_RUNS, seed: null, workers: 1, snapshot: null, offline: false,
     publish: false, out: null, traceRuns: [0, 1, 2], allowUnreconciled: false, maxUnsupportedFraction: 1e-4, asOf: null, confirmThrough: null, allowIncompleteSchedule: false,
@@ -168,11 +172,14 @@ export async function execute(args: CliArgs, log: (s: string) => void = console.
   if (args.snapshot && snapshotSchema(args.snapshot) === UFC_INPUT_SCHEMA) args = { ...args, sport: 'ufc' };
   if (args.snapshot && snapshotSchema(args.snapshot) === GOLF_INPUT_SCHEMA) args = { ...args, sport: 'golf' };
   if (args.snapshot && snapshotSchema(args.snapshot) === TENNIS_INPUT_SCHEMA) args = { ...args, sport: 'tennis' };
+  if (args.snapshot && snapshotSchema(args.snapshot) === CBASE_INPUT_SCHEMA) args = { ...args, sport: 'college_baseball' };
   if (args.sport === 'nba') return executeNba(args, log);
   /* golf runs one competition per tour event: the outcome carries each event's run (printGolfSummary, publishGolf) */
   if (args.sport === 'golf') return executeGolf({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns, offline: args.offline, tours: (args.tours as Tour[] | null) || undefined }, log) as unknown as RunOutcome;
   /* tennis runs one competition per singles main draw, and one for the day's matches */
   if (args.sport === 'tennis') return executeTennis({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns, offline: args.offline }, log) as unknown as RunOutcome;
+  /* college baseball reads only committed files (the warehouse and the research): --offline changes nothing */
+  if (args.sport === 'college_baseball') return executeCbase({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns }, log) as unknown as RunOutcome;
   if (args.sport === 'wnba') return executeWnba({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns, offline: args.offline }, log) as unknown as RunOutcome;
   /* the UFC reads only committed files (the feeds and the model loop's data): --offline changes nothing */
   if (args.sport === 'ufc') return executeUfc({ season: args.season, runs: args.runs, seed: args.seed, workers: args.workers, snapshot: args.snapshot, out: args.out, traceRuns: args.traceRuns }, log) as unknown as RunOutcome;
@@ -475,6 +482,12 @@ if (isMain) {
         printTennisSummary(t, console.log);
         if (!t.runs.length && t.refused.length) process.exit(2);
         process.exit(args.publish ? await publishTennis(t, console.log) : 0);
+      }
+      if ((o as unknown as CbaseOutcome).sport === 'college_baseball') {
+        const c = o as unknown as CbaseOutcome;
+        printCbaseSummary(c, console.log);
+        if (!c.results) process.exit(2);
+        process.exit(args.publish ? await publishCbase(c, console.log) : 0);
       }
       if (args.sport === 'cfb') printCfbSummary(o as unknown as CfbRunOutcome, console.log);
       else if (args.sport === 'ncaam') printNcaamSummary(o as any, console.log);
