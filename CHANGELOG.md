@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-24 — The landing page's first section never reads DATA INCOMPLETE
+
+The free section's **Today's games** card (`index.html` #free, `lib/edgedesk_home_free.js`) listed the four soonest games with the board's status chip on each. When the board had not priced them yet, or their price was stale, the first thing a visitor saw was a column of DATA INCOMPLETE.
+
+- **A game with EdgeDesk's public read comes first.** The card still lists up to four games, shown soonest first, but it picks games with a RESEARCH, WATCH or PASS read before games without one.
+- **A game without a read is listed with no chip.** The card already says "with EdgeDesk's public read where the free board has one". This is the rule the research preview already keeps: its `listed_games` and `listed_props` leave DATA INCOMPLETE out.
+- Nothing changes in the view model or in what `/today/` shows; there, DATA INCOMPLETE is printed with its reason.
+
+Tests: `node tools/home/landing.e2e.js` (305, was 301).
+- The live board's games carry a read where they have one, and none reads DATA INCOMPLETE.
+- A stale board, where every game is DATA INCOMPLETE, still lists the slate with no chip. On the old code this check failed at 390 and 1280 px with the same column of DATA INCOMPLETE as the reported phone screenshot.
+- Green with local fonts and with the CI runner's (Inter hidden).
+
 ## 2026-10-24 — The landing page sells the terminal: the desk, Signal Center and the Simulator
 
 The landing page (`index.html`) described football research and bet tracking. Since 2026-10-23 the terminal also has Signal Center (live in production) and the Simulator (ten sports ACTIVE). The page now says what EdgeDesk is, a research terminal for sports markets, and what Full Access adds to the free research, seat by seat. The free football research still comes first, and nothing is claimed that the product does not do.

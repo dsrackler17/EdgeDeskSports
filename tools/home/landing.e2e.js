@@ -418,9 +418,10 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
         await C.page.evaluate(() => document.getElementById('free').scrollIntoView({ block: 'start', behavior: 'instant' }));
         await C.page.waitForTimeout(500);
         const f = await C.page.evaluate(() => ({ games: [...document.querySelectorAll('#freeGames li')].map((li) => li.innerText),
-          chips: document.querySelectorAll('#freeGames .st').length, arts: [...document.querySelectorAll('#freeArts a')].map((a) => a.getAttribute('href')),
+          chips: document.querySelectorAll('#freeGames .st').length, chipText: [...document.querySelectorAll('#freeGames .st')].map((x) => x.textContent.trim()), arts: [...document.querySelectorAll('#freeArts a')].map((a) => a.getAttribute('href')),
           links: [...document.querySelectorAll('#free a')].map((a) => a.getAttribute('href')) }));
-        chk(vp.width + ' free: the week\'s games from the board, each with EdgeDesk\'s public read', f.games.length >= 1 && f.games.length <= 4 && f.chips === f.games.length, f);
+        chk(vp.width + ' free: the week\'s games from the board, EdgeDesk\'s public read on those it has one for', f.games.length >= 1 && f.games.length <= 4 && f.chips >= 1 && f.chips <= f.games.length, f);
+        chk(vp.width + ' free: no game in the first section reads DATA INCOMPLETE', f.chipText.every((c) => c !== 'DATA INCOMPLETE') && !f.games.some((t) => /DATA INCOMPLETE/.test(t)), f.chipText);
         const pubUrls = PUB.articles.map((a) => a.url.replace('https://edgedesksports.com', ''));
         chk(vp.width + ' free: the latest research, linked to published articles only', f.arts.length >= 1 && f.arts.every((h) => pubUrls.indexOf(h) >= 0), f.arts);
         ['/today/', '/articles/', '/tools/no-vig-calculator/', '/tools/fair-odds-calculator/', '/tools/model-vs-market/', '/research/sample/', '/newsletter/?from=home_free']
@@ -495,8 +496,10 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
       prevTag: document.getElementById('lpPrevTag').textContent, prevLive: document.getElementById('lpPrevTag').classList.contains('live'),
       upd: (() => { const li = document.querySelector('#lpStats li[data-k="updated"]'); return { old: li.classList.contains('old'), text: li.textContent }; })(),
-      research: (() => { const li = document.querySelector('#lpStats li[data-k="research"]'); return li.hidden ? null : li.querySelector('b').textContent; })()
+      research: (() => { const li = document.querySelector('#lpStats li[data-k="research"]'); return li.hidden ? null : li.querySelector('b').textContent; })(),
+      free: [...document.querySelectorAll('#freeGames li')].map((li) => li.innerText)
     }));
+    chk(vp.width + ' stale: #free still lists the slate, and none of it reads DATA INCOMPLETE', r.free.length >= 1 && !r.free.some((t) => /DATA INCOMPLETE/.test(t)), r.free);
     chk(vp.width + ' stale: the preview is not called live', !r.prevLive && /^(Last update|Example)/.test(r.prevTag), r.prevTag);
     chk(vp.width + ' stale: "Last update", not a green "Updated"', r.upd.old && /^Last update/.test(r.upd.text), r.upd);
     chk(vp.width + ' stale: the research-grade count does not count the games it downgraded', r.research === null || +r.research.replace(/,/g, '') < 4, r.research);
