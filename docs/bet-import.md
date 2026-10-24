@@ -124,7 +124,9 @@ The candidates come from `public.signals` (EdgeDesk's capture), through `bet_imp
   - A claim is atomic per reader (an advisory lock), and refused claims are recorded.
   - **It fails closed:** if the allowance cannot be checked, nothing is sent to the model.
 - **Prompt injection.** The prompt treats all input as data. Pasted text goes between markers, and a platform name typed for "Other" cannot break out of its quotes.
-- **Model:** `claude-opus-5-5`, effort `medium`, with the server-side refusal fallback (`fallbacks: "default"`). Override with `BET_IMPORT_MODEL`, `BET_IMPORT_EFFORT` and `BET_IMPORT_FALLBACKS=0`.
+- **Model:** `claude-opus-5-5`, effort `medium`. The server-side refusal fallback (`fallbacks: "default"`, a beta) is off unless `BET_IMPORT_FALLBACKS=1`. Override with `BET_IMPORT_MODEL` and `BET_IMPORT_EFFORT`.
+- **The schema stays inside the API's structured-output limits.** At most 16 parameters may have a union type (`anyOf`, or a type array such as `["string", "null"]`) and at most 24 may be optional, across a request; over either, the API refuses every read with a 400 before reading anything. The first deployed schema had 26 nullable fields and every read failed with "The reader could not process this request". Now nothing is nullable: a field that is not shown is `""`, and every amount is a string of its digits (`"24.64"`), which also keeps money exact. The unit suite counts both limits.
+- **A refused request names its cause.** When the API refuses a request, its own error text (about the request, never its content) is logged and shown after the message ("Reader said: …").
 - **Cost:** a phone screenshot is roughly 1–5k image tokens, and the answer is about 200 tokens a bet.
 
 ## 7. Deploy
