@@ -40,7 +40,8 @@ async function recordModel(db, key) {
 
 async function syncChampion(db, o) {
   o = o || {};
-  const H = history().filter((h) => ['INIT', 'PROMOTE', 'ROLLBACK'].includes(h.decision));
+  /* only the lines that moved the pointer: a winning candidate's weekly decision record is a PROMOTE too, naming the champion it beat */
+  const H = history().filter(RG.movesPointer);
   const status = await db.rpc('ncaaw_fc_public_status', {}).catch(() => null);
   const dbKey = Array.isArray(status) && status[0] ? status[0].champion_key : null;
   const ptr = RG.readPointer(); if (!ptr) throw new Error('no champion pointer in the repository');
