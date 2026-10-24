@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T23:30:00.000Z",
   "game_when_label": "2026-10-24 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-24T23:09:03.952Z",
-  "generated_at": "2026-10-24T23:09:03.952Z",
+  "updated_at": "2026-10-24T23:11:58.786Z",
+  "generated_at": "2026-10-24T23:11:58.786Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/ole-miss-vs-texas-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "manual_review",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1901,13 +1901,13 @@
   "snapshot_id": "snap_5462c8b3d010a416",
   "publication_snapshot_id": "snap_5462c8b3d010a416",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-24T23:30:00.000Z",
-    "minutes_before_kickoff": 21,
+    "minutes_before_kickoff": 18,
     "published_at": null,
-    "refreshed": true,
-    "at": "2026-10-24T23:09:03.952Z"
+    "refreshed": false,
+    "at": "2026-10-24T23:11:58.786Z"
   },
   "featured": {
     "editorial_priority": 65,
@@ -2199,29 +2199,18 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-24T23:09:03.952Z"
+    "at": "2026-10-24T23:11:58.786Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-24T23:09:03.952Z",
-    "blocking": [
-      {
-        "id": "my_take",
-        "why": "an auto-generated article publishes only after the owner writes \"My take\" of at least 240 characters",
-        "detail": "0 characters on file"
-      },
-      {
-        "id": "evidence_inputs_suspect",
-        "why": "EdgeDesk’s own inputs for this game are suspect, so a person reviews the page before it goes out",
-        "detail": "CROSS_MODEL_OUTLIER, DATA_FAULT"
-      }
-    ],
+    "at": "2026-10-24T23:11:58.786Z",
+    "blocking": [],
     "warnings": [],
-    "hold_reason": "my_take, evidence_inputs_suspect"
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "x6wjjl99ecur",
+    "packet_hash": "zefg4xnya26r",
     "status": "UNEXPLAINED",
     "input_suspect": true,
     "question": "Can Texas’ pass rush get to Trinidad Chambliss?",
@@ -2324,99 +2313,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T23:09:03.952Z"
-  },
-  "freshness": {
-    "at": "2026-10-24T23:09:03.952Z",
-    "fields": {
-      "market.line": {
-        "value": "Texas −8.5",
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 54.5,
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at DraftKings",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-24T23:11:58.786Z"
   }
 }
