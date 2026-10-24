@@ -57,7 +57,7 @@ function cfgFromEnv() {
     effort: ['low', 'medium', 'high'].includes(e('BET_IMPORT_EFFORT', 'medium')) ? e('BET_IMPORT_EFFORT', 'medium') : 'medium',
     maxTokens: Math.max(2000, Math.min(64000, parseInt(e('BET_IMPORT_MAX_TOKENS', '16000'), 10) || 16000)),
     timeoutMs: Math.max(10000, Math.min(380000, parseInt(e('BET_IMPORT_TIMEOUT_MS', '140000'), 10) || 140000)),
-    fallbacks: e('BET_IMPORT_FALLBACKS', '1') !== '0' };
+    fallbacks: e('BET_IMPORT_FALLBACKS', '0') === '1' };
 }
 const pad = (s, n) => { s = String(s == null ? '' : s); return s.length >= n ? s.slice(0, n - 1) + '…' : s + ' '.repeat(n - s.length); };
 

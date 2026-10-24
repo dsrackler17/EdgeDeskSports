@@ -73,6 +73,29 @@ function strict(s, at) {
   return bad;
 }
 chk('the answer schema is strict all the way down, with no constraint structured outputs refuse', strict(C.SCHEMA, '$').length === 0, strict(C.SCHEMA, '$'));
+/* the API's explicit limits (structured outputs): at most 16 parameters with a
+   union type (anyOf, or a type array) and 24 optional ones across a request;
+   over either, every read is refused with a 400 before anything is read */
+function counts(s, acc) {
+  acc = acc || { unions: [], optional: [] };
+  if (!s || typeof s !== 'object') return acc;
+  if (s.type === 'object') Object.keys(s.properties || {}).forEach((k) => {
+    const p = s.properties[k];
+    if (p && (Array.isArray(p.anyOf) || Array.isArray(p.type))) acc.unions.push(k);
+    if ((s.required || []).indexOf(k) < 0) acc.optional.push(k);
+    counts(p, acc);
+  });
+  if (s.items) {
+    if (Array.isArray(s.items.anyOf) || Array.isArray(s.items.type)) acc.unions.push('items');
+    counts(s.items, acc);
+  }
+  (s.anyOf || []).forEach((x) => counts(x, acc));
+  return acc;
+}
+const lim = counts(C.SCHEMA);
+chk('the schema is inside the API\'s structured-output limits: no union-typed parameter (limit ' + C.SCHEMA_LIMITS.unionParams + '), no optional one (limit ' + C.SCHEMA_LIMITS.optionalParams + ')',
+  lim.unions.length === 0 && lim.optional.length === 0 && C.SCHEMA_LIMITS.unionParams === 16 && C.SCHEMA_LIMITS.optionalParams === 24, lim);
+chk('…and the prompt no longer asks for null (a field not shown is "")', !/\bnull\b/.test(C.systemPrompt()) && /empty string ""/.test(C.systemPrompt()));
 chk('the schema asks for every field the import needs, each with a confidence', ['sport', 'league', 'event', 'market_type', 'selection', 'side', 'line', 'price_display', 'price_format',
   'stake', 'contracts', 'potential_payout', 'payout', 'placed_at', 'status', 'book', 'confidence'].every((k) => k in C.SCHEMA.properties.bets.items.properties)
   && C.CONF_FIELDS.every((k) => k in C.SCHEMA.properties.bets.items.properties.confidence.properties));
@@ -198,9 +221,9 @@ function answer(bets, stop) {
       && j.bets[1].issues.some((i) => i.code === 'MISSING_STAKE') && j.bets[0].valid, j);
     chk('the key comes from the secret and goes only to api.anthropic.com', call.init.headers['x-api-key'] === 'sk-ant-secret'
       && W.calls.filter((c) => JSON.stringify(c.init || {}).includes('sk-ant-secret')).length === 1 && !JSON.stringify(j).includes('sk-ant'));
-    chk('the call: claude-opus-5-5, API version 2026-10-21, strict JSON schema, the refusal fallback', sent.model === 'claude-opus-5-5' && call.init.headers['anthropic-version'] === '2026-10-21'
-      && sent.output_config.format.type === 'json_schema' && JSON.stringify(sent.output_config.format.schema) === JSON.stringify(C.SCHEMA) && sent.fallbacks === 'default'
-      && call.init.headers['anthropic-beta'] === 'server-side-fallback-2026-07-01' && !('temperature' in sent) && !('thinking' in sent));
+    chk('the call: claude-opus-5-5, API version 2026-10-21, strict JSON schema, effort medium; no beta, no fallback, no sampling or thinking field by default', sent.model === 'claude-opus-5-5' && call.init.headers['anthropic-version'] === '2026-10-21'
+      && sent.output_config.format.type === 'json_schema' && JSON.stringify(sent.output_config.format.schema) === JSON.stringify(C.SCHEMA) && sent.output_config.effort === 'medium'
+      && !('fallbacks' in sent) && !call.init.headers['anthropic-beta'] && !('temperature' in sent) && !('thinking' in sent), { fallbacks: sent.fallbacks, beta: call.init.headers['anthropic-beta'] });
     chk('the screenshot goes as an image block, before the text', sent.messages[0].content[0].type === 'image' && sent.messages[0].content[0].source.data === PNG && sent.messages[0].content[1].type === 'text');
     chk('the claim is settled once with counts and tokens', W.settles.length === 1 && W.settles[0].p_id === 41 && W.settles[0].p_outcome === 'parsed' && W.settles[0].p_bets === 2
       && W.settles[0].p_flagged === 1 && W.settles[0].p_tokens_in === 2400);
@@ -218,6 +241,13 @@ function answer(bets, stop) {
     chk('a refusal: said in the body (422, NOT_READ), settled as refused', r.status === 200 && j.ok === false && j.status === 422 && j.reason === 'NOT_READ' && j.message && W.settles[0].p_outcome === 'refused', j);
     W.model = answer('not json at all'); r = await F.handle(req(paste)); j = await body(r);
     chk('an answer that is not the schema: 502 INVALID_OUTPUT in the body, nothing returned as bets', j.ok === false && j.status === 502 && j.reason === 'INVALID_OUTPUT' && !j.bets, j);
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => (String(url) === 'https://api.anthropic.com/v1/messages'
+      ? resp(400, { type: 'error', error: { type: 'invalid_request_error', message: 'Schema is too complex for compilation.' } }) : realFetch(url, init));
+    r = await F.handle(req(paste)); j = await body(r);
+    chk('a request the API refuses: the API\'s own reason travels in the body (detail), so the page can name it', j.ok === false && j.status === 502 && j.reason === 'UPSTREAM_ERROR'
+      && j.detail === 'Schema is too complex for compilation.', j);
+    globalThis.fetch = realFetch;
     W.modelStatus = 529; r = await F.handle(req(paste)); j = await body(r);
     chk('the API overloaded: 503 UPSTREAM_BUSY in the body, try again', j.ok === false && j.status === 503 && j.reason === 'UPSTREAM_BUSY', j);
     W.modelStatus = 200;
@@ -232,9 +262,10 @@ function answer(bets, stop) {
       r.status === 200 && j.bets.length === 5 && j.bets.every((b) => b.book_key === 'draftkings_predictions' && b.platform_type === 'PREDICTION_MARKET' && b.book_detected)
       && /did not say which platform these are from: tell it from the logo/.test(sentDk.messages[0].content[3].text), j.bets && j.bets.map((b) => b.book_key));
     chk('…"flagged" counts only the rows with something to fix or check (the two cut-off cards), not the ones with only information', j.flagged === 2, j.flagged);
-    ENV.BET_IMPORT_MODEL = 'claude-sonnet-5-5'; ENV.BET_IMPORT_FALLBACKS = '0'; W.model = answer([]); W.calls = []; await body(await F.handle(req(paste)));
+    ENV.BET_IMPORT_MODEL = 'claude-sonnet-5-5'; ENV.BET_IMPORT_FALLBACKS = '1'; W.model = answer([]); W.calls = []; await body(await F.handle(req(paste)));
     const sent3 = W.calls.find((c) => /anthropic/.test(c.url));
-    chk('the model and the fallback are the operator\'s to change', JSON.parse(sent3.init.body).model === 'claude-sonnet-5-5' && !('fallbacks' in JSON.parse(sent3.init.body)) && !sent3.init.headers['anthropic-beta']);
+    chk('the model and the fallback are the operator\'s to change (BET_IMPORT_FALLBACKS=1: fallbacks "default" with its own beta header)', JSON.parse(sent3.init.body).model === 'claude-sonnet-5-5'
+      && JSON.parse(sent3.init.body).fallbacks === 'default' && sent3.init.headers['anthropic-beta'] === 'server-side-fallback-2026-07-01');
     console.log = realLog;
   }
 
@@ -325,6 +356,17 @@ function answer(bets, stop) {
   const dk = dres.bets.map((b, i) => Object.assign(b, { id: 'd' + i, origin: 'screenshot', file: b.source_image, tile: 0, tiles: 1, edited: {}, confirmed: false, fresh: true,
     check: C.checkBet(b, { today: DK.today }), match: { state: 'none', auto: true, event: null, candidates: [] } }));
   const dexp = DK.expect.rows;
+  /* the same cards in the shape the schema now asks for: every amount a string of its digits, "" for what is not shown */
+  const asSchema = (b) => { const o = {}; Object.keys(b).forEach((k) => {
+    const v = b[k];
+    o[k] = k === 'confidence' || k === 'teams' || k === 'legs' || k === 'source_image' || k === 'is_bonus' ? v : v == null ? '' : typeof v === 'number' ? String(v) : v; }); return o; };
+  const sres = C.normalizeResult({ bets: DK.answer.bets.map(asSchema), warnings: DK.answer.warnings }, { book: DK.book, images: DK.images, today: DK.today });
+  const strip2 = (b) => { const o = Object.assign({}, b); delete o.read; return JSON.stringify(o); };
+  const nres = C.normalizeResult(DK.answer, { book: DK.book, images: DK.images, today: DK.today });
+  chk('the schema\'s answer shape (amounts as strings, "" for not shown) reads exactly as numbers and nulls did', sres.bets.length === nres.bets.length
+    && sres.bets.every((b, i) => strip2(b) === strip2(nres.bets[i])), sres.bets.map((b, i) => strip2(b) === strip2(nres.bets[i])));
+  chk('amounts read from strings exactly: "24.64", "$1,234.50", "-2.5", "54%", ".5", "" and junk', C.amt('24.64') === 24.64 && C.amt('$1,234.50') === 1234.5 && C.amt('−2.5') === -2.5
+    && C.amt('54%') === 54 && C.amt('.5') === 0.5 && C.amt('') === null && C.amt('n/a') === null && C.amt(7) === 7);
   chk('every card is read as a DraftKings Predictions contract, the platform detected, not chosen', dk.length === dexp.length
     && dk.every((b) => b.book_key === DK.expect.platform && b.platform_type === 'PREDICTION_MARKET' && b.book_detected && b.side === 'YES'));
   const pricesOff = dk.filter((b, i) => b.selection !== dexp[i].selection || b.price.american !== dexp[i].price_american || b.status !== dexp[i].status || b.check.valid !== dexp[i].valid);
