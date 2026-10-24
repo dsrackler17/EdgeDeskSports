@@ -46,7 +46,10 @@ After it: the terminal seat reads "Shadow mode". Readers see an empty feed and n
 
 ## 2. Shadow evaluation
 
-Run this only after step 1 is green. A run against a database without the migration stops at its first call, writes nothing, and fails with *"Signal Center's database is not deployed here … Apply supabase/signal_center.sql first"*.
+Run this only after step 1 is green. (The first deploy on 2026-10-24 applied, but every ingest was refused:
+the file hashed with pgcrypto's `digest()`, which Supabase keeps in the `extensions` schema outside the doors'
+`search_path`. The file now uses PostgreSQL's built-in `sha256()`, and the SQL suites put pgcrypto where
+Supabase does, so this cannot pass the tests again. Re-apply the file after updating.) A run against a database without the migration stops at its first call, writes nothing, and fails with *"Signal Center's database is not deployed here … Apply supabase/signal_center.sql first"*.
 
 Set the repository variable **`SIGNAL_CENTER_WORKER` = `on`** (Settings → Secrets and variables → Actions →
 Variables). `.github/workflows/signal-center.yml` then runs hourly at :23. A run can also be started by hand, with
@@ -63,10 +66,19 @@ Review in `/admin/signals/` for at least two NFL and CFB game weeks:
 
 ## 3. Go live (NFL and college football first)
 
-`/admin/signals/` → Mode → **Live**, sports **NFL** and **College football** → Save (it asks first). Or, signed in
-as an operator: `select public.sc_admin_set_mode('live', array['nfl','cfb']);`
+Any one of:
 
-- A run publishes under the mode it **began** in, so the next run publishes.
+- `/admin/signals/` → Mode → **Live**, tick the sports → Save (it asks first);
+- **Actions → Signal Center mode** (`.github/workflows/signal-center-mode.yml`): mode, sports (`nfl,cfb` or
+  `all`, checked against the registry) and a reason. It calls `public.sc_owner_set_mode` with `SB_DB_URL`, a door
+  no API role can reach;
+- the SQL editor: `select public.sc_owner_set_mode('live', array['nfl','cfb'], '<why>');`
+
+Each switch is logged in `sc_config_log`, with the reason where one is given.
+
+- **Switching to live publishes what is already stored in shadow** if it clears the publication rule now. Held
+  and withdrawn signals are never touched. The result says how many were published (`promoted`).
+- A run publishes under the mode it **began** in, so the next run publishes the new signals.
 - Published means: VERIFIED, not a fixture, a live sport, label ≥ Routine (`sc_config.publish.min_label`).
   Notices go to Full Access readers who asked, at Notable+ by default: at most 5 per run and 20 per day each.
 - Then, as separate decisions:
@@ -82,7 +94,7 @@ as an operator: `select public.sc_admin_set_mode('live', array['nfl','cfb']);`
 | Switch | Where | Effect |
 | --- | --- | --- |
 | `SIGNAL_CENTER_WORKER` | repository variable | `on` runs the hourly job; anything else stops it (manual runs still allowed) |
-| `sc_config.mode` | `/admin/signals/` or `sc_admin_set_mode` | `shadow` publishes nothing; `live` publishes the live sports |
+| `sc_config.mode` | `/admin/signals/`, *Signal Center mode*, or `sc_owner_set_mode` | `shadow` publishes nothing new; `live` publishes the live sports (and the eligible shadow signals at the switch) |
 | `sc_config.live_sports` | same | which sports may publish |
 | `sc_config.free` | SQL (operator) | the public preview: feed_limit 3, max_age_hours 72, min_label Notable, categories, example graphics 2 (events ≥ 72 h old) |
 | `sc_config.notify` | SQL | min_label Notable, cooldown 6 h per subject, max_per_run 500, max_per_reader_run 5, max_per_reader_day 20, window 24 h |
@@ -93,7 +105,8 @@ Every `sc_config` change made through an operator door is appended to `sc_config
 
 ## 5. Rollback
 
-1. **Soft (keeps everything, publishes nothing):** Mode → Shadow. Readers see the empty, honest state immediately.
+1. **Soft (keeps everything, publishes nothing new):** Mode → Shadow, or *Signal Center mode* with `shadow`.
+   What is already published stays published until an operator holds or withdraws it.
 2. **Stop the job:** set `SIGNAL_CENTER_WORKER` to `off`.
 3. **One signal:** Hold or Withdraw it (the reason is kept; history stays readable).
 4. **Remove the feature:** run `supabase/signal_center_rollback.sql` in the SQL editor. It is **destructive**: it
