@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_perf_health_v1",
- "generated_at": "2026-10-24T21:11:56.191Z",
+ "generated_at": "2026-10-24T22:32:16.360Z",
  "status": "WARN",
  "items": [
   {
@@ -13,7 +13,7 @@
      "event_key": "CFB|401856835",
      "sport": "cfb",
      "pending": "NOT_FINAL",
-     "hours_past_start": 17,
+     "hours_past_start": 19,
      "start_utc": "2026-10-24T04:00:00.000Z",
      "home": "UCF",
      "away": "BYU"
@@ -22,10 +22,24 @@
      "event_key": "CFB|401858497",
      "sport": "cfb",
      "pending": "NOT_FINAL",
-     "hours_past_start": 17,
+     "hours_past_start": 19,
      "start_utc": "2026-10-24T04:00:00.000Z",
      "home": "Minnesota",
      "away": "Iowa"
+    }
+   ]
+  },
+  {
+   "level": "WARN",
+   "check": "source_read_failed",
+   "detail": "an ESPN scoreboard read failed (it is retried next run)",
+   "count": 1,
+   "sample": [
+    {
+     "day": "20261024",
+     "sport": "wnba",
+     "ok": false,
+     "error": "no feed"
     }
    ]
   },
@@ -38,10 +52,10 @@
  ],
  "counts": {
   "forecasts": 2430,
-  "results": 611,
-  "grades": 611,
-  "quotes": 1715,
-  "research_grades": 5853,
-  "grade_outcomes": 160
+  "results": 622,
+  "grades": 622,
+  "quotes": 1762,
+  "research_grades": 5869,
+  "grade_outcomes": 173
  }
 }
