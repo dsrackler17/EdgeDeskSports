@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-24T04:47:49.287Z",
+ "generated_at": "2026-10-24T09:37:56.431Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,28 +119,28 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 105,
+  "total": 100,
   "by_group": {
-   "p4": 56,
-   "independent": 3,
-   "other": 50
+   "p4": 54,
+   "other": 47,
+   "independent": 2
   },
   "by_matchup": {
-   "conference": 101,
-   "non_conference": 4
+   "conference": 97,
+   "non_conference": 3
   },
   "by_conference": {
-   "acc": 15,
-   "independents": 3,
-   "mac": 9,
-   "american": 10,
-   "mwc": 9,
    "sec": 11,
    "big12": 15,
+   "acc": 13,
    "bigten": 15,
+   "american": 9,
+   "mac": 8,
+   "mwc": 8,
    "sunbelt": 10,
    "pac12": 7,
-   "cusa": 5
+   "cusa": 5,
+   "independents": 2
   },
   "fbs_fcs_in_source": 0
  },
@@ -200,11 +200,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 105
+  "PREDICTED": 100
  },
  "weather": {
-  "requested": 100,
-  "answered": 100,
+  "requested": 95,
+  "answered": 95,
   "dome": 3,
   "no_venue": 0,
   "failed": 0,
@@ -212,10 +212,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "100 of 100 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "95 of 95 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 105
+  "NO_MARKET": 100
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -284,12 +284,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 49,
-    "total": 105,
+    "non_power_games": 46,
+    "total": 100,
     "example": [
-     "Massachusetts @ UConn",
-     "Army @ Tulsa",
-     "Air Force @ Wyoming"
+     "Rice @ Florida Atlantic",
+     "Western Michigan @ Toledo",
+     "Akron @ Kent State"
     ]
    }
   },
@@ -304,7 +304,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 101,
+    "conference_games": 97,
     "wrong": 0
    }
   },
@@ -338,8 +338,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 105,
-    "audit_total": 105
+    "slate": 100,
+    "audit_total": 100
    }
   },
   {

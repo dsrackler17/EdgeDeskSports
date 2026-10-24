@@ -37,6 +37,31 @@ Tests:
 - Signal Center registry 227, worker 46
 - every men's suite still green.
 
+## 2026-10-24 — Watch items say what they add to the line; reliability prints as data quality
+
+A reader asked three things of the Houston at Utah card: how many points altitude gets, whether it is counted twice with home field, how the whole defence (not one lane) is read, and what "RELIABILITY 98/100" means. The answers now sit on every game's card and research page, not in a reply.
+
+- **Every "What to watch for" item carries a chip** (`EDGameSnapshot.effectOf`), taken from the snapshot's own driver rows:
+  - `UTAH +2.8`: the term, its points and the team they favour.
+  - `0 PTS`: measured, but not in the number. This covers college travel, officials and weather, altitude (rejected), a regime change at the standard weight, and anything under 0.05 pts.
+  - `CONTEXT` (a ranking with no term) and `CROSS-CHECK` (models agreeing).
+  - Drawn on the graphic (square and portrait, with a legend) and on the research page with its reason. A spec recorded before chips redraws without them. The graphic template is now `edgedesk_game_graphic/4`.
+- **The whole defence.** A pass or run mismatch now prints the same defence's other lane: `UTAH pass O #19 vs HOU pass D #86; run O #24 vs run D #36.`
+  - On college games the chip is the matchup term, which nets all eight pairings on both sides of the ball (Utah +1.4).
+  - The text says that term has no held-out test of its own.
+- **Altitude** says it adds 0 and why. Home field is one 2.8-pt value for every home team, so the climb is not counted inside it either.
+- **Altitude re-checked against the 2.8-pt home field** (`football/altitude/research/recheck.js` → `football/validation/altitude_cfb_recheck.json`).
+  - The old verdict was fitted against 4.082 pts. On a fresh cold replay it is still REJECTED: held-out MAE 12.933 → 12.950 (p = 0.71), placebo p = 0.14.
+  - The double-counting reasoning has flipped: hosts of a 3,000+ ft climb now beat the number by +1.04 pts (95% CI −0.03 to +2.22). This is written up in `docs/cfb-altitude/README.md`. `params.js` is unchanged.
+- **Reliability prints as DATA QUALITY** on the graphic, the snapshot label and the research page.
+  - It is a hand-weighted check of the inputs, and the alt text says it is not a win probability.
+  - `reliability_calibration_cfb.json` has never validated it: 76 graded games, and none at 90+. The internal field names are unchanged.
+- **Factor evidence** (`lib/edgedesk_factor_evidence.js`, `tools/football/factor_evidence.js` → `docs/game-research/FACTORS.md`, `football/game_research/factors.json`).
+  - For each college factor: is it in the number, how much, what test, what result. It is generated only from the model and validation files.
+  - It names the gap: the stylistic matchup term moves every college line and was fitted in-sample on 2014–2019. The cold replay carries no play-level efficiency, so the term has no out-of-sample record. The next piece of work is a leave-one-term-out held-out test.
+
+Tests: `node tools/football/game_research.test.js` (241, 20 new: every item carries an effect, in-number chips match the driver rows, unpriced families never claim points, two-lane text, altitude wording, chips and legend drawn, old specs redraw without them, the data-quality label, the registry against `params.js`, and `FACTORS.md` freshness), `tools/football/game_research_ui.e2e.js` (57), `cfb:altitude:test` (131), and the NBA, NHL and Signal Center graphic suites unchanged.
+
 ## 2026-10-24 — Import picks: screenshots or pasted bet history, read by Claude, checked by the reader
 
 Readers on books with no history export (Novig, ProphetX, Kalshi, DK Predictions) entered picks one at a time. Portfolio → Import → **Screenshots or pasted text** (also on + Add position and the empty book) now reads a batch at once. The reader then checks every row before anything is saved. `docs/bet-import.md` is the design.

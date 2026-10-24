@@ -1,8 +1,52 @@
 {
  "schema": "edgedesk_perf_health_v1",
- "generated_at": "2026-10-24T05:01:36.002Z",
- "status": "OK",
+ "generated_at": "2026-10-24T12:44:04.163Z",
+ "status": "WARN",
  "items": [
+  {
+   "level": "WARN",
+   "check": "missing_finals",
+   "detail": "4 started game(s) with no verified final 8+ hours after the start",
+   "count": 4,
+   "sample": [
+    {
+     "event_key": "CFB|401856835",
+     "sport": "cfb",
+     "pending": "NOT_FINAL",
+     "hours_past_start": 9,
+     "start_utc": "2026-10-24T04:00:00.000Z",
+     "home": "UCF",
+     "away": "BYU"
+    },
+    {
+     "event_key": "CFB|401856838",
+     "sport": "cfb",
+     "pending": "NOT_FINAL",
+     "hours_past_start": 9,
+     "start_utc": "2026-10-24T04:00:00.000Z",
+     "home": "Arizona",
+     "away": "Iowa State"
+    },
+    {
+     "event_key": "CFB|401858276",
+     "sport": "cfb",
+     "pending": "NOT_FINAL",
+     "hours_past_start": 9,
+     "start_utc": "2026-10-24T04:00:00.000Z",
+     "home": "Clemson",
+     "away": "Virginia Tech"
+    },
+    {
+     "event_key": "CFB|401858497",
+     "sport": "cfb",
+     "pending": "NOT_FINAL",
+     "hours_past_start": 9,
+     "start_utc": "2026-10-24T04:00:00.000Z",
+     "home": "Minnesota",
+     "away": "Iowa"
+    }
+   ]
+  },
   {
    "level": "INFO",
    "check": "no_pregame_grade",
@@ -11,11 +55,11 @@
   }
  ],
  "counts": {
-  "forecasts": 2306,
-  "results": 605,
-  "grades": 605,
-  "quotes": 1597,
-  "research_grades": 5089,
-  "grade_outcomes": 154
+  "forecasts": 2335,
+  "results": 609,
+  "grades": 609,
+  "quotes": 1628,
+  "research_grades": 5429,
+  "grade_outcomes": 158
  }
 }

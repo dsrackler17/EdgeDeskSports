@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-24T04:08:07.750Z",
- "board_generated_at": "2026-10-24T04:07:58.593Z",
+ "generated_at": "2026-10-24T12:08:08.493Z",
+ "board_generated_at": "2026-10-24T12:08:01.360Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -70,7 +70,7 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.7 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · PASS: favorite flip: the independent ensemble also favour EdgeDesk’s team · PASS: the submodels disagree with each other by SD 0.9 (limit 6)"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.8 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · PASS: favorite flip: the independent ensemble also favour EdgeDesk’s team · PASS: the submodels disagree with each other by SD 0.8 (limit 6)"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
@@ -136,7 +136,7 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.4 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.5 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
@@ -201,8 +201,8 @@
     },
     {
      "requirement": "submodel support",
-     "result": "INCOMPLETE",
-     "detail": "INCOMPLETE: no independent submodel projections are available for this game"
+     "result": "FAIL",
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required)"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
@@ -211,7 +211,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support incomplete."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
   },
   {
    "game_id": "401856732",
@@ -268,7 +268,7 @@
     {
      "requirement": "submodel support",
      "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (3 on the market’s side; 2 required) · FAIL: the independent ensemble is 2.4 pts on the market’s side (at least 3 on EdgeDesk’s side required) · FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (2 on the market’s side; 2 required) · FAIL: the independent ensemble is 2.2 pts on the market’s side (at least 3 on EdgeDesk’s side required) · FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
