@@ -12,12 +12,12 @@ men's system is separate: [`docs/ncaam-forecast/README.md`](../ncaam-forecast/RE
 `ncaaw_adjeff@1.0.0`, promoted by the weekly gates on 2026-10-24 over the
 served scores-only model.
 
-- The code runs on `main` once this branch is merged (daily refresh 13:47 UTC,
-  weekly challengers Monday 11:37 UTC).
-- The database layer is **not yet in production**: run *Deploy NCAAW forecast
-  SQL* after the merge (Deploy, step 2).
+- The code is on `main` (daily refresh 13:47 UTC, weekly challengers Monday
+  11:37 UTC).
+- The database layer and the research registration are in production:
+  *Deploy NCAAW forecast SQL*, run 40098150410, every report row `ok`.
 - **Nothing is published** until `NCAAW_FC_PUBLISH` is `on` (Deploy, step 4).
-  The season opens 2026-11-02.
+  Setting it is the one step left; the season opens 2026-11-02.
 
 Not built, each with its reason (NCAAW_MODEL_NOTES.md §9): the NCAA tournament
 simulation (the first two rounds are home games for the top 16 seeds, and the
@@ -79,8 +79,9 @@ every weekly report cite that selection's hash).
 ## Deploy (each step is a person's decision)
 
 1. **Merge** the branch to `main` after review.
-2. **Database.** The simulator layer is in production already (*Deploy
-   simulator SQL*). Run Actions → *Deploy NCAAW forecast SQL*.
+2. **Database** (done 2026-10-24, run 40098150410). The simulator layer is in
+   production already (*Deploy simulator SQL*). Run Actions → *Deploy NCAAW
+   forecast SQL*. Re-running it is safe (idempotent, additive).
    - It needs the `SB_DB_URL` secret.
    - It runs the SQL suite on a throwaway PostgreSQL, refuses without
      `public.sim_viewer_entitled()`, applies `supabase/ncaaw_forecast.sql` in
