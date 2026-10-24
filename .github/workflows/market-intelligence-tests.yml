@@ -21,6 +21,9 @@ on:
       - 'lib/edgedesk_validation.js'
       - 'tools/market_intel/**'
       - 'docs/market-intelligence/hypotheses.json'
+      - 'football/cfb_p4/research/fcs_uncapped.js'
+      - 'football/cfb_p4/fcs_margin_map.js'
+      - 'football/validation/fcs_uncapped_cfb.json'
       - '.github/workflows/market-intelligence-tests.yml'
   workflow_dispatch:
 
@@ -46,6 +49,8 @@ jobs:
         run: node tools/market_intel/market_intel.test.js
       - name: Replay (nothing after the replay time; the result withheld)
         run: node tools/market_intel/replay.test.js
+      - name: The FBS-vs-FCS experiment (H-014) and its forward tests (no fold reads a later season; the map is never priced)
+        run: node tools/market_intel/fcs_experiment.test.js
       - name: The reports rebuild from the committed ledgers, and every hypothesis is well formed
         run: |
           node tools/market_intel/validation_report.js --json > /tmp/validation.json
