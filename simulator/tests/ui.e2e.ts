@@ -285,7 +285,9 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
       const { ctx, page, errors } = await open(vp, '#simulator/nba', { entitled: true, published: true });
-      await page.evaluate(() => (window as any).navHashRoute('#simulator/nba')); await page.waitForTimeout(500);
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/nba'));
+      /* the NBA run's 1,050 result rows come in pages: wait for its 30 cards, not a fixed time (a slow runner took longer than 500 ms) */
+      await page.waitForFunction(() => document.querySelectorAll('#simHost .sm-club').length >= 30, null, { timeout: 15000 }).catch(() => {});
       let t = await text(page);
       T.chk(W + ': NBA title view: 30 NBA-title cards, the playoff conference title and the regular-season places apart, 500 simulated seasons', (await page.locator('#simHost .sm-club').count()) === 30 && /win NBA title/.test(t) && /Conference title \(playoffs\)/.test(t) && /Regular season: 1st in the/.test(t) && /500 simulated seasons/.test(t) && !/Super Bowl|Stanley Cup/.test(t));
       T.chk(W + ': NBA: no market is mapped, shown as unavailable (not zero)', /Market: unavailable/.test(t));
@@ -401,7 +403,9 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     if (TENNIS_DRAWS.length) for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width + 'w';
       const { ctx, page, errors } = await open(vp, '#simulator/tennis', { entitled: true, published: true });
-      await page.evaluate(() => (window as any).navHashRoute('#simulator/tennis')); await page.waitForTimeout(700);
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/tennis'));
+      /* every tennis run's summary, then the selected draw's and the matches' rows: wait for the title table, not a fixed time */
+      await page.waitForFunction(() => /Who wins the title/.test((document.getElementById('simHost') as HTMLElement).innerText), null, { timeout: 15000 }).catch(() => {});
       let t = await text(page);
       T.chk(W + ': tennis: the tabs are Draws, Matches and Model Health, Draws open', /Matches/.test(await page.locator('#simHost .sm-tabs').innerText()) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Draws');
       T.chk(W + ': tennis Draws: the draw, who wins the title with fair odds', /3,000 simulated draws/.test(t) && /Who wins the title/.test(t) && /Draw order:/.test(t), t.slice(0, 400));
