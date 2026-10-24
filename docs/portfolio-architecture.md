@@ -120,7 +120,8 @@ All tables live in `public` (served by PostgREST) except the credentials table. 
 
 - `status`: `OPEN`, `WON`, `LOST`, `PUSH`, `VOID`, `CASHED_OUT`, `SETTLED`. A prediction-market position only uses `OPEN` / `SETTLED` / `VOID`, and its status is derived.
 - `placed_at`, `settled_at`. The rule `status = 'OPEN' ⇔ settled_at is null` holds, and `settled_at ≥ placed_at`.
-- `source`: `MANUAL` \| `CSV` \| `SYNC` \| `EDGEDESK`, plus `import_id`, `notes`, `raw_payload` (≤ 64 KB).
+- `source`: `MANUAL` \| `CSV` \| `SYNC` \| `EDGEDESK` \| `IMPORT_SCREENSHOT` \| `IMPORT_PASTE` (the last two: [`bet-import.md`](bet-import.md)), plus `import_id`, `notes`, `raw_payload` (≤ 64 KB).
+- Import picks adds `price_display` (the price as shown), `price_american` (derived for both instruments) and `market_sig_key` (the matched EdgeDesk capture key).
 
 **Attribution** (§8): `edge_source`, `edge_ref_type`, `edge_ref_id`, `model_version`, `model_probability`, `model_fair_line`, `market_line_at_research`, `market_line_at_entry`, `edge_at_entry`, `clv`, `confidence_tier`.
 
@@ -286,6 +287,8 @@ file ──(browser: parse, detect, map, normalize, issues)──▶ portfolio_i
      ──portfolio_import_classify()──▶ NEW · DUPLICATE · DUPLICATE_IN_FILE · NEEDS_REVIEW · INVALID   (CLASSIFIED)
      ──reader confirms, may tick review / duplicate rows──▶ portfolio_import_commit()               (COMMITTED)
 ```
+
+**Screenshots and pasted text** take the same path from the staged rows on: `lib/edgedesk_bet_import.js` stages one `wager` or `fill` row per pick the reader confirmed (importer `screenshot_v1` / `paste_v1`), and the rows it creates are labelled `IMPORT_SCREENSHOT` / `IMPORT_PASTE` — [`bet-import.md`](bet-import.md).
 
 **In the browser** (`lib/edgedesk_portfolio_import.js`):
 

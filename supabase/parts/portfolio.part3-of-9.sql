@@ -38,7 +38,7 @@ create table if not exists public.portfolio_transactions (
   constraint portfolio_transactions_type check (transaction_type in ('BET', 'BUY', 'SELL', 'FILL', 'CASHOUT', 'SETTLEMENT',
     'VOID', 'REFUND', 'DEPOSIT', 'WITHDRAWAL', 'FEE', 'ADJUSTMENT')),
   constraint portfolio_transactions_side check (side is null or side in ('BUY', 'SELL')),
-  constraint portfolio_transactions_source check (source in ('MANUAL', 'CSV', 'SYNC', 'EDGEDESK')),
+  constraint portfolio_transactions_source check (source in ('MANUAL', 'CSV', 'SYNC', 'EDGEDESK', 'IMPORT_SCREENSHOT', 'IMPORT_PASTE')),
   -- a trade is a quantity of contracts at a price between $0 and $1
   constraint portfolio_transactions_trade check (transaction_type not in ('BUY', 'SELL', 'FILL')
     or (position_id is not null and quantity > 0 and quantity <= 1000000000 and quantity = round(quantity, 6)

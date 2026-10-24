@@ -1,0 +1,129 @@
+# Deploy Screenshot / Paste Import ("Import picks" on the Portfolio's Import
+# tab): supabase/bet_import.sql (IMPORT_SCREENSHOT / IMPORT_PASTE on the
+# existing portfolio_positions, the display price and matched game, the
+# per-reader allowance, the games lookup and the close job) and the
+# parse_bet_import edge function. docs/bet-import.md.
+#
+# MANUAL ON PURPOSE, as every deploy-*.yml here: tests first, then the SQL,
+# then the function (the function fails closed until its allowance exists, so
+# the SQL goes first). A report row that says CHECK THIS fails the job.
+#
+# SECRETS (GitHub, the same ones the other deploy workflows use):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the function
+#   SB_DB_URL                                     to apply the SQL (optional;
+#                                                 or paste supabase/bet_import.sql
+#                                                 into the SQL editor)
+# And once, on the Supabase side (Edge Functions → Secrets, or the CLI):
+#   supabase secrets set ANTHROPIC_API_KEY=<key>   — already set if edgedesk_ai
+#                                                    runs; the function reads it
+#                                                    server-side and never returns it
+#   optional: BET_IMPORT_MODEL (default claude-opus-5-5), BET_IMPORT_EFFORT
+#   (low | medium | high, default medium), BET_IMPORT_MAX_TOKENS (16000),
+#   BET_IMPORT_TIMEOUT_MS (140000), BET_IMPORT_FALLBACKS ('0' = off),
+#   BET_IMPORT_ORIGINS (CORS allow-list, default *).
+# SUPABASE_URL and SUPABASE_ANON_KEY are provided to every function by Supabase.
+#
+# JWT VERIFICATION STAYS ON (no --no-verify-jwt): only a signed-in reader's
+# token reaches the function, and the function asks Supabase Auth again.
+#
+# THE ADOPTION LISTS. This change also teaches the sportsbook and Kalshi sync
+# (portfolio_aggregator.sql, portfolio_connect.sql — both switched off today)
+# to adopt an imported pick instead of counting it twice. Those files are
+# applied by "Deploy Portfolio schema"; run it once before any sync is ever
+# switched on. Nothing in this workflow needs it.
+name: Deploy bet import (screenshots / paste)
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_sql:
+        description: 'Apply supabase/bet_import.sql (needs supabase/portfolio.sql already applied)'
+        type: boolean
+        default: true
+      deploy_function:
+        description: 'Deploy supabase/functions/parse_bet_import (JWT verification ON)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-bet-import
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # the deployed function file itself is imported by the test (type
+      # stripping) against a mocked network, and the SQL runs on a throwaway
+      # PostgreSQL with the browser's own staged rows: what ships is what was tested
+      - name: The core, the function and the SQL must pass before anything ships
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
+          node tools/portfolio/inline_bet_import_core.js --check
+          node tools/portfolio/bet_import.test.js
+          node tools/portfolio/bet_import_sql.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — parse_bet_import cannot be deployed from CI."; fi
+          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — paste supabase/bet_import.sql into the SQL editor instead."; fi
+
+      - name: Apply supabase/bet_import.sql (one transaction)
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/bet_import.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/bet_import.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -12
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/bet_import.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Install the Supabase CLI
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: The function's secret is set (names only; no value is read)
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if supabase secrets list --project-ref "$PROJECT_REF" 2>/dev/null | grep -q 'ANTHROPIC_API_KEY'; then
+            echo "ANTHROPIC_API_KEY is set."
+          else
+            echo "::warning::ANTHROPIC_API_KEY is not set in Supabase — the function will answer 503 until it is: supabase secrets set ANTHROPIC_API_KEY=<key>"
+          fi
+
+      # JWT verification ON (the default): no --no-verify-jwt
+      - name: Deploy parse_bet_import
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy parse_bet_import --project-ref "$PROJECT_REF"

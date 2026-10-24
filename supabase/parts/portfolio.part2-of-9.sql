@@ -196,7 +196,7 @@ create table if not exists public.portfolio_positions (
   constraint portfolio_positions_status check (status in ('OPEN', 'WON', 'LOST', 'PUSH', 'VOID', 'CASHED_OUT', 'SETTLED')),
   constraint portfolio_positions_status_by_type check (platform_type = 'SPORTSBOOK' or status in ('OPEN', 'SETTLED', 'VOID')),
   constraint portfolio_positions_result check (result is null or result in ('WIN', 'LOSS', 'PUSH', 'VOID', 'CASHOUT')),
-  constraint portfolio_positions_source check (source in ('MANUAL', 'CSV', 'SYNC', 'EDGEDESK')),
+  constraint portfolio_positions_source check (source in ('MANUAL', 'CSV', 'SYNC', 'EDGEDESK', 'IMPORT_SCREENSHOT', 'IMPORT_PASTE')),
   constraint portfolio_positions_text check (length(btrim(event_name)) between 1 and 200 and length(btrim(market_name)) between 1 and 200
     and length(btrim(selection)) between 1 and 200 and coalesce(length(side), 0) <= 80 and coalesce(length(sport), 0) <= 30
     and coalesce(length(league), 0) <= 30 and coalesce(length(event_id), 0) <= 120 and coalesce(length(notes), 0) <= 2000

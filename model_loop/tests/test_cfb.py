@@ -151,6 +151,48 @@ class TestCfb(unittest.TestCase):
         self.assertEqual(list(lower_side(df)), [1.0, -1.0, 0.0])
 
 
+class IngestRecordFinalTest(unittest.TestCase):
+    """The schedule feed refreshes weekly: a midweek game's result comes from the
+    record's final until then, and the feed's own final always wins."""
+
+    def test_record_final_fills_a_game_the_feed_has_not_completed(self):
+        import json
+        from unittest import mock
+        from model_loop.adapters.cfb import ingest
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        raw = os.path.join(d, "raw")
+        os.makedirs(raw)
+        n = 4
+        pd.DataFrame({
+            "game_id": [11, 12, 13, 14], "season": 2026, "week": 8, "season_type": "regular",
+            "start_date": ["2026-10-17T19:30:00.000Z", "2026-10-20T23:00:00.000Z", "2026-10-31T19:30:00.000Z",
+                           "2026-10-17T23:00:00.000Z"],
+            "completed": [True, False, False, True], "home_points": [21.0, np.nan, np.nan, 30.0],
+            "away_points": [14.0, np.nan, np.nan, 27.0],
+            "home_id": [1, 3, 5, 7], "away_id": [2, 4, 6, 8], "home_team": ["A", "C", "E", "G"], "away_team": ["B", "D", "F", "H"],
+            "home_division": ["fbs"] * n, "away_division": ["fbs"] * n, "home_conference": ["X"] * n,
+            "away_conference": ["X"] * n, "neutral_site": [False] * n, "conference_game": [True] * n,
+            "venue": ["v"] * n, "notes": [None] * n,
+        }).to_parquet(os.path.join(raw, "sched_2026.parquet"), index=False)
+        market = os.path.join(d, "market.csv")
+        pd.DataFrame({"game_id": [11], "spread_close": [-3.5]}).to_csv(market, index=False)
+        rec = os.path.join(d, "cfb_2026.json")
+        with open(rec, "w") as f:
+            json.dump({"games": {
+                "12": {"final": {"home_score": 23, "away_score": 26, "source": "espn"}, "close": {"home_line": 10.5, "total": 45.5}},
+                "13": {"final": None, "close": None},
+                "14": {"final": {"home_score": 31, "away_score": 27, "source": "espn"}},   # the feed's final wins
+            }}, f)
+        with mock.patch.object(ingest, "RECORD_2026", rec):
+            g = ingest.build_games(raw, [2026], market).set_index("game_id")
+        self.assertEqual(g.at[11, "result"], 7.0)
+        self.assertEqual((g.at[12, "result"], g.at[12, "total_pts"]), (-3.0, 49.0))
+        self.assertEqual(g.at[12, "close_margin"], -10.5)
+        self.assertTrue(np.isnan(g.at[13, "result"]))
+        self.assertEqual(g.at[14, "result"], 3.0)
+
+
 class WeeklyRankingTest(unittest.TestCase):
     """The weekly loop tests what the misses point at first (the NFL loop's rule)."""
 

@@ -2,6 +2,27 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- Disconnect: the credential is deleted (not merely flagged), the account
+-- reads DISCONNECTED and syncs no more. History stays unless the reader asks
+-- for it to go; then the synced positions and their transactions are deleted
+-- with the account.
+create or replace function public.portfolio_svc_disconnect(p_account uuid, p_delete_history boolean default false)
+returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare cred int; pos int := 0;
+begin
+  perform public.portfolio_svc_assert();
+  delete from portfolio_private.platform_credentials where platform_account_id = p_account;
+  get diagnostics cred = row_count;
+  if p_delete_history then
+    delete from public.portfolio_positions where platform_account_id = p_account and source = 'SYNC';
+    get diagnostics pos = row_count;
+    delete from public.platform_accounts where id = p_account;
+  else
+    update public.platform_accounts set status = 'DISCONNECTED', next_sync_at = null, metadata = metadata - 'credential' where id = p_account;
+  end if;
+  return jsonb_build_object('credential_deleted', cred > 0, 'positions_deleted', pos);
+end $$;
+
 -- THE LIVE SMOKE TEST, recorded by tools/portfolio/connector_smoke.js. A
 -- stage can pass only after every stage before it has passed; the test can
 -- be PASSED only with all ten (the table's own check enforces it again).
@@ -206,12 +227,3 @@ create policy portfolio_sync_runs_own on public.portfolio_sync_runs for select t
 
 revoke all on public.portfolio_platform_registry, public.portfolio_sync_runs from public, anon;
 revoke all on public.portfolio_platform_registry, public.portfolio_sync_runs from authenticated;
-grant select on public.portfolio_platform_registry, public.portfolio_sync_runs to authenticated;
-grant select, insert, update, delete on public.portfolio_platform_registry, public.portfolio_sync_runs to service_role;
-
-revoke all on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events from public;
-do $$ begin
-  execute 'revoke all on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events from anon, authenticated';
-  execute 'grant select, insert, update, delete on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events to service_role';
-  execute 'grant usage on sequence portfolio_private.connector_events_id_seq to service_role';
-end $$;

@@ -2924,6 +2924,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
 <link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261014bs2">
+<link rel="stylesheet" href="/lib/edgedesk_bet_import.css?v=20261024bi2">
 <link rel="stylesheet" href="/lib/edgedesk_simulator.css?v=20261024cbase2">
 <link rel="stylesheet" href="/lib/edgedesk_signal_center.css?v=20261024sc1">
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
@@ -4105,7 +4106,7 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_props_ui.js?v=20261016g1"></script>
 <script src="/lib/edgedesk_saved_research.js?v=20261011lm1"></script>
 <!-- PORTFOLIO: engine → importer → connector contract → page, in that order -->
-<script src="/lib/edgedesk_portfolio.js?v=20261005pf3"></script>
+<script src="/lib/edgedesk_portfolio.js?v=20261024bi1"></script>
 <script src="/lib/edgedesk_portfolio_import.js?v=20261012bh1"></script>
 <script src="/lib/edgedesk_slip_reader.js?v=20261014bs2"></script>
 <!-- BET HISTORY: loss patterns over the reader's own tickets (EDBETS), after the importer it groups leg rows with -->
@@ -4252,8 +4253,11 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_portfolio_process.js?v=20261005pf3"></script>
 <!-- THE DECISION RECORD: context quality, edge capture, process memory and Card → Record Position (supabase/portfolio_decision.sql) -->
 <script src="/lib/edgedesk_decision_record.js?v=20261005dr1"></script>
-<script src="/lib/edgedesk_portfolio_journal_ui.js?v=20261014bs2"></script>
-<script src="/lib/edgedesk_portfolio_ui.js?v=20261014jr1"></script>
+<script src="/lib/edgedesk_portfolio_journal_ui.js?v=20261024bi1"></script>
+<!-- IMPORT PICKS: screenshots or pasted text → Claude reads them (supabase/functions/parse_bet_import) → the reader reviews every row → the Portfolio's own import commit (supabase/bet_import.sql). Core first: the review table checks rows with the same code the server does. -->
+<script src="/lib/edgedesk_bet_import_core.js?v=20261024bi2"></script>
+<script src="/lib/edgedesk_bet_import.js?v=20261024bi2"></script>
+<script src="/lib/edgedesk_portfolio_ui.js?v=20261024bi2"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine

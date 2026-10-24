@@ -144,9 +144,11 @@ create policy platform_accounts_delete_own on public.platform_accounts for delet
 
 drop policy if exists portfolio_positions_select_own on public.portfolio_positions;
 create policy portfolio_positions_select_own on public.portfolio_positions for select to authenticated using (user_id = auth.uid());
+-- IMPORT_SCREENSHOT / IMPORT_PASTE: rows a screenshot or paste import commits
+-- (supabase/bet_import.sql re-labels them at insert and carries this same text)
 drop policy if exists portfolio_positions_insert_own on public.portfolio_positions;
 create policy portfolio_positions_insert_own on public.portfolio_positions for insert to authenticated
-  with check (user_id = auth.uid() and source in ('MANUAL', 'CSV', 'EDGEDESK'));
+  with check (user_id = auth.uid() and source in ('MANUAL', 'CSV', 'EDGEDESK', 'IMPORT_SCREENSHOT', 'IMPORT_PASTE'));
 drop policy if exists portfolio_positions_update_own on public.portfolio_positions;
 create policy portfolio_positions_update_own on public.portfolio_positions for update to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -158,7 +160,7 @@ drop policy if exists portfolio_transactions_select_own on public.portfolio_tran
 create policy portfolio_transactions_select_own on public.portfolio_transactions for select to authenticated using (user_id = auth.uid());
 drop policy if exists portfolio_transactions_insert_own on public.portfolio_transactions;
 create policy portfolio_transactions_insert_own on public.portfolio_transactions for insert to authenticated
-  with check (user_id = auth.uid() and source in ('MANUAL', 'CSV', 'EDGEDESK'));
+  with check (user_id = auth.uid() and source in ('MANUAL', 'CSV', 'EDGEDESK', 'IMPORT_SCREENSHOT', 'IMPORT_PASTE'));
 drop policy if exists portfolio_transactions_update_own on public.portfolio_transactions;
 create policy portfolio_transactions_update_own on public.portfolio_transactions for update to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());

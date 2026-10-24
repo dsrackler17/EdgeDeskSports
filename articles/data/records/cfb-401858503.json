@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T04:00:00.000Z",
   "game_when_label": "2026-10-31 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-24T04:26:53.497Z",
-  "generated_at": "2026-10-24T04:26:53.497Z",
+  "updated_at": "2026-10-23T16:59:10.561Z",
+  "generated_at": "2026-10-23T16:59:10.561Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -252,7 +252,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T19:30:00.000Z",
-        "retrieved_at": "2026-10-24T01:28:04.374Z"
+        "retrieved_at": "2026-10-23T16:41:15.766Z"
       },
       "home": {
         "team": "Maryland",
@@ -330,9 +330,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T16:30:00.000Z",
-        "retrieved_at": "2026-10-24T01:28:04.374Z"
+        "retrieved_at": "2026-10-23T16:41:15.766Z"
       },
-      "generated_at": "2026-10-24T01:28:49.725Z",
+      "generated_at": "2026-10-23T16:41:55.754Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -706,14 +706,14 @@
               "h": {
                 "v": "55.7",
                 "n": 55.7,
-                "rank": "#50 of 138",
-                "rank_n": 50,
+                "rank": "#49 of 138",
+                "rank_n": 49,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 2.1,
-                "rank_gap": 46
+                "rank_gap": 45
               }
             },
             {
@@ -1245,7 +1245,7 @@
           "team": "Maryland",
           "label": "receivers",
           "v": "55.7",
-          "rank": "#50 of 138",
+          "rank": "#49 of 138",
           "note": null
         },
         "def": {
@@ -1256,7 +1256,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Maryland’s receivers rates 55.7 (#50 of 138) against Illinois’s secondary at 48.4 (#119 of 138). Maryland’s unit stands higher among its own position group, by 69 places."
+        "read": "Maryland’s receivers rates 55.7 (#49 of 138) against Illinois’s secondary at 48.4 (#119 of 138). Maryland’s unit stands higher among its own position group, by 70 places."
       }
     ],
     "roster": {
@@ -1571,11 +1571,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 89,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Illinois’s availability report is not due yet",
-        "score": 88,
+        "text": "89 · STRONG",
+        "sub": "main deduction: no source has established whether Maryland or Illinois’s starting QB can play",
+        "score": 89,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1613,27 +1613,29 @@
           {
             "key": "environment",
             "label": "Environment",
-            "score": 8.5,
+            "score": 10,
             "max": 10
           }
         ],
-        "main_deduction": "Illinois’s availability report is not due yet; the impact of Illinois’s absences cannot be assessed: no graded availability read",
-        "capped_by": [],
+        "main_deduction": "no source has established whether Maryland or Illinois’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+        "capped_by": [
+          "QB_STATUS_UNCONFIRMED"
+        ],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Illinois)",
-            "potential_gain": 1,
-            "text": "up to +1"
-          },
-          {
-            "action": "Re-read availability inside the filing window (Maryland)",
-            "potential_gain": 1,
-            "text": "up to +1"
-          },
-          {
             "action": "Capture a market quote",
+            "potential_gain": 2,
+            "text": "up to +2 once re-read availability inside the filing window (Maryland) and Re-read availability inside the filing window (Illinois) is done"
+          },
+          {
+            "action": "Confirm Illinois’s starting QB (Katin Houser)",
             "potential_gain": 1,
-            "text": "up to +1"
+            "text": "up to +1 once re-read availability inside the filing window (Maryland) and Re-read availability inside the filing window (Illinois) is done"
+          },
+          {
+            "action": "Confirm Maryland’s starting QB (Malik Washington)",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (Maryland) and Re-read availability inside the filing window (Illinois) is done"
           }
         ],
         "stability": {
@@ -1809,7 +1811,7 @@
         {
           "k": "Receivers",
           "a": "57.8  #4",
-          "h": "55.7  #50",
+          "h": "55.7  #49",
           "note": null
         },
         {
@@ -1876,11 +1878,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T04:26:53.497Z"
+    "at": "2026-10-23T16:59:10.561Z"
   }
 }
