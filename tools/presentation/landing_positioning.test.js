@@ -92,8 +92,11 @@ const HERO = section('top', 'header');
 chk('the hero is found', HERO.length > 2500);
 has(HERO, '<span class="ey" data-hero="eyebrow">Research, not picks.</span>', 'the eyebrow is the philosophy: research, not picks');
 has(HERO, '<h1 data-hero="headline">The research terminal <span class="g">for sports markets.</span></h1>', 'the headline: the research terminal for sports markets');
-has(HERO, '<p class="sub" data-hero="sub">EdgeDesk prices the game beside the market, simulates seasons in ten sports and tells you what changed, with free football research every week and no card needed.</p>',
-  'the sentence: what the terminal does, and that the football research is free, every week, with no card');
+/* three lines at 375 px even in the CI runner's wide fallback face, where the
+   headline takes three: landing.e2e.js holds the first phone screen; the
+   offer line under the buttons says no card */
+has(HERO, '<p class="sub" data-hero="sub">EdgeDesk prices the game beside the market, simulates seasons in ten sports and flags what changed, with free football research.</p>',
+  'the sentence: what the terminal does, and that the football research is free');
 chk('the sentence is one sentence, not a paragraph', plain(HERO.match(/<p class="sub"[\s\S]*?<\/p>/)[0]).trim().split(/[.!?](\s|$)/).filter(s => s.trim()).length === 1);
 /* FREE RESEARCH FIRST (docs/product-led-growth/PLAN.md, Phase 1): the free
    research is the primary action; the trial is right beside it, through the
