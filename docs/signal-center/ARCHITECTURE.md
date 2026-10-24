@@ -99,6 +99,7 @@ a door and every invariant lives in one place.
 | anyone (`anon`, `authenticated`) | `sc_status()`, `sc_pulse(hours)` (counts only), `sc_public_feed(limit)` (number-free headlines, at most `free.feed_limit`, plus example graphics of events that passed ≥ 72 h ago) |
 | a signed-in account | `sc_feed(filters, cursor, limit)`, `sc_signal(id)`, `sc_signal_version(id, version)`, `sc_model_dna_current(sport)`, `sc_my_preferences()`, `sc_save_preferences(p)`, `sc_unread_count()`. Each decides inside: Full Access (`sc_viewer_entitled()` → `community_is_entitled`, fail closed) gets the numbers; anyone else gets the preview or "locked". |
 | operators | `sc_admin_queue`, `sc_admin_act` (publish, hold, withdraw, preview pin, regenerate), `sc_admin_graphic` (approve/revoke external, withdraw), `sc_admin_set_mode`, `sc_admin_runs`, `sc_admin_failures`, `sc_admin_resolve_failure`. Each calls `sc_require_admin()` → `billing_is_admin()`. |
+| the database owner (connection string; no API role) | `sc_owner_set_mode(mode, sports, reason)`: the same switch as `sc_admin_set_mode`, for *Signal Center mode* (`.github/workflows/signal-center-mode.yml`) and the SQL editor. Going live publishes the eligible shadow signals (`sc_promote_shadow`). |
 | the job (`service_role` only) | `sc_begin_run`, `sc_current`, `sc_prior_divergences`, `sc_active`, `sc_graphics_due`, `sc_ingest`, `sc_put_graphics`, `sc_put_dna`, `sc_fail`, `sc_expire`, `sc_notify`, `sc_finish_run` |
 
 The feed is keyset-paged. The cursor is base64 `{sort, v, id}`, and a cursor from
