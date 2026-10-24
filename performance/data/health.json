@@ -1,45 +1,22 @@
 {
  "schema": "edgedesk_perf_health_v1",
- "generated_at": "2026-10-24T22:32:16.360Z",
+ "generated_at": "2026-10-24T23:42:49.153Z",
  "status": "WARN",
  "items": [
   {
    "level": "WARN",
    "check": "missing_finals",
-   "detail": "2 started game(s) with no verified final 8+ hours after the start",
-   "count": 2,
+   "detail": "1 started game(s) with no verified final 8+ hours after the start",
+   "count": 1,
    "sample": [
     {
      "event_key": "CFB|401856835",
      "sport": "cfb",
      "pending": "NOT_FINAL",
-     "hours_past_start": 19,
+     "hours_past_start": 20,
      "start_utc": "2026-10-24T04:00:00.000Z",
      "home": "UCF",
      "away": "BYU"
-    },
-    {
-     "event_key": "CFB|401858497",
-     "sport": "cfb",
-     "pending": "NOT_FINAL",
-     "hours_past_start": 19,
-     "start_utc": "2026-10-24T04:00:00.000Z",
-     "home": "Minnesota",
-     "away": "Iowa"
-    }
-   ]
-  },
-  {
-   "level": "WARN",
-   "check": "source_read_failed",
-   "detail": "an ESPN scoreboard read failed (it is retried next run)",
-   "count": 1,
-   "sample": [
-    {
-     "day": "20261024",
-     "sport": "wnba",
-     "ok": false,
-     "error": "no feed"
     }
    ]
   },
@@ -51,11 +28,11 @@
   }
  ],
  "counts": {
-  "forecasts": 2430,
-  "results": 622,
-  "grades": 622,
+  "forecasts": 2493,
+  "results": 635,
+  "grades": 635,
   "quotes": 1762,
-  "research_grades": 5869,
-  "grade_outcomes": 173
+  "research_grades": 5958,
+  "grade_outcomes": 186
  }
 }

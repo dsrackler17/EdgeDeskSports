@@ -16,22 +16,22 @@
   "NO_PREGAME_MARKET": 89,
   "KEY_ROLE_UNKNOWN": 79
  },
- "generated_at": "2026-10-24T22:32:16.360Z",
+ "generated_at": "2026-10-24T23:42:49.153Z",
  "what": "How EdgeDesk's A–F Research Grades have held up on completed games. A grade measures the quality and reliability of the pregame research, not the chance a side wins. Research, not picks.",
  "ledger": {
   "epoch": "2026-10-17T01:20:49.521Z",
-  "last_capture_at": "2026-10-24T22:32:16.360Z",
-  "snapshots": 5869,
-  "outcomes": 173,
+  "last_capture_at": "2026-10-24T23:42:49.153Z",
+  "snapshots": 5958,
+  "outcomes": 186,
   "chains": {
    "ok": true,
    "files": 29,
-   "rows": 11478
+   "rows": 11669
   }
  },
  "evaluation_period": {
   "from": "2026-10-17T02:00:00.000Z",
-  "to": "2026-10-24T17:00:00.000Z"
+  "to": "2026-10-24T20:00:00.000Z"
  },
  "min_n": 20,
  "insufficient": false,
@@ -39,25 +39,25 @@
   "schema": "edgedesk_research_grade_v1:performance",
   "min_n": 20,
   "totals": {
-   "games": 193,
-   "graded": 188,
+   "games": 211,
+   "graded": 206,
    "ungraded": 5,
-   "settled_graded": 165,
+   "settled_graded": 178,
    "void": 0,
-   "unsettled": 23,
+   "unsettled": 28,
    "sample_state": "EARLY_SIGNAL",
-   "research_coverage": 0.9741
+   "research_coverage": 0.9763
   },
   "exclusions": {
    "void": 0,
-   "unsettled": 23,
+   "unsettled": 28,
    "by_why": {}
   },
   "distribution": {
    "A": 0,
-   "B": 29,
-   "C": 135,
-   "D": 20,
+   "B": 36,
+   "C": 145,
+   "D": 21,
    "F": 4,
    "INSUFFICIENT": 5
   },
@@ -306,19 +306,19 @@
     }
    },
    "B": {
-    "games": 29,
+    "games": 36,
     "settled": 28,
     "sample_state": "TOO_EARLY",
-    "avg_score": 87.4,
+    "avg_score": 87.6,
     "avg_dimensions": {
-     "reliability": 85.5,
-     "completeness": 99,
-     "market": 86.8,
-     "clarity": 74.3,
-     "uncertainty": 88.6
+     "reliability": 85.1,
+     "completeness": 99.2,
+     "market": 88.6,
+     "clarity": 74,
+     "uncertainty": 88.4
     },
     "market_coverage": 1,
-    "market_n": 29,
+    "market_n": 36,
     "brier_ci": {
      "n": 28,
      "mean": 0.2516,
@@ -341,11 +341,11 @@
      "schema": "edgedesk_performance_v1:metrics",
      "min_n": 20,
      "eligibility": {
-      "games": 29,
+      "games": 36,
       "graded": 28,
       "void": 0,
       "flagged_pregame": 0,
-      "awaiting_result": 1,
+      "awaiting_result": 8,
       "conflict": 0,
       "by_why": {}
      },
@@ -607,58 +607,58 @@
     }
    },
    "C": {
-    "games": 135,
-    "settled": 115,
+    "games": 145,
+    "settled": 127,
     "sample_state": "EARLY_SIGNAL",
-    "avg_score": 74.9,
+    "avg_score": 75,
     "avg_dimensions": {
-     "reliability": 71.4,
-     "completeness": 93.8,
-     "market": 82.7,
-     "clarity": 51.9,
-     "uncertainty": 68.8
+     "reliability": 71.3,
+     "completeness": 93.9,
+     "market": 82.9,
+     "clarity": 51.4,
+     "uncertainty": 68.6
     },
-    "market_coverage": 0.8815,
-    "market_n": 119,
+    "market_coverage": 0.8897,
+    "market_n": 129,
     "brier_ci": {
-     "n": 115,
-     "mean": 0.2282,
-     "low": 0.1913,
-     "high": 0.2652
+     "n": 127,
+     "mean": 0.2312,
+     "low": 0.1949,
+     "high": 0.2675
     },
     "margin_mae_ci": {
-     "n": 94,
-     "mean": 11.69,
-     "low": 9.71,
-     "high": 13.66
+     "n": 106,
+     "mean": 11.81,
+     "low": 9.94,
+     "high": 13.69
     },
     "total_mae_ci": {
-     "n": 115,
-     "mean": 11.53,
-     "low": 9.64,
-     "high": 13.43
+     "n": 127,
+     "mean": 11.87,
+     "low": 10.06,
+     "high": 13.67
     },
     "metrics": {
      "schema": "edgedesk_performance_v1:metrics",
      "min_n": 20,
      "eligibility": {
-      "games": 135,
-      "graded": 115,
+      "games": 145,
+      "graded": 127,
       "void": 0,
       "flagged_pregame": 0,
-      "awaiting_result": 20,
+      "awaiting_result": 18,
       "conflict": 0,
       "by_why": {}
      },
      "winner": {
-      "n": 115,
-      "called": 115,
-      "correct": 75,
-      "pct": 0.6522,
+      "n": 127,
+      "called": 127,
+      "correct": 83,
+      "pct": 0.6535,
       "ties": 0,
-      "scored": 115,
-      "brier": 0.2282,
-      "log_loss": 0.6649,
+      "scored": 127,
+      "brier": 0.2312,
+      "log_loss": 0.6722,
       "sample_state": "EARLY_SIGNAL",
       "calibration": [
        {
@@ -684,31 +684,31 @@
        {
         "from": 0.2,
         "to": 0.3,
-        "n": 6,
-        "mean_predicted": 0.229,
-        "observed": 0.3333,
-        "wilson_low": 0.0968,
-        "wilson_high": 0.7,
+        "n": 8,
+        "mean_predicted": 0.2268,
+        "observed": 0.5,
+        "wilson_low": 0.2152,
+        "wilson_high": 0.7848,
         "inside_interval": true
        },
        {
         "from": 0.3,
         "to": 0.4,
-        "n": 10,
-        "mean_predicted": 0.3583,
-        "observed": 0.4,
-        "wilson_low": 0.1682,
-        "wilson_high": 0.6873,
+        "n": 12,
+        "mean_predicted": 0.3598,
+        "observed": 0.3333,
+        "wilson_low": 0.1381,
+        "wilson_high": 0.6094,
         "inside_interval": true
        },
        {
         "from": 0.4,
         "to": 0.5,
-        "n": 16,
-        "mean_predicted": 0.4624,
-        "observed": 0.4375,
-        "wilson_low": 0.231,
-        "wilson_high": 0.6682,
+        "n": 17,
+        "mean_predicted": 0.461,
+        "observed": 0.4118,
+        "wilson_low": 0.2161,
+        "wilson_high": 0.6399,
         "inside_interval": true
        },
        {
@@ -724,11 +724,11 @@
        {
         "from": 0.6,
         "to": 0.7,
-        "n": 15,
-        "mean_predicted": 0.6558,
-        "observed": 0.7333,
-        "wilson_low": 0.4805,
-        "wilson_high": 0.891,
+        "n": 17,
+        "mean_predicted": 0.6574,
+        "observed": 0.7059,
+        "wilson_low": 0.4687,
+        "wilson_high": 0.8672,
         "inside_interval": true
        },
        {
@@ -744,11 +744,11 @@
        {
         "from": 0.8,
         "to": 0.9,
-        "n": 9,
-        "mean_predicted": 0.8378,
-        "observed": 0.7778,
-        "wilson_low": 0.4526,
-        "wilson_high": 0.9368,
+        "n": 14,
+        "mean_predicted": 0.8402,
+        "observed": 0.7857,
+        "wilson_low": 0.5241,
+        "wilson_high": 0.9243,
         "inside_interval": true
        },
        {
@@ -774,156 +774,156 @@
        {
         "from": 0.55,
         "to": 0.6,
-        "n": 20,
-        "correct": 13,
-        "pct": 0.65,
-        "mean_p": 0.5723
+        "n": 21,
+        "correct": 14,
+        "pct": 0.6667,
+        "mean_p": 0.5717
        },
        {
         "from": 0.6,
         "to": 0.65,
-        "n": 12,
-        "correct": 9,
+        "n": 13,
+        "correct": 10,
         "pct": null,
-        "mean_p": 0.6253
+        "mean_p": 0.6242
        },
        {
         "from": 0.65,
         "to": 0.7,
-        "n": 13,
-        "correct": 8,
+        "n": 16,
+        "correct": 10,
         "pct": null,
-        "mean_p": 0.6731
+        "mean_p": 0.6715
        },
        {
         "from": 0.7,
         "to": 0.8,
-        "n": 20,
+        "n": 22,
         "correct": 14,
-        "pct": 0.7,
-        "mean_p": 0.7494
+        "pct": 0.6364,
+        "mean_p": 0.7522
        },
        {
         "from": 0.8,
         "to": 1,
-        "n": 25,
-        "correct": 18,
-        "pct": 0.72,
-        "mean_p": 0.8783
+        "n": 30,
+        "correct": 22,
+        "pct": 0.7333,
+        "mean_p": 0.8727
        }
       ]
      },
      "margin": {
-      "n": 94,
-      "mae": 11.69,
-      "bias": -0.02,
-      "rmse": 15.2,
+      "n": 106,
+      "mae": 11.81,
+      "bias": -0.62,
+      "rmse": 15.35,
       "sample_state": "EARLY_SIGNAL"
      },
      "total": {
-      "n": 115,
-      "mae": 11.53,
-      "bias": 0.6,
-      "rmse": 15.46,
+      "n": 127,
+      "mae": 11.87,
+      "bias": 0.67,
+      "rmse": 15.74,
       "sample_state": "EARLY_SIGNAL"
      },
      "market": {
       "spread": {
-       "n": 79,
-       "model_mae": 11.78,
-       "market_mae": 11.3,
-       "model_nearer": 33,
-       "market_nearer": 43,
+       "n": 91,
+       "model_mae": 11.92,
+       "market_mae": 11.38,
+       "model_nearer": 38,
+       "market_nearer": 50,
        "sample_state": "EARLY_SIGNAL"
       },
       "total": {
-       "n": 99,
-       "model_mae": 11.45,
-       "market_mae": 11.17,
-       "model_nearer": 42,
-       "market_nearer": 55,
+       "n": 111,
+       "model_mae": 11.84,
+       "market_mae": 11.44,
+       "model_nearer": 45,
+       "market_nearer": 64,
        "sample_state": "EARLY_SIGNAL"
       },
       "moneyline": {
-       "n": 99,
-       "model_brier": 0.2212,
-       "market_brier": 0.2126,
+       "n": 111,
+       "model_brier": 0.2253,
+       "market_brier": 0.2172,
        "sample_state": "EARLY_SIGNAL"
       }
      },
      "picks": {
       "spread": [
        {
-        "n": 76,
-        "w": 36,
-        "l": 40,
+        "n": 88,
+        "w": 41,
+        "l": 47,
         "p": 0,
-        "pct": 0.4737,
-        "priced": 76,
-        "units": -7.175,
-        "roi": -0.0944,
+        "pct": 0.4659,
+        "priced": 88,
+        "units": -9.618,
+        "roi": -0.1093,
         "sample_state": "EARLY_SIGNAL",
         "min_gap": 0
        },
        {
-        "n": 54,
-        "w": 24,
-        "l": 30,
+        "n": 62,
+        "w": 27,
+        "l": 35,
         "p": 0,
-        "pct": 0.4444,
-        "priced": 54,
-        "units": -8.281,
-        "roi": -0.1534,
+        "pct": 0.4355,
+        "priced": 62,
+        "units": -10.542,
+        "roi": -0.17,
         "sample_state": "EARLY_SIGNAL",
         "min_gap": 1.5
        },
        {
-        "n": 32,
-        "w": 15,
-        "l": 17,
+        "n": 36,
+        "w": 16,
+        "l": 20,
         "p": 0,
-        "pct": 0.4688,
-        "priced": 32,
-        "units": -3.479,
-        "roi": -0.1087,
+        "pct": 0.4444,
+        "priced": 36,
+        "units": -5.586,
+        "roi": -0.1552,
         "sample_state": "TOO_EARLY",
         "min_gap": 3
        }
       ],
       "total": [
        {
-        "n": 98,
-        "w": 45,
-        "l": 53,
+        "n": 110,
+        "w": 49,
+        "l": 61,
         "p": 0,
-        "pct": 0.4592,
-        "priced": 98,
-        "units": -12.607,
-        "roi": -0.1286,
+        "pct": 0.4455,
+        "priced": 110,
+        "units": -17.014,
+        "roi": -0.1547,
         "sample_state": "EARLY_SIGNAL",
         "min_gap": 0
        },
        {
-        "n": 59,
-        "w": 27,
-        "l": 32,
+        "n": 65,
+        "w": 28,
+        "l": 37,
         "p": 0,
-        "pct": 0.4576,
-        "priced": 59,
-        "units": -7.421,
-        "roi": -0.1258,
+        "pct": 0.4308,
+        "priced": 65,
+        "units": -11.574,
+        "roi": -0.1781,
         "sample_state": "EARLY_SIGNAL",
         "min_gap": 1.5
        },
        {
-        "n": 40,
+        "n": 43,
         "w": 19,
-        "l": 21,
+        "l": 24,
         "p": 0,
-        "pct": 0.475,
-        "priced": 40,
-        "units": -3.739,
-        "roi": -0.0935,
+        "pct": 0.4419,
+        "priced": 43,
+        "units": -6.739,
+        "roi": -0.1567,
         "sample_state": "TOO_EARLY",
         "min_gap": 3
        }
@@ -931,20 +931,20 @@
      },
      "clv": {
       "spread": {
-       "n": 49,
-       "avg_pts": 0.11,
-       "beat": 11,
-       "flat": 27,
-       "lost": 11,
-       "sample_state": "TOO_EARLY"
+       "n": 61,
+       "avg_pts": 0.05,
+       "beat": 12,
+       "flat": 34,
+       "lost": 15,
+       "sample_state": "EARLY_SIGNAL"
       },
       "total": {
-       "n": 49,
-       "avg_pts": 0.27,
-       "beat": 19,
-       "flat": 22,
-       "lost": 8,
-       "sample_state": "TOO_EARLY"
+       "n": 61,
+       "avg_pts": 0.26,
+       "beat": 21,
+       "flat": 31,
+       "lost": 9,
+       "sample_state": "EARLY_SIGNAL"
       }
      },
      "trend": [
@@ -966,52 +966,52 @@
       },
       {
        "period": "2026-W43",
-       "n": 47,
-       "called": 47,
-       "correct": 31,
-       "margin_n": 42,
-       "margin_mae": 12.1,
-       "total_n": 47,
-       "total_mae": 12.88,
-       "cum_called": 115,
-       "cum_correct": 75,
-       "cum_pct": 0.6522,
-       "cum_brier": 0.2282,
-       "cum_margin_mae": 11.69,
-       "cum_total_mae": 11.53
+       "n": 59,
+       "called": 59,
+       "correct": 39,
+       "margin_n": 54,
+       "margin_mae": 12.25,
+       "total_n": 59,
+       "total_mae": 13.33,
+       "cum_called": 127,
+       "cum_correct": 83,
+       "cum_pct": 0.6535,
+       "cum_brier": 0.2312,
+       "cum_margin_mae": 11.81,
+       "cum_total_mae": 11.87
       }
      ]
     }
    },
    "D": {
-    "games": 20,
-    "settled": 19,
+    "games": 21,
+    "settled": 20,
     "sample_state": "TOO_EARLY",
     "avg_score": 66.8,
     "avg_dimensions": {
-     "reliability": 66.3,
-     "completeness": 89.1,
-     "market": 55.4,
-     "clarity": 48.8,
-     "uncertainty": 63.1
+     "reliability": 66.5,
+     "completeness": 89.4,
+     "market": 54.7,
+     "clarity": 48.5,
+     "uncertainty": 63.3
     },
     "market_coverage": 1,
-    "market_n": 20,
+    "market_n": 21,
     "brier_ci": {
-     "n": 19,
-     "mean": null,
+     "n": 20,
+     "mean": 0.2556,
      "low": null,
      "high": null
     },
     "margin_mae_ci": {
-     "n": 19,
-     "mean": null,
+     "n": 20,
+     "mean": 10.44,
      "low": null,
      "high": null
     },
     "total_mae_ci": {
-     "n": 19,
-     "mean": null,
+     "n": 20,
+     "mean": 11.83,
      "low": null,
      "high": null
     },
@@ -1019,8 +1019,8 @@
      "schema": "edgedesk_performance_v1:metrics",
      "min_n": 20,
      "eligibility": {
-      "games": 20,
-      "graded": 19,
+      "games": 21,
+      "graded": 20,
       "void": 0,
       "flagged_pregame": 0,
       "awaiting_result": 1,
@@ -1028,16 +1028,87 @@
       "by_why": {}
      },
      "winner": {
-      "n": 19,
-      "called": 19,
+      "n": 20,
+      "called": 20,
       "correct": 10,
-      "pct": null,
+      "pct": 0.5,
       "ties": 0,
-      "scored": 19,
-      "brier": null,
-      "log_loss": null,
+      "scored": 20,
+      "brier": 0.2556,
+      "log_loss": 0.7037,
       "sample_state": "TOO_EARLY",
-      "calibration": [],
+      "calibration": [
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 1,
+        "mean_predicted": 0.1784,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 1,
+        "mean_predicted": 0.2993,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 3,
+        "mean_predicted": 0.3522,
+        "observed": 0.6667,
+        "wilson_low": 0.2077,
+        "wilson_high": 0.9385,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 4,
+        "mean_predicted": 0.4273,
+        "observed": 0.75,
+        "wilson_low": 0.3006,
+        "wilson_high": 0.9544,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 7,
+        "mean_predicted": 0.5573,
+        "observed": 0.5714,
+        "wilson_low": 0.2505,
+        "wilson_high": 0.8418,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 3,
+        "mean_predicted": 0.7793,
+        "observed": 0.3333,
+        "wilson_low": 0.0615,
+        "wilson_high": 0.7923,
+        "inside_interval": true
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 1,
+        "mean_predicted": 0.917,
+        "observed": 1,
+        "wilson_low": 0.2065,
+        "wilson_high": 1,
+        "inside_interval": true
+       }
+      ],
       "bands": [
        {
         "from": 0.5,
@@ -1058,10 +1129,10 @@
        {
         "from": 0.6,
         "to": 0.65,
-        "n": 1,
+        "n": 2,
         "correct": 0,
         "pct": null,
-        "mean_p": 0.6356
+        "mean_p": 0.6364
        },
        {
         "from": 0.65,
@@ -1090,56 +1161,68 @@
       ]
      },
      "margin": {
-      "n": 19,
-      "mae": null,
-      "bias": null,
-      "rmse": null,
+      "n": 20,
+      "mae": 10.44,
+      "bias": -0.15,
+      "rmse": 12.42,
       "sample_state": "TOO_EARLY"
      },
      "total": {
-      "n": 19,
-      "mae": null,
-      "bias": null,
-      "rmse": null,
+      "n": 20,
+      "mae": 11.83,
+      "bias": 2.78,
+      "rmse": 16.44,
       "sample_state": "TOO_EARLY"
      },
      "market": {
       "spread": {
-       "n": 19,
-       "model_mae": null,
-       "market_mae": null,
+       "n": 20,
+       "model_mae": 10.44,
+       "market_mae": 8.48,
        "model_nearer": 8,
-       "market_nearer": 10,
+       "market_nearer": 11,
        "sample_state": "TOO_EARLY"
       },
       "total": {
-       "n": 19,
-       "model_mae": null,
-       "market_mae": null,
+       "n": 20,
+       "model_mae": 11.83,
+       "market_mae": 12.4,
        "model_nearer": 10,
-       "market_nearer": 9,
+       "market_nearer": 10,
        "sample_state": "TOO_EARLY"
       },
       "moneyline": {
-       "n": 19,
-       "model_brier": null,
-       "market_brier": null,
+       "n": 20,
+       "model_brier": 0.2556,
+       "market_brier": 0.2199,
        "sample_state": "TOO_EARLY"
       }
      },
      "picks": {
       "spread": [
        {
-        "n": 19,
+        "n": 20,
         "w": 10,
-        "l": 9,
+        "l": 10,
         "p": 0,
-        "pct": null,
-        "priced": 19,
-        "units": 0.072,
-        "roi": null,
+        "pct": 0.5,
+        "priced": 20,
+        "units": -0.928,
+        "roi": -0.0464,
         "sample_state": "TOO_EARLY",
         "min_gap": 0
+       },
+       {
+        "n": 17,
+        "w": 7,
+        "l": 10,
+        "p": 0,
+        "pct": null,
+        "priced": 17,
+        "units": -3.743,
+        "roi": null,
+        "sample_state": "TOO_EARLY",
+        "min_gap": 1.5
        },
        {
         "n": 16,
@@ -1151,42 +1234,30 @@
         "units": -2.743,
         "roi": null,
         "sample_state": "TOO_EARLY",
-        "min_gap": 1.5
-       },
-       {
-        "n": 15,
-        "w": 7,
-        "l": 8,
-        "p": 0,
-        "pct": null,
-        "priced": 15,
-        "units": -1.743,
-        "roi": null,
-        "sample_state": "TOO_EARLY",
         "min_gap": 3
        }
       ],
       "total": [
        {
-        "n": 19,
-        "w": 11,
+        "n": 20,
+        "w": 12,
         "l": 8,
         "p": 0,
-        "pct": null,
-        "priced": 19,
-        "units": 2.069,
-        "roi": null,
+        "pct": 0.6,
+        "priced": 20,
+        "units": 2.978,
+        "roi": 0.1489,
         "sample_state": "TOO_EARLY",
         "min_gap": 0
        },
        {
-        "n": 16,
-        "w": 9,
+        "n": 17,
+        "w": 10,
         "l": 7,
         "p": 0,
         "pct": null,
-        "priced": 16,
-        "units": 1.164,
+        "priced": 17,
+        "units": 2.073,
         "roi": null,
         "sample_state": "TOO_EARLY",
         "min_gap": 1.5
@@ -1207,18 +1278,18 @@
      },
      "clv": {
       "spread": {
-       "n": 9,
+       "n": 10,
        "avg_pts": null,
        "beat": 4,
-       "flat": 5,
+       "flat": 6,
        "lost": 0,
        "sample_state": "TOO_EARLY"
       },
       "total": {
-       "n": 9,
+       "n": 10,
        "avg_pts": null,
        "beat": 4,
-       "flat": 2,
+       "flat": 3,
        "lost": 3,
        "sample_state": "TOO_EARLY"
       }
@@ -1242,19 +1313,19 @@
       },
       {
        "period": "2026-W43",
-       "n": 13,
-       "called": 13,
+       "n": 14,
+       "called": 14,
        "correct": 6,
-       "margin_n": 13,
-       "margin_mae": 11.74,
-       "total_n": 13,
-       "total_mae": 14.41,
-       "cum_called": 19,
+       "margin_n": 14,
+       "margin_mae": 11.48,
+       "total_n": 14,
+       "total_mae": 13.46,
+       "cum_called": 20,
        "cum_correct": 10,
-       "cum_pct": null,
-       "cum_brier": null,
-       "cum_margin_mae": null,
-       "cum_total_mae": null
+       "cum_pct": 0.5,
+       "cum_brier": 0.2556,
+       "cum_margin_mae": 10.44,
+       "cum_total_mae": 11.83
       }
      ]
     }
@@ -1824,7 +1895,7 @@
      "higher": "B",
      "lower": "C",
      "brier": {
-      "n_a": 115,
+      "n_a": 127,
       "n_b": 28,
       "diff": null,
       "low": null,
@@ -1833,7 +1904,7 @@
       "why": "each group needs 50 settled games"
      },
      "margin_mae": {
-      "n_a": 94,
+      "n_a": 106,
       "n_b": 0,
       "diff": null,
       "low": null,
@@ -1846,8 +1917,8 @@
      "higher": "C",
      "lower": "D",
      "brier": {
-      "n_a": 19,
-      "n_b": 115,
+      "n_a": 20,
+      "n_b": 127,
       "diff": null,
       "low": null,
       "high": null,
@@ -1855,8 +1926,8 @@
       "why": "each group needs 50 settled games"
      },
      "margin_mae": {
-      "n_a": 19,
-      "n_b": 94,
+      "n_a": 20,
+      "n_b": 106,
       "diff": null,
       "low": null,
       "high": null,
@@ -1869,7 +1940,7 @@
      "lower": "F",
      "brier": {
       "n_a": 3,
-      "n_b": 19,
+      "n_b": 20,
       "diff": null,
       "low": null,
       "high": null,
@@ -1878,7 +1949,7 @@
      },
      "margin_mae": {
       "n_a": 3,
-      "n_b": 19,
+      "n_b": 20,
       "diff": null,
       "low": null,
       "high": null,
@@ -1920,28 +1991,28 @@
    },
    {
     "period": "2026-W43",
-    "games": 113,
-    "settled": 90,
+    "games": 131,
+    "settled": 103,
     "counts": {
      "A": 0,
-     "B": 29,
-     "C": 67,
-     "D": 14,
+     "B": 36,
+     "C": 77,
+     "D": 15,
      "F": 3,
      "INSUFFICIENT": 0
     },
     "cum_brier": {
      "A": null,
      "B": 0.2516,
-     "C": 0.2282,
-     "D": null,
+     "C": 0.2312,
+     "D": 0.2556,
      "F": null
     },
     "cum_n": {
      "A": 0,
      "B": 28,
-     "C": 115,
-     "D": 19,
+     "C": 127,
+     "D": 20,
      "F": 3
     }
    }
@@ -1952,25 +2023,25 @@
    "schema": "edgedesk_research_grade_v1:performance",
    "min_n": 20,
    "totals": {
-    "games": 96,
-    "graded": 93,
+    "games": 105,
+    "graded": 102,
     "ungraded": 3,
-    "settled_graded": 73,
+    "settled_graded": 86,
     "void": 0,
-    "unsettled": 20,
+    "unsettled": 16,
     "sample_state": "EARLY_SIGNAL",
-    "research_coverage": 0.9688
+    "research_coverage": 0.9714
    },
    "exclusions": {
     "void": 0,
-    "unsettled": 20,
+    "unsettled": 16,
     "by_why": {}
    },
    "distribution": {
     "A": 0,
     "B": 0,
-    "C": 83,
-    "D": 10,
+    "C": 91,
+    "D": 11,
     "F": 0,
     "INSUFFICIENT": 3
    },
@@ -2462,58 +2533,58 @@
      }
     },
     "C": {
-     "games": 83,
-     "settled": 64,
+     "games": 91,
+     "settled": 76,
      "sample_state": "EARLY_SIGNAL",
-     "avg_score": 74.6,
+     "avg_score": 74.7,
      "avg_dimensions": {
-      "reliability": 71.7,
-      "completeness": 93.5,
-      "market": 84.3,
-      "clarity": 41.2,
-      "uncertainty": 70.4
+      "reliability": 71.5,
+      "completeness": 93.7,
+      "market": 84.7,
+      "clarity": 41.3,
+      "uncertainty": 70.5
      },
-     "market_coverage": 0.8193,
-     "market_n": 68,
+     "market_coverage": 0.8352,
+     "market_n": 76,
      "brier_ci": {
-      "n": 64,
-      "mean": 0.2228,
-      "low": 0.162,
-      "high": 0.2835
+      "n": 76,
+      "mean": 0.2286,
+      "low": 0.1723,
+      "high": 0.285
      },
      "margin_mae_ci": {
-      "n": 64,
-      "mean": 11.28,
-      "low": 9.21,
-      "high": 13.34
+      "n": 76,
+      "mean": 11.52,
+      "low": 9.54,
+      "high": 13.49
      },
      "total_mae_ci": {
-      "n": 64,
-      "mean": 13.97,
-      "low": 11.39,
-      "high": 16.55
+      "n": 76,
+      "mean": 14.14,
+      "low": 11.79,
+      "high": 16.5
      },
      "metrics": {
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 83,
-       "graded": 64,
+       "games": 91,
+       "graded": 76,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 19,
+       "awaiting_result": 15,
        "conflict": 0,
        "by_why": {}
       },
       "winner": {
-       "n": 64,
-       "called": 64,
-       "correct": 45,
-       "pct": 0.7031,
+       "n": 76,
+       "called": 76,
+       "correct": 53,
+       "pct": 0.6974,
        "ties": 0,
-       "scored": 64,
-       "brier": 0.2228,
-       "log_loss": 0.6656,
+       "scored": 76,
+       "brier": 0.2286,
+       "log_loss": 0.6776,
        "sample_state": "EARLY_SIGNAL",
        "calibration": [
         {
@@ -2539,31 +2610,31 @@
         {
          "from": 0.2,
          "to": 0.3,
-         "n": 4,
-         "mean_predicted": 0.2328,
-         "observed": 0.5,
-         "wilson_low": 0.15,
-         "wilson_high": 0.85,
-         "inside_interval": true
+         "n": 6,
+         "mean_predicted": 0.2286,
+         "observed": 0.6667,
+         "wilson_low": 0.3,
+         "wilson_high": 0.9032,
+         "inside_interval": false
         },
         {
          "from": 0.3,
          "to": 0.4,
-         "n": 6,
-         "mean_predicted": 0.3413,
-         "observed": 0.3333,
-         "wilson_low": 0.0968,
-         "wilson_high": 0.7,
+         "n": 8,
+         "mean_predicted": 0.3478,
+         "observed": 0.25,
+         "wilson_low": 0.0715,
+         "wilson_high": 0.5907,
          "inside_interval": true
         },
         {
          "from": 0.4,
          "to": 0.5,
-         "n": 6,
-         "mean_predicted": 0.4514,
-         "observed": 0.3333,
-         "wilson_low": 0.0968,
-         "wilson_high": 0.7,
+         "n": 7,
+         "mean_predicted": 0.4497,
+         "observed": 0.2857,
+         "wilson_low": 0.0822,
+         "wilson_high": 0.6411,
          "inside_interval": true
         },
         {
@@ -2579,11 +2650,11 @@
         {
          "from": 0.6,
          "to": 0.7,
-         "n": 9,
-         "mean_predicted": 0.6588,
-         "observed": 0.7778,
-         "wilson_low": 0.4526,
-         "wilson_high": 0.9368,
+         "n": 11,
+         "mean_predicted": 0.6607,
+         "observed": 0.7273,
+         "wilson_low": 0.4344,
+         "wilson_high": 0.9025,
          "inside_interval": true
         },
         {
@@ -2599,11 +2670,11 @@
         {
          "from": 0.8,
          "to": 0.9,
-         "n": 8,
-         "mean_predicted": 0.8422,
-         "observed": 0.875,
-         "wilson_low": 0.5291,
-         "wilson_high": 0.9776,
+         "n": 13,
+         "mean_predicted": 0.843,
+         "observed": 0.8462,
+         "wilson_low": 0.5777,
+         "wilson_high": 0.9567,
          "inside_interval": true
         },
         {
@@ -2629,156 +2700,156 @@
         {
          "from": 0.55,
          "to": 0.6,
-         "n": 8,
-         "correct": 6,
+         "n": 9,
+         "correct": 7,
          "pct": null,
-         "mean_p": 0.5731
+         "mean_p": 0.5717
         },
         {
          "from": 0.6,
          "to": 0.65,
-         "n": 5,
-         "correct": 5,
+         "n": 6,
+         "correct": 6,
          "pct": null,
-         "mean_p": 0.6356
+         "mean_p": 0.6315
         },
         {
          "from": 0.65,
          "to": 0.7,
-         "n": 10,
-         "correct": 6,
+         "n": 13,
+         "correct": 8,
          "pct": null,
-         "mean_p": 0.6704
+         "mean_p": 0.669
         },
         {
          "from": 0.7,
          "to": 0.8,
-         "n": 12,
+         "n": 14,
          "correct": 7,
          "pct": null,
-         "mean_p": 0.7504
+         "mean_p": 0.7546
         },
         {
          "from": 0.8,
          "to": 1,
-         "n": 24,
-         "correct": 18,
-         "pct": 0.75,
-         "mean_p": 0.8815
+         "n": 29,
+         "correct": 22,
+         "pct": 0.7586,
+         "mean_p": 0.8751
         }
        ]
       },
       "margin": {
-       "n": 64,
-       "mae": 11.28,
-       "bias": 0.56,
-       "rmse": 14.04,
+       "n": 76,
+       "mae": 11.52,
+       "bias": -0.37,
+       "rmse": 14.45,
        "sample_state": "EARLY_SIGNAL"
       },
       "total": {
-       "n": 64,
-       "mae": 13.97,
-       "bias": 1.79,
-       "rmse": 17.44,
+       "n": 76,
+       "mae": 14.14,
+       "bias": 1.72,
+       "rmse": 17.56,
        "sample_state": "EARLY_SIGNAL"
       },
       "market": {
        "spread": {
-        "n": 49,
-        "model_mae": 11.3,
-        "market_mae": 10.91,
-        "model_nearer": 23,
-        "market_nearer": 26,
-        "sample_state": "TOO_EARLY"
+        "n": 61,
+        "model_mae": 11.6,
+        "market_mae": 11.11,
+        "model_nearer": 28,
+        "market_nearer": 33,
+        "sample_state": "EARLY_SIGNAL"
        },
        "total": {
-        "n": 49,
-        "model_mae": 14.3,
+        "n": 61,
+        "model_mae": 14.45,
         "market_mae": 13.7,
-        "model_nearer": 21,
-        "market_nearer": 27,
-        "sample_state": "TOO_EARLY"
+        "model_nearer": 24,
+        "market_nearer": 36,
+        "sample_state": "EARLY_SIGNAL"
        },
        "moneyline": {
-        "n": 49,
-        "model_brier": 0.2065,
-        "market_brier": 0.2002,
-        "sample_state": "TOO_EARLY"
+        "n": 61,
+        "model_brier": 0.2169,
+        "market_brier": 0.211,
+        "sample_state": "EARLY_SIGNAL"
        }
       },
       "picks": {
        "spread": [
         {
-         "n": 49,
-         "w": 25,
-         "l": 24,
+         "n": 61,
+         "w": 30,
+         "l": 31,
          "p": 0,
-         "pct": 0.5102,
-         "priced": 49,
-         "units": -1.064,
-         "roi": -0.0217,
-         "sample_state": "TOO_EARLY",
+         "pct": 0.4918,
+         "priced": 61,
+         "units": -3.507,
+         "roi": -0.0575,
+         "sample_state": "EARLY_SIGNAL",
          "min_gap": 0
         },
         {
-         "n": 31,
-         "w": 15,
-         "l": 16,
+         "n": 39,
+         "w": 18,
+         "l": 21,
          "p": 0,
-         "pct": 0.4839,
-         "priced": 31,
-         "units": -2.32,
-         "roi": -0.0748,
+         "pct": 0.4615,
+         "priced": 39,
+         "units": -4.582,
+         "roi": -0.1175,
          "sample_state": "TOO_EARLY",
          "min_gap": 1.5
         },
         {
-         "n": 18,
-         "w": 8,
-         "l": 10,
+         "n": 22,
+         "w": 9,
+         "l": 13,
          "p": 0,
-         "pct": null,
-         "priced": 18,
-         "units": -2.696,
-         "roi": null,
+         "pct": 0.4091,
+         "priced": 22,
+         "units": -4.803,
+         "roi": -0.2183,
          "sample_state": "TOO_EARLY",
          "min_gap": 3
         }
        ],
        "total": [
         {
-         "n": 49,
-         "w": 22,
-         "l": 27,
+         "n": 61,
+         "w": 26,
+         "l": 35,
          "p": 0,
-         "pct": 0.449,
-         "priced": 49,
-         "units": -7.031,
-         "roi": -0.1435,
-         "sample_state": "TOO_EARLY",
+         "pct": 0.4262,
+         "priced": 61,
+         "units": -11.439,
+         "roi": -0.1875,
+         "sample_state": "EARLY_SIGNAL",
          "min_gap": 0
         },
         {
-         "n": 38,
-         "w": 16,
-         "l": 22,
+         "n": 44,
+         "w": 17,
+         "l": 27,
          "p": 0,
-         "pct": 0.4211,
-         "priced": 38,
-         "units": -7.395,
-         "roi": -0.1946,
+         "pct": 0.3864,
+         "priced": 44,
+         "units": -11.547,
+         "roi": -0.2624,
          "sample_state": "TOO_EARLY",
          "min_gap": 1.5
         },
         {
-         "n": 21,
+         "n": 24,
          "w": 9,
-         "l": 12,
+         "l": 15,
          "p": 0,
-         "pct": 0.4286,
-         "priced": 21,
-         "units": -3.786,
-         "roi": -0.1803,
+         "pct": 0.375,
+         "priced": 24,
+         "units": -6.786,
+         "roi": -0.2827,
          "sample_state": "TOO_EARLY",
          "min_gap": 3
         }
@@ -2786,20 +2857,20 @@
       },
       "clv": {
        "spread": {
-        "n": 49,
-        "avg_pts": 0.11,
-        "beat": 11,
-        "flat": 27,
-        "lost": 11,
-        "sample_state": "TOO_EARLY"
+        "n": 61,
+        "avg_pts": 0.05,
+        "beat": 12,
+        "flat": 34,
+        "lost": 15,
+        "sample_state": "EARLY_SIGNAL"
        },
        "total": {
-        "n": 49,
-        "avg_pts": 0.27,
-        "beat": 19,
-        "flat": 22,
-        "lost": 8,
-        "sample_state": "TOO_EARLY"
+        "n": 61,
+        "avg_pts": 0.26,
+        "beat": 21,
+        "flat": 31,
+        "lost": 9,
+        "sample_state": "EARLY_SIGNAL"
        }
       },
       "trend": [
@@ -2821,51 +2892,51 @@
        },
        {
         "period": "2026-W43",
-        "n": 20,
-        "called": 20,
-        "correct": 13,
-        "margin_n": 20,
-        "margin_mae": 10.36,
-        "total_n": 20,
-        "total_mae": 14.75,
-        "cum_called": 64,
-        "cum_correct": 45,
-        "cum_pct": 0.7031,
-        "cum_brier": 0.2228,
-        "cum_margin_mae": 11.28,
-        "cum_total_mae": 13.97
+        "n": 32,
+        "called": 32,
+        "correct": 21,
+        "margin_n": 32,
+        "margin_mae": 11.27,
+        "total_n": 32,
+        "total_mae": 14.87,
+        "cum_called": 76,
+        "cum_correct": 53,
+        "cum_pct": 0.6974,
+        "cum_brier": 0.2286,
+        "cum_margin_mae": 11.52,
+        "cum_total_mae": 14.14
        }
       ]
      }
     },
     "D": {
-     "games": 10,
-     "settled": 9,
+     "games": 11,
+     "settled": 10,
      "sample_state": "TOO_EARLY",
-     "avg_score": 67.7,
+     "avg_score": 67.5,
      "avg_dimensions": {
-      "reliability": 59.5,
-      "completeness": 93.2,
-      "market": 67.8,
-      "clarity": 39.4,
-      "uncertainty": 70.9
+      "reliability": 60.4,
+      "completeness": 93.4,
+      "market": 65.3,
+      "clarity": 39.7,
+      "uncertainty": 70.6
      },
      "market_coverage": 1,
-     "market_n": 10,
+     "market_n": 11,
      "brier_ci": {
-      "n": 9,
+      "n": 10,
       "mean": null,
       "low": null,
       "high": null
      },
      "margin_mae_ci": {
-      "n": 9,
+      "n": 10,
       "mean": null,
       "low": null,
       "high": null
      },
      "total_mae_ci": {
-      "n": 9,
+      "n": 10,
       "mean": null,
       "low": null,
       "high": null
@@ -2874,8 +2945,8 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 10,
-       "graded": 9,
+       "games": 11,
+       "graded": 10,
        "void": 0,
        "flagged_pregame": 0,
        "awaiting_result": 1,
@@ -2883,12 +2954,12 @@
        "by_why": {}
       },
       "winner": {
-       "n": 9,
-       "called": 9,
+       "n": 10,
+       "called": 10,
        "correct": 5,
        "pct": null,
        "ties": 0,
-       "scored": 9,
+       "scored": 10,
        "brier": null,
        "log_loss": null,
        "sample_state": "TOO_EARLY",
@@ -2913,10 +2984,10 @@
         {
          "from": 0.6,
          "to": 0.65,
-         "n": 0,
+         "n": 1,
          "correct": 0,
          "pct": null,
-         "mean_p": null
+         "mean_p": 0.6371
         },
         {
          "from": 0.65,
@@ -2945,14 +3016,14 @@
        ]
       },
       "margin": {
-       "n": 9,
+       "n": 10,
        "mae": null,
        "bias": null,
        "rmse": null,
        "sample_state": "TOO_EARLY"
       },
       "total": {
-       "n": 9,
+       "n": 10,
        "mae": null,
        "bias": null,
        "rmse": null,
@@ -2960,23 +3031,23 @@
       },
       "market": {
        "spread": {
-        "n": 9,
+        "n": 10,
         "model_mae": null,
         "market_mae": null,
         "model_nearer": 6,
-        "market_nearer": 3,
-        "sample_state": "TOO_EARLY"
-       },
-       "total": {
-        "n": 9,
-        "model_mae": null,
-        "market_mae": null,
-        "model_nearer": 5,
         "market_nearer": 4,
         "sample_state": "TOO_EARLY"
        },
+       "total": {
+        "n": 10,
+        "model_mae": null,
+        "market_mae": null,
+        "model_nearer": 5,
+        "market_nearer": 5,
+        "sample_state": "TOO_EARLY"
+       },
        "moneyline": {
-        "n": 9,
+        "n": 10,
         "model_brier": null,
         "market_brier": null,
         "sample_state": "TOO_EARLY"
@@ -2985,16 +3056,28 @@
       "picks": {
        "spread": [
         {
-         "n": 9,
+         "n": 10,
          "w": 6,
-         "l": 3,
+         "l": 4,
          "p": 0,
          "pct": null,
-         "priced": 9,
-         "units": 2.442,
+         "priced": 10,
+         "units": 1.442,
          "roi": null,
          "sample_state": "TOO_EARLY",
          "min_gap": 0
+        },
+        {
+         "n": 7,
+         "w": 3,
+         "l": 4,
+         "p": 0,
+         "pct": null,
+         "priced": 7,
+         "units": -1.374,
+         "roi": null,
+         "sample_state": "TOO_EARLY",
+         "min_gap": 1.5
         },
         {
          "n": 6,
@@ -3006,42 +3089,30 @@
          "units": -0.374,
          "roi": null,
          "sample_state": "TOO_EARLY",
-         "min_gap": 1.5
-        },
-        {
-         "n": 5,
-         "w": 3,
-         "l": 2,
-         "p": 0,
-         "pct": null,
-         "priced": 5,
-         "units": 0.626,
-         "roi": null,
-         "sample_state": "TOO_EARLY",
          "min_gap": 3
         }
        ],
        "total": [
         {
-         "n": 9,
-         "w": 5,
+         "n": 10,
+         "w": 6,
          "l": 4,
          "p": 0,
          "pct": null,
-         "priced": 9,
-         "units": 0.593,
+         "priced": 10,
+         "units": 1.502,
          "roi": null,
          "sample_state": "TOO_EARLY",
          "min_gap": 0
         },
         {
-         "n": 7,
-         "w": 4,
+         "n": 8,
+         "w": 5,
          "l": 3,
          "p": 0,
          "pct": null,
-         "priced": 7,
-         "units": 0.641,
+         "priced": 8,
+         "units": 1.55,
          "roi": null,
          "sample_state": "TOO_EARLY",
          "min_gap": 1.5
@@ -3062,18 +3133,18 @@
       },
       "clv": {
        "spread": {
-        "n": 9,
+        "n": 10,
         "avg_pts": null,
         "beat": 4,
-        "flat": 5,
+        "flat": 6,
         "lost": 0,
         "sample_state": "TOO_EARLY"
        },
        "total": {
-        "n": 9,
+        "n": 10,
         "avg_pts": null,
         "beat": 4,
-        "flat": 2,
+        "flat": 3,
         "lost": 3,
         "sample_state": "TOO_EARLY"
        }
@@ -3097,14 +3168,14 @@
        },
        {
         "period": "2026-W43",
-        "n": 4,
-        "called": 4,
+        "n": 5,
+        "called": 5,
         "correct": 2,
-        "margin_n": 4,
-        "margin_mae": 11.28,
-        "total_n": 4,
-        "total_mae": 20.95,
-        "cum_called": 9,
+        "margin_n": 5,
+        "margin_mae": 10.65,
+        "total_n": 5,
+        "total_mae": 17,
+        "cum_called": 10,
         "cum_correct": 5,
         "cum_pct": null,
         "cum_brier": null,
@@ -3646,7 +3717,7 @@
       "higher": "B",
       "lower": "C",
       "brier": {
-       "n_a": 64,
+       "n_a": 76,
        "n_b": 0,
        "diff": null,
        "low": null,
@@ -3655,7 +3726,7 @@
        "why": "each group needs 50 settled games"
       },
       "margin_mae": {
-       "n_a": 64,
+       "n_a": 76,
        "n_b": 0,
        "diff": null,
        "low": null,
@@ -3668,8 +3739,8 @@
       "higher": "C",
       "lower": "D",
       "brier": {
-       "n_a": 9,
-       "n_b": 64,
+       "n_a": 10,
+       "n_b": 76,
        "diff": null,
        "low": null,
        "high": null,
@@ -3677,8 +3748,8 @@
        "why": "each group needs 50 settled games"
       },
       "margin_mae": {
-       "n_a": 9,
-       "n_b": 64,
+       "n_a": 10,
+       "n_b": 76,
        "diff": null,
        "low": null,
        "high": null,
@@ -3691,7 +3762,7 @@
       "lower": "F",
       "brier": {
        "n_a": 0,
-       "n_b": 9,
+       "n_b": 10,
        "diff": null,
        "low": null,
        "high": null,
@@ -3700,7 +3771,7 @@
       },
       "margin_mae": {
        "n_a": 0,
-       "n_b": 9,
+       "n_b": 10,
        "diff": null,
        "low": null,
        "high": null,
@@ -3742,28 +3813,28 @@
     },
     {
      "period": "2026-W43",
-     "games": 44,
-     "settled": 24,
+     "games": 53,
+     "settled": 37,
      "counts": {
       "A": 0,
       "B": 0,
-      "C": 39,
-      "D": 5,
+      "C": 47,
+      "D": 6,
       "F": 0,
       "INSUFFICIENT": 0
      },
      "cum_brier": {
       "A": null,
       "B": null,
-      "C": 0.2228,
+      "C": 0.2286,
       "D": null,
       "F": null
      },
      "cum_n": {
       "A": 0,
       "B": 0,
-      "C": 64,
-      "D": 9,
+      "C": 76,
+      "D": 10,
       "F": 0
      }
     }
@@ -3773,24 +3844,24 @@
    "schema": "edgedesk_research_grade_v1:performance",
    "min_n": 20,
    "totals": {
-    "games": 29,
-    "graded": 29,
+    "games": 31,
+    "graded": 31,
     "ungraded": 0,
     "settled_graded": 28,
     "void": 0,
-    "unsettled": 1,
+    "unsettled": 3,
     "sample_state": "TOO_EARLY",
     "research_coverage": 1
    },
    "exclusions": {
     "void": 0,
-    "unsettled": 1,
+    "unsettled": 3,
     "by_why": {}
    },
    "distribution": {
     "A": 0,
     "B": 0,
-    "C": 20,
+    "C": 22,
     "D": 9,
     "F": 0,
     "INSUFFICIENT": 0
@@ -4283,19 +4354,19 @@
      }
     },
     "C": {
-     "games": 20,
+     "games": 22,
      "settled": 19,
      "sample_state": "TOO_EARLY",
-     "avg_score": 73.1,
+     "avg_score": 73,
      "avg_dimensions": {
       "reliability": 75,
-      "completeness": 88.9,
-      "market": 74.5,
-      "clarity": 53.4,
-      "uncertainty": 54.4
+      "completeness": 89.7,
+      "market": 74,
+      "clarity": 53.7,
+      "uncertainty": 53.3
      },
      "market_coverage": 1,
-     "market_n": 20,
+     "market_n": 22,
      "brier_ci": {
       "n": 19,
       "mean": null,
@@ -4318,11 +4389,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 20,
+       "games": 22,
        "graded": 19,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 1,
+       "awaiting_result": 3,
        "conflict": 0,
        "by_why": {}
       },
@@ -5386,12 +5457,12 @@
    "trend": [
     {
      "period": "2026-W43",
-     "games": 29,
+     "games": 31,
      "settled": 28,
      "counts": {
       "A": 0,
       "B": 0,
-      "C": 20,
+      "C": 22,
       "D": 9,
       "F": 0,
       "INSUFFICIENT": 0
@@ -7121,23 +7192,23 @@
    "schema": "edgedesk_research_grade_v1:performance",
    "min_n": 20,
    "totals": {
-    "games": 50,
-    "graded": 50,
+    "games": 57,
+    "graded": 57,
     "ungraded": 0,
     "settled_graded": 49,
     "void": 0,
-    "unsettled": 1,
+    "unsettled": 8,
     "sample_state": "TOO_EARLY",
     "research_coverage": 1
    },
    "exclusions": {
     "void": 0,
-    "unsettled": 1,
+    "unsettled": 8,
     "by_why": {}
    },
    "distribution": {
     "A": 0,
-    "B": 29,
+    "B": 36,
     "C": 21,
     "D": 0,
     "F": 0,
@@ -7388,19 +7459,19 @@
      }
     },
     "B": {
-     "games": 29,
+     "games": 36,
      "settled": 28,
      "sample_state": "TOO_EARLY",
-     "avg_score": 87.4,
+     "avg_score": 87.6,
      "avg_dimensions": {
-      "reliability": 85.5,
-      "completeness": 99,
-      "market": 86.8,
-      "clarity": 74.3,
-      "uncertainty": 88.6
+      "reliability": 85.1,
+      "completeness": 99.2,
+      "market": 88.6,
+      "clarity": 74,
+      "uncertainty": 88.4
      },
      "market_coverage": 1,
-     "market_n": 29,
+     "market_n": 36,
      "brier_ci": {
       "n": 28,
       "mean": 0.2516,
@@ -7423,11 +7494,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 29,
+       "games": 36,
        "graded": 28,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 1,
+       "awaiting_result": 8,
        "conflict": 0,
        "by_why": {}
       },
@@ -8859,11 +8930,11 @@
     },
     {
      "period": "2026-W43",
-     "games": 34,
+     "games": 41,
      "settled": 33,
      "counts": {
       "A": 0,
-      "B": 29,
+      "B": 36,
       "C": 5,
       "D": 0,
       "F": 0,
@@ -10562,25 +10633,25 @@
    "schema": "edgedesk_research_grade_v1:performance",
    "min_n": 20,
    "totals": {
-    "games": 193,
-    "graded": 188,
+    "games": 211,
+    "graded": 206,
     "ungraded": 5,
-    "settled_graded": 165,
+    "settled_graded": 178,
     "void": 0,
-    "unsettled": 23,
+    "unsettled": 28,
     "sample_state": "EARLY_SIGNAL",
-    "research_coverage": 0.9741
+    "research_coverage": 0.9763
    },
    "exclusions": {
     "void": 0,
-    "unsettled": 23,
+    "unsettled": 28,
     "by_why": {}
    },
    "distribution": {
     "A": 0,
-    "B": 29,
-    "C": 135,
-    "D": 20,
+    "B": 36,
+    "C": 145,
+    "D": 21,
     "F": 4,
     "INSUFFICIENT": 5
    },
@@ -10829,19 +10900,19 @@
      }
     },
     "B": {
-     "games": 29,
+     "games": 36,
      "settled": 28,
      "sample_state": "TOO_EARLY",
-     "avg_score": 87.4,
+     "avg_score": 87.6,
      "avg_dimensions": {
-      "reliability": 85.5,
-      "completeness": 99,
-      "market": 86.8,
-      "clarity": 74.3,
-      "uncertainty": 88.6
+      "reliability": 85.1,
+      "completeness": 99.2,
+      "market": 88.6,
+      "clarity": 74,
+      "uncertainty": 88.4
      },
      "market_coverage": 1,
-     "market_n": 29,
+     "market_n": 36,
      "brier_ci": {
       "n": 28,
       "mean": 0.2516,
@@ -10864,11 +10935,11 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 29,
+       "games": 36,
        "graded": 28,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 1,
+       "awaiting_result": 8,
        "conflict": 0,
        "by_why": {}
       },
@@ -11130,58 +11201,58 @@
      }
     },
     "C": {
-     "games": 135,
-     "settled": 115,
+     "games": 145,
+     "settled": 127,
      "sample_state": "EARLY_SIGNAL",
-     "avg_score": 74.9,
+     "avg_score": 75,
      "avg_dimensions": {
-      "reliability": 71.4,
-      "completeness": 93.8,
-      "market": 82.7,
-      "clarity": 51.9,
-      "uncertainty": 68.8
+      "reliability": 71.3,
+      "completeness": 93.9,
+      "market": 82.9,
+      "clarity": 51.4,
+      "uncertainty": 68.6
      },
-     "market_coverage": 0.8815,
-     "market_n": 119,
+     "market_coverage": 0.8897,
+     "market_n": 129,
      "brier_ci": {
-      "n": 115,
-      "mean": 0.2282,
-      "low": 0.1913,
-      "high": 0.2652
+      "n": 127,
+      "mean": 0.2312,
+      "low": 0.1949,
+      "high": 0.2675
      },
      "margin_mae_ci": {
-      "n": 94,
-      "mean": 11.69,
-      "low": 9.71,
-      "high": 13.66
+      "n": 106,
+      "mean": 11.81,
+      "low": 9.94,
+      "high": 13.69
      },
      "total_mae_ci": {
-      "n": 115,
-      "mean": 11.53,
-      "low": 9.64,
-      "high": 13.43
+      "n": 127,
+      "mean": 11.87,
+      "low": 10.06,
+      "high": 13.67
      },
      "metrics": {
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 135,
-       "graded": 115,
+       "games": 145,
+       "graded": 127,
        "void": 0,
        "flagged_pregame": 0,
-       "awaiting_result": 20,
+       "awaiting_result": 18,
        "conflict": 0,
        "by_why": {}
       },
       "winner": {
-       "n": 115,
-       "called": 115,
-       "correct": 75,
-       "pct": 0.6522,
+       "n": 127,
+       "called": 127,
+       "correct": 83,
+       "pct": 0.6535,
        "ties": 0,
-       "scored": 115,
-       "brier": 0.2282,
-       "log_loss": 0.6649,
+       "scored": 127,
+       "brier": 0.2312,
+       "log_loss": 0.6722,
        "sample_state": "EARLY_SIGNAL",
        "calibration": [
         {
@@ -11207,31 +11278,31 @@
         {
          "from": 0.2,
          "to": 0.3,
-         "n": 6,
-         "mean_predicted": 0.229,
-         "observed": 0.3333,
-         "wilson_low": 0.0968,
-         "wilson_high": 0.7,
+         "n": 8,
+         "mean_predicted": 0.2268,
+         "observed": 0.5,
+         "wilson_low": 0.2152,
+         "wilson_high": 0.7848,
          "inside_interval": true
         },
         {
          "from": 0.3,
          "to": 0.4,
-         "n": 10,
-         "mean_predicted": 0.3583,
-         "observed": 0.4,
-         "wilson_low": 0.1682,
-         "wilson_high": 0.6873,
+         "n": 12,
+         "mean_predicted": 0.3598,
+         "observed": 0.3333,
+         "wilson_low": 0.1381,
+         "wilson_high": 0.6094,
          "inside_interval": true
         },
         {
          "from": 0.4,
          "to": 0.5,
-         "n": 16,
-         "mean_predicted": 0.4624,
-         "observed": 0.4375,
-         "wilson_low": 0.231,
-         "wilson_high": 0.6682,
+         "n": 17,
+         "mean_predicted": 0.461,
+         "observed": 0.4118,
+         "wilson_low": 0.2161,
+         "wilson_high": 0.6399,
          "inside_interval": true
         },
         {
@@ -11247,11 +11318,11 @@
         {
          "from": 0.6,
          "to": 0.7,
-         "n": 15,
-         "mean_predicted": 0.6558,
-         "observed": 0.7333,
-         "wilson_low": 0.4805,
-         "wilson_high": 0.891,
+         "n": 17,
+         "mean_predicted": 0.6574,
+         "observed": 0.7059,
+         "wilson_low": 0.4687,
+         "wilson_high": 0.8672,
          "inside_interval": true
         },
         {
@@ -11267,11 +11338,11 @@
         {
          "from": 0.8,
          "to": 0.9,
-         "n": 9,
-         "mean_predicted": 0.8378,
-         "observed": 0.7778,
-         "wilson_low": 0.4526,
-         "wilson_high": 0.9368,
+         "n": 14,
+         "mean_predicted": 0.8402,
+         "observed": 0.7857,
+         "wilson_low": 0.5241,
+         "wilson_high": 0.9243,
          "inside_interval": true
         },
         {
@@ -11297,156 +11368,156 @@
         {
          "from": 0.55,
          "to": 0.6,
-         "n": 20,
-         "correct": 13,
-         "pct": 0.65,
-         "mean_p": 0.5723
+         "n": 21,
+         "correct": 14,
+         "pct": 0.6667,
+         "mean_p": 0.5717
         },
         {
          "from": 0.6,
          "to": 0.65,
-         "n": 12,
-         "correct": 9,
+         "n": 13,
+         "correct": 10,
          "pct": null,
-         "mean_p": 0.6253
+         "mean_p": 0.6242
         },
         {
          "from": 0.65,
          "to": 0.7,
-         "n": 13,
-         "correct": 8,
+         "n": 16,
+         "correct": 10,
          "pct": null,
-         "mean_p": 0.6731
+         "mean_p": 0.6715
         },
         {
          "from": 0.7,
          "to": 0.8,
-         "n": 20,
+         "n": 22,
          "correct": 14,
-         "pct": 0.7,
-         "mean_p": 0.7494
+         "pct": 0.6364,
+         "mean_p": 0.7522
         },
         {
          "from": 0.8,
          "to": 1,
-         "n": 25,
-         "correct": 18,
-         "pct": 0.72,
-         "mean_p": 0.8783
+         "n": 30,
+         "correct": 22,
+         "pct": 0.7333,
+         "mean_p": 0.8727
         }
        ]
       },
       "margin": {
-       "n": 94,
-       "mae": 11.69,
-       "bias": -0.02,
-       "rmse": 15.2,
+       "n": 106,
+       "mae": 11.81,
+       "bias": -0.62,
+       "rmse": 15.35,
        "sample_state": "EARLY_SIGNAL"
       },
       "total": {
-       "n": 115,
-       "mae": 11.53,
-       "bias": 0.6,
-       "rmse": 15.46,
+       "n": 127,
+       "mae": 11.87,
+       "bias": 0.67,
+       "rmse": 15.74,
        "sample_state": "EARLY_SIGNAL"
       },
       "market": {
        "spread": {
-        "n": 79,
-        "model_mae": 11.78,
-        "market_mae": 11.3,
-        "model_nearer": 33,
-        "market_nearer": 43,
+        "n": 91,
+        "model_mae": 11.92,
+        "market_mae": 11.38,
+        "model_nearer": 38,
+        "market_nearer": 50,
         "sample_state": "EARLY_SIGNAL"
        },
        "total": {
-        "n": 99,
-        "model_mae": 11.45,
-        "market_mae": 11.17,
-        "model_nearer": 42,
-        "market_nearer": 55,
+        "n": 111,
+        "model_mae": 11.84,
+        "market_mae": 11.44,
+        "model_nearer": 45,
+        "market_nearer": 64,
         "sample_state": "EARLY_SIGNAL"
        },
        "moneyline": {
-        "n": 99,
-        "model_brier": 0.2212,
-        "market_brier": 0.2126,
+        "n": 111,
+        "model_brier": 0.2253,
+        "market_brier": 0.2172,
         "sample_state": "EARLY_SIGNAL"
        }
       },
       "picks": {
        "spread": [
         {
-         "n": 76,
-         "w": 36,
-         "l": 40,
+         "n": 88,
+         "w": 41,
+         "l": 47,
          "p": 0,
-         "pct": 0.4737,
-         "priced": 76,
-         "units": -7.175,
-         "roi": -0.0944,
+         "pct": 0.4659,
+         "priced": 88,
+         "units": -9.618,
+         "roi": -0.1093,
          "sample_state": "EARLY_SIGNAL",
          "min_gap": 0
         },
         {
-         "n": 54,
-         "w": 24,
-         "l": 30,
+         "n": 62,
+         "w": 27,
+         "l": 35,
          "p": 0,
-         "pct": 0.4444,
-         "priced": 54,
-         "units": -8.281,
-         "roi": -0.1534,
+         "pct": 0.4355,
+         "priced": 62,
+         "units": -10.542,
+         "roi": -0.17,
          "sample_state": "EARLY_SIGNAL",
          "min_gap": 1.5
         },
         {
-         "n": 32,
-         "w": 15,
-         "l": 17,
+         "n": 36,
+         "w": 16,
+         "l": 20,
          "p": 0,
-         "pct": 0.4688,
-         "priced": 32,
-         "units": -3.479,
-         "roi": -0.1087,
+         "pct": 0.4444,
+         "priced": 36,
+         "units": -5.586,
+         "roi": -0.1552,
          "sample_state": "TOO_EARLY",
          "min_gap": 3
         }
        ],
        "total": [
         {
-         "n": 98,
-         "w": 45,
-         "l": 53,
+         "n": 110,
+         "w": 49,
+         "l": 61,
          "p": 0,
-         "pct": 0.4592,
-         "priced": 98,
-         "units": -12.607,
-         "roi": -0.1286,
+         "pct": 0.4455,
+         "priced": 110,
+         "units": -17.014,
+         "roi": -0.1547,
          "sample_state": "EARLY_SIGNAL",
          "min_gap": 0
         },
         {
-         "n": 59,
-         "w": 27,
-         "l": 32,
+         "n": 65,
+         "w": 28,
+         "l": 37,
          "p": 0,
-         "pct": 0.4576,
-         "priced": 59,
-         "units": -7.421,
-         "roi": -0.1258,
+         "pct": 0.4308,
+         "priced": 65,
+         "units": -11.574,
+         "roi": -0.1781,
          "sample_state": "EARLY_SIGNAL",
          "min_gap": 1.5
         },
         {
-         "n": 40,
+         "n": 43,
          "w": 19,
-         "l": 21,
+         "l": 24,
          "p": 0,
-         "pct": 0.475,
-         "priced": 40,
-         "units": -3.739,
-         "roi": -0.0935,
+         "pct": 0.4419,
+         "priced": 43,
+         "units": -6.739,
+         "roi": -0.1567,
          "sample_state": "TOO_EARLY",
          "min_gap": 3
         }
@@ -11454,20 +11525,20 @@
       },
       "clv": {
        "spread": {
-        "n": 49,
-        "avg_pts": 0.11,
-        "beat": 11,
-        "flat": 27,
-        "lost": 11,
-        "sample_state": "TOO_EARLY"
+        "n": 61,
+        "avg_pts": 0.05,
+        "beat": 12,
+        "flat": 34,
+        "lost": 15,
+        "sample_state": "EARLY_SIGNAL"
        },
        "total": {
-        "n": 49,
-        "avg_pts": 0.27,
-        "beat": 19,
-        "flat": 22,
-        "lost": 8,
-        "sample_state": "TOO_EARLY"
+        "n": 61,
+        "avg_pts": 0.26,
+        "beat": 21,
+        "flat": 31,
+        "lost": 9,
+        "sample_state": "EARLY_SIGNAL"
        }
       },
       "trend": [
@@ -11489,52 +11560,52 @@
        },
        {
         "period": "2026-W43",
-        "n": 47,
-        "called": 47,
-        "correct": 31,
-        "margin_n": 42,
-        "margin_mae": 12.1,
-        "total_n": 47,
-        "total_mae": 12.88,
-        "cum_called": 115,
-        "cum_correct": 75,
-        "cum_pct": 0.6522,
-        "cum_brier": 0.2282,
-        "cum_margin_mae": 11.69,
-        "cum_total_mae": 11.53
+        "n": 59,
+        "called": 59,
+        "correct": 39,
+        "margin_n": 54,
+        "margin_mae": 12.25,
+        "total_n": 59,
+        "total_mae": 13.33,
+        "cum_called": 127,
+        "cum_correct": 83,
+        "cum_pct": 0.6535,
+        "cum_brier": 0.2312,
+        "cum_margin_mae": 11.81,
+        "cum_total_mae": 11.87
        }
       ]
      }
     },
     "D": {
-     "games": 20,
-     "settled": 19,
+     "games": 21,
+     "settled": 20,
      "sample_state": "TOO_EARLY",
      "avg_score": 66.8,
      "avg_dimensions": {
-      "reliability": 66.3,
-      "completeness": 89.1,
-      "market": 55.4,
-      "clarity": 48.8,
-      "uncertainty": 63.1
+      "reliability": 66.5,
+      "completeness": 89.4,
+      "market": 54.7,
+      "clarity": 48.5,
+      "uncertainty": 63.3
      },
      "market_coverage": 1,
-     "market_n": 20,
+     "market_n": 21,
      "brier_ci": {
-      "n": 19,
-      "mean": null,
+      "n": 20,
+      "mean": 0.2556,
       "low": null,
       "high": null
      },
      "margin_mae_ci": {
-      "n": 19,
-      "mean": null,
+      "n": 20,
+      "mean": 10.44,
       "low": null,
       "high": null
      },
      "total_mae_ci": {
-      "n": 19,
-      "mean": null,
+      "n": 20,
+      "mean": 11.83,
       "low": null,
       "high": null
      },
@@ -11542,8 +11613,8 @@
       "schema": "edgedesk_performance_v1:metrics",
       "min_n": 20,
       "eligibility": {
-       "games": 20,
-       "graded": 19,
+       "games": 21,
+       "graded": 20,
        "void": 0,
        "flagged_pregame": 0,
        "awaiting_result": 1,
@@ -11551,16 +11622,87 @@
        "by_why": {}
       },
       "winner": {
-       "n": 19,
-       "called": 19,
+       "n": 20,
+       "called": 20,
        "correct": 10,
-       "pct": null,
+       "pct": 0.5,
        "ties": 0,
-       "scored": 19,
-       "brier": null,
-       "log_loss": null,
+       "scored": 20,
+       "brier": 0.2556,
+       "log_loss": 0.7037,
        "sample_state": "TOO_EARLY",
-       "calibration": [],
+       "calibration": [
+        {
+         "from": 0.1,
+         "to": 0.2,
+         "n": 1,
+         "mean_predicted": 0.1784,
+         "observed": 0,
+         "wilson_low": 0,
+         "wilson_high": 0.7935,
+         "inside_interval": true
+        },
+        {
+         "from": 0.2,
+         "to": 0.3,
+         "n": 1,
+         "mean_predicted": 0.2993,
+         "observed": 0,
+         "wilson_low": 0,
+         "wilson_high": 0.7935,
+         "inside_interval": true
+        },
+        {
+         "from": 0.3,
+         "to": 0.4,
+         "n": 3,
+         "mean_predicted": 0.3522,
+         "observed": 0.6667,
+         "wilson_low": 0.2077,
+         "wilson_high": 0.9385,
+         "inside_interval": true
+        },
+        {
+         "from": 0.4,
+         "to": 0.5,
+         "n": 4,
+         "mean_predicted": 0.4273,
+         "observed": 0.75,
+         "wilson_low": 0.3006,
+         "wilson_high": 0.9544,
+         "inside_interval": true
+        },
+        {
+         "from": 0.5,
+         "to": 0.6,
+         "n": 7,
+         "mean_predicted": 0.5573,
+         "observed": 0.5714,
+         "wilson_low": 0.2505,
+         "wilson_high": 0.8418,
+         "inside_interval": true
+        },
+        {
+         "from": 0.7,
+         "to": 0.8,
+         "n": 3,
+         "mean_predicted": 0.7793,
+         "observed": 0.3333,
+         "wilson_low": 0.0615,
+         "wilson_high": 0.7923,
+         "inside_interval": true
+        },
+        {
+         "from": 0.9,
+         "to": 1,
+         "n": 1,
+         "mean_predicted": 0.917,
+         "observed": 1,
+         "wilson_low": 0.2065,
+         "wilson_high": 1,
+         "inside_interval": true
+        }
+       ],
        "bands": [
         {
          "from": 0.5,
@@ -11581,10 +11723,10 @@
         {
          "from": 0.6,
          "to": 0.65,
-         "n": 1,
+         "n": 2,
          "correct": 0,
          "pct": null,
-         "mean_p": 0.6356
+         "mean_p": 0.6364
         },
         {
          "from": 0.65,
@@ -11613,56 +11755,68 @@
        ]
       },
       "margin": {
-       "n": 19,
-       "mae": null,
-       "bias": null,
-       "rmse": null,
+       "n": 20,
+       "mae": 10.44,
+       "bias": -0.15,
+       "rmse": 12.42,
        "sample_state": "TOO_EARLY"
       },
       "total": {
-       "n": 19,
-       "mae": null,
-       "bias": null,
-       "rmse": null,
+       "n": 20,
+       "mae": 11.83,
+       "bias": 2.78,
+       "rmse": 16.44,
        "sample_state": "TOO_EARLY"
       },
       "market": {
        "spread": {
-        "n": 19,
-        "model_mae": null,
-        "market_mae": null,
+        "n": 20,
+        "model_mae": 10.44,
+        "market_mae": 8.48,
         "model_nearer": 8,
-        "market_nearer": 10,
+        "market_nearer": 11,
         "sample_state": "TOO_EARLY"
        },
        "total": {
-        "n": 19,
-        "model_mae": null,
-        "market_mae": null,
+        "n": 20,
+        "model_mae": 11.83,
+        "market_mae": 12.4,
         "model_nearer": 10,
-        "market_nearer": 9,
+        "market_nearer": 10,
         "sample_state": "TOO_EARLY"
        },
        "moneyline": {
-        "n": 19,
-        "model_brier": null,
-        "market_brier": null,
+        "n": 20,
+        "model_brier": 0.2556,
+        "market_brier": 0.2199,
         "sample_state": "TOO_EARLY"
        }
       },
       "picks": {
        "spread": [
         {
-         "n": 19,
+         "n": 20,
          "w": 10,
-         "l": 9,
+         "l": 10,
          "p": 0,
-         "pct": null,
-         "priced": 19,
-         "units": 0.072,
-         "roi": null,
+         "pct": 0.5,
+         "priced": 20,
+         "units": -0.928,
+         "roi": -0.0464,
          "sample_state": "TOO_EARLY",
          "min_gap": 0
+        },
+        {
+         "n": 17,
+         "w": 7,
+         "l": 10,
+         "p": 0,
+         "pct": null,
+         "priced": 17,
+         "units": -3.743,
+         "roi": null,
+         "sample_state": "TOO_EARLY",
+         "min_gap": 1.5
         },
         {
          "n": 16,
@@ -11674,42 +11828,30 @@
          "units": -2.743,
          "roi": null,
          "sample_state": "TOO_EARLY",
-         "min_gap": 1.5
-        },
-        {
-         "n": 15,
-         "w": 7,
-         "l": 8,
-         "p": 0,
-         "pct": null,
-         "priced": 15,
-         "units": -1.743,
-         "roi": null,
-         "sample_state": "TOO_EARLY",
          "min_gap": 3
         }
        ],
        "total": [
         {
-         "n": 19,
-         "w": 11,
+         "n": 20,
+         "w": 12,
          "l": 8,
          "p": 0,
-         "pct": null,
-         "priced": 19,
-         "units": 2.069,
-         "roi": null,
+         "pct": 0.6,
+         "priced": 20,
+         "units": 2.978,
+         "roi": 0.1489,
          "sample_state": "TOO_EARLY",
          "min_gap": 0
         },
         {
-         "n": 16,
-         "w": 9,
+         "n": 17,
+         "w": 10,
          "l": 7,
          "p": 0,
          "pct": null,
-         "priced": 16,
-         "units": 1.164,
+         "priced": 17,
+         "units": 2.073,
          "roi": null,
          "sample_state": "TOO_EARLY",
          "min_gap": 1.5
@@ -11730,18 +11872,18 @@
       },
       "clv": {
        "spread": {
-        "n": 9,
+        "n": 10,
         "avg_pts": null,
         "beat": 4,
-        "flat": 5,
+        "flat": 6,
         "lost": 0,
         "sample_state": "TOO_EARLY"
        },
        "total": {
-        "n": 9,
+        "n": 10,
         "avg_pts": null,
         "beat": 4,
-        "flat": 2,
+        "flat": 3,
         "lost": 3,
         "sample_state": "TOO_EARLY"
        }
@@ -11765,19 +11907,19 @@
        },
        {
         "period": "2026-W43",
-        "n": 13,
-        "called": 13,
+        "n": 14,
+        "called": 14,
         "correct": 6,
-        "margin_n": 13,
-        "margin_mae": 11.74,
-        "total_n": 13,
-        "total_mae": 14.41,
-        "cum_called": 19,
+        "margin_n": 14,
+        "margin_mae": 11.48,
+        "total_n": 14,
+        "total_mae": 13.46,
+        "cum_called": 20,
         "cum_correct": 10,
-        "cum_pct": null,
-        "cum_brier": null,
-        "cum_margin_mae": null,
-        "cum_total_mae": null
+        "cum_pct": 0.5,
+        "cum_brier": 0.2556,
+        "cum_margin_mae": 10.44,
+        "cum_total_mae": 11.83
        }
       ]
      }
@@ -12347,7 +12489,7 @@
       "higher": "B",
       "lower": "C",
       "brier": {
-       "n_a": 115,
+       "n_a": 127,
        "n_b": 28,
        "diff": null,
        "low": null,
@@ -12356,7 +12498,7 @@
        "why": "each group needs 50 settled games"
       },
       "margin_mae": {
-       "n_a": 94,
+       "n_a": 106,
        "n_b": 0,
        "diff": null,
        "low": null,
@@ -12369,8 +12511,8 @@
       "higher": "C",
       "lower": "D",
       "brier": {
-       "n_a": 19,
-       "n_b": 115,
+       "n_a": 20,
+       "n_b": 127,
        "diff": null,
        "low": null,
        "high": null,
@@ -12378,8 +12520,8 @@
        "why": "each group needs 50 settled games"
       },
       "margin_mae": {
-       "n_a": 19,
-       "n_b": 94,
+       "n_a": 20,
+       "n_b": 106,
        "diff": null,
        "low": null,
        "high": null,
@@ -12392,7 +12534,7 @@
       "lower": "F",
       "brier": {
        "n_a": 3,
-       "n_b": 19,
+       "n_b": 20,
        "diff": null,
        "low": null,
        "high": null,
@@ -12401,7 +12543,7 @@
       },
       "margin_mae": {
        "n_a": 3,
-       "n_b": 19,
+       "n_b": 20,
        "diff": null,
        "low": null,
        "high": null,
@@ -12443,28 +12585,28 @@
     },
     {
      "period": "2026-W43",
-     "games": 113,
-     "settled": 90,
+     "games": 131,
+     "settled": 103,
      "counts": {
       "A": 0,
-      "B": 29,
-      "C": 67,
-      "D": 14,
+      "B": 36,
+      "C": 77,
+      "D": 15,
       "F": 3,
       "INSUFFICIENT": 0
      },
      "cum_brier": {
       "A": null,
       "B": 0.2516,
-      "C": 0.2282,
-      "D": null,
+      "C": 0.2312,
+      "D": 0.2556,
       "F": null
      },
      "cum_n": {
       "A": 0,
       "B": 28,
-      "C": 115,
-      "D": 19,
+      "C": 127,
+      "D": 20,
       "F": 3
      }
     }
@@ -12474,23 +12616,23 @@
  "coverage": [
   {
    "sport": "cfb",
-   "eligible_games": 96,
-   "with_pregame_grade": 96,
-   "graded": 93,
+   "eligible_games": 105,
+   "with_pregame_grade": 105,
+   "graded": 102,
    "ungraded": 3,
-   "settled": 76,
+   "settled": 89,
    "void": 0,
-   "awaiting": 20
+   "awaiting": 16
   },
   {
    "sport": "nba",
-   "eligible_games": 29,
-   "with_pregame_grade": 29,
-   "graded": 29,
+   "eligible_games": 31,
+   "with_pregame_grade": 31,
+   "graded": 31,
    "ungraded": 0,
    "settled": 28,
    "void": 0,
-   "awaiting": 1
+   "awaiting": 3
   },
   {
    "sport": "nfl",
@@ -12504,13 +12646,13 @@
   },
   {
    "sport": "nhl",
-   "eligible_games": 50,
-   "with_pregame_grade": 50,
-   "graded": 50,
+   "eligible_games": 57,
+   "with_pregame_grade": 57,
+   "graded": 57,
    "ungraded": 0,
    "settled": 49,
    "void": 0,
-   "awaiting": 1
+   "awaiting": 8
   },
   {
    "sport": "wnba",
@@ -12527,7 +12669,7 @@
   "no_pregame_grade": 452,
   "no_pregame_grade_note": "Completed games with no grade locked before kickoff (most started before the grade ledger began). They are never graded afterwards.",
   "result_conflicts": 0,
-  "missing_finals": 2,
+  "missing_finals": 1,
   "void": 0,
   "by_why": {}
  },
@@ -12610,13 +12752,13 @@
    "sport": "cfb",
    "season": 2026,
    "path": "/performance/data/grades/games/cfb-2026.json",
-   "rows": 96
+   "rows": 105
   },
   {
    "sport": "nba",
    "season": 2027,
    "path": "/performance/data/grades/games/nba-2027.json",
-   "rows": 29
+   "rows": 31
   },
   {
    "sport": "nfl",
@@ -12628,7 +12770,7 @@
    "sport": "nhl",
    "season": 2027,
    "path": "/performance/data/grades/games/nhl-2027.json",
-   "rows": 50
+   "rows": 57
   },
   {
    "sport": "wnba",
