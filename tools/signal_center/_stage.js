@@ -49,6 +49,8 @@ async function stage(o) {
     ${slice(FU, 'create table if not exists public.user_event_kinds (', '\n);')}
     insert into auth.users (id, email) values (${lit(USERS.SUB)}, 'sub@edgedesk.test'), (${lit(USERS.NOSUB)}, 'free@edgedesk.test'), (${lit(USERS.ADMIN)}, 'op@edgedesk.test');
     insert into public.subscriptions values (${lit(USERS.SUB)}, 'active', 'price_x', now() + interval '20 days');`);
+  /* pgcrypto where Supabase keeps it, outside the doors' search_path */
+  db.sql('drop extension if exists pgcrypto; create schema if not exists extensions; create extension pgcrypto with schema extensions;');
   db.applyFile(F('simulator.sql'));
   db.applyFile(F('signal_center.sql'));
   /* two published NFL simulator runs in THIS throwaway database (the worker

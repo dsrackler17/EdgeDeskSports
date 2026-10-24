@@ -93,10 +93,13 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
       insert into public.subscriptions values (${lit(SUB)}, 'active', 'price_x', now() + interval '20 days'), (${lit(LAPSED)}, 'canceled', 'price_x', now() - interval '30 days');`);
 
     /* ---- apply ---- */
+    /* pgcrypto where Supabase keeps it: in the extensions schema, outside the
+       doors' search_path (2026-10-24: digest() resolved here, not in production) */
+    db.sql('drop extension if exists pgcrypto; create schema if not exists extensions; create extension pgcrypto with schema extensions;');
     let out = db.applyFile(SQLF);
-    chk('applies, and every report row is ok', (out.match(/\|ok/g) || []).length === 11 && !/CHECK THIS/.test(out), out.slice(-1500));
+    chk('applies, and every report row is ok', (out.match(/\|ok/g) || []).length === 12 && !/CHECK THIS/.test(out), out.slice(-1500));
     out = db.applyFile(SQLF);
-    chk('applies again identically (idempotent)', (out.match(/\|ok/g) || []).length === 11 && !/CHECK THIS/.test(out));
+    chk('applies again identically (idempotent)', (out.match(/\|ok/g) || []).length === 12 && !/CHECK THIS/.test(out));
     chk('the Signal Center seat is registered as a client event, once', +db.sql(`select count(*) from public.user_event_kinds where event_name = 'primary_nav_signals' and source = 'client';`) === 1);
     /* the SQL editor sends the file as ONE raw string */
     const sh = path.join(db.home, 'editor.sh');
@@ -190,9 +193,17 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     chk('a run older than the lease is failed and a new one begins', r3.busy === false && +db.sql("select count(*) from public.sc_runs where status = 'failed' and error->>'reason' like 'lease expired%';").trim() === 1);
 
     /* ---- live ---- */
+    const eligibleSql = "select count(*) from public.sc_signals where publication = 'SHADOW' and verification_state = 'VERIFIED' and lifecycle = 'ACTIVE' and not fixture and sport in ('nfl','cfb') and public.sc_label_rank(label) >= public.sc_label_rank('Routine');";
+    /* an operator holds one eligible shadow signal first: going live must not override that */
+    const heldId = +db.sql("select signal_id from public.sc_signals where publication = 'SHADOW' and verification_state = 'VERIFIED' and lifecycle = 'ACTIVE' and not fixture and sport in ('nfl','cfb') and public.sc_label_rank(label) >= public.sc_label_rank('Routine') order by signal_id limit 1;").trim();
+    as(ADMIN, 'public.sc_admin_act(' + heldId + ", 'hold', 'checking it first')");
+    const eligible = +db.sql(eligibleSql).trim();
     const mode = as(ADMIN, "public.sc_admin_set_mode('live', array['nfl','cfb'])");
     chk('the operator switches to live for nfl and cfb', mode.mode === 'live');
     chk('…and the change is logged', +db.sql("select count(*) from public.sc_config_log where key in ('mode','live_sports');").trim() === 2);
+    chk('going live publishes the eligible shadow signals of the live sports', eligible > 0 && mode.promoted === eligible && +db.sql(eligibleSql).trim() === 0, { eligible, promoted: mode.promoted });
+    chk('…each with a published event naming the operator', +db.sql("select count(*) from public.sc_signal_events where kind = 'published' and actor like 'admin:%' and detail->>'reason' = 'the mode was switched to live';").trim() === eligible);
+    chk('…but an operator\'s hold is never overridden', db.sql('select publication from public.sc_signals where signal_id = ' + heldId + ';').trim() === 'HELD');
     /* a run publishes under the mode it began in: switching mid-run changes nothing */
     const qx = shift(game('nfl|L_X', 'Xray Team', 'Yankee Team', 30), 'x1', 'x2', 0.35, 0.52);
     chk('a run begun in shadow keeps publishing nothing after the switch', ingest(r3.run_id, [qx]).items[0].publication === 'SHADOW');
@@ -218,9 +229,9 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
 
     /* ---- gates ---- */
     const subFeed = as(SUB, "public.sc_feed('{}'::jsonb, null, 25)");
-    const expectPub = [q1, q4, q5, q6].filter((p) => E.SPEC.labels.findIndex((l) => l.label === p.score.label) <= 2).length;
+    const expectPub = [q1, q4, q5, q6].filter((p) => E.SPEC.labels.findIndex((l) => l.label === p.score.label) <= 2).length + mode.promoted;
     chk('Full Access: the subscriber sees the published signals with their numbers', subFeed.access === 'full' && subFeed.items.length === expectPub && subFeed.items.every((i) => /%/.test(i.headline) && i.values && i.values.current), subFeed.items.map((i) => i.headline));
-    chk('Full Access: no shadow, unverified or NBA signal leaks', subFeed.items.every((i) => i.sport === 'nfl' && i.verification === 'VERIFIED'));
+    chk('Full Access: no shadow, unverified or NBA signal leaks', subFeed.items.every((i) => ['nfl', 'cfb'].indexOf(i.sport) >= 0 && i.verification === 'VERIFIED'));
     const freeFeed = as(NOSUB, "public.sc_feed('{}'::jsonb, null, 25)");
     chk('a signed-in non-subscriber gets the preview', freeFeed.access === 'preview' && freeFeed.reason === 'not_entitled');
     chk('…limited by sc_config.free.feed_limit (3)', freeFeed.items.length <= 3 && freeFeed.limit === 3);
@@ -409,6 +420,22 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     const plan = db.sql("explain select signal_id from public.sc_signals where publication = 'PUBLISHED' order by first_detected_at desc, signal_id desc limit 26;");
     chk('the recent feed is served by its index', /sc_signals_feed_idx/.test(plan), plan);
 
+    /* ---- the owner's door (the database owner, with the connection string) ---- */
+    chk('anon cannot use the owner\'s mode door', /permission denied/.test(db.mustFail(() => db.anon("select public.sc_owner_set_mode('live', null, 'x');")) || ''));
+    chk('an operator account cannot use it either (it is not an API door)', /permission denied/.test(db.mustFail(() => db.as(ADMIN, "select public.sc_owner_set_mode('live', null, 'x');")) || ''));
+    chk('nor can the job', /permission denied/.test(db.mustFail(() => db.service("select public.sc_owner_set_mode('live', null, 'x');")) || ''));
+    chk('nor can anyone reach the switch\'s internals', /permission denied/.test(db.mustFail(() => db.as(ADMIN, "select public.sc_set_mode('live', null, null, 'x', 'x');")) || '')
+      && /permission denied/.test(db.mustFail(() => db.service("select public.sc_promote_shadow('x');")) || ''));
+    chk('the owner must say why', /say why/.test(db.mustFail(() => db.sql("select public.sc_owner_set_mode('live', null, '  ');")) || ''));
+    const shadowOf = (sports) => +db.sql("select count(*) from public.sc_signals where publication = 'SHADOW' and verification_state = 'VERIFIED' and lifecycle = 'ACTIVE' and not fixture and sport in (" + sports.map(lit).join(',') + ") and public.sc_label_rank(label) >= public.sc_label_rank('Routine');").trim();
+    const nbaShadow = shadowOf(['nba']), liveShadow = shadowOf(['nfl', 'cfb', 'nba', 'nhl']);
+    const own = J(db.sql("select public.sc_owner_set_mode('live', array['nfl','cfb','nba','nhl'], 'live for every sport with a source (owner, 2026-10-24)');"));
+    chk('the owner switches to live for more sports, and every eligible shadow signal of them publishes (NBA included)', own.mode === 'live' && nbaShadow > 0 && own.promoted === liveShadow && shadowOf(['nfl', 'cfb', 'nba', 'nhl']) === 0 && JSON.stringify(own.live_sports) === '["nfl","cfb","nba","nhl"]', { own, nbaShadow, liveShadow });
+    chk('…logged with the reason and no account', +db.sql("select count(*) from public.sc_config_log where changed_by is null and reason like 'live for every sport%';").trim() === 2);
+    chk('…and the events name the owner', +db.sql("select count(*) from public.sc_signal_events where kind = 'published' and actor = 'owner';").trim() === liveShadow);
+    const back = J(db.sql("select public.sc_owner_set_mode('shadow', null, 'back to shadow for the next checks');"));
+    chk('switching to shadow publishes nothing and keeps the live sports', back.mode === 'shadow' && back.promoted === 0 && JSON.stringify(back.live_sports) === '["nfl","cfb","nba","nhl"]');
+
     /* ---- rollback: removes every piece, leaves the rest of the project, and the file applies again ---- */
     const RB = F('signal_center_rollback.sql');
     const rbText = fs.readFileSync(RB, 'utf8');
@@ -428,7 +455,7 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     rb = db.applyFile(RB);
     chk('the rollback runs twice safely', /Signal Center is removed\|ok/.test(rb));
     out = db.applyFile(SQLF);
-    chk('and the file applies again after a rollback', (out.match(/\|ok/g) || []).length === 11 && !/CHECK THIS/.test(out), out.slice(-800));
+    chk('and the file applies again after a rollback', (out.match(/\|ok/g) || []).length === 12 && !/CHECK THIS/.test(out), out.slice(-800));
   } catch (e) {
     chk('the suite ran to the end', false, String(e && e.stack || e).slice(0, 1500));
   } finally {
