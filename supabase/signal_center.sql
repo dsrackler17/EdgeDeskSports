@@ -295,6 +295,15 @@ create table if not exists public.sc_signals (
 -- added after the first deployment: an installed table gets them here
 alter table public.sc_signals add column if not exists backfilled boolean not null default false;
 alter table public.sc_signals add column if not exists signal_at timestamptz;
+-- The deploy applies this file as ONE transaction (psql -1). The row updates
+-- below rewrite rows this transaction already rewrote, so PostgreSQL queues
+-- the deferred current_version_id foreign key's check for each, and a queued
+-- check makes any later ALTER TABLE on sc_signals fail ("pending trigger
+-- events": the first production try of this file, 2026-10-24 01:14 UTC).
+-- Checking constraints at each statement's end for the rest of this
+-- transaction leaves nothing pending. The doors' own transactions keep the
+-- deferral (it is a per-transaction setting).
+set constraints all immediate;
 -- rows stored before these columns existed (the first production runs) are
 -- dated by the same rule the engine applies (E.SPEC.backfill): a signal first
 -- detected more than 180 minutes after its source record was found later, and

@@ -536,8 +536,20 @@ chk('no anon grant on a reader door that returns numbers',!/grant execute on fun
     db.sql(`insert into public.sc_signals (signal_key, category, sport, event_kind, subject_key, subject_label, outcome_id, event_key, event_at, headline, public_headline,
               change_pp, evidence_class, evidence_rank, verification_state, score, label, lifecycle, publication, source_at, first_detected_at) values
             ${legacy('sc1-00000000000000a1', 'cfb|UPG', '5 days', 'EXPIRED')}, ${legacy('sc1-00000000000000a2', 'cfb|UPG', '4 days', 'EXPIRED')}, ${legacy('sc1-00000000000000a3', 'cfb|UPG2', '30 minutes', 'ACTIVE')};`);
-    out = db.applyFile(SQLF);
-    chk('the file upgrades a table whose rows predate the columns', (out.match(/\|ok/g) || []).length === 12 && !/CHECK THIS/.test(out), out.slice(-600));
+    /* each with its stored version, as production's rows have (current_version_id set): what makes the
+       upgrade's second pass queue the deferred foreign key's checks */
+    db.sql(`insert into public.sc_signal_versions (signal_id, version, version_hash, payload, payload_sha256, reason, engine_version, spec_version)
+              select signal_id, 1, 'sv1-' || substr(md5(signal_key), 1, 16), jsonb_build_object('signal_key', signal_key), repeat('0', 64), 'initial', 'e', 's'
+                from public.sc_signals where signal_key like 'sc1-00000000000000a%';
+            alter table public.sc_signals disable trigger sc_signals_guard;  -- this file's guard reads the columns dropped above; production's older guard did not
+            update public.sc_signals s set current_version_id = v.version_id from public.sc_signal_versions v where v.signal_id = s.signal_id and s.signal_key like 'sc1-00000000000000a%';
+            alter table public.sc_signals enable trigger sc_signals_guard;`);
+    /* as the deploy applies it: one transaction (psql -1). Production's first
+       try (2026-10-24 01:14 UTC) failed here: "cannot ALTER TABLE sc_signals
+       because it has pending trigger events" (the row updates queue the
+       deferred foreign key's checks; the RLS loop then alters the table) */
+    try { out = db.applyFileAtomic(SQLF); } catch (e) { out = 'FAILED: ' + String(e.message || e).slice(0, 600); }
+    chk('the file upgrades a table whose rows predate the columns, in one transaction as the deploy applies it', (out.match(/\|ok/g) || []).length === 12 && !/CHECK THIS|FAILED/.test(out), out.slice(-600));
     const up = (k) => J(db.sql('select to_jsonb(x) from (select signal_id, backfilled, lifecycle, superseded_by, extract(epoch from signal_at - source_at) as at_record, extract(epoch from signal_at - first_detected_at) as at_detection from public.sc_signals where signal_key = ' + lit(k) + ') x;'));
     const u1 = up('sc1-00000000000000a1'), u2 = up('sc1-00000000000000a2'), u3 = up('sc1-00000000000000a3');
     chk('upgrade: a row found days after its record is backfilled and dated by that record', u1.backfilled && +u1.at_record === 0 && u2.backfilled && +u2.at_record === 0, [u1, u2]);
