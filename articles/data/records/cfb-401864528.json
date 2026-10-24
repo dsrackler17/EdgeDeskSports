@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T21:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1973,10 +1973,82 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1ml7x831gyc79t",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can Nevada hold San José State to field goals?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.3 points.",
+    "gap": {
+      "points": 0.3,
+      "toward": "San José State",
+      "other": "Nevada"
+    },
+    "supporting": [
+      "When Nevada has the ball (big plays through the air): Nevada’s offense turns 8.6% of its pass plays into explosive gains, and San José State’s defense gives up explosive gains on 7.9% of opponent pass plays (FBS average 10.3%).",
+      "In his last two games (Air Force and UTEP), Jones averaged 6.2 yards per attempt, against 8.7 in his two games before that.",
+      "AJ Bianco has completed 31 of 58 passes (53.4%) for 335 yards, 5.8 yards per attempt, 2 touchdowns and 3 interceptions in four games for Nevada, and has been sacked on 0 of 58 dropbacks.",
+      "When San José State has the ball (the line of scrimmage on running plays): San José State’s offense is stopped at or behind the line on 16.6% of its runs, and Nevada’s defense stops 12.3% of opponent runs at or behind the line (FBS average 17.4%)."
+    ],
+    "contradicting": [
+      "When San José State has the ball (third down): San José State’s offense converts 31.9% of its third downs, and Nevada’s defense allows opponents to convert 32.2% of their third downs (FBS average 39.7%).",
+      "When San José State has the ball (the red zone): San José State’s offense succeeds on 25.3% of its red-zone plays, and Nevada’s defense allows success on 41.6% of opponent red-zone plays (FBS average 43.6%).",
+      "When San José State has the ball (big plays on the ground): San José State’s offense turns 4.4% of its runs into explosive gains, and Nevada’s defense gives up explosive gains on 5.1% of opponent runs (FBS average 6.6%).",
+      "When Nevada has the ball (the run game against the run defense): Nevada’s offense averages 6.2 yards per carry, and San José State’s defense allows 5.4 yards per carry (FBS average 5.1)."
+    ],
+    "quarterbacks": [
+      "Carter Jones has completed 53 of 89 passes (59.6%) for 654 yards, 7.3 yards per attempt, 4 touchdowns and 2 interceptions in four games for Nevada, and has been sacked on 7 of 96 dropbacks.",
+      "AJ Bianco has completed 31 of 58 passes (53.4%) for 335 yards, 5.8 yards per attempt, 2 touchdowns and 3 interceptions in four games for Nevada, and has been sacked on 0 of 58 dropbacks.",
+      "Luke Weaver has completed 133 of 210 passes (63.3%) for 1,529 yards, 7.3 yards per attempt, 11 touchdowns and 5 interceptions in six games for San José State, and has been sacked on 13 of 223 dropbacks.",
+      "Daniel Rolovich has completed 12 of 23 passes (52.2%) for 193 yards, 8.4 yards per attempt, 1 touchdown and no interceptions in one game for San José State, and has been sacked on 1 of 24 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "San José State’s offense has to keep winning in the red zone: it succeeds on 25.3% of its red-zone plays, and Nevada’s defense allows success on 41.6% of opponent red-zone plays.",
+        "San José State’s offense has to hold its own on long runs against a defense that gives up explosive gains on 5.1% of opponent runs.",
+        "San José State’s defense has to come out ahead on big pass plays: it gives up explosive gains on 7.9% of opponent pass plays, against an offense that turns 8.6% of its pass plays into explosive gains.",
+        "San José State’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 16.6% of its runs, and Nevada’s defense stops 12.3% of opponent runs at or behind the line."
+      ],
+      "market": [
+        "Nevada’s defense has to come out ahead in the red zone: it allows success on 41.6% of opponent red-zone plays, against an offense that succeeds on 25.3% of its red-zone plays.",
+        "Nevada’s defense has to come out ahead on long runs: it gives up explosive gains on 5.1% of opponent runs, against an offense that turns 4.4% of its runs into explosive gains.",
+        "Jones keeps producing at his season rate (59.6% completions, 7.3 yards per attempt, 4 TD, 2 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed for San José State.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel, rest and travel, conference implications and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (San José State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T23:07:14.716Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

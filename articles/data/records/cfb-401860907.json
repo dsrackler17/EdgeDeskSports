@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T22:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1895,10 +1895,108 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1rri0c5slutp3",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": true,
+    "question": "Can Washington State get Boise State off the field on third down?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.8 points.",
+    "gap": {
+      "points": 1.8,
+      "toward": "Washington State",
+      "other": "Boise State"
+    },
+    "supporting": [
+      "EdgeDesk’s position-group ratings put Washington State’s pass defense No. 31 nationally and Boise State’s No. 131.",
+      "EdgeDesk’s position-group ratings put Washington State’s defense No. 42 nationally and Boise State’s No. 114.",
+      "EdgeDesk’s position-group ratings put Washington State’s secondary No. 39 nationally and Boise State’s No. 93.",
+      "When Washington State has the ball (the run game against the run defense): Washington State’s offense averages 4.7 yards per carry, and Boise State’s defense allows 5.8 yards per carry (FBS average 5.1)."
+    ],
+    "contradicting": [
+      "When Washington State has the ball (pass protection against the pass rush): Washington State’s offense has allowed a sack on 8.8% of its dropbacks, and Boise State’s defense sacks the quarterback on 7.9% of opponent dropbacks (FBS average 5.6%).",
+      "When Washington State has the ball (third down): Washington State’s offense converts 22.8% of its third downs, and Boise State’s defense allows opponents to convert 31.1% of their third downs (FBS average 39.7%).",
+      "When Washington State has the ball (the line of scrimmage on running plays): Washington State’s offense is stopped at or behind the line on 23.2% of its runs, and Boise State’s defense stops 26.2% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Boise State has the ball (pass protection against the pass rush): Boise State’s offense has allowed a sack on 2.9% of its dropbacks, and Washington State’s defense sacks the quarterback on 3.5% of opponent dropbacks (FBS average 5.6%)."
+    ],
+    "quarterbacks": [
+      "Caden Pinnick has completed 110 of 177 passes (62.1%) for 952 yards, 5.4 yards per attempt, 3 touchdowns and 5 interceptions in six games for Washington State, and has been sacked on 19 of 196 dropbacks.",
+      "Owen Eshelman has completed 32 of 49 passes (65.3%) for 289 yards, 5.9 yards per attempt, 2 touchdowns and 1 interception in one game for Washington State, and has been sacked on 3 of 52 dropbacks.",
+      "Maddux Madsen has completed 110 of 166 passes (66.3%) for 1,296 yards, 7.8 yards per attempt, 13 touchdowns and no interceptions in six games for Boise State, and has been sacked on 5 of 171 dropbacks."
+    ],
+    "availability": [
+      "Washington State’s availability report lists receiver Darrius Clemons as doubtful."
+    ],
+    "script": {
+      "model": [
+        "Washington State’s defense has to come out ahead on third down: it allows opponents to convert 33.8% of their third downs, against an offense that converts 47.7% of its third downs.",
+        "Washington State’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 7.9% of opponent dropbacks.",
+        "Washington State’s defense has to slow Boise State in the pass-rush matchup — Boise State’s offense has allowed a sack on 2.9% of its dropbacks.",
+        "Washington State’s offense has to keep winning on the ground: it averages 4.7 yards per carry, and Boise State’s defense allows 5.8 yards per carry."
+      ],
+      "market": [
+        "Boise State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.9% of opponent dropbacks, against an offense that has allowed a sack on 8.8% of its dropbacks.",
+        "Boise State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.9% of its dropbacks, and Washington State’s defense sacks the quarterback on 3.5% of opponent dropbacks.",
+        "Boise State’s offense has to keep winning on third down: it converts 47.7% of its third downs, and Washington State’s defense allows opponents to convert 33.8% of their third downs."
+      ]
+    },
+    "unknown": [
+      "Washington State’s availability report lists receiver Darrius Clemons as doubtful.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Washington State and Boise State.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Washington State), sack rate (Washington State), sack rate allowed (Boise State) and sack rate (Boise State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "high",
+        "text": "EdgeDesk’s published number sits 6.2 points from the middle of its own other models."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Washington State: new head coach; transfers out at the 94th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Pac-12 Conference availability report (Third Report)",
+        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T02:08:23.239Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T23:07:14.716Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

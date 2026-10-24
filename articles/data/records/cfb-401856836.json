@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T23:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1864,9 +1864,9 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "oa5olz1ttj0qd",
+    "packet_hash": "fkx6hf79zrsh",
     "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
+    "input_suspect": true,
     "question": "Can Colorado win at the line of scrimmage?",
     "assessment": "No material disagreement: EdgeDesk and the line are within 0.8 points.",
     "gap": {
@@ -1921,6 +1921,11 @@
         "text": "EdgeDesk’s own sources disagree on sack rate allowed (Oklahoma State), sack rate (Oklahoma State), sack rate allowed (Colorado) and sack rate (Colorado); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
       },
       {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "high",
+        "text": "EdgeDesk’s published number sits 8.4 points from the middle of its own other models."
+      },
+      {
         "key": "REGIME_CHANGE",
         "severity": "medium",
         "text": "Oklahoma State: new head coach; returning roster share at the 2nd percentile; returning production at the 1st percentile; transfers out at the 100th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
@@ -1931,7 +1936,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T20:53:12.812Z",
+        "observed_at": "2026-10-24T04:41:17.441Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1945,7 +1950,7 @@
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-24T15:16:12.675Z",
+        "observed_at": "2026-10-24T04:32:40.639Z",
         "verification": "RATING"
       },
       {
@@ -1961,6 +1966,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T23:07:14.716Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

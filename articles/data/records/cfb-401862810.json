@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T19:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1914,10 +1914,87 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "kf4jc01s81w8y",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can Navy’s pass rush get to Tayven Jackson?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.8 points.",
+    "gap": {
+      "points": 0.8,
+      "toward": "Navy",
+      "other": "North Texas"
+    },
+    "supporting": [
+      "When Navy has the ball (the passing game against the pass defense): Navy’s offense averages 10.6 yards per pass attempt, and North Texas’ defense allows 7.9 yards per pass attempt (FBS average 7.4).",
+      "When Navy has the ball (big plays through the air): Navy’s offense turns 16.0% of its pass plays into explosive gains, and North Texas’ defense gives up explosive gains on 9.8% of opponent pass plays (FBS average 10.3%).",
+      "When North Texas has the ball (big plays on the ground): North Texas’ offense turns 6.9% of its runs into explosive gains, and Navy’s defense gives up explosive gains on 2.8% of opponent runs (FBS average 6.6%).",
+      "When Navy has the ball (the line of scrimmage on running plays): Navy’s offense is stopped at or behind the line on 11.0% of its runs, and North Texas’ defense stops 17.7% of opponent runs at or behind the line (FBS average 17.4%)."
+    ],
+    "contradicting": [
+      "When Navy has the ball (pass protection against the pass rush): Navy’s offense has allowed a sack on 11.0% of its dropbacks, and North Texas’ defense sacks the quarterback on 8.0% of opponent dropbacks (FBS average 5.6%).",
+      "When North Texas has the ball (the passing game against the pass defense): North Texas’ offense averages 9.5 yards per pass attempt, and Navy’s defense allows 9.3 yards per pass attempt (FBS average 7.4).",
+      "When North Texas has the ball (big plays through the air): North Texas’ offense turns 13.6% of its pass plays into explosive gains, and Navy’s defense gives up explosive gains on 15.0% of opponent pass plays (FBS average 10.3%).",
+      "When Navy has the ball (big plays on the ground): Navy’s offense turns 7.8% of its runs into explosive gains, and North Texas’ defense gives up explosive gains on 4.0% of opponent runs (FBS average 6.6%)."
+    ],
+    "quarterbacks": [
+      "Jackson Gutierrez has completed 25 of 53 passes (47.2%) for 559 yards, 10.5 yards per attempt, 6 touchdowns and 1 interception in five games for Navy, and has been sacked on 8 of 61 dropbacks.",
+      "Braxton Woodson has completed 8 of 20 passes (40.0%) for 134 yards, 6.7 yards per attempt, no touchdowns and 1 interception in four games for Navy, and has been sacked on 1 of 21 dropbacks.",
+      "Tayven Jackson has completed 142 of 197 passes (72.1%) for 1,839 yards, 9.3 yards per attempt, 14 touchdowns and 4 interceptions in six games for North Texas, and has been sacked on 3 of 200 dropbacks.",
+      "Chaston Ditta has completed 15 of 20 passes (75.0%) for 183 yards, 9.2 yards per attempt, 1 touchdown and no interceptions in four games for North Texas, and has been sacked on 2 of 22 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Navy’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.4% of opponent dropbacks, against an offense that has allowed a sack on 2.2% of its dropbacks.",
+        "Navy’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 8.0% of opponent dropbacks.",
+        "Navy’s defense has to slow North Texas on big pass plays — North Texas’ offense turns 13.6% of its pass plays into explosive gains.",
+        "Navy’s offense has to keep winning on big pass plays: it turns 16.0% of its pass plays into explosive gains, and North Texas’ defense gives up explosive gains on 9.8% of opponent pass plays."
+      ],
+      "market": [
+        "North Texas’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.0% of opponent dropbacks, against an offense that has allowed a sack on 11.0% of its dropbacks.",
+        "North Texas’ offense has to keep winning on big pass plays: it turns 13.6% of its pass plays into explosive gains, and Navy’s defense gives up explosive gains on 15.0% of opponent pass plays.",
+        "North Texas’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.2% of its dropbacks, and Navy’s defense sacks the quarterback on 8.4% of opponent dropbacks."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Navy and North Texas.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Navy), sack rate (Navy) and sack rate (North Texas); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "North Texas: new head coach; returning roster share at the 8th percentile; returning production at the 1st percentile; transfers out at the 87th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T23:07:14.716Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }
