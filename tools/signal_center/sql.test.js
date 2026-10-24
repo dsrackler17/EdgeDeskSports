@@ -531,13 +531,35 @@ chk('no anon grant on a reader door that returns numbers',!/grant execute on fun
     /* ---- upgrade: rows an earlier engine stored before signal_at and backfilled existed (production's
        371 from 2026-10-24 00:25 UTC): dated by the engine's 180-minute rule and placed in record time ---- */
     db.sql('alter table public.sc_signals drop column signal_at, drop column backfilled;');
+    /* the guard production ran then (#737's file), which knows neither column */
+    db.sql(`create or replace function public.sc_signals_guard() returns trigger language plpgsql as $g$
+      begin
+        if tg_op = 'DELETE' then raise exception 'public.sc_signals: delete refused (withdraw it instead; history is kept)'; end if;
+        if new.signal_key is distinct from old.signal_key or new.category is distinct from old.category or new.sport is distinct from old.sport
+           or new.subject_key is distinct from old.subject_key or new.outcome_id is distinct from old.outcome_id or new.event_key is distinct from old.event_key
+           or new.first_detected_at is distinct from old.first_detected_at or new.first_run_id is distinct from old.first_run_id or new.fixture is distinct from old.fixture then
+          raise exception 'public.sc_signals: a signal''s identity is immutable (signal %)', old.signal_key;
+        end if;
+        if new.current_version < old.current_version then raise exception 'public.sc_signals: the current version never goes backwards'; end if;
+        new.updated_at := now();
+        return new;
+      end $g$;`);
     const legacy = (key, ev, srcAgo, life) => `('${key}', 'FORECAST_SHIFT', 'cfb', 'game', 'cfb:up', 'Upgrade U', 'home_win', '${ev}', now() + interval '1 day', 'Upgrade U win probability up 4.0 pp to 50.0%', 'EdgeDesk forecast moved toward Upgrade U',
       4, 'UNEXPLAINED', 1, 'VERIFIED', 40, 'Routine', '${life}', 'SHADOW', now() - interval '${srcAgo}', now() - interval '1 minute')`;
     db.sql(`insert into public.sc_signals (signal_key, category, sport, event_kind, subject_key, subject_label, outcome_id, event_key, event_at, headline, public_headline,
               change_pp, evidence_class, evidence_rank, verification_state, score, label, lifecycle, publication, source_at, first_detected_at) values
-            ${legacy('sc1-00000000000000a1', 'cfb|UPG', '5 days', 'EXPIRED')}, ${legacy('sc1-00000000000000a2', 'cfb|UPG', '4 days', 'EXPIRED')}, ${legacy('sc1-00000000000000a3', 'cfb|UPG2', '30 minutes', 'ACTIVE')};`);
-    out = db.applyFile(SQLF);
-    chk('the file upgrades a table whose rows predate the columns', (out.match(/\|ok/g) || []).length === 12 && !/CHECK THIS/.test(out), out.slice(-600));
+            ${legacy('sc1-00000000000000a1', 'cfb|UPG', '5 days', 'EXPIRED')}, ${legacy('sc1-00000000000000a2', 'cfb|UPG', '4 days', 'EXPIRED')}, ${legacy('sc1-00000000000000a3', 'cfb|UPG2', '30 minutes', 'ACTIVE')};
+            insert into public.sc_signal_versions (signal_id, version, version_hash, payload, payload_sha256, reason, engine_version, spec_version)
+            select signal_id, 1, 'sv1-' || lpad(to_hex(signal_id), 16, '0'), jsonb_build_object('summary', headline), repeat('b', 64), 'initial', 'e', 's'
+              from public.sc_signals where signal_key like 'sc1-00000000000000a%';
+            update public.sc_signals s set current_version_id = v.version_id from public.sc_signal_versions v where v.signal_id = s.signal_id and s.signal_key like 'sc1-00000000000000a%';`);
+    /* as production holds them (each with its current version, so the deferred
+       current_version_id key is set) and as the deploy applies the file: one
+       transaction (psql -1). 2026-10-24 01:14 UTC: a second update of a row
+       inside the file queued that deferred check, and a later ALTER TABLE
+       refused to run with it pending. */
+    try { out = db.applyFileAtomic(SQLF); } catch (e) { out = 'ERR ' + String(e.sqlMessage || e.message).split('\n').filter((l) => /ERROR|CONTEXT/.test(l)).join(' | '); }
+    chk('the file upgrades a table whose rows predate the columns, in one transaction', (out.match(/\|ok/g) || []).length === 12 && !/CHECK THIS|^ERR/.test(out), out.slice(-600));
     const up = (k) => J(db.sql('select to_jsonb(x) from (select signal_id, backfilled, lifecycle, superseded_by, extract(epoch from signal_at - source_at) as at_record, extract(epoch from signal_at - first_detected_at) as at_detection from public.sc_signals where signal_key = ' + lit(k) + ') x;'));
     const u1 = up('sc1-00000000000000a1'), u2 = up('sc1-00000000000000a2'), u3 = up('sc1-00000000000000a3');
     chk('upgrade: a row found days after its record is backfilled and dated by that record', u1.backfilled && +u1.at_record === 0 && u2.backfilled && +u2.at_record === 0, [u1, u2]);

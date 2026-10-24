@@ -142,9 +142,9 @@ the terminal's Coverage view shows that column from the database.
 | NHL | shadow | operational | experimental | experimental | experimental | **blocked** | operational | operational | experimental |
 | MLB | shadow | — | — | — | experimental | — | — | operational | — |
 | WNBA | shadow | operational | — | — | experimental | — | operational | — | — |
-| Men's college basketball | shadow | operational | — | — | **blocked** | — | — | operational | — |
+| Men's college basketball | shadow | coming soon | — | — | **blocked** | — | — | operational | — |
 | UFC | shadow | coming soon | — | — | experimental | — | — | operational | — |
-| College baseball | shadow | coming soon | — | — | coming soon | — | — | operational | — |
+| College baseball | shadow | coming soon | — | — | — | — | — | operational | — |
 | Women's college basketball | shadow | — | — | — | — | — | — | — | — |
 | Tennis | shadow | — | — | — | experimental | — | — | — | — |
 | Golf | shadow | — | — | — | experimental | — | — | — | — |
@@ -170,7 +170,10 @@ Blockers worth knowing:
   `completed`, the runs that took the published pointer, and their `ncaam_fc_forecasts`), D-I against D-I, for games
   not yet started. A run that lost the race (`superseded`) was never shown and is never read. A game rated in between
   two runs is the shift's source-dated support; availability is not modelled, and every signal carries the
-  forecast's data-quality flags.
+  forecast's data-quality flags. **Held at coming soon:** the forecast tables (`supabase/ncaam_forecast.sql`) are not
+  deployed in production (2026-10-24: "table not found"), and the daily job publishes only with `NCAAM_FC_PUBLISH`
+  on. Deploying them (Actions → Deploy NCAAM forecast SQL) and switching the publication on are the owner's
+  decisions; the registry entry then becomes operational.
 - **MLB has no forecast history to compare.**
 - **Not supported anywhere yet:** roster movement (no source-dated transaction feed), model disagreement (no
   independent models published side by side), historical anomaly (the ledgers start in 2026). The Coverage view

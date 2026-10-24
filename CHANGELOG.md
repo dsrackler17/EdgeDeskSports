@@ -20,6 +20,13 @@ Tests: `node tools/presentation/landing_positioning.test.js` (540, was 479). New
 - the sample arithmetic adds up.
 
 Twelve mutations were checked; each one turned the suite red. `node tools/presentation/landing_interaction.test.js` (217, was 215) covers the new sheet's dead classes, budget and non-blocking load. `node tools/home/landing.e2e.js` (301, was 300) covers the hero, variant `r`, and no overflow at 320 to 1280 px; it caught the Simulator table widening the phone column, which is fixed. Every other unit suite that reads `index.html`, the pricing or the plans is green. `tools/billing/checkout_flow.e2e.js` step 5 fails here identically on `main`; it needs a configured checkout link, and no workflow runs it.
+## 2026-10-24 — Signal Center: men's college basketball forecast shifts held at coming soon
+
+Production has no men's college basketball forecast tables: the first live run after the deploy answered "table not found" for `ncaam_fc_runs`. The cell said operational. It now says **coming soon**, and names why: `supabase/ncaam_forecast.sql` is not deployed, and the daily job publishes only with `NCAAM_FC_PUBLISH` on. The wiring stays tested (`worker.test.js` reads staged runs through `ncaamGames` and finds the shift). Once the tables are deployed and publishing, the registry entry becomes operational.
+
+## 2026-10-24 — Signal Center: the upgrade applies to a table that already holds signals
+
+The deploy of the backfill (2026-10-24 01:14 UTC) rolled back, so nothing changed: `cannot ALTER TABLE "sc_signals" because it has pending trigger events`. The upgrade updates the stored rows twice (dating, then placement). The second update of a row the same transaction already wrote queues the deferred `current_version_id` check, and the later `ALTER TABLE … enable row level security` will not run while a check is pending. The file now checks every constraint at its statement (`set constraints all immediate`, this transaction only). The SQL suite's upgrade test now builds the table as production holds it, with versions and the guard #737 installed, and applies the file in one transaction as the deploy does. Before the fix it failed with production's exact error.
 
 ## 2026-10-24 — Signal Center: NFL injuries, dated by EdgeDesk's first sight
 
