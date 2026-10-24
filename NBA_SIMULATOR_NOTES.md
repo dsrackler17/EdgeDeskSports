@@ -50,7 +50,7 @@ production readiness or a deployment: §16 states exactly what exists.
 | `raw.githubusercontent.com` (sportsdataverse/hoopR-nba-data) | yes | the NBA work tables were rebuilt (`node nba/ingest/season.js --season all`: 2003-2027, 102 MB); the committed `nba/data` files were restored afterwards so every number here rests on the committed data |
 | `www.nba.com`, `official.nba.com`, `ak-static.cms.nba.com`, `cdn.nba.com` | **no** (proxy policy, 403 on CONNECT); from GitHub's runners nba.com, `api-hub.nba.com`, `pr.nba.com` and `cdn.nba.com` answer 403 (Akamai "Access Denied") | the league's pages were read as the Internet Archive keeps them, from the runners (§5.5) |
 | `en.wikipedia.org`, ESPN, basketball-reference | **no** | no secondary confirmation either |
-| Kalshi | **no** | no NBA futures market could be read or mapped |
+| Kalshi | **no** from the build environment; from GitHub's runners yes (*Simulator source check*) | 480 NBA futures markets mapped (§18) |
 
 ---
 
@@ -527,8 +527,8 @@ keys with four semantics. The results carry `outcome_semantics`; for such a
 run `validateFuturesConfig` requires a mapping's `settlement.semantic` to be
 the mapped outcome's (and refuses two outcomes sharing one), so a "conference
 champion" market mapped to `finish_1`, or a play-in market mapped to
-`make_playoffs`, is refused (`nba_sim.test.ts` §9). **No NBA market is mapped**
-(Kalshi unreachable).
+`make_playoffs`, is refused (`nba_sim.test.ts` §9). The 480 mapped markets (§18) each carry
+their outcome's semantic.
 
 ---
 
@@ -695,8 +695,8 @@ simulation noise only.
   `ui.e2e.ts` in Chromium at 390 and 1440 px. The e2e mock now pages results
   as PostgREST does: an NBA run publishes 1,050 result rows, more than one
   page.
-- Kalshi: no NBA mapping (the markets step reports "unavailable"; nothing is
-  fetched).
+- Kalshi: 480 NBA 2026-27 futures markets mapped (§18), compared after each
+  NBA publication by the *markets* job.
 - Nothing is "production-ready", "deployed" or a "validated edge".
 
 ---
@@ -725,3 +725,73 @@ modified: simulator/src/cli/run.ts (--sport nba, --as-of, --allow-incomplete-sch
           simulator/src/publish/publish.ts (snapshot meta), lib/edgedesk_simulator_sports.js (generated), package.json (sim:nba:*),
           .github/workflows/simulator-tests.yml, docs/simulator/README.md, SIMULATOR_NOTES.md (NBA row)
 ```
+
+## 18. Kalshi futures
+
+`simulator/src/cli/build_kalshi_mappings.ts --sport nba` maps a market only
+when its rules match one of Kalshi's own NBA templates word for word. They
+were read from the 2026-27 markets the Simulator source check listed (run
+40043908953, 2026-10-24, every one open). Each mapping carries the
+settlement semantic of its outcome (`NBA_OUTCOME_SEMANTICS`), and the run
+refuses any other.
+
+| Series | Kalshi's wording (abridged) | Simulated outcome | Set |
+|---|---|---|---|
+| `KXNBA` | wins the 2027 Pro Basketball Finals | `win_title` | all 30 |
+| `KXNBAEAST`, `KXNBAWEST` | wins the Pro Basketball Eastern / Western Conference Finals | `win_conference` (the playoff title) | 15 each |
+| `KXNBAECFQUAL`, `KXNBAWCFQUAL` | qualifies for the Eastern / Western Conference Finals | `reach_conference_finals` | never (two reach it) |
+| `KXNBAPLAYOFF` | qualifies for the Pro Basketball Playoffs (the play-in alone does not count) | `make_playoffs` | never |
+| `KXNBAPLAYIN` | qualifies for the … Conference Play-In Tournament | `play_in` | never |
+| `KXNBASEED` | is the #k seed in the … Conference Playoffs (seeds 7 and 8 from the play-in) | `seed_k`, k = 2..8 | 15 each |
+| `KXNBAEAST1SEED`, `KXNBAWEST1SEED` | is the #1 seed … at the conclusion of the regular season | `finish_1` (first in the standings) | 15 each |
+| `KXNBAATLANTIC` … `KXNBASOUTHWEST` | is the … Division winner (the league's tiebreakers) | `win_division` | 5 each |
+| `KXNBACUP` | is the Emirates 2026 Pro Basketball Cup champion | `cup_champion` | all 30 |
+| `KXNBACUPGROUP` | wins East / West Group A-C in the Pro Basketball Cup | `cup_win_group` | never (below) |
+
+- **The seed distinction.** A seed in the conference *playoffs*, with seeds 7
+  and 8 decided by the play-in, is `seed_k`. The #1 seed "at the conclusion
+  of the regular season" is first place in the standings, `finish_1`. The two
+  semantics differ even where the clubs coincide.
+- **Season.** It is read from the rules. The Finals write "2027", which is the
+  2026-27 season. The event ticker may name either year of the season, since
+  Kalshi writes both (`KXNBAPACIFIC-26` beside `KXNBASEED-27`).
+- **Event tickers.** A seed's, a play-in's and a Cup group's event ticker must
+  name its conference, and for a seed its number too. The Cup's year must be
+  the season's start.
+- **Clubs.** Kalshi's suffixes are the ESPN codes except `GSW`, `NOP`, `NYK`,
+  `SAS`, `UTA` and `WAS`. Its labels are city names (one per club across all
+  480 club markets: `Los Angeles C`, `Los Angeles L`, `New York`, …).
+- **Secondary rules.** The playoff, division and seed markets carry their note
+  before the disclaimer. Only that exact note is accepted; the seed note must
+  name the same season and conference as the rules.
+- **Cup groups.** Kalshi letters the groups A-C. The simulator numbers the
+  groups it reads off the schedule. Each market asks whether one club wins its
+  own group, which is `cup_win_group` whatever the label, so each is compared
+  on its own and a group's five are never normalised. Every 2026-27 run carries
+  the Cup outcomes (the season configures the Cup).
+- **Not mapped.** The Finals matchups, the champion's conference, any team of
+  a Cup group winning the Cup, a first-time champion, seed over/unders, the
+  All-Cup team, a club changing conference, awards and props.
+- **Mapped now.** All 480 club markets, 16 outcomes x 30 clubs, forming 26
+  complete sets.
+- **Evidence.** `simulator/fixtures/kalshi_nba_2026_27_markets.json.gz` keeps
+  the 480 real markets. `markets.test.ts` maps every one, checks each
+  semantic, and leaves out each alteration (season, label, conference, a
+  seed's event, the seed note, the play-in note, division, the Cup year). It
+  also compares the committed mappings end to end against an NBA run.
+- **Hashes.** The 270 markets with a note (playoffs, divisions, seeds) cannot
+  have their rules hash recomputed from the log, which prints the note with
+  its line breaks squashed. The stored hash is the runner's, on the raw text.
+- **Reading the listing.** The source check now prints Kalshi's section last.
+  The NBA job's log runs past the 5,000 lines GitHub's log API returns, and
+  printed first, the section was cut off.
+
+**Next season (2027-28):** once Kalshi lists the markets, run *Simulator
+source check*, then
+
+```
+node simulator/src/cli/build_kalshi_mappings.ts --sport nba --log <the fetch (nba) job's log> --run <run id>   # or --candidates <kalshi_candidates_nba.json>
+npm run sim:test
+```
+
+and commit.
