@@ -224,7 +224,7 @@ function snap(id, at, p, ver, extra) {
   const golfEnd = Object.assign({}, golf, { current: Object.assign(run('g2', '2026-10-23T00:00:00Z'), { validation_summary: { sport_summary: { kind: 'golf_tournament', event: { end: '2026-10-25T07:00Z' } } } }) });
   const ge = E.simulationShifts(golfEnd, gres, { now: NOW }).signals[0];
   chk('golf: the signal expires a day after ESPN’s end date (its final day), and keeps the date as listed', ge.event.at === '2026-10-26T07:00:00.000Z' && ge.event.ends === '2026-10-25T07:00:00.000Z', ge.event);
-  chk('golf: no end on file, no expiry is invented', g.signals[0].event.at === null && g.signals[0].event.ends === null);
+  chk('golf: no end on file, no expiry is invented', g.signals[0].event.at === null && !('ends' in g.signals[0].event));
   chk('a team sport’s season outcome never takes an end date', E.simulationShifts(Object.assign({}, pair, { current: Object.assign(run('r2', '2026-10-22T00:00:00Z'), { validation_summary: { sport_summary: { kind: 'golf_tournament', event: { end: '2026-10-25T07:00Z' } } } }) }), res, { now: NOW }).signals[0].event.at === null);
   const ten = E.simulationShifts({ sport: 'tennis', competition: 'Test Masters', season: '2026', previous: golf.previous, current: golf.current },
     { previous: [row('t1', 'win_title', 0.20), row('t1', 'win_next_match', 0.55)], current: [row('t1', 'win_title', 0.31), row('t1', 'win_next_match', 0.75)] }, { now: NOW });
