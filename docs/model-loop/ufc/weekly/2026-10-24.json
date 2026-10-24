@@ -1,0 +1,186 @@
+{
+ "at": "2026-10-24T15:51:56Z",
+ "served_before": "1.2.0",
+ "promoted": "1.3.0",
+ "window": [
+  2016,
+  2026
+ ],
+ "recent_full_season": 2025,
+ "baseline": {
+  "full": {
+   "n": 5823,
+   "logloss": 0.6551,
+   "brier": 0.2316,
+   "coin_flip_logloss": 0.69315,
+   "vs_coin_flip": {
+    "n": 5823,
+    "mean_diff": -0.03805,
+    "t": -10.922,
+    "ci95": [
+     -0.04493,
+     -0.03182
+    ]
+   },
+   "accuracy": 0.6043,
+   "calibration": {
+    "bins": [
+     {
+      "bin": "0.0-0.2",
+      "n": 74,
+      "mean_pred": 0.1688,
+      "observed": 0.2297
+     },
+     {
+      "bin": "0.2-0.4",
+      "n": 2043,
+      "mean_pred": 0.3255,
+      "observed": 0.3294
+     },
+     {
+      "bin": "0.4-0.6",
+      "n": 2987,
+      "mean_pred": 0.4906,
+      "observed": 0.5072
+     },
+     {
+      "bin": "0.6-0.8",
+      "n": 708,
+      "mean_pred": 0.6622,
+      "observed": 0.6977
+     },
+     {
+      "bin": "0.8-1.0",
+      "n": 11,
+      "mean_pred": 0.8252,
+      "observed": 1.0
+     }
+    ],
+    "ece": 0.0153
+   }
+  },
+  "recent": {
+   "n": 563,
+   "logloss": 0.64359,
+   "brier": 0.22597,
+   "coin_flip_logloss": 0.69315,
+   "vs_coin_flip": {
+    "n": 563,
+    "mean_diff": -0.04956,
+    "t": -4.609,
+    "ci95": [
+     -0.07006,
+     -0.02914
+    ]
+   },
+   "accuracy": 0.6359,
+   "calibration": {
+    "bins": [
+     {
+      "bin": "0.0-0.2",
+      "n": 9,
+      "mean_pred": 0.1809,
+      "observed": 0.1111
+     },
+     {
+      "bin": "0.2-0.4",
+      "n": 201,
+      "mean_pred": 0.3295,
+      "observed": 0.2985
+     },
+     {
+      "bin": "0.4-0.6",
+      "n": 292,
+      "mean_pred": 0.4863,
+      "observed": 0.5
+     },
+     {
+      "bin": "0.6-0.8",
+      "n": 60,
+      "mean_pred": 0.6539,
+      "observed": 0.7333
+     },
+     {
+      "bin": "0.8-1.0",
+      "n": 1,
+      "mean_pred": 0.8131,
+      "observed": 1.0
+     }
+    ],
+    "ece": 0.0281
+   }
+  }
+ },
+ "candidates": [
+  {
+   "at": "2026-10-24T15:51:55Z",
+   "served_version": "1.2.0",
+   "candidate": "age_by_division",
+   "change": {
+    "key": "age_div",
+    "how": [
+     "set",
+     {
+      "Bantamweight": [
+       28,
+       -15
+      ],
+      "Featherweight": [
+       28,
+       -15
+      ],
+      "Lightweight": [
+       30,
+       -15
+      ],
+      "Welterweight": [
+       33,
+       -25
+      ],
+      "Middleweight": [
+       28,
+       -20
+      ],
+      "Light Heavyweight": [
+       40,
+       -25
+      ],
+      "Heavyweight": [
+       31,
+       -15
+      ],
+      "W Strawweight": [
+       28,
+       -30
+      ]
+     }
+    ]
+   },
+   "delta": {
+    "logloss": -0.00249,
+    "brier": -0.00117,
+    "2025_logloss": -0.00498
+   },
+   "ci95": [
+    -0.00462,
+    -0.00041
+   ],
+   "decision": "PASS",
+   "reason": "clears every condition"
+  },
+  {
+   "at": "2026-10-24T15:51:56Z",
+   "served_version": "1.2.0",
+   "candidate": "age_shared",
+   "change": {
+    "key": "age_div",
+    "how": [
+     "set",
+     {}
+    ]
+   },
+   "decision": "SKIPPED",
+   "reason": "no change from the served configuration"
+  }
+ ]
+}

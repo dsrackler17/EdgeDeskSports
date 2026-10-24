@@ -53,7 +53,7 @@ class Versions:
              "config_sha256": content_hash(cfg), "status": status, "promoted_by": promoted_by,
              "promoted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "reason": reason, "evidence": evidence}
         for old in self.doc["versions"]:
-            if old.get("status") == "SERVED":
+            if str(old.get("status", "")).startswith("SERVED"):
                 old["status"] = "RETIRED (rollback target)"
         self.doc["versions"].append(v)
         self.doc["current"] = v["version"]

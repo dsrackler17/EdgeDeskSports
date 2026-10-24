@@ -85,55 +85,92 @@ Fighter facts read: `{"reconstructed": 2423, "none": 2}` pre-UFC record sources.
 
 Selected configuration: `{"age_knee": 32, "age_slope": -15, "calibration": "none", "debut_offset": 25.0, "k": 64, "k_new_mult": 1.5, "layoff_days": 365, "layoff_regress": 0.25, "new_bouts": 3, "prior_exp": -25, "prior_rec": 150, "scale": 400.0}`.
 
-## 3. The selected model against 1.1.0 and the close
+## 3. The served model (1.3.0) against 1.1.0 and the close
 
-Test window 2024 on, read once: 1623 bouts, log loss 0.66579 → 0.64587 (-0.01991, card-blocked 95% interval [-0.02806, -0.01144]), Brier -0.00939. **Promoted**: clears the promotion rule.
+Versions since 1.1.0: **1.2.0** (study-2026-10, 2026-10-24): 2026-10 study: pre_ufc_record, age kept one at a time on 2021-2023; on the 1623 test bouts from 2024 log loss 0.66579 -> 0.64587 (-0.01991, card-blocked 95% interval [-0.02806, -0.01144]), Brier -0.00939 against 1.1.0. Cleared the promotion rule.; **1.3.0** (weekly-loop, 2026-10-24): weekly loop: candidate age_by_division cleared the full-window rule
 
-| Window | Bouts | 1.1.0 LL | Selected LL | 1.1.0 Brier | Selected Brier | With a close | 1.1.0 LL | Selected LL | Close LL | Close Brier |
+Test window 2024 on: 1623 bouts, log loss 0.66579 → 0.63986 (-0.02593, card-blocked 95% interval [-0.03579, -0.01576]), Brier -0.01200. **This window is no longer untouched**: a later change was adopted by the weekly rule, which reads every bout since 2016 (its own out-of-sample record is in section 5). Against 1.1.0: **clears** the promotion rule.
+
+| Window | Bouts | 1.1.0 LL | 1.3.0 LL | 1.1.0 Brier | 1.3.0 Brier | With a close | 1.1.0 LL | 1.3.0 LL | Close LL | Close Brier |
 |---|---|---|---|---|---|---|---|---|---|---|
-| since_2018 | 4853 | 0.67304 | 0.65333 | 0.24017 | 0.23082 | 3764 | 0.67065 | 0.65045 | 0.60377 | 0.20851 |
-| fit | 2537 | 0.67946 | 0.65975 | 0.24321 | 0.23357 | 2324 | 0.67815 | 0.66 | 0.6175 | 0.21461 |
-| select | 1663 | 0.67543 | 0.65701 | 0.24135 | 0.23278 | 1379 | 0.67387 | 0.65153 | 0.6062 | 0.20941 |
-| test | 1623 | 0.66579 | 0.64587 | 0.23669 | 0.2273 | 983 | 0.65752 | 0.63581 | 0.58114 | 0.19842 |
-| out_of_sample | 3286 | 0.67067 | 0.65151 | 0.23905 | 0.23007 | 2362 | 0.66707 | 0.64499 | 0.59577 | 0.20484 |
+| since_2018 | 4853 | 0.67304 | 0.651 | 0.24017 | 0.22974 | 3764 | 0.67065 | 0.64803 | 0.60377 | 0.20851 |
+| fit | 2537 | 0.67946 | 0.65662 | 0.24321 | 0.23213 | 2324 | 0.67815 | 0.65704 | 0.6175 | 0.21461 |
+| select | 1663 | 0.67543 | 0.65894 | 0.24135 | 0.23343 | 1379 | 0.67387 | 0.65224 | 0.6062 | 0.20941 |
+| test | 1623 | 0.66579 | 0.63986 | 0.23669 | 0.22469 | 983 | 0.65752 | 0.62813 | 0.58114 | 0.19842 |
+| out_of_sample | 3286 | 0.67067 | 0.64951 | 0.23905 | 0.22911 | 2362 | 0.66707 | 0.6422 | 0.59577 | 0.20484 |
 
 1.1.0, out of sample (2021 on): gaps over 8 points 1536 bouts, 451 in the model's favour, 1085 in the market's; over 10 points 1359, 381 v 978.
 
-selected, out of sample (2021 on): gaps over 8 points 1420 bouts, 478 in the model's favour, 942 in the market's; over 10 points 1209, 395 v 814.
+1.3.0, out of sample (2021 on): gaps over 8 points 1408 bouts, 505 in the model's favour, 903 in the market's; over 10 points 1186, 426 v 760.
 
-Hindsight check on the pre-UFC record (gain v 1.1.0, log loss):
+Hindsight check on the pre-UFC record (gain v 1.1.0, log loss; 'selected' is 1.3.0):
 
-- fighters who stayed in the UFC (both fought there in 2025 or later): selected -0.01323, record step alone -0.00506 (2241 bouts)
-- the others: selected -0.02527, record step alone -0.01932 (2612 bouts)
-- by season, selected: {'2018': -0.02627, '2019': -0.01635, '2020': -0.02018, '2021': -0.01662, '2022': -0.01403, '2023': -0.02462, '2024': -0.02198, '2025': -0.01748, '2026': -0.02033}
+- fighters who stayed in the UFC (both fought there in 2025 or later): selected -0.01551, record step alone -0.00506 (2241 bouts)
+- the others: selected -0.02763, record step alone -0.01932 (2612 bouts)
+- by season, selected: {'2018': -0.02925, '2019': -0.01842, '2020': -0.02428, '2021': -0.01067, '2022': -0.01495, '2023': -0.0238, '2024': -0.02894, '2025': -0.02246, '2026': -0.02647}
 - by season, record step alone: {'2018': -0.01964, '2019': -0.01454, '2020': -0.02012, '2021': -0.01165, '2022': -0.00868, '2023': -0.01395, '2024': -0.01278, '2025': -0.00707, '2026': -0.00693}
-- **the cleanest read**, test window, both fighters still in the UFC in 2026 (1016 bouts): selected -0.01855 [-0.02885, -0.00766], record step alone -0.00848 [-0.0159, -0.00075], age step alone -0.01262 [-0.01859, -0.00644]
+- **the cleanest read**, test window, both fighters still in the UFC in 2026 (1016 bouts): selected -0.02406 [-0.03667, -0.01072], record step alone -0.00848 [-0.0159, -0.00075], age step alone -0.01914 [-0.02815, -0.0091]
 
-What 1.2.0 still misreads (the same breakdown, since 2018, bouts with a close):
+What 1.3.0 still misreads (the same breakdown, since 2018, bouts with a close):
 
-| Factor | Bucket | Bouts | 1.2.0 said | Close said | Won |
+| Factor | Bucket | Bouts | 1.3.0 said | Close said | Won |
 |---|---|---|---|---|---|
-| ufc sample | 0 (debut) | 364 | 0.486 | 0.419 | 0.379 |
-| ufc sample | 1-2 | 1033 | 0.522 | 0.510 | 0.522 |
-| ufc sample | 3-5 | 955 | 0.535 | 0.541 | 0.541 |
-| ufc sample | 6-10 | 809 | 0.523 | 0.530 | 0.548 |
-| ufc sample | 11+ | 237 | 0.503 | 0.531 | 0.510 |
-| layoff | under 180 days | 800 | 0.498 | 0.497 | 0.509 |
-| layoff | 180-364 | 1691 | 0.491 | 0.490 | 0.487 |
-| layoff | 365-539 | 446 | 0.454 | 0.462 | 0.440 |
-| layoff | 540+ | 297 | 0.435 | 0.428 | 0.394 |
-| age | under 30 | 675 | 0.489 | 0.488 | 0.455 |
-| age | 30-32 | 1117 | 0.475 | 0.460 | 0.451 |
-| age | 33-34 | 781 | 0.440 | 0.449 | 0.420 |
-| age | 35-36 | 613 | 0.409 | 0.417 | 0.377 |
-| age | 37+ | 578 | 0.382 | 0.384 | 0.336 |
-| age | older by 5+ years | 1348 | 0.391 | 0.391 | 0.347 |
-| age | older by 8+ years | 519 | 0.356 | 0.363 | 0.322 |
-| division change | moved up | 210 | 0.498 | 0.489 | 0.481 |
+| ufc sample | 0 (debut) | 364 | 0.496 | 0.419 | 0.379 |
+| ufc sample | 1-2 | 1033 | 0.534 | 0.510 | 0.522 |
+| ufc sample | 3-5 | 955 | 0.546 | 0.541 | 0.541 |
+| ufc sample | 6-10 | 809 | 0.528 | 0.530 | 0.548 |
+| ufc sample | 11+ | 237 | 0.508 | 0.531 | 0.510 |
+| layoff | under 180 days | 800 | 0.497 | 0.497 | 0.509 |
+| layoff | 180-364 | 1691 | 0.487 | 0.490 | 0.487 |
+| layoff | 365-539 | 446 | 0.450 | 0.462 | 0.440 |
+| layoff | 540+ | 297 | 0.428 | 0.428 | 0.394 |
+| age | under 30 | 675 | 0.482 | 0.488 | 0.455 |
+| age | 30-32 | 1117 | 0.452 | 0.460 | 0.451 |
+| age | 33-34 | 781 | 0.425 | 0.449 | 0.420 |
+| age | 35-36 | 613 | 0.397 | 0.417 | 0.377 |
+| age | 37+ | 578 | 0.369 | 0.384 | 0.336 |
+| age | older by 5+ years | 1348 | 0.367 | 0.391 | 0.347 |
+| age | older by 8+ years | 519 | 0.331 | 0.363 | 0.322 |
+| division change | moved up | 210 | 0.496 | 0.489 | 0.481 |
 | division change | moved down | 305 | 0.469 | 0.483 | 0.498 |
-| debutants | one debutant | 364 | 0.486 | 0.419 | 0.379 |
+| debutants | one debutant | 364 | 0.496 | 0.419 | 0.379 |
 | rematches | rematch: read from the last meeting's winner | 93 | 0.533 | 0.546 | 0.559 |
 
 ## 4. The guard
 
-Threshold 8 points (`docs/model-loop/ufc/guard.json`). Certification of the selected model's large gaps: **not certified**: the closing line on file is untimestamped (a public archive's pre-fight line), so it can refuse a signal but never certify one; on those bouts the model's log loss 0.6524 is worse than the closing line's 0.5728: 942 resolved in the market's favour, 478 in the model's.
+Threshold 8 points (`docs/model-loop/ufc/guard.json`). Certification of 1.3.0's large gaps: **not certified**: the closing line on file is untimestamped (a public archive's pre-fight line), so it can refuse a signal but never certify one; on those bouts the model's log loss 0.6540 is worse than the closing line's 0.5797: 903 resolved in the market's favour, 505 in the model's.
+
+## 5. The age curve by division
+
+Asked 2026-10-24: does age cost the same at every weight (heavyweights, perhaps the lighter divisions, aging later), and the same for an elite UFC record? Protocol `age_protocol.json` (sha256 `9bb8cad3842e79e1…`), written before any candidate was fitted, on top of 1.2.0. Each candidate was fitted on 2016-2020 alone, so 2021 on is out of sample for every one of them.
+
+| Candidate | Δ fit LL | Δ 2021-2023 LL | Study decision | Δ 2021 on LL (95% interval) | Δ by season, 2021 on |
+|---|---|---|---|---|---|
+| division curves | -0.00313 | +0.00193 | DROPPED | -0.00199 ([-0.00482, 0.00083]) | 2021 +0.0060, 2022 -0.0009, 2023 +0.0008, 2024 -0.0070, 2025 -0.0050, 2026 -0.0061 |
+| division knees | -0.00266 | +0.00094 | DROPPED | -0.00155 ([-0.00342, 0.00032]) | 2021 +0.0020, 2022 +0.0000, 2023 +0.0008, 2024 -0.0047, 2025 -0.0038, 2026 -0.0038 |
+| elite | -0.00073 | -0.00082 | KEPT | -0.00024 ([-0.0015, 0.00112]) | 2021 -0.0001, 2022 -0.0007, 2023 -0.0017, 2024 -0.0019, 2025 +0.0022, 2026 +0.0007 |
+| division curves and elite | -0.00375 | +0.00188 | DROPPED | -0.00129 ([-0.00427, 0.00183]) | 2021 +0.0067, 2022 -0.0008, 2023 -0.0002, 2024 -0.0079, 2025 -0.0012, 2026 -0.0045 |
+
+Study rule (2021-2023 alone): kept ['elite']; TEST log loss change +0.00034 does not clear -0.0005; card-blocked 95% interval [-0.00159, 0.00228] is not below zero; Brier worse (+0.00027).
+
+**Adopted: division curves, as 1.3.0** (weekly-loop, 2026-10-24: weekly loop: candidate age_by_division cleared the full-window rule). The study's own rule dropped it on 2021-2023 alone; the weekly rule, which every UFC change has to clear (loop.py), reads every bout since 2016 and passed it. Out of sample it gains 0.0020 over 3286 bouts (95% interval [-0.00482, 0.00083]): better, not proven. The weekly loop retests it, and the reverse, every week.
+
+Where the decline starts, by division (fitted on 2016-2020 bouts at that weight; the older fighter in bouts 3+ years apart, older one 33+, every bout since 2016):
+
+| Division | Fit bouts | Decline from | Elo a year | Older fighter: 1.2.0 said | 1.3.0 said | won |
+|---|---|---|---|---|---|---|
+| Flyweight | 127 | shared (32) | shared (-15) | 0.387 | 0.388 | 0.301 (83) |
+| Bantamweight | 260 | 28 | -15.0 | 0.393 | 0.365 | 0.369 (198) |
+| Featherweight | 296 | 28 | -15.0 | 0.401 | 0.371 | 0.372 (183) |
+| Lightweight | 372 | 30 | -15.0 | 0.391 | 0.373 | 0.370 (262) |
+| Welterweight | 384 | 33 | -25 | 0.405 | 0.384 | 0.379 (311) |
+| Middleweight | 272 | 28 | -20 | 0.379 | 0.324 | 0.311 (270) |
+| Light Heavyweight | 211 | 40 | -25 | 0.388 | 0.452 | 0.444 (169) |
+| Heavyweight | 206 | 31 | -15.0 | 0.390 | 0.381 | 0.364 (209) |
+| W Strawweight | 156 | 28 | -30 | 0.390 | 0.278 | 0.345 (110) |
+| W Flyweight | 109 | shared (32) | shared (-15) | 0.409 | 0.414 | 0.393 (89) |
+| W Bantamweight | 94 | shared (32) | shared (-15) | 0.403 | 0.403 | 0.404 (99) |
+| W Featherweight | 16 | shared (32) | shared (-15) | 0.363 | 0.363 | 0.286 (14) |
+
+Earliest decline: Bantamweight, Featherweight, Middleweight, W Strawweight (28); latest: Light Heavyweight (40); the grid runs 28-40.
+The elite term ({"age_elite_slope": -15}): 2021 on -0.00024; better in 4 of 6 seasons. Before the protocol, a heavyweight-only later knee was tried on every window and made each worse (age_protocol.json disclosure).
