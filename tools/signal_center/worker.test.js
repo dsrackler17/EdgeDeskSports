@@ -139,9 +139,18 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
     chk('golf: the top-10 move is a signal about a player; the cut, once made (Observed), is not compared', person.filter((x) => x.sport === 'golf').length === 1 && person.some((x) => x.sport === 'golf' && x.outcome === 'top_10' && x.kind === 'player'), person);
     chk('UFC: stored as mma, linking to the Simulator’s ufc; the next bout is never compared', person.filter((x) => x.sport === 'mma').length === 1 && person.some((x) => x.sport === 'mma' && x.outcome === 'title_shot' && x.href === '#simulator/ufc') && !person.some((x) => x.sport === 'ufc'), person);
     const hoops = JSON.parse(q("select coalesce(json_agg(json_build_object('ev', s.event_key, 'change', s.change_pp, 'v', s.verification_state, 'cls', v.payload->'evidence'->>'class', 'prev', v.payload->'values'->'previous'->>'snapshot_id', 'cur', v.payload->'values'->'current'->>'snapshot_id', 'flags', v.payload->'quality'->'flags')), '[]') from public.sc_signals s join public.sc_signal_versions v on v.version_id = s.current_version_id where s.category = 'FORECAST_SHIFT' and s.sport = 'ncaam';"));
-    chk('men’s college basketball: one forecast shift between the two published runs (60% to 52%)', hoops.length === 1 && hoops[0].ev === 'NCAAM|401' && +hoops[0].change === 8 && hoops[0].v === 'VERIFIED', hoops);
-    chk('…never from the run that lost the race (superseded), nor a non-D1 game', hoops.every((x) => x.prev !== M3 && x.cur !== M3 && x.ev !== 'NCAAM|402'), hoops);
-    chk('…a game rated in between is its source-dated support, and the early-season flag rides along', hoops.length === 1 && hoops[0].cls === 'SUPPORTED_ASSOCIATION' && (hoops[0].flags || []).indexOf('DATA_LIMITED') >= 0, hoops);
+    /* the registry holds NCAAM forecast shifts at coming soon until the forecast tables are deployed in
+       production: nothing is stored, and the reader is checked directly (what the engine would compare) */
+    chk('men’s college basketball: nothing is stored while the registry says coming soon', hoops.length === 0, hoops);
+    const E = require(path.join(ROOT, 'lib', 'edgedesk_signal_engine.js'));
+    console.log = () => {};
+    let hg;
+    try { hg = await DB.ncaamGames(client(), NOW, () => {}); } finally { console.log = quiet; }
+    const g401 = hg.filter((g) => g.game.event_key === 'NCAAM|401')[0];
+    chk('…the reader builds each D-I game’s series from the two published runs only (superseded and non-D1 left out)', hg.length === 1 && g401 && g401.series.length === 2
+      && g401.series.map((r) => r.snapshot_id).join() === [M1, M2].join() && g401.series.every((r) => r.model_version === MK && r.data_status === 'LIMITED'), hg.map((g) => [g.game.event_key, g.series.map((r) => r.snapshot_id)]));
+    const hs = g401 ? E.forecastShifts(g401.series, g401.game, { now: NOW }).signals : [];
+    chk('…and the engine finds the 60% to 52% shift in it, supported by a game rated in between', hs.length === 1 && hs[0].values.change_pp === 8 && hs[0].verification.state === 'VERIFIED' && hs[0].evidence.class === 'SUPPORTED_ASSOCIATION' && hs[0].quality.flags.indexOf('DATA_LIMITED') >= 0, hs.map((x) => [x.headline, x.verification.failed]));
     const gStats = JSON.parse(q("select json_build_object('ready', count(*) filter (where status = 'READY'), 'failed', count(*) filter (where status = 'FAILED'), 'mismatch', count(*) filter (where g.payload_sha256 <> v.payload_sha256)) from public.sc_graphics g join public.sc_signal_versions v using (version_id);"));
     chk('graphics: drawn for the due versions, three formats each, from the exact stored payload', gStats.ready > 0 && gStats.ready % 3 === 0 && gStats.mismatch === 0, gStats);
     chk('graphics: none failed its checks', gStats.failed === 0, gStats);
