@@ -1,7 +1,16 @@
 # Signal Center — deployment
 
-**Nothing here has been run against production.** The steps below are for the
-owner. Each is a separate decision, and each can be undone.
+**Production state (2026-10-24).** Steps 1 and 3 have been run, at the owner's request:
+
+- the migration was applied by *Deploy Signal Center schema*, and re-applied after the `sha256()` fix
+  (run 40044555415: all 12 report rows ok);
+- *Signal Center mode* switched to **live for every sport** in the registry (run 40044724761; reason kept in
+  `sc_config_log`);
+- the first *Signal Center run* (40044823741) stored 371 signals, published 166, drew 144 graphics (48 versions,
+  three formats) and stored the Model DNA records, in 23 database requests.
+
+The hourly job runs only when the repository variable `SIGNAL_CENTER_WORKER` is `on` (§2). The steps below remain
+the runbook. Each is a separate decision, and each can be undone.
 
 ## 0. What it depends on (already in production)
 
@@ -39,6 +48,7 @@ Expected report:
 9  mode                                                  ok: shadow (nothing is published until an operator switches to live)
 10 notices                                               ok
 11 the Signal Center seat is counted                     ok
+12 the owner's mode door is reachable by no API role     ok
 ```
 
 After it: the terminal seat reads "Shadow mode". Readers see an empty feed and new readers are handed on to Research.
@@ -86,8 +96,9 @@ Each switch is logged in `sc_config_log`, with the reason where one is given.
     sitemap.
   - The landing page's Free column (`lib/edgedesk_plans.js` FREE + `index.html`) does not list Signal Center. Add
     it only once the preview has published content.
-- Other sports: add them to the live list only after their own shadow review. The registry marks NBA and NHL
-  divergences experimental, and NFL injuries stay blocked.
+- Other sports: the review plan adds them only after their own shadow review; the owner switched every sport on
+  on 2026-10-24. The registry still marks NBA and NHL divergences experimental, every Simulator shift experimental
+  (a T3 research model), and NFL injuries blocked: those labels ride on every signal whatever the mode.
 
 ## 4. Switches
 

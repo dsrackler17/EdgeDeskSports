@@ -64,6 +64,10 @@ const sm = E.simulationShifts({ sport: 'cfb', competition: 'NCAA FBS', season: '
   { previous: [row(0.552)], current: [row(0.628)] }, { now: NOW }).signals[0];
 const smDown = E.simulationShifts({ sport: 'nfl', competition: 'NFL', season: '2026', previous: run('33333333-aaaa-4aaa-8aaa-111111111111', iso(NOW - 3 * 86400e3)), current: run('44444444-bbbb-4bbb-8bbb-222222222222', iso(NOW - 3600e3)) },
   { previous: [Object.assign(row(0.71, 'Research'), { entity_id: 'KC', entity_name: 'Kansas City Chiefs', outcome: 'make_playoffs' })], current: [Object.assign(row(0.58, 'Research'), { entity_id: 'KC', entity_name: 'Kansas City Chiefs', outcome: 'make_playoffs' })] }, { now: NOW }).signals[0];
+/* a golfer (a person, not a team) with a long name */
+const golfRow = (p) => ({ entity_id: 'pga-46046', entity_name: 'Christopher Montgomery-Alexander', outcome: 'top_10', probability: p, mcse: Math.sqrt(p * (1 - p) / 1e5), provenance: 'Research', applicable: true });
+const smGolf = E.simulationShifts({ sport: 'golf', competition: 'PGA Tour Test Open', season: '2026', previous: run('55555555-aaaa-4aaa-8aaa-111111111111', iso(NOW - 86400e3)), current: run('66666666-bbbb-4bbb-8bbb-222222222222', iso(NOW - 3600e3)) },
+  { previous: [golfRow(0.30)], current: [golfRow(0.44)] }, { now: NOW }).signals[0];
 const inj = E.injuryChanges([{ sport: 'cfb', team: { name: 'Army' }, player: { id: 'p1', name: 'Bartholomew Montgomery-Alexander III', position: 'QB' }, status: 'QUESTIONABLE', report: { id: '1', type: 'Game Day', published_at: iso(NOW - 900 * 60e3), retrieved_at: iso(NOW), source_url: 'https://example.org/report', source: 'American availability report' }, game: { event_key: 'cfb|1', event_at: iso(NOW + 86400e3), label: 'Army at Tulsa' } },
   { sport: 'cfb', team: { name: 'Army' }, player: { id: 'p1', name: 'Bartholomew Montgomery-Alexander III', position: 'QB' }, status: 'GAME_TIME_DECISION', report: { id: '2', type: 'Game Day', published_at: iso(NOW - 60 * 60e3), retrieved_at: iso(NOW), source_url: 'https://example.org/report', source: 'American availability report' }, game: { event_key: 'cfb|1', event_at: iso(NOW + 86400e3), label: 'Army at Tulsa' } }], { now: NOW, positions: ['QB'] })[1];
 const DNA = require(path.join(ROOT, 'lib', 'edgedesk_model_dna.js'));
@@ -72,14 +76,14 @@ const perf = { generated_at: iso(NOW), min_n: 20, ledger: { epoch: '2026-10-16T0
   by_model: [{ sport: 'nfl', tier: 'VERIFIED', model_version: 'v1', graded: 150, winner: {} }] };
 const rel = E.reliabilityWarnings(DNA.build(reg, perf, { nfl: { id: 'edgedesk_nfl_v2.1.0', version: 'edgedesk_nfl_v2.1.0' } }, NOW), { now: NOW });
 const dq = E.dataQuality([{ id: 'x', label: 'Football research snapshots', state: 'ok', generated_at: iso(NOW - 600 * 60e3), max_age_minutes: 180 }], { now: NOW })[0];
-const ALL = { fs1, fs2, fsv, dv, cv, lm, sm, smDown, inj, rel0: rel[0], rel1: rel[1], rel2: rel[2] };
+const ALL = { fs1, fs2, fsv, dv, cv, lm, sm, smDown, smGolf, inj, rel0: rel[0], rel1: rel[1], rel2: rel[2] };
 chk('every controlled payload was built', Object.keys(ALL).every((k) => ALL[k]), Object.keys(ALL).filter((k) => !ALL[k]));
 /* SC_GRAPHICS_FIXTURES_OUT=f.json writes these controlled payloads, so
    tools/signal_center/render_graphics.js --payloads f.json can draw them */
 if (process.env.SC_GRAPHICS_FIXTURES_OUT) require('fs').writeFileSync(process.env.SC_GRAPHICS_FIXTURES_OUT, JSON.stringify(Object.keys(ALL).map((k) => ALL[k]).filter(Boolean)));
 chk('three reliability subtypes', rel.map((r) => r.subtype).sort().join(',') === 'behind_market,calibration_band,no_live_record', rel.map((r) => r.subtype));
 
-const expectKind = { fs1: 'probability_shift', fs2: 'probability_shift', fsv: 'probability_shift', dv: 'market_disagreement', cv: 'market_disagreement', lm: 'market_disagreement', sm: 'simulator_movement', smDown: 'simulator_movement', inj: 'injury_impact', rel0: 'reliability_alert', rel1: 'reliability_alert', rel2: 'reliability_alert' };
+const expectKind = { fs1: 'probability_shift', fs2: 'probability_shift', fsv: 'probability_shift', dv: 'market_disagreement', cv: 'market_disagreement', lm: 'market_disagreement', sm: 'simulator_movement', smDown: 'simulator_movement', smGolf: 'simulator_movement', inj: 'injury_impact', rel0: 'reliability_alert', rel1: 'reliability_alert', rel2: 'reliability_alert' };
 const contents = {};
 Object.keys(ALL).forEach((k) => {
   const r = SG.content(ALL[k], { version: 2, payload_sha256: 'a'.repeat(64) });
@@ -119,6 +123,11 @@ Object.keys(ALL).forEach((k) => {
   chk('simulator: ESTIMATED is flagged for a committee-proxy outcome', s.flag && s.flag.text === 'ESTIMATED' && /not the committee/.test(s.why.text));
   chk('simulator: Monte Carlo error is labelled sampling-only', s.meta.some((m) => /SAMPLING ONLY/.test(m)));
   chk('simulator: run snapshot dates are printed', /inputs /.test(s.numbers.left.sub) && /inputs /.test(s.numbers.right.sub));
+  /* a golfer: initials in neutral colours (no photo, no logo), no playing surface */
+  const gc = SG.content(smGolf, { version: 1, payload_sha256: 'f'.repeat(64) });
+  chk('golf: a player graphic, initials in neutral colours, never the entity id', gc.ok && gc.content.subject.kind === 'player' && gc.content.subject.team.abbr === 'CM' && /neutral/.test(gc.content.subject.team.colors_source), gc.ok ? gc.content.subject : gc);
+  chk('golf: no playing surface is drawn', gc.ok && gc.content.surface === 'none');
+  chk('golf: every format lays out inside its boxes', gc.ok && FORMATS.every((f) => SG.check(SG.layout(gc.content, f)).length === 0));
   const i = contents.inj;
   chk('injury: facts and the estimate are apart; no effect is claimed', /NOT CALCULATED/.test(i.numbers.change.text) && /ESTIMATE none/.test(i.meta[1]) && i.why.title === 'THE FACTS');
   chk('injury: the current designation and its source time', i.numbers.right.value === 'GAME-TIME DECISION' && /published/.test(i.numbers.right.sub));

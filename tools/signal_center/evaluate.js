@@ -35,7 +35,7 @@ function latestQuote(list) {
      sourceStates    sources.sourceStates()
      db (optional)   { simPairs:[{pair, results}], simReference:[...],
                        nbaInjuries:[rows], nbaEffects:{}, kalshi: Map(event key -> {p_home, captured_at}),
-                       priorDivergences:[payloads] }
+                       ncaamGames:[{game, series}] (db.ncaamGames), priorDivergences:[payloads] }
      now, fixture */
 function evaluate(inputs) {
   const now = inputs.now;
@@ -50,7 +50,9 @@ function evaluate(inputs) {
 
   const football = inputs.football || [];
   const perfGames = inputs.perfGames || [];
-  const allGames = football.concat(perfGames);
+  /* forecast history kept in the database (men's college basketball's daily runs) */
+  const dbGames = (inputs.db && inputs.db.ncaamGames) || [];
+  const allGames = football.concat(perfGames, dbGames);
   const gameBy = new Map(allGames.map((g) => [g.game.event_key, g]));
 
   /* ---- Model DNA, and the reliability grade every signal carries */

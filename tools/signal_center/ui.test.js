@@ -149,6 +149,24 @@ chk('pulse: nothing in the window says so', /No material changes detected/.test(
 chk('pulse: a version change is counted apart', /model version change/.test(UI.renderPulse({ published: 3, forecast_shifts: 1, model_version_changes: 2 }, 24)));
 const cov = strip(UI.renderCoverage(REG));
 chk('coverage: every registry sport, and the unsupported categories with their reasons', REG.sports().every((s) => cov.indexOf(s.label) >= 0) && Object.keys(REG.UNSUPPORTED).every((k) => cov.indexOf(REG.UNSUPPORTED[k].slice(0, 40)) >= 0));
+{
+  /* a tournament: its event time is the expiry, never printed as a start; its end is ESPN's, verbatim */
+  const run = (id, at, vs) => ({ run_id: id, model_version: 'v1', rules_version: 'r1', engine_version: 'e1', n_sims: 100000, input_snapshot_at: at, completed_at: at, published_at: at, validation_summary: vs || {} });
+  const row = (p) => ({ entity_id: 'pga-1', entity_name: 'Test Golfer', outcome: 'top_10', probability: p, mcse: Math.sqrt(p * (1 - p) / 1e5), provenance: 'Research', applicable: true });
+  const gp = E.simulationShifts({ sport: 'golf', competition: 'PGA Tour Test Open', season: '2026', previous: run('g1', '2026-10-22T00:00:00Z'), current: run('g2', '2026-10-23T00:00:00Z', { sport_summary: { kind: 'golf_tournament', event: { end: '2026-10-25T07:00Z' } } }) },
+    { previous: [row(0.3)], current: [row(0.42)] }, { now: NOW }).signals[0];
+  const card = strip(UI.renderCard(item(gp, 77, true), 'full', NOW));
+  chk('a tournament card names the event with no time (its event time is the expiry)', /PGA Tour Test Open 2026/.test(card) && !/PGA Tour Test Open 2026 · /.test(card), card.slice(0, 300));
+  const det = strip(UI.renderDetail({ found: true, access: 'full', admin: false, item: item(gp, 77, true), payload: gp, payload_sha256: 'f'.repeat(64), versions: [], events: [], graphics: [], dna: null, timeline: [] }, NOW));
+  chk('its timing shows the competition end exactly as ESPN lists it', /Competition end, as ESPN lists it/.test(det) && /Oct 25, 3:00 AM ET/.test(det), det.slice(det.indexOf('Timing'), det.indexOf('Timing') + 300));
+  chk('a game keeps its event time on the card', /· /.test(strip(UI.renderCard(item(shift, 5, true), 'full', NOW))));
+}
+const covLive = UI.renderCoverage(REG, { deployed: true, mode: 'live', live_sports: ['nfl', 'golf'] });
+const rowOf = (html, label) => { const i = html.indexOf('<b>' + label + '</b>'); return i < 0 ? '' : strip(html.slice(i, html.indexOf('</tr>', i))); };
+chk('coverage: with the database’s mode it says what each sport publishes today', /Publishing/.test(covLive) && /tournaments\. live /.test(rowOf(covLive, 'Golf')) && /\. shadow /.test(rowOf(covLive, 'NBA')) && !/Publishing/.test(UI.renderCoverage(REG)), [rowOf(covLive, 'Golf'), rowOf(covLive, 'NBA')]);
+const covShadow = UI.renderCoverage(REG, { deployed: true, mode: 'shadow', live_sports: ['nfl'] });
+chk('coverage: in shadow mode a switched-on sport still reads shadow', /In season\. shadow /.test(rowOf(covShadow, 'NFL')), rowOf(covShadow, 'NFL'));
+chk('coverage: golf, tennis and UFC show their Simulator shifts', ['Golf', 'Tennis', 'UFC'].every((l) => /experimental/.test(rowOf(UI.renderCoverage(REG), l))), ['Golf', 'Tennis', 'UFC'].map((l) => rowOf(UI.renderCoverage(REG), l)));
 chk('method: the live scoring specification from the engine', strip(UI.renderMethod(E)).indexOf(E.SPEC.id) >= 0 && /Major 70\+/.test(strip(UI.renderMethod(E))));
 chk('method without the engine still explains the rules', /The evidence ladder/.test(UI.renderMethod(null)));
 const pf = UI.renderPrefs({ sports: ['nfl'], categories: [], teams: ['Texas Tech'], min_label: 'Major', notify: true }, { entitled: false });

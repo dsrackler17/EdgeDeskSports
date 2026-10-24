@@ -71,6 +71,17 @@ function snap(id, at, p, ver, extra) {
   chk('a payload re-hashes to its own version hash after a JSON round trip', again === r1[0].version_hash);
 }
 
+/* ── men's college basketball (published daily runs) ──────────────────── */
+{
+  const NG = Object.assign({}, GAME, { sport: 'ncaam', league: 'ncaam', event_key: 'NCAAM|401', event_at: '2026-11-12T00:00:00Z', home: { name: 'Home U', abbr: null }, away: { name: 'Away State', abbr: null }, research_href: null, simulator_href: '#simulator/ncaam' });
+  const run = (id, at, p, hg, flags) => snap(id, at, p, 'ncaam_rtm@1.2.0', { data_status: flags ? 'LIMITED' : 'OK', inputs: { home_games: hg, away_games: 4, availability: 'Not modelled', built_at: at, flags: flags || null } });
+  const s = E.forecastShifts([run('r1', '2026-11-10T14:00:00Z', 0.60, 3, 'EARLY_SEASON_FEW_GAMES'), run('r2', '2026-11-11T14:00:00Z', 0.52, 4, 'EARLY_SEASON_FEW_GAMES')], NG, { now: Date.parse('2026-11-11T15:00:00Z') }).signals;
+  chk('a daily-run move of 8 pp is one verified forecast shift', s.length === 1 && s[0].values.change_pp === 8 && s[0].verification.state === 'VERIFIED', s.map((x) => [x.headline, x.verification.failed]));
+  chk('…supported by a source-dated fact: a game was rated in between', s[0].evidence.class === 'SUPPORTED_ASSOCIATION' && /home team’s rated games changed from 3 to 4/.test(s[0].evidence.summary), s[0].evidence.summary);
+  chk('…carrying the early-season flag', s[0].quality.flags.indexOf('DATA_LIMITED') >= 0);
+  chk('…linking to the Simulator, with no game page claimed', s[0].links.simulator === '#simulator/ncaam' && s[0].links.research === null);
+}
+
 /* ── arithmetic ───────────────────────────────────────────────────────── */
 {
   chk('displayed change = difference of displayed values (0.5545 -> 55.5, 0.6012 -> 60.1 => +4.6)', E._ppChange(0.5545, 0.6012) === 4.6, E._ppChange(0.5545, 0.6012));
@@ -201,6 +212,27 @@ function snap(id, at, p, ver, extra) {
   chk('a simulator model change is a MODEL_VERSION_CHANGE', vchg.evidence.class === 'MODEL_VERSION_CHANGE');
   chk('older inputs than the previous run are refused', E.simulationShifts(Object.assign({}, pair, { previous: pair.current, current: pair.previous }), res, { now: NOW }).signals.length === 0);
   chk('no previous run: nothing to compare', E.simulationShifts({ sport: 'nfl', current: pair.current }, res, { now: NOW }).signals.length === 0);
+
+  /* tournaments and title paths: people, not teams */
+  const golf = { sport: 'golf', competition: 'PGA Tour · Test Open', season: '2026', previous: run('g1', '2026-10-22T00:00:00Z'), current: run('g2', '2026-10-23T00:00:00Z') };
+  const gres = { previous: [row('p1', 'top_10', 0.30), row('p1', 'win', 0.04), row('p1', 'make_cut', 0.80, 'Research')], current: [row('p1', 'top_10', 0.42), row('p1', 'win', 0.041), row('p1', 'make_cut', 1, 'Observed')] };
+  const g = E.simulationShifts(golf, gres, { now: NOW });
+  chk('golf: a top-10 move of +12 pp is a signal about a player', g.signals.length === 1 && g.signals[0].outcome.id === 'top_10' && g.signals[0].subject.kind === 'player' && /top-10 finish probability up 12\.0 pp/.test(g.signals[0].headline), g.signals.map((x) => x.headline));
+  chk('golf: the cut, once made (Observed), is a provenance change and never compared', g.refused.some((x) => x.outcome === 'make_cut' && /provenance changed/.test(x.reason)));
+  chk('golf: its relevance says tournament, not season', /^Tournament outcome/.test(g.signals[0].relevance));
+  chk('golf: the evidence speaks of a player, never a team', /this player’s number/.test(g.signals[0].evidence.summary) && !/team/.test(g.signals[0].evidence.summary));
+  const golfEnd = Object.assign({}, golf, { current: Object.assign(run('g2', '2026-10-23T00:00:00Z'), { validation_summary: { sport_summary: { kind: 'golf_tournament', event: { end: '2026-10-25T07:00Z' } } } }) });
+  const ge = E.simulationShifts(golfEnd, gres, { now: NOW }).signals[0];
+  chk('golf: the signal expires a day after ESPN’s end date (its final day), and keeps the date as listed', ge.event.at === '2026-10-26T07:00:00.000Z' && ge.event.ends === '2026-10-25T07:00:00.000Z', ge.event);
+  chk('golf: no end on file, no expiry is invented', g.signals[0].event.at === null && g.signals[0].event.ends === null);
+  chk('a team sport’s season outcome never takes an end date', E.simulationShifts(Object.assign({}, pair, { current: Object.assign(run('r2', '2026-10-22T00:00:00Z'), { validation_summary: { sport_summary: { kind: 'golf_tournament', event: { end: '2026-10-25T07:00Z' } } } }) }), res, { now: NOW }).signals[0].event.at === null);
+  const ten = E.simulationShifts({ sport: 'tennis', competition: 'Test Masters', season: '2026', previous: golf.previous, current: golf.current },
+    { previous: [row('t1', 'win_title', 0.20), row('t1', 'win_next_match', 0.55)], current: [row('t1', 'win_title', 0.31), row('t1', 'win_next_match', 0.75)] }, { now: NOW });
+  chk('tennis: the title move is compared; "win the next match" never is', ten.signals.length === 1 && ten.signals[0].outcome.id === 'win_title', ten.signals.map((x) => x.outcome.id));
+  const ufc = E.simulationShifts({ sport: 'mma', sim_sport: 'ufc', competition: 'UFC lightweight', season: '2026', previous: golf.previous, current: golf.current },
+    { previous: [row('f1', 'title_shot', 0.20, 'Estimated'), row('f1', 'win_next_bout', 0.5)], current: [row('f1', 'title_shot', 0.35, 'Estimated'), row('f1', 'win_next_bout', 0.7)] }, { now: NOW });
+  chk('UFC: a title-shot move is Estimated and says so; the next bout is never compared', ufc.signals.length === 1 && /estimated/.test(ufc.signals[0].headline) && /modelled step/.test(ufc.signals[0].simulation.estimated_note), ufc.signals.map((x) => x.headline));
+  chk('UFC: the signal is Signal Center’s mma and links to the Simulator’s ufc', ufc.signals[0].sport === 'mma' && ufc.signals[0].links.simulator === '#simulator/ufc');
 }
 
 /* ── injuries ─────────────────────────────────────────────────────────── */

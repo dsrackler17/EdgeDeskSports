@@ -7,8 +7,9 @@
 
    Writes go only to the sc_* job doors (supabase/signal_center.sql). Reads of
    other layers (the Simulator's published runs, the NBA injury reports, the
-   Kalshi card) are plain GETs; a layer that is not installed, or answers an
-   error, removes only its own signals: it is recorded and the run goes on.
+   Kalshi card, the men's college basketball forecast runs) are plain GETs; a
+   layer that is not installed, or answers an error, removes only its own
+   signals: it is recorded and the run goes on.
 
    Transient failures (network, 5xx, 429) are retried at most 3 times with
    exponential backoff; a 4xx is a deterministic refusal and is not retried.
@@ -58,7 +59,7 @@ function client(env, opts) {
       return call('POST', 'rpc/' + name, args || {});
     },
     get(path) {
-      if (!/^(sim_published|sim_runs|sim_team_results|nba_injury_report_snapshots|nba_injury_reports|kalshi_card_current)\?/.test(path)) throw new Error('the worker reads only the published layers it needs, not ' + path.split('?')[0]);
+      if (!/^(sim_published|sim_runs|sim_team_results|nba_injury_report_snapshots|nba_injury_reports|kalshi_card_current|ncaam_fc_runs|ncaam_fc_forecasts)\?/.test(path)) throw new Error('the worker reads only the published layers it needs, not ' + path.split('?')[0]);
       return call('GET', path);
     }
   };
@@ -66,6 +67,11 @@ function client(env, opts) {
 
 /* ------------------------------------------------ the database sources */
 const SIM_OUTCOMES = require('../../lib/edgedesk_signal_engine.js').SIM_OUTCOMES;
+/* the Simulator's key for a sport where Signal Center's differs */
+const SIM_SPORT = { ufc: 'mma' };
+/* PostgREST answers at most this many rows (Supabase's max-rows default): a
+   page that full may be cut short, so it is read again outcome by outcome */
+const PAGE = 1000;
 
 /* the Simulator: each competition's published run and the run it replaced */
 async function simPairs(db, log) {
@@ -74,7 +80,8 @@ async function simPairs(db, log) {
   try { pub = await db.get('sim_published?select=sport,competition,season,run_id,previous_run_id,published_at'); }
   catch (e) { log('sim', 'the Simulator is not readable here: ' + e.message); return out; }
   for (const p of pub || []) {
-    if (!p.previous_run_id || !SIM_OUTCOMES[p.sport]) continue;
+    const sport = SIM_SPORT[p.sport] || p.sport;
+    if (!p.previous_run_id || !SIM_OUTCOMES[sport]) continue;
     const runs = {};
     for (const id of [p.previous_run_id, p.run_id]) {
       const r = await db.get('sim_runs?select=run_id,sport,competition,season,status,model_version,rules_version,engine_version,n_sims,input_snapshot_at,completed_at,validation_summary&run_id=eq.' + id);
@@ -82,14 +89,20 @@ async function simPairs(db, log) {
     }
     if (!runs[p.previous_run_id] || !runs[p.run_id]) { log('sim', p.sport + ': a run of the published pair is missing'); continue; }
     const results = { previous: [], current: [] };
-    for (const oc of Object.keys(SIM_OUTCOMES[p.sport])) {
-      for (const [side, id] of [['previous', p.previous_run_id], ['current', p.run_id]]) {
-        const rows = await db.get('sim_team_results?select=entity_id,entity_name,outcome,probability,mcse,provenance,applicable&run_id=eq.' + id + '&outcome=eq.' + oc);
-        (rows || []).forEach((x) => results[side].push(x));
+    const outcomes = Object.keys(SIM_OUTCOMES[sport]);
+    const cols = 'sim_team_results?select=entity_id,entity_name,outcome,probability,mcse,provenance,applicable&run_id=eq.';
+    for (const [side, id] of [['previous', p.previous_run_id], ['current', p.run_id]]) {
+      /* one request per run for every outcome compared; a full page is read
+         again one outcome at a time rather than compared short */
+      let rows = await db.get(cols + id + '&outcome=in.(' + outcomes.join(',') + ')&limit=' + PAGE);
+      if ((rows || []).length >= PAGE) {
+        rows = [];
+        for (const oc of outcomes) ((await db.get(cols + id + '&outcome=eq.' + oc + '&limit=' + PAGE)) || []).forEach((x) => rows.push(x));
       }
+      (rows || []).forEach((x) => results[side].push(x));
     }
     const cur = Object.assign({}, runs[p.run_id], { published_at: p.published_at });
-    out.push({ pair: { sport: p.sport, competition: p.competition, season: p.season, previous: runs[p.previous_run_id], current: cur }, results });
+    out.push({ pair: { sport, sim_sport: p.sport, competition: p.competition, season: p.season, previous: runs[p.previous_run_id], current: cur }, results });
   }
   return out;
 }
@@ -124,4 +137,52 @@ async function kalshiMids(db, log) {
   return m;
 }
 
-module.exports = { client, simPairs, nbaInjuries, kalshiMids, MAX_REQUESTS };
+/* men's college basketball: the daily pregame runs that were published (a
+   run is 'completed' only when it took the published pointer; a run that lost
+   the race is 'superseded' and was never shown), oldest first, and each run's
+   forecasts for D-I games that have not started. One game appears in every
+   daily run inside the 48-hour horizon: consecutive runs are its history. */
+const NCAAM_RUNS = 6;
+const NCAAM_SETTLES = 'game winner, overtime included (the published forecast’s home probability)';
+async function ncaamGames(db, now, log) {
+  let runs;
+  try { runs = await db.get('ncaam_fc_runs?select=run_id,model_key,as_of,completed_at&scope=eq.pregame&status=eq.completed&order=as_of.desc&limit=' + NCAAM_RUNS); }
+  catch (e) { log('ncaam', 'the men’s college basketball forecasts are not readable here: ' + e.message); return []; }
+  const byGame = new Map();
+  for (const r of (runs || []).slice().reverse()) {
+    let rows;
+    try { rows = await db.get('ncaam_fc_forecasts?select=game_id,start_utc,home_id,away_id,home_name,away_name,neutral,available,p_home,games_played,data_quality,availability_assumption&run_id=eq.' + r.run_id + '&regime=eq.D1_D1&start_utc=gt.' + new Date(now).toISOString() + '&order=game_id.asc&limit=' + PAGE); }
+    catch (e) { log('ncaam', 'run ' + r.run_id + ': forecasts not readable: ' + e.message); return []; }
+    if ((rows || []).length >= PAGE) log('ncaam', 'run ' + r.run_id + ': ' + PAGE + ' forecasts or more; the rest were not compared');
+    (rows || []).forEach((f) => {
+      if (!byGame.has(f.game_id)) byGame.set(f.game_id, { last: f, series: [] });
+      const g = byGame.get(f.game_id), gp = f.games_played || {};
+      g.last = f;
+      g.series.push({
+        snapshot_id: r.run_id, at: r.completed_at, built_at: r.as_of,
+        p_home: f.available && typeof f.p_home === 'number' ? f.p_home : null,
+        model_id: r.model_key, model_version: r.model_key,
+        data_status: !f.available ? 'UNAVAILABLE' : ((f.data_quality || []).length ? 'LIMITED' : 'OK'),
+        consistent: true,
+        inputs: { home_games: gp.home == null ? null : gp.home, away_games: gp.away == null ? null : gp.away, availability: f.availability_assumption || null, built_at: r.as_of, flags: (f.data_quality || []).join(', ') || null }
+      });
+    });
+  }
+  const out = [];
+  byGame.forEach((g, id) => {
+    const f = g.last;
+    out.push({
+      game: {
+        sport: 'ncaam', league: 'ncaam', season: (String(f.start_utc || '').slice(0, 4) | 0) || null, event_key: 'NCAAM|' + id, event_at: f.start_utc,
+        home: { name: f.home_name, abbr: null }, away: { name: f.away_name, abbr: null }, neutral: !!f.neutral, settles: NCAAM_SETTLES,
+        /* the forecasts are read in the Simulator's college basketball Games tab */
+        research_href: null, simulator_href: '#simulator/ncaam',
+        source: { id: 'ncaam_fc', label: 'EdgeDesk men’s college basketball forecasts (published daily runs)', ref: 'public.ncaam_fc_forecasts' }
+      },
+      series: g.series
+    });
+  });
+  return out;
+}
+
+module.exports = { client, simPairs, nbaInjuries, kalshiMids, ncaamGames, MAX_REQUESTS };

@@ -597,7 +597,8 @@ begin
         case p#>>'{evidence,class}' when 'CONFIRMED_CAUSE' then 4 when 'SUPPORTED_ASSOCIATION' then 3 when 'OBSERVED' then 3 when 'UNEXPLAINED' then 1 else 0 end,
         v_state, (p#>>'{score,total}')::numeric, p#>>'{score,label}', nullif(p#>>'{values,distribution,rarity}', '')::numeric, p#>>'{reliability,grade}', p#>>'{research_grade,letter}',
         p#>>'{model,version}', nullif(p#>>'{timestamps,source_published_at}', '')::timestamptz, v_fixture,
-        v_life, case when v_life = 'EXPIRED' then 'the event had started when the signal was detected' when v_life = 'WITHDRAWN' then 'invalidated at detection' end,
+        v_life, case when v_life = 'EXPIRED' and p->>'event_kind' = 'season' then 'the competition had ended when the signal was detected'
+                     when v_life = 'EXPIRED' then 'the event had started when the signal was detected' when v_life = 'WITHDRAWN' then 'invalidated at detection' end,
         v_pub, 'system', case when v_pub = 'PUBLISHED' then now() end, p_run, 1)
     returning signal_id into v_sig;
     insert into public.sc_signal_versions (signal_id, version, version_hash, payload, payload_sha256, reason, run_id, engine_version, spec_version)
@@ -758,7 +759,9 @@ create or replace function public.sc_expire()
 returns integer language plpgsql security definer set search_path = public, pg_temp as $$
 declare n integer;
 begin
-  with e as (update public.sc_signals set lifecycle = 'EXPIRED', lifecycle_reason = 'the event started'
+  -- a game expires when it starts; a season-kind signal (a tournament) carries
+  -- the time its competition ends instead
+  with e as (update public.sc_signals set lifecycle = 'EXPIRED', lifecycle_reason = case when event_kind = 'season' then 'the competition it is about has ended' else 'the event started' end
               where lifecycle = 'ACTIVE' and event_at is not null and event_at <= now() returning signal_id)
   insert into public.sc_signal_events (signal_id, kind, actor, detail) select signal_id, 'expired', 'system', '{}'::jsonb from e;
   get diagnostics n = row_count;

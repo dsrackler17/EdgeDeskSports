@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-24 — Signal Center: live in production; golf, tennis, UFC and men's college basketball wired
+
+**In production** (at the owner's request; docs/signal-center/DEPLOYMENT.md): the migration is applied (all 12 report rows ok), the mode is **live for every sport**, and the first run stored 371 signals, published 166 and drew 144 graphics. The first deploy's ingest failure (`digest()` outside the doors' `search_path`) is fixed with the built-in `sha256()`.
+
+- **Simulator shifts for golf, tennis and UFC** (`E.SIM_OUTCOMES`). Golf compares one tournament (win, top 5/10/20, the cut until it is made), tennis one draw (title, final, semifinal, quarterfinal), UFC the title path (Estimated). An outcome whose meaning changes between runs is never compared: "win the next match" and the next-bout outcomes. A signal about a golfer, a player or a fighter is about a person: its graphic shows initials in neutral colours and no playing surface. The Simulator's `ufc` is Signal Center's `mma`.
+- **Men's college basketball forecast shifts** from the published daily runs (`ncaam_fc_runs` with status `completed`, and their forecasts), D-I against D-I, for games not yet started. A run that never took the published pointer is not read. A game rated between two runs is the shift's source-dated support; the forecasts' data-quality flags ride along, and availability is not modelled.
+- **Coverage** shows what the database publishes today ("Publishing": live or shadow) when the mode is known.
+- **The operator console** lists every registry sport, and keeps any switched-on sport it does not list, so saving the mode can no longer drop one.
+- The worker reads each simulator run's compared outcomes in one request (a full page is read again outcome by outcome). The PostgREST stand-in (`tools/billing/_pgrest.js`) learns `in.()`.
+
 ## 2026-10-23 — Signal Center: what changed in EdgeDesk's research, why, and whether the evidence supports it
 
 A new first seat in the terminal, **Signals** (`app.html#signals`, alias `#signal-center`). It is backed by a detection engine, an additive database layer, a graphics template family, a public preview and an operator console. **Nothing is deployed:** the migration is not applied, the hourly run is off, and Signal Center starts in shadow mode (docs/signal-center/DEPLOYMENT.md).

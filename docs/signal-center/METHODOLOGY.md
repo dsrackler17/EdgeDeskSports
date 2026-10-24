@@ -18,7 +18,12 @@ Two numbers are compared only when they answer the same question. Otherwise ther
   name (or by the ledger's own `oriented_by`) before anything is compared. A swapped or unknown orientation is
   refused.
 - **In time order, before the event**: the later record is after the earlier one, and both precede kickoff. A
-  signal detected after its event started is stored as EXPIRED, never as current.
+  signal detected after its event started is stored as EXPIRED, never as current. A tournament (golf, tennis) is
+  about a competition in progress, so its signals expire when it ends instead: 24 hours after ESPN's `endDate`, which
+  marks the start of the final day. A tournament with no end date on file is never given one.
+- **The same outcome definition, run to run**: a Simulator outcome is compared only while it means the same thing.
+  Golf's cut is compared until it is made (it then turns Observed, a provenance change); tennis's "win the next
+  match" and UFC's next-bout outcomes are never compared, because the next match changes once one is played.
 
 What a candidate fails is recorded in the run's `refused` list with its reason, for example "quote is 279 min old
 (live window 180 min): not a current price". Nothing is filled in.

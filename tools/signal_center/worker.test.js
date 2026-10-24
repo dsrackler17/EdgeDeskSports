@@ -76,7 +76,44 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
         ${res(R1, 'BUF', 'Buffalo Bills', 'make_playoffs', 80000)}, ${res(R2, 'BUF', 'Buffalo Bills', 'make_playoffs', 80300)};
       update public.sim_runs set status = 'completed', completed_at = '2026-10-20T11:00:00Z', finished_at = '2026-10-20T11:00:00Z' where run_id = ${lit(R1)};
       update public.sim_runs set status = 'completed', completed_at = '2026-10-23T11:00:00Z', finished_at = '2026-10-23T11:00:00Z' where run_id = ${lit(R2)};
-      insert into public.sim_published (sport, competition, season, run_id, input_snapshot_at, published_at, previous_run_id) values ('nfl', 'NFL', '2026', ${lit(R2)}, '2026-10-23T10:00:00Z', '2026-10-23T11:05:00Z', ${lit(R1)});
+      insert into public.sim_published (sport, competition, season, run_id, input_snapshot_at, published_at, previous_run_id) values ('nfl', 'NFL', '2026', ${lit(R2)}, '2026-10-23T10:00:00Z', '2026-10-23T11:05:00Z', ${lit(R1)});`);
+
+    /* a golf tournament and a UFC division, published the same way: people,
+       not teams; the Simulator calls UFC "ufc", Signal Center "mma" */
+    const G1 = 'bbbbbbbb-1111-4111-8111-000000000001', G2 = 'bbbbbbbb-1111-4111-8111-000000000002', U1 = 'cccccccc-1111-4111-8111-000000000001', U2 = 'cccccccc-1111-4111-8111-000000000002';
+    const simRun = (id, sport, comp, k, at) => `(${lit(id)}, ${lit(sport)}, ${lit(comp)}, '2026', ${lit(h(k))}, '1', 'pcg', ${N}, ${lit(sport + '_v1')}, 'sim/0.1', ${lit(sport + '_2026')}, ${lit(h('c'))}, ${lit(at)}, 'snap', ${lit(h('a'))}, 'running', now())`;
+    const resP = (run, id, name, outcome, count, prov) => res(run, id, name, outcome, count).replace(/'Research'\)$/, lit(prov || 'Research') + ')');
+    db.sql(`insert into public.sim_runs (run_id, sport, competition, season, idempotency_key, seed, prng_version, n_sims, model_version, engine_version, rules_version, config_hash, input_snapshot_at, input_ref, input_hash, status, started_at)
+      values ${simRun(G1, 'golf', 'PGA Tour Test Open', '3', '2026-10-22T08:00:00Z')}, ${simRun(G2, 'golf', 'PGA Tour Test Open', '4', '2026-10-23T08:00:00Z')},
+             ${simRun(U1, 'ufc', 'UFC lightweight', '5', '2026-10-15T08:00:00Z')}, ${simRun(U2, 'ufc', 'UFC lightweight', '6', '2026-10-22T08:00:00Z')};
+      insert into public.sim_team_results (run_id, entity_id, entity_name, entity_groups, outcome, category, applicable, outcome_count, n_sims, probability, mcse, wilson_lo, wilson_hi, interval_method, fair_decimal, provenance) values
+        ${res(G1, 'pga-1', 'Test Golfer', 'top_10', 30000)}, ${res(G2, 'pga-1', 'Test Golfer', 'top_10', 42000)},
+        ${resP(G1, 'pga-1', 'Test Golfer', 'make_cut', 80000)}, ${resP(G2, 'pga-1', 'Test Golfer', 'make_cut', 100000, 'Observed')},
+        ${resP(U1, 'ufc-1', 'Test Fighter', 'title_shot', 20000, 'Estimated')}, ${resP(U2, 'ufc-1', 'Test Fighter', 'title_shot', 35000, 'Estimated')},
+        ${res(U1, 'ufc-1', 'Test Fighter', 'win_next_bout', 50000)}, ${res(U2, 'ufc-1', 'Test Fighter', 'win_next_bout', 70000)};
+      update public.sim_runs set status = 'completed', completed_at = input_snapshot_at + interval '1 hour', finished_at = input_snapshot_at + interval '1 hour' where run_id in (${lit(G1)}, ${lit(G2)}, ${lit(U1)}, ${lit(U2)});
+      insert into public.sim_published (sport, competition, season, run_id, input_snapshot_at, published_at, previous_run_id) values
+        ('golf', 'PGA Tour Test Open', '2026', ${lit(G2)}, '2026-10-23T08:00:00Z', '2026-10-23T09:05:00Z', ${lit(G1)}),
+        ('ufc', 'UFC lightweight', '2026', ${lit(U2)}, '2026-10-22T08:00:00Z', '2026-10-22T09:05:00Z', ${lit(U1)});`);
+
+    /* men's college basketball: two published daily runs and one that lost
+       the race (superseded, never shown), as basketball/ncaam_forecast writes them */
+    db.applyFile(F('ncaam_forecast.sql'));
+    const M1 = 'dddddddd-1111-4111-8111-000000000001', M2 = 'dddddddd-1111-4111-8111-000000000002', M3 = 'dddddddd-1111-4111-8111-000000000003', MK = 'ncaam_rtm@1.2.0';
+    const fc = (run, game, home, away, p, gh, flags, regime) => `(${lit(run)}, ${lit(game)}, '2026-10-25T00:00:00Z', ${lit(home)}, ${lit(away)}, ${lit(home + ' U')}, ${lit(away + ' State')}, false, null, ${lit(regime || 'D1_D1')}, true, null,
+       ${p}, 0.05, '{"mean":3,"q10":-9,"q90":15}'::jsonb, '{"mean":140,"q10":125,"q90":155}'::jsonb, 72, 69, ${lit(JSON.stringify({ home: gh, away: 1 }))}::jsonb, ${lit(JSON.stringify(flags || []))}::jsonb, 'Not modelled: no owned college-basketball availability feed.')`;
+    db.sql(`insert into public.ncaam_fc_models (model_key, model_id, version, engine, config, config_sha256) values (${lit(MK)}, 'ncaam_rtm', '1.2.0', 'research_team_model', '{}'::jsonb, ${lit(h('e'))});
+      insert into public.ncaam_fc_champion (scope, model_key, decision) values ('ncaam', ${lit(MK)}, 'INIT');
+      insert into public.ncaam_fc_runs (run_id, idempotency_key, model_key, artifact_sha256, snapshot_sha256, as_of, expected_games) values
+        (${lit(M1)}, ${lit(h('7'))}, ${lit(MK)}, ${lit(h('8'))}, ${lit(h('9'))}, '2026-10-22T13:00:00Z', 2),
+        (${lit(M2)}, ${lit(h('6'))}, ${lit(MK)}, ${lit(h('8'))}, ${lit(h('9'))}, '2026-10-23T13:00:00Z', 2),
+        (${lit(M3)}, ${lit(h('5'))}, ${lit(MK)}, ${lit(h('8'))}, ${lit(h('9'))}, '2026-10-23T12:00:00Z', 2);
+      insert into public.ncaam_fc_forecasts (run_id, game_id, start_utc, home_id, away_id, home_name, away_name, neutral, event, regime, available, unavailable_reason, p_home, p_ot, margin, total, pts_home, pts_away, games_played, data_quality, availability_assumption) values
+        ${fc(M1, '401', 'Home', 'Away', 0.60, 0, ['EARLY_SEASON_FEW_GAMES'])}, ${fc(M2, '401', 'Home', 'Away', 0.52, 1, ['EARLY_SEASON_FEW_GAMES'])},
+        ${fc(M1, '402', 'Big', 'Small', 0.80, 0, [], 'D1_OTHER')}, ${fc(M2, '402', 'Big', 'Small', 0.60, 1, [], 'D1_OTHER')},
+        ${fc(M3, '401', 'Home', 'Away', 0.30, 1)}, ${fc(M3, '402', 'Big', 'Small', 0.90, 1, [], 'D1_OTHER')};
+      update public.ncaam_fc_runs set status = 'completed', completed_at = as_of + interval '1 hour' where run_id in (${lit(M1)}, ${lit(M2)});
+      update public.ncaam_fc_runs set status = 'superseded', completed_at = as_of + interval '2 hours' where run_id = ${lit(M3)};
       update public.sc_config set value = '"live"' where key = 'mode';
       insert into public.sc_preferences (user_id, sports, min_label, notify) values (${lit(SUB)}, '{nfl,cfb}', 'Routine', true), (${lit(NOSUB)}, '{}', 'Monitor', true);`);
 
@@ -95,8 +132,16 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
     chk('live sports publish, others stay in shadow', +q("select count(*) from public.sc_signals where publication = 'PUBLISHED';") > 0 && +q("select count(*) from public.sc_signals where publication = 'PUBLISHED' and sport not in ('nfl','cfb');") === 0);
     chk('every published signal is VERIFIED and not a fixture', q("select count(*) from public.sc_signals where publication = 'PUBLISHED' and (verification_state <> 'VERIFIED' or fixture);") === '0');
     const sims = JSON.parse(q("select coalesce(json_agg(json_build_object('subject', subject_label, 'change', change_pp, 'v', verification_state, 'href', v.payload->'links'->>'simulator')), '[]') from public.sc_signals s join public.sc_signal_versions v on v.version_id = s.current_version_id where s.category = 'SIMULATION_SHIFT';"));
-    chk('two simulator shifts (Chiefs −13.0, Lions +7.6); the Bills’ 0.3 pp is not one', sims.length === 2 && sims.some((s) => s.subject === 'Kansas City Chiefs' && +s.change === -13) && sims.some((s) => s.subject === 'Detroit Lions' && +s.change === 7.6), sims);
-    chk('…both verified by the server against the published rows, linking to the Simulator', sims.every((s) => s.v === 'VERIFIED' && s.href === '#simulator/nfl') && +q("select count(*) from public.sc_signal_events where kind = 'server_check' and (detail->>'ok')::boolean;") === 2);
+    const nflSims = sims.filter((s) => s.href === '#simulator/nfl');
+    chk('two NFL simulator shifts (Chiefs −13.0, Lions +7.6); the Bills’ 0.3 pp is not one', nflSims.length === 2 && nflSims.some((s) => s.subject === 'Kansas City Chiefs' && +s.change === -13) && nflSims.some((s) => s.subject === 'Detroit Lions' && +s.change === 7.6), sims);
+    chk('…verified by the server against the published rows, like every simulator shift', sims.every((s) => s.v === 'VERIFIED') && +q("select count(*) from public.sc_signal_events where kind = 'server_check' and (detail->>'ok')::boolean;") === sims.length);
+    const person = JSON.parse(q("select coalesce(json_agg(json_build_object('sport', s.sport, 'outcome', s.outcome_id, 'subject', s.subject_label, 'kind', v.payload->'subject'->>'kind', 'href', v.payload->'links'->>'simulator', 'pub', s.publication) order by s.sport), '[]') from public.sc_signals s join public.sc_signal_versions v on v.version_id = s.current_version_id where s.category = 'SIMULATION_SHIFT' and s.sport in ('golf', 'mma', 'ufc');"));
+    chk('golf: the top-10 move is a signal about a player; the cut, once made (Observed), is not compared', person.filter((x) => x.sport === 'golf').length === 1 && person.some((x) => x.sport === 'golf' && x.outcome === 'top_10' && x.kind === 'player'), person);
+    chk('UFC: stored as mma, linking to the Simulator’s ufc; the next bout is never compared', person.filter((x) => x.sport === 'mma').length === 1 && person.some((x) => x.sport === 'mma' && x.outcome === 'title_shot' && x.href === '#simulator/ufc') && !person.some((x) => x.sport === 'ufc'), person);
+    const hoops = JSON.parse(q("select coalesce(json_agg(json_build_object('ev', s.event_key, 'change', s.change_pp, 'v', s.verification_state, 'cls', v.payload->'evidence'->>'class', 'prev', v.payload->'values'->'previous'->>'snapshot_id', 'cur', v.payload->'values'->'current'->>'snapshot_id', 'flags', v.payload->'quality'->'flags')), '[]') from public.sc_signals s join public.sc_signal_versions v on v.version_id = s.current_version_id where s.category = 'FORECAST_SHIFT' and s.sport = 'ncaam';"));
+    chk('men’s college basketball: one forecast shift between the two published runs (60% to 52%)', hoops.length === 1 && hoops[0].ev === 'NCAAM|401' && +hoops[0].change === 8 && hoops[0].v === 'VERIFIED', hoops);
+    chk('…never from the run that lost the race (superseded), nor a non-D1 game', hoops.every((x) => x.prev !== M3 && x.cur !== M3 && x.ev !== 'NCAAM|402'), hoops);
+    chk('…a game rated in between is its source-dated support, and the early-season flag rides along', hoops.length === 1 && hoops[0].cls === 'SUPPORTED_ASSOCIATION' && (hoops[0].flags || []).indexOf('DATA_LIMITED') >= 0, hoops);
     const gStats = JSON.parse(q("select json_build_object('ready', count(*) filter (where status = 'READY'), 'failed', count(*) filter (where status = 'FAILED'), 'mismatch', count(*) filter (where g.payload_sha256 <> v.payload_sha256)) from public.sc_graphics g join public.sc_signal_versions v using (version_id);"));
     chk('graphics: drawn for the due versions, three formats each, from the exact stored payload', gStats.ready > 0 && gStats.ready % 3 === 0 && gStats.mismatch === 0, gStats);
     chk('graphics: none failed its checks', gStats.failed === 0, gStats);

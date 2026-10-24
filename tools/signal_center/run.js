@@ -143,7 +143,7 @@ async function liveRun(db, inputs, opts) {
   console.log('run ' + run + ' · mode ' + begun.mode + ' · live sports ' + JSON.stringify(begun.live_sports));
   try {
     /* 2: the database layers */
-    const dbIn = { simPairs: await DB.simPairs(db, note), nbaInjuries: await DB.nbaInjuries(db, inputs.now, note), kalshi: await DB.kalshiMids(db, note) };
+    const dbIn = { simPairs: await DB.simPairs(db, note), nbaInjuries: await DB.nbaInjuries(db, inputs.now, note), kalshi: await DB.kalshiMids(db, note), ncaamGames: await DB.ncaamGames(db, inputs.now, note) };
     try { dbIn.priorDivergences = ((await db.rpc('sc_prior_divergences', {})) || []).map((r) => r.payload); } catch (e) { note('sc', 'stored divergences unreadable: ' + e.message); dbIn.priorDivergences = []; }
     /* 3 */
     const r = opts.fixture ? { signals: opts.fixture, dna: [], stats: { fixture: true }, refused: [], ineligible: {} } : evaluate(Object.assign({}, inputs, { db: dbIn }));
@@ -189,7 +189,7 @@ async function liveRun(db, inputs, opts) {
     counts.requests = db.used + 1;
     /* 10 */
     const fin = await db.rpc('sc_finish_run', { p_run: run, p_status: 'completed', p_counts: counts, p_error: null });
-    console.log('run completed · ' + fin.expired + ' signals expired (their event started) · ' + counts.requests + ' database requests');
+    console.log('run completed · ' + fin.expired + ' signals expired (their event started or their competition ended) · ' + counts.requests + ' database requests');
     return { run, counts };
   } catch (e) {
     console.error('run failed: ' + e.message);
