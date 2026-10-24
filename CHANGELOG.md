@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-24 — College number: unfed matchup inputs start at league average; the schedule term computed as trained, and rejected
+
+Two fixes that follow from the leave-one-term-out record (`docs/cfb-validation/LOTO.md`). Pricing patch `edgedesk_cfb_r1+p12` (`football/cfb_validation/versions.jsonl`).
+
+- **The matchup inputs the season feed never supplies.**
+  - The season feed (`football/rankings/engine_efficiency.json` `unavailable_features`) has no EPA, explosiveness, passing-down, front-disruption, drive or field-position rates.
+  - The live board used to hold those inputs at the 2025 closing seed all season. The held-out test replays them at 0, so 0.42 pts of the live matchup term on average had never been tested.
+  - `engine.js` `ingest.resetUnmeasuredEfficiency` now sets them to league average for every team, offence and defence, at the break into the artifact's season. `build_coverage.js` `buildState` calls it, and so does the board's replay in `app.html` (also on a late join).
+  - The profile labels these inputs `unmeasured` ("league average: not measured by the season's play-level feed"). The efficiency gap skips them. An input the feed later supplies is absorbed and labelled as usual.
+  - **Effect on the line.** On the 2026-10-24 slate, the matchup term moves the line by 0.42 pts on average (median 0.33, max 1.56; 33 of 100 games by 0.5 or more, 5 by 1.0 or more). Every slate coverage check passes. `loto.js --live` now finds 0.00 pts of the live term from last season's values, so the live term is the tested one.
+- **The schedule term.**
+  - Rest, byes, road stretches and look-aheads used to be priced as `points_per_stress × (away stress − home stress) / 100`, built from a 0–100 index. That form ignored the weights' signs (a bye and a look-ahead carry the other sign), floored the index at 0 and divided by 100 a second time. It moved the line by 0.001 pts on average.
+  - `situation.schedulePoints` now computes the term exactly as `train_layers.py` fitted it: Σ w_k (home_k − away_k), over the components known for both sides. It averages 1.18 pts.
+  - The term is published as `shadow_points` and adds 0 to the number unless `params.schedule.points_applied` is set, the way travel and altitude work.
+  - **Held-out test.** `loto.js` has a new shadow-term mode that tests the term added to the shipped number on 2022–2025 (3,004 games). Result: **REJECTED**. MAE is 0.040 worse (95% CI −0.090 to +0.010, p = 0.14), worse in 3 of 4 seasons, and the weight k is 0.05 [−0.32, 0.43], which carries no signal. Even in the 2014–2019 seasons it was fitted on, k is only 0.47. It also moves the number away from the close. So it stays out of the line.
+  - The 0–100 index stays as a display of the schedule geometry and prices nothing.
+  - **Priced confidence.** The confidence ledger's priced confidence (how much of EdgeDesk's information the number uses) drops a little where both sides have schedule context: 41.3 → 38.6 on a test game, because the schedule no longer counts as priced. Information confidence, the data-quality score and the input contract do not change: the schedule context is still on file and still feeds the outcome range.
+  - **Cards and docs.** In `FACTORS.md`, Rest and schedule now reads "no · tested on unseen games and rejected: adds 0". A college schedule spot or rest edge carries `0 PTS` and says so.
+- **Tests.**
+  - `football/cfb_p4/tests.js` has 110 checks, 6 new: the reset, its labels, the efficiency-gap fallback, re-absorption after a reset, the schedule term's trained form checked by hand, and the not-applied gate with its shadow points.
+  - `football/fbs/efficiency_replay.test.js` has 11 checks: the build resets only for the artifact's own season.
+  - `tools/football/loto.test.js` has 44 checks: the shadow arithmetic by hand; a real shadow term is VALIDATED and a noise one never is; the record's live split has no last-season part; a shadow term is in the number exactly when its record validates it.
+  - `tools/football/game_research.test.js` has 248 checks.
+  - The research-card libs' stamps moved (`20261024sr1`), and so did the home page's model stamp.
+
 ## 2026-10-24 — Content engine: the draft and its integrity check read one availability index
 
 Since the morning's editorial data refresh, `System integrity tests` failed on every branch (10 checks: the deterministic draft was BLOCKED, so it was never approved, exported or sent). The content-engine live check (`evidence.test.js` L) failed on six articles.

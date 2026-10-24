@@ -618,6 +618,74 @@
           && (!other || (/TRAINED SEED/.test(pr.efficiency[other].source || '') && pr.efficiency_seed_features.indexOf(other) >= 0)) && !!f;
       })());
 
+    /* features the season feed never supplies start the season at league
+       average (as research/loto.js replays them), not at last season's seed */
+    chk('an unmeasured feature is reset to league average for every team and labelled so',
+      (function () {
+        var st = E.newState();
+        var before = E.strength.profile(st, 'alabama', true).efficiency.epa_per_play.value;
+        E.ingest.seasonBreak(st);
+        E.ingest.resetUnmeasuredEfficiency(st, ['epa_per_play']);
+        var pr = E.strength.profile(st, 'alabama', true), m = pr.efficiency.epa_per_play, d = pr.efficiency.def_epa_per_play;
+        var everyTeam = Object.keys(st.eff).every(function (t) { return st.eff[t].epa_per_play === 0 && st.eff[t].def_epa_per_play === 0; });
+        return before !== 0 && everyTeam && m.value === 0 && m.unmeasured === true && d.unmeasured === true
+          && /league average/.test(m.source) && pr.efficiency_unmeasured_features.indexOf('def_epa_per_play') >= 0
+          && pr.efficiency.success_rate.unmeasured === undefined && pr.efficiency.success_rate.value !== 0;
+      })());
+    chk('a reset feature is not read as an observation: the efficiency gap falls back to success rate',
+      (function () {
+        var st = E.newState();
+        E.ingest.seasonBreak(st);
+        E.ingest.resetUnmeasuredEfficiency(st, ['epa_per_play']);
+        var h = E.strength.profile(st, 'alabama', true), a = E.strength.profile(st, 'auburn', true);
+        var g = E.fairLine.efficiencyGap(h, a);
+        var sr = (h.efficiency.success_rate.value - h.efficiency.def_success_rate.value) - (a.efficiency.success_rate.value - a.efficiency.def_success_rate.value);
+        return Math.abs(g - sr) < 1e-12;
+      })());
+    chk('a reset feature the feed later supplies is absorbed and labelled by its own updates',
+      (function () {
+        var st = E.newState();
+        E.ingest.seasonBreak(st);
+        E.ingest.resetUnmeasuredEfficiency(st, ['epa_per_play']);
+        E.ingest.absorbGame(st, { home: 'Alabama', away: 'Auburn', home_points: 31, away_points: 17,
+          team_stats: { home: { epa_per_play: 0.15 }, away: { epa_per_play: -0.02 } } });
+        var m = E.strength.profile(st, 'alabama', true).efficiency.epa_per_play;
+        return !m.unmeasured && m.value !== 0 && /updated this season/.test(m.source || '');
+      })());
+
+    /* the schedule term is priced only in the form it was trained in, and only
+       once its held-out record puts it in (research/loto.js) */
+    chk('the schedule term is the trained form: sum of w_k (home_k - away_k)',
+      (function () {
+        var hS = { rest_days: 5, consecutive_road: 0, road_last3: 1, prev_opp_rating: 10, next_opp_rating: 5 };
+        var aS = { rest_days: 13, consecutive_road: 2, road_last3: 2, prev_opp_rating: -5, next_opp_rating: 12 };
+        var m = E.situation.schedulePoints(hS, aS), w = P.schedule.weights, h = E.situation.scheduleComponents(hS), a = E.situation.scheduleComponents(aS);
+        var want = 0, k, n = 0;
+        for (k in w) if (h[k] != null && a[k] != null) { want += w[k] * (h[k] - a[k]); n++; }
+        return Math.abs(m.shadow_points - want) < 1e-12 && m.components.length === n && n === 6
+          && Math.abs(want) > 0.05;
+      })());
+    chk('…measured but 0 in the number until params put it in, with the shadow points published',
+      (function () {
+        var sched = { home: { rest_days: 5, consecutive_road: 0, road_last3: 1, prev_opp_rating: 10, next_opp_rating: 5 },
+          away: { rest_days: 13, consecutive_road: 2, road_last3: 2, prev_opp_rating: -5, next_opp_rating: 12 } };
+        var req = function () { return { season: P.trained_through_season, week: 5, state: E.newState(),
+          game: { home: 'Alabama', away: 'Auburn', neutral_site: false },
+          teams: { home: { conference: 'SEC', schedule: sched.home }, away: { conference: 'SEC', schedule: sched.away } } }; };
+        var off = E.projectGame(req()), c0 = off.contributions.filter(function (c) { return c.key === 'schedule'; })[0];
+        var was = P.schedule.points_applied;
+        P.schedule.points_applied = true;
+        var on;
+        try { on = E.projectGame(req()); } finally { if (was === undefined) delete P.schedule.points_applied; else P.schedule.points_applied = was; }
+        var c1 = on.contributions.filter(function (c) { return c.key === 'schedule'; })[0];
+        return P.schedule.points_applied !== true && c0.points === 0 && c0.available === false && /NOT applied/.test(c0.reason)
+          && Math.abs(c0.shadow_points) > 0.05 && c1.available === true && Math.abs(c1.points - c0.shadow_points) < 1e-9
+          && Math.abs((on.model.fair_spread - off.model.fair_spread) - c0.shadow_points) < 1e-6;
+      })());
+    chk('a schedule known for one side only is not a difference',
+      E.situation.schedulePoints({ rest_days: 6 }, null).available === false
+        && E.situation.schedulePoints({ rest_days: 6 }, null).shadow_points === undefined);
+
     chk('the volatility index states how many drivers it rests on',
       (function () {
         var st = E.strength.newState();

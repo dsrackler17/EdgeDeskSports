@@ -873,6 +873,13 @@ section('15. every watch item says what it does to EdgeDesk’s number (docs/gam
   chk('registry: the matchup term carries its leave-one-term-out verdict', FX.matchup.in_number && FX.matchup.status === STATUS_FROM_LOTO[LM.status], [FX.matchup.status, LM.status]);
   chk('registry: the unpriced lanes are exactly the inert lane pairings', JSON.stringify(FX.matchup.unpriced_lanes.slice().sort()) === JSON.stringify(Object.keys(FE.LANE_PAIRS).filter((l) => LT.pairs.some((p) => p.name === FE.LANE_PAIRS[l] && p.holdout.inert && (!LT.live || (LT.live.by_pairing.find((x) => x.name === p.name) || { mean_abs: 0 }).mean_abs < FE.LANE_LIVE_MIN))).sort()), FX.matchup.unpriced_lanes);
   chk('registry: the data-quality score moves nothing and is not validated', FX.reliability.in_number === false && FX.reliability.status === 'NOT_VALIDATED');
+  global.window = global.window || global;
+  const PS = require(path.join(ROOT, 'football', 'cfb_p4', 'params.js')).schedule || {}, LS = LT.terms.find((t) => t.key === 'schedule');
+  chk('registry: rest and schedule is in the number only when params.js applies it, and carries its tested-added verdict', FX.schedule.in_number === (PS.points_applied === true)
+    && (FX.schedule.in_number || (LS.shadow === true && FX.schedule.status === (LS.status === 'VALIDATED' ? 'VALIDATED' : (LS.status === 'REJECTED' ? 'REJECTED' : 'NOT_PRICED')) && FX.schedule.points === 0)), [FX.schedule.status, LS.status]);
+  const noSched = { league: 'cfb', drivers: { rows: [], small: [], unpriced: [] } };
+  chk('…so a college schedule spot or rest edge says 0 PTS while it is out of the number', FX.schedule.in_number
+    || ['schedule', 'travel'].every((fam) => { const e = GS.effectOf(noSched, { id: fam, family: fam, title: fam === 'travel' ? 'REST EDGE' : 'SCHEDULE SPOT' }, FX); return e.kind === 'zero' && e.term === 'schedule'; }));
   let fresh = true;
   try { execFileSync(process.execPath, [path.join(ROOT, 'tools', 'football', 'factor_evidence.js'), '--check'], { stdio: 'pipe' }); } catch (e) { fresh = false; }
   chk('docs/game-research/FACTORS.md and factors.json are generated from the current records', fresh);

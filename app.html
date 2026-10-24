@@ -2930,7 +2930,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261024lo1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261024sr1">
 <link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021inj1">
 </head>
 <body>
@@ -4053,9 +4053,9 @@ window.mcRefresh=function(){
 <!-- the canonical team resolver (the one supabase/functions/kalshi_sync links games with):
      the graphic places each Kalshi price on this game's own home or away team with it -->
 <script src="/lib/football_identity.js?v=20261021ks1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261024lo1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261024lo1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261024lo1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261024sr1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261024sr1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261024sr1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -52987,6 +52987,9 @@ function fbP4Load(force,signal){
     seasons.forEach(function(yy){
       chain=chain.then(function(){
         E.ingest.seasonBreak(st);
+        /* as the build does: the features this season's play feed never
+           supplies start the season at league average, not last season */
+        if(yy===cur)fbP4ResetUnmeasured(st,S.engineEfficiency,yy);
         return fbP4Schedule(yy,signal).then(function(res){
           /* THE BUILD'S ORDER, tie-break included (football/fbs/build_coverage.js
              buildState). The opponent adjustment is sequential, so two games
@@ -53205,6 +53208,17 @@ function fbP4EffForGame(D,r,season){
   if(!h&&!a)return null;
   return {home:h,away:a};
 }
+/* football/fbs/build_coverage.js buildState: the artifact's unavailable
+   features are reset to league average once, right after the season break
+   into the artifact's season. Once per state, so a late join cannot wipe a
+   feature the replay has since absorbed. */
+function fbP4ResetUnmeasured(st,D,season){
+  var E=window.EDCfbP4;
+  if(!st||st.effUnmeasured||!E||!E.ingest||typeof E.ingest.resetUnmeasuredEfficiency!=='function')return false;
+  if(!D||D.schema!=='edgedesk_cfb_engine_efficiency_v1'||+D.season!==+season||!Array.isArray(D.unavailable_features))return false;
+  E.ingest.resetUnmeasuredEfficiency(st,D.unavailable_features);
+  return true;
+}
 function fbP4EngineEfficiencyLoad(){
   var R=FBP4_EFF;
   if(R.data&&Date.now()-R.at<15*60000)return Promise.resolve(R.data);
@@ -53254,6 +53268,10 @@ function fbP4ApplyEngineEfficiency(){
      "moving" since the last update. So a game the replay already absorbed is
      only counted here, and a game the build would not absorb (no final
      score) is not absorbed either. */
+  /* the replay resets these at the season break when the artifact was in
+     time; when it arrived late, reset them now (they are never absorbed, so
+     the order does not matter) */
+  fbP4ResetUnmeasured(S.state,D,S.season);
   var done=FBP4_EFF_DONE.get(S.state)||{};
   var games=0,teamRows=0,missing=0,late=0;
   rows.forEach(function(r){
@@ -53282,7 +53300,8 @@ function fbP4ApplyEngineEfficiency(){
   S.notes.push('Play-level matchup replay: '+games+' completed game'+(games===1?'':'s')
     +' supplied current efficiency ('+teamRows+' team rows)'
     +(missing?('; '+missing+' completed game'+(missing===1?'':'s')+' still wait on the public play feed'):'')
-    +'. Missing EPA-only fields remain unavailable; they are never filled with zero.');
+    +'. The fields this feed does not supply (EPA, explosiveness, front disruption, drive and field-position rates) '
+    +'are set to league average and labeled unmeasured, as the held-out test replayed them; they are never carried from last season.');
   return games;
 }
 

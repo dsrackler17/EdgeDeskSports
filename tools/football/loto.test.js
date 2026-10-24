@@ -22,8 +22,9 @@ function section(t) { console.log('\n== ' + t); }
 
 /* ------------------------------------------------------------ synthetic games
    The truth is known: matchup is real at its shipped weight, conference is
-   pure noise, schedule is tiny, home field is real, rating is real but
-   shipped 10% too large. One pairing never moves. */
+   pure noise, home field is real, rating is real but shipped 10% too large.
+   Schedule is a SHADOW term (not in fair), real unless opts.schedReal is
+   false. One pairing never moves. */
 function rng(seed) { let a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function gauss(R) { let u = 0, v = 0; while (!u) u = R(); while (!v) v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 function synth(opts) {
@@ -31,15 +32,15 @@ function synth(opts) {
   const R = rng(opts.seed || 7), rows = [];
   for (let season = 2014; season <= 2025; season++) {
     for (let i = 0; i < (opts.perSeason || 900); i++) {
-      const rating = gauss(R) * 9, matchup = gauss(R) * 2.5, conference = gauss(R) * 1.2, schedule = gauss(R) * 0.004;
+      const rating = gauss(R) * 9, matchup = gauss(R) * 2.5, conference = gauss(R) * 1.2, sched = gauss(R) * 1.5;
       const neutral = R() < 0.07, hfa = neutral ? 0 : 2.8;
-      const truth = rating / 1.1 + matchup + hfa;            /* conference and schedule carry nothing */
+      const truth = rating / 1.1 + matchup + hfa + (opts.schedReal === false ? 0 : sched);   /* conference carries nothing */
       const margin = Math.round(truth + gauss(R) * 13);
-      const c = { rating, hfa, qb: 0, matchup, travel: 0, schedule, injury: 0, rivalry: 0, conference };
+      const c = { rating, hfa, qb: 0, matchup, travel: 0, schedule: 0, injury: 0, rivalry: 0, conference };
       const fair = Object.keys(c).reduce((s, k) => s + c[k], 0);
       const kick = Date.UTC(season, 8, 1) + i * 36e5;
       rows.push({ game_id: season + '_' + i, season, completed: true, home_fbs: true, away_fbs: true, neutral_site: neutral,
-        final_margin: margin, fair, sigma: 14.5, c, c_avail: { matchup: true },
+        final_margin: margin, fair, sigma: 14.5, c, c_avail: { matchup: true }, shadow: { schedule: sched },
         prediction_ts: new Date(kick - 4 * 864e5).toISOString(), kickoff: new Date(kick).toISOString(),
         mkt: { close_home_line: -(truth + gauss(R) * 3) },
         mpairs: { 'early downs': matchup * 0.7, 'ball control': matchup * 0.3, 'run game': 0 } });
@@ -63,6 +64,13 @@ section('1. the arithmetic on a hand-sized case');
   chk('a term that is exactly right has k = 1', Math.abs(mn.k - 1) < 1e-9, mn.k);
   const zero = L.measure(noiseless.map((x) => Object.assign({}, x, { c: { m: 0 } })), (x) => x.c.m, { boot: 10, seed: 3 });
   chk('a term that never moves is INERT, not graded', zero.inert === true && zero.k === undefined, zero);
+  const tiny = L.measure(noiseless.map((x) => Object.assign({}, x, { c: { m: x.c.m * 0.01 } })), (x) => x.c.m, { boot: 10, seed: 4 });
+  chk('a term that moves under 0.05 pts on average is flagged negligible', tiny.negligible === true && tiny.mean_abs_term < L.NEGLIGIBLE_PTS, tiny);
+  /* a SHADOW term is not in fair: with = fair + t (11, -3, 3 → errors 1, 1, 3), without = fair (errors 2, 3, 2) */
+  const sh = L.measure(g, (x) => x.c.m, { boot: 50, seed: 1, shadow: true });
+  chk('a shadow term is tested added: MAE with is fair + term, without is fair', Math.abs(sh.mae_with - 5 / 3) < 1e-3 && Math.abs(sh.mae_without - 7 / 3) < 1e-3 && Math.abs(sh.delta - 2 / 3) < 1e-3, sh);
+  /* k: b = fair → y − b = 2, −3, −2 → (3·2 + −2·−3 + 1·−2) / 14 = 10/14 */
+  chk('…and its k is fitted against the shipped number without it', Math.abs(sh.k - 10 / 14) < 1e-3, sh.k);
 }
 
 section('2. weight verdicts read k’s interval');
@@ -85,8 +93,10 @@ section('3. synthetic games: the harness finds the truth it was given');
   chk('a real term at its right weight: k interval holds 1, delta positive', T.matchup.holdout.k_ci95[0] < 1 && T.matchup.holdout.k_ci95[1] > 1 && T.matchup.holdout.delta > 0, T.matchup.holdout);
   chk('…and the promotion rules validate it', T.matchup.status === 'VALIDATED', [T.matchup.status, T.matchup.reasons]);
   chk('a pure-noise term: k interval holds 0, never VALIDATED', T.conference.holdout.k_ci95[0] < 0 && T.conference.holdout.k_ci95[1] > 0 && T.conference.status !== 'VALIDATED', [T.conference.holdout.k_ci95, T.conference.status]);
-  chk('a term that moves under 0.05 pts is NEGLIGIBLE, not graded', T.schedule.status === 'NEGLIGIBLE' && T.schedule.weight.key === 'NEGLIGIBLE', T.schedule.status);
-  chk('…and its trained-scale row restates k in trained units', T.schedule.trained_scale && Math.abs(T.schedule.trained_scale.k - T.schedule.holdout.k / 100) < 0.01, T.schedule.trained_scale);
+  chk('a real shadow term left out of the number is found: tested added, k interval holds 1, VALIDATED', T.schedule.shadow === true && T.schedule.holdout.k_ci95[0] < 1 && T.schedule.holdout.k_ci95[1] > 1 && T.schedule.holdout.delta > 0 && T.schedule.status === 'VALIDATED', [T.schedule.holdout.k_ci95, T.schedule.status]);
+  const JN = L.run(synth({ schedReal: false, seed: 11 }), { boot: 400 });
+  const SN = JN.terms.find((t) => t.key === 'schedule');
+  chk('…and a shadow term that carries nothing is never VALIDATED', SN.status !== 'VALIDATED' && SN.holdout.k_ci95[0] < 0 && SN.holdout.k_ci95[1] > 0, [SN.status, SN.holdout.k_ci95]);
   chk('a real but over-weighted rating is caught (shipped 1.1×, best fit ≈ 0.91)', T.rating.holdout.k_ci95[1] < 1 && T.rating.weight.key === 'OVERWEIGHTED', T.rating.holdout.k_ci95);
   chk('the core rating is never put to the promotion rules', T.rating.status === null);
   const P = {}; J.pairs.forEach((p) => { P[p.name] = p; });
@@ -118,6 +128,13 @@ section('4. the committed record');
   chk('the matchup term was measured on the held-out window', mt && mt.holdout.n > 2000 && mt.fit_window && mt.fit_window.seasons.join() === '2014,2019');
   chk('inert pairings name the features the season feed does not supply', (J.pairs || []).filter((p) => p.holdout.inert).every((p) => p.unfed_features.length > 0));
   chk('the live split is recorded', J.live && J.live.games > 0 && J.live.mean_abs_matchup > 0);
+  chk('the live board resets the unfed features: none of its matchup term comes from last season', J.live.reset === true && J.live.mean_abs_last_season === 0 && J.live.games_last_season_ge_half_pt === 0, J.live);
+  global.window = global.window || global;
+  const PP = require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
+  J.terms.filter((t) => t.shadow).forEach((t) => {
+    chk('a shadow term is in the number exactly when its record validates it · ' + t.key, ((PP[t.key] || {}).points_applied === true) === (t.status === 'VALIDATED'), [t.status, (PP[t.key] || {}).points_applied]);
+  });
+  chk('the schedule term is tested as a shadow term', J.terms.some((t) => t.key === 'schedule' && t.shadow === true && t.holdout.n > 2000 && t.fit_window && t.fit_window.seasons.join() === '2014,2019'));
   const md = fs.readFileSync(path.join(ROOT, 'docs', 'cfb-validation', 'LOTO.md'), 'utf8');
   chk('docs/cfb-validation/LOTO.md is the render of the committed record', md === L.render(J));
 }

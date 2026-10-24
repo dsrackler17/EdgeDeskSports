@@ -375,7 +375,9 @@ function matchupPairs(mH, mA) {
 }
 function comp(out, key) {
   var c = (out.contributions || []).filter(function (x) { return x.key === key; })[0];
-  return c ? { pts: r3(c.points), avail: !!c.available } : { pts: null, avail: false };
+  return c ? { pts: r3(c.points), avail: !!c.available,
+    shadow: typeof c.shadow_points === 'number' && isFinite(c.shadow_points) ? r3(c.shadow_points) : null }
+    : { pts: null, avail: false, shadow: null };
 }
 
 freezes.forEach(function (T) {
@@ -449,6 +451,9 @@ freezes.forEach(function (T) {
         rivalry: comp(out, 'rivalry').pts, conference: comp(out, 'conference').pts
       },
       c_avail: { matchup: comp(out, 'matchup').avail, schedule: comp(out, 'schedule').avail },
+      /* what a measured-but-unapplied term would add (0 in fair), so the
+         held-out test can price it in (research/loto.js shadow terms) */
+      shadow: { schedule: comp(out, 'schedule').shadow },
       matchup_home_off: mH && mH.points && mH.points.available ? r3(mH.points.value) : null,
       matchup_away_off: mA && mA.points && mA.points.available ? r3(mA.points.value) : null,
       /* the matchup term by pairing, home edge minus away edge, so each of the

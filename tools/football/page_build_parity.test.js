@@ -161,6 +161,13 @@ function waitFor(test, ms) {
     { build: built.absorbed, page: S.absorbed });
   chk('with play-level rows for games the page also joined', built.efficiency_games_absorbed > 0
     && built.efficiency_games_absorbed <= R.games, { build: built.efficiency_games_absorbed, page: R.games });
+  /* the features the artifact's feed never supplies start the season at
+     league average on BOTH paths (engine.js strength.resetUnmeasured) */
+  chk('both paths reset the features the artifact says its feed never supplies',
+    Array.isArray(eff.unavailable_features) && eff.unavailable_features.length > 0
+      && JSON.stringify(Object.keys(S.state.effUnmeasured || {}).sort()) === JSON.stringify(Object.keys(built.st.effUnmeasured || {}).sort())
+      && Object.keys(built.st.effUnmeasured || {}).length === 2 * eff.unavailable_features.length,
+    { page: Object.keys(S.state.effUnmeasured || {}), build: Object.keys(built.st.effUnmeasured || {}) });
 
   /* ---- the same request, under each state ------------------------------ */
   /* every input except the rating state is the page's own request, so any
