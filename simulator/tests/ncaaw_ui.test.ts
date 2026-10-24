@@ -114,6 +114,21 @@ T.chk('a read error is shown, escaped', /could not be read: &lt;b&gt;/.test(pain
   T.chk('...the forecasts arrive in the cache', c2.forecasts.length === 1 && c2.entitled === true);
 }
 
+/* preseason: the women's seat names its season's phase; the tournament simulation stays BLOCKED */
+{
+  const pre = Date.parse('2026-10-24T15:00:00Z'), opener = Date.parse('2026-11-02T05:00:00Z');
+  T.chk('the registry dates the women\'s opening day, and the tournament stays BLOCKED', reg.games && reg.games.regular_season_start === '2026-11-02T05:00:00Z' && reg.status === 'BLOCKED');
+  T.eq('seasonPhase across the opener', [UI.seasonPhase(reg, pre), UI.seasonPhase(reg, opener), UI.seasonPhase(reg, now)], ['preseason', 'season', 'season']);
+  const paintAt = (c: any, tab: string, t: number) => N.adapter.paint({ sport: reg, cache: c, tab, nowMs: t });
+  const empty = paintAt({ fc_status: { champion_key: 'ncaaw_adjeff@1.0.0' }, entitled: true }, 'games', pre);
+  T.chk('preseason, nothing published: the preseason card and the women\'s empty state', /sm-preseason/.test(empty) && /regular season opens Mon, Nov 2/.test(empty) && /Exhibition games are not priced/.test(empty) && /No women’s college basketball forecast has been published yet/.test(empty));
+  const preCache = cache({ forecasts: [fc({ start_utc: '2026-11-03T00:00:00Z', as_of: '2026-10-24T13:50:00Z', data_quality: ['PRESEASON_RATINGS', 'EARLY_SEASON_FEW_GAMES'] })] });
+  const g = paintAt(preCache, 'games', pre);
+  T.chk('preseason, published: the card and the flagged forecasts', /sm-preseason/.test(g) && /preseason ratings/.test(g) && /74\.0%/.test(g));
+  T.chk('in season: no preseason card', !/sm-preseason/.test(games));
+  T.chk('Tournament: the blocked card names the tournament simulation, not the seat', /NCAA tournament simulation — Blocked/.test(tour));
+}
+
 /* the adapter is registered with the reader through its public hook only */
 UI.registerSport('ncaaw', N.adapter);
 T.chk('the adapter is registered beside the men\'s, as its own sport', UI._adapters.ncaaw === N.adapter && UI._adapters.ncaaw !== UI._adapters.ncaam);

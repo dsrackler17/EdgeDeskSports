@@ -6,6 +6,16 @@
 
      node basketball/ncaam_forecast/refresh.js [--hours 48] [--publish] [--now ISO]
 
+   The window: games starting in the next --hours, except in the PRESEASON.
+   Before the season's first regular-season game (the earliest season_type 2
+   game in its schedule file) the window runs to the end of the opening week
+   (opener + 7 days): no game moves a rating before then, so the opening slate
+   is priced from preseason ratings (last season's, carried) and every such
+   forecast is flagged PRESEASON_RATINGS. From the opener on, the routine
+   window applies with no change by anyone. The schedule files carry no
+   exhibition game (the source has no season_type 1 row in any season), so
+   none is priced.
+
    Routine only: the champion's CONFIGURATION is fixed (registry/champion.json);
    only its ratings and calibration move with new results. No parameter is
    chosen and nothing is promoted here (weekly.js does that, behind gates).
@@ -45,9 +55,20 @@ const DEFINITIONS = {
 
 function quarantinedThisSeason(games, season) { const m = new Map(); for (const g of games) if (g.season === season && g.quarantine.length) for (const t of [g.home_id, g.away_id]) m.set(t, (m.get(t) || 0) + 1); return m; }
 
+/** the season's first regular-season game (ms), or Infinity when its schedule lists none yet */
+function regularSeasonStart(games, season) { let t = Infinity; for (const g of games) if (g.season === season && g.season_type === 2 && g.start_ms < t) t = g.start_ms; return t; }
+const OPENING_WEEK_MS = 7 * 86400e3;
+/** the forecast window: PRESEASON (before the opener) through the end of the opening week; the routine hours from the opener on */
+function forecastWindow(games, season, nowMs, hours) {
+  const opener = regularSeasonStart(games, season); const routine = nowMs + (hours || 48) * 3600e3;
+  const iso = Number.isFinite(opener) ? new Date(opener).toISOString() : null;
+  if (nowMs < opener && Number.isFinite(opener)) return { phase: 'preseason', from: nowMs, to: Math.max(routine, opener + OPENING_WEEK_MS), regular_season_start: iso };
+  return { phase: 'season', from: nowMs, to: routine, regular_season_start: iso };
+}
+
 function buildForecasts(games, art, policy, o) {
   o = o || {};
-  const nowMs = o.nowMs; const horizon = nowMs + (o.hours || 48) * 3600e3; const season = art.season;
+  const nowMs = o.nowMs; const horizon = o.toMs || nowMs + (o.hours || 48) * 3600e3; const season = art.season;
   const teams = JSON.parse(fs.readFileSync(C.PATHS.teams, 'utf8')).teams;
   const quar = quarantinedThisSeason(games, season);
   const fac = FA.teamFactors(games.filter((g) => g.season === season && Date.parse(g.assumed_available_at) < nowMs),
@@ -59,6 +80,7 @@ function buildForecasts(games, art, policy, o) {
     const pr = MD.predict(art, g);
     const flags = [];
     const gh = art.teams[g.home_id] ? art.teams[g.home_id].games : 0, ga = art.teams[g.away_id] ? art.teams[g.away_id].games : 0;
+    if (o.preseason) flags.push('PRESEASON_RATINGS');
     if (Math.min(gh, ga) < 5) flags.push('EARLY_SEASON_FEW_GAMES');
     if (!art.teams[g.home_id] || !art.teams[g.away_id]) flags.push('TEAM_WITHOUT_RATING_HISTORY');
     if (pr.raw.regime === 'D1_OTHER') flags.push('NON_D1_OPPONENT_POOLED');
@@ -113,16 +135,18 @@ async function refresh(o) {
   const games = DS.load();
   const art = MD.buildArtifact(games, champ.config, nowMs, { season: C.currentSeason(nowMs) });
   const policyFile = C.PATHS.upsetPolicy; const policy = fs.existsSync(policyFile) ? JSON.parse(fs.readFileSync(policyFile, 'utf8')) : null;
-  const fcs = buildForecasts(games, art, policy, { nowMs, hours: o.hours });
+  const win = forecastWindow(games, art.season, nowMs, o.hours);
+  const fcs = buildForecasts(games, art, policy, { nowMs, toMs: win.to, preseason: win.phase === 'preseason' });
   const G = gates(games, art, fcs, nowMs);
   const publishable = G.every((g) => g.pass);
   const doc = { schema: 'edgedesk_ncaam_fc_forecasts_v1', as_of: new Date(nowMs).toISOString(), model: { key: ptr.current.key, model_id: champ.model_id, version: champ.version, config_sha256: champ.config_sha256 },
     artifact: { sha256: art.artifact_sha256, code_sha256: art.code_sha256, training_snapshot: art.training_snapshot, calibration_n: art.calibration.D1_D1 && art.calibration.D1_D1.n, kappa: art.calibration.D1_D1 && art.calibration.D1_D1.kappa },
-    upset_policy: policy ? { version: policy.version, theta: policy.signals.upset_probability.theta } : null, definitions: DEFINITIONS, gates: G, publishable, forecasts: fcs };
+    upset_policy: policy ? { version: policy.version, theta: policy.signals.upset_probability.theta } : null, definitions: DEFINITIONS,
+    window: { phase: win.phase, from: new Date(win.from).toISOString(), to: new Date(win.to).toISOString(), regular_season_start: win.regular_season_start }, gates: G, publishable, forecasts: fcs };
   const outDir = path.join(C.PATHS.out, 'forecasts'); fs.mkdirSync(outDir, { recursive: true });
   const file = path.join(outDir, doc.as_of.replace(/[:.]/g, '').slice(0, 15) + '.json');
   fs.writeFileSync(file, JSON.stringify(doc, null, 1));
-  console.log('[ncaam refresh] ' + fcs.length + ' forecasts, ' + (publishable ? 'PUBLISHABLE' : 'BLOCKED: ' + G.filter((g) => !g.pass).map((g) => g.id + ' ' + g.detail).join('; ')) + ' -> ' + path.relative(C.ROOT, file));
+  console.log('[ncaam refresh] ' + win.phase + ' window to ' + new Date(win.to).toISOString() + ': ' + fcs.length + ' forecasts, ' + (publishable ? 'PUBLISHABLE' : 'BLOCKED: ' + G.filter((g) => !g.pass).map((g) => g.id + ' ' + g.detail).join('; ')) + ' -> ' + path.relative(C.ROOT, file));
   if (o.publish) {
     if (!publishable) { const e = new Error('nothing published: a gate failed'); e.exitCode = 1; throw e; }
     const P = require('./publish');
@@ -132,7 +156,7 @@ async function refresh(o) {
   return doc;
 }
 
-module.exports = { refresh, buildForecasts, gates, AVAILABILITY, DEFINITIONS };
+module.exports = { refresh, buildForecasts, forecastWindow, regularSeasonStart, gates, AVAILABILITY, DEFINITIONS };
 
 if (require.main === module) {
   const a = process.argv; const val = (k) => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : null; };
