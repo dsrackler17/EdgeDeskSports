@@ -110,8 +110,9 @@ chk('golf, tennis and UFC Simulator shifts are experimental while the Simulator 
 }));
 chk('an outcome whose meaning changes between runs is never compared ("next match", "next bout")', !E.SIM_OUTCOMES.tennis.win_next_match && !E.SIM_OUTCOMES.mma.win_next_bout && !E.SIM_OUTCOMES.mma.win_next_finish && !E.SIM_OUTCOMES.mma.win_next_decision);
 chk('a simulator shift about a person is a player, not a team', ['golf', 'tennis', 'mma'].every((k) => !!E.SIM_INDIVIDUAL[k]) && !E.SIM_INDIVIDUAL.nfl);
-chk('men’s college basketball forecast shifts read the published daily runs', R.eligible('ncaam', 'FORECAST_SHIFT').ok && /ncaam_fc_runs/.test(R.sport('ncaam').signals.FORECAST_SHIFT.source) && DBJS.indexOf("status=eq.completed") >= 0);
-chk('…and say that availability is not modelled', /availability is not modelled/.test(R.sport('ncaam').signals.FORECAST_SHIFT.detail));
+chk('men’s college basketball forecast shifts are wired to the published daily runs', /ncaam_fc_runs/.test(R.sport('ncaam').signals.FORECAST_SHIFT.source) && DBJS.indexOf("status=eq.completed") >= 0);
+chk('…and are not claimed live while their tables are not deployed in production', !R.eligible('ncaam', 'FORECAST_SHIFT').ok && /not deployed in production/.test(R.sport('ncaam').signals.FORECAST_SHIFT.detail));
+chk('…and say that availability is not modelled', /availability not modelled/.test(R.sport('ncaam').signals.FORECAST_SHIFT.detail));
 chk('men’s college basketball has no market to compare (no captured price)', !R.eligible('ncaam', 'MARKET_DIVERGENCE').ok);
 
 console.log((fail ? 'FAILED' : 'ALL GREEN') + ' signal center registry — ' + pass + ' passed, ' + fail + ' failed');
