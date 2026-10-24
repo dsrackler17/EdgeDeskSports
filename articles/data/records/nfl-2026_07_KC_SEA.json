@@ -23,8 +23,8 @@
   "game_time": "2026-10-26T00:20:00.000Z",
   "game_when_label": "2026-10-26 00:20 UTC",
   "published_at": null,
-  "updated_at": "2026-10-24T10:49:55.290Z",
-  "generated_at": "2026-10-24T10:49:55.290Z",
+  "updated_at": "2026-10-24T20:41:18.744Z",
+  "generated_at": "2026-10-24T20:41:18.744Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
@@ -1181,7 +1181,7 @@
       "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "total_difference": "2.2 points",
       "book": "DraftKings",
-      "capture_age": "1067 hours old",
+      "capture_age": "1077 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
@@ -1332,7 +1332,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "19lhwyt1bt52fb",
+    "packet_hash": "smvlc91olguln",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can the Seahawks stop the Chiefs’ run game?",
@@ -1358,7 +1358,10 @@
       "Seattle Seahawks’ passers have completed 126 of 198 (63.6%) for 1,469 yards, 7.4 yards per attempt, with 11 touchdowns, 7 interceptions and 16 sacks taken in six games.",
       "Kansas City Chiefs’ passers have completed 105 of 158 (66.5%) for 1,309 yards, 8.3 yards per attempt, with 9 touchdowns, 3 interceptions and 6 sacks taken in five games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists three Seattle Seahawks players as out or doubtful, including LB Chazz Surratt (out), LB Drake Thomas (out) and RB Zach Charbonnet (out).",
+      "The official injury report lists three Kansas City Chiefs players as out or doubtful, including RB Brashard Smith (out), T Jaylon Moore (out) and WR Rashee Rice (out)."
+    ],
     "script": {
       "model": [
         "The Seattle Seahawks have to win on the ground (Kansas City Chiefs’ No. 3 run game against Seattle Seahawks’ No. 1 run defense).",
@@ -1371,7 +1374,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
       "The line on file was captured Sept. 9 and may have moved."
     ],
     "flags": [],
@@ -1380,15 +1383,22 @@
         "label": "EdgeDesk NFL team ratings (2026)",
         "url": null,
         "path": "football/nfl/slate.json",
-        "observed_at": "2026-10-23T17:54:05.578Z",
+        "observed_at": "2026-10-24T16:43:15.335Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-24T10:49:49.492Z",
+        "observed_at": "2026-10-24T20:41:05.180Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "NFL injury report via nflverse (third-party mirror of the league report)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-24T11:06:15.611Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1396,6 +1406,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T20:41:18.744Z"
   }
 }

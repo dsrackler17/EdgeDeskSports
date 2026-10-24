@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T17:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1886,82 +1886,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1ksw9kpp4hru",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Miami (OH) win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.0 points.",
-    "gap": {
-      "points": 1,
-      "toward": "Central Michigan",
-      "other": "Miami (OH)"
-    },
-    "supporting": [
-      "When Miami (OH) has the ball (pass protection against the pass rush): Miami (OH)’s offense has allowed a sack on 8.4% of its dropbacks, and Central Michigan’s defense sacks the quarterback on 6.8% of opponent dropbacks (FBS average 5.6%).",
-      "In his last two games (Ohio and Western Michigan), Flores averaged 6.5 yards per attempt, against 4.3 in his five games before that.",
-      "In his last two games (Ohio and Western Michigan), Glasser averaged 8.3 yards per attempt, against 5.7 in his four games before that.",
-      "Caleb Heavner has completed 38 of 70 passes (54.3%) for 394 yards, 5.6 yards per attempt, 2 touchdowns and 2 interceptions in six games for Miami (OH), and has been sacked on 10 of 80 dropbacks."
-    ],
-    "contradicting": [
-      "When Central Michigan has the ball (pass protection against the pass rush): Central Michigan’s offense has allowed a sack on 12.0% of its dropbacks, and Miami (OH)’s defense sacks the quarterback on 5.1% of opponent dropbacks (FBS average 5.6%).",
-      "When Central Michigan has the ball (big plays through the air): Central Michigan’s offense turns 4.9% of its pass plays into explosive gains, and Miami (OH)’s defense gives up explosive gains on 9.3% of opponent pass plays (FBS average 10.3%).",
-      "When Central Michigan has the ball (big plays on the ground): Central Michigan’s offense turns 6.9% of its runs into explosive gains, and Miami (OH)’s defense gives up explosive gains on 3.8% of opponent runs (FBS average 6.6%).",
-      "When Miami (OH) has the ball (big plays through the air): Miami (OH)’s offense turns 15.0% of its pass plays into explosive gains, and Central Michigan’s defense gives up explosive gains on 12.6% of opponent pass plays (FBS average 10.3%)."
-    ],
-    "quarterbacks": [
-      "Angel Flores has completed 55 of 93 passes (59.1%) for 502 yards, 5.4 yards per attempt, 2 touchdowns and 2 interceptions in seven games for Central Michigan, and has been sacked on 11 of 104 dropbacks.",
-      "Jadyn Glasser has completed 24 of 43 passes (55.8%) for 274 yards, 6.4 yards per attempt, 1 touchdown and 3 interceptions in six games for Central Michigan, and has been sacked on 5 of 48 dropbacks.",
-      "David McComb has completed 63 of 101 passes (62.4%) for 1,077 yards, 10.7 yards per attempt, 7 touchdowns and 1 interception in four games for Miami (OH), and has been sacked on 6 of 107 dropbacks.",
-      "Caleb Heavner has completed 38 of 70 passes (54.3%) for 394 yards, 5.6 yards per attempt, 2 touchdowns and 2 interceptions in six games for Miami (OH), and has been sacked on 10 of 80 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Central Michigan’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 11.0% of its runs, and Miami (OH)’s defense stops 21.2% of opponent runs at or behind the line.",
-        "Central Michigan’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 5.1% of opponent dropbacks.",
-        "Central Michigan’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 9.3% of opponent pass plays.",
-        "Central Michigan’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.8% of opponent dropbacks, against an offense that has allowed a sack on 8.4% of its dropbacks."
-      ],
-      "market": [
-        "Miami (OH)’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.1% of opponent dropbacks, against an offense that has allowed a sack on 12.0% of its dropbacks.",
-        "Miami (OH)’s defense has to come out ahead on big pass plays: it gives up explosive gains on 9.3% of opponent pass plays, against an offense that turns 4.9% of its pass plays into explosive gains.",
-        "Miami (OH)’s defense has to come out ahead at the line of scrimmage: it stops 21.2% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 11.0% of its runs."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for Central Michigan and Miami (OH).",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (Central Michigan), sack rate allowed (Miami (OH)) and sack rate (Miami (OH)); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T20:41:18.744Z"
   }
 }

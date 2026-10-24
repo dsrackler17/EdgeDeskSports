@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1900,112 +1900,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1e3qyb1o5c9lb",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can LSU win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.6 points.",
-    "gap": {
-      "points": 1.6,
-      "toward": "Auburn",
-      "other": "LSU"
-    },
-    "supporting": [
-      "When Auburn has the ball (big plays on the ground): Auburn’s offense turns 11.3% of its runs into explosive gains, and LSU’s defense gives up explosive gains on 4.8% of opponent runs (FBS average 6.6%).",
-      "When LSU has the ball (pass protection against the pass rush): LSU’s offense has allowed a sack on 5.8% of its dropbacks, and Auburn’s defense sacks the quarterback on 8.3% of opponent dropbacks (FBS average 5.6%).",
-      "When LSU has the ball (big plays on the ground): LSU’s offense turns 4.4% of its runs into explosive gains, and Auburn’s defense gives up explosive gains on 5.3% of opponent runs (FBS average 6.6%).",
-      "EdgeDesk’s position-group ratings put Auburn’s running backs No. 4 nationally and LSU’s No. 76."
-    ],
-    "contradicting": [
-      "When Auburn has the ball (pass protection against the pass rush): Auburn’s offense has allowed a sack on 10.7% of its dropbacks, and LSU’s defense sacks the quarterback on 11.4% of opponent dropbacks (FBS average 5.6%).",
-      "When Auburn has the ball (the passing game against the pass defense): Auburn’s offense averages 6.3 yards per pass attempt, and LSU’s defense allows 5.9 yards per pass attempt (FBS average 7.4).",
-      "When Auburn has the ball (the line of scrimmage on running plays): Auburn’s offense is stopped at or behind the line on 12.1% of its runs, and LSU’s defense stops 26.8% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When LSU has the ball (early downs): LSU’s offense succeeds on 52.0% of its first- and second-down plays, and Auburn’s defense allows success on 46.0% of first- and second-down plays (FBS average 42.7%)."
-    ],
-    "quarterbacks": [
-      "Byrum Brown has completed 119 of 184 passes (64.7%) for 1,227 yards, 6.7 yards per attempt, 9 touchdowns and 7 interceptions in six games for Auburn, and has been sacked on 23 of 207 dropbacks.",
-      "Sam Leavitt has completed 147 of 210 passes (70.0%) for 1,820 yards, 8.7 yards per attempt, 14 touchdowns and 8 interceptions in seven games for LSU, and has been sacked on 11 of 221 dropbacks.",
-      "Landen Clark has completed 14 of 31 passes (45.2%) for 235 yards, 7.6 yards per attempt, 1 touchdown and no interceptions in five games for LSU, and has been sacked on 1 of 32 dropbacks.",
-      "Byrum Brown does not appear on Auburn’s update 2 availability report.",
-      "Sam Leavitt does not appear on LSU’s update 2 availability report."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Auburn’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 12.1% of its runs, and LSU’s defense stops 26.8% of opponent runs at or behind the line.",
-        "Auburn’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 11.4% of opponent dropbacks.",
-        "Auburn’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.3% of opponent dropbacks, against an offense that has allowed a sack on 5.8% of its dropbacks.",
-        "Auburn’s offense has to keep winning on long runs: it turns 11.3% of its runs into explosive gains, and LSU’s defense gives up explosive gains on 4.8% of opponent runs."
-      ],
-      "market": [
-        "LSU’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 11.4% of opponent dropbacks, against an offense that has allowed a sack on 10.7% of its dropbacks.",
-        "LSU’s defense has to come out ahead at the line of scrimmage: it stops 26.8% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 12.1% of its runs.",
-        "Leavitt keeps producing at his season rate (70.0% completions, 8.7 yards per attempt, 14 TD, 8 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Auburn and LSU.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Auburn), sack rate (Auburn) and sack rate (LSU); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.8 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Auburn: new head coach; returning roster share at the 28th percentile; returning production at the 28th percentile; transfers out at the 88th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "LSU: new head coach; returning roster share at the 21st percentile; returning production at the 37th percentile; transfers out at the 91st percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-24T04:32:40.639Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Southeastern Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-24T00:10:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T20:41:18.744Z"
   }
 }

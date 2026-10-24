@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1852,92 +1852,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "19bl6kg17njfqa",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can TCU take away West Virginia’s big plays?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward TCU, and its own breakdown accounts for about 1.0 of the 2.3 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 2.3,
-      "toward": "TCU",
-      "other": "West Virginia"
-    },
-    "supporting": [
-      "When TCU has the ball (the passing game against the pass defense): TCU’s offense averages 8.5 yards per pass attempt, and West Virginia’s defense allows 11.2 yards per pass attempt (FBS average 7.4).",
-      "When TCU has the ball (big plays through the air): TCU’s offense turns 12.0% of its pass plays into explosive gains, and West Virginia’s defense gives up explosive gains on 19.4% of opponent pass plays (FBS average 10.3%).",
-      "When West Virginia has the ball (pass protection against the pass rush): West Virginia’s offense has allowed a sack on 7.5% of its dropbacks, and TCU’s defense sacks the quarterback on 6.9% of opponent dropbacks (FBS average 5.6%).",
-      "When West Virginia has the ball (big plays on the ground): West Virginia’s offense turns 7.2% of its runs into explosive gains, and TCU’s defense gives up explosive gains on 1.9% of opponent runs (FBS average 6.6%)."
-    ],
-    "contradicting": [
-      "When TCU has the ball (pass protection against the pass rush): TCU’s offense has allowed a sack on 8.1% of its dropbacks, and West Virginia’s defense sacks the quarterback on 6.3% of opponent dropbacks (FBS average 5.6%).",
-      "When West Virginia has the ball (big plays through the air): West Virginia’s offense turns 22.4% of its pass plays into explosive gains, and TCU’s defense gives up explosive gains on 6.3% of opponent pass plays (FBS average 10.3%).",
-      "When TCU has the ball (big plays on the ground): TCU’s offense turns 2.3% of its runs into explosive gains, and West Virginia’s defense gives up explosive gains on 8.3% of opponent runs (FBS average 6.6%).",
-      "When TCU has the ball (the line of scrimmage on running plays): TCU’s offense is stopped at or behind the line on 22.2% of its runs, and West Virginia’s defense stops 19.7% of opponent runs at or behind the line (FBS average 17.4%)."
-    ],
-    "quarterbacks": [
-      "Jaden Craig has completed 128 of 192 passes (66.7%) for 1,687 yards, 8.8 yards per attempt, 10 touchdowns and 5 interceptions in six games for TCU, and has been sacked on 17 of 209 dropbacks.",
-      "Michael Hawkins Jr. has completed 83 of 144 passes (57.6%) for 1,519 yards, 10.5 yards per attempt, 10 touchdowns and 1 interception in seven games for West Virginia, and has been sacked on 12 of 156 dropbacks.",
-      "Jaden Craig does not appear on TCU’s update 2 availability report.",
-      "Michael Hawkins Jr. does not appear on West Virginia’s update 2 availability report."
-    ],
-    "availability": [
-      "TCU’s availability report lists running back Jeremy Payne as doubtful."
-    ],
-    "script": {
-      "model": [
-        "TCU’s defense has to come out ahead on big pass plays: it gives up explosive gains on 6.3% of opponent pass plays, against an offense that turns 22.4% of its pass plays into explosive gains.",
-        "TCU’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 6.3% of opponent dropbacks.",
-        "TCU’s offense has to keep winning on big pass plays: it turns 12.0% of its pass plays into explosive gains, and West Virginia’s defense gives up explosive gains on 19.4% of opponent pass plays.",
-        "TCU’s defense has to come out ahead on long runs: it gives up explosive gains on 1.9% of opponent runs, against an offense that turns 7.2% of its runs into explosive gains."
-      ],
-      "market": [
-        "West Virginia’s offense has to keep winning on big pass plays: it turns 22.4% of its pass plays into explosive gains, and TCU’s defense gives up explosive gains on 6.3% of opponent pass plays.",
-        "West Virginia’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.3% of opponent dropbacks, against an offense that has allowed a sack on 8.1% of its dropbacks.",
-        "Hawkins keeps producing at his season rate (57.6% completions, 10.5 yards per attempt, 10 TD, 1 INT)."
-      ]
-    },
-    "unknown": [
-      "TCU’s availability report lists running back Jeremy Payne as doubtful.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for TCU and West Virginia.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (TCU), sack rate (TCU), sack rate allowed (West Virginia) and sack rate (West Virginia); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big 12 Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-24T02:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T20:41:18.744Z"
   }
 }

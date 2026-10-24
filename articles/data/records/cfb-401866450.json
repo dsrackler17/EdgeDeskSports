@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1891,97 +1891,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "ayo4p51e3obxn",
-    "status": "EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Western Michigan’s pass rush get to John Alan Richter?",
-    "assessment": "Most of the 2.0-point difference traces to home field (engine constant) (about 1.1 points), which the closing market has historically priced differently. That explains the gap; it does not make either number a bet.",
-    "gap": {
-      "points": 2,
-      "toward": "Toledo",
-      "other": "Western Michigan"
-    },
-    "supporting": [
-      "When Toledo has the ball (pass protection against the pass rush): Toledo’s offense has allowed a sack on 0.0% of its dropbacks, and Western Michigan’s defense sacks the quarterback on 7.3% of opponent dropbacks (FBS average 5.6%).",
-      "When Toledo has the ball (the line of scrimmage on running plays): Toledo’s offense is stopped at or behind the line on 13.4% of its runs, and Western Michigan’s defense stops 14.4% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Western Michigan has the ball (big plays through the air): Western Michigan’s offense turns 9.8% of its pass plays into explosive gains, and Toledo’s defense gives up explosive gains on 7.4% of opponent pass plays (FBS average 10.3%).",
-      "When Western Michigan has the ball (big plays on the ground): Western Michigan’s offense turns 5.6% of its runs into explosive gains, and Toledo’s defense gives up explosive gains on 4.6% of opponent runs (FBS average 6.6%)."
-    ],
-    "contradicting": [
-      "When Toledo has the ball (big plays on the ground): Toledo’s offense turns 4.3% of its runs into explosive gains, and Western Michigan’s defense gives up explosive gains on 4.5% of opponent runs (FBS average 6.6%).",
-      "When Western Michigan has the ball (the line of scrimmage on running plays): Western Michigan’s offense is stopped at or behind the line on 11.0% of its runs, and Toledo’s defense stops 18.0% of opponent runs at or behind the line (FBS average 17.4%).",
-      "In his last two games (Kent State and Central Michigan), Lowry averaged 9.2 yards per attempt, against 6.5 in his five games before that.",
-      "EdgeDesk’s position-group ratings put Western Michigan’s running backs No. 54 nationally and Toledo’s No. 106."
-    ],
-    "quarterbacks": [
-      "John Alan Richter has completed 144 of 220 passes (65.5%) for 1,861 yards, 8.5 yards per attempt, 14 touchdowns and 1 interception in seven games for Toledo, and has been sacked on 2 of 222 dropbacks.",
-      "Broc Lowry has completed 101 of 147 passes (68.7%) for 1,041 yards, 7.1 yards per attempt, 8 touchdowns and 1 interception in seven games for Western Michigan, and has been sacked on 9 of 156 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Toledo’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 0.0% of its dropbacks, and Western Michigan’s defense sacks the quarterback on 7.3% of opponent dropbacks.",
-        "Toledo’s defense has to slow Western Michigan at the line of scrimmage — Western Michigan’s offense is stopped at or behind the line on 11.0% of its runs.",
-        "Toledo’s offense has to hold its own on long runs against a defense that gives up explosive gains on 4.5% of opponent runs.",
-        "Toledo’s defense has to come out ahead on long runs: it gives up explosive gains on 4.6% of opponent runs, against an offense that turns 5.6% of its runs into explosive gains."
-      ],
-      "market": [
-        "Western Michigan’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 11.0% of its runs, and Toledo’s defense stops 18.0% of opponent runs at or behind the line.",
-        "Western Michigan’s defense has to come out ahead on long runs: it gives up explosive gains on 4.5% of opponent runs, against an offense that turns 4.3% of its runs into explosive gains.",
-        "Western Michigan’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.3% of opponent dropbacks, against an offense that has allowed a sack on 0.0% of its dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Western Michigan.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Western Michigan) and sack rate (Western Michigan); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.9 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Toledo: new head coach; returning roster share at the 27th percentile; returning production at the 9th percentile; transfers out at the 79th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-24T04:32:40.639Z",
-        "verification": "RATING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T20:41:18.744Z"
   }
 }
