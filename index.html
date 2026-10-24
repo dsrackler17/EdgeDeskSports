@@ -617,8 +617,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1"></noscript>
 <!-- the desk's styles (#desk, #signals, #simulator), below the first screen too -->
-<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261023dk1" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261023dk1"></noscript>
+<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261024dk2" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261024dk2"></noscript>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -928,18 +928,41 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       <p class="rs-more rv"><a class="lnk" href="/signals/" data-cta="signals_preview">See today&rsquo;s free preview</a> &middot; <a class="lnk" href="/methodology/" data-cta="signals_method">Read the methodology</a></p>
     </div>
     <div class="rv">
-      <div class="panel" role="region" aria-label="A sample signal, the way Full Access shows it">
+      <div class="panel" role="region" aria-label="A sample signal at each level of evidence, the way Full Access shows it" id="sigDemo">
         <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">Signal Center &middot; Why did this change?</span><span class="chips"><span class="tag">Sample data</span></span></div>
         <div class="sig">
-          <span class="sig-k">Forecast shift &middot; NFL &middot; <b class="amb">Notable</b></span>
-          <h3>Home side&rsquo;s win chance: 54.0% &rarr; 60.5%</h3>
-          <span class="sig-w">Sample game &middot; not a current signal</span>
-          <div class="cells c3"><div><span class="l">Before</span><span class="v">54.0%</span></div><div><span class="l">After</span><span class="v mdl">60.5%</span></div><div><span class="l">Change</span><span class="v pos">+6.5 pts</span></div></div>
-          <span class="sig-s">Evidence</span>
-          <ol class="ladder" aria-label="The evidence ladder, with this signal&rsquo;s step marked">
-            <li>Confirmed cause</li><li class="on" aria-current="step">Supported association</li><li>Observed</li><li>Unexplained</li>
-          </ol>
-          <p class="sig-p">Between the two snapshots, the away side&rsquo;s starting quarterback was listed Out, first seen by EdgeDesk Thursday at 4:12 PM. The change is associated with it; its share has not been isolated.</p>
+          <span class="sig-s">Evidence, strongest first: tap a level to see its signal</span>
+          <div class="ladder" role="group" aria-label="The evidence ladder">
+            <button type="button" data-ev="cause" aria-pressed="false">Confirmed cause</button><button type="button" data-ev="assoc" aria-pressed="true">Supported association</button><button type="button" data-ev="obs" aria-pressed="false">Observed</button><button type="button" data-ev="unex" aria-pressed="false">Unexplained</button>
+          </div>
+          <div class="sig-v" data-ev="cause" hidden>
+            <span class="sig-k">Availability &middot; NBA &middot; <b class="amb">Major</b></span>
+            <h3>Home side&rsquo;s starting guard listed Out, was Doubtful</h3>
+            <span class="sig-w">Sample player &middot; not a current signal</span>
+            <div class="cells c3"><div><span class="l">Was</span><span class="v">Doubtful</span></div><div><span class="l">Now</span><span class="v mdl">Out</span></div><div><span class="l">Win chance</span><span class="v neg">&minus;4.1 pts</span></div></div>
+            <p class="sig-p"><b>Why:</b> EdgeDesk re-ran its model changing only this player&rsquo;s availability, and that one input moves the home side&rsquo;s win chance by 4.1 points. Confirmed cause needs exactly that computation, so Signal Center holds it back until it has one: no live signal carries it yet.</p>
+          </div>
+          <div class="sig-v" data-ev="assoc">
+            <span class="sig-k">Forecast shift &middot; NFL &middot; <b class="amb">Notable</b></span>
+            <h3>Home side&rsquo;s win chance: 54.0% &rarr; 60.5%</h3>
+            <span class="sig-w">Sample game &middot; not a current signal</span>
+            <div class="cells c3"><div><span class="l">Before</span><span class="v">54.0%</span></div><div><span class="l">After</span><span class="v mdl">60.5%</span></div><div><span class="l">Change</span><span class="v pos">+6.5 pts</span></div></div>
+            <p class="sig-p"><b>Why:</b> Between the two snapshots, the away side&rsquo;s starting quarterback was listed Out, first seen by EdgeDesk Thursday at 4:12 PM. The change is associated with it; its share has not been isolated.</p>
+          </div>
+          <div class="sig-v" data-ev="obs" hidden>
+            <span class="sig-k">Market divergence &middot; College football &middot; <b class="amb">Notable</b></span>
+            <h3>EdgeDesk and the market part ways on the home side</h3>
+            <span class="sig-w">Sample game &middot; not a current signal</span>
+            <div class="cells c3"><div><span class="l">EdgeDesk</span><span class="v mdl">61.0%</span></div><div><span class="l">Market</span><span class="v">54.2%</span></div><div><span class="l">Gap</span><span class="v warn">6.8 pts</span></div></div>
+            <p class="sig-p"><b>Why:</b> Both numbers are on record: EdgeDesk&rsquo;s forecast at 9:02 AM and a named sportsbook&rsquo;s two-way price, margin removed, at 9:05 AM. Nothing here establishes why they differ, so Signal Center doesn&rsquo;t say. A gap is a question to research, never a recommendation.</p>
+          </div>
+          <div class="sig-v" data-ev="unex" hidden>
+            <span class="sig-k">Forecast shift &middot; College football &middot; <b class="amb">Routine</b></span>
+            <h3>Away side&rsquo;s win chance: 41.0% &rarr; 37.2%</h3>
+            <span class="sig-w">Sample game &middot; not a current signal</span>
+            <div class="cells c3"><div><span class="l">Before</span><span class="v">41.0%</span></div><div><span class="l">After</span><span class="v mdl">37.2%</span></div><div><span class="l">Change</span><span class="v neg">&minus;3.8 pts</span></div></div>
+            <p class="sig-p"><b>Why:</b> The model re-ran and the number moved, but the snapshots don&rsquo;t record which input changed. Signal Center says it doesn&rsquo;t know yet instead of guessing.</p>
+          </div>
           <span class="sig-s">Model DNA</span>
           <p class="sig-p">The model&rsquo;s live record against results, and against the market&rsquo;s close on the same games, rides with every signal. Where the model trails the market, the signal says so.</p>
         </div>
@@ -2839,6 +2862,19 @@ function viewOnce(id, fn){
 (function coachView(){
   if(!$('coach')) return;
   viewOnce('coach', function(){ track('process_coach_view'); });
+})();
+
+/* the Signal Center sample: each step of the evidence ladder shows its own
+   sample signal (SAMPLE data, about no real game); without script the
+   markup's own step, a supported association, is the one shown */
+(function sigLadder(){
+  var host=$('sigDemo'); if(!host) return;
+  var bs=host.querySelectorAll('.ladder button'), vs=host.querySelectorAll('.sig-v');
+  function show(k){
+    for(var i=0;i<bs.length;i++) bs[i].setAttribute('aria-pressed', String(bs[i].getAttribute('data-ev')===k));
+    for(var j=0;j<vs.length;j++) vs[j].hidden=vs[j].getAttribute('data-ev')!==k;
+  }
+  for(var i=0;i<bs.length;i++) bs[i].addEventListener('click', function(){ var k=this.getAttribute('data-ev'); show(k); track('signal_sample_click', {level:k}); });
 })();
 
 /* ======================================================================

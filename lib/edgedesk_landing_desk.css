@@ -60,10 +60,15 @@
 .sig .cells{margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .sig .cells>div{background:var(--deep)}
 .sig-s{display:block;margin-top:16px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.ladder{list-style:none;padding:0;margin:8px 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
-.ladder li{font-family:var(--mono);font-size:10px;line-height:1.3;color:var(--faint);border:1px solid var(--line2);border-radius:6px;padding:6px 7px;text-align:center;min-width:0}
-.ladder li.on{color:var(--est);border-color:rgba(217,164,65,.5);background:rgba(217,164,65,.07);font-weight:700}
+/* the evidence ladder is the sample's switch: each step shows its own signal */
+.sig>.sig-s:first-child{margin-top:0}
+.ladder{margin:8px 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.ladder button{font-family:var(--mono);font-size:10px;line-height:1.3;color:var(--dim);background:transparent;border:1px solid var(--line2);border-radius:6px;padding:7px;min-height:36px;text-align:center;min-width:0;cursor:pointer;transition:border-color .15s,color .15s}
+.ladder button:hover{color:var(--text);border-color:var(--dim)}
+.ladder button[aria-pressed="true"]{color:var(--est);border-color:rgba(217,164,65,.5);background:rgba(217,164,65,.07);font-weight:700}
+.sig-v{margin-top:16px}
 .sig-p{margin-top:8px;font-size:13.5px;line-height:1.55;color:var(--dim)}
+.sig-p b{color:var(--text);font-weight:600}
 @media(max-width:480px){.ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* ---------- #simulator: one sample division ---------- */

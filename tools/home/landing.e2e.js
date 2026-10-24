@@ -427,6 +427,22 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
         ['/today/', '/articles/', '/tools/no-vig-calculator/', '/tools/fair-odds-calculator/', '/tools/model-vs-market/', '/research/sample/', '/newsletter/?from=home_free']
           .forEach((h) => chk(vp.width + ' free: links ' + h, f.links.indexOf(h) >= 0, f.links));
         chk(vp.width + ' free: nothing wider than the screen, no script error', (await overflowing(C.page)).length === 0 && C.errors.length === 0, C.errors);
+        /* #signals: each step of the evidence ladder shows its own sample signal */
+        await C.page.evaluate(() => document.getElementById('sigDemo').scrollIntoView({ block: 'start', behavior: 'instant' }));
+        const shown = () => C.page.evaluate(() => ({ on: [...document.querySelectorAll('#sigDemo .ladder button[aria-pressed="true"]')].map((b) => b.dataset.ev),
+          vis: [...document.querySelectorAll('#sigDemo .sig-v')].filter((v) => !v.hidden && v.offsetHeight > 0).map((v) => v.dataset.ev),
+          h3: (() => { const v = [...document.querySelectorAll('#sigDemo .sig-v')].find((x) => !x.hidden); return v ? v.querySelector('h3').textContent : ''; })() }));
+        const s0 = await shown();
+        chk(vp.width + ' signals: the sample opens on a supported association', s0.on.join() === 'assoc' && s0.vis.join() === 'assoc', s0);
+        const seen = [];
+        for (const k of ['cause', 'obs', 'unex', 'assoc']) {
+          await C.page.click('#sigDemo .ladder button[data-ev="' + k + '"]');
+          const s1 = await shown(); seen.push(s1.h3);
+          chk(vp.width + ' signals: tapping ' + k + ' shows its own sample, and only it', s1.on.join() === k && s1.vis.join() === k && s1.h3.length > 10, s1);
+          chk(vp.width + ' signals: ' + k + ' fits the screen', (await overflowing(C.page)).length === 0, await overflowing(C.page));
+        }
+        chk(vp.width + ' signals: four steps, four different signals', new Set(seen).size === 4, seen);
+        chk(vp.width + ' signals: no script error while switching', C.errors.length === 0, C.errors);
         await C.ctx.close();
       }
     }

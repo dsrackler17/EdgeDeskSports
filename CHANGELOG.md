@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-24 — Signal Center's sample: tap each level of evidence to see its signal
+
+The landing page's Signal Center picture (`index.html` #signals) showed one sample signal with the evidence ladder beneath it as a static row. The four steps are now buttons. Each shows a sample signal at that level, in the detail view's order: kind, sport, label, headline, numbers, and why.
+
+- **Confirmed cause:** an NBA availability change, where EdgeDesk re-ran the model changing only that player's availability (−4.1 pts). It says plainly that no live signal carries this level yet: none of today's sources supplies an isolated effect (`tools/signal_center/evaluate.js` passes `nbaEffects` empty).
+- **Supported association:** the forecast shift that was the only sample before. This is the step the markup opens on, so a no-script reader sees it.
+- **Observed:** a market divergence. Both numbers are on record, and no reason is claimed.
+- **Unexplained:** a forecast shift with no input recorded; Signal Center says it does not know yet.
+- Every sample is labelled "not a current signal" and is about no real game or player. Each tap is measured as `signal_sample_click`, with the level. The styles are in `lib/edgedesk_landing_desk.css` (stamp `20261024dk2`).
+
+Tests: `landing_positioning.test.js` 556 (was 540). Each step has its sample; the default is the no-script view. Each kind, sport and label is Signal Center's or the engine's own. Each sample's numbers add up and it names no real team. A guard fails the suite the day a source supplies isolated effects, so the "no live signal carries it yet" sentence cannot go stale. `landing_interaction.test.js` 219 (the module exists and bails without its host). `landing.e2e.js` 327: at 390 and 1280 px, tapping each step shows only its own sample, four steps give four different signals, and nothing overflows. With the module removed, 8 of these checks fail.
+
 ## 2026-10-24 — The landing page's first section never reads DATA INCOMPLETE
 
 The free section's **Today's games** card (`index.html` #free, `lib/edgedesk_home_free.js`) listed the four soonest games with the board's status chip on each. When the board had not priced them yet, or their price was stale, the first thing a visitor saw was a column of DATA INCOMPLETE.
