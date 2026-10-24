@@ -2,6 +2,7 @@
 
   python3 -m model_loop.adapters.ufc.ingest fetch [--from 2014]   # network: GitHub runners
   python3 -m model_loop.adapters.ufc.ingest build                 # raw months -> model_loop/data/ufc/bouts.csv
+  python3 -m model_loop.adapters.ufc.ingest athletes              # network: each fighter's date of birth -> fighters.csv
 
 The request is the one the data pack made for 2024
 (datapack/quant_v1/scripts/expand_samples.py): the site scoreboard for a month,
@@ -17,6 +18,11 @@ record as of the request, not as of the bout, so it would carry hindsight.
 
 Finished months never change: once a month's file holds only completed or
 cancelled bouts it is not fetched again. The month in progress always is.
+
+`athletes` reads one thing per fighter from ESPN's public athlete document:
+the date of birth (a fixed fact, so an age at any bout is point in time).
+Nothing else in that document is kept: its record, weight and rank are as of
+the request. A fighter already on file with a date is not fetched again.
 """
 import argparse
 import csv
@@ -33,7 +39,11 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")
 RAW = os.path.join(ROOT, ".cache", "model_loop", "ufc", "raw")
 PACK_RAW = os.path.join(ROOT, "datapack", "quant_v1", "data", "ufc", "raw")
 OUT = os.path.join(ROOT, "model_loop", "data", "ufc", "bouts.csv")
+FIGHTERS = os.path.join(ROOT, "model_loop", "data", "ufc", "fighters.csv")
 URL = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates={month}&limit=1000"
+ATHLETE_URLS = ["https://site.web.api.espn.com/apis/common/v3/sports/mma/athletes/{id}",
+                "https://sports.core.api.espn.com/v2/sports/mma/athletes/{id}"]
+FIGHTER_FIELDS = ["fighter_id", "name", "date_of_birth", "source", "fetched_at"]
 FIELDS = ["bout_id", "event_id", "event_name", "start_time", "fighter_a_id", "fighter_a", "fighter_b_id", "fighter_b",
           "a_winner", "b_winner", "status", "status_detail", "round", "clock", "format_json", "weight_class"]
 DONE = {"STATUS_FINAL", "STATUS_CANCELED", "STATUS_POSTPONED", "STATUS_NO_CONTEST"}
@@ -131,13 +141,76 @@ def build(raw_dirs=None, out=OUT):
     return ordered
 
 
+def _dob(doc):
+    """the date of birth (YYYY-MM-DD) in either ESPN athlete document, else None"""
+    a = doc.get("athlete", doc) if isinstance(doc, dict) else {}
+    v = a.get("dateOfBirth") or a.get("birthDate")
+    return str(v)[:10] if v and len(str(v)) >= 10 and str(v)[4] == "-" else None
+
+
+def athletes(bouts=OUT, out=FIGHTERS, pause=0.25, limit=None):
+    """Every fighter in the bouts: the date of birth from ESPN (kept rows are not refetched)."""
+    ids = {}
+    with open(bouts, newline="") as f:
+        for r in csv.DictReader(f):
+            for k, n in (("fighter_a_id", "fighter_a"), ("fighter_b_id", "fighter_b")):
+                if r[k]:
+                    ids[r[k]] = r[n]
+    have = {}
+    if os.path.exists(out):
+        with open(out, newline="") as f:
+            have = {r["fighter_id"]: r for r in csv.DictReader(f)}
+    todo = [i for i in sorted(ids) if not (have.get(i) or {}).get("date_of_birth")]
+    if limit:
+        todo = todo[:limit]
+    got = missing = failed = 0
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    for fid in todo:
+        row = {"fighter_id": fid, "name": ids[fid], "date_of_birth": "", "source": "", "fetched_at": stamp}
+        errored = False
+        for url in ATHLETE_URLS:
+            req = urllib.request.Request(url.format(id=fid), headers={"Accept": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    dob = _dob(json.loads(r.read()))
+            except Exception:  # noqa: BLE001 - the next host is tried, then the fighter is counted as failed
+                dob, errored = None, True
+            if dob:
+                row.update(date_of_birth=dob, source=url.split("/apis/")[0].split("/v2/")[0])
+                break
+        if row["date_of_birth"]:
+            got += 1
+        elif errored:
+            failed += 1
+        else:
+            missing += 1
+        have[fid] = row
+        time.sleep(pause)
+    for fid, n in ids.items():
+        have.setdefault(fid, {"fighter_id": fid, "name": n, "date_of_birth": "", "source": "", "fetched_at": ""})
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=FIGHTER_FIELDS)
+        w.writeheader()
+        for fid in sorted(have):
+            w.writerow({k: have[fid].get(k, "") for k in FIGHTER_FIELDS})
+    with_dob = sum(1 for r in have.values() if r.get("date_of_birth"))
+    print(f"ufc athletes: {got} dates fetched, {missing} without a date, {failed} failed; "
+          f"{with_dob} of {len(have)} fighters have a date of birth -> {os.path.relpath(out, ROOT)}", file=sys.stderr)
+    return failed
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["fetch", "build"])
+    ap.add_argument("cmd", choices=["fetch", "build", "athletes"])
     ap.add_argument("--from", dest="first", type=int, default=2014)
+    ap.add_argument("--limit", type=int, default=None)
     a = ap.parse_args(argv)
     if a.cmd == "fetch":
         sys.exit(1 if fetch(a.first) else 0)
+    if a.cmd == "athletes":
+        athletes(limit=a.limit)
+        return
     build()
 
 
