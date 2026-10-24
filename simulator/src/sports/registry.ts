@@ -121,6 +121,19 @@ const NCAAM_LIMITS = [
   'Monte Carlo sampling error (shown as +/-) measures simulation noise only, never model accuracy.'
 ];
 
+/** NCAAW: the pregame forecasts are a separate product (basketball/ncaaw_forecast, published once
+    NCAAW_FC_PUBLISH is on); what is BLOCKED is the tournament simulation, which is not built */
+const NCAAW_BLOCKERS = [
+  'Tournament simulation not built for the women\'s format: the first two rounds are played on the top 16 seeds\' campuses (home games, not neutral), and the slot engine treats every game as neutral',
+  '2027 NCAA women\'s tournament format and official bracket not verified (Selection Sunday 2027)'
+];
+const NCAAW_LIMITS = [
+  'Team strength: opponent-adjusted efficiency and tempo from women\'s box scores (2017-present; earlier seasons\' box scores are too sparse), refitted daily.',
+  'Player availability is not modelled: no owned women\'s college-basketball injury or lineup feed exists. A star\'s absence announced before tip is not in the number.',
+  'No market comparison: no women\'s college basketball price is captured.',
+  'In-game (live) forecasts are not built for the women\'s game.'
+];
+
 const NFL_LIMITS = [
   'Strength uncertainty: one persistent normal offset per club (sigma calibrated on 2006-2024 frozen forecasts so the spread of simulated remaining wins matches history); the 2025 holdout season was more volatile than that calibration.',
   'Game outcomes come from the served edgedesk_nfl_v2 margin distribution, including its own tie mass. The model does not beat the closing line in its walk-forward record.',
@@ -246,8 +259,10 @@ export function sportRegistry(): SportEntry[] {
       activation_path: 'Each season: re-run the Simulator source check, compare the NHL.com tie-breaking and playoff-format pages with NHL_SIMULATOR_NOTES.md, and re-verify the three facts in simulator/src/sports/nhl/config.ts in a reviewed commit.' },
     { key: 'mlb', label: 'MLB', status: mlb.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: mlb.blockers, limitations: MLB_LIMITS,
       activation_path: 'Each season: re-run the Simulator source check (job fetch (mlb): MLB\'s standings, postseason schedule, rulebook and explainers) and a dispatched MLB dry run, re-verify the facts in simulator/src/sports/mlb/config.ts in a reviewed commit, and set the season\'s nightly window (nightly_through). MLB_SIMULATOR_NOTES.md §15.' },
-    { key: 'ncaam', label: 'College Basketball', status: ncaam.status, structure: 'tournament', tabs: ['games', 'upset_watch', 'tournament', 'model_health'], blockers: ncaam.blockers, limitations: NCAAM_LIMITS,
+    { key: 'ncaam', label: 'Men\'s College Basketball', status: ncaam.status, structure: 'tournament', tabs: ['games', 'upset_watch', 'tournament', 'model_health'], blockers: ncaam.blockers, limitations: NCAAM_LIMITS,
       activation_path: 'After Selection Sunday 2027: write basketball/ncaam_forecast/config/brackets/2027.json from the official bracket and record the 2027 format and bracket as VERIFIED with verified_by/verified_at in simulator/src/sports/ncaam/config.ts. Already in place: supabase/simulator.sql and supabase/ncaam_forecast.sql are applied in production (2026-10-24), and the champion is a research_team_model (ncaam_adjeff@1.0.0, promoted by the weekly gates on 2026-10-23).' },
+    { key: 'ncaaw', label: 'Women\'s College Basketball', status: 'BLOCKED', structure: 'tournament', tabs: ['games', 'upset_watch', 'tournament', 'model_health'], blockers: NCAAW_BLOCKERS, limitations: NCAAW_LIMITS,
+      activation_path: 'Build a host-site-aware women\'s bracket (the first two rounds at the top 16 seeds\' campuses), verify the 2027 format and bracket after Selection Sunday 2027 with verified_by/verified_at, and register a women\'s tournament simulation before any publication. The pregame forecasts in the Games and Upset Watch tabs do not wait on this: basketball/ncaaw_forecast publishes them once NCAAW_FC_PUBLISH is on.' },
     { key: 'wnba', label: 'WNBA', status: wnba.status, structure: 'series', tabs: ['title', 'games', 'model_health'], blockers: wnba.blockers, limitations: WNBA_LIMITS,
       activation_path: 'Active for the 2026 postseason: the series formats and hosts are measured from the schedule (simulator/src/sports/wnba/config.ts), the game model is the served basketball walk-forward and the shared series offset comes from simulator/data/wnba_strength_uncertainty.json. For 2027: a configuration with the season\'s playoff bracket rule (pairings of rounds not yet played), re-run the uncertainty study, set nightly_through. WNBA_SIMULATOR_NOTES.md.' },
     { key: 'tennis', label: 'Tennis', status: tennis.status, structure: 'events', tabs: ['draws', 'matches', 'model_health'], blockers: tennis.blockers, limitations: TENNIS_LIMITS,

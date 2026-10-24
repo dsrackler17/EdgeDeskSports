@@ -37,7 +37,7 @@ function latestQuote(list) {
      sourceStates    sources.sourceStates()
      db (optional)   { simPairs:[{pair, results}], simReference:[...],
                        nbaInjuries:[rows], nbaEffects:{}, kalshi: Map(event key -> {p_home, captured_at}),
-                       ncaamGames:[{game, series}] (db.ncaamGames), priorDivergences:[payloads] }
+                       ncaamGames / ncaawGames:[{game, series}] (db.ncaamGames, db.ncaawGames), priorDivergences:[payloads] }
      now, fixture */
 function evaluate(inputs) {
   const now = inputs.now;
@@ -54,8 +54,8 @@ function evaluate(inputs) {
   const perfGames = inputs.perfGames || [];
   /* the ledger's football rows from before research covered a game: their
      own series, listed first so the research entry is the game's identity;
-     then forecast history kept in the database (men's college basketball's daily runs) */
-  const dbGames = (inputs.db && inputs.db.ncaamGames) || [];
+     then forecast history kept in the database (men's and women's college basketball's daily runs) */
+  const dbGames = ((inputs.db && inputs.db.ncaamGames) || []).concat((inputs.db && inputs.db.ncaawGames) || []);
   const allGames = (inputs.footballLedger || []).concat(football, perfGames, dbGames);
   const gameBy = new Map(allGames.map((g) => [g.game.event_key, g]));
 

@@ -455,7 +455,7 @@ Division I men's games starting in the next 48 hours: win probability
 (overtime included), expected score, 80% margin and total intervals, and the
 overtime chance. Each forecast carries its data-quality flags and an
 availability assumption. Upset Watch keeps three separate signals, never one
-score. Readers see them in the Simulator's College Basketball tabs (Games,
+score. Readers see them in the Simulator's Men's College Basketball tabs (Games,
 Upset Watch, Model Health); the database checks the Full Access entitlement
 and fails closed.
 
@@ -482,6 +482,52 @@ and fails closed.
   rollback): [`docs/ncaam-forecast/README.md`](docs/ncaam-forecast/README.md).
 - **Run it:** `npm run ncaam:fc:test`, `npm run ncaam:fc:check`, then
   `npm run ncaam:fc:refresh` (no credentials, nothing published).
+
+## Women's college basketball forecast — the same system for the women's game
+
+`basketball/ncaaw_forecast/` is the men's forecast system rebuilt for NCAA
+Division I women's basketball, with its own data, selection, champion, tables
+and switch. It forecasts every D-I game starting in the next 48 hours: win
+probability (overtime included), expected score, 80% margin and total
+intervals, and the overtime chance. Each forecast carries its data-quality
+flags. Upset Watch keeps its three separate signals. Readers see them in the
+Simulator's **Women's College Basketball** seat (Games, Upset Watch, Model
+Health). The database checks the Full Access entitlement and fails closed.
+
+- **What differs from the men's.**
+  - **Format:** four quarters from 2015-16, counted per game from the source's
+    regulation format.
+  - **Possessions:** no one-and-one, so the possession estimate uses the
+    two-shot-bonus constant 0.44.
+  - **Box scores:** sparse before 2017, so the possession model starts there.
+  - **Tournament:** the first two rounds are home games for the top 16 seeds.
+  - **Selection:** every parameter was re-chosen on women's games only
+    (2018-2022). The women's model keeps more of last season's rating
+    (`carry` 1.0) and weights recent games more (half-life 365 days).
+- **Status (2026-10-24): built, tables not yet in production, publication
+  off.** After the merge, the daily refresh (13:47 UTC) and the weekly
+  challengers (Monday 11:37 UTC) run on `main`. *Deploy NCAAW forecast SQL*
+  puts the tables in production. Nothing is published until the repository
+  variable `NCAAW_FC_PUBLISH` is `on`. The season opens 2026-11-02.
+- **Champion `ncaaw_adjeff@1.0.0`**, promoted by the weekly gates on
+  2026-10-24 over the served scores-only model.
+  - On the 2023-26 confirmation window (D-I v D-I, 21,695 games), log loss
+    improves by 0.0046 [0.0028, 0.0066] and margin CRPS by 0.19 points.
+  - On the 2024-26 tournament holdout (201 games) log loss improves by 0.009
+    [0.001, 0.019], though probabilities there are too timid (top seeds at
+    home).
+  - Walk-forward validated, never market-tested: research, EXPERIMENTAL (T3),
+    not an edge claim.
+- **Not built, each with its reason:** the NCAA tournament simulation (needs a
+  host-site-aware bracket), in-game forecasts (no women's live feed), and the
+  market comparison (no women's college basketball price is captured).
+- **Where:** `basketball/ncaaw_forecast/`, `supabase/ncaaw_forecast.sql`
+  (+ `ncaaw_forecast_registry.sql`), `lib/edgedesk_simulator_ncaaw.js`,
+  `.github/workflows/ncaaw-*.yml` and `deploy-ncaaw-forecast.yml`. Evidence:
+  [`NCAAW_MODEL_NOTES.md`](NCAAW_MODEL_NOTES.md). Runbook:
+  [`docs/ncaaw-forecast/README.md`](docs/ncaaw-forecast/README.md).
+- **Run it:** `npm run ncaaw:fc:test`, `npm run ncaaw:fc:check`, then
+  `npm run ncaaw:fc:refresh` (no credentials, nothing published).
 
 ## The quant desk — every sport researched model first, then priced, then audited
 

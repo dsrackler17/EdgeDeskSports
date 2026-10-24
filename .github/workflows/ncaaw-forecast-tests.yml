@@ -1,0 +1,136 @@
+# EdgeDesk women's college basketball forecast — every suite, on every change to it.
+#
+#   unit   the model (distribution coherence, fit recovery, the women's data
+#          rules, point-in-time artifacts, Upset Watch, promotion gates,
+#          registry; no live model is built), the Women's College Basketball
+#          reader and its Simulator registry entry, and the generated-file
+#          checks (frozen selection and validation records, the research-
+#          registry SQL, the migration being a byte copy)
+#   sql    supabase/ncaaw_forecast.sql (after supabase/simulator.sql) on a real,
+#          throwaway PostgreSQL: RLS, the premium entitlement failing closed,
+#          atomic publication, immutability, the champion pointer, the live
+#          gate, the research registration (NCAAW_SQL_REQUIRED=1: a missing
+#          cluster FAILS, never skips)
+#   ops    failure injection on the real weekly run (ingest, train, evaluate,
+#          store, promote): the champion never moves and every failure is
+#          recorded; an inconsistent registry stops weekly and refresh
+#   e2e    the Women's College Basketball tabs in Chromium at desktop, tablet and phone
+#
+# No network beyond package installs, no credentials, nothing written.
+name: NCAAW forecast suites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'basketball/ncaaw_forecast/**'
+      - '!basketball/ncaaw_forecast/data/**'
+      - '!basketball/ncaaw_forecast/registry/**'
+      - '!basketball/ncaaw_forecast/reports/**'
+      - 'basketball/ncaam_research/team_model.js'
+      - 'basketball/ncaam_research/lib/**'
+      - 'simulator/src/sports/registry.ts'
+      - 'simulator/tests/ncaaw_*'
+      - 'supabase/ncaaw_forecast.sql'
+      - 'supabase/ncaaw_forecast_registry.sql'
+      - 'supabase/migrations/20261024180000_ncaaw_forecast.sql'
+      - 'lib/edgedesk_simulator*.js'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/ncaaw-*.yml'
+  pull_request:
+    paths:
+      - 'basketball/ncaaw_forecast/**'
+      - 'basketball/ncaam_research/team_model.js'
+      - 'basketball/ncaam_research/lib/**'
+      - 'simulator/src/sports/registry.ts'
+      - 'simulator/tests/ncaaw_*'
+      - 'supabase/ncaaw_forecast.sql'
+      - 'supabase/ncaaw_forecast_registry.sql'
+      - 'supabase/migrations/20261024180000_ncaaw_forecast.sql'
+      - 'lib/edgedesk_simulator*.js'
+      - 'tools/personal/_pg.js'
+      - '.github/workflows/ncaaw-*.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ncaaw-forecast-tests-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Install the pinned typechecker (dev only; the runtime has no dependencies)
+        run: npm ci --prefix simulator --no-audit --no-fund
+      - name: Typecheck the simulator (the registry's NCAAW entry included)
+        run: npm run --prefix simulator typecheck
+      - name: The forecast model, data quality, gates and registry
+        run: node --max-old-space-size=6144 basketball/ncaaw_forecast/tests/model.test.js
+      - name: The Women's College Basketball reader
+        run: |
+          node simulator/tests/ncaaw_ui.test.ts
+      - name: Frozen records and generated files are current
+        run: |
+          node basketball/ncaaw_forecast/select.js --check
+          node basketball/ncaaw_forecast/validate.js --check
+          node basketball/ncaaw_forecast/registry.js verify
+          node simulator/src/research/build_ncaaw_registry_sql.ts --check
+          node simulator/src/cli/build_ui_registry.ts --check
+          cmp supabase/ncaaw_forecast.sql supabase/migrations/20261024180000_ncaaw_forecast.sql
+
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: supabase/ncaaw_forecast.sql on a real PostgreSQL
+        env:
+          NCAAW_SQL_REQUIRED: '1'
+        run: node basketball/ncaaw_forecast/tests/sql.test.js
+
+  ops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: Failure injection on the real weekly run
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: node basketball/ncaaw_forecast/tests/ops.test.js
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.0'
+      - name: Install Playwright (pinned) and Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The Women's College Basketball tabs in a real browser
+        env:
+          NCAAW_E2E_REQUIRED: '1'
+        run: node simulator/tests/ncaaw_ui.e2e.ts
