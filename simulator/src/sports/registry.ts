@@ -20,6 +20,7 @@ import { NCAAM_2027 } from './ncaam/config.ts';
 import { WNBA_2026 } from './wnba/config.ts';
 import { golfActivation } from './golf/activation.ts';
 import { tennisActivation } from './tennis/activation.ts';
+import { cbaseActivation } from './college_baseball/activation.ts';
 import { UFC_2026 } from './ufc/config.ts';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -205,6 +206,14 @@ const GOLF_LIMITS = [
 
 /** Tennis: ACTIVE only while the committed study and backtest meet the activation conditions on their holdout
     (simulator/src/sports/tennis/activation.ts); a draw's order is checked per run (run.ts) */
+const CBASE_LIMITS = [
+  'No 2027 schedule exists yet: the season is the measured move of each team\'s rating from the preseason to Selection Monday, not a game-by-game simulation. Once 2027 games are in the warehouse the view starts from the served model\'s current ratings.',
+  'The selection committee is a proxy fitted on 2014-2026 fields: one automatic bid per conference (its winner drawn by strength), the at-large bids and the 16 hosts by rating plus a measured noise. Geography, which moves real 2-4 seeds between regionals, is not modelled.',
+  'From the preseason the field chance runs slightly hot near the bubble (teams given 40-60% made it about 40% of the time in the backtest).',
+  'The title call beats chance on average over eleven tournaments, but eleven are too few to prove it; once Omaha starts the model is no better than a coin among the eight.',
+  'Roster turnover, the transfer portal, the draft and 2027 conference moves are not known to the model; 2026 memberships are used.',
+  'Every number here passes through the committee proxy, so it is Estimated; there is no market to compare it with.'
+];
 const TENNIS_LIMITS = [
   'Who wins a match comes from a rating of every ATP and WTA singles match ESPN lists since 2022 (main draws and qualifying): an Elo per tour that moves by the share of games won, its settings chosen on 2023-2024. On 2025-2026 matches its log loss was about 9% below a coin\'s and below FiveThirtyEight\'s published tennis Elo; it has never been compared with closing prices.',
   'The court surface is not in the data, so one rating covers clay, grass and hard courts: a clay or grass specialist is misjudged on the other surfaces. Injuries, fitness and withdrawals after the scoreboard was read are not modelled; a match in progress is priced from before its first ball, not from its score.',
@@ -222,6 +231,7 @@ export function sportRegistry(): SportEntry[] {
   const wnba = wnbaStatus();
   const golf = golfActivation();
   const tennis = tennisActivation();
+  const cbase = cbaseActivation();
   const ufc = ufcStatus();
   return [
     { key: 'nfl', label: 'NFL', status: nfl.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: nfl.blockers, limitations: NFL_LIMITS,
@@ -246,8 +256,7 @@ export function sportRegistry(): SportEntry[] {
       activation_path: 'Active while the committed backtest (simulator/data/golf_backtest.json, walk-forward over 2025-2026) meets its activation conditions; each event\'s cut, rounds and field are measured per run. Each season: let the feeds refresh, re-run the skill study and the backtest, and set the new season and nightly_through in simulator/src/sports/golf/config.ts. GOLF_SIMULATOR_NOTES.md.' },
     { key: 'ufc', label: 'UFC', status: ufc.status, structure: 'events', tabs: ['fights', 'title_path', 'model_health'], blockers: ufc.blockers, limitations: UFC_LIMITS,
       activation_path: 'Active: every booked bout from the served UFC Elo (model_loop/adapters/ufc, reproduced in every run by simulator/src/sports/ufc/elo.ts), champions and rankings from ufc.com, the schedule from ESPN and the title history from Wikipedia, refreshed by the Simulator sports-data job (fetch_sports_data.ts --what ufc). UFC_SIMULATOR_NOTES.md.' },
-    { key: 'college_baseball', label: 'College Baseball', status: 'COMING_SOON', structure: 'tournament', tabs: ['tournament'],
-      blockers: ['Out of season until February 2027; no 2027 schedule; release gates G11, G12 and G15 fail.'],
-      limitations: [], activation_path: 'The 2027 schedule and passing release gates.' }
+    { key: 'college_baseball', label: 'College Baseball', status: cbase.status, structure: 'tournament', tabs: ['tournament', 'conference', 'model_health'], blockers: cbase.blockers, limitations: CBASE_LIMITS,
+      activation_path: 'Active while the committed backtests (simulator/data/college_baseball_backtest.json: every NCAA tournament 2014-2026 the warehouse holds whole; simulator/data/college_baseball_road.json: the season walk-forward from 2016) meet the activation conditions in simulator/src/sports/college_baseball/activation.ts. The Road to Omaha runs nightly from the committed warehouse until the night before Selection Monday; the tournament itself, from the bracket the committee names, is not yet a published view. Each season: re-run both backtests and set the new season in simulator/src/sports/college_baseball/config.ts. The betting board\'s release gates (G11, G12, G15) are separate and still fail. COLLEGE_BASEBALL_SIMULATOR_NOTES.md.' }
   ];
 }

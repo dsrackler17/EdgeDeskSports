@@ -1,0 +1,1483 @@
+{
+ "schema": "edgedesk_sim_cbase_backtest_v1",
+ "generated_at": "2026-10-24T00:56:21.980Z",
+ "model_version": "1.0.0",
+ "sims_per_tournament": 20000,
+ "seasons": [
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2021,
+  2022,
+  2024,
+  2025,
+  2026
+ ],
+ "refused": [
+  {
+   "season": 2020,
+   "reason": "no tournament (the 2020 season was cancelled)"
+  },
+  {
+   "season": 2023,
+   "reason": "the warehouse holds 2023 results only through 2023-03-29"
+  }
+ ],
+ "windows": {
+  "SELECTION": "2014-2022: the served configuration was chosen on these seasons' games",
+  "VALIDATION": "2023-2024",
+  "HOLDOUT": "2025-2026"
+ },
+ "regional_winner_log_loss": {
+  "pods": 176,
+  "model": 1.0026,
+  "uniform": 1.3863,
+  "seed_lines": 1.1116,
+  "diff_vs_uniform": {
+   "mean": -0.3837,
+   "ci95": [
+    -0.4943,
+    -0.2731
+   ]
+  },
+  "diff_vs_seed_lines": {
+   "mean": -0.1091,
+   "ci95": [
+    -0.1747,
+    -0.0413
+   ]
+  }
+ },
+ "omaha": {
+  "brier": {
+   "model": 0.086752,
+   "uniform": 0.109375,
+   "seed_lines": 0.0954
+  },
+  "log_loss_diff_vs_uniform": {
+   "mean": -0.0913,
+   "ci95": [
+    -0.1166,
+    -0.0647
+   ]
+  },
+  "log_loss_diff_vs_seed_lines": {
+   "mean": -0.0344,
+   "ci95": [
+    -0.0557,
+    -0.0128
+   ]
+  }
+ },
+ "champion": {
+  "log_loss": {
+   "model": 3.4116,
+   "uniform": 4.1589,
+   "seed_lines": 3.9164
+  },
+  "diff_vs_uniform": {
+   "mean": -0.7473,
+   "ci95": [
+    -1.5738,
+    0.1165
+   ]
+  },
+  "diff_vs_seed_lines": {
+   "mean": -0.5048,
+   "ci95": [
+    -1.2067,
+    0.212
+   ]
+  },
+  "omaha_open": {
+   "model": 2.0862,
+   "uniform": 2.0794,
+   "diff_vs_uniform": {
+    "mean": 0.0068,
+    "ci95": [
+     -0.4185,
+     0.4457
+    ]
+   }
+  },
+  "holdout_validation": [
+   {
+    "season": 2024,
+    "champion": "Tennessee",
+    "p": 0.2056,
+    "rank": 1
+   },
+   {
+    "season": 2025,
+    "champion": "LSU",
+    "p": 0.0981,
+    "rank": 3
+   },
+   {
+    "season": 2026,
+    "champion": "Oklahoma",
+    "p": 0.0022,
+    "rank": 30
+   }
+  ]
+ },
+ "games": {
+  "n": 1419,
+  "log_loss": 0.611,
+  "vs_coin": {
+   "mean": -0.0822,
+   "ci95": [
+    -0.1002,
+    -0.062
+   ]
+  },
+  "favourites": [
+   {
+    "bin": "0.5-0.6",
+    "n": 557,
+    "mean_chance": 0.5479,
+    "favourite_won": 0.5332
+   },
+   {
+    "bin": "0.6-0.7",
+    "n": 428,
+    "mean_chance": 0.646,
+    "favourite_won": 0.6495
+   },
+   {
+    "bin": "0.7-0.8",
+    "n": 240,
+    "mean_chance": 0.7437,
+    "favourite_won": 0.775
+   },
+   {
+    "bin": "0.8-1",
+    "n": 194,
+    "mean_chance": 0.8685,
+    "favourite_won": 0.8608
+   }
+  ],
+  "holdout": {
+   "n": 269,
+   "log_loss": 0.6408,
+   "vs_coin": {
+    "mean": -0.0524,
+    "ci95": [
+     -0.1077,
+     0.004
+    ]
+   },
+   "favourites": [
+    {
+     "bin": "0.5-0.6",
+     "n": 77,
+     "mean_chance": 0.5487,
+     "favourite_won": 0.5325
+    },
+    {
+     "bin": "0.6-0.7",
+     "n": 81,
+     "mean_chance": 0.6483,
+     "favourite_won": 0.6049
+    },
+    {
+     "bin": "0.7-0.8",
+     "n": 58,
+     "mean_chance": 0.7456,
+     "favourite_won": 0.7069
+    },
+    {
+     "bin": "0.8-1",
+     "n": 53,
+     "mean_chance": 0.8748,
+     "favourite_won": 0.7547
+    }
+   ]
+  },
+  "by_round": {
+   "regional": {
+    "n": 1054,
+    "log_loss": 0.5925,
+    "vs_coin": {
+     "mean": -0.1007,
+     "ci95": [
+      -0.1233,
+      -0.0775
+     ]
+    },
+    "favourites": [
+     {
+      "bin": "0.5-0.6",
+      "n": 363,
+      "mean_chance": 0.548,
+      "favourite_won": 0.5427
+     },
+     {
+      "bin": "0.6-0.7",
+      "n": 297,
+      "mean_chance": 0.6501,
+      "favourite_won": 0.6364
+     },
+     {
+      "bin": "0.7-0.8",
+      "n": 206,
+      "mean_chance": 0.7444,
+      "favourite_won": 0.7913
+     },
+     {
+      "bin": "0.8-1",
+      "n": 188,
+      "mean_chance": 0.8697,
+      "favourite_won": 0.8617
+     }
+    ]
+   },
+   "super": {
+    "n": 194,
+    "log_loss": 0.6509,
+    "vs_coin": {
+     "mean": -0.0422,
+     "ci95": [
+      -0.0817,
+      -0.0002
+     ]
+    },
+    "favourites": [
+     {
+      "bin": "0.5-0.6",
+      "n": 79,
+      "mean_chance": 0.5475,
+      "favourite_won": 0.4937
+     },
+     {
+      "bin": "0.6-0.7",
+      "n": 79,
+      "mean_chance": 0.6414,
+      "favourite_won": 0.7342
+     },
+     {
+      "bin": "0.7-0.8",
+      "n": 30,
+      "mean_chance": 0.7401,
+      "favourite_won": 0.6333
+     },
+     {
+      "bin": "0.8-1",
+      "n": 6,
+      "mean_chance": 0.8296,
+      "favourite_won": 0.8333
+     }
+    ]
+   },
+   "omaha": {
+    "n": 171,
+    "log_loss": 0.6799,
+    "vs_coin": {
+     "mean": -0.0132,
+     "ci95": [
+      -0.0408,
+      0.014
+     ]
+    },
+    "favourites": [
+     {
+      "bin": "0.5-0.6",
+      "n": 115,
+      "mean_chance": 0.5479,
+      "favourite_won": 0.5304
+     },
+     {
+      "bin": "0.6-0.7",
+      "n": 52,
+      "mean_chance": 0.63,
+      "favourite_won": 0.5962
+     },
+     {
+      "bin": "0.7-0.8",
+      "n": 4,
+      "mean_chance": 0.7365,
+      "favourite_won": 1
+     },
+     {
+      "bin": "0.8-1",
+      "n": 0,
+      "mean_chance": null,
+      "favourite_won": null
+     }
+    ]
+   }
+  }
+ },
+ "super_host_proxy": {
+  "n": 86,
+  "agree": 74,
+  "share": 0.8605
+ },
+ "per_season": [
+  {
+   "season": 2014,
+   "window": "SELECTION",
+   "start": "2014-05-30",
+   "champion": {
+    "id": "736",
+    "name": "Vanderbilt",
+    "p": 0.051,
+    "rank": 8,
+    "p_omaha_open": 0.1886
+   },
+   "favourites": [
+    {
+     "id": "365",
+     "name": "LSU",
+     "p": 0.1363
+    },
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.0934
+    },
+    {
+     "id": "698",
+     "name": "TCU",
+     "p": 0.07
+    },
+    {
+     "id": "234",
+     "name": "Florida St.",
+     "p": 0.067
+    },
+    {
+     "id": "433",
+     "name": "Ole Miss",
+     "p": 0.0612
+    }
+   ],
+   "omaha": [
+    {
+     "id": "109",
+     "name": "UC Irvine",
+     "p": 0.0619
+    },
+    {
+     "id": "736",
+     "name": "Vanderbilt",
+     "p": 0.3258
+    },
+    {
+     "id": "367",
+     "name": "Louisville",
+     "p": 0.2142
+    },
+    {
+     "id": "703",
+     "name": "Texas",
+     "p": 0.1091
+    },
+    {
+     "id": "700",
+     "name": "Texas Tech",
+     "p": 0.2013
+    },
+    {
+     "id": "698",
+     "name": "TCU",
+     "p": 0.446
+    },
+    {
+     "id": "433",
+     "name": "Ole Miss",
+     "p": 0.3765
+    },
+    {
+     "id": "746",
+     "name": "Virginia",
+     "p": 0.3509
+    }
+   ],
+   "champion_log_loss": {
+    "model": 2.9769,
+    "uniform": 4.1589,
+    "seed_lines": 3.5117
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 1.6684,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.092506,
+    "uniform": 0.109375,
+    "seed_lines": 0.096672
+   },
+   "omaha_log_loss": {
+    "model": 0.296058,
+    "uniform": 0.37677,
+    "seed_lines": 0.319552
+   },
+   "calibration": null,
+   "hosts_rebuilt": 16
+  },
+  {
+   "season": 2015,
+   "window": "SELECTION",
+   "start": "2015-05-29",
+   "champion": {
+    "id": "746",
+    "name": "Virginia",
+    "p": 0.0079,
+    "rank": 20,
+    "p_omaha_open": 0.0582
+   },
+   "favourites": [
+    {
+     "id": "365",
+     "name": "LSU",
+     "p": 0.1183
+    },
+    {
+     "id": "415",
+     "name": "Miami (FL)",
+     "p": 0.1074
+    },
+    {
+     "id": "110",
+     "name": "UCLA",
+     "p": 0.1073
+    },
+    {
+     "id": "521",
+     "name": "Oklahoma St.",
+     "p": 0.0882
+    },
+    {
+     "id": "698",
+     "name": "TCU",
+     "p": 0.0822
+    }
+   ],
+   "omaha": [
+    {
+     "id": "415",
+     "name": "Miami (FL)",
+     "p": 0.5299
+    },
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.0741
+    },
+    {
+     "id": "746",
+     "name": "Virginia",
+     "p": 0.0956
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.5157
+    },
+    {
+     "id": "97",
+     "name": "Cal St. Fullerton",
+     "p": 0.362
+    },
+    {
+     "id": "365",
+     "name": "LSU",
+     "p": 0.6278
+    },
+    {
+     "id": "736",
+     "name": "Vanderbilt",
+     "p": 0.4708
+    },
+    {
+     "id": "698",
+     "name": "TCU",
+     "p": 0.486
+    }
+   ],
+   "champion_log_loss": {
+    "model": 4.8409,
+    "uniform": 4.1589,
+    "seed_lines": 4.4021
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 2.8447,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.068501,
+    "uniform": 0.109375,
+    "seed_lines": 0.088871
+   },
+   "omaha_log_loss": {
+    "model": 0.231899,
+    "uniform": 0.37677,
+    "seed_lines": 0.291482
+   },
+   "calibration": {
+    "a": 0.0819,
+    "b": 1.01113,
+    "n": 7908
+   },
+   "hosts_rebuilt": 16
+  },
+  {
+   "season": 2016,
+   "window": "SELECTION",
+   "start": "2016-06-03",
+   "champion": {
+    "id": "149",
+    "name": "Coastal Carolina",
+    "p": 0.0052,
+    "rank": 21,
+    "p_omaha_open": 0.0367
+   },
+   "favourites": [
+    {
+     "id": "367",
+     "name": "Louisville",
+     "p": 0.1657
+    },
+    {
+     "id": "697",
+     "name": "Texas A&M",
+     "p": 0.1389
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.101
+    },
+    {
+     "id": "698",
+     "name": "TCU",
+     "p": 0.082
+    },
+    {
+     "id": "736",
+     "name": "Vanderbilt",
+     "p": 0.0789
+    }
+   ],
+   "omaha": [
+    {
+     "id": "700",
+     "name": "Texas Tech",
+     "p": 0.3901
+    },
+    {
+     "id": "29",
+     "name": "Arizona",
+     "p": 0.1617
+    },
+    {
+     "id": "415",
+     "name": "Miami (FL)",
+     "p": 0.4789
+    },
+    {
+     "id": "698",
+     "name": "TCU",
+     "p": 0.352
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.4543
+    },
+    {
+     "id": "149",
+     "name": "Coastal Carolina",
+     "p": 0.1154
+    },
+    {
+     "id": "104",
+     "name": "UC Santa Barbara",
+     "p": 0.0245
+    },
+    {
+     "id": "521",
+     "name": "Oklahoma St.",
+     "p": 0.1981
+    }
+   ],
+   "champion_log_loss": {
+    "model": 5.2591,
+    "uniform": 4.1589,
+    "seed_lines": 4.4021
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 3.3063,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.096115,
+    "uniform": 0.109375,
+    "seed_lines": 0.115231
+   },
+   "omaha_log_loss": {
+    "model": 0.310287,
+    "uniform": 0.37677,
+    "seed_lines": 0.398423
+   },
+   "calibration": {
+    "a": 0.06894,
+    "b": 1.03859,
+    "n": 15936
+   },
+   "hosts_rebuilt": 16
+  },
+  {
+   "season": 2017,
+   "window": "SELECTION",
+   "start": "2017-06-01",
+   "champion": {
+    "id": "235",
+    "name": "Florida",
+    "p": 0.0598,
+    "rank": 5,
+    "p_omaha_open": 0.0832
+   },
+   "favourites": [
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.1421
+    },
+    {
+     "id": "457",
+     "name": "North Carolina",
+     "p": 0.1251
+    },
+    {
+     "id": "367",
+     "name": "Louisville",
+     "p": 0.117
+    },
+    {
+     "id": "365",
+     "name": "LSU",
+     "p": 0.095
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.0598
+    }
+   ],
+   "omaha": [
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.5992
+    },
+    {
+     "id": "97",
+     "name": "Cal St. Fullerton",
+     "p": 0.12
+    },
+    {
+     "id": "697",
+     "name": "Texas A&M",
+     "p": 0.1501
+    },
+    {
+     "id": "367",
+     "name": "Louisville",
+     "p": 0.5566
+    },
+    {
+     "id": "234",
+     "name": "Florida St.",
+     "p": 0.3195
+    },
+    {
+     "id": "365",
+     "name": "LSU",
+     "p": 0.5521
+    },
+    {
+     "id": "698",
+     "name": "TCU",
+     "p": 0.4123
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.5422
+    }
+   ],
+   "champion_log_loss": {
+    "model": 2.8167,
+    "uniform": 4.1589,
+    "seed_lines": 3.5117
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 2.4865,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.06493,
+    "uniform": 0.109375,
+    "seed_lines": 0.088871
+   },
+   "omaha_log_loss": {
+    "model": 0.21619,
+    "uniform": 0.37677,
+    "seed_lines": 0.291482
+   },
+   "calibration": {
+    "a": 0.07372,
+    "b": 1.04696,
+    "n": 24412
+   },
+   "hosts_rebuilt": 16
+  },
+  {
+   "season": 2018,
+   "window": "SELECTION",
+   "start": "2018-06-01",
+   "champion": {
+    "id": "528",
+    "name": "Oregon St.",
+    "p": 0.1555,
+    "rank": 1,
+    "p_omaha_open": 0.364
+   },
+   "favourites": [
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.1555
+    },
+    {
+     "id": "674",
+     "name": "Stanford",
+     "p": 0.1255
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.1043
+    },
+    {
+     "id": "457",
+     "name": "North Carolina",
+     "p": 0.0797
+    },
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.0687
+    }
+   ],
+   "omaha": [
+    {
+     "id": "430",
+     "name": "Mississippi St.",
+     "p": 0.1323
+    },
+    {
+     "id": "457",
+     "name": "North Carolina",
+     "p": 0.5925
+    },
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.5117
+    },
+    {
+     "id": "756",
+     "name": "Washington",
+     "p": 0.0637
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.5628
+    },
+    {
+     "id": "700",
+     "name": "Texas Tech",
+     "p": 0.3745
+    },
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.4142
+    },
+    {
+     "id": "703",
+     "name": "Texas",
+     "p": 0.1818
+    }
+   ],
+   "champion_log_loss": {
+    "model": 1.8611,
+    "uniform": 4.1589,
+    "seed_lines": 3.5117
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 1.0107,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.074431,
+    "uniform": 0.109375,
+    "seed_lines": 0.088871
+   },
+   "omaha_log_loss": {
+    "model": 0.250266,
+    "uniform": 0.37677,
+    "seed_lines": 0.291482
+   },
+   "calibration": {
+    "a": 0.06707,
+    "b": 1.07413,
+    "n": 24978
+   },
+   "hosts_rebuilt": 15
+  },
+  {
+   "season": 2019,
+   "window": "SELECTION",
+   "start": "2019-05-31",
+   "champion": {
+    "id": "736",
+    "name": "Vanderbilt",
+    "p": 0.1497,
+    "rank": 2,
+    "p_omaha_open": 0.2633
+   },
+   "favourites": [
+    {
+     "id": "110",
+     "name": "UCLA",
+     "p": 0.2079
+    },
+    {
+     "id": "736",
+     "name": "Vanderbilt",
+     "p": 0.1497
+    },
+    {
+     "id": "674",
+     "name": "Stanford",
+     "p": 0.1042
+    },
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.0718
+    },
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.0694
+    }
+   ],
+   "omaha": [
+    {
+     "id": "700",
+     "name": "Texas Tech",
+     "p": 0.4485
+    },
+    {
+     "id": "736",
+     "name": "Vanderbilt",
+     "p": 0.5836
+    },
+    {
+     "id": "367",
+     "name": "Louisville",
+     "p": 0.4432
+    },
+    {
+     "id": "418",
+     "name": "Michigan",
+     "p": 0.0227
+    },
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.4869
+    },
+    {
+     "id": "234",
+     "name": "Florida St.",
+     "p": 0.0543
+    },
+    {
+     "id": "430",
+     "name": "Mississippi St.",
+     "p": 0.3514
+    },
+    {
+     "id": "37",
+     "name": "Auburn",
+     "p": 0.0998
+    }
+   ],
+   "champion_log_loss": {
+    "model": 1.8995,
+    "uniform": 4.1589,
+    "seed_lines": 4.4021
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 1.3347,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.08968,
+    "uniform": 0.109375,
+    "seed_lines": 0.105078
+   },
+   "omaha_log_loss": {
+    "model": 0.306019,
+    "uniform": 0.37677,
+    "seed_lines": 0.350057
+   },
+   "calibration": {
+    "a": 0.07292,
+    "b": 1.08559,
+    "n": 24872
+   },
+   "hosts_rebuilt": 14
+  },
+  {
+   "season": 2021,
+   "window": "SELECTION",
+   "start": "2021-06-04",
+   "champion": {
+    "id": "430",
+    "name": "Mississippi St.",
+    "p": 0.0415,
+    "rank": 8,
+    "p_omaha_open": 0.0949
+   },
+   "favourites": [
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.1325
+    },
+    {
+     "id": "703",
+     "name": "Texas",
+     "p": 0.1262
+    },
+    {
+     "id": "736",
+     "name": "Vanderbilt",
+     "p": 0.123
+    },
+    {
+     "id": "110",
+     "name": "UCLA",
+     "p": 0.0859
+    },
+    {
+     "id": "698",
+     "name": "TCU",
+     "p": 0.0691
+    }
+   ],
+   "omaha": [
+    {
+     "id": "490",
+     "name": "NC State",
+     "p": 0.1497
+    },
+    {
+     "id": "674",
+     "name": "Stanford",
+     "p": 0.1406
+    },
+    {
+     "id": "29",
+     "name": "Arizona",
+     "p": 0.2457
+    },
+    {
+     "id": "736",
+     "name": "Vanderbilt",
+     "p": 0.6271
+    },
+    {
+     "id": "694",
+     "name": "Tennessee",
+     "p": 0.3787
+    },
+    {
+     "id": "703",
+     "name": "Texas",
+     "p": 0.6054
+    },
+    {
+     "id": "430",
+     "name": "Mississippi St.",
+     "p": 0.4528
+    },
+    {
+     "id": "746",
+     "name": "Virginia",
+     "p": 0.0974
+    }
+   ],
+   "champion_log_loss": {
+    "model": 3.1809,
+    "uniform": 4.1589,
+    "seed_lines": 3.5117
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 2.3555,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.080525,
+    "uniform": 0.109375,
+    "seed_lines": 0.083624
+   },
+   "omaha_log_loss": {
+    "model": 0.25884,
+    "uniform": 0.37677,
+    "seed_lines": 0.28706
+   },
+   "calibration": {
+    "a": 0.08392,
+    "b": 1.08304,
+    "n": 18464
+   },
+   "hosts_rebuilt": 16
+  },
+  {
+   "season": 2022,
+   "window": "SELECTION",
+   "start": "2022-06-03",
+   "champion": {
+    "id": "433",
+    "name": "Ole Miss",
+    "p": 0.0096,
+    "rank": 21,
+    "p_omaha_open": 0.1252
+   },
+   "favourites": [
+    {
+     "id": "694",
+     "name": "Tennessee",
+     "p": 0.3589
+    },
+    {
+     "id": "674",
+     "name": "Stanford",
+     "p": 0.0951
+    },
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.0946
+    },
+    {
+     "id": "703",
+     "name": "Texas",
+     "p": 0.0633
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.0389
+    }
+   ],
+   "omaha": [
+    {
+     "id": "513",
+     "name": "Notre Dame",
+     "p": 0.09
+    },
+    {
+     "id": "703",
+     "name": "Texas",
+     "p": 0.4917
+    },
+    {
+     "id": "522",
+     "name": "Oklahoma",
+     "p": 0.0641
+    },
+    {
+     "id": "697",
+     "name": "Texas A&M",
+     "p": 0.2917
+    },
+    {
+     "id": "674",
+     "name": "Stanford",
+     "p": 0.5609
+    },
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.1976
+    },
+    {
+     "id": "433",
+     "name": "Ole Miss",
+     "p": 0.1249
+    },
+    {
+     "id": "37",
+     "name": "Auburn",
+     "p": 0.1213
+    }
+   ],
+   "champion_log_loss": {
+    "model": 4.646,
+    "uniform": 4.1589,
+    "seed_lines": 4.4021
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 2.0778,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.104835,
+    "uniform": 0.109375,
+    "seed_lines": 0.096672
+   },
+   "omaha_log_loss": {
+    "model": 0.330013,
+    "uniform": 0.37677,
+    "seed_lines": 0.319552
+   },
+   "calibration": {
+    "a": 0.09482,
+    "b": 1.05223,
+    "n": 17704
+   },
+   "hosts_rebuilt": 15
+  },
+  {
+   "season": 2024,
+   "window": "VALIDATION",
+   "start": "2024-05-31",
+   "champion": {
+    "id": "694",
+    "name": "Tennessee",
+    "p": 0.2056,
+    "rank": 1,
+    "p_omaha_open": 0.2828
+   },
+   "favourites": [
+    {
+     "id": "694",
+     "name": "Tennessee",
+     "p": 0.2056
+    },
+    {
+     "id": "457",
+     "name": "North Carolina",
+     "p": 0.0947
+    },
+    {
+     "id": "521",
+     "name": "Oklahoma St.",
+     "p": 0.0919
+    },
+    {
+     "id": "697",
+     "name": "Texas A&M",
+     "p": 0.0876
+    },
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.079
+    }
+   ],
+   "omaha": [
+    {
+     "id": "694",
+     "name": "Tennessee",
+     "p": 0.6755
+    },
+    {
+     "id": "234",
+     "name": "Florida St.",
+     "p": 0.3174
+    },
+    {
+     "id": "746",
+     "name": "Virginia",
+     "p": 0.3524
+    },
+    {
+     "id": "457",
+     "name": "North Carolina",
+     "p": 0.5317
+    },
+    {
+     "id": "334",
+     "name": "Kentucky",
+     "p": 0.3306
+    },
+    {
+     "id": "490",
+     "name": "NC State",
+     "p": 0.1657
+    },
+    {
+     "id": "235",
+     "name": "Florida",
+     "p": 0.0651
+    },
+    {
+     "id": "697",
+     "name": "Texas A&M",
+     "p": 0.5032
+    }
+   ],
+   "champion_log_loss": {
+    "model": 1.5818,
+    "uniform": 4.1589,
+    "seed_lines": 3.5117
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 1.2632,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.075917,
+    "uniform": 0.109375,
+    "seed_lines": 0.090619
+   },
+   "omaha_log_loss": {
+    "model": 0.2431,
+    "uniform": 0.37677,
+    "seed_lines": 0.311407
+   },
+   "calibration": {
+    "a": 0.08914,
+    "b": 1.05595,
+    "n": 18892
+   },
+   "hosts_rebuilt": 16
+  },
+  {
+   "season": 2025,
+   "window": "HOLDOUT",
+   "start": "2025-05-30",
+   "champion": {
+    "id": "365",
+    "name": "LSU",
+    "p": 0.0981,
+    "rank": 3,
+    "p_omaha_open": 0.1748
+   },
+   "favourites": [
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.127
+    },
+    {
+     "id": "457",
+     "name": "North Carolina",
+     "p": 0.1124
+    },
+    {
+     "id": "365",
+     "name": "LSU",
+     "p": 0.0981
+    },
+    {
+     "id": "736",
+     "name": "Vanderbilt",
+     "p": 0.0937
+    },
+    {
+     "id": "694",
+     "name": "Tennessee",
+     "p": 0.0704
+    }
+   ],
+   "omaha": [
+    {
+     "id": "367",
+     "name": "Louisville",
+     "p": 0.0757
+    },
+    {
+     "id": "528",
+     "name": "Oregon St.",
+     "p": 0.3067
+    },
+    {
+     "id": "29",
+     "name": "Arizona",
+     "p": 0.057
+    },
+    {
+     "id": "149",
+     "name": "Coastal Carolina",
+     "p": 0.3676
+    },
+    {
+     "id": "110",
+     "name": "UCLA",
+     "p": 0.2191
+    },
+    {
+     "id": "454",
+     "name": "Murray St.",
+     "p": 0.006
+    },
+    {
+     "id": "365",
+     "name": "LSU",
+     "p": 0.5645
+    },
+    {
+     "id": "31",
+     "name": "Arkansas",
+     "p": 0.5192
+    }
+   ],
+   "champion_log_loss": {
+    "model": 2.3223,
+    "uniform": 4.1589,
+    "seed_lines": 3.5117
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 1.7441,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.097565,
+    "uniform": 0.109375,
+    "seed_lines": 0.098219
+   },
+   "omaha_log_loss": {
+    "model": 0.351464,
+    "uniform": 0.37677,
+    "seed_lines": 0.338039
+   },
+   "calibration": {
+    "a": 0.08904,
+    "b": 1.06164,
+    "n": 20148
+   },
+   "hosts_rebuilt": 16
+  },
+  {
+   "season": 2026,
+   "window": "HOLDOUT",
+   "start": "2026-05-29",
+   "champion": {
+    "id": "522",
+    "name": "Oklahoma",
+    "p": 0.0022,
+    "rank": 30,
+    "p_omaha_open": 0.0575
+   },
+   "favourites": [
+    {
+     "id": "255",
+     "name": "Georgia Tech",
+     "p": 0.1502
+    },
+    {
+     "id": "110",
+     "name": "UCLA",
+     "p": 0.1248
+    },
+    {
+     "id": "37",
+     "name": "Auburn",
+     "p": 0.1121
+    },
+    {
+     "id": "457",
+     "name": "North Carolina",
+     "p": 0.0862
+    },
+    {
+     "id": "430",
+     "name": "Mississippi St.",
+     "p": 0.0785
+    }
+   ],
+   "omaha": [
+    {
+     "id": "768",
+     "name": "West Virginia",
+     "p": 0.1942
+    },
+    {
+     "id": "716",
+     "name": "Troy",
+     "p": 0.0231
+    },
+    {
+     "id": "457",
+     "name": "North Carolina",
+     "p": 0.4606
+    },
+    {
+     "id": "433",
+     "name": "Ole Miss",
+     "p": 0.1016
+    },
+    {
+     "id": "257",
+     "name": "Georgia",
+     "p": 0.4139
+    },
+    {
+     "id": "522",
+     "name": "Oklahoma",
+     "p": 0.0516
+    },
+    {
+     "id": "8",
+     "name": "Alabama",
+     "p": 0.2477
+    },
+    {
+     "id": "703",
+     "name": "Texas",
+     "p": 0.5476
+    }
+   ],
+   "champion_log_loss": {
+    "model": 6.1423,
+    "uniform": 4.1589,
+    "seed_lines": 4.4021
+   },
+   "champion_log_loss_omaha_open": {
+    "model": 2.8568,
+    "uniform": 2.0794
+   },
+   "omaha_brier": {
+    "model": 0.109266,
+    "uniform": 0.109375,
+    "seed_lines": 0.096672
+   },
+   "omaha_log_loss": {
+    "model": 0.345616,
+    "uniform": 0.37677,
+    "seed_lines": 0.319552
+   },
+   "calibration": {
+    "a": 0.0848,
+    "b": 1.09997,
+    "n": 20313
+   },
+   "hosts_rebuilt": 16
+  }
+ ]
+}

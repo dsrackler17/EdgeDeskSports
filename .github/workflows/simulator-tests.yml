@@ -63,6 +63,13 @@ on:
       - 'model_loop/data/ufc/title_bouts.csv'
       - 'docs/model-loop/ufc/candidates.jsonl'
       - 'tools/tennis/espn.js'
+      - 'college_baseball/lib/**'
+      - 'college_baseball/data/**'
+      - 'college_baseball/params/**'
+      - 'college_baseball/config.js'
+      - 'college_baseball/walkforward.js'
+      - 'college_baseball/validation/oos_team_predictions.csv.gz'
+      - 'docs/model-loop/college_baseball/versions.json'
       - 'model_loop/published/ufc/**'
       - 'docs/model-loop/ufc/versions.json'
       - 'tools/personal/_pg.js'
@@ -102,6 +109,13 @@ on:
       - 'model_loop/data/ufc/title_bouts.csv'
       - 'docs/model-loop/ufc/candidates.jsonl'
       - 'tools/tennis/espn.js'
+      - 'college_baseball/lib/**'
+      - 'college_baseball/data/**'
+      - 'college_baseball/params/**'
+      - 'college_baseball/config.js'
+      - 'college_baseball/walkforward.js'
+      - 'college_baseball/validation/oos_team_predictions.csv.gz'
+      - 'docs/model-loop/college_baseball/versions.json'
       - 'model_loop/published/ufc/**'
       - 'docs/model-loop/ufc/versions.json'
       - 'tools/personal/_pg.js'
@@ -189,6 +203,8 @@ jobs:
         run: npm run sim:golf:test
       - name: Tennis draws and matches (the rating, the draw rebuilt and confirmed against ESPN, the bracket against its exact calculation, sum rules, workers) and its reader tabs
         run: npm run sim:tennis:test
+      - name: College baseball's Road to Omaha (the replay against the served predictions, the tournament rebuilt from its games, double elimination, the committee proxy, sum rules, the real snapshot) and its reader tabs
+        run: npm run sim:cbase:test
       - name: Generated files are current
         run: |
           node simulator/src/cli/build_ui_registry.ts --check
