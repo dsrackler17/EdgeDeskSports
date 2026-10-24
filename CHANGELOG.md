@@ -40,6 +40,20 @@ Tests:
 
 All three are in `portfolio-tests.yml`. The existing Portfolio suites stay green: `portfolio:test`, all eleven `portfolio:sql` suites (814 checks), navigation, integrity and guide. One UI assertion changed on purpose: the empty book lists "Import picks" between the CSV import and recording by hand.
 
+## 2026-10-24 — The landing fixes reach browsers that already had the page: new ?v= stamps, and a guard
+
+#749 removed the DATA INCOMPLETE chips from the landing page's Today's games card, but phones kept showing them. `lib/edgedesk_home_free.js` changed while `index.html` still loaded it as `?v=20261008a`, so a returning browser kept running its cached copy. #747 did the same to `lib/edgedesk_pricing.js` (`?v=20261004a`), whose FEATURES list the terminal's paywall prints.
+
+- **New stamps:** `edgedesk_home_free.js?v=20261024a` in `index.html`; `edgedesk_pricing.js?v=20261024a` in `index.html`, `app.html`, `methodology/index.html` and `research/sample/index.html`.
+- **A guard** (`tools/presentation/landing_asset_stamps.json`, `landing_interaction.test.js` §7b): every `/lib` asset `index.html` loads with a stamp is recorded with that stamp and its content hash (sha256, 16 hex).
+  - If an asset's content changes and its stamp does not, the suite fails and says what to do: bump the stamp, then record both.
+  - Each asset must carry one stamp wherever the page loads it.
+  - Every recorded asset must be one the page loads.
+  - Mutation-checked: appending to `edgedesk_home_free.js` without a new stamp fails it, and so does rolling the stamp back.
+- `lib/edgedesk_track.js` changed on 2026-10-23 under `?v=20260930a`, but only in an app navigation event name the landing page never sends. It is recorded as it stands.
+
+Tests: `landing_interaction.test.js` 295 (was 219). Every unit suite that reads `index.html`, `app.html`, the methodology or sample pages, the pricing or the plans is green (135 files; 3 skip without PostgreSQL).
+
 ## 2026-10-24 — Men's college basketball forecasts: tables in production, named where the sports are
 
 The forecast tables are in production. *Deploy NCAAM forecast SQL* (run 40052574063) passed the SQL suite on a throwaway PostgreSQL, found the simulator layer, applied `supabase/ncaam_forecast.sql` in one transaction (every report row `ok`: tables, row-level security, no client writes, job functions closed to clients, live forecasts off, an anonymous caller not entitled) and registered NCAAM-FORECAST 1.0.0 and SIM-NCAAM-TOURNAMENT 0.1.0 (EXPERIMENTAL, T3). Nothing is published until `NCAAM_FC_PUBLISH` is `on`; the season opens 2026-11-02.
