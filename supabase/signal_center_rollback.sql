@@ -50,6 +50,7 @@ drop function if exists public.sc_admin_set_mode(text, text[]);
 drop function if exists public.sc_owner_set_mode(text, text[], text);
 drop function if exists public.sc_set_mode(text, text[], uuid, text, text);
 drop function if exists public.sc_promote_shadow(text);
+drop function if exists public.sc_place_shadow(text, uuid, text);
 drop function if exists public.sc_admin_runs(integer);
 drop function if exists public.sc_admin_failures(integer);
 drop function if exists public.sc_admin_resolve_failure(bigint);
@@ -57,6 +58,7 @@ drop function if exists public.sc_require_admin();
 -- the job doors
 drop function if exists public.sc_begin_run(jsonb);
 drop function if exists public.sc_require_run(uuid);
+drop function if exists public.sc_publish_pending(uuid);
 drop function if exists public.sc_current(text[]);
 drop function if exists public.sc_prior_divergences();
 drop function if exists public.sc_active(text[], integer);

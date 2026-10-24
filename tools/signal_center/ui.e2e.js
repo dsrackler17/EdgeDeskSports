@@ -164,8 +164,10 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
       chk('Research Pulse prints the counts the database holds', pulseTxt.indexOf(String(pulse.published)) >= 0 && pulse.published > 0, { db: pulse.published, txt: pulseTxt.slice(0, 200) });
       let cs = await cards(page);
       chk('Full Access cards are not locked and carry numbers', cs.every((c) => !c.locked) && cs.some((c) => DIGIT_CLAIM.test(c.text)), cs.slice(0, 2).map((c) => c.text.slice(0, 120)));
-      /* the first card is the newest published signal, word for word */
-      const newest = q("select headline from public.sc_signals where publication = 'PUBLISHED' and verification_state = 'VERIFIED' and lifecycle = 'ACTIVE' and not fixture order by first_detected_at desc, signal_id desc limit 1;");
+      /* the first card is the newest published signal, word for word: the
+         feed lands on the latest per subject, current and past, by the moment
+         each signal describes */
+      const newest = q("select headline from public.sc_signals where publication = 'PUBLISHED' and verification_state = 'VERIFIED' and lifecycle in ('ACTIVE', 'EXPIRED') and not fixture order by signal_at desc, signal_id desc limit 1;");
       chk('the first card is the newest published signal, word for word', cs[0] && cs[0].head === newest, { ui: cs[0] && cs[0].head, db: newest });
       /* filters: sport */
       await page.evaluate(() => { const d = document.querySelector('#scHost .sc-filters'); if (d) d.open = true; });
@@ -257,7 +259,7 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
       chk('Coverage shows every sport and an honest blocked state', /NFL/.test(cov) && /College football/.test(cov) && /MLB/.test(cov) && /blocked/i.test(cov), cov.slice(0, 200));
       await page.click('#scHost [data-sc-view="method"]');
       await page.waitForSelector('#scHost .sc-tbl', { timeout: 15000 });
-      chk('Method prints the scoring specification from the engine (loaded on demand)', /sc_importance_v1/.test(await page.textContent('#sc-body')) && await page.evaluate(() => !!window.EDSignalEngine));
+      chk('Method prints the scoring specification from the engine (loaded on demand)', /sc_importance_v2/.test(await page.textContent('#sc-body')) && await page.evaluate(() => !!window.EDSignalEngine));
       await page.click('#scHost [data-sc-view="alerts"]');
       await page.waitForSelector('#scHost form[data-sc-prefs]', { timeout: 10000 });
       await page.check('#scHost input[name="sports"][value="nfl"]');

@@ -7,8 +7,10 @@
    Committed sources (no credentials):
      football/game_research/history/<season>.jsonl   NFL and CFB forecasts
      football/game_research/current.json             the snapshot now served
-     performance/ledger/forecasts/<sport>-<y>.jsonl  NBA, NHL, WNBA forecasts
-     performance/ledger/quotes/<sport>-<y>.jsonl     named-book quotes, timed
+     performance/ledger/forecasts/<sport>-<y>.jsonl  NBA, NHL, WNBA forecasts;
+                                                     NFL and CFB before research
+     performance/ledger/quotes/<sport>-<y>.jsonl     NBA and NHL quotes, timed
+     record/football/quotes/<sport>_<y>.jsonl        NFL and CFB quotes, timed
      performance/data/summary.json                   the live graded record
      engine/registry.json                            the backtest evidence
      football/availability/reports/*.json            CFB availability reports
@@ -114,7 +116,12 @@ function footballCurrent(root) {
 
 /* ------------------------------------------------ the performance ledger */
 const PERF_SPORTS = ['nba', 'nhl', 'wnba'];
-const RESEARCH_HREF = { nba: (id) => '#research/nba/' + encodeURIComponent(id), nhl: (id) => '#research/nhl/' + encodeURIComponent(id), wnba: () => null };
+const RESEARCH_HREF = { nba: (id) => '#research/nba/' + encodeURIComponent(id), nhl: (id) => '#research/nhl/' + encodeURIComponent(id), wnba: () => null,
+  nfl: (id) => '#game/nfl/' + encodeURIComponent(id), cfb: (id) => '#game/cfb/' + encodeURIComponent(id) };
+/* when a ledger row became EdgeDesk's record: its capture time, or, for a row
+   imported from an earlier record (captured_at null), the time that record
+   first carried the number (recorded_at, read from the record's git history) */
+function perfRowAt(cap) { return (cap && (cap.captured_at || cap.recorded_at)) || null; }
 function perfForecastGames(root, sports) {
   root = root || ROOT;
   const dir = path.join(root, 'performance', 'ledger', 'forecasts');
@@ -132,7 +139,7 @@ function perfForecastGames(root, sports) {
         const fc = r.forecast || {}, m = r.model || {}, cap = r.capture || {}, rd = r.readiness || {};
         const sum = (fc.p_home || 0) + (fc.p_away || 0) + (fc.p_draw || 0);
         return {
-          snapshot_id: cap.projection_id || r.hash, at: cap.captured_at, built_at: m.predicted_at || null,
+          snapshot_id: cap.projection_id || r.hash, at: perfRowAt(cap), built_at: m.predicted_at || null,
           p_home: typeof fc.p_home === 'number' ? fc.p_home : null,
           /* the summary grades by model.id; the distribution version rides along */
           model_id: m.id || null, model_version: m.id ? m.id + (m.version ? '@' + m.version : '') : null,
@@ -158,12 +165,33 @@ function perfForecastGames(root, sports) {
   return out;
 }
 
-/* named-book quotes per event, every capture, from the performance ledger */
+/* NFL and CFB forecasts from the performance ledger, for the stretch BEFORE
+   game research began recording each game (its history starts 2026-10-16;
+   the ledger's football rows, imported from the football record, start
+   2026-09-11). Each is its own series under the research event key: a ledger
+   row is never compared with a research snapshot (two pipelines), and a game
+   research already covers keeps only its earlier ledger rows. */
+function footballLedgerGames(root, research) {
+  const firstResearch = new Map();
+  (research || []).forEach((g) => {
+    const ts = g.series.map((r) => Date.parse(r.at)).filter(isFinite);
+    if (ts.length) firstResearch.set(g.game.event_key, Math.min.apply(null, ts));
+  });
+  return perfForecastGames(root, ['nfl', 'cfb']).map((g) => {
+    const key = g.game.event_key.replace(/^(NFL|CFB)\|/, (m, a) => a.toLowerCase() + '|');
+    const cut = firstResearch.get(key);
+    const series = g.series.filter((r) => cut === undefined || Date.parse(r.at) < cut);
+    return { game: Object.assign({}, g.game, { event_key: key, settles: FOOTBALL_SETTLES }), series };
+  }).filter((g) => g.series.length);
+}
+
+/* named-book quotes per event, every capture, from the performance ledger
+   (NBA and NHL; football reads footballRecordQuotes) */
 function perfQuotes(root, sports) {
   root = root || ROOT;
   const dir = path.join(root, 'performance', 'ledger', 'quotes');
   const byEvent = new Map();
-  (sports || ['nfl', 'cfb', 'nba', 'nhl']).forEach((sport) => {
+  (sports || ['nba', 'nhl']).forEach((sport) => {
     listFiles(dir, new RegExp('^' + sport + '-\\d{4}\\.jsonl$')).forEach((f) => readJsonl(f).forEach((q) => {
       if (q.schema !== 'edgedesk_perf_quote_v1' || !q.event_key || !q.moneyline) return;
       if (!byEvent.has(q.event_key)) byEvent.set(q.event_key, []);
@@ -172,6 +200,30 @@ function perfQuotes(root, sports) {
   });
   return byEvent;
 }
+/* NFL and CFB moneylines from the football quote record
+   (record/football/quotes/<sport>_<y>.jsonl): every DraftKings reading
+   EdgeDesk captured through ESPN since 2026-10-03, pregame only, each with
+   the time EdgeDesk observed it and the teams as ESPN printed them (so it can
+   be oriented by name). Keyed like the performance ledger (NFL|<game id>). */
+function footballRecordQuotes(root, byEvent) {
+  root = root || ROOT;
+  byEvent = byEvent || new Map();
+  ['nfl', 'cfb'].forEach((sport) => {
+    listFiles(path.join(root, 'record', 'football', 'quotes'), new RegExp('^' + sport + '_\\d{4}\\.jsonl$')).forEach((f) => readJsonl(f).forEach((q) => {
+      if (q.schema !== 'edgedesk_record_quote_v1' || q.market_type !== 'moneyline' || q.is_pregame === false || !q.game_id || !q.observed_at) return;
+      if (typeof q.price_home !== 'number' || typeof q.price_away !== 'number') return;
+      const key = sport.toUpperCase() + '|' + q.game_id;
+      if (!byEvent.has(key)) byEvent.set(key, []);
+      byEvent.get(key).push({ book: q.provider_book || q.book, source: q.source, captured_at: q.observed_at, observed_at: q.observed_at, moneyline: { home: q.price_home, away: q.price_away },
+        ref: path.relative(root, f) + '#' + q.quote_id, start_utc: q.kickoff_ts || null, slate_id: null, sport, home: { name: q.home_team }, away: { name: q.away_team } });
+    }));
+  });
+  return byEvent;
+}
+/* every quote Signal Center compares: the ledger's (NBA, NHL) and the
+   football record's (NFL, CFB), one capture path per sport */
+function allQuotes(root) { return footballRecordQuotes(root, perfQuotes(root)); }
+
 /* the team names ESPN printed for each slate event, so a quote's home and
    away can be checked against the model's (orientation) */
 function slateTeams(root) {
@@ -271,4 +323,4 @@ function sourceStates(root, now) {
   return out;
 }
 
-module.exports = { ROOT, readJson, readJsonl, footballGames, footballCurrent, perfForecastGames, perfQuotes, perfKeyFor, slateTeams, audits, cfbAvailability, nflInjuries, sourceStates, PERF_SPORTS, FOOTBALL_SETTLES };
+module.exports = { ROOT, readJson, readJsonl, footballGames, footballCurrent, footballLedgerGames, perfForecastGames, perfQuotes, footballRecordQuotes, allQuotes, perfKeyFor, slateTeams, audits, cfbAvailability, nflInjuries, sourceStates, PERF_SPORTS, FOOTBALL_SETTLES };

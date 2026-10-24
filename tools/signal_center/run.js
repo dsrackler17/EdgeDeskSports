@@ -27,7 +27,9 @@
                               INVALIDATED version (withdrawn, history kept)
      5  sc_current            the stored version of every key: a re-evaluation is sent
                               only when it is a material update (E.materialUpdate)
-     6  sc_ingest             batches of 200, idempotent by key and version hash
+     6  sc_ingest             batches of 200, idempotent by key and version hash;
+                              sc_publish_pending: a live run publishes what was
+                              stored in shadow (history included), by the same rule
      7  sc_graphics_due       draw the content of every version still missing its
                               graphic (lib/edgedesk_signal_graphic.js), check it, store it
      8  sc_put_dna            the Model DNA records, stored once per distinct audit
@@ -74,15 +76,22 @@ function teamStyleResolver(root) {
 
 function committedInputs(root, now) {
   const football = S.footballGames(root), au = S.audits(root);
-  return { football, footballCurrent: S.footballCurrent(root), perfGames: S.perfForecastGames(root), perfLastCapture: au.perf && au.perf.ledger ? au.perf.ledger.last_capture_at : null,
-    quotes: S.perfQuotes(root), slateTeams: S.slateTeams(root), audits: au, cfbAvailability: S.cfbAvailability(root, football), nflInjuries: S.nflInjuries(root, football), sourceStates: S.sourceStates(root, now), now };
+  return { football, footballLedger: S.footballLedgerGames(root, football), footballCurrent: S.footballCurrent(root), perfGames: S.perfForecastGames(root),
+    perfLastCapture: au.perf && au.perf.ledger ? au.perf.ledger.last_capture_at : null,
+    quotes: S.allQuotes(root), slateTeams: S.slateTeams(root), audits: au, cfbAvailability: S.cfbAvailability(root, football), nflInjuries: S.nflInjuries(root, football), sourceStates: S.sourceStates(root, now), now };
 }
 
 /* step 4: an active signal whose compared records are no longer in its source
-   (the ledgers are append-only, so this means a source was rewritten) */
+   (the ledgers are append-only, so this means a source was rewritten). A game
+   can have two series (ledger rows before research, then research): its
+   records are the union. */
 function invalidations(active, inputs) {
   const ids = new Map();
-  inputs.football.concat(inputs.perfGames).forEach((g) => ids.set(g.game.event_key, new Set(g.series.map((r) => r.snapshot_id))));
+  (inputs.footballLedger || []).concat(inputs.football, inputs.perfGames).forEach((g) => {
+    const have = ids.get(g.game.event_key) || new Set();
+    g.series.forEach((r) => have.add(r.snapshot_id));
+    ids.set(g.game.event_key, have);
+  });
   const out = [];
   (active || []).forEach((row) => {
     const p = row.payload;
@@ -172,7 +181,12 @@ async function liveRun(db, inputs, opts) {
       (res.items || []).filter((i) => i.rejected).slice(0, 5).forEach((i) => note('ingest', i.signal_key + ' refused: ' + i.rejected));
     }
     Object.assign(counts, ing);
-    console.log('stored: ' + ing.inserted + ' new, ' + ing.versioned + ' new versions, ' + ing.unchanged + ' unchanged, ' + ing.rejected + ' refused, ' + ing.published + ' published');
+    counts.backfilled = send.filter((x) => x.payload.backfilled).length;
+    console.log('stored: ' + ing.inserted + ' new, ' + ing.versioned + ' new versions, ' + ing.unchanged + ' unchanged, ' + ing.rejected + ' refused, ' + ing.published + ' published'
+      + ' · ' + counts.backfilled + ' sent were found in the ledger after the fact');
+    /* 6b: a live run publishes what was stored in shadow, by the same rule */
+    counts.promoted = await db.rpc('sc_publish_pending', { p_run: run });
+    if (counts.promoted) console.log('published ' + counts.promoted + ' signals stored while in shadow mode');
     /* 7 */
     const due = (await db.rpc('sc_graphics_due', { p_template_version: SG.TEMPLATE_VERSION, p_limit: 150 })) || [];
     const gi = graphicItems(due, opts.resolver);
@@ -217,6 +231,8 @@ async function main() {
     const graphics = r.signals.filter((p) => SG.eligible(p).ok).length;
     fs.writeFileSync(path.join(out, 'run.json'), JSON.stringify({ schema: 'edgedesk_signal_center_dry_run_v1', evaluated_at: new Date(now).toISOString(), engine_version: E.VERSION, spec: E.SPEC, stats: r.stats, signals: r.signals, dna: r.dna, refused: r.refused, ineligible: r.ineligible }, null, 1));
     console.log((flag('dry-run') ? 'DRY RUN' : 'DRY RUN (SB_URL / SB_SERVICE_ROLE not set)') + ' · ' + r.signals.length + ' signals, ' + graphics + ' with a graphic template, ' + r.dna.length + ' Model DNA records · ' + path.relative(process.cwd(), path.join(out, 'run.json')));
+    const bf = r.signals.filter((p) => p.backfilled);
+    if (bf.length) console.log('  ' + bf.length + ' found in the ledger after the fact, from ' + bf.map((p) => p.timestamps.scored_as_of).sort()[0] + (r.stats.replay ? ' · market replayed over ' + r.stats.replay.passes + ' capture passes' : ''));
     Object.keys(r.stats.by_category || {}).sort().forEach((k) => console.log('  ' + k + ': ' + r.stats.by_category[k]));
     return;
   }

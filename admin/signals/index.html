@@ -159,9 +159,9 @@ td.h{min-width:240px}
 </div>
 <script src="/lib/edgedesk_calc.js?v=20261008i"></script>
 <script src="/lib/edgedesk_game_graphic.js?v=20261022edge1"></script>
-<script src="/lib/edgedesk_signal_engine.js?v=20261024sc2"></script>
-<script src="/lib/edgedesk_signal_graphic.js?v=20261024sc2"></script>
-<script src="/lib/edgedesk_signal_registry.js?v=20261024sc2"></script>
+<script src="/lib/edgedesk_signal_engine.js?v=20261024sc3"></script>
+<script src="/lib/edgedesk_signal_graphic.js?v=20261024sc3"></script>
+<script src="/lib/edgedesk_signal_registry.js?v=20261024sc3"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
@@ -222,11 +222,11 @@ function qFilters() {
 function paintQueue() {
   var pubF = $('qPub').value;
   var rows = Q.items.filter(function (it) { return !pubF || it.publication === pubF; });
-  $('queue').innerHTML = '<thead><tr><th>#</th><th>Label</th><th>Type</th><th>Sport</th><th>Headline</th><th>Publication</th><th>Verification</th><th>Lifecycle</th><th class="n">Score</th><th>Detected</th><th></th></tr></thead><tbody>'
+  $('queue').innerHTML = '<thead><tr><th>#</th><th>Label</th><th>Type</th><th>Sport</th><th>Headline</th><th>Publication</th><th>Verification</th><th>Lifecycle</th><th class="n">Score</th><th>When</th><th></th></tr></thead><tbody>'
     + (rows.length ? rows.map(function (it) {
       return '<tr' + (Q.sel === it.signal_id ? ' class="sel"' : '') + '><td class="mono">' + esc(it.signal_id) + '</td><td>' + esc(it.label) + '</td><td>' + esc(CATS[it.category] || it.category) + '</td><td>' + esc(it.sport) + '</td>'
         + '<td class="h">' + esc(it.headline) + '</td><td><span class="pill ' + esc(it.publication) + '">' + esc(it.publication) + '</span></td><td>' + esc(it.verification) + '</td><td>' + esc(it.lifecycle) + '</td>'
-        + '<td class="n">' + esc(it.score) + '</td><td>' + esc(when(it.first_detected_at)) + '</td><td><button class="g" data-open="' + esc(it.signal_id) + '">Review</button></td></tr>';
+        + '<td class="n">' + esc(it.score) + '</td><td' + (it.backfilled ? ' title="found in the ledger ' + esc(when(it.first_detected_at)) + '"' : '') + '>' + esc(when(it.signal_at || it.first_detected_at)) + (it.backfilled ? ' · found later' : '') + '</td><td><button class="g" data-open="' + esc(it.signal_id) + '">Review</button></td></tr>';
     }).join('') : '<tr><td colspan="11" class="note">No signal matches.</td></tr>') + '</tbody>';
   $('qMore').classList.toggle('hide', !(Q.page && Q.page.next_cursor));
   $('qNote').textContent = Q.items.length + ' loaded' + (pubF ? ', ' + rows.length + ' ' + pubF.toLowerCase() : '') + '.';

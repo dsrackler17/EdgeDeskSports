@@ -4,10 +4,15 @@
 
 - the migration was applied by *Deploy Signal Center schema*, and re-applied after the `sha256()` fix
   (run 40044555415: all 12 report rows ok);
-- *Signal Center mode* switched to **live for every sport** in the registry (run 40044724761; reason kept in
-  `sc_config_log`);
-- the first *Signal Center run* (40044823741) stored 371 signals, published 166, drew 144 graphics (48 versions,
-  three formats) and stored the Model DNA records, in 23 database requests.
+- *Signal Center mode* switched to **live for every sport** in the registry at 00:23 UTC (run 40044724761; reason
+  kept in `sc_config_log`);
+- the first *Signal Center run* (40044823741, 00:25 UTC) stored 371 signals, published 166, drew 144 graphics (48
+  versions, three formats) and stored the Model DNA records, in 23 database requests.
+
+To take the backfill (#741), run step 1 **again** after merging, then step 2. Step 1 is idempotent. It replaces the
+doors and adds `sc_signals.backfilled` and `signal_at`. It dates the rows already stored by the 180-minute rule and
+places them in record time (older active or expired signals about the same subject, outcome and event are
+superseded, with an audit event).
 
 The hourly job runs only when the repository variable `SIGNAL_CENTER_WORKER` is `on` (§2). The steps below remain
 the runbook. Each is a separate decision, and each can be undone.
@@ -52,7 +57,8 @@ Expected report:
 ```
 
 After it: the terminal seat reads "Shadow mode". Readers see an empty feed and new readers are handed on to Research.
-`/signals/` says shadow mode. Nothing is published.
+`/signals/` says shadow mode. Nothing is published. An operator sees the stored, unpublished signals in the terminal
+by default, and the pulse says it includes them.
 
 ## 2. Shadow evaluation
 
@@ -64,6 +70,10 @@ Supabase does, so this cannot pass the tests again. Re-apply the file after upda
 Set the repository variable **`SIGNAL_CENTER_WORKER` = `on`** (Settings → Secrets and variables → Actions →
 Variables). `.github/workflows/signal-center.yml` then runs hourly at :23. A run can also be started by hand, with
 *dry run* to write nothing. Secrets: `SB_URL`, `SB_SERVICE_ROLE`, the ones the other jobs use.
+
+**The first run stores the season so far.** It reads every committed record back to the start of each ledger:
+about 750 signals on 2026-10-24. Each is placed when it happened and marked *found in the ledger later*, and none
+becomes a notice. Graphics catch up at 150 versions a run (Notable and above). Later runs store only what is new.
 
 Review in `/admin/signals/` for at least two NFL and CFB game weeks:
 
@@ -86,9 +96,13 @@ Any one of:
 
 Each switch is logged in `sc_config_log`, with the reason where one is given.
 
-- **Switching to live publishes what is already stored in shadow** if it clears the publication rule now. Held
-  and withdrawn signals are never touched. The result says how many were published (`promoted`).
-- A run publishes under the mode it **began** in, so the next run publishes the new signals.
+- **Switching to live publishes what is already stored in shadow** if it clears the publication rule now
+  (`sc_place_shadow`: verified, a live sport, label ≥ Routine, not withdrawn, history included). Held and withdrawn
+  signals are never touched. The result says how many were published (`promoted`).
+- A run publishes under the mode it **began** in, so the next run publishes the new signals. A live run also
+  publishes, by the same rule, whatever is still unpublished (`sc_publish_pending`): the backfilled history, and
+  what an earlier engine stored before history was publishable. History is published as history (expired or
+  superseded) and never notified.
 - Published means: VERIFIED, not a fixture, a live sport, label ≥ Routine (`sc_config.publish.min_label`).
   Notices go to Full Access readers who asked, at Notable+ by default: at most 5 per run and 20 per day each.
 - Then, as separate decisions:
@@ -132,6 +146,7 @@ Every `sc_config` change made through an operator door is appended to `sc_config
 select public.sc_status();                                   -- mode, live sports, last run
 select status, started_at, finished_at, counts->'requests' from public.sc_runs order by started_at desc limit 10;
 select category, sport, publication, count(*) from public.sc_signals group by 1, 2, 3 order by 1, 2, 3;
+select backfilled, min(signal_at), max(signal_at), count(*) from public.sc_signals group by 1;  -- history found later vs live
 select count(*) from public.sc_signals where publication = 'PUBLISHED' and (verification_state <> 'VERIFIED' or fixture);  -- must be 0
 select stage, error, created_at from public.sc_failures where resolved_at is null order by created_at desc limit 20;
 select status, external_approval, count(*) from public.sc_graphics group by 1, 2;
