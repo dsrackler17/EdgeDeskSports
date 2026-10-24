@@ -70,6 +70,7 @@ const MODULES = {
   navMenu:     { host: 'id="navBurger"', what: 'the phone menu opens and closes', min: 150 },
   pricingView: { host: 'id="pricing"',   what: 'reaching the price is measured', min: 60 },
   coachView:   { host: 'id="coach"',     what: 'reaching Process Coach is measured', min: 60 },
+  sigLadder:   { host: 'id="sigDemo"',   what: 'each evidence step shows its own sample signal', min: 150 },
   stickyCta:   { host: 'id="mbar"',      what: 'the phone\'s sticky call to action shows and hides', min: 150 },
   liveBoard:   { host: 'id="lpPreview"', what: 'the live research preview is read and drawn', min: 150 },
   reveals:     { host: 'class="',        what: 'blocks enter once, quietly', min: 150 }

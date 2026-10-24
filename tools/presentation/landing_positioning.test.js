@@ -92,8 +92,11 @@ const HERO = section('top', 'header');
 chk('the hero is found', HERO.length > 2500);
 has(HERO, '<span class="ey" data-hero="eyebrow">Research, not picks.</span>', 'the eyebrow is the philosophy: research, not picks');
 has(HERO, '<h1 data-hero="headline">The research terminal <span class="g">for sports markets.</span></h1>', 'the headline: the research terminal for sports markets');
-has(HERO, '<p class="sub" data-hero="sub">EdgeDesk prices the game beside the market, simulates seasons in ten sports and tells you what changed, with free football research every week and no card needed.</p>',
-  'the sentence: what the terminal does, and that the football research is free, every week, with no card');
+/* three lines at 375 px even in the CI runner's wide fallback face, where the
+   headline takes three: landing.e2e.js holds the first phone screen; the
+   offer line under the buttons says no card */
+has(HERO, '<p class="sub" data-hero="sub">EdgeDesk prices the game beside the market, simulates seasons in ten sports and flags what changed, with free football research.</p>',
+  'the sentence: what the terminal does, and that the football research is free');
 chk('the sentence is one sentence, not a paragraph', plain(HERO.match(/<p class="sub"[\s\S]*?<\/p>/)[0]).trim().split(/[.!?](\s|$)/).filter(s => s.trim()).length === 1);
 /* FREE RESEARCH FIRST (docs/product-led-growth/PLAN.md, Phase 1): the free
    research is the primary action; the trial is right beside it, through the
@@ -190,18 +193,43 @@ has(SIG, 'Know what changed. <span class="g">See if the evidence holds.</span>',
 ['Forecast shift', 'Line movement', 'Availability', 'Simulation shift'].forEach(k =>
   chk('a signal kind the page names is one Signal Center has: ' + k, SIG.indexOf('<li><b>' + k) >= 0 && SC.indexOf("'" + k + "'") >= 0));
 {
-  const ladder = [...SIG.matchAll(/<ol class="ladder"[\s\S]*?<\/ol>/g)].map(m => [...m[0].matchAll(/<li[^>]*>([^<]+)<\/li>/g)].map(x => x[1]))[0] || [];
+  const ladder = [...(SIG.match(/<div class="ladder" role="group" aria-label="The evidence ladder">([\s\S]*?)<\/div>/) || [, ''])[1].matchAll(/<button type="button" data-ev="([a-z]+)" aria-pressed="(true|false)">([^<]+)<\/button>/g)]
+    .map(m => ({ k: m[1], on: m[2] === 'true', label: m[3] }));
   chk('the ladder is the engine\'s, strongest first: confirmed cause, supported association, observed, unexplained',
-    JSON.stringify(ladder) === JSON.stringify(['Confirmed cause', 'Supported association', 'Observed', 'Unexplained'])
-    && ladder.slice(0, 3).every(l => SC.indexOf("'" + l + "'") >= 0) && SC.indexOf("'Unexplained movement'") >= 0, ladder);
-  chk('the sample\'s step is the one its story earns: a dated event between two snapshots is a supported association',
-    /<li class="on" aria-current="step">Supported association<\/li>/.test(SIG) && /Between the two snapshots/.test(SIG));
+    JSON.stringify(ladder.map(l => l.label)) === JSON.stringify(['Confirmed cause', 'Supported association', 'Observed', 'Unexplained'])
+    && ladder.slice(0, 3).every(l => SC.indexOf("'" + l.label + "'") >= 0) && SC.indexOf("'Unexplained movement'") >= 0, ladder);
+  /* each step is a button that shows its own sample signal */
+  const V = {};
+  [...SIG.matchAll(/<div class="sig-v" data-ev="([a-z]+)"( hidden)?>([\s\S]*?)<\/p>\s*<\/div>/g)].forEach(m => { V[m[1]] = { hidden: !!m[2], html: m[3] }; });
+  chk('every step has its sample, and every sample its step', ladder.length === 4 && ladder.every(l => V[l.k]) && Object.keys(V).length === 4, Object.keys(V));
+  chk('the step pressed in the markup is the sample shown without script: a supported association', JSON.stringify(ladder.filter(l => l.on).map(l => l.k)) === '["assoc"]'
+    && Object.keys(V).filter(k => !V[k].hidden).join() === 'assoc');
+  const ENGINE = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_signal_engine.js'), 'utf8');
+  Object.keys(V).forEach(k => {
+    const h = V[k].html, kick = (h.match(/<span class="sig-k">([^&]+) &middot; [^&]+ &middot; <b class="amb">([A-Za-z]+)<\/b><\/span>/) || []);
+    chk(k + ': its kind is one Signal Center has, and its label one the engine gives', !!kick[1] && SC.indexOf("'" + kick[1] + "'") >= 0 && new RegExp("label: '" + kick[2] + "'").test(ENGINE), kick.slice(1));
+    chk(k + ': it is a sample about no real game or player', /<span class="sig-w">Sample (?:game|player) &middot; not a current signal<\/span>/.test(h) && !/\b(?:Ravens|Steelers|Bengals|Browns|Chiefs)\b/.test(h));
+    chk(k + ': it says why, in the terms of its own step', /<p class="sig-p"><b>Why:<\/b> /.test(h));
+  });
+  const nums = (k) => [...(V[k] ? V[k].html : '').matchAll(/<span class="v[^"]*">([^<]+)<\/span>/g)].map(m => plain(m[1]).trim());
+  chk('supported association: a dated event between two snapshots, and 60.5 - 54.0 = +6.5 pts', /Between the two snapshots/.test(V.assoc.html) && /54\.0% &rarr; 60\.5%/.test(V.assoc.html)
+    && JSON.stringify(nums('assoc')) === JSON.stringify(['54.0%', '60.5%', '+6.5 pts']));
+  chk('unexplained: 37.2 - 41.0 = -3.8 pts, and it says it does not know yet', JSON.stringify(nums('unex')) === JSON.stringify(['41.0%', '37.2%', '-3.8 pts']) && /41\.0% &rarr; 37\.2%/.test(V.unex.html)
+    && Math.abs((37.2 - 41.0) + 3.8) < 1e-9 && /doesn&rsquo;t know yet/.test(V.unex.html));
+  chk('observed: 61.0 - 54.2 = 6.8 pts, both numbers on record, and no why claimed', JSON.stringify(nums('obs')) === JSON.stringify(['61.0%', '54.2%', '6.8 pts']) && Math.abs((61.0 - 54.2) - 6.8) < 1e-9
+    && /Nothing here establishes why/.test(V.obs.html) && /never a recommendation/.test(V.obs.html));
+  chk('confirmed cause: only one input changed, and it says no live signal carries it yet', /changing only this player&rsquo;s availability/.test(V.cause.html) && /no live signal carries it yet/.test(V.cause.html));
+  /* "no live signal carries it yet" is true while no source feeds the engine an
+     isolated effect; the day one does, this fails and the sentence goes */
+  chk('…and that is still true: no Signal Center source supplies an isolated effect', () => {
+    const dir = path.join(ROOT, 'tools', 'signal_center');
+    return fs.readdirSync(dir).filter(f => /\.js$/.test(f) && !/test|e2e/.test(f)).every(f => {
+      const src = fs.readFileSync(path.join(dir, f), 'utf8');
+      return !/nbaEffects\s*[:=](?!\s*\{\s*\})/.test(src.replace(/nbaEffects:\{\}/g, '').replace(/inputs\.db\.nbaEffects \|\| \{\}/g, ''));
+    });
+  });
 }
-chk('the sample\'s label is one of the engine\'s', /<b class="amb">(Major|Notable|Routine)<\/b>/.test(SIG) && /\{ min: \d+, label: 'Notable' \}/.test(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_signal_engine.js'), 'utf8')));
-chk('the sample shift adds up: 60.5 - 54.0 = +6.5 pts', /54\.0% &rarr; 60\.5%/.test(SIG) && /<span class="v">54\.0%<\/span>/.test(SIG) && /<span class="v mdl">60\.5%<\/span>/.test(SIG)
-  && /<span class="v pos">\+6\.5 pts<\/span>/.test(SIG) && Math.abs((60.5 - 54.0) - 6.5) < 1e-9);
-chk('the sample is about no real game, and says it is not a current signal', /Sample game &middot; not a current signal/.test(SIG) && /Home side/.test(SIG) && !/\b(?:Ravens|Steelers|Bengals|Browns|Chiefs)\b/.test(SIG));
-chk('an injury designation is dated by EdgeDesk\'s first sight, never called published', /first seen by EdgeDesk/.test(SIG) && !/published (?:at|on) /i.test(plain(SIG)));
+chk('the injury designation in the sample is dated by EdgeDesk\'s first sight, never called published', /first seen by EdgeDesk/.test(SIG) && !/published (?:at|on) /i.test(plain(SIG)));
 has(SIG, 'Where the model trails the market, the signal says so.', 'Model DNA is described as including where the model is behind');
 has(SIG, 'href="/signals/"', 'the free preview is one tap away');
 
@@ -580,13 +608,19 @@ has(FAQ, 'reopen signup', 'and the confirmation-email help');
   .forEach(re => chk('coverage is never overstated: ' + re, !re.test(TEXT), (re.exec(TEXT) || [])[0]));
 {
   const sportsA = answer('What sports are currently supported?');
-  const allowed = [sportsA, plain(SIMS)];
+  /* #signals' samples may name a sport too, one Signal Center covers (below) */
+  const allowed = [sportsA, plain(SIMS), plain(SIG)];
   const rest = allowed.reduce((t, a) => t.split(a).join(' '), TEXT);
   [[/\bMLB\b/, 'MLB'], [/\bNBA\b/, 'NBA'], [/\bNHL\b/, 'NHL'], [/\bUFC\b/, 'UFC'], [/\bbaseball\b/i, 'College Baseball'], [/\bWNBA\b/, 'WNBA'], [/\btennis\b/i, 'Tennis'], [/\bgolf\b/i, 'Golf']]
     .forEach(([re, label]) => {
-      chk('another sport is named only in the coverage answer and the Simulator section: ' + re, re.test(sportsA) && re.test(plain(SIMS)) && !re.test(rest), (re.exec(rest) || [])[0]);
+      chk('another sport is named only in the coverage answer, the Simulator section and a Signal Center sample: ' + re, re.test(sportsA) && re.test(plain(SIMS)) && !re.test(rest), (re.exec(rest) || [])[0]);
       chk('and only because the Simulator runs it: ' + label, ACTIVE.indexOf(label.toLowerCase()) >= 0);
     });
+  {
+    const covered = [...SC.matchAll(/\['[a-z]+', '([^']+)'\]/g)].map(m => m[1].toLowerCase());
+    const named = [...SIG.matchAll(/<span class="sig-k">[^&]+ &middot; ([^&]+) &middot;/g)].map(m => m[1].trim().toLowerCase());
+    chk('every sport a Signal Center sample names is one Signal Center covers (lib/edgedesk_signal_center.js SPORTS)', named.length >= 4 && named.every(n => covered.indexOf(n) >= 0), [named, covered]);
+  }
   chk('the coverage answer names the Simulator\'s sports and says it makes no value claim', /The Simulator runs ten sports: the NFL, college football, the NBA, NHL, MLB and WNBA, golf, tennis, UFC and college baseball\. It is experimental, and its comparisons with Kalshi make no value claims either\./.test(sportsA), sportsA);
 }
 has(IDX, 'carried as unknown, never as healthy', 'unknown is not healthy');

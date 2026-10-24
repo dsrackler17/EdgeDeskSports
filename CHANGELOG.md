@@ -11,11 +11,36 @@ Where the forecasts were missing or out of date:
 - **Simulator:** the College Basketball activation path no longer asks for the SQL or a champion (both done). `SIMULATOR_NOTES.md`'s matrix said COMING SOON with pre-build blockers. It now says BLOCKED for the tournament, with the Games and Upset Watch tabs reading the daily forecasts.
 - **`CBB_MODEL_NOTES.md` and the runbook** record what is deployed and what is left: setting the variable.
 
+## 2026-10-24 — Signal Center's sample: tap each level of evidence to see its signal
+
+The landing page's Signal Center picture (`index.html` #signals) showed one sample signal with the evidence ladder beneath it as a static row. The four steps are now buttons. Each shows a sample signal at that level, in the detail view's order: kind, sport, label, headline, numbers, and why.
+
+- **Confirmed cause:** an NBA availability change, where EdgeDesk re-ran the model changing only that player's availability (−4.1 pts). It says plainly that no live signal carries this level yet: none of today's sources supplies an isolated effect (`tools/signal_center/evaluate.js` passes `nbaEffects` empty).
+- **Supported association:** the forecast shift that was the only sample before. This is the step the markup opens on, so a no-script reader sees it.
+- **Observed:** a market divergence. Both numbers are on record, and no reason is claimed.
+- **Unexplained:** a forecast shift with no input recorded; Signal Center says it does not know yet.
+- Every sample is labelled "not a current signal" and is about no real game or player. Each tap is measured as `signal_sample_click`, with the level. The styles are in `lib/edgedesk_landing_desk.css` (stamp `20261024dk2`).
+
+Tests: `landing_positioning.test.js` 556 (was 540). Each step has its sample; the default is the no-script view. Each kind, sport and label is Signal Center's or the engine's own. Each sample's numbers add up and it names no real team. A guard fails the suite the day a source supplies isolated effects, so the "no live signal carries it yet" sentence cannot go stale. `landing_interaction.test.js` 219 (the module exists and bails without its host). `landing.e2e.js` 327: at 390 and 1280 px, tapping each step shows only its own sample, four steps give four different signals, and nothing overflows. With the module removed, 8 of these checks fail.
+
+## 2026-10-24 — The landing page's first section never reads DATA INCOMPLETE
+
+The free section's **Today's games** card (`index.html` #free, `lib/edgedesk_home_free.js`) listed the four soonest games with the board's status chip on each. When the board had not priced them yet, or their price was stale, the first thing a visitor saw was a column of DATA INCOMPLETE.
+
+- **A game with EdgeDesk's public read comes first.** The card still lists up to four games, shown soonest first, but it picks games with a RESEARCH, WATCH or PASS read before games without one.
+- **A game without a read is listed with no chip.** The card already says "with EdgeDesk's public read where the free board has one". This is the rule the research preview already keeps: its `listed_games` and `listed_props` leave DATA INCOMPLETE out.
+- Nothing changes in the view model or in what `/today/` shows; there, DATA INCOMPLETE is printed with its reason.
+
+Tests: `node tools/home/landing.e2e.js` (305, was 301).
+- The live board's games carry a read where they have one, and none reads DATA INCOMPLETE.
+- A stale board, where every game is DATA INCOMPLETE, still lists the slate with no chip. On the old code this check failed at 390 and 1280 px with the same column of DATA INCOMPLETE as the reported phone screenshot.
+- Green with local fonts and with the CI runner's (Inter hidden).
+
 ## 2026-10-24 — The landing page sells the terminal: the desk, Signal Center and the Simulator
 
 The landing page (`index.html`) described football research and bet tracking. Since 2026-10-23 the terminal also has Signal Center (live in production) and the Simulator (ten sports ACTIVE). The page now says what EdgeDesk is, a research terminal for sports markets, and what Full Access adds to the free research, seat by seat. The free football research still comes first, and nothing is claimed that the product does not do.
 
-- **The hero:** "The research terminal for sports markets." The sentence says what the terminal does and that the football research is free with no card. The previous headline is kept as variant `r` (`?hero=r`).
+- **The hero:** "The research terminal for sports markets." The sentence says what the terminal does and that the football research is free. It is short enough for the first phone screen in the CI runner's wide fallback face, where the headline wraps to three lines; the offer line under the buttons says "no card". The previous headline is kept as variant `r` (`?hero=r`).
 - **#desk (new):** the terminal's six seats (`app.html` `NAV_PRIMARY`), each with the question it answers, Signals and Simulator marked New. Below them, the upgrade from free to Full Access, row by row; a part that is not free says "Not included". Kalshi is claimed only where it lists the game or the future.
 - **#signals (new):** what Signal Center detects, the evidence ladder and Model DNA, with a link to the free preview (`/signals/`). Its picture is labelled sample data about no real game. Its kinds, ladder and label are the engine's own words.
 - **#simulator (new):** the ten sports the registry has ACTIVE and what each simulates, the provenance labels, and the honesty line: experimental, and none of its game models has shown it beats the market. Its picture is labelled sample data. The division column sums to 100, and the ± is the Monte Carlo error at 100,000 runs.
