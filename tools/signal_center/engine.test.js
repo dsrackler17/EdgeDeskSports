@@ -324,6 +324,11 @@ function snap(id, at, p, ver, extra) {
   chk('the guard leaves EdgeDesk’s name alone', E.copyOk('EdgeDesk 57.7% vs Draft Kings 34.3%'));
   let threw = false;
   try { E._finish({ identity: { x: 1 }, headline: 'This is a lock', evidence: { items: [] } }, {}, { now: NOW }); } catch (e) { threw = /research-not-picks/.test(e.message); }
+  /* a name is data: a quarterback named Lock is reported, EdgeDesk calling a game a lock is not */
+  let named = null; try { named = E._finish({ identity: { x: 2 }, subject: { kind: 'player', label: 'Drew Lock', team: 'Seattle Seahawks' }, headline: 'Drew Lock (QB, Seattle Seahawks) listed questionable', summary: 'Drew Lock (Seattle Seahawks) is listed questionable.', evidence: { items: [{ text: 'Drew Lock (QB) listed questionable on the injury report.' }] } }, {}, { now: NOW }); } catch (e) { named = e; }
+  chk('a player whose name is a banned word is reported (the rule reads EdgeDesk\u2019s words, not the names)', named && !(named instanceof Error), named && named.message);
+  let pitched = false; try { E._finish({ identity: { x: 3 }, subject: { kind: 'player', label: 'Drew Lock', team: 'Seattle Seahawks' }, headline: 'Drew Lock is questionable: Seattle is a lock', evidence: { items: [] } }, {}, { now: NOW }); } catch (e) { pitched = /research-not-picks/.test(e.message); }
+  chk('...while a pitch beside that name is still refused', pitched);
   chk('a payload that breaks the copy rule is refused, not softened', threw);
 }
 
@@ -370,10 +375,12 @@ function snap(id, at, p, ver, extra) {
   chk('…deterministically (same keys and hashes twice)', JSON.stringify(a.signals.map((s) => s.signal_key + s.version_hash)) === JSON.stringify(b.signals.map((s) => s.signal_key + s.version_hash)));
   chk('…one payload per key', new Set(a.signals.map((s) => s.signal_key)).size === a.signals.length);
   chk('…every payload re-hashes to its version hash', a.signals.every((s) => E.versionHash(JSON.parse(JSON.stringify(s))) === s.version_hash));
-  chk('…every payload passes the copy rule', a.signals.every((s) => [s.headline, s.summary, s.evidence.summary].every(E.copyOk)));
+  chk('…every payload passes the copy rule (its own names aside)', a.signals.every((s) => [s.headline, s.summary, s.evidence.summary].every((w) => E.copyOkIn(s, w))));
   chk('…every unverified payload names its failed checks', a.signals.every((s) => s.verification.state === 'VERIFIED' || s.verification.failed.length > 0));
   const nflObs = inputs.nflInjuries;
-  chk('the NFL observation ledger is read, every row matched to its team’s game that week', nflObs.length > 0 && nflObs.every((r) => r.report.published_at === null && r.report.observed_at) && nflObs.filter((r) => r.game.event_key).every((r) => /^nfl\|2026_\d{2}_/.test(r.game.event_key) && [r.game.home.abbr, r.game.away.abbr].indexOf(r.team.abbr) >= 0), nflObs.slice(0, 2));
+  chk('the NFL observation ledger is read, every row matched to its team’s game that week', nflObs.length > 0 && nflObs.every((r) => r.report.published_at === null && r.report.observed_at) && nflObs.filter((r) => r.game.event_key).every((r) => /^nfl\|2026_\d{2}_/.test(r.game.event_key)
+    /* the ledger writes nflverse's code (the Rams are LA), the game shows its display code (LAR): the team is in the game's key or its display codes */
+    && (r.game.event_key.split('|')[1].split('_').slice(2).indexOf(r.team.abbr) >= 0 || [r.game.home.abbr, r.game.away.abbr].indexOf(r.team.abbr) >= 0)), nflObs.slice(0, 2));
   chk('…every NFL injury signal is dated by EdgeDesk’s first sight, never as published, and none comes from the baseline', a.signals.filter((s) => s.category === 'INJURY_IMPACT' && s.sport === 'nfl').every((s) => s.timestamps.source_published_at === null && s.timestamps.observed_at && nflObs.some((r) => !r.report.baseline && r.report.observed_at === s.timestamps.observed_at)));
   chk('…no MLB forecast signal (no forecast history)', a.signals.every((s) => !(s.sport === 'mlb' && s.category === 'FORECAST_SHIFT')));
   chk('…ineligible pairs are recorded with their reasons', Object.keys(a.ineligible).length > 0 && Object.values(a.ineligible).every((v) => / — /.test(v)));
