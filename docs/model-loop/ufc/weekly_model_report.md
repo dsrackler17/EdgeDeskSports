@@ -1,8 +1,8 @@
 # UFC weekly model report
 
-Generated 2026-10-21T04:09:13Z. EXPERIMENTAL and outcome-graded only: no UFC closing prices are archived.
+Generated 2026-10-24T15:02:10Z. EXPERIMENTAL. No timestamped UFC closing prices are archived; the 2026-10 study (docs/model-loop/ufc/study/README.md) measures the model against an untimestamped public archive of pre-fight lines, where it trails the closing line by a wide margin.
 
-Served: **1.1.0**.
+Served: **1.2.0**.
 
 ## Preregistered backtest
 
@@ -15,15 +15,20 @@ Served: **1.1.0**.
 
 Decision: served — clears every condition.
 
+## The disagreement guard
+
+Threshold 8 points; 9 of 20 published bouts have a market price, 5 disagree; certified as a signal: no (the closing line on file is untimestamped (a public archive's pre-fight line), so it can refuse a signal but never certify one; on those bouts the model's log loss 0.6524 is worse than the closing line's 0.5728: 942 resolved in the market's favour, 478 in the model's).
+
+| Bout | Model | Market (no vig) | Gap | Likely why |
+|---|---|---|---|---|
+| Azamat Murzakanov v Dominick Reyes | 0.550 | 0.645 | -9.4 | Azamat Murzakanov is 37.5, past 35: how much age has taken is where the model and the market most often differ; Dominick Reyes is 36.8, past 35: how much age has taken is where the model and the market most often differ |
+| Abus Magomedov v Cam Rowston | 0.425 | 0.532 | -10.7 | Abus Magomedov is 36.1, past 35: how much age has taken is where the model and the market most often differ |
+| Alexander Volkanovski v Movsar Evloev | 0.348 | 0.496 | -14.7 | Alexander Volkanovski is 38.1, past 35: how much age has taken is where the model and the market most often differ |
+| Alexander Volkov v Rizvan Kuniev | 0.653 | 0.522 | +13.1 | Alexander Volkov is 38.0, past 35: how much age has taken is where the model and the market most often differ |
+| Aaron Pico v Losene Keita | 0.344 | 0.572 | -22.8 | Aaron Pico has 2 UFC bouts in the data (pro record before the UFC 13-4): a short sample; Losene Keita has 2 UFC bouts in the data (pro record before the UFC 16-1): a short sample |
+
 ## This week's research
 
 | Candidate | Change | Δ log loss | 95% interval | Δ Brier | Decision |
 |---|---|---|---|---|---|
-| k_lower | `k` ['mul', 0.75] | 0.002 | [0.00121, 0.00289] | 0.00095 | FAIL: log loss change +0.00200 does not clear -0.0005; 95% interval [0.00121, 0.00289] is not below zero; Brier worse (+0.00095); worse on 2025 |
-| k_higher | `k` ['mul', 1.33] | -0.00108 | [-0.00219, -0.00012] | -0.00052 | PASS: clears every condition |
-| new_faster | `k_new_mult` ['add', 0.5] | -0.00158 | [-0.00295, -0.00033] | -0.00076 | PASS: clears every condition |
-| new_slower | `k_new_mult` ['add', -0.5] | — | — | — | SKIPPED: no change from the served configuration |
-| new_window_longer | `new_bouts` ['set', 6] | 0.0 | [0.0, 0.0] | 0.0 | FAIL: log loss change +0.00000 does not clear -0.0005; 95% interval [0.0, 0.0] is not below zero |
-| layoff_more | `layoff_regress` ['add', 0.15] | -0.00024 | [-0.00077, 0.00029] | -0.00013 | FAIL: log loss change -0.00024 does not clear -0.0005; 95% interval [-0.00077, 0.00029] is not below zero |
-| layoff_less | `layoff_regress` ['add', -0.15] | 0.00085 | [0.00024, 0.00143] | 0.00042 | FAIL: log loss change +0.00085 does not clear -0.0005; 95% interval [0.00024, 0.00143] is not below zero; Brier worse (+0.00042); worse on 2025 |
-| calibration_toggle | `calibration` ['toggle', None] | -0.0002 | [-0.00057, 0.00012] | -9e-05 | FAIL: log loss change -0.00020 does not clear -0.0005; 95% interval [-0.00057, 0.00012] is not below zero |
+| champion_term | `champ_bonus` ['set', 100.0] | 9e-05 | [-0.00106, 0.00124] | 0.0 | FAIL: log loss change +0.00009 does not clear -0.0005; 95% interval [-0.00106, 0.00124] is not below zero; worse on 2025 |

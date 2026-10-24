@@ -1,0 +1,1544 @@
+{
+ "schema": "edgedesk_cfb_loto_v1",
+ "generated_at": "2026-10-24T14:32:41.432Z",
+ "declared": "2026-10-24",
+ "question": "For each priced term: does the shipped engine predict held-out games better with it than without it, and is its weight right?",
+ "rows": {
+  "file": "DIR/out/disagreement_replay.jsonl (disagreement_replay.js, 10009 rows)",
+  "total": 10009,
+  "scored": 8724,
+  "seasons": [
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ]
+ },
+ "holdout": [
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "affected_pts": 1,
+ "bootstrap": 2000,
+ "leakage": {
+  "clean": true,
+  "checked": 10009,
+  "violations": 0,
+  "rule": "prediction_ts (the weekly freeze the row was priced at) is before kickoff on every row, and the replay absorbs only games finished before the freeze"
+ },
+ "target_note": "error = final home margin minus the projection; + delta = the term makes held-out predictions better. The close is the archive’s final consensus line (cfb_market_orientation_v2), a lower-noise second target.",
+ "brier_note": "Brier with one normal per game at the row’s own sigma for both arms, because the replay stores the engine’s win probability for the full projection only.",
+ "terms": [
+  {
+   "key": "matchup",
+   "label": "Stylistic matchup",
+   "droppable": true,
+   "fit": "football/cfb_p4/research/train_p4.py fit_matchup on 2014-2019 residuals (B_TUNE_LO, B_TUNE_HI)",
+   "caveat": null,
+   "trained_scale": null,
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 1.302,
+    "negligible": false,
+    "mae_with": 12.689,
+    "mae_without": 12.726,
+    "rmse_with": 15.994,
+    "rmse_without": 16.051,
+    "delta": 0.037,
+    "delta_ci95": [
+     -0.021,
+     0.094
+    ],
+    "paired_p": 0.2026,
+    "k": 0.839,
+    "k_ci95": [
+     0.479,
+     1.201
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 3.866,
+     "delta": 0.053,
+     "k": 0.656,
+     "k_ci95": [
+      0.548,
+      0.768
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.18745,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 12.687,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 13.065,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 12.878,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 12.279,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "holdout_affected": {
+    "n": 1670,
+    "mean_abs_term": 2.007,
+    "negligible": false,
+    "mae_with": 12.767,
+    "mae_without": 12.843,
+    "rmse_with": 15.982,
+    "rmse_without": 16.086,
+    "delta": 0.076,
+    "delta_ci95": [
+     -0.029,
+     0.178
+    ],
+    "paired_p": 0.1488,
+    "k": 0.848,
+    "k_ci95": [
+     0.492,
+     1.203
+    ],
+    "close": {
+     "n": 1670,
+     "mae_with": 3.903,
+     "mae_without": 3.995,
+     "delta": 0.092,
+     "k": 0.657,
+     "k_ci95": [
+      0.54,
+      0.762
+     ]
+    },
+    "brier_with": 0.16268,
+    "brier_without": 0.16306,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 401,
+      "mae_before": 12.895,
+      "mae_after": 12.841
+     },
+     {
+      "season": 2023,
+      "n": 405,
+      "mae_before": 13.481,
+      "mae_after": 13.43
+     },
+     {
+      "season": 2024,
+      "n": 431,
+      "mae_before": 12.899,
+      "mae_after": 12.849
+     },
+     {
+      "season": 2025,
+      "n": 433,
+      "mae_before": 12.141,
+      "mae_after": 11.997
+     }
+    ]
+   },
+   "fit_window": {
+    "seasons": [
+     2014,
+     2019
+    ],
+    "result": {
+     "n": 4319,
+     "mean_abs_term": 1.334,
+     "negligible": false,
+     "mae_with": 12.912,
+     "mae_without": 12.976,
+     "rmse_with": 16.419,
+     "rmse_without": 16.52,
+     "delta": 0.064,
+     "delta_ci95": [
+      0.017,
+      0.113
+     ],
+     "paired_p": 0.0109,
+     "k": 1.07,
+     "k_ci95": [
+      0.781,
+      1.374
+     ],
+     "close": {
+      "n": 4174,
+      "mae_with": 3.598,
+      "mae_without": 3.696,
+      "delta": 0.098,
+      "k": 0.71,
+      "k_ci95": [
+       0.628,
+       0.79
+      ]
+     },
+     "brier_with": 0.17152,
+     "brier_without": 0.17295,
+     "per_season": [
+      {
+       "season": 2014,
+       "n": 676,
+       "mae_before": 12.827,
+       "mae_after": 12.736
+      },
+      {
+       "season": 2015,
+       "n": 723,
+       "mae_before": 13.05,
+       "mae_after": 13.043
+      },
+      {
+       "season": 2016,
+       "n": 719,
+       "mae_before": 13.215,
+       "mae_after": 13.13
+      },
+      {
+       "season": 2017,
+       "n": 735,
+       "mae_before": 12.899,
+       "mae_after": 12.866
+      },
+      {
+       "season": 2018,
+       "n": 732,
+       "mae_before": 12.857,
+       "mae_after": 12.823
+      },
+      {
+       "season": 2019,
+       "n": 734,
+       "mae_before": 13.004,
+       "mae_after": 12.866
+      }
+     ]
+    }
+   },
+   "between": {
+    "seasons": [
+     2020,
+     2021
+    ],
+    "result": {
+     "n": 1240,
+     "mean_abs_term": 1.298,
+     "negligible": false,
+     "mae_with": 13.3,
+     "mae_without": 13.413,
+     "rmse_with": 16.522,
+     "rmse_without": 16.632,
+     "delta": 0.113,
+     "delta_ci95": [
+      0.019,
+      0.203
+     ],
+     "paired_p": 0.0157,
+     "k": 1.154,
+     "k_ci95": [
+      0.581,
+      1.741
+     ],
+     "close": {
+      "n": 1240,
+      "mae_with": 3.872,
+      "mae_without": 4.175,
+      "delta": 0.303,
+      "k": 1.174,
+      "k_ci95": [
+       0.994,
+       1.341
+      ]
+     },
+     "brier_with": 0.18573,
+     "brier_without": 0.18663,
+     "per_season": [
+      {
+       "season": 2020,
+       "n": 508,
+       "mae_before": 13.649,
+       "mae_after": 13.52
+      },
+      {
+       "season": 2021,
+       "n": 732,
+       "mae_before": 13.248,
+       "mae_after": 13.147
+      }
+     ]
+    }
+   },
+   "status": "CANDIDATE",
+   "conditions_failed": [
+    "significance"
+   ],
+   "reasons": [
+    "paired p = 0.203, above the 0.05 bar"
+   ],
+   "weight": {
+    "key": "WEIGHT_SUPPORTED",
+    "text": "the shipped weight is consistent with the data (multiplier 0.84)"
+   }
+  },
+  {
+   "key": "schedule",
+   "label": "Rest and schedule",
+   "droppable": true,
+   "fit": "football/cfb_p4/research/train_layers.py, tune window before 2022 (TEST_LO)",
+   "caveat": "the engine divides the trained points-per-stress by 100 a second time (football/cfb_p4/engine.js schedGap; train_layers.py already scales it), so the shipped term is 100× smaller than trained. The trained-scale row reads the same data at the size training intended",
+   "trained_scale": {
+    "scale": 100,
+    "k": -0.96,
+    "k_ci95": [
+     -3.38,
+     1.37
+    ],
+    "mean_abs_term": 0.1,
+    "weight": {
+     "key": "NO_SIGNAL",
+     "text": "no measurable information: the multiplier’s interval includes 0"
+    }
+   },
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 0.001,
+    "negligible": true,
+    "mae_with": 12.689,
+    "mae_without": 12.689,
+    "rmse_with": 15.994,
+    "rmse_without": 15.993,
+    "delta": 0,
+    "delta_ci95": [
+     0,
+     0
+    ],
+    "paired_p": 0.7128,
+    "k": -96.478,
+    "k_ci95": [
+     -337.958,
+     137.158
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 3.813,
+     "delta": 0,
+     "k": -27.348,
+     "k_ci95": [
+      -118.217,
+      64.002
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.18716,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 12.674,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 13.042,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 12.853,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 12.196,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "holdout_affected": {
+    "n": 0
+   },
+   "fit_window": null,
+   "between": null,
+   "status": "NEGLIGIBLE",
+   "conditions_failed": null,
+   "reasons": null,
+   "weight": {
+    "key": "NEGLIGIBLE",
+    "text": "moves the number by 0.001 pts on average: too small to weigh"
+   }
+  },
+  {
+   "key": "conference",
+   "label": "Conference strength",
+   "droppable": true,
+   "fit": "football/cfb_p4/research/train_layers.py, tune window before 2022 (TEST_LO)",
+   "caveat": null,
+   "trained_scale": null,
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 0.896,
+    "negligible": false,
+    "mae_with": 12.689,
+    "mae_without": 12.875,
+    "rmse_with": 15.994,
+    "rmse_without": 16.228,
+    "delta": 0.186,
+    "delta_ci95": [
+     0.11,
+     0.265
+    ],
+    "paired_p": 0,
+    "k": 1.106,
+    "k_ci95": [
+     0.889,
+     1.324
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 4.164,
+     "delta": 0.351,
+     "k": 1.012,
+     "k_ci95": [
+      0.912,
+      1.115
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.18891,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 12.961,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 13.024,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 13.015,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 12.514,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "holdout_affected": {
+    "n": 541,
+    "mean_abs_term": 5.126,
+    "negligible": false,
+    "mae_with": 12.96,
+    "mae_without": 14.033,
+    "rmse_with": 16.444,
+    "rmse_without": 17.724,
+    "delta": 1.073,
+    "delta_ci95": [
+     0.613,
+     1.535
+    ],
+    "paired_p": 0,
+    "k": 1.106,
+    "k_ci95": [
+     0.886,
+     1.335
+    ],
+    "close": {
+     "n": 541,
+     "mae_with": 5.037,
+     "mae_without": 7.053,
+     "delta": 2.015,
+     "k": 1.011,
+     "k_ci95": [
+      0.915,
+      1.107
+     ]
+    },
+    "brier_with": 0.15271,
+    "brier_without": 0.16297,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 131,
+      "mae_before": 14.915,
+      "mae_after": 13.312
+     },
+     {
+      "season": 2023,
+      "n": 133,
+      "mae_before": 12.96,
+      "mae_after": 13.088
+     },
+     {
+      "season": 2024,
+      "n": 134,
+      "mae_before": 14.938,
+      "mae_after": 13.957
+     },
+     {
+      "season": 2025,
+      "n": 143,
+      "mae_before": 13.377,
+      "mae_after": 11.585
+     }
+    ]
+   },
+   "fit_window": null,
+   "between": null,
+   "status": "VALIDATED",
+   "conditions_failed": [],
+   "reasons": [],
+   "weight": {
+    "key": "WEIGHT_SUPPORTED",
+    "text": "the shipped weight is consistent with the data (multiplier 1.11)"
+   }
+  },
+  {
+   "key": "hfa",
+   "label": "Home field",
+   "droppable": true,
+   "fit": "football/cfb_p4/research/hfa_unify.js chose the value with the lowest 2022-2025 MAE, so 2022-2025 is not held out for its SIZE",
+   "caveat": "the 2.8-pt value was selected on this window; read its multiplier as a check, not a validation",
+   "trained_scale": null,
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 2.602,
+    "negligible": false,
+    "mae_with": 12.689,
+    "mae_without": 12.875,
+    "rmse_with": 15.994,
+    "rmse_without": 16.22,
+    "delta": 0.186,
+    "delta_ci95": [
+     0.095,
+     0.277
+    ],
+    "paired_p": 0.0001,
+    "k": 1,
+    "k_ci95": [
+     0.799,
+     1.206
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 4.309,
+     "delta": 0.496,
+     "k": 0.939,
+     "k_ci95": [
+      0.876,
+      1.002
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.19046,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 12.836,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 13.174,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 13.091,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 12.404,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "holdout_affected": {
+    "n": 2906,
+    "mean_abs_term": 2.8,
+    "negligible": false,
+    "mae_with": 12.679,
+    "mae_without": 12.879,
+    "rmse_with": 15.97,
+    "rmse_without": 16.214,
+    "delta": 0.2,
+    "delta_ci95": [
+     0.099,
+     0.297
+    ],
+    "paired_p": 0.0001,
+    "k": 1,
+    "k_ci95": [
+     0.795,
+     1.199
+    ],
+    "close": {
+     "n": 2906,
+     "mae_with": 3.773,
+     "mae_without": 4.307,
+     "delta": 0.534,
+     "k": 0.939,
+     "k_ci95": [
+      0.876,
+      1.003
+     ]
+    },
+    "brier_with": 0.18392,
+    "brier_without": 0.18747,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 714,
+      "mae_before": 12.877,
+      "mae_after": 12.711
+     },
+     {
+      "season": 2023,
+      "n": 728,
+      "mae_before": 12.954,
+      "mae_after": 12.811
+     },
+     {
+      "season": 2024,
+      "n": 721,
+      "mae_before": 13.224,
+      "mae_after": 12.96
+     },
+     {
+      "season": 2025,
+      "n": 743,
+      "mae_before": 12.471,
+      "mae_after": 12.245
+     }
+    ]
+   },
+   "fit_window": null,
+   "between": null,
+   "status": "VALIDATED",
+   "conditions_failed": [],
+   "reasons": [],
+   "weight": {
+    "key": "WEIGHT_SUPPORTED",
+    "text": "the shipped weight is consistent with the data (multiplier 1.00)"
+   }
+  },
+  {
+   "key": "rating",
+   "label": "Team strength",
+   "droppable": false,
+   "fit": "the opponent-adjusted rating recursion, hyperparameters tuned before 2022",
+   "caveat": "the base of the model: dropping it is not a question, only its weight is",
+   "trained_scale": null,
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 8.72,
+    "negligible": false,
+    "mae_with": 12.689,
+    "mae_without": 14.76,
+    "rmse_with": 15.994,
+    "rmse_without": 18.842,
+    "delta": 2.071,
+    "delta_ci95": [
+     1.748,
+     2.404
+    ],
+    "paired_p": 0,
+    "k": 0.911,
+    "k_ci95": [
+     0.86,
+     0.962
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 8.684,
+     "delta": 4.871,
+     "k": 0.922,
+     "k_ci95": [
+      0.905,
+      0.94
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.22184,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 14.425,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 14.995,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 14.813,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 14.782,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "holdout_affected": {
+    "n": 2876,
+    "mean_abs_term": 9.437,
+    "negligible": false,
+    "mae_with": 12.69,
+    "mae_without": 14.942,
+    "rmse_with": 15.96,
+    "rmse_without": 19.045,
+    "delta": 2.253,
+    "delta_ci95": [
+     1.91,
+     2.599
+    ],
+    "paired_p": 0,
+    "k": 0.912,
+    "k_ci95": [
+     0.861,
+     0.961
+    ],
+    "close": {
+     "n": 2876,
+     "mae_with": 3.857,
+     "mae_without": 9.15,
+     "delta": 5.294,
+     "k": 0.922,
+     "k_ci95": [
+      0.906,
+      0.939
+     ]
+    },
+    "brier_with": 0.182,
+    "brier_without": 0.21974,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 675,
+      "mae_before": 14.539,
+      "mae_after": 12.642
+     },
+     {
+      "season": 2023,
+      "n": 731,
+      "mae_before": 15.143,
+      "mae_after": 13.033
+     },
+     {
+      "season": 2024,
+      "n": 733,
+      "mae_before": 15.004,
+      "mae_after": 12.869
+     },
+     {
+      "season": 2025,
+      "n": 737,
+      "mae_before": 15.051,
+      "mae_after": 12.215
+     }
+    ]
+   },
+   "fit_window": null,
+   "between": null,
+   "status": null,
+   "conditions_failed": null,
+   "reasons": null,
+   "weight": {
+    "key": "OVERWEIGHTED",
+    "text": "real but over-weighted: the best-fit multiplier is 0.91"
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "name": "ball control vs front disruption",
+   "shipped_weight": 38.39498,
+   "features": [
+    "success_rate",
+    "def_front_disruption_rate"
+   ],
+   "unfed_features": [
+    "front_disruption_rate"
+   ],
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 1.557,
+    "negligible": false,
+    "mae_with": 12.689,
+    "mae_without": 12.769,
+    "rmse_with": 15.994,
+    "rmse_without": 16.095,
+    "delta": 0.08,
+    "delta_ci95": [
+     0.011,
+     0.149
+    ],
+    "paired_p": 0.02,
+    "k": 0.922,
+    "k_ci95": [
+     0.633,
+     1.217
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 3.969,
+     "delta": 0.157,
+     "k": 0.768,
+     "k_ci95": [
+      0.679,
+      0.86
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.18839,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 12.731,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 13.103,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 12.941,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 12.308,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "fit_window": {
+    "n": 4319,
+    "mean_abs_term": 1.56,
+    "negligible": false,
+    "mae_with": 12.912,
+    "mae_without": 12.992,
+    "rmse_with": 16.419,
+    "rmse_without": 16.539,
+    "delta": 0.08,
+    "delta_ci95": [
+     0.024,
+     0.138
+    ],
+    "paired_p": 0.0065,
+    "k": 0.998,
+    "k_ci95": [
+     0.749,
+     1.238
+    ],
+    "close": {
+     "n": 4174,
+     "mae_with": 3.598,
+     "mae_without": 3.781,
+     "delta": 0.183,
+     "k": 0.777,
+     "k_ci95": [
+      0.707,
+      0.845
+     ]
+    },
+    "brier_with": 0.17152,
+    "brier_without": 0.17315,
+    "per_season": [
+     {
+      "season": 2014,
+      "n": 676,
+      "mae_before": 12.861,
+      "mae_after": 12.736
+     },
+     {
+      "season": 2015,
+      "n": 723,
+      "mae_before": 13.134,
+      "mae_after": 13.043
+     },
+     {
+      "season": 2016,
+      "n": 719,
+      "mae_before": 13.195,
+      "mae_after": 13.13
+     },
+     {
+      "season": 2017,
+      "n": 735,
+      "mae_before": 12.903,
+      "mae_after": 12.866
+     },
+     {
+      "season": 2018,
+      "n": 732,
+      "mae_before": 12.875,
+      "mae_after": 12.823
+     },
+     {
+      "season": 2019,
+      "n": 734,
+      "mae_before": 12.98,
+      "mae_after": 12.866
+     }
+    ]
+   },
+   "weight": {
+    "key": "WEIGHT_SUPPORTED",
+    "text": "the shipped weight is consistent with the data (multiplier 0.92)"
+   }
+  },
+  {
+   "name": "early-down offence vs early-down defence",
+   "shipped_weight": -11.1757,
+   "features": [
+    "early_down_success",
+    "def_early_down_success"
+   ],
+   "unfed_features": [],
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 0.56,
+    "negligible": false,
+    "mae_with": 12.689,
+    "mae_without": 12.688,
+    "rmse_with": 15.994,
+    "rmse_without": 16.007,
+    "delta": -0.001,
+    "delta_ci95": [
+     -0.025,
+     0.023
+    ],
+    "paired_p": 0.9107,
+    "k": 0.925,
+    "k_ci95": [
+     0.121,
+     1.727
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 3.882,
+     "delta": 0.069,
+     "k": 1.216,
+     "k_ci95": [
+      0.975,
+      1.468
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.18722,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 12.678,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 13.037,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 12.841,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 12.204,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "fit_window": {
+    "n": 4319,
+    "mean_abs_term": 0.584,
+    "negligible": false,
+    "mae_with": 12.912,
+    "mae_without": 12.931,
+    "rmse_with": 16.419,
+    "rmse_without": 16.448,
+    "delta": 0.019,
+    "delta_ci95": [
+     -0.004,
+     0.041
+    ],
+    "paired_p": 0.0895,
+    "k": 1.36,
+    "k_ci95": [
+     0.701,
+     1.989
+    ],
+    "close": {
+     "n": 4174,
+     "mae_with": 3.598,
+     "mae_without": 3.67,
+     "delta": 0.073,
+     "k": 1.212,
+     "k_ci95": [
+      1.028,
+      1.403
+     ]
+    },
+    "brier_with": 0.17152,
+    "brier_without": 0.17196,
+    "per_season": [
+     {
+      "season": 2014,
+      "n": 676,
+      "mae_before": 12.722,
+      "mae_after": 12.736
+     },
+     {
+      "season": 2015,
+      "n": 723,
+      "mae_before": 13.024,
+      "mae_after": 13.043
+     },
+     {
+      "season": 2016,
+      "n": 719,
+      "mae_before": 13.149,
+      "mae_after": 13.13
+     },
+     {
+      "season": 2017,
+      "n": 735,
+      "mae_before": 12.909,
+      "mae_after": 12.866
+     },
+     {
+      "season": 2018,
+      "n": 732,
+      "mae_before": 12.862,
+      "mae_after": 12.823
+     },
+     {
+      "season": 2019,
+      "n": 734,
+      "mae_before": 12.909,
+      "mae_after": 12.866
+     }
+    ]
+   },
+   "weight": {
+    "key": "WEIGHT_SUPPORTED",
+    "text": "the shipped weight is consistent with the data (multiplier 0.93)"
+   }
+  },
+  {
+   "name": "explosive offence vs explosive prevention",
+   "shipped_weight": 1.16524,
+   "features": [
+    "expl_epa_rate",
+    "def_expl_epa_rate"
+   ],
+   "unfed_features": [
+    "expl_epa_rate"
+   ],
+   "holdout": {
+    "n": 3127,
+    "inert": true,
+    "mean_abs_term": 0
+   },
+   "fit_window": {
+    "n": 4319,
+    "inert": true,
+    "mean_abs_term": 0
+   },
+   "weight": {
+    "key": "INERT",
+    "text": "always 0: nothing to weigh"
+   }
+  },
+  {
+   "name": "field position",
+   "shipped_weight": -0.15245,
+   "features": [
+    "start_field_position",
+    "def_start_field_position"
+   ],
+   "unfed_features": [
+    "start_field_position"
+   ],
+   "holdout": {
+    "n": 3127,
+    "inert": true,
+    "mean_abs_term": 0
+   },
+   "fit_window": {
+    "n": 4319,
+    "inert": true,
+    "mean_abs_term": 0
+   },
+   "weight": {
+    "key": "INERT",
+    "text": "always 0: nothing to weigh"
+   }
+  },
+  {
+   "name": "finishing drives vs red-zone defence",
+   "shipped_weight": 1.03362,
+   "features": [
+    "red_zone_success",
+    "def_red_zone_success"
+   ],
+   "unfed_features": [],
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 0.099,
+    "negligible": false,
+    "mae_with": 12.689,
+    "mae_without": 12.689,
+    "rmse_with": 15.994,
+    "rmse_without": 15.997,
+    "delta": 0,
+    "delta_ci95": [
+     -0.004,
+     0.005
+    ],
+    "paired_p": 0.9533,
+    "k": 3.679,
+    "k_ci95": [
+     -0.476,
+     7.985
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 3.81,
+     "delta": -0.002,
+     "k": 0.44,
+     "k_ci95": [
+      -1.003,
+      1.731
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.18714,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 12.671,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 13.046,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 12.851,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 12.198,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "fit_window": {
+    "n": 4319,
+    "mean_abs_term": 0.101,
+    "negligible": false,
+    "mae_with": 12.912,
+    "mae_without": 12.914,
+    "rmse_with": 16.419,
+    "rmse_without": 16.42,
+    "delta": 0.002,
+    "delta_ci95": [
+     -0.002,
+     0.005
+    ],
+    "paired_p": 0.3634,
+    "k": 1.544,
+    "k_ci95": [
+     -2.404,
+     5.511
+    ],
+    "close": {
+     "n": 4174,
+     "mae_with": 3.598,
+     "mae_without": 3.597,
+     "delta": -0.001,
+     "k": 0.474,
+     "k_ci95": [
+      -0.601,
+      1.514
+     ]
+    },
+    "brier_with": 0.17152,
+    "brier_without": 0.17153,
+    "per_season": [
+     {
+      "season": 2014,
+      "n": 676,
+      "mae_before": 12.747,
+      "mae_after": 12.736
+     },
+     {
+      "season": 2015,
+      "n": 723,
+      "mae_before": 13.044,
+      "mae_after": 13.043
+     },
+     {
+      "season": 2016,
+      "n": 719,
+      "mae_before": 13.129,
+      "mae_after": 13.13
+     },
+     {
+      "season": 2017,
+      "n": 735,
+      "mae_before": 12.865,
+      "mae_after": 12.866
+     },
+     {
+      "season": 2018,
+      "n": 732,
+      "mae_before": 12.824,
+      "mae_after": 12.823
+     },
+     {
+      "season": 2019,
+      "n": 734,
+      "mae_before": 12.866,
+      "mae_after": 12.866
+     }
+    ]
+   },
+   "weight": {
+    "key": "NO_SIGNAL",
+    "text": "no measurable information: the multiplier’s interval includes 0"
+   }
+  },
+  {
+   "name": "pass rush vs pass protection",
+   "shipped_weight": -9.6636,
+   "features": [
+    "sack_rate_allowed",
+    "def_sack_rate_allowed"
+   ],
+   "unfed_features": [],
+   "holdout": {
+    "n": 3127,
+    "mean_abs_term": 0.261,
+    "negligible": false,
+    "mae_with": 12.689,
+    "mae_without": 12.69,
+    "rmse_with": 15.994,
+    "rmse_without": 15.989,
+    "delta": 0,
+    "delta_ci95": [
+     -0.012,
+     0.012
+    ],
+    "paired_p": 0.9577,
+    "k": -0.102,
+    "k_ci95": [
+     -1.709,
+     1.472
+    ],
+    "close": {
+     "n": 3127,
+     "mae_with": 3.813,
+     "mae_without": 3.801,
+     "delta": -0.012,
+     "k": -0.024,
+     "k_ci95": [
+      -0.524,
+      0.478
+     ]
+    },
+    "brier_with": 0.18717,
+    "brier_without": 0.18699,
+    "per_season": [
+     {
+      "season": 2022,
+      "n": 733,
+      "mae_before": 12.678,
+      "mae_after": 12.675
+     },
+     {
+      "season": 2023,
+      "n": 790,
+      "mae_before": 13.053,
+      "mae_after": 13.042
+     },
+     {
+      "season": 2024,
+      "n": 797,
+      "mae_before": 12.845,
+      "mae_after": 12.853
+     },
+     {
+      "season": 2025,
+      "n": 807,
+      "mae_before": 12.191,
+      "mae_after": 12.196
+     }
+    ]
+   },
+   "fit_window": {
+    "n": 4319,
+    "mean_abs_term": 0.244,
+    "negligible": false,
+    "mae_with": 12.912,
+    "mae_without": 12.918,
+    "rmse_with": 16.419,
+    "rmse_without": 16.423,
+    "delta": 0.006,
+    "delta_ci95": [
+     -0.004,
+     0.015
+    ],
+    "paired_p": 0.2288,
+    "k": 1.08,
+    "k_ci95": [
+     -0.482,
+     2.643
+    ],
+    "close": {
+     "n": 4174,
+     "mae_with": 3.598,
+     "mae_without": 3.594,
+     "delta": -0.004,
+     "k": 0.366,
+     "k_ci95": [
+      -0.046,
+      0.786
+     ]
+    },
+    "brier_with": 0.17152,
+    "brier_without": 0.17165,
+    "per_season": [
+     {
+      "season": 2014,
+      "n": 676,
+      "mae_before": 12.741,
+      "mae_after": 12.736
+     },
+     {
+      "season": 2015,
+      "n": 723,
+      "mae_before": 13.027,
+      "mae_after": 13.043
+     },
+     {
+      "season": 2016,
+      "n": 719,
+      "mae_before": 13.155,
+      "mae_after": 13.13
+     },
+     {
+      "season": 2017,
+      "n": 735,
+      "mae_before": 12.864,
+      "mae_after": 12.866
+     },
+     {
+      "season": 2018,
+      "n": 732,
+      "mae_before": 12.819,
+      "mae_after": 12.823
+     },
+     {
+      "season": 2019,
+      "n": 734,
+      "mae_before": 12.894,
+      "mae_after": 12.866
+     }
+    ]
+   },
+   "weight": {
+    "key": "NO_SIGNAL",
+    "text": "no measurable information: the multiplier’s interval includes 0"
+   }
+  },
+  {
+   "name": "passing efficiency vs pass defence",
+   "shipped_weight": 0.33824,
+   "features": [
+    "epa_pass",
+    "def_epa_pass"
+   ],
+   "unfed_features": [
+    "epa_pass"
+   ],
+   "holdout": {
+    "n": 3127,
+    "inert": true,
+    "mean_abs_term": 0
+   },
+   "fit_window": {
+    "n": 4319,
+    "inert": true,
+    "mean_abs_term": 0
+   },
+   "weight": {
+    "key": "INERT",
+    "text": "always 0: nothing to weigh"
+   }
+  },
+  {
+   "name": "run game vs run defence",
+   "shipped_weight": -0.14688,
+   "features": [
+    "epa_rush",
+    "def_epa_rush"
+   ],
+   "unfed_features": [
+    "epa_rush"
+   ],
+   "holdout": {
+    "n": 3127,
+    "inert": true,
+    "mean_abs_term": 0
+   },
+   "fit_window": {
+    "n": 4319,
+    "inert": true,
+    "mean_abs_term": 0
+   },
+   "weight": {
+    "key": "INERT",
+    "text": "always 0: nothing to weigh"
+   }
+  }
+ ],
+ "not_testable": {
+  "qb": "no historical starter series is fed to the replay, so the term is 0 on every row",
+  "injury": "historical injury reports do not exist, so the term is 0 on every row",
+  "travel": "not priced (params.travel.points_applied false): 0 on every row",
+  "rivalry": "not priced (0 to the mean): 0 on every row",
+  "altitude": "not priced: tested separately in football/altitude (REJECTED)"
+ },
+ "live": {
+  "slate_generated_at": "2026-10-24T14:03:12.717Z",
+  "season": 2026,
+  "seed_season": 2025,
+  "games": 100,
+  "mean_abs_matchup": 1.44,
+  "mean_abs_current": 1.23,
+  "mean_abs_last_season": 0.42,
+  "games_last_season_ge_half_pt": 33,
+  "by_pairing": [
+   {
+    "name": "pass rush vs pass protection",
+    "mean_abs": 0.28
+   },
+   {
+    "name": "run game vs run defence",
+    "mean_abs": 0.01
+   },
+   {
+    "name": "explosive offence vs explosive prevention",
+    "mean_abs": 0.01
+   },
+   {
+    "name": "passing efficiency vs pass defence",
+    "mean_abs": 0.03
+   },
+   {
+    "name": "early-down offence vs early-down defence",
+    "mean_abs": 0.68
+   },
+   {
+    "name": "finishing drives vs red-zone defence",
+    "mean_abs": 0.11
+   },
+   {
+    "name": "ball control vs front disruption",
+    "mean_abs": 1.62
+   },
+   {
+    "name": "field position",
+    "mean_abs": 0.18
+   }
+  ],
+  "unfed_features": [
+   "epa_per_play",
+   "epa_pass",
+   "epa_rush",
+   "passing_down_success",
+   "expl_epa_rate",
+   "front_disruption_rate",
+   "points_per_drive",
+   "start_field_position"
+  ],
+  "note": "current = features the season feed updates; last season = features it never supplies, held at the 2025 closing seed (decayed once at the season break)"
+ }
+}

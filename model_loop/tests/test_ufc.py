@@ -1,6 +1,9 @@
 """The UFC adapter: the parser reproduces the data pack, the Elo is causal and
-symmetric, and the preregistered pipeline (backtest -> serve decision ->
-refresh -> score -> research) runs end to end on a synthetic history."""
+symmetric (the 2026-10 parameters too, and off they change nothing), the
+point-in-time facts, the market's no-vig price and the disagreement guard
+behave as documented, and the preregistered pipeline (backtest -> serve
+decision -> refresh -> score -> research) runs end to end on a synthetic
+history."""
 import csv
 import glob
 import gzip
@@ -13,8 +16,11 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from model_loop.adapters.ufc import factors as FX
+from model_loop.adapters.ufc import guard as GD
 from model_loop.adapters.ufc import ingest as I
 from model_loop.adapters.ufc import loop as L
+from model_loop.adapters.ufc import market as K
 from model_loop.adapters.ufc import model as U
 
 PACK = os.path.join(I.ROOT, "datapack", "quant_v1", "data", "ufc")
@@ -116,6 +122,112 @@ class EloTest(unittest.TestCase):
         self.assertTrue(np.allclose(z.p.values - 0.5, -(1 - z.p.values - 0.5)))
 
 
+EXT = {"k": 64, "k_new_mult": 1.5, "layoff_regress": 0.25, "debut_offset": 25.0, "prior_rec": 150, "prior_exp": -25, "age_slope": -15,
+       "age_knee": 32, "shrink_bouts": 2, "half_life_days": 1460, "div_regress": 0.25, "div_up": -40, "div_down": 20, "h2h": 100, "h2h_decay": 0.5}
+
+
+class ExtendedTest(unittest.TestCase):
+    """the 2026-10 parameters: off, the walk is 1.1.0's to the last digit; on, it stays causal and symmetric"""
+    def setUp(self):
+        self.d = tempfile.mkdtemp()
+        synthetic(os.path.join(self.d, "bouts.csv"), seasons=range(2016, 2019), per_season=300)
+        self.bouts = U.load(os.path.join(self.d, "bouts.csv"))
+        self.bouts.loc[self.bouts.index[::5], "weight_class"] = "Welterweight"
+        rng = np.random.default_rng(9)
+        ids = sorted(set(self.bouts.fighter_a_id) | set(self.bouts.fighter_b_id))
+        self.facts = {f: (pd.Timestamp("1985-01-01", tz="UTC") + pd.Timedelta(days=int(rng.integers(0, 4000))),
+                          float(rng.integers(0, 20)), float(rng.integers(0, 6))) for f in ids}
+        self.fx = FX.compute(self.bouts, facts=self.facts)
+
+    def tearDown(self):
+        shutil.rmtree(self.d)
+
+    def test_off_the_extended_walk_is_the_served_walk(self):
+        cfg = {"k": 64, "k_new_mult": 1.5, "layoff_regress": 0.25}
+        r0, _ = U.walk(self.bouts, cfg)
+        r1, _ = U._walk_extended(self.bouts, dict(U.DEFAULTS, **cfg), self.fx)
+        self.assertTrue(np.array_equal(r0.p_raw.values, r1.p_raw.values))
+        self.assertFalse(U.extended(dict(U.DEFAULTS, **cfg)))
+        self.assertTrue(U.extended(dict(U.DEFAULTS, **cfg, age_slope=-15)))
+
+    def test_on_causal_and_symmetric(self):
+        r1, _ = U.walk(self.bouts, EXT, fx=self.fx)
+        flipped = self.bouts.copy()
+        flipped.loc[flipped.index[-50:], "y"] = 1 - flipped.loc[flipped.index[-50:], "y"]
+        r2, _ = U.walk(flipped, EXT, fx=FX.compute(flipped, facts=self.facts))
+        self.assertTrue(np.allclose(r1.p_raw.values[:-50], r2.p_raw.values[:-50]))
+        sw = self.bouts.copy()
+        sw[["fighter_a_id", "fighter_b_id"]] = self.bouts[["fighter_b_id", "fighter_a_id"]].values
+        sw["y"] = 1 - self.bouts.y
+        r3, _ = U.walk(sw, EXT, fx=FX.compute(sw, facts=self.facts))
+        self.assertTrue(np.allclose(r1.p_raw.values, 1 - r3.p_raw.values))
+        self.assertFalse(np.allclose(r1.p_raw.values, U.walk(self.bouts, {"k": 64, "k_new_mult": 1.5, "layoff_regress": 0.25})[0].p_raw.values))
+
+    def test_the_prior_and_the_age_curve(self):
+        P = dict(U.DEFAULTS, debut_offset=25.0, prior_rec=150, prior_exp=-25)
+        self.assertAlmostEqual(U.prior_of(P, 10, 2), 1525.0)                    # the centre: a 10-2 record
+        self.assertAlmostEqual(U.prior_of(P, None, None), 1525.0)               # no record on file: the centre
+        self.assertGreater(U.prior_of(P, 15, 0), U.prior_of(P, 10, 2))
+        A = dict(U.DEFAULTS, age_slope=-15, age_knee=32)
+        self.assertEqual(U.age_points(A, 30.0), 0.0)
+        self.assertAlmostEqual(U.age_points(A, 38.0), -90.0)
+        self.assertEqual(U.age_points(A, float("nan")), 0.0)
+        first = self.bouts.iloc[0]
+        r, st = U.walk(self.bouts.iloc[:1].reset_index(drop=True), EXT, fx=self.fx.iloc[:1].reset_index(drop=True))
+        self.assertIn(first.fighter_a_id, st["priors"])
+
+    def test_factors(self):
+        fx = self.fx
+        self.assertTrue((fx.n_a.iloc[:1] == 0).all())
+        moved = fx.div_step_a.dropna()
+        self.assertTrue(set(moved.unique()) <= {-1.0, 0.0, 1.0})              # Lightweight <-> Welterweight
+        self.assertTrue((fx.meet >= 0).all() and fx.meet_last.dropna().isin([0.0, 0.5, 1.0]).all())
+        ages = fx.age_a.dropna()
+        self.assertTrue(((ages > 20) & (ages < 40)).all())
+
+
+class MarketGuardTest(unittest.TestCase):
+    def test_no_vig_and_orientation(self):
+        p, ov = K.novig(-200, 170)
+        self.assertAlmostEqual(float(p), (200 / 300) / (200 / 300 + 100 / 270))
+        self.assertAlmostEqual(float(ov), 200 / 300 + 100 / 270 - 1)
+        self.assertTrue(np.isnan(K.american_to_prob([50])[0]))                  # not a price
+        q = {"home_id": "1", "away_id": "2", "p_home": 0.6, "ml_home": -160, "ml_away": 140}
+        self.assertEqual(K.quote_for(q, "1"), (0.6, -160, 140))
+        self.assertAlmostEqual(K.quote_for(q, "2")[0], 0.4)
+        self.assertIsNone(K.quote_for(q, "3"))
+
+    def test_archive_matching_reads_the_sides_and_refuses_a_wrong_winner(self):
+        b = pd.DataFrame({"bout_id": ["1", "2"], "event_id": ["e", "e"], "fighter_a": ["Jon Smith", "Ana Lee"], "fighter_b": ["Bo Diaz", "Kim Park"],
+                          "ts": pd.to_datetime(["2020-01-02T03:00Z", "2020-01-02T03:00Z"], utc=True), "final": [True, True], "y": [1.0, 0.0]})
+        arch = pd.DataFrame({"red": ["Bo Diaz", "Ana Lee"], "blue": ["Jon Smith", "Kim Park"], "red_odds": [150, -200], "blue_odds": [-170, 170],
+                             "date": pd.to_datetime(["2020-01-01", "2020-01-01"]), "winner": ["Blue", "Red"]})
+        arch["p_red"], arch["overround"] = K.novig(arch.red_odds.values, arch.blue_odds.values)
+        m = K.match_archive(b, arch).set_index("bout_id")
+        self.assertEqual(list(m.index), ["1"])                                 # bout 2: the archive's winner disagrees with ESPN's
+        self.assertAlmostEqual(m.loc["1", "p_a_close"], 1 - arch.p_red.iloc[0])  # Jon Smith is the archive's blue
+
+    def test_the_guard_labels_a_gap_and_never_makes_it_a_signal_uncertified(self):
+        cfg = GD.config()
+        th = cfg["threshold_pp"]
+        cert = GD.certification({"rows": [{"lo": th, "n": 500, "model_log_loss": 0.6, "close_log_loss": 0.5}],
+                                 f"over_{th}": {"n": 500, "model_favour": 150, "market_favour": 350, "diff_ci95": [0.05, 0.1]}},
+                                {"timestamped": False}, cfg)
+        self.assertFalse(cert["certified"])
+        self.assertTrue(any("untimestamped" in r for r in cert["reasons"]))
+        ok = GD.certification({"rows": [{"lo": th, "n": 500, "model_log_loss": 0.5, "close_log_loss": 0.6}],
+                               f"over_{th}": {"n": 500, "diff_ci95": [-0.1, -0.05]}}, {"timestamped": True}, cfg)
+        self.assertTrue(ok["certified"])
+        f = GD.explain("Old", {"ufc_bouts": 19, "age": 38.0, "days_off": 400}, "New", {"ufc_bouts": 2, "age": 31.0, "pre_w": 12, "pre_l": 1}, meet=1, meet_last=0.0, cfg=cfg)
+        self.assertEqual([x["code"] for x in f], ["short_sample", "layoff", "age", "rematch"])
+        d = GD.assess(0.70, {"p_a": 0.53}, f, cert, cfg)
+        self.assertEqual((d["status"], d["label"], d["gap_pp"], d["signal_allowed"]), ("DISAGREES", GD.LABEL, 17.0, False))
+        self.assertEqual(GD.assess(0.70, {"p_a": 0.53}, f, ok, cfg)["signal_allowed"], True)
+        a = GD.assess(0.55, {"p_a": 0.53}, f, cert, cfg)
+        self.assertEqual((a["status"], a["factors"]), ("AGREES", []))
+        self.assertEqual(GD.assess(0.55, None, f, cert, cfg)["status"], "NO_MARKET")
+
+
 class PipelineTest(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
@@ -137,6 +249,8 @@ class PipelineTest(unittest.TestCase):
         out = L.cmd_refresh(fetch=False)
         self.assertEqual(out["status"], "EXPERIMENTAL")
         self.assertTrue(all(abs(b["p_a"] + b["p_b"] - 1) < 1e-9 for b in out["bouts"]))
+        self.assertTrue(all(b["guard"]["status"] in ("AGREES", "DISAGREES", "NO_MARKET") and not b["guard"]["signal_allowed"] for b in out["bouts"]))
+        self.assertEqual(out["guard"]["threshold_pp"], GD.config()["threshold_pp"])
         s = L.cmd_research(only=["k_lower", "calibration_toggle"])
         self.assertEqual(len(s["candidates"]), 2)
         self.assertTrue(all(c["decision"] in ("PASS", "FAIL", "SKIPPED") for c in s["candidates"]))

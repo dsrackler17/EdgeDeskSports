@@ -2,7 +2,7 @@
  "schema": "edgedesk_lab_walkforward_v1",
  "sport": "mma",
  "label": "UFC / MMA",
- "generated_at": "2026-10-21T11:49:32Z",
+ "generated_at": "2026-10-24T15:01:38Z",
  "data": {
   "source": "ESPN public scoreboard, month by month (model_loop/adapters/ufc/ingest.py)",
   "bouts": 6932,
@@ -80,24 +80,24 @@
    "window": "live 2026-2026",
    "seasons": 1,
    "n": 498,
-   "log_loss": 0.67121,
-   "brier": 0.23916,
+   "log_loss": 0.65088,
+   "brier": 0.23001,
    "coin_flip_log_loss": 0.69315,
-   "favourite_mean_p": 0.5774,
-   "favourite_won": 0.5904,
-   "calibration_in_the_large": -0.0129,
-   "calibration_slope": 1.048,
+   "favourite_mean_p": 0.6109,
+   "favourite_won": 0.6225,
+   "calibration_in_the_large": -0.0116,
+   "calibration_slope": 1.068,
    "calibration_slope_method": "slope-only recalibration p' = sigmoid(b logit p): a symmetric model has no side to fit an intercept for",
    "vs_coin_flip": {
-    "mean_diff": -0.02194,
+    "mean_diff": -0.042268,
     "ci95": [
-     -0.042372,
-     -0.00128
+     -0.069698,
+     -0.013618
     ],
     "blocks": 46,
     "block": "a UFC card (event_id)"
    },
-   "version": "1.1.0",
+   "version": "1.2.0",
    "note": "the served version's changes after 1.0.0 were chosen on the full window by the weekly rule; this season is their clean test"
   }
  },

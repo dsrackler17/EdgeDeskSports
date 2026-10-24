@@ -1,121 +1,45 @@
 {
  "schema": "edgedesk_model_loop_ufc_current_v1",
- "generated_at": "2026-10-23T19:39:03Z",
+ "generated_at": "2026-10-24T15:02:07Z",
  "status": "EXPERIMENTAL",
  "data_status": {
   "status": "OK",
   "reasons": [],
   "missing_results": []
  },
- "note": "Outcome-graded research only: no UFC closing prices are archived, so nothing here is compared with a market or claims value. A bout is priced the same whichever fighter is listed first.",
+ "note": "EXPERIMENTAL research. Each bout carries the market's latest no-vig price beside the model's: a gap above the guard's threshold is labelled 'Model disagrees with market', never an edge (guard.py). A bout is priced the same whichever fighter is listed first.",
  "served": {
-  "version": "1.1.0",
-  "promoted_at": "2026-10-21T04:09:13Z",
-  "reason": "weekly loop: candidate new_faster cleared the full-window rule"
+  "version": "1.2.0",
+  "promoted_at": "2026-10-24T14:58:41Z",
+  "reason": "2026-10 study: pre_ufc_record, age kept one at a time on 2021-2023; on the 1623 test bouts from 2024 log loss 0.66579 -> 0.64587 (-0.01991, card-blocked 95% interval [-0.02806, -0.01144]), Brier -0.00939 against 1.1.0. Cleared the promotion rule."
  },
- "config_sha256": "7aeca585b04434e178efa34de8566683781ce6fec4b2daa1a9c52c30a5c48b8a",
+ "config_sha256": "e6f03e299dbb731d559e3421aaf89fb4e80f17d89ef0b3d8ac57150470599245",
  "calibration_slopes": {},
+ "guard": {
+  "threshold_pp": 8,
+  "label": "Model disagrees with market",
+  "certification": {
+   "certified": false,
+   "threshold_pp": 8,
+   "n": 1420,
+   "model_log_loss": 0.65238,
+   "close_log_loss": 0.57283,
+   "model_favour": 478,
+   "market_favour": 942,
+   "ci95": [
+    0.05993,
+    0.0981
+   ],
+   "reasons": [
+    "the closing line on file is untimestamped (a public archive's pre-fight line), so it can refuse a signal but never certify one",
+    "on those bouts the model's log loss 0.6524 is worse than the closing line's 0.5728: 942 resolved in the market's favour, 478 in the model's"
+   ]
+  },
+  "disagreements": 5,
+  "with_market": 9,
+  "config": "docs/model-loop/ufc/guard.json"
+ },
  "bouts": [
-  {
-   "bout_id": "401928047",
-   "event_id": "600061267",
-   "event": "UFC 333: Volkanovski vs. Evloev",
-   "start": "2026-10-24T14:00Z",
-   "weight_class": "Bantamweight",
-   "fighter_a": {
-    "id": "5264462",
-    "name": "Colby Thicknesse",
-    "ufc_bouts_in_data": 3
-   },
-   "fighter_b": {
-    "id": "5454811",
-    "name": "Asaf Chopurov",
-    "ufc_bouts_in_data": 0
-   },
-   "p_a": 0.5624,
-   "p_b": 0.4376,
-   "basis": "debut: priced as an average fighter"
-  },
-  {
-   "bout_id": "401930357",
-   "event_id": "600061267",
-   "event": "UFC 333: Volkanovski vs. Evloev",
-   "start": "2026-10-24T14:00Z",
-   "weight_class": "Middleweight",
-   "fighter_a": {
-    "id": "3960340",
-    "name": "Abubakar Vagaev",
-    "ufc_bouts_in_data": 1
-   },
-   "fighter_b": {
-    "id": "4687434",
-    "name": "Jacob Malkoun",
-    "ufc_bouts_in_data": 9
-   },
-   "p_a": 0.4004,
-   "p_b": 0.5996,
-   "basis": "Elo from every earlier UFC bout in the data"
-  },
-  {
-   "bout_id": "401930915",
-   "event_id": "600061267",
-   "event": "UFC 333: Volkanovski vs. Evloev",
-   "start": "2026-10-24T14:00Z",
-   "weight_class": "Featherweight",
-   "fighter_a": {
-    "id": "4881997",
-    "name": "Daniel Santos",
-    "ufc_bouts_in_data": 6
-   },
-   "fighter_b": {
-    "id": "5145682",
-    "name": "Bolaji Oki",
-    "ufc_bouts_in_data": 6
-   },
-   "p_a": 0.6046,
-   "p_b": 0.3954,
-   "basis": "Elo from every earlier UFC bout in the data"
-  },
-  {
-   "bout_id": "401930916",
-   "event_id": "600061267",
-   "event": "UFC 333: Volkanovski vs. Evloev",
-   "start": "2026-10-24T14:00Z",
-   "weight_class": "Lightweight",
-   "fighter_a": {
-    "id": "5145777",
-    "name": "Noah Gugnon",
-    "ufc_bouts_in_data": 1
-   },
-   "fighter_b": {
-    "id": "5212351",
-    "name": "Kody Steele",
-    "ufc_bouts_in_data": 3
-   },
-   "p_a": 0.5035,
-   "p_b": 0.4965,
-   "basis": "Elo from every earlier UFC bout in the data"
-  },
-  {
-   "bout_id": "401930917",
-   "event_id": "600061267",
-   "event": "UFC 333: Volkanovski vs. Evloev",
-   "start": "2026-10-24T14:00Z",
-   "weight_class": "W Strawweight",
-   "fighter_a": {
-    "id": "4239113",
-    "name": "Nicolle Caliari",
-    "ufc_bouts_in_data": 4
-   },
-   "fighter_b": {
-    "id": "5080935",
-    "name": "Iasmin Lucindo",
-    "ufc_bouts_in_data": 7
-   },
-   "p_a": 0.3443,
-   "p_b": 0.6557,
-   "basis": "Elo from every earlier UFC bout in the data"
-  },
   {
    "bout_id": "401911637",
    "event_id": "600061267",
@@ -125,16 +49,80 @@
    "fighter_a": {
     "id": "4227265",
     "name": "Azamat Murzakanov",
-    "ufc_bouts_in_data": 8
+    "ufc_bouts_in_data": 8,
+    "factors": {
+     "ufc_bouts": 8,
+     "days_off": 195.0,
+     "age": 37.53319644079398,
+     "div_step": 0.0,
+     "pre_w": 9.0,
+     "pre_l": 0.0
+    }
    },
    "fighter_b": {
     "id": "4233039",
     "name": "Dominick Reyes",
-    "ufc_bouts_in_data": 15
+    "ufc_bouts_in_data": 15,
+    "factors": {
+     "ufc_bouts": 15,
+     "days_off": 195.0,
+     "age": 36.82683093771389,
+     "div_step": 0.0,
+     "pre_w": 6.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.5178,
-   "p_b": 0.4822,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.5503,
+   "p_b": 0.4497,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.6447,
+    "p_b": 0.3553,
+    "price_a": -205,
+    "price_b": 170,
+    "book": "DraftKings",
+    "observed_at": "2026-10-24T12:14:31Z",
+    "overround": 0.0425,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "DISAGREES",
+    "label": "Model disagrees with market",
+    "threshold_pp": 8,
+    "gap_pp": -9.4,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Azamat Murzakanov",
+      "text": "Azamat Murzakanov is 37.5, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 578,
+       "model_said": 0.3815,
+       "close_said": 0.3839,
+       "won": 0.3356
+      }
+     },
+     {
+      "code": "age",
+      "fighter": "Dominick Reyes",
+      "text": "Dominick Reyes is 36.8, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 613,
+       "model_said": 0.4095,
+       "close_said": 0.4175,
+       "won": 0.3768
+      }
+     }
+    ],
+    "certified": false,
+    "note": "Not an edge: gaps this size have historically resolved in the market's favour, or have not been certified to beat the close."
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.5178
+   }
   },
   {
    "bout_id": "401911638",
@@ -145,16 +133,69 @@
    "fighter_a": {
     "id": "3077822",
     "name": "Abus Magomedov",
-    "ufc_bouts_in_data": 8
+    "ufc_bouts_in_data": 8,
+    "factors": {
+     "ufc_bouts": 8,
+     "days_off": 119.0,
+     "age": 36.14236824093087,
+     "div_step": 0.0,
+     "pre_w": 24.0,
+     "pre_l": 4.0
+    }
    },
    "fighter_b": {
     "id": "4694832",
     "name": "Cam Rowston",
-    "ufc_bouts_in_data": 5
+    "ufc_bouts_in_data": 5,
+    "factors": {
+     "ufc_bouts": 5,
+     "days_off": 175.0,
+     "age": 31.761806981519506,
+     "div_step": 0.0,
+     "pre_w": 11.0,
+     "pre_l": 2.0
+    }
    },
-   "p_a": 0.4773,
-   "p_b": 0.5227,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.425,
+   "p_b": 0.575,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.5325,
+    "p_b": 0.4675,
+    "price_a": -125,
+    "price_b": 105,
+    "book": "DraftKings",
+    "observed_at": "2026-10-24T12:14:31Z",
+    "overround": 0.0434,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "DISAGREES",
+    "label": "Model disagrees with market",
+    "threshold_pp": 8,
+    "gap_pp": -10.7,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Abus Magomedov",
+      "text": "Abus Magomedov is 36.1, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 613,
+       "model_said": 0.4095,
+       "close_said": 0.4175,
+       "won": 0.3768
+      }
+     }
+    ],
+    "certified": false,
+    "note": "Not an edge: gaps this size have historically resolved in the market's favour, or have not been certified to beat the close."
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.4773
+   }
   },
   {
    "bout_id": "401911639",
@@ -165,16 +206,57 @@
    "fighter_a": {
     "id": "3026263",
     "name": "Nikita Krylov",
-    "ufc_bouts_in_data": 21
+    "ufc_bouts_in_data": 21,
+    "factors": {
+     "ufc_bouts": 21,
+     "days_off": 104.0,
+     "age": 34.63107460643395,
+     "div_step": 0.0,
+     "pre_w": 19.0,
+     "pre_l": 3.0
+    }
    },
    "fighter_b": {
     "id": "5291025",
     "name": "Abdul-Rakhman Yakhyaev",
-    "ufc_bouts_in_data": 4
+    "ufc_bouts_in_data": 4,
+    "factors": {
+     "ufc_bouts": 4,
+     "days_off": 119.0,
+     "age": 25.804243668720055,
+     "div_step": 0.0,
+     "pre_w": 6.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.3853,
-   "p_b": 0.6147,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.2604,
+   "p_b": 0.7396,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.1881,
+    "p_b": 0.8119,
+    "price_a": 410,
+    "price_b": -550,
+    "book": "DraftKings",
+    "observed_at": "2026-10-24T12:14:31Z",
+    "overround": 0.0422,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "AGREES",
+    "label": "Model and market agree within the threshold",
+    "threshold_pp": 8,
+    "gap_pp": 7.2,
+    "signal_allowed": false,
+    "factors": [],
+    "certified": false,
+    "note": null
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.3853
+   }
   },
   {
    "bout_id": "401911640",
@@ -185,16 +267,57 @@
    "fighter_a": {
     "id": "3931156",
     "name": "Grant Dawson",
-    "ufc_bouts_in_data": 16
+    "ufc_bouts_in_data": 16,
+    "factors": {
+     "ufc_bouts": 16,
+     "days_off": 167.0,
+     "age": 32.6735112936345,
+     "div_step": 0.0,
+     "pre_w": 11.0,
+     "pre_l": 1.0
+    }
    },
    "fighter_b": {
     "id": "5092398",
     "name": "Nurullo Aliev",
-    "ufc_bouts_in_data": 5
+    "ufc_bouts_in_data": 5,
+    "factors": {
+     "ufc_bouts": 5,
+     "days_off": 91.0,
+     "age": 25.87542778918549,
+     "div_step": 0.0,
+     "pre_w": 7.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.6078,
-   "p_b": 0.3922,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.5577,
+   "p_b": 0.4423,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.5108,
+    "p_b": 0.4892,
+    "price_a": -115,
+    "price_b": -105,
+    "book": "DraftKings",
+    "observed_at": "2026-10-23T20:44:32Z",
+    "overround": 0.0471,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "AGREES",
+    "label": "Model and market agree within the threshold",
+    "threshold_pp": 8,
+    "gap_pp": 4.7,
+    "signal_allowed": false,
+    "factors": [],
+    "certified": false,
+    "note": null
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.6078
+   }
   },
   {
    "bout_id": "401911632",
@@ -205,16 +328,69 @@
    "fighter_a": {
     "id": "3949584",
     "name": "Alexander Volkanovski",
-    "ufc_bouts_in_data": 18
+    "ufc_bouts_in_data": 18,
+    "factors": {
+     "ufc_bouts": 18,
+     "days_off": 265.0,
+     "age": 38.06707734428473,
+     "div_step": 0.0,
+     "pre_w": 13.0,
+     "pre_l": 1.0
+    }
    },
    "fighter_b": {
     "id": "4029275",
     "name": "Movsar Evloev",
-    "ufc_bouts_in_data": 10
+    "ufc_bouts_in_data": 10,
+    "factors": {
+     "ufc_bouts": 10,
+     "days_off": 216.0,
+     "age": 32.69815195071869,
+     "div_step": 0.0,
+     "pre_w": 10.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.4593,
-   "p_b": 0.5407,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.3483,
+   "p_b": 0.6517,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.4957,
+    "p_b": 0.5043,
+    "price_a": -108,
+    "price_b": -112,
+    "book": "DraftKings",
+    "observed_at": "2026-10-24T12:14:31Z",
+    "overround": 0.0475,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "DISAGREES",
+    "label": "Model disagrees with market",
+    "threshold_pp": 8,
+    "gap_pp": -14.7,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Alexander Volkanovski",
+      "text": "Alexander Volkanovski is 38.1, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 578,
+       "model_said": 0.3815,
+       "close_said": 0.3839,
+       "won": 0.3356
+      }
+     }
+    ],
+    "certified": false,
+    "note": "Not an edge: gaps this size have historically resolved in the market's favour, or have not been certified to beat the close."
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.4593
+   }
   },
   {
    "bout_id": "401911633",
@@ -225,16 +401,57 @@
    "fighter_a": {
     "id": "3948572",
     "name": "Merab Dvalishvili",
-    "ufc_bouts_in_data": 17
+    "ufc_bouts_in_data": 17,
+    "factors": {
+     "ufc_bouts": 17,
+     "days_off": 321.0,
+     "age": 35.7864476386037,
+     "div_step": 0.0,
+     "pre_w": 7.0,
+     "pre_l": 2.0
+    }
    },
    "fighter_b": {
     "id": "4293517",
     "name": "Petr Yan",
-    "ufc_bouts_in_data": 16
+    "ufc_bouts_in_data": 16,
+    "factors": {
+     "ufc_bouts": 16,
+     "days_off": 321.0,
+     "age": 33.6974674880219,
+     "div_step": 0.0,
+     "pre_w": 8.0,
+     "pre_l": 1.0
+    }
    },
-   "p_a": 0.5474,
-   "p_b": 0.4526,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.5128,
+   "p_b": 0.4872,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.4365,
+    "p_b": 0.5635,
+    "price_a": 120,
+    "price_b": -142,
+    "book": "DraftKings",
+    "observed_at": "2026-10-24T12:14:31Z",
+    "overround": 0.0413,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "AGREES",
+    "label": "Model and market agree within the threshold",
+    "threshold_pp": 8,
+    "gap_pp": 7.6,
+    "signal_allowed": false,
+    "factors": [],
+    "certified": false,
+    "note": null
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.5474
+   }
   },
   {
    "bout_id": "401911634",
@@ -245,16 +462,57 @@
    "fighter_a": {
     "id": "4895691",
     "name": "Ramazan Temirov",
-    "ufc_bouts_in_data": 3
+    "ufc_bouts_in_data": 3,
+    "factors": {
+     "ufc_bouts": 3,
+     "days_off": 91.0,
+     "age": 29.727583846680357,
+     "div_step": 0.0,
+     "pre_w": 17.0,
+     "pre_l": 3.0
+    }
    },
    "fighter_b": {
     "id": "5147737",
     "name": "Lone'er Kavanagh",
-    "ufc_bouts_in_data": 6
+    "ufc_bouts_in_data": 6,
+    "factors": {
+     "ufc_bouts": 6,
+     "days_off": 104.0,
+     "age": 27.37577002053388,
+     "div_step": 0.0,
+     "pre_w": 6.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.5565,
-   "p_b": 0.4435,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.5035,
+   "p_b": 0.4965,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.4892,
+    "p_b": 0.5108,
+    "price_a": -105,
+    "price_b": -115,
+    "book": "DraftKings",
+    "observed_at": "2026-10-23T23:32:21Z",
+    "overround": 0.0471,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "AGREES",
+    "label": "Model and market agree within the threshold",
+    "threshold_pp": 8,
+    "gap_pp": 1.4,
+    "signal_allowed": false,
+    "factors": [],
+    "certified": false,
+    "note": null
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.5565
+   }
   },
   {
    "bout_id": "401911635",
@@ -265,16 +523,69 @@
    "fighter_a": {
     "id": "2993650",
     "name": "Alexander Volkov",
-    "ufc_bouts_in_data": 19
+    "ufc_bouts_in_data": 19,
+    "factors": {
+     "ufc_bouts": 19,
+     "days_off": 167.0,
+     "age": 37.998631074606436,
+     "div_step": 0.0,
+     "pre_w": 26.0,
+     "pre_l": 6.0
+    }
    },
    "fighter_b": {
     "id": "4001837",
     "name": "Rizvan Kuniev",
-    "ufc_bouts_in_data": 5
+    "ufc_bouts_in_data": 5,
+    "factors": {
+     "ufc_bouts": 5,
+     "days_off": 91.0,
+     "age": 34.62286105407255,
+     "div_step": 0.0,
+     "pre_w": 10.0,
+     "pre_l": 2.0
+    }
    },
-   "p_a": 0.7057,
-   "p_b": 0.2943,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.653,
+   "p_b": 0.347,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.5217,
+    "p_b": 0.4783,
+    "price_a": -120,
+    "price_b": 100,
+    "book": "DraftKings",
+    "observed_at": "2026-10-24T12:14:31Z",
+    "overround": 0.0455,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "DISAGREES",
+    "label": "Model disagrees with market",
+    "threshold_pp": 8,
+    "gap_pp": 13.1,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Alexander Volkov",
+      "text": "Alexander Volkov is 38.0, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 578,
+       "model_said": 0.3815,
+       "close_said": 0.3839,
+       "won": 0.3356
+      }
+     }
+    ],
+    "certified": false,
+    "note": "Not an edge: gaps this size have historically resolved in the market's favour, or have not been certified to beat the close."
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.7057
+   }
   },
   {
    "bout_id": "401929495",
@@ -285,16 +596,80 @@
    "fighter_a": {
     "id": "4199009",
     "name": "Aaron Pico",
-    "ufc_bouts_in_data": 2
+    "ufc_bouts_in_data": 2,
+    "factors": {
+     "ufc_bouts": 2,
+     "days_off": 195.0,
+     "age": 30.083504449007528,
+     "div_step": 0.0,
+     "pre_w": 13.0,
+     "pre_l": 4.0
+    }
    },
    "fighter_b": {
     "id": "5192314",
     "name": "Losene Keita",
-    "ufc_bouts_in_data": 2
+    "ufc_bouts_in_data": 2,
+    "factors": {
+     "ufc_bouts": 2,
+     "days_off": 48.0,
+     "age": 28.815879534565365,
+     "div_step": 0.0,
+     "pre_w": 16.0,
+     "pre_l": 1.0
+    }
    },
-   "p_a": 0.495,
-   "p_b": 0.505,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.3444,
+   "p_b": 0.6556,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": {
+    "p_a": 0.5721,
+    "p_b": 0.4279,
+    "price_a": -148,
+    "price_b": 124,
+    "book": "DraftKings",
+    "observed_at": "2026-10-23T23:32:21Z",
+    "overround": 0.0432,
+    "no_vig": "multiplicative",
+    "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
+   },
+   "guard": {
+    "status": "DISAGREES",
+    "label": "Model disagrees with market",
+    "threshold_pp": 8,
+    "gap_pp": -22.8,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "short_sample",
+      "fighter": "Aaron Pico",
+      "text": "Aaron Pico has 2 UFC bouts in the data (pro record before the UFC 13-4): a short sample",
+      "record": {
+       "n": 1033,
+       "model_said": 0.5223,
+       "close_said": 0.5102,
+       "won": 0.5218
+      }
+     },
+     {
+      "code": "short_sample",
+      "fighter": "Losene Keita",
+      "text": "Losene Keita has 2 UFC bouts in the data (pro record before the UFC 16-1): a short sample",
+      "record": {
+       "n": 1033,
+       "model_said": 0.5223,
+       "close_said": 0.5102,
+       "won": 0.5218
+      }
+     }
+    ],
+    "certified": false,
+    "note": "Not an edge: gaps this size have historically resolved in the market's favour, or have not been certified to beat the close."
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.495
+   }
   },
   {
    "bout_id": "401914105",
@@ -305,16 +680,91 @@
    "fighter_a": {
     "id": "4418809",
     "name": "Tainara Lisboa",
-    "ufc_bouts_in_data": 4
+    "ufc_bouts_in_data": 4,
+    "factors": {
+     "ufc_bouts": 4,
+     "days_off": 378.0,
+     "age": 35.66598220396988,
+     "div_step": -1.0,
+     "pre_w": 5.0,
+     "pre_l": 2.0
+    }
    },
    "fighter_b": {
     "id": "5130185",
     "name": "Lucia Szabov\u00e1",
-    "ufc_bouts_in_data": 0
+    "ufc_bouts_in_data": 0,
+    "factors": {
+     "ufc_bouts": 0,
+     "days_off": null,
+     "age": 28.854209445585216,
+     "div_step": null,
+     "pre_w": 12.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.4839,
-   "p_b": 0.5161,
-   "basis": "debut: priced as an average fighter"
+   "p_a": 0.2079,
+   "p_b": 0.7921,
+   "basis": "debut: priced from the prior (the pre-UFC record when on file)",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "debut",
+      "fighter": "Lucia Szabov\u00e1",
+      "text": "Lucia Szabov\u00e1 makes a UFC debut: the model has no UFC bout to rate",
+      "record": {
+       "n": 364,
+       "model_said": 0.4862,
+       "close_said": 0.4192,
+       "won": 0.3791
+      }
+     },
+     {
+      "code": "layoff",
+      "fighter": "Tainara Lisboa",
+      "text": "Tainara Lisboa returns after 378 days out",
+      "record": {
+       "n": 446,
+       "model_said": 0.4535,
+       "close_said": 0.462,
+       "won": 0.4395
+      }
+     },
+     {
+      "code": "age",
+      "fighter": "Tainara Lisboa",
+      "text": "Tainara Lisboa is 35.7, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 613,
+       "model_said": 0.4095,
+       "close_said": 0.4175,
+       "won": 0.3768
+      }
+     },
+     {
+      "code": "weight_change",
+      "fighter": "Tainara Lisboa",
+      "text": "Tainara Lisboa moves down 1 division: the rating was earned at another weight",
+      "record": {
+       "n": 305,
+       "model_said": 0.4689,
+       "close_said": 0.4834,
+       "won": 0.4984
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.4839
+   }
   },
   {
    "bout_id": "401914106",
@@ -325,16 +775,80 @@
    "fighter_a": {
     "id": "4687604",
     "name": "Joe Kropschot",
-    "ufc_bouts_in_data": 1
+    "ufc_bouts_in_data": 1,
+    "factors": {
+     "ufc_bouts": 1,
+     "days_off": 80.0,
+     "age": 31.367556468172484,
+     "div_step": 0.0,
+     "pre_w": 8.0,
+     "pre_l": 3.0
+    }
    },
    "fighter_b": {
     "id": "5134399",
     "name": "Nick Klein",
-    "ufc_bouts_in_data": 3
+    "ufc_bouts_in_data": 3,
+    "factors": {
+     "ufc_bouts": 3,
+     "days_off": 454.0,
+     "age": 31.145790554414784,
+     "div_step": 0.0,
+     "pre_w": 5.0,
+     "pre_l": 1.0
+    }
    },
-   "p_a": 0.6139,
-   "p_b": 0.3861,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.5808,
+   "p_b": 0.4192,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "short_sample",
+      "fighter": "Joe Kropschot",
+      "text": "Joe Kropschot has 1 UFC bout in the data (pro record before the UFC 8-3): a short sample",
+      "record": {
+       "n": 1033,
+       "model_said": 0.5223,
+       "close_said": 0.5102,
+       "won": 0.5218
+      }
+     },
+     {
+      "code": "short_sample",
+      "fighter": "Nick Klein",
+      "text": "Nick Klein has 3 UFC bouts in the data (pro record before the UFC 5-1): a short sample",
+      "record": {
+       "n": 955,
+       "model_said": 0.5352,
+       "close_said": 0.5415,
+       "won": 0.5414
+      }
+     },
+     {
+      "code": "layoff",
+      "fighter": "Nick Klein",
+      "text": "Nick Klein returns after 454 days out",
+      "record": {
+       "n": 446,
+       "model_said": 0.4535,
+       "close_said": 0.462,
+       "won": 0.4395
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.6139
+   }
   },
   {
    "bout_id": "401928105",
@@ -345,16 +859,58 @@
    "fighter_a": {
     "id": "4816066",
     "name": "Piera Rodriguez",
-    "ufc_bouts_in_data": 8
+    "ufc_bouts_in_data": 8,
+    "factors": {
+     "ufc_bouts": 8,
+     "days_off": 231.0,
+     "age": 33.96851471594798,
+     "div_step": 0.0,
+     "pre_w": 6.0,
+     "pre_l": 0.0
+    }
    },
    "fighter_b": {
     "id": "5139556",
     "name": "Talita Alencar",
-    "ufc_bouts_in_data": 6
+    "ufc_bouts_in_data": 6,
+    "factors": {
+     "ufc_bouts": 6,
+     "days_off": 189.0,
+     "age": 36.03832991101985,
+     "div_step": 0.0,
+     "pre_w": 4.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.5528,
-   "p_b": 0.4472,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.5958,
+   "p_b": 0.4042,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Talita Alencar",
+      "text": "Talita Alencar is 36.0, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 613,
+       "model_said": 0.4095,
+       "close_said": 0.4175,
+       "won": 0.3768
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.5528
+   }
   },
   {
    "bout_id": "401928106",
@@ -365,16 +921,80 @@
    "fighter_a": {
     "id": "5085010",
     "name": "Theodor Berggren",
-    "ufc_bouts_in_data": 1
+    "ufc_bouts_in_data": 1,
+    "factors": {
+     "ufc_bouts": 1,
+     "days_off": 126.0,
+     "age": 26.559890485968516,
+     "div_step": 0.0,
+     "pre_w": 8.0,
+     "pre_l": 3.0
+    }
    },
    "fighter_b": {
     "id": "5289853",
     "name": "Rodrigo Sezinando",
-    "ufc_bouts_in_data": 1
+    "ufc_bouts_in_data": 1,
+    "factors": {
+     "ufc_bouts": 1,
+     "days_off": 413.0,
+     "age": 28.8870636550308,
+     "div_step": 0.0,
+     "pre_w": 9.0,
+     "pre_l": 1.0
+    }
    },
-   "p_a": 0.5005,
-   "p_b": 0.4995,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.4031,
+   "p_b": 0.5969,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "short_sample",
+      "fighter": "Theodor Berggren",
+      "text": "Theodor Berggren has 1 UFC bout in the data (pro record before the UFC 8-3): a short sample",
+      "record": {
+       "n": 1033,
+       "model_said": 0.5223,
+       "close_said": 0.5102,
+       "won": 0.5218
+      }
+     },
+     {
+      "code": "short_sample",
+      "fighter": "Rodrigo Sezinando",
+      "text": "Rodrigo Sezinando has 1 UFC bout in the data (pro record before the UFC 9-1): a short sample",
+      "record": {
+       "n": 1033,
+       "model_said": 0.5223,
+       "close_said": 0.5102,
+       "won": 0.5218
+      }
+     },
+     {
+      "code": "layoff",
+      "fighter": "Rodrigo Sezinando",
+      "text": "Rodrigo Sezinando returns after 413 days out",
+      "record": {
+       "n": 446,
+       "model_said": 0.4535,
+       "close_said": 0.462,
+       "won": 0.4395
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.5005
+   }
   },
   {
    "bout_id": "401928108",
@@ -385,16 +1005,58 @@
    "fighter_a": {
     "id": "4697476",
     "name": "Andre Petroski",
-    "ufc_bouts_in_data": 14
+    "ufc_bouts_in_data": 14,
+    "factors": {
+     "ufc_bouts": 14,
+     "days_off": 168.0,
+     "age": 35.38672142368241,
+     "div_step": 0.0,
+     "pre_w": 5.0,
+     "pre_l": 1.0
+    }
    },
    "fighter_b": {
     "id": "5123963",
     "name": "Azamat Bekoev",
-    "ufc_bouts_in_data": 4
+    "ufc_bouts_in_data": 4,
+    "factors": {
+     "ufc_bouts": 4,
+     "days_off": 210.0,
+     "age": 30.836413415468858,
+     "div_step": 0.0,
+     "pre_w": 18.0,
+     "pre_l": 3.0
+    }
    },
-   "p_a": 0.5194,
-   "p_b": 0.4806,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.4219,
+   "p_b": 0.5781,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Andre Petroski",
+      "text": "Andre Petroski is 35.4, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 613,
+       "model_said": 0.4095,
+       "close_said": 0.4175,
+       "won": 0.3768
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.5194
+   }
   },
   {
    "bout_id": "401928109",
@@ -405,16 +1067,69 @@
    "fighter_a": {
     "id": "3955577",
     "name": "Julian Erosa",
-    "ufc_bouts_in_data": 19
+    "ufc_bouts_in_data": 19,
+    "factors": {
+     "ufc_bouts": 19,
+     "days_off": 216.0,
+     "age": 37.25119780971937,
+     "div_step": 0.0,
+     "pre_w": 21.0,
+     "pre_l": 5.0
+    }
    },
    "fighter_b": {
     "id": "5068724",
     "name": "JeongYeong Lee",
-    "ufc_bouts_in_data": 4
+    "ufc_bouts_in_data": 4,
+    "factors": {
+     "ufc_bouts": 4,
+     "days_off": 538.0,
+     "age": 30.965092402464066,
+     "div_step": 0.0,
+     "pre_w": 9.0,
+     "pre_l": 1.0
+    }
    },
-   "p_a": 0.577,
-   "p_b": 0.423,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.4442,
+   "p_b": 0.5558,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "layoff",
+      "fighter": "JeongYeong Lee",
+      "text": "JeongYeong Lee returns after 538 days out",
+      "record": {
+       "n": 446,
+       "model_said": 0.4535,
+       "close_said": 0.462,
+       "won": 0.4395
+      }
+     },
+     {
+      "code": "age",
+      "fighter": "Julian Erosa",
+      "text": "Julian Erosa is 37.3, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 578,
+       "model_said": 0.3815,
+       "close_said": 0.3839,
+       "won": 0.3356
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.577
+   }
   },
   {
    "bout_id": "401928110",
@@ -425,16 +1140,69 @@
    "fighter_a": {
     "id": "4393818",
     "name": "Gaston Bola\u00f1os",
-    "ufc_bouts_in_data": 5
+    "ufc_bouts_in_data": 5,
+    "factors": {
+     "ufc_bouts": 5,
+     "days_off": 133.0,
+     "age": 34.12731006160164,
+     "div_step": 0.0,
+     "pre_w": 6.0,
+     "pre_l": 3.0
+    }
    },
    "fighter_b": {
     "id": "5060394",
     "name": "Francis Marshall",
-    "ufc_bouts_in_data": 8
+    "ufc_bouts_in_data": 8,
+    "factors": {
+     "ufc_bouts": 8,
+     "days_off": 189.0,
+     "age": 27.66324435318275,
+     "div_step": -1.0,
+     "pre_w": 5.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.46,
-   "p_b": 0.54,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.3567,
+   "p_b": 0.6433,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age_gap",
+      "fighter": "Gaston Bola\u00f1os",
+      "text": "Gaston Bola\u00f1os is 6.5 years older",
+      "record": {
+       "n": 1348,
+       "model_said": 0.3909,
+       "close_said": 0.3906,
+       "won": 0.3472
+      }
+     },
+     {
+      "code": "weight_change",
+      "fighter": "Francis Marshall",
+      "text": "Francis Marshall moves down 1 division: the rating was earned at another weight",
+      "record": {
+       "n": 305,
+       "model_said": 0.4689,
+       "close_said": 0.4834,
+       "won": 0.4984
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.46
+   }
   },
   {
    "bout_id": "401921310",
@@ -445,16 +1213,58 @@
    "fighter_a": {
     "id": "3028863",
     "name": "Renato Moicano",
-    "ufc_bouts_in_data": 20
+    "ufc_bouts_in_data": 20,
+    "factors": {
+     "ufc_bouts": 20,
+     "days_off": 210.0,
+     "age": 37.44832306639288,
+     "div_step": 0.0,
+     "pre_w": 8.0,
+     "pre_l": 0.0
+    }
    },
    "fighter_b": {
     "id": "5144007",
     "name": "Tom Nolan",
-    "ufc_bouts_in_data": 7
+    "ufc_bouts_in_data": 7,
+    "factors": {
+     "ufc_bouts": 7,
+     "days_off": 147.0,
+     "age": 26.650239561943874,
+     "div_step": 0.0,
+     "pre_w": 5.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.5166,
-   "p_b": 0.4834,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.4039,
+   "p_b": 0.5961,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Renato Moicano",
+      "text": "Renato Moicano is 37.4, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 578,
+       "model_said": 0.3815,
+       "close_said": 0.3839,
+       "won": 0.3356
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.5166
+   }
   },
   {
    "bout_id": "401928103",
@@ -465,16 +1275,58 @@
    "fighter_a": {
     "id": "3146349",
     "name": "Carlos Leal",
-    "ufc_bouts_in_data": 4
+    "ufc_bouts_in_data": 4,
+    "factors": {
+     "ufc_bouts": 4,
+     "days_off": 252.0,
+     "age": 32.49555099247091,
+     "div_step": 0.0,
+     "pre_w": 21.0,
+     "pre_l": 5.0
+    }
    },
    "fighter_b": {
     "id": "3960071",
     "name": "Randy Brown",
-    "ufc_bouts_in_data": 22
+    "ufc_bouts_in_data": 22,
+    "factors": {
+     "ufc_bouts": 22,
+     "days_off": 203.0,
+     "age": 36.31759069130732,
+     "div_step": 0.0,
+     "pre_w": 6.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.3512,
-   "p_b": 0.6488,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.3949,
+   "p_b": 0.6051,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Randy Brown",
+      "text": "Randy Brown is 36.3, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 613,
+       "model_said": 0.4095,
+       "close_said": 0.4175,
+       "won": 0.3768
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.3512
+   }
   },
   {
    "bout_id": "401928104",
@@ -485,16 +1337,69 @@
    "fighter_a": {
     "id": "3154898",
     "name": "Yana Santos",
-    "ufc_bouts_in_data": 12
+    "ufc_bouts_in_data": 12,
+    "factors": {
+     "ufc_bouts": 12,
+     "days_off": 392.0,
+     "age": 36.9719370294319,
+     "div_step": 0.0,
+     "pre_w": 10.0,
+     "pre_l": 3.0
+    }
    },
    "fighter_b": {
     "id": "5110469",
     "name": "Luana Santos",
-    "ufc_bouts_in_data": 7
+    "ufc_bouts_in_data": 7,
+    "factors": {
+     "ufc_bouts": 7,
+     "days_off": 133.0,
+     "age": 26.543463381245722,
+     "div_step": 0.0,
+     "pre_w": 5.0,
+     "pre_l": 1.0
+    }
    },
-   "p_a": 0.365,
-   "p_b": 0.635,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.2794,
+   "p_b": 0.7206,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "layoff",
+      "fighter": "Yana Santos",
+      "text": "Yana Santos returns after 392 days out",
+      "record": {
+       "n": 446,
+       "model_said": 0.4535,
+       "close_said": 0.462,
+       "won": 0.4395
+      }
+     },
+     {
+      "code": "age",
+      "fighter": "Yana Santos",
+      "text": "Yana Santos is 37.0, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 613,
+       "model_said": 0.4095,
+       "close_said": 0.4175,
+       "won": 0.3768
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.365
+   }
   },
   {
    "bout_id": "401928107",
@@ -505,16 +1410,69 @@
    "fighter_a": {
     "id": "4629138",
     "name": "Jean-Paul Lebosnoyani",
-    "ufc_bouts_in_data": 3
+    "ufc_bouts_in_data": 3,
+    "factors": {
+     "ufc_bouts": 3,
+     "days_off": 105.0,
+     "age": 27.761806981519506,
+     "div_step": 0.0,
+     "pre_w": 8.0,
+     "pre_l": 2.0
+    }
    },
    "fighter_b": {
     "id": "5350562",
     "name": "Farman Hasanov",
-    "ufc_bouts_in_data": 1
+    "ufc_bouts_in_data": 1,
+    "factors": {
+     "ufc_bouts": 1,
+     "days_off": 126.0,
+     "age": 31.252566735112936,
+     "div_step": 0.0,
+     "pre_w": 5.0,
+     "pre_l": 0.0
+    }
    },
-   "p_a": 0.6498,
-   "p_b": 0.3502,
-   "basis": "Elo from every earlier UFC bout in the data"
+   "p_a": 0.5743,
+   "p_b": 0.4257,
+   "basis": "Elo from every earlier UFC bout in the data",
+   "market": null,
+   "guard": {
+    "status": "NO_MARKET",
+    "label": "No market price on file",
+    "threshold_pp": 8,
+    "gap_pp": null,
+    "signal_allowed": false,
+    "factors": [
+     {
+      "code": "short_sample",
+      "fighter": "Jean-Paul Lebosnoyani",
+      "text": "Jean-Paul Lebosnoyani has 3 UFC bouts in the data (pro record before the UFC 8-2): a short sample",
+      "record": {
+       "n": 955,
+       "model_said": 0.5352,
+       "close_said": 0.5415,
+       "won": 0.5414
+      }
+     },
+     {
+      "code": "short_sample",
+      "fighter": "Farman Hasanov",
+      "text": "Farman Hasanov has 1 UFC bout in the data (pro record before the UFC 5-0): a short sample",
+      "record": {
+       "n": 1033,
+       "model_said": 0.5223,
+       "close_said": 0.5102,
+       "won": 0.5218
+      }
+     }
+    ],
+    "certified": false
+   },
+   "compare": {
+    "version": "1.1.0",
+    "p_a": 0.6498
+   }
   }
  ]
 }

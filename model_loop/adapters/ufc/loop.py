@@ -5,7 +5,9 @@ everything here is graded against results only and nothing claims value.
   python3 -m model_loop.adapters.ufc.loop prereg     # the protocol, hashed (committed before any tuning)
   python3 -m model_loop.adapters.ufc.loop backtest   # tune on 2016-2020, report 2021-2024 and the 2025 holdout,
                                                      # create the version history (once)
-  python3 -m model_loop.adapters.ufc.loop refresh    # ratings through now; price the next 14 days of bouts
+  python3 -m model_loop.adapters.ufc.loop refresh    # ratings through now; price the next 14 days of bouts, each beside
+                                                     # the market and the disagreement guard (guard.py)
+  python3 -m model_loop.adapters.ufc.loop price --version 1.1.0   # any version's prices for the same bouts (comparison only)
   python3 -m model_loop.adapters.ufc.loop score      # grade every published pregame number that has a result
   python3 -m model_loop.adapters.ufc.loop research   # candidates -> full walk-forward -> promote?
   python3 -m model_loop.adapters.ufc.loop report     # docs/model-loop/ufc/weekly_model_report.md
@@ -39,7 +41,10 @@ import pandas as pd
 from ...core import metrics as M
 from ...core.versions import Versions
 from ...core.walkforward import content_hash
+from . import factors as FX
+from . import guard as GD
 from . import ingest
+from . import market as K
 from . import model as U
 
 ROOT = ingest.ROOT
@@ -47,6 +52,8 @@ DATA = ingest.OUT
 DOCS = os.path.join(ROOT, "docs", "model-loop", "ufc")
 PUB = os.path.join(ROOT, "model_loop", "published", "ufc")
 LEDGER = os.path.join(ROOT, "model_loop", "ledger", "ufc")
+STUDY = os.path.join(DOCS, "study")
+COMPARE_VERSION = "1.1.0"      # kept runnable: every published bout carries its price beside the served one
 WINDOWS = {"burn_in": [2014, 2015], "tune": [2016, 2020], "validation": [2021, 2024], "holdout": [2025, 2025], "live": [2026, 2099]}
 GRID = {"k": [16, 24, 32, 48, 64], "k_new_mult": [1.0, 1.5, 2.0], "layoff_regress": [0.0, 0.25], "calibration": ["none", "slope"]}
 MIN_VALIDATION_N = 1000
@@ -65,6 +72,16 @@ CATALOGUE = [
     # from the Elo again. The champion going in: model_loop/data/ufc/title_bouts.csv
     # (simulator/src/research/ufc_title_bouts.ts, regenerated before every run).
     ("champion_term", "champ_bonus", ("set", 100.0)),
+    # the 2026-10 study's open questions (docs/model-loop/ufc/study): the pre-UFC record prior was chosen at the edge
+    # of its grid (prior_rec 150), the age slope is one grid point, and head to head improved the 2021-2023 log loss
+    # by 0.0003 (short of the 0.0005 bar). Each is retested every week under the same rule; on a version without the
+    # parameter, a multiple of 0 changes nothing and the candidate is skipped
+    ("record_prior_stronger", "prior_rec", ("mul", 1.33)),
+    ("age_steeper", "age_slope", ("mul", 1.33)), ("age_gentler", "age_slope", ("mul", 0.75)),
+    ("head_to_head", "h2h", ("set", 150.0)),
+    # 1.2.0 overrates debutants (since 2018 it said 48.6% for the debutant, the close 41.9%, they won 37.9%): a lower
+    # starting point, retested every week ("set": the "add" rule's bounds are the layoff share's and the step's)
+    ("debut_lower", "debut_offset", ("set", -25.0)),
 ]
 
 
@@ -194,10 +211,68 @@ def served():
     return V.current if str(V.current.get("status", "")).startswith("SERVED") else None
 
 
+def version_config(version):
+    """any version's configuration (versions.json): 1.1.0 stays runnable for comparison after a promotion"""
+    return Versions(os.path.join(DOCS, "versions.json")).get(version)
+
+
+def _certification(version):
+    """the study's certification of the served version's large gaps (guard.py), or an uncertified stub"""
+    p = os.path.join(STUDY, "comparison.json")
+    if os.path.exists(p):
+        c = _jload(p)
+        cfg = version_config(version)["config"]
+        side = "new" if content_hash(cfg) == content_hash(c.get("selected_config") or {}) else "old" \
+            if content_hash(cfg) == content_hash(c.get("base_config") or {}) else None
+        if side:
+            oos = c["windows"]["out_of_sample"][side]
+            return GD.certification(oos["gaps"], c.get("reference"))
+    return {"certified": False, "reasons": ["the study has not certified this version's large gaps (docs/model-loop/ufc/study)"]}
+
+
+def price_upcoming(d, cfg, now, days=14):
+    rows, state, fits = run(d, cfg)
+    up = (rows.status == "STATUS_SCHEDULED") & (rows.ts >= now) & (rows.ts <= now + pd.Timedelta(days=days))
+    return rows, up, state, fits
+
+
+def cmd_price(version, fetch=False):
+    """a version's prices for the bouts refresh would publish now (comparison only: nothing is published)"""
+    d = U.load(DATA)
+    v = version_config(version)
+    now = pd.Timestamp.now(tz="UTC")
+    rows, up, _, _ = price_upcoming(d, v["config"], now)
+    out = {"schema": "edgedesk_model_loop_ufc_prices_v1", "generated_at": now_iso(), "version": version, "config_sha256": v["config_sha256"],
+           "note": "Comparison only: the served version's prices are model_loop/published/ufc/current.json.",
+           "bouts": [{"bout_id": r.bout_id, "event": r.event_name, "fighter_a": r.fighter_a, "fighter_b": r.fighter_b, "p_a": round(float(r.p), 4)}
+                     for r in rows[up].itertuples()]}
+    dump(os.path.join(STUDY, f"prices_{version}.json"), out)
+    print(f"ufc price: {len(out['bouts'])} bouts priced by v{version} (comparison only)", file=sys.stderr)
+    return out
+
+
+def refresh_inputs():
+    """the fighter facts the served model reads (model_loop/data/ufc/fighter_facts.csv): the date of birth of every
+    fighter not yet on file (ESPN; a newly booked fighter included, since the bouts were just fetched), ESPN's records as
+    of the simulator feed's fetch time, then each fighter's date of birth and pre-UFC record (factors.build_facts). Run
+    by a fetching refresh only, so a run with --no-fetch prices from the files on disk"""
+    try:
+        ingest.athletes()
+    except Exception as e:  # noqa: BLE001 - a failed fetch keeps the dates on file; the next run tries again
+        print(f"ufc athletes: {e}", file=sys.stderr)
+    if os.path.exists(ingest.SIM_FEED):
+        try:
+            ingest.records()
+        except SystemExit as e:                      # a partial feed: keep the records on file
+            print(str(e), file=sys.stderr)
+    FX.build_facts()
+
+
 def cmd_refresh(fetch=True):
     if fetch:
         ingest.fetch()
         ingest.build()
+        refresh_inputs()
     d = U.load(DATA)
     cur = served()
     now = pd.Timestamp.now(tz="UTC")
@@ -206,8 +281,9 @@ def cmd_refresh(fetch=True):
            "data_status": {"status": "DEGRADED" if len(missing) else "OK",
                            "reasons": [f"{len(missing)} bout(s) past their start have no result in the data yet"] if len(missing) else [],
                            "missing_results": missing.bout_id.tolist()[:50]},
-           "note": "Outcome-graded research only: no UFC closing prices are archived, so nothing here is compared with "
-                   "a market or claims value. A bout is priced the same whichever fighter is listed first."}
+           "note": "EXPERIMENTAL research. Each bout carries the market's latest no-vig price beside the model's: a gap above the "
+                   "guard's threshold is labelled 'Model disagrees with market', never an edge (guard.py). A bout is priced the same "
+                   "whichever fighter is listed first."}
     if cur is None:
         ran = os.path.exists(os.path.join(DOCS, "backtest.json"))
         out.update(served=None, bouts=[], reason=("No version is served: the tuned Elo did not clear the preregistered rule "
@@ -218,17 +294,46 @@ def cmd_refresh(fetch=True):
         dump(os.path.join(PUB, "current.json"), out)
         print("ufc refresh: nothing served", file=sys.stderr)
         return out
-    rows, state, fits = run(d, cur["config"])
-    up = rows[(rows.status == "STATUS_SCHEDULED") & (rows.ts >= now) & (rows.ts <= now + pd.Timedelta(days=14))]
-    bouts = []
-    for r in up.itertuples():
-        bouts.append({"bout_id": r.bout_id, "event_id": r.event_id, "event": r.event_name, "start": r.ts.strftime("%Y-%m-%dT%H:%MZ"),
-                      "weight_class": r.weight_class, "fighter_a": {"id": r.fighter_a_id, "name": r.fighter_a, "ufc_bouts_in_data": int(r.a_bouts)},
-                      "fighter_b": {"id": r.fighter_b_id, "name": r.fighter_b, "ufc_bouts_in_data": int(r.b_bouts)},
-                      "p_a": round(float(r.p), 4), "p_b": round(1 - float(r.p), 4),
-                      "basis": "debut: priced as an average fighter" if min(r.a_bouts, r.b_bouts) == 0 else "Elo from every earlier UFC bout in the data"})
+    rows, up, state, fits = price_upcoming(d, cur["config"], now)
+    fx = FX.compute(d)
+    try:
+        cmp_v = COMPARE_VERSION if cur["version"] != COMPARE_VERSION and version_config(COMPARE_VERSION) else None
+    except KeyError:                                 # a history without 1.1.0 (tests): no comparison price
+        cmp_v = None
+    cmp_rows = run(d, version_config(cmp_v)["config"])[0] if cmp_v else None
+    gcfg = GD.config()
+    cert = _certification(cur["version"])
+    evidence = GD.evidence_for(cur["version"])
+    quotes = K.latest_quotes()
+    bouts, dis = [], 0
+    for r in rows[up].itertuples():
+        i = r.Index
+        fa, fb = FX.side(fx, i, "a"), FX.side(fx, i, "b")
+        q = K.quote_for(quotes.get(r.bout_id), r.fighter_a_id)
+        market = None
+        if q:
+            mq = quotes[r.bout_id]
+            market = {"p_a": round(q[0], 4), "p_b": round(1 - q[0], 4), "price_a": q[1], "price_b": q[2], "book": mq["book"],
+                      "observed_at": mq["observed_at"], "overround": round(mq["overround"], 4), "no_vig": "multiplicative", "source": mq["source"]}
+        meet = fx["meet"].iloc[i]
+        g = GD.assess(float(r.p), market, GD.explain(r.fighter_a, fa, r.fighter_b, fb, meet=meet, meet_last=fx["meet_last"].iloc[i],
+                                                       evidence=evidence, cfg=gcfg), cert, cfg=gcfg)
+        dis += g["status"] == "DISAGREES"
+        b = {"bout_id": r.bout_id, "event_id": r.event_id, "event": r.event_name, "start": r.ts.strftime("%Y-%m-%dT%H:%MZ"),
+             "weight_class": r.weight_class, "fighter_a": dict({"id": r.fighter_a_id, "name": r.fighter_a, "ufc_bouts_in_data": int(r.a_bouts)}, factors=fa),
+             "fighter_b": dict({"id": r.fighter_b_id, "name": r.fighter_b, "ufc_bouts_in_data": int(r.b_bouts)}, factors=fb),
+             "p_a": round(float(r.p), 4), "p_b": round(1 - float(r.p), 4),
+             "basis": "debut: priced from the prior (the pre-UFC record when on file)" if min(r.a_bouts, r.b_bouts) == 0 and U.extended(dict(U.DEFAULTS, **cur["config"]))
+             else "debut: priced as an average fighter" if min(r.a_bouts, r.b_bouts) == 0 else "Elo from every earlier UFC bout in the data",
+             "market": market, "guard": g}
+        if cmp_rows is not None:
+            b["compare"] = {"version": cmp_v, "p_a": round(float(cmp_rows.loc[i, "p"]), 4)}
+        bouts.append(b)
     out.update(served={"version": cur["version"], "promoted_at": cur["promoted_at"], "reason": cur["reason"]},
-               config_sha256=cur["config_sha256"], calibration_slopes=fits, bouts=bouts)
+               config_sha256=cur["config_sha256"], calibration_slopes=fits,
+               guard={"threshold_pp": gcfg["threshold_pp"], "label": GD.LABEL, "certification": cert, "disagreements": dis,
+                      "with_market": sum(1 for b in bouts if b["market"]), "config": "docs/model-loop/ufc/guard.json"},
+               bouts=bouts)
     dump(os.path.join(PUB, "current.json"), out)
     os.makedirs(LEDGER, exist_ok=True)
     path = os.path.join(LEDGER, f"cards_{now.year}.jsonl")
@@ -248,7 +353,7 @@ def cmd_refresh(fetch=True):
                 continue
             f.write(json.dumps(dict(body, published_at=out["generated_at"], content_sha256=sha), sort_keys=True) + "\n")
             added += 1
-    print(f"ufc refresh: {len(bouts)} bouts priced by v{cur['version']}; {added} ledger rows", file=sys.stderr)
+    print(f"ufc refresh: {len(bouts)} bouts priced by v{cur['version']}; {dis} disagree with the market; {added} ledger rows", file=sys.stderr)
     return out
 
 
@@ -370,7 +475,9 @@ def cmd_report():
     bt = _jload(os.path.join(DOCS, "backtest.json")) if os.path.exists(os.path.join(DOCS, "backtest.json")) else None
     rec = _jload(os.path.join(PUB, "record.json")) if os.path.exists(os.path.join(PUB, "record.json")) else None
     cur = served()
-    md = ["# UFC weekly model report\n", f"Generated {now_iso()}. EXPERIMENTAL and outcome-graded only: no UFC closing prices are archived.\n"]
+    md = ["# UFC weekly model report\n", f"Generated {now_iso()}. EXPERIMENTAL. No timestamped UFC closing prices are archived; the 2026-10 study "
+          "(docs/model-loop/ufc/study/README.md) measures the model against an untimestamped public archive of pre-fight lines, "
+          "where it trails the closing line by a wide margin.\n"]
     md.append(f"Served: **{cur['version']}**.\n" if cur else "Served: **nothing**. The tuned Elo has not cleared the preregistered rule; no fight probability is published.\n")
     if bt:
         md.append("## Preregistered backtest\n")
@@ -386,6 +493,20 @@ def cmd_report():
         md.append("## The published record\n")
         md.append(f"{s['n']} bouts graded pregame: log loss {s['logloss']} (coin flip {s['coin_flip_logloss']}), Brier {s['brier']}, "
                   f"accuracy {s['accuracy']}. The feed kept its fighter order after the result in {s['feed_order_kept_after_result']:.0%} of them.\n")
+    cj = _jload(os.path.join(PUB, "current.json")) if os.path.exists(os.path.join(PUB, "current.json")) else None
+    if cj and cj.get("guard"):
+        g = cj["guard"]
+        dis = [b for b in cj.get("bouts", []) if (b.get("guard") or {}).get("status") == "DISAGREES"]
+        md.append("## The disagreement guard\n")
+        md.append(f"Threshold {g['threshold_pp']} points; {g['with_market']} of {len(cj.get('bouts', []))} published bouts have a market price, "
+                  f"{g['disagreements']} disagree; certified as a signal: {'yes' if g['certification'].get('certified') else 'no'} "
+                  f"({'; '.join(g['certification'].get('reasons', []))}).\n")
+        if dis:
+            md.append("| Bout | Model | Market (no vig) | Gap | Likely why |\n|---|---|---|---|---|")
+            for b in dis:
+                md.append(f"| {b['fighter_a']['name']} v {b['fighter_b']['name']} | {b['p_a']:.3f} | {b['market']['p_a']:.3f} | {b['guard']['gap_pp']:+.1f} | "
+                          + "; ".join(f["text"] for f in b["guard"]["factors"]) + " |")
+            md.append("")
     if files:
         w = _jload(os.path.join(DOCS, "weekly", files[-1]))
         md.append("## This week's research\n")
@@ -511,6 +632,7 @@ def cmd_all(fetch=True):
     if fetch:
         ingest.fetch()
         ingest.build()
+        refresh_inputs()
     if not os.path.exists(os.path.join(DOCS, "backtest.json")):
         cmd_backtest()
     cmd_refresh(fetch=False)
@@ -524,14 +646,17 @@ def cmd_all(fetch=True):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["prereg", "backtest", "refresh", "score", "research", "report", "evidence", "all"])
+    ap.add_argument("cmd", choices=["prereg", "backtest", "refresh", "price", "score", "research", "report", "evidence", "all"])
     ap.add_argument("--no-fetch", action="store_true")
     ap.add_argument("--only", default="")
+    ap.add_argument("--version", default=COMPARE_VERSION)
     a = ap.parse_args(argv)
     {"prereg": cmd_prereg, "backtest": cmd_backtest, "score": cmd_score, "report": cmd_report,
      "evidence": cmd_evidence}.get(a.cmd, lambda: None)()
     if a.cmd == "refresh":
         cmd_refresh(fetch=not a.no_fetch)
+    elif a.cmd == "price":
+        cmd_price(a.version)
     elif a.cmd == "research":
         cmd_research([c for c in a.only.split(",") if c] or None)
     elif a.cmd == "all":
