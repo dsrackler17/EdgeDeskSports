@@ -26,7 +26,10 @@ const TEAMS = require(path.join(ROOT, 'hockey', 'data', 'teams.json')).teams;
 let pass = 0, fail = 0;
 function ok(name, cond, detail) { if (cond) { pass++; return; } fail++; console.log('FAIL | ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 500) : '')); }
 const now = Date.parse(SLATE.generated_at) + 60000;
-const g = SLATE.games[0];
+/* the first game still ahead at that clock: the slate's first game can start within a minute of the build
+   (2026-10-23: built 23:59:32, MTL at CHI at 00:00:00), and the desk rightly never prices a game under way */
+const upcoming = (x) => Date.parse(x.start_utc) > now;
+const g = SLATE.games.find(upcoming);
 const nick = (abbr) => D.CLUBS[abbr].filter((n) => n.split(' ').length === 1)[0] || D.CLUBS[abbr][0];
 
 /* 1. the gate */
@@ -47,7 +50,7 @@ ok('a quoted moneyline, puck line and total are read', JSON.stringify(D.classify
 const r2 = D.answer(g.away + ' at ' + g.home + ' NHL price', SLATE, null, now);
 ok('two clubs place their game', r2 && r2.block.game_id === g.game_id && r2.block.resolved_via === 'both clubs', r2 && r2.block);
 const one = D.answer(nick(g.home) + ' moneyline', SLATE, null, now);
-ok('one club places its next game', one && one.block.game_id === SLATE.games.find((x) => x.home === g.home || x.away === g.home).game_id);
+ok('one club places its next game', one && one.block.game_id === SLATE.games.find((x) => upcoming(x) && (x.home === g.home || x.away === g.home)).game_id);
 const other = Object.keys(D.CLUBS).find((a) => a !== g.home && a !== g.away && !SLATE.games.some((x) => (x.home === g.home && x.away === a) || (x.away === g.home && x.home === a)));
 const none = D.answer(nick(g.home) + ' at ' + nick(other) + ' nhl', SLATE, null, now);
 ok('two clubs that do not meet are said, never another game priced', none && none.block.game_id == null && /no upcoming game between/.test(none.text), none && none.text);

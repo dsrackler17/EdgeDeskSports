@@ -1,10 +1,10 @@
 # Changelog
 
-## 2026-10-24 — Signal Center: the first run stores, and the season's history is found point in time
+## 2026-10-24 — Signal Center: the season's history, found point in time
 
-The first production runs after the schema was applied evaluated 367 signals and stored none: every write failed with `function digest(bytea, unknown) does not exist`. Signal Center showed "No evaluation has completed yet" and an empty feed. This fixes that, and backfills the season from the records EdgeDesk already keeps. Each signal is dated when it happened and marked as found later.
+The first production runs stored nothing: every write failed on pgcrypto's `digest()`, which Supabase keeps off the doors' search path. #737 fixed that with core `sha256()`, and the 00:25 UTC run (live, every sport) stored 371 signals and published 166. Two problems remained. That run dated every signal by itself, including changes from days earlier. And it read only part of what EdgeDesk records. This backfills the season from the records EdgeDesk already keeps, each signal dated when it happened and marked as found later, and corrects the rows already stored.
 
-- **The write fix** (`supabase/signal_center.sql`, mirrored): Supabase keeps pgcrypto in the `extensions` schema, which the doors' pinned `search_path` does not reach, so `digest()` failed there. The hashes now use core `sha256()`, the same lesson `supabase/games_social.sql` records. The SQL suite now places pgcrypto in `extensions` as Supabase does, so it reproduced the production failure before the fix. A static check refuses any pgcrypto call.
+- **No pgcrypto call can come back** (`tools/signal_center/sql.test.js`): a static check refuses `digest()` and its relatives, comments aside.
 - **More history from the existing records** (`tools/signal_center/sources.js`):
   - Imported performance-ledger rows were dropped because their `capture.captured_at` is null. They are now read at their `recorded_at`, taken from the record's git history. This affects 70 NBA, 162 NHL and 929 CFB rows.
   - NFL and CFB forecasts from the ledger now count back to 2026-09-11, before game research began (2026-10-16). Each is its own series, never paired with a research snapshot.
@@ -17,10 +17,24 @@ The first production runs after the schema was applied evaluated 367 signals and
   - A live run publishes verified history (expired or superseded) and, through the new job door `sc_publish_pending`, what was stored while in shadow. Holds stick, and backfilled signals never become notices.
   - The feed sorts and filters by `signal_at`, and gains the `timeline` scope (latest per subject, current and past). The pulse counts by `signal_at` and tells an operator in shadow mode that it includes unpublished signals.
   - A disagreement whose convergence is on record is no longer offered for another (`sc_prior_divergences`). Previously every later quote made a new convergence card.
+  - **Rows already stored** (the 371 from 00:25 UTC) are dated by the same 180-minute rule when this file is applied. They are placed in record time: in each subject, outcome and event, older active or expired signals are superseded by the newest, with an audit event.
+  - One placement rule for what is still unpublished, `sc_place_shadow` (verified, a live sport, label ≥ Routine, not withdrawn, history included). It runs on #737's switch to live (`sc_promote_shadow`) and on every live run (`sc_publish_pending`).
+- **The scoring specification is `sc_importance_v2`**: v1 plus the backfill rule. The new id re-versions each stored signal once (reason *methodology*), so the 00:25 UTC rows are re-scored by the rule their backfilled siblings follow.
 - **The terminal seat** lands on the timeline. A backfilled card reads "recorded <time> · found in the ledger later". An operator in shadow mode sees the unpublished signals by default, as the status bar already said.
 - **Audit:** every number in the 745 signals of a dry run (2026-10-24) was re-derived from the raw files by an independent checker (its own de-vig and exact-decimal rounding). It found 0 issues: values, orientation, source citation, time order, pregame, and that no comparison read a record stamped after its board. This audit caught one bug before release: replayed disagreements had cited the research file for ledger snapshots.
 
-Tests: `engine.test.js` 125, `registry.test.js` 186, `ui.test.js` 96, `graphics.test.js` 268, `sql.test.js` 165, `worker.test.js` 36, `graphics.e2e.js` 200, `ui.e2e.js` 123, `pages.e2e.js` 58; navigation 263 + 172.
+Tests: `engine.test.js` 125, `registry.test.js` 186, `ui.test.js` 96, `graphics.test.js` 268, `sql.test.js` 184 (including the upgrade of rows stored before these columns), `worker.test.js` 36, `graphics.e2e.js` 200, `ui.e2e.js` 123, `pages.e2e.js` 58; navigation 263 + 172.
+
+## 2026-10-24 — FBS vs FCS: the level-map repair, tested as registered and rejected
+
+The CFB engine prices FBS-vs-FCS favourites 7.8 points short of the close (H-003). The first repair, a map from the engine's margin to the real (uncapped) final, was pre-registered as H-014 (`docs/market-intelligence/hypotheses.json`, committed before any fit) and run once (`npm run cfb:fcs:uncapped`, `football/cfb_p4/research/fcs_uncapped.js`).
+
+- **Rejected.** On 1,072 FBS-vs-FCS games, 2016–2025, each season fitted only on earlier ones, the affine map lowers MAE against real finals by 0.10 pts [−0.23, +0.02] (6 of 10 seasons); the shift by 0.08. The bias goes from 2.07 to 0.43 points but the error barely moves. The registered bar was an interval below −0.5.
+- **What it showed.** The historical shortfall is about 2 points and has risen (2024 3.4, 2025 5.1, about 8 live in 2026). The gap to the market is ordering, not level: on games with a close, the engine's MAE is 15.1 against the close's 12.1. The FCS bridge's own 2026 walk-forward, re-scored on real finals, lowers MAE by 0.95 pts [−1.46, +0.29], where its capped verdict saw 0.02. `docs/market-intelligence/AUDIT.md` is corrected (it had called per-team ratings the wrong fix).
+- **Recorded, never applied.** `football/cfb_p4/fcs_margin_map.js` holds the final fit with `survived: false, promoted: false`; nothing reads it into a price. Evidence: `football/validation/fcs_uncapped_cfb.json`; report: `docs/market-intelligence/FCS_UNCAPPED.md`.
+- **Forward tests.** H-015 (the map, if it had survived) and H-016 (a frozen +4.27-point shift, the 2024–2025 mean shortfall, designed after seeing the season means and so tested only on games after its registration) are judged by `tools/market_intel/validation_report.js` as games are played.
+
+Tests: `node tools/market_intel/fcs_experiment.test.js` (19): no fold reads a later season, the committed evidence for H-014 reproduces, the map is never priced, and the forward tests sign the FBS side correctly home or away.
 
 ## 2026-10-23 — Signal Center: what changed in EdgeDesk's research, why, and whether the evidence supports it
 

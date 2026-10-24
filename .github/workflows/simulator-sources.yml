@@ -15,8 +15,9 @@
 #   - MLB's 2026 standings and postseason games from its Stats API, its
 #     postseason, tiebreaker and extra-inning pages, the 2026 Official
 #     Baseball Rules
-#   - Kalshi's futures series for each sport (fee_type, fee_multiplier), every
-#     open market's full settlement rules and their sha256, the fee schedule
+#   - Kalshi's futures series for each sport, college football included
+#     (fee_type, fee_multiplier), every open market's full settlement rules
+#     and their sha256, the fee schedule
 # One job per sport, so each log stays readable. Runs on a pull request that
 # changes it, or by hand.
 name: Simulator source check
@@ -42,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sport: [nfl, nhl, nba, mlb]
+        sport: [nfl, nhl, nba, mlb, cfb]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

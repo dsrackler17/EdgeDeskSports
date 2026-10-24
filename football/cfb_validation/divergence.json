@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_rating_divergence_v1",
- "generated_at": "2026-10-23T23:08:05.537Z",
+ "generated_at": "2026-10-24T00:08:04.316Z",
  "names": {
   "current": {
    "key": "CURRENT_FBS_POWER_RATING",
@@ -36,8 +36,8 @@
   "scale_offset": -5.036
  },
  "median_abs": 3.818,
- "p90_abs": 7.632,
- "max_abs": 14.911,
+ "p90_abs": 7.633,
+ "max_abs": 14.91,
  "bands": {
   "basis": "this build’s own distribution: |divergence| p50 → ELEVATED, p90 → LARGE",
   "elevated": 3.82,
@@ -179,15 +179,15 @@
    "key": "army",
    "team": "Army",
    "conference": "American",
-   "current": -6.01,
+   "current": -6,
    "state": 0.08,
    "carried": 2.82,
    "this_season": -4.02,
    "prior_weight": 0.6,
    "games_played": 6,
-   "difference": 6.09,
-   "rating_state_divergence": -11.13,
-   "abs_divergence": 11.13,
+   "difference": 6.08,
+   "rating_state_divergence": -11.12,
+   "abs_divergence": 11.12,
    "band": "LARGE",
    "flagged": true,
    "why": [
@@ -454,15 +454,15 @@
    "key": "army",
    "team": "Army",
    "conference": "American",
-   "current": -6.01,
+   "current": -6,
    "state": 0.08,
    "carried": 2.82,
    "this_season": -4.02,
    "prior_weight": 0.6,
    "games_played": 6,
-   "difference": 6.09,
-   "rating_state_divergence": -11.13,
-   "abs_divergence": 11.13,
+   "difference": 6.08,
+   "rating_state_divergence": -11.12,
+   "abs_divergence": 11.12,
    "band": "LARGE",
    "flagged": true,
    "why": [
@@ -1716,7 +1716,7 @@
    "why": [
     "The pricing state is 60% the long-run trained state (+0.2) and 40% this season’s own track (−10.9): the learned prior-weight curve keeps 60% on the long-run state at 7 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 68% (+4.5 from 7 games), with +4.7 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +2.2 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "The current rating includes a roster/talent term of +2.1 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−5.0 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +4.0."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
@@ -2912,8 +2912,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -3.63,
-   "rating_state_divergence": -1.4,
-   "abs_divergence": 1.4,
+   "rating_state_divergence": -1.41,
+   "abs_divergence": 1.41,
    "band": "NORMAL",
    "flagged": false,
    "why": [
@@ -3467,7 +3467,7 @@
   }
  ],
  "state_source": "football/cfb_p4 engine replay (football/fbs/build_coverage.js buildState): trained seeds through 2025, 510 completed games absorbed",
- "current_source": "football/rating/current.json (2026-10-23T22:09:46.852Z, week 7)",
+ "current_source": "football/rating/current.json (2026-10-23T23:58:38.053Z, week 7)",
  "season": 2026,
  "unseeded": [
   {

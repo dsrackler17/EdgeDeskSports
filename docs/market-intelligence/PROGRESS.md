@@ -1,7 +1,7 @@
 # Progress — market intelligence and model validation
 
-**Last checkpoint:** 2026-10-23, branch `claude/exciting-dijkstra-st8gr0` (from `main` at `e4c20619`).
-**Current phase:** Phases 1–4 done as far as the data allows; Phases 5, 7 and 8 have their foundations; Phase 6 is held back by evidence (no finding kind has shown value yet). Resume from [`NEXT_STEPS.md`](NEXT_STEPS.md) #1.
+**Last checkpoint:** 2026-10-24, branch `claude/exciting-dijkstra-st8gr0` (restarted from `main` at `c4daff4b` after #728 merged).
+**Current phase:** Phase 5, the FBS-vs-FCS repair. Stage 1 (a level map) was run as pre-registered and REJECTED (H-014); stage 2 (per-team FCS ratings on uncapped finals) is next. Resume from [`NEXT_STEPS.md`](NEXT_STEPS.md) #1.
 
 ## Milestones completed
 
@@ -75,9 +75,10 @@ Not run: browser end-to-end suites (no UI changed), the SQL suites of workflows 
 | H-006 CFB win probability beats the no-vig close | Brier +0.016 [0.009, 0.028] (worse) | REJECTED |
 | H-007 CFB win probability overconfident | slope 0.97 [0.68, 1.22] | REJECTED |
 | H-008 NFL disagreement informs the final | 0.57 [−0.01, 0.99] | REJECTED (exploratory; borderline) |
-| H-002, H-004, H-009–H-013 | forward windows from 2026-10-24 | INSUFFICIENT_EVIDENCE (no games yet) |
+| H-014 FBS-vs-FCS level map (shift or affine), walk-forward 2016–2025 | affine −0.10 pts [−0.23, +0.02], n 1,072, 6 of 10 seasons; shift −0.08 [−0.18, +0.02]; the bias goes 2.07 → 0.43 but the error does not move | REJECTED (pre-registered 2026-10-24T00:13:37Z; meets the repo's looser v12 bar, not the registered one) |
+| H-002, H-004, H-009–H-013, H-015, H-016 | forward windows from 2026-10-24 | INSUFFICIENT_EVIDENCE (no games yet; H-015 needs a surviving map and has none) |
 
-**Accepted improvements:** none to any model (no model was changed). **Rejected improvements:** none proposed yet; the FCS bridge's own "not demonstrated" verdict stands, and this audit adds that it was judged on the wrong (capped) metric.
+**Accepted improvements:** none to any model (no model was changed). **Rejected improvements:** the FBS-vs-FCS level map (H-014, `football/cfb_p4/fcs_margin_map.js` records it with `survived: false`). The FCS bridge's own "not demonstrated" verdict was judged on capped finals; on real finals its 2026 rows show −0.95 pts [−1.46, +0.29], so it is the next experiment, not a closed one.
 
 ## Blocked or waiting
 
@@ -88,4 +89,4 @@ Not run: browser end-to-end suites (no UI changed), the SQL suites of workflows 
 
 ## To resume
 
-Read `NEXT_STEPS.md`, run `npm run market-intel:test` (expect 64 + 49 + 16) and `npm run market-intel:report`, and check the forward hypotheses in `VALIDATION.md`.
+Read `NEXT_STEPS.md`, run `npm run market-intel:test` (expect 64 + 49 + 16 + 19) and `npm run market-intel:report`, and check the forward hypotheses in `VALIDATION.md`.

@@ -11,6 +11,7 @@
 | [`VALIDATION.md`](VALIDATION.md), `validation.json` | model vs market on every committed live ledger, with intervals; hypotheses judged | `npm run market-intel:validate` |
 | [`hypotheses.json`](hypotheses.json) | the pre-registered hypotheses (rejected ones stay) | hand, before a test runs |
 | [`MARKET_INTEL_BACKTEST.md`](MARKET_INTEL_BACKTEST.md), `market_intel_backtest.json` | what each market-intelligence finding was worth on 2026 football | `npm run market-intel:backtest` |
+| [`FCS_UNCAPPED.md`](FCS_UNCAPPED.md), `football/validation/fcs_uncapped_cfb.json` | the FBS-vs-FCS repair experiment (H-014) | `npm run cfb:fcs:uncapped` |
 | `model_registry.json` | every published model identity, label problems, live same-game comparisons | `npm run market-intel:registry` |
 | [`PROGRESS.md`](PROGRESS.md) | what is done, tested, open and blocked; where to resume | hand, each checkpoint |
 | [`NEXT_STEPS.md`](NEXT_STEPS.md) | the ranked next actions (Phase 11 scoring) | hand |
@@ -53,7 +54,7 @@ Status words: **DONE** (acceptance criteria passed, tests executed), **PARTIAL**
 | 3 Market Intelligence engine | PARTIAL | 9 kinds, written eligibility, explanations from computed numbers only, no-myth guard, deterministic ids, tests | `lib/edgedesk_market_intel.js`, 49 tests. Gap: no Supabase store yet (Phase 6) |
 | 3.4 Reference quality | BLOCKED | needs multi-book timestamped history | paid capture paused to 2026-11-01; free data is one book |
 | 4 Validation lab | DONE (library) / PARTIAL (data) | point-in-time benchmark, walk-forward folds with embargo and a separation check, clustered intervals, multiplicity, pre-registration, rejected hypotheses kept | `lib/edgedesk_validation_lab.js`, 64 tests; `hypotheses.json`. Data: one partial live season |
-| 5 Model improvement | PARTIAL | hypothesis → baseline → isolated change → walk-forward → decision → record | FBS-vs-FCS cause found (`AUDIT.md` §2); the repair experiment is NEXT_STEPS #1 |
+| 5 Model improvement | PARTIAL | hypothesis → baseline → isolated change → walk-forward → decision → record | FBS-vs-FCS stage 1 run as pre-registered and REJECTED (H-014, [`FCS_UNCAPPED.md`](FCS_UNCAPPED.md)); the record stays (`football/cfb_p4/fcs_margin_map.js`, `survived: false`); stage 2 is NEXT_STEPS #1 |
 | 6 Signal Center integration | BLOCKED (by evidence) | only validated findings reach subscribers | no finding kind has shown value beyond data warnings; integration point designed (`AUDIT.md` §6) |
 | 6.1 Graphics | NOT STARTED | — | D-7 (the "EDGE" headline) needs an owner decision first |
 | 7 Replay | PARTIAL (foundation) | point-in-time reconstruction, result withheld, coverage windows, no future leakage | `lib/edgedesk_replay.js`, 16 tests (every committed football game replayed, 0 leaks). Gap: no UI; history from 2026-09-11 (forecasts) / 2026-10-03 (quotes) only |

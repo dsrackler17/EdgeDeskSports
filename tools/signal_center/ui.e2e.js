@@ -259,7 +259,7 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
       chk('Coverage shows every sport and an honest blocked state', /NFL/.test(cov) && /College football/.test(cov) && /MLB/.test(cov) && /blocked/i.test(cov), cov.slice(0, 200));
       await page.click('#scHost [data-sc-view="method"]');
       await page.waitForSelector('#scHost .sc-tbl', { timeout: 15000 });
-      chk('Method prints the scoring specification from the engine (loaded on demand)', /sc_importance_v1/.test(await page.textContent('#sc-body')) && await page.evaluate(() => !!window.EDSignalEngine));
+      chk('Method prints the scoring specification from the engine (loaded on demand)', /sc_importance_v2/.test(await page.textContent('#sc-body')) && await page.evaluate(() => !!window.EDSignalEngine));
       await page.click('#scHost [data-sc-view="alerts"]');
       await page.waitForSelector('#scHost form[data-sc-prefs]', { timeout: 10000 });
       await page.check('#scHost input[name="sports"][value="nfl"]');

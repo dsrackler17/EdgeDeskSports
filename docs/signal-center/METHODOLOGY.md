@@ -2,8 +2,10 @@
 
 The rules `lib/edgedesk_signal_engine.js` enforces, in the order a candidate
 meets them. The engine version is `edgedesk_signal_engine/1`, the payload schema
-`edgedesk_signal_v1`, and the scoring specification `sc_importance_v1`
-(adopted 2026-10-23). The terminal's **Method** view prints the specification
+`edgedesk_signal_v1`, and the scoring specification `sc_importance_v2`
+(adopted 2026-10-24: `sc_importance_v1` of 2026-10-23 plus the backfill rule in §3;
+the new id re-versions every signal stored under v1 once, with reason
+*methodology*). The terminal's **Method** view prints the specification
 from the engine itself, so the page and the code cannot disagree.
 
 ## 1. Only comparable numbers
@@ -111,7 +113,7 @@ against `sim_team_results` before storing it.
 - Versions, events and Model DNA snapshots are append-only. The database refuses updates and deletes, so the
   point-in-time history is real.
 
-## 6. The importance score (`sc_importance_v1`)
+## 6. The importance score (`sc_importance_v2`)
 
 > A transparent, rules-based ranking of what to read first. It is not a probability, it has not been validated
 > against outcomes, and it says nothing about whether a bet would be profitable.
