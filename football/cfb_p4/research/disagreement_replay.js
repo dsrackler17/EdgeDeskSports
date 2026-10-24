@@ -361,6 +361,18 @@ var outFile = path.join(outDir, 'disagreement_replay.jsonl');
 var fd = fs.openSync(outFile, 'w');
 var nOut = 0, nRefused = 0;
 
+function matchupPairs(mH, mA) {
+  var o = {}, any = false;
+  [[mH, 1], [mA, -1]].forEach(function (x) {
+    ((x[0] && x[0].detail) || []).forEach(function (d) {
+      if (!d.available || typeof d.points !== 'number' || !isFinite(d.points)) return;
+      o[d.name] = (o[d.name] || 0) + x[1] * d.points; any = true;
+    });
+  });
+  if (!any) return null;
+  Object.keys(o).forEach(function (k) { o[k] = r3(o[k]); });
+  return o;
+}
 function comp(out, key) {
   var c = (out.contributions || []).filter(function (x) { return x.key === key; })[0];
   return c ? { pts: r3(c.points), avail: !!c.available } : { pts: null, avail: false };
@@ -439,6 +451,9 @@ freezes.forEach(function (T) {
       c_avail: { matchup: comp(out, 'matchup').avail, schedule: comp(out, 'schedule').avail },
       matchup_home_off: mH && mH.points && mH.points.available ? r3(mH.points.value) : null,
       matchup_away_off: mA && mA.points && mA.points.available ? r3(mA.points.value) : null,
+      /* the matchup term by pairing, home edge minus away edge, so each of the
+         learned pairings can be tested on its own (research/loto.js) */
+      mpairs: matchupPairs(mH, mA),
       /* the rating term, taken apart: the long-term carried state vs this
          season's own fresh track, and the learned blend weight between them */
       h_carried: r3(H.home_carried), h_fresh: r3(H.home_this_season),
