@@ -3,6 +3,16 @@
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
 
+grant select on public.portfolio_platform_registry, public.portfolio_sync_runs to authenticated;
+grant select, insert, update, delete on public.portfolio_platform_registry, public.portfolio_sync_runs to service_role;
+
+revoke all on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events from public;
+do $$ begin
+  execute 'revoke all on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events from anon, authenticated';
+  execute 'grant select, insert, update, delete on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events to service_role';
+  execute 'grant usage on sequence portfolio_private.connector_events_id_seq to service_role';
+end $$;
+
 -- Service functions: the service role only. Reader functions: signed-in readers.
 do $$
 declare f record;

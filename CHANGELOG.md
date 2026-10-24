@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-10-24 — Import picks: screenshots or pasted bet history, read by Claude, checked by the reader
+
+Readers on books with no history export (Novig, ProphetX, Kalshi, DK Predictions) entered picks one at a time. Portfolio → Import → **Screenshots or pasted text** (also on + Add position and the empty book) now reads a batch at once. The reader then checks every row before anything is saved. `docs/bet-import.md` is the design.
+
+- **No new picks table.** Confirmed rows go through the Portfolio's own staging and commit (`portfolio_import_commit`) into `portfolio_positions`, under the reader's token and the same row level security.
+- **Labels and dedupe.** Imported rows are labelled `IMPORT_SCREENSHOT` / `IMPORT_PASTE`, upper case like the column's other values. A pick already saved (same platform, event, market, selection, price, stake and placed minute) is skipped. The page also says so before Confirm.
+- **The reader:** `supabase/functions/parse_bet_import` sends the screenshots or text to the Anthropic Messages API and asks for strict JSON.
+  - JWT verified; the key is a Supabase secret.
+  - Limits: ≤ 6 images and 4.5 MB each, ≤ 40,000 characters.
+  - A per-reader allowance, claimed atomically in the database, that fails closed.
+  - The shared core (`lib/edgedesk_bet_import_core.js`) checks every bet on the server, and again in the browser on every edit. A failing bet is flagged, never dropped. Images are never stored or logged.
+- **The review table:**
+  - every field is editable, and fields the model was unsure of are highlighted;
+  - a row with an error cannot be confirmed;
+  - each pick is matched to an EdgeDesk game from `public.signals`, and an unmatched one says so and offers the games;
+  - a shared city ("New York") is evidence for neither team.
+- **Screenshots** are scaled and re-encoded as JPEG on the device, and tall scrolling captures are cut into overlapping tiles.
+- **Prices both ways.** `price_display` holds the price as shown. `price_american` is derived for both instruments: 54¢ = −117, 40¢ = +150. Kalshi and DK Predictions picks become contract fills: a sale is a BUY and a SELL, and a loss resolves to the other side.
+- **CLV:** a matched single carries its game and capture key. A new 15-minute job (`portfolio_svc_attach_import_close`) puts the close on the journal: the reader's book's last tick before the start, else EdgeDesk's own close.
+- **Existing files:**
+  - `portfolio.sql` carries the widened insert policies (the same owner rule plus the two values).
+  - The sportsbook and Kalshi sync adoption lists (`portfolio_aggregator.sql`, `portfolio_connect.sql`) adopt an imported pick instead of double-counting it once a sync is switched on.
+  - The parts are regenerated.
+- **Deploy:** `.github/workflows/deploy-bet-import.yml` runs the tests, then the SQL, then the function with JWT verification on.
+- **Read on choosing, and kept up to date** (from a reader's DraftKings Predictions "Trades" screenshots):
+  - **Detect automatically** is the default: the model names the platform from the screenshot, and each row's platform can be changed in review. A position priced as a percentage or in cents is DraftKings Predictions / FanDuel Predicts, not the sportsbook.
+  - Reading starts as soon as screenshots are chosen; **Add more screenshots** appends to the same review.
+  - Percent prices, "Bought" (cost), "Paid" (payout) and profit boosts are read; a pick that names its outcome is YES on it; team names are written in full; header balances are ignored.
+  - Rows with nothing to check (valid, no warning, nothing unsure, game settled) arrive confirmed. What was worked out is shown as information, not as a problem.
+  - **Contracts, exactly:** a 2-decimal price takes contracts to 4 decimals (the database's whole-millionth rule), the remainder of the cost is the fee, and a settled contract's payout is what it paid. Under 202.5 at 54%, $24.64, won $48.84 boosted → +$24.20. Over and Under of one game are separate contracts.
+  - **Automatic update:** a pick saved Open is settled in place (one PATCH under the reader's RLS) when a later screenshot shows its result; a pick settled another way is left alone and said so; nothing is ever inserted twice.
+  - `tools/portfolio/bet_import_live.js`: an opt-in check of real screenshots against the real API with the operator's own key (never in CI).
+
+Tests:
+- `node tools/portfolio/bet_import.test.js` (100): the core, the shipped function against a mocked network, the review table, and the DK Predictions fixture (`tools/portfolio/fixtures/dk_predictions_trades.json`, transcribed; no image committed).
+- `node tools/portfolio/bet_import_sql.test.js` (76): `bet_import.sql` with the browser's own staged rows through the real commit; dedupe, RLS, the allowance, games and closes; the DK cards' P&L and the Open → Won update under RLS.
+- `node tools/portfolio/bet_import.e2e.js` (41): Chromium, the real migrations, 1280 px and 390 px; the DK journey with no platform chosen, pre-confirmed rows, an appended screenshot and an in-place update.
+
+All three are in `portfolio-tests.yml`. The existing Portfolio suites stay green: `portfolio:test`, all eleven `portfolio:sql` suites (814 checks), navigation, integrity and guide. One UI assertion changed on purpose: the empty book lists "Import picks" between the CSV import and recording by hand.
+
 ## 2026-10-24 — The landing fixes reach browsers that already had the page: new ?v= stamps, and a guard
 
 #749 removed the DATA INCOMPLETE chips from the landing page's Today's games card, but phones kept showing them. `lib/edgedesk_home_free.js` changed while `index.html` still loaded it as `?v=20261008a`, so a returning browser kept running its cached copy. #747 did the same to `lib/edgedesk_pricing.js` (`?v=20261004a`), whose FEATURES list the terminal's paywall prints.

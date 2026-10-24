@@ -54,7 +54,7 @@ begin
            -- a bet the reader typed or imported, the book's own bet id from its file included; never one a
            -- provider already adopted (its id now in a provider's namespace: 'juicereel:…', 'sharpsports:…')
            and (x.external_position_id is null or x.external_position_id !~ '^[a-z][a-z0-9_]{1,30}:')
-           and x.source in ('MANUAL', 'CSV', 'EDGEDESK') and x.stake = v_stake
+           and x.source in ('MANUAL', 'CSV', 'EDGEDESK', 'IMPORT_SCREENSHOT', 'IMPORT_PASTE') and x.stake = v_stake
            and ((v_odds is not null and x.odds_american = v_odds) or (v_odds is null and x.odds_american is null and x.odds_decimal = v_dec))
            and (x.line is null or v_line is null or x.line = v_line)
            and x.placed_at between v_placed - interval '15 minutes' and v_placed + interval '15 minutes';

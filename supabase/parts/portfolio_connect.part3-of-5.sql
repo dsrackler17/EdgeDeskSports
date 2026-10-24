@@ -32,7 +32,8 @@ begin
       perform set_config('portfolio.bulk_fills', 'on', true);
       did_adopt := false;
       -- RECONCILIATION. A position the reader recorded by hand (or from
-      -- EdgeDesk) before connecting, of exactly this contract — the same
+      -- EdgeDesk, or imported from a screenshot or pasted text —
+      -- supabase/bet_import.sql) before connecting, of exactly this contract — the same
       -- platform and the same normalized event, market and side — with no
       -- platform id yet: the platform's record ADOPTS it instead of arriving
       -- as a second copy. Its decision record (journal, snapshot, path)
@@ -42,7 +43,7 @@ begin
                        and external_position_id = p->>'external_position_id') then
         select array_agg(x.id order by x.placed_at) into adopt from public.portfolio_positions x
          where x.user_id = a.user_id and x.platform = a.platform and x.platform_type = 'PREDICTION_MARKET' and x.external_position_id is null
-           and x.source in ('MANUAL', 'EDGEDESK')
+           and x.source in ('MANUAL', 'EDGEDESK', 'IMPORT_SCREENSHOT', 'IMPORT_PASTE')
            and x.contract_key = public.portfolio_contract_key(a.platform,
                  left(coalesce(nullif(btrim(p->>'event_name'), ''), p->>'external_position_id'), 200),
                  left(coalesce(nullif(btrim(p->>'market_name'), ''), nullif(btrim(p->>'event_name'), ''), p->>'external_position_id'), 200),
@@ -203,25 +204,4 @@ begin
    where a.connection_type = 'API' and a.status in ('CONNECTED', 'SYNCING', 'ERROR') and coalesce(a.next_sync_at, now()) <= now()
      and not exists (select 1 from public.portfolio_sync_runs r where r.platform_account_id = a.id and r.status = 'RUNNING' and r.started_at > now() - interval '15 minutes')
    order by a.next_sync_at nulls first limit greatest(1, least(p_limit, 200));
-end $$;
-
--- Disconnect: the credential is deleted (not merely flagged), the account
--- reads DISCONNECTED and syncs no more. History stays unless the reader asks
--- for it to go; then the synced positions and their transactions are deleted
--- with the account.
-create or replace function public.portfolio_svc_disconnect(p_account uuid, p_delete_history boolean default false)
-returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-declare cred int; pos int := 0;
-begin
-  perform public.portfolio_svc_assert();
-  delete from portfolio_private.platform_credentials where platform_account_id = p_account;
-  get diagnostics cred = row_count;
-  if p_delete_history then
-    delete from public.portfolio_positions where platform_account_id = p_account and source = 'SYNC';
-    get diagnostics pos = row_count;
-    delete from public.platform_accounts where id = p_account;
-  else
-    update public.platform_accounts set status = 'DISCONNECTED', next_sync_at = null, metadata = metadata - 'credential' where id = p_account;
-  end if;
-  return jsonb_build_object('credential_deleted', cred > 0, 'positions_deleted', pos);
 end $$;

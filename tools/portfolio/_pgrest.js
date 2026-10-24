@@ -9,8 +9,8 @@
    the derive trigger, the composite keys and the import functions are the
    real ones, not a JavaScript imitation that could agree with itself.
 
-   Only what the page uses: select= (columns, col::text casts, *), eq. / is.
-   filters, order=a.desc,b.asc, limit, offset; POST (one row or many, from
+   Only what the page uses: select= (columns, col::text casts, *), eq. / is. /
+   in.(…) filters, order=a.desc,b.asc, limit, offset; POST (one row or many, from
    JSON, defaults kept for absent keys) with Prefer return=representation;
    PATCH and DELETE by filter; POST /rpc/<fn> with named arguments (an array
    back from a set-returning function, a value from any other). Errors
@@ -32,8 +32,15 @@ function where(params) {
   const out = [];
   for (const [k, v] of params) {
     if (['select', 'limit', 'offset', 'order'].indexOf(k) >= 0) continue;
-    const m = /^(eq|neq|is)\.(.*)$/.exec(v);
+    const m = /^(eq|neq|is|in)\.(.*)$/.exec(v);
     if (!m) throw new Error('unsupported filter ' + k + '=' + v);
+    if (m[1] === 'in') {
+      const vals = /^\((.*)\)$/.exec(m[2]);
+      if (!vals) throw new Error('unsupported filter ' + k + '=' + v);
+      const list = vals[1] === '' ? [] : vals[1].split(',').map((x) => lit(x.replace(/^"|"$/g, '')));
+      out.push(list.length ? ident(k) + ' in (' + list.join(', ') + ')' : 'false');
+      continue;
+    }
     if (m[1] === 'is') out.push(ident(k) + (m[2] === 'null' ? ' is null' : m[2] === 'true' ? ' is true' : m[2] === 'false' ? ' is false' : ' is not null'));
     else out.push(ident(k) + (m[1] === 'eq' ? ' = ' : ' <> ') + lit(m[2]));
   }

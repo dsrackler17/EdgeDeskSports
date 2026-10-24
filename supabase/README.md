@@ -240,6 +240,18 @@ The Portfolio's whole database in one file (pasted as `parts/portfolio.part1-of-
 - **Re-running it on a live site cannot deadlock a reader's save.** It takes its tables with `NOWAIT` and retries without holding any.
 - **The report** has 15 rows. Tested against a real PostgreSQL by `tools/portfolio/portfolio_sql.test.js`, and in Chromium by `tools/portfolio/portfolio_ui.e2e.js`.
 
+### `bet_import.sql` — Screenshot / Paste Import onto the reader's own picks
+
+Run after `portfolio.sql` (required), `portfolio_journal.sql` and `portfolio_decision.sql` (optional: the close job needs the journal). Applied by `.github/workflows/deploy-bet-import.yml`, or pasted whole; mirrored in `migrations/20261024160000_bet_import.sql`. No new picks table: imported picks are `portfolio_positions` rows, through the existing import pipeline. `docs/bet-import.md` is the narrative.
+
+- **`IMPORT_SCREENSHOT` / `IMPORT_PASTE`** join `source` on positions and fills. The commit writes `CSV`, and `portfolio_import_source()` relabels at insert by the import's importer (`screenshot_v1` / `paste_v1`). The insert policies are the same owner rule with the two values added; `portfolio.sql` carries identical text, so re-running either leaves the same policy.
+- **`price_display`** (as shown), **`price_american`** (derived by trigger; a contract's average price as a probability: 54¢ = -117) and **`market_sig_key`** (the matched `signals.sig_key`) on `portfolio_positions`. `portfolio_bet_import_finalize(import)` (invoker) copies them, and the game, from the reviewed rows after the commit.
+- **`bet_import_events()` / `bet_import_markets()`**: event identity and capture keys from `public.signals`, never a price; signed-in readers only; nothing when `signals` is absent.
+- **`portfolio_svc_attach_import_close()`** (the service role, pg_cron every 15 minutes): the journal close for matched imported singles — the reader's book's last tick before the start (`book_quote_ticks`), else EdgeDesk's own close — as `EDGEDESK_CAPTURE`, once.
+- **The allowance**: `bet_import_policy` (one row: per hour 20, per day 60, images per day 200, all readers per day 3,000, `enabled`) and `bet_import_usage` (counts, sizes and tokens per request, never an image; readers read their own). `bet_import_claim()` / `bet_import_settle()` (definer, `auth.uid()` only, an advisory lock per reader).
+
+The report has 10 rows. Tested against a real PostgreSQL with the browser's own staged rows by `tools/portfolio/bet_import_sql.test.js`.
+
 ### `portfolio_aggregator.sql` — sportsbook history through a sync provider (SharpSports BetSync retired; tables kept)
 
 **SharpSports was retired on 2026-10-14 (cost).** This file is unchanged and stays applied. Its ingest, settlement history and refresh records are provider-independent and are what the next provider uses. Its webhook and bettor tables keep whatever was recorded. See `docs/sportsbook-sync-providers.md`.
