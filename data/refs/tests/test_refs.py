@@ -3,6 +3,7 @@ synthetic season (no download). Needs pandas and pyarrow.
 
   python3 -m unittest discover -s data/refs/tests -v
 """
+import csv
 import json
 import os
 import subprocess
@@ -142,8 +143,11 @@ class CommittedTest(unittest.TestCase):
     def test_the_committed_csvs_pass_the_seed_checks(self):
         r = subprocess.run([sys.executable, "-I", UPSERT, "--dry-run"], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("nfl_ref_assignments: 677 rows", r.stdout)
-        self.assertIn("nfl_ref_game_penalties: 663 rows", r.stdout)
+        # every committed row is read; the refs job appends rows after each final, so count the files rather than pin a number
+        for table, name in (("nfl_ref_assignments", "ref_assignments.csv"), ("nfl_ref_game_penalties", "ref_game_penalties.csv")):
+            with open(os.path.join(REFS, name), encoding="utf-8") as fh:
+                rows = sum(1 for _ in csv.reader(fh)) - 1
+            self.assertIn(f"{table}: {rows} rows", r.stdout)
 
 
 class SeedFileTest(unittest.TestCase):

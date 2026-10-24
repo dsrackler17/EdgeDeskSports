@@ -1,0 +1,637 @@
+{
+ "schema": "edgedesk_fcs_uncapped_validation_v1",
+ "version": "cfb_fcs_uncapped_v1",
+ "generated_from": [
+  "docs/model-loop/cfb/predictions.csv.gz",
+  "model_loop/adapters/cfb/baselines/cfb_p4_replay_predictions.csv.gz",
+  "record/football/cfb_2026.json"
+ ],
+ "hypothesis": "H-014",
+ "registered_at": "2026-10-24T00:13:37Z",
+ "lab": "edgedesk_validation_lab_v1",
+ "data": {
+  "games": 1622,
+  "by_season": {
+   "2012": 106,
+   "2013": 110,
+   "2014": 107,
+   "2015": 105,
+   "2016": 113,
+   "2017": 98,
+   "2018": 112,
+   "2019": 114,
+   "2020": 34,
+   "2021": 117,
+   "2022": 120,
+   "2023": 118,
+   "2024": 121,
+   "2025": 125,
+   "2026": 122
+  },
+  "skipped": {
+   "before the replay (2012)": 369,
+   "no replay prediction": 8
+  },
+  "sigma_implied": 1620
+ },
+ "folds": {
+  "test_seasons": "2016-2025",
+  "expanding_from": 2012,
+  "separated": true,
+  "problems": 0
+ },
+ "seasons": [
+  {
+   "season": 2016,
+   "n_train": 428,
+   "n_test": 113,
+   "fit": {
+    "C1_shift": {
+     "a": 1.911
+    },
+    "C2_affine": {
+     "a": 1.947,
+     "b": 0.9987
+    }
+   },
+   "mae_raw": 15.77,
+   "mae_C1_shift": 15.678,
+   "mae_C2_affine": 15.675,
+   "bias_raw": 1.787,
+   "bias_C1_shift": -0.124,
+   "bias_C2_affine": -0.125
+  },
+  {
+   "season": 2017,
+   "n_train": 541,
+   "n_test": 98,
+   "fit": {
+    "C1_shift": {
+     "a": 1.885
+    },
+    "C2_affine": {
+     "a": 5.328,
+     "b": 0.8726
+    }
+   },
+   "mae_raw": 16.102,
+   "mae_C1_shift": 16.285,
+   "mae_C2_affine": 16.208,
+   "bias_raw": -0.076,
+   "bias_C1_shift": -1.962,
+   "bias_C2_affine": -1.885
+  },
+  {
+   "season": 2018,
+   "n_train": 639,
+   "n_test": 112,
+   "fit": {
+    "C1_shift": {
+     "a": 1.584
+    },
+    "C2_affine": {
+     "a": 5.9,
+     "b": 0.8409
+    }
+   },
+   "mae_raw": 15.466,
+   "mae_C1_shift": 15.249,
+   "mae_C2_affine": 15.1,
+   "bias_raw": 3.759,
+   "bias_C1_shift": 2.175,
+   "bias_C2_affine": 2.214
+  },
+  {
+   "season": 2019,
+   "n_train": 751,
+   "n_test": 114,
+   "fit": {
+    "C1_shift": {
+     "a": 1.909
+    },
+    "C2_affine": {
+     "a": 6.778,
+     "b": 0.8207
+    }
+   },
+   "mae_raw": 13.598,
+   "mae_C1_shift": 13.612,
+   "mae_C2_affine": 13.609,
+   "bias_raw": 1.244,
+   "bias_C1_shift": -0.665,
+   "bias_C2_affine": -0.543
+  },
+  {
+   "season": 2020,
+   "n_train": 865,
+   "n_test": 34,
+   "fit": {
+    "C1_shift": {
+     "a": 1.821
+    },
+    "C2_affine": {
+     "a": 6.18,
+     "b": 0.84
+    }
+   },
+   "mae_raw": 11.634,
+   "mae_C1_shift": 11.973,
+   "mae_C2_affine": 12.38,
+   "bias_raw": -0.382,
+   "bias_C1_shift": -2.203,
+   "bias_C2_affine": -2.148
+  },
+  {
+   "season": 2021,
+   "n_train": 899,
+   "n_test": 117,
+   "fit": {
+    "C1_shift": {
+     "a": 1.738
+    },
+    "C2_affine": {
+     "a": 5.718,
+     "b": 0.854
+    }
+   },
+   "mae_raw": 15.297,
+   "mae_C1_shift": 15.325,
+   "mae_C2_affine": 15.283,
+   "bias_raw": -0.475,
+   "bias_C1_shift": -2.213,
+   "bias_C2_affine": -2.105
+  },
+  {
+   "season": 2022,
+   "n_train": 1016,
+   "n_test": 120,
+   "fit": {
+    "C1_shift": {
+     "a": 1.483
+    },
+    "C2_affine": {
+     "a": 4.939,
+     "b": 0.8736
+    }
+   },
+   "mae_raw": 16.119,
+   "mae_C1_shift": 15.982,
+   "mae_C2_affine": 15.786,
+   "bias_raw": 2.505,
+   "bias_C1_shift": 1.023,
+   "bias_C2_affine": 1.075
+  },
+  {
+   "season": 2023,
+   "n_train": 1136,
+   "n_test": 118,
+   "fit": {
+    "C1_shift": {
+     "a": 1.591
+    },
+    "C2_affine": {
+     "a": 5.697,
+     "b": 0.8501
+    }
+   },
+   "mae_raw": 13.665,
+   "mae_C1_shift": 13.712,
+   "mae_C2_affine": 13.754,
+   "bias_raw": 1.471,
+   "bias_C1_shift": -0.12,
+   "bias_C2_affine": -0.008
+  },
+  {
+   "season": 2024,
+   "n_train": 1254,
+   "n_test": 121,
+   "fit": {
+    "C1_shift": {
+     "a": 1.58
+    },
+    "C2_affine": {
+     "a": 5.409,
+     "b": 0.8605
+    }
+   },
+   "mae_raw": 15.219,
+   "mae_C1_shift": 14.98,
+   "mae_C2_affine": 14.892,
+   "bias_raw": 3.401,
+   "bias_C1_shift": 1.821,
+   "bias_C2_affine": 1.854
+  },
+  {
+   "season": 2025,
+   "n_train": 1375,
+   "n_test": 125,
+   "fit": {
+    "C1_shift": {
+     "a": 1.74
+    },
+    "C2_affine": {
+     "a": 5.775,
+     "b": 0.8532
+    }
+   },
+   "mae_raw": 13.77,
+   "mae_C1_shift": 13.421,
+   "mae_C2_affine": 13.59,
+   "bias_raw": 5.12,
+   "bias_C1_shift": 3.38,
+   "bias_C2_affine": 3.532
+  }
+ ],
+ "pooled": {
+  "C1_shift": {
+   "n": 1072,
+   "clusters": 102,
+   "mae_raw": 14.867,
+   "mae_candidate": 14.789,
+   "mae_diff": {
+    "est": -0.078,
+    "ci": [
+     -0.179,
+     0.018
+    ],
+    "n": 1072,
+    "clusters": 102,
+    "draws": 2000,
+    "seed": 20261023,
+    "alpha": 0.05,
+    "method": "cluster_bootstrap_percentile",
+    "se": 0.05,
+    "few_clusters": false,
+    "leave_one_out": {
+     "min": -0.099,
+     "max": -0.066,
+     "sign_stable": true
+    }
+   },
+   "verdict": "NO_DIFFERENCE_DEMONSTRATED",
+   "leave_one_season_out": {
+    "min": -0.104,
+    "max": -0.042
+   },
+   "seasons_better": 5,
+   "seasons": 10,
+   "bias_raw": 2.066,
+   "bias_candidate": 0.354,
+   "capped_mae_diff": {
+    "est": 0.255,
+    "ci": [
+     0.162,
+     0.343
+    ],
+    "n": 1072,
+    "clusters": 102,
+    "draws": 2000,
+    "seed": 20261023,
+    "alpha": 0.05,
+    "method": "cluster_bootstrap_percentile",
+    "se": 0.047,
+    "few_clusters": false,
+    "leave_one_out": {
+     "min": 0.238,
+     "max": 0.273,
+     "sign_stable": true
+    }
+   },
+   "vs_close": {
+    "n": 979,
+    "mean_abs_gap_raw": 8.694,
+    "mean_abs_gap_candidate": 8.503,
+    "diff": {
+     "est": -0.19,
+     "ci": [
+      -0.295,
+      -0.094
+     ],
+     "n": 979,
+     "clusters": 102,
+     "draws": 2000,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "se": 0.051,
+     "few_clusters": false,
+     "leave_one_out": {
+      "min": -0.208,
+      "max": -0.172,
+      "sign_stable": true
+     }
+    },
+    "close_mae": 12.111,
+    "raw_mae": 15.101,
+    "candidate_mae": 15.049
+   },
+   "brier": {
+    "n": 1072,
+    "raw": 0.05361,
+    "candidate": 0.05367,
+    "diff": {
+     "est": 0.00007,
+     "ci": [
+      -0.0005,
+      0.00056
+     ],
+     "n": 1072,
+     "clusters": 102,
+     "draws": 2000,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "se": 0.00026,
+     "few_clusters": false,
+     "leave_one_out": {
+      "min": -0.00005,
+      "max": 0.00013,
+      "sign_stable": false
+     }
+    },
+    "worse": false
+   },
+   "repo_bar": {
+    "rule": "pooled OOS MAE improves >= 0.05 pts AND beats raw in a majority of eval years (football/cfb_p4/v12_correction.js)",
+    "met": false
+   }
+  },
+  "C2_affine": {
+   "n": 1072,
+   "clusters": 102,
+   "mae_raw": 14.867,
+   "mae_candidate": 14.766,
+   "mae_diff": {
+    "est": -0.101,
+    "ci": [
+     -0.227,
+     0.019
+    ],
+    "n": 1072,
+    "clusters": 102,
+    "draws": 2000,
+    "seed": 20261023,
+    "alpha": 0.05,
+    "method": "cluster_bootstrap_percentile",
+    "se": 0.062,
+    "few_clusters": false,
+    "leave_one_out": {
+     "min": -0.128,
+     "max": -0.087,
+     "sign_stable": true
+    }
+   },
+   "verdict": "NO_DIFFERENCE_DEMONSTRATED",
+   "leave_one_season_out": {
+    "min": -0.128,
+    "max": -0.07
+   },
+   "seasons_better": 6,
+   "seasons": 10,
+   "bias_raw": 2.066,
+   "bias_candidate": 0.431,
+   "capped_mae_diff": {
+    "est": -0.087,
+    "ci": [
+     -0.219,
+     0.04
+    ],
+    "n": 1072,
+    "clusters": 102,
+    "draws": 2000,
+    "seed": 20261023,
+    "alpha": 0.05,
+    "method": "cluster_bootstrap_percentile",
+    "se": 0.066,
+    "few_clusters": false,
+    "leave_one_out": {
+     "min": -0.111,
+     "max": -0.071,
+     "sign_stable": true
+    }
+   },
+   "vs_close": {
+    "n": 979,
+    "mean_abs_gap_raw": 8.694,
+    "mean_abs_gap_candidate": 8.595,
+    "diff": {
+     "est": -0.099,
+     "ci": [
+      -0.214,
+      0.002
+     ],
+     "n": 979,
+     "clusters": 102,
+     "draws": 2000,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "se": 0.053,
+     "few_clusters": false,
+     "leave_one_out": {
+      "min": -0.116,
+      "max": -0.084,
+      "sign_stable": true
+     }
+    },
+    "close_mae": 12.111,
+    "raw_mae": 15.101,
+    "candidate_mae": 15.015
+   },
+   "brier": {
+    "n": 1072,
+    "raw": 0.05361,
+    "candidate": 0.0539,
+    "diff": {
+     "est": 0.00029,
+     "ci": [
+      -0.00081,
+      0.00129
+     ],
+     "n": 1072,
+     "clusters": 102,
+     "draws": 2000,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "se": 0.00053,
+     "few_clusters": false,
+     "leave_one_out": {
+      "min": 0.00005,
+      "max": 0.00041,
+      "sign_stable": true
+     }
+    },
+    "worse": false
+   },
+   "repo_bar": {
+    "rule": "pooled OOS MAE improves >= 0.05 pts AND beats raw in a majority of eval years (football/cfb_p4/v12_correction.js)",
+    "met": true
+   }
+  }
+ },
+ "chosen": "C2_affine",
+ "hypotheses": {
+  "H-014": {
+   "status": "REJECTED",
+   "why": "acceptance rule ci_upper_below not met",
+   "result": {
+    "est": -0.101,
+    "ci": [
+     -0.227,
+     0.019
+    ],
+    "verdict": "NO_DIFFERENCE_DEMONSTRATED",
+    "n": 1072,
+    "clusters": 102,
+    "leave_one_out": {
+     "min": -0.128,
+     "max": -0.07
+    },
+    "candidate": "C2_affine",
+    "also": {
+     "majority_of_seasons": true,
+     "brier_not_worse": true
+    }
+   }
+  }
+ },
+ "final_map": {
+  "kind": "C2_affine",
+  "a": 5.428,
+  "b": 0.8764,
+  "fitted_on": "2012-2025",
+  "n": 1500
+ },
+ "check_2026": {
+  "note": "The 2026 aggregate shortfall had been seen (H-003): these describe 2026 and confirm nothing. H-015 is the confirmatory test, on games after 2026-10-24T00:13:37Z.",
+  "replay": {
+   "n": 122,
+   "mae_raw": 17.093,
+   "mae_mapped": 16.188,
+   "diff": {
+    "est": -0.904,
+    "ci": [
+     -1.084,
+     -0.671
+    ],
+    "n": 122,
+    "clusters": 6,
+    "draws": 2000,
+    "seed": 20261023,
+    "alpha": 0.05,
+    "method": "cluster_bootstrap_percentile",
+    "se": 0.108,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": -0.953,
+     "max": -0.786,
+     "sign_stable": true
+    }
+   }
+  },
+  "live_record": {
+   "n": 73,
+   "mae_raw": 15.543,
+   "mae_mapped": 14.825,
+   "diff": {
+    "est": -0.718,
+    "ci": [
+     -0.987,
+     -0.466
+    ],
+    "n": 73,
+    "clusters": 5,
+    "draws": 2000,
+    "seed": 20261023,
+    "alpha": 0.05,
+    "method": "cluster_bootstrap_percentile",
+    "se": 0.127,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": -0.788,
+     "max": -0.653,
+     "sign_stable": true
+    }
+   },
+   "vs_close": {
+    "n": 73,
+    "mean_abs_gap_raw": 9.653,
+    "mean_abs_gap_mapped": 8.804,
+    "diff": {
+     "est": -0.85,
+     "ci": [
+      -1.729,
+      -0.565
+     ],
+     "n": 73,
+     "clusters": 5,
+     "draws": 2000,
+     "seed": 20261023,
+     "alpha": 0.05,
+     "method": "cluster_bootstrap_percentile",
+     "se": 0.294,
+     "few_clusters": true,
+     "leave_one_out": {
+      "min": -1.202,
+      "max": -0.721,
+      "sign_stable": true
+     }
+    }
+   }
+  },
+  "bridge_rescored": {
+   "source": "football/validation/fcs_bridge_cfb.json",
+   "season": 2026,
+   "n": 122,
+   "clusters": 6,
+   "floor_mae": 16.914,
+   "bridge_mae": 15.966,
+   "uncapped_diff": {
+    "est": -0.948,
+    "ci": [
+     -1.464,
+     0.288
+    ],
+    "n": 122,
+    "clusters": 6,
+    "draws": 2000,
+    "seed": 20261023,
+    "alpha": 0.05,
+    "method": "cluster_bootstrap_percentile",
+    "se": 0.437,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": -1.178,
+     "max": -0.457,
+     "sign_stable": true
+    }
+   },
+   "uncapped_verdict": "NO_DIFFERENCE_DEMONSTRATED",
+   "capped_diff": {
+    "est": -0.017,
+    "ci": [
+     -0.933,
+     1.424
+    ],
+    "n": 122,
+    "clusters": 6,
+    "draws": 2000,
+    "seed": 20261023,
+    "alpha": 0.05,
+    "method": "cluster_bootstrap_percentile",
+    "se": 0.65,
+    "few_clusters": true,
+    "leave_one_out": {
+     "min": -0.311,
+     "max": 0.814,
+     "sign_stable": false
+    }
+   },
+   "capped_verdict": "NO_DIFFERENCE_DEMONSTRATED",
+   "file_verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.03, n = 122)."
+  }
+ },
+ "status": "REJECTED",
+ "why": "acceptance rule ci_upper_below not met"
+}

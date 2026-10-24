@@ -10,6 +10,17 @@
 - **The operator console** lists every registry sport, and keeps any switched-on sport it does not list, so saving the mode can no longer drop one.
 - The worker reads each simulator run's compared outcomes in one request (a full page is read again outcome by outcome). The PostgREST stand-in (`tools/billing/_pgrest.js`) learns `in.()`.
 
+## 2026-10-24 — FBS vs FCS: the level-map repair, tested as registered and rejected
+
+The CFB engine prices FBS-vs-FCS favourites 7.8 points short of the close (H-003). The first repair, a map from the engine's margin to the real (uncapped) final, was pre-registered as H-014 (`docs/market-intelligence/hypotheses.json`, committed before any fit) and run once (`npm run cfb:fcs:uncapped`, `football/cfb_p4/research/fcs_uncapped.js`).
+
+- **Rejected.** On 1,072 FBS-vs-FCS games, 2016–2025, each season fitted only on earlier ones, the affine map lowers MAE against real finals by 0.10 pts [−0.23, +0.02] (6 of 10 seasons); the shift by 0.08. The bias goes from 2.07 to 0.43 points but the error barely moves. The registered bar was an interval below −0.5.
+- **What it showed.** The historical shortfall is about 2 points and has risen (2024 3.4, 2025 5.1, about 8 live in 2026). The gap to the market is ordering, not level: on games with a close, the engine's MAE is 15.1 against the close's 12.1. The FCS bridge's own 2026 walk-forward, re-scored on real finals, lowers MAE by 0.95 pts [−1.46, +0.29], where its capped verdict saw 0.02. `docs/market-intelligence/AUDIT.md` is corrected (it had called per-team ratings the wrong fix).
+- **Recorded, never applied.** `football/cfb_p4/fcs_margin_map.js` holds the final fit with `survived: false, promoted: false`; nothing reads it into a price. Evidence: `football/validation/fcs_uncapped_cfb.json`; report: `docs/market-intelligence/FCS_UNCAPPED.md`.
+- **Forward tests.** H-015 (the map, if it had survived) and H-016 (a frozen +4.27-point shift, the 2024–2025 mean shortfall, designed after seeing the season means and so tested only on games after its registration) are judged by `tools/market_intel/validation_report.js` as games are played.
+
+Tests: `node tools/market_intel/fcs_experiment.test.js` (19): no fold reads a later season, the committed evidence for H-014 reproduces, the map is never priced, and the forward tests sign the FBS side correctly home or away.
+
 ## 2026-10-23 — Signal Center: what changed in EdgeDesk's research, why, and whether the evidence supports it
 
 A new first seat in the terminal, **Signals** (`app.html#signals`, alias `#signal-center`). It is backed by a detection engine, an additive database layer, a graphics template family, a public preview and an operator console. **Nothing is deployed:** the migration is not applied, the hourly run is off, and Signal Center starts in shadow mode (docs/signal-center/DEPLOYMENT.md).
