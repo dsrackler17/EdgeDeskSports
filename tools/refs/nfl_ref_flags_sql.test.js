@@ -16,10 +16,15 @@
                 updated_at moves on every write
      seed       data/refs/upsert_refs.py against a stand-in PostgREST that
                 runs each request as service_role on this database:
-                assignments first, then penalties; 677 assignments and 663
-                penalty rows; a second run adds nothing; a wrong key or a
-                server error exits 1 and never prints the key
-     card       every Week 7 row of nfl_game_ref_context matches
+                assignments first, then penalties; every row of both
+                committed files (counted from them: the refs job appends a
+                game's penalties after each final); a second run adds
+                nothing; a wrong key or a server error exits 1 and never
+                prints the key
+     card       on the penalties the Week 7 card was made from, those before
+                Week 7 (later finals are deleted first: the handoff files
+                below are frozen, the penalty file is not), every Week 7 row
+                of nfl_game_ref_context matches
                 data/refs/ref_assignments_2026_w7.csv (GB @ DET is Alex Moore,
                 CLE @ TEN is Scott Novak); rank of 17; O/U matches
                 ref_summary.csv; anon reads it; the committed fixture the
@@ -52,6 +57,11 @@ function csvRows(file) {
   const h = lines[0].split(',');
   return lines.slice(1).map((l) => { const c = l.split(','); const o = {}; h.forEach((k, i) => { o[k] = c[i]; }); return o; });
 }
+/* the committed files' own row counts (the refs job appends a game's penalties after each final), and the penalties the Week 7
+   card was made from: every game before 2026 Week 7 */
+const PEN = csvRows(path.join(REFS, 'ref_game_penalties.csv'));
+const nAssign = csvRows(path.join(REFS, 'ref_assignments.csv')).length, nPen = PEN.length;
+const nPenW7 = PEN.filter((r) => !(Number(r.season) === 2026 && Number(r.week) >= 7)).length;
 function python() {
   for (const p of ['python3', 'python']) { try { cp.execFileSync(p, ['--version'], { stdio: 'ignore' }); return p; } catch (_) { /* next */ } }
   return null;
@@ -163,12 +173,12 @@ function runPy(py, args, env) {
       T.chk('seed: exits 0', r.code === 0, r.err || r.out);
       T.chk('seed: every assignment batch before the first penalty batch', posts.length >= 3 && posts.indexOf('nfl_ref_game_penalties') > posts.lastIndexOf('nfl_ref_assignments'), posts);
       T.chk('seed: upserts on game_id with merge-duplicates', R.log.filter((x) => x.method === 'POST').every((x) => /on_conflict=game_id/.test(x.url) && /resolution=merge-duplicates/.test(x.prefer)));
-      T.chk('seed: 677 assignments and 663 penalty rows', db.sql('select count(*) from public.nfl_ref_assignments;') === '677' && db.sql('select count(*) from public.nfl_ref_game_penalties;') === '663',
+      T.chk('seed: every row of both committed files (' + nAssign + ' assignments, ' + nPen + ' penalty rows)', db.sql('select count(*) from public.nfl_ref_assignments;') === String(nAssign) && db.sql('select count(*) from public.nfl_ref_game_penalties;') === String(nPen),
         [db.sql('select count(*) from public.nfl_ref_assignments;'), db.sql('select count(*) from public.nfl_ref_game_penalties;')]);
-      T.chk('seed: says what it loaded', /nfl_ref_assignments: upserted 677 rows on game_id; the table holds 677/.test(r.out) && /nfl_ref_game_penalties: upserted 663 rows on game_id; the table holds 663/.test(r.out), r.out);
+      T.chk('seed: says what it loaded', new RegExp('nfl_ref_assignments: upserted ' + nAssign + ' rows on game_id; the table holds ' + nAssign).test(r.out) && new RegExp('nfl_ref_game_penalties: upserted ' + nPen + ' rows on game_id; the table holds ' + nPen).test(r.out), r.out);
       const before = db.sql("select md5(string_agg(t::text, '|' order by game_id)) from (select game_id, season, week, referee, source from public.nfl_ref_assignments) t;");
       r = await runPy(py, [], env);
-      T.chk('seed: a second run exits 0 and adds nothing', r.code === 0 && db.sql('select count(*) from public.nfl_ref_assignments;') === '677' && db.sql('select count(*) from public.nfl_ref_game_penalties;') === '663'
+      T.chk('seed: a second run exits 0 and adds nothing', r.code === 0 && db.sql('select count(*) from public.nfl_ref_assignments;') === String(nAssign) && db.sql('select count(*) from public.nfl_ref_game_penalties;') === String(nPen)
         && db.sql("select md5(string_agg(t::text, '|' order by game_id)) from (select game_id, season, week, referee, source from public.nfl_ref_assignments) t;") === before, r.err);
       r = await runPy(py, [], Object.assign({}, env, { SB_SERVICE_ROLE: 'wrong-key' }));
       T.chk('seed: a wrong key exits 1 with the server\'s message, and the key is never printed', r.code === 1 && /HTTP 401: .*Invalid API key/.test(r.err) && !/wrong-key|service-role-test-key/.test(r.out + r.err), r);
@@ -183,7 +193,13 @@ function runPy(py, args, env) {
     out = db.applyFile(LAYER_PATH);
     T.chk('after the seed every report row is ok', (out.match(/\|ok$/gm) || []).length === 7 && !/CHECK THIS|pending/.test(out), out);
 
-    /* ---- the card view against the handoff's Week 7 slate ---- */
+    /* ---- the card view against the handoff's Week 7 slate ----
+       The handoff's files (ref_assignments_2026_w7.csv, ref_summary.csv, the browser fixture) are the pre-game Week 7 card, frozen
+       when it was made from the games through Week 6; the refs job keeps appending finals to ref_game_penalties.csv, and a final
+       Week 7 game folds into its own referee's numbers (2026-10-23: NE @ CHI, Alan Eck's sixth game). The card is checked on what
+       it was made from: the penalties before Week 7. */
+    db.sql('delete from public.nfl_ref_game_penalties where season = 2026 and week >= 7;');
+    T.chk('card: checked on the penalties before 2026 Week 7 (' + nPenW7 + ' rows)', db.sql('select count(*) from public.nfl_ref_game_penalties;') === String(nPenW7));
     const W7 = csvRows(path.join(REFS, 'ref_assignments_2026_w7.csv'));
     const view = rows('select * from public.nfl_game_ref_context where season = 2026 and week = 7 order by game_id');
     const by = {}; view.forEach((v) => { by[v.game_id] = v; });
@@ -210,7 +226,7 @@ function runPy(py, args, env) {
     T.chk('card: the O/U record (season and 3-year) matches ref_summary.csv', ouOff.length === 0, ouOff.slice(0, 2));
     T.chk('card: pushes are counted apart, never as unders', db.sql("select sum(y3_pushes) from (select distinct referee, y3_pushes from public.nfl_game_ref_context) x;") === '3'
       && db.sql('select count(*) from public.nfl_ref_game_penalties where went_over is null;') === '3');
-    T.chk('card: anon reads every game\'s row', db.anon('select count(*) from public.nfl_game_ref_context;') === '677' && db.anon("select referee from public.nfl_game_ref_context where game_id = '2026_07_GB_DET';") === 'Alex Moore');
+    T.chk('card: anon reads every game\'s row', db.anon('select count(*) from public.nfl_game_ref_context;') === String(nAssign) && db.anon("select referee from public.nfl_game_ref_context where game_id = '2026_07_GB_DET';") === 'Alex Moore');
     T.chk('card: a game with no announced assignment has no row', db.anon("select count(*) from public.nfl_game_ref_context where game_id = '2026_08_NYJ_CIN';") === '0');
     const fx = JSON.stringify(view, null, 1) + '\n';
     if (WRITE) { fs.mkdirSync(path.dirname(FIXTURE), { recursive: true }); fs.writeFileSync(FIXTURE, fx); console.log('wrote ' + path.relative(ROOT, FIXTURE)); }
