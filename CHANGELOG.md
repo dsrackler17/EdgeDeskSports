@@ -1,13 +1,6 @@
 # Changelog
 
-## 2026-10-24 — Import picks reaches the reader, and a long read stays connected
 
-Import picks on edgedesksports.com said "EdgeDesk could not be reached" for every screenshot: `parse_bet_import` had never been deployed. A function that does not exist answers without CORS headers, so the browser saw a network failure. *Deploy bet import* (run 40097376309) has now applied `supabase/bet_import.sql` (all 10 report rows `ok`) and deployed the function; `ANTHROPIC_API_KEY` is set.
-
-- **The answer starts at once.** Once a request passes sign-in, its checks and the allowance, the function answers `200` straight away and sends a space every 4 seconds until the JSON. A minute-long read no longer looks like a dead connection to iPhone Safari or a proxy. Failures from then on are in the body (`{ ok: false, status, reason, message }`); the page already shows their message.
-- **Shorter reads.** The page sends 2 images per request (was 3) and pasted text in 12,000-character parts (was up to 39,500, at most 4 parts), so each read stays inside the function's time limit and the model's output. A pasted line longer than a part is cut.
-
-Tests: `node tools/portfolio/bet_import.test.js` (101; the keep-alive answer and the in-body failures), `bet_import.e2e.js` (41).
 
 ## 2026-10-24 — Women's college basketball forecasts: the men's system, rebuilt for the women's game
 

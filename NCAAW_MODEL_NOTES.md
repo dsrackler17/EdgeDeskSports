@@ -18,22 +18,24 @@ which is league-neutral: it reads possessions, points and minutes.
 
 ## 1. Status, component by component
 
-*Deployed* = in production. Code that runs on `main` is deployed once this branch is merged.
+*Deployed* = in production. **2026-10-24:** the build is on `main`, and the database layer and research
+registration are applied in production (*Deploy NCAAW forecast SQL*, run 40098150410: every report row `ok`).
+**Nothing is published yet:** `NCAAW_FC_PUBLISH` is not set.
 
 | Component | Built | Tested | Deployed | Waits on |
 |---|---|---|---|---|
-| Data: wehoop women's schedules + box scores 2010-2027, quality, quarantine, D-I membership, hashes (§3) | yes | yes | with the merge (daily job) | merge |
-| Pregame model: ratings, coherent win probability, margin and total distributions (§4) | yes | yes (98 checks) | with the merge | merge |
+| Data: wehoop women's schedules + box scores 2010-2027, quality, quarantine, D-I membership, hashes (§3) | yes | yes | yes (daily job) | — |
+| Pregame model: ratings, coherent win probability, margin and total distributions (§4) | yes | yes (98 checks) | yes | — |
 | Development selection, frozen (§5) | yes | `select.js --check` | — | — |
 | Validation record (§6) | yes | `validate.js --check` (leakage 0) | — | — |
-| Champion `ncaaw_adjeff@1.0.0`, promoted by the weekly gates (§7) | yes | yes; failure injection 37 checks | with the merge | merge |
-| Daily refresh and atomic publication (`ncaaw-forecast.yml`, 13:47 UTC) | yes | yes | builds daily after the merge; **publishes only with `NCAAW_FC_PUBLISH = on`** | the variable (a person) |
-| Weekly challengers (`ncaaw-weekly.yml`, Monday 11:37 UTC) | yes | yes | with the merge | merge |
+| Champion `ncaaw_adjeff@1.0.0`, promoted by the weekly gates (§7) | yes | yes; failure injection 37 checks | yes | — |
+| Daily refresh and atomic publication (`ncaaw-forecast.yml`, 13:47 UTC) | yes | yes | builds daily; **publishes only with `NCAAW_FC_PUBLISH = on`** | the variable (a person) |
+| Weekly challengers (`ncaaw-weekly.yml`, Monday 11:37 UTC) | yes | yes | yes | — |
 | Upset Watch (three separate signals, frozen thresholds) (§8) | yes | yes | with publication | as above |
-| Database `supabase/ncaaw_forecast.sql` + migration, RLS, premium gate | yes | yes (67 checks on PostgreSQL, the men's layer beside it) | **no** | merge, then *Deploy NCAAW forecast SQL* |
-| Research registration NCAAW-FORECAST 1.0.0 (EXPERIMENTAL, T3), written before validation | yes | yes | no | same deploy |
-| Reader: the Simulator's **Women's College Basketball** seat (Games, Upset Watch, Tournament, Model Health) | yes | unit 49 + Chromium 41 checks | with the merge ("no forecast published yet" until the first publication) | publication |
-| Signal Center: women's forecast shifts | wired, tested | yes | coming soon | deploy + publication |
+| Database `supabase/ncaaw_forecast.sql` + migration, RLS, premium gate | yes | yes (67 checks on PostgreSQL, the men's layer beside it) | **yes** (2026-10-24, run 40098150410) | — |
+| Research registration NCAAW-FORECAST 1.0.0 (EXPERIMENTAL, T3), written before validation | yes | yes | yes (same run) | — |
+| Reader: the Simulator's **Women's College Basketball** seat (Games, Upset Watch, Tournament, Model Health) | yes | unit 49 + Chromium 41 checks | yes ("no forecast published yet" until the first publication) | publication |
+| Signal Center: women's forecast shifts | wired, tested | yes | coming soon | publication |
 | Market-assisted forecast, market-disagreement signal | interfaces only | the "unavailable" state | **no** | no women's college basketball price is captured anywhere |
 | NCAA tournament simulation | **not built** | — | — | a host-site-aware women's bracket (§9) |
 | In-game (live) forecasts | **not built** | — | — | a women's live feed and writer |
@@ -174,9 +176,8 @@ The market-disagreement signal is UNAVAILABLE: no women's college basketball pri
 
 ## 10. Before the season (2026-11-02)
 
-- [ ] Merge the branch. The daily refresh and the weekly challengers then run on `main`.
-- [ ] Actions → *Deploy NCAAW forecast SQL* (needs `supabase/simulator.sql` in production, which
-  it is).
+- [x] Merge the branch (#755). The daily refresh and the weekly challengers run on `main`.
+- [x] Actions → *Deploy NCAAW forecast SQL* (run 40098150410, every report row `ok`).
 - [ ] Set `NCAAW_FC_PUBLISH = on`. The next daily run publishes; the reader and Signal Center
   then show the forecasts.
 - [ ] Owner review of the wehoop/ESPN data terms before women's output is sold.

@@ -504,11 +504,11 @@ Health). The database checks the Full Access entitlement and fails closed.
   - **Selection:** every parameter was re-chosen on women's games only
     (2018-2022). The women's model keeps more of last season's rating
     (`carry` 1.0) and weights recent games more (half-life 365 days).
-- **Status (2026-10-24): built, tables not yet in production, publication
-  off.** After the merge, the daily refresh (13:47 UTC) and the weekly
-  challengers (Monday 11:37 UTC) run on `main`. *Deploy NCAAW forecast SQL*
-  puts the tables in production. Nothing is published until the repository
-  variable `NCAAW_FC_PUBLISH` is `on`. The season opens 2026-11-02.
+- **Status (2026-10-24): tables in production, publication off.** The daily
+  refresh (13:47 UTC) and the weekly challengers (Monday 11:37 UTC) run on
+  `main`, and the database layer and the research registration are applied
+  (*Deploy NCAAW forecast SQL*, run 40098150410). Nothing is published until the
+  repository variable `NCAAW_FC_PUBLISH` is `on`. The season opens 2026-11-02.
 - **Champion `ncaaw_adjeff@1.0.0`**, promoted by the weekly gates on
   2026-10-24 over the served scores-only model.
   - On the 2023-26 confirmation window (D-I v D-I, 21,695 games), log loss

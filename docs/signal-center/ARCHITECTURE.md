@@ -177,8 +177,9 @@ Blockers worth knowing:
 - **Women's college basketball forecast shifts** read the women's own published daily runs (`ncaaw_fc_runs` with
   status `completed` and their `ncaaw_fc_forecasts`, `supabase/ncaaw_forecast.sql`), by the same rule as the men's
   (`tools/signal_center/db.js` reads both leagues through one function; neither reads the other's tables, and the
-  worker's read allowlist names both). **Held at coming soon:** the women's forecast tables are not deployed in
-  production yet, and the daily job (`ncaaw-forecast.yml`) publishes only with `NCAAW_FC_PUBLISH` on. Its Simulator
+  worker's read allowlist names both). **Held at coming soon until the first publication:** the women's forecast tables are in
+  production since 2026-10-24 (Actions → Deploy NCAAW forecast SQL, run 40098150410), and the daily job
+  (`ncaaw-forecast.yml`) publishes only with `NCAAW_FC_PUBLISH` on, the owner's switch. Its Simulator
   module is blocked by the Simulator itself: no women's tournament simulation is built (the first two rounds are
   played on the top 16 seeds' campuses). No data-quality signal: the games slate carries no women's games.
 - **MLB has no forecast history to compare.**
