@@ -1,0 +1,16 @@
+{
+ "schema": "edgedesk_model_loop_ufc_guard_config_v1",
+ "about": "The UFC market disagreement guard (model_loop/adapters/ufc/guard.py; the simulator's copy is simulator/src/sports/ufc/guard.ts). When the served model and the market's no-vig price for the same fighter differ by more than threshold_pp percentage points, the bout is labelled 'Model disagrees with market' with both numbers side by side and the factors that likely explain the gap, never as an edge. A gap is shown as a signal only when the study certifies that gaps of that size beat the closing line (certify).",
+ "threshold_pp": 8,
+ "factors": {
+  "short_sample_bouts": 3,
+  "layoff_days": 365,
+  "age_years": 35,
+  "age_gap_years": 6
+ },
+ "certify": {
+  "min_n": 300,
+  "requires_timestamped_close": true,
+  "rule": "On out-of-sample bouts (2021 on) where |model - close| > threshold_pp: n >= min_n, the model's log loss below the closing line's with the card-blocked 95% interval of the difference below zero, and the closing line timestamped. An untimestamped reference can refuse certification, never grant it."
+ }
+}

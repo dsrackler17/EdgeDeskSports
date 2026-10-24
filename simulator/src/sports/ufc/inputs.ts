@@ -25,6 +25,14 @@
      cross-checks       Wikipedia's incumbents and ESPN's title accolades
                         (simulator/data/feeds/ufc_espn_samples.json.gz) beside
                         ufc.com's champions
+     fighter facts      model_loop/data/ufc/fighter_facts.csv (dates of birth
+                        and pre-UFC records: the served model's inputs when its
+                        configuration reads them, factors.ts)
+     market, guard      research/clv/openers/ufc (DraftKings' latest no-vig
+                        price per bout) and docs/model-loop/ufc/guard.json:
+                        every booked bout's disagreement verdict (guard.ts)
+     model record       docs/model-loop/ufc/study/comparison.json: the served
+                        model, 1.1.0 and the closing line on the same bouts
    The snapshot's `data` is canonical and content-hashed (input_hash); `meta`
    carries what does not change a result. No network or database call
    happens here or after.
@@ -34,8 +42,10 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { hashCanonical, sha256Hex } from '../../core/canonical.ts';
 import { REPO, loadServedBouts, loadCurrent, servedVersion, walk, checkReproduction, sortBouts, emptyState, codeIdentity, FINAL, round4, attachChampions, loadTitleChampions, TITLE_BOUTS_CSV,
-  type Bout, type EloState, type ReproductionCheck, type EloConfig, type WalkRow } from './elo.ts';
+  factorsFor, loadFighterFacts, computeFactors, versionConfig, FIGHTER_FACTS_CSV, COMPARE_VERSION, type Bout, type EloState, type ReproductionCheck, type EloConfig, type WalkRow, type BoutFacts } from './elo.ts';
+import { loadGuardConfig, latestQuotes, marketFor, explain, assess, evidenceFor, GUARD_JSON, type GuardVerdict, type Market } from './guard.ts';
 import { parseTitleHistory, divisionRates, normalisedGaps, type DivisionRates, type DivisionHistory } from './title_history.ts';
+import { priorOf } from './elo.ts';
 import { finishStudy, baseRate, studyRoundDist, dev, DIVISIONS, type FinishStudy } from './finish.ts';
 import { UFC_2026, type UfcConfig } from './config.ts';
 
@@ -63,6 +73,9 @@ export interface UfcFighter {
   rating: number; bouts: number; debut: boolean;
   last_fight: string | null; last_result: 'W' | 'L' | 'D' | null;
   record: { w: number; l: number; d: number };
+  /** the date of birth (fighter_facts.csv; null: none on file) and the served model's prior for the fighter (1500 under
+      1.0/1.1): what an unbooked title fight is priced from beside the rating (module.ts) */
+  dob: string | null; prior: number;
   /** shrunk finish tendencies (logit deviations): as a winner, as a loser (finish.ts) */
   fin_win: number; fin_loss: number;
 }
@@ -74,6 +87,13 @@ export interface UfcBooked {
   title: { division: string; champion: string } | null;
   /** P(finish | a wins), P(finish | b wins), P(round k | finish) */
   finish_if_a: number; finish_if_b: number; round_dist: number[];
+  /** the market's latest no-vig price for fighter a (null: none captured), and the disagreement guard's verdict (guard.ts) */
+  market: Market | null; guard: GuardVerdict;
+  /** the comparison version's price for the same bout (1.1.0, kept runnable), when it is not the served one */
+  compare: { version: string; p_a: number } | null;
+  /** each fighter's facts at the bout (factors.ts): UFC bouts, days out, age, divisions moved, pre-UFC record */
+  facts: { a: { ufc_bouts: number; days_off: number | null; age: number | null; div_step: number | null; pre_w: number | null; pre_l: number | null };
+    b: { ufc_bouts: number; days_off: number | null; age: number | null; div_step: number | null; pre_w: number | null; pre_l: number | null } };
 }
 export interface UfcDivision {
   key: string; label: string; champion: string;
@@ -114,9 +134,28 @@ export interface UfcInputData {
   cross_checks: { wikipedia: Array<{ division: string; ufc: string; wikipedia: string | null; agree: boolean }>; espn: Array<{ bout_id: string; division: string; holder: string; champion: string; agree: boolean }> };
   name_matching: { matched: number; unmatched: string[]; aliases: string[]; ambiguous: string[] };
   data_checks: { finals_csv: number; finals_feed_only: number; scheduled_feed: number; csv_scheduled_dropped: string[]; late: string[]; double_booked: string[] };
-  health: { windows: Array<{ label: string; n: number; log_loss: number; coin: number; brier: number | null; favourite_p: number | null; favourite_won: number | null }>; market: string; record_graded: number };
+  health: { windows: Array<{ label: string; n: number; log_loss: number; coin: number; brier: number | null; favourite_p: number | null; favourite_won: number | null }>; market: string; record_graded: number;
+    /** the 2026-10 study (docs/model-loop/ufc/study/comparison.json): the served model and 1.1.0 against the closing line */
+    study: UfcStudy | null };
+  /** the disagreement guard (docs/model-loop/ufc/guard.json; the loop's published certification) */
+  guard: { threshold_pp: number; certified: boolean; certification_reasons: string[]; with_market: number; disagreements: number;
+    /** the loop's verdicts on the bouts it lists, against this copy's */
+    agree: { compared: number; same: number; differ: string[] } };
   code: Record<string, string>;
   config: { rules_version: string; horizon_days: number; rate_window_years: number; matchmaking: string; not_modelled: string[] };
+}
+export interface UfcStudy {
+  generated_at: string; base_version: string; promoted: boolean; reasons: string[];
+  reference: { name: string; kind: string; timestamped: boolean; matched: number; span: string[]; sha256: string | null };
+  test: { window: number[]; n: number; old_log_loss: number; new_log_loss: number; delta_log_loss: number; ci95: number[] | null; delta_brier: number };
+  /** per window: 1.1.0 and the selected model on every decided bout, and on the bouts with a closing line beside the line itself */
+  windows: Array<{ key: string; label: string; n: number; old: { log_loss: number; brier: number }; new: { log_loss: number; brier: number };
+    close_n: number; close_old: { log_loss: number; brier: number }; close_new: { log_loss: number; brier: number }; close: { log_loss: number; brier: number } }>;
+  /** favourite-side reliability since 2018 on the bouts with a closing line: bins of [said, won, n] */
+  calibration: { old: Array<{ bin: string; n: number; said: number; won: number }>; new: Array<{ bin: string; n: number; said: number; won: number }>; close: Array<{ bin: string; n: number; said: number; won: number }> };
+  /** out-of-sample gaps (2021 on) between each model and the close, by size: who the result sided with */
+  gaps: { old: any[]; new: any[]; over_threshold_old: any; over_threshold_new: any };
+  steps: Array<{ step: string; label: string; decision: string; select_delta: number | null; fit_delta: number | null; chosen: Record<string, unknown> | null; reason: string }>;
 }
 export interface UfcSnapshot { schema: string; input_hash: string; data: UfcInputData; meta: { built_at: string; builder: string; feeds: Array<{ name: string; sha256: string }> } }
 
@@ -139,7 +178,8 @@ export function feedToBout(f: FeedBout): Bout {
     a_winner: fin && f.winner === 'a', b_winner: fin && f.winner === 'b', status: fin ? FINAL : f.status === 'scheduled' ? 'STATUS_SCHEDULED' : 'STATUS_CANCELED',
     round: fin ? f.end_round : null, clock: fin ? f.end_time : null, periods: f.rounds, weight_class: f.weight_class || '' };
 }
-const cloneState = (S: EloState): EloState => ({ R: new Map(S.R), N: new Map(S.N), last: new Map(S.last) });
+const cloneState = (S: EloState): EloState => ({ R: new Map(S.R), N: new Map(S.N), last: new Map(S.last), MU: new Map(S.MU || []),
+  PAIR: new Map([...(S.PAIR || new Map()).entries()].map(([k, v]) => [k, v.slice()])) });
 
 /** a fighter's last final before t from the walked rows: result and time */
 function lastFinals(rows: WalkRow[], upTo: number): Map<string, { ts: number; result: 'W' | 'L' | 'D'; rec: { w: number; l: number; d: number } }> {
@@ -237,14 +277,39 @@ export function espnAccolades(samples: any): Array<{ bout_id: string; athlete: s
   return out;
 }
 
+/** the study's comparison (docs/model-loop/ufc/study/comparison.json) as Model Health reads it */
+export function studySummary(c: any, sel: any, threshold: number): UfcStudy {
+  const W = c.windows || {};
+  const m = (x: any) => ({ log_loss: x ? x.log_loss : NaN, brier: x ? x.brier : NaN });
+  const labels: Record<string, string> = { since_2018: 'Every bout since 2018', fit: 'Fit 2016-2020 (parameters chosen)', select: 'Select 2021-2023 (features kept or dropped)', test: 'Test 2024 on (read once)', out_of_sample: 'Out of sample, 2021 on' };
+  const windows = ['since_2018', 'test', 'select', 'fit'].filter((k) => W[k]).map((k) => {
+    const o = W[k].old, n = W[k].new;
+    return { key: k, label: labels[k], n: o.all.n, old: m(o.all), new: m(n.all), close_n: o.close_subset.n, close_old: m(o.close_subset.model), close_new: m(n.close_subset.model), close: m(o.close_subset.close) };
+  });
+  const cal = (x: any[]) => (x || []).map((r) => ({ bin: r.bin, n: r.n, said: r.said, won: r.won }));
+  const oos = W.out_of_sample || W.since_2018 || {};
+  const over = (side: string) => (oos[side] && oos[side].gaps && oos[side].gaps['over_' + threshold]) || null;
+  return {
+    generated_at: c.generated_at, base_version: c.base_version, promoted: !!c.promote, reasons: c.reasons || [],
+    reference: { name: c.reference && c.reference.name, kind: c.reference && c.reference.kind, timestamped: !!(c.reference && c.reference.timestamped), matched: c.reference ? c.reference.matched : 0,
+      span: (c.reference && c.reference.span) || [], sha256: (c.reference && c.reference.sha256) || null },
+    test: c.test,
+    windows,
+    calibration: W.since_2018 ? { old: cal(W.since_2018.old.calibration.model_close_subset), new: cal(W.since_2018.new.calibration.model_close_subset), close: cal(W.since_2018.old.calibration.close) } : { old: [], new: [], close: [] },
+    gaps: { old: (oos.old && oos.old.gaps.rows) || [], new: (oos.new && oos.new.gaps.rows) || [], over_threshold_old: over('old'), over_threshold_new: over('new') },
+    steps: ((sel && sel.steps) || []).filter((x: any) => x.step !== 'base').map((x: any) => ({ step: x.step, label: x.label, decision: x.decision, select_delta: x.select_delta ?? null, fit_delta: x.fit_delta ?? null, chosen: x.chosen || null, reason: x.reason || '' }))
+  };
+}
+
 export interface BuildOptions { config?: UfcConfig }
 export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
   const C = opt.config || UFC_2026;
   const sv = servedVersion();
-  /* 1 the served data, walked exactly as the loop walks it, against what the loop published */
+  /* 1 the served data, walked exactly as the loop walks it (with the same fighter facts), against what the loop published */
   const served = loadServedBouts();
   const cur = loadCurrent();
-  const servedWalk = walk(served.bouts, sv.config);
+  const facts = loadFighterFacts(REPO);
+  const servedWalk = walk(served.bouts, sv.config, emptyState(), factorsFor(served.bouts, sv.config, facts.map));
   const reproduction = checkReproduction(servedWalk.rows, cur.doc, sv);
   /* 2 the schedule (and any newer result) from the feed; one row per bout, the feed's when it knows more */
   const feedBuf = gz(C.feeds.bouts);
@@ -270,10 +335,18 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
   /* 3 the state at the as-of time (every row up to it, cancelled ones included: the served walk regresses on them too), then
      every later row priced from it: the served price of each booked bout */
   const past = union.filter((b) => b.ts <= asOfMs), future = union.filter((b) => b.ts > asOfMs);
-  const W0 = walk(past, sv.config);
+  /* every bout's facts over the whole sequence (causal: a later row never moves an earlier one), split as the walk is */
+  const factU = computeFactors(union, facts.map);
+  const factOf = new Map(union.map((b, i) => [b.bout_id, factU[i]]));
+  const fxPast = factU.slice(0, past.length), fxFut = factU.slice(past.length);
+  const W0 = walk(past, sv.config, emptyState(), fxPast);
   const state0 = cloneState(W0.state);
-  const W1 = walk(future, sv.config, cloneState(W0.state));
+  const W1 = walk(future, sv.config, cloneState(W0.state), fxFut);
   const priced = new Map(W1.rows.map((r) => [r.bout.bout_id, r]));
+  /* the comparison version (1.1.0) on the same rows: how each booked bout's price moved */
+  const cmpV = sv.version !== COMPARE_VERSION ? versionConfig(COMPARE_VERSION) : null;
+  const cmpPriced = new Map<string, number>();
+  if (cmpV) { const C0 = walk(past, cmpV.config, emptyState(), fxPast); for (const r of walk(future, cmpV.config, cloneState(C0.state), fxFut).rows) cmpPriced.set(r.bout.bout_id, r.p); }
   const lastF = lastFinals(W0.rows, asOfMs);
   /* 4 rankings: one grouping per division (the page repeats the divisions with empty lists; pound-for-pound lists dropped) */
   const rk = JSON.parse(fs.readFileSync(path.join(REPO, C.feeds.rankings), 'utf8'));
@@ -327,15 +400,19 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
   const tend = (id: string) => { const c = finCounts.get(id); return c ? { w: r6(dev(c.wf, c.w, c.ew, m)), l: r6(dev(c.lf, c.l, c.el, m)) } : { w: 0, l: 0 }; };
   const logit = (p: number) => Math.log(p / (1 - p)), logistic = (x: number) => 1 / (1 + Math.exp(-x));
   const pFinish = (division: string, R: number, winner: string, loser: string) => r6(logistic(logit(baseRate(study.base, division, R)) + tend(winner).w + tend(loser).l));
-  /* 8 fighters: everyone booked, every champion, every ranked contender */
+  /* 8 fighters: everyone booked, every champion, every ranked contender. A debutant's rating is the served model's
+     starting rating for them: 1500 under 1.0/1.1, the prior from the pre-UFC record when the configuration has one */
+  const debutRating = (id: string): number => { const x = facts.map.get(id); return priorOf(sv.config, x ? x.pre_w : null, x && x.pre_w != null ? x.pre_l : null); };
   const F = new Map<string, UfcFighter>();
   const fighter = (id: string, name: string): UfcFighter => {
     let f = F.get(id);
     if (f) return f;
     const lf = lastF.get(id), t = tend(id);
     f = { id, name: nameOf.get(id) || name, division: 'Other', ranked_division: null, rank: null, champion: false, moved_from: null,
-      rating: r6(state0.R.has(id) ? (state0.R.get(id) as number) : 1500), bouts: state0.N.get(id) || 0, debut: !state0.N.get(id),
-      last_fight: lf ? new Date(lf.ts).toISOString() : null, last_result: lf ? lf.result : null, record: lf ? lf.rec : { w: 0, l: 0, d: 0 }, fin_win: t.w, fin_loss: t.l };
+      rating: r6(state0.R.has(id) ? (state0.R.get(id) as number) : debutRating(id)), bouts: state0.N.get(id) || 0, debut: !state0.N.get(id),
+      last_fight: lf ? new Date(lf.ts).toISOString() : null, last_result: lf ? lf.result : null, record: lf ? lf.rec : { w: 0, l: 0, d: 0 },
+      dob: facts.map.get(id) && facts.map.get(id)!.dob != null ? new Date(facts.map.get(id)!.dob as number).toISOString().slice(0, 10) : null,
+      prior: r6(state0.MU && state0.MU.has(id) ? (state0.MU.get(id) as number) : debutRating(id)), fin_win: t.w, fin_loss: t.l };
     F.set(id, f);
     return f;
   };
@@ -343,6 +420,12 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
     if (d.champion) { const f = fighter(d.champion, ''); f.champion = true; f.ranked_division = d.key; f.division = d.key; }
     for (const r of d.ranked) if (r.id) { const f = fighter(r.id, r.name); if (!f.champion) { f.ranked_division = d.key; f.rank = r.rank; f.division = d.key; } }
   }
+  /* the disagreement guard: the same file and ledger as the loop, its published certification (guard.ts) */
+  const G = loadGuardConfig(REPO), Q = latestQuotes(REPO), ev = evidenceFor(REPO, sv.version);
+  const cert = (cur.doc.guard && cur.doc.guard.certification) || { certified: false, reasons: ['the loop has published no certification'] };
+  const side = (F0: BoutFacts | undefined, s: 'a' | 'b') => F0 ? { ufc_bouts: s === 'a' ? F0.n_a : F0.n_b, days_off: s === 'a' ? F0.days_off_a : F0.days_off_b, age: s === 'a' ? (F0.age_a == null ? null : r6(F0.age_a)) : (F0.age_b == null ? null : r6(F0.age_b)),
+    div_step: s === 'a' ? F0.div_step_a : F0.div_step_b, pre_w: s === 'a' ? F0.pre_w_a : F0.pre_w_b, pre_l: s === 'a' ? F0.pre_l_a : F0.pre_l_b }
+    : { ufc_bouts: 0, days_off: null, age: null, div_step: null, pre_w: null, pre_l: null };
   const booked: UfcBooked[] = [];
   const bookedCount = new Map<string, number>();
   for (const fb0 of feedSched) {
@@ -356,10 +439,15 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
     const title = division && ch && (ch === fa.id || ch === fb.id) ? { division, champion: ch } : null;
     const R = b.periods === 5 ? 5 : 3;
     const pub = (cur.doc.bouts || []).find((x: any) => String(x.bout_id) === b.bout_id);
+    const pA = pr ? r6(pr.p) : NaN, F0 = factOf.get(b.bout_id);
+    const market = marketFor(Q.quotes.get(b.bout_id), b.fighter_a_id);
+    const verdict = assess(pA, market, F0 ? explain(fa.name, fb.name, F0, ev, G.cfg) : [], !!cert.certified, G.cfg);
     booked.push({ bout_id: b.bout_id, event_id: b.event_id, event: b.event_name, start: b.start_time, weight_class: b.weight_class, division, rounds: R,
       order: (feedById.get(b.bout_id) || ({} as FeedBout)).order ?? null, a: fa.id, b: fb.id,
-      p_a: pr ? r6(pr.p) : NaN, p_a_published: pub ? pub.p_a : null, basis: pr && Math.min(pr.a_bouts, pr.b_bouts) === 0 ? 'debut' : 'elo', title,
-      finish_if_a: pFinish(division || '', R, fa.id, fb.id), finish_if_b: pFinish(division || '', R, fb.id, fa.id), round_dist: studyRoundDist(study, division || '', R) });
+      p_a: pA, p_a_published: pub ? pub.p_a : null, basis: pr && Math.min(pr.a_bouts, pr.b_bouts) === 0 ? 'debut' : 'elo', title,
+      finish_if_a: pFinish(division || '', R, fa.id, fb.id), finish_if_b: pFinish(division || '', R, fb.id, fa.id), round_dist: studyRoundDist(study, division || '', R),
+      market, guard: verdict, compare: cmpV && cmpPriced.has(b.bout_id) ? { version: cmpV.version, p_a: r6(cmpPriced.get(b.bout_id) as number) } : null,
+      facts: { a: side(F0, 'a'), b: side(F0, 'b') } });
     /* a ranked contender booked in another division has moved: they can win only that division's title in this run */
     for (const f of [fa, fb]) if (division && f.ranked_division && f.ranked_division !== division && !f.champion) { f.moved_from = f.ranked_division; f.division = division; }
     for (const f of [fa, fb]) if (division && f.division === 'Other') f.division = division;
@@ -409,8 +497,27 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
        the first bouts' step (versions.json) and is scored clean on the live season */
     windows: [win(val.result.confirmation, 'validation 2021-2024 (tuned 1.0.0)'), win(val.result.holdout_2025, 'holdout 2025 (tuned 1.0.0)'), ...(val.result.live_served ? [win(val.result.live_served, '2026 so far (served ' + val.result.live_served.version + ')')] : [])],
     market: (val.markets && val.markets.moneyline && val.markets.moneyline.market_reason) || 'no closing-price archive',
-    record_graded: (recJson.bouts || []).length
+    record_graded: (recJson.bouts || []).length,
+    study: null
   };
+  /* 11b the 2026-10 study: the served model and 1.1.0 against the closing line (Model Health) */
+  const studyFile = path.join(REPO, 'docs', 'model-loop', 'ufc', 'study', 'comparison.json'), selFile = path.join(REPO, 'docs', 'model-loop', 'ufc', 'study', 'selection.json');
+  const studyBuf = fs.existsSync(studyFile) ? fs.readFileSync(studyFile) : null;
+  health.study = studyBuf ? studySummary(JSON.parse(studyBuf.toString('utf8')), fs.existsSync(selFile) ? JSON.parse(fs.readFileSync(selFile, 'utf8')) : null, G.cfg.threshold_pp) : null;
+  /* 11c the guard: this copy, applied to the market the loop published with each bout (the ledger may hold a newer
+     quote by now: the displayed verdict uses the latest, the check uses the loop's own), against the loop's verdict */
+  const agree = { compared: 0, same: 0, differ: [] as string[] };
+  for (const b of booked) {
+    const pb = (cur.doc.bouts || []).find((x: any) => String(x.bout_id) === b.bout_id);
+    if (!pb || !pb.guard || pb.p_a !== round4(b.p_a)) continue;
+    agree.compared++;
+    const mine = assess(b.p_a, pb.market && typeof pb.market.p_a === 'number' ? pb.market : null, [], !!cert.certified, G.cfg);
+    const okGap = pb.guard.gap_pp == null ? mine.gap_pp == null : mine.gap_pp != null && Math.abs(pb.guard.gap_pp - mine.gap_pp) <= 0.15;
+    if (pb.guard.status === mine.status && okGap && pb.guard.signal_allowed === mine.signal_allowed) agree.same++;
+    else agree.differ.push(b.bout_id + ' (loop ' + pb.guard.status + ' ' + pb.guard.gap_pp + ', here ' + mine.status + ' ' + mine.gap_pp + ')');
+  }
+  const guard: UfcInputData['guard'] = { threshold_pp: G.cfg.threshold_pp, certified: !!cert.certified, certification_reasons: cert.reasons || [],
+    with_market: booked.filter((b) => b.market).length, disagreements: booked.filter((b) => b.guard.status === 'DISAGREES').length, agree };
   /* 12 the champion term's latest weekly test */
   const candFile = path.join(REPO, 'docs', 'model-loop', 'ufc', 'candidates.jsonl');
   const candBuf = fs.existsSync(candFile) ? fs.readFileSync(candFile) : null;
@@ -441,6 +548,7 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
     data_checks: { finals_csv: served.bouts.filter((b) => b.status === FINAL).length, finals_feed_only: finalsFeedOnly, scheduled_feed: feedSched.length, csv_scheduled_dropped: dropped, late,
       double_booked: [...bookedCount.entries()].filter(([, n]) => n > 1).map(([id]) => id) },
     health,
+    guard,
     code: codeIdentity(),
     config: { rules_version: C.rules_version, horizon_days: C.horizon_days, rate_window_years: C.rate_window_years, matchmaking: C.matchmaking.value, not_modelled: C.not_modelled }
   };
@@ -449,7 +557,9 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
       feeds: [{ name: 'model_loop/data/ufc/bouts.csv', sha256: served.sha256 }, { name: 'model_loop/published/ufc/current.json', sha256: cur.sha256 }, { name: C.feeds.bouts, sha256: sha256Hex(fs.readFileSync(path.join(REPO, C.feeds.bouts))) },
         { name: C.feeds.rankings, sha256: sha256Hex(fs.readFileSync(path.join(REPO, C.feeds.rankings))) }, { name: C.feeds.title_history, sha256: sha256Hex(fs.readFileSync(path.join(REPO, C.feeds.title_history))) },
         ...(served.titles_sha256 ? [{ name: TITLE_BOUTS_CSV, sha256: served.titles_sha256 }] : []), ...(candBuf ? [{ name: 'docs/model-loop/ufc/candidates.jsonl', sha256: sha256Hex(candBuf) }] : []),
-        ...(samplesSha ? [{ name: C.feeds.espn_samples, sha256: samplesSha }] : [])] } };
+        ...(samplesSha ? [{ name: C.feeds.espn_samples, sha256: samplesSha }] : []),
+        ...(facts.sha256 ? [{ name: FIGHTER_FACTS_CSV, sha256: facts.sha256 }] : []), { name: GUARD_JSON, sha256: G.sha256 }, ...Q.files,
+        ...(studyBuf ? [{ name: 'docs/model-loop/ufc/study/comparison.json', sha256: sha256Hex(studyBuf) }] : [])] } };
 }
 
 export function writeUfcSnapshot(file: string, snap: UfcSnapshot): void {

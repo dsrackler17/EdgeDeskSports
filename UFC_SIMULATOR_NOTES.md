@@ -15,7 +15,8 @@ likely each fighter who is not champion is to become champion.
 | Area | State | Evidence |
 |---|---|---|
 | Fights: every booked bout, who wins, finish or decision, the round | Implemented, tested; **ACTIVE** | `simulator/src/sports/ufc/`, §3 |
-| Fight model | The model loop's served UFC Elo **1.1.0** (EXPERIMENTAL), ported line for line; reproduces all 25 published p_a and `model.py` itself to 4e-16 | `elo.ts`, §2 |
+| Fight model | The model loop's served UFC Elo **1.2.0** (EXPERIMENTAL; 2026-10-24: 1.1.0 plus a prior from the pre-UFC record and an age curve), ported line for line; reproduces all 20 published p_a and `model.py` itself at full precision (every 2026-10 parameter too); 1.1.0 kept runnable and shown beside it | `elo.ts`, §2, §2a |
+| Market disagreement guard | Every booked bout beside DraftKings' latest no-vig price; a gap over 8 points is "Model disagrees with market", with its likely reasons and no fair odds; never a signal (not certified) | `guard.ts`, §2a |
 | Finish / decision / round | Measured point in time from every bout since 2014, chosen on 2016-2022, tested on 2023 on | `finish.ts`, §4 |
 | Title path (12 months, every division) | Implemented, tested; **Estimated** (the matchmaking rule); title-fight pace MEASURED from Wikipedia's title history | `module.ts`, §5 |
 | Champions and rankings | ufc.com/rankings in every run (page sha256 recorded and checked against the saved page); Wikipedia's incumbents and ESPN's title accolades agree | `inputs.ts`, §6 |
@@ -25,14 +26,29 @@ likely each fighter who is not champion is to become champion.
 
 ---
 
-## 2. The fight model (no new model)
+## 2. The fight model
 
 Who wins every simulated fight comes from the model the loop serves for UFC:
 the walk-forward Elo `model_loop/adapters/ufc/model.py walk()` with the served
-configuration from `docs/model-loop/ufc/versions.json` (current **1.1.0**,
-status `SERVED (EXPERIMENTAL)`: k 64, a 1.5x step for a fighter's first 3 bouts
-in the data, a 25% regression toward 1500 after 365 days or more out, scale 400,
-no calibration; config sha256 `7aeca585…`).
+configuration from `docs/model-loop/ufc/versions.json`. Since 2026-10-24 that is
+**1.2.0** (`SERVED (EXPERIMENTAL)`, config sha256 `e6f03e29…`): 1.1.0's Elo (k 64,
+a 1.5x step for a fighter's first 3 bouts in the data, a 25% regression toward
+1500 after 365 days or more out, scale 400, no calibration) plus two changes the
+2026-10 study kept (§2a): each fighter starts from a **prior built from the pro
+record before the first bout in the data** (`debut_offset` 25, `prior_rec` 150,
+`prior_exp` −25: 1525 for a 10-2 record), and an **age curve** (−15 Elo a year past
+32, on the price). 1.1.0 (`7aeca585…`) is the rollback target and stays runnable:
+every booked bout carries its 1.1.0 price beside the served one.
+
+The facts both read (each fighter's date of birth from ESPN's athlete document;
+the pre-UFC record, reconstructed as ESPN's record as of one stated time less every
+later result in the data) are one committed file, `model_loop/data/ufc/fighter_facts.csv`,
+which the loop and the port both read (`factors.py`, `factors.ts`).
+
+The text below describes the 1.1.0 walk; the 1.2.0 walk (`model.py _walk_extended`,
+`elo.ts walkExtended`) is the same with the prior and the age points added, and the
+port reproduces it at full precision (and with every other 2026-10 parameter on too:
+`simulator/tests/ufc_elo.test.ts`).
 
 `simulator/src/sports/ufc/elo.ts` ports the walk line for line (the simulator is
 TypeScript with no runtime dependency): bouts in (start time, bout id as text)
@@ -54,16 +70,82 @@ committed data (`model_loop/data/ufc/bouts.csv`, 6,932 bouts):
 Bouts beyond the loop's 14-day window (UFC 334, UFC 335 …) are priced by the same
 walk continued over the ESPN feed's scheduled rows at their dates: what the
 served model will publish for them when they enter its window, unless a result
-in between moves a rating. A debutant is priced at 1500 ("an average fighter"),
-as the served model does.
+in between moves a rating. A debutant starts from the served model's prior (1.2.0:
+from the pre-UFC record; 1500 under 1.0/1.1).
+
+### 2a. The 2026-10 study and the disagreement guard
+
+On UFC 333 the served 1.1.0 had Dvalishvili 54.6% (Kalshi about 41%) and Volkov
+70.4% (Kalshi about 53%). `model_loop/adapters/ufc/study.py` measured why
+(`docs/model-loop/ufc/study/README.md` has every table).
+
+**The closing line.** No licensed, timestamped UFC close exists in the repository.
+The study grades against a public archive's pre-fight moneyline (the Ultimate UFC
+Dataset's `ufc-master.csv`: one line per side, a steady ~4% margin, 2010 to
+2026-03; only its two odds columns are read, fetched at run time into `.cache`, sha256
+recorded, never committed), matched to 5,662 ESPN bouts. It is **untimestamped**, so it
+grades but never certifies.
+
+**1.1.0, every decided bout since 2018** (4,853; 3,764 with a close): log loss
+0.673, Brier 0.240; on the bouts with a close 0.671 against the closing line's
+0.604 (Brier 0.239 v 0.209). Its stated chances are calibrated but it almost never
+leaves 50-65%, where the close names 80-90% favourites and stays on the diagonal.
+**Gaps over 10 points: 2,102 bouts, 586 resolved in the model's favour, 1,516 in the
+market's.** Its blind spots (each bout read from the side of the fighter concerned,
+said by the model / by the close / won): the older fighter at 37+ 47.8% / 38.4% /
+33.6%; 8+ years older 45.9 / 36.3 / 32.2; a debutant 45.3 / 41.9 / 37.9; the fighter
+with 1-10 UFC bouts against a more experienced one 49-50 / 51-54 / 52-55; out 540+
+days 46.0 / 42.8 / 39.4. Division changes and rematches: small.
+
+**One change at a time** (fit 2016-2020, kept only if the 2021-2023 log loss fell by
+0.0005 or more; protocol hashed before any step, `protocol.json`): step-size re-tune
+dropped; short-sample shrinkage and a debut prior dropped; **pre-UFC record prior
+kept (−0.0114)**; layoff decay dropped; **age curve kept (−0.0070)**; division
+change dropped; recency dropped (the fit chose none); head to head dropped
+(−0.0003). **Promotion** (2024 on, read once, against 1.1.0 on the same 1,623
+bouts): log loss 0.666 → 0.646 (−0.0199, card-blocked 95% interval −0.028 to
+−0.011), Brier −0.0094: promoted as 1.2.0. Since 2018: 0.653 (1.1.0 0.673); on the
+bouts with a close 0.650 against the close's 0.604.
+
+**Hindsight in the record prior.** The reconstructed record of a fighter who also
+fought outside the UFC after the first bout in the data carries those results back.
+The record step's gain is about −0.019 on fighters who left the UFC and −0.005 on
+those still there; on the test window with both fighters still in the UFC in 2026
+(1,016 bouts, where it can barely act) the record step alone gains −0.0085 (95%
+interval −0.016 to −0.001) and 1.2.0 −0.0186 (−0.029 to −0.008). So the record prior
+helps, by about half what the full backtest shows. For a bout priced now the record is
+exact. ESPN's athlete overview lists only the five latest UFC bouts, so no dated
+career history (nor pre-UFC opponent quality) is available.
+
+**What 1.2.0 still misreads.** Debutants: 48.6% said, 41.9% the close, 37.9% won
+(worse than 1.1.0). The age curve is one line for every division (heavyweights may
+age later). The record prior sat at its grid's edge. The weekly loop now tests
+`record_prior_stronger`, `age_steeper`, `age_gentler`, `head_to_head` and
+`debut_lower` under its preregistered rule.
+
+**The guard** (`model_loop/adapters/ufc/guard.py`, `simulator/src/sports/ufc/guard.ts`,
+`docs/model-loop/ufc/guard.json`). Every booked bout carries DraftKings' latest
+pregame moneyline as ESPN shows it (`research/clv/openers/ufc`, captured hourly),
+the margin removed multiplicatively. A gap over **8 points** (`threshold_pp`) is
+labelled **"Model disagrees with market"**: both numbers side by side, the factors
+present that the model is known to misread (a debut or short UFC sample, a layoff of
+365+ days, 35 or older, a weight change, a rematch) each with the served version's
+measured record, no fair odds. A gap is a signal only when the study certifies that
+gaps that size beat a **timestamped** close out of sample with n ≥ 300; on 2021 on,
+1.2.0's 1,420 gaps over 8 points resolved 478 in its favour and 942 in the market's,
+and the close on file is untimestamped: **not certified**. The loop publishes the
+verdicts (`current.json` `guard`); the simulator's copy reproduces them (gate
+`guard.agrees`); the Games page reads the loop's (`tools/slate/research.js`: a
+disagreeing main event is a LIMITED projection, never a signal).
 
 The model's record (the loop's own evaluation, `model_loop/published/ufc/validation.json`):
 validation 2021-2024 log loss **0.6756** (n 2,225) against a coin's 0.6931;
-2025 holdout 0.6657 (n 563); 2026 so far, served 1.1.0, 0.6712 (n 498).
+2025 holdout 0.6657 (n 563); 2026 so far, served 1.2.0, 0.6509 (n 498).
 Favourites: said 56.1% and won 56.5% in 2021-2024; 56.4% / 60.9% in 2025. The
-validation and holdout scored the tuned configuration (1.0.0); 1.1.0 changed only
-the new-fighter step (promoted for a log loss 0.0016 lower over 2016 to date).
-No closing-price archive exists, so it has never been compared with a market.
+validation and holdout are the preregistered backtest of the tuned 1.0.0; 1.1.0
+changed only the new-fighter step (a log loss 0.0016 lower over 2016 to date), and
+1.2.0 is measured against 1.1.0 and the closing line in §2a. No timestamped
+closing archive exists, so nothing here is certified as beating the market.
 
 ---
 
@@ -186,7 +268,9 @@ periods (`title_record.periods`, split at `TITLE_SPLIT` = 2021-01-01):
 
 Finer: 2014–15 +7.5 in 31, 2016–20 +8.7 in 69, 2021–24 +1.0 in 63, 2025 −1.2
 in 17, 2026 +1.0 in 7. The Elo underrated champions before 2021; since then it
-has matched them.
+has matched them. Under the served 1.2.0 (2026-10-24) the same fights: 2014–2020
+expected 57.7 (champions ahead by +13.3), 2021–2026 expected 50.7 (+1.3); the
+reader reads the numbers from each run.
 
 **The champion term (the fix belongs in the model, so it lives there).**
 `model_loop/adapters/ufc/model.py` gained `champ_bonus`: Elo points added to the
@@ -237,13 +321,18 @@ injuries and withdrawals; draws and no contests.
 | Names | ufc.com → ESPN ids | all 176 matched (accents, curly quotes, word order); one alias with its evidence: Muhammad Saidov = ESPN "Muhammad Said" (5369438, the only light heavyweight with that name stem) |
 | Title history | Wikipedia (sha256 in the snapshot) | every table read; incumbents agree with ufc.com in 11 of 11 |
 | Title accolades | `simulator/data/feeds/ufc_espn_samples.json.gz` (raw ESPN scoreboard; the fight-centre documents came back empty) | the four booked title fights: the holder is the ufc.com champion |
+| Fighter facts | `model_loop/data/ufc/fighter_facts.csv` (date of birth from ESPN's athlete document; the pre-UFC record reconstructed: `factors.py`) | the loop and the port read the same file (sha256 in the snapshot); the reproduction gate holds only if they agree |
+| Market, guard | `research/clv/openers/ufc/*.jsonl` (DraftKings via ESPN, observed_at stamped), `docs/model-loop/ufc/guard.json` | the guard's verdict on every bout the loop publishes is reproduced (`guard.agrees`) |
+| Model record | `docs/model-loop/ufc/study/comparison.json` | read into Model Health as written |
 
 Gates that block the simulation: `model.reproduces`, `fighters.rated` (every
 fighter rated from the data or a debutant at 1500; no champion or ranked
 contender without a UFC bout), `rankings.parsed`, `title_history.parsed`,
 `schedule.single` (no fighter booked twice). Publication only: `model.served`,
 `model.booked_priced` (the bouts the loop lists carry its published price),
-`rankings.fresh` (≤ 8 days), `champions.agree`, `schedule.current`, then
+`rankings.fresh` (≤ 8 days), `champions.agree`, `schedule.current`, `guard.agrees`
+(this copy of the guard gives the loop's verdict on every bout both list, and no
+disagreement is a signal without certification), then
 `run.sum_rules`, `run.finite`, `run.count` (100,000), `sport.active`.
 
 Registry: **ACTIVE** while the loop serves its Elo (`versions.json` status
@@ -252,37 +341,58 @@ in each run, and the matchmaking rule is labelled Estimated, not a fact to verif
 
 ---
 
-## 7. Dry run (committed data, 2026-10-23)
+## 7. Dry run (committed data, 2026-10-24, served 1.2.0)
 
 `node simulator/src/cli/run.ts --sport ufc --season 2026 --workers 4 --dry-run`
-(`npm run sim:ufc:dry-run`): 100,000 runs, 1.7-7.2 s on 4 workers (machine
-load), peak RSS 288 MB, input hash `ea3500c47b70…`, seed 16876396022525349366
-(from the input hash), **PUBLISHABLE**.
+(`npm run sim:ufc:dry-run`): 100,000 runs, 2.6 s on 4 workers, peak RSS 333 MB,
+input hash `5fe01830c04f…`, seed 6908548426050263681 (from the input hash), model
+`edgedesk_ufc_elo@1.2.0+cfge6f03e29`, **PUBLISHABLE** (every gate, `model.reproduces`
+20 of 20 and `guard.agrees` 18 of 18 included).
 
-**UFC 333 main event, featherweight title** (served 45.93% Volkanovski):
-Volkanovski 45.9% ±0.3 (fair 2.18 / +118: by finish 20.7%, decision 25.3%),
-**Evloev 54.1% ±0.3** (fair 1.85 / −118: finish 17.5%, decision 36.6%); a finish
-38.2% (R1 13.8, R2 10.2, R3 7.4, R4 3.5, R5 3.3), the distance 61.8%; **new
-champion 54.1%**. Co-main, bantamweight title: Dvalishvili 54.8% over the
-champion Yan 45.2% (finish 30.7%). UFC 334: Gane 57.8% v Hokit; Harrison 37.2% v
-Nunes 62.8%. UFC 335: Oliveira 69.4% v Lopes; Pereira 55.4% v Pavlovich.
+**UFC 333** (1.1.0 → 1.2.0, the served price; the market is DraftKings' latest
+no-vig price, 2026-10-24 07:37-12:14 UTC; DISAGREES: over 8 points):
+
+| Bout | 1.1.0 | 1.2.0 | Market | Guard |
+|---|---|---|---|---|
+| Volkanovski v Evloev (title) | 45.9 | 34.8 | 49.6 | DISAGREES −14.7 (Volkanovski 38) |
+| Dvalishvili v Yan (title) | 54.7 | 51.3 | 43.6 | agrees (+7.6) |
+| Temirov v Kavanagh | 55.7 | 50.4 | 48.9 | agrees |
+| Volkov v Kuniev | 70.6 | 65.3 | 52.2 | DISAGREES +13.1 (Volkov 38) |
+| Pico v Keita | 49.5 | 34.4 | 57.2 | DISAGREES −22.8 (both 2 UFC bouts) |
+| Murzakanov v Reyes | 51.8 | 55.0 | 64.5 | DISAGREES −9.4 (both past 35) |
+| Krylov v Yakhyaev | 38.5 | 26.0 | 18.8 | agrees |
+| Magomedov v Rowston | 47.7 | 42.5 | 53.3 | DISAGREES −10.7 (Magomedov 36) |
+| Dawson v Aliev | 60.8 | 55.8 | 51.1 | agrees |
+| Thicknesse v Chopurov | 56.2 | 46.0 | 17.8 | DISAGREES +28.3 (Chopurov's debut) |
+| Vagaev v Malkoun | 40.0 | 42.7 | 59.3 | DISAGREES −16.6 (short sample, weight change) |
+| Santos v Oki | 60.5 | 59.6 | 51.1 | DISAGREES +8.5 (Oki's weight change) |
+| Gugnon v Steele | 50.3 | 47.1 | 41.7 | agrees |
+| Caliari v Lucindo | 34.4 | 34.9 | 22.9 | DISAGREES +12.1 (Lucindo's layoff) |
+
+1.2.0 is nearer the market than 1.1.0 on 10 of the 14 (mean gap 13.0 → 11.6
+points; over 8 points 10 → 9). The main event: Volkanovski 34.7% ±0.3 (finish 15.7%,
+decision 18.9%), Evloev 65.3% (finish 20.8%, decision 44.5%); a finish 36.6%; **new
+champion 65.3%**, fair odds withheld (the model disagrees with the market). UFC 334:
+Gane 43.9% v Hokit (1.1.0 57.8%, market 69.6%: DISAGREES −25.7), Harrison 48.5% v
+Nunes (1.1.0 37.0%, market 64.5%: DISAGREES −16.0). UFC 335: Oliveira 62.7% v Lopes;
+Pavlovich 52.3% v Pereira.
 
 **Title path to 2027-10-18** (hold the title at the horizon · win it · title
 shot · beat the champion if given the shot; Estimated):
 
 | Division | Expected title fights | Top of the table |
 |---|---|---|
-| Flyweight | 1.69 | Van (C) 54.7 · Kape 23.8 / 33.3 / 97.6 / 34.2 · Royval 16.6 / 18.6 / 59.8 / 31.2 |
-| Bantamweight | 2.56 | O'Malley 30.2 / 41.5 / 96.0 / 43.2 · Dvalishvili 26.4 / 54.8 / 100 / 54.8 · Song 20.6 · Yan (C) 19.5 |
-| Featherweight | 1.98 | Evloev 31.1 / 54.1 / 100 / 54.1 · Sterling 26.3 / 27.9 / 50.2 / 55.5 · Volkanovski (C) 25.2 |
-| Lightweight | 1.49 | Gaethje (C) 39.5 · Tsarukyan 35.3 / 45.8 / 93.5 / 49.0 · Oliveira 15.7 |
-| Welterweight | 1.39 | Makhachev (C) 68.1 · Prates 19.6 / 24.7 / 94.1 / 26.2 · Morales 10.7 |
-| Middleweight | 1.91 | Du Plessis 40.6 / 60.7 / 99.3 / 61.1 · Imavov 25.4 · Strickland (C) 23.4 |
-| Light heavyweight | 1.93 | Ankalaev 36.0 / 51.0 / 99.4 / 51.3 · Ulberg (C) 34.3 · Stirling 15.7 |
-| Heavyweight | 1.33 | Gane (C) 48.8 · Hokit 34.8 / 42.2 / 100 / 42.2 · Volkov 12.6 |
-| Women's strawweight | 1.39 | Dern (C) 43.7 · Jandiroba 19.8 · Gomes 17.7 · Suarez 17.4 |
-| Women's flyweight | 1.06 | Silva (C) 59.1 · Shevchenko 32.6 / 36.6 / 83.8 / 43.7 · Grasso 7.8 |
-| Women's bantamweight | 1.71 | Nunes 47.1 / 62.8 / 100 / 62.8 · Edwards 24.9 · Harrison (C) 24.8 |
+| Flyweight | 1.70 | Van (C) 58.6 · Kape 22.1 / 30.5 / 97.6 / 31.2 · Royval 14.4 / 16.3 / 60.0 / 27.2 |
+| Bantamweight | 2.56 | O'Malley 33.4 / 46.2 / 96.0 / 48.1 · Song 22.1 · Dvalishvili 21.2 / 51.4 / 100 / 51.4 · Yan (C) 19.9 |
+| Featherweight | 1.98 | Evloev 39.7 / 65.3 / 100 / 65.3 · Sterling 17.5 · Volkanovski (C) 17.0 · Vallejos 16.1 |
+| Lightweight | 1.49 | Tsarukyan 44.7 / 54.7 / 93.4 / 58.6 · Gaethje (C) 33.4 · Oliveira 12.2 |
+| Welterweight | 1.39 | Makhachev (C) 66.2 · Prates 17.9 / 24.1 / 94.0 / 25.6 · Morales 14.2 |
+| Middleweight | 1.91 | Du Plessis 42.8 / 65.0 / 99.2 / 65.5 · Imavov 26.8 · Strickland (C) 19.5 |
+| Light heavyweight | 1.93 | Ankalaev 37.1 / 54.2 / 99.4 / 54.6 · Ulberg (C) 29.7 · Stirling 21.1 |
+| Heavyweight | 1.33 | Hokit 48.7 / 56.0 / 100 / 56.0 · Gane (C) 37.3 · Volkov 10.0 |
+| Women's strawweight | 1.39 | Dern (C) 44.6 · Jandiroba 19.9 · Gomes 19.5 · Suarez 14.2 |
+| Women's flyweight | 1.05 | Silva (C) 64.8 · Shevchenko 26.9 / 30.6 / 83.8 / 36.5 · Grasso 7.9 |
+| Women's bantamweight | 1.71 | Nunes 34.2 / 51.3 / 100 / 51.3 · Harrison (C) 31.8 · Edwards 30.4 |
 
 Several #1 contenders show nothing because the rule excludes a fighter coming
 off a loss (Pantoja, Topuria, Machado Garry, Chimaev, Zhang) or a no contest
@@ -302,15 +412,25 @@ through `esc()`.
   ufc.com champion/rank tags and debut marks, win share with its ±, fair decimal
   and American odds under it, by finish / by decision, finish v the distance,
   finish by round, a title badge and the chance of a new champion, the served
-  price beside the loop's published value.
+  price beside the loop's published value; **Model v market**: the market's no-vig
+  price, the gap and 1.1.0's price; a gap over the threshold is labelled "Model
+  disagrees with market" (on the bout and in its header), says it is not an edge,
+  lists what the model likely misreads with the served version's record on it, and
+  withholds the fair odds (the new champion's too).
 - **Title Path**: the horizon and the rule in plain words, the measured share of
   challengers off a win; per division: champion and the chance to keep the belt,
   the booked title fight, the pace, contenders moved out, a table (hold, win,
   shot, beat the champion if given the shot), contenders with no shot in any
   simulated year listed apart with the reason.
 - **Model Health**: the served Elo and the reproduction count, its record beside a
-  coin (plain-language verdict; no closing-price test), champions against the
-  Elo, the finish model out of sample, draws and no contests.
+  coin; **against the closing line**: 1.1.0 and the served model by window (log loss,
+  Brier, and on the bouts with a close beside the close itself), a calibration chart
+  (favourite-side reliability of the close, 1.1.0 and the served model; colours
+  checked for colour-vision deficiency on the dark surface, a dash and three marker
+  shapes as well, a direct label per line, every point's numbers on hover and in a
+  table), how gaps resolved by size, the certification in plain words, every change
+  tried; champions against the Elo, the finish model out of sample, draws and no
+  contests.
 
 Tested in Chromium at 390 and 1440 px (`simulator/tests/ui.e2e.ts`): no
 horizontal page scroll, no page error.
@@ -319,8 +439,11 @@ horizontal page scroll, no page error.
 
 ## 9. Limitations (also in the registry, shown in the reader)
 
-1. The served Elo's edge over a coin flip is modest (about 2.5% lower log loss in
-   validation, 4% in the 2025 holdout); never compared with closing prices.
+1. The served Elo (1.2.0) beats 1.1.0 out of sample but still trails the market
+   by a wide margin (since 2018 log loss about 0.65 v the closing line's 0.60). The
+   close it is graded against is an untimestamped public archive, so no gap is
+   certified as an edge: a gap over 8 points is "Model disagrees with market".
+   Residual blind spots: debutants (overrated), one age curve for every division.
 2. No method in the data: KO/TKO and submission are not told apart; draws and no
    contests are not simulated.
 3. The title path is Estimated: EdgeDesk's matchmaking rule, the measured pace,
@@ -329,24 +452,24 @@ horizontal page scroll, no page error.
    titles, retirements, injuries and withdrawals are not modelled; a contender
    booked in another division is treated as having moved.
 5. Title fights are priced without a champion term: champions beat the Elo's
-   expectation from 2014 to 2020 (71 of 100 v 54.8 expected) but have matched it
-   since 2021 (52 of 87 v 51.2). The term is retested every week (section 5) and
-   served only if it clears the preregistered rule.
-6. Ratings are frozen at the last result (the served layoff rule still applies at
-   a fight's date).
+   expectation from 2014 to 2020 (under 1.2.0, 71 of 100 v 57.7 expected) but have
+   matched it since 2021 (52 of 87 v 50.7). The term is retested every week
+   (section 5) and served only if it clears the preregistered rule.
+6. Ratings are frozen at the last result (the served layoff rule and age curve
+   still apply at a fight's date; head to head is not carried into a simulated
+   rematch).
 7. The ± is simulation noise only.
 
 ---
 
-## 10. Tests (2026-10-23, this environment)
+## 10. Tests (2026-10-24, this environment)
 
 | Suite | Result |
 |---|---|
-| `ufc_elo.test.ts` | 22 passed (SYNTHETIC walk cases; current.json reproduced; model.py at full precision) |
-| `ufc_sim.test.ts` | 66 passed (gamma helpers; SYNTHETIC two-division fixture: sum rules, exact marginals, rounds, rank rule, per-run invariants over 3,000 traced runs; 1 v 3 workers; gates on mutated snapshots; committed data; registry, plan) |
-| `ufc_ui.test.ts` | 33 passed (states, the three tabs, fair odds, escaping on every tab) |
-| `ui.test.ts` | 92 passed (UFC ACTIVE with its three tabs) |
-| `cli.test.ts` | 39 passed (the UFC in the nightly plan) |
-| `ui.e2e.ts` (Chromium) | 87 passed (UFC at 390 and 1440 px) |
+| `ufc_elo.test.ts` | 43 passed (SYNTHETIC walk cases; the 2026-10 parameters by hand and off; current.json reproduced; model.py at full precision served, with the champion term and with every 2026-10 parameter on; 1.1.0 runnable) |
+| `ufc_sim.test.ts` | 70 passed (gamma helpers; SYNTHETIC two-division fixture: sum rules, exact marginals, rounds, rank rule, per-run invariants over 3,000 traced runs; 1 v 3 workers; gates on mutated snapshots; committed data incl. the guard on every booked bout and 1.1.0's price beside 1.2.0's; registry, plan) |
+| `ufc_ui.test.ts` | 45 passed (states, the three tabs, fair odds and their withholding, the guard label and reasons, the closing-line card and calibration chart, escaping on every tab) |
+| `model_loop/tests` (Python) | 156 passed (the UFC suite: the extended walk off = 1.1.0, causal and symmetric on, prior and age by hand, factors, no-vig and archive matching, the guard and its certification refusals, the pipeline's refresh with the guard) |
+| `tools/slate/build.test.js`, `games.test.js`, `games_ui.e2e.js` | 67, 106, 105 passed (the UFC card's guard on the Games page) |
 | `npm run sim:test` | every suite green |
 | typecheck, `npm run sim:check` | clean, generated files current |

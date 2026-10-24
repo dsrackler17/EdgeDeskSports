@@ -9,9 +9,11 @@
                            fighters and bout counts, and misses no bout in its
                            window
      fighters.rated        every fighter rated from the data or priced as a
-                           debutant (1500) exactly as the served model does; no
-                           champion or ranked contender without a UFC bout (a
-                           name that did not match)
+                           debutant exactly as the served model does (1500 under
+                           1.0/1.1; the prior from the pre-UFC record when the
+                           served configuration has one); no champion or ranked
+                           contender without a UFC bout (a name that did not
+                           match)
      rankings.parsed       eleven divisions, each a champion and ranked
                            contenders, every name matched, the recorded page
                            sha256 equal to the saved page's
@@ -27,6 +29,10 @@
                            name the same champions as ufc.com
      schedule.current      no scheduled bout before the last result (a result
                            the feed has not delivered)
+     guard.agrees          this copy of the disagreement guard (guard.ts) gives
+                           the loop's verdict on every bout both list, and no
+                           disagreement is a signal unless the study certified
+                           gaps that size
    then run.sum_rules (with: finish + decision = wins, per fighter),
    run.finite, run.count (100,000 to publish) and sport.active.
    =========================================================================== */
@@ -53,9 +59,9 @@ export function validateUfcInputs(snap: UfcSnapshot, nowMs: number = Date.now())
     'the port of the served Elo ' + d.elo.version + ' reproduces ' + rp.reproduced + ' of ' + rp.published + ' published p_a (' + rp.file + ', ' + rp.generated_at + ') to four decimals, same fighters and bout counts'
     + (rp.mismatches.length ? '; mismatches: ' + rp.mismatches.slice(0, 5).map((m) => m.bout_id + ' ' + m.why).join('; ') : '') + (rp.window_missing.length ? '; priced in the window but not published: ' + rp.window_missing.join(', ') : ''));
   const ranked = d.fighters.filter((f) => f.champion || f.rank != null);
-  const unrated = d.fighters.filter((f) => !(Number.isFinite(f.rating) && (f.bouts > 0 || (f.debut && f.rating === 1500))));
+  const unrated = d.fighters.filter((f) => !(Number.isFinite(f.rating) && (f.bouts > 0 || f.debut)));
   const ghost = ranked.filter((f) => f.bouts === 0);
-  g('fighters.rated', !unrated.length && !ghost.length, d.fighters.length + ' fighters: ' + d.fighters.filter((f) => !f.debut).length + ' rated from their UFC bouts, ' + d.fighters.filter((f) => f.debut).length + ' debutants priced as an average fighter (1500), as the served model prices them'
+  g('fighters.rated', !unrated.length && !ghost.length, d.fighters.length + ' fighters: ' + d.fighters.filter((f) => !f.debut).length + ' rated from their UFC bouts, ' + d.fighters.filter((f) => f.debut).length + ' debutants priced from the served model\'s starting rating (' + (d.elo.config.prior_rec ? 'the prior from the pre-UFC record' : 'an average fighter, 1500') + ')'
     + (unrated.length ? '; unrated: ' + unrated.map((f) => f.name).join(', ') : '') + (ghost.length ? '; champions or ranked contenders with no UFC bout in the data (unmatched names?): ' + ghost.map((f) => f.name).join(', ') : ''));
   const rk = d.rankings, nm = d.name_matching;
   const thin = d.divisions.filter((v) => v.contenders.length + v.moved_out.length < 10);
@@ -80,6 +86,10 @@ export function validateUfcInputs(snap: UfcSnapshot, nowMs: number = Date.now())
     + (cw.length ? '; Wikipedia differs: ' + cw.map((x) => x.division + ' (ufc.com ' + x.ufc + ', Wikipedia ' + x.wikipedia + ')').join(', ') : '') + (ce.length ? '; ESPN differs on ' + ce.map((x) => x.bout_id).join(', ') : ''), 'publication');
   const late = d.data_checks.late;
   g('schedule.current', !late.length, late.length ? 'scheduled bouts before the last result, without a result: ' + late.join(', ') : 'every bout before the last result (' + d.as_of + ') has its result', 'publication');
+  const GA = d.guard, sig = d.bouts.filter((b) => b.guard.signal_allowed && !GA.certified);
+  g('guard.agrees', !GA.agree.differ.length && !sig.length, 'disagreement guard (threshold ' + GA.threshold_pp + ' points, ' + (GA.certified ? 'certified' : 'not certified: no disagreement is a signal') + '): ' + GA.with_market + ' of ' + d.bouts.length + ' booked bouts have a market price, '
+    + GA.disagreements + ' disagree; the loop\'s verdict reproduced on ' + GA.agree.same + ' of ' + GA.agree.compared + ' bouts both list'
+    + (GA.agree.differ.length ? '; differ: ' + GA.agree.differ.slice(0, 5).join('; ') : '') + (sig.length ? '; a signal without certification: ' + sig.map((b) => b.bout_id).join(', ') : ''), 'publication');
   return out;
 }
 
@@ -100,6 +110,7 @@ export function readerSummary(d: UfcInputData, results: ResultsDoc, diags: Recor
     const sa = fa.reduce((x, y) => x + y, 0), sb = fb.reduce((x, y) => x + y, 0);
     c.bouts.push({ bout_id: b.bout_id, start: b.start, order: b.order, weight_class: b.weight_class, division: b.division, rounds: b.rounds, title: b.title,
       a: side(b.a), b: side(b.b), served_p_a: b.p_a, published_p_a: b.p_a_published, basis: b.basis,
+      market: b.market, guard: b.guard, compare: b.compare, facts: b.facts,
       a_win: P(aw, n), b_win: P(n - aw, n), a_finish: P(sa, n), a_decision: P(aw - sa, n), b_finish: P(sb, n), b_decision: P(n - aw - sb, n),
       finish: P(sa + sb, n), decision: P(n - sa - sb, n), finish_rounds: fa.map((x, k) => P(x + fb[k], n)),
       new_champion: b.title ? P(b.title.champion === b.a ? n - aw : aw, n) : null });
@@ -127,7 +138,7 @@ export function readerSummary(d: UfcInputData, results: ResultsDoc, diags: Recor
     divisions,
     matchmaking: { rule: d.matchmaking.rule, min_rest_days: d.matchmaking.min_rest_days, challengers: d.title_record.challengers },
     model_health: { elo: { version: d.elo.version, status: d.elo.status, promoted_at: d.elo.promoted_at, config: d.elo.config, reproduced: d.elo.reproduction.reproduced, published: d.elo.reproduction.published },
-      windows: d.health.windows, market: d.health.market, title_record: { matched: d.title_record.matched, unmatched: d.title_record.unmatched.length, decided: d.title_record.decided, champion_won: d.title_record.champion_won,
+      windows: d.health.windows, market: d.health.market, study: d.health.study, guard: d.guard, title_record: { matched: d.title_record.matched, unmatched: d.title_record.unmatched.length, decided: d.title_record.decided, champion_won: d.title_record.champion_won,
         elo_expected: d.title_record.elo_expected_champion_wins, log_loss: d.title_record.log_loss, coin: d.title_record.coin_log_loss,
         periods: (d.title_record.periods || []).map((x) => ({ from: x.from, to: x.to, decided: x.decided, champion_won: x.champion_won, elo_expected: x.elo_expected_champion_wins })) },
       champion_term: { served_bonus: d.elo.config.champ_bonus || 0, last_test: d.champion_term },
@@ -190,7 +201,9 @@ export function printUfcSummary(o: { results: ResultsDoc; gates: Gate[]; outDir:
   const pp = (x: any) => (x ? (100 * x.probability).toFixed(1).padStart(5) + '±' + (100 * 1.96 * x.mcse).toFixed(1) : '   —   ');
   for (const c of S.cards) {
     log('— ' + c.event + ' (' + c.date.slice(0, 10) + ')');
-    for (const b of c.bouts) log('  ' + (b.title ? '[TITLE] ' : '') + (b.a.name + ' ' + pp(b.a_win)).padEnd(34) + ' v ' + (b.b.name + ' ' + pp(b.b_win)).padEnd(34) + ' served ' + (100 * b.served_p_a).toFixed(1) + '% · finish ' + pp(b.finish) + ' · R1 ' + pp(b.finish_rounds[0]) + (b.new_champion ? ' · new champion ' + pp(b.new_champion) : ''));
+    for (const b of c.bouts) log('  ' + (b.title ? '[TITLE] ' : '') + (b.a.name + ' ' + pp(b.a_win)).padEnd(34) + ' v ' + (b.b.name + ' ' + pp(b.b_win)).padEnd(34) + ' served ' + (100 * b.served_p_a).toFixed(1) + '%'
+      + (b.compare ? ' (' + b.compare.version + ' ' + (100 * b.compare.p_a).toFixed(1) + '%)' : '') + (b.market ? ' · market ' + (100 * b.market.p_a).toFixed(1) + '%' : '') + (b.guard.status === 'DISAGREES' ? ' · DISAGREES ' + b.guard.gap_pp + ' pts' : '')
+      + ' · finish ' + pp(b.finish) + ' · R1 ' + pp(b.finish_rounds[0]) + (b.new_champion ? ' · new champion ' + pp(b.new_champion) : ''));
   }
   const ent = new Map((r.entities as any[]).map((e) => [e.entity_id, e]));
   log('title path to ' + S.horizon.to + ' (percent: hold the title at the horizon · win it · title shot · beat the champion if given the shot) — Estimated');

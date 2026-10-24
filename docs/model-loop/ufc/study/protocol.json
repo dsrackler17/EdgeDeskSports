@@ -1,0 +1,220 @@
+{
+ "schema": "edgedesk_model_loop_ufc_study_protocol_v1",
+ "windows": {
+  "walk_from": 2014,
+  "fit": [
+   2016,
+   2020
+  ],
+  "select": [
+   2021,
+   2023
+  ],
+  "test": [
+   2024,
+   2099
+  ],
+  "diagnosis": [
+   2018,
+   2099
+  ]
+ },
+ "min_gain_ll": 0.0005,
+ "base_version": "1.1.0",
+ "steps": [
+  {
+   "id": "step_size",
+   "label": "Step size: k and the newcomer step re-tuned (1.1.0 sat at the edge of its grid, k 64)",
+   "grid": {
+    "k": [
+     48,
+     64,
+     80,
+     96,
+     128
+    ],
+    "k_new_mult": [
+     1.0,
+     1.25,
+     1.5,
+     2.0
+    ]
+   }
+  },
+  {
+   "id": "short_sample",
+   "label": "Short-sample shrinkage and a debut prior: few UFC bouts are pulled toward the prior; a debutant need not start at 1500",
+   "grid": {
+    "shrink_bouts": [
+     0,
+     0.5,
+     1,
+     2,
+     3,
+     5
+    ],
+    "debut_offset": [
+     -75,
+     -50,
+     -25,
+     0,
+     25
+    ],
+    "k_new_mult": [
+     1.0,
+     1.5,
+     2.0
+    ]
+   }
+  },
+  {
+   "id": "pre_ufc_record",
+   "label": "The pre-UFC record as the prior: professional wins, losses and experience before the first bout in the data",
+   "grid": {
+    "prior_rec": [
+     0,
+     25,
+     50,
+     75,
+     100,
+     150
+    ],
+    "prior_exp": [
+     -25,
+     0,
+     25,
+     50,
+     75
+    ],
+    "debut_offset": [
+     "-25",
+     "+0",
+     "+25"
+    ]
+   }
+  },
+  {
+   "id": "layoff",
+   "label": "Layoff decay: a smooth pull toward the prior after long inactivity, and a faster step on return",
+   "grid": {
+    "layoff_mode": [
+     "smooth"
+    ],
+    "layoff_days": [
+     180,
+     270,
+     365
+    ],
+    "layoff_span": [
+     180,
+     365,
+     730
+    ],
+    "layoff_regress": [
+     0.1,
+     0.25,
+     0.4,
+     0.6
+    ],
+    "layoff_k_mult": [
+     1.0,
+     1.5
+    ]
+   }
+  },
+  {
+   "id": "age",
+   "label": "Age curve: points per year above a knee, more past 36, and for youth",
+   "grid": {
+    "age_knee": [
+     32,
+     34
+    ],
+    "age_slope": [
+     0,
+     -5,
+     -10,
+     -15,
+     -20
+    ],
+    "age_slope2": [
+     0,
+     -10,
+     -20
+    ],
+    "young_slope": [
+     0,
+     5,
+     10
+    ]
+   }
+  },
+  {
+   "id": "division_change",
+   "label": "Division change: the rating discounted toward the prior, and points per division moved",
+   "grid": {
+    "div_regress": [
+     0,
+     0.1,
+     0.25,
+     0.5
+    ],
+    "div_up": [
+     -60,
+     -40,
+     -20,
+     0,
+     20
+    ],
+    "div_down": [
+     -40,
+     -20,
+     0,
+     20,
+     40
+    ]
+   }
+  },
+  {
+   "id": "recency",
+   "label": "Recency: a rating's distance from the prior halves every so many days, so old results fade",
+   "grid": {
+    "half_life_days": [
+     0,
+     730,
+     1095,
+     1460,
+     2190,
+     2920
+    ],
+    "k": [
+     "+0",
+     "*1.25"
+    ]
+   }
+  },
+  {
+   "id": "head_to_head",
+   "label": "Head to head: earlier meetings of the same two fighters (rematches, trilogies)",
+   "grid": {
+    "h2h": [
+     0,
+     25,
+     50,
+     100,
+     150,
+     200
+    ],
+    "h2h_decay": [
+     0.5,
+     1.0
+    ]
+   }
+  }
+ ],
+ "keep_rule": "SELECT log loss at least 0.0005 below the model before the step, and FIT log loss no worse",
+ "promote_rule": "TEST log loss at least 0.0005 below 1.1.0's on the same bouts with the card-blocked paired 95% interval below zero, and the Brier score no worse",
+ "reference": "the public archive's pre-fight moneyline without its margin (untimestamped): it grades, never certifies",
+ "disclosure": "Written 2026-10-24 after the diagnosis of 1.1.0 (which reads 2018 on, the test window included) and before any step was fitted or selected. The diagnosis read the test window's errors for 1.1.0 only.",
+ "sha256": "dac131d32e81a1cf5d87f82f5211b8b26d19d8a45d1d8284884d8945daff2761"
+}

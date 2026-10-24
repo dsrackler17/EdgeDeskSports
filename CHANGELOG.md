@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-24 — UFC: why the model disagreed with the market, a better model (1.2.0), and a guard on every disagreement
+
+On UFC 333 the served UFC Elo (1.1.0) had Dvalishvili 54.6% against Kalshi's ~41% and Volkov 70.4% against ~53%. The study behind this change (`model_loop/adapters/ufc/study.py`, every table in `docs/model-loop/ufc/study/README.md`) found those gaps were the model's blind spots, fixed what out-of-sample evidence supported, and stopped the product from presenting a large disagreement as an edge.
+
+- **The diagnosis (1.1.0, every decided bout since 2018).** Graded against a public archive's pre-fight closing lines (untimestamped, matched to 5,662 ESPN bouts):
+  - log loss 0.671 against the closing line's 0.604 on the same 3,764 bouts (Brier 0.239 v 0.209);
+  - gaps over 10 points: 2,102 bouts, **586 resolved in the model's favour, 1,516 in the market's**;
+  - blind spots: age (the older fighter at 37+: said 47.8%, close 38.4%, won 33.6%), debutants (45.3 / 41.9 / 37.9), short UFC samples, long layoffs.
+- **One change at a time** (fit 2016-2020; kept only if 2021-2023 log loss fell by 0.0005; protocol hashed first): kept the pre-UFC record as the prior (−0.0114) and an age curve (−0.0070); dropped step size, short-sample shrinkage and a debut prior, layoff decay, division change, recency and head to head.
+- **1.2.0 promoted, 1.1.0 kept runnable.** On 1,623 bouts from 2024 on (read once): log loss 0.666 → 0.646 (−0.0199, card-blocked 95% interval −0.028 to −0.011), Brier −0.0094. On bouts where both fighters are still in the UFC (where the reconstructed record's hindsight can barely act) the gain holds: −0.0186 (−0.029 to −0.008). It still trails the close (0.650 v 0.604 since 2018). Every published bout carries 1.1.0's price beside 1.2.0's.
+- **The disagreement guard** (`guard.py`, `guard.ts`, `docs/model-loop/ufc/guard.json`). Every bout is shown beside DraftKings' latest no-vig price. A gap over 8 points is labelled **"Model disagrees with market"** on the Simulator and Games pages, with both numbers, the factors that likely explain it (short sample, layoff, age, weight change, rematch) and their measured record, and no fair odds. A gap is a signal only when the study certifies it beat a timestamped close; it does not (942 of 1,420 out-of-sample gaps over 8 points went the market's way), so no disagreement is a signal.
+- **Model Health** shows 1.1.0, 1.2.0 and the closing line side by side (log loss, Brier), a calibration chart, how gaps resolved, the certification and every change tried.
+- **New data.** Dates of birth from ESPN's athlete documents (`fighters.csv`, 2,407 of 2,425), records as of a stated time (`records.csv`), and one per-fighter facts file both the loop and the simulator read (`fighter_facts.csv`).
+- **Still open.** 1.2.0 overrates debutants (48.6% said v 37.9% won), and its age curve is one line for every division. The record prior sat at its grid's edge. No timestamped closing archive exists. The weekly loop now retests five follow-ups under its preregistered rule.
+
 
 
 ## 2026-10-24 — Women's college basketball forecasts: the men's system, rebuilt for the women's game
