@@ -93,6 +93,8 @@ const PUB = require('../publish');
     fs.mkdirSync(process.env.NCAAM_REPORTS_DIR, { recursive: true });
     const repFile = path.join(process.env.NCAAM_REPORTS_DIR, '2026-10-23-selection_v1.json'); const repText = JSON.stringify(rep, null, 1) + '\n'; fs.writeFileSync(repFile, repText);
     T.throws('promote() refuses a decision that is not PROMOTE', () => RG.promote(challenger, { decision: 'RETAIN', file: repFile, report_sha256: sha(repText) }), /refused/);
+    /* as weekly.js does: the candidate's decision record first (champion = the champion it was scored against), then the pointer move */
+    RG.recordDecision({ decision: 'PROMOTE', candidate: 'selection_v1', challenger: 'ncaam_adjeff@1.0.0', champion: RG.readPointer().current.key, report: repFile, report_sha256: sha(repText), gates_failed: [] });
     RG.promote(challenger, { decision: 'PROMOTE', file: repFile, report_sha256: sha(repText) });
     const d0 = pgDb();
     const s1 = await PUB.syncChampion(d0);

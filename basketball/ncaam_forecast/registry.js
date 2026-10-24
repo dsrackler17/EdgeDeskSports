@@ -115,6 +115,11 @@ function rollback(o) {
 
 function recordDecision(rec) { appendHistory(rec); }
 
+/** a history line that moved the pointer: INIT, ROLLBACK, or a PROMOTE written by promote() (it names `replaced`).
+    weekly.js's own decision record for a winning candidate is also a PROMOTE, but it names the champion it was scored
+    against and moves nothing */
+function movesPointer(x) { return !!x && (x.decision === 'INIT' || x.decision === 'ROLLBACK' || (x.decision === 'PROMOTE' && !!x.replaced)); }
+
 /** The registry agrees with itself: the pointer's model record exists with the
     pointer's configuration, and the last pointer-moving history line (INIT,
     PROMOTE with `replaced`, ROLLBACK) names the current champion. A crash
@@ -131,14 +136,14 @@ function verify() {
   let last = null;
   for (const l of lines) {
     let x; try { x = JSON.parse(l); } catch (_) { r.push('an unreadable history line'); continue; }
-    if (x.decision === 'INIT' || x.decision === 'ROLLBACK' || (x.decision === 'PROMOTE' && x.replaced)) last = x;
+    if (movesPointer(x)) last = x;
   }
   if (!last) r.push('the history has no INIT, PROMOTE or ROLLBACK line');
   else if (last.champion !== ptr.current.key) r.push('the history says the champion is ' + last.champion + ', the pointer says ' + ptr.current.key);
   return { ok: !r.length, reasons: r, champion: ptr.current.key };
 }
 
-module.exports = { DIR, P, atomicWrite, appendHistory, readPointer, readModel, recordModel, modelKey, init, promote, rollback, recordDecision, verify };
+module.exports = { DIR, P, atomicWrite, appendHistory, readPointer, readModel, recordModel, modelKey, init, promote, rollback, recordDecision, movesPointer, verify };
 
 if (require.main === module) {
   const cmd = process.argv[2]; const arg = (k) => { const i = process.argv.indexOf('--' + k); return i >= 0 ? process.argv[i + 1] : null; };
