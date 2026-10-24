@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-24T04:08:07.750Z",
+ "generated_at": "2026-10-24T05:08:11.735Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-18T04:07:57.885Z",
+  "since": "2026-10-18T05:07:55.858Z",
   "changes": [
    {
     "what": "pricing code",
@@ -22,8 +22,8 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-18T01:11:38.459Z",
-    "to": "2026-10-24T01:29:24.180Z"
+    "from": "2026-10-18T04:52:41.905Z",
+    "to": "2026-10-24T04:47:49.287Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -34,7 +34,7 @@
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 10,
+    "from": 43,
     "to": 56
    }
   ],
@@ -381,52 +381,6 @@
   },
   {
    "from_at": "2026-10-14T05:09:34.133Z",
-   "to_at": "2026-10-22T05:08:29.173Z",
-   "old_fair": -1.32,
-   "new_fair": -5.78,
-   "change": -4.46,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "home: Cutter Boley (PREVIOUS_GAME) → Cutter Boley (COMPETITION)"
-    },
-    {
-     "cause": "HOME_VENUE_CORRECTION",
-     "term": "hfa",
-     "points": -1.28
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -0.61
-    },
-    {
-     "cause": "QB_ABSENCE_OR_AVAILABILITY",
-     "term": "injury",
-     "points": 1.95
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401856839",
-   "game": "Kansas State @ Arizona State",
-   "market_then": null,
-   "market_now": 2.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-10-14T05:09:34.133Z",
    "to_at": "2026-10-22T21:49:29.744Z",
    "old_fair": 12.84,
    "new_fair": 8.49,
@@ -708,6 +662,52 @@
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
    "price_state": "PRICE NO LONGER ATTRACTIVE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-24T04:47:49.287Z",
+   "old_fair": -1.32,
+   "new_fair": -4.81,
+   "change": -3.49,
+   "material": true,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "QB_STATUS",
+     "detail": "home: Cutter Boley (PREVIOUS_GAME) → Cutter Boley (COMPETITION)"
+    },
+    {
+     "cause": "HOME_VENUE_CORRECTION",
+     "term": "hfa",
+     "points": -1.28
+    },
+    {
+     "cause": "MATCHUP_UPDATE",
+     "term": "matchup",
+     "points": -0.61
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": 2.93
+    }
+   ],
+   "unexplained": -0.01,
+   "game_id": "401856839",
+   "game": "Kansas State @ Arizona State",
+   "market_then": null,
+   "market_now": 1.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-10-14T05:09:34.133Z",
