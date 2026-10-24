@@ -13,7 +13,10 @@
 #                              ATP and WTA singles main draw whose order is
 #                              known, each its own competition, and one for
 #                              the day's matches; today's scoreboards are read
-#                              live here, the committed feed if that fails)
+#                              live here, the committed feed if that fails),
+#                              and through 2027-05-30 college baseball (the
+#                              2027 Road to Omaha from the committed warehouse;
+#                              unchanged inputs reuse the published run)
 #                              (plan.ts NIGHTLY), 100,000 runs.
 #   schedule 15:47 UTC daily   the NBA (plan.ts NBA_CRON), 100,000 runs: late
 #                              enough that hoopR has the previous night's
@@ -73,10 +76,10 @@ on:
       sport:
         description: 'Sport (only sports with a simulation module)'
         type: choice
-        options: [nfl, nhl, mlb, cfb, ncaam, wnba, nba, ufc, golf, tennis]
+        options: [nfl, nhl, mlb, cfb, ncaam, wnba, nba, ufc, golf, tennis, college_baseball]
         default: nfl
       season:
-        description: 'Season (must equal the sport''s configured season: NFL, MLB, CFB, WNBA, UFC, golf and tennis 2026; NHL and NBA 2027 = 2026-27; NCAAM 2027)'
+        description: 'Season (must equal the sport''s configured season: NFL, MLB, CFB, WNBA, UFC, golf and tennis 2026; NHL and NBA 2027 = 2026-27; NCAAM and college baseball 2027)'
         type: string
         default: '2026'
       runs:
@@ -180,6 +183,9 @@ jobs:
       - name: The tennis suites, before a tennis run
         if: ${{ matrix.sport == 'tennis' }}
         run: npm run sim:tennis:test
+      - name: The college baseball suites, before a college baseball run (the replay must reproduce the served predictions)
+        if: ${{ matrix.sport == 'college_baseball' }}
+        run: npm run sim:cbase:test
       - name: The college basketball (NCAAM) bracket suite, before an NCAAM run
         if: ${{ matrix.sport == 'ncaam' }}
         run: node simulator/tests/ncaam_sim.test.ts

@@ -33,6 +33,9 @@ import { executeUfc } from '../src/sports/ufc/run.ts';
 import { buildUfcSnapshot } from '../src/sports/ufc/inputs.ts';
 import { executeGolf } from '../src/sports/golf/run.ts';
 import { tennisRuns } from './_tennis_fixture.ts';
+import { executeCbase } from '../src/sports/college_baseball/run.ts';
+import { writeCbaseSnapshot } from '../src/sports/college_baseball/inputs.ts';
+import { syntheticSnapshot } from './_college_baseball_fixture.ts';
 import os from 'node:os';
 
 const require = createRequire(import.meta.url);
@@ -131,6 +134,14 @@ const tennis = tout.runs.map((r, i) => {
 });
 const tennisOf = (u: string) => tennis.find((g) => u.includes(g.id) || u.includes(encodeURIComponent(g.id)) || u.includes('competition=eq.' + encodeURIComponent(g.comp))) || null;
 const TENNIS_DRAWS = tennis.filter((t) => t.comp !== 'matches');
+/* college baseball: the synthetic 2027 preseason (_college_baseball_fixture.ts: no warehouse replay), 3,000 runs */
+const cdir = fs.mkdtempSync(path.join(os.tmpdir(), 'cbase-e2e-'));
+writeCbaseSnapshot(path.join(cdir, 'snap.json'), syntheticSnapshot());
+const cout = await executeCbase({ season: 2027, runs: 3000, seed: '5', workers: 1, snapshot: path.join(cdir, 'snap.json'), out: path.join(cdir, 'out'), traceRuns: [], nowMs: Date.parse('2026-10-24T12:00:00Z') }, () => {});
+const CBASE_RUN_ID = 'abababab-0000-0000-0000-000000000000';
+const crun = { ...run, run_id: CBASE_RUN_ID, sport: 'college_baseball', competition: 'road-to-omaha', season: '2027', n_sims: 3000, seed: '5', model_version: cout.results!.run.model_version, rules_version: cout.results!.run.rules_version, comparison_id: null,
+  validation_summary: { flags: cout.results!.flags, sport_summary: (cout.results as any).sport_summary } };
+const crows = resultRows(cout as any), cents = entityRows(cout as any);
 const EVIL = '<img src=x onerror="window.__xss=1">';
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 
@@ -152,7 +163,8 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
   try { browser = await pw.chromium.launch({ headless: true }); }
   catch (_) { const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'; if (fs.existsSync(exe)) browser = await pw.chromium.launch({ headless: true, executablePath: exe }); else { srv.close(); skip('no Chromium'); } }
 
-  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean }
+  /* soon: a sport the served registry shows as COMING_SOON with one test blocker (every sport is ACTIVE or has views of its own) */
+  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean; soon?: string }
   async function open(viewport: { width: number; height: number }, hash: string, sc: Scenario) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript(() => {
@@ -175,8 +187,16 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     const isUfc = (u: string) => u.includes(encodeURIComponent(UFC_RUN_ID)) || u.includes(UFC_RUN_ID) || /sport=eq\.ufc/.test(u);
     const isNhl = (u: string) => u.includes(encodeURIComponent(NHL_RUN_ID)) || u.includes(NHL_RUN_ID) || /sport=eq\.nhl/.test(u);
     const isNba = (u: string) => u.includes(encodeURIComponent(NBA_RUN_ID)) || u.includes(NBA_RUN_ID) || /sport=eq\.nba/.test(u);
+    const cstatus = { ...status, sport: 'college_baseball', competition: 'road-to-omaha', season: '2027', published_run_id: sc.published ? CBASE_RUN_ID : null, n_sims: 3000, model_version: crun.model_version, comparison_status: null, comparison_at: null };
+    const isCbase = (u: string) => u.includes(CBASE_RUN_ID) || /sport=eq\.college_baseball/.test(u);
     await ctx.route('**/*', async (route: any) => {
       const u = route.request().url();
+      if (sc.soon && u.startsWith('http://127.0.0.1') && u.includes('/lib/edgedesk_simulator_sports.js')) {
+        const resp = await route.fetch(); const key = sc.soon;
+        const body = (await resp.text()).replace(new RegExp('("key": "' + key + '",\\s*"label": "[^"]+",\\s*"status": )"ACTIVE"'), '$1"COMING_SOON"')
+          .replace(new RegExp('("key": "' + key + '"[\\s\\S]*?"blockers": )\\[\\]'), '$1["TEST: out of season until February"]');
+        return route.fulfill({ response: resp, body });
+      }
       if (u.startsWith('http://127.0.0.1')) return route.continue();
       if (/supabase\.co/.test(u)) {
         const J = (b: unknown, st = 200) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(b) });
@@ -184,14 +204,14 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
         const gstatus = golf.map((g) => ({ ...status, sport: 'golf', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
         const tstatus = tennis.map((g) => ({ ...status, sport: 'tennis', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, ...gstatus, ...tstatus]); }
+        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, cstatus, ...gstatus, ...tstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
         const g = /sport=eq\.golf|eeeeeeee-/.test(u) ? golfOf(u) : /sport=eq\.tennis|ffffffff-/.test(u) ? tennisOf(u) : null;
         /* the tennis reader first asks for every tennis run (its draw picker's names), then each competition's */
         if (/sim_current_runs/.test(u) && /sport=eq\.tennis/.test(u) && !/competition=eq/.test(u)) return J(sc.entitled && sc.published ? tennis.map((t) => t.run) : []);
-        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? (g ? [g.run] : /sport=eq\.(golf|tennis)/.test(u) ? [] : [isUfc(u) ? urun : isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run]) : []);
-        if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(g ? g.rows : isUfc(u) ? urows : isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
-        if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(g ? g.ents : isUfc(u) ? uents : isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
+        if (/sim_current_runs/.test(u)) return J(sc.entitled && sc.published ? (g ? [g.run] : /sport=eq\.(golf|tennis)/.test(u) ? [] : [isCbase(u) ? crun : isUfc(u) ? urun : isWnba(u) ? wrun : isNhl(u) ? nrun : isNba(u) ? brun : run]) : []);
+        if (/sim_current_results/.test(u)) return J(sc.entitled ? paged(g ? g.rows : isCbase(u) ? crows : isUfc(u) ? urows : isWnba(u) ? wrows : isNhl(u) ? nrows : isNba(u) ? brows : rows.map((r) => (sc.evil && r.entity_id === 'BUF' ? { ...r, entity_name: EVIL } : r))) : []);
+        if (/sim_current_entities/.test(u)) return J(sc.entitled ? paged(g ? g.ents : isCbase(u) ? cents : isUfc(u) ? uents : isWnba(u) ? wents : isNhl(u) ? nents : isNba(u) ? bents : ents.map((e) => (sc.evil && e.entity_id === 'BUF' ? { ...e, entity_name: EVIL } : e))) : []);
         if (/sim_current_edges/.test(u)) return J(sc.entitled ? edges : []);
         if (/subscriptions/.test(u)) return J([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]);
         /* an onboarded reader: without it the personal desk's first-run walkthrough opens over the page once it is quiet */
@@ -367,8 +387,10 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       if (golf.length > 1) T.chk(W + ': golf: a tour picker with every tour\'s event', (await page.locator('#simHost [data-sim-act="tour"]').count()) === golf.length);
       T.chk(W + ': golf Leaderboard: no horizontal page scroll (the table scrolls in its card)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1), await page.evaluate(() => [document.scrollingElement!.scrollWidth, window.innerWidth]));
       await shot(page, 'sim-golf-leaderboard-' + W);
-      /* the table scrolls in its card under a sticky player column: bring the header into the open part first, as a reader would */
+      /* the table scrolls in its card under a sticky player column: bring the header into the open part first, as a reader would
+         (mid-screen, clear of the fixed bottom bar, then sideways past the sticky column) */
       await page.evaluate(() => { const b = document.querySelector('#simHost [data-sim-act="sort"][data-sim-val="top_20"]') as HTMLElement, sc = b.closest('.sm-scroll') as HTMLElement, th = sc.querySelector('th') as HTMLElement;
+        b.scrollIntoView({ block: 'center', inline: 'nearest' });
         sc.scrollLeft += b.getBoundingClientRect().left - sc.getBoundingClientRect().left - th.getBoundingClientRect().width - 8; });
       await page.click('#simHost [data-sim-act="sort"][data-sim-val="top_20"]'); await page.waitForTimeout(150);
       T.chk(W + ': golf Leaderboard: a column header sorts the table', (await page.locator('#simHost .sm-sort.on').innerText()).startsWith('Top 20'));
@@ -393,11 +415,37 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       await ctx.close();
     }
     {
-      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/college_baseball', { entitled: true, published: true });
+      const { ctx, page } = await open({ width: 390, height: 844 }, '#simulator/college_baseball', { entitled: true, published: true, soon: 'college_baseball' });
       await page.evaluate(() => (window as any).navHashRoute('#simulator/college_baseball')); await page.waitForTimeout(300);
       const t = await text(page);
-      T.chk('a sport that is not ACTIVE (#simulator/college_baseball) shows its blockers and no number', /Coming Soon/.test(t) && /Out of season/.test(t) && !/\d+\.\d%/.test(t));
+      T.chk('a sport that is not ACTIVE (college baseball, served as Coming Soon) shows its blockers and no number, even with a run published', /Coming Soon/i.test(t) && /TEST: out of season until February/.test(t) && !/\d+\.\d%/.test(t), t.slice(0, 300));
       await shot(page, 'sim-blocked-college-baseball-390'); await ctx.close();
+    }
+    /* college baseball (its own adapter: Road to Omaha, Conferences, Model Health) */
+    for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+      const W = vp.width + 'w';
+      const { ctx, page, errors } = await open(vp, '#simulator/college_baseball', { entitled: true, published: true });
+      await page.evaluate(() => (window as any).navHashRoute('#simulator/college_baseball'));
+      await page.waitForFunction(() => /Who gets to Omaha/.test((document.getElementById('simHost') as HTMLElement).innerText), null, { timeout: 15000 }).catch(() => {});
+      let t = await text(page);
+      T.chk(W + ': college baseball: the tabs are Road to Omaha, Conferences and Model Health, Road to Omaha open', /Conferences/.test(await page.locator('#simHost .sm-tabs').innerText()) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Road to Omaha');
+      T.chk(W + ': college baseball: who gets to Omaha, the preseason stated, 40 teams then all', /Who gets to Omaha/.test(t) && /2027 preseason/.test(t) && /3,000 simulated seasons/.test(t) && (await page.locator('#simHost .sm-tbl tbody tr').count()) === 40, t.slice(0, 300));
+      await page.click('#simHost [data-sim-act="all"]'); await page.waitForTimeout(150);
+      T.eq(W + ': college baseball: show all lists every team', await page.locator('#simHost .sm-tbl tbody tr').count(), 120);
+      T.chk(W + ': college baseball: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1), await page.evaluate(() => [document.scrollingElement!.scrollWidth, window.innerWidth]));
+      await shot(page, 'sim-cbase-road-' + W);
+      await page.click('#simHost [data-sim-tab="conference"]'); await page.waitForTimeout(150);
+      await page.click('#simHost [data-sim-act="conf"][data-sim-val="SWAC"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': college baseball Conferences: the list, then the picked conference', /Bids/.test(t) && /SWAC/.test(t) && (await page.locator('#simHost [data-sim-act="conf"][aria-current="true"]').innerText()) === 'SWAC');
+      await shot(page, 'sim-cbase-conferences-' + W);
+      await page.click('#simHost [data-sim-tab="model_health"]'); await page.waitForTimeout(150);
+      t = await text(page);
+      T.chk(W + ': college baseball Model Health: both backtests and what the model does not know', /Does the model call NCAA tournaments\?/.test(t) && /Does the Road to Omaha call a season/.test(t) && /What the model does not know/.test(t));
+      T.chk(W + ': college baseball Model Health: no horizontal page scroll', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
+      await shot(page, 'sim-cbase-health-' + W);
+      T.eq(W + ': college baseball: no page errors', errors, []);
+      await ctx.close();
     }
     /* tennis (its own adapter: Draws, Matches, Model Health; one competition per draw and one for the day's matches) */
     if (TENNIS_DRAWS.length) for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
