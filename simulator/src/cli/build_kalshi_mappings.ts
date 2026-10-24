@@ -124,9 +124,9 @@ export function buildMappings(markets: Candidate[], series: SeriesInfo[], verifi
 
 /* ---------------------------------------------------------------- MLB and the NHL: one season-keyed builder */
 interface LeagueTeam { code: string; name: string; group: string; division: string }
-/** group: the league (MLB) or conference (NHL) the series names; secondary: the only secondary rules texts the
-    series may carry (default: Kalshi's standard disclaimer alone) */
-interface LeagueSeriesRule { outcome: string; group?: string; div?: string; re: RegExp; basis: string; secondary?: string[] }
+/** group: the league (MLB) or conference (NHL, NBA) the series names; secondary: the only secondary rules texts the
+    series may carry (default: Kalshi's standard disclaimer alone), or a test of the text against the primary's match */
+interface LeagueSeriesRule { outcome: string; group?: string; div?: string; re: RegExp; basis: string; secondary?: string[] | ((text: string, m: RegExpMatchArray) => boolean) }
 interface LeagueSpec {
   sport: string; competition: string; series: Record<string, LeagueSeriesRule>;
   /** Kalshi ticker suffix -> the simulator's entity id; every other suffix is the same */
@@ -137,10 +137,13 @@ interface LeagueSpec {
   label(team: LeagueTeam, label: string): string;
   /** the note of a complete outcome set */
   note(outcome: string, scope: string): string;
+  /** what the outcome settles on, for a run that declares outcome_semantics (the NBA's) */
+  semantic?(outcome: string): string;
 }
 
-/* Each template captures the club (1) and the season (2); the season must be the event ticker's (KXMLB-26: 2026,
-   KXNHL-27: 2026-27), so next season's markets map to next season's run as soon as Kalshi lists them. */
+/* Each template captures the club (1) and the season (2); the event ticker must name that season (KXMLB-26: 2026;
+   a two-year season by either year, as Kalshi does both: KXNHL-27 and KXNBAPACIFIC-26 are 2026-27), so next
+   season's markets map to next season's run as soon as Kalshi lists them. */
 function buildLeagueMappings(spec: LeagueSpec, markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }) {
   const mappings: Mapping[] = [], left: Array<{ market_ticker: string; why: string[] }> = [];
   const fee = new Map(series.map((s) => [s.ticker, s]));
@@ -155,7 +158,8 @@ function buildLeagueMappings(spec: LeagueSpec, markets: Candidate[], series: Ser
     if (!m) why.push('rules text does not match the ' + k.series_ticker + ' template');
     else if (m[1] !== squash(k.yes_sub_title)) why.push('rules name "' + m[1] + '" but the market is labelled "' + k.yes_sub_title + '"');
     const season = m ? m[2] : '';
-    if (m && !new RegExp('^' + k.series_ticker + '-' + season.slice(-2) + '(?![0-9])').test(k.event_ticker)) why.push('event ' + k.event_ticker + ' is not the ' + season + ' season');
+    const years = season.length === 4 ? season.slice(2) : season.slice(2, 4) + '|' + season.slice(-2);
+    if (m && !new RegExp('^' + k.series_ticker + '-(' + years + ')(?![0-9])').test(k.event_ticker)) why.push('event ' + k.event_ticker + ' is not the ' + season + ' season');
     const teams = m ? spec.teams(season) : null;
     if (m && !teams) why.push('no ' + spec.competition + ' alignment is configured for ' + season);
     const suffix = k.market_ticker.split('-').pop() as string, code = spec.suffix[suffix] || suffix;
@@ -163,7 +167,8 @@ function buildLeagueMappings(spec: LeagueSpec, markets: Candidate[], series: Ser
     if (teams && !team) why.push('ticker suffix ' + suffix + ' is not a club');
     const lab = team ? spec.label(team, squash(k.yes_sub_title)) : '';
     if (lab) why.push(lab);
-    if (!(rule.secondary || [DISCLAIMER]).includes(squash(k.rules_secondary))) why.push('secondary rules are not the series\' own (' + (rule.secondary ? 'its stated text' : 'the standard disclaimer alone') + ')');
+    const sec = squash(k.rules_secondary), allowed = rule.secondary || [DISCLAIMER];
+    if (!(typeof allowed === 'function' ? !!m && allowed(sec, m) : allowed.includes(sec))) why.push('secondary rules are not the series\' own (' + (rule.secondary ? 'its stated text' : 'the standard disclaimer alone') + ')');
     if (!/^[0-9a-f]{64}$/.test(k.rules_sha256 || '')) why.push('no rules sha256');
     if (team && rule.group && team.group !== rule.group) why.push(team.code + ' is not in the ' + rule.group);
     if (team && rule.div && team.division !== rule.div) why.push(team.code + ' is not in the ' + rule.div);
@@ -172,7 +177,7 @@ function buildLeagueMappings(spec: LeagueSpec, markets: Candidate[], series: Ser
     const set = o === 'make_playoffs' ? null : rule.div ? id + ':' + o + ':' + team.division : rule.group ? id + ':' + o + ':' + team.group : id + ':' + o;
     mappings.push({ mapping_id: id + ':' + k.market_ticker, status: 'verified', sport: spec.sport, competition: spec.competition, season,
       series_ticker: k.series_ticker, event_ticker: k.event_ticker, market_ticker: k.market_ticker, entity_id: team.code, outcome: o, outcome_set: set,
-      settlement: { basis: 'Kalshi ' + k.series_ticker + ': ' + rule.basis, rules_sha256: k.rules_sha256, rules_excerpt: squash(k.rules_primary) },
+      settlement: { basis: 'Kalshi ' + k.series_ticker + ': ' + rule.basis, rules_sha256: k.rules_sha256, rules_excerpt: squash(k.rules_primary), ...(spec.semantic ? { semantic: spec.semantic(o) } : {}) },
       verified_by: verified.by, verified_at: verified.at });
   }
   mappings.sort((a, b) => a.market_ticker.localeCompare(b.market_ticker));

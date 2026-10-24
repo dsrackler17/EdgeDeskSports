@@ -281,7 +281,8 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   const cup = fx.markets.find((k) => k.market_ticker === 'KXNHL-27-WSH')!, east = fx.markets.find((k) => k.market_ticker === 'KXNHLEAST-27-WSH')!, pres = fx.markets.find((k) => k.market_ticker === 'KXNHLPRES-27-WSH')!;
   const div = fx.markets.find((k) => k.market_ticker === 'KXNHLMETROPOLITAN-27-WSH')!;
   const one = (k: Candidate) => buildNhlMappings([k], fx.series, by);
-  T.eq('a season that is not the event ticker\'s is left out', one({ ...cup, rules_primary: cup.rules_primary.replace('2026-27', '2027-28') }).left.length, 1);
+  T.eq('a season the event ticker does not name is left out', one({ ...cup, rules_primary: cup.rules_primary.replace('2026-27', '2028-29') }).left.length, 1);
+  T.eq('a two-year season\'s event ticker may name either year (Kalshi does both: KXNHL-27, KXNBAPACIFIC-26)', one({ ...cup, event_ticker: 'KXNHL-26', market_ticker: 'KXNHL-26-WSH' }).mappings.map((m) => m.season), ['2026-27']);
   T.eq('a label that is not the ticker\'s club is left out, even with rules to match', one({ ...cup, yes_sub_title: 'Pittsburgh Penguins', rules_primary: cup.rules_primary.replace('Washington Capitals', 'Pittsburgh Penguins') }).left.length, 1);
   T.eq('a club of the other conference is left out of a conference title', one({ ...east, market_ticker: 'KXNHLEAST-27-EDM', yes_sub_title: 'Edmonton Oilers', rules_primary: east.rules_primary.replace('Washington Capitals', 'Edmonton Oilers') }).left.length, 1);
   T.eq('a club outside the division is left out', one({ ...div, market_ticker: 'KXNHLMETROPOLITAN-27-BOS', yes_sub_title: 'Boston Bruins', rules_primary: div.rules_primary.replace('Washington Capitals', 'Boston Bruins') }).left.length, 1);
