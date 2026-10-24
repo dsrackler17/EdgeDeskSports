@@ -117,8 +117,8 @@ chk('…and say that availability is not modelled', /availability not modelled/.
 chk('men’s college basketball has no market to compare (no captured price)', !R.eligible('ncaam', 'MARKET_DIVERGENCE').ok);
 chk('women’s college basketball forecast shifts are wired to their own published daily runs (ncaaw_fc_*, not the men’s)', /ncaaw_fc_runs/.test(R.sport('ncaaw').signals.FORECAST_SHIFT.source) && !/ncaam/.test(JSON.stringify(R.sport('ncaaw')))
   && /'ncaaw_fc'/.test(DBJS) && /ncaawGames/.test(DBJS));
-chk('…and are not claimed live while their tables are not deployed in production (and NCAAW_FC_PUBLISH is the switch)', !R.eligible('ncaaw', 'FORECAST_SHIFT').ok && /not deployed in production/.test(R.sport('ncaaw').signals.FORECAST_SHIFT.detail)
-  && /NCAAW_FC_PUBLISH/.test(R.sport('ncaaw').capabilities.forecasting.detail));
+chk('…and are not claimed live until the daily job publishes (the tables are in production; NCAAW_FC_PUBLISH is the switch)', !R.eligible('ncaaw', 'FORECAST_SHIFT').ok && /NCAAW_FC_PUBLISH/.test(R.sport('ncaaw').signals.FORECAST_SHIFT.detail)
+  && /in production since 2026-10-24/.test(R.sport('ncaaw').capabilities.forecasting.detail) && !/not deployed/.test(JSON.stringify(R.sport('ncaaw'))));
 chk('…and say that availability is not modelled', /availability not modelled/.test(R.sport('ncaaw').signals.FORECAST_SHIFT.detail));
 chk('women’s college basketball has no market to compare and no schedule feed to watch (the slate carries none of its games)', !R.eligible('ncaaw', 'MARKET_DIVERGENCE').ok && !R.eligible('ncaaw', 'DATA_QUALITY_WARNING').ok
   && /carries no women’s college basketball games/.test(R.sport('ncaaw').signals.DATA_QUALITY_WARNING.detail));

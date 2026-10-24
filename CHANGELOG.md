@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-24 — Women's college basketball forecast tables are in production
+
+*Deploy NCAAW forecast SQL* (run 40098150410) put the women's forecast tables in production, step by step:
+
+- It passed the SQL suite (67 checks) on a throwaway PostgreSQL.
+- It found the simulator layer's premium gate.
+- It applied `supabase/ncaaw_forecast.sql` in one transaction. Every report row read `ok`: the tables exist, row-level security is on, no client can write, the job functions are closed to clients, live forecasts are off, and an anonymous caller is not entitled.
+- It registered NCAAW-FORECAST 1.0.0 (EXPERIMENTAL, T3).
+
+Nothing is published until `NCAAW_FC_PUBLISH` is `on`; the season opens 2026-11-02. Signal Center's women's entry, the runbook, the model notes, the README and the Simulator notes now say the tables are in production. The women's forecast shifts stay at coming soon until the first publication. Registry cache buster sc8.
+
 ## 2026-10-24 — Women's college basketball forecasts: the men's system, rebuilt for the women's game
 
 `basketball/ncaaw_forecast/` gives NCAA Division I women's basketball the same pregame forecasts as the men's: win probability (overtime included), expected score, 80% margin and total intervals, and Upset Watch. It has its own data, selection, champion, tables (`ncaaw_fc_*`) and publication switch (`NCAAW_FC_PUBLISH`), and shares only the league-neutral research engine. Readers see it in the Simulator's new **Women's College Basketball** seat. The men's seat is now labelled **Men's College Basketball**.
