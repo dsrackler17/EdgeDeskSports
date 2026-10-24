@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T01:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1924,10 +1924,87 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "7sk92f8sdxz9",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Wyoming take away Air Force’s big plays?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Air Force, and its own breakdown accounts for about 0.0 of the 3.4 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 3.4,
+      "toward": "Air Force",
+      "other": "Wyoming"
+    },
+    "supporting": [
+      "When Wyoming has the ball (pass protection against the pass rush): Wyoming’s offense has allowed a sack on 8.8% of its dropbacks, and Air Force’s defense sacks the quarterback on 5.6% of opponent dropbacks (FBS average 5.6%).",
+      "When Air Force has the ball (big plays through the air): Air Force’s offense turns 17.7% of its pass plays into explosive gains, and Wyoming’s defense gives up explosive gains on 7.2% of opponent pass plays (FBS average 10.3%).",
+      "When Air Force has the ball (the line of scrimmage on running plays): Air Force’s offense is stopped at or behind the line on 8.4% of its runs, and Wyoming’s defense stops 11.5% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Air Force has the ball (the run game against the run defense): Air Force’s offense averages 5.6 yards per carry, and Wyoming’s defense allows 5.8 yards per carry (FBS average 5.1)."
+    ],
+    "contradicting": [
+      "When Air Force has the ball (pass protection against the pass rush): Air Force’s offense has allowed a sack on 19.0% of its dropbacks, and Wyoming’s defense sacks the quarterback on 6.7% of opponent dropbacks (FBS average 5.6%).",
+      "EdgeDesk’s position-group ratings put Wyoming’s offensive line No. 11 nationally and Air Force’s No. 90.",
+      "EdgeDesk’s position-group ratings put Wyoming’s secondary No. 22 nationally and Air Force’s No. 132.",
+      "EdgeDesk’s position-group ratings put Wyoming’s pass defense No. 32 nationally and Air Force’s No. 120."
+    ],
+    "quarterbacks": [
+      "Tyler Hughes has completed 98 of 155 passes (63.2%) for 1,030 yards, 6.6 yards per attempt, 3 touchdowns and 7 interceptions in seven games for Wyoming, and has been sacked on 14 of 169 dropbacks.",
+      "Liam Szarka has completed 19 of 40 passes (47.5%) for 296 yards, 7.4 yards per attempt, 1 touchdown and 4 interceptions in four games for Air Force, and has been sacked on 2 of 42 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Air Force’s offense has to keep winning on big pass plays: it turns 17.7% of its pass plays into explosive gains, and Wyoming’s defense gives up explosive gains on 7.2% of opponent pass plays.",
+        "Air Force’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 6.7% of opponent dropbacks.",
+        "Air Force’s defense has to slow Wyoming at the line of scrimmage — Wyoming’s offense is stopped at or behind the line on 11.6% of its runs.",
+        "Air Force’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 8.4% of its runs, and Wyoming’s defense stops 11.5% of opponent runs at or behind the line."
+      ],
+      "market": [
+        "Wyoming’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.7% of opponent dropbacks, against an offense that has allowed a sack on 19.0% of its dropbacks.",
+        "Wyoming’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 11.6% of its runs, and Air Force’s defense stops 15.8% of opponent runs at or behind the line.",
+        "Wyoming’s defense has to come out ahead on big pass plays: it gives up explosive gains on 7.2% of opponent pass plays, against an offense that turns 17.7% of its pass plays into explosive gains."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Wyoming and Air Force.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Wyoming), sack rate (Wyoming) and sack rate (Air Force); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-23T16:42:02.097Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-23T16:41:35.293Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T04:26:53.497Z"
+    "at": "2026-10-23T16:59:10.561Z"
   }
 }

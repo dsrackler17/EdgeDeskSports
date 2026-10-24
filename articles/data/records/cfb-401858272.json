@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T02:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1850,10 +1850,104 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "nl6hiecdwt1g",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can NC State contain Stanford’s explosive runs?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.8 points.",
+    "gap": {
+      "points": 1.8,
+      "toward": "Stanford",
+      "other": "NC State"
+    },
+    "supporting": [
+      "When Stanford has the ball (big plays on the ground): Stanford’s offense turns 3.4% of its runs into explosive gains, and NC State’s defense gives up explosive gains on 11.0% of opponent runs (FBS average 6.6%).",
+      "When Stanford has the ball (pass protection against the pass rush): Stanford’s offense has allowed a sack on 3.5% of its dropbacks, and NC State’s defense sacks the quarterback on 4.6% of opponent dropbacks (FBS average 5.6%).",
+      "EdgeDesk’s position-group ratings put Stanford’s running backs No. 56 nationally and NC State’s No. 125.",
+      "When NC State has the ball (big plays through the air): NC State’s offense turns 10.2% of its pass plays into explosive gains, and Stanford’s defense gives up explosive gains on 8.8% of opponent pass plays (FBS average 10.3%)."
+    ],
+    "contradicting": [
+      "When NC State has the ball (pass protection against the pass rush): NC State’s offense has allowed a sack on 5.1% of its dropbacks, and Stanford’s defense sacks the quarterback on 3.0% of opponent dropbacks (FBS average 5.6%).",
+      "When Stanford has the ball (the line of scrimmage on running plays): Stanford’s offense is stopped at or behind the line on 19.8% of its runs, and NC State’s defense stops 22.9% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When NC State has the ball (third down): NC State’s offense converts 50.1% of its third downs, and Stanford’s defense allows opponents to convert 44.2% of their third downs (FBS average 39.7%).",
+      "When NC State has the ball (the red zone): NC State’s offense succeeds on 43.9% of its red-zone plays, and Stanford’s defense allows success on 55.8% of opponent red-zone plays (FBS average 43.6%)."
+    ],
+    "quarterbacks": [
+      "Davis Warren has completed 141 of 235 passes (60.0%) for 1,630 yards, 6.9 yards per attempt, 7 touchdowns and 2 interceptions in seven games for Stanford, and has been sacked on 11 of 246 dropbacks.",
+      "CJ Bailey has completed 124 of 190 passes (65.3%) for 1,482 yards, 7.8 yards per attempt, 9 touchdowns and 4 interceptions in six games for NC State, and has been sacked on 9 of 199 dropbacks.",
+      "Davis Warren does not appear on Stanford’s update 2 availability report.",
+      "CJ Bailey does not appear on NC State’s update 2 availability report."
+    ],
+    "availability": [
+      "Stanford’s availability report lists 12 players as out, including offensive linemen Aidan Kilstrom and Nathan Mejia.",
+      "NC State’s availability report lists 14 players as out, including offensive linemen Rylan Vann, Yousef Mugharbil and Spike Sowells Jr.."
+    ],
+    "script": {
+      "model": [
+        "Stanford’s offense has to keep winning on long runs: it turns 3.4% of its runs into explosive gains, and NC State’s defense gives up explosive gains on 11.0% of opponent runs.",
+        "Stanford’s defense has to slow NC State in the pass-rush matchup — NC State’s offense has allowed a sack on 5.1% of its dropbacks.",
+        "Stanford’s defense has to slow NC State on third down — NC State’s offense converts 50.1% of its third downs.",
+        "Stanford’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.5% of its dropbacks, and NC State’s defense sacks the quarterback on 4.6% of opponent dropbacks."
+      ],
+      "market": [
+        "NC State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 5.1% of its dropbacks, and Stanford’s defense sacks the quarterback on 3.0% of opponent dropbacks.",
+        "NC State’s offense has to keep winning on third down: it converts 50.1% of its third downs, and Stanford’s defense allows opponents to convert 44.2% of their third downs.",
+        "NC State’s defense has to come out ahead on long runs: it gives up explosive gains on 11.0% of opponent runs, against an offense that turns 3.4% of its runs into explosive gains."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed for NC State.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (NC State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Stanford: new head coach; returning production at the 46th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-23T16:42:02.097Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-23T16:41:35.293Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Atlantic Coast Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-23T03:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T04:26:53.497Z"
+    "at": "2026-10-23T16:59:10.561Z"
   }
 }
