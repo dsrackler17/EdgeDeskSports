@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-24T21:10:37.569Z",
+ "evaluated_at": "2026-10-24T23:41:31.780Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 510 without a price, 0 stale."
+  "No market had a fresh executable price: 474 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.013
  },
  "counts": {
-  "RESEARCH": 510
+  "RESEARCH": 474
  },
  "gate_failures": {
-  "NO_PRICE": 510,
-  "NEEDS_PRICE": 510
+  "NO_PRICE": 474,
+  "NEEDS_PRICE": 474
  },
- "n_candidates": 510,
+ "n_candidates": 474,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -130,1296 +130,6 @@
   }
  },
  "candidates": [
-  {
-   "id": "8721170b",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909853",
-   "event": {
-    "home": "Charlotte Hornets",
-    "away": "Miami Heat",
-    "start_utc": "2026-10-24T22:00:00Z",
-    "label": "Miami Heat @ Charlotte Hornets"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Charlotte Hornets",
-    "line": null,
-    "settles": "including overtime"
-   },
-   "label": "Miami Heat @ Charlotte Hornets — Charlotte Hornets moneyline",
-   "quote": null,
-   "fair_american": -124,
-   "break_even": null,
-   "prob": {
-    "model": 0.5537,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5537,
-    "sd": 0.0354,
-    "conservative": 0.5084,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 101,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +101 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.9 (home), total 227.7",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "8a5e122c",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909853",
-   "event": {
-    "home": "Charlotte Hornets",
-    "away": "Miami Heat",
-    "start_utc": "2026-10-24T22:00:00Z",
-    "label": "Miami Heat @ Charlotte Hornets"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 227.5,
-    "settles": "including overtime"
-   },
-   "label": "Miami Heat @ Charlotte Hornets — over 227.5",
-   "quote": null,
-   "fair_american": -101,
-   "break_even": null,
-   "prob": {
-    "model": 0.5033,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5033,
-    "sd": 0.0354,
-    "conservative": 0.458,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 123,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.9 (home), total 227.7",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "9993d940",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909853",
-   "event": {
-    "home": "Charlotte Hornets",
-    "away": "Miami Heat",
-    "start_utc": "2026-10-24T22:00:00Z",
-    "label": "Miami Heat @ Charlotte Hornets"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 227.5,
-    "settles": "including overtime"
-   },
-   "label": "Miami Heat @ Charlotte Hornets — under 227.5",
-   "quote": null,
-   "fair_american": 101,
-   "break_even": null,
-   "prob": {
-    "model": 0.4967,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4967,
-    "sd": 0.0354,
-    "conservative": 0.4514,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 126,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.9 (home), total 227.7",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "c9058c24",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909853",
-   "event": {
-    "home": "Charlotte Hornets",
-    "away": "Miami Heat",
-    "start_utc": "2026-10-24T22:00:00Z",
-    "label": "Miami Heat @ Charlotte Hornets"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Miami Heat",
-    "line": 2,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Miami Heat @ Charlotte Hornets — Miami Heat +2",
-   "quote": null,
-   "fair_american": -101,
-   "break_even": null,
-   "prob": {
-    "model": 0.4896,
-    "push": 0.0277,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4896,
-    "sd": 0.0354,
-    "conservative": 0.4443,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 123,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.9 (home), total 227.7",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "ef251fdb",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909853",
-   "event": {
-    "home": "Charlotte Hornets",
-    "away": "Miami Heat",
-    "start_utc": "2026-10-24T22:00:00Z",
-    "label": "Miami Heat @ Charlotte Hornets"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Charlotte Hornets",
-    "line": -2,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Miami Heat @ Charlotte Hornets — Charlotte Hornets -2",
-   "quote": null,
-   "fair_american": 101,
-   "break_even": null,
-   "prob": {
-    "model": 0.4827,
-    "push": 0.0277,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4827,
-    "sd": 0.0354,
-    "conservative": 0.4374,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 127,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.9 (home), total 227.7",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "b9bb4745",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909853",
-   "event": {
-    "home": "Charlotte Hornets",
-    "away": "Miami Heat",
-    "start_utc": "2026-10-24T22:00:00Z",
-    "label": "Miami Heat @ Charlotte Hornets"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Miami Heat",
-    "line": null,
-    "settles": "including overtime"
-   },
-   "label": "Miami Heat @ Charlotte Hornets — Miami Heat moneyline",
-   "quote": null,
-   "fair_american": 124,
-   "break_even": null,
-   "prob": {
-    "model": 0.4463,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4463,
-    "sd": 0.0354,
-    "conservative": 0.401,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 154,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +154 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 1.9 (home), total 227.7",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "10145f0b",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909854",
-   "event": {
-    "home": "Cleveland Cavaliers",
-    "away": "Brooklyn Nets",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Brooklyn Nets @ Cleveland Cavaliers"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Cleveland Cavaliers",
-    "line": null,
-    "settles": "including overtime"
-   },
-   "label": "Brooklyn Nets @ Cleveland Cavaliers — Cleveland Cavaliers moneyline",
-   "quote": null,
-   "fair_american": -506,
-   "break_even": null,
-   "prob": {
-    "model": 0.8351,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.8351,
-    "sd": 0.0354,
-    "conservative": 0.7898,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -343,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -343 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.7 (home), total 220.3",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "9fa9011c",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909855",
-   "event": {
-    "home": "Philadelphia 76ers",
-    "away": "Milwaukee Bucks",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Milwaukee Bucks @ Philadelphia 76ers"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Philadelphia 76ers",
-    "line": null,
-    "settles": "including overtime"
-   },
-   "label": "Milwaukee Bucks @ Philadelphia 76ers — Philadelphia 76ers moneyline",
-   "quote": null,
-   "fair_american": -503,
-   "break_even": null,
-   "prob": {
-    "model": 0.8341,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.8341,
-    "sd": 0.0354,
-    "conservative": 0.7888,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -341,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -341 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.8 (home), total 227.2",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "ecc8c16b",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909854",
-   "event": {
-    "home": "Cleveland Cavaliers",
-    "away": "Brooklyn Nets",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Brooklyn Nets @ Cleveland Cavaliers"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Cleveland Cavaliers",
-    "line": -12.5,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Brooklyn Nets @ Cleveland Cavaliers — Cleveland Cavaliers -12.5",
-   "quote": null,
-   "fair_american": -102,
-   "break_even": null,
-   "prob": {
-    "model": 0.5044,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5044,
-    "sd": 0.0354,
-    "conservative": 0.4591,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 122,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.7 (home), total 220.3",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "5672382c",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909854",
-   "event": {
-    "home": "Cleveland Cavaliers",
-    "away": "Brooklyn Nets",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Brooklyn Nets @ Cleveland Cavaliers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 220.5,
-    "settles": "including overtime"
-   },
-   "label": "Brooklyn Nets @ Cleveland Cavaliers — under 220.5",
-   "quote": null,
-   "fair_american": -101,
-   "break_even": null,
-   "prob": {
-    "model": 0.5034,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5034,
-    "sd": 0.0354,
-    "conservative": 0.4581,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 123,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.7 (home), total 220.3",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "13ced916",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909854",
-   "event": {
-    "home": "Cleveland Cavaliers",
-    "away": "Brooklyn Nets",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Brooklyn Nets @ Cleveland Cavaliers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 220.5,
-    "settles": "including overtime"
-   },
-   "label": "Brooklyn Nets @ Cleveland Cavaliers — over 220.5",
-   "quote": null,
-   "fair_american": 101,
-   "break_even": null,
-   "prob": {
-    "model": 0.4966,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4966,
-    "sd": 0.0354,
-    "conservative": 0.4513,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 126,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.7 (home), total 220.3",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "39cec9f4",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909854",
-   "event": {
-    "home": "Cleveland Cavaliers",
-    "away": "Brooklyn Nets",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Brooklyn Nets @ Cleveland Cavaliers"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Brooklyn Nets",
-    "line": 12.5,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Brooklyn Nets @ Cleveland Cavaliers — Brooklyn Nets +12.5",
-   "quote": null,
-   "fair_american": 102,
-   "break_even": null,
-   "prob": {
-    "model": 0.4956,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4956,
-    "sd": 0.0354,
-    "conservative": 0.4503,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 127,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.7 (home), total 220.3",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "81f28e35",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909855",
-   "event": {
-    "home": "Philadelphia 76ers",
-    "away": "Milwaukee Bucks",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Milwaukee Bucks @ Philadelphia 76ers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 227,
-    "settles": "including overtime"
-   },
-   "label": "Milwaukee Bucks @ Philadelphia 76ers — over 227",
-   "quote": null,
-   "fair_american": -102,
-   "break_even": null,
-   "prob": {
-    "model": 0.4946,
-    "push": 0.0209,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4946,
-    "sd": 0.0354,
-    "conservative": 0.4493,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 122,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.8 (home), total 227.2",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "e330e99d",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909855",
-   "event": {
-    "home": "Philadelphia 76ers",
-    "away": "Milwaukee Bucks",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Milwaukee Bucks @ Philadelphia 76ers"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Milwaukee Bucks",
-    "line": 13,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Milwaukee Bucks @ Philadelphia 76ers — Milwaukee Bucks +13",
-   "quote": null,
-   "fair_american": -102,
-   "break_even": null,
-   "prob": {
-    "model": 0.4915,
-    "push": 0.0277,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4915,
-    "sd": 0.0354,
-    "conservative": 0.4462,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 122,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.8 (home), total 227.2",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "57259a71",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909855",
-   "event": {
-    "home": "Philadelphia 76ers",
-    "away": "Milwaukee Bucks",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Milwaukee Bucks @ Philadelphia 76ers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 227,
-    "settles": "including overtime"
-   },
-   "label": "Milwaukee Bucks @ Philadelphia 76ers — under 227",
-   "quote": null,
-   "fair_american": 102,
-   "break_even": null,
-   "prob": {
-    "model": 0.4845,
-    "push": 0.0209,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4845,
-    "sd": 0.0354,
-    "conservative": 0.4392,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 127,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.8 (home), total 227.2",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "fc417888",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909855",
-   "event": {
-    "home": "Philadelphia 76ers",
-    "away": "Milwaukee Bucks",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Milwaukee Bucks @ Philadelphia 76ers"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Philadelphia 76ers",
-    "line": -13,
-    "settles": "including overtime; a whole-number line can push"
-   },
-   "label": "Milwaukee Bucks @ Philadelphia 76ers — Philadelphia 76ers -13",
-   "quote": null,
-   "fair_american": 102,
-   "break_even": null,
-   "prob": {
-    "model": 0.4808,
-    "push": 0.0277,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4808,
-    "sd": 0.0354,
-    "conservative": 0.4355,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 128,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +128 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.8 (home), total 227.2",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "e8ce8238",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909855",
-   "event": {
-    "home": "Philadelphia 76ers",
-    "away": "Milwaukee Bucks",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Milwaukee Bucks @ Philadelphia 76ers"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Milwaukee Bucks",
-    "line": null,
-    "settles": "including overtime"
-   },
-   "label": "Milwaukee Bucks @ Philadelphia 76ers — Milwaukee Bucks moneyline",
-   "quote": null,
-   "fair_american": 503,
-   "break_even": null,
-   "prob": {
-    "model": 0.1659,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.1659,
-    "sd": 0.0354,
-    "conservative": 0.1206,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 746,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +746 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.8 (home), total 227.2",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8).",
-    "A back-to-back: rest decisions are announced late."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
-  {
-   "id": "500e9585",
-   "status": "RESEARCH",
-   "sport_id": "nba",
-   "sport_label": "NBA",
-   "event_key": "NBA|401909854",
-   "event": {
-    "home": "Cleveland Cavaliers",
-    "away": "Brooklyn Nets",
-    "start_utc": "2026-10-24T23:30:00Z",
-    "label": "Brooklyn Nets @ Cleveland Cavaliers"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Brooklyn Nets",
-    "line": null,
-    "settles": "including overtime"
-   },
-   "label": "Brooklyn Nets @ Cleveland Cavaliers — Brooklyn Nets moneyline",
-   "quote": null,
-   "fair_american": 506,
-   "break_even": null,
-   "prob": {
-    "model": 0.1649,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.1649,
-    "sd": 0.0354,
-    "conservative": 0.1196,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 753,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +753 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "projected margin 12.7 (home), total 220.3",
-    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
-   ],
-   "invalidators": [
-    "A star or starter ruled out: availability is not modelled.",
-    "Early in a season, ratings lean on last season (carried at 0.8)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
-  },
   {
    "id": "40ee6c6c",
    "status": "RESEARCH",
@@ -1839,6 +549,1302 @@
    "settlement": null,
    "evidence": [
     "projected margin 3.2 (home), total 240.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "5ffcb760",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909858",
+   "event": {
+    "home": "Dallas Mavericks",
+    "away": "San Antonio Spurs",
+    "start_utc": "2026-10-25T00:00:00Z",
+    "label": "San Antonio Spurs @ Dallas Mavericks"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 230,
+    "settles": "including overtime"
+   },
+   "label": "San Antonio Spurs @ Dallas Mavericks — under 230",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4909,
+    "push": 0.0209,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4909,
+    "sd": 0.0354,
+    "conservative": 0.4456,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin -6.5 (home), total 229.9",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "345f74de",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909858",
+   "event": {
+    "home": "Dallas Mavericks",
+    "away": "San Antonio Spurs",
+    "start_utc": "2026-10-25T00:00:00Z",
+    "label": "San Antonio Spurs @ Dallas Mavericks"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 230,
+    "settles": "including overtime"
+   },
+   "label": "San Antonio Spurs @ Dallas Mavericks — over 230",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4882,
+    "push": 0.0209,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4882,
+    "sd": 0.0354,
+    "conservative": 0.4429,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin -6.5 (home), total 229.9",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "3e960c12",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909857",
+   "event": {
+    "home": "Chicago Bulls",
+    "away": "Washington Wizards",
+    "start_utc": "2026-10-25T00:00:00Z",
+    "label": "Washington Wizards @ Chicago Bulls"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 240,
+    "settles": "including overtime"
+   },
+   "label": "Washington Wizards @ Chicago Bulls — under 240",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4877,
+    "push": 0.0209,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4877,
+    "sd": 0.0354,
+    "conservative": 0.4424,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.2 (home), total 240.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "c67ba572",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909857",
+   "event": {
+    "home": "Chicago Bulls",
+    "away": "Washington Wizards",
+    "start_utc": "2026-10-25T00:00:00Z",
+    "label": "Washington Wizards @ Chicago Bulls"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Washington Wizards",
+    "line": 3,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Washington Wizards @ Chicago Bulls — Washington Wizards +3",
+   "quote": null,
+   "fair_american": 102,
+   "break_even": null,
+   "prob": {
+    "model": 0.481,
+    "push": 0.0277,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.481,
+    "sd": 0.0354,
+    "conservative": 0.4357,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 128,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +128 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.2 (home), total 240.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "97dde6ac",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909857",
+   "event": {
+    "home": "Chicago Bulls",
+    "away": "Washington Wizards",
+    "start_utc": "2026-10-25T00:00:00Z",
+    "label": "Washington Wizards @ Chicago Bulls"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Washington Wizards",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Washington Wizards @ Chicago Bulls — Washington Wizards moneyline",
+   "quote": null,
+   "fair_american": 147,
+   "break_even": null,
+   "prob": {
+    "model": 0.4046,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4046,
+    "sd": 0.0354,
+    "conservative": 0.3593,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 184,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +184 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.2 (home), total 240.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "d7d3585f",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909858",
+   "event": {
+    "home": "Dallas Mavericks",
+    "away": "San Antonio Spurs",
+    "start_utc": "2026-10-25T00:00:00Z",
+    "label": "San Antonio Spurs @ Dallas Mavericks"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Dallas Mavericks",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "San Antonio Spurs @ Dallas Mavericks — Dallas Mavericks moneyline",
+   "quote": null,
+   "fair_american": 239,
+   "break_even": null,
+   "prob": {
+    "model": 0.2948,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.2948,
+    "sd": 0.0354,
+    "conservative": 0.2495,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 309,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +309 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin -6.5 (home), total 229.9",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "6ccca46c",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909856",
+   "event": {
+    "home": "Atlanta Hawks",
+    "away": "Houston Rockets",
+    "start_utc": "2026-10-25T00:30:00Z",
+    "label": "Houston Rockets @ Atlanta Hawks"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Atlanta Hawks",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Houston Rockets @ Atlanta Hawks — Atlanta Hawks moneyline",
+   "quote": null,
+   "fair_american": -154,
+   "break_even": null,
+   "prob": {
+    "model": 0.6058,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6058,
+    "sd": 0.0354,
+    "conservative": 0.5605,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -122,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -122 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.5 (home), total 228.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "16ed9dfc",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909856",
+   "event": {
+    "home": "Atlanta Hawks",
+    "away": "Houston Rockets",
+    "start_utc": "2026-10-25T00:30:00Z",
+    "label": "Houston Rockets @ Atlanta Hawks"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Atlanta Hawks",
+    "line": -3.5,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Houston Rockets @ Atlanta Hawks — Atlanta Hawks -3.5",
+   "quote": null,
+   "fair_american": -100,
+   "break_even": null,
+   "prob": {
+    "model": 0.5005,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5005,
+    "sd": 0.0354,
+    "conservative": 0.4552,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.5 (home), total 228.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "a9e3b3bf",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909856",
+   "event": {
+    "home": "Atlanta Hawks",
+    "away": "Houston Rockets",
+    "start_utc": "2026-10-25T00:30:00Z",
+    "label": "Houston Rockets @ Atlanta Hawks"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Houston Rockets",
+    "line": 3.5,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Houston Rockets @ Atlanta Hawks — Houston Rockets +3.5",
+   "quote": null,
+   "fair_american": 100,
+   "break_even": null,
+   "prob": {
+    "model": 0.4995,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4995,
+    "sd": 0.0354,
+    "conservative": 0.4542,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 125,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.5 (home), total 228.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "0ab84f5f",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909856",
+   "event": {
+    "home": "Atlanta Hawks",
+    "away": "Houston Rockets",
+    "start_utc": "2026-10-25T00:30:00Z",
+    "label": "Houston Rockets @ Atlanta Hawks"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 228,
+    "settles": "including overtime"
+   },
+   "label": "Houston Rockets @ Atlanta Hawks — over 228",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4913,
+    "push": 0.0209,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4913,
+    "sd": 0.0354,
+    "conservative": 0.446,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.5 (home), total 228.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "4f038971",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909856",
+   "event": {
+    "home": "Atlanta Hawks",
+    "away": "Houston Rockets",
+    "start_utc": "2026-10-25T00:30:00Z",
+    "label": "Houston Rockets @ Atlanta Hawks"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 228,
+    "settles": "including overtime"
+   },
+   "label": "Houston Rockets @ Atlanta Hawks — under 228",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4878,
+    "push": 0.0209,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4878,
+    "sd": 0.0354,
+    "conservative": 0.4425,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.5 (home), total 228.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "84f87712",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909856",
+   "event": {
+    "home": "Atlanta Hawks",
+    "away": "Houston Rockets",
+    "start_utc": "2026-10-25T00:30:00Z",
+    "label": "Houston Rockets @ Atlanta Hawks"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Houston Rockets",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Houston Rockets @ Atlanta Hawks — Houston Rockets moneyline",
+   "quote": null,
+   "fair_american": 154,
+   "break_even": null,
+   "prob": {
+    "model": 0.3942,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3942,
+    "sd": 0.0354,
+    "conservative": 0.3489,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 192,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +192 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 3.5 (home), total 228.1",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "302c2143",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909859",
+   "event": {
+    "home": "Denver Nuggets",
+    "away": "New Orleans Pelicans",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "New Orleans Pelicans @ Denver Nuggets"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Denver Nuggets",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "New Orleans Pelicans @ Denver Nuggets — Denver Nuggets moneyline",
+   "quote": null,
+   "fair_american": -438,
+   "break_even": null,
+   "prob": {
+    "model": 0.8142,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.8142,
+    "sd": 0.0354,
+    "conservative": 0.7689,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -306,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -306 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 11.8 (home), total 231.3",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "a8adec5b",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909859",
+   "event": {
+    "home": "Denver Nuggets",
+    "away": "New Orleans Pelicans",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "New Orleans Pelicans @ Denver Nuggets"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 231.5,
+    "settles": "including overtime"
+   },
+   "label": "New Orleans Pelicans @ Denver Nuggets — under 231.5",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.5037,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5037,
+    "sd": 0.0354,
+    "conservative": 0.4584,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 123,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 11.8 (home), total 231.3",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "6e851097",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909859",
+   "event": {
+    "home": "Denver Nuggets",
+    "away": "New Orleans Pelicans",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "New Orleans Pelicans @ Denver Nuggets"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 231.5,
+    "settles": "including overtime"
+   },
+   "label": "New Orleans Pelicans @ Denver Nuggets — over 231.5",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4963,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4963,
+    "sd": 0.0354,
+    "conservative": 0.451,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 11.8 (home), total 231.3",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "eee99edd",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909859",
+   "event": {
+    "home": "Denver Nuggets",
+    "away": "New Orleans Pelicans",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "New Orleans Pelicans @ Denver Nuggets"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "New Orleans Pelicans",
+    "line": 12,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "New Orleans Pelicans @ Denver Nuggets — New Orleans Pelicans +12",
+   "quote": null,
+   "fair_american": -103,
+   "break_even": null,
+   "prob": {
+    "model": 0.493,
+    "push": 0.0277,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.493,
+    "sd": 0.0354,
+    "conservative": 0.4477,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 122,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 11.8 (home), total 231.3",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "0af39e3c",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909859",
+   "event": {
+    "home": "Denver Nuggets",
+    "away": "New Orleans Pelicans",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "New Orleans Pelicans @ Denver Nuggets"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Denver Nuggets",
+    "line": -12,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "New Orleans Pelicans @ Denver Nuggets — Denver Nuggets -12",
+   "quote": null,
+   "fair_american": 103,
+   "break_even": null,
+   "prob": {
+    "model": 0.4793,
+    "push": 0.0277,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4793,
+    "sd": 0.0354,
+    "conservative": 0.434,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 129,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +129 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 11.8 (home), total 231.3",
+    "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8).",
+    "A back-to-back: rest decisions are announced late."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/nba:points_rest+bb_cal_v2_home_intercept"
+  },
+  {
+   "id": "d6c53ddb",
+   "status": "RESEARCH",
+   "sport_id": "nba",
+   "sport_label": "NBA",
+   "event_key": "NBA|401909859",
+   "event": {
+    "home": "Denver Nuggets",
+    "away": "New Orleans Pelicans",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "New Orleans Pelicans @ Denver Nuggets"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "New Orleans Pelicans",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "New Orleans Pelicans @ Denver Nuggets — New Orleans Pelicans moneyline",
+   "quote": null,
+   "fair_american": 438,
+   "break_even": null,
+   "prob": {
+    "model": 0.1858,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.1858,
+    "sd": 0.0354,
+    "conservative": 0.1405,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 626,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +626 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 11.8 (home), total 231.3",
     "model points_rest+bb_cal_v2_home_intercept (nba); moneyline OUTCOME_VALIDATED, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
    ],
    "invalidators": [
@@ -3557,37 +3563,37 @@
    "model_id": "edgedesk_nfl_v2.1.0"
   },
   {
-   "id": "abeb81cc",
+   "id": "76d18e75",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020173",
+   "event_key": "NHL|2026020177",
    "event": {
-    "home": "WSH",
-    "away": "BUF",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "BUF @ WSH"
+    "home": "UTA",
+    "away": "TBL",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "TBL @ UTA"
    },
    "market": {
     "kind": "spread",
-    "side": "BUF",
+    "side": "TBL",
     "line": 1.5,
     "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
    },
-   "label": "BUF @ WSH — BUF +1.5",
+   "label": "TBL @ UTA — TBL +1.5",
    "quote": null,
-   "fair_american": -225,
+   "fair_american": -193,
    "break_even": null,
    "prob": {
-    "model": 0.692,
+    "model": 0.6588,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.692,
-    "sd": 0.0232,
-    "conservative": 0.6623,
+    "posterior": 0.6588,
+    "sd": 0.0204,
+    "conservative": 0.6327,
     "components": {
-     "model_sd": 0.013,
+     "model_sd": 0.0068,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -3595,7 +3601,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -185,
+   "min_acceptable_american": -163,
    "disagreement": null,
    "gates": [
     {
@@ -3608,21 +3614,22 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -185 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -163 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1516 (WSH) vs 3.0706 (BUF) regulation goals",
-    "WSH 5v5 xG for 1.0429× league, BUF 5v5 xG for 1.0272×",
-    "goalies: projected uncertain (L. Thompson 76% / U. Luukkonen 76%)",
+    "λ 3.2088 (UTA) vs 2.8739 (TBL) regulation goals",
+    "UTA 5v5 xG for 1.0669× league, TBL 5v5 xG for 1.0451×",
+    "goalies: projected uncertain (K. Vejmelka 73% / D. Hildeby 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
     "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
     "state": "FRESH",
@@ -3631,777 +3638,37 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "bf647bbd",
+   "id": "2b48895a",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020174",
+   "event_key": "NHL|2026020177",
    "event": {
-    "home": "CBJ",
-    "away": "VGK",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "VGK @ CBJ"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "CBJ",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "VGK @ CBJ — CBJ +1.5",
-   "quote": null,
-   "fair_american": -199,
-   "break_even": null,
-   "prob": {
-    "model": 0.6658,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6658,
-    "sd": 0.0216,
-    "conservative": 0.6382,
-    "components": {
-     "model_sd": 0.0098,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -167,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -167 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.8382 (CBJ) vs 3.1378 (VGK) regulation goals",
-    "CBJ 5v5 xG for 1.0171× league, VGK 5v5 xG for 1.0202×",
-    "goalies: projected uncertain (J. Greaves 64% / A. Hill 52%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "20a2c0fa",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020171",
-   "event": {
-    "home": "OTT",
-    "away": "NYR",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "NYR @ OTT"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "NYR",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "NYR @ OTT — NYR +1.5",
-   "quote": null,
-   "fair_american": -194,
-   "break_even": null,
-   "prob": {
-    "model": 0.6604,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6604,
-    "sd": 0.0231,
-    "conservative": 0.6308,
-    "components": {
-     "model_sd": 0.0128,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -162,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -162 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.0919 (OTT) vs 2.7361 (NYR) regulation goals",
-    "OTT 5v5 xG for 1.0066× league, NYR 5v5 xG for 0.9599×",
-    "goalies: projected uncertain (L. Ullmark 66% / D. Garand 82%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "cc8a413e",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020175",
-   "event": {
-    "home": "STL",
-    "away": "CAR",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "CAR @ STL"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "STL",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "CAR @ STL — STL +1.5",
-   "quote": null,
-   "fair_american": -180,
-   "break_even": null,
-   "prob": {
-    "model": 0.6432,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6432,
-    "sd": 0.0218,
-    "conservative": 0.6153,
-    "components": {
-     "model_sd": 0.0102,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -152,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -152 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.784 (STL) vs 3.2331 (CAR) regulation goals",
-    "STL 5v5 xG for 0.9666× league, CAR 5v5 xG for 1.16×",
-    "goalies: projected uncertain (J. Hofer 73% / P. Kochetkov 56%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "bca94bb3",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020170",
-   "event": {
-    "home": "BOS",
-    "away": "SJS",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "SJS @ BOS"
+    "home": "UTA",
+    "away": "TBL",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "TBL @ UTA"
    },
    "market": {
     "kind": "moneyline",
-    "side": "BOS",
+    "side": "UTA",
     "line": null,
     "settles": "includes overtime and shootout"
    },
-   "label": "SJS @ BOS — BOS moneyline",
+   "label": "TBL @ UTA — UTA moneyline",
    "quote": null,
-   "fair_american": -165,
+   "fair_american": -124,
    "break_even": null,
    "prob": {
-    "model": 0.6223,
+    "model": 0.5544,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6223,
-    "sd": 0.0192,
-    "conservative": 0.5977,
+    "posterior": 0.5544,
+    "sd": 0.0165,
+    "conservative": 0.5333,
     "components": {
-     "model_sd": 0.0099,
-     "calibration_sd": 0.0112,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -142,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -142 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.4654 (BOS) vs 2.6911 (SJS) regulation goals",
-    "BOS 5v5 xG for 0.9993× league, SJS 5v5 xG for 0.941×",
-    "goalies: projected uncertain (J. Swayman 65% / Y. Askarov 57%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "8377d2c7",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020172",
-   "event": {
-    "home": "PIT",
-    "away": "NSH",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "NSH @ PIT"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "NSH",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "NSH @ PIT — NSH +1.5",
-   "quote": null,
-   "fair_american": -168,
-   "break_even": null,
-   "prob": {
-    "model": 0.627,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.627,
-    "sd": 0.0233,
-    "conservative": 0.5971,
-    "components": {
-     "model_sd": 0.0132,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -141,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -141 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.3766 (PIT) vs 2.8391 (NSH) regulation goals",
-    "PIT 5v5 xG for 1.0543× league, NSH 5v5 xG for 0.9777×",
-    "goalies: projected uncertain (A. Silovs 65% / J. Saros 72%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "043cc523",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020176",
-   "event": {
-    "home": "EDM",
-    "away": "TOR",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "TOR @ EDM"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "TOR",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "TOR @ EDM — TOR +1.5",
-   "quote": null,
-   "fair_american": -157,
-   "break_even": null,
-   "prob": {
-    "model": 0.6106,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6106,
-    "sd": 0.0248,
-    "conservative": 0.5788,
-    "components": {
-     "model_sd": 0.0157,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -131,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -131 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.501 (EDM) vs 2.8678 (TOR) regulation goals",
-    "EDM 5v5 xG for 1.0369× league, TOR 5v5 xG for 0.9586×",
-    "goalies: projected uncertain (D. Levi 74% / S. Bobrovsky 71%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "5ac2d031",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020176",
-   "event": {
-    "home": "EDM",
-    "away": "TOR",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "TOR @ EDM"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "EDM",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "TOR @ EDM — EDM moneyline",
-   "quote": null,
-   "fair_american": -149,
-   "break_even": null,
-   "prob": {
-    "model": 0.5989,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5989,
-    "sd": 0.0209,
-    "conservative": 0.5721,
-    "components": {
-     "model_sd": 0.0143,
-     "calibration_sd": 0.0095,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -128,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -128 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.501 (EDM) vs 2.8678 (TOR) regulation goals",
-    "EDM 5v5 xG for 1.0369× league, TOR 5v5 xG for 0.9586×",
-    "goalies: projected uncertain (D. Levi 74% / S. Bobrovsky 71%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "3719b7bc",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020170",
-   "event": {
-    "home": "BOS",
-    "away": "SJS",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "SJS @ BOS"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "SJS",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "SJS @ BOS — SJS +1.5",
-   "quote": null,
-   "fair_american": -145,
-   "break_even": null,
-   "prob": {
-    "model": 0.5923,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5923,
-    "sd": 0.0221,
-    "conservative": 0.564,
-    "components": {
-     "model_sd": 0.0109,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -124,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -124 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.4654 (BOS) vs 2.6911 (SJS) regulation goals",
-    "BOS 5v5 xG for 0.9993× league, SJS 5v5 xG for 0.941×",
-    "goalies: projected uncertain (J. Swayman 65% / Y. Askarov 57%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "5b8b29f4",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020172",
-   "event": {
-    "home": "PIT",
-    "away": "NSH",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "NSH @ PIT"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "PIT",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "NSH @ PIT — PIT moneyline",
-   "quote": null,
-   "fair_american": -141,
-   "break_even": null,
-   "prob": {
-    "model": 0.5854,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5854,
-    "sd": 0.0194,
-    "conservative": 0.5605,
-    "components": {
-     "model_sd": 0.012,
-     "calibration_sd": 0.0095,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -122,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -122 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.3766 (PIT) vs 2.8391 (NSH) regulation goals",
-    "PIT 5v5 xG for 1.0543× league, NSH 5v5 xG for 0.9777×",
-    "goalies: projected uncertain (A. Silovs 65% / J. Saros 72%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "ffadf66a",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020175",
-   "event": {
-    "home": "STL",
-    "away": "CAR",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "CAR @ STL"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "CAR",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "CAR @ STL — CAR moneyline",
-   "quote": null,
-   "fair_american": -133,
-   "break_even": null,
-   "prob": {
-    "model": 0.5707,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5707,
-    "sd": 0.0213,
-    "conservative": 0.5433,
-    "components": {
-     "model_sd": 0.0093,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -114,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -114 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.784 (STL) vs 3.2331 (CAR) regulation goals",
-    "STL 5v5 xG for 0.9666× league, CAR 5v5 xG for 1.16×",
-    "goalies: projected uncertain (J. Hofer 73% / P. Kochetkov 56%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "a75d8575",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020171",
-   "event": {
-    "home": "OTT",
-    "away": "NYR",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "NYR @ OTT"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "OTT",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "NYR @ OTT — OTT moneyline",
-   "quote": null,
-   "fair_american": -127,
-   "break_even": null,
-   "prob": {
-    "model": 0.559,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.559,
-    "sd": 0.0192,
-    "conservative": 0.5344,
-    "components": {
-     "model_sd": 0.0116,
+     "model_sd": 0.0062,
      "calibration_sd": 0.0095,
      "lineup_sd": 0.012
     }
@@ -4428,15 +3695,16 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.0919 (OTT) vs 2.7361 (NYR) regulation goals",
-    "OTT 5v5 xG for 1.0066× league, NYR 5v5 xG for 0.9599×",
-    "goalies: projected uncertain (L. Ullmark 66% / D. Garand 82%)",
+    "λ 3.2088 (UTA) vs 2.8739 (TBL) regulation goals",
+    "UTA 5v5 xG for 1.0669× league, TBL 5v5 xG for 1.0451×",
+    "goalies: projected uncertain (K. Vejmelka 73% / D. Hildeby 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
     "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
     "state": "FRESH",
@@ -4445,183 +3713,35 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "c3ae37ab",
+   "id": "abc10d9e",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020174",
+   "event_key": "NHL|2026020177",
    "event": {
-    "home": "CBJ",
-    "away": "VGK",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "VGK @ CBJ"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "VGK",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "VGK @ CBJ — VGK moneyline",
-   "quote": null,
-   "fair_american": -121,
-   "break_even": null,
-   "prob": {
-    "model": 0.5471,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5471,
-    "sd": 0.0212,
-    "conservative": 0.52,
-    "components": {
-     "model_sd": 0.0089,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -104,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -104 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.8382 (CBJ) vs 3.1378 (VGK) regulation goals",
-    "CBJ 5v5 xG for 1.0171× league, VGK 5v5 xG for 1.0202×",
-    "goalies: projected uncertain (J. Greaves 64% / A. Hill 52%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "09cf1334",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020173",
-   "event": {
-    "home": "WSH",
-    "away": "BUF",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "BUF @ WSH"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "WSH",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "BUF @ WSH — WSH moneyline",
-   "quote": null,
-   "fair_american": -106,
-   "break_even": null,
-   "prob": {
-    "model": 0.5138,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5138,
-    "sd": 0.0193,
-    "conservative": 0.4891,
-    "components": {
-     "model_sd": 0.0118,
-     "calibration_sd": 0.0095,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 109,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.1516 (WSH) vs 3.0706 (BUF) regulation goals",
-    "WSH 5v5 xG for 1.0429× league, BUF 5v5 xG for 1.0272×",
-    "goalies: projected uncertain (L. Thompson 76% / U. Luukkonen 76%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "1b9aef8e",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020170",
-   "event": {
-    "home": "BOS",
-    "away": "SJS",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "SJS @ BOS"
+    "home": "UTA",
+    "away": "TBL",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "TBL @ UTA"
    },
    "market": {
     "kind": "total",
-    "side": "under",
-    "line": 6.5,
+    "side": "over",
+    "line": 6,
     "settles": "includes overtime; the shootout winner is credited one goal"
    },
-   "label": "SJS @ BOS — under 6.5",
+   "label": "TBL @ UTA — over 6",
    "quote": null,
-   "fair_american": -109,
+   "fair_american": -111,
    "break_even": null,
    "prob": {
-    "model": 0.5206,
-    "push": 0,
+    "model": 0.4689,
+    "push": 0.1098,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5206,
+    "posterior": 0.4689,
     "sd": 0.0277,
-    "conservative": 0.4851,
+    "conservative": 0.4334,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4650,15 +3770,16 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.4654 (BOS) vs 2.6911 (SJS) regulation goals",
-    "BOS 5v5 xG for 0.9993× league, SJS 5v5 xG for 0.941×",
-    "goalies: projected uncertain (J. Swayman 65% / Y. Askarov 57%)",
+    "λ 3.2088 (UTA) vs 2.8739 (TBL) regulation goals",
+    "UTA 5v5 xG for 1.0669× league, TBL 5v5 xG for 1.0451×",
+    "goalies: projected uncertain (K. Vejmelka 73% / D. Hildeby 77%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
     "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
     "state": "FRESH",
@@ -4667,37 +3788,37 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "6b9b5ac2",
+   "id": "42053d58",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020176",
+   "event_key": "NHL|2026020177",
    "event": {
-    "home": "EDM",
-    "away": "TOR",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "TOR @ EDM"
+    "home": "UTA",
+    "away": "TBL",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "TBL @ UTA"
    },
    "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 6.5,
-    "settles": "includes overtime; the shootout winner is credited one goal"
+    "kind": "moneyline",
+    "side": "TBL",
+    "line": null,
+    "settles": "includes overtime and shootout"
    },
-   "label": "TOR @ EDM — over 6.5",
+   "label": "TBL @ UTA — TBL moneyline",
    "quote": null,
-   "fair_american": -106,
+   "fair_american": 124,
    "break_even": null,
    "prob": {
-    "model": 0.5153,
+    "model": 0.4456,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5153,
-    "sd": 0.0277,
-    "conservative": 0.4798,
+    "posterior": 0.4456,
+    "sd": 0.0202,
+    "conservative": 0.4197,
     "components": {
-     "model_sd": 0.02,
+     "model_sd": 0.0062,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4705,7 +3826,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 113,
+   "min_acceptable_american": 143,
    "disagreement": null,
    "gates": [
     {
@@ -4718,15 +3839,240 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +113 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +143 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.501 (EDM) vs 2.8678 (TOR) regulation goals",
-    "EDM 5v5 xG for 1.0369× league, TOR 5v5 xG for 0.9586×",
-    "goalies: projected uncertain (D. Levi 74% / S. Bobrovsky 71%)",
+    "λ 3.2088 (UTA) vs 2.8739 (TBL) regulation goals",
+    "UTA 5v5 xG for 1.0669× league, TBL 5v5 xG for 1.0451×",
+    "goalies: projected uncertain (K. Vejmelka 73% / D. Hildeby 77%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "5b03aba2",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020177",
+   "event": {
+    "home": "UTA",
+    "away": "TBL",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "TBL @ UTA"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 6,
+    "settles": "includes overtime; the shootout winner is credited one goal"
+   },
+   "label": "TBL @ UTA — under 6",
+   "quote": null,
+   "fair_american": 111,
+   "break_even": null,
+   "prob": {
+    "model": 0.4213,
+    "push": 0.1098,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4213,
+    "sd": 0.0277,
+    "conservative": 0.3858,
+    "components": {
+     "model_sd": 0.02,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 136,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +136 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2088 (UTA) vs 2.8739 (TBL) regulation goals",
+    "UTA 5v5 xG for 1.0669× league, TBL 5v5 xG for 1.0451×",
+    "goalies: projected uncertain (K. Vejmelka 73% / D. Hildeby 77%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "63e8e7ae",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020177",
+   "event": {
+    "home": "UTA",
+    "away": "TBL",
+    "start_utc": "2026-10-25T01:00:00Z",
+    "label": "TBL @ UTA"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "UTA",
+    "line": -1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "TBL @ UTA — UTA -1.5",
+   "quote": null,
+   "fair_american": 193,
+   "break_even": null,
+   "prob": {
+    "model": 0.3412,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3412,
+    "sd": 0.0204,
+    "conservative": 0.3151,
+    "components": {
+     "model_sd": 0.0068,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 224,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +224 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2088 (UTA) vs 2.8739 (TBL) regulation goals",
+    "UTA 5v5 xG for 1.0669× league, TBL 5v5 xG for 1.0451×",
+    "goalies: projected uncertain (K. Vejmelka 73% / D. Hildeby 77%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "a60c6369",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020178",
+   "event": {
+    "home": "CGY",
+    "away": "DET",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "DET @ CGY"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "CGY",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "DET @ CGY — CGY +1.5",
+   "quote": null,
+   "fair_american": -226,
+   "break_even": null,
+   "prob": {
+    "model": 0.6937,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6937,
+    "sd": 0.0221,
+    "conservative": 0.6653,
+    "components": {
+     "model_sd": 0.011,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -188,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -188 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.903 (CGY) vs 3.0151 (DET) regulation goals",
+    "CGY 5v5 xG for 0.9619× league, DET 5v5 xG for 0.9831×",
+    "goalies: projected uncertain (D. Cooley 49% / J. Gibson 64%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -4741,35 +4087,405 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "41993810",
+   "id": "01a99d6c",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020172",
+   "event_key": "NHL|2026020179",
    "event": {
-    "home": "PIT",
-    "away": "NSH",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "NSH @ PIT"
+    "home": "SEA",
+    "away": "MIN",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "MIN @ SEA"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "SEA",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "MIN @ SEA — SEA +1.5",
+   "quote": null,
+   "fair_american": -199,
+   "break_even": null,
+   "prob": {
+    "model": 0.6655,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6655,
+    "sd": 0.0221,
+    "conservative": 0.6372,
+    "components": {
+     "model_sd": 0.0109,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -166,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -166 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.8478 (SEA) vs 3.1475 (MIN) regulation goals",
+    "SEA 5v5 xG for 0.9259× league, MIN 5v5 xG for 1.0022×",
+    "goalies: projected uncertain (P. Grubauer 67% / J. Wallstedt 90%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "bb43aa8c",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020179",
+   "event": {
+    "home": "SEA",
+    "away": "MIN",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "MIN @ SEA"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "MIN",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "MIN @ SEA — MIN moneyline",
+   "quote": null,
+   "fair_american": -121,
+   "break_even": null,
+   "prob": {
+    "model": 0.547,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.547,
+    "sd": 0.0216,
+    "conservative": 0.5193,
+    "components": {
+     "model_sd": 0.0099,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -104,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -104 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.8478 (SEA) vs 3.1475 (MIN) regulation goals",
+    "SEA 5v5 xG for 0.9259× league, MIN 5v5 xG for 1.0022×",
+    "goalies: projected uncertain (P. Grubauer 67% / J. Wallstedt 90%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "d65ef606",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020178",
+   "event": {
+    "home": "CGY",
+    "away": "DET",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "DET @ CGY"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "DET",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "DET @ CGY — DET moneyline",
+   "quote": null,
+   "fair_american": -107,
+   "break_even": null,
+   "prob": {
+    "model": 0.517,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.517,
+    "sd": 0.0217,
+    "conservative": 0.4892,
+    "components": {
+     "model_sd": 0.01,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 108,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.903 (CGY) vs 3.0151 (DET) regulation goals",
+    "CGY 5v5 xG for 0.9619× league, DET 5v5 xG for 0.9831×",
+    "goalies: projected uncertain (D. Cooley 49% / J. Gibson 64%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "4c04bd46",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020178",
+   "event": {
+    "home": "CGY",
+    "away": "DET",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "DET @ CGY"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "CGY",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "DET @ CGY — CGY moneyline",
+   "quote": null,
+   "fair_american": 107,
+   "break_even": null,
+   "prob": {
+    "model": 0.483,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.483,
+    "sd": 0.0192,
+    "conservative": 0.4584,
+    "components": {
+     "model_sd": 0.01,
+     "calibration_sd": 0.0112,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 123,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.903 (CGY) vs 3.0151 (DET) regulation goals",
+    "CGY 5v5 xG for 0.9619× league, DET 5v5 xG for 0.9831×",
+    "goalies: projected uncertain (D. Cooley 49% / J. Gibson 64%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "4303083f",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020179",
+   "event": {
+    "home": "SEA",
+    "away": "MIN",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "MIN @ SEA"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "SEA",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "MIN @ SEA — SEA moneyline",
+   "quote": null,
+   "fair_american": 121,
+   "break_even": null,
+   "prob": {
+    "model": 0.453,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.453,
+    "sd": 0.0192,
+    "conservative": 0.4284,
+    "components": {
+     "model_sd": 0.0099,
+     "calibration_sd": 0.0112,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 138,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +138 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.8478 (SEA) vs 3.1475 (MIN) regulation goals",
+    "SEA 5v5 xG for 0.9259× league, MIN 5v5 xG for 1.0022×",
+    "goalies: projected uncertain (P. Grubauer 67% / J. Wallstedt 90%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "174bcacc",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020179",
+   "event": {
+    "home": "SEA",
+    "away": "MIN",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "MIN @ SEA"
    },
    "market": {
     "kind": "total",
-    "side": "under",
-    "line": 6.5,
+    "side": "over",
+    "line": 6,
     "settles": "includes overtime; the shootout winner is credited one goal"
    },
-   "label": "NSH @ PIT — under 6.5",
+   "label": "MIN @ SEA — over 6",
    "quote": null,
    "fair_american": -104,
    "break_even": null,
    "prob": {
-    "model": 0.5096,
-    "push": 0,
+    "model": 0.4543,
+    "push": 0.11,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5096,
+    "posterior": 0.4543,
     "sd": 0.0277,
-    "conservative": 0.4741,
+    "conservative": 0.4188,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4779,7 +4495,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 115,
+   "min_acceptable_american": 117,
    "disagreement": null,
    "gates": [
     {
@@ -4792,15 +4508,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +115 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +117 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3766 (PIT) vs 2.8391 (NSH) regulation goals",
-    "PIT 5v5 xG for 1.0543× league, NSH 5v5 xG for 0.9777×",
-    "goalies: projected uncertain (A. Silovs 65% / J. Saros 72%)",
+    "λ 2.8478 (SEA) vs 3.1475 (MIN) regulation goals",
+    "SEA 5v5 xG for 0.9259× league, MIN 5v5 xG for 1.0022×",
+    "goalies: projected uncertain (P. Grubauer 67% / J. Wallstedt 90%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -4815,35 +4531,35 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "3cf7a669",
+   "id": "04226f75",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020173",
+   "event_key": "NHL|2026020178",
    "event": {
-    "home": "WSH",
-    "away": "BUF",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "BUF @ WSH"
+    "home": "CGY",
+    "away": "DET",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "DET @ CGY"
    },
    "market": {
     "kind": "total",
     "side": "under",
-    "line": 6.5,
+    "line": 6,
     "settles": "includes overtime; the shootout winner is credited one goal"
    },
-   "label": "BUF @ WSH — under 6.5",
+   "label": "DET @ CGY — under 6",
    "quote": null,
-   "fair_american": -103,
+   "fair_american": -102,
    "break_even": null,
    "prob": {
-    "model": 0.5074,
-    "push": 0,
+    "model": 0.4485,
+    "push": 0.1098,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5074,
+    "posterior": 0.4485,
     "sd": 0.0277,
-    "conservative": 0.4719,
+    "conservative": 0.413,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4853,7 +4569,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 116,
+   "min_acceptable_american": 120,
    "disagreement": null,
    "gates": [
     {
@@ -4866,15 +4582,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +116 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +120 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1516 (WSH) vs 3.0706 (BUF) regulation goals",
-    "WSH 5v5 xG for 1.0429× league, BUF 5v5 xG for 1.0272×",
-    "goalies: projected uncertain (L. Thompson 76% / U. Luukkonen 76%)",
+    "λ 2.903 (CGY) vs 3.0151 (DET) regulation goals",
+    "CGY 5v5 xG for 0.9619× league, DET 5v5 xG for 0.9831×",
+    "goalies: projected uncertain (D. Cooley 49% / J. Gibson 64%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -4889,183 +4605,35 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "c83e9a7b",
+   "id": "a5eb119f",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020173",
+   "event_key": "NHL|2026020178",
    "event": {
-    "home": "WSH",
-    "away": "BUF",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "BUF @ WSH"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "BUF",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "BUF @ WSH — BUF moneyline",
-   "quote": null,
-   "fair_american": 106,
-   "break_even": null,
-   "prob": {
-    "model": 0.4862,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4862,
-    "sd": 0.0225,
-    "conservative": 0.4573,
-    "components": {
-     "model_sd": 0.0118,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 123,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.1516 (WSH) vs 3.0706 (BUF) regulation goals",
-    "WSH 5v5 xG for 1.0429× league, BUF 5v5 xG for 1.0272×",
-    "goalies: projected uncertain (L. Thompson 76% / U. Luukkonen 76%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "d5768a65",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020173",
-   "event": {
-    "home": "WSH",
-    "away": "BUF",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "BUF @ WSH"
+    "home": "CGY",
+    "away": "DET",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "DET @ CGY"
    },
    "market": {
     "kind": "total",
     "side": "over",
-    "line": 6.5,
+    "line": 6,
     "settles": "includes overtime; the shootout winner is credited one goal"
    },
-   "label": "BUF @ WSH — over 6.5",
+   "label": "DET @ CGY — over 6",
    "quote": null,
-   "fair_american": 103,
+   "fair_american": 102,
    "break_even": null,
    "prob": {
-    "model": 0.4926,
-    "push": 0,
+    "model": 0.4416,
+    "push": 0.1098,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4926,
+    "posterior": 0.4416,
     "sd": 0.0277,
-    "conservative": 0.4571,
-    "components": {
-     "model_sd": 0.02,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 123,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +123 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.1516 (WSH) vs 3.0706 (BUF) regulation goals",
-    "WSH 5v5 xG for 1.0429× league, BUF 5v5 xG for 1.0272×",
-    "goalies: projected uncertain (L. Thompson 76% / U. Luukkonen 76%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "3c99bab6",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020172",
-   "event": {
-    "home": "PIT",
-    "away": "NSH",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "NSH @ PIT"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 6.5,
-    "settles": "includes overtime; the shootout winner is credited one goal"
-   },
-   "label": "NSH @ PIT — over 6.5",
-   "quote": null,
-   "fair_american": 104,
-   "break_even": null,
-   "prob": {
-    "model": 0.4904,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4904,
-    "sd": 0.0277,
-    "conservative": 0.4549,
+    "conservative": 0.4061,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -5094,9 +4662,9 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.3766 (PIT) vs 2.8391 (NSH) regulation goals",
-    "PIT 5v5 xG for 1.0543× league, NSH 5v5 xG for 0.9777×",
-    "goalies: projected uncertain (A. Silovs 65% / J. Saros 72%)",
+    "λ 2.903 (CGY) vs 3.0151 (DET) regulation goals",
+    "CGY 5v5 xG for 0.9619× league, DET 5v5 xG for 0.9831×",
+    "goalies: projected uncertain (D. Cooley 49% / J. Gibson 64%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -5111,35 +4679,35 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "28cfb2bc",
+   "id": "7bef9398",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020176",
+   "event_key": "NHL|2026020179",
    "event": {
-    "home": "EDM",
-    "away": "TOR",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "TOR @ EDM"
+    "home": "SEA",
+    "away": "MIN",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "MIN @ SEA"
    },
    "market": {
     "kind": "total",
     "side": "under",
-    "line": 6.5,
+    "line": 6,
     "settles": "includes overtime; the shootout winner is credited one goal"
    },
-   "label": "TOR @ EDM — under 6.5",
+   "label": "MIN @ SEA — under 6",
    "quote": null,
-   "fair_american": 106,
+   "fair_american": 104,
    "break_even": null,
    "prob": {
-    "model": 0.4847,
-    "push": 0,
+    "model": 0.4357,
+    "push": 0.11,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4847,
+    "posterior": 0.4357,
     "sd": 0.0277,
-    "conservative": 0.4492,
+    "conservative": 0.4002,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -5168,9 +4736,9 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.501 (EDM) vs 2.8678 (TOR) regulation goals",
-    "EDM 5v5 xG for 1.0369× league, TOR 5v5 xG for 0.9586×",
-    "goalies: projected uncertain (D. Levi 74% / S. Bobrovsky 71%)",
+    "λ 2.8478 (SEA) vs 3.1475 (MIN) regulation goals",
+    "SEA 5v5 xG for 0.9259× league, MIN 5v5 xG for 1.0022×",
+    "goalies: projected uncertain (P. Grubauer 67% / J. Wallstedt 90%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -5185,35 +4753,331 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "f5ef0154",
+   "id": "42f1a83c",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020170",
+   "event_key": "NHL|2026020179",
    "event": {
-    "home": "BOS",
-    "away": "SJS",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "SJS @ BOS"
+    "home": "SEA",
+    "away": "MIN",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "MIN @ SEA"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "MIN",
+    "line": -1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "MIN @ SEA — MIN -1.5",
+   "quote": null,
+   "fair_american": 199,
+   "break_even": null,
+   "prob": {
+    "model": 0.3345,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3345,
+    "sd": 0.0221,
+    "conservative": 0.3062,
+    "components": {
+     "model_sd": 0.0109,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 233,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +233 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.8478 (SEA) vs 3.1475 (MIN) regulation goals",
+    "SEA 5v5 xG for 0.9259× league, MIN 5v5 xG for 1.0022×",
+    "goalies: projected uncertain (P. Grubauer 67% / J. Wallstedt 90%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "618b5938",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020178",
+   "event": {
+    "home": "CGY",
+    "away": "DET",
+    "start_utc": "2026-10-25T02:00:00Z",
+    "label": "DET @ CGY"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "DET",
+    "line": -1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "DET @ CGY — DET -1.5",
+   "quote": null,
+   "fair_american": 226,
+   "break_even": null,
+   "prob": {
+    "model": 0.3063,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3063,
+    "sd": 0.0221,
+    "conservative": 0.2779,
+    "components": {
+     "model_sd": 0.011,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 267,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +267 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.903 (CGY) vs 3.0151 (DET) regulation goals",
+    "CGY 5v5 xG for 0.9619× league, DET 5v5 xG for 0.9831×",
+    "goalies: projected uncertain (D. Cooley 49% / J. Gibson 64%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "1cb51027",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020180",
+   "event": {
+    "home": "CHI",
+    "away": "FLA",
+    "start_utc": "2026-10-25T19:00:00Z",
+    "label": "FLA @ CHI"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "CHI",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "FLA @ CHI — CHI +1.5",
+   "quote": null,
+   "fair_american": -160,
+   "break_even": null,
+   "prob": {
+    "model": 0.6161,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6161,
+    "sd": 0.0238,
+    "conservative": 0.5857,
+    "components": {
+     "model_sd": 0.014,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -135,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -135 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.6869 (CHI) vs 3.3187 (FLA) regulation goals",
+    "CHI 5v5 xG for 0.9036× league, FLA 5v5 xG for 1.0091×",
+    "goalies: projected uncertain (S. Knight 87% / A. Schmid 41%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "080d2931",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020180",
+   "event": {
+    "home": "CHI",
+    "away": "FLA",
+    "start_utc": "2026-10-25T19:00:00Z",
+    "label": "FLA @ CHI"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "FLA",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "FLA @ CHI — FLA moneyline",
+   "quote": null,
+   "fair_american": -150,
+   "break_even": null,
+   "prob": {
+    "model": 0.5995,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5995,
+    "sd": 0.023,
+    "conservative": 0.57,
+    "components": {
+     "model_sd": 0.0127,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -127,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -127 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.6869 (CHI) vs 3.3187 (FLA) regulation goals",
+    "CHI 5v5 xG for 0.9036× league, FLA 5v5 xG for 1.0091×",
+    "goalies: projected uncertain (S. Knight 87% / A. Schmid 41%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "c44daf1c",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020180",
+   "event": {
+    "home": "CHI",
+    "away": "FLA",
+    "start_utc": "2026-10-25T19:00:00Z",
+    "label": "FLA @ CHI"
    },
    "market": {
     "kind": "total",
     "side": "over",
-    "line": 6.5,
+    "line": 6,
     "settles": "includes overtime; the shootout winner is credited one goal"
    },
-   "label": "SJS @ BOS — over 6.5",
+   "label": "FLA @ CHI — over 6",
    "quote": null,
-   "fair_american": 109,
+   "fair_american": -105,
    "break_even": null,
    "prob": {
-    "model": 0.4794,
-    "push": 0,
+    "model": 0.4548,
+    "push": 0.111,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4794,
+    "posterior": 0.4548,
     "sd": 0.0277,
-    "conservative": 0.4439,
+    "conservative": 0.4193,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -5223,7 +5087,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 130,
+   "min_acceptable_american": 117,
    "disagreement": null,
    "gates": [
     {
@@ -5236,15 +5100,15 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +130 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +117 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.4654 (BOS) vs 2.6911 (SJS) regulation goals",
-    "BOS 5v5 xG for 0.9993× league, SJS 5v5 xG for 0.941×",
-    "goalies: projected uncertain (J. Swayman 65% / Y. Askarov 57%)",
+    "λ 2.6869 (CHI) vs 3.3187 (FLA) regulation goals",
+    "CHI 5v5 xG for 0.9036× league, FLA 5v5 xG for 1.0091×",
+    "goalies: projected uncertain (S. Knight 87% / A. Schmid 41%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -5259,45 +5123,45 @@
    "model_id": "edgedesk_nhl_v1:xg_core"
   },
   {
-   "id": "75a438c6",
+   "id": "9b268ec8",
    "status": "RESEARCH",
    "sport_id": "nhl",
    "sport_label": "NHL",
-   "event_key": "NHL|2026020174",
+   "event_key": "NHL|2026020180",
    "event": {
-    "home": "CBJ",
-    "away": "VGK",
-    "start_utc": "2026-10-24T23:00:00Z",
-    "label": "VGK @ CBJ"
+    "home": "CHI",
+    "away": "FLA",
+    "start_utc": "2026-10-25T19:00:00Z",
+    "label": "FLA @ CHI"
    },
    "market": {
-    "kind": "moneyline",
-    "side": "CBJ",
-    "line": null,
-    "settles": "includes overtime and shootout"
+    "kind": "total",
+    "side": "under",
+    "line": 6,
+    "settles": "includes overtime; the shootout winner is credited one goal"
    },
-   "label": "VGK @ CBJ — CBJ moneyline",
+   "label": "FLA @ CHI — under 6",
    "quote": null,
-   "fair_american": 121,
+   "fair_american": 105,
    "break_even": null,
    "prob": {
-    "model": 0.4529,
-    "push": 0,
+    "model": 0.4343,
+    "push": 0.111,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4529,
-    "sd": 0.0187,
-    "conservative": 0.429,
+    "posterior": 0.4343,
+    "sd": 0.0277,
+    "conservative": 0.3988,
     "components": {
-     "model_sd": 0.0089,
-     "calibration_sd": 0.0112,
+     "model_sd": 0.02,
+     "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
    },
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 138,
+   "min_acceptable_american": 128,
    "disagreement": null,
    "gates": [
     {
@@ -5310,15 +5174,163 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +138 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +128 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 2.8382 (CBJ) vs 3.1378 (VGK) regulation goals",
-    "CBJ 5v5 xG for 1.0171× league, VGK 5v5 xG for 1.0202×",
-    "goalies: projected uncertain (J. Greaves 64% / A. Hill 52%)",
+    "λ 2.6869 (CHI) vs 3.3187 (FLA) regulation goals",
+    "CHI 5v5 xG for 0.9036× league, FLA 5v5 xG for 1.0091×",
+    "goalies: projected uncertain (S. Knight 87% / A. Schmid 41%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "2c9368ae",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020180",
+   "event": {
+    "home": "CHI",
+    "away": "FLA",
+    "start_utc": "2026-10-25T19:00:00Z",
+    "label": "FLA @ CHI"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "CHI",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "FLA @ CHI — CHI moneyline",
+   "quote": null,
+   "fair_american": 150,
+   "break_even": null,
+   "prob": {
+    "model": 0.4005,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4005,
+    "sd": 0.0208,
+    "conservative": 0.3739,
+    "components": {
+     "model_sd": 0.0127,
+     "calibration_sd": 0.0112,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 173,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +173 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.6869 (CHI) vs 3.3187 (FLA) regulation goals",
+    "CHI 5v5 xG for 0.9036× league, FLA 5v5 xG for 1.0091×",
+    "goalies: projected uncertain (S. Knight 87% / A. Schmid 41%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "0e271571",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020180",
+   "event": {
+    "home": "CHI",
+    "away": "FLA",
+    "start_utc": "2026-10-25T19:00:00Z",
+    "label": "FLA @ CHI"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "FLA",
+    "line": -1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "FLA @ CHI — FLA -1.5",
+   "quote": null,
+   "fair_american": 160,
+   "break_even": null,
+   "prob": {
+    "model": 0.3839,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3839,
+    "sd": 0.0238,
+    "conservative": 0.3535,
+    "components": {
+     "model_sd": 0.014,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 189,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +189 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.6869 (CHI) vs 3.3187 (FLA) regulation goals",
+    "CHI 5v5 xG for 0.9036× league, FLA 5v5 xG for 1.0091×",
+    "goalies: projected uncertain (S. Knight 87% / A. Schmid 41%)",
     "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
    "invalidators": [
@@ -5766,9 +5778,9 @@
    "label": "NHL",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 198,
+   "candidates": 180,
    "priced": 0,
-   "note": "33 upcoming games priced by the model; book prices: DISABLED",
+   "note": "30 upcoming games priced by the model; book prices: DISABLED",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -5946,9 +5958,9 @@
    "label": "NBA",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 144,
+   "candidates": 126,
    "priced": 0,
-   "note": "144 fair prices in the window; no book price is captured for this sport",
+   "note": "126 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -6159,19 +6171,19 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-24T21:10:37.537Z",
-  "nhl_slate_generated_at": "2026-10-24T21:10:28.230Z",
+  "registry_generated_at": "2026-10-24T23:41:31.678Z",
+  "nhl_slate_generated_at": "2026-10-24T23:41:23.300Z",
   "basketball_slate_generated_at": "2026-10-24T13:23:52.444Z",
   "nhl_quotes": {
    "status": "DISABLED",
-   "generated_at": "2026-10-24T21:10:28.166Z",
+   "generated_at": "2026-10-24T23:41:23.234Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
-  "football_sheets_generated_at": "2026-10-24T20:59:05.112Z",
+  "football_sheets_generated_at": "2026-10-24T23:23:31.342Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 510,
+  "research_total": 474,
   "research_kept": 78,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
