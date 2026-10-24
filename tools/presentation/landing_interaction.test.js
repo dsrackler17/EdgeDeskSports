@@ -104,7 +104,7 @@ chk('every button the script builds says what kind it is', !/'<button (?!type=)/
 chk('the answers are native <details>, so they work without script', (IDX.match(/<details>/g) || []).length >= 10);
 chk('there is a skip link to the main content', /<a class="skip" href="#main">/.test(IDX) && /<main id="main">/.test(IDX));
 chk('focus is always visible', /:focus-visible\{outline:2px solid var\(--obs\)/.test(CSS));
-chk('there is exactly one h1, and it is the hero line', (IDX.match(/<h1\b/g) || []).length === 1 && /<h1 data-hero="headline">Research the game /.test(IDX));
+chk('there is exactly one h1, and it is the hero line', (IDX.match(/<h1\b/g) || []).length === 1 && /<h1 data-hero="headline">The research terminal /.test(IDX));
 chk('every section is introduced by an h2', () => {
   const secs = [...IDX.matchAll(/<section class="(?:sec[^"]*|final)" id="([a-z]+)">/g)].map(m => m[1]);
   return secs.length >= 10 && secs.every(id => {
@@ -189,14 +189,14 @@ chk('no CSS rule is left for a class nothing carries', () => {
 /* the stylesheets the page moved out of its <style> (the 200 KB budget):
    every class each one styles is still carried by the page or by the script
    that draws into it */
-[['lib/edgedesk_landing_pictures.css', [IDX]], ['lib/edgedesk_home_model.css', [IDX, fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_home_model.js'), 'utf8')]]].forEach(([f, hosts]) => {
+[['lib/edgedesk_landing_pictures.css', [IDX]], ['lib/edgedesk_landing_desk.css', [IDX]], ['lib/edgedesk_home_model.css', [IDX, fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_home_model.js'), 'utf8')]]].forEach(([f, hosts]) => {
   const css = fs.readFileSync(path.join(ROOT, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const cls = [...new Set((css.match(/\.[a-zA-Z][a-zA-Z0-9_-]+/g) || []).map(x => x.slice(1)))].filter(c => !/^\d/.test(c));
   const dead = cls.filter(c => !hosts.some(h => new RegExp('(?<![a-zA-Z0-9_-])' + c.replace(/-/g, '\\-') + '(?![a-zA-Z0-9_-])').test(h)));
   chk(f + ': no rule for a class nothing carries', cls.length > 10 && dead.length === 0, dead.join(', '));
 });
-chk('the product pictures\' sheet never blocks the first screen, and still loads without script',
-  /<link rel="stylesheet" href="\/lib\/edgedesk_landing_pictures\.css\?v=[0-9a-z]+" media="print" onload="this\.media='all'">\s*<noscript><link rel="stylesheet" href="\/lib\/edgedesk_landing_pictures\.css\?v=[0-9a-z]+"><\/noscript>/.test(IDX));
+['edgedesk_landing_pictures', 'edgedesk_landing_desk'].forEach(f => chk('the ' + f + ' sheet never blocks the first screen, and still loads without script',
+  new RegExp('<link rel="stylesheet" href="\\/lib\\/' + f + '\\.css\\?v=[0-9a-z]+" media="print" onload="this\\.media=\'all\'">\\s*<noscript><link rel="stylesheet" href="\\/lib\\/' + f + '\\.css\\?v=[0-9a-z]+"><\\/noscript>').test(IDX)));
 chk('no giant commented-out markup is left behind', !/<!--[^>]*<(?:section|div|article)\b[\s\S]{0,4000}?-->/.test(IDX.replace(/<script[\s\S]*?<\/script>/g, '')));
 [/\bbullpen\b/i, /\bpitching\b/i, /\bpitch mix\b/i, /\bpark factor\b/i, /\bumpire\b/i, /\binnings?\b/i, /Reds @ Cubs/, /Dodgers/]
   .forEach(re => chk('no baseball copy survives: ' + re, !re.test(IDX), (re.exec(IDX) || [])[0]));
@@ -298,15 +298,18 @@ chk('it says the price beside the button', /<div class="mbar" id="mbar" hidden>[
 /* ======================================================================== */
 /* 6c. THE HERO IS READY FOR A TEST, WITHOUT A FAKE TEST FRAMEWORK          */
 /* ======================================================================== */
-chk('the hero copy lives in one config with the candidate headlines (p: the process line that led before free research)', /var HERO_COPY = \{\s*a: \{ headline: 'Research the game <span class="g">before you bet it\.<\/span>' \},\s*\/\*[^*]*\*\/\s*p: \{ headline: 'Bet with a process\. <span class="g">Know what&rsquo;s working\.<\/span>' \},\s*b: \{ headline: 'Stop guessing <span class="g">why you&rsquo;re losing\.<\/span>' \},\s*c: \{ headline: 'Research the bet\. Track the result\. <span class="g">Improve the process\.<\/span>' \}/.test(LANDING));
-chk('variant a is exactly the markup, so search engines and no-script readers get it', IDX.indexOf('<h1 data-hero="headline">Research the game <span class="g">before you bet it.</span></h1>') > 0);
+chk('the hero copy lives in one config with the candidate headlines (r: the free-research line that led before the terminal; p: the process line before that)', /var HERO_COPY = \{\s*a: \{ headline: 'The research terminal <span class="g">for sports markets\.<\/span>' \},\s*\/\*[^*]*\*\/\s*r: \{ headline: 'Research the game <span class="g">before you bet it\.<\/span>' \},\s*\/\*[^*]*\*\/\s*p: \{ headline: 'Bet with a process\. <span class="g">Know what&rsquo;s working\.<\/span>' \},\s*b: \{ headline: 'Stop guessing <span class="g">why you&rsquo;re losing\.<\/span>' \},\s*c: \{ headline: 'Research the bet\. Track the result\. <span class="g">Improve the process\.<\/span>' \}/.test(LANDING));
+chk('variant a is exactly the markup, so search engines and no-script readers get it', IDX.indexOf('<h1 data-hero="headline">The research terminal <span class="g">for sports markets.</span></h1>') > 0);
 chk('only a named variant can be shown, and nobody is assigned at random', /Object\.prototype\.hasOwnProperty\.call\(HERO_COPY,q\)/.test(LANDING) && !/Math\.random/.test(IDX));
 chk('a Sign out click is never counted as a log in', /login_click' && \/sign out\/i/.test(LANDING));
 
 /* ======================================================================== */
 /* 7. WEIGHT                                                                */
 /* ======================================================================== */
-chk('the page is under 200 KB, preserved auth and billing block included', IDX.length < 200 * 1024, Math.round(IDX.length / 1024) + ' KB');
+/* 200 KB until 2026-10-23, when the page took the desk, Signal Center and the
+   Simulator: their styles are lib/edgedesk_landing_desk.css, so the growth is
+   markup, about 15 KB raw and 4 KB over the wire (57.9 to 61.9 KB gzipped) */
+chk('the page is under 216 KB, preserved auth and billing block included', IDX.length < 216 * 1024, Math.round(IDX.length / 1024) + ' KB');
 chk('the presentation script is small', LANDING.length < 28 * 1024, Math.round(LANDING.length / 1024) + ' KB');
 chk('the multi-megabyte artifacts are never fetched', !/rankings\/current\.json'|players\/current\.json'|props\/(?:nfl|cfb)\/(?:summary|board)\.json|cfb_terminal\/board\.json/.test(IDX.replace(/\/\*[\s\S]*?\*\//g, '')));
 const BOARD = path.join(ROOT, 'football', 'home', 'board.json');
@@ -319,7 +322,7 @@ chk('nothing below the fold is an image or a video', !/<(?:img|video|iframe)\b/.
    the selective "worth researching" count), so it gets 36 KiB; the others 32
    (the #model demo's 28 grew to 32 with Kalshi's read beside the graphic) */
 const LIB_BUDGET = { 'edgedesk_home.js': 36 * 1024, 'edgedesk_track.js': 32 * 1024, 'edgedesk_pricing.js': 32 * 1024, 'edgedesk_home_model.js': 32 * 1024,
-  'edgedesk_home_model.css': 12 * 1024, 'edgedesk_landing_pictures.css': 12 * 1024 };
+  'edgedesk_home_model.css': 12 * 1024, 'edgedesk_landing_pictures.css': 12 * 1024, 'edgedesk_landing_desk.css': 12 * 1024 };
 const libs = Object.keys(LIB_BUDGET).map(f => [f, fs.statSync(path.join(ROOT, 'lib', f)).size]);
 chk('the small libraries and sheets it loads stay small', libs.every(([f, n]) => n < LIB_BUDGET[f]), libs.map(([f, n]) => f + ' ' + n).join(', '));
 

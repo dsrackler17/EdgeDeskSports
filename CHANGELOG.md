@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-24 — The landing page sells the terminal: the desk, Signal Center and the Simulator
+
+The landing page (`index.html`) described football research and bet tracking. Since 2026-10-23 the terminal also has Signal Center (live in production) and the Simulator (ten sports ACTIVE). The page now says what EdgeDesk is, a research terminal for sports markets, and what Full Access adds to the free research, seat by seat. The free football research still comes first, and nothing is claimed that the product does not do.
+
+- **The hero:** "The research terminal for sports markets." The sentence says what the terminal does and that the football research is free with no card. The previous headline is kept as variant `r` (`?hero=r`).
+- **#desk (new):** the terminal's six seats (`app.html` `NAV_PRIMARY`), each with the question it answers, Signals and Simulator marked New. Below them, the upgrade from free to Full Access, row by row; a part that is not free says "Not included". Kalshi is claimed only where it lists the game or the future.
+- **#signals (new):** what Signal Center detects, the evidence ladder and Model DNA, with a link to the free preview (`/signals/`). Its picture is labelled sample data about no real game. Its kinds, ladder and label are the engine's own words.
+- **#simulator (new):** the ten sports the registry has ACTIVE and what each simulates, the provenance labels, and the honesty line: experimental, and none of its game models has shown it beats the market. Its picture is labelled sample data. The division column sums to 100, and the ± is the Monte Carlo error at 100,000 runs.
+- **Pricing:** `EDPricing.FEATURES` (also the terminal's paywall) now leads with Signal Center and the Simulator. The football lines and the journal lines each merged, so there are still eight. `EDPlans.FULL` mirrors the list with each server gate. The Signal Center preview joins `EDPlans.FREE` and the free card, now that Signal Center publishes.
+- **Elsewhere on the page:** the #research eyebrow is now "Game research" and its market line names Kalshi. The FAQ adds "What do Signal Center and the Simulator add?", and the coverage answer names the Simulator's sports. Trust adds the pre-registered model tests, whose rejections stay on record. The footer, social metadata and structured data describe the terminal.
+- **Weight:** the new styles are `lib/edgedesk_landing_desk.css`, which loads like the pictures sheet and never blocks the first screen. The page budget rises from 200 KB to 216 KB because the markup grew about 15 KB (57.9 → 61.9 KB gzipped).
+- The Bloomberg name is not on the page; the copy says "research terminal" instead.
+
+Tests: `node tools/presentation/landing_positioning.test.js` (540, was 479). New checks:
+- the seats are app.html's;
+- the sports listed are the registry's ACTIVE ones, and every "N sports" on the page, metadata included, is their count;
+- other sports are named only in #simulator and the coverage answer;
+- the sample arithmetic adds up.
+
+Twelve mutations were checked; each one turned the suite red. `node tools/presentation/landing_interaction.test.js` (217, was 215) covers the new sheet's dead classes, budget and non-blocking load. `node tools/home/landing.e2e.js` (301, was 300) covers the hero, variant `r`, and no overflow at 320 to 1280 px; it caught the Simulator table widening the phone column, which is fixed. Every other unit suite that reads `index.html`, the pricing or the plans is green. `tools/billing/checkout_flow.e2e.js` step 5 fails here identically on `main`; it needs a configured checkout link, and no workflow runs it.
 ## 2026-10-24 — Signal Center: men's college basketball forecast shifts held at coming soon
 
 Production has no men's college basketball forecast tables: the first live run after the deploy answered "table not found" for `ncaam_fc_runs`. The cell said operational. It now says **coming soon**, and names why: `supabase/ncaam_forecast.sql` is not deployed, and the daily job publishes only with `NCAAM_FC_PUBLISH` on. The wiring stays tested (`worker.test.js` reads staged runs through `ncaamGames` and finds the shift). Once the tables are deployed and publishing, the registry entry becomes operational.

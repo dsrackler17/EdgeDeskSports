@@ -19,7 +19,7 @@
    LIVE    at 320 · 375 · 390 · 430 · 768 · 1280:
              nothing wider than the screen (every element's box is measured,
              since the page clips overflow-x); the hero says "Research, not
-             picks" and "Research the game before you bet it."; both hero
+             picks" and "The research terminal for sports markets."; both hero
              actions above the fold, at least 44 px tall, the first one the
              free research (#free) and the second the trial; beside them a
              free no-vig calculator that works (and says so); the research
@@ -244,7 +244,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       };
     });
     chk(w + ': the eyebrow is "Research, not picks."', /Research, not picks\./i.test(r.eyebrow), r.eyebrow);
-    chk(w + ': the headline', r.h1 === 'Research the game before you bet it.', r.h1);
+    chk(w + ': the headline', r.h1 === 'The research terminal for sports markets.', r.h1);
     chk(w + ': both hero calls to action above the fold', r.cta && r.start && r.cta.bottom <= r.vh && r.start.bottom <= r.vh, [r.cta, r.start, r.vh]);
     chk(w + ': and at least 44 px tall', r.cta.h >= 44 && r.start.h >= 44, [r.cta.h, r.start.h]);
     chk(w + ': the first is the free research (#free), the second the free trial', /^Explore free research/.test(r.second.text) && r.second.href === '#free' && /^Start free trial/.test(r.primary), [r.second, r.primary]);
@@ -383,6 +383,9 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     const P = await open({ width: 1280, height: 900 }, 'live', { search: '?hero=p' });
     chk('variant p: the process headline that led before free research is kept', (await P.page.evaluate(() => document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim())) === 'Bet with a process. Know what’s working.');
     await P.ctx.close();
+    const R = await open({ width: 1280, height: 900 }, 'live', { search: '?hero=r' });
+    chk('variant r: the free-research headline that led before the terminal is kept', (await R.page.evaluate(() => document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim())) === 'Research the game before you bet it.');
+    await R.ctx.close();
     {
       /* THE HERO CALCULATOR AND #free, at a phone and a desktop */
       const OT = require(path.join(ROOT, 'lib', 'edgedesk_odds_tools.js'));
@@ -428,7 +431,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     }
     await S.ctx.close();
     const U = await open({ width: 1280, height: 900 }, 'live', { search: '?hero=<b>x</b>' });
-    chk('an unknown variant leaves the page as it ships', (await U.page.evaluate(() => document.querySelector('h1').textContent)) === 'Research the game before you bet it.');
+    chk('an unknown variant leaves the page as it ships', (await U.page.evaluate(() => document.querySelector('h1').textContent)) === 'The research terminal for sports markets.');
     await U.ctx.close();
   }
 
