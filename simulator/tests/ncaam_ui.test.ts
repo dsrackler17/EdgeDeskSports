@@ -79,6 +79,36 @@ T.chk('not entitled: the Full Access card', /Full Access/.test(lockG));
 T.chk('loading', /Loading/.test(paint({ loading: true }, 'games')));
 T.chk('a read error is shown, escaped', /could not be read: &lt;b&gt;/.test(paint({ fc_status: status, entitled: true, error: '<b>x' }, 'games')));
 
+/* preseason: the seat names its season's phase; what stays blocked is the tournament simulation */
+{
+  const pre = Date.parse('2026-10-24T15:00:00Z'), opener = Date.parse('2026-11-02T05:00:00Z');
+  T.chk('the registry dates the opening day; the tournament simulation stays BLOCKED (the planner\'s gate)', reg.games && reg.games.regular_season_start === '2026-11-02T05:00:00Z' && reg.status === 'BLOCKED');
+  T.eq('seasonPhase: preseason before the opener, the season from the opener on, null for a sport without game forecasts',
+    [UI.seasonPhase(reg, pre), UI.seasonPhase(reg, opener - 1), UI.seasonPhase(reg, opener), UI.seasonPhase(reg, now), UI.seasonPhase(SPORTS.sports.find((s: any) => s.key === 'nfl'), pre)], ['preseason', 'preseason', 'season', 'season', null]);
+  T.eq('the opening day, in US Eastern', UI.openingDay(reg), 'Mon, Nov 2');
+  const paintAt = (c: any, tab: string, t: number) => N.adapter.paint({ sport: reg, cache: c, tab, nowMs: t });
+  const empty = paintAt({ fc_status: { champion_key: 'ncaam_adjeff@1.0.0' }, entitled: true }, 'games', pre);
+  T.chk('preseason, nothing published: the preseason card, the opening day and why exhibitions are not priced', /class="sm-card sm-preseason"/.test(empty) && /regular season opens Mon, Nov 2/.test(empty) && /Exhibition games are not priced/.test(empty) && /takes over on its own/.test(empty) && /No college basketball forecast has been published yet/.test(empty));
+  const preFc = (o: any) => fc(Object.assign({ start_utc: '2026-11-02T23:00:00Z', as_of: '2026-10-24T13:40:00Z', data_quality: ['PRESEASON_RATINGS', 'EARLY_SEASON_FEW_GAMES'], games_played: { home: 0, away: 0 } }, o));
+  const preCache = cache({ fc_status: Object.assign({}, status, { published_as_of: '2026-10-24T13:40:00Z', published_at: '2026-10-24T13:45:00Z' }), forecasts: [preFc({})] });
+  const g = paintAt(preCache, 'games', pre), u = paintAt(preCache, 'upset_watch', pre);
+  T.chk('preseason, published: the card above the opening week\'s forecasts, each flagged', /sm-preseason/.test(g) && /preseason ratings/.test(g) && /early season few games/.test(g) && /68\.0%/.test(g) && g.indexOf('sm-preseason') < g.indexOf('sm-gc'));
+  T.chk('...and above Upset Watch', /sm-preseason/.test(u) && /High upset probability/.test(u));
+  T.chk('after the opener, forecasts made before it say so until the next refresh replaces them', /regular season opened Mon, Nov 2/.test(paintAt(preCache, 'games', opener + 3600e3)) && /made before it/.test(paintAt(preCache, 'games', opener + 3600e3)));
+  T.chk('in season, in-season forecasts: no preseason card', !/sm-preseason/.test(games) && !/sm-preseason/.test(up));
+  T.chk('preseason, not entitled: the card and the lock, no number', /sm-preseason/.test(paintAt(cache({ entitled: false }), 'games', pre)) && /Full Access/.test(paintAt(cache({ entitled: false }), 'games', pre)) && !NUMBER.test(paintAt(cache({ entitled: false }), 'games', pre)));
+  T.chk('Tournament: the blocked card names the tournament simulation, not the seat', /NCAA tournament simulation — Blocked/.test(tour) && !/Men&#39;s College Basketball — Blocked/.test(tour));
+  /* the picker (the clock decides Preseason or nothing; never Blocked) */
+  const host: any = { innerHTML: '', addEventListener() {}, querySelector() { return null; } };
+  UI.open(host, { sport: 'ncaam' });
+  const btn = (k: string) => (host.innerHTML.match(new RegExp('<button[^>]*data-sim-sport="' + k + '"[^>]*>[\\s\\S]*?</button>')) || [''])[0];
+  for (const k of ['ncaam', 'ncaaw']) {
+    const b = btn(k), sp = SPORTS.sports.find((s: any) => s.key === k);
+    T.chk('picker: ' + k + ' is never marked Blocked or dimmed, and says Preseason exactly before its opening day', !!b && !/Blocked/.test(b) && !/sm-sport[^"]* off/.test(b) && /Preseason/.test(b) === (UI.seasonPhase(sp, Date.now()) === 'preseason'));
+  }
+  T.chk('picker: a sport without game forecasts keeps its status chip (college baseball, NFL unchanged)', !/Preseason/.test(btn('nfl')) && !/Preseason/.test(btn('college_baseball')));
+}
+
 /* the adapter is registered with the reader through its public hook only */
 T.chk('the reader exports registerSport and the shared helpers', typeof UI.registerSport === 'function' && typeof UI.badge === 'function' && typeof UI.cell === 'function');
 UI.registerSport('ncaam', N.adapter);

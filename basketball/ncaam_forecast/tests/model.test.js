@@ -291,4 +291,23 @@ T.near('invPhi inverts Phi', D.Phi(D.invPhi(0.0123)), 0.0123, 1e-14);
   T.chk('Math.random is never used', !/Math\.random/.test(src));
 }
 
+/* ------------------------------------------------------------------ the refresh window (SYNTHETIC schedule)
+   PRESEASON before the first regular-season game: through the end of the opening week; the routine hours from the
+   opener on, by the clock alone */
+{
+  const R = require('../refresh');
+  const H = 3600e3, opener = Date.parse('2026-11-02T05:00:00Z');
+  const sched = [{ season: 2027, season_type: 2, start_ms: opener + 18 * H }, { season: 2027, season_type: 2, start_ms: opener }, { season: 2027, season_type: 3, start_ms: opener - 30 * 24 * H }, { season: 2026, season_type: 2, start_ms: opener - 365 * 24 * H }];
+  T.eq('the opener is the season\'s first regular-season game (another season and other season types ignored)', R.regularSeasonStart(sched, 2027), opener);
+  T.eq('a season whose schedule lists no game has no opener', R.regularSeasonStart(sched, 2028), Infinity);
+  const pre = R.forecastWindow(sched, 2027, Date.parse('2026-10-24T13:37:00Z'), 48);
+  T.chk('preseason: the window runs to the end of the opening week', pre.phase === 'preseason' && pre.to === opener + 7 * 24 * H && pre.regular_season_start === '2026-11-02T05:00:00.000Z');
+  const eve = R.forecastWindow(sched, 2027, opener - H, 48);
+  T.chk('the hour before the opener is still preseason', eve.phase === 'preseason' && eve.to === opener + 7 * 24 * H);
+  const day1 = R.forecastWindow(sched, 2027, opener, 48);
+  T.chk('from the opener: the season and the routine window, with no change by anyone', day1.phase === 'season' && day1.to === opener + 48 * H);
+  T.chk('preseason never shortens a longer requested window', R.forecastWindow(sched, 2027, opener - 2 * H, 400).to === opener - 2 * H + 400 * H);
+  T.chk('no opener in the schedule: the routine window', R.forecastWindow(sched, 2028, opener, 48).phase === 'season');
+}
+
 process.exit(T.done());

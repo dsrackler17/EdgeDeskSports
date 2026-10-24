@@ -37,7 +37,16 @@ export interface SportEntry {
   limitations: string[];
   /** what would have to exist for this sport to be activated */
   activation_path: string;
+  /** a sport whose pregame game forecasts are published on their own (college basketball: basketball/ncaam_forecast,
+      basketball/ncaaw_forecast). Its seat is open whatever `status` says about its tournament simulation, and the
+      reader names the phase of the season instead: Preseason before regular_season_start, the season from it */
+  games?: { regular_season_start: string };
 }
+
+/** the first game day of the 2026-27 Division I season, men's and women's alike (the first games in the hoopR mbb and
+    wehoop wbb schedules, both from ESPN), as midnight US Eastern. The reader turns Preseason into the season at this
+    instant; the daily refreshes find the opener in their own schedule files, so they need no date */
+const CBB_2027_OPENING_DAY = '2026-11-02T05:00:00Z';
 
 /** NFL: the engine, config and tests are complete; the remaining blocker is
     the human verification of the 2026 facts the official sites hold. */
@@ -260,9 +269,11 @@ export function sportRegistry(): SportEntry[] {
     { key: 'mlb', label: 'MLB', status: mlb.status, structure: 'season', tabs: ['division', 'conference', 'title', 'futures'], blockers: mlb.blockers, limitations: MLB_LIMITS,
       activation_path: 'Each season: re-run the Simulator source check (job fetch (mlb): MLB\'s standings, postseason schedule, rulebook and explainers) and a dispatched MLB dry run, re-verify the facts in simulator/src/sports/mlb/config.ts in a reviewed commit, and set the season\'s nightly window (nightly_through). MLB_SIMULATOR_NOTES.md §15.' },
     { key: 'ncaam', label: 'Men\'s College Basketball', status: ncaam.status, structure: 'tournament', tabs: ['games', 'upset_watch', 'tournament', 'model_health'], blockers: ncaam.blockers, limitations: NCAAM_LIMITS,
-      activation_path: 'After Selection Sunday 2027: write basketball/ncaam_forecast/config/brackets/2027.json from the official bracket and record the 2027 format and bracket as VERIFIED with verified_by/verified_at in simulator/src/sports/ncaam/config.ts. Already in place: supabase/simulator.sql and supabase/ncaam_forecast.sql are applied in production (2026-10-24), and the champion is a research_team_model (ncaam_adjeff@1.0.0, promoted by the weekly gates on 2026-10-23).' },
+      activation_path: 'After Selection Sunday 2027: write basketball/ncaam_forecast/config/brackets/2027.json from the official bracket and record the 2027 format and bracket as VERIFIED with verified_by/verified_at in simulator/src/sports/ncaam/config.ts. Already in place: supabase/simulator.sql and supabase/ncaam_forecast.sql are applied in production (2026-10-24), and the champion is a research_team_model (ncaam_adjeff@1.0.0, promoted by the weekly gates on 2026-10-23). The pregame forecasts in the Games and Upset Watch tabs do not wait on the tournament: basketball/ncaam_forecast publishes them once NCAAM_FC_PUBLISH is on.',
+      games: { regular_season_start: CBB_2027_OPENING_DAY } },
     { key: 'ncaaw', label: 'Women\'s College Basketball', status: 'BLOCKED', structure: 'tournament', tabs: ['games', 'upset_watch', 'tournament', 'model_health'], blockers: NCAAW_BLOCKERS, limitations: NCAAW_LIMITS,
-      activation_path: 'Build a host-site-aware women\'s bracket (the first two rounds at the top 16 seeds\' campuses), verify the 2027 format and bracket after Selection Sunday 2027 with verified_by/verified_at, and register a women\'s tournament simulation before any publication. The pregame forecasts in the Games and Upset Watch tabs do not wait on this: basketball/ncaaw_forecast publishes them once NCAAW_FC_PUBLISH is on.' },
+      activation_path: 'Build a host-site-aware women\'s bracket (the first two rounds at the top 16 seeds\' campuses), verify the 2027 format and bracket after Selection Sunday 2027 with verified_by/verified_at, and register a women\'s tournament simulation before any publication. The pregame forecasts in the Games and Upset Watch tabs do not wait on this: basketball/ncaaw_forecast publishes them once NCAAW_FC_PUBLISH is on.',
+      games: { regular_season_start: CBB_2027_OPENING_DAY } },
     { key: 'wnba', label: 'WNBA', status: wnba.status, structure: 'series', tabs: ['title', 'games', 'model_health'], blockers: wnba.blockers, limitations: WNBA_LIMITS,
       activation_path: 'Active for the 2026 postseason: the series formats and hosts are measured from the schedule (simulator/src/sports/wnba/config.ts), the game model is the served basketball walk-forward and the shared series offset comes from simulator/data/wnba_strength_uncertainty.json. For 2027: a configuration with the season\'s playoff bracket rule (pairings of rounds not yet played), re-run the uncertainty study, set nightly_through. WNBA_SIMULATOR_NOTES.md.' },
     { key: 'tennis', label: 'Tennis', status: tennis.status, structure: 'events', tabs: ['draws', 'matches', 'model_health'], blockers: tennis.blockers, limitations: TENNIS_LIMITS,

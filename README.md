@@ -451,8 +451,8 @@ Tests: `npm run ncaam:test`, `npm run ncaam:test:pack`, `npm run ncaam:e2e`,
 ## Men's college basketball forecast — daily pregame win probabilities, Upset Watch, weekly challengers
 
 `basketball/ncaam_forecast/` publishes calibrated pregame forecasts for NCAA
-Division I men's games starting in the next 48 hours: win probability
-(overtime included), expected score, 80% margin and total intervals, and the
+Division I men's games starting in the next 48 hours (in the preseason, the
+whole opening week, from preseason ratings): win probability (overtime included), expected score, 80% margin and total intervals, and the
 overtime chance. Each forecast carries its data-quality flags and an
 availability assumption. Upset Watch keeps three separate signals, never one
 score. Readers see them in the Simulator's Men's College Basketball tabs (Games,
@@ -487,8 +487,8 @@ and fails closed.
 
 `basketball/ncaaw_forecast/` is the men's forecast system rebuilt for NCAA
 Division I women's basketball, with its own data, selection, champion, tables
-and switch. It forecasts every D-I game starting in the next 48 hours: win
-probability (overtime included), expected score, 80% margin and total
+and switch. It forecasts every D-I game starting in the next 48 hours (in the
+preseason, the whole opening week): win probability (overtime included), expected score, 80% margin and total
 intervals, and the overtime chance. Each forecast carries its data-quality
 flags. Upset Watch keeps its three separate signals. Readers see them in the
 Simulator's **Women's College Basketball** seat (Games, Upset Watch, Model

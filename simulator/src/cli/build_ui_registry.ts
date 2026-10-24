@@ -22,7 +22,8 @@ const OUT = path.join(REPO, 'lib', 'edgedesk_simulator_sports.js');
 export function uiRegistrySource(): string {
   const data = {
     schema: 'edgedesk_sim_sports_v1',
-    sports: sportRegistry().map((s) => ({ key: s.key, label: s.label, status: s.status, structure: s.structure, tabs: s.tabs, blockers: s.blockers, limitations: s.limitations, activation_path: s.activation_path })),
+    sports: sportRegistry().map((s) => Object.assign({ key: s.key, label: s.label, status: s.status, structure: s.structure, tabs: s.tabs, blockers: s.blockers, limitations: s.limitations, activation_path: s.activation_path },
+      s.games ? { games: s.games } : {})),
     nfl: { season: String(NFL_2026.season), competition: NFL_2026.competition, rules_version: NFL_2026.rules_version,
       estimated_inputs: ['Postseason rest (from the format)', 'Super Bowl venue and designated home', 'Scores for points-ranking tiebreaks (linemaker team-points model)'] },
     /* the NHL's runs are published under the season label (sim_runs.season '2026-27') */
