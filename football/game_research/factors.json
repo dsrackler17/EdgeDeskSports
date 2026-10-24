@@ -10,8 +10,8 @@
    "status": "CORE",
    "points_text": "the neutral-field rating gap",
    "test": "the whole engine replayed cold on 2022-2025, seasons no layer was tuned on",
-   "result": "spread MAE 12.769 on 3127 games against the closing line’s 12.015; rating and home field alone: 12.989",
-   "source": "football/cfb_p4/params.js",
+   "result": "spread MAE 12.769 on 3127 games against the closing line’s 12.015; rating and home field alone: 12.989; left out on 2022-2025: weight k 0.91 (95% CI +0.86 to +0.96): real but over-weighted: the best-fit multiplier is 0.91",
+   "source": "football/cfb_p4/params.js, football/validation/loto_cfb.json",
    "status_text": "The model’s base, tested as a whole"
   },
   "home_field": {
@@ -21,20 +21,43 @@
    "points": 2.8,
    "points_text": "2.8 pts for every home team, the same at every stadium (0 at a neutral site)",
    "test": "walk-forward 2014-2025, 8724 games, against the previous 4.082-pt constant",
-   "result": "spread MAE −0.052 (95% CI −0.08 to −0.02), better in 11/12 seasons; a per-stadium table was tested and rejected: it tracked the home team’s own rating (corr 0.77), not the stadium",
-   "source": "football/cfb_p4/home_field.js",
+   "result": "spread MAE −0.052 (95% CI −0.08 to −0.02), better in 11/12 seasons; a per-stadium table was tested and rejected: it tracked the home team’s own rating (corr 0.77), not the stadium; left out on 2022-2025: weight k 1.00 (95% CI +0.80 to +1.21), a check only, because the value was chosen on that window",
+   "source": "football/cfb_p4/home_field.js, football/validation/loto_cfb.json",
    "status_text": "Validated on unseen games"
   },
   "matchup": {
    "label": "Stylistic matchup",
    "in_number": true,
-   "status": "IN_USE_UNTESTED",
+   "status": "IN_USE_NOT_SIGNIF",
    "pairs": 8,
-   "points_text": "8 offence-vs-defence pairings on both sides of the ball (run, pass, trenches, explosives, early downs, red zone, field position), netted into one term",
-   "test": "weights fitted on 2014-2019 residuals (4331 games, in-sample r² 0.023)",
-   "result": "no held-out test of its own: the historical replay carries no play-level efficiency, so the term is absent from every out-of-sample record",
-   "source": "football/cfb_p4/params.js",
-   "status_text": "In the number, not yet tested on unseen games by itself"
+   "active_pairs": [
+    "ball control vs front disruption",
+    "early-down offence vs early-down defence",
+    "pass rush vs pass protection",
+    "finishing drives vs red-zone defence"
+   ],
+   "inert_pairs": [
+    "explosive offence vs explosive prevention",
+    "field position",
+    "passing efficiency vs pass defence",
+    "run game vs run defence"
+   ],
+   "unpriced_lanes": [
+    "pass",
+    "run"
+   ],
+   "live": {
+    "games": 100,
+    "mean_abs": 1.44,
+    "current": 1.23,
+    "last_season": 0.42,
+    "seed_season": 2025
+   },
+   "points_text": "8 learned offence-vs-defence pairings netted into one term. 4 move it with this season’s data (ball control vs front disruption, early-down offence vs early-down defence carry most of it); 4 never do, because the season feed does not supply their inputs (explosive offence vs explosive prevention, field position, passing efficiency vs pass defence, run game vs run defence)",
+   "test": "left out of the shipped engine game by game on 2022-2025 (3127 games, no refit); weights fitted on 2014-2019 residuals (4331 games, in-sample r² 0.023)",
+   "result": "MAE +0.037 better with it (95% CI −0.02 to +0.09, p = 0.20; better in 4 of 4 seasons); weight k 0.84 (95% CI +0.48 to +1.20): the shipped weight is consistent with the data (multiplier 0.84). Live, 0.42 pts of the term on average come from last season’s values for the unfed inputs, which no test covers",
+   "source": "football/cfb_p4/params.js, football/validation/loto_cfb.json",
+   "status_text": "In the number, held-out gain not significant"
   },
   "altitude": {
    "label": "Altitude",
@@ -111,22 +134,22 @@
   "schedule": {
    "label": "Rest and schedule",
    "in_number": true,
-   "status": "HELD_OUT_SIGNAL",
+   "status": "NEGLIGIBLE",
    "points_text": "short rest, byes, road stretches, look-aheads",
-   "test": "fitted on 3369 tune games, scored on 2022 on",
-   "result": "held-out r² 0.0025 (tune 0.0069); average move 1.13 pts",
-   "source": "football/cfb_p4/params.js",
-   "status_text": "In the number; explains some error on unseen seasons"
+   "test": "left out of the shipped engine game by game on 2022-2025 (3127 games, no refit)",
+   "result": "moves the number by 0.001 pts on average, against the 1.13 pts training measured: the engine scales the trained points-per-stress down by 100 a second time; at the trained scale the held-out weight is k -0.96 (95% CI −3.38 to +1.37): no measurable information: the multiplier’s interval includes 0",
+   "source": "football/cfb_p4/params.js, football/validation/loto_cfb.json",
+   "status_text": "In the number, but moves it by under 0.05 pts"
   },
   "conference": {
    "label": "Conference strength",
    "in_number": true,
-   "status": "HELD_OUT_SIGNAL",
+   "status": "VALIDATED",
    "points_text": "cross-conference games only, fading to 0 by six games played",
-   "test": "fitted on 1193 tune games, scored on 2022 on",
-   "result": "held-out r² 0.079",
-   "source": "football/cfb_p4/params.js",
-   "status_text": "In the number; explains some error on unseen seasons"
+   "test": "left out of the shipped engine game by game on 2022-2025 (3127 games, no refit)",
+   "result": "MAE +0.186 better with it (95% CI +0.11 to +0.27, p = 0.00; better in 3 of 4 seasons); weight k 1.11 (95% CI +0.89 to +1.32): the shipped weight is consistent with the data (multiplier 1.11)",
+   "source": "football/cfb_p4/params.js, football/validation/loto_cfb.json",
+   "status_text": "Validated on unseen games"
   },
   "qb": {
    "label": "Quarterback",
