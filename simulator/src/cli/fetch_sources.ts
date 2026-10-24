@@ -457,13 +457,16 @@ async function kalshi() {
     + settled.length + ' closed or settled markets of series with none open');
 }
 
-await kalshi();
 if (SPORT === 'nhl') await nhlApi();
 if (SPORT === 'nba') await nbaApi();
 if (SPORT === 'mlb') await mlbApi();
 /* MLB: the rulebook and the known pages first, the archive's slow index last */
 for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : SPORT === 'mlb' ? [MLB_RULES_PDF].concat(mlbPages(MLB_ARTICLES)) : NBA_PAGES) await fetchPage(p);
 if (SPORT === 'mlb') for (const p of mlbPages(await mlbDiscover())) await fetchPage(p);
+if (EXCERPTS.length) { section('EXCERPTS (the paragraphs of each page read above that name the rules; the whole text is above and in the artifact)'); console.log(EXCERPTS.join('\n\n')); }
+/* Kalshi's section last, then the short summary: GitHub's log API returns a job's last 5,000 lines, and
+   build_kalshi_mappings.ts --log reads the section whole from there (printed first, the NBA's was cut off
+   behind its schedule and pages: run 40019030435, 6,396 lines) */
+await kalshi();
 section('SUMMARY');
 console.log(SUMMARY.join('\n') + '\nwritten to ' + OUT);
-if (EXCERPTS.length) { section('EXCERPTS (the paragraphs of each page read above that name the rules; the whole text is above and in the artifact)'); console.log(EXCERPTS.join('\n\n')); }
