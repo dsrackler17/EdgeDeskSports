@@ -153,6 +153,25 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   src2.engine.verdict = 'BEST_SUPPORTED'; src2.engine.best.label = 'FLA ML';
   RES.join(evs2, src2, { now: F.NOW });
   chk('its BEST_SUPPORTED pick is', evs2[0].research.signal && evs2[0].research.signal.actionable === true);
+  /* UFC: the served model's bouts on the card, each beside the market and the guard; a disagreeing main event is a
+     LIMITED projection labelled "Model disagrees with market", never a signal */
+  const ug = (status, gap) => ({ status, gap_pp: gap, threshold_pp: 8, label: status === 'DISAGREES' ? 'Model disagrees with market' : 'Model and market agree within the threshold', signal_allowed: false,
+    factors: status === 'DISAGREES' ? [{ code: 'age', text: 'Old Guy is 38.0: past 35' }, { code: 'short_sample', text: 'New Guy has 2 UFC bouts in the data' }] : [] });
+  const srcU = F.research();
+  srcU.ufc = { schema: 'edgedesk_model_loop_ufc_current_v1', generated_at: '2026-10-13T12:00:00Z', served: { version: '9.9.9' }, guard: { threshold_pp: 8, certification: { certified: false } },
+    bouts: [{ bout_id: 'b1', event_id: 'E333', fighter_a: { id: '10', name: 'Old Guy' }, fighter_b: { id: '20', name: 'New Guy' }, p_a: 0.70, market: { p_a: 0.53, book: 'DraftKings', observed_at: '2026-10-13T11:00:00Z' }, guard: ug('DISAGREES', 17), compare: { version: '1.1.0', p_a: 0.72 } },
+      { bout_id: 'b2', event_id: 'E333', fighter_a: { id: '30', name: 'A' }, fighter_b: { id: '40', name: 'B' }, p_a: 0.55, market: { p_a: 0.53 }, guard: ug('AGREES', 2) }] };
+  const evU = [{ id: 'mma:espn:E333', sport: 'mma', league: 'UFC', provider: 'espn', provider_id: 'E333', start_utc: '2026-10-13T23:00:00Z', status: 'SCHEDULED',
+    home: { id: '20', name: 'New Guy' }, away: { id: '10', name: 'Old Guy' } }];
+  RES.join(evU, srcU, { now: F.NOW });
+  const ru = evU[0].research;
+  eq('UFC: the card carries every bout with its guard verdict', [ru.ufc.bouts.length, ru.ufc.bouts[0].status, ru.ufc.bouts[1].status, ru.ufc.threshold_pp, ru.ufc.certified], [2, 'DISAGREES', 'AGREES', 8, false]);
+  eq('UFC: the main event read from the home side (New Guy 30%), fair prices without margin', [ru.model.home_line, ru.model.fair.ml_away], [233, -233]);
+  chk('UFC: a disagreement makes the projection LIMITED with the reason, and is never a signal', ru.model.data_quality === 'LIMITED' && /disagrees with market by 17\.0 points \(age, short sample\); not an edge/.test(ru.model.note)
+    && ru.model.disagreement.label === 'Model disagrees with market' && ru.model.disagreement.signal_allowed === false && !ru.signal);
+  srcU.ufc.bouts[0].guard = ug('AGREES', 3);
+  RES.join(evU, srcU, { now: F.NOW });
+  chk('UFC: agreeing with the market, the projection is OK and carries no disagreement', evU[0].research.model.data_quality === 'OK' && evU[0].research.model.disagreement === null);
 
   /* ── THE LIVE POLLER ──────────────────────────────────────────────── */
   const g = LIVE.gate(s, F.NOW);

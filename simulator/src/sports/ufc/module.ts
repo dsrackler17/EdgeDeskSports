@@ -24,10 +24,14 @@
       champion meets the first contender in order who is coming off a win
       and has rested at least the measured minimum; the winner is drawn from
       the served Elo on the ratings frozen at the as-of time, with the served
-      layoff rule at the fight's date (a fighter idle 365 days or more loses
-      25% of their distance from 1500, and keeps the loss) and the served
-      champion term (champ_bonus Elo points to the champion going in; 0, so
-      off, in the served config). A simulated fight never moves a rating.
+      configuration's terms at the fight's date (elo.ts): the layoff rule
+      (1.0/1.1 and the 2026-10 versions: a fighter idle 365 days or more loses
+      25% of their distance from 1500, and keeps the loss; or the smooth one,
+      toward the prior), the recency half-life, short-sample shrinkage toward
+      the prior, the age curve at the fight's date, and the champion term
+      (champ_bonus Elo points to the champion going in; 0, so off, in the
+      served config). Head to head is not carried into a simulated rematch. A
+      simulated fight never moves a rating.
    Outcomes per fighter: the next booked bout won (by finish, by decision);
    a title shot, a title won and the title held at the horizon (Estimated:
    they pass through the matchmaking rule). Sum rules (after every run): one
@@ -36,9 +40,9 @@
 import type { SimModule, EntityDef, OutcomeDef, SumRule, RunMarks } from '../../core/engine.ts';
 import { streamFor, STREAM } from '../../core/prng.ts';
 import type { UfcInputData } from './inputs.ts';
+import { ELO_DEFAULTS, agePoints, type EloConfig } from './elo.ts';
 
 const DAY = 86400000;
-export const LAYOFF_DAYS = 365;
 
 /* ------------------------------------------------------------ the gamma gaps */
 /** ln Gamma(x), Lanczos (g = 7, n = 9) */
@@ -103,12 +107,17 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
   const oNext = O.get('win_next_bout')!, oFin = O.get('win_next_finish')!, oDec = O.get('win_next_decision')!;
   const oShot = O.get('title_shot')!, oWin = O.get('win_title')!, oHold = O.get('champion_at_horizon')!;
   const nE = entities.length;
-  /* the served Elo's scale and champion term (0 while the term is not served) */
-  const eloScale = d.elo.config.scale || 400, champBonus = d.elo.config.champ_bonus || 0;
+  /* the served Elo's configuration: scale, champion term (0 while the term is not served), layoff, recency, shrinkage, age */
+  const P: EloConfig = { ...ELO_DEFAULTS, ...d.elo.config };
+  const eloScale = P.scale || 400, champBonus = P.champ_bonus || 0;
+  const LD = Number(P.layoff_days), LR = Number(P.layoff_regress), LS = Number(P.layoff_span), STEP = (P.layoff_mode || 'step') === 'step';
+  const HL = Number(P.half_life_days || 0), SB = Number(P.shrink_bouts || 0);
   /* the fighters' state at the as-of time */
   const baseRating = new Float64Array(nE), baseLast = new Float64Array(nE), baseRes = new Uint8Array(nE), finW = new Float64Array(nE), finL = new Float64Array(nE);
+  const prior = new Float64Array(nE), dob = new Float64Array(nE), nBouts = new Float64Array(nE);
   d.fighters.forEach((f, i) => {
     baseRating[i] = f.rating; baseLast[i] = f.last_fight ? Date.parse(f.last_fight) : NaN;
+    prior[i] = Number.isFinite(f.prior) ? f.prior : 1500; dob[i] = f.dob ? Date.parse(f.dob + 'T00:00:00Z') : NaN; nBouts[i] = f.bouts;
     baseRes[i] = f.last_result === 'W' ? 1 : f.last_result === 'L' ? 2 : f.last_result === 'D' ? 3 : 0;
     finW[i] = f.fin_win; finL[i] = f.fin_loss;
   });
@@ -141,9 +150,23 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
   const rating = new Float64Array(nE), last = new Float64Array(nE), res = new Uint8Array(nE), wins = new Uint8Array(nE);
   const champ = new Int32Array(D.length);
   const order: number[][] = D.map(() => []);
+  /* the step layoff rule (stored, as the walk does); then what an unbooked title fight is priced from at time t */
   const regress = (i: number, t: number) => {
     const lt = last[i];
-    if (lt === lt && Math.floor((t - lt) / DAY) >= LAYOFF_DAYS) rating[i] = 1500 + (rating[i] - 1500) * 0.75;
+    if (STEP && LR && lt === lt && Math.floor((t - lt) / DAY) >= LD) rating[i] = 1500 + (rating[i] - 1500) * (1 - LR);
+  };
+  const priceRating = (i: number, t: number): number => {
+    const mu = prior[i], lt = last[i];
+    let r = rating[i];
+    if (lt === lt) {
+      const days = Math.floor((t - lt) / DAY);
+      let dev = r - mu;
+      if (!STEP && LR && days > LD) dev *= 1 - LR * Math.min(1, (days - LD) / LS);
+      if (HL) dev *= 0.5 ** (days / HL);
+      if (!STEP || HL) r = mu + dev;
+    }
+    if (SB) r = mu + (r - mu) * nBouts[i] / (nBouts[i] + SB);
+    return r + (dob[i] === dob[i] ? agePoints(P, Math.floor((t - dob[i]) / DAY) / 365.25) : 0);
   };
   const pick = (cum: number[], u: number) => { for (let k = 0; k < cum.length; k++) if (u < cum[k]) return k; return cum.length - 1; };
   const moveAhead = (ord: number[], w: number, l: number) => {
@@ -202,7 +225,7 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
         else {
           unbooked++;
           regress(c, t); regress(ch, t);
-          const pCh = 1 / (1 + 10 ** (-(rating[ch] - rating[c] - champBonus) / eloScale));
+          const pCh = 1 / (1 + 10 ** (-(priceRating(ch, t) - priceRating(c, t) - champBonus) / eloScale));
           const chWins = rt.nextDouble() < pCh;
           const w = chWins ? ch : c, l = chWins ? c : ch;
           const fin = rm.nextDouble() < 1 / (1 + Math.exp(-(x.lf5 + finW[w] + finL[l])));

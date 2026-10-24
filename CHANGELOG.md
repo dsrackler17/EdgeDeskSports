@@ -25,6 +25,15 @@ Two fixes that follow from the leave-one-term-out record (`docs/cfb-validation/L
   - `tools/football/game_research.test.js` has 248 checks.
   - The research-card libs' stamps moved (`20261024sr1`), and so did the home page's model stamp.
 
+## 2026-10-24 — College basketball: preseason mode, then the season on its own
+
+The Simulator's **Men's College Basketball** and **Women's College Basketball** seats no longer say *Blocked*. What was blocked is the NCAA tournament simulation (no 2027 field before Selection Sunday; no women's host-site bracket), not the game forecasts, so the seats now name the phase of the season.
+
+- **Preseason.** Until the season's first regular-season game (2026-11-02), both daily refreshes price the whole opening week instead of the next 48 hours. Ratings are last season's, carried forward, because no game has moved them yet. Each forecast is flagged `PRESEASON_RATINGS`, and the seat shows a **Preseason** chip and a card saying so.
+- **Then the season, with no switch.** The refresh finds the opener in its own schedule file. From opening day it returns to the routine 48-hour window. The reader's chip turns over at the opening day in the generated registry (`games.regular_season_start`).
+- **Exhibition games are not priced.** No schedule we read lists them: the hoopR and wehoop files have no preseason row in any season, and ESPN's Division I scoreboard listed none this week.
+- **Unchanged.** The tournament simulation stays BLOCKED, with the same blockers, in the Tournament tab (now titled *NCAA tournament simulation — Blocked*). The planner's publication gate is unchanged too. Publication still waits on `NCAAM_FC_PUBLISH` and `NCAAW_FC_PUBLISH`.
+
 ## 2026-10-24 — Content engine: the draft and its integrity check read one availability index
 
 Since the morning's editorial data refresh, `System integrity tests` failed on every branch (10 checks: the deterministic draft was BLOCKED, so it was never approved, exported or sent). The content-engine live check (`evidence.test.js` L) failed on six articles.
@@ -74,9 +83,6 @@ Tests: `node tools/football/loto.test.js` (37, in the CFB validation workflow) c
 - the committed record re-derives its own statuses, and `LOTO.md` is its render.
 
 `game_research.test.js` (246): unpriced lanes say 0 PTS, line-of-scrimmage items keep the matchup term, and the registry carries the verdict. The browser test (57) and the CFB validation, engine, altitude and landing suites all pass. Cache stamps moved for the snapshot and home model.
-
-
-
 
 ## 2026-10-24 — Women's college basketball forecasts: the men's system, rebuilt for the women's game
 

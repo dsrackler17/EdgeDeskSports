@@ -55,11 +55,23 @@ const fights = paint(cache(), 'fights');
 T.chk('Fights: the EXPERIMENTAL label and the count of simulated runs', /EXPERIMENTAL/.test(fights) && /4,000 simulated runs/.test(fights));
 T.chk('Fights: every card by date, UFC 333 first', (fights.match(/class="sm-sub"/g) || []).length === S.cards.length && fights.indexOf('UFC 333') < fights.indexOf('UFC 335'));
 T.chk('Fights: every bout with both fighters\' win shares and ±', (fights.match(/<b>\d+\.\d% ±\d/g) || []).length === 2 * nBouts);
-T.chk('Fights: fair decimal and American odds for every fighter', (fights.match(/no margin">\d+\.\d\d · [+-]\d+<\/div>/g) || []).length === 2 * nBouts);
+const allBouts = [].concat(...S.cards.map((c: any) => c.bouts)) as any[];
+const nDis = allBouts.filter((b) => b.guard && b.guard.status === 'DISAGREES').length;
+T.chk('Fights: fair decimal and American odds for every fighter whose bout agrees with the market (or has no price), withheld where it disagrees ('
+  + nDis + ' bouts)', (fights.match(/no margin">\d+\.\d\d · [+-]\d+<\/div>/g) || []).length === 2 * (nBouts - nDis) && (fights.match(/>fair odds withheld</g) || []).length === 2 * nDis);
+T.chk('Fights: every bout shows the model beside the market (or says there is no price)', (fights.match(/<b>Model v market<\/b>/g) || []).length === nBouts);
+T.chk('Fights: a disagreement is labelled, says it is not an edge, and lists what the model likely misreads or says none is present',
+  nDis === 0 || ((fights.match(/class="sm-guard"><span class="sm-tag sm-dis">Model disagrees with market<\/span>/g) || []).length === nDis
+    && (fights.match(/Not an edge: the model and the market differ by more than \d+ points/g) || []).length === nDis
+    && (fights.match(/What the model likely misreads here:|None of the factors the model is known to misread/g) || []).length === nDis));
+T.chk('Fights: a disagreeing title fight withholds the new champion\'s fair odds too', (fights.match(/<b>New champion:<\/b> [^<]*<span class="sm-dim">· fair odds withheld<\/span>/g) || []).length === allBouts.filter((b) => b.title && b.guard && b.guard.status === 'DISAGREES').length);
+T.chk('Fights: the guard never shows a signal without certification', allBouts.every((b) => !b.guard || !b.guard.signal_allowed || b.guard.certified));
 T.chk('Fights: finish v decision and the round of a finish for every bout', (fights.match(/Ends in a finish \d/g) || []).length === nBouts && (fights.match(/Finish by round: R1 /g) || []).length === nBouts && /R5 \d/.test(fights));
 T.chk('Fights: the four title fights carry the title badge and the chance of a new champion', (fights.match(/ title<\/span>/g) || []).length === 4 && (fights.match(/New champion:<\/b> \d+\.\d% ±/g) || []).length === 4);
 T.chk('Fights: the ufc.com champion and ranks beside the names, and debutants marked', /Champion<\/span>/.test(fights) && /#1 Featherweight/.test(fights) && /UFC debut/.test(fights));
-T.chk('Fights: the served price and the loop\'s published value', /Served Elo price: Alexander Volkanovski 45\.9% \(the model loop published 45\.93%\)/.test(fights));
+const mainB = S.cards.find((c: any) => /^UFC 333/.test(c.event)).bouts[0];
+T.chk('Fights: the served price and the loop\'s published value (main event ' + mainB.a.name + ' ' + (100 * mainB.served_p_a).toFixed(1) + '%)', mainB.a.name === 'Alexander Volkanovski'
+  && fights.indexOf('Served Elo price: Alexander Volkanovski ' + (100 * mainB.served_p_a).toFixed(1) + '% (the model loop published ' + (100 * mainB.published_p_a).toFixed(2) + '%)') >= 0);
 T.chk('Fights: the method is never split into KO and submission', !/KO\/TKO \d|Submission \d/.test(fights));
 /* Title Path */
 const tp = paint(cache(), 'title_path');
@@ -68,15 +80,26 @@ T.chk('Title Path: eleven divisions, each with its champion and pace', (tp.match
 T.chk('Title Path: the booked title fights named, the others say none is booked', (tp.match(/Booked title fight:/g) || []).length === 4 && (tp.match(/No title fight booked/g) || []).length === 7);
 T.chk('Title Path: every contender row with hold, win, shot and beat-the-champion columns', /Champion at horizon/.test(tp) && /Beats the champion if given the shot/.test(tp) && /Movsar Evloev/.test(tp));
 T.chk('Title Path: contenders with no shot in any simulated year are listed apart with the reason', /No title shot in any simulated year:<\/b> [^<]*Alexandre Pantoja \(#1, coming off a loss\)/.test(tp));
-T.chk('Title Path: how champions are priced, by period, and what is not modelled', /From 2014 to 2020 champions won 71 of 100 where it expected 54\.8 — it underrated them then; since 2021 champions have won about as many title fights as it expected \(52 of 87, expected 51\.2\)/.test(tp)
+const TP = S.model_health.title_record.periods;
+T.chk('Title Path: how champions are priced, by period (' + TP.map((x: any) => x.champion_won + ' of ' + x.decided + ' v ' + x.elo_expected.toFixed(1)).join('; ') + '), and what is not modelled',
+  tp.indexOf('From 2014 to 2020 champions won 71 of 100 where it expected ' + TP[0].elo_expected.toFixed(1) + ' — it underrated them then; since 2021 champions have won about as many title fights as it expected (52 of 87, expected ' + TP[1].elo_expected.toFixed(1) + ')') >= 0
   && /A champion term is tested every week/.test(tp) && !/understate/.test(tp) && /Interim belts/.test(tp));
 T.chk('Title Path: a contender who moved divisions is named under the division they left', /booked in another division \(counted there\): [^<]*Diego Lopes \(Lightweight\)/.test(tp));
 /* Model Health */
 const h = paint(cache(), 'model_health');
-T.chk('Model Health: the reproduction check and the three windows beside a coin', /reproduces every price the loop published: 25 of 25/.test(h) && (h.match(/<tr><td>(validation|holdout|2026)/g) || []).length === 3 && /0\.693/.test(h));
-T.chk('Model Health: the plain-language verdict and no closing-price test', /better than a coin flip, but not by much/.test(h) && /never been compared with closing prices/.test(h));
+const EH = S.model_health.elo;
+T.chk('Model Health: the reproduction check (' + EH.reproduced + ' of ' + EH.published + ') and the three windows beside a coin', EH.published > 0 && EH.reproduced === EH.published && h.indexOf('reproduces every price the loop published: ' + EH.reproduced + ' of ' + EH.published) >= 0 && (h.match(/<tr><td>(validation|holdout|2026)/g) || []).length === 3 && /0\.693/.test(h));
+T.chk('Model Health: the plain-language verdict', /better than a coin flip, but not by much/.test(h));
+const St = S.model_health.study;
+T.chk('Model Health: the served model and 1.1.0 against the closing line, every window, log loss and Brier', !!St && /Against the closing line/.test(h) && (h.match(/<tr><td>(Every bout since 2018|Test 2024 on|Select 2021-2023|Fit 2016-2020)/g) || []).length === St.windows.length && /Closing line<\/th><th>Close Brier/.test(h));
+T.chk('Model Health: the reference is named as untimestamped, so it never certifies', !St || St.reference.timestamped || /It is untimestamped \(/.test(h));
+T.chk('Model Health: the calibration chart: three series (a dashed close), a diagonal, a legend, a hover title on every point, and its table',
+  !!St && (h.match(/<polyline class="sm-cal-line /g) || []).length === 3 && /stroke-dasharray="5 3"/.test(h) && /class="sm-cal-diag"/.test(h) && /class="sm-cal-legend/.test(h)
+  && (h.match(/<title>/g) || []).length === ['old', 'new', 'close'].reduce((a, k) => a + St.calibration[k].filter((r: any) => r.n >= 10).length, 0) && /The calibration numbers/.test(h));
+T.chk('Model Health: how large gaps resolved, and the certification in plain words', /When the [^<]+ and the close disagree \(2021 on\)/.test(h) && /resolved in the model’s favour and [\d,]+ in the market’s/.test(h) && /(Not certified as a signal|Certified: gaps that size beat the close)/.test(h));
+T.chk('Model Health: every change tried, kept or dropped', !!St && (h.match(/class="sm-dec sm-dec-(promote|retain)"/g) || []).length === St.steps.length);
 T.chk('Model Health: champions against the Elo, and the finish model out of sample', /champions won <b>\d+<\/b>; the Elo expected about <b>\d+<\/b>/.test(h) && /tested on [\d,]+ later bouts/.test(h));
-T.chk('Model Health: the title record in two periods', /<tr><td>2014–2020<\/td><td class="sm-num">100<\/td><td class="sm-num">71<\/td><td class="sm-num">54\.8<\/td><td class="sm-num">\+16\.2<\/td><\/tr>/.test(h) && /<tr><td>2021–2026<\/td><td class="sm-num">87<\/td>/.test(h));
+T.chk('Model Health: the title record in two periods', h.indexOf('<tr><td>2014–2020</td><td class="sm-num">100</td><td class="sm-num">71</td><td class="sm-num">' + TP[0].elo_expected.toFixed(1) + '</td><td class="sm-num">+' + (71 - TP[0].elo_expected).toFixed(1) + '</td></tr>') >= 0 && /<tr><td>2021–2026<\/td><td class="sm-num">87<\/td>/.test(h));
 T.chk('Model Health: the champion term, not served, with its latest weekly test in plain words', /The champion term\.<\/b> The model loop tests, every week, giving the champion going in 100 extra rating points/.test(h)
   && /Latest test, [^:]+: <b>not adopted<\/b>\. Over every bout since 2016 it moved the log loss by \+0\.00009 \(lower is better; adopting it takes a fall of at least 0\.0005\), and on 2025 alone by \+0\.00241\./.test(h) && /title fights are priced without one/.test(h));
 T.chk('Model Health: a served champion term is stated as served', (() => { const r2 = JSON.parse(JSON.stringify(run)); r2.validation_summary.sport_summary.model_health.champion_term.served_bonus = 100;
@@ -90,6 +113,8 @@ const ss = evilRun.validation_summary.sport_summary;
 ss.cards.forEach((c: any) => { c.event = EVIL + c.event; c.bouts.forEach((b: any) => { b.a.name = EVIL + b.a.name; b.b.name = EVIL + b.b.name; b.weight_class = EVIL; }); });
 ss.divisions.forEach((v: any) => { v.people.forEach((p: any) => { p.name = EVIL + p.name; }); });
 ss.model_health.market = EVIL; ss.matchmaking.min_rest_days = EVIL;
+if (ss.model_health.study) { ss.model_health.study.reference.name = EVIL; ss.model_health.study.steps.forEach((x: any) => { x.label = EVIL; }); }
+ss.cards.forEach((c: any) => c.bouts.forEach((b: any) => { if (b.market) b.market.book = EVIL; b.guard = { status: 'DISAGREES', label: EVIL, threshold_pp: 8, gap_pp: 12, signal_allowed: false, certified: false, factors: [{ code: 'age', text: EVIL, record: null }] }; }));
 for (const tab of ['fights', 'title_path', 'model_health']) {
   const x = paint(cache({ entities: evilEnt, results: evilRes, run: evilRun }), tab);
   T.chk('escaping (' + tab + '): hostile text never reaches the page as markup', !/<img/.test(x) && /&lt;img/.test(x));

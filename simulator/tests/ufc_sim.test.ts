@@ -22,6 +22,7 @@ import { runRange, checkAggregateSums, type RunMarks } from '../src/core/engine.
 import { runPlan } from '../src/core/runner.ts';
 import { buildResults } from '../src/core/results.ts';
 import { hashCanonical } from '../src/core/canonical.ts';
+import { round4 } from '../src/sports/ufc/elo.ts';
 import { sportRegistry } from '../src/sports/registry.ts';
 import { planRuns } from '../src/cli/plan.ts';
 
@@ -45,7 +46,7 @@ K.near('P(2, 9) (continued-fraction side)', gammaP(2, 9), 1 - Math.exp(-9) * (1 
 /* ---- SYNTHETIC fixture: two divisions, five booked bouts ---- */
 type F = UfcInputData['fighters'][number];
 const fighter = (id: string, division: string, o: Partial<F> = {}): F => ({ id, name: 'Fighter ' + id, division, ranked_division: division, rank: null, champion: false, moved_from: null,
-  rating: 1500, bouts: 10, debut: false, last_fight: '2026-06-01T00:00:00.000Z', last_result: 'W', record: { w: 8, l: 2, d: 0 }, fin_win: 0, fin_loss: 0, ...o });
+  rating: 1500, bouts: 10, debut: false, last_fight: '2026-06-01T00:00:00.000Z', last_result: 'W', record: { w: 8, l: 2, d: 0 }, dob: null, prior: 1500, fin_win: 0, fin_loss: 0, ...o });
 function synth(): UfcInputData {
   const LW = 'Lightweight', WF = 'W Flyweight';
   const fighters: F[] = [
@@ -55,7 +56,9 @@ function synth(): UfcInputData {
     fighter('M1', LW, { ranked_division: WF, rank: null, moved_from: null })
   ];
   const bout = (id: string, start: string, a: string, b: string, p: number, division: string, o: Partial<UfcInputData['bouts'][number]> = {}) => ({ bout_id: id, event_id: 'E' + start.slice(5, 7), event: 'SYNTHETIC ' + start.slice(0, 10), start,
-    weight_class: division, division, rounds: 3, order: 3, a, b, p_a: p, p_a_published: null, basis: 'elo' as const, title: null, finish_if_a: 0.55, finish_if_b: 0.35, round_dist: [0.5, 0.3, 0.2], ...o });
+    weight_class: division, division, rounds: 3, order: 3, a, b, p_a: p, p_a_published: null, basis: 'elo' as const, title: null, finish_if_a: 0.55, finish_if_b: 0.35, round_dist: [0.5, 0.3, 0.2],
+    market: null, guard: { status: 'NO_MARKET' as const, label: 'No market price on file', threshold_pp: 8, gap_pp: null, signal_allowed: false, factors: [], certified: false, note: null }, compare: null,
+    facts: { a: { ufc_bouts: 3, days_off: 120, age: 30, div_step: 0, pre_w: 10, pre_l: 2 }, b: { ufc_bouts: 3, days_off: 120, age: 30, div_step: 0, pre_w: 10, pre_l: 2 } }, ...o });
   const bouts = [
     bout('B1', '2026-11-01T02:00:00Z', 'LC', 'L1', 0.58, LW, { rounds: 5, order: 1, title: { division: LW, champion: 'LC' }, round_dist: [0.36, 0.27, 0.19, 0.1, 0.08], finish_if_a: 0.6, finish_if_b: 0.5 }),
     bout('B2', '2026-11-01T01:00:00Z', 'U1', 'U2', 0.62, LW),
@@ -79,7 +82,8 @@ function synth(): UfcInputData {
     champion_term: null,
     rankings: { url: 'SYNTHETIC', fetched_at: '2026-10-23T00:00:00Z', page_sha256: 'synthetic', html_sha256: 'synthetic', groupings: 2, divisions: 2, deduped: 0, pound_for_pound: 0 },
     title_history: { sha256: 'synthetic', unparsed: [], window_years: 5 }, cross_checks: { wikipedia: [], espn: [] }, name_matching: { matched: 0, unmatched: [], aliases: [], ambiguous: [] },
-    data_checks: { finals_csv: 0, finals_feed_only: 0, scheduled_feed: 5, csv_scheduled_dropped: [], late: [], double_booked: [] }, health: { windows: [], market: 'SYNTHETIC', record_graded: 0 }, code: {},
+    data_checks: { finals_csv: 0, finals_feed_only: 0, scheduled_feed: 5, csv_scheduled_dropped: [], late: [], double_booked: [] }, health: { windows: [], market: 'SYNTHETIC', record_graded: 0, study: null },
+    guard: { threshold_pp: 8, certified: false, certification_reasons: ['SYNTHETIC'], with_market: 0, disagreements: 0, agree: { compared: 0, same: 0, differ: [] } }, code: {},
     config: { rules_version: 'SYNTHETIC', horizon_days: 365, rate_window_years: 5, matchmaking: 'SYNTHETIC', not_modelled: [] }
   };
 }
@@ -213,10 +217,13 @@ K.eq('committed data: the ufc.com champions', champs, { Flyweight: 'Joshua Van',
 const titles = d.bouts.filter((b) => b.title).map((b) => b.title!.division + ': ' + name(b.a) + ' v ' + name(b.b)).sort();
 K.eq('committed data: the booked title fights (champion v another fighter at that weight)', titles, ['Bantamweight: Merab Dvalishvili v Petr Yan', 'Featherweight: Alexander Volkanovski v Movsar Evloev', 'Heavyweight: Ciryl Gane v Josh Hokit', 'W Bantamweight: Kayla Harrison v Amanda Nunes']);
 const main = d.bouts.find((b) => b.event.startsWith('UFC 333') && b.order === 1)!;
-K.eq('committed data: UFC 333\'s main event is Volkanovski v Evloev at the published price', [name(main.a), name(main.b), main.p_a_published, main.rounds], ['Alexander Volkanovski', 'Movsar Evloev', 0.4593, 5]);
+K.eq('committed data: UFC 333\'s main event is Volkanovski v Evloev, five rounds, at the price the loop published (' + main.p_a_published + ')', [name(main.a), name(main.b), main.rounds, main.p_a_published != null && round4(main.p_a) === main.p_a_published], ['Alexander Volkanovski', 'Movsar Evloev', 5, true]);
+K.chk('committed data: the booked bouts carry the comparison version\'s price (1.1.0) beside the served one when it is not 1.1.0', d.elo.version === '1.1.0' || d.bouts.every((b) => b.compare && b.compare.version === '1.1.0' && b.compare.p_a > 0 && b.compare.p_a < 1));
+K.chk('committed data: every booked bout has a guard verdict; a disagreement is never a signal without certification', d.bouts.every((b) => ['AGREES', 'DISAGREES', 'NO_MARKET'].includes(b.guard.status) && (!b.guard.signal_allowed || d.guard.certified))
+  && d.bouts.filter((b) => b.market).every((b) => (b.guard.status === 'DISAGREES') === (Math.abs(100 * (b.p_a - b.market!.p_a)) > d.guard.threshold_pp)));
 K.chk('committed data: ESPN\'s title accolades and Wikipedia\'s incumbents agree with ufc.com', d.cross_checks.espn.length === 4 && d.cross_checks.espn.every((x) => x.agree) && d.cross_checks.wikipedia.every((x) => x.agree));
 K.chk('committed data: a title-fight rate in every division from Wikipedia, the gaps\' shape measured', d.divisions.every((v) => v.rate.per_year > 0 && v.mean_gap_days! > 0) && d.gaps.shape > 1 && d.gaps.n > 100, d.gaps);
-K.chk('committed data: no booked bout before the as-of time, every fighter rated or a debutant at 1500', d.bouts.every((b) => Date.parse(b.start) > Date.parse(d.as_of)) && d.fighters.every((f) => f.bouts > 0 || (f.debut && f.rating === 1500)));
+K.chk('committed data: no booked bout before the as-of time, every fighter rated or a debutant at the served model\'s starting rating (its prior)', d.bouts.every((b) => Date.parse(b.start) > Date.parse(d.as_of)) && d.fighters.every((f) => f.bouts > 0 || (f.debut && Number.isFinite(f.rating) && f.rating === f.prior)));
 
 /* ---- the gates refuse what they must ---- */
 const mutate = (fn: (x: UfcInputData) => void): UfcSnapshot => { const s = JSON.parse(JSON.stringify(snap)) as UfcSnapshot; fn(s.data); s.input_hash = hashCanonical(s.data); return s; };
@@ -255,6 +262,6 @@ K.eq('gate: a result the feed has not delivered blocks publication', gate(mutate
 /* ---- registry and plan ---- */
 const reg = sportRegistry().find((s) => s.key === 'ufc')!;
 K.eq('registry: the UFC is ACTIVE with Fights, Title Path and Model Health', [reg.status, reg.tabs.join(), reg.blockers.length], ['ACTIVE', 'fights,title_path,model_health', 0]);
-K.chk('registry: the limitations state the modest edge over a coin, the Estimated title path and the champions\' record, and never the word "probability"', reg.limitations.some((l) => /coin flip/.test(l)) && reg.limitations.some((l) => /Estimated/.test(l)) && reg.limitations.some((l) => /without a champion term/.test(l) && /since 2021/.test(l)) && !/probability/i.test(JSON.stringify(reg)));
+K.chk('registry: the limitations state how far the model trails the closing line, the disagreement guard, the Estimated title path and the champions\' record, and never the word "probability"', reg.limitations.some((l) => /closing line/.test(l) && /trails the market/.test(l)) && reg.limitations.some((l) => /"Model disagrees with market"/.test(l) && /never presented as an edge/.test(l)) && reg.limitations.some((l) => /Estimated/.test(l)) && reg.limitations.some((l) => /without a champion term/.test(l) && /since 2021/.test(l)) && !/probability/i.test(JSON.stringify(reg)));
 K.chk('plan: the UFC runs every night and can be dispatched', planRuns('schedule', {}, undefined, new Date('2027-03-01T10:17:00Z')).some((r) => r.sport === 'ufc' && r.publish) && planRuns('workflow_dispatch', { sport: 'ufc', season: '2026', runs: '100000', publish: 'true' })[0].sport === 'ufc');
 process.exit(K.done());

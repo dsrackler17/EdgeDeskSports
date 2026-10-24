@@ -7,7 +7,16 @@
 
      where the research lives   module + entity  → #research/<module>/<entity>
      a free published article   articles/data/published.json
-     the model's own number     the sport's slate (status, tier, fair prices)
+     the model's own number     the sport's slate (status, tier, fair prices);
+                                UFC: the served Elo's file
+                                (model_loop/published/ufc/current.json), each
+                                bout beside the market and the disagreement
+                                guard's verdict (model_loop/adapters/ufc/
+                                guard.py). A bout where the model and the
+                                market differ by more than the guard's
+                                threshold is "Model disagrees with market":
+                                its data quality is LIMITED and it is never a
+                                signal
      the board's read           the CFB terminal's status (RESEARCH, PASS …)
      an actionable signal       ONLY a decision the existing validation
                                 certified: the CFB decision engine's BET, or
@@ -51,7 +60,8 @@ function loadSources(files) {
     nbaRecent: files.nbaRecent !== undefined ? files.nbaRecent : (files.basketball !== undefined || files.nba !== undefined ? null : readJson('nba/recent.json')),
     basketball: r('basketball', 'basketball/slate.json'),
     engine: r('engine', 'engine/board.json'),
-    published: r('published', 'articles/data/published.json')
+    published: r('published', 'articles/data/published.json'),
+    ufc: r('ufc', 'model_loop/published/ufc/current.json')
   };
 }
 
@@ -173,6 +183,47 @@ function modelFromLab(g, L, src) {
   };
 }
 
+/* UFC: the served model's bouts by ESPN event id (a card), with each bout's guard verdict */
+function ufcIndex(src) {
+  const c = src.ufc;
+  const by = {};
+  if (!c || c.schema !== 'edgedesk_model_loop_ufc_current_v1' || !c.served) return { by, c: null };
+  (c.bouts || []).forEach((b) => { if (b && b.event_id != null) (by[String(b.event_id)] = by[String(b.event_id)] || []).push(b); });
+  return { by, c };
+}
+/* a fair American price from a probability (no margin) */
+function fairAmerican(p) {
+  p = num(p);
+  if (p == null || p <= 0 || p >= 1) return null;
+  return Math.round(p >= 0.5 ? -100 * p / (1 - p) : 100 * (1 - p) / p);
+}
+function ufcBoutRow(b) {
+  const g = b.guard || {}, m = b.market || null;
+  return { bout_id: String(b.bout_id), a: b.fighter_a && b.fighter_a.name, b: b.fighter_b && b.fighter_b.name, p_a: num(b.p_a),
+    market_p_a: m ? num(m.p_a) : null, book: m ? m.book || null : null, observed_at: m ? m.observed_at || null : null,
+    gap_pp: num(g.gap_pp), status: g.status || 'NO_MARKET', label: g.label || null, signal_allowed: g.signal_allowed === true,
+    factors: (g.factors || []).map((f) => f.text).filter(Boolean),
+    compare: b.compare && num(b.compare.p_a) != null ? { version: b.compare.version, p_a: num(b.compare.p_a) } : null };
+}
+/* the card's main event as the slate lists it (home and away are ESPN's athlete ids): EdgeDesk's number for it.
+   A disagreement with the market is a LIMITED projection with the reason in its note, never an edge. */
+function modelFromUfc(e, card, c) {
+  const hid = e.home && String(e.home.id), aid = e.away && String(e.away.id);
+  const b = card.find((x) => x.fighter_a && x.fighter_b && ((String(x.fighter_a.id) === hid && String(x.fighter_b.id) === aid) || (String(x.fighter_a.id) === aid && String(x.fighter_b.id) === hid)));
+  if (!b || num(b.p_a) == null) return null;
+  const pHome = String(b.fighter_a.id) === hid ? num(b.p_a) : 1 - num(b.p_a);
+  const g = b.guard || {};
+  const dis = g.status === 'DISAGREES';
+  const why = (g.factors || []).map((f) => f.code.replace(/_/g, ' ')).filter((x, i, a) => a.indexOf(x) === i);
+  return {
+    status: 'PREDICTED', tier: 'EXPERIMENTAL', data_quality: dis ? 'LIMITED' : 'OK', home_line: fairAmerican(pHome),
+    source: 'model_loop/published/ufc/current.json (UFC Elo ' + (c.served && c.served.version) + ')',
+    fair: { ml_home: fairAmerican(pHome), ml_away: fairAmerican(1 - pHome) },
+    note: dis ? 'model disagrees with market by ' + Math.abs(num(g.gap_pp)).toFixed(1) + ' points' + (why.length ? ' (' + why.join(', ') + ')' : '') + '; not an edge' : null,
+    disagreement: dis ? { label: g.label, gap_pp: num(g.gap_pp), threshold_pp: num(g.threshold_pp), signal_allowed: g.signal_allowed === true } : null
+  };
+}
+
 /* The cross-sport engine's verdict for a game: actionable only when the
    engine itself chose it (BEST_SUPPORTED) — never a candidate it passed on. */
 function engineSignal(src, e) {
@@ -189,7 +240,7 @@ function join(events, src, o) {
   o = o || {};
   src = src || loadSources();
   const arts = articles(src.published);
-  const nfl = nflIndex(src), cfb = cfbIndex(src), nhl = nhlIndex(src), bb = basketballIndex(src), nba = nbaIndex(src, o.now != null ? o.now : Date.now());
+  const nfl = nflIndex(src), cfb = cfbIndex(src), nhl = nhlIndex(src), bb = basketballIndex(src), nba = nbaIndex(src, o.now != null ? o.now : Date.now()), ufc = ufcIndex(src);
   const homeKeys = {};
   ((src.home && src.home.games) || []).forEach((g) => { homeKeys[g.key] = true; });
   const stats = { joined: {}, unmatched: {} };
@@ -263,6 +314,15 @@ function join(events, src, o) {
       /* the UFC panel researches fighters and runs the live fight center; it
          has no per-card route, so the link opens the panel itself */
       r.module = 'ufc'; r.entity = null; r.note = 'Opens UFC research: fighter records and the live fight center.';
+      /* the served UFC Elo's bouts on this card, each beside the market and the guard (never a signal) */
+      const card = e.provider === 'espn' ? ufc.by[e.provider_id] : null;
+      if (card && card.length) {
+        const C = ufc.c;
+        r.ufc = { version: C.served.version, generated_at: C.generated_at || null, threshold_pp: num(C.guard && C.guard.threshold_pp),
+          certified: !!(C.guard && C.guard.certification && C.guard.certification.certified), source: 'model_loop/published/ufc/current.json',
+          bouts: card.map(ufcBoutRow) };
+        r.model = modelFromUfc(e, card, C);
+      }
     } else if (e.sport === 'nba' && e.provider === 'espn' && nba[e.provider_id]) {
       /* the NBA panel's game: its research page and the number on it */
       const hit = nba[e.provider_id];

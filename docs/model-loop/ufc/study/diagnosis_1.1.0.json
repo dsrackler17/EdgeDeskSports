@@ -1,0 +1,1130 @@
+{
+ "schema": "edgedesk_model_loop_ufc_diagnosis_v1",
+ "generated_at": "2026-10-24T14:57:01Z",
+ "version": "1.1.0",
+ "config": {
+  "k": 64,
+  "k_new_mult": 1.5,
+  "new_bouts": 3,
+  "layoff_days": 365,
+  "layoff_regress": 0.25,
+  "scale": 400.0,
+  "calibration": "none"
+ },
+ "facts": {
+  "file": "model_loop/data/ufc/fighter_facts.csv",
+  "sha256": "a21fc71c56cdb53fe98e62290849c8349f55b8a34234ee63026c9348dca7113d",
+  "fighters": 2425,
+  "with_date_of_birth": 2407,
+  "pre_record_source": {
+   "reconstructed": 2423,
+   "none": 2
+  }
+ },
+ "window": [
+  2018,
+  2099
+ ],
+ "reference": {
+  "name": "Ultimate UFC Dataset (ufc-master.csv)",
+  "url": "https://raw.githubusercontent.com/shortlikeafox/ultimate_ufc_dataset/master/ufc-master.csv",
+  "home": "https://github.com/shortlikeafox/ultimate_ufc_dataset",
+  "timestamped": false,
+  "kind": "approximate close: one pre-fight moneyline per side, quote time not stated",
+  "available": true,
+  "sha256": "b8aa6604539d5981bba561cb65da26133567732145ca48efbec2d9423b081937",
+  "rows_with_odds": 6899,
+  "matched": 5662,
+  "span": [
+   "2010-03-21",
+   "2026-03-28"
+  ],
+  "median_overround": 0.0399
+ },
+ "evaluation": {
+  "version": "1.1.0",
+  "window": [
+   2018,
+   2099
+  ],
+  "all": {
+   "n": 4853,
+   "log_loss": 0.67304,
+   "brier": 0.24017,
+   "accuracy": 0.5733
+  },
+  "close_subset": {
+   "n": 3764,
+   "model": {
+    "n": 3764,
+    "log_loss": 0.67065,
+    "brier": 0.23901,
+    "accuracy": 0.5781
+   },
+   "close": {
+    "n": 3764,
+    "log_loss": 0.60377,
+    "brier": 0.20851,
+    "accuracy": 0.6679
+   },
+   "model_minus_close_ci95": [
+    0.05797,
+    0.07591
+   ]
+  },
+  "calibration": {
+   "model": [
+    {
+     "bin": "50-55%",
+     "lo": 0.5,
+     "hi": 0.55,
+     "n": 1941,
+     "said": 0.5191,
+     "won": 0.5126,
+     "se": 0.0113
+    },
+    {
+     "bin": "55-60%",
+     "lo": 0.55,
+     "hi": 0.6,
+     "n": 1483,
+     "said": 0.5726,
+     "won": 0.5752,
+     "se": 0.0128
+    },
+    {
+     "bin": "60-65%",
+     "lo": 0.6,
+     "hi": 0.65,
+     "n": 869,
+     "said": 0.6231,
+     "won": 0.618,
+     "se": 0.0165
+    },
+    {
+     "bin": "65-70%",
+     "lo": 0.65,
+     "hi": 0.7,
+     "n": 377,
+     "said": 0.6726,
+     "won": 0.6578,
+     "se": 0.0244
+    },
+    {
+     "bin": "70-75%",
+     "lo": 0.7,
+     "hi": 0.75,
+     "n": 146,
+     "said": 0.7208,
+     "won": 0.8151,
+     "se": 0.0321
+    },
+    {
+     "bin": "75-80%",
+     "lo": 0.75,
+     "hi": 0.8,
+     "n": 30,
+     "said": 0.7688,
+     "won": 0.6667,
+     "se": 0.0861
+    },
+    {
+     "bin": "80-90%",
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 7,
+     "said": 0.8156,
+     "won": 0.8571,
+     "se": 0.1323
+    }
+   ],
+   "model_close_subset": [
+    {
+     "bin": "50-55%",
+     "lo": 0.5,
+     "hi": 0.55,
+     "n": 1359,
+     "said": 0.5234,
+     "won": 0.5092,
+     "se": 0.0136
+    },
+    {
+     "bin": "55-60%",
+     "lo": 0.55,
+     "hi": 0.6,
+     "n": 1193,
+     "said": 0.5731,
+     "won": 0.5801,
+     "se": 0.0143
+    },
+    {
+     "bin": "60-65%",
+     "lo": 0.6,
+     "hi": 0.65,
+     "n": 737,
+     "said": 0.6231,
+     "won": 0.6174,
+     "se": 0.0179
+    },
+    {
+     "bin": "65-70%",
+     "lo": 0.65,
+     "hi": 0.7,
+     "n": 318,
+     "said": 0.6731,
+     "won": 0.6572,
+     "se": 0.0266
+    },
+    {
+     "bin": "70-75%",
+     "lo": 0.7,
+     "hi": 0.75,
+     "n": 125,
+     "said": 0.7208,
+     "won": 0.832,
+     "se": 0.0334
+    },
+    {
+     "bin": "75-80%",
+     "lo": 0.75,
+     "hi": 0.8,
+     "n": 25,
+     "said": 0.7681,
+     "won": 0.64,
+     "se": 0.096
+    },
+    {
+     "bin": "80-90%",
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 7,
+     "said": 0.8156,
+     "won": 0.8571,
+     "se": 0.1323
+    }
+   ],
+   "close": [
+    {
+     "bin": "50-55%",
+     "lo": 0.5,
+     "hi": 0.55,
+     "n": 573,
+     "said": 0.5243,
+     "won": 0.5131,
+     "se": 0.0209
+    },
+    {
+     "bin": "55-60%",
+     "lo": 0.55,
+     "hi": 0.6,
+     "n": 726,
+     "said": 0.5757,
+     "won": 0.5868,
+     "se": 0.0183
+    },
+    {
+     "bin": "60-65%",
+     "lo": 0.6,
+     "hi": 0.65,
+     "n": 656,
+     "said": 0.6248,
+     "won": 0.6448,
+     "se": 0.0187
+    },
+    {
+     "bin": "65-70%",
+     "lo": 0.65,
+     "hi": 0.7,
+     "n": 664,
+     "said": 0.6735,
+     "won": 0.6642,
+     "se": 0.0183
+    },
+    {
+     "bin": "70-75%",
+     "lo": 0.7,
+     "hi": 0.75,
+     "n": 478,
+     "said": 0.7241,
+     "won": 0.7427,
+     "se": 0.02
+    },
+    {
+     "bin": "75-80%",
+     "lo": 0.75,
+     "hi": 0.8,
+     "n": 347,
+     "said": 0.7743,
+     "won": 0.8386,
+     "se": 0.0197
+    },
+    {
+     "bin": "80-90%",
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 309,
+     "said": 0.8384,
+     "won": 0.9126,
+     "se": 0.0161
+    },
+    {
+     "bin": "90-100%",
+     "lo": 0.9,
+     "hi": 1.0,
+     "n": 11,
+     "said": 0.9099,
+     "won": 1.0,
+     "se": 0.0
+    }
+   ]
+  },
+  "gaps": {
+   "rows": [
+    {
+     "gap_pp": "0-4",
+     "lo": 0,
+     "hi": 4,
+     "n": 677,
+     "model_favour": 322,
+     "market_favour": 355,
+     "model_side_rate": 0.4756,
+     "close_expected_rate": 0.4728,
+     "model_expected_rate": 0.4924,
+     "model_log_loss": 0.6756,
+     "close_log_loss": 0.67446,
+     "diff_ci95": [
+      -0.00242,
+      0.00459
+     ]
+    },
+    {
+     "gap_pp": "4-8",
+     "lo": 4,
+     "hi": 8,
+     "n": 691,
+     "model_favour": 296,
+     "market_favour": 395,
+     "model_side_rate": 0.4284,
+     "close_expected_rate": 0.4317,
+     "model_expected_rate": 0.4912,
+     "model_log_loss": 0.65883,
+     "close_log_loss": 0.65217,
+     "diff_ci95": [
+      -0.00213,
+      0.01602
+     ]
+    },
+    {
+     "gap_pp": "8-10",
+     "lo": 8,
+     "hi": 10,
+     "n": 294,
+     "model_favour": 120,
+     "market_favour": 174,
+     "model_side_rate": 0.4082,
+     "close_expected_rate": 0.3932,
+     "model_expected_rate": 0.4831,
+     "model_log_loss": 0.67615,
+     "close_log_loss": 0.66536,
+     "diff_ci95": [
+      -0.01012,
+      0.03257
+     ]
+    },
+    {
+     "gap_pp": "10-15",
+     "lo": 10,
+     "hi": 15,
+     "n": 775,
+     "model_favour": 259,
+     "market_favour": 516,
+     "model_side_rate": 0.3342,
+     "close_expected_rate": 0.3586,
+     "model_expected_rate": 0.4826,
+     "model_log_loss": 0.66066,
+     "close_log_loss": 0.61414,
+     "diff_ci95": [
+      0.02883,
+      0.06342
+     ]
+    },
+    {
+     "gap_pp": "15-20",
+     "lo": 15,
+     "hi": 20,
+     "n": 584,
+     "model_favour": 175,
+     "market_favour": 409,
+     "model_side_rate": 0.2997,
+     "close_expected_rate": 0.3123,
+     "model_expected_rate": 0.486,
+     "model_log_loss": 0.64843,
+     "close_log_loss": 0.57005,
+     "diff_ci95": [
+      0.05276,
+      0.10251
+     ]
+    },
+    {
+     "gap_pp": "20+",
+     "lo": 20,
+     "hi": 100,
+     "n": 743,
+     "model_favour": 152,
+     "market_favour": 591,
+     "model_side_rate": 0.2046,
+     "close_expected_rate": 0.2583,
+     "model_expected_rate": 0.5203,
+     "model_log_loss": 0.70286,
+     "close_log_loss": 0.48568,
+     "diff_ci95": [
+      0.18392,
+      0.24984
+     ]
+    }
+   ],
+   "over_8": {
+    "n": 2396,
+    "model_favour": 706,
+    "market_favour": 1690,
+    "model_log_loss": 0.67266,
+    "close_log_loss": 0.56985,
+    "diff_ci95": [
+     0.08935,
+     0.11641
+    ]
+   },
+   "over_10": {
+    "n": 2102,
+    "model_favour": 586,
+    "market_favour": 1516,
+    "model_log_loss": 0.67218,
+    "close_log_loss": 0.55649,
+    "diff_ci95": [
+     0.10034,
+     0.13101
+    ]
+   }
+  },
+  "by_season": {
+   "2018": {
+    "n": 522,
+    "log_loss": 0.67056,
+    "brier": 0.23883,
+    "accuracy": 0.5747
+   },
+   "2019": {
+    "n": 553,
+    "log_loss": 0.68628,
+    "brier": 0.24668,
+    "accuracy": 0.5443
+   },
+   "2020": {
+    "n": 492,
+    "log_loss": 0.67659,
+    "brier": 0.24177,
+    "accuracy": 0.5671
+   },
+   "2021": {
+    "n": 549,
+    "log_loss": 0.6769,
+    "brier": 0.24211,
+    "accuracy": 0.5574
+   },
+   "2022": {
+    "n": 558,
+    "log_loss": 0.67202,
+    "brier": 0.23956,
+    "accuracy": 0.5932
+   },
+   "2023": {
+    "n": 556,
+    "log_loss": 0.67741,
+    "brier": 0.24241,
+    "accuracy": 0.5486
+   },
+   "2024": {
+    "n": 562,
+    "log_loss": 0.6657,
+    "brier": 0.23682,
+    "accuracy": 0.5783
+   },
+   "2025": {
+    "n": 563,
+    "log_loss": 0.66108,
+    "brier": 0.23436,
+    "accuracy": 0.5897
+   },
+   "2026": {
+    "n": 498,
+    "log_loss": 0.67121,
+    "brier": 0.23916,
+    "accuracy": 0.6084
+   }
+  }
+ },
+ "breakdowns": {
+  "ufc_sample": {
+   "side": "the fighter with fewer UFC bouts in the data (bouts with equal counts left out)",
+   "rows": [
+    {
+     "n": 542,
+     "model_log_loss": 0.6593,
+     "model_said": 0.4674,
+     "won": 0.3967,
+     "n_close": 364,
+     "close_said": 0.4192,
+     "won_close_subset": 0.3791,
+     "model_said_close_subset": 0.4528,
+     "model_log_loss_close_subset": 0.64959,
+     "close_log_loss": 0.54915,
+     "bucket": "0 (debut)"
+    },
+    {
+     "n": 1189,
+     "model_log_loss": 0.67991,
+     "model_said": 0.4915,
+     "won": 0.5307,
+     "n_close": 1033,
+     "close_said": 0.5102,
+     "won_close_subset": 0.5218,
+     "model_said_close_subset": 0.4915,
+     "model_log_loss_close_subset": 0.67759,
+     "close_log_loss": 0.61354,
+     "bucket": "1-2"
+    },
+    {
+     "n": 1090,
+     "model_log_loss": 0.66743,
+     "model_said": 0.5027,
+     "won": 0.5431,
+     "n_close": 955,
+     "close_said": 0.5415,
+     "won_close_subset": 0.5414,
+     "model_said_close_subset": 0.5029,
+     "model_log_loss_close_subset": 0.67077,
+     "close_log_loss": 0.60176,
+     "bucket": "3-5"
+    },
+    {
+     "n": 952,
+     "model_log_loss": 0.67591,
+     "model_said": 0.4991,
+     "won": 0.541,
+     "n_close": 809,
+     "close_said": 0.5302,
+     "won_close_subset": 0.5476,
+     "model_said_close_subset": 0.4986,
+     "model_log_loss_close_subset": 0.67535,
+     "close_log_loss": 0.61116,
+     "bucket": "6-10"
+    },
+    {
+     "n": 297,
+     "model_log_loss": 0.66759,
+     "model_said": 0.4888,
+     "won": 0.4949,
+     "n_close": 237,
+     "close_said": 0.5315,
+     "won_close_subset": 0.5105,
+     "model_said_close_subset": 0.4901,
+     "model_log_loss_close_subset": 0.66509,
+     "close_log_loss": 0.61861,
+     "bucket": "11+"
+    }
+   ]
+  },
+  "layoff": {
+   "side": "the fighter longer out since the last bout (both fighters with an earlier UFC bout)",
+   "rows": [
+    {
+     "n": 913,
+     "model_log_loss": 0.66302,
+     "model_said": 0.5011,
+     "won": 0.5104,
+     "n_close": 800,
+     "close_said": 0.4967,
+     "won_close_subset": 0.5088,
+     "model_said_close_subset": 0.5006,
+     "model_log_loss_close_subset": 0.66482,
+     "close_log_loss": 0.60142,
+     "bucket": "under 180 days"
+    },
+    {
+     "n": 1982,
+     "model_log_loss": 0.67864,
+     "model_said": 0.4953,
+     "won": 0.4823,
+     "n_close": 1691,
+     "close_said": 0.4897,
+     "won_close_subset": 0.4873,
+     "model_said_close_subset": 0.4951,
+     "model_log_loss_close_subset": 0.67769,
+     "close_log_loss": 0.60742,
+     "bucket": "180-364"
+    },
+    {
+     "n": 519,
+     "model_log_loss": 0.66897,
+     "model_said": 0.4672,
+     "won": 0.4393,
+     "n_close": 446,
+     "close_said": 0.462,
+     "won_close_subset": 0.4395,
+     "model_said_close_subset": 0.4663,
+     "model_log_loss_close_subset": 0.6688,
+     "close_log_loss": 0.6338,
+     "bucket": "365-539"
+    },
+    {
+     "n": 346,
+     "model_log_loss": 0.66722,
+     "model_said": 0.4609,
+     "won": 0.3902,
+     "n_close": 297,
+     "close_said": 0.4278,
+     "won_close_subset": 0.3939,
+     "model_said_close_subset": 0.4599,
+     "model_log_loss_close_subset": 0.66765,
+     "close_log_loss": 0.59554,
+     "bucket": "540+"
+    }
+   ]
+  },
+  "age": {
+   "side": "the older fighter (both dates of birth on file)",
+   "coverage": 0.9992,
+   "rows": [
+    {
+     "n": 1006,
+     "model_log_loss": 0.68173,
+     "model_said": 0.4977,
+     "won": 0.4523,
+     "n_close": 675,
+     "close_said": 0.4885,
+     "won_close_subset": 0.4548,
+     "model_said_close_subset": 0.5012,
+     "model_log_loss_close_subset": 0.68196,
+     "close_log_loss": 0.59647,
+     "bucket": "under 30"
+    },
+    {
+     "n": 1461,
+     "model_log_loss": 0.66974,
+     "model_said": 0.4953,
+     "won": 0.4415,
+     "n_close": 1117,
+     "close_said": 0.4601,
+     "won_close_subset": 0.4512,
+     "model_said_close_subset": 0.4929,
+     "model_log_loss_close_subset": 0.6659,
+     "close_log_loss": 0.60917,
+     "bucket": "30-32"
+    },
+    {
+     "n": 946,
+     "model_log_loss": 0.67383,
+     "model_said": 0.488,
+     "won": 0.426,
+     "n_close": 781,
+     "close_said": 0.4485,
+     "won_close_subset": 0.42,
+     "model_said_close_subset": 0.487,
+     "model_log_loss_close_subset": 0.67025,
+     "close_log_loss": 0.60999,
+     "bucket": "33-34"
+    },
+    {
+     "n": 739,
+     "model_log_loss": 0.67233,
+     "model_said": 0.4792,
+     "won": 0.3775,
+     "n_close": 613,
+     "close_said": 0.4175,
+     "won_close_subset": 0.3768,
+     "model_said_close_subset": 0.4772,
+     "model_log_loss_close_subset": 0.67343,
+     "close_log_loss": 0.60659,
+     "bucket": "35-36"
+    },
+    {
+     "n": 697,
+     "model_log_loss": 0.66746,
+     "model_said": 0.4779,
+     "won": 0.3515,
+     "n_close": 578,
+     "close_said": 0.3839,
+     "won_close_subset": 0.3356,
+     "model_said_close_subset": 0.4775,
+     "model_log_loss_close_subset": 0.66422,
+     "close_log_loss": 0.59049,
+     "bucket": "37+"
+    },
+    {
+     "n": 1688,
+     "model_log_loss": 0.65971,
+     "model_said": 0.4742,
+     "won": 0.3513,
+     "n_close": 1348,
+     "close_said": 0.3906,
+     "won_close_subset": 0.3472,
+     "model_said_close_subset": 0.4698,
+     "model_log_loss_close_subset": 0.656,
+     "close_log_loss": 0.57916,
+     "bucket": "older by 5+ years"
+    },
+    {
+     "n": 652,
+     "model_log_loss": 0.64908,
+     "model_said": 0.4646,
+     "won": 0.3206,
+     "n_close": 519,
+     "close_said": 0.3634,
+     "won_close_subset": 0.3218,
+     "model_said_close_subset": 0.4592,
+     "model_log_loss_close_subset": 0.64606,
+     "close_log_loss": 0.57825,
+     "bucket": "older by 8+ years"
+    }
+   ]
+  },
+  "division_change": {
+   "side": "the fighter at a new weight (bouts where exactly one moved)",
+   "rows": [
+    {
+     "n": 263,
+     "model_log_loss": 0.66822,
+     "model_said": 0.4911,
+     "won": 0.4981,
+     "n_close": 210,
+     "close_said": 0.489,
+     "won_close_subset": 0.481,
+     "model_said_close_subset": 0.4949,
+     "model_log_loss_close_subset": 0.66477,
+     "close_log_loss": 0.57578,
+     "bucket": "moved up"
+    },
+    {
+     "n": 361,
+     "model_log_loss": 0.67418,
+     "model_said": 0.4745,
+     "won": 0.4848,
+     "n_close": 305,
+     "close_said": 0.4834,
+     "won_close_subset": 0.4984,
+     "model_said_close_subset": 0.4786,
+     "model_log_loss_close_subset": 0.67116,
+     "close_log_loss": 0.60648,
+     "bucket": "moved down"
+    },
+    {
+     "n": 4153,
+     "model_log_loss": 0.67333,
+     "model_said": 0.4905,
+     "won": 0.4676,
+     "n_close": 3185,
+     "close_said": 0.4594,
+     "won_close_subset": 0.46,
+     "model_said_close_subset": 0.4886,
+     "model_log_loss_close_subset": 0.67093,
+     "close_log_loss": 0.60561,
+     "bucket": "neither (read from fighter_a)"
+    }
+   ]
+  },
+  "debutants": {
+   "side": "the debutant (bouts with exactly one)",
+   "rows": [
+    {
+     "n": 542,
+     "model_log_loss": 0.6593,
+     "model_said": 0.4674,
+     "won": 0.3967,
+     "n_close": 364,
+     "close_said": 0.4192,
+     "won_close_subset": 0.3791,
+     "model_said_close_subset": 0.4528,
+     "model_log_loss_close_subset": 0.64959,
+     "close_log_loss": 0.54915,
+     "bucket": "one debutant"
+    },
+    {
+     "n": 418,
+     "model_log_loss": 0.69315,
+     "model_said": 0.5,
+     "won": 0.4976,
+     "n_close": 53,
+     "close_said": 0.5007,
+     "won_close_subset": 0.4906,
+     "model_said_close_subset": 0.5,
+     "model_log_loss_close_subset": 0.69315,
+     "close_log_loss": 0.56889,
+     "bucket": "both debut (read from fighter_a)"
+    },
+    {
+     "n": 3893,
+     "model_log_loss": 0.67279,
+     "model_said": 0.486,
+     "won": 0.4513,
+     "n_close": 3347,
+     "close_said": 0.4562,
+     "won_close_subset": 0.4503,
+     "model_said_close_subset": 0.4854,
+     "model_log_loss_close_subset": 0.67259,
+     "close_log_loss": 0.61027,
+     "bucket": "neither (read from fighter_a)"
+    }
+   ]
+  },
+  "rematches": {
+   "side": "the winner of the fighters' latest meeting",
+   "rows": [
+    {
+     "n": 108,
+     "model_log_loss": 0.67259,
+     "model_said": 0.5329,
+     "won": 0.537,
+     "n_close": 93,
+     "close_said": 0.5461,
+     "won_close_subset": 0.5591,
+     "model_said_close_subset": 0.5336,
+     "model_log_loss_close_subset": 0.66763,
+     "close_log_loss": 0.65292,
+     "bucket": "rematch: read from the last meeting's winner"
+    }
+   ]
+  }
+ },
+ "breakdowns_close_subset_only": {
+  "ufc_sample": {
+   "side": "the fighter with fewer UFC bouts in the data (bouts with equal counts left out)",
+   "rows": [
+    {
+     "n": 364,
+     "model_log_loss": 0.64959,
+     "model_said": 0.4528,
+     "won": 0.3791,
+     "n_close": 364,
+     "close_said": 0.4192,
+     "won_close_subset": 0.3791,
+     "model_said_close_subset": 0.4528,
+     "model_log_loss_close_subset": 0.64959,
+     "close_log_loss": 0.54915,
+     "bucket": "0 (debut)"
+    },
+    {
+     "n": 1033,
+     "model_log_loss": 0.67759,
+     "model_said": 0.4915,
+     "won": 0.5218,
+     "n_close": 1033,
+     "close_said": 0.5102,
+     "won_close_subset": 0.5218,
+     "model_said_close_subset": 0.4915,
+     "model_log_loss_close_subset": 0.67759,
+     "close_log_loss": 0.61354,
+     "bucket": "1-2"
+    },
+    {
+     "n": 955,
+     "model_log_loss": 0.67077,
+     "model_said": 0.5029,
+     "won": 0.5414,
+     "n_close": 955,
+     "close_said": 0.5415,
+     "won_close_subset": 0.5414,
+     "model_said_close_subset": 0.5029,
+     "model_log_loss_close_subset": 0.67077,
+     "close_log_loss": 0.60176,
+     "bucket": "3-5"
+    },
+    {
+     "n": 809,
+     "model_log_loss": 0.67535,
+     "model_said": 0.4986,
+     "won": 0.5476,
+     "n_close": 809,
+     "close_said": 0.5302,
+     "won_close_subset": 0.5476,
+     "model_said_close_subset": 0.4986,
+     "model_log_loss_close_subset": 0.67535,
+     "close_log_loss": 0.61116,
+     "bucket": "6-10"
+    },
+    {
+     "n": 237,
+     "model_log_loss": 0.66509,
+     "model_said": 0.4901,
+     "won": 0.5105,
+     "n_close": 237,
+     "close_said": 0.5315,
+     "won_close_subset": 0.5105,
+     "model_said_close_subset": 0.4901,
+     "model_log_loss_close_subset": 0.66509,
+     "close_log_loss": 0.61861,
+     "bucket": "11+"
+    }
+   ]
+  },
+  "layoff": {
+   "side": "the fighter longer out since the last bout (both fighters with an earlier UFC bout)",
+   "rows": [
+    {
+     "n": 800,
+     "model_log_loss": 0.66482,
+     "model_said": 0.5006,
+     "won": 0.5088,
+     "n_close": 800,
+     "close_said": 0.4967,
+     "won_close_subset": 0.5088,
+     "model_said_close_subset": 0.5006,
+     "model_log_loss_close_subset": 0.66482,
+     "close_log_loss": 0.60142,
+     "bucket": "under 180 days"
+    },
+    {
+     "n": 1691,
+     "model_log_loss": 0.67769,
+     "model_said": 0.4951,
+     "won": 0.4873,
+     "n_close": 1691,
+     "close_said": 0.4897,
+     "won_close_subset": 0.4873,
+     "model_said_close_subset": 0.4951,
+     "model_log_loss_close_subset": 0.67769,
+     "close_log_loss": 0.60742,
+     "bucket": "180-364"
+    },
+    {
+     "n": 446,
+     "model_log_loss": 0.6688,
+     "model_said": 0.4663,
+     "won": 0.4395,
+     "n_close": 446,
+     "close_said": 0.462,
+     "won_close_subset": 0.4395,
+     "model_said_close_subset": 0.4663,
+     "model_log_loss_close_subset": 0.6688,
+     "close_log_loss": 0.6338,
+     "bucket": "365-539"
+    },
+    {
+     "n": 297,
+     "model_log_loss": 0.66765,
+     "model_said": 0.4599,
+     "won": 0.3939,
+     "n_close": 297,
+     "close_said": 0.4278,
+     "won_close_subset": 0.3939,
+     "model_said_close_subset": 0.4599,
+     "model_log_loss_close_subset": 0.66765,
+     "close_log_loss": 0.59554,
+     "bucket": "540+"
+    }
+   ]
+  },
+  "age": {
+   "side": "the older fighter (both dates of birth on file)",
+   "coverage": 1.0,
+   "rows": [
+    {
+     "n": 675,
+     "model_log_loss": 0.68196,
+     "model_said": 0.5012,
+     "won": 0.4548,
+     "n_close": 675,
+     "close_said": 0.4885,
+     "won_close_subset": 0.4548,
+     "model_said_close_subset": 0.5012,
+     "model_log_loss_close_subset": 0.68196,
+     "close_log_loss": 0.59647,
+     "bucket": "under 30"
+    },
+    {
+     "n": 1117,
+     "model_log_loss": 0.6659,
+     "model_said": 0.4929,
+     "won": 0.4512,
+     "n_close": 1117,
+     "close_said": 0.4601,
+     "won_close_subset": 0.4512,
+     "model_said_close_subset": 0.4929,
+     "model_log_loss_close_subset": 0.6659,
+     "close_log_loss": 0.60917,
+     "bucket": "30-32"
+    },
+    {
+     "n": 781,
+     "model_log_loss": 0.67025,
+     "model_said": 0.487,
+     "won": 0.42,
+     "n_close": 781,
+     "close_said": 0.4485,
+     "won_close_subset": 0.42,
+     "model_said_close_subset": 0.487,
+     "model_log_loss_close_subset": 0.67025,
+     "close_log_loss": 0.60999,
+     "bucket": "33-34"
+    },
+    {
+     "n": 613,
+     "model_log_loss": 0.67343,
+     "model_said": 0.4772,
+     "won": 0.3768,
+     "n_close": 613,
+     "close_said": 0.4175,
+     "won_close_subset": 0.3768,
+     "model_said_close_subset": 0.4772,
+     "model_log_loss_close_subset": 0.67343,
+     "close_log_loss": 0.60659,
+     "bucket": "35-36"
+    },
+    {
+     "n": 578,
+     "model_log_loss": 0.66422,
+     "model_said": 0.4775,
+     "won": 0.3356,
+     "n_close": 578,
+     "close_said": 0.3839,
+     "won_close_subset": 0.3356,
+     "model_said_close_subset": 0.4775,
+     "model_log_loss_close_subset": 0.66422,
+     "close_log_loss": 0.59049,
+     "bucket": "37+"
+    },
+    {
+     "n": 1348,
+     "model_log_loss": 0.656,
+     "model_said": 0.4698,
+     "won": 0.3472,
+     "n_close": 1348,
+     "close_said": 0.3906,
+     "won_close_subset": 0.3472,
+     "model_said_close_subset": 0.4698,
+     "model_log_loss_close_subset": 0.656,
+     "close_log_loss": 0.57916,
+     "bucket": "older by 5+ years"
+    },
+    {
+     "n": 519,
+     "model_log_loss": 0.64606,
+     "model_said": 0.4592,
+     "won": 0.3218,
+     "n_close": 519,
+     "close_said": 0.3634,
+     "won_close_subset": 0.3218,
+     "model_said_close_subset": 0.4592,
+     "model_log_loss_close_subset": 0.64606,
+     "close_log_loss": 0.57825,
+     "bucket": "older by 8+ years"
+    }
+   ]
+  },
+  "division_change": {
+   "side": "the fighter at a new weight (bouts where exactly one moved)",
+   "rows": [
+    {
+     "n": 210,
+     "model_log_loss": 0.66477,
+     "model_said": 0.4949,
+     "won": 0.481,
+     "n_close": 210,
+     "close_said": 0.489,
+     "won_close_subset": 0.481,
+     "model_said_close_subset": 0.4949,
+     "model_log_loss_close_subset": 0.66477,
+     "close_log_loss": 0.57578,
+     "bucket": "moved up"
+    },
+    {
+     "n": 305,
+     "model_log_loss": 0.67116,
+     "model_said": 0.4786,
+     "won": 0.4984,
+     "n_close": 305,
+     "close_said": 0.4834,
+     "won_close_subset": 0.4984,
+     "model_said_close_subset": 0.4786,
+     "model_log_loss_close_subset": 0.67116,
+     "close_log_loss": 0.60648,
+     "bucket": "moved down"
+    },
+    {
+     "n": 3185,
+     "model_log_loss": 0.67093,
+     "model_said": 0.4886,
+     "won": 0.46,
+     "n_close": 3185,
+     "close_said": 0.4594,
+     "won_close_subset": 0.46,
+     "model_said_close_subset": 0.4886,
+     "model_log_loss_close_subset": 0.67093,
+     "close_log_loss": 0.60561,
+     "bucket": "neither (read from fighter_a)"
+    }
+   ]
+  },
+  "debutants": {
+   "side": "the debutant (bouts with exactly one)",
+   "rows": [
+    {
+     "n": 364,
+     "model_log_loss": 0.64959,
+     "model_said": 0.4528,
+     "won": 0.3791,
+     "n_close": 364,
+     "close_said": 0.4192,
+     "won_close_subset": 0.3791,
+     "model_said_close_subset": 0.4528,
+     "model_log_loss_close_subset": 0.64959,
+     "close_log_loss": 0.54915,
+     "bucket": "one debutant"
+    },
+    {
+     "n": 53,
+     "model_log_loss": 0.69315,
+     "model_said": 0.5,
+     "won": 0.4906,
+     "n_close": 53,
+     "close_said": 0.5007,
+     "won_close_subset": 0.4906,
+     "model_said_close_subset": 0.5,
+     "model_log_loss_close_subset": 0.69315,
+     "close_log_loss": 0.56889,
+     "bucket": "both debut (read from fighter_a)"
+    },
+    {
+     "n": 3347,
+     "model_log_loss": 0.67259,
+     "model_said": 0.4854,
+     "won": 0.4503,
+     "n_close": 3347,
+     "close_said": 0.4562,
+     "won_close_subset": 0.4503,
+     "model_said_close_subset": 0.4854,
+     "model_log_loss_close_subset": 0.67259,
+     "close_log_loss": 0.61027,
+     "bucket": "neither (read from fighter_a)"
+    }
+   ]
+  },
+  "rematches": {
+   "side": "the winner of the fighters' latest meeting",
+   "rows": [
+    {
+     "n": 93,
+     "model_log_loss": 0.66763,
+     "model_said": 0.5336,
+     "won": 0.5591,
+     "n_close": 93,
+     "close_said": 0.5461,
+     "won_close_subset": 0.5591,
+     "model_said_close_subset": 0.5336,
+     "model_log_loss_close_subset": 0.66763,
+     "close_log_loss": 0.65292,
+     "bucket": "rematch: read from the last meeting's winner"
+    }
+   ]
+  }
+ }
+}

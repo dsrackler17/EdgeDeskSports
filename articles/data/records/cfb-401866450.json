@@ -21,8 +21,8 @@
   "game_time": "2026-10-24T16:00:00.000Z",
   "game_when_label": "2026-10-24 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-24T10:49:55.290Z",
-  "generated_at": "2026-10-24T10:49:55.290Z",
+  "updated_at": "2026-10-24T15:50:53.464Z",
+  "generated_at": "2026-10-24T15:50:53.464Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -138,9 +138,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -148,6 +148,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Toledo and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mid-American Conference requires an availability report for this game: a single game-day report for every game a MAC school plays, published an hour before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Western Michigan and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mid-American Conference requires an availability report for this game: a single game-day report for every game a MAC school plays, published an hour before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mid-American Conference requires an availability report for this game: a single game-day report for every game a MAC school plays, published an hour before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mid-American Conference requires an availability report for this game: a single game-day report for every game a MAC school plays, published an hour before kickoff"
           },
           {
             "field": "off_field",
@@ -246,7 +270,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T17:30:00.000Z",
-        "retrieved_at": "2026-10-24T04:32:17.267Z"
+        "retrieved_at": "2026-10-24T15:15:52.709Z"
       },
       "home": {
         "team": "Toledo",
@@ -318,9 +342,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T19:30:00.000Z",
-        "retrieved_at": "2026-10-24T04:32:17.267Z"
+        "retrieved_at": "2026-10-24T15:15:52.709Z"
       },
-      "generated_at": "2026-10-24T04:33:05.712Z",
+      "generated_at": "2026-10-24T15:16:37.479Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -639,8 +663,8 @@
               "a": {
                 "v": "56.9",
                 "n": 56.9,
-                "rank": "#88 of 138",
-                "rank_n": 88,
+                "rank": "#89 of 138",
+                "rank_n": 89,
                 "note": null
               },
               "h": {
@@ -653,7 +677,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.2,
-                "rank_gap": 20
+                "rank_gap": 21
               }
             },
             {
@@ -735,15 +759,15 @@
               "a": {
                 "v": "56.6",
                 "n": 56.6,
-                "rank": "#54 of 138",
-                "rank_n": 54,
+                "rank": "#55 of 138",
+                "rank_n": 55,
                 "note": null
               },
               "h": {
                 "v": "55.2",
                 "n": 55.2,
-                "rank": "#106 of 138",
-                "rank_n": 106,
+                "rank": "#107 of 138",
+                "rank_n": 107,
                 "note": null
               },
               "edge": {
@@ -831,15 +855,15 @@
               "a": {
                 "v": "52.6",
                 "n": 52.6,
-                "rank": "#133 of 137",
-                "rank_n": 133,
+                "rank": "#134 of 138",
+                "rank_n": 134,
                 "note": null
               },
               "h": {
                 "v": "52.7",
                 "n": 52.7,
-                "rank": "#132 of 137",
-                "rank_n": 132,
+                "rank": "#133 of 138",
+                "rank_n": 133,
                 "note": null
               },
               "edge": {
@@ -925,9 +949,9 @@
           "gap": 1.4,
           "lead": "Western Michigan",
           "trail": "Toledo",
-          "lead_cell": "56.6 · #54 of 138",
-          "trail_cell": "55.2 · #106 of 138",
-          "text": "Western Michigan 56.6 (#54 of 138) vs Toledo 55.2 (#106 of 138) — 52 places on the national board."
+          "lead_cell": "56.6 · #55 of 138",
+          "trail_cell": "55.2 · #107 of 138",
+          "text": "Western Michigan 56.6 (#55 of 138) vs Toledo 55.2 (#107 of 138) — 52 places on the national board."
         },
         {
           "k": "Special teams",
@@ -1100,7 +1124,7 @@
           "team": "Western Michigan",
           "label": "QB room",
           "v": "56.9",
-          "rank": "#88 of 138",
+          "rank": "#89 of 138",
           "note": null
         },
         "def": {
@@ -1111,7 +1135,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Western Michigan’s QB room rates 56.9 (#88 of 138) against Toledo’s secondary at 58.4 (#18 of 138). Toledo’s unit stands higher among its own position group, by 70 places."
+        "read": "Western Michigan’s QB room rates 56.9 (#89 of 138) against Toledo’s secondary at 58.4 (#18 of 138). Toledo’s unit stands higher among its own position group, by 71 places."
       },
       {
         "title": "Toledo QB room vs Western Michigan secondary",
@@ -1176,7 +1200,7 @@
           "team": "Western Michigan",
           "label": "running backs",
           "v": "56.6",
-          "rank": "#54 of 138",
+          "rank": "#55 of 138",
           "note": null
         },
         "def": {
@@ -1187,7 +1211,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Western Michigan’s running backs rates 56.6 (#54 of 138) against Toledo’s linebackers at 58.1 (#14 of 138). Toledo’s unit stands higher among its own position group, by 40 places."
+        "read": "Western Michigan’s running backs rates 56.6 (#55 of 138) against Toledo’s linebackers at 58.1 (#14 of 138). Toledo’s unit stands higher among its own position group, by 41 places."
       },
       {
         "title": "Toledo running backs vs Western Michigan linebackers",
@@ -1195,7 +1219,7 @@
           "team": "Toledo",
           "label": "running backs",
           "v": "55.2",
-          "rank": "#106 of 138",
+          "rank": "#107 of 138",
           "note": null
         },
         "def": {
@@ -1206,7 +1230,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Toledo’s running backs rates 55.2 (#106 of 138) against Western Michigan’s linebackers at 52.3 (#83 of 138). Western Michigan’s unit stands higher among its own position group, by 23 places."
+        "read": "Toledo’s running backs rates 55.2 (#107 of 138) against Western Michigan’s linebackers at 52.3 (#83 of 138). Western Michigan’s unit stands higher among its own position group, by 24 places."
       },
       {
         "title": "Western Michigan receivers vs Toledo secondary",
@@ -1411,7 +1435,7 @@
         "heading": "Why Western Michigan can keep it close",
         "bullets": [
           "Continuity: Western Michigan 55.4 (#19 of 138) vs Toledo 36.2 (#109 of 138) — 90 places on the national board.",
-          "Running backs: Western Michigan 56.6 (#54 of 138) vs Toledo 55.2 (#106 of 138) — 52 places on the national board.",
+          "Running backs: Western Michigan 56.6 (#55 of 138) vs Toledo 55.2 (#107 of 138) — 52 places on the national board.",
           "Special teams: Western Michigan 49.9 (#71 of 130) vs Toledo 46.9 (#118 of 130) — 47 places on the national board.",
           "The outcome range is 14.6 points wide at one sigma — p10 -16.0 to p90 +26.0 for Toledo, so a projection of +5.0 still produces results a long way either side of it.",
           "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
@@ -1581,11 +1605,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Toledo or Western Michigan’s starting QB can play",
-        "score": 89,
+        "text": "85 · STRONG",
+        "sub": "main deduction: Western Michigan’s availability sources refused",
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1599,7 +1623,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1611,7 +1635,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1627,20 +1651,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Toledo or Western Michigan’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "Western Michigan’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Western Michigan’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Capture a market quote",
-            "potential_gain": 2,
-            "text": "up to +2 once re-read availability inside the filing window (Toledo) and Re-read availability inside the filing window (Western Michigan) is done"
+            "action": "Restore an injury/availability source for Western Michigan",
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Toledo) and Re-read availability inside the filing window (Western Michigan) is done"
+            "action": "Restore an injury/availability source for Toledo",
+            "potential_gain": 4,
+            "text": "up to +4"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1809,7 +1836,7 @@
         },
         {
           "k": "QB room",
-          "a": "56.9  #88",
+          "a": "56.9  #89",
           "h": "58.1  #68",
           "note": null
         },
@@ -1827,8 +1854,8 @@
         },
         {
           "k": "Running backs",
-          "a": "56.6  #54",
-          "h": "55.2  #106",
+          "a": "56.6  #55",
+          "h": "55.2  #107",
           "note": null
         },
         {
@@ -1893,13 +1920,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "ayo4p51e3obxn",
+    "packet_hash": "1b5xich11vxkzn",
     "status": "EXPLAINED",
     "input_suspect": false,
     "question": "Can Western Michigan’s pass rush get to John Alan Richter?",
-    "assessment": "Most of the 2.0-point difference traces to home field (engine constant) (about 1.1 points), which the closing market has historically priced differently. That explains the gap; it does not make either number a bet.",
+    "assessment": "Most of the 2.5-point difference traces to home field (engine constant) (about 1.1 points), which the closing market has historically priced differently. That explains the gap; it does not make either number a bet.",
     "gap": {
-      "points": 2,
+      "points": 2.5,
       "toward": "Toledo",
       "other": "Western Michigan"
     },
@@ -1913,7 +1940,7 @@
       "When Toledo has the ball (big plays on the ground): Toledo’s offense turns 4.3% of its runs into explosive gains, and Western Michigan’s defense gives up explosive gains on 4.5% of opponent runs (FBS average 6.6%).",
       "When Western Michigan has the ball (the line of scrimmage on running plays): Western Michigan’s offense is stopped at or behind the line on 11.0% of its runs, and Toledo’s defense stops 18.0% of opponent runs at or behind the line (FBS average 17.4%).",
       "In his last two games (Kent State and Central Michigan), Lowry averaged 9.2 yards per attempt, against 6.5 in his five games before that.",
-      "EdgeDesk’s position-group ratings put Western Michigan’s running backs No. 54 nationally and Toledo’s No. 106."
+      "EdgeDesk’s position-group ratings put Western Michigan’s running backs No. 55 nationally and Toledo’s No. 107."
     ],
     "quarterbacks": [
       "John Alan Richter has completed 144 of 220 passes (65.5%) for 1,861 yards, 8.5 yards per attempt, 14 touchdowns and 1 interception in seven games for Toledo, and has been sacked on 2 of 222 dropbacks.",
@@ -1959,7 +1986,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
+        "observed_at": "2026-10-24T15:16:44.582Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1973,7 +2000,7 @@
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-24T04:32:40.639Z",
+        "observed_at": "2026-10-24T15:16:12.675Z",
         "verification": "RATING"
       }
     ],
@@ -1982,6 +2009,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-24T15:50:53.464Z"
   }
 }

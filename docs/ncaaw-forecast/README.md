@@ -64,6 +64,31 @@ coverage ≥ 97%, finite outputs) and `publishable`. Without `--publish` nothing
 leaves the machine. A `--now` far from the last ingest fails the freshness gate,
 as it should.
 
+### Preseason
+
+Before the season's first regular-season game (the earliest `season_type` 2
+game in the season's schedule file; 2026-11-02 for 2026-27) the refresh runs in
+**preseason** mode. Its window runs to the end of the opening week (opener + 7
+days), not 48 hours. No game moves a rating before the opener, so the opening
+slate is priced from preseason ratings: last season's, carried forward. Every
+such forecast is flagged `PRESEASON_RATINGS`, and the refresh document records
+`window.phase`. From the opener on, the routine `--hours` window applies.
+Nobody has to switch anything.
+
+Exhibition games are not priced. The wehoop schedule files have no
+`season_type` 1 row in any season, and ESPN's Division I scoreboard listed no
+game on a preseason date (2024-11-01) or from 2026-10-22 to 10-27 (the slate).
+The Simulator seat shows **Preseason** on its chip and a preseason card until
+the opening day in the generated registry (`games.regular_season_start`,
+`simulator/src/sports/registry.ts`). Each new season, set that date in a
+reviewed commit. The tournament simulation's status (BLOCKED) is separate and
+still gates only the Tournament tab and the simulator planner.
+
+```powershell
+node basketball/ncaaw_forecast/refresh.js --now 2026-10-24T15:00:00Z   # preseason: through 2026-11-09, every forecast flagged
+node basketball/ncaaw_forecast/refresh.js --now 2026-11-02T13:37:00Z   # opening day: the routine 48 h
+```
+
 ### Records (research, not a claim of edge)
 
 ```powershell

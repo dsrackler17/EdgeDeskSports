@@ -9,6 +9,7 @@
 .sm-sport.on{border-color:var(--accent,#2fa79a);color:var(--accent,#2fa79a)}
 .sm-sport.off{color:var(--dim,#aa9c87)}
 .sm-soon{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint,#958a7a);border:1px solid var(--border,#332a1b);border-radius:6px;padding:1px 5px}
+.sm-soon.sm-pre{color:var(--accent,#2fa79a);border-color:currentColor}
 .sm-tabs{margin:0 0 12px}
 .sm-meta{border:1px solid var(--border,#332a1b);background:var(--surface,#191510);border-radius:var(--rad-s,11px);padding:10px 12px;margin:0 0 12px;font-size:12.5px;line-height:1.6;overflow-wrap:anywhere;min-width:0}
 .sm-stalebar{margin-top:6px;padding:6px 8px;border-radius:8px;background:color-mix(in srgb,var(--warn,#d99a2b) 16%,transparent);color:var(--warn,#d99a2b);font-weight:600}
@@ -82,3 +83,25 @@
 .sm-gc-d dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
 .sm-link{background:none;border:0;padding:4px 0;min-height:28px;color:var(--accent,#2fa79a);font:inherit;font-weight:600;cursor:pointer;text-align:left}
 .sm-link[aria-current]{text-decoration:underline}
+/* UFC: the disagreement guard and the calibration chart (lib/edgedesk_simulator_ufc.js). Series colours validated for
+   colour-vision deficiency on the dark surface (closing line #3987e5, 1.1.0 #d95926, served #199e70); a dash and three
+   marker shapes carry identity as well */
+.sm-dis{color:var(--warn,#d99a2b);border:1px solid var(--warn,#d99a2b)}
+.sm-card-dis{border-color:color-mix(in srgb,var(--warn,#d99a2b) 55%,var(--border,#332a1b))}
+.sm-guard{margin-top:6px;padding:6px 8px;border-radius:8px;background:color-mix(in srgb,var(--warn,#d99a2b) 10%,transparent);overflow-wrap:anywhere}
+.sm-cal{display:block;width:100%;max-width:520px;height:auto;margin:4px 0}
+.sm-cal-grid{stroke:var(--border,#332a1b);stroke-width:1}
+.sm-cal-diag{stroke:var(--dim,#aa9c87);stroke-width:1;stroke-dasharray:2 3}
+.sm-cal-ax{fill:var(--faint,#958a7a);font-size:9.5px}
+.sm-cal-line{fill:none;stroke-width:2;stroke-linejoin:round}
+.sm-cal-pt{stroke:var(--surface,#191510);stroke-width:2}
+.sm-cal-lab{font-size:10px;font-weight:700;fill:var(--text,#f1ebdf)}
+.sm-cal-close{--c:#3987e5}.sm-cal-old{--c:#d95926}.sm-cal-new{--c:#199e70}
+.sm-cal-line.sm-cal-close,.sm-cal-line.sm-cal-old,.sm-cal-line.sm-cal-new{stroke:var(--c)}
+.sm-cal-pt.sm-cal-close,.sm-cal-pt.sm-cal-old,.sm-cal-pt.sm-cal-new{fill:var(--c)}
+.sm-cal-hit:hover .sm-cal-pt{stroke:var(--text,#f1ebdf)}
+.sm-cal-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:4px 0}
+.sm-cal-legend span{display:inline-flex;align-items:center;gap:5px}
+.sm-cal-legend i{display:inline-block;width:16px;height:0;border-top:2px solid var(--c)}
+.sm-cal-legend i.dash{border-top-style:dashed}
+.sm-cal-legend i.sm-cal-diag-key{border-top:1px dashed var(--dim,#aa9c87)}
