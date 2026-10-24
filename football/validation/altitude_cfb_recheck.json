@@ -1,0 +1,240 @@
+{
+ "schema": "edgedesk_cfb_altitude_recheck_v1",
+ "run_at": "2026-10-24T04:50:22.903Z",
+ "question": "Does the altitude verdict, fitted against the 4.082-pt league home field, still hold against the 2.8-pt home field promoted on 2026-10-19 (football/cfb_p4/home_field.js)?",
+ "baseline": {
+  "before": {
+   "home_field_pts": 4.082,
+   "record_generated_at": "2026-10-17T17:32:50.127Z"
+  },
+  "after": {
+   "home_field_pts": 2.8,
+   "home_field_version": "cfb_hfa_unified_v1"
+  },
+  "check": "the all-games V1 residual moved from -1.26 to 0.066 pts, so the fresh replay ran on the new home field"
+ },
+ "data": "sportsdataverse/cfbfastR-data schedules 2001-2025 and betting/csv/cfb_line_odds.csv.gz via football/cfb_p4/research/build_market.py",
+ "not_run": "the play-load and opponent-pace diagnostics need the research package panel, which is not in the repository; neither can price",
+ "verdict": {
+  "before": "REJECTED",
+  "after": "REJECTED",
+  "points_applied": false,
+  "support_state": "NOT_ESTABLISHED"
+ },
+ "support_text": "Not established: in 13,511 FBS home games 2006–2025, home teams hosting a visitor that climbed 3,000+ ft beat EdgeDesk’s pregame number by +1.05 pts more than other home teams (95% CI −0.16 to +2.25; 651 games at 14 venues). Out of sample the adjustment did not pass its validation gates, so it moves 0 points.",
+ "selected": "cat_3000",
+ "gates": [
+  {
+   "id": "G1_promotion_rules_on_affected_games",
+   "before": false,
+   "after": false
+  },
+  {
+   "id": "G2_confirmation_sample",
+   "before": true,
+   "after": true
+  },
+  {
+   "id": "G3_global_no_harm",
+   "before": true,
+   "after": true
+  },
+  {
+   "id": "G4_permutation_placebo",
+   "before": false,
+   "after": false
+  },
+  {
+   "id": "G5_descent_placebo",
+   "before": true,
+   "after": true
+  },
+  {
+   "id": "G6_venue_robustness",
+   "before": false,
+   "after": true
+  },
+  {
+   "id": "G7_coefficient_stability",
+   "before": true,
+   "after": true
+  },
+  {
+   "id": "G8_data_coverage",
+   "before": true,
+   "after": true
+  }
+ ],
+ "cat_3000_full_sample": {
+  "before": {
+   "coef": 1.029,
+   "se": 0.615,
+   "ci95": [
+    -0.178,
+    2.235
+   ],
+   "treated": 651,
+   "n": 13511,
+   "wild_p": 0.1401
+  },
+  "after": {
+   "coef": 1.047,
+   "se": 0.614,
+   "ci95": [
+    -0.156,
+    2.251
+   ],
+   "treated": 651,
+   "n": 13511,
+   "wild_p": 0.1361
+  }
+ },
+ "confirm_affected": {
+  "before": {
+   "status": "REJECTED",
+   "failed": [
+    "pooled_improvement",
+    "significance"
+   ],
+   "reasons": [
+    "pooled MAE got worse by 0.019 points, against a 0.02 bar",
+    "paired p = 0.545, above the 0.05 bar"
+   ],
+   "effect": -0.019,
+   "p": 0.545,
+   "brier_delta": 0.0008
+  },
+  "after": {
+   "status": "REJECTED",
+   "failed": [
+    "pooled_improvement",
+    "significance"
+   ],
+   "reasons": [
+    "pooled MAE got worse by 0.017 points, against a 0.02 bar",
+    "paired p = 0.710, above the 0.05 bar"
+   ],
+   "effect": -0.017,
+   "p": 0.7099,
+   "brier_delta": 0.0008
+  }
+ },
+ "permutation_p": {
+  "before": 0.6567,
+  "after": 0.1443
+ },
+ "venue_holdout": {
+  "before": {
+   "n": 643,
+   "mae_before": 12.543,
+   "mae_after": 12.592,
+   "improvement": -0.049
+  },
+  "after": {
+   "n": 643,
+   "mae_before": 12.584,
+   "mae_after": 12.576,
+   "improvement": 0.009
+  }
+ },
+ "residuals": [
+  {
+   "group": "all non-neutral",
+   "before": {
+    "n": 13511,
+    "host_venues": 161,
+    "v1_residual": -1.26,
+    "ci95": [
+     -1.664,
+     -0.882
+    ],
+    "v1_mae": 12.866
+   },
+   "after": {
+    "n": 13511,
+    "host_venues": 161,
+    "v1_residual": 0.066,
+    "ci95": [
+     -0.319,
+     0.477
+    ],
+    "v1_mae": 12.823
+   }
+  },
+  {
+   "group": "gain >= 3,000 ft",
+   "before": {
+    "n": 650,
+    "host_venues": 14,
+    "v1_residual": -0.299,
+    "ci95": [
+     -1.404,
+     0.928
+    ],
+    "v1_mae": 12.525
+   },
+   "after": {
+    "n": 650,
+    "host_venues": 14,
+    "v1_residual": 1.045,
+    "ci95": [
+     -0.034,
+     2.222
+    ],
+    "v1_mae": 12.579
+   }
+  },
+  {
+   "group": "host venue >= 3,000 ft (any visitor)",
+   "before": {
+    "n": 1268,
+    "host_venues": 15,
+    "v1_residual": -1.155,
+    "ci95": [
+     -2.013,
+     -0.362
+    ],
+    "v1_mae": 12.415
+   },
+   "after": {
+    "n": 1268,
+    "host_venues": 15,
+    "v1_residual": 0.188,
+    "ci95": [
+     -0.656,
+     0.954
+    ],
+    "v1_mae": 12.413
+   }
+  },
+  {
+   "group": "descent >= 3,000 ft",
+   "before": {
+    "n": 764,
+    "host_venues": 119,
+    "v1_residual": 0.638,
+    "ci95": [
+     -0.608,
+     2.034
+    ],
+    "v1_mae": 13.022
+   },
+   "after": {
+    "n": 764,
+    "host_venues": 119,
+    "v1_residual": 1.952,
+    "ci95": [
+     0.609,
+     3.346
+    ],
+    "v1_mae": 13.161
+   }
+  }
+ ],
+ "reading": [
+  "Altitude still moves 0 points: the selected term made the 139 held-out 2022-2025 games it touched slightly worse again, and shuffled altitude labels did as well often enough to fail the placebo.",
+  "The double-counting argument has flipped. With 4.082 pts every home side was over-credited and mountain hosts were about right, so an altitude term would have counted twice. With 2.8 pts home sides overall are about right, and mountain hosts facing a 3,000+ ft climb are UNDER-credited by about a point. An altitude term would no longer double count; it would address a real but unproven residual.",
+  "Home teams also beat the number by about 2 pts when a mountain visitor DESCENDS 3,000+ ft, which altitude physiology does not predict. Part of the residual may be how mountain programmes are rated, not thin air."
+ ],
+ "reproduce": "CFB_P4_DATA=<dir> python3 football/cfb_p4/research/build_market.py <dir>/out && node football/altitude/research/run.js --data <dir> --write (in a scratch checkout) && node football/altitude/research/recheck.js --fresh <scratch>/football/validation/altitude_cfb.json --write"
+}

@@ -48,6 +48,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const GS = require(path.join(ROOT, 'lib', 'edgedesk_game_snapshot.js'));
 const FL = require(path.join(ROOT, 'lib', 'edgedesk_fairline.js'));
 const CTX = require(path.join(__dirname, 'game_context.js'));
+const FE = require(path.join(ROOT, 'lib', 'edgedesk_factor_evidence.js'));
 const { writeIfChanged } = require(path.join(__dirname, 'write_if_changed.js'));
 
 const OUT = path.join(ROOT, 'football', 'game_research');
@@ -192,6 +193,8 @@ function build(opts) {
   const forecasts = opts.forecasts !== undefined ? opts.forecasts : readJson('football/venues/forecasts.json');
   /* referees, travel and rest (tools/football/game_context.js): committed files only */
   const context = opts.context !== undefined ? opts.context : CTX.load({ season: (nfl && nfl.season) || (fbs && fbs.games && fbs.games[0] && fbs.games[0].season) });
+  /* what each factor does to the college number, and the test behind it (docs/game-research/FACTORS.md) */
+  const factors = opts.factors !== undefined ? opts.factors : FE.load(ROOT);
   const prevHistory = opts.history || null;
   const prevCurrent = opts.previous !== undefined ? opts.previous : null;
 
@@ -240,7 +243,7 @@ function build(opts) {
       });
       const s = GS.fromCfb(g, { terminal: term && term.games ? term.games[String(g.game_id)] : null, rankings: rk && rk.teams, rankings_as_of: rk && (rk.data_as_of || rk.generated_at),
         team_count: rk && rk.team_count, rank_counts: rankCounts, identity, records: recs, polls: pollsFor(gk), units_label: rk && rk.week_label ? rk.week_label + ' ratings' : null, sheet: fullSheets[gk] || null,
-        generated_at: fbs.generated_at, source: 'football/fbs/slate.json',
+        generated_at: fbs.generated_at, source: 'football/fbs/slate.json', factors,
         forecast: forecasts && forecasts.by_game ? forecasts.by_game[String(g.game_id)] || null : null,
         context: context ? CTX.cfbContext(g, context, { home: GS.teamIdentity('cfb', g.home_team, g.home_team_id, identity).abbr, away: GS.teamIdentity('cfb', g.away_team, g.away_team_id, identity).abbr }) : null });
       snaps.push(s);

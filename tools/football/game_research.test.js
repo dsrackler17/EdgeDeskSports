@@ -298,7 +298,8 @@ proj.forEach((s) => {
     if (c.market) chk('no market panel without a market number · ' + s.game_key, false, c.market);
     if (!c.detail || c.detail.cells.length < 2 || c.detail.cells.some((x) => !x.v || (Array.isArray(x.v) ? x.v.some((v) => !v || v === '—') : x.v === '—'))) chk('model detail replaces the market, no empty cell · ' + s.game_key, false, c.detail);
   }
-  if (/%/.test(c.confidence) && /RELIABILITY/.test(c.confidence)) chk('reliability is never a percent on the graphic · ' + s.game_key, false, c.confidence);
+  if (/%/.test(c.confidence) && /RELIABILITY|DATA QUALITY/.test(c.confidence)) chk('reliability is never a percent on the graphic · ' + s.game_key, false, c.confidence);
+  if (s.confidence.kind === 'reliability' && (/RELIABILITY/.test(c.confidence) || !/^DATA QUALITY /.test(c.confidence))) chk('the reliability score prints as DATA QUALITY, a check of the inputs · ' + s.game_key, false, c.confidence);
   ['square', 'portrait'].forEach((f) => {
     const L = GG.layout(c, f);
     laid++;
@@ -785,6 +786,87 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
     if (!ok) chk('home field restated from the snapshot’s own numbers · ' + g.game_key, false, [it.short, w, g.model.home_margin, row && row.points]);
   });
   chk('checked the home-field item on every committed game that has one', hfN >= 10, hfN);
+}
+
+/* ======================================================================= */
+section('15. every watch item says what it does to EdgeDesk’s number (docs/game-research/FACTORS.md)');
+{
+  const FE = require(path.join(ROOT, 'lib', 'edgedesk_factor_evidence.js'));
+  const REG = FE.load(ROOT), FX = REG.factors;
+  const KINDS = ['in_number', 'zero', 'in_rating', 'check', 'context'];
+  let fxN = 0, inN = 0, zeroN = 0, laneN = 0, altN = 0;
+  proj.forEach((s) => {
+    const rows = (s.drivers && s.drivers.rows) || [];
+    s.insights.forEach((i) => {
+      const e = i.effect;
+      if (!e || KINDS.indexOf(e.kind) < 0 || !e.label) { chk('every watch item carries its effect · ' + s.game_key + ' ' + i.id, false, e); return; }
+      fxN++;
+      if (e.kind === 'in_number') {
+        inN++;
+        const d = rows.find((r) => r.key === e.term) || (e.term === 'altitude' ? { points: Math.abs(s.altitude_travel.adjustment.applied_points), favors: e.team } : null);
+        if (!d || Math.abs(Math.round(Math.abs(d.points) * 10) / 10 - e.points) > 1e-9 || d.favors !== e.team) chk('an in-number chip is a term the projection carries, at its own points · ' + s.game_key + ' ' + i.id, false, { e, d });
+        if (e.label !== s[e.team].abbr + ' +' + e.points.toFixed(1)) chk('the chip names the team its points favour · ' + s.game_key + ' ' + i.id, false, e.label);
+      }
+      if (e.kind === 'zero') { zeroN++; if (e.label !== '0 PTS' || e.points !== 0) chk('a zero chip says 0 PTS · ' + s.game_key, false, e); }
+      /* a factor the model does not price can never claim points */
+      if (s.league === 'cfb' && ['officials', 'weather'].indexOf(i.family) >= 0 && e.kind === 'in_number') chk('officials and weather never claim points · ' + s.game_key, false, e);
+      if (s.league === 'cfb' && i.family === 'travel' && !/REST EDGE/.test(i.title) && e.kind === 'in_number' && !rows.some((r) => r.key === 'travel')) chk('college travel claims points only when the projection carries a travel term · ' + s.game_key, false, e);
+      /* the whole defence: a pass or run mismatch is read beside the same defence's other lane */
+      const ev = i.evidence || {};
+      if (ev.lane) {
+        laneN++;
+        if (!/pass O #\d+ .* pass D #\d+; run O #\d+ vs run D #\d+\.$|run O #\d+ .* run D #\d+; pass O #\d+ vs pass D #\d+\.$/.test(i.short)) chk('a lane mismatch prints the other lane of the same defence · ' + s.game_key + ' ' + i.id, false, i.short);
+        if (!ev.lane.ranks.every((r) => i.text.indexOf('#' + r) >= 0)) chk('…and its long text names both lanes’ ranks · ' + s.game_key, false, i.text);
+        const mt = rows.find((r) => r.key === 'matchup');
+        if (s.league === 'cfb' && mt && (e.term !== 'matchup' || i.text.indexOf(mt.favors_team + ' +' + mt.points.toFixed(1)) < 0)) chk('…and says the matchup term, not the lane, carries the points · ' + s.game_key, false, [e, i.text]);
+      }
+      if (i.family === 'altitude') {
+        altN++;
+        const applied = !!(s.altitude_travel && s.altitude_travel.adjustment && s.altitude_travel.adjustment.applied);
+        if (!applied && (e.kind !== 'zero' || !/adds 0/.test(i.short) || !/EdgeDesk adds 0 pts/.test(i.text))) chk('altitude says it adds 0 when the term is not validated · ' + s.game_key, false, [e, i.short]);
+        const hf = rows.find((r) => r.key === 'hfa');
+        if (!applied && hf && !s.neutral_site && i.text.indexOf('one ' + hf.points.toFixed(1) + '-pt value for every home team') < 0) chk('…and that home field is one value for every home team, so nothing is counted twice · ' + s.game_key, false, i.text);
+      }
+    });
+  });
+  chk('every projected game’s watch items carry an effect', fxN === proj.reduce((a, s) => a + s.insights.length, 0), fxN);
+  chk('the committed slates exercise in-number, zero and two-lane items', inN > 50 && zeroN > 20 && laneN > 20, { inN, zeroN, laneN });
+  chk('the committed slates hold at least one altitude item', altN >= 1, altN);
+
+  /* the graphic: one chip per item, the legend, and an old spec redraws without either */
+  const s = proj.find((x) => x.insights.length >= 5 && x.insights.some((i) => i.effect && i.effect.kind === 'zero')), spec = GS.graphicSpec(s);
+  chk('the graphic spec carries each chip’s kind and label only', spec.insights.every((i) => i.effect && Object.keys(i.effect).join() === 'kind,label'));
+  const c = GG.content(spec, null, { now: t0 }).content;
+  ['square', 'portrait'].forEach((f) => {
+    const ops = GG.layout(c, f).ops.filter((o) => o.type === 'text');
+    const labels = c.insights.map((i) => i.effect.label);
+    chk('every chip is drawn · ' + f, labels.every((l) => ops.some((o) => o.text === l)), labels);
+    chk('the chip legend is drawn · ' + f, ops.some((o) => o.text === GG.EFFECT_LEGEND));
+  });
+  const old = clone(spec); old.insights.forEach((i) => { delete i.effect; });
+  const co = GG.content(old, null, { now: t0 }).content, oops = GG.layout(co, 'square').ops.filter((o) => o.type === 'text');
+  chk('a spec recorded before chips redraws with none', !co.effects && !oops.some((o) => o.text === GG.EFFECT_LEGEND || o.text === '0 PTS'));
+  chk('the alt text reads each chip in words', /0 pts in EdgeDesk’s line|pts in EdgeDesk’s line/.test(GG.altText(c)));
+  chk('the alt text says the data-quality score is not a win probability', proj.filter((x) => x.league === 'cfb').slice(0, 5).every((x) => /DATA QUALITY \d+\/100.*\(a check of the inputs, not a win probability\)/.test(GG.altText(GG.content(GS.graphicSpec(x), null, { now: t0 }).content))));
+  chk('the snapshot labels the reliability score as data quality', proj.filter((x) => x.confidence.kind === 'reliability').every((x) => /^Data quality (\d+\/100|not scored)/.test(x.confidence.label)));
+
+  /* the regime item: no extra weight, no claimed points */
+  const rg = { league: 'cfb', home: { abbr: 'UTAH', name: 'Utah' }, away: { abbr: 'HOU', name: 'Houston' }, drivers: { rows: [], small: [] },
+    edges: { regime: { home: { reason: 'new head coach', weight: 0.6, standard_weight: 0.6, games: 6 } } } };
+  chk('a regime change at the standard weight adds 0', GS.effectOf(rg, { id: 'regime_home', family: 'coaching' }).kind === 'zero');
+  rg.edges.regime.home.weight = 0.7;
+  chk('…and above it sits inside the team-strength term', GS.effectOf(rg, { id: 'regime_home', family: 'coaching' }).kind === 'in_rating');
+  chk('a family with no term is context, never points', GS.effectOf(rg, { id: 'continuity', family: 'continuity' }).kind === 'context');
+
+  /* the evidence registry reads the generated files, and the page is current */
+  const AP = require(path.join(ROOT, 'football', 'altitude', 'params.js')), HF = require(path.join(ROOT, 'football', 'cfb_p4', 'home_field.js'));
+  chk('registry: altitude is in the number only when params.js is VALIDATED with points applied', FX.altitude.in_number === (AP.status === 'VALIDATED' && AP.points_applied === true));
+  chk('registry: home field is the promoted one value', FX.home_field.points === HF.hfa);
+  chk('registry: the matchup term is in the number and says it has no held-out test of its own', FX.matchup.in_number && FX.matchup.status === 'IN_USE_UNTESTED');
+  chk('registry: the data-quality score moves nothing and is not validated', FX.reliability.in_number === false && FX.reliability.status === 'NOT_VALIDATED');
+  let fresh = true;
+  try { execFileSync(process.execPath, [path.join(ROOT, 'tools', 'football', 'factor_evidence.js'), '--check'], { stdio: 'pipe' }); } catch (e) { fresh = false; }
+  chk('docs/game-research/FACTORS.md and factors.json are generated from the current records', fresh);
 }
 
 console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | game research (snapshot, graphic, history, price check, wiring) | ' + pass + ' passed, ' + fail + ' failed');
