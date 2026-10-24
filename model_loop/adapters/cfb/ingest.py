@@ -18,7 +18,9 @@ and football/cfb_p4/research/fetch_data.sh already read):
                                               build_market.py orients lines on
   this repository
     record/football/cfb_2026.json             2026 closes (DraftKings via ESPN),
-                                              frozen at kickoff by the record job
+                                              frozen at kickoff by the record job;
+                                              its finals fill a game the weekly
+                                              schedule refresh has not reached
 
 Closing lines 2006-2025 are the cfb_p4 market table: football/cfb_p4/research/
 build_market.py is run unmodified on the downloaded archive (median across
@@ -170,20 +172,26 @@ def _rest_days(s):
 
 
 def _record_2026():
-    """2026 closes as the record froze them (DraftKings via ESPN, at kickoff)."""
+    """2026 closes as the record froze them (DraftKings via ESPN, at kickoff),
+    and its finals (ESPN and cfbfastR, which must agree; set once)."""
     try:
         rec = json.load(open(RECORD_2026))["games"]
     except Exception:
         return {}
     out = {}
     for gid, g in rec.items():
+        r = {}
         c = g.get("close") or {}
-        if c.get("home_line") is None:
-            continue
-        pr = c.get("prices") or {}
-        out[int(gid)] = {"close_margin": -float(c["home_line"]), "close_total": c.get("total"),
-                         "home_ml": pr.get("home_ml"), "away_ml": pr.get("away_ml"),
-                         "close_source": "record/football/cfb_2026.json (" + str(c.get("book") or c.get("source")) + ")"}
+        if c.get("home_line") is not None:
+            pr = c.get("prices") or {}
+            r = {"close_margin": -float(c["home_line"]), "close_total": c.get("total"),
+                 "home_ml": pr.get("home_ml"), "away_ml": pr.get("away_ml"),
+                 "close_source": "record/football/cfb_2026.json (" + str(c.get("book") or c.get("source")) + ")"}
+        f = g.get("final") or {}
+        if f.get("home_score") is not None and f.get("away_score") is not None:
+            r["final"] = (float(f["home_score"]), float(f["away_score"]))
+        if r:
+            out[int(gid)] = r
     return out
 
 
@@ -206,6 +214,13 @@ def build_games(raw, seasons, market_csv):
         "home_score": np.where(done, s.home_points, np.nan), "away_score": np.where(done, s.away_points, np.nan),
         "venue": s.venue.astype("string"), "notes": s.notes.astype("string"),
     })
+    # the schedule feed refreshes weekly (Sunday), so a Tuesday-to-Thursday game would
+    # have no result until then: the record's final (read from ESPN within hours) fills it
+    rec = _record_2026()
+    for i, gid in zip(g.index, g.game_id):
+        f = (rec.get(int(gid)) or {}).get("final")
+        if f and not np.isfinite(g.at[i, "home_score"]):
+            g.at[i, "home_score"], g.at[i, "away_score"] = f
     g["result"] = g.home_score - g.away_score
     g["total_pts"] = g.home_score + g.away_score
     g["home_rest"] = [rest.get((a, b), np.nan) for a, b in zip(g.game_id, g.home)]
@@ -226,10 +241,9 @@ def build_games(raw, seasons, market_csv):
     for a, b in cols.items():
         g[b] = g.game_id.map(M[a]) if a in M.columns else np.nan
     g["close_source"] = np.where(g.close_margin.notna(), "cfbfastR line archive (median across books)", None)
-    rec = _record_2026()
     for i, gid in zip(g.index, g.game_id):
         r = rec.get(int(gid))
-        if r and not np.isfinite(g.at[i, "close_margin"]):
+        if r and "close_margin" in r and not np.isfinite(g.at[i, "close_margin"]):
             for k in ("close_margin", "close_total", "home_ml", "away_ml", "close_source"):
                 g.at[i, k] = r[k]
     for c in ("close_margin", "close_total", "open_margin", "home_ml", "away_ml", "close_margin_pin"):
