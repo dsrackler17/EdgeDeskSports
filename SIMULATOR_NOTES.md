@@ -20,7 +20,7 @@ deployment: §16 states exactly what exists and what does not.
 | NFL season simulation | Implemented, tested; **ACTIVE** — its three 2026 facts verified against the NFL's pages on 2026-10-23 | §7.5 |
 | Strength uncertainty | Calibrated from frozen-forecast residuals | `simulator/data/nfl_strength_uncertainty.json`, §6.2 |
 | Database layer | Tested on a real PostgreSQL 16; **applied to production** 2026-10-23 (*Deploy simulator SQL* run 39947585888, every report row `ok`) | `supabase/simulator.sql`, §9 |
-| Kalshi futures comparison | **352 NFL markets mapped** exactly (Super Bowl, conference, division, playoffs, seeds 1–7); MLB: the World Series, pennants, divisions and playoff qualifiers by Kalshi's own wording (2 open 2026 markets mapped; 2027 not listed yet: `MLB_SIMULATOR_NOTES.md` §15.1); **160 NHL 2026-27 markets** (Stanley Cup, playoff conference titles, divisions, Presidents' Trophy, playoff qualifiers: `NHL_SIMULATOR_NOTES.md` §16); fee schedule verified from Kalshi's docs and API | `simulator/config/kalshi_futures.json`, §10 |
+| Kalshi futures comparison | **352 NFL markets mapped** exactly (Super Bowl, conference, division, playoffs, seeds 1–7); MLB: the World Series, pennants, divisions and playoff qualifiers by Kalshi's own wording (2 open 2026 markets mapped; 2027 not listed yet: `MLB_SIMULATOR_NOTES.md` §15.1); **160 NHL 2026-27 markets** (Stanley Cup, playoff conference titles, divisions, Presidents' Trophy, playoff qualifiers: `NHL_SIMULATOR_NOTES.md` §16); **480 NBA 2026-27 markets** (title, conference titles and finals, playoffs, play-in, seeds, first place, divisions, the Cup and its groups: `NBA_SIMULATOR_NOTES.md` §18); fee schedule verified from Kalshi's docs and API | `simulator/config/kalshi_futures.json`, §10 |
 | Research registration | EXPERIMENTAL / T3; **applied** 2026-10-23 (same run) | `supabase/simulator_registry.sql`, §11 |
 | Backtest 2010–2025 | Run (16 seasons × 4 as-of weeks × 2,000 runs) | `simulator/data/nfl_backtest.json`, §11.2 |
 | Reader (Simulator seat in `app.html`) | Implemented, tested in Chromium at three widths | `lib/edgedesk_simulator.js`, §13 |
@@ -114,7 +114,7 @@ it is stale.
 |---|---|---|---|---|
 | **NFL** | **ACTIVE** (verified 2026-10-23, §7.5) | season | served model `football/nfl_model.js`; schedule/results/standings from nflverse; rules engine reproduces 2002–2025 | 2026 tiebreaking procedures, 2026 playoff format and Super Bowl LXI venue/designated home not verified against the NFL's official pages (unreachable from the build environment) — §7.5 |
 | **College football** | **ACTIVE** (verified 2026-10-23, CFB_SIMULATOR_NOTES.md §4) | season | `football/cfb_p4` engine replayed over the 2026 feed; ten conference procedures from their own text; 2026 CFP rules; an Estimated committee proxy — all in [`CFB_SIMULATOR_NOTES.md`](CFB_SIMULATOR_NOTES.md) | none standing; Sacramento State's MAC eligibility (no MAC statement) is measured each run and holds publication if any run depended on it |
-| NBA | ACTIVE | season | the served `nba/` model (`edgedesk_nba_v1:E_ridge_P`, equal to the published slate); rules replay every postseason 2006-07..2025-26 and every NBA Cup knockout field 2023-24..2025-26; strength and return-hazard studies — **[`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md)** | none standing; the Cup-dependent games' pairings the league does not publish are Estimated (labelled) |
+| NBA | ACTIVE | season | the served `nba/` model (`edgedesk_nba_v1:E_ridge_P`, equal to the published slate); rules replay every postseason 2006-07..2025-26 and every NBA Cup knockout field 2023-24..2025-26; strength and return-hazard studies — **[`NBA_SIMULATOR_NOTES.md`](NBA_SIMULATOR_NOTES.md)** | none standing; the Cup-dependent games' pairings the league does not publish are Estimated (labelled); 480 Kalshi NBA futures mapped |
 | **NHL** | **ACTIVE** | season | served `hockey/` model (regulation/OT/shootout); schedule from sportsdataverse; results from `hockey/data/team_games`; rules engine reproduces 2013-14..2025-26 playoff series; strength and goal-distribution studies (`NHL_SIMULATOR_NOTES.md`) | none (2026-27 tie-breaking, playoff format and home ice verified from NHL.com, 2026-10-23); 160 Kalshi NHL futures mapped |
 | **WNBA** | **ACTIVE** (2026 postseason) | series | served `basketball/` walk-forward (points ratings + season calibration) replayed point-in-time; schedule and results from wehoop; shared series offset `simulator/data/wnba_strength_uncertainty.json` — [`WNBA_SIMULATOR_NOTES.md`](WNBA_SIMULATOR_NOTES.md) | none standing; formats and hosts are measured from the schedule each run; a round not yet paired is refused (2027 needs the bracket rule) |
 | **MLB** | **ACTIVE** (verified 2026-10-23, MLB_SIMULATOR_NOTES.md §15) | season | served lab brain `mlb/history/model.js` replayed point-in-time; Retrosheet 2010–2025 (+ postseason 2012–2025); live 2026 from MLB's Stats API; rules reproduce every 2012–2025 postseason pairing and host | none standing; the tiebreak procedure is measured in every run (`run.tiebreak_measured` refuses a run in which a tie decided a reported place) — [`MLB_SIMULATOR_NOTES.md`](MLB_SIMULATOR_NOTES.md) §15 |
@@ -410,6 +410,10 @@ reach divisional round, reach conference final, win conference, win Super Bowl.
   16 + 16), the four division winners (regular season, 8 each), the
   Presidents' Trophy (32: its stated tiebreakers are the simulator's) and
   playoff qualifiers (32); 8 complete sets (`NHL_SIMULATOR_NOTES.md` §16).
+- **NBA** (`--sport nba`): 480 markets of 2026-27, 16 outcomes x 30 clubs,
+  each with the run's settlement semantic: a playoff seed (7 and 8 from the
+  play-in) is `seed_k`, the #1 seed at the end of the regular season is
+  `finish_1`; 26 complete sets (`NBA_SIMULATOR_NOTES.md` §18).
 - **Reference vs executable, separately.** Reference = YES bid/ask midpoint,
   only when two-sided and the spread ≤ 0.06 (`kalshi_rule('max_spread')`);
   the midpoint is never executable. Executable = the YES ask at the configured
@@ -590,8 +594,8 @@ rest; Monte Carlo ± is simulation noise only.
   report row `ok` (the entitlement gate finds `community_is_entitled`).
 - NFL: **ACTIVE** (§7.5). The first 100,000-run publication is made from `main`
   by the *Simulator* workflow; the nightly job (10:17 UTC) publishes after it.
-- Kalshi: 352 NFL markets, the 2 open 2026 MLB World Series markets and 160
-  NHL 2026-27 markets mapped, fees verified; compared after each publication by the *markets* job. A
+- Kalshi: 352 NFL markets, the 2 open 2026 MLB World Series markets, 160
+  NHL and 480 NBA 2026-27 markets mapped, fees verified; compared after each publication by the *markets* job. A
   mapping for a later season than the run's is not that run's (next season's
   futures listed while this one finishes); an earlier season's is an error. A flag still needs every condition in this section.
 - Nothing here is a "validated edge": the model is EXPERIMENTAL (§11).
