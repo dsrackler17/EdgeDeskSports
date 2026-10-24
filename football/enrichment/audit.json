@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-24T13:37:25.121Z",
+ "generated_at": "2026-10-24T14:03:12.717Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-24T13:37:25.121Z",
-  "reliability_generated_at": "2026-10-24T13:37:25.121Z",
-  "enrichment_generated_at": "2026-10-24T13:37:19.105Z",
+  "at": "2026-10-24T14:03:12.717Z",
+  "reliability_generated_at": "2026-10-24T14:03:12.717Z",
+  "enrichment_generated_at": "2026-10-24T14:03:03.313Z",
   "counts": {
    "games": 100,
    "mean": 87.2,
@@ -19,11 +19,11 @@
    "missing_qb_status": 149,
    "qb_conflicts_open": 10,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 20,
+   "games_lacking_injury_information": 21,
    "unrated_meaningful_absences": 342,
    "fcs_games_thin_data": 0,
    "games_under_two_market_sources": 100,
-   "stale_evidence_records": 45,
+   "stale_evidence_records": 61,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -1366,11 +1366,11 @@
    },
    "401862809": {
     "game": "Rice @ Florida Atlantic",
-    "score": 89,
+    "score": 88,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
-     "qb_status": 2,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 1.6,
      "transfer_turnover": 0.3
     },
@@ -1379,8 +1379,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401862810": {
@@ -2107,7 +2107,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-24T13:29:41.342Z",
+  "at": "2026-10-24T13:37:25.121Z",
   "counts": {
    "games": 100,
    "mean": 87.2,
@@ -2132,34 +2132,12 @@
   "baseline_of": null
  },
  "what_improved": [],
- "what_degraded": [],
+ "what_degraded": [
+  "+1 games lacking injury information (20 → 21)",
+  "+16 stale evidence records (45 → 61)"
+ ],
  "why": [],
  "history": [
-  {
-   "at": "2026-10-18T04:49:51.217Z",
-   "counts": {
-    "games": 79,
-    "mean": 86.7,
-    "median": 88,
-    "by_band": {
-     "VERY_STRONG": 8,
-     "ADEQUATE": 12,
-     "STRONG": 57,
-     "LOW": 1,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 133,
-    "qb_conflicts_open": 2,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 19,
-    "unrated_meaningful_absences": 166,
-    "fcs_games_thin_data": 1,
-    "games_under_two_market_sources": 79,
-    "stale_evidence_records": 36,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-18T04:52:41.905Z",
    "counts": {
@@ -3542,6 +3520,30 @@
     "fcs_games_thin_data": 0,
     "games_under_two_market_sources": 100,
     "stale_evidence_records": 45,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-24T14:03:12.717Z",
+   "counts": {
+    "games": 100,
+    "mean": 87.2,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 18,
+     "ADEQUATE": 21,
+     "STRONG": 59,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 149,
+    "qb_conflicts_open": 10,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 21,
+    "unrated_meaningful_absences": 342,
+    "fcs_games_thin_data": 0,
+    "games_under_two_market_sources": 100,
+    "stale_evidence_records": 61,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
