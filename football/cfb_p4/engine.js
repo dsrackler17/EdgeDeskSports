@@ -811,6 +811,30 @@
         if (moved) (st.effFresh || (st.effFresh = {}))[t] = (st.effFresh[t] || 0) + 1;
       }
     },
+    /* A FEATURE THE SEASON FEED NEVER SUPPLIES IS LEAGUE AVERAGE, NOT LAST
+       YEAR. Left alone, such a feature keeps the decayed closing value of the
+       trained season all year, and the matchup pairings built on it price that
+       stale value into the line. The held-out test (research/loto.js) replays
+       every season with these features at 0 because the feed has nothing for
+       them, so the live state has to match what was tested: they are set to 0
+       for every team here, and the profile labels them unmeasured. A feature
+       the feed later supplies is absorbed as usual and labelled by its own
+       updates. */
+    resetUnmeasured: function (st, features) {
+      var fs = effFeats(), want = {}, list = [], i, t, f;
+      for (i = 0; i < (features || []).length; i++) {
+        f = String(features[i]);
+        want[f] = true;
+        if (f.indexOf('def_') !== 0) want['def_' + f] = true;
+      }
+      for (i = 0; i < fs.length; i++) if (want[fs[i]]) list.push(fs[i]);
+      if (!list.length) return;
+      for (t in st.eff) if (has(st.eff, t)) {
+        for (i = 0; i < list.length; i++) st.eff[t][list[i]] = 0;
+      }
+      st.effUnmeasured = st.effUnmeasured || {};
+      for (i = 0; i < list.length; i++) st.effUnmeasured[list[i]] = st.season;
+    },
     /* the interpretable Layer-1 subrating bundle for one team */
     profile: function (st, teamKey, isFbs) {
       var P = params();
@@ -857,13 +881,26 @@
           + (seasonsStale ? ', ' + seasonsStale + ' season(s) old' : '')
           + '. No play-level feed has updated it; supply game.team_stats to absorbGame '
           + 'and it becomes current.';
-      var fs = effFeats(), i, ffT = (st.effFreshF && st.effFreshF[teamKey]) || {}, seedFeats = [];
+      var fs = effFeats(), i, ffT = (st.effFreshF && st.effFreshF[teamKey]) || {}, seedFeats = [], unFeats = [];
       var seedConf = clamp(1 - 0.35 * seasonsStale, 0.15, 0.85);
       var seedSrc = 'opponent-adjusted EWMA (play-level) — TRAINED SEED, not updated since';
+      var U = st.effUnmeasured || {};
       for (i = 0; i < fs.length; i++) {
         /* a team with play-level games can still have features the feed never
            supplies: each feature is labelled by its OWN updates */
         var fF = ffT[fs[i]] || 0, seedOnly = fresh && !fF;
+        if (has(U, fs[i]) && !fF) {
+          /* reset to league average at the season break (resetUnmeasured) */
+          unFeats.push(fs[i]);
+          out.efficiency[fs[i]] = M(0, { n: 0, confidence: 0,
+            source: 'league average: not measured by the season\'s play-level feed',
+            basis: 'the play-level feed for season ' + U[fs[i]] + ' does not supply ' + fs[i]
+              + ', so it was reset to the league average at the season break instead of carrying the season '
+              + st.seededThrough + ' value forward',
+            as_of: 'season ' + U[fs[i]] });
+          out.efficiency[fs[i]].unmeasured = true;
+          continue;
+        }
         if (seedOnly && e && isNum(e[fs[i]])) seedFeats.push(fs[i]);
         out.efficiency[fs[i]] = (e && isNum(e[fs[i]]))
           ? M(e[fs[i]], { n: n, confidence: seedOnly ? seedConf : effConf, source: seedOnly ? seedSrc : effSrc,
@@ -875,6 +912,7 @@
       }
       out.efficiency_is_seed = !fresh;
       out.efficiency_seed_features = seedFeats;
+      out.efficiency_unmeasured_features = unFeats;
       return out;
     },
     /* Section XXI — regression of unstable statistics. The shrinkage factor
@@ -1185,14 +1223,15 @@
         + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
       return 2 * R * Math.asin(Math.sqrt(clamp(a, 0, 1)));
     },
-    /* Section XV — SCHEDULE STRESS 0-100 from what the schedule itself
-       shows. Every component is pregame-computable; nothing peeks forward
-       except the identity (not the result) of the next opponent. */
-    scheduleStress: function (s) {
-      var P = params(); if (!P || !P.schedule) return M.missing('schedule-stress weights not trained');
-      if (!s) return M.missing('no schedule context supplied for this side');
-      var w = P.schedule.weights, acc = 0, den = 0, why = [], k, v;
-      var comps = {
+    /* Section XV — SCHEDULE, from what the schedule itself shows. Every
+       component is pregame-computable; nothing peeks forward except the
+       identity (not the result) of the next opponent.
+
+       The eight components for one side, each in [0, 1]: the transform
+       research/train_layers.py schedule_layer fitted the weights on */
+    scheduleComponents: function (s) {
+      if (!s) return null;
+      return {
         short_rest: isNum(s.rest_days) ? clamp((7 - s.rest_days) / 7, 0, 1) : null,
         off_bye: isNum(s.rest_days) ? (s.rest_days >= 12 ? 1 : 0) : null,
         consec_road: isNum(s.consecutive_road) ? clamp(s.consecutive_road / 3, 0, 1) : null,
@@ -1202,6 +1241,57 @@
         prev_opponent_strength: isNum(s.prev_opp_rating) ? clamp((s.prev_opp_rating + 20) / 40, 0, 1) : null,
         lookahead: isNum(s.next_opp_rating) ? clamp((s.next_opp_rating + 20) / 40, 0, 1) : null
       };
+    },
+    /* THE SCHEDULE TERM AS IT WAS TRAINED. schedule_layer regresses the
+       rating residual on HOME MINUS AWAY component differences, so each
+       weight is signed and already in points at its component's maximum
+       (short_rest -4.0 to the side that has it, off_bye +0.7), and the term is
+       sum of w_k (home_k - away_k) over the components measured for both sides.
+
+       It used to be priced from the 0-100 stress index below instead:
+       points_per_stress x (away index - home index) / 100. That read every
+       weight as "stress is bad" (off_bye, tz_last3 and lookahead carry the
+       other sign), floored the index at 0 and divided by 100 a scale already
+       fitted per 50 index points, so it moved the line by 0.001 pts on
+       average where training measured 1.1 (docs/cfb-validation/LOTO.md).
+       The index stays for display and prices nothing.
+
+       Whether the term moves the line is its held-out record's call:
+       params schedule.points_applied puts it in the number. Without it the
+       term is measured and published as shadow points, and is 0 in the fair
+       line, as travel and altitude are. */
+    schedulePoints: function (hS, aS) {
+      var P = params(); if (!P || !P.schedule || !P.schedule.weights) return M.missing('schedule weights not trained');
+      if (!hS && !aS) return M.missing('no schedule context supplied');
+      if (!hS || !aS) return M.missing('schedule context supplied for one side only: the term is a home-minus-away difference');
+      var w = P.schedule.weights, h = situation.scheduleComponents(hS), a = situation.scheduleComponents(aS);
+      var pts = 0, parts = [], nW = 0, k, d;
+      for (k in w) if (has(w, k) && isNum(w[k])) {
+        nW++;
+        if (!isNum(h[k]) || !isNum(a[k])) continue;
+        d = w[k] * (h[k] - a[k]);
+        pts += d;
+        parts.push({ component: k, home: h[k], away: a[k], weight: w[k], points: d });
+      }
+      if (!parts.length) return M.missing('no schedule component measured for both sides');
+      var applied = P.schedule.points_applied === true;
+      var on = M(pts, { n: parts.length, confidence: 0.4,
+        source: 'schedule geometry, home minus away (trained form)',
+        basis: parts.length + ' of ' + nW + ' components measured for both sides',
+        components: parts, weights_basis: P.schedule.basis || null });
+      if (applied) return on;
+      var m = M.missing('schedule measured but NOT applied \u2014 added to the number, the trained-form term did not improve unseen games (docs/cfb-validation/LOTO.md)'
+        + ' (shadow ' + (pts >= 0 ? '+' : '') + pts.toFixed(2) + ' pts, not in the number)');
+      m.shadow_points = pts;
+      m.components = parts;
+      m.basis = on.basis;
+      return m;
+    },
+    scheduleStress: function (s) {
+      var P = params(); if (!P || !P.schedule) return M.missing('schedule-stress weights not trained');
+      if (!s) return M.missing('no schedule context supplied for this side');
+      var w = P.schedule.weights, acc = 0, den = 0, why = [], k, v;
+      var comps = situation.scheduleComponents(s);
       for (k in comps) if (has(comps, k)) {
         v = comps[k];
         if (v == null || !isNum(w[k])) continue;
@@ -2491,13 +2581,15 @@
       return n ? s : null;
     },
     /* net EPA per play (offence minus what the defence allows), home minus
-       away; success rate when EPA is not observed for both sides */
+       away; success rate when EPA is not observed for both sides. A feature
+       reset to league average is not an observation of either team. */
     efficiencyGap: function (hProf, aProf) {
       var pairs = [['epa_per_play', 'def_epa_per_play'], ['success_rate', 'def_success_rate']], i;
       var he = (hProf && hProf.efficiency) || {}, ae = (aProf && aProf.efficiency) || {};
+      var seen = function (m) { return avail(m) && !m.unmeasured; };
       for (i = 0; i < pairs.length; i++) {
         var o = pairs[i][0], d = pairs[i][1];
-        if (avail(he[o]) && avail(he[d]) && avail(ae[o]) && avail(ae[d])) {
+        if (seen(he[o]) && seen(he[d]) && seen(ae[o]) && seen(ae[d])) {
           return (he[o].value - he[d].value) - (ae[o].value - ae[d].value);
         }
       }
@@ -2678,11 +2770,7 @@
       ? M(pts(H.injuries.points) - pts(A.injuries.points), {
           confidence: 0.6, source: 'supplied injury reports' })
       : M.missing('no injury report supplied for either side');
-    var schedGap = (avail(H.schedule) || avail(A.schedule))
-      ? M(((P.schedule && P.schedule.points_per_stress) || 0)
-          * ((avail(A.schedule) ? A.schedule.value : 0) - (avail(H.schedule) ? H.schedule.value : 0)) / 100, {
-          confidence: 0.4, source: 'schedule stress differential' })
-      : M.missing('no schedule context supplied');
+    var schedGap = situation.schedulePoints(H.supplied.schedule, A.supplied.schedule);
     var wx = context.weather(req.weather, H.strength, A.strength);
 
     var gpMin = Math.min(H.blended.games_played == null ? 99 : H.blended.games_played,
@@ -3087,9 +3175,13 @@
         off_field: { home: H.offfield, away: A.offfield }
       },
       contributions: terms.map(function (t) {
-        return { key: t.key, label: t.label, points: pts(t.m),
+        var c = { key: t.key, label: t.label, points: pts(t.m),
           available: avail(t.m), confidence: t.m.confidence,
           source: t.m.source, basis: t.m.basis, reason: t.m.reason };
+        /* a measured-but-unapplied term publishes what it WOULD add, so its
+           held-out test can price it without it touching the number */
+        if (isNum(t.m.shadow_points)) c.shadow_points = t.m.shadow_points;
+        return c;
       }).concat(champOut ? [{ key: 'champion', label: 'priced by ' + champOut.label + ' (its number less V1\'s)',
         points: fairSpread - champOut.v1.margin, available: true, confidence: null, source: champOut.source,
         basis: 'the governance champion\'s stored pregame number less V1\'s (lib/cfb_champion.js)', reason: null }] : []),
@@ -3398,6 +3490,14 @@
       return state;
     },
     seasonBreak: function (state) { strength.seasonBreak(state); return state; },
+    /* Call right after the season break into a season whose play-level feed
+       is known not to supply `features` (the artifact's unavailable_features;
+       each name covers its def_ counterpart). See strength.resetUnmeasured. */
+    resetUnmeasuredEfficiency: function (state, features) {
+      if (!state) return state;
+      strength.resetUnmeasured(state, features);
+      return state;
+    },
     /* Install the richer current FBS rating AFTER replay. This is deliberately
        separate from st.r/st.rf: historical replay still drives game counts,
        scoring, efficiency and uncertainty. By default current availability is
