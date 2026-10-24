@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T19:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1856,10 +1856,98 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1x3vuvxpymepr",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can Georgia Tech’s pass rush get to Mason McKenzie?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.0 points.",
+    "gap": {
+      "points": 0,
+      "toward": "Boston College",
+      "other": "Georgia Tech"
+    },
+    "supporting": [
+      "When Georgia Tech has the ball (pass protection against the pass rush): Georgia Tech’s offense has allowed a sack on 7.5% of its dropbacks, and Boston College’s defense sacks the quarterback on 8.3% of opponent dropbacks (FBS average 5.6%).",
+      "When Georgia Tech has the ball (the red zone): Georgia Tech’s offense succeeds on 37.9% of its red-zone plays, and Boston College’s defense allows success on 33.5% of opponent red-zone plays (FBS average 43.6%).",
+      "When Georgia Tech has the ball (big plays through the air): Georgia Tech’s offense turns 9.0% of its pass plays into explosive gains, and Boston College’s defense gives up explosive gains on 5.8% of opponent pass plays (FBS average 10.3%).",
+      "When Boston College has the ball (big plays on the ground): Boston College’s offense turns 9.0% of its runs into explosive gains, and Georgia Tech’s defense gives up explosive gains on 7.4% of opponent runs (FBS average 6.6%)."
+    ],
+    "contradicting": [
+      "When Georgia Tech has the ball (big plays on the ground): Georgia Tech’s offense turns 10.7% of its runs into explosive gains, and Boston College’s defense gives up explosive gains on 7.2% of opponent runs (FBS average 6.6%).",
+      "When Boston College has the ball (pass protection against the pass rush): Boston College’s offense has allowed a sack on 8.7% of its dropbacks, and Georgia Tech’s defense sacks the quarterback on 6.7% of opponent dropbacks (FBS average 5.6%).",
+      "EdgeDesk’s position-group ratings put Georgia Tech’s quarterback room No. 47 nationally and Boston College’s No. 126.",
+      "EdgeDesk’s position-group ratings put Georgia Tech’s running backs No. 9 nationally and Boston College’s No. 133."
+    ],
+    "quarterbacks": [
+      "Alberto Mendoza has completed 134 of 190 passes (70.5%) for 1,513 yards, 8.0 yards per attempt, 9 touchdowns and 4 interceptions in six games for Georgia Tech, and has been sacked on 13 of 203 dropbacks.",
+      "Mason McKenzie has completed 99 of 167 passes (59.3%) for 1,288 yards, 7.7 yards per attempt, 7 touchdowns and 7 interceptions in six games for Boston College, and has been sacked on 16 of 183 dropbacks.",
+      "Alberto Mendoza does not appear on Georgia Tech’s update 2 availability report.",
+      "Mason McKenzie does not appear on Boston College’s update 2 availability report."
+    ],
+    "availability": [
+      "Georgia Tech’s availability report lists 14 players as out, including offensive linemen Markell Samuel and Ethan Mackenny."
+    ],
+    "script": {
+      "model": [
+        "Boston College’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 8.7% of its dropbacks, and Georgia Tech’s defense sacks the quarterback on 6.7% of opponent dropbacks.",
+        "Boston College’s defense has to slow Georgia Tech on long runs — Georgia Tech’s offense turns 10.7% of its runs into explosive gains.",
+        "Boston College’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.3% of opponent dropbacks, against an offense that has allowed a sack on 7.5% of its dropbacks.",
+        "Boston College’s defense has to come out ahead on big pass plays: it gives up explosive gains on 5.8% of opponent pass plays, against an offense that turns 9.0% of its pass plays into explosive gains."
+      ],
+      "market": [
+        "Georgia Tech’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.7% of opponent dropbacks, against an offense that has allowed a sack on 8.7% of its dropbacks.",
+        "Georgia Tech’s offense has to keep winning on long runs: it turns 10.7% of its runs into explosive gains, and Boston College’s defense gives up explosive gains on 7.2% of opponent runs.",
+        "Mendoza keeps producing at his season rate (70.5% completions, 8.0 yards per attempt, 9 TD, 4 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for Georgia Tech and Boston College.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate (Georgia Tech), sack rate allowed (Boston College) and sack rate (Boston College); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Atlantic Coast Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

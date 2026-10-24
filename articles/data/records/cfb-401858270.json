@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T16:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1807,10 +1807,96 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1hvmsa71i773bh",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can SMU’s pass rush get to Jackson Brousseau?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.9 points.",
+    "gap": {
+      "points": 0.9,
+      "toward": "California",
+      "other": "SMU"
+    },
+    "supporting": [
+      "In his last two games (Boston College and Virginia), Jennings averaged 6.2 yards per attempt, against 11.4 in his four games before that."
+    ],
+    "contradicting": [
+      "When SMU has the ball (big plays through the air): SMU’s offense turns 12.2% of its pass plays into explosive gains, and California’s defense gives up explosive gains on 15.7% of opponent pass plays (FBS average 10.3%).",
+      "When SMU has the ball (big plays on the ground): SMU’s offense turns 8.2% of its runs into explosive gains, and California’s defense gives up explosive gains on 10.5% of opponent runs (FBS average 6.6%).",
+      "When SMU has the ball (pass protection against the pass rush): SMU’s offense has allowed a sack on 3.2% of its dropbacks, and California’s defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.6%).",
+      "When SMU has the ball (the passing game against the pass defense): SMU’s offense averages 9.0 yards per pass attempt, and California’s defense allows 8.0 yards per pass attempt (FBS average 7.4)."
+    ],
+    "quarterbacks": [
+      "Kevin Jennings has completed 140 of 193 passes (72.5%) for 1,859 yards, 9.6 yards per attempt, 16 touchdowns and 5 interceptions in six games for SMU, and has been sacked on 7 of 200 dropbacks.",
+      "Jaron-Keawe Sagapolutele has completed 121 of 180 passes (67.2%) for 1,310 yards, 7.3 yards per attempt, 9 touchdowns and 5 interceptions in six games for California, and has been sacked on 7 of 187 dropbacks.",
+      "Jackson Brousseau has completed 74 of 121 passes (61.2%) for 662 yards, 5.5 yards per attempt, 3 touchdowns and no interceptions in five games for California, and has been sacked on 4 of 125 dropbacks.",
+      "Kevin Jennings does not appear on SMU’s update 2 availability report.",
+      "Jackson Brousseau does not appear on California’s update 2 availability report."
+    ],
+    "availability": [
+      "California’s availability report lists receiver Jordan King as doubtful.",
+      "California’s availability report lists receiver Cooper Perry as doubtful.",
+      "California’s availability report lists receiver Mark Hamper as doubtful.",
+      "California’s availability report lists offensive lineman Bastian Swinney as doubtful.",
+      "California’s availability report lists offensive lineman Jimothy Lewis Jr. as doubtful."
+    ],
+    "script": {
+      "model": [
+        "California’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.5% of its dropbacks, and SMU’s defense sacks the quarterback on 11.4% of opponent dropbacks.",
+        "California’s defense has to slow SMU on long runs — SMU’s offense turns 8.2% of its runs into explosive gains.",
+        "California’s defense has to slow SMU on big pass plays — SMU’s offense turns 12.2% of its pass plays into explosive gains."
+      ],
+      "market": [
+        "SMU’s offense has to keep winning on long runs: it turns 8.2% of its runs into explosive gains, and California’s defense gives up explosive gains on 10.5% of opponent runs.",
+        "SMU’s offense has to keep winning on big pass plays: it turns 12.2% of its pass plays into explosive gains, and California’s defense gives up explosive gains on 15.7% of opponent pass plays.",
+        "SMU’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 11.4% of opponent dropbacks, against an offense that has allowed a sack on 3.5% of its dropbacks."
+      ]
+    },
+    "unknown": [
+      "California’s availability report lists receiver Jordan King as doubtful.",
+      "California’s availability report lists receiver Cooper Perry as doubtful.",
+      "California’s availability report lists receiver Mark Hamper as doubtful.",
+      "California’s availability report lists offensive lineman Bastian Swinney as doubtful.",
+      "California’s availability report lists offensive lineman Jimothy Lewis Jr. as doubtful.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for SMU and California."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (SMU), sack rate allowed (California) and sack rate (California); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Atlantic Coast Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T01:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

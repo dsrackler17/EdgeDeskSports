@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T20:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1920,10 +1920,91 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1vrryif1escec5",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Ohio contain Eastern Michigan’s explosive runs?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Ohio, and its own breakdown accounts for about 1.1 of the 7.2 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 7.2,
+      "toward": "Ohio",
+      "other": "Eastern Michigan"
+    },
+    "supporting": [
+      "When Ohio has the ball (third down): Ohio’s offense converts 54.1% of its third downs, and Eastern Michigan’s defense allows opponents to convert 43.1% of their third downs (FBS average 39.7%).",
+      "When Ohio has the ball (the red zone): Ohio’s offense succeeds on 54.0% of its red-zone plays, and Eastern Michigan’s defense allows success on 52.6% of opponent red-zone plays (FBS average 43.6%).",
+      "When Eastern Michigan has the ball (big plays on the ground): Eastern Michigan’s offense turns 3.5% of its runs into explosive gains, and Ohio’s defense gives up explosive gains on 5.3% of opponent runs (FBS average 6.6%).",
+      "When Ohio has the ball (the line of scrimmage on running plays): Ohio’s offense is stopped at or behind the line on 10.0% of its runs, and Eastern Michigan’s defense stops 18.1% of opponent runs at or behind the line (FBS average 17.4%)."
+    ],
+    "contradicting": [
+      "When Ohio has the ball (big plays through the air): Ohio’s offense turns 6.5% of its pass plays into explosive gains, and Eastern Michigan’s defense gives up explosive gains on 9.1% of opponent pass plays (FBS average 10.3%).",
+      "In his last two games (Kent State and Sacramento State), Vezza averaged 3.4 yards per attempt, against 7.8 in his four games before that.",
+      "When Ohio has the ball (pass protection against the pass rush): Ohio’s offense has allowed a sack on 7.0% of its dropbacks, and Eastern Michigan’s defense sacks the quarterback on 5.1% of opponent dropbacks (FBS average 5.6%).",
+      "When Ohio has the ball (big plays on the ground): Ohio’s offense turns 7.2% of its runs into explosive gains, and Eastern Michigan’s defense gives up explosive gains on 4.5% of opponent runs (FBS average 6.6%)."
+    ],
+    "quarterbacks": [
+      "Nick Poulos has completed 38 of 69 passes (55.1%) for 503 yards, 7.3 yards per attempt, 5 touchdowns and no interceptions in four games for Ohio, and has been sacked on 5 of 74 dropbacks.",
+      "Matt Vezza has completed 41 of 64 passes (64.1%) for 444 yards, 6.9 yards per attempt, 4 touchdowns and 3 interceptions in six games for Ohio, and has been sacked on 6 of 70 dropbacks.",
+      "Noah Kim has completed 168 of 284 passes (59.2%) for 1,692 yards, 6.0 yards per attempt, 11 touchdowns and 4 interceptions in eight games for Eastern Michigan, and has been sacked on 9 of 293 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Ohio’s defense has to come out ahead on long runs: it gives up explosive gains on 5.3% of opponent runs, against an offense that turns 3.5% of its runs into explosive gains.",
+        "Ohio’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 9.1% of opponent pass plays.",
+        "Ohio’s defense has to slow Eastern Michigan on third down — Eastern Michigan’s offense converts 46.1% of its third downs.",
+        "Ohio’s offense has to keep winning in the red zone: it succeeds on 54.0% of its red-zone plays, and Eastern Michigan’s defense allows success on 52.6% of opponent red-zone plays."
+      ],
+      "market": [
+        "Eastern Michigan’s defense has to come out ahead on big pass plays: it gives up explosive gains on 9.1% of opponent pass plays, against an offense that turns 6.5% of its pass plays into explosive gains.",
+        "Eastern Michigan’s offense has to keep winning on third down: it converts 46.1% of its third downs, and Ohio’s defense allows opponents to convert 39.2% of their third downs.",
+        "Eastern Michigan’s offense has to keep winning on long runs: it turns 3.5% of its runs into explosive gains, and Ohio’s defense gives up explosive gains on 5.3% of opponent runs."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Ohio and Eastern Michigan.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Ohio) and sack rate (Eastern Michigan); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "medium",
+        "text": "EdgeDesk’s published number sits 3.9 points from the middle of its own other models."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Ohio: new head coach; returning production at the 18th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

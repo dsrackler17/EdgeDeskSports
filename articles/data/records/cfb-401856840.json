@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T16:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1822,10 +1822,95 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1163sxy1en9vdw",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Texas Tech contain Cincinnati’s explosive runs?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas Tech, and its own breakdown accounts for about 0.0 of the 2.2 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 2.2,
+      "toward": "Texas Tech",
+      "other": "Cincinnati"
+    },
+    "supporting": [
+      "When Texas Tech has the ball (big plays on the ground): Texas Tech’s offense turns 10.0% of its runs into explosive gains, and Cincinnati’s defense gives up explosive gains on 7.8% of opponent runs (FBS average 6.6%).",
+      "When Cincinnati has the ball (big plays through the air): Cincinnati’s offense turns 10.2% of its pass plays into explosive gains, and Texas Tech’s defense gives up explosive gains on 7.3% of opponent pass plays (FBS average 10.3%).",
+      "When Cincinnati has the ball (the line of scrimmage on running plays): Cincinnati’s offense is stopped at or behind the line on 17.9% of its runs, and Texas Tech’s defense stops 22.3% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Texas Tech has the ball (early downs): Texas Tech’s offense succeeds on 51.4% of its first- and second-down plays, and Cincinnati’s defense allows success on 44.0% of first- and second-down plays (FBS average 42.7%)."
+    ],
+    "contradicting": [
+      "When Cincinnati has the ball (the passing game against the pass defense): Cincinnati’s offense averages 9.1 yards per pass attempt, and Texas Tech’s defense allows 7.1 yards per pass attempt (FBS average 7.4).",
+      "JC French IV has completed 103 of 149 passes (69.1%) for 1,246 yards, 8.4 yards per attempt, 8 touchdowns and no interceptions in six games for Cincinnati, and has been sacked on 10 of 159 dropbacks.",
+      "In his last two games (Arizona and West Virginia), French averaged 9.2 yards per attempt, against 7.8 in his four games before that.",
+      "In his last two games (Colorado and Arizona State), Hammond averaged 7.0 yards per attempt, against 8.4 in his four games before that."
+    ],
+    "quarterbacks": [
+      "JC French IV has completed 103 of 149 passes (69.1%) for 1,246 yards, 8.4 yards per attempt, 8 touchdowns and no interceptions in six games for Cincinnati, and has been sacked on 10 of 159 dropbacks.",
+      "Will Hammond has completed 112 of 165 passes (67.9%) for 1,314 yards, 8.0 yards per attempt, 6 touchdowns and 5 interceptions in six games for Texas Tech, and has been sacked on 8 of 173 dropbacks.",
+      "JC French IV does not appear on Cincinnati’s update 2 availability report.",
+      "Will Hammond does not appear on Texas Tech’s update 2 availability report."
+    ],
+    "availability": [
+      "Cincinnati’s availability report lists running back Gi'Bran Payne as questionable.",
+      "Cincinnati’s availability report lists tight end Devyn Zahursky as questionable.",
+      "Texas Tech’s availability report lists six players as out, including offensive linemen Hunter Zambrano and Elias Gillen."
+    ],
+    "script": {
+      "model": [
+        "Texas Tech’s defense has to come out ahead on long runs: it gives up explosive gains on 4.3% of opponent runs, against an offense that turns 8.0% of its runs into explosive gains.",
+        "Texas Tech’s defense has to slow Cincinnati through the air — Cincinnati’s offense averages 9.1 yards per pass attempt.",
+        "Texas Tech’s offense has to keep winning on long runs: it turns 10.0% of its runs into explosive gains, and Cincinnati’s defense gives up explosive gains on 7.8% of opponent runs.",
+        "Texas Tech’s defense has to come out ahead on big pass plays: it gives up explosive gains on 7.3% of opponent pass plays, against an offense that turns 10.2% of its pass plays into explosive gains."
+      ],
+      "market": [
+        "Cincinnati’s offense has to keep winning through the air: it averages 9.1 yards per pass attempt, and Texas Tech’s defense allows 7.1 yards per pass attempt.",
+        "Cincinnati’s offense has to keep winning on long runs: it turns 8.0% of its runs into explosive gains, and Texas Tech’s defense gives up explosive gains on 4.3% of opponent runs.",
+        "French keeps producing at his season rate (69.1% completions, 8.4 yards per attempt, 8 TD, 0 INT)."
+      ]
+    },
+    "unknown": [
+      "Cincinnati’s availability report lists running back Gi'Bran Payne as questionable.",
+      "Cincinnati’s availability report lists tight end Devyn Zahursky as questionable.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Cincinnati and Texas Tech.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Cincinnati), sack rate allowed (Texas Tech) and sack rate (Texas Tech); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Big 12 Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T02:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

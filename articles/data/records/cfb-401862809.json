@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T16:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1904,10 +1904,87 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "oihx5bkc4o19",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Florida Atlantic’s pass rush get to Jacurri Brown?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Florida Atlantic, and its own breakdown accounts for about 0.8 of the 2.3 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 2.3,
+      "toward": "Florida Atlantic",
+      "other": "Rice"
+    },
+    "supporting": [
+      "When Florida Atlantic has the ball (third down): Florida Atlantic’s offense converts 53.4% of its third downs, and Rice’s defense allows opponents to convert 40.4% of their third downs (FBS average 39.7%).",
+      "When Rice has the ball (pass protection against the pass rush): Rice’s offense has allowed a sack on 12.1% of its dropbacks, and Florida Atlantic’s defense sacks the quarterback on 5.2% of opponent dropbacks (FBS average 5.6%).",
+      "When Florida Atlantic has the ball (the line of scrimmage on running plays): Florida Atlantic’s offense is stopped at or behind the line on 11.6% of its runs, and Rice’s defense stops 16.0% of opponent runs at or behind the line (FBS average 17.4%).",
+      "In his last two games (texassouthern and Army), Veltkamp averaged 9.5 yards per attempt, against 7.6 in his four games before that."
+    ],
+    "contradicting": [
+      "When Rice has the ball (big plays on the ground): Rice’s offense turns 6.2% of its runs into explosive gains, and Florida Atlantic’s defense gives up explosive gains on 10.1% of opponent runs (FBS average 6.6%).",
+      "When Rice has the ball (the run game against the run defense): Rice’s offense averages 5.4 yards per carry, and Florida Atlantic’s defense allows 6.2 yards per carry (FBS average 5.1).",
+      "EdgeDesk’s position-group ratings put Rice’s linebackers No. 106 nationally and Florida Atlantic’s No. 135.",
+      "EdgeDesk’s position-group ratings put Rice’s pass defense No. 84 nationally and Florida Atlantic’s No. 110."
+    ],
+    "quarterbacks": [
+      "Caden Veltkamp has completed 162 of 224 passes (72.3%) for 1,825 yards, 8.1 yards per attempt, 15 touchdowns and 3 interceptions in six games for Florida Atlantic, and has been sacked on 11 of 235 dropbacks.",
+      "Jacurri Brown has completed 40 of 83 passes (48.2%) for 478 yards, 5.8 yards per attempt, 3 touchdowns and 2 interceptions in seven games for Rice, and has been sacked on 10 of 93 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Florida Atlantic’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.2% of opponent dropbacks, against an offense that has allowed a sack on 12.1% of its dropbacks.",
+        "Florida Atlantic’s defense has to slow Rice on long runs — Rice’s offense turns 6.2% of its runs into explosive gains.",
+        "Florida Atlantic’s defense has to slow Rice on the ground — Rice’s offense averages 5.4 yards per carry.",
+        "Florida Atlantic’s offense has to keep winning on third down: it converts 53.4% of its third downs, and Rice’s defense allows opponents to convert 40.4% of their third downs."
+      ],
+      "market": [
+        "Rice’s offense has to keep winning on long runs: it turns 6.2% of its runs into explosive gains, and Florida Atlantic’s defense gives up explosive gains on 10.1% of opponent runs.",
+        "Rice’s offense has to keep winning on the ground: it averages 5.4 yards per carry, and Florida Atlantic’s defense allows 6.2 yards per carry.",
+        "Rice’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 12.1% of its dropbacks, and Florida Atlantic’s defense sacks the quarterback on 5.2% of opponent dropbacks."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for Florida Atlantic and Rice.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate (Florida Atlantic) and sack rate allowed (Rice); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

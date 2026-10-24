@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T17:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1851,10 +1851,100 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "zeqomc1bwbxhi",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can Baylor’s pass rush get to Isaiah Marshall?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.5 points.",
+    "gap": {
+      "points": 1.5,
+      "toward": "Kansas",
+      "other": "Baylor"
+    },
+    "supporting": [
+      "When Kansas has the ball (big plays through the air): Kansas’ offense turns 15.8% of its pass plays into explosive gains, and Baylor’s defense gives up explosive gains on 10.0% of opponent pass plays (FBS average 10.3%).",
+      "When Baylor has the ball (the red zone): Baylor’s offense succeeds on 30.7% of its red-zone plays, and Kansas’ defense allows success on 37.6% of opponent red-zone plays (FBS average 43.6%).",
+      "DJ Lagway has completed 91 of 185 passes (49.2%) for 1,098 yards, 5.9 yards per attempt, 8 touchdowns and 3 interceptions in four games for Baylor, and has been sacked on 8 of 193 dropbacks.",
+      "EdgeDesk’s position-group ratings put Kansas’ offensive line No. 35 nationally and Baylor’s No. 85."
+    ],
+    "contradicting": [
+      "When Kansas has the ball (big plays on the ground): Kansas’ offense turns 5.6% of its runs into explosive gains, and Baylor’s defense gives up explosive gains on 3.4% of opponent runs (FBS average 6.6%).",
+      "When Kansas has the ball (pass protection against the pass rush): Kansas’ offense has allowed a sack on 3.3% of its dropbacks, and Baylor’s defense sacks the quarterback on 9.1% of opponent dropbacks (FBS average 5.6%).",
+      "When Kansas has the ball (the run game against the run defense): Kansas’ offense averages 5.2 yards per carry, and Baylor’s defense allows 3.8 yards per carry (FBS average 5.1).",
+      "When Kansas has the ball (the line of scrimmage on running plays): Kansas’ offense is stopped at or behind the line on 15.2% of its runs, and Baylor’s defense stops 24.3% of opponent runs at or behind the line (FBS average 17.4%)."
+    ],
+    "quarterbacks": [
+      "Isaiah Marshall has completed 88 of 167 passes (52.7%) for 1,338 yards, 8.0 yards per attempt, 10 touchdowns and 5 interceptions in six games for Kansas, and has been sacked on 6 of 173 dropbacks.",
+      "DJ Lagway has completed 91 of 185 passes (49.2%) for 1,098 yards, 5.9 yards per attempt, 8 touchdowns and 3 interceptions in four games for Baylor, and has been sacked on 8 of 193 dropbacks.",
+      "Nate Bennett has completed 45 of 61 passes (73.8%) for 566 yards, 9.3 yards per attempt, 5 touchdowns and 2 interceptions in three games for Baylor, and has been sacked on 4 of 65 dropbacks.",
+      "Kansas’ update 2 Big 12 availability report (published Oct. 23) lists quarterback Cole Ballard as probable.",
+      "Isaiah Marshall does not appear on Kansas’ update 2 availability report.",
+      "DJ Lagway does not appear on Baylor’s update 2 availability report."
+    ],
+    "availability": [
+      "Kansas’ availability report lists five players as out, including offensive linemen Kasen Carpenter and Kaden Moody."
+    ],
+    "script": {
+      "model": [
+        "Kansas’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.3% of its dropbacks, and Baylor’s defense sacks the quarterback on 9.1% of opponent dropbacks.",
+        "Kansas’ offense has to hold its own on long runs against a defense that gives up explosive gains on 3.4% of opponent runs.",
+        "Kansas’ offense has to hold its own at the line of scrimmage against a defense that stops 24.3% of opponent runs at or behind the line.",
+        "Kansas’ offense has to keep winning on big pass plays: it turns 15.8% of its pass plays into explosive gains, and Baylor’s defense gives up explosive gains on 10.0% of opponent pass plays."
+      ],
+      "market": [
+        "Baylor’s defense has to come out ahead on long runs: it gives up explosive gains on 3.4% of opponent runs, against an offense that turns 5.6% of its runs into explosive gains.",
+        "Baylor’s defense has to come out ahead at the line of scrimmage: it stops 24.3% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 15.2% of its runs.",
+        "Baylor’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.1% of opponent dropbacks, against an offense that has allowed a sack on 3.3% of its dropbacks."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Kansas and Baylor.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Kansas), sack rate (Kansas), sack rate allowed (Baylor) and sack rate (Baylor); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "Big 12 Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T02:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

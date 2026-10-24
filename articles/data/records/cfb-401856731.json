@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T19:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1820,10 +1820,101 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1vr0yvv1c4mc55",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can Tennessee get South Carolina off the field on third down?",
+    "assessment": "EdgeDesk’s number is 7.6 points closer to Tennessee than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 7.6 points. The measured football evidence leans toward South Carolina, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 7.6,
+      "toward": "Tennessee",
+      "other": "South Carolina"
+    },
+    "supporting": [
+      "When South Carolina has the ball (pass protection against the pass rush): South Carolina’s offense has allowed a sack on 4.7% of its dropbacks, and Tennessee’s defense sacks the quarterback on 11.9% of opponent dropbacks (FBS average 5.6%).",
+      "When South Carolina has the ball (big plays through the air): South Carolina’s offense turns 8.9% of its pass plays into explosive gains, and Tennessee’s defense gives up explosive gains on 4.8% of opponent pass plays (FBS average 10.3%).",
+      "When South Carolina has the ball (the passing game against the pass defense): South Carolina’s offense averages 7.4 yards per pass attempt, and Tennessee’s defense allows 5.7 yards per pass attempt (FBS average 7.4).",
+      "EdgeDesk’s position-group ratings put Tennessee’s secondary No. 5 nationally and South Carolina’s No. 77."
+    ],
+    "contradicting": [
+      "When Tennessee has the ball (pass protection against the pass rush): Tennessee’s offense has allowed a sack on 8.3% of its dropbacks, and South Carolina’s defense sacks the quarterback on 7.5% of opponent dropbacks (FBS average 5.6%).",
+      "When South Carolina has the ball (the run game against the run defense): South Carolina’s offense averages 6.2 yards per carry, and Tennessee’s defense allows 5.0 yards per carry (FBS average 5.1).",
+      "When South Carolina has the ball (the red zone): South Carolina’s offense succeeds on 56.8% of its red-zone plays, and Tennessee’s defense allows success on 44.1% of opponent red-zone plays (FBS average 43.6%).",
+      "In his last two games (Texas and Auburn), Brandon averaged 3.9 yards per attempt, against 8.6 in his three games before that."
+    ],
+    "quarterbacks": [
+      "LaNorris Sellers has completed 115 of 188 passes (61.2%) for 1,338 yards, 7.1 yards per attempt, 12 touchdowns and 4 interceptions in six games for South Carolina, and has been sacked on 10 of 198 dropbacks.",
+      "Faizon Brandon has completed 61 of 101 passes (60.4%) for 697 yards, 6.9 yards per attempt, 7 touchdowns and 1 interception in five games for Tennessee, and has been sacked on 15 of 116 dropbacks.",
+      "George MacIntyre has completed 53 of 80 passes (66.3%) for 592 yards, 7.4 yards per attempt, 2 touchdowns and 3 interceptions in five games for Tennessee, and has been sacked on 3 of 83 dropbacks.",
+      "LaNorris Sellers does not appear on South Carolina’s update 2 availability report.",
+      "George MacIntyre does not appear on Tennessee’s update 2 availability report."
+    ],
+    "availability": [
+      "South Carolina’s availability report lists running back Jawarn Howell as doubtful.",
+      "South Carolina’s availability report lists five players as out, including offensive linemen Josiah Thompson and Seth Smith."
+    ],
+    "script": {
+      "model": [
+        "Tennessee’s defense has to come out ahead on third down: it allows opponents to convert 27.3% of their third downs, against an offense that converts 53.3% of its third downs.",
+        "Tennessee’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 7.5% of opponent dropbacks.",
+        "Tennessee’s defense has to slow South Carolina in the red zone — South Carolina’s offense succeeds on 56.8% of its red-zone plays.",
+        "Tennessee’s defense has to come out ahead on big pass plays: it gives up explosive gains on 4.8% of opponent pass plays, against an offense that turns 8.9% of its pass plays into explosive gains."
+      ],
+      "market": [
+        "South Carolina’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.5% of opponent dropbacks, against an offense that has allowed a sack on 8.3% of its dropbacks.",
+        "South Carolina’s offense has to keep winning in the red zone: it succeeds on 56.8% of its red-zone plays, and Tennessee’s defense allows success on 44.1% of opponent red-zone plays.",
+        "South Carolina’s offense has to keep winning on third down: it converts 53.3% of its third downs, and Tennessee’s defense allows opponents to convert 27.3% of their third downs."
+      ]
+    },
+    "unknown": [
+      "South Carolina’s availability report lists running back Jawarn Howell as doubtful.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for South Carolina.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (South Carolina) and sack rate (South Carolina); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Southeastern Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T00:10:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

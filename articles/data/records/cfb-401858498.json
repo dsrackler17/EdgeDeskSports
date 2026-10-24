@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T16:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1814,10 +1814,105 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "6g5ooo2phdju",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can Rutgers contain Northwestern’s explosive runs?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.1 points.",
+    "gap": {
+      "points": 0.1,
+      "toward": "Rutgers",
+      "other": "Northwestern"
+    },
+    "supporting": [
+      "When Northwestern has the ball (pass protection against the pass rush): Northwestern’s offense has allowed a sack on 8.9% of its dropbacks, and Rutgers’ defense sacks the quarterback on 4.6% of opponent dropbacks (FBS average 5.6%).",
+      "EdgeDesk’s position-group ratings put Rutgers’ offensive line No. 28 nationally and Northwestern’s No. 86.",
+      "When Rutgers has the ball (third down): Rutgers’ offense converts 47.1% of its third downs, and Northwestern’s defense allows opponents to convert 36.2% of their third downs (FBS average 39.7%).",
+      "When Rutgers has the ball (down-to-down efficiency): Rutgers’ offense succeeds on 47.6% of its offensive plays, and Northwestern’s defense allows opponents to succeed on 42.4% of their plays (FBS average 42.4%)."
+    ],
+    "contradicting": [
+      "When Northwestern has the ball (the run game against the run defense): Northwestern’s offense averages 5.6 yards per carry, and Rutgers’ defense allows 6.8 yards per carry (FBS average 5.1).",
+      "When Northwestern has the ball (big plays through the air): Northwestern’s offense turns 15.8% of its pass plays into explosive gains, and Rutgers’ defense gives up explosive gains on 10.9% of opponent pass plays (FBS average 10.3%).",
+      "When Northwestern has the ball (big plays on the ground): Northwestern’s offense turns 9.1% of its runs into explosive gains, and Rutgers’ defense gives up explosive gains on 11.1% of opponent runs (FBS average 6.6%).",
+      "When Northwestern has the ball (the passing game against the pass defense): Northwestern’s offense averages 9.6 yards per pass attempt, and Rutgers’ defense allows 7.5 yards per pass attempt (FBS average 7.4)."
+    ],
+    "quarterbacks": [
+      "Aidan Chiles has completed 98 of 142 passes (69.0%) for 1,398 yards, 9.8 yards per attempt, 9 touchdowns and no interceptions in six games for Northwestern, and has been sacked on 14 of 156 dropbacks.",
+      "Dylan Lonergan has completed 74 of 127 passes (58.3%) for 1,066 yards, 8.4 yards per attempt, 10 touchdowns and 5 interceptions in five games for Rutgers, and has been sacked on 6 of 133 dropbacks.",
+      "AJ Surace has completed 33 of 53 passes (62.3%) for 475 yards, 9.0 yards per attempt, 6 touchdowns and 4 interceptions in four games for Rutgers, and has been sacked on 8 of 61 dropbacks.",
+      "Aidan Chiles does not appear on Northwestern’s update 2 availability report.",
+      "Dylan Lonergan does not appear on Rutgers’ update 2 availability report."
+    ],
+    "availability": [
+      "Northwestern’s availability report lists 11 players as out, including offensive linemen David Anchondo, Ezomo Oratokhai and Jacob Miller.",
+      "Rutgers’ availability report lists running back Antwan Raymond as questionable.",
+      "Rutgers’ availability report lists receiver Jourdin Houston as questionable.",
+      "Rutgers’ availability report lists running back Ja'shon Benjamin as questionable."
+    ],
+    "script": {
+      "model": [
+        "Rutgers’ defense has to come out ahead on long runs: it gives up explosive gains on 11.1% of opponent runs, against an offense that turns 9.1% of its runs into explosive gains.",
+        "Rutgers’ defense has to slow Northwestern on big pass plays — Northwestern’s offense turns 15.8% of its pass plays into explosive gains.",
+        "Rutgers’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 4.6% of opponent dropbacks, against an offense that has allowed a sack on 8.9% of its dropbacks.",
+        "Rutgers’ offense has to keep winning on third down: it converts 47.1% of its third downs, and Northwestern’s defense allows opponents to convert 36.2% of their third downs."
+      ],
+      "market": [
+        "Northwestern’s offense has to keep winning on long runs: it turns 9.1% of its runs into explosive gains, and Rutgers’ defense gives up explosive gains on 11.1% of opponent runs.",
+        "Northwestern’s offense has to keep winning on big pass plays: it turns 15.8% of its pass plays into explosive gains, and Rutgers’ defense gives up explosive gains on 10.9% of opponent pass plays.",
+        "Chiles keeps producing at his season rate (69.0% completions, 9.8 yards per attempt, 9 TD, 0 INT)."
+      ]
+    },
+    "unknown": [
+      "Rutgers’ availability report lists running back Antwan Raymond as questionable.",
+      "Rutgers’ availability report lists receiver Jourdin Houston as questionable.",
+      "Rutgers’ availability report lists running back Ja'shon Benjamin as questionable.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Northwestern and Rutgers.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Northwestern), sack rate (Northwestern), sack rate allowed (Rutgers) and sack rate (Rutgers); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Big Ten Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T19:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1883,10 +1883,79 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1df9ekeo6nnx8",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can Ball State take away Sacramento State’s big plays?",
+    "assessment": "EdgeDesk’s number is 2.0 points closer to Sacramento State than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 2.0 points. The measured football evidence leans toward Ball State, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 2,
+      "toward": "Sacramento State",
+      "other": "Ball State"
+    },
+    "supporting": [
+      "Keldric Luster has completed 119 of 184 passes (64.7%) for 1,075 yards, 5.8 yards per attempt, 7 touchdowns and 4 interceptions in six games for Ball State, and has been sacked on 10 of 194 dropbacks.",
+      "When Sacramento State has the ball (pass protection against the pass rush): Sacramento State’s offense has allowed a sack on 5.0% of its dropbacks, and Ball State’s defense sacks the quarterback on 5.1% of opponent dropbacks (FBS average 5.6%)."
+    ],
+    "contradicting": [
+      "When Sacramento State has the ball (big plays through the air): Sacramento State’s offense turns 2.6% of its pass plays into explosive gains, and Ball State’s defense gives up explosive gains on 11.0% of opponent pass plays (FBS average 10.3%).",
+      "When Sacramento State has the ball (big plays on the ground): Sacramento State’s offense turns 5.3% of its runs into explosive gains, and Ball State’s defense gives up explosive gains on 5.1% of opponent runs (FBS average 6.6%).",
+      "When Ball State has the ball (pass protection against the pass rush): Ball State’s offense has allowed a sack on 5.1% of its dropbacks, and Sacramento State’s defense sacks the quarterback on 4.8% of opponent dropbacks (FBS average 5.6%).",
+      "When Ball State has the ball (big plays on the ground): Ball State’s offense turns 5.3% of its runs into explosive gains, and Sacramento State’s defense gives up explosive gains on 9.4% of opponent runs (FBS average 6.6%)."
+    ],
+    "quarterbacks": [
+      "Keldric Luster has completed 119 of 184 passes (64.7%) for 1,075 yards, 5.8 yards per attempt, 7 touchdowns and 4 interceptions in six games for Ball State, and has been sacked on 10 of 194 dropbacks.",
+      "Tyler Mizzell has completed 24 of 39 passes (61.5%) for 270 yards, 6.9 yards per attempt, 1 touchdown and no interceptions in five games for Ball State, and has been sacked on 2 of 41 dropbacks.",
+      "Jackson Sharman has completed 107 of 193 passes (55.4%) for 1,073 yards, 5.6 yards per attempt, 6 touchdowns and 6 interceptions in six games for Sacramento State, and has been sacked on 9 of 202 dropbacks.",
+      "Carson Conklin has completed 25 of 46 passes (54.3%) for 224 yards, 4.9 yards per attempt, no touchdowns and 1 interception in one game for Sacramento State, and has been sacked on 2 of 48 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Sacramento State’s offense has to keep winning on big pass plays: it turns 2.6% of its pass plays into explosive gains, and Ball State’s defense gives up explosive gains on 11.0% of opponent pass plays.",
+        "Sacramento State’s offense has to hold its own on long runs against a defense that gives up explosive gains on 5.1% of opponent runs.",
+        "Sacramento State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 5.0% of its dropbacks, and Ball State’s defense sacks the quarterback on 5.1% of opponent dropbacks."
+      ],
+      "market": [
+        "Ball State’s defense has to come out ahead on big pass plays: it gives up explosive gains on 11.0% of opponent pass plays, against an offense that turns 2.6% of its pass plays into explosive gains.",
+        "Ball State’s defense has to come out ahead on long runs: it gives up explosive gains on 5.1% of opponent runs, against an offense that turns 5.3% of its runs into explosive gains.",
+        "Luster keeps producing at his season rate (64.7% completions, 5.8 yards per attempt, 7 TD, 4 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Ball State and Sacramento State.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings, injuries and personnel and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Ball State), sack rate (Ball State), sack rate allowed (Sacramento State) and sack rate (Sacramento State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T19:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1894,10 +1894,107 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "jlgluf18d9it1",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": true,
+    "question": "Can Alabama win at the line of scrimmage?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.4 points.",
+    "gap": {
+      "points": 0.4,
+      "toward": "Texas A&M",
+      "other": "Alabama"
+    },
+    "supporting": [
+      "When Alabama has the ball (pass protection against the pass rush): Alabama’s offense has allowed a sack on 10.0% of its dropbacks, and Texas A&M’s defense sacks the quarterback on 2.8% of opponent dropbacks (FBS average 5.6%).",
+      "When Alabama has the ball (third down): Alabama’s offense converts 34.9% of its third downs, and Texas A&M’s defense allows opponents to convert 29.4% of their third downs (FBS average 39.7%).",
+      "In his last two games (Georgia and Tennessee), Russell averaged 5.4 yards per attempt, against 10.7 in his five games before that.",
+      "EdgeDesk’s position-group ratings put Texas A&M’s offensive line No. 15 nationally and Alabama’s No. 122."
+    ],
+    "contradicting": [
+      "When Alabama has the ball (big plays through the air): Alabama’s offense turns 13.6% of its pass plays into explosive gains, and Texas A&M’s defense gives up explosive gains on 12.8% of opponent pass plays (FBS average 10.3%).",
+      "When Alabama has the ball (big plays on the ground): Alabama’s offense turns 10.3% of its runs into explosive gains, and Texas A&M’s defense gives up explosive gains on 5.5% of opponent runs (FBS average 6.6%).",
+      "When Texas A&M has the ball (pass protection against the pass rush): Texas A&M’s offense has allowed a sack on 5.2% of its dropbacks, and Alabama’s defense sacks the quarterback on 9.1% of opponent dropbacks (FBS average 5.6%).",
+      "When Alabama has the ball (the line of scrimmage on running plays): Alabama’s offense is stopped at or behind the line on 14.6% of its runs, and Texas A&M’s defense stops 16.0% of opponent runs at or behind the line (FBS average 17.4%)."
+    ],
+    "quarterbacks": [
+      "Keelon Russell has completed 129 of 194 passes (66.5%) for 1,746 yards, 9.0 yards per attempt, 12 touchdowns and 4 interceptions in seven games for Alabama, and has been sacked on 21 of 215 dropbacks.",
+      "Marcel Reed has completed 112 of 200 passes (56.0%) for 1,272 yards, 6.4 yards per attempt, 7 touchdowns and 6 interceptions in seven games for Texas A&M, and has been sacked on 11 of 211 dropbacks.",
+      "Brady Hart has completed 12 of 21 passes (57.1%) for 143 yards, 6.8 yards per attempt, 2 touchdowns and 1 interception in three games for Texas A&M, and has been sacked on 0 of 21 dropbacks.",
+      "Keelon Russell does not appear on Alabama’s update 2 availability report.",
+      "Marcel Reed does not appear on Texas A&M’s update 2 availability report."
+    ],
+    "availability": [
+      "Alabama’s availability report lists running back EJ Crowell as doubtful.",
+      "Alabama’s availability report lists offensive lineman Racin Delgatty as doubtful."
+    ],
+    "script": {
+      "model": [
+        "Texas A&M’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 14.4% of its runs, and Alabama’s defense stops 20.4% of opponent runs at or behind the line.",
+        "Texas A&M’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 9.1% of opponent dropbacks.",
+        "Texas A&M’s defense has to slow Alabama on long runs — Alabama’s offense turns 10.3% of its runs into explosive gains.",
+        "Texas A&M’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 2.8% of opponent dropbacks, against an offense that has allowed a sack on 10.0% of its dropbacks."
+      ],
+      "market": [
+        "Alabama’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.1% of opponent dropbacks, against an offense that has allowed a sack on 5.2% of its dropbacks.",
+        "Alabama’s offense has to keep winning on long runs: it turns 10.3% of its runs into explosive gains, and Texas A&M’s defense gives up explosive gains on 5.5% of opponent runs.",
+        "Alabama’s defense has to come out ahead at the line of scrimmage: it stops 20.4% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 14.4% of its runs."
+      ]
+    },
+    "unknown": [
+      "Alabama’s availability report lists running back EJ Crowell as doubtful.",
+      "Alabama’s availability report lists offensive lineman Racin Delgatty as doubtful.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Alabama and Texas A&M.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Alabama), sack rate (Alabama), sack rate allowed (Texas A&M) and sack rate (Texas A&M); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "DATA_FAULT",
+        "severity": "high",
+        "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "Southeastern Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T00:10:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T16:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1875,10 +1875,97 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1excbay1tnlrh4",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Pittsburgh win at the line of scrimmage?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Miami, and its own breakdown accounts for about 1.1 of the 4.3 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 4.3,
+      "toward": "Miami",
+      "other": "Pittsburgh"
+    },
+    "supporting": [
+      "When Miami has the ball (pass protection against the pass rush): Miami’s offense has allowed a sack on 2.3% of its dropbacks, and Pittsburgh’s defense sacks the quarterback on 4.9% of opponent dropbacks (FBS average 5.6%).",
+      "When Miami has the ball (big plays through the air): Miami’s offense turns 16.3% of its pass plays into explosive gains, and Pittsburgh’s defense gives up explosive gains on 12.1% of opponent pass plays (FBS average 10.3%).",
+      "When Miami has the ball (the passing game against the pass defense): Miami’s offense averages 9.7 yards per pass attempt, and Pittsburgh’s defense allows 8.5 yards per pass attempt (FBS average 7.4).",
+      "When Miami has the ball (third down): Miami’s offense converts 52.1% of its third downs, and Pittsburgh’s defense allows opponents to convert 37.8% of their third downs (FBS average 39.7%)."
+    ],
+    "contradicting": [
+      "When Pittsburgh has the ball (pass protection against the pass rush): Pittsburgh’s offense has allowed a sack on 3.1% of its dropbacks, and Miami’s defense sacks the quarterback on 8.5% of opponent dropbacks (FBS average 5.6%).",
+      "When Pittsburgh has the ball (the line of scrimmage on running plays): Pittsburgh’s offense is stopped at or behind the line on 8.3% of its runs, and Miami’s defense stops 16.0% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Miami has the ball (the run game against the run defense): Miami’s offense averages 6.0 yards per carry, and Pittsburgh’s defense allows 3.1 yards per carry (FBS average 5.1).",
+      "When Miami has the ball (big plays on the ground): Miami’s offense turns 7.8% of its runs into explosive gains, and Pittsburgh’s defense gives up explosive gains on 3.9% of opponent runs (FBS average 6.6%)."
+    ],
+    "quarterbacks": [
+      "Darian Mensah has completed 135 of 168 passes (80.4%) for 1,771 yards, 10.5 yards per attempt, 18 touchdowns and 1 interception in six games for Miami, and has been sacked on 5 of 173 dropbacks.",
+      "Luke Nickel has completed 14 of 19 passes (73.7%) for 193 yards, 10.2 yards per attempt, 3 touchdowns and 1 interception in three games for Miami, and has been sacked on 1 of 20 dropbacks.",
+      "Mason Heintschel has completed 98 of 148 passes (66.2%) for 1,313 yards, 8.9 yards per attempt, 14 touchdowns and 1 interception in five games for Pittsburgh, and has been sacked on 5 of 153 dropbacks.",
+      "Holden Geriner has completed 46 of 70 passes (65.7%) for 438 yards, 6.3 yards per attempt, 2 touchdowns and 2 interceptions in four games for Pittsburgh, and has been sacked on 2 of 72 dropbacks.",
+      "Darian Mensah does not appear on Miami’s update 2 availability report.",
+      "Pittsburgh’s update 2 ACC availability report (published Oct. 23) lists quarterback Mason Heintschel as out.",
+      "Corey Dailey does not appear on Pittsburgh’s update 2 availability report."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Miami’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 8.3% of its runs, and Pittsburgh’s defense stops 27.7% of opponent runs at or behind the line.",
+        "Miami’s defense has to slow Pittsburgh at the line of scrimmage — Pittsburgh’s offense is stopped at or behind the line on 8.3% of its runs.",
+        "Miami’s defense has to slow Pittsburgh in the pass-rush matchup — Pittsburgh’s offense has allowed a sack on 3.1% of its dropbacks.",
+        "Miami’s offense has to keep winning on big pass plays: it turns 16.3% of its pass plays into explosive gains, and Pittsburgh’s defense gives up explosive gains on 12.1% of opponent pass plays."
+      ],
+      "market": [
+        "Pittsburgh’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 8.3% of its runs, and Miami’s defense stops 16.0% of opponent runs at or behind the line.",
+        "Pittsburgh’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.1% of its dropbacks, and Miami’s defense sacks the quarterback on 8.5% of opponent dropbacks.",
+        "Pittsburgh’s defense has to come out ahead at the line of scrimmage: it stops 27.7% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 8.3% of its runs."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed for Pittsburgh.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Pittsburgh); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "QB_REPLACEMENT_GENERIC",
+        "severity": "medium",
+        "text": "The availability report lists Mason Heintschel out, and EdgeDesk’s main model subtracts a generic quarterback absence (3.9 points) from Pittsburgh — it does not price the replacement’s own play (Holden Geriner: 65.7% completions, 6.3 yards per attempt, 2 TD, 2 INT)."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Atlantic Coast Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

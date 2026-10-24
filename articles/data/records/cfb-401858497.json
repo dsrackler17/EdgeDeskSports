@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T19:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1863,10 +1863,97 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1pgr3xf157qhvl",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Iowa’s pass rush get to Drake Lindsey?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Iowa, and its own breakdown accounts for about 0.0 of the 3.1 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 3.1,
+      "toward": "Iowa",
+      "other": "Minnesota"
+    },
+    "supporting": [
+      "When Minnesota has the ball (the run game against the run defense): Minnesota’s offense averages 3.6 yards per carry, and Iowa’s defense allows 3.8 yards per carry (FBS average 5.1).",
+      "When Minnesota has the ball (big plays on the ground): Minnesota’s offense turns 3.7% of its runs into explosive gains, and Iowa’s defense gives up explosive gains on 2.7% of opponent runs (FBS average 6.6%).",
+      "When Minnesota has the ball (third down): Minnesota’s offense converts 29.8% of its third downs, and Iowa’s defense allows opponents to convert 38.8% of their third downs (FBS average 39.7%).",
+      "When Iowa has the ball (the line of scrimmage on running plays): Iowa’s offense is stopped at or behind the line on 13.8% of its runs, and Minnesota’s defense stops 15.4% of opponent runs at or behind the line (FBS average 17.4%)."
+    ],
+    "contradicting": [
+      "In his last two games (Michigan and Ohio State), Brown averaged 5.8 yards per attempt, against 7.9 in his three games before that.",
+      "EdgeDesk’s position-group ratings put Minnesota’s pass defense No. 37 nationally and Iowa’s No. 79."
+    ],
+    "quarterbacks": [
+      "Drake Lindsey has completed 128 of 196 passes (65.3%) for 1,350 yards, 6.9 yards per attempt, 10 touchdowns and 5 interceptions in six games for Minnesota, and has been sacked on 2 of 198 dropbacks.",
+      "Hank Brown has completed 78 of 124 passes (62.9%) for 850 yards, 6.9 yards per attempt, 5 touchdowns and 1 interception in five games for Iowa, and has been sacked on 4 of 128 dropbacks.",
+      "Jeremy Hecklinski has completed 31 of 50 passes (62.0%) for 386 yards, 7.7 yards per attempt, 4 touchdowns and 1 interception in four games for Iowa, and has been sacked on 1 of 51 dropbacks.",
+      "Minnesota’s update 2 Big Ten availability report (published Oct. 23) lists quarterback Michael Merdinger as out.",
+      "Drake Lindsey does not appear on Minnesota’s update 2 availability report.",
+      "Jeremy Hecklinski does not appear on Iowa’s update 2 availability report."
+    ],
+    "availability": [
+      "Minnesota’s availability report lists eight players as out, including offensive linemen Brett Carroll and Ashton Beers."
+    ],
+    "script": {
+      "model": [
+        "Iowa’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.6% of opponent dropbacks, against an offense that has allowed a sack on 1.4% of its dropbacks.",
+        "Iowa’s defense has to come out ahead on long runs: it gives up explosive gains on 2.7% of opponent runs, against an offense that turns 3.7% of its runs into explosive gains.",
+        "Iowa’s defense has to come out ahead on the ground: it allows 3.8 yards per carry, against an offense that averages 3.6 yards per carry.",
+        "Iowa’s quarterback situation has to settle: Hank Brown has taken 47% of Iowa’s recent dropbacks and Jeremy Hecklinski 39%."
+      ],
+      "market": [
+        "Minnesota’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 1.4% of its dropbacks, and Iowa’s defense sacks the quarterback on 10.6% of opponent dropbacks.",
+        "Lindsey keeps producing at his season rate (65.3% completions, 6.9 yards per attempt, 10 TD, 5 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Minnesota and Iowa.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Minnesota), sack rate (Minnesota), sack rate allowed (Iowa) and sack rate (Iowa); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "Big Ten Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T20:41:18.744Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }
