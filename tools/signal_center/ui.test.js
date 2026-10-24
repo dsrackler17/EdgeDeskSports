@@ -72,7 +72,11 @@ R.forEach(([h, want]) => chk('parseHash ' + h, JSON.stringify(UI.parseHash(h)) =
 });
 
 /* ---- filters ---- */
-chk('the default filters send nothing', Object.keys(UI.filtersToRpc({ sort: 'recent', scope: 'active' })).length === 0, UI.filtersToRpc({ sort: 'recent', scope: 'active' }));
+chk('the default filters count as none set', Object.keys(UI.filtersToRpc({ sort: 'recent', scope: UI.DEFAULT_SCOPE })).length === 0, UI.filtersToRpc({ sort: 'recent', scope: UI.DEFAULT_SCOPE }));
+chk('the feed is sent its default scope explicitly: the latest per subject, current and past (the door alone would show only active)', UI.feedArgs({ sort: 'recent', scope: UI.DEFAULT_SCOPE }, { admin: false, mode: 'live' }).scope === 'timeline');
+chk('…and a reader’s choice of scope wins', UI.feedArgs({ scope: 'active' }, {}).scope === 'active');
+chk('an operator in shadow mode sees the unpublished signals by default', UI.feedArgs({}, { admin: true, mode: 'shadow' }).include_shadow === true && UI.feedArgs({}, { admin: false, mode: 'shadow' }).include_shadow === undefined && UI.feedArgs({}, { admin: true, mode: 'live' }).include_shadow === undefined);
+chk('…until they untick it', UI.feedArgs({ include_shadow: '' }, { admin: true, mode: 'shadow' }).include_shadow === undefined);
 const fr = UI.filtersToRpc({ sport: 'cfb', category: 'MARKET_DIVERGENCE', min_label: 'Notable', team: ' Texas Tech ', sort: 'shift', scope: 'history', evidence: '', reliability: null });
 chk('the filters a reader set reach the door, trimmed; the empty ones do not', fr.sport === 'cfb' && fr.category === 'MARKET_DIVERGENCE' && fr.min_label === 'Notable' && fr.team === 'Texas Tech' && fr.sort === 'shift' && fr.scope === 'history' && !('evidence' in fr) && !('reliability' in fr), fr);
 
@@ -95,6 +99,16 @@ chk('a full item under preview access is still locked', /sc-locked/.test(UI.rend
   chk('full card: "Why?" names the signal it opens', /data-sc-open="5"/.test(html) && /aria-label="Why: open the evidence for /.test(html));
   const dv = UI.renderCard(item(div, 6, true), 'full', NOW), dt = strip(dv);
   chk('full divergence card: EdgeDesk vs the named book, no-vig', /EdgeDesk/.test(dt) && dt.indexOf(div.values.previous.book) >= 0 && /no-vig/.test(dt), dt.slice(0, 240));
+}
+/* ---- a backfilled card: when it happened, and that it was found later ---- */
+{
+  const it = Object.assign(item(shift, 7, true), { backfilled: true, signal_at: '2026-10-11T15:59:20.307Z', first_detected_at: new Date(NOW).toISOString() });
+  const t = strip(UI.renderCard(it, 'full', NOW));
+  chk('backfilled card: dated by its record, marked found in the ledger later', /recorded Oct 11/.test(t) && /found in the ledger later/.test(t) && !/detected just now/.test(t), t.slice(0, 260));
+  const live = strip(UI.renderCard(Object.assign(item(shift, 8, true), { signal_at: new Date(NOW - 30 * 60000).toISOString() }), 'full', NOW));
+  chk('a live card still says when it was detected', /detected 30 min ago/.test(live), live.slice(0, 200));
+  const pt = strip(UI.renderPulse({ published: 12, major: 2, backfilled: 9, includes_unpublished: true }, 168));
+  chk('pulse: says how many were found later, and when an operator sees unpublished counts', /9 of these were found in EdgeDesk’s ledgers after the fact/.test(pt) && /not published yet/.test(pt), pt);
 }
 /* ---- the feed ---- */
 {

@@ -9,8 +9,9 @@ compares records that answer the same question.
 | --- | --- | --- |
 | `football/game_research/history/<season>.jsonl` | Append-only NFL and CFB game-research snapshots: win probability, fair spread and total, model version, inputs (records, ranks, kickoff, venue, availability, model run time) | Forecast shifts, their input changes, the rarity reference |
 | `football/game_research/current.json` | The current research per game, with the QB context | Model identity, availability context |
-| `performance/ledger/forecasts/<sport>-2026.jsonl` | Hash-chained pregame forecasts (NBA, NHL, WNBA, NFL, CFB…) | Forecast shifts outside football research; the model side of divergences |
-| `performance/ledger/quotes/<sport>-2026.jsonl` | ESPN-relayed DraftKings two-way prices with `captured_at` | Market divergence, convergence, line movement |
+| `performance/ledger/forecasts/<sport>-2026.jsonl` | Hash-chained pregame forecasts (NBA, NHL, WNBA, NFL, CFB…). Rows imported from earlier records carry `recorded_at` (from the record's git history) instead of `captured_at` | Forecast shifts outside football research. For NFL and CFB, the stretch before research covered a game (from 2026-09-11), as its own series. The model side of divergences |
+| `performance/ledger/quotes/<sport>-2026.jsonl` | ESPN-relayed DraftKings two-way prices with `captured_at` | NBA and NHL divergence, convergence, line movement |
+| `record/football/quotes/<sport>_2026.jsonl` | Every DraftKings reading EdgeDesk captured through ESPN since 2026-10-03, with the teams as ESPN printed them | NFL and CFB divergence (replayed point in time), convergence, line movement |
 | `performance/data/summary.json` | Live grading: Brier, log loss, calibration bands with Wilson intervals, market comparison | Model DNA, reliability warnings |
 | `engine/registry.json` | Out-of-sample backtest readiness per model and market | Model DNA backtest rows |
 | `football/availability/reports/*.json` | Dated CFB availability reports (`published_at`) | Availability changes (CFB, QB only) |
@@ -43,7 +44,10 @@ database (service) ─┘          (read)                    (two-pass rarity)  
    above, through the service role, with retries and a request budget of 400.
 2. **Detect.** `evaluate.js` runs the engine twice. The first pass builds each
    league's reference distribution of comparable changes. The second scores each
-   candidate against changes recorded *before* it (point in time).
+   candidate against changes recorded *before* it (point in time). Past
+   model–market boards are rebuilt at each capture pass from the records stamped
+   by then (`replayMarket`). A change found more than 180 minutes after its record
+   is scored as of that record and marked backfilled (METHODOLOGY.md §3).
 3. **Verify.** Every payload carries its checks. A failed check makes it
    UNVERIFIED, and an unverified signal never reaches a reader. The server
    re-checks simulator signals against `sim_team_results` at ingest.
@@ -83,7 +87,7 @@ a door and every invariant lives in one place.
 | --- | --- |
 | `sc_config` / `sc_config_log` | mode (`shadow`/`live`), live sports, free-tier limits, notice and graphic rules; every change logged |
 | `sc_runs` | one row per evaluation (a lease: one at a time) |
-| `sc_signals` | one row per signal identity: current version, lifecycle, publication, and the columns the feed filters and sorts on |
+| `sc_signals` | one row per signal identity: current version, lifecycle, publication, and the columns the feed filters and sorts on. `signal_at` (the moment it describes) and `backfilled` are fixed at the first version |
 | `sc_signal_versions` | **append-only** full payloads with SHA-256 |
 | `sc_signal_events` | **append-only** audit trail (detected, versioned, published, held, withdrawn, superseded, expired, invalidated, graphic and notice events, server checks) |
 | `sc_graphics` | render content per (version, template, template version, format). Content is immutable; only status (READY/FAILED/OUTDATED/WITHDRAWN) and operator approval (NONE/APPROVED/REVOKED) move. Outdating a graphic revokes its approval. |
@@ -99,18 +103,25 @@ a door and every invariant lives in one place.
 | anyone (`anon`, `authenticated`) | `sc_status()`, `sc_pulse(hours)` (counts only), `sc_public_feed(limit)` (number-free headlines, at most `free.feed_limit`, plus example graphics of events that passed ≥ 72 h ago) |
 | a signed-in account | `sc_feed(filters, cursor, limit)`, `sc_signal(id)`, `sc_signal_version(id, version)`, `sc_model_dna_current(sport)`, `sc_my_preferences()`, `sc_save_preferences(p)`, `sc_unread_count()`. Each decides inside: Full Access (`sc_viewer_entitled()` → `community_is_entitled`, fail closed) gets the numbers; anyone else gets the preview or "locked". |
 | operators | `sc_admin_queue`, `sc_admin_act` (publish, hold, withdraw, preview pin, regenerate), `sc_admin_graphic` (approve/revoke external, withdraw), `sc_admin_set_mode`, `sc_admin_runs`, `sc_admin_failures`, `sc_admin_resolve_failure`. Each calls `sc_require_admin()` → `billing_is_admin()`. |
-| the job (`service_role` only) | `sc_begin_run`, `sc_current`, `sc_prior_divergences`, `sc_active`, `sc_graphics_due`, `sc_ingest`, `sc_put_graphics`, `sc_put_dna`, `sc_fail`, `sc_expire`, `sc_notify`, `sc_finish_run` |
+| the job (`service_role` only) | `sc_begin_run`, `sc_current`, `sc_prior_divergences`, `sc_active`, `sc_graphics_due`, `sc_ingest`, `sc_publish_pending`, `sc_put_graphics`, `sc_put_dna`, `sc_fail`, `sc_expire`, `sc_notify`, `sc_finish_run` |
 
 The feed is keyset-paged. The cursor is base64 `{sort, v, id}`, and a cursor from
-another sort is refused. Sorts: recent, largest shift, largest disagreement,
-evidence quality, rarity, score. At 5,000 signals the first page, a filtered page
+another sort is refused. Sorts: recent (by `signal_at`), largest shift, largest
+disagreement, evidence quality, rarity, score. Scopes: `active` (the door's
+default), `timeline` (the latest per subject, current and past; the terminal's
+default), `history` and `all`. At 5,000 signals the first page, a filtered page
 and the 7-day pulse each answer in about 30–55 ms, including the psql round trip
-(`tools/signal_center/sql.test.js`). The recent sort uses `sc_signals_feed_idx`.
+(`tools/signal_center/sql.test.js`). The recent sort uses `sc_signals_time_idx`.
 
 **Publication rule.** A signal is published only when the run began in
-`live` mode, its sport is in `live_sports`, it is VERIFIED and not a fixture, and
-its label is at least `publish.min_label` (Routine). An operator's hold or
-withdrawal sticks across later versions.
+`live` mode, its sport is in `live_sports`, it is VERIFIED and not a fixture, it is
+not withdrawn, and its label is at least `publish.min_label` (Routine). History is
+published as history: expired, or superseded by a newer record. A convergence is
+recorded once per disagreement (`sc_prior_divergences` leaves out a disagreement whose
+closing is on record). A live run also
+publishes, by the same rule, what was stored while in shadow (`sc_publish_pending`).
+An operator's hold or withdrawal sticks across later versions. Notices go only to
+fresh, active signals that were not found later.
 
 ## 5. Per-sport capabilities
 

@@ -162,7 +162,7 @@
      same renderer the terminal uses; they load only when there is one */
   function examples(list) {
     if (!list || !list.length) return;
-    var libs = ['/lib/edgedesk_calc.js?v=20261008i', '/lib/edgedesk_game_graphic.js?v=20261022edge1', '/lib/edgedesk_signal_engine.js?v=20261024sc1', '/lib/edgedesk_signal_graphic.js?v=20261024sc1'];
+    var libs = ['/lib/edgedesk_calc.js?v=20261008i', '/lib/edgedesk_game_graphic.js?v=20261022edge1', '/lib/edgedesk_signal_engine.js?v=20261024sc2', '/lib/edgedesk_signal_graphic.js?v=20261024sc1'];
     libs.reduce(function (p, src) { return p.then(function () { return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }); }, Promise.resolve())
       .then(function () {
         $('spExamples').hidden = false;

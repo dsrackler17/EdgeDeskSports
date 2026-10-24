@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-24 — Signal Center: the first run stores, and the season's history is found point in time
+
+The first production runs after the schema was applied evaluated 367 signals and stored none: every write failed with `function digest(bytea, unknown) does not exist`. Signal Center showed "No evaluation has completed yet" and an empty feed. This fixes that, and backfills the season from the records EdgeDesk already keeps. Each signal is dated when it happened and marked as found later.
+
+- **The write fix** (`supabase/signal_center.sql`, mirrored): Supabase keeps pgcrypto in the `extensions` schema, which the doors' pinned `search_path` does not reach, so `digest()` failed there. The hashes now use core `sha256()`, the same lesson `supabase/games_social.sql` records. The SQL suite now places pgcrypto in `extensions` as Supabase does, so it reproduced the production failure before the fix. A static check refuses any pgcrypto call.
+- **More history from the existing records** (`tools/signal_center/sources.js`):
+  - Imported performance-ledger rows were dropped because their `capture.captured_at` is null. They are now read at their `recorded_at`, taken from the record's git history. This affects 70 NBA, 162 NHL and 929 CFB rows.
+  - NFL and CFB forecasts from the ledger now count back to 2026-09-11, before game research began (2026-10-16). Each is its own series, never paired with a research snapshot.
+  - NFL and CFB prices come from `record/football/quotes/`: every DraftKings reading since 2026-10-03, with the teams named. One capture path per sport.
+- **Point in time** (`lib/edgedesk_signal_engine.js`, `E.SPEC.backfill`): a change found more than 180 minutes after its record is scored as of that record and marked `backfilled`. Its detection time stays the true one. Neither field changes a version.
+- **Past model–market boards are replayed** (`tools/signal_center/evaluate.js` `replayMarket`). At each capture pass, each game's latest snapshot and price are judged by the same engine with now = the pass. No later record is read. There is one card per disagreement episode (a new one only when the gap moved ≥ 2 pp) and one convergence when it closes.
+- **The database places history** (same file, additive and idempotent):
+  - `sc_signals.backfilled` and `signal_at` (the moment a signal describes) are fixed at the first version.
+  - Older signals are superseded by newer records in time order, whichever was found first.
+  - A live run publishes verified history (expired or superseded) and, through the new job door `sc_publish_pending`, what was stored while in shadow. Holds stick, and backfilled signals never become notices.
+  - The feed sorts and filters by `signal_at`, and gains the `timeline` scope (latest per subject, current and past). The pulse counts by `signal_at` and tells an operator in shadow mode that it includes unpublished signals.
+  - A disagreement whose convergence is on record is no longer offered for another (`sc_prior_divergences`). Previously every later quote made a new convergence card.
+- **The terminal seat** lands on the timeline. A backfilled card reads "recorded <time> · found in the ledger later". An operator in shadow mode sees the unpublished signals by default, as the status bar already said.
+- **Audit:** every number in the 745 signals of a dry run (2026-10-24) was re-derived from the raw files by an independent checker (its own de-vig and exact-decimal rounding). It found 0 issues: values, orientation, source citation, time order, pregame, and that no comparison read a record stamped after its board. This audit caught one bug before release: replayed disagreements had cited the research file for ledger snapshots.
+
+Tests: `engine.test.js` 125, `registry.test.js` 186, `ui.test.js` 96, `graphics.test.js` 268, `sql.test.js` 165, `worker.test.js` 36, `graphics.e2e.js` 200, `ui.e2e.js` 123, `pages.e2e.js` 58; navigation 263 + 172.
+
 ## 2026-10-23 — Signal Center: what changed in EdgeDesk's research, why, and whether the evidence supports it
 
 A new first seat in the terminal, **Signals** (`app.html#signals`, alias `#signal-center`). It is backed by a detection engine, an additive database layer, a graphics template family, a public preview and an operator console. **Nothing is deployed:** the migration is not applied, the hourly run is off, and Signal Center starts in shadow mode (docs/signal-center/DEPLOYMENT.md).

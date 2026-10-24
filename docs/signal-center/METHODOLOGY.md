@@ -19,6 +19,9 @@ Two numbers are compared only when they answer the same question. Otherwise ther
   refused.
 - **In time order, before the event**: the later record is after the earlier one, and both precede kickoff. A
   signal detected after its event started is stored as EXPIRED, never as current.
+- **One pipeline per comparison**: a performance-ledger row is never compared with a game-research snapshot, and
+  one capture path supplies each sport's prices (NFL and CFB: the football quote record; NBA and NHL: the
+  performance ledger).
 
 What a candidate fails is recorded in the run's `refused` list with its reason, for example "quote is 279 min old
 (live window 180 min): not a current price". Nothing is filled in.
@@ -61,8 +64,24 @@ unexplained forecast shifts are reported as unexplained.
 
 Each signal also separates **facts** (dated, sourced) from **estimates** (the model's). Its **timing** is kept as
 separate facts: the event, source published, forecast calculated, recorded by EdgeDesk, detected by Signal Center,
-published. An earlier source timestamp never proves EdgeDesk knew earlier. A signal found in the append-only ledger
-after the fact is marked *found in the ledger later*.
+published. An earlier source timestamp never proves EdgeDesk knew earlier.
+
+**Found in the ledger later** (`E.SPEC.backfill`). Signal Center reads every record back to the start of each
+ledger, so most of the season is found after the fact. A change found more than 180 minutes after its source record
+is:
+
+- **scored as of that record**: freshness and relevance at that moment, which is the score the hourly evaluation
+  would have given it when the record appeared. It is not marked down as stale for having been found late;
+- **placed at that record** (`signal_at`): the feed sorts by it and the pulse counts it on the day it happened;
+- **marked** *found in the ledger later*, with its true detection time kept beside it. EdgeDesk did not show it at
+  the time, and the page never suggests it did.
+
+**Past model–market boards are replayed, never reconstructed from later data.** At each capture pass the board is
+rebuilt from records stamped at or before that moment: each game's latest snapshot and its latest named price (live
+window 180 minutes, model at most 36 hours old). The engine judges it with now set to the pass. A disagreement is
+kept the first time it crossed the floor. A refreshed snapshot with the same gap is the same story, so a new card
+needs the gap to move at least 2 pp (the rule for a new version). A convergence is kept once, when the gap closed.
+Prices without team names are not replayed, because only today's slate could orient them.
 
 ## 4. Verification
 
@@ -86,7 +105,8 @@ against `sim_team_results` before storing it.
   ages). A new version is written only when something material changed. `E.materialUpdate` decides, and the
   reason is stored.
 - **Lifecycle:** ACTIVE → SUPERSEDED (a newer signal about the same subject and outcome), EXPIRED (the event
-  started) or WITHDRAWN (invalidated or by an operator, with a reason). **Publication:** SHADOW, PUBLISHED, HELD
+  started) or WITHDRAWN (invalidated or by an operator, with a reason). Supersession follows the records' time,
+  not the order things were found: an older record found after a newer one is stored SUPERSEDED at once. **Publication:** SHADOW, PUBLISHED, HELD
   or WITHDRAWN. An operator's decision sticks.
 - Versions, events and Model DNA snapshots are append-only. The database refuses updates and deletes, so the
   point-in-time history is real.
@@ -106,7 +126,8 @@ against `sim_team_results` before storing it.
 | relevance | 0.05 | 1 when the event is inside 7 days (or a season outcome still open); 0.5 later; 0 once started |
 
 Penalties: a LIMITED source record −10; a source with no publication or capture time −10; a model version change
-between the records −15 (and no rarity at all, since such a move is not comparable).
+between the records −15 (and no rarity at all, since such a move is not comparable). A signal found in the ledger
+later is scored at its record's time (§3).
 
 Labels: **Major** 70+, **Notable** 50+, **Routine** 30+, **Monitor** below. The detail page shows every component,
 its value, its points and the rule. Rarity is a point-in-time percentile among the league's own earlier changes. It

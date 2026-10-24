@@ -1,7 +1,11 @@
 # Signal Center — deployment
 
-**Nothing here has been run against production.** The steps below are for the
-owner. Each is a separate decision, and each can be undone.
+**State (2026-10-24):** step 1 has been run (the schema is applied, shadow mode).
+The first two manual runs of step 2 stored nothing: every write failed on pgcrypto's
+`digest()`, which Supabase keeps in the `extensions` schema. The fix (core `sha256()`)
+needs step 1 run **again** after merging. It is idempotent: it replaces the doors and
+adds `sc_signals.backfilled` and `signal_at`. Then run step 2. The steps below are for
+the owner. Each is a separate decision, and each can be undone.
 
 ## 0. What it depends on (already in production)
 
@@ -42,7 +46,8 @@ Expected report:
 ```
 
 After it: the terminal seat reads "Shadow mode". Readers see an empty feed and new readers are handed on to Research.
-`/signals/` says shadow mode. Nothing is published.
+`/signals/` says shadow mode. Nothing is published. An operator sees the stored, unpublished signals in the terminal
+by default, and the pulse says it includes them.
 
 ## 2. Shadow evaluation
 
@@ -51,6 +56,10 @@ Run this only after step 1 is green. A run against a database without the migrat
 Set the repository variable **`SIGNAL_CENTER_WORKER` = `on`** (Settings → Secrets and variables → Actions →
 Variables). `.github/workflows/signal-center.yml` then runs hourly at :23. A run can also be started by hand, with
 *dry run* to write nothing. Secrets: `SB_URL`, `SB_SERVICE_ROLE`, the ones the other jobs use.
+
+**The first run stores the season so far.** It reads every committed record back to the start of each ledger:
+about 750 signals on 2026-10-24. Each is placed when it happened and marked *found in the ledger later*, and none
+becomes a notice. Graphics catch up at 150 versions a run (Notable and above). Later runs store only what is new.
 
 Review in `/admin/signals/` for at least two NFL and CFB game weeks:
 
@@ -66,7 +75,9 @@ Review in `/admin/signals/` for at least two NFL and CFB game weeks:
 `/admin/signals/` → Mode → **Live**, sports **NFL** and **College football** → Save (it asks first). Or, signed in
 as an operator: `select public.sc_admin_set_mode('live', array['nfl','cfb']);`
 
-- A run publishes under the mode it **began** in, so the next run publishes.
+- A run publishes under the mode it **began** in, so the next run publishes. That run also publishes what shadow
+  stored (`sc_publish_pending`), including the backfilled history: verified, a live sport, label ≥ Routine, not held
+  or withdrawn. History is published as history (expired or superseded) and never notified.
 - Published means: VERIFIED, not a fixture, a live sport, label ≥ Routine (`sc_config.publish.min_label`).
   Notices go to Full Access readers who asked, at Notable+ by default: at most 5 per run and 20 per day each.
 - Then, as separate decisions:
@@ -108,6 +119,7 @@ Every `sc_config` change made through an operator door is appended to `sc_config
 select public.sc_status();                                   -- mode, live sports, last run
 select status, started_at, finished_at, counts->'requests' from public.sc_runs order by started_at desc limit 10;
 select category, sport, publication, count(*) from public.sc_signals group by 1, 2, 3 order by 1, 2, 3;
+select backfilled, min(signal_at), max(signal_at), count(*) from public.sc_signals group by 1;  -- history found later vs live
 select count(*) from public.sc_signals where publication = 'PUBLISHED' and (verification_state <> 'VERIFIED' or fixture);  -- must be 0
 select stage, error, created_at from public.sc_failures where resolved_at is null order by created_at desc limit 20;
 select status, external_approval, count(*) from public.sc_graphics group by 1, 2;

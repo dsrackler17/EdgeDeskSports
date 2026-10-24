@@ -54,6 +54,7 @@ drop function if exists public.sc_require_admin();
 -- the job doors
 drop function if exists public.sc_begin_run(jsonb);
 drop function if exists public.sc_require_run(uuid);
+drop function if exists public.sc_publish_pending(uuid);
 drop function if exists public.sc_current(text[]);
 drop function if exists public.sc_prior_divergences();
 drop function if exists public.sc_active(text[], integer);

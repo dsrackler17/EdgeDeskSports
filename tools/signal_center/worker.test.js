@@ -110,8 +110,27 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
     let r2;
     try { r2 = await RUN.liveRun(client(), inputs, Object.assign({ idem: 'run-2' }, opts)); } finally { console.log = quiet; }
     chk('a second run over the same sources stores nothing new', r2.counts.inserted === 0 && r2.counts.versioned === 0, r2.counts);
-    chk('…and draws nothing new', r2.counts.graphics.generated === 0, r2.counts.graphics);
     chk('…and sends no second notice', r2.counts.notices.sent === 0, r2.counts.notices);
+    /* graphics catch up at most 150 versions a run (the backfill is larger); a
+       run after they caught up draws nothing, and nothing was ever drawn twice */
+    let caught = r2.counts.graphics.generated === 0, extra = 0;
+    while (!caught && extra < 12) {
+      console.log = () => {};
+      let rx;
+      try { rx = await RUN.liveRun(client(), inputs, Object.assign({ idem: 'catch-up-' + extra }, opts)); } finally { console.log = quiet; }
+      extra++; caught = rx.counts.graphics.generated === 0 && rx.counts.inserted === 0 && rx.counts.versioned === 0;
+    }
+    chk('graphics catch up over a few runs, then a run draws nothing new', caught, { extra });
+    chk('…and no graphic was drawn twice', q('select count(*) = count(distinct (version_id, template, template_version, format)) from public.sc_graphics;') === 't');
+
+    /* ---- the backfill: history from the ledgers, placed when it happened ---- */
+    const bf = JSON.parse(q("select json_build_object('n', count(*) filter (where backfilled), 'oldest', min(signal_at) filter (where backfilled), 'late', count(*) filter (where backfilled and signal_at > first_detected_at), 'div', count(*) filter (where backfilled and category = 'MARKET_DIVERGENCE'), 'unver', count(*) filter (where backfilled and verification_state <> 'VERIFIED')) from public.sc_signals;"));
+    chk('history from the ledgers is stored, found later, back into September', bf.n > 100 && bf.oldest < '2026-10-01' && bf.late === 0, bf);
+    chk('past model–market boards were replayed point in time', bf.div > 20, bf);
+    chk('every backfilled signal is verified', bf.unver === 0, bf);
+    chk('backfilled history of a live sport is published as history', +q("select count(*) from public.sc_signals where backfilled and publication = 'PUBLISHED' and sport in ('nfl','cfb') and lifecycle <> 'ACTIVE';") > 50);
+    chk('no notice was sent for a backfilled signal', q("select count(*) from public.sc_notification_log l join public.sc_signals s using (signal_id) where s.backfilled;") === '0');
+    chk('a game’s older signals are superseded by its newer ones, whatever order they were found in', q("select count(*) from public.sc_signals a join public.sc_signals b on a.category = b.category and a.subject_key = b.subject_key and a.outcome_id = b.outcome_id and a.event_key is not distinct from b.event_key and a.signal_id <> b.signal_id where a.lifecycle in ('ACTIVE','EXPIRED') and b.lifecycle in ('ACTIVE','EXPIRED');") === '0');
 
     /* ---- the lease ---- */
     db.sql("insert into public.sc_runs (mode, engine_version, spec_version) values ('live', 'x', 'y');");

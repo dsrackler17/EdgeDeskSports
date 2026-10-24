@@ -32,8 +32,13 @@
                   reduced to a win rate; small samples are counts
      scoring      components, weights, penalties and labels; the claim is printed
      copy         no payload carries a banned phrase; the guard refuses one
+     backfill     a change found long after its record is scored as of that
+                  record and marked, never re-versioned for it; the market
+                  replay reads no record stamped after the board it rebuilds,
+                  keeps one disagreement per episode and one convergence
      real data    the committed sources evaluate deterministically, every signal
-                  is VERIFIED or explains why not, and every payload re-hashes
+                  is VERIFIED or explains why not, and every payload re-hashes;
+                  the ledgers' history back to September is found
    =========================================================================== */
 'use strict';
 const path = require('path');
@@ -279,13 +284,44 @@ function snap(id, at, p, ver, extra) {
   chk('a payload that breaks the copy rule is refused, not softened', threw);
 }
 
+/* ── backfill: point in time ─────────────────────────────────────────── */
+{
+  const { replayMarket } = require('./evaluate.js');
+  const H = 3600e3, iso = (t) => new Date(t).toISOString();
+  const G = { sport: 'nfl', league: 'nfl', season: 2026, event_key: 'nfl|BF', event_at: iso(NOW - 24 * H), home: { name: 'Home Club', abbr: 'HOM' }, away: { name: 'Away Club', abbr: 'AWY' },
+    settles: 'game winner', research_href: '#game/nfl/BF', source: { id: 'gr', label: 'game research', ref: 'football/game_research/history/2026.jsonl' } };
+  const snap = (id, hAgo, p) => ({ snapshot_id: id, at: iso(NOW - hAgo * H), built_at: iso(NOW - hAgo * H), p_home: p, model_id: 'm1', model_version: 'm1', data_status: 'OK', consistent: true, inputs: {} });
+  /* the book has the home side at about 50% throughout (-110 / -110) */
+  const quote = (hAgo, h, a) => ({ book: 'DraftKings', source: 'espn', captured_at: iso(NOW - hAgo * H), observed_at: iso(NOW - hAgo * H), moneyline: { home: h, away: a }, home: { name: 'Home Club' }, away: { name: 'Away Club' }, ref: 'record#' + hAgo });
+  /* model: 50% (h100) -> 62% (h80) -> 62.5% (h70, same story) -> 66% (h60, moved) -> 51% (h40, closed) */
+  const series = [snap('a', 100, 0.50), snap('b', 80, 0.62), snap('c', 70, 0.625), snap('d', 60, 0.66), snap('e', 40, 0.51)];
+  const quotes = new Map([['NFL|BF', [quote(99, -110, -110), quote(79, -110, -110), quote(69, -110, -110), quote(59, -110, -110), quote(39, -110, -110), quote(30, -110, -110)]]]);
+  const games = [{ game: G, series }];
+  const r = replayMarket(games, new Map([[G.event_key, games[0]]]), quotes, { now: NOW }, () => true);
+  const div = r.signals.filter((s) => s.category === 'MARKET_DIVERGENCE'), conv = r.signals.filter((s) => s.category === 'MARKET_CONVERGENCE');
+  chk('replay: a disagreement is found at the first board where it existed, with the model of that moment', div.length >= 1 && div[0].values.current.snapshot_id === 'b' && div[0].timestamps.source_published_at === iso(NOW - 79 * H), div.map((d) => [d.values.current.snapshot_id, d.timestamps.source_published_at]));
+  chk('replay: a refreshed snapshot with the same gap is the same story (no new card)', div.every((d) => d.values.current.snapshot_id !== 'c'), div.map((d) => d.values.current.snapshot_id));
+  chk('replay: a gap that moved 2 pp or more is a new card', div.some((d) => d.values.current.snapshot_id === 'd'));
+  chk('replay: the closing is recorded once, when it happened', conv.length === 1 && conv[0].timestamps.source_published_at === iso(NOW - 39 * H), conv.map((c) => c.timestamps.source_published_at));
+  chk('replay: everything found is backfilled, detected now, scored as of its record', r.signals.every((s) => s.backfilled && s.timestamps.detected_at === iso(NOW) && s.timestamps.scored_as_of === s.timestamps.source_published_at));
+  /* no record stamped after the board is read: a snapshot recorded after the
+     last price would have made a disagreement that no board ever showed */
+  const late = series.concat([snap('z', 35, 0.90)]);
+  const r2 = replayMarket([{ game: G, series: late }], new Map([[G.event_key, { game: G, series: late }]]), new Map([['NFL|BF', quotes.get('NFL|BF').slice(0, 5)]]), { now: NOW }, () => true);
+  chk('replay: a snapshot recorded after the last board is never compared with it', r2.signals.every((s) => s.values.current.snapshot_id !== 'z'));
+  const unnamed = new Map([['NFL|BF', quotes.get('NFL|BF').map((q) => Object.assign({}, q, { home: null, away: null }))]]);
+  chk('replay: a price without team names is not replayed (it cannot be oriented for a past board)', replayMarket(games, new Map([[G.event_key, games[0]]]), unnamed, { now: NOW }, () => true).signals.length === 0);
+  const fresh = E.forecastShifts([snap('f1', 3, 0.40), snap('f2', 1, 0.50)], Object.assign({}, G, { event_at: iso(NOW + 24 * H) }), { now: NOW }).signals[0];
+  chk('a change found within the hour is not backfilled and is scored now', fresh.backfilled === false && fresh.timestamps.scored_as_of === iso(NOW));
+}
+
 /* ── the committed sources ───────────────────────────────────────────── */
 {
   const S = require('./sources.js');
   const { evaluate } = require('./evaluate.js');
   const football = S.footballGames();
   const au = S.audits();
-  const inputs = { football, footballCurrent: S.footballCurrent(), perfGames: S.perfForecastGames(), perfLastCapture: au.perf && au.perf.ledger ? au.perf.ledger.last_capture_at : null, quotes: S.perfQuotes(), slateTeams: S.slateTeams(), audits: au, cfbAvailability: S.cfbAvailability(null, football), sourceStates: S.sourceStates(null), now: NOW };
+  const inputs = { football, footballLedger: S.footballLedgerGames(null, football), footballCurrent: S.footballCurrent(), perfGames: S.perfForecastGames(), perfLastCapture: au.perf && au.perf.ledger ? au.perf.ledger.last_capture_at : null, quotes: S.allQuotes(), slateTeams: S.slateTeams(), audits: au, cfbAvailability: S.cfbAvailability(null, football), sourceStates: S.sourceStates(null), now: NOW };
   const a = evaluate(inputs), b = evaluate(inputs);
   chk('the real sources evaluate to some signals', a.signals.length > 20, a.stats);
   chk('…deterministically (same keys and hashes twice)', JSON.stringify(a.signals.map((s) => s.signal_key + s.version_hash)) === JSON.stringify(b.signals.map((s) => s.signal_key + s.version_hash)));
@@ -299,6 +335,12 @@ function snap(id, at, p, ver, extra) {
   chk('…every football divergence was oriented by team names', a.signals.filter((s) => s.category === 'MARKET_DIVERGENCE').every((s) => s.verification.checks.some((c) => c.id === 'orientation' && c.ok)));
   chk('…Model DNA has a record for NFL and CFB with a grade', ['nfl', 'cfb'].every((k) => a.dna.some((d) => d.sport === k && DNA.GRADES[d.grade])));
   chk('…no signal claims a confirmed cause', a.signals.every((s) => s.evidence.class !== 'CONFIRMED_CAUSE'));
+  const bf = a.signals.filter((s) => s.backfilled);
+  chk('…the ledgers’ history is found, back into September', bf.length > 100 && bf.some((s) => s.timestamps.source_published_at < '2026-10-01'), bf.length);
+  chk('…football ledger rows from before research are their own series (never paired with a research snapshot)', a.signals.filter((s) => s.category === 'FORECAST_SHIFT' && (s.sport === 'nfl' || s.sport === 'cfb'))
+    .every((s) => (s.sources[0].ref.indexOf('game_research') >= 0) === /^gr1-/.test(String(s.values.previous.snapshot_id)) && (s.sources[0].ref.indexOf('game_research') >= 0) === /^gr1-/.test(String(s.values.current.snapshot_id))));
+  chk('…past model–market boards are replayed', (a.stats.replay || {}).passes > 50 && a.signals.some((s) => s.category === 'MARKET_DIVERGENCE' && s.backfilled));
+  chk('…no backfilled signal was scored after its own record', bf.every((s) => s.timestamps.scored_as_of === s.timestamps.source_published_at));
 }
 
 process.exit(T.done());

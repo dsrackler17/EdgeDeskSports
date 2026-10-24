@@ -59,7 +59,8 @@ const text = fs.readFileSync(SQLF, 'utf8');
 chk('no psql meta-command on any line', text.split('\n').every((l) => !l.trimStart().startsWith('\\')));
 chk('the migration mirror is byte-identical', fs.existsSync(MIRROR) && fs.readFileSync(MIRROR, 'utf8') === text);
 chk('no client write grant anywhere in the file', !/grant\s+(insert|update|delete|all)[^;]*\bto\s+(anon|authenticated)/i.test(text));
-chk('no anon grant on a reader door that returns numbers', !/grant execute on function public\.sc_(feed|signal|signal_version|model_dna_current)\([^)]*\)\s+to\s+[^;]*anon/i.test(text));
+chk('core PostgreSQL only: no pgcrypto call (Supabase keeps it off the doors\' search_path)', !/\b(digest|gen_random_bytes|crypt|gen_salt|hmac)\s*\(/i.test(text.replace(/--[^\n]*/g, '')));
+chk('no anon grant on a reader door that returns numbers',!/grant execute on function public\.sc_(feed|signal|signal_version|model_dna_current)\([^)]*\)\s+to\s+[^;]*anon/i.test(text));
 
 (async () => {
   const db = await PG.start('scsql');
@@ -81,6 +82,10 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     const slice = (src, start, end) => { const i0 = src.indexOf(start); if (i0 < 0) throw new Error('not found: ' + start); return src.slice(i0, src.indexOf(end, i0) + end.length); };
     const PR = fs.readFileSync(F('personal_research.sql'), 'utf8');
     const FU = fs.readFileSync(F('funnel.sql'), 'utf8');
+    /* Supabase installs pgcrypto in the `extensions` schema, off the pinned
+       search_path of every door: a door calling digest() fails there (the
+       first production run refused all 367 signals that way) */
+    db.sql(`create schema if not exists extensions; create extension if not exists pgcrypto; alter extension pgcrypto set schema extensions;`);
     db.sql(`create table public.subscriptions (user_id uuid, status text, price_id text, current_period_end timestamptz);
       ${slice(BH, 'create or replace function public.billing_row_grants_access(', '$$;')}
       ${slice(BH, 'create or replace function public.billing_is_admin()', '$$;')}
@@ -360,14 +365,82 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     chk('a non-operator cannot list failures', /operators only/.test(db.mustFail(() => db.as(SUB, 'select public.sc_admin_failures(5);')) || ''));
     finish(r5.run_id);
 
+    /* ---- backfill: history found in the ledger after the fact ---- */
+    const GB = game('cfb|BF_1', 'Bravo U', 'Charlie U', -72, 'cfb'); /* played three days ago */
+    const bf1 = E.forecastShifts([snap('b1', 240 * 60, 0.40), snap('b2', 200 * 60, 0.52)], GB, { now: NOW, reliability: { m1: 'VALIDATED' } }).signals[0];
+    const bf2 = E.forecastShifts([snap('b2', 200 * 60, 0.52), snap('b3', 120 * 60, 0.66)], GB, { now: NOW, reliability: { m1: 'VALIDATED' } }).signals[0];
+    chk('engine: a change found days after its record is backfilled, scored as of that record', bf1.backfilled === true && bf1.timestamps.scored_as_of === bf1.timestamps.source_published_at
+      && bf1.timestamps.detected_at === iso(NOW) && bf1.score.components.find((c) => c.id === 'freshness').value === 1, [bf1.timestamps, bf1.score.components]);
+    chk('engine: whether it was backfilled never changes its version', E.versionHash(Object.assign({}, bf1, { backfilled: false })) === bf1.version_hash);
+    const r6 = begin('k7');
+    ig = ingest(r6.run_id, [bf2]);
+    ig = ingest(r6.run_id, [bf1]);
+    const rowOf = (k) => J(db.sql('select to_jsonb(x) from (select signal_id, lifecycle, publication, backfilled, signal_at, first_detected_at, source_at, superseded_by from public.sc_signals where signal_key = ' + lit(k) + ') x;'));
+    const b1r = rowOf(bf1.signal_key), b2r = rowOf(bf2.signal_key);
+    chk('backfilled history is stored as found later, placed at its record’s time', b1r.backfilled && b2r.backfilled && Date.parse(b2r.signal_at) === Date.parse(bf2.timestamps.source_published_at)
+      && Date.parse(b2r.first_detected_at) > Date.parse(b2r.signal_at) + 100 * 3600e3, [b1r, b2r]);
+    chk('the older record found second is superseded by the newer one at once', b1r.lifecycle === 'SUPERSEDED' && b1r.superseded_by === b2r.signal_id && b2r.lifecycle === 'EXPIRED', [b1r, b2r]);
+    chk('a live run publishes verified history (expired, superseded) of a live sport', b1r.publication === 'PUBLISHED' && b2r.publication === 'PUBLISHED', [b1r.publication, b2r.publication]);
+    const scopeIds = (scope) => as(SUB, "public.sc_feed('{\"scope\":\"" + scope + "\",\"sport\":\"cfb\"}'::jsonb, null, 50)").items.map((i) => i.signal_id);
+    chk('the timeline scope shows the latest per subject, current and past', scopeIds('timeline').indexOf(b2r.signal_id) >= 0 && scopeIds('timeline').indexOf(b1r.signal_id) < 0);
+    chk('the history scope shows the superseded one too', scopeIds('history').indexOf(b1r.signal_id) >= 0 && scopeIds('history').indexOf(b2r.signal_id) >= 0);
+    chk('the active scope (the door’s default) shows neither', as(SUB, "public.sc_feed('{\"sport\":\"cfb\"}'::jsonb, null, 50)").items.every((i) => i.signal_id !== b1r.signal_id && i.signal_id !== b2r.signal_id));
+    chk('an unknown scope is refused', /unknown scope/.test(db.mustFail(() => db.as(SUB, "select public.sc_feed('{\"scope\":\"everything\"}'::jsonb, null, 10);")) || ''));
+    const bfItem = as(SUB, "public.sc_feed('{\"scope\":\"history\",\"sport\":\"cfb\"}'::jsonb, null, 50)").items.find((i) => i.signal_id === b2r.signal_id);
+    chk('a feed item says it was found later, and when it happened', bfItem && bfItem.backfilled === true && Date.parse(bfItem.signal_at) === Date.parse(b2r.signal_at));
+    const p168 = anon('public.sc_pulse(168)');
+    chk('the pulse counts history on the day it happened (5 days ago in, 8 days ago out)', p168.backfilled === 1 && anon('public.sc_pulse(336)').backfilled === 2, [p168.backfilled]);
+    chk('when a signal happened never changes', /immutable/.test(db.mustFail(() => db.sql('update public.sc_signals set signal_at = now() where signal_id = ' + b2r.signal_id + ';')) || ''));
+    /* a backfilled signal for a game still ahead is published, but nobody is notified of old news */
+    const bf3 = E.forecastShifts([snap('c1', 600, 0.30), snap('c2', 400, 0.47)], game('nfl|BF_2', 'Delta Club', 'Echo Club', 30), { now: NOW, reliability: { m1: 'VALIDATED' } }).signals[0];
+    ig = ingest(r6.run_id, [bf3]);
+    const b3r = rowOf(bf3.signal_key);
+    chk('a backfilled signal for an upcoming game is active and published', bf3.backfilled && b3r.lifecycle === 'ACTIVE' && b3r.publication === 'PUBLISHED', b3r);
+    svc('public.sc_notify(' + lit(r6.run_id) + '::uuid)');
+    chk('…and never becomes a notice (not even a held one)', +db.sql('select count(*) from public.sc_notification_log where signal_id = ' + b3r.signal_id + ';').trim() === 0);
+    finish(r6.run_id);
+    /* stored in shadow, published by the first live run */
+    as(ADMIN, "public.sc_admin_set_mode('shadow', null)");
+    chk('in shadow mode an operator’s pulse counts the unpublished signals, and says so', as(ADMIN, 'public.sc_pulse(24)').includes_unpublished === true && anon('public.sc_pulse(24)').includes_unpublished === false);
+    const r7 = begin('k8');
+    const sh1 = shift(game('nfl|SH_1', 'Fox Club', 'Golf Club', 30), 'h1', 'h2', 0.30, 0.47);
+    const sh2 = shift(game('nfl|SH_2', 'Hotel Club', 'India Club', 30), 'h3', 'h4', 0.30, 0.47);
+    ingest(r7.run_id, [sh1, sh2]);
+    chk('a shadow run publishes nothing pending', svc('public.sc_publish_pending(' + lit(r7.run_id) + '::uuid)') === 0 && rowOf(sh1.signal_key).publication === 'SHADOW');
+    as(ADMIN, 'public.sc_admin_act(' + rowOf(sh2.signal_key).signal_id + ", 'hold', 'checking')");
+    finish(r7.run_id);
+    as(ADMIN, "public.sc_admin_set_mode('live', array['nfl','cfb'])");
+    const r8 = begin('k9');
+    const promoted = svc('public.sc_publish_pending(' + lit(r8.run_id) + '::uuid)');
+    chk('the first live run publishes what shadow stored, by the publication rule', promoted >= 1 && rowOf(sh1.signal_key).publication === 'PUBLISHED', promoted);
+    chk('…an operator’s hold sticks', rowOf(sh2.signal_key).publication === 'HELD');
+    chk('…a sport that is not live stays in shadow', rowOf(q2.signal_key).publication === 'SHADOW');
+    chk('…an unverified signal stays in shadow', rowOf(q3.signal_key).publication === 'SHADOW');
+    chk('…and the publication is in the audit trail', +db.sql("select count(*) from public.sc_signal_events where signal_id = " + rowOf(sh1.signal_key).signal_id + " and kind = 'published' and run_id = " + lit(r8.run_id) + '::uuid;').trim() === 1);
+    chk('a client cannot call the door', /permission denied/.test(db.mustFail(() => db.as(ADMIN, 'select public.sc_publish_pending(' + lit(r8.run_id) + '::uuid);')) || ''));
+    /* a disagreement whose closing is on record is not offered for another */
+    const GD = game('nfl|CV_1', 'Kilo Club', 'Lima Club', 30);
+    const named = (h, a, minsAgo) => ({ book: 'DraftKings', source: 'espn', captured_at: iso(NOW - minsAgo * 60e3), moneyline: { home: h, away: a }, home: { name: 'Kilo Club' }, away: { name: 'Lima Club' } });
+    const dRow = { game: GD, model: { p_home: 0.64, at: iso(NOW - 30 * 60e3), snapshot_id: 'cv1', model_id: 'm1', model_version: 'm1' }, quote: named(-110, -110, 20) };
+    const dv = E.marketDivergence([dRow], { now: NOW }).signals[0];
+    const cvRow = { game: GD, model: { p_home: 0.53, at: iso(NOW - 5 * 60e3), snapshot_id: 'cv2', model_id: 'm1', model_version: 'm1' }, quote: named(-110, -110, 4) };
+    const cv = E.marketConvergence([dv], [cvRow], { now: NOW })[0];
+    chk('engine: a test disagreement and its closing', dv && cv && cv.identity.from === dv.signal_key, [!!dv, !!cv]);
+    const prior = () => svc('(select coalesce(jsonb_agg(payload->>\'signal_key\'), \'[]\'::jsonb) from public.sc_prior_divergences())');
+    ingest(r8.run_id, [dv]);
+    chk('an open disagreement is a convergence candidate', prior().indexOf(dv.signal_key) >= 0);
+    ingest(r8.run_id, [cv]);
+    chk('…until its closing is on record (recorded once, not once per later quote)', prior().indexOf(dv.signal_key) < 0);
+    finish(r8.run_id);
+
     /* ---- the feed at scale: filters, sorts, pages ---- */
     db.sql(`insert into public.sc_signals (signal_key, category, sport, league, event_kind, subject_key, subject_label, outcome_id, event_key, event_at, teams, market_type,
-              headline, public_headline, change_pp, evidence_class, evidence_rank, verification_state, score, label, rarity, lifecycle, publication, published_at, first_detected_at, current_version)
+              headline, public_headline, change_pp, evidence_class, evidence_rank, verification_state, score, label, rarity, lifecycle, publication, published_at, first_detected_at, signal_at, current_version)
             select 'sc1-' || lpad(to_hex(1000000 + i), 16, '0'), case when i % 3 = 0 then 'MARKET_DIVERGENCE' else 'FORECAST_SHIFT' end, case when i % 2 = 0 then 'nfl' else 'cfb' end, 'x', 'game',
                    'team:' || (i % 97), 'Team ' || (i % 97), 'home_win', 'ev' || i, now() + interval '2 days', array['team ' || (i % 97)], 'moneyline',
                    'Team ' || (i % 97) || ' win probability up ' || (i % 20) || '.0 pp to 50.0%', 'EdgeDesk forecast moved toward Team ' || (i % 97), (i % 20)::numeric - 5, 'UNEXPLAINED', 1, 'VERIFIED',
                    (i % 100), case when i % 100 >= 70 then 'Major' when i % 100 >= 50 then 'Notable' when i % 100 >= 30 then 'Routine' else 'Monitor' end, (i % 10) / 10.0,
-                   'ACTIVE', 'PUBLISHED', now(), now() - (i || ' minutes')::interval, 1
+                   'ACTIVE', 'PUBLISHED', now(), now() - (i || ' minutes')::interval, now() - (i || ' minutes')::interval, 1
               from generate_series(1, 5000) i;
             insert into public.sc_signal_versions (signal_id, version, version_hash, payload, payload_sha256, reason, engine_version, spec_version)
             select signal_id, 1, 'sv1-' || lpad(to_hex(signal_id), 16, '0'), jsonb_build_object('summary', headline, 'event', jsonb_build_object('label', 'x')), repeat('a', 64), 'initial', 'e', 's'
@@ -379,10 +452,10 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     const firstMs = Date.now() - t0;
     chk('5,000 published signals: the first page is 25 with a cursor', page1.items.length === 25 && !!page1.next_cursor);
     const seen = new Set(page1.items.map((i) => i.signal_id));
-    let cursor = page1.next_cursor, pages = 1, dup = 0, ordered = true, last = page1.items[page1.items.length - 1].first_detected_at;
+    let cursor = page1.next_cursor, pages = 1, dup = 0, ordered = true, last = page1.items[page1.items.length - 1].signal_at;
     while (cursor && pages < 8) {
       const pg = as(SUB, "public.sc_feed('{}'::jsonb, " + lit(cursor) + ', 25)');
-      pg.items.forEach((i) => { if (seen.has(i.signal_id)) dup++; seen.add(i.signal_id); if (i.first_detected_at > last) ordered = false; last = i.first_detected_at; });
+      pg.items.forEach((i) => { if (seen.has(i.signal_id)) dup++; seen.add(i.signal_id); if (i.signal_at > last) ordered = false; last = i.signal_at; });
       cursor = pg.next_cursor; pages++;
     }
     chk('keyset paging: no duplicate across 8 pages, newest first', dup === 0 && ordered && seen.size === 200, { dup, ordered, n: seen.size });
@@ -406,8 +479,8 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     const t3 = Date.now(); anon('public.sc_public_feed(3)'); const prevMs = Date.now() - t3;
     console.log('NOTE | latency at 5,000 signals (psql round trip included): first page ' + firstMs + ' ms, filtered page ' + filtMs + ' ms, 7-day pulse ' + pulseMs + ' ms, public preview ' + prevMs + ' ms');
     chk('latency at 5,000 signals stays under a second per call (round trip included)', firstMs < 1000 && filtMs < 1000 && pulseMs < 1000 && prevMs < 1000 && deep.items.length > 0, { firstMs, filtMs, pulseMs, prevMs });
-    const plan = db.sql("explain select signal_id from public.sc_signals where publication = 'PUBLISHED' order by first_detected_at desc, signal_id desc limit 26;");
-    chk('the recent feed is served by its index', /sc_signals_feed_idx/.test(plan), plan);
+    const plan = db.sql("explain select signal_id from public.sc_signals where publication = 'PUBLISHED' order by signal_at desc, signal_id desc limit 26;");
+    chk('the recent feed (by the moment each signal describes) is served by its index', /sc_signals_time_idx/.test(plan), plan);
 
     /* ---- rollback: removes every piece, leaves the rest of the project, and the file applies again ---- */
     const RB = F('signal_center_rollback.sql');
