@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-24T18:21:03.015Z",
+ "as_of": "2026-10-24T19:08:10.119Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "fbdc787b0aaea582",
+ "inputs_key": "1cccfa42d7c7dad7",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 4903,
+   "rows": 4909,
    "mode": "LIVE",
-   "sha1": "89e277f74f38"
+   "sha1": "d9e00c573fb0"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "cacf29c0943d"
+   "sha1": "256317272459"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "4903 decision snapshots issued before kickoff; 245 settled"
+   "note": "4909 decision snapshots issued before kickoff; 245 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,11 +133,11 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 4903,
+  "issued_snapshots": 4909,
   "issued_by_decision": {
    "NO_DECISION": 1840,
-   "PASS": 2833,
-   "WATCH": 230
+   "PASS": 2838,
+   "WATCH": 231
   },
   "graded_rows": 251,
   "unit_of_analysis": "the first snapshot of each decision class per game",
@@ -16331,7 +16331,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-24T16:06:27.936Z",
+  "generated_at": "2026-10-24T19:01:48.933Z",
   "sports": {
    "nfl": {
     "versions": [
