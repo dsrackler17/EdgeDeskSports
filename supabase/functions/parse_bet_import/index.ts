@@ -54,13 +54,16 @@
 //    BET_IMPORT_EFFORT        optional, low | medium | high (default medium)
 //    BET_IMPORT_MAX_TOKENS    optional, default 16000
 //    BET_IMPORT_TIMEOUT_MS    optional, default 140000 (the model call)
-//    BET_IMPORT_FALLBACKS     optional, '0' turns off the server-side refusal
-//                             fallback (fallbacks: "default")
+//    BET_IMPORT_FALLBACKS     optional, '1' turns on the server-side refusal
+//                             fallback (fallbacks: "default", a beta); off by
+//                             default: a bet screenshot is not what the
+//                             classifiers decline, and one beta fewer is one
+//                             way fewer for every read to be refused
 //    BET_IMPORT_ORIGINS       optional, comma-separated allowed origins for
 //                             CORS (default *; the API is bearer-token only)
 // ============================================================
 
-export const BUILD = 'parse_bet_import@2026-10-24.3';
+export const BUILD = 'parse_bet_import@2026-10-24.4';
 
 // ── BEGIN BET IMPORT CORE ──────────────────────────────────────────────────
 // Canonical source: lib/edgedesk_bet_import_core.js, copied VERBATIM by
@@ -106,7 +109,7 @@ export const BUILD = 'parse_bet_import@2026-10-24.3';
 }(typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this), function () {
   'use strict';
 
-  var VERSION = 'bet_import_core_v2';
+  var VERSION = 'bet_import_core_v3';
 
   /* ═══ 1. THE BOOKS ═════════════════════════════════════════════════════
      The selector's books, by EdgeDesk's platform keys (lib/edgedesk_portfolio.js
@@ -166,25 +169,31 @@ export const BUILD = 'parse_bet_import@2026-10-24.3';
 
   /* ═══ 2. THE ANSWER'S SHAPE (strict JSON) ══════════════════════════════
      Every object closes with additionalProperties: false and names every
-     property as required; a value that may be absent is a null. No numeric
-     or length constraints (structured outputs do not take them): those are
-     checkBet()'s job, after the answer arrives. */
-  function nul(t) { return { anyOf: [t, { type: 'null' }] }; }
+     property as required. NOTHING IS NULLABLE: structured outputs refuse
+     (400, before reading anything) a request whose schemas hold more than
+     16 parameters with a union type (anyOf, or a type array such as
+     ["string", "null"]) or more than 24 optional ones — SCHEMA_LIMITS, which
+     the unit suite counts. So a field that is not shown is "" (an empty
+     string), and every amount or number is a STRING of its digits ("24.64",
+     "-2.5", "54"), which also keeps money exact; normalizeBet reads both
+     that and plain numbers. No numeric or length constraints (structured
+     outputs do not take them): those are checkBet()'s job. */
   var STR = { type: 'string' }, NUM = { type: 'number' };
+  var SCHEMA_LIMITS = { unionParams: 16, optionalParams: 24 };
+  function en(values) { return { type: 'string', enum: values }; }
   function obj(props) { return { type: 'object', additionalProperties: false, required: Object.keys(props), properties: props }; }
   var CONFIDENCE_SCHEMA = obj(CONF_FIELDS.reduce(function (o, k) { o[k] = NUM; return o; }, {}));
-  var LEG_SCHEMA = obj({ selection: nul(STR), event: nul(STR), market: nul(STR), line: nul(NUM), price_display: nul(STR),
-    status: nul({ type: 'string', enum: STATUSES }) });
+  var LEG_SCHEMA = obj({ selection: STR, event: STR, market: STR, line: STR, price_display: STR, status: en(STATUSES) });
   var BET_SCHEMA = obj({
     source_image: { type: 'integer' },
-    book: nul(STR), sport: nul(STR), league: nul(STR),
-    event: nul(STR), teams: { type: 'array', items: STR }, event_start: nul(STR),
-    market_type: { type: 'string', enum: MARKET_TYPES }, market: nul(STR), selection: nul(STR),
-    side: nul({ type: 'string', enum: ['YES', 'NO'] }), line: nul(NUM),
-    price_display: nul(STR), price_format: { type: 'string', enum: PRICE_FORMATS }, price_value: nul(NUM),
-    stake: nul(NUM), contracts: nul(NUM), potential_payout: nul(NUM), payout: nul(NUM), fees: nul(NUM), boost_pct: nul(NUM),
-    placed_at: nul(STR), status: { type: 'string', enum: STATUSES }, bet_id: nul(STR), is_bonus: { type: 'boolean' },
-    legs: { type: 'array', items: LEG_SCHEMA }, notes: nul(STR), confidence: CONFIDENCE_SCHEMA
+    book: STR, sport: STR, league: STR,
+    event: STR, teams: { type: 'array', items: STR }, event_start: STR,
+    market_type: en(MARKET_TYPES), market: STR, selection: STR,
+    side: en(['YES', 'NO', 'NONE']), line: STR,
+    price_display: STR, price_format: en(PRICE_FORMATS), price_value: STR,
+    stake: STR, contracts: STR, potential_payout: STR, payout: STR, fees: STR, boost_pct: STR,
+    placed_at: STR, status: en(STATUSES), bet_id: STR, is_bonus: { type: 'boolean' },
+    legs: { type: 'array', items: LEG_SCHEMA }, notes: STR, confidence: CONFIDENCE_SCHEMA
   });
   var SCHEMA = obj({ bets: { type: 'array', items: BET_SCHEMA }, warnings: { type: 'array', items: STR } });
 
@@ -198,12 +207,13 @@ export const BUILD = 'parse_bet_import@2026-10-24.3';
       'Return one entry in "bets" for every bet or position that is visible, including ones that are only partly visible (rate the',
       'fields you could not read low); a card whose pick is not visible at all (only its footer or edge) is skipped and mentioned in',
       '"warnings". If the same bet appears twice (overlapping screenshots), list it once. Do not invent a bet, a',
-      'number or a name: a field that is not shown is null, and its confidence is 0. Ignore balances (the amounts in an app\'s header),',
+      'number or a name: a field that is not shown is an empty string "", and its confidence is 0. Every amount and number is a string',
+      'of its digits as printed, without $, commas or %: "24.64", "-2.5", "54". Ignore balances (the amounts in an app\'s header),',
       'promotions, banners, account names and numbers, navigation and filter tabs; never copy them into any field.',
       '',
       'Fields:',
       '- source_image: the 0-based index of the image the bet is in, or -1 for pasted text.',
-      '- book: the platform, from its name, logo or layout, else null. DraftKings has two products: its Predictions / Trades screens',
+      '- book: the platform, from its name, logo or layout, else "". DraftKings has two products: its Predictions / Trades screens',
       '  (positions priced as a percentage such as "54%", with "Bought:" and "Paid:", tagged "Trade") are "DraftKings Predictions"; its',
       '  sportsbook Bets screens (American odds, "Wager", "To Pay") are "DraftKings Sportsbook". Likewise "FanDuel Predicts" versus',
       '  "FanDuel Sportsbook". Others: Kalshi, Polymarket, Novig, ProphetX, BetMGM, Caesars, Fanatics, bet365, ...',
@@ -214,7 +224,7 @@ export const BUILD = 'parse_bet_import@2026-10-24.3';
       '  is "UConn Huskies", "James Madison" is "James Madison Dukes". In a box score the team listed first is the away team.',
       '- event: the game as "Away @ Home" with those full names when both teams are known (otherwise as printed); for a prediction',
       '  market about something other than one game, the market\'s title.',
-      '- event_start: the game\'s start as local "YYYY-MM-DDTHH:MM" only when it is shown, else null.',
+      '- event_start: the game\'s start as local "YYYY-MM-DDTHH:MM" only when it is shown, else "".',
       '- market_type: moneyline, spread, total, prop (a player or game prop), parlay (two or more legs, same-game included), future, or',
       '  other. A prediction-market contract on who wins a game is moneyline; on a total is total.',
       '- market: the market\'s name as printed beside or under the pick (e.g. "Total Points", "Alternate Total Points", "Spread", "To',
@@ -222,26 +232,27 @@ export const BUILD = 'parse_bet_import@2026-10-24.3';
       '  Win" is a moneyline.',
       '- selection: the pick as the book shows it, e.g. "Kansas City Chiefs -2.5", "Over 47.5", "Mahomes Over 275.5", "Yes".',
       '- side: for a prediction-market contract, YES when the position backs the outcome it names (a team, "Over", "Under", a player,',
-      '  a spread) and NO only when it is labelled No; null for other bets.',
-      '- line: the spread or total number, signed for spreads (-2.5), else null.',
+      '  a spread) and NO only when it is labelled No; NONE for other bets.',
+      '- line: the spread or total number, signed for spreads ("-2.5"), else "".',
       '- price_display: the price exactly as shown ("54¢", "+120", "-110", "1.91", "54%"). price_format: cents for 54¢ or $0.54 per',
-      '  contract, probability for 54%, american, decimal or fractional. price_value: the number as shown (54, -110, 1.91, 0.54).',
+      '  contract, probability for 54%, american, decimal or fractional. price_value: the number as shown ("54", "-110", "1.91", "0.54").',
       '- stake: the amount risked in dollars ("Bought", "Cost", "Risk", "Wager"); for a contract, what was paid for it (excluding fees',
       '  shown separately). contracts: the number of contracts or shares, for prediction markets, only when shown. potential_payout:',
       '  the total return if it wins ("To Pay", "Payout if Yes"; stake plus profit, or contracts x $1). payout: what was actually',
-      '  returned for a settled bet ("Paid", "Returned"; 0 for a loss), else null. fees: commission or trading fees shown for this bet,',
-      '  else null. boost_pct: a profit or odds boost shown on the bet ("25% Boost" is 25), else null.',
+      '  returned for a settled bet ("Paid", "Returned"; "0" for a loss), else "". fees: commission or trading fees shown for this bet,',
+      '  else "". boost_pct: a profit or odds boost shown on the bet ("25% Boost" is "25"), else "".',
       '- placed_at: when the bet was placed, local "YYYY-MM-DDTHH:MM" ("Placed: Oct 22, 2026 at 22:22:53" is 2026-10-22T22:22). Resolve',
       '  "Today", "Yesterday" and weekday names from the date you',
       '  are given. A date without a year is the most recent such date that is not after today. If only a date is shown use T12:00 and',
-      '  rate placed_at 0.5 at most. If no date is shown, null.',
+      '  rate placed_at 0.5 at most. If no date is shown, "".',
       '- status: open (pending, live, unsettled), won, lost, push, void (cancelled, refunded), cashed_out (cashed out, or a contract sold',
       '  before it settled), or unknown - read from the bet\'s own Won / Lost / Open badge, never from a scoreboard. "To win" is a',
       '  potential amount, not a result; a cash-out offer is not a cash-out.',
-      '- bet_id: the bet, ticket or order id if printed, else null. is_bonus: true for a bonus bet, free bet or site credit.',
-      '- legs: for a parlay, each leg; otherwise an empty list. notes: anything ambiguous the person should check, briefly.',
+      '- bet_id: the bet, ticket or order id if printed, else "". is_bonus: true for a bonus bet, free bet or site credit.',
+      '- legs: for a parlay, each leg (status unknown when not shown); otherwise an empty list. notes: anything ambiguous the person',
+      '  should check, briefly, else "".',
       '- confidence: for each listed field, 1 when printed plainly, about 0.9 for a team name you expanded with certainty, about 0.5',
-      '  when inferred, 0.2 when a guess, 0 when null.',
+      '  when inferred, 0.2 when a guess, 0 when not shown.',
       '',
       'If nothing in the input is a bet, return an empty "bets" list and say why in "warnings". Put any other caution in "warnings".'
     ].join('\n');
@@ -425,9 +436,21 @@ export const BUILD = 'parse_bet_import@2026-10-24.3';
     return m[1] + '-' + m[2] + '-' + m[3] + 'T' + m[4] + ':' + m[5];
   }
 
+  /* an amount as the model wrote it: the schema's string of digits ("24.64",
+     "-2.5", "" when not shown) or a plain number → a number, or null */
+  function amt(x) {
+    if (isNum(x)) return x;
+    if (typeof x !== 'string') return null;
+    var t = cleanText(x).replace(/[$,\s]/g, '').replace(/^\+/, '').replace(/[%¢]$/, '');
+    var m = /^(-?)(\d+(?:\.\d+)?|\.\d+)$/.exec(t);
+    return m ? Number(m[1] + (m[2].charAt(0) === '.' ? '0' : '') + m[2]) : null;
+  }
+  var AMOUNTS = ['line', 'price_value', 'stake', 'contracts', 'potential_payout', 'payout', 'fees', 'boost_pct'];
+
   /* ctx: { book: the selector's key, bookLabel (Other), images (count), now (ms), today ('YYYY-MM-DD') } */
   function normalizeBet(raw, ctx, index) {
-    raw = raw && typeof raw === 'object' ? raw : {};
+    raw = Object.assign({}, raw && typeof raw === 'object' ? raw : {});
+    AMOUNTS.forEach(function (k) { raw[k] = amt(raw[k]); });
     ctx = ctx || {};
     var hint = BOOK_BY_KEY[ctx.book] || BOOK_BY_KEY.other, read = resolveBook(raw.book), conf = {};
     var chosen = hint.key !== 'other' && hint.key !== 'auto';
@@ -467,8 +490,10 @@ export const BUILD = 'parse_bet_import@2026-10-24.3';
       is_bonus: raw.is_bonus === true,
       legs: (Array.isArray(raw.legs) ? raw.legs : []).slice(0, LIMITS.maxLegs).map(function (l) {
         l = l || {};
+        var ll = amt(l.line);
         return { selection: text(l.selection, 200), event: text(l.event, 200), market: text(l.market, 200),
-          line: isNum(l.line) ? numStr(l.line, 3) : '', price_display: text(l.price_display, 40), status: STATUSES.indexOf(l.status) >= 0 ? l.status : '' };
+          line: isNum(ll) ? numStr(ll, 3) : '', price_display: text(l.price_display, 40),
+          status: STATUSES.indexOf(l.status) >= 0 && l.status !== 'unknown' ? l.status : '' };
       }),
       notes: text(raw.notes, 300),
       confidence: conf,
@@ -625,7 +650,7 @@ export const BUILD = 'parse_bet_import@2026-10-24.3';
 
   return {
     VERSION: VERSION, BOOKS: BOOKS, BOOK_BY_KEY: BOOK_BY_KEY, MARKET_TYPES: MARKET_TYPES, STATUSES: STATUSES, PRICE_FORMATS: PRICE_FORMATS,
-    CONF_FIELDS: CONF_FIELDS, LOW_CONFIDENCE: LOW_CONFIDENCE, LIMITS: LIMITS, SCHEMA: SCHEMA,
+    CONF_FIELDS: CONF_FIELDS, LOW_CONFIDENCE: LOW_CONFIDENCE, LIMITS: LIMITS, SCHEMA: SCHEMA, SCHEMA_LIMITS: SCHEMA_LIMITS, amt: amt,
     systemPrompt: systemPrompt, userText: userText, resolveBook: resolveBook,
     parsePrice: parsePrice, probToAmerican: probToAmerican, contractsFor: contractsFor, sellPriceFor: sellPriceFor, americanText: americanText, micro: micro, fromMicro: fromMicro, divRoundInt: divRoundInt,
     normalizeBet: normalizeBet, checkBet: checkBet, normalizeResult: normalizeResult, salvage: salvage, sameBetKey: sameBetKey, localTime: localTime
@@ -643,7 +668,7 @@ const CFG = () => ({
   effort: ['low', 'medium', 'high'].includes(env('BET_IMPORT_EFFORT', 'medium')) ? env('BET_IMPORT_EFFORT', 'medium') : 'medium',
   maxTokens: Math.max(2000, Math.min(64000, parseInt(env('BET_IMPORT_MAX_TOKENS', '16000'), 10) || 16000)),
   timeoutMs: Math.max(10000, Math.min(380000, parseInt(env('BET_IMPORT_TIMEOUT_MS', '140000'), 10) || 140000)),
-  fallbacks: env('BET_IMPORT_FALLBACKS', '1') !== '0',
+  fallbacks: env('BET_IMPORT_FALLBACKS', '0') === '1',
   origins: String(env('BET_IMPORT_ORIGINS', '*')).split(',').map((s) => s.trim()).filter(Boolean)
 });
 
@@ -819,8 +844,11 @@ export async function callModel(req, cfg) {
   try { msg = JSON.parse(raw); } catch (_) { msg = null; }
   if (!r.ok) {
     const busy = r.status === 429 || r.status === 529 || r.status >= 500;
-    logLine('upstream_error', { status: r.status, type: msg && msg.error && msg.error.type });
-    return { ok: false, status: busy ? 503 : 502, reason: busy ? 'UPSTREAM_BUSY' : 'UPSTREAM_ERROR', outcome: 'upstream_error',
+    /* the API's own words on what it refused (about the request, never its
+       images or text), so a refusal names its cause in the log and the page */
+    const detail = String((msg && msg.error && msg.error.message) || '').replace(/\s+/g, ' ').slice(0, 300);
+    logLine('upstream_error', { status: r.status, type: msg && msg.error && msg.error.type, detail });
+    return { ok: false, status: busy ? 503 : 502, reason: busy ? 'UPSTREAM_BUSY' : 'UPSTREAM_ERROR', outcome: 'upstream_error', detail: detail || undefined,
       message: busy ? 'The reader is busy right now. Nothing was saved; try again in a minute.' : 'The reader could not process this request. Nothing was saved.' };
   }
   const usage = msg && msg.usage ? { input_tokens: msg.usage.input_tokens || 0, output_tokens: msg.usage.output_tokens || 0 } : null;
@@ -896,7 +924,7 @@ export async function handle(req) {
     if (!m.ok) {
       await settle(m.outcome || 'error', 0, 0);
       logLine('failed', { reason: m.reason, ms: Date.now() - started });
-      return { ok: false, status: m.status, reason: m.reason, message: m.message, quota };
+      return { ok: false, status: m.status, reason: m.reason, message: m.message, detail: m.detail, quota };
     }
     const res = CORE.normalizeResult(m.answer, { book: CORE.BOOK_BY_KEY[r.book] ? r.book : 'other', bookLabel: r.bookLabel, bookType: r.bookType,
       images: nImages, today: r.today });

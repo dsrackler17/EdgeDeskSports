@@ -2,6 +2,7 @@
 
 
 
+
 ## 2026-10-24 — Women's college basketball forecasts: the men's system, rebuilt for the women's game
 
 `basketball/ncaaw_forecast/` gives NCAA Division I women's basketball the same pregame forecasts as the men's: win probability (overtime included), expected score, 80% margin and total intervals, and Upset Watch. It has its own data, selection, champion, tables (`ncaaw_fc_*`) and publication switch (`NCAAW_FC_PUBLISH`), and shares only the league-neutral research engine. Readers see it in the Simulator's new **Women's College Basketball** seat. The men's seat is now labelled **Men's College Basketball**.
