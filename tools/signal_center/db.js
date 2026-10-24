@@ -59,7 +59,7 @@ function client(env, opts) {
       return call('POST', 'rpc/' + name, args || {});
     },
     get(path) {
-      if (!/^(sim_published|sim_runs|sim_team_results|nba_injury_report_snapshots|nba_injury_reports|kalshi_card_current|ncaam_fc_runs|ncaam_fc_forecasts)\?/.test(path)) throw new Error('the worker reads only the published layers it needs, not ' + path.split('?')[0]);
+      if (!/^(sim_published|sim_runs|sim_team_results|nba_injury_report_snapshots|nba_injury_reports|kalshi_card_current|ncaam_fc_runs|ncaam_fc_forecasts|ncaaw_fc_runs|ncaaw_fc_forecasts)\?/.test(path)) throw new Error('the worker reads only the published layers it needs, not ' + path.split('?')[0]);
       return call('GET', path);
     }
   };
@@ -137,23 +137,30 @@ async function kalshiMids(db, log) {
   return m;
 }
 
-/* men's college basketball: the daily pregame runs that were published (a
-   run is 'completed' only when it took the published pointer; a run that lost
-   the race is 'superseded' and was never shown), oldest first, and each run's
-   forecasts for D-I games that have not started. One game appears in every
-   daily run inside the 48-hour horizon: consecutive runs are its history. */
-const NCAAM_RUNS = 6;
-const NCAAM_SETTLES = 'game winner, overtime included (the published forecast’s home probability)';
-async function ncaamGames(db, now, log) {
+/* college basketball, men's (ncaam_fc_*) and women's (ncaaw_fc_*): the daily
+   pregame runs that were published (a run is 'completed' only when it took the
+   published pointer; a run that lost the race is 'superseded' and was never
+   shown), oldest first, and each run's forecasts for D-I games that have not
+   started. One game appears in every daily run inside the 48-hour horizon:
+   consecutive runs are its history. The two leagues are separate systems with
+   separate tables and champions; nothing is shared but this reader's shape. */
+const FC_RUNS = 6;
+const FC_SETTLES = 'game winner, overtime included (the published forecast’s home probability)';
+const FC_LEAGUES = {
+  ncaam: { prefix: 'ncaam_fc', key: 'NCAAM', who: 'men’s college basketball', href: '#simulator/ncaam', source: { id: 'ncaam_fc', label: 'EdgeDesk men’s college basketball forecasts (published daily runs)', ref: 'public.ncaam_fc_forecasts' } },
+  ncaaw: { prefix: 'ncaaw_fc', key: 'NCAAW', who: 'women’s college basketball', href: '#simulator/ncaaw', source: { id: 'ncaaw_fc', label: 'EdgeDesk women’s college basketball forecasts (published daily runs)', ref: 'public.ncaaw_fc_forecasts' } }
+};
+async function fcGames(league, db, now, log) {
+  const L = FC_LEAGUES[league];
   let runs;
-  try { runs = await db.get('ncaam_fc_runs?select=run_id,model_key,as_of,completed_at&scope=eq.pregame&status=eq.completed&order=as_of.desc&limit=' + NCAAM_RUNS); }
-  catch (e) { log('ncaam', 'the men’s college basketball forecasts are not readable here: ' + e.message); return []; }
+  try { runs = await db.get(L.prefix + '_runs?select=run_id,model_key,as_of,completed_at&scope=eq.pregame&status=eq.completed&order=as_of.desc&limit=' + FC_RUNS); }
+  catch (e) { log(league, 'the ' + L.who + ' forecasts are not readable here: ' + e.message); return []; }
   const byGame = new Map();
   for (const r of (runs || []).slice().reverse()) {
     let rows;
-    try { rows = await db.get('ncaam_fc_forecasts?select=game_id,start_utc,home_id,away_id,home_name,away_name,neutral,available,p_home,games_played,data_quality,availability_assumption&run_id=eq.' + r.run_id + '&regime=eq.D1_D1&start_utc=gt.' + new Date(now).toISOString() + '&order=game_id.asc&limit=' + PAGE); }
-    catch (e) { log('ncaam', 'run ' + r.run_id + ': forecasts not readable: ' + e.message); return []; }
-    if ((rows || []).length >= PAGE) log('ncaam', 'run ' + r.run_id + ': ' + PAGE + ' forecasts or more; the rest were not compared');
+    try { rows = await db.get(L.prefix + '_forecasts?select=game_id,start_utc,home_id,away_id,home_name,away_name,neutral,available,p_home,games_played,data_quality,availability_assumption&run_id=eq.' + r.run_id + '&regime=eq.D1_D1&start_utc=gt.' + new Date(now).toISOString() + '&order=game_id.asc&limit=' + PAGE); }
+    catch (e) { log(league, 'run ' + r.run_id + ': forecasts not readable: ' + e.message); return []; }
+    if ((rows || []).length >= PAGE) log(league, 'run ' + r.run_id + ': ' + PAGE + ' forecasts or more; the rest were not compared');
     (rows || []).forEach((f) => {
       if (!byGame.has(f.game_id)) byGame.set(f.game_id, { last: f, series: [] });
       const g = byGame.get(f.game_id), gp = f.games_played || {};
@@ -173,16 +180,18 @@ async function ncaamGames(db, now, log) {
     const f = g.last;
     out.push({
       game: {
-        sport: 'ncaam', league: 'ncaam', season: (String(f.start_utc || '').slice(0, 4) | 0) || null, event_key: 'NCAAM|' + id, event_at: f.start_utc,
-        home: { name: f.home_name, abbr: null }, away: { name: f.away_name, abbr: null }, neutral: !!f.neutral, settles: NCAAM_SETTLES,
+        sport: league, league, season: (String(f.start_utc || '').slice(0, 4) | 0) || null, event_key: L.key + '|' + id, event_at: f.start_utc,
+        home: { name: f.home_name, abbr: null }, away: { name: f.away_name, abbr: null }, neutral: !!f.neutral, settles: FC_SETTLES,
         /* the forecasts are read in the Simulator's college basketball Games tab */
-        research_href: null, simulator_href: '#simulator/ncaam',
-        source: { id: 'ncaam_fc', label: 'EdgeDesk men’s college basketball forecasts (published daily runs)', ref: 'public.ncaam_fc_forecasts' }
+        research_href: null, simulator_href: L.href,
+        source: Object.assign({}, L.source)
       },
       series: g.series
     });
   });
   return out;
 }
+const ncaamGames = (db, now, log) => fcGames('ncaam', db, now, log);
+const ncaawGames = (db, now, log) => fcGames('ncaaw', db, now, log);
 
-module.exports = { client, simPairs, nbaInjuries, kalshiMids, ncaamGames, MAX_REQUESTS };
+module.exports = { client, simPairs, nbaInjuries, kalshiMids, ncaamGames, ncaawGames, MAX_REQUESTS };

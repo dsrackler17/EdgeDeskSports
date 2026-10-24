@@ -115,6 +115,15 @@ chk('…and are not claimed live until the daily job publishes (the tables are i
   && /in production since 2026-10-24/.test(R.sport('ncaam').capabilities.forecasting.detail) && !/not deployed/.test(JSON.stringify(R.sport('ncaam'))));
 chk('…and say that availability is not modelled', /availability not modelled/.test(R.sport('ncaam').signals.FORECAST_SHIFT.detail));
 chk('men’s college basketball has no market to compare (no captured price)', !R.eligible('ncaam', 'MARKET_DIVERGENCE').ok);
+chk('women’s college basketball forecast shifts are wired to their own published daily runs (ncaaw_fc_*, not the men’s)', /ncaaw_fc_runs/.test(R.sport('ncaaw').signals.FORECAST_SHIFT.source) && !/ncaam/.test(JSON.stringify(R.sport('ncaaw')))
+  && /'ncaaw_fc'/.test(DBJS) && /ncaawGames/.test(DBJS));
+chk('…and are not claimed live while their tables are not deployed in production (and NCAAW_FC_PUBLISH is the switch)', !R.eligible('ncaaw', 'FORECAST_SHIFT').ok && /not deployed in production/.test(R.sport('ncaaw').signals.FORECAST_SHIFT.detail)
+  && /NCAAW_FC_PUBLISH/.test(R.sport('ncaaw').capabilities.forecasting.detail));
+chk('…and say that availability is not modelled', /availability not modelled/.test(R.sport('ncaaw').signals.FORECAST_SHIFT.detail));
+chk('women’s college basketball has no market to compare and no schedule feed to watch (the slate carries none of its games)', !R.eligible('ncaaw', 'MARKET_DIVERGENCE').ok && !R.eligible('ncaaw', 'DATA_QUALITY_WARNING').ok
+  && /carries no women’s college basketball games/.test(R.sport('ncaaw').signals.DATA_QUALITY_WARNING.detail));
+chk('…and its tournament is blocked by the Simulator itself (no women’s tournament simulation is built)', R.sport('ncaaw').signals.SIMULATION_SHIFT.state === 'BLOCKED' && /top 16 seeds/.test(R.sport('ncaaw').signals.SIMULATION_SHIFT.detail));
+chk('…and its model audit cites the women’s validation record', /ncaaw_fc_validation\.json/.test(R.sport('ncaaw').capabilities.model_audit.source || ''));
 
 console.log((fail ? 'FAILED' : 'ALL GREEN') + ' signal center registry — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

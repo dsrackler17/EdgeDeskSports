@@ -1,0 +1,289 @@
+{
+ "schema": "edgedesk_ncaaw_fc_weekly_report_v1",
+ "date": "2026-10-24",
+ "generated_at": "2026-10-24T05:04:08.452Z",
+ "candidate": "selection_v1",
+ "champion": "ncaaw_points@1.1.0",
+ "challenger": {
+  "model_id": "ncaaw_adjeff",
+  "version": "1.0.0",
+  "engine": "research_team_model",
+  "config": {
+   "model_id": "ncaaw_adjeff",
+   "version": "1.0.0",
+   "engine": "research_team_model",
+   "params": {
+    "lambda": 150,
+    "lambda_tempo": 2,
+    "kMu": 3000,
+    "kEta": 6000,
+    "sweeps": 6,
+    "half_life": 365,
+    "carry": 1,
+    "carry_tempo": 0.9,
+    "continuity_slope": 0,
+    "continuity_ref": 0.45,
+    "transfer_beta": 0,
+    "blowout_margin": 30,
+    "blowout_weight": 1,
+    "scale": "additive",
+    "new_program_quantile": 0.25,
+    "nond1_lambda": 400,
+    "poss_coef": null
+   },
+   "calibration": {
+    "refit_days": 7,
+    "window_seasons": 3,
+    "min_rows": {
+     "D1_D1": 300,
+     "D1_OTHER": 100
+    },
+    "kappa": "fit",
+    "variance": {
+     "margin": "v1",
+     "total": "v2"
+    },
+    "parameter_variance": "stable",
+    "location_fit": "plain"
+   },
+   "selection_hash": "48e6afca2753bd736202023780cdf0244a08e1558252e04062c457b45f8a62cd"
+  },
+  "config_sha256": "081adca707dae847a5b186c61d1403977b8a9a170b21073e706f54cc403bb48a"
+ },
+ "policy_version": "1.0.0",
+ "snapshot": {
+  "through": "2026-10-24T05:03:19.340Z",
+  "rows": 93725,
+  "sha256": "f316986fe5e0d196198a4c9ed39bbf4f3799f286281c7c3132257eef5930ae03",
+  "seasons": [
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ]
+ },
+ "leakage": {
+  "checked": 23207,
+  "violations": 0,
+  "examples": []
+ },
+ "data": {
+  "season_in_progress": 2027,
+  "coverage": {
+   "rows": 2283,
+   "final": 0,
+   "score_ok": 0,
+   "box_ok": 0,
+   "d1_d1_box_ok": 0,
+   "not_played": 0,
+   "scheduled": 2283,
+   "quarantined": {},
+   "excluded_from_possession_model": 0,
+   "box_coverage": null
+  }
+ },
+ "result": {
+  "decision": "PROMOTE",
+  "gates": [
+   {
+    "id": "G1_min_sample",
+    "pass": true,
+    "detail": "21695 shared games over 4 seasons (need 15000 and 3)",
+    "evidence": null
+   },
+   {
+    "id": "G2_log_loss",
+    "pass": true,
+    "detail": "difference -0.00455 (95% CI [-0.00661,-0.00276]), need <= -0.0002 with the interval below 0",
+    "evidence": {
+     "n": 21695,
+     "clusters": 561,
+     "mean_diff": -0.00455,
+     "ci95": [
+      -0.00661,
+      -0.00276
+     ],
+     "metric": "log_loss",
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   {
+    "id": "G3_brier",
+    "pass": true,
+    "detail": "difference -0.00133 (95% CI [-0.00211,-0.00063])",
+    "evidence": {
+     "n": 21695,
+     "clusters": 561,
+     "mean_diff": -0.00133,
+     "ci95": [
+      -0.00211,
+      -0.00063
+     ],
+     "metric": "brier",
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   {
+    "id": "G4_margin_crps",
+    "pass": true,
+    "detail": "difference -0.19007 (95% CI [-0.21772,-0.16228]), limit +0.002",
+    "evidence": {
+     "n": 21695,
+     "clusters": 561,
+     "mean_diff": -0.19007,
+     "ci95": [
+      -0.21772,
+      -0.16228
+     ],
+     "metric": "margin_crps",
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   {
+    "id": "G5_calibration",
+    "pass": true,
+    "detail": "citl -0.0002, slope 1.0553, coverage80 margin 0.802 total 0.8015, overtime 0.0438 vs 0.0441",
+    "evidence": null
+   },
+   {
+    "id": "G6_cohorts",
+    "pass": true,
+    "detail": "no gated cohort regressed",
+    "evidence": {
+     "neutral_site": {
+      "n": 2032,
+      "gated": true,
+      "mean_diff": -0.00454,
+      "ci95": [
+       -0.01125,
+       0.0022
+      ],
+      "regression": false
+     },
+     "home_site": {
+      "n": 19663,
+      "gated": true,
+      "mean_diff": -0.00455,
+      "ci95": [
+       -0.00674,
+       -0.00239
+      ],
+      "regression": false
+     },
+     "early_season_min_games_lt_5": {
+      "n": 4028,
+      "gated": true,
+      "mean_diff": -0.01363,
+      "ci95": [
+       -0.02076,
+       -0.00665
+      ],
+      "regression": false
+     },
+     "postseason_non_holdout": {
+      "n": 1436,
+      "gated": true,
+      "mean_diff": -0.00285,
+      "ci95": [
+       -0.0058,
+       -0.00022
+      ],
+      "regression": false
+     },
+     "most_recent_complete_season": {
+      "n": 5555,
+      "gated": true,
+      "mean_diff": -0.00567,
+      "ci95": [
+       -0.01048,
+       -0.00204
+      ],
+      "regression": false
+     },
+     "d1_vs_non_d1_regime": {
+      "n": 1430,
+      "gated": true,
+      "mean_diff": 0.00947,
+      "ci95": [
+       -0.00737,
+       0.028
+      ],
+      "regression": false
+     }
+    }
+   },
+   {
+    "id": "G7_integrity",
+    "pass": true,
+    "detail": "hashes, leakage audit, snapshot f316986fe5e0, reproducible artifact",
+    "evidence": null
+   },
+   {
+    "id": "G8_operations",
+    "pass": true,
+    "detail": "runtime 0.7 min, outputs finite",
+    "evidence": null
+   }
+  ],
+  "window": {
+   "from": 2023,
+   "to": 2027
+  },
+  "shared_games": 21695,
+  "seasons": [
+   2023,
+   2024,
+   2025,
+   2026
+  ],
+  "challenger": {
+   "n": 21695,
+   "log_loss": 0.46582,
+   "brier": 0.15473,
+   "citl": -0.0002,
+   "slope": 1.0553,
+   "margin_crps": 6.8727,
+   "margin_mae": 9.679,
+   "margin_c80": 0.802,
+   "total_crps": 9.0777,
+   "total_mae": 12.798,
+   "total_c80": 0.8015,
+   "overtime": {
+    "mean_forecast": 0.0438,
+    "observed": 0.0441,
+    "n": 21695
+   }
+  },
+  "champion": {
+   "n": 21695,
+   "log_loss": 0.47037,
+   "brier": 0.15606,
+   "citl": -0.0087,
+   "slope": 0.9898,
+   "margin_crps": 7.0628,
+   "margin_mae": 9.909,
+   "margin_c80": 0.8346,
+   "total_crps": 9.1402,
+   "total_mae": 12.868,
+   "total_c80": 0.811,
+   "overtime": null
+  },
+  "artifact_sha256": "474326e4ec20baa7b31a90b0aca519d8dd91b91446d08f2107a536a541d63f06"
+ }
+}

@@ -152,7 +152,7 @@ async function liveRun(db, inputs, opts) {
   console.log('run ' + run + ' · mode ' + begun.mode + ' · live sports ' + JSON.stringify(begun.live_sports));
   try {
     /* 2: the database layers */
-    const dbIn = { simPairs: await DB.simPairs(db, note), nbaInjuries: await DB.nbaInjuries(db, inputs.now, note), kalshi: await DB.kalshiMids(db, note), ncaamGames: await DB.ncaamGames(db, inputs.now, note) };
+    const dbIn = { simPairs: await DB.simPairs(db, note), nbaInjuries: await DB.nbaInjuries(db, inputs.now, note), kalshi: await DB.kalshiMids(db, note), ncaamGames: await DB.ncaamGames(db, inputs.now, note), ncaawGames: await DB.ncaawGames(db, inputs.now, note) };
     try { dbIn.priorDivergences = ((await db.rpc('sc_prior_divergences', {})) || []).map((r) => r.payload); } catch (e) { note('sc', 'stored divergences unreadable: ' + e.message); dbIn.priorDivergences = []; }
     /* 3 */
     const r = opts.fixture ? { signals: opts.fixture, dna: [], stats: { fixture: true }, refused: [], ineligible: {} } : evaluate(Object.assign({}, inputs, { db: dbIn }));

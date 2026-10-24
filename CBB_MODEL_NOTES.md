@@ -11,6 +11,9 @@ code is named `ncaam` / `ncaam_fc_*` so that nothing collides with college baseb
 **Men's only.** No women's source is read: the `wbb_`/`wehoop`/`ncaaw` paths are refused by a
 test (`basketball/ncaam_forecast/tests/model.test.js`, "scope").
 
+**Women's counterpart:** [`NCAAW_MODEL_NOTES.md`](NCAAW_MODEL_NOTES.md) (`basketball/ncaaw_forecast/`, its own data,
+selection, champion and tables; it shares only the league-neutral research engine).
+
 **Runbook** (Windows PowerShell setup, run, deploy, disable, rollback):
 [`docs/ncaam-forecast/README.md`](docs/ncaam-forecast/README.md).
 

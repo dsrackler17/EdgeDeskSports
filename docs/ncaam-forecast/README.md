@@ -6,7 +6,8 @@ and a correlated NCAA tournament simulator. Design, evidence, status and
 limitations are in [`CBB_MODEL_NOTES.md`](../../CBB_MODEL_NOTES.md) at the
 repository root; this page is how to set up, run, verify, deploy, disable and
 roll back the system. (In this repository `cbb` means college baseball; this
-system is named `ncaam` everywhere.)
+system is named `ncaam` everywhere.) The women's system is separate, with its own tables and
+switch: [`docs/ncaaw-forecast/README.md`](../ncaaw-forecast/README.md).
 
 **Status today (2026-10-24).** The pregame system is implemented and tested, and its
 champion is `ncaam_adjeff@1.0.0`, promoted by the weekly gates on 2026-10-23.
@@ -162,7 +163,7 @@ that moment, and `--snapshot <dir>/snapshot.json` re-runs the exact inputs.
    publishes. To publish at once: Actions → *NCAAM forecast (daily)* → Run
    workflow.
 5. **Frontend.** `app.html` already loads `lib/edgedesk_simulator_ncaam.js`
-   (cache-bust `?v=20261023ncaam1`). The College Basketball tabs show the
+   (cache-bust `?v=20261023ncaam1`). The Men's College Basketball tabs show the
    statuses, the blockers and "no forecast published yet" until the first
    publication.
 
