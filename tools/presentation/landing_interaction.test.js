@@ -325,6 +325,31 @@ chk('nothing below the fold is an image or a video', !/<(?:img|video|iframe)\b/.
 const LIB_BUDGET = { 'edgedesk_home.js': 36 * 1024, 'edgedesk_track.js': 32 * 1024, 'edgedesk_pricing.js': 32 * 1024, 'edgedesk_home_model.js': 32 * 1024,
   'edgedesk_home_model.css': 12 * 1024, 'edgedesk_landing_pictures.css': 12 * 1024, 'edgedesk_landing_desk.css': 12 * 1024 };
 const libs = Object.keys(LIB_BUDGET).map(f => [f, fs.statSync(path.join(ROOT, 'lib', f)).size]);
+
+/* ======================================================================== */
+/* 7b. A CHANGED ASSET CARRIES A NEW ?v= STAMP                              */
+/* ======================================================================== */
+/* A returning browser keeps a /lib file it already has under the same URL:
+   #749 changed lib/edgedesk_home_free.js under ?v=20261008a, and phones kept
+   showing the old DATA INCOMPLETE chips. landing_asset_stamps.json records
+   each asset's stamp and its content hash when the stamp was set. */
+{
+  const crypto = require('crypto');
+  const REC = JSON.parse(fs.readFileSync(path.join(__dirname, 'landing_asset_stamps.json'), 'utf8')).assets;
+  const uses = {};
+  [...IDX.matchAll(/(?:src|href)="\/(lib\/[^"?]+)\?v=([A-Za-z0-9]+)"/g)].forEach(m => { (uses[m[1]] = uses[m[1]] || new Set()).add(m[2]); });
+  chk('the page loads its own /lib assets with a stamp (the scan is not blind)', Object.keys(uses).length >= 10, Object.keys(uses).length);
+  Object.keys(uses).sort().forEach(f => {
+    const v = [...uses[f]], rec = REC[f];
+    const sha = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, f))).digest('hex').slice(0, 16);
+    chk(f + ': one stamp wherever the page loads it', v.length === 1, v);
+    chk(f + ': recorded in landing_asset_stamps.json', !!rec);
+    if (!rec || v.length !== 1) return;
+    chk(f + ': changed since its stamp was set, so ?v=' + v[0] + ' must move (browsers keep the old copy)', !(sha !== rec.sha256 && v[0] === rec.v), 'recorded ' + JSON.stringify(rec) + ', file now ' + sha + ': bump the stamp in index.html, then record both in landing_asset_stamps.json');
+    chk(f + ': the stamp and hash on record are the page\'s and the file\'s', rec.v === v[0] && rec.sha256 === sha, 'recorded ' + JSON.stringify(rec) + ', page ?v=' + v[0] + ', file now ' + sha);
+  });
+  Object.keys(REC).forEach(f => chk('every recorded asset is one the page loads: ' + f, !!uses[f]));
+}
 chk('the small libraries and sheets it loads stay small', libs.every(([f, n]) => n < LIB_BUDGET[f]), libs.map(([f, n]) => f + ' ' + n).join(', '));
 
 console.log('');
