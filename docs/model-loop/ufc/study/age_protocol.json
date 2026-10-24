@@ -1,0 +1,84 @@
+{
+ "schema": "edgedesk_model_loop_ufc_age_protocol_v1",
+ "base_version": "1.2.0",
+ "windows": {
+  "walk_from": 2014,
+  "fit": [
+   2016,
+   2020
+  ],
+  "select": [
+   2021,
+   2023
+  ],
+  "test": [
+   2024,
+   2099
+  ],
+  "diagnosis": [
+   2018,
+   2099
+  ]
+ },
+ "grid": {
+  "knee": [
+   28,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   35,
+   36,
+   37,
+   38,
+   39,
+   40
+  ],
+  "slope": [
+   0,
+   -5,
+   -10,
+   -15,
+   -20,
+   -25,
+   -30,
+   -40
+  ],
+  "elite": [
+   0,
+   -5,
+   -10,
+   -15,
+   -20,
+   -30
+  ],
+  "min_fit_bouts": 150
+ },
+ "divisions": [
+  "Flyweight",
+  "Bantamweight",
+  "Featherweight",
+  "Lightweight",
+  "Welterweight",
+  "Middleweight",
+  "Light Heavyweight",
+  "Heavyweight",
+  "W Strawweight",
+  "W Flyweight",
+  "W Bantamweight",
+  "W Featherweight"
+ ],
+ "question": "Does a fighter's age cost the same at every weight, and for an elite UFC record as for any other? (asked 2026-10-24: heavyweights, and perhaps the lighter divisions, may age later)",
+ "candidates": {
+  "division_curves": "each division its own knee and slope (age_div), chosen on FIT by the log loss of that division's bouts alone: knee with the shared slope, then slope, then knee again, divisions in the order listed, each on top of the ones before; a division with fewer than min_fit_bouts FIT bouts with both ages keeps the shared curve",
+  "division_knees": "each division its own knee, the shared slope (-15), chosen the same way",
+  "elite": "age_elite_slope (more Elo per year past the knee for a fighter with 6+ UFC wins at 70%+ before the bout), chosen on FIT over every bout",
+  "division_curves_and_elite": "division_curves, then the elite slope chosen on FIT on top of them"
+ },
+ "keep_rule": "SELECT log loss at least 0.0005 below 1.2.0's and FIT no worse; among the kept, the lowest SELECT log loss",
+ "promote_rule": "TEST log loss at least 0.0005 below 1.2.0's on the same bouts with the card-blocked paired 95% interval below zero, and the Brier score no worse",
+ "disclosure": "Written 2026-10-24 before any candidate was fitted. Already seen, on every bout since 2016 (FIT, SELECT and TEST): 1.2.0's error for the older fighter by division and age, and for older fighters with an elite UFC record (6+ wins at 70%+, the cut-off used here). A heavyweight-only later knee (0-6 years) was tried on all three windows and made each worse; it is not a candidate. TEST was read for 1.2.0's promotion; this is the first read for an age-by-division model.",
+ "sha256": "9bb8cad3842e79e12d5230fc2163ead33be3fb6c229882d09f21952c96afe73b"
+}

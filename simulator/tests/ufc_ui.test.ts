@@ -98,6 +98,14 @@ T.chk('Model Health: the calibration chart: three series (a dashed close), a dia
   && (h.match(/<title>/g) || []).length === ['old', 'new', 'close'].reduce((a, k) => a + St.calibration[k].filter((r: any) => r.n >= 10).length, 0) && /The calibration numbers/.test(h));
 T.chk('Model Health: how large gaps resolved, and the certification in plain words', /When the [^<]+ and the close disagree \(2021 on\)/.test(h) && /resolved in the model’s favour and [\d,]+ in the market’s/.test(h) && /(Not certified as a signal|Certified: gaps that size beat the close)/.test(h));
 T.chk('Model Health: every change tried, kept or dropped', !!St && (h.match(/class="sm-dec sm-dec-(promote|retain)"/g) || []).length === St.steps.length);
+const AG = St && St.age;
+T.chk('Model Health: the age study, a row per division with where its decline starts and the older fighter\'s said / won, and every candidate\'s out-of-sample record',
+  !!AG && /Age by division \(where the decline starts/.test(h) && AG.divisions.every((d: any) => h.indexOf('<tr><td>' + d.division + '</td>') >= 0)
+  && AG.candidates.every((c: any) => h.indexOf('<tr><td>' + c.key.replace(/_/g, ' ')) >= 0) && /Δ 2021 on<\/th>/.test(h));
+T.chk('Model Health: an adopted age curve is named with its version, said to be better but not proven, and the test window no longer untouched',
+  !AG || !AG.adopted || (h.indexOf(AG.adopted.version + ' carries it') >= 0 && /better, not proven/.test(h) && (St.test_untouched || /2024 on is no longer untouched/.test(h))));
+T.chk('Model Health: with nothing adopted, the age block says so', (() => { const r2 = JSON.parse(JSON.stringify(run)); const s2 = r2.validation_summary.sport_summary.model_health.study;
+  if (!s2 || !s2.age) return true; s2.age.adopted = null; return /No age curve by division is served/.test(paint(cache({ run: r2 }), 'model_health')); })());
 T.chk('Model Health: champions against the Elo, and the finish model out of sample', /champions won <b>\d+<\/b>; the Elo expected about <b>\d+<\/b>/.test(h) && /tested on [\d,]+ later bouts/.test(h));
 T.chk('Model Health: the title record in two periods', h.indexOf('<tr><td>2014–2020</td><td class="sm-num">100</td><td class="sm-num">71</td><td class="sm-num">' + TP[0].elo_expected.toFixed(1) + '</td><td class="sm-num">+' + (71 - TP[0].elo_expected).toFixed(1) + '</td></tr>') >= 0 && /<tr><td>2021–2026<\/td><td class="sm-num">87<\/td>/.test(h));
 T.chk('Model Health: the champion term, not served, with its latest weekly test in plain words', /The champion term\.<\/b> The model loop tests, every week, giving the champion going in 100 extra rating points/.test(h)
@@ -113,7 +121,8 @@ const ss = evilRun.validation_summary.sport_summary;
 ss.cards.forEach((c: any) => { c.event = EVIL + c.event; c.bouts.forEach((b: any) => { b.a.name = EVIL + b.a.name; b.b.name = EVIL + b.b.name; b.weight_class = EVIL; }); });
 ss.divisions.forEach((v: any) => { v.people.forEach((p: any) => { p.name = EVIL + p.name; }); });
 ss.model_health.market = EVIL; ss.matchmaking.min_rest_days = EVIL;
-if (ss.model_health.study) { ss.model_health.study.reference.name = EVIL; ss.model_health.study.steps.forEach((x: any) => { x.label = EVIL; }); }
+if (ss.model_health.study) { ss.model_health.study.reference.name = EVIL; ss.model_health.study.steps.forEach((x: any) => { x.label = EVIL; });
+  if (ss.model_health.study.age) { ss.model_health.study.age.divisions.forEach((d: any) => { d.division = EVIL; }); ss.model_health.study.age.candidates.forEach((c: any) => { c.key = EVIL; }); } }
 ss.cards.forEach((c: any) => c.bouts.forEach((b: any) => { if (b.market) b.market.book = EVIL; b.guard = { status: 'DISAGREES', label: EVIL, threshold_pp: 8, gap_pp: 12, signal_allowed: false, certified: false, factors: [{ code: 'age', text: EVIL, record: null }] }; }));
 for (const tab of ['fights', 'title_path', 'model_health']) {
   const x = paint(cache({ entities: evilEnt, results: evilRes, run: evilRun }), tab);

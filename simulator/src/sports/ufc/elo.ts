@@ -76,16 +76,20 @@ export interface EloConfig {
   debut_offset?: number; prior_rec?: number; prior_exp?: number; shrink_bouts?: number;
   layoff_mode?: string; layoff_span?: number; layoff_k_mult?: number; half_life_days?: number;
   age_slope?: number; age_knee?: number; age_slope2?: number; age_knee2?: number; young_slope?: number; young_knee?: number;
+  /** a division's own [knee, slope] for a bout at that weight; the elite term (an elite UFC record before the bout) */
+  age_div?: Record<string, [number, number]>; age_elite_slope?: number; age_elite_wins?: number; age_elite_rate?: number;
   div_regress?: number; div_up?: number; div_down?: number; h2h?: number; h2h_decay?: number;
 }
 /** model.py DEFAULTS: the served config is laid over them */
 export const ELO_DEFAULTS: EloConfig = { k: 32, k_new_mult: 1, new_bouts: 3, layoff_days: 365, layoff_regress: 0, scale: 400, calibration: 'none', champ_bonus: 0,
   debut_offset: 0, prior_rec: 0, prior_exp: 0, shrink_bouts: 0, layoff_mode: 'step', layoff_span: 365, layoff_k_mult: 1, half_life_days: 0,
-  age_slope: 0, age_knee: 33, age_slope2: 0, age_knee2: 36, young_slope: 0, young_knee: 26, div_regress: 0, div_up: 0, div_down: 0, h2h: 0, h2h_decay: 0.5 };
-const EXTENSIONS = ['debut_offset', 'prior_rec', 'prior_exp', 'shrink_bouts', 'half_life_days', 'age_slope', 'age_slope2', 'young_slope', 'div_regress', 'div_up', 'div_down', 'h2h'] as const;
+  age_slope: 0, age_knee: 33, age_slope2: 0, age_knee2: 36, young_slope: 0, young_knee: 26, age_div: {}, age_elite_slope: 0, age_elite_wins: 6, age_elite_rate: 0.7,
+  div_regress: 0, div_up: 0, div_down: 0, h2h: 0, h2h_decay: 0.5 };
+const EXTENSIONS = ['debut_offset', 'prior_rec', 'prior_exp', 'shrink_bouts', 'half_life_days', 'age_slope', 'age_slope2', 'young_slope', 'age_elite_slope', 'div_regress', 'div_up', 'div_down', 'h2h'] as const;
 /** model.py extended(): does the configuration use any parameter added after 1.1.0's? */
 export function extendedConfig(cfg: EloConfig): boolean {
-  return EXTENSIONS.some((k) => Number(cfg[k] || 0) !== 0) || (cfg.layoff_mode || 'step') !== 'step' || Number(cfg.layoff_k_mult ?? 1) !== 1;
+  return EXTENSIONS.some((k) => Number(cfg[k] || 0) !== 0) || (cfg.layoff_mode || 'step') !== 'step' || Number(cfg.layoff_k_mult ?? 1) !== 1
+    || Object.keys(cfg.age_div || {}).length > 0;
 }
 const REC_CENTRE = Math.log(12.0 / 4.0), EXP_CENTRE = Math.log(13.0);
 /** model.py prior_of(): a fighter's starting rating from the record before the data (null: no record on file) */
@@ -97,11 +101,21 @@ export function priorOf(cfg: EloConfig, w: number | null, l: number | null): num
   }
   return mu;
 }
-/** model.py age_points() */
-export function agePoints(cfg: EloConfig, age: number | null): number {
+/** model.py age_points(): the division's own knee and slope when age_div has one, the shared curve otherwise, and the
+    elite term for a fighter with an elite UFC record */
+export function agePoints(cfg: EloConfig, age: number | null, div: string | null = null, elite = false): number {
   if (age == null || !Number.isFinite(age)) return 0.0;
-  return Number(cfg.age_slope) * Math.max(0.0, age - Number(cfg.age_knee)) + Number(cfg.age_slope2) * Math.max(0.0, age - Number(cfg.age_knee2))
+  const ks = div && cfg.age_div ? cfg.age_div[div] : undefined;
+  const knee = ks ? Number(ks[0]) : Number(cfg.age_knee), slope = ks ? Number(ks[1]) : Number(cfg.age_slope);
+  let pts = slope * Math.max(0.0, age - knee) + Number(cfg.age_slope2) * Math.max(0.0, age - Number(cfg.age_knee2))
     + Number(cfg.young_slope) * Math.max(0.0, Number(cfg.young_knee) - age);
+  const es = Number(cfg.age_elite_slope || 0);
+  if (es && elite) pts += es * Math.max(0.0, age - knee);
+  return pts;
+}
+/** model.py elite_record(): age_elite_wins UFC wins or more at age_elite_rate or better */
+export function eliteRecord(cfg: EloConfig, w: number | null, l: number | null): boolean {
+  return w != null && l != null && w >= Number(cfg.age_elite_wins ?? 6) && w / Math.max(w + l, 1.0) >= Number(cfg.age_elite_rate ?? 0.7);
 }
 export const TITLE_BOUTS_CSV = 'model_loop/data/ufc/title_bouts.csv';
 
@@ -222,8 +236,8 @@ export function walk(bouts: Bout[], cfg: EloConfig, S: EloState = emptyState(), 
 
 /** model.py _walk_extended(): the same arithmetic in the same order */
 function walkExtended(bouts: Bout[], P: EloConfig, S: EloState, fx: BoutFacts[] | null): { rows: WalkRow[]; state: EloState } {
-  const needs = ['prior_rec', 'prior_exp', 'age_slope', 'age_slope2', 'young_slope', 'div_regress', 'div_up', 'div_down'] as const;
-  if (!fx && needs.some((k) => Number(P[k] || 0) !== 0)) throw new Error('this UFC configuration reads each bout\'s facts: pass computeFactors(bouts, facts)');
+  const needs = ['prior_rec', 'prior_exp', 'age_slope', 'age_slope2', 'young_slope', 'age_elite_slope', 'div_regress', 'div_up', 'div_down'] as const;
+  if (!fx && (needs.some((k) => Number(P[k] || 0) !== 0) || Object.keys(P.age_div || {}).length > 0)) throw new Error('this UFC configuration reads each bout\'s facts: pass computeFactors(bouts, facts)');
   if (fx && fx.length !== bouts.length) throw new Error('the facts must be computed over the same bouts, in the same order');
   if (!S.MU) S.MU = new Map();
   if (!S.PAIR) S.PAIR = new Map();
@@ -232,7 +246,8 @@ function walkExtended(bouts: Bout[], P: EloConfig, S: EloState, fx: BoutFacts[] 
   const lr = Number(P.layoff_regress), ld = Number(P.layoff_days), ls = Number(P.layoff_span), lk = Number(P.layoff_k_mult);
   const hl = Number(P.half_life_days), sb = Number(P.shrink_bouts), dvr = Number(P.div_regress);
   const dup = Number(P.div_up), ddn = Number(P.div_down), h2h = Number(P.h2h), h2d = Number(P.h2h_decay), cb = Number(P.champ_bonus || 0);
-  const useAge = [P.age_slope, P.age_slope2, P.young_slope].some((x) => Number(x) !== 0);
+  const useAge = [P.age_slope, P.age_slope2, P.young_slope, P.age_elite_slope].some((x) => Number(x || 0) !== 0) || Object.keys(P.age_div || {}).length > 0;
+  const useElite = Number(P.age_elite_slope || 0) !== 0;
   const rows: WalkRow[] = [];
   const state = (f: string, t: number, F: BoutFacts | null, side: 'a' | 'b'): [number, number, number, boolean] => {
     if (!MU.has(f)) {
@@ -267,7 +282,10 @@ function walkExtended(bouts: Bout[], P: EloConfig, S: EloState, fx: BoutFacts[] 
     const pa = sb ? mua + (ra - mua) * nA / (nA + sb) : ra;
     const pb = sb ? mub + (rb - mub) * nB / (nB + sb) : rb;
     let adj = 0.0;
-    if (useAge && F) adj += agePoints(P, F.age_a) - agePoints(P, F.age_b);
+    if (useAge && F) {
+      const ea = useElite && eliteRecord(P, F.uw_a, F.ul_a), eb = useElite && eliteRecord(P, F.uw_b, F.ul_b);
+      adj += agePoints(P, F.age_a, b.weight_class, ea) - agePoints(P, F.age_b, b.weight_class, eb);
+    }
     if ((dup || ddn) && F) for (const [sgn, ds] of [[1.0, F.div_step_a], [-1.0, F.div_step_b]] as Array<[number, number | null]>) if (ds) adj += sgn * (ds > 0 ? dup * ds : ddn * -ds);
     const lo = a < bb ? a : bb, key = a < bb ? a + '|' + bb : bb + '|' + a;
     if (h2h && PAIR.has(key)) {

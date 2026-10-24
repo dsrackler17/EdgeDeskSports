@@ -144,8 +144,22 @@ export interface UfcInputData {
   code: Record<string, string>;
   config: { rules_version: string; horizon_days: number; rate_window_years: number; matchmaking: string; not_modelled: string[] };
 }
+/** the age study (docs/model-loop/ufc/study/age_by_division.json): where each division's decline starts, the candidates'
+    out-of-sample record (each fitted on 2016-2020 alone), and the version that carries one, if any */
+export interface UfcAgeStudy {
+  base_version: string;
+  adopted: { candidate: string; version: string; promoted_by: string; reason: string } | null;
+  candidates: Array<{ key: string; fit_delta: number; select_delta: number; decision: string;
+    oos: { n: number; delta_log_loss: number; ci95: number[] | null; by_season: Record<string, number> } | null }>;
+  divisions: Array<{ division: string; fit_bouts: number; knee: number | null; slope: number | null;
+    older: { n: number; base_said: number; new_said: number; won: number } | null }>;
+}
 export interface UfcStudy {
   generated_at: string; base_version: string; promoted: boolean; reasons: string[];
+  /** the version compared with 1.1.0 (the served one), the versions between them, and whether any choice behind it read 2024 on */
+  new_version: string | null; test_untouched: boolean;
+  lineage: Array<{ version: string; promoted_by: string; promoted_at: string; reason: string; choice_read_test: boolean }>;
+  age: UfcAgeStudy | null;
   reference: { name: string; kind: string; timestamped: boolean; matched: number; span: string[]; sha256: string | null };
   test: { window: number[]; n: number; old_log_loss: number; new_log_loss: number; delta_log_loss: number; ci95: number[] | null; delta_brier: number };
   /** per window: 1.1.0 and the selected model on every decided bout, and on the bouts with a closing line beside the line itself */
@@ -278,7 +292,26 @@ export function espnAccolades(samples: any): Array<{ bout_id: string; athlete: s
 }
 
 /** the study's comparison (docs/model-loop/ufc/study/comparison.json) as Model Health reads it */
-export function studySummary(c: any, sel: any, threshold: number): UfcStudy {
+export function ageSummary(a: any): UfcAgeStudy | null {
+  if (!a || !a.candidates) return null;
+  const ad = a.adopted || null, fits = (a.fits && a.fits.division_curves) || {};
+  const rows = ((ad && a.candidates[ad.candidate]) || a.candidates.division_curves || {}).divisions || {};
+  return {
+    base_version: a.base_version,
+    adopted: ad ? { candidate: ad.candidate, version: ad.version, promoted_by: ad.promoted_by || '', reason: ad.reason || '' } : null,
+    candidates: Object.keys(a.candidates).map((k) => {
+      const x = a.candidates[k], o = x.out_of_sample;
+      return { key: k, fit_delta: x.fit_delta, select_delta: x.select_delta, decision: x.decision,
+        oos: o ? { n: o.n, delta_log_loss: o.delta_log_loss, ci95: o.ci95 || null, by_season: o.by_season || {} } : null };
+    }),
+    divisions: Object.keys(fits).map((d) => {
+      const f = fits[d], o = (rows[d] || {}).older_33_plus;
+      return { division: d, fit_bouts: f.fit_bouts, knee: f.curve ? f.curve[0] : null, slope: f.curve ? f.curve[1] : null,
+        older: o ? { n: o.n, base_said: o.base_said, new_said: o.new_said, won: o.won } : null };
+    })
+  };
+}
+export function studySummary(c: any, sel: any, threshold: number, age: any = null): UfcStudy {
   const W = c.windows || {};
   const m = (x: any) => ({ log_loss: x ? x.log_loss : NaN, brier: x ? x.brier : NaN });
   const labels: Record<string, string> = { since_2018: 'Every bout since 2018', fit: 'Fit 2016-2020 (parameters chosen)', select: 'Select 2021-2023 (features kept or dropped)', test: 'Test 2024 on (read once)', out_of_sample: 'Out of sample, 2021 on' };
@@ -291,6 +324,9 @@ export function studySummary(c: any, sel: any, threshold: number): UfcStudy {
   const over = (side: string) => (oos[side] && oos[side].gaps && oos[side].gaps['over_' + threshold]) || null;
   return {
     generated_at: c.generated_at, base_version: c.base_version, promoted: !!c.promote, reasons: c.reasons || [],
+    new_version: c.new_version || null, test_untouched: c.test_untouched !== false,
+    lineage: (c.lineage || []).map((x: any) => ({ version: x.version, promoted_by: x.promoted_by || '', promoted_at: x.promoted_at || '', reason: x.reason || '', choice_read_test: !!x.choice_read_test })),
+    age: ageSummary(age),
     reference: { name: c.reference && c.reference.name, kind: c.reference && c.reference.kind, timestamped: !!(c.reference && c.reference.timestamped), matched: c.reference ? c.reference.matched : 0,
       span: (c.reference && c.reference.span) || [], sha256: (c.reference && c.reference.sha256) || null },
     test: c.test,
@@ -503,7 +539,10 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
   /* 11b the 2026-10 study: the served model and 1.1.0 against the closing line (Model Health) */
   const studyFile = path.join(REPO, 'docs', 'model-loop', 'ufc', 'study', 'comparison.json'), selFile = path.join(REPO, 'docs', 'model-loop', 'ufc', 'study', 'selection.json');
   const studyBuf = fs.existsSync(studyFile) ? fs.readFileSync(studyFile) : null;
-  health.study = studyBuf ? studySummary(JSON.parse(studyBuf.toString('utf8')), fs.existsSync(selFile) ? JSON.parse(fs.readFileSync(selFile, 'utf8')) : null, G.cfg.threshold_pp) : null;
+  const ageFile = path.join(REPO, 'docs', 'model-loop', 'ufc', 'study', 'age_by_division.json');
+  const ageBuf = fs.existsSync(ageFile) ? fs.readFileSync(ageFile) : null;
+  health.study = studyBuf ? studySummary(JSON.parse(studyBuf.toString('utf8')), fs.existsSync(selFile) ? JSON.parse(fs.readFileSync(selFile, 'utf8')) : null, G.cfg.threshold_pp,
+    ageBuf ? JSON.parse(ageBuf.toString('utf8')) : null) : null;
   /* 11c the guard: this copy, applied to the market the loop published with each bout (the ledger may hold a newer
      quote by now: the displayed verdict uses the latest, the check uses the loop's own), against the loop's verdict */
   const agree = { compared: 0, same: 0, differ: [] as string[] };
@@ -559,7 +598,8 @@ export function buildUfcSnapshot(opt: BuildOptions = {}): UfcSnapshot {
         ...(served.titles_sha256 ? [{ name: TITLE_BOUTS_CSV, sha256: served.titles_sha256 }] : []), ...(candBuf ? [{ name: 'docs/model-loop/ufc/candidates.jsonl', sha256: sha256Hex(candBuf) }] : []),
         ...(samplesSha ? [{ name: C.feeds.espn_samples, sha256: samplesSha }] : []),
         ...(facts.sha256 ? [{ name: FIGHTER_FACTS_CSV, sha256: facts.sha256 }] : []), { name: GUARD_JSON, sha256: G.sha256 }, ...Q.files,
-        ...(studyBuf ? [{ name: 'docs/model-loop/ufc/study/comparison.json', sha256: sha256Hex(studyBuf) }] : [])] } };
+        ...(studyBuf ? [{ name: 'docs/model-loop/ufc/study/comparison.json', sha256: sha256Hex(studyBuf) }] : []),
+        ...(ageBuf ? [{ name: 'docs/model-loop/ufc/study/age_by_division.json', sha256: sha256Hex(ageBuf) }] : [])] } };
 }
 
 export function writeUfcSnapshot(file: string, snap: UfcSnapshot): void {

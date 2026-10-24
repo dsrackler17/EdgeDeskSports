@@ -8,6 +8,7 @@ guard may claim. EXPERIMENTAL throughout.
   python3 -m model_loop.adapters.ufc.study compare           # the selected model v 1.1.0 v the close, the test window read once
   python3 -m model_loop.adapters.ufc.study report            # docs/model-loop/ufc/study/README.md from the files above
   python3 -m model_loop.adapters.ufc.study version           # the selected model into versions.json: served only if compare promoted it
+  python3 -m model_loop.adapters.ufc.study age               # the age curve, division by division, and for elite records (age_protocol.json)
   python3 -m model_loop.adapters.ufc.study all               # the four in order; then the report
 
 Everything lands in docs/model-loop/ufc/study/ (protocol.json, diagnosis_<v>.json,
@@ -421,11 +422,28 @@ def cmd_select(D=None):
 
 
 # ----------------------------------------------------------------- compare
+def lineage(version):
+    """the versions after BASE_VERSION up to `version`, parent by parent: who promoted each, why, and whether that
+    choice read the test window (the weekly rule reads every bout since 2016; the study's promotion read it once)"""
+    V = Versions(os.path.join(DOCS, "versions.json"))
+    out, v = [], V.get(version)
+    while v and v["version"] != BASE_VERSION:
+        by = v.get("promoted_by") or ""
+        out.append({"version": v["version"], "promoted_by": by, "promoted_at": v.get("promoted_at"), "reason": v.get("reason", ""),
+                    "choice_read_test": not by.startswith("study")})
+        v = V.get(v["parent"]) if v.get("parent") else None
+    return out[::-1]
+
+
 def cmd_compare(D=None):
+    """the served version (versions.json current) against 1.1.0 and the close: what Model Health shows. The study's
+    own selection stays in selection.json and its promotion in versions.json (1.2.0)"""
     sha = _check_protocol()
     D = D or Data()
     sel = _jload(os.path.join(OUT, "selection.json"))
-    old_cfg, new_cfg = served_config(BASE_VERSION), sel["selected_config"]
+    V = Versions(os.path.join(DOCS, "versions.json"))
+    new_version = V.current["version"]
+    old_cfg, new_cfg = served_config(BASE_VERSION), served_config(new_version)
     old, _ = D.run(old_cfg)
     new, _ = D.run(new_cfg)
     test = _in(old, WINDOWS["test"]) & old.y.notna()
@@ -446,15 +464,18 @@ def cmd_compare(D=None):
         windows[name] = {"old": evaluate(D, old, BASE_VERSION, w), "new": evaluate(D, new, "selected", w)}
     s18 = new[_in(new, WINDOWS["diagnosis"]) & new.y.notna()]
     hind = hindsight_check(D, old, new, new_cfg)
+    lin = lineage(new_version)
     out = {"schema": "edgedesk_model_loop_ufc_comparison_v1", "generated_at": now_iso(), "protocol_sha256": sha, "facts": D.facts_prov,
-           "base_version": BASE_VERSION, "base_config": old_cfg, "selected_config": new_cfg, "reference": D.close_prov,
+           "base_version": BASE_VERSION, "base_config": old_cfg, "selected_config": sel["selected_config"],
+           "new_version": new_version, "new_config": new_cfg, "lineage": lin,
+           "test_untouched": not any(x["choice_read_test"] for x in lin), "reference": D.close_prov,
            "test": {"window": WINDOWS["test"], "n": int(len(so)), "old_log_loss": round(float(lo.mean()), 5), "new_log_loss": round(float(ln.mean()), 5),
                     "delta_log_loss": round(d_ll, 5), "ci95": ci, "delta_brier": round(d_br, 5)},
            "promote": not reasons, "reasons": reasons or ["clears the promotion rule"],
            "windows": windows, "breakdowns_new": breakdowns(s18), "dob_coverage": round(float(np.isfinite(s18.age_a).mean()), 4),
            "hindsight_check": hind}
     dump(os.path.join(OUT, "comparison.json"), out)
-    print(f"study compare: test n {len(so)} LL {lo.mean():.5f} -> {ln.mean():.5f} ({d_ll:+.5f}, CI {ci}); promote={not reasons}", file=sys.stderr)
+    print(f"study compare: {new_version} v {BASE_VERSION}: test n {len(so)} LL {lo.mean():.5f} -> {ln.mean():.5f} ({d_ll:+.5f}, CI {ci}); promote={not reasons}", file=sys.stderr)
     return out
 
 
@@ -496,6 +517,50 @@ def hindsight_check(D, old, new, new_cfg):
 
 def _f(x, d=4):
     return "—" if x is None else (f"{x:+.{d}f}" if isinstance(x, float) and d < 0 else f"{x:.{abs(d)}f}")
+
+
+def _age_report(ag, proto):
+    C, ad = ag["candidates"], ag.get("adopted")
+    md = ["", "## 5. The age curve by division\n",
+          "Asked 2026-10-24: does age cost the same at every weight (heavyweights, perhaps the lighter divisions, aging later), "
+          f"and the same for an elite UFC record? Protocol `age_protocol.json` (sha256 `{(proto or {}).get('sha256', '')[:16]}…`), "
+          f"written before any candidate was fitted, on top of {ag['base_version']}. Each candidate was fitted on "
+          f"{WINDOWS['fit'][0]}-{WINDOWS['fit'][1]} alone, so {WINDOWS['select'][0]} on is out of sample for every one of them.\n",
+          "| Candidate | Δ fit LL | Δ 2021-2023 LL | Study decision | Δ 2021 on LL (95% interval) | Δ by season, 2021 on |\n|---|---|---|---|---|---|"]
+    for k, r in C.items():
+        o = r.get("out_of_sample") or {}
+        md.append(f"| {k.replace('_', ' ')} | {r['fit_delta']:+.5f} | {r['select_delta']:+.5f} | {r['decision']} | "
+                  f"{o.get('delta_log_loss', 0):+.5f} ({o.get('ci95')}) | " + ", ".join(f"{y} {v:+.4f}" for y, v in (o.get("by_season") or {}).items()) + " |")
+    md.append(f"\nStudy rule (2021-2023 alone): kept {ag.get('kept') or 'none'}; " + "; ".join(ag.get("reasons", [])) + ".\n")
+    if ad:
+        r = C[ad["candidate"]]
+        o = r["out_of_sample"]
+        md.append(f"**Adopted: {ad['candidate'].replace('_', ' ')}, as {ad['version']}** ({ad['promoted_by']}, {str(ad['promoted_at'])[:10]}: "
+                  f"{ad['reason']}). The study's own rule dropped it on 2021-2023 alone; the weekly rule, which every UFC change has to clear "
+                  f"(loop.py), reads every bout since 2016 and passed it. Out of sample it gains {-o['delta_log_loss']:.4f} over {o['n']} bouts "
+                  f"(95% interval {o['ci95']}): better, not proven. The weekly loop retests it, and the reverse, every week.\n")
+    fits = ag["fits"]["division_curves"]
+    rows = (C.get(ad["candidate"]) if ad else C["division_curves"])["divisions"]
+    md += ["Where the decline starts, by division (fitted on 2016-2020 bouts at that weight; the older fighter in bouts 3+ years apart, "
+           "older one 33+, every bout since 2016):\n",
+           f"| Division | Fit bouts | Decline from | Elo a year | Older fighter: {ag['base_version']} said | {ad['version'] if ad else 'by division'} said | won |\n|---|---|---|---|---|---|---|"]
+    for div, f in fits.items():
+        cur = f.get("curve")
+        od = (rows.get(div) or {}).get("older_33_plus") or {}
+        md.append(f"| {div} | {f['fit_bouts']} | {cur[0] if cur else 'shared (32)'} | {cur[1] if cur else 'shared (-15)'} | "
+                  f"{od.get('base_said', 0):.3f} | {od.get('new_said', 0):.3f} | {od.get('won', 0):.3f} ({od.get('n', 0)}) |")
+    knees = {d: f["curve"][0] for d, f in fits.items() if f.get("curve")}
+    if knees:
+        lo, hi = min(knees.values()), max(knees.values())
+        md.append(f"\nEarliest decline: {', '.join(d for d, k in knees.items() if k == lo)} ({lo}); latest: "
+                  f"{', '.join(d for d, k in knees.items() if k == hi)} ({hi}); the grid runs {AGE_GRID['knee'][0]}-{AGE_GRID['knee'][-1]}.")
+    el = C.get("elite") or {}
+    if el:
+        bs = (el.get("out_of_sample") or {}).get("by_season") or {}
+        md.append(f"The elite term ({json.dumps(el['config_change'])}): 2021 on {el['out_of_sample']['delta_log_loss']:+.5f}; better in "
+                  f"{sum(v < 0 for v in bs.values())} of {len(bs)} seasons. Before the protocol, a heavyweight-only later knee was tried on "
+                  "every window and made each worse (age_protocol.json disclosure).")
+    return md
 
 
 def cmd_report():
@@ -555,24 +620,30 @@ def cmd_report():
                       f"**{x['decision']}**{': ' + x['reason'] if x.get('decision') != 'KEPT' else ''} |")
         md.append(f"\nSelected configuration: `{json.dumps(sel['selected_config'], sort_keys=True)}`.\n")
     if cmp_:
-        t = cmp_["test"]
-        md += ["## 3. The selected model against 1.1.0 and the close\n",
-               f"Test window {t['window'][0]} on, read once: {t['n']} bouts, log loss {t['old_log_loss']} → {t['new_log_loss']} "
+        t, nv = cmp_["test"], cmp_.get("new_version", "selected")
+        md += [f"## 3. The served model ({nv}) against 1.1.0 and the close\n",
+               "Versions since 1.1.0: " + "; ".join(f"**{x['version']}** ({x['promoted_by']}, {str(x['promoted_at'])[:10]}): {x['reason']}"
+                                                     for x in cmp_.get("lineage", [])) + "\n",
+               f"Test window {t['window'][0]} on: {t['n']} bouts, log loss {t['old_log_loss']} → {t['new_log_loss']} "
                f"({t['delta_log_loss']:+.5f}, card-blocked 95% interval {t['ci95']}), Brier {t['delta_brier']:+.5f}. "
-               f"**{'Promoted' if cmp_['promote'] else 'Not promoted'}**: {'; '.join(cmp_['reasons'])}.\n",
-               "| Window | Bouts | 1.1.0 LL | Selected LL | 1.1.0 Brier | Selected Brier | With a close | 1.1.0 LL | Selected LL | Close LL | Close Brier |\n|---|---|---|---|---|---|---|---|---|---|---|"]
+               + ("No choice behind it read this window except the promotion itself. " if cmp_.get("test_untouched", True) else
+                  "**This window is no longer untouched**: a later change was adopted by the weekly rule, which reads every bout "
+                  "since 2016 (its own out-of-sample record is in section 5). ")
+               + (f"Against 1.1.0: **clears** the promotion rule.\n" if cmp_["promote"] else
+                  f"Against 1.1.0: **does not clear** the promotion rule ({'; '.join(cmp_['reasons'])}).\n"),
+               f"| Window | Bouts | 1.1.0 LL | {nv} LL | 1.1.0 Brier | {nv} Brier | With a close | 1.1.0 LL | {nv} LL | Close LL | Close Brier |\n|---|---|---|---|---|---|---|---|---|---|---|"]
         for k, w in cmp_["windows"].items():
             o, n = w["old"], w["new"]
             md.append(f"| {k} | {o['all']['n']} | {o['all']['log_loss']} | {n['all']['log_loss']} | {o['all']['brier']} | {n['all']['brier']} | "
                       f"{o['close_subset']['n']} | {o['close_subset']['model']['log_loss']} | {n['close_subset']['model']['log_loss']} | "
                       f"{o['close_subset']['close']['log_loss']} | {o['close_subset']['close']['brier']} |")
-        for side, lab in (("old", "1.1.0"), ("new", "selected")):
+        for side, lab in (("old", "1.1.0"), ("new", nv)):
             ov = cmp_["windows"]["out_of_sample"][side]["gaps"]
             md.append(f"\n{lab}, out of sample (2021 on): gaps over 8 points {ov['over_8']['n']} bouts, {ov['over_8']['model_favour']} in the model's favour, "
                       f"{ov['over_8']['market_favour']} in the market's; over 10 points {ov['over_10']['n']}, {ov['over_10']['model_favour']} v {ov['over_10']['market_favour']}.")
         h = cmp_.get("hindsight_check")
         if h:
-            md += ["", "Hindsight check on the pre-UFC record (gain v 1.1.0, log loss):\n",
+            md += ["", f"Hindsight check on the pre-UFC record (gain v 1.1.0, log loss; 'selected' is {nv}):\n",
                    f"- fighters who stayed in the UFC (both fought there in 2025 or later): selected {h['stayed']['selected']['delta_log_loss']}, "
                    f"record step alone {h['stayed']['record_step_only']['delta_log_loss']} ({h['stayed']['selected']['n']} bouts)",
                    f"- the others: selected {h['left']['selected']['delta_log_loss']}, record step alone {h['left']['record_step_only']['delta_log_loss']} ({h['left']['selected']['n']} bouts)",
@@ -583,7 +654,7 @@ def cmd_report():
                           f"{c['selected']['delta_log_loss']} {c['selected']['ci95']}, record step alone {c['record_step_only']['delta_log_loss']} "
                           f"{c['record_step_only']['ci95']}, age step alone {c['age_step_only']['delta_log_loss']} {c['age_step_only']['ci95']}")
         vs = Versions(os.path.join(DOCS, "versions.json")).doc["versions"]
-        sv = next((v for v in vs if v["config_sha256"] == content_hash(cmp_["selected_config"])), None)
+        sv = next((v for v in vs if v["config_sha256"] == content_hash(cmp_.get("new_config") or cmp_["selected_config"])), None)
         dn = P(f"diagnosis_{sv['version']}.json") if sv else None
         if dn:
             md += ["", f"What {sv['version']} still misreads (the same breakdown, since 2018, bouts with a close):\n",
@@ -595,7 +666,10 @@ def cmd_report():
                                   f"{r.get('close_said', 0):.3f} | {r.get('won_close_subset', 0):.3f} |")
         cert = G.certification(cmp_["windows"]["out_of_sample"]["new"]["gaps"], cmp_.get("reference"))
         md += ["", "## 4. The guard\n", f"Threshold {G.config()["threshold_pp"]} points (`docs/model-loop/ufc/guard.json`). "
-               f"Certification of the selected model's large gaps: **{'certified' if cert['certified'] else 'not certified'}**: {'; '.join(cert['reasons'])}."]
+               f"Certification of {nv}'s large gaps: **{'certified' if cert['certified'] else 'not certified'}**: {'; '.join(cert['reasons'])}."]
+    ag = P("age_by_division.json")
+    if ag:
+        md += _age_report(ag, P("age_protocol.json"))
     text = "\n".join(md) + "\n"
     with open(os.path.join(OUT, "README.md"), "w") as f:
         f.write(text)
@@ -613,7 +687,7 @@ def cmd_version():
     sel = _jload(os.path.join(OUT, "selection.json"))
     vp = os.path.join(DOCS, "versions.json")
     V = Versions(vp)
-    cfg = cmp_["selected_config"]
+    cfg = sel["selected_config"]
     h = content_hash(cfg)
     for v in V.doc["versions"]:
         if v["config_sha256"] == h:
@@ -644,6 +718,215 @@ def cmd_version():
     return v
 
 
+# ------------------------------------------------------------- age study
+AGE_BASE = "1.2.0"
+AGE_DIVISIONS = ["Flyweight", "Bantamweight", "Featherweight", "Lightweight", "Welterweight", "Middleweight", "Light Heavyweight",
+                 "Heavyweight", "W Strawweight", "W Flyweight", "W Bantamweight", "W Featherweight"]
+AGE_GRID = {"knee": list(range(28, 41)), "slope": [0, -5, -10, -15, -20, -25, -30, -40], "elite": [0, -5, -10, -15, -20, -30],
+            "min_fit_bouts": 150}
+AGE_OUT = os.path.join(OUT, "age_by_division.json")
+
+
+def age_protocol_doc():
+    return {"schema": "edgedesk_model_loop_ufc_age_protocol_v1", "base_version": AGE_BASE, "windows": WINDOWS, "grid": AGE_GRID,
+            "divisions": AGE_DIVISIONS,
+            "question": "Does a fighter's age cost the same at every weight, and for an elite UFC record as for any other? "
+                        "(asked 2026-10-24: heavyweights, and perhaps the lighter divisions, may age later)",
+            "candidates": {
+                "division_curves": "each division its own knee and slope (age_div), chosen on FIT by the log loss of that division's "
+                                   "bouts alone: knee with the shared slope, then slope, then knee again, divisions in the order "
+                                   "listed, each on top of the ones before; a division with fewer than min_fit_bouts FIT bouts with "
+                                   "both ages keeps the shared curve",
+                "division_knees": "each division its own knee, the shared slope (-15), chosen the same way",
+                "elite": "age_elite_slope (more Elo per year past the knee for a fighter with 6+ UFC wins at 70%+ before the bout), "
+                         "chosen on FIT over every bout",
+                "division_curves_and_elite": "division_curves, then the elite slope chosen on FIT on top of them"},
+            "keep_rule": f"SELECT log loss at least {MIN_GAIN_LL} below {AGE_BASE}'s and FIT no worse; among the kept, the lowest SELECT "
+                         "log loss",
+            "promote_rule": f"TEST log loss at least {MIN_GAIN_LL} below {AGE_BASE}'s on the same bouts with the card-blocked paired 95% "
+                            "interval below zero, and the Brier score no worse",
+            "disclosure": "Written 2026-10-24 before any candidate was fitted. Already seen, on every bout since 2016 (FIT, SELECT and "
+                          "TEST): 1.2.0's error for the older fighter by division and age, and for older fighters with an elite UFC "
+                          "record (6+ wins at 70%+, the cut-off used here). A heavyweight-only later knee (0-6 years) was tried on all "
+                          "three windows and made each worse; it is not a candidate. TEST was read for 1.2.0's promotion; this is the "
+                          "first read for an age-by-division model."}
+
+
+def _age_protocol_sha():
+    p = os.path.join(OUT, "age_protocol.json")
+    body = json.loads(json.dumps(age_protocol_doc()))
+    if not os.path.exists(p):
+        doc = dict(body, sha256=content_hash(body))
+        dump(p, doc)
+        return doc["sha256"]
+    doc = _jload(p)
+    if {k: v for k, v in doc.items() if k != "sha256"} != body or content_hash(body) != doc["sha256"]:
+        raise SystemExit("age_protocol.json does not match the code's protocol: change neither after the fact")
+    return doc["sha256"]
+
+
+def _div_mask(D, rows, w, div=None):
+    m = _in(rows, w) & rows.y.notna()
+    if div:
+        m &= (D.d.loc[rows.index, "weight_class"] == div).values
+    return m
+
+
+def _fit_divisions(D, base, slopes):
+    """coordinate search, division by division, on FIT bouts at that weight"""
+    cfg = copy.deepcopy(base)
+    cfg["age_div"] = dict(cfg.get("age_div") or {})
+    shared = (float(cfg["age_knee"]), float(cfg["age_slope"]))
+    known = np.isfinite(D.fx.age_a.values) & np.isfinite(D.fx.age_b.values)
+    picks = {}
+    for div in AGE_DIVISIONS:
+        nfit = int((_in(D.d, WINDOWS["fit"]) & D.d.y.notna() & (D.d.weight_class == div) & known).sum())
+        if nfit < AGE_GRID["min_fit_bouts"]:
+            picks[div] = {"fit_bouts": nfit, "curve": None, "note": f"fewer than {AGE_GRID['min_fit_bouts']} FIT bouts: the shared curve"}
+            continue
+
+        def score(knee, slope):
+            c = copy.deepcopy(cfg)
+            c["age_div"][div] = [knee, slope]
+            rows, _ = D.run(c)
+            x = rows[_div_mask(D, rows, WINDOWS["fit"], div)]
+            return float(ll_each(x.p, x.y).mean())
+        knee, slope = shared
+        best = (score(knee, slope), knee, slope)
+        for rnd in (0, 1, 2):
+            if rnd == 1 and slopes:
+                for sl in AGE_GRID["slope"]:
+                    v = score(best[1], sl)
+                    if v < best[0] - 1e-12:
+                        best = (v, best[1], sl)
+            elif rnd != 1:
+                for kn in AGE_GRID["knee"]:
+                    v = score(kn, best[2])
+                    if v < best[0] - 1e-12:
+                        best = (v, kn, best[2])
+        if (best[1], best[2]) != shared:
+            cfg["age_div"][div] = [best[1], best[2]]
+        picks[div] = {"fit_bouts": nfit, "curve": [best[1], best[2]], "fit_log_loss_division": round(best[0], 5)}
+    if not cfg["age_div"]:
+        cfg.pop("age_div")
+    return cfg, picks
+
+
+def _fit_elite(D, base):
+    best = None
+    for es in AGE_GRID["elite"]:
+        c = dict(copy.deepcopy(base), age_elite_slope=es)
+        f, _ = _window_ll(D.run(c)[0], WINDOWS["fit"])
+        if best is None or f < best[0] - 1e-12:
+            best = (f, c)
+    return best[1]
+
+
+def _division_table(D, base_rows, rows):
+    """per division: bouts and the log-loss change against the base in each window, and the older fighter's said / won"""
+    out = {}
+    for div in AGE_DIVISIONS:
+        r = {}
+        for wn in ("fit", "select", "test"):
+            m = _div_mask(D, base_rows, WINDOWS[wn], div)
+            if m.sum():
+                a, b = rows[m], base_rows[m]
+                r[wn] = {"n": int(m.sum()), "delta_log_loss": round(float((ll_each(a.p, a.y) - ll_each(b.p, b.y)).mean()), 5)}
+        s = base_rows[_div_mask(D, base_rows, [WINDOWS["fit"][0], WINDOWS["test"][1]], div)]
+        aa, ab = s.age_a.values, s.age_b.values
+        ok = np.isfinite(aa) & np.isfinite(ab) & (np.abs(aa - ab) >= 3) & (np.fmax(aa, ab) >= 33)
+        ob = ab > aa
+        if ok.sum():
+            y = np.where(ob, 1 - s.y.values, s.y.values)[ok]
+            said_b = np.where(ob, 1 - s.p.values, s.p.values)[ok]
+            said_n = np.where(ob, 1 - rows.loc[s.index, "p"].values, rows.loc[s.index, "p"].values)[ok]
+            r["older_33_plus"] = {"n": int(ok.sum()), "base_said": round(float(said_b.mean()), 4), "new_said": round(float(said_n.mean()), 4),
+                                  "won": round(float(y.mean()), 4)}
+        out[div] = r
+    return out
+
+
+def _age_oos(base_rows, rows):
+    """every candidate was fitted on FIT alone, so SELECT and TEST together (2021 on) are out of sample for it"""
+    w = [WINDOWS["select"][0], WINDOWS["test"][1]]
+    b = base_rows[_in(base_rows, w) & base_rows.y.notna()]
+    a = rows.loc[b.index]
+    dl = ll_each(a.p, b.y) - ll_each(b.p, b.y)
+    return {"window": w, "n": int(len(b)), "delta_log_loss": round(float(dl.mean()), 5), "ci95": block_ci(dl, b.event_id.values),
+            "delta_brier": round(float(np.mean((a.p - b.y) ** 2) - np.mean((b.p - b.y) ** 2)), 5),
+            "by_season": {str(int(k)): round(float(dl[b.season.values == k].mean()), 5) for k in sorted(b.season.unique())}}
+
+
+def _num_eq(a, b):
+    f = lambda x: json.loads(json.dumps(x), parse_int=float)
+    return f(a) == f(b)
+
+
+def _age_adopted(results):
+    """the candidate a version now carries, if any (the weekly loop retests the age curve by division: loop.py CATALOGUE)"""
+    vs = Versions(os.path.join(DOCS, "versions.json")).doc["versions"]
+    for v in vs:
+        for name, r in results.items():
+            ch = r["config_change"]
+            if ch and all(_num_eq(v["config"].get(k), x) for k, x in ch.items()):
+                return {"candidate": name, "version": v["version"], "status": v["status"], "promoted_by": v.get("promoted_by"),
+                        "promoted_at": v.get("promoted_at"), "reason": v.get("reason")}
+    return None
+
+
+def cmd_age(D=None):
+    """the age curve by division and for elite records, under age_protocol.json; writes age_by_division.json"""
+    sha = _age_protocol_sha()
+    D = D or Data()
+    base = dict(U.DEFAULTS, **served_config(AGE_BASE))
+    base_rows, _ = D.run(base)
+    fit0, _ = _window_ll(base_rows, WINDOWS["fit"])
+    sel0, s_sel = _window_ll(base_rows, WINDOWS["select"])
+    curves_cfg, curves = _fit_divisions(D, base, slopes=True)
+    knees_cfg, knees = _fit_divisions(D, base, slopes=False)
+    elite_cfg = _fit_elite(D, base)
+    both_cfg = _fit_elite(D, curves_cfg)
+    cands, results = {"division_curves": curves_cfg, "division_knees": knees_cfg, "elite": elite_cfg, "division_curves_and_elite": both_cfg}, {}
+    for name, c in cands.items():
+        rows, _ = D.run(c)
+        f, _ = _window_ll(rows, WINDOWS["fit"])
+        sl, s2 = _window_ll(rows, WINDOWS["select"])
+        diff = ll_each(s2.p, s2.y) - ll_each(base_rows.loc[s2.index, "p"], s2.y)
+        keep = (sl - sel0) <= -MIN_GAIN_LL and f <= fit0 + 1e-12
+        results[name] = {"config_change": {k: c.get(k) for k in ("age_div", "age_elite_slope") if c.get(k)},
+                         "fit_delta": round(f - fit0, 5), "select_delta": round(sl - sel0, 5), "select_ci95": block_ci(diff, s2.event_id.values),
+                         "decision": "KEPT" if keep else "DROPPED",
+                         "reason": "clears the keep rule" if keep else "; ".join(x for x in (
+                             f"SELECT log loss change {sl - sel0:+.5f} does not clear -{MIN_GAIN_LL}" if (sl - sel0) > -MIN_GAIN_LL else "",
+                             f"FIT log loss worse ({f - fit0:+.5f})" if f > fit0 + 1e-12 else "") if x),
+                         "divisions": _division_table(D, base_rows, rows), "out_of_sample": _age_oos(base_rows, rows)}
+        print(f"age candidate {name}: {results[name]['decision']} (fit {f - fit0:+.5f}, select {sl - sel0:+.5f}) {results[name]['config_change']}", file=sys.stderr)
+    kept = [k for k, v in results.items() if v["decision"] == "KEPT"]
+    out = {"schema": "edgedesk_model_loop_ufc_age_study_v1", "generated_at": now_iso(), "protocol_sha256": sha, "base_version": AGE_BASE,
+           "facts": D.facts_prov, "reference": D.close_prov, "fits": {"division_curves": curves, "division_knees": knees},
+           "candidates": results, "kept": kept, "adopted": _age_adopted(results)}
+    if kept:
+        name = min(kept, key=lambda k: results[k]["select_delta"])
+        new_cfg = {k: v for k, v in cands[name].items() if k in U.DEFAULTS and (v != U.DEFAULTS.get(k) or k in served_config(AGE_BASE))}
+        rows, _ = D.run(new_cfg)
+        test = _in(base_rows, WINDOWS["test"]) & base_rows.y.notna()
+        so, sn = base_rows[test], rows.loc[base_rows[test].index]
+        lo, ln = ll_each(so.p, so.y), ll_each(sn.p, sn.y)
+        d_ll, d_br = float((ln - lo).mean()), float(np.mean((sn.p - sn.y) ** 2) - np.mean((so.p - so.y) ** 2))
+        ci = block_ci(ln - lo, so.event_id.values)
+        reasons = [x for x in (f"TEST log loss change {d_ll:+.5f} does not clear -{MIN_GAIN_LL}" if d_ll > -MIN_GAIN_LL else "",
+                               f"card-blocked 95% interval {ci} is not below zero" if not ci or ci[1] >= 0 else "",
+                               f"Brier worse ({d_br:+.5f})" if d_br > 0 else "") if x]
+        out.update(chosen=name, selected_config=new_cfg, promote=not reasons, reasons=reasons or ["clears the promotion rule"],
+                   test={"window": WINDOWS["test"], "n": int(len(so)), "old_log_loss": round(float(lo.mean()), 5), "new_log_loss": round(float(ln.mean()), 5),
+                         "delta_log_loss": round(d_ll, 5), "ci95": ci, "delta_brier": round(d_br, 5)})
+        print(f"age study: {name} chosen; test {d_ll:+.5f} CI {ci}; promote={not reasons}", file=sys.stderr)
+    else:
+        out.update(chosen=None, promote=False, reasons=["no candidate cleared the keep rule"])
+    dump(AGE_OUT, out)
+    return out
+
+
 def cmd_all():
     D = Data()
     cmd_diagnose(BASE_VERSION, D)
@@ -657,7 +940,7 @@ def cmd_all():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["protocol", "diagnose", "select", "compare", "report", "version", "all"])
+    ap.add_argument("cmd", choices=["protocol", "diagnose", "select", "compare", "report", "version", "age", "all"])
     ap.add_argument("--version", default=BASE_VERSION)
     a = ap.parse_args(argv)
     if a.cmd == "protocol":
@@ -672,6 +955,8 @@ def main(argv=None):
         cmd_report()
     elif a.cmd == "version":
         cmd_version()
+    elif a.cmd == "age":
+        cmd_age()
     else:
         cmd_all()
 

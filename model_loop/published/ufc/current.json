@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_model_loop_ufc_current_v1",
- "generated_at": "2026-10-24T15:02:07Z",
+ "generated_at": "2026-10-24T15:57:10Z",
  "status": "EXPERIMENTAL",
  "data_status": {
   "status": "OK",
@@ -9,11 +9,11 @@
  },
  "note": "EXPERIMENTAL research. Each bout carries the market's latest no-vig price beside the model's: a gap above the guard's threshold is labelled 'Model disagrees with market', never an edge (guard.py). A bout is priced the same whichever fighter is listed first.",
  "served": {
-  "version": "1.2.0",
-  "promoted_at": "2026-10-24T14:58:41Z",
-  "reason": "2026-10 study: pre_ufc_record, age kept one at a time on 2021-2023; on the 1623 test bouts from 2024 log loss 0.66579 -> 0.64587 (-0.01991, card-blocked 95% interval [-0.02806, -0.01144]), Brier -0.00939 against 1.1.0. Cleared the promotion rule."
+  "version": "1.3.0",
+  "promoted_at": "2026-10-24T15:51:56Z",
+  "reason": "weekly loop: candidate age_by_division cleared the full-window rule"
  },
- "config_sha256": "e6f03e299dbb731d559e3421aaf89fb4e80f17d89ef0b3d8ac57150470599245",
+ "config_sha256": "430f205ac849bc92d88febd53146563698f4be0b57f926a5abdd4eb3dffa347b",
  "calibration_slopes": {},
  "guard": {
   "threshold_pp": 8,
@@ -21,21 +21,21 @@
   "certification": {
    "certified": false,
    "threshold_pp": 8,
-   "n": 1420,
-   "model_log_loss": 0.65238,
-   "close_log_loss": 0.57283,
-   "model_favour": 478,
-   "market_favour": 942,
+   "n": 1408,
+   "model_log_loss": 0.654,
+   "close_log_loss": 0.57965,
+   "model_favour": 505,
+   "market_favour": 903,
    "ci95": [
-    0.05993,
-    0.0981
+    0.05396,
+    0.09375
    ],
    "reasons": [
     "the closing line on file is untimestamped (a public archive's pre-fight line), so it can refuse a signal but never certify one",
-    "on those bouts the model's log loss 0.6524 is worse than the closing line's 0.5728: 942 resolved in the market's favour, 478 in the model's"
+    "on those bouts the model's log loss 0.6540 is worse than the closing line's 0.5797: 903 resolved in the market's favour, 505 in the model's"
    ]
   },
-  "disagreements": 5,
+  "disagreements": 7,
   "with_market": 9,
   "config": "docs/model-loop/ufc/guard.json"
  },
@@ -72,8 +72,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.5503,
-   "p_b": 0.4497,
+   "p_a": 0.5433,
+   "p_b": 0.4567,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.6447,
@@ -90,7 +90,7 @@
     "status": "DISAGREES",
     "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": -9.4,
+    "gap_pp": -10.1,
     "signal_allowed": false,
     "factors": [
      {
@@ -99,7 +99,7 @@
       "text": "Azamat Murzakanov is 37.5, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 578,
-       "model_said": 0.3815,
+       "model_said": 0.3691,
        "close_said": 0.3839,
        "won": 0.3356
       }
@@ -110,7 +110,7 @@
       "text": "Dominick Reyes is 36.8, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 613,
-       "model_said": 0.4095,
+       "model_said": 0.3968,
        "close_said": 0.4175,
        "won": 0.3768
       }
@@ -156,8 +156,8 @@
      "pre_l": 2.0
     }
    },
-   "p_a": 0.425,
-   "p_b": 0.575,
+   "p_a": 0.3979,
+   "p_b": 0.6021,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.5325,
@@ -174,7 +174,7 @@
     "status": "DISAGREES",
     "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": -10.7,
+    "gap_pp": -13.5,
     "signal_allowed": false,
     "factors": [
      {
@@ -183,7 +183,7 @@
       "text": "Abus Magomedov is 36.1, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 613,
-       "model_said": 0.4095,
+       "model_said": 0.3968,
        "close_said": 0.4175,
        "won": 0.3768
       }
@@ -229,8 +229,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.2604,
-   "p_b": 0.7396,
+   "p_a": 0.3165,
+   "p_b": 0.6835,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.1881,
@@ -244,14 +244,26 @@
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
    "guard": {
-    "status": "AGREES",
-    "label": "Model and market agree within the threshold",
+    "status": "DISAGREES",
+    "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": 7.2,
+    "gap_pp": 12.8,
     "signal_allowed": false,
-    "factors": [],
+    "factors": [
+     {
+      "code": "age_gap",
+      "fighter": "Nikita Krylov",
+      "text": "Nikita Krylov is 8.8 years older",
+      "record": {
+       "n": 1348,
+       "model_said": 0.3666,
+       "close_said": 0.3906,
+       "won": 0.3472
+      }
+     }
+    ],
     "certified": false,
-    "note": null
+    "note": "Not an edge: gaps this size have historically resolved in the market's favour, or have not been certified to beat the close."
    },
    "compare": {
     "version": "1.1.0",
@@ -290,8 +302,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.5577,
-   "p_b": 0.4423,
+   "p_a": 0.5144,
+   "p_b": 0.4856,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.5108,
@@ -308,7 +320,7 @@
     "status": "AGREES",
     "label": "Model and market agree within the threshold",
     "threshold_pp": 8,
-    "gap_pp": 4.7,
+    "gap_pp": 0.4,
     "signal_allowed": false,
     "factors": [],
     "certified": false,
@@ -351,8 +363,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.3483,
-   "p_b": 0.6517,
+   "p_a": 0.3648,
+   "p_b": 0.6352,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.4957,
@@ -369,7 +381,7 @@
     "status": "DISAGREES",
     "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": -14.7,
+    "gap_pp": -13.1,
     "signal_allowed": false,
     "factors": [
      {
@@ -378,7 +390,7 @@
       "text": "Alexander Volkanovski is 38.1, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 578,
-       "model_said": 0.3815,
+       "model_said": 0.3691,
        "close_said": 0.3839,
        "won": 0.3356
       }
@@ -424,8 +436,8 @@
      "pre_l": 1.0
     }
    },
-   "p_a": 0.5128,
-   "p_b": 0.4872,
+   "p_a": 0.5283,
+   "p_b": 0.4717,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.4365,
@@ -439,14 +451,37 @@
     "source": "research/clv/openers/ufc (DraftKings via ESPN, captured by the clv-openers workflow)"
    },
    "guard": {
-    "status": "AGREES",
-    "label": "Model and market agree within the threshold",
+    "status": "DISAGREES",
+    "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": 7.6,
+    "gap_pp": 9.2,
     "signal_allowed": false,
-    "factors": [],
+    "factors": [
+     {
+      "code": "age",
+      "fighter": "Merab Dvalishvili",
+      "text": "Merab Dvalishvili is 35.8, past 35: how much age has taken is where the model and the market most often differ",
+      "record": {
+       "n": 613,
+       "model_said": 0.3968,
+       "close_said": 0.4175,
+       "won": 0.3768
+      }
+     },
+     {
+      "code": "rematch",
+      "fighter": "Petr Yan",
+      "text": "a rematch (2 earlier meetings; Petr Yan won the last)",
+      "record": {
+       "n": 93,
+       "model_said": 0.5328,
+       "close_said": 0.5461,
+       "won": 0.5591
+      }
+     }
+    ],
     "certified": false,
-    "note": null
+    "note": "Not an edge: gaps this size have historically resolved in the market's favour, or have not been certified to beat the close."
    },
    "compare": {
     "version": "1.1.0",
@@ -485,8 +520,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.5035,
-   "p_b": 0.4965,
+   "p_a": 0.5031,
+   "p_b": 0.4969,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.4892,
@@ -546,8 +581,8 @@
      "pre_l": 2.0
     }
    },
-   "p_a": 0.653,
-   "p_b": 0.347,
+   "p_a": 0.6528,
+   "p_b": 0.3472,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.5217,
@@ -573,7 +608,7 @@
       "text": "Alexander Volkov is 38.0, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 578,
-       "model_said": 0.3815,
+       "model_said": 0.3691,
        "close_said": 0.3839,
        "won": 0.3356
       }
@@ -619,8 +654,8 @@
      "pre_l": 1.0
     }
    },
-   "p_a": 0.3444,
-   "p_b": 0.6556,
+   "p_a": 0.3263,
+   "p_b": 0.6737,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": {
     "p_a": 0.5721,
@@ -637,7 +672,7 @@
     "status": "DISAGREES",
     "label": "Model disagrees with market",
     "threshold_pp": 8,
-    "gap_pp": -22.8,
+    "gap_pp": -24.6,
     "signal_allowed": false,
     "factors": [
      {
@@ -646,7 +681,7 @@
       "text": "Aaron Pico has 2 UFC bouts in the data (pro record before the UFC 13-4): a short sample",
       "record": {
        "n": 1033,
-       "model_said": 0.5223,
+       "model_said": 0.5345,
        "close_said": 0.5102,
        "won": 0.5218
       }
@@ -657,7 +692,7 @@
       "text": "Losene Keita has 2 UFC bouts in the data (pro record before the UFC 16-1): a short sample",
       "record": {
        "n": 1033,
-       "model_said": 0.5223,
+       "model_said": 0.5345,
        "close_said": 0.5102,
        "won": 0.5218
       }
@@ -703,8 +738,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.2079,
-   "p_b": 0.7921,
+   "p_a": 0.2077,
+   "p_b": 0.7923,
    "basis": "debut: priced from the prior (the pre-UFC record when on file)",
    "market": null,
    "guard": {
@@ -720,7 +755,7 @@
       "text": "Lucia Szabov\u00e1 makes a UFC debut: the model has no UFC bout to rate",
       "record": {
        "n": 364,
-       "model_said": 0.4862,
+       "model_said": 0.4958,
        "close_said": 0.4192,
        "won": 0.3791
       }
@@ -731,7 +766,7 @@
       "text": "Tainara Lisboa returns after 378 days out",
       "record": {
        "n": 446,
-       "model_said": 0.4535,
+       "model_said": 0.4497,
        "close_said": 0.462,
        "won": 0.4395
       }
@@ -742,7 +777,7 @@
       "text": "Tainara Lisboa is 35.7, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 613,
-       "model_said": 0.4095,
+       "model_said": 0.3968,
        "close_said": 0.4175,
        "won": 0.3768
       }
@@ -753,7 +788,7 @@
       "text": "Tainara Lisboa moves down 1 division: the rating was earned at another weight",
       "record": {
        "n": 305,
-       "model_said": 0.4689,
+       "model_said": 0.4685,
        "close_said": 0.4834,
        "won": 0.4984
       }
@@ -798,8 +833,8 @@
      "pre_l": 1.0
     }
    },
-   "p_a": 0.5808,
-   "p_b": 0.4192,
+   "p_a": 0.5789,
+   "p_b": 0.4211,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -815,7 +850,7 @@
       "text": "Joe Kropschot has 1 UFC bout in the data (pro record before the UFC 8-3): a short sample",
       "record": {
        "n": 1033,
-       "model_said": 0.5223,
+       "model_said": 0.5345,
        "close_said": 0.5102,
        "won": 0.5218
       }
@@ -826,7 +861,7 @@
       "text": "Nick Klein has 3 UFC bouts in the data (pro record before the UFC 5-1): a short sample",
       "record": {
        "n": 955,
-       "model_said": 0.5352,
+       "model_said": 0.5464,
        "close_said": 0.5415,
        "won": 0.5414
       }
@@ -837,7 +872,7 @@
       "text": "Nick Klein returns after 454 days out",
       "record": {
        "n": 446,
-       "model_said": 0.4535,
+       "model_said": 0.4497,
        "close_said": 0.462,
        "won": 0.4395
       }
@@ -882,8 +917,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.5958,
-   "p_b": 0.4042,
+   "p_a": 0.5909,
+   "p_b": 0.4091,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -899,7 +934,7 @@
       "text": "Talita Alencar is 36.0, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 613,
-       "model_said": 0.4095,
+       "model_said": 0.3968,
        "close_said": 0.4175,
        "won": 0.3768
       }
@@ -944,8 +979,8 @@
      "pre_l": 1.0
     }
    },
-   "p_a": 0.4031,
-   "p_b": 0.5969,
+   "p_a": 0.4026,
+   "p_b": 0.5974,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -961,7 +996,7 @@
       "text": "Theodor Berggren has 1 UFC bout in the data (pro record before the UFC 8-3): a short sample",
       "record": {
        "n": 1033,
-       "model_said": 0.5223,
+       "model_said": 0.5345,
        "close_said": 0.5102,
        "won": 0.5218
       }
@@ -972,7 +1007,7 @@
       "text": "Rodrigo Sezinando has 1 UFC bout in the data (pro record before the UFC 9-1): a short sample",
       "record": {
        "n": 1033,
-       "model_said": 0.5223,
+       "model_said": 0.5345,
        "close_said": 0.5102,
        "won": 0.5218
       }
@@ -983,7 +1018,7 @@
       "text": "Rodrigo Sezinando returns after 413 days out",
       "record": {
        "n": 446,
-       "model_said": 0.4535,
+       "model_said": 0.4497,
        "close_said": 0.462,
        "won": 0.4395
       }
@@ -1028,8 +1063,8 @@
      "pre_l": 3.0
     }
    },
-   "p_a": 0.4219,
-   "p_b": 0.5781,
+   "p_a": 0.4212,
+   "p_b": 0.5788,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -1045,7 +1080,7 @@
       "text": "Andre Petroski is 35.4, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 613,
-       "model_said": 0.4095,
+       "model_said": 0.3968,
        "close_said": 0.4175,
        "won": 0.3768
       }
@@ -1090,8 +1125,8 @@
      "pre_l": 1.0
     }
    },
-   "p_a": 0.4442,
-   "p_b": 0.5558,
+   "p_a": 0.4583,
+   "p_b": 0.5417,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -1107,7 +1142,7 @@
       "text": "JeongYeong Lee returns after 538 days out",
       "record": {
        "n": 446,
-       "model_said": 0.4535,
+       "model_said": 0.4497,
        "close_said": 0.462,
        "won": 0.4395
       }
@@ -1118,7 +1153,7 @@
       "text": "Julian Erosa is 37.3, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 578,
-       "model_said": 0.3815,
+       "model_said": 0.3691,
        "close_said": 0.3839,
        "won": 0.3356
       }
@@ -1163,8 +1198,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.3567,
-   "p_b": 0.6433,
+   "p_a": 0.2978,
+   "p_b": 0.7022,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -1180,7 +1215,7 @@
       "text": "Gaston Bola\u00f1os is 6.5 years older",
       "record": {
        "n": 1348,
-       "model_said": 0.3909,
+       "model_said": 0.3666,
        "close_said": 0.3906,
        "won": 0.3472
       }
@@ -1191,7 +1226,7 @@
       "text": "Francis Marshall moves down 1 division: the rating was earned at another weight",
       "record": {
        "n": 305,
-       "model_said": 0.4689,
+       "model_said": 0.4685,
        "close_said": 0.4834,
        "won": 0.4984
       }
@@ -1236,8 +1271,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.4039,
-   "p_b": 0.5961,
+   "p_a": 0.3737,
+   "p_b": 0.6263,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -1253,7 +1288,7 @@
       "text": "Renato Moicano is 37.4, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 578,
-       "model_said": 0.3815,
+       "model_said": 0.3691,
        "close_said": 0.3839,
        "won": 0.3356
       }
@@ -1298,8 +1333,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.3949,
-   "p_b": 0.6051,
+   "p_a": 0.437,
+   "p_b": 0.563,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -1315,7 +1350,7 @@
       "text": "Randy Brown is 36.3, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 613,
-       "model_said": 0.4095,
+       "model_said": 0.3968,
        "close_said": 0.4175,
        "won": 0.3768
       }
@@ -1360,8 +1395,8 @@
      "pre_l": 1.0
     }
    },
-   "p_a": 0.2794,
-   "p_b": 0.7206,
+   "p_a": 0.2797,
+   "p_b": 0.7203,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -1377,7 +1412,7 @@
       "text": "Yana Santos returns after 392 days out",
       "record": {
        "n": 446,
-       "model_said": 0.4535,
+       "model_said": 0.4497,
        "close_said": 0.462,
        "won": 0.4395
       }
@@ -1388,7 +1423,7 @@
       "text": "Yana Santos is 37.0, past 35: how much age has taken is where the model and the market most often differ",
       "record": {
        "n": 613,
-       "model_said": 0.4095,
+       "model_said": 0.3968,
        "close_said": 0.4175,
        "won": 0.3768
       }
@@ -1433,8 +1468,8 @@
      "pre_l": 0.0
     }
    },
-   "p_a": 0.5743,
-   "p_b": 0.4257,
+   "p_a": 0.5744,
+   "p_b": 0.4256,
    "basis": "Elo from every earlier UFC bout in the data",
    "market": null,
    "guard": {
@@ -1450,7 +1485,7 @@
       "text": "Jean-Paul Lebosnoyani has 3 UFC bouts in the data (pro record before the UFC 8-2): a short sample",
       "record": {
        "n": 955,
-       "model_said": 0.5352,
+       "model_said": 0.5464,
        "close_said": 0.5415,
        "won": 0.5414
       }
@@ -1461,7 +1496,7 @@
       "text": "Farman Hasanov has 1 UFC bout in the data (pro record before the UFC 5-0): a short sample",
       "record": {
        "n": 1033,
-       "model_said": 0.5223,
+       "model_said": 0.5345,
        "close_said": 0.5102,
        "won": 0.5218
       }
