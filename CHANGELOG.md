@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-24 — Signal Center: the upgrade applies to a table that already holds signals
+
+The deploy of the backfill (2026-10-24 01:14 UTC) rolled back, so nothing changed: `cannot ALTER TABLE "sc_signals" because it has pending trigger events`. The upgrade updates the stored rows twice (dating, then placement). The second update of a row the same transaction already wrote queues the deferred `current_version_id` check, and the later `ALTER TABLE … enable row level security` will not run while a check is pending. The file now checks every constraint at its statement (`set constraints all immediate`, this transaction only). The SQL suite's upgrade test now builds the table as production holds it, with versions and the guard #737 installed, and applies the file in one transaction as the deploy does. Before the fix it failed with production's exact error.
+
 ## 2026-10-24 — Signal Center: NFL injuries, dated by EdgeDesk's first sight
 
 nflverse's copy of the NFL's official injury report has no per-row publication time, which kept NFL injury signals blocked. The injury sync (every six hours, unchanged) now also appends each game designation new or changed since its last run to an append-only ledger, `football/injuries/history/nfl_<season>.jsonl`, stamped with its own retrieval time. Signal Center reads quarterbacks from it.
