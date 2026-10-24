@@ -46,6 +46,26 @@ The general home lean is the job of the football-only margin calibrator
 (`football/cfb_p4/margin_calibration.js`, already in SHADOW), not of an altitude
 term.
 
+> **Re-checked 2026-10-24 against the 2.8-pt home field**
+> (`football/validation/altitude_cfb_recheck.json`, `research/recheck.js`).
+> The paragraph above was written against the old 4.082-pt constant. On
+> 2026-10-19 the engine moved to one 2.8-pt home field, so the harness was run
+> again on the current engine.
+> - **Verdict unchanged: REJECTED, 0 points.** On the 139 held-out 2022–2025
+>   games it touched, MAE 12.933 → 12.950 (p = 0.71). Permutation placebo
+>   p = 0.14 (was 0.66). G6 venue robustness now passes. G1 and G4 still fail.
+> - **The double-counting argument has flipped.** All home sides are now
+>   about right (residual +0.07). Hosts of a 3,000+ ft climb beat the number by
+>   **+1.04 pts** (95% CI −0.03 to +2.22, 650 games). An altitude term would no
+>   longer double count. It would address a real residual that held-out
+>   accuracy has not yet shown it can fix.
+> - **The descent placebo** shows home teams beating the number by +1.95 pts when
+>   a mountain visitor descends 3,000+ ft. Altitude physiology does not predict
+>   that. Part of the residual may be how mountain programmes are rated.
+> - Not re-run: the play-load diagnostics, which need the research package
+>   panel. The committed `params.js` and `BACKTEST.md` are unchanged; promotion
+>   still needs `run.js --write` to pass every gate, and a person.
+
 ## 2. The research package, re-verified
 
 `altitude_analysis.zip` was treated as research input, not production code.

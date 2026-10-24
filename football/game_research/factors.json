@@ -1,0 +1,174 @@
+{
+ "schema": "edgedesk_factor_evidence_v1",
+ "version": "edgedesk_factor_evidence/1",
+ "league": "cfb",
+ "model_version": "edgedesk_cfb_p4_v1.0.1",
+ "factors": {
+  "rating": {
+   "label": "Team strength",
+   "in_number": true,
+   "status": "CORE",
+   "points_text": "the neutral-field rating gap",
+   "test": "the whole engine replayed cold on 2022-2025, seasons no layer was tuned on",
+   "result": "spread MAE 12.769 on 3127 games against the closing line’s 12.015; rating and home field alone: 12.989",
+   "source": "football/cfb_p4/params.js",
+   "status_text": "The model’s base, tested as a whole"
+  },
+  "home_field": {
+   "label": "Home field",
+   "in_number": true,
+   "status": "VALIDATED",
+   "points": 2.8,
+   "points_text": "2.8 pts for every home team, the same at every stadium (0 at a neutral site)",
+   "test": "walk-forward 2014-2025, 8724 games, against the previous 4.082-pt constant",
+   "result": "spread MAE −0.052 (95% CI −0.08 to −0.02), better in 11/12 seasons; a per-stadium table was tested and rejected: it tracked the home team’s own rating (corr 0.77), not the stadium",
+   "source": "football/cfb_p4/home_field.js",
+   "status_text": "Validated on unseen games"
+  },
+  "matchup": {
+   "label": "Stylistic matchup",
+   "in_number": true,
+   "status": "IN_USE_UNTESTED",
+   "pairs": 8,
+   "points_text": "8 offence-vs-defence pairings on both sides of the ball (run, pass, trenches, explosives, early downs, red zone, field position), netted into one term",
+   "test": "weights fitted on 2014-2019 residuals (4331 games, in-sample r² 0.023)",
+   "result": "no held-out test of its own: the historical replay carries no play-level efficiency, so the term is absent from every out-of-sample record",
+   "source": "football/cfb_p4/params.js",
+   "status_text": "In the number, not yet tested on unseen games by itself"
+  },
+  "altitude": {
+   "label": "Altitude",
+   "in_number": false,
+   "status": "REJECTED",
+   "points": 0,
+   "points_text": "0 pts: research only (shadow estimate +0.76 pts, not in the number)",
+   "test": "walk-forward 2014-2021, confirmed on 2022-2025; 8 declared gates",
+   "result": "held-out MAE 12.905 → 12.924 on the 139 games it touched (p = 0.55); failed 3 of 8 gates",
+   "recheck": {
+    "run_at": "2026-10-24T04:50:22.903Z",
+    "home_field_pts": 2.8,
+    "verdict": "REJECTED",
+    "effect": -0.017,
+    "p": 0.7099,
+    "permutation_p": 0.1443,
+    "mountain_residual": {
+     "n": 650,
+     "host_venues": 14,
+     "v1_residual": 1.045,
+     "ci95": [
+      -0.034,
+      2.222
+     ],
+     "v1_mae": 12.579
+    },
+    "all_residual": {
+     "n": 13511,
+     "host_venues": 161,
+     "v1_residual": 0.066,
+     "ci95": [
+      -0.319,
+      0.477
+     ],
+     "v1_mae": 12.823
+    },
+    "text": "Re-run 2026-10-24 against the 2.8-pt home field: still REJECTED (held-out change −0.017 MAE, p = 0.71; placebo p = 0.14). Replayed on that home field, hosts of a 3,000+ ft climb beat EdgeDesk’s number by +1.04 pts across 2006-2025 (95% CI −0.03 to +2.22, 650 games): watched, not priced"
+   },
+   "source": "football/altitude/params.js, football/validation/altitude_cfb_recheck.json",
+   "status_text": "Tested on unseen games and rejected: adds 0"
+  },
+  "travel": {
+   "label": "Travel",
+   "in_number": false,
+   "status": "REJECTED",
+   "points": 0,
+   "points_text": "0 pts: measured, not applied",
+   "test": "walk-forward residual regression on 6419 tune-window road games, scored on 2022-2025",
+   "result": "held-out MAE +0.043 (worse) and the time-zone slope reversed sign after the tune window",
+   "source": "football/cfb_p4/params.js",
+   "status_text": "Tested on unseen games and rejected: adds 0"
+  },
+  "rivalry": {
+   "label": "Rivalry",
+   "in_number": false,
+   "status": "REJECTED",
+   "points": 0,
+   "points_text": "0 pts to the mean; widens the outcome range only",
+   "test": "467 rivalry pairs, persistence 2014-2025",
+   "result": "Pair mean residual persists at r = -0.042 from the tune window into 2014-2025, and applying it raises held-out residual MAE by 0.063 points on 2022-2025.",
+   "source": "football/cfb_p4/params.js",
+   "status_text": "Tested on unseen games and rejected: adds 0"
+  },
+  "regime": {
+   "label": "Regime change",
+   "in_number": true,
+   "status": "IN_USE_NOT_SIGNIF",
+   "points_text": "changes how much a programme’s long-run rating counts after a coaching change; at most games it gives the standard weight",
+   "test": "walk-forward 2014-2025, 2203 coaching-change games",
+   "result": "spread MAE −0.032 (95% CI −0.10 to +0.03), better in 7 of 12 seasons",
+   "source": "football/cfb_p4/regime_curve.js",
+   "status_text": "In the number, held-out gain not significant"
+  },
+  "schedule": {
+   "label": "Rest and schedule",
+   "in_number": true,
+   "status": "HELD_OUT_SIGNAL",
+   "points_text": "short rest, byes, road stretches, look-aheads",
+   "test": "fitted on 3369 tune games, scored on 2022 on",
+   "result": "held-out r² 0.0025 (tune 0.0069); average move 1.13 pts",
+   "source": "football/cfb_p4/params.js",
+   "status_text": "In the number; explains some error on unseen seasons"
+  },
+  "conference": {
+   "label": "Conference strength",
+   "in_number": true,
+   "status": "HELD_OUT_SIGNAL",
+   "points_text": "cross-conference games only, fading to 0 by six games played",
+   "test": "fitted on 1193 tune games, scored on 2022 on",
+   "result": "held-out r² 0.079",
+   "source": "football/cfb_p4/params.js",
+   "status_text": "In the number; explains some error on unseen seasons"
+  },
+  "qb": {
+   "label": "Quarterback",
+   "in_number": true,
+   "status": "HELD_OUT_SIGNAL",
+   "points_text": "10.1 pts per point of EPA per dropback, when a measured starter is on file",
+   "test": "fitted on 4255 tune games, scored on 2022 on",
+   "result": "held-out r² 0.0081",
+   "source": "football/cfb_p4/params.js",
+   "status_text": "In the number; explains some error on unseen seasons"
+  },
+  "weather": {
+   "label": "Weather",
+   "in_number": false,
+   "status": "NOT_PRICED",
+   "points": 0,
+   "points_text": "0 pts: no historical weather series exists, so no coefficient was earned",
+   "test": null,
+   "result": null,
+   "source": "football/cfb_p4/params.js",
+   "status_text": "Shown for context; no term in the number"
+  },
+  "officials": {
+   "label": "Officiating",
+   "in_number": false,
+   "status": "NOT_PRICED",
+   "points": 0,
+   "points_text": "0 pts: shown for context",
+   "test": null,
+   "result": null,
+   "source": "lib/edgedesk_game_context.js",
+   "status_text": "Shown for context; no term in the number"
+  },
+  "reliability": {
+   "label": "Data quality (reliability)",
+   "in_number": false,
+   "status": "NOT_VALIDATED",
+   "points_text": "moves no number: a hand-weighted 0-100 check of the inputs’ completeness, freshness, agreement and stability",
+   "test": "graded games by score band (2026-09-25)",
+   "result": "76 graded games; 80-89: 41, 70-79: 12, 60-69: 5, 50-59: 18; no graded game has scored 90 or more; too few graded games per reliability bucket to test the ordering",
+   "source": "football/validation/reliability_calibration_cfb.json",
+   "status_text": "Not yet validated against results"
+  }
+ }
+}
