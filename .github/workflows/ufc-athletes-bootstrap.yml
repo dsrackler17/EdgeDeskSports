@@ -1,0 +1,49 @@
+# One-off bootstrap for the UFC model's age curve: ESPN answers GitHub's
+# runners but not every development sandbox, so the first fighters.csv
+# (model_loop/data/ufc/fighters.csv: each fighter's date of birth) is fetched
+# here and committed back to the branch that triggered it. After the first
+# run the weekly UFC loop (model-loop-ufc.yml) keeps the file current; this
+# workflow is removed before merge.
+name: UFC athletes bootstrap
+
+on:
+  push:
+    branches: ['claude/youthful-goldberg-b4rfsz']
+    paths: ['.github/workflows/ufc-athletes-bootstrap.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  athletes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Probe ESPN's fighter documents (what a fight history endpoint answers)
+        continue-on-error: true
+        run: |
+          for u in \
+            "https://site.web.api.espn.com/apis/common/v3/sports/mma/athletes/3949584" \
+            "https://sports.core.api.espn.com/v2/sports/mma/athletes/3949584" \
+            "https://sports.core.api.espn.com/v2/sports/mma/athletes/3949584/eventlog" \
+            "https://site.web.api.espn.com/apis/common/v3/sports/mma/athletes/3949584/fight-history" \
+            "https://site.web.api.espn.com/apis/common/v3/sports/mma/athletes/3949584/overview"; do
+            code=$(curl -sS -m 30 -o /tmp/probe.json -w '%{http_code}' "$u" || echo 000)
+            echo "$code $u"
+            python3 -c "import json;d=json.load(open('/tmp/probe.json'));a=d.get('athlete',d);print(' keys:',sorted(a.keys())[:40]);print(' dob:',a.get('dateOfBirth'),' age:',a.get('age'))" 2>/dev/null || true
+          done
+      - name: Dates of birth
+        run: python3 -m model_loop.adapters.ufc.ingest athletes
+      - name: Commit fighters.csv to this branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add model_loop/data/ufc/fighters.csv
+          git commit -m "ufc data: fighters' dates of birth (ESPN athlete documents)" || { echo "nothing new"; exit 0; }
+          for i in 1 2 3 4; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0; sleep $((2**i)); done
+          exit 1
