@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_model_loop_versions_v1",
  "sport": "UFC",
- "current": "1.1.0",
+ "current": "1.2.0",
  "versions": [
   {
    "version": "1.0.0",
@@ -16,7 +16,7 @@
     "calibration": "none"
    },
    "config_sha256": "a5e2c893272c05d137b002ce2b1619dea31db0cef419dae496b0ec7eec55f448",
-   "status": "SERVED (EXPERIMENTAL)",
+   "status": "RETIRED (rollback target)",
    "promoted_by": "preregistered-rule",
    "promoted_at": "2026-10-21T04:09:11Z",
    "reason": "Cleared the preregistered rule: clears every condition. Validation 2021-2024 log loss 0.67561 (coin flip 0.69315); 2025 holdout 0.66571. Outcome-graded only: no UFC closing prices are archived.",
@@ -66,7 +66,7 @@
     "calibration": "none"
    },
    "config_sha256": "7aeca585b04434e178efa34de8566683781ce6fec4b2daa1a9c52c30a5c48b8a",
-   "status": "SERVED (EXPERIMENTAL)",
+   "status": "RETIRED (rollback target); runnable for comparison",
    "promoted_by": "weekly-loop",
    "promoted_at": "2026-10-21T04:09:13Z",
    "reason": "weekly loop: candidate new_faster cleared the full-window rule",
@@ -80,6 +80,116 @@
      -0.00295,
      -0.00033
     ]
+   }
+  },
+  {
+   "version": "1.2.0",
+   "parent": "1.1.0",
+   "config": {
+    "k": 64,
+    "k_new_mult": 1.5,
+    "new_bouts": 3,
+    "layoff_days": 365,
+    "layoff_regress": 0.25,
+    "scale": 400.0,
+    "calibration": "none",
+    "debut_offset": 25.0,
+    "prior_rec": 150,
+    "prior_exp": -25,
+    "age_slope": -15,
+    "age_knee": 32
+   },
+   "config_sha256": "e6f03e299dbb731d559e3421aaf89fb4e80f17d89ef0b3d8ac57150470599245",
+   "status": "SERVED (EXPERIMENTAL)",
+   "promoted_by": "study-2026-10",
+   "promoted_at": "2026-10-24T14:58:41Z",
+   "reason": "2026-10 study: pre_ufc_record, age kept one at a time on 2021-2023; on the 1623 test bouts from 2024 log loss 0.66579 -> 0.64587 (-0.01991, card-blocked 95% interval [-0.02806, -0.01144]), Brier -0.00939 against 1.1.0. Cleared the promotion rule.",
+   "evidence": {
+    "study": "docs/model-loop/ufc/study (protocol sha256 dac131d32e81a1cf5d87f82f5211b8b26d19d8a45d1d8284884d8945daff2761)",
+    "test_window": {
+     "window": [
+      2024,
+      2099
+     ],
+     "n": 1623,
+     "old_log_loss": 0.66579,
+     "new_log_loss": 0.64587,
+     "delta_log_loss": -0.01991,
+     "ci95": [
+      -0.02806,
+      -0.01144
+     ],
+     "delta_brier": -0.00939
+    },
+    "kept": [
+     "pre_ufc_record",
+     "age"
+    ],
+    "dropped": [
+     "step_size",
+     "short_sample",
+     "layoff",
+     "division_change",
+     "recency",
+     "head_to_head"
+    ],
+    "not_tested": [],
+    "facts": {
+     "file": "model_loop/data/ufc/fighter_facts.csv",
+     "sha256": "a21fc71c56cdb53fe98e62290849c8349f55b8a34234ee63026c9348dca7113d",
+     "fighters": 2425,
+     "with_date_of_birth": 2407,
+     "pre_record_source": {
+      "reconstructed": 2423,
+      "none": 2
+     }
+    },
+    "reference": {
+     "name": "Ultimate UFC Dataset (ufc-master.csv)",
+     "timestamped": false,
+     "matched": 5662,
+     "sha256": "b8aa6604539d5981bba561cb65da26133567732145ca48efbec2d9423b081937"
+    },
+    "vs_close_since_2018": {
+     "old": {
+      "n": 3764,
+      "model": {
+       "n": 3764,
+       "log_loss": 0.67065,
+       "brier": 0.23901,
+       "accuracy": 0.5781
+      },
+      "close": {
+       "n": 3764,
+       "log_loss": 0.60377,
+       "brier": 0.20851,
+       "accuracy": 0.6679
+      },
+      "model_minus_close_ci95": [
+       0.05797,
+       0.07591
+      ]
+     },
+     "new": {
+      "n": 3764,
+      "model": {
+       "n": 3764,
+       "log_loss": 0.65045,
+       "brier": 0.22944,
+       "accuracy": 0.6097
+      },
+      "close": {
+       "n": 3764,
+       "log_loss": 0.60377,
+       "brier": 0.20851,
+       "accuracy": 0.6679
+      },
+      "model_minus_close_ci95": [
+       0.03857,
+       0.05551
+      ]
+     }
+    }
    }
   }
  ]

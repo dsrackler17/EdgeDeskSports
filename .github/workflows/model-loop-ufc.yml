@@ -13,7 +13,11 @@
 # Nothing is published until the tuned Elo clears the preregistered rule
 # (validation 2021-2024 beats the coin flip with its 95% interval below zero,
 # and the 2025 holdout is below it too). The weekly research tests a champion
-# term too (model.py champ_bonus, title flags regenerated in the run).
+# term too (model.py champ_bonus, title flags regenerated in the run). Every
+# published bout carries the market's latest no-vig price and the disagreement
+# guard's verdict (model_loop/adapters/ufc/guard.py, docs/model-loop/ufc/guard.json).
+# A fetching run also fetches the date of birth of every fighter not yet on file
+# and rebuilds the fighter facts the model reads (loop.py refresh_inputs).
 # ESPN answers GitHub's runners (the
 # UFC sync job already reads it every six hours); nothing logs in or pays.
 name: Model loop UFC (per event)

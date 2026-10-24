@@ -100,6 +100,15 @@ eq('the NHL value is a LEAN, labelled as an unvalidated model', [nhl.decision, n
 chk('…and says why it is capped', /not yet validated against closing prices/.test(nhl.action_reason_text));
 eq('the aligned NHL game is a PASS', [byId['nhl:espn:2'].decision, byId['nhl:espn:2'].action_reason_code].join(' '), 'PASS MARKET_ALIGNED');
 
+/* a guarded disagreement (UFC: model_loop/adapters/ufc/guard.py via the slate) is never a lean or a blended edge */
+const Sd = JSON.parse(JSON.stringify(S));
+const ev1 = Sd.events.find((e) => e.id === 'nhl:espn:1');
+ev1.research.model.disagreement = { label: 'Model disagrees with market', gap_pp: 12.5, threshold_pp: 8, signal_allowed: false };
+ev1.research.model.note = 'model disagrees with market by 12.5 points (age); not an edge';
+const dRow = F.rows(Sd, { now: NOW, covered: { 'cfb|401000001': 1 } }).find((r) => r.game_id === 'nhl:espn:1');
+eq('a disagreement the guard has not certified: no decision, labelled, never a lean', [dRow.board_kind, dRow.decision, dRow.action_reason_code, !!dRow.reference_quote], ['MODEL_DISAGREES', 'NO_DECISION', 'MODEL_DISAGREES_WITH_MARKET', false]);
+chk('…and says so with both numbers and the reason', /^Model disagrees with market: EdgeDesk .*12\.5 points from the market’s no-vig price \(threshold 8\)\. Model disagrees with market by 12\.5 points \(age\); not an edge\. .*not an edge\.$/.test(dRow.action_reason_text), dRow.action_reason_text);
+
 console.log('— C · scrutiny');
 const wild = byId['mlb:espn:3'];
 eq('a gap too large to believe is WATCH · CHECK THE NUMBER', [wild.decision, wild.decision_qualifier], ['WATCH', 'CHECK THE NUMBER']);

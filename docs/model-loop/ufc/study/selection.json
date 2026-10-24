@@ -1,0 +1,223 @@
+{
+ "schema": "edgedesk_model_loop_ufc_selection_v1",
+ "generated_at": "2026-10-24T14:58:32Z",
+ "protocol_sha256": "dac131d32e81a1cf5d87f82f5211b8b26d19d8a45d1d8284884d8945daff2761",
+ "facts": {
+  "file": "model_loop/data/ufc/fighter_facts.csv",
+  "sha256": "a21fc71c56cdb53fe98e62290849c8349f55b8a34234ee63026c9348dca7113d",
+  "fighters": 2425,
+  "with_date_of_birth": 2407,
+  "pre_record_source": {
+   "reconstructed": 2423,
+   "none": 2
+  }
+ },
+ "base_version": "1.1.0",
+ "steps": [
+  {
+   "step": "base",
+   "version": "1.1.0",
+   "fit_log_loss": 0.67946,
+   "select_log_loss": 0.67543
+  },
+  {
+   "step": "step_size",
+   "label": "Step size: k and the newcomer step re-tuned (1.1.0 sat at the edge of its grid, k 64)",
+   "grid_points": 20,
+   "chosen": {
+    "k_new_mult": 1.25
+   },
+   "fit_log_loss": 0.67897,
+   "fit_delta": -0.0005,
+   "select_log_loss": 0.67576,
+   "select_delta": 0.00032,
+   "select_ci95": [
+    -0.00081,
+    0.00144
+   ],
+   "n_select": 1663,
+   "decision": "DROPPED",
+   "reason": "SELECT log loss change +0.00032 does not clear -0.0005",
+   "seconds": 2.6
+  },
+  {
+   "step": "short_sample",
+   "label": "Short-sample shrinkage and a debut prior: few UFC bouts are pulled toward the prior; a debutant need not start at 1500",
+   "grid_points": 90,
+   "chosen": {
+    "k_new_mult": 1.0,
+    "debut_offset": 25
+   },
+   "fit_log_loss": 0.6789,
+   "fit_delta": -0.00056,
+   "select_log_loss": 0.67633,
+   "select_delta": 0.00089,
+   "select_ci95": [
+    -0.00144,
+    0.00318
+   ],
+   "n_select": 1663,
+   "decision": "DROPPED",
+   "reason": "SELECT log loss change +0.00089 does not clear -0.0005",
+   "seconds": 16.2
+  },
+  {
+   "step": "pre_ufc_record",
+   "label": "The pre-UFC record as the prior: professional wins, losses and experience before the first bout in the data",
+   "grid_points": 90,
+   "chosen": {
+    "debut_offset": 25.0,
+    "prior_rec": 150,
+    "prior_exp": -25
+   },
+   "fit_log_loss": 0.66356,
+   "fit_delta": -0.0159,
+   "select_log_loss": 0.66401,
+   "select_delta": -0.01142,
+   "select_ci95": [
+    -0.01817,
+    -0.00444
+   ],
+   "n_select": 1663,
+   "decision": "KEPT",
+   "reason": "clears the keep rule",
+   "seconds": 16.2
+  },
+  {
+   "step": "layoff",
+   "label": "Layoff decay: a smooth pull toward the prior after long inactivity, and a faster step on return",
+   "grid_points": 72,
+   "chosen": {
+    "layoff_days": 270,
+    "layoff_regress": 0.4,
+    "layoff_mode": "smooth",
+    "layoff_span": 180
+   },
+   "fit_log_loss": 0.66259,
+   "fit_delta": -0.00097,
+   "select_log_loss": 0.66439,
+   "select_delta": 0.00037,
+   "select_ci95": [
+    -0.00231,
+    0.00324
+   ],
+   "n_select": 1663,
+   "decision": "DROPPED",
+   "reason": "SELECT log loss change +0.00037 does not clear -0.0005",
+   "seconds": 11.7
+  },
+  {
+   "step": "age",
+   "label": "Age curve: points per year above a knee, more past 36, and for youth",
+   "grid_points": 90,
+   "chosen": {
+    "age_slope": -15,
+    "age_knee": 32
+   },
+   "fit_log_loss": 0.65975,
+   "fit_delta": -0.00381,
+   "select_log_loss": 0.65701,
+   "select_delta": -0.00701,
+   "select_ci95": [
+    -0.01121,
+    -0.00273
+   ],
+   "n_select": 1663,
+   "decision": "KEPT",
+   "reason": "clears the keep rule",
+   "seconds": 18.7
+  },
+  {
+   "step": "division_change",
+   "label": "Division change: the rating discounted toward the prior, and points per division moved",
+   "grid_points": 100,
+   "chosen": {
+    "div_up": -40,
+    "div_down": 40
+   },
+   "fit_log_loss": 0.6582,
+   "fit_delta": -0.00155,
+   "select_log_loss": 0.65978,
+   "select_delta": 0.00277,
+   "select_ci95": [
+    0.00049,
+    0.00504
+   ],
+   "n_select": 1663,
+   "decision": "DROPPED",
+   "reason": "SELECT log loss change +0.00277 does not clear -0.0005",
+   "seconds": 21.2
+  },
+  {
+   "step": "recency",
+   "label": "Recency: a rating's distance from the prior halves every so many days, so old results fade",
+   "grid_points": 12,
+   "chosen": {},
+   "fit_log_loss": 0.65975,
+   "fit_delta": 0.0,
+   "select_log_loss": 0.65701,
+   "select_delta": 0.0,
+   "select_ci95": [
+    0.0,
+    0.0
+   ],
+   "n_select": 1663,
+   "decision": "DROPPED",
+   "reason": "the fit window chose the model before the step (no change)",
+   "seconds": 2.2
+  },
+  {
+   "step": "head_to_head",
+   "label": "Head to head: earlier meetings of the same two fighters (rematches, trilogies)",
+   "grid_points": 12,
+   "chosen": {
+    "h2h": 150
+   },
+   "fit_log_loss": 0.65947,
+   "fit_delta": -0.00029,
+   "select_log_loss": 0.65672,
+   "select_delta": -0.00029,
+   "select_ci95": [
+    -0.00176,
+    0.0011
+   ],
+   "n_select": 1663,
+   "decision": "DROPPED",
+   "reason": "SELECT log loss change -0.00029 does not clear -0.0005",
+   "seconds": 2.4
+  }
+ ],
+ "selected_config": {
+  "k": 64,
+  "k_new_mult": 1.5,
+  "new_bouts": 3,
+  "layoff_days": 365,
+  "layoff_regress": 0.25,
+  "scale": 400.0,
+  "calibration": "none",
+  "debut_offset": 25.0,
+  "prior_rec": 150,
+  "prior_exp": -25,
+  "age_slope": -15,
+  "age_knee": 32
+ },
+ "kept": [
+  "pre_ufc_record",
+  "age"
+ ],
+ "dropped": [
+  "step_size",
+  "short_sample",
+  "layoff",
+  "division_change",
+  "recency",
+  "head_to_head"
+ ],
+ "not_tested": [],
+ "fit_log_loss": 0.65975,
+ "select_log_loss": 0.65701,
+ "base": {
+  "fit_log_loss": 0.67946,
+  "select_log_loss": 0.67543
+ }
+}

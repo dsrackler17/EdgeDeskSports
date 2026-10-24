@@ -34,12 +34,25 @@
    model_loop/data/ufc/title_bouts.csv exactly as model.py load() reads it.
    The loop tests it every week; while the served configuration has no
    champ_bonus (0), it changes nothing.
+
+   The 2026-10 parameters (model.py _walk_extended; docs/model-loop/ufc/study):
+   a configuration that sets any of them takes walkExtended(), the same
+   arithmetic in the same order as the Python: each fighter's prior (1500 +
+   debut_offset + the pre-UFC record's terms, fixed at the first appearance;
+   the stored rating starts there), the rating moved toward the prior by time
+   (the step layoff of 1.0/1.1, or the smooth one; the recency half-life) and
+   by a division change, then the price-only terms (short-sample shrinkage,
+   age, division step, head to head, the champion). The facts it reads
+   (age, division step, pre-UFC record) are factors.ts's, from
+   model_loop/data/ufc/fighter_facts.csv, the file the loop reads too. With
+   none of them set, walk() is the 1.1.0 walk above, unchanged.
    =========================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseCsv } from '../../core/csv.ts';
 import { sha256Hex } from '../../core/canonical.ts';
+import { computeFactors, loadFighterFacts, FIGHTER_FACTS_CSV, type BoutFacts, type FighterFact } from './factors.ts';
 
 export const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 export const BOUTS_CSV = 'model_loop/data/ufc/bouts.csv';
@@ -49,19 +62,58 @@ export const FINAL = 'STATUS_FINAL';
 const DAY_MS = 86400000;
 
 /** the code and parameters a priced UFC bout depends on: hashed into every snapshot */
-export const UFC_CODE_FILES = ['model_loop/adapters/ufc/model.py', 'model_loop/adapters/ufc/loop.py', VERSIONS_JSON, 'simulator/src/sports/ufc/elo.ts'];
+export const UFC_CODE_FILES = ['model_loop/adapters/ufc/model.py', 'model_loop/adapters/ufc/loop.py', 'model_loop/adapters/ufc/factors.py', 'model_loop/adapters/ufc/guard.py', VERSIONS_JSON,
+  'docs/model-loop/ufc/guard.json', 'simulator/src/sports/ufc/elo.ts', 'simulator/src/sports/ufc/factors.ts', 'simulator/src/sports/ufc/guard.ts'];
 export function codeIdentity(): Record<string, string> {
   const out: Record<string, string> = {};
   for (const f of UFC_CODE_FILES) { const p = path.join(REPO, f); out[f] = fs.existsSync(p) ? sha256Hex(fs.readFileSync(p)) : 'missing'; }
   return out;
 }
 
-export interface EloConfig { k: number; k_new_mult: number; new_bouts: number; layoff_days: number; layoff_regress: number; scale: number; calibration: string; champ_bonus?: number }
+export interface EloConfig {
+  k: number; k_new_mult: number; new_bouts: number; layoff_days: number; layoff_regress: number; scale: number; calibration: string; champ_bonus?: number;
+  /* the 2026-10 parameters (model.py DEFAULTS; every one off at its default) */
+  debut_offset?: number; prior_rec?: number; prior_exp?: number; shrink_bouts?: number;
+  layoff_mode?: string; layoff_span?: number; layoff_k_mult?: number; half_life_days?: number;
+  age_slope?: number; age_knee?: number; age_slope2?: number; age_knee2?: number; young_slope?: number; young_knee?: number;
+  div_regress?: number; div_up?: number; div_down?: number; h2h?: number; h2h_decay?: number;
+}
 /** model.py DEFAULTS: the served config is laid over them */
-export const ELO_DEFAULTS: EloConfig = { k: 32, k_new_mult: 1, new_bouts: 3, layoff_days: 365, layoff_regress: 0, scale: 400, calibration: 'none', champ_bonus: 0 };
+export const ELO_DEFAULTS: EloConfig = { k: 32, k_new_mult: 1, new_bouts: 3, layoff_days: 365, layoff_regress: 0, scale: 400, calibration: 'none', champ_bonus: 0,
+  debut_offset: 0, prior_rec: 0, prior_exp: 0, shrink_bouts: 0, layoff_mode: 'step', layoff_span: 365, layoff_k_mult: 1, half_life_days: 0,
+  age_slope: 0, age_knee: 33, age_slope2: 0, age_knee2: 36, young_slope: 0, young_knee: 26, div_regress: 0, div_up: 0, div_down: 0, h2h: 0, h2h_decay: 0.5 };
+const EXTENSIONS = ['debut_offset', 'prior_rec', 'prior_exp', 'shrink_bouts', 'half_life_days', 'age_slope', 'age_slope2', 'young_slope', 'div_regress', 'div_up', 'div_down', 'h2h'] as const;
+/** model.py extended(): does the configuration use any parameter added after 1.1.0's? */
+export function extendedConfig(cfg: EloConfig): boolean {
+  return EXTENSIONS.some((k) => Number(cfg[k] || 0) !== 0) || (cfg.layoff_mode || 'step') !== 'step' || Number(cfg.layoff_k_mult ?? 1) !== 1;
+}
+const REC_CENTRE = Math.log(12.0 / 4.0), EXP_CENTRE = Math.log(13.0);
+/** model.py prior_of(): a fighter's starting rating from the record before the data (null: no record on file) */
+export function priorOf(cfg: EloConfig, w: number | null, l: number | null): number {
+  let mu = 1500.0 + Number(cfg.debut_offset || 0);
+  if (w != null && l != null && Number.isFinite(w)) {
+    const z = Math.log((w + 2.0) / (l + 2.0));
+    mu += Number(cfg.prior_rec || 0) * (z - REC_CENTRE) + Number(cfg.prior_exp || 0) * (Math.log1p(w + l) - EXP_CENTRE);
+  }
+  return mu;
+}
+/** model.py age_points() */
+export function agePoints(cfg: EloConfig, age: number | null): number {
+  if (age == null || !Number.isFinite(age)) return 0.0;
+  return Number(cfg.age_slope) * Math.max(0.0, age - Number(cfg.age_knee)) + Number(cfg.age_slope2) * Math.max(0.0, age - Number(cfg.age_knee2))
+    + Number(cfg.young_slope) * Math.max(0.0, Number(cfg.young_knee) - age);
+}
 export const TITLE_BOUTS_CSV = 'model_loop/data/ufc/title_bouts.csv';
 
 export interface ServedVersion { version: string; config: EloConfig; config_sha256: string; status: string; promoted_at: string; evidence: unknown }
+/** the version every booked bout is also priced by, beside the served one (kept runnable for comparison: model loop COMPARE_VERSION) */
+export const COMPARE_VERSION = '1.1.0';
+/** any version's configuration from versions.json (null when it is not there) */
+export function versionConfig(version: string): ServedVersion | null {
+  const v = JSON.parse(fs.readFileSync(path.join(REPO, VERSIONS_JSON), 'utf8'));
+  const x = (v.versions as any[]).find((y) => y.version === version);
+  return x ? { version: x.version, config: { ...ELO_DEFAULTS, ...x.config }, config_sha256: x.config_sha256, status: x.status, promoted_at: x.promoted_at, evidence: x.evidence } : null;
+}
 export function servedVersion(): ServedVersion {
   const v = JSON.parse(fs.readFileSync(path.join(REPO, VERSIONS_JSON), 'utf8'));
   const cur = (v.versions as any[]).find((x) => x.version === v.current);
@@ -115,9 +167,10 @@ export function attachChampions(bouts: Bout[], map: Map<string, string>): Bout[]
   return bouts;
 }
 
-/** the walk's ratings at any point: rating, absorbed bouts, last absorbed bout time (ms) */
-export interface EloState { R: Map<string, number>; N: Map<string, number>; last: Map<string, number> }
-export function emptyState(): EloState { return { R: new Map(), N: new Map(), last: new Map() }; }
+/** the walk's ratings at any point: rating, absorbed bouts, last absorbed bout time (ms); the extended walk adds each
+    fighter's prior (MU) and each pair's earlier residuals (PAIR, from the lower id's side) */
+export interface EloState { R: Map<string, number>; N: Map<string, number>; last: Map<string, number>; MU?: Map<string, number>; PAIR?: Map<string, number[]> }
+export function emptyState(): EloState { return { R: new Map(), N: new Map(), last: new Map(), MU: new Map(), PAIR: new Map() }; }
 
 /** model.py rating(f, t): the stored rating, regressed toward 1500 after a layoff (and the regression STORED) */
 export function rating(S: EloState, cfg: EloConfig, f: string, t: number): number {
@@ -135,9 +188,12 @@ export function expectA(cfg: EloConfig, ra: number, rb: number): number {
 }
 
 export interface WalkRow { bout: Bout; p: number; a_bouts: number; b_bouts: number; final: boolean; y: number | null; draw: boolean }
-/** model.py walk(): one causal pass over every bout; mutates and returns the state */
-export function walk(bouts: Bout[], cfg: EloConfig, S: EloState = emptyState()): { rows: WalkRow[]; state: EloState } {
+/** model.py walk(): one causal pass over every bout; mutates and returns the state. A configuration with a 2026-10
+    parameter needs each bout's facts (computeFactors over the same bouts, in the same order). */
+export function walk(bouts: Bout[], cfg: EloConfig, S: EloState = emptyState(), fx: BoutFacts[] | null = null): { rows: WalkRow[]; state: EloState } {
   if (cfg.calibration !== 'none') throw new Error('the served UFC calibration is "' + cfg.calibration + '": only "none" is ported (model.py calibrate)');
+  const full = { ...ELO_DEFAULTS, ...cfg };
+  if (extendedConfig(full)) return walkExtended(bouts, full, S, fx);
   const rows: WalkRow[] = [];
   for (const b of bouts) {
     const a = b.fighter_a_id, bb = b.fighter_b_id, t = b.ts;
@@ -163,6 +219,90 @@ export function walk(bouts: Bout[], cfg: EloConfig, S: EloState = emptyState()):
   }
   return { rows, state: S };
 }
+
+/** model.py _walk_extended(): the same arithmetic in the same order */
+function walkExtended(bouts: Bout[], P: EloConfig, S: EloState, fx: BoutFacts[] | null): { rows: WalkRow[]; state: EloState } {
+  const needs = ['prior_rec', 'prior_exp', 'age_slope', 'age_slope2', 'young_slope', 'div_regress', 'div_up', 'div_down'] as const;
+  if (!fx && needs.some((k) => Number(P[k] || 0) !== 0)) throw new Error('this UFC configuration reads each bout\'s facts: pass computeFactors(bouts, facts)');
+  if (fx && fx.length !== bouts.length) throw new Error('the facts must be computed over the same bouts, in the same order');
+  if (!S.MU) S.MU = new Map();
+  if (!S.PAIR) S.PAIR = new Map();
+  const MU = S.MU, PAIR = S.PAIR;
+  const k = Number(P.k), scale = Number(P.scale), step = (P.layoff_mode || 'step') === 'step';
+  const lr = Number(P.layoff_regress), ld = Number(P.layoff_days), ls = Number(P.layoff_span), lk = Number(P.layoff_k_mult);
+  const hl = Number(P.half_life_days), sb = Number(P.shrink_bouts), dvr = Number(P.div_regress);
+  const dup = Number(P.div_up), ddn = Number(P.div_down), h2h = Number(P.h2h), h2d = Number(P.h2h_decay), cb = Number(P.champ_bonus || 0);
+  const useAge = [P.age_slope, P.age_slope2, P.young_slope].some((x) => Number(x) !== 0);
+  const rows: WalkRow[] = [];
+  const state = (f: string, t: number, F: BoutFacts | null, side: 'a' | 'b'): [number, number, number, boolean] => {
+    if (!MU.has(f)) {
+      const w = F ? (side === 'a' ? F.pre_w_a : F.pre_w_b) : null, l = F ? (side === 'a' ? F.pre_l_a : F.pre_l_b) : null;
+      MU.set(f, priorOf(P, w, w != null ? l : null));
+      S.R.set(f, MU.get(f) as number);
+    }
+    const mu = MU.get(f) as number, n = S.N.get(f) || 0, lt = S.last.get(f);
+    let r = S.R.get(f) as number, longOff = false;
+    if (lt !== undefined) {
+      const days = Math.floor((t - lt) / DAY_MS);
+      longOff = days >= ld;
+      if (step) {
+        if (lr && longOff) { r = 1500.0 + (r - 1500.0) * (1.0 - lr); S.R.set(f, r); }
+        if (hl) r = mu + (r - mu) * 0.5 ** (days / hl);
+      } else {
+        let dev = r - mu;
+        if (lr && days > ld) dev *= 1.0 - lr * Math.min(1.0, (days - ld) / ls);
+        if (hl) dev *= 0.5 ** (days / hl);
+        r = mu + dev;
+      }
+    }
+    const ds = F ? (side === 'a' ? F.div_step_a : F.div_step_b) : null;
+    if (dvr && ds) r = mu + (r - mu) * (1.0 - dvr);
+    return [r, mu, n, longOff];
+  };
+  for (let i = 0; i < bouts.length; i++) {
+    const b = bouts[i], F = fx ? fx[i] : null;
+    const a = b.fighter_a_id, bb = b.fighter_b_id, t = b.ts;
+    const [ra, mua, nA, offa] = state(a, t, F, 'a');
+    const [rb, mub, nB, offb] = state(bb, t, F, 'b');
+    const pa = sb ? mua + (ra - mua) * nA / (nA + sb) : ra;
+    const pb = sb ? mub + (rb - mub) * nB / (nB + sb) : rb;
+    let adj = 0.0;
+    if (useAge && F) adj += agePoints(P, F.age_a) - agePoints(P, F.age_b);
+    if ((dup || ddn) && F) for (const [sgn, ds] of [[1.0, F.div_step_a], [-1.0, F.div_step_b]] as Array<[number, number | null]>) if (ds) adj += sgn * (ds > 0 ? dup * ds : ddn * -ds);
+    const lo = a < bb ? a : bb, key = a < bb ? a + '|' + bb : bb + '|' + a;
+    if (h2h && PAIR.has(key)) {
+      let res = 0.0, wgt = 1.0;
+      const hist = PAIR.get(key) as number[];
+      for (let j = hist.length - 1; j >= 0; j--) { res += wgt * hist[j]; wgt *= h2d; }
+      adj += h2h * (a === lo ? res : -res);
+    }
+    if (cb && b.champ) adj += b.champ === a ? cb : b.champ === bb ? -cb : 0.0;
+    const e = 1.0 / (1.0 + 10 ** (-(pa - pb + adj) / scale));
+    const final = b.status === FINAL;
+    const y = final && b.a_winner && !b.b_winner ? 1 : final && b.b_winner && !b.a_winner ? 0 : null;
+    const draw = final && !b.a_winner && !b.b_winner;
+    rows.push({ bout: b, p: e, a_bouts: nA, b_bouts: nB, final, y, draw });
+    if (final && (y != null || draw)) {
+      const s = draw ? 0.5 : (y as number);
+      const ka = k * (nA < P.new_bouts ? P.k_new_mult : 1.0) * (offa ? lk : 1.0);
+      const kb = k * (nB < P.new_bouts ? P.k_new_mult : 1.0) * (offb ? lk : 1.0);
+      S.R.set(a, ra + ka * (s - e));
+      S.R.set(bb, rb - kb * (s - e));
+      S.N.set(a, nA + 1); S.N.set(bb, nB + 1);
+      S.last.set(a, t); S.last.set(bb, t);
+      const list = PAIR.get(key) || [];
+      list.push(a === lo ? s - e : -(s - e));
+      PAIR.set(key, list);
+    }
+  }
+  return { rows, state: S };
+}
+
+/** the served walk's inputs beside the bouts: each bout's facts when the configuration reads them */
+export function factorsFor(bouts: Bout[], cfg: EloConfig, facts: Map<string, FighterFact>): BoutFacts[] | null {
+  return extendedConfig({ ...ELO_DEFAULTS, ...cfg }) ? computeFactors(bouts, facts) : null;
+}
+export { loadFighterFacts, computeFactors, FIGHTER_FACTS_CSV, type BoutFacts, type FighterFact };
 
 /** Python round(x, 4) for the published file (ties are measure-zero for these values) */
 export const round4 = (x: number): number => Number(x.toFixed(4));

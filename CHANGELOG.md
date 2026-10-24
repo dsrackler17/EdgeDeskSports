@@ -1,54 +1,6 @@
 # Changelog
 
-## 2026-10-24 — Content engine: the draft and its integrity check read one availability index
 
-Since the morning's editorial data refresh, `System integrity tests` failed on every branch (10 checks: the deterministic draft was BLOCKED, so it was never approved, exported or sent). The content-engine live check (`evidence.test.js` L) failed on six articles.
-
-- **The quarterback-input sentence.** A `QB_INPUT_CONFLICT` flag was written as "the model's quarterback input may be out of date (the model expects Parker Puckett, but Kamario Taylor is listed as questionable)". `AVAIL.guardProse` checks every player named in an uncertainty sentence. Puckett, the model's own starter, has only an inferred classification, so the engine blocked a sentence it wrote itself.
-  - `availabilityIndex()` is now the one place the index is built, and `validate()`'s `qb_claims_sourced` and the draft both read it.
-  - The draft names only the reported player, and gives his status only when that index says his report may be stated. Otherwise it says the input "should be checked against the latest availability report" and asserts nobody's availability.
-  - When the report lists the model's own starter, he is named as the starter it expects.
-  - `draft()` passes its clock to the classification, so the draft and the check judge the same report at the same moment.
-- **Other models' margins.** "EdgeDesk's two other, independently built models have Mississippi State by 0.3 and Oklahoma by 1.9" failed `numbers_reconcile`. `altMarginsOf()` read those margins only from a games-to-watch packet, which a matchup analysis does not carry. It now also reads the evidence packet's own `other_models` claim, the sentence the copy prints. A margin no model has still fails.
-- The edge function copy is re-inlined (`tools/content/inline.js`). The admin content page's engine stamp moved.
-
-Tests: `tools/integrity/regression.test.js` 129/129 (was 10 failing). `tools/content/evidence.test.js` 198, 5 new, all failing on the old engine: the conflict sentence never names the model's starter; a sourced questionable report is named with its status; the model's own starter is named as such; an unsourced report asserts nothing; the packet's other-model margins reconcile while an invented one fails. Content core 333, edge function 70, games to watch 136 and the weekly job 30 all pass.
-
-## 2026-10-24 — Leave one term out: each college term held to games it never saw
-
-`football/cfb_p4/research/loto.js` removes each priced term from the shipped engine, game by game, on 2022–2025. Nothing is refitted, and the repository's own promotion rules (`football/validation/promote.js`) judge the difference. It also fits each term's best multiplier k (k ≈ 1: the weight is right; k ≈ 0: the term carries nothing). The record is `football/validation/loto_cfb.json`, rendered to `docs/cfb-validation/LOTO.md`.
-
-- **The rows.** `disagreement_replay.js` prices 8,724 FBS games, 2014–2025. It runs the shipped engine cold and frozen weekly, with the matchup layer fed by the board's own efficiency adapter (`disagreement_eff.js`, rebuilt for 2014–2025). The replay now also records the matchup term pairing by pairing (`mpairs`). Every row was priced before kickoff.
-- **Verdicts (held out 2022–2025, 3,127 games):**
-
-  | term | effect on MAE | weight k | promotion rules | weight |
-  |---|---|---|---|---|
-  | Stylistic matchup | +0.037 (95% CI −0.021 to +0.094), p = 0.20, better in 4 of 4 seasons | 0.84 [0.48, 1.20] | CANDIDATE | carries real information at about the right weight; the accuracy gain is not yet significant |
-  | Conference strength | +0.186 | 1.11 | VALIDATED | |
-  | Home field | +0.186 | 1.00 | VALIDATED | a check only: its value was chosen on this window |
-  | Team strength | | 0.91 [0.86, 0.96] | | over-weighted by about 9% |
-  | Rest and schedule | moves the line 0.001 pts on average (NEGLIGIBLE) | | | |
-
-  The schedule result comes from units: `engine.js` schedGap divides the trained points-per-stress by 100 a second time. At the trained scale its held-out weight has no signal (k −0.96, interval −3.38 to +1.37). Not changed here.
-- **The matchup term, pairing by pairing.**
-  - Four of its eight learned pairings never move in the replay: run game, passing efficiency, explosives and field position. They need EPA and field-position inputs that the season feed (`football/rankings/engine_efficiency.js`) does not supply.
-  - On the live board those inputs hold the 2025 closing seed all season. `--live` splits the live slate's matchup points: 1.23 pts on average from this season's data and 0.42 from last season's values, which no test covers.
-  - The run and pass pairings move the live line by 0.01 and 0.03 pts.
-- **The cards follow the evidence.**
-  - A college pass or run mismatch now carries `0 PTS` and says its pairing gets no current-season data. It names the matchup term's points ("Utah +1.4 here") as moving through other pairings, with the term's held-out record in one sentence.
-  - Line-of-scrimmage items keep the matchup chip.
-  - `lib/edgedesk_factor_evidence.js` reads the record. `FACTORS.md` now gives matchup, schedule, conference, home field and team strength their leave-one-term-out results, and lists the inert pairings and the unpriced lanes.
-- **Not testable here:** quarterback and injury (no historical inputs), travel, rivalry and altitude (not priced).
-
-Tests: `node tools/football/loto.test.js` (37, in the CFB validation workflow) covers:
-- a real term at its right weight is validated;
-- a noise term never is;
-- a term shipped 10% too large is caught as over-weighted;
-- inert and negligible terms are reported, not graded;
-- a row priced after kickoff fails the leakage check;
-- the committed record re-derives its own statuses, and `LOTO.md` is its render.
-
-`game_research.test.js` (246): unpriced lanes say 0 PTS, line-of-scrimmage items keep the matchup term, and the registry carries the verdict. The browser test (57) and the CFB validation, engine, altitude and landing suites all pass. Cache stamps moved for the snapshot and home model.
 
 
 
