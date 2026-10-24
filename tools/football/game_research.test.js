@@ -794,7 +794,7 @@ section('15. every watch item says what it does to EdgeDesk’s number (docs/gam
   const FE = require(path.join(ROOT, 'lib', 'edgedesk_factor_evidence.js'));
   const REG = FE.load(ROOT), FX = REG.factors;
   const KINDS = ['in_number', 'zero', 'in_rating', 'check', 'context'];
-  let fxN = 0, inN = 0, zeroN = 0, laneN = 0, altN = 0;
+  let fxN = 0, inN = 0, zeroN = 0, laneN = 0, altN = 0, laneZeroN = 0;
   proj.forEach((s) => {
     const rows = (s.drivers && s.drivers.rows) || [];
     s.insights.forEach((i) => {
@@ -819,6 +819,10 @@ section('15. every watch item says what it does to EdgeDesk’s number (docs/gam
         if (!ev.lane.ranks.every((r) => i.text.indexOf('#' + r) >= 0)) chk('…and its long text names both lanes’ ranks · ' + s.game_key, false, i.text);
         const mt = rows.find((r) => r.key === 'matchup');
         if (s.league === 'cfb' && mt && (e.term !== 'matchup' || i.text.indexOf(mt.favors_team + ' +' + mt.points.toFixed(1)) < 0)) chk('…and says the matchup term, not the lane, carries the points · ' + s.game_key, false, [e, i.text]);
+        /* a lane whose own pairing gets no current-season data claims no points (docs/cfb-validation/LOTO.md) */
+        const unpricedLane = s.league === 'cfb' && (FX.matchup.unpriced_lanes || []).indexOf(i.family) >= 0;
+        if (unpricedLane && (e.kind !== 'zero' || !/This gap is not in EdgeDesk’s number/.test(i.text))) chk('…and a lane the matchup term does not price says 0 PTS · ' + s.game_key + ' ' + i.id, false, [e, i.text]);
+        if (unpricedLane) laneZeroN++;
       }
       if (i.family === 'altitude') {
         altN++;
@@ -832,6 +836,8 @@ section('15. every watch item says what it does to EdgeDesk’s number (docs/gam
   chk('every projected game’s watch items carry an effect', fxN === proj.reduce((a, s) => a + s.insights.length, 0), fxN);
   chk('the committed slates exercise in-number, zero and two-lane items', inN > 50 && zeroN > 20 && laneN > 20, { inN, zeroN, laneN });
   chk('the committed slates hold at least one altitude item', altN >= 1, altN);
+  chk('the committed slates exercise a lane the matchup term does not price', laneZeroN >= 10, laneZeroN);
+  chk('a college line-of-scrimmage item keeps the matchup term’s points', proj.filter((x) => x.league === 'cfb').every((x) => x.insights.filter((i) => i.family === 'trenches').every((i) => i.effect.kind !== 'in_number' || i.effect.term === 'matchup')));
 
   /* the graphic: one chip per item, the legend, and an old spec redraws without either */
   const s = proj.find((x) => x.insights.length >= 5 && x.insights.some((i) => i.effect && i.effect.kind === 'zero')), spec = GS.graphicSpec(s);
@@ -862,7 +868,10 @@ section('15. every watch item says what it does to EdgeDesk’s number (docs/gam
   const AP = require(path.join(ROOT, 'football', 'altitude', 'params.js')), HF = require(path.join(ROOT, 'football', 'cfb_p4', 'home_field.js'));
   chk('registry: altitude is in the number only when params.js is VALIDATED with points applied', FX.altitude.in_number === (AP.status === 'VALIDATED' && AP.points_applied === true));
   chk('registry: home field is the promoted one value', FX.home_field.points === HF.hfa);
-  chk('registry: the matchup term is in the number and says it has no held-out test of its own', FX.matchup.in_number && FX.matchup.status === 'IN_USE_UNTESTED');
+  const LT = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'loto_cfb.json'), 'utf8')), LM = LT.terms.find((t) => t.key === 'matchup');
+  const STATUS_FROM_LOTO = { VALIDATED: 'VALIDATED', CANDIDATE: 'IN_USE_NOT_SIGNIF', RESEARCH_ONLY: 'IN_USE_NOT_SIGNIF', REJECTED: 'IN_USE_REJECTED' };
+  chk('registry: the matchup term carries its leave-one-term-out verdict', FX.matchup.in_number && FX.matchup.status === STATUS_FROM_LOTO[LM.status], [FX.matchup.status, LM.status]);
+  chk('registry: the unpriced lanes are exactly the inert lane pairings', JSON.stringify(FX.matchup.unpriced_lanes.slice().sort()) === JSON.stringify(Object.keys(FE.LANE_PAIRS).filter((l) => LT.pairs.some((p) => p.name === FE.LANE_PAIRS[l] && p.holdout.inert && (!LT.live || (LT.live.by_pairing.find((x) => x.name === p.name) || { mean_abs: 0 }).mean_abs < FE.LANE_LIVE_MIN))).sort()), FX.matchup.unpriced_lanes);
   chk('registry: the data-quality score moves nothing and is not validated', FX.reliability.in_number === false && FX.reliability.status === 'NOT_VALIDATED');
   let fresh = true;
   try { execFileSync(process.execPath, [path.join(ROOT, 'tools', 'football', 'factor_evidence.js'), '--check'], { stdio: 'pipe' }); } catch (e) { fresh = false; }

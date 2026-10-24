@@ -25,6 +25,9 @@ on:
       - 'admin/cfb-validation/**'
       - 'app.html'
       - 'tools/validation/**'
+      - 'tools/football/loto.test.js'
+      - 'football/validation/loto_cfb.json'
+      - 'docs/cfb-validation/LOTO.md'
       - '.github/workflows/cfb-validation-tests.yml'
   push:
     branches: [main]
@@ -58,5 +61,7 @@ jobs:
         run: node tools/validation/ui.test.js
       - name: The build runs on the committed ledger (check mode, writes nothing)
         run: node football/cfb_validation/build.js --check
+      - name: Leave one term out (the harness on synthetic games, and the committed record)
+        run: node tools/football/loto.test.js
       - name: The research terminal still builds and keeps its rules
         run: node football/cfb_terminal/build.js --check && node football/cfb_terminal/tests.js

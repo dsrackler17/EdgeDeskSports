@@ -213,6 +213,44 @@ chk('G … but not for EdgeDesk’s own page', (() => { const w = write(OM, 'edg
   chk('G a conference report’s quarterback listing supports the uncertainty it states', passed(withReport(true), 'qb_claims_sourced'), withReport(true).checks.filter((c) => c.id === 'qb_claims_sourced'));
   chk('G … and the same sentence with no Vanderbilt report on file still fails', failed(withReport(false), 'qb_claims_sourced'));
 }
+/* the draft's OWN quarterback-input sentence (plainFlags). The conflict names
+   two players, the model's starter and the reported one; the draft names only
+   the reported one, and states his status only when the index validate()
+   reads lets it, so the engine never blocks a sentence it wrote itself */
+{
+  const qbSentence = (b) => (b.match(/[^.]*quarterback input[^.]*\./) || [''])[0];
+  const variant = (fn) => { const p = JSON.parse(JSON.stringify(OM)); fn(p); return write(p, 'matchup_analysis'); };
+  const s0 = qbSentence(body(write(OM, 'matchup_analysis').a));
+  chk('Q the input-conflict sentence is drafted and never names the model’s own starter', /quarterback input/.test(s0) && !/Berlowitz/.test(s0), s0);
+  const q = variant((p) => p.evidence.claims.filter((c) => c.subject === 'Jared Curtis' && (c.verification === 'OFFICIAL_REPORT' || (c.topic === 'input' && c.verification === 'CONFLICTING')))
+    .forEach((c) => { c.values.status = 'QUESTIONABLE'; c.status = 'QUESTIONABLE'; }));
+  const s1 = qbSentence(body(q.a));
+  chk('Q a reported starter listed questionable on a sourced report is named with his status, and the draft passes its own check',
+    /Jared Curtis is listed as questionable/.test(s1) && !/Berlowitz/.test(s1) && passed(q.rep, 'qb_claims_sourced'), [s1, q.rep.checks.filter((c) => c.id === 'qb_claims_sourced')]);
+  /* the report lists the model's OWN starter: he is named as the starter it expects, never as "a different starter" */
+  const own = variant((p) => p.evidence.claims.forEach((c) => {
+    if (c.topic === 'input' && c.verification === 'CONFLICTING') { c.values.model_starter = 'Jared Curtis'; c.values.status = 'QUESTIONABLE'; }
+    if (c.verification === 'OFFICIAL_REPORT' && c.subject === 'Jared Curtis') { c.values.status = 'QUESTIONABLE'; c.status = 'QUESTIONABLE'; }
+  }));
+  const so = qbSentence(body(own.a));
+  chk('Q when the report lists the model’s own starter, he is named as the starter it expects', /Jared Curtis, the starter it expects, is listed as questionable/.test(so) && !/different starter/.test(so) && passed(own.rep, 'qb_claims_sourced'), so);
+  const u = variant((p) => { p.evidence.claims = p.evidence.claims.filter((c) => !(c.verification === 'OFFICIAL_REPORT' && c.subject === 'Jared Curtis')); });
+  const s2 = qbSentence(body(u.a));
+  chk('Q with no sourced report behind him, the sentence asserts nobody’s availability and the draft still passes',
+    /should be checked against the latest availability report/.test(s2) && !/Curtis|Berlowitz|questionable|probable/.test(s2) && passed(u.rep, 'qb_claims_sourced'), [s2, u.rep.checks.filter((c) => c.id === 'qb_claims_sourced')]);
+}
+/* the packet's own "other models" claim, printed verbatim, reconciles even
+   when the opportunity carries no games-to-watch packet to read them from */
+{
+  const OTHER = 'EdgeDesk’s two other, independently built models have Ole Miss by 1.3 and Vanderbilt by 0.4.';
+  const withOthers = (p) => { p.evidence.claims = p.evidence.claims.filter((c) => c.key !== 'other_models').concat([{ id: 'x-other', topic: 'model', key: 'other_models', label: 'EdgeDesk’s other models', text: OTHER,
+    short: 'EdgeDesk’s other models: Ole Miss by 1.3 and Vanderbilt by 0.4', cite: { nums: ['1.3'], words: ['other', 'models'] },
+    values: { median_home_line: -0.5, models: [] }, source: { id: 'cfb_terminal', label: 'EdgeDesk model consensus' }, observed_at: FIX.frozen_at, verification: 'MODEL_OUTPUT' }]); return p; };
+  const w = write(withOthers(JSON.parse(JSON.stringify(OM))), 'matchup_analysis');
+  const say = (t) => CE.validate(edit(w.a, 'conclusion', (b) => b + '\n\n' + t), w.o, { publisher: SR, now: NOW, teamLists: TL });
+  chk('N the other models’ margins, as the evidence packet states them, reconcile', !((w.o.research.matchups || []).length) && passed(say(OTHER), 'numbers_reconcile'), say(OTHER).checks.filter((c) => c.id === 'numbers_reconcile'));
+  chk('N … and a margin no EdgeDesk model has still fails', failed(say('EdgeDesk’s two other, independently built models have Ole Miss by 7.7 and Vanderbilt by 0.4.'), 'numbers_reconcile'));
+}
 /* the 14-check editorial gate (CE.gate) the database requires before approval sees the evidence too */
 chk('G the editorial gate BLOCKS when the evidence fails (under unsupported factual claims)', (() => {
   const bad = add('thesis', 'EdgeDesk’s model likes Vanderbilt because Vanderbilt’s defense sacks the quarterback on 8.0% of opponent dropbacks.');
