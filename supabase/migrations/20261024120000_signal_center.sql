@@ -77,9 +77,13 @@
 -- CONVENTION (supabase/README.md): idempotent, additive, pasted into the SQL
 -- editor, no psql meta-commands, ends in a report. Safe to run again.
 -- Mirrored in supabase/migrations/20261024120000_signal_center.sql.
+--
+-- CORE POSTGRES ONLY (supabase/games_social.sql's lesson). Supabase installs
+-- pgcrypto in the `extensions` schema, which the doors' pinned search_path
+-- (public, pg_temp) does not reach: digest() there failed every ingest with
+-- "function digest(bytea, unknown) does not exist". Hashes use sha256(bytea)
+-- (core since PostgreSQL 11) and ids gen_random_uuid() (core since 13).
 -- =============================================================================
-
-create extension if not exists pgcrypto;
 
 begin;
 
@@ -263,6 +267,12 @@ create table if not exists public.sc_signals (
   published_at       timestamptz,
   public_preview     boolean not null default false,
   first_detected_at  timestamptz not null default now(),
+  -- found after the fact (E.SPEC.backfill): decided once, at the first version
+  backfilled         boolean not null default false,
+  -- the moment the signal describes, which the feed sorts and the pulse counts
+  -- by: its detection, or for a backfilled signal the source record it was
+  -- scored as of (never later than its detection)
+  signal_at          timestamptz not null default now(),
   first_run_id       uuid,
   current_version    integer not null default 1,
   current_version_id bigint,
@@ -272,9 +282,27 @@ create table if not exists public.sc_signals (
   check (not fixture or publication <> 'PUBLISHED'),
   check (publication <> 'PUBLISHED' or verification_state = 'VERIFIED')
 );
+-- added after the first deployment: an installed table gets them here
+alter table public.sc_signals add column if not exists backfilled boolean not null default false;
+alter table public.sc_signals add column if not exists signal_at timestamptz;
+-- rows stored before these columns existed (the first production runs) are
+-- dated by the same rule the engine applies (E.SPEC.backfill): a signal first
+-- detected more than 180 minutes after its source record was found later, and
+-- describes the moment of that record. A data freshness warning describes its
+-- detection (its source time is the stale record's). Runs once per row.
+update public.sc_signals
+   set backfilled = (category <> 'DATA_QUALITY_WARNING' and source_at is not null and first_detected_at - source_at > interval '180 minutes'),
+       signal_at = case when category <> 'DATA_QUALITY_WARNING' and source_at is not null and first_detected_at - source_at > interval '180 minutes'
+                        then source_at else first_detected_at end
+ where signal_at is null;
+alter table public.sc_signals alter column signal_at set default now();
+alter table public.sc_signals alter column signal_at set not null;
 create index if not exists sc_signals_feed_idx on public.sc_signals (publication, first_detected_at desc, signal_id desc);
+create index if not exists sc_signals_time_idx on public.sc_signals (publication, signal_at desc, signal_id desc);
 create index if not exists sc_signals_sport_idx on public.sc_signals (sport, publication, first_detected_at desc);
 create index if not exists sc_signals_cat_idx on public.sc_signals (category, publication, first_detected_at desc);
+create index if not exists sc_signals_sport_time_idx on public.sc_signals (sport, publication, signal_at desc);
+create index if not exists sc_signals_cat_time_idx on public.sc_signals (category, publication, signal_at desc);
 create index if not exists sc_signals_subject_idx on public.sc_signals (category, subject_key, outcome_id, event_key) where lifecycle = 'ACTIVE';
 create index if not exists sc_signals_event_idx on public.sc_signals (event_at) where lifecycle = 'ACTIVE';
 create index if not exists sc_signals_teams_idx on public.sc_signals using gin (teams);
@@ -318,6 +346,23 @@ do $actor$ begin
   alter table public.sc_signal_events add constraint sc_signal_events_actor_check check (actor in ('system', 'owner') or actor ~ '^admin:[0-9a-f-]{36}$');
 end $actor$;
 create index if not exists sc_signal_events_signal_idx on public.sc_signal_events (signal_id, at);
+
+-- placement in record time, for rows stored before sc_ingest_one enforced it
+-- (an earlier engine superseded only on an ACTIVE insert, in key order): in
+-- each subject, outcome and event, every active or expired signal older than
+-- the newest is superseded by it. A placed table has nothing to move, so
+-- this is a no-op on every later application.
+with ranked as (
+  select signal_id, first_value(signal_id) over w as newest, row_number() over w as rn
+    from public.sc_signals
+   where lifecycle in ('ACTIVE', 'EXPIRED')
+  window w as (partition by category, subject_key, outcome_id, coalesce(event_key, '') order by source_at desc nulls last, signal_id desc)
+), moved as (
+  update public.sc_signals s set lifecycle = 'SUPERSEDED', lifecycle_reason = 'a newer signal about the same subject and outcome', superseded_by = r.newest
+    from ranked r where r.signal_id = s.signal_id and r.rn > 1
+  returning s.signal_id, r.newest)
+insert into public.sc_signal_events (signal_id, kind, actor, detail)
+select signal_id, 'superseded', 'system', jsonb_build_object('by', newest, 'note', 'placed in record time') from moved;
 
 -- ---------------------------------------------------------------- graphics
 create table if not exists public.sc_graphics (
@@ -403,7 +448,9 @@ begin
   if tg_op = 'DELETE' then raise exception 'public.sc_signals: delete refused (withdraw it instead; history is kept)'; end if;
   if new.signal_key is distinct from old.signal_key or new.category is distinct from old.category or new.sport is distinct from old.sport
      or new.subject_key is distinct from old.subject_key or new.outcome_id is distinct from old.outcome_id or new.event_key is distinct from old.event_key
-     or new.first_detected_at is distinct from old.first_detected_at or new.first_run_id is distinct from old.first_run_id or new.fixture is distinct from old.fixture then
+     or new.first_detected_at is distinct from old.first_detected_at or new.first_run_id is distinct from old.first_run_id or new.fixture is distinct from old.fixture
+     -- when a signal happened is dated once (a row stored before the column existed is dated by this file)
+     or (old.signal_at is not null and (new.signal_at is distinct from old.signal_at or new.backfilled is distinct from old.backfilled)) then
     raise exception 'public.sc_signals: a signal''s identity is immutable (signal %)', old.signal_key;
   end if;
   if new.current_version < old.current_version then raise exception 'public.sc_signals: the current version never goes backwards'; end if;
@@ -496,8 +543,12 @@ $$;
 create or replace function public.sc_prior_divergences()
 returns table (payload jsonb)
 language sql stable security definer set search_path = public, pg_temp as $$
+  -- a disagreement whose closing is already on record is not a candidate
+  -- again: a convergence is recorded once, not once per later quote
   select v.payload from public.sc_signals s join public.sc_signal_versions v on v.version_id = s.current_version_id
    where s.category = 'MARKET_DIVERGENCE' and s.lifecycle = 'ACTIVE' and s.verification_state = 'VERIFIED' and (s.event_at is null or s.event_at > now())
+     and not exists (select 1 from public.sc_signals c join public.sc_signal_versions cv on cv.version_id = c.current_version_id
+                      where c.category = 'MARKET_CONVERGENCE' and c.event_key = s.event_key and cv.payload#>>'{identity,from}' = s.signal_key)
    order by s.signal_id desc limit 2000;
 $$;
 
@@ -554,6 +605,7 @@ declare
   s record; v_id bigint; v_sig bigint; v_ver integer; v_state text := p#>>'{verification,state}'; v_check jsonb;
   v_pub text; v_life text := 'ACTIVE'; v_event_at timestamptz; v_fixture boolean := coalesce((p->>'fixture')::boolean, false);
   v_reason text := coalesce(nullif(p_reason, ''), 'evidence_update'); v_sha text;
+  v_backfilled boolean := coalesce((p->>'backfilled')::boolean, false); v_signal_at timestamptz; v_source_at timestamptz; v_newer bigint;
 begin
   -- shape
   if coalesce(p->>'schema', '') <> 'edgedesk_signal_v1' then return jsonb_build_object('signal_key', k, 'rejected', 'schema is not edgedesk_signal_v1'); end if;
@@ -577,27 +629,48 @@ begin
   end if;
 
   v_event_at := nullif(p#>>'{event,at}', '')::timestamptz;
+  v_source_at := nullif(p#>>'{timestamps,source_published_at}', '')::timestamptz;
   if v_event_at is not null and v_event_at <= now() then v_life := 'EXPIRED'; end if;
   if v_state = 'INVALIDATED' then v_life := 'WITHDRAWN'; end if;
+  -- a backfilled signal is placed at the record it was scored as of; anything
+  -- else at its detection. Never in the future.
+  v_signal_at := case when v_backfilled then least(now(), coalesce(nullif(p#>>'{timestamps,scored_as_of}', '')::timestamptz, v_source_at, now())) else now() end;
   v_sha := encode(sha256(convert_to(p::text, 'UTF8')), 'hex');
 
   perform pg_advisory_xact_lock(hashtext('public.sc_signals ' || k));
   select * into s from public.sc_signals where signal_key = k;
 
   if not found then
+    -- placement in time: a newer signal about the same subject and outcome
+    -- already stored (a backfill can find the older one second) makes this
+    -- one history at once, exactly as if it had been found first
+    if v_life <> 'WITHDRAWN' and v_source_at is not null then
+      select o.signal_id into v_newer from public.sc_signals o
+       where o.category = cat and o.subject_key = p#>>'{subject,key}' and o.outcome_id = p#>>'{outcome,id}' and o.event_key is not distinct from p#>>'{event,key}'
+         and o.lifecycle in ('ACTIVE', 'EXPIRED', 'SUPERSEDED') and o.source_at > v_source_at
+       order by o.source_at desc, o.signal_id desc limit 1;
+      if v_newer is not null then v_life := 'SUPERSEDED'; end if;
+    end if;
+    -- published: a live run, a live sport, VERIFIED, at or above the label,
+    -- not a fixture, and not withdrawn. History (expired, or superseded by a
+    -- newer record) is published as history; notices go only to fresh,
+    -- active, non-backfilled signals (sc_notify)
     v_pub := case when v_fixture then 'SHADOW'
-                  when p_mode = 'live' and v_state = 'VERIFIED' and v_life = 'ACTIVE' and p_live ? (p->>'sport') and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
+                  when p_mode = 'live' and v_state = 'VERIFIED' and v_life <> 'WITHDRAWN' and p_live ? (p->>'sport') and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
                   else 'SHADOW' end;
     insert into public.sc_signals (signal_key, category, subtype, sport, league, season, event_kind, subject_key, subject_label, outcome_id, event_key, event_at, teams, market_type,
         headline, public_headline, change_pp, evidence_class, evidence_rank, verification_state, score, label, rarity, reliability_grade, research_grade, model_version, source_at, fixture,
+        backfilled, signal_at, superseded_by,
         lifecycle, lifecycle_reason, publication, publication_by, published_at, first_run_id, current_version)
     values (k, cat, p->>'subtype', p->>'sport', p->>'league', p->>'season', p->>'event_kind', p#>>'{subject,key}', p#>>'{subject,label}', p#>>'{outcome,id}', p#>>'{event,key}', v_event_at,
         coalesce((select array_agg(x) from jsonb_array_elements_text(coalesce(p->'teams', '[]'::jsonb)) x), '{}'), p->>'market_type',
         p->>'headline', p->>'public_headline', nullif(p#>>'{values,change_pp}', '')::numeric, p#>>'{evidence,class}',
         case p#>>'{evidence,class}' when 'CONFIRMED_CAUSE' then 4 when 'SUPPORTED_ASSOCIATION' then 3 when 'OBSERVED' then 3 when 'UNEXPLAINED' then 1 else 0 end,
         v_state, (p#>>'{score,total}')::numeric, p#>>'{score,label}', nullif(p#>>'{values,distribution,rarity}', '')::numeric, p#>>'{reliability,grade}', p#>>'{research_grade,letter}',
-        p#>>'{model,version}', nullif(p#>>'{timestamps,source_published_at}', '')::timestamptz, v_fixture,
-        v_life, case when v_life = 'EXPIRED' then 'the event had started when the signal was detected' when v_life = 'WITHDRAWN' then 'invalidated at detection' end,
+        p#>>'{model,version}', v_source_at, v_fixture,
+        v_backfilled, v_signal_at, v_newer,
+        v_life, case when v_life = 'EXPIRED' then 'the event had started when the signal was detected' when v_life = 'WITHDRAWN' then 'invalidated at detection'
+                     when v_life = 'SUPERSEDED' then 'a newer signal about the same subject and outcome was already on record' end,
         v_pub, 'system', case when v_pub = 'PUBLISHED' then now() end, p_run, 1)
     returning signal_id into v_sig;
     insert into public.sc_signal_versions (signal_id, version, version_hash, payload, payload_sha256, reason, run_id, engine_version, spec_version)
@@ -607,13 +680,15 @@ begin
     perform public.sc_event(v_sig, 'detected', 'system', p_run, jsonb_build_object('version', 1, 'verification', v_state, 'lifecycle', v_life));
     if v_check is not null then perform public.sc_event(v_sig, 'server_check', 'system', p_run, v_check); end if;
     if v_pub = 'PUBLISHED' then perform public.sc_event(v_sig, 'published', 'system', p_run, '{}'); end if;
-    -- an older active signal about the same thing, from an earlier record, is superseded
-    if v_life = 'ACTIVE' then
+    if v_life = 'SUPERSEDED' then perform public.sc_event(v_sig, 'superseded', 'system', p_run, jsonb_build_object('by', v_newer, 'note', 'the newer signal was stored first')); end if;
+    -- an older signal about the same thing, from an earlier record, is
+    -- superseded (an expired one too: a backfill stores history in any order)
+    if v_life in ('ACTIVE', 'EXPIRED') then
       with old as (
         update public.sc_signals o set lifecycle = 'SUPERSEDED', lifecycle_reason = 'a newer signal about the same subject and outcome', superseded_by = v_sig
-         where o.lifecycle = 'ACTIVE' and o.signal_id <> v_sig and o.category = cat and o.subject_key = p#>>'{subject,key}' and o.outcome_id = p#>>'{outcome,id}'
+         where o.lifecycle in ('ACTIVE', 'EXPIRED') and o.signal_id <> v_sig and o.category = cat and o.subject_key = p#>>'{subject,key}' and o.outcome_id = p#>>'{outcome,id}'
            and o.event_key is not distinct from p#>>'{event,key}'
-           and coalesce(o.source_at, '-infinity') <= coalesce(nullif(p#>>'{timestamps,source_published_at}', '')::timestamptz, 'infinity')
+           and coalesce(o.source_at, '-infinity') <= coalesce(v_source_at, 'infinity')
         returning o.signal_id)
       insert into public.sc_signal_events (signal_id, kind, actor, run_id, detail) select signal_id, 'superseded', 'system', p_run, jsonb_build_object('by', v_sig) from old;
     end if;
@@ -634,7 +709,7 @@ begin
   v_pub := case when v_state = 'INVALIDATED' then 'WITHDRAWN'
                 when s.publication in ('HELD', 'WITHDRAWN') then s.publication
                 when s.publication = 'PUBLISHED' and v_state <> 'VERIFIED' then 'SHADOW'
-                when s.publication = 'SHADOW' and p_mode = 'live' and v_state = 'VERIFIED' and s.lifecycle = 'ACTIVE' and not s.fixture and p_live ? s.sport
+                when s.publication = 'SHADOW' and p_mode = 'live' and v_state = 'VERIFIED' and s.lifecycle <> 'WITHDRAWN' and not s.fixture and p_live ? s.sport
                      and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
                 else s.publication end;
   update public.sc_signals set current_version = v_ver, current_version_id = v_id, headline = p->>'headline', public_headline = p->>'public_headline',
@@ -754,6 +829,41 @@ begin
   return jsonb_build_object('recorded', n);
 end $$;
 
+-- THE ONE PLACEMENT RULE for what is still SHADOW, the same as sc_ingest_one
+-- publishes by: VERIFIED, not a fixture, not withdrawn (history included:
+-- expired, or superseded by a newer record), a live sport, at or above
+-- publish.min_label. Only the system's own placements move; HELD and
+-- WITHDRAWN (an operator's decisions) never do. Two callers: the switch to
+-- live (sc_promote_shadow) and every live run (sc_publish_pending). The
+-- callers check the mode; notices are never sent for history (sc_notify).
+create or replace function public.sc_place_shadow(p_actor text, p_run uuid, p_reason text)
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare n integer := 0; v_live jsonb := coalesce(public.sc_cfg('live_sports'), '[]'::jsonb);
+  v_min text := coalesce(public.sc_cfg('publish')->>'min_label', 'Routine');
+begin
+  with p as (
+    update public.sc_signals s set publication = 'PUBLISHED', publication_by = 'system', published_at = coalesce(s.published_at, now())
+     where s.publication = 'SHADOW' and coalesce(s.publication_by, 'system') = 'system'
+       and s.verification_state = 'VERIFIED' and s.lifecycle <> 'WITHDRAWN' and not s.fixture
+       and v_live ? s.sport and public.sc_label_rank(s.label) >= public.sc_label_rank(v_min)
+    returning s.signal_id)
+  insert into public.sc_signal_events (signal_id, kind, actor, run_id, detail)
+  select signal_id, 'published', p_actor, p_run, jsonb_build_object('reason', p_reason) from p;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+-- a run that began in live mode places what is still SHADOW: what a shadow
+-- period stored (the backfilled history included), and what an earlier engine
+-- stored before history was publishable, without waiting for a new version
+create or replace function public.sc_publish_pending(p_run uuid)
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  perform public.sc_require_run(p_run);
+  if (select mode from public.sc_runs where run_id = p_run) is distinct from 'live' then return 0; end if;
+  return public.sc_place_shadow('system', p_run, 'stored unpublished; published by a live run');
+end $$;
+
 create or replace function public.sc_expire()
 returns integer language plpgsql security definer set search_path = public, pg_temp as $$
 declare n integer;
@@ -789,8 +899,9 @@ begin
   if to_regclass('public.user_alerts') is null then return jsonb_build_object('sent', 0, 'note', 'public.user_alerts is not installed: no notices'); end if;
   v_max := coalesce((cfg->>'max_per_run')::integer, 500);
   for s in select x.*, v.payload from public.sc_signals x join public.sc_signal_versions v on v.version_id = x.current_version_id
-            where x.publication = 'PUBLISHED' and x.lifecycle = 'ACTIVE' and x.verification_state = 'VERIFIED' and not x.fixture
+            where x.publication = 'PUBLISHED' and x.lifecycle = 'ACTIVE' and x.verification_state = 'VERIFIED' and not x.fixture and not x.backfilled
               and x.published_at >= now() - make_interval(hours => coalesce((cfg->>'window_hours')::integer, 24))
+              and x.signal_at >= now() - make_interval(hours => coalesce((cfg->>'window_hours')::integer, 24))
               and public.sc_label_rank(x.label) >= public.sc_label_rank(coalesce(cfg->>'min_label', 'Notable'))
             order by x.score desc, x.signal_id desc loop
     for u in select p.* from public.sc_preferences p
@@ -841,15 +952,15 @@ returns jsonb language sql stable security definer set search_path = public, pg_
       'event_kind', s.event_kind, 'subject', s.subject_label, 'event_key', s.event_key, 'event_at', s.event_at, 'headline', s.headline, 'public_headline', s.public_headline,
       'change_pp', s.change_pp, 'score', s.score, 'label', s.label, 'evidence_class', s.evidence_class, 'verification', s.verification_state, 'rarity', s.rarity,
       'reliability_grade', s.reliability_grade, 'research_grade', s.research_grade, 'model_version', s.model_version, 'market_type', s.market_type,
-      'first_detected_at', s.first_detected_at, 'source_at', s.source_at, 'lifecycle', s.lifecycle, 'publication', s.publication, 'version', s.current_version,
+      'first_detected_at', s.first_detected_at, 'signal_at', s.signal_at, 'source_at', s.source_at, 'lifecycle', s.lifecycle, 'publication', s.publication, 'version', s.current_version,
       'fixture', s.fixture,
       'event', v.payload->'event', 'values', jsonb_build_object('previous', v.payload#>'{values,previous}', 'current', v.payload#>'{values,current}', 'change_display', v.payload#>'{values,change_display}', 'unit', v.payload#>'{values,unit}'),
-      'links', v.payload->'links', 'summary', v.payload->>'summary', 'timestamps', v.payload->'timestamps', 'backfilled', coalesce((v.payload->>'backfilled')::boolean, false),
+      'links', v.payload->'links', 'summary', v.payload->>'summary', 'timestamps', v.payload->'timestamps', 'backfilled', s.backfilled,
       'graphics', (select count(*) from public.sc_graphics g where g.version_id = s.current_version_id and g.status = 'READY'))
   else
     jsonb_build_object('signal_id', s.signal_id, 'category', s.category, 'sport', s.sport, 'league', s.league, 'event_kind', s.event_kind, 'subject', s.subject_label,
       'event_at', s.event_at, 'event_label', v.payload#>>'{event,label}', 'public_headline', s.public_headline, 'label', s.label, 'evidence_class', s.evidence_class,
-      'explanation', v.payload->>'public_summary', 'first_detected_at', s.first_detected_at, 'locked', true)
+      'explanation', v.payload->>'public_summary', 'first_detected_at', s.first_detected_at, 'signal_at', s.signal_at, 'backfilled', s.backfilled, 'locked', true)
   end
   from public.sc_signal_versions v where v.version_id = s.current_version_id;
 $$;
@@ -867,11 +978,15 @@ begin
     'free', jsonb_build_object('feed_limit', f->'feed_limit', 'max_age_hours', f->'max_age_hours', 'min_label', f->'min_label', 'categories', f->'categories'));
 end $$;
 
--- Research Pulse: counts of published signals in the window. Counts only: no
--- number, no headline, so anyone may see how much changed.
+-- Research Pulse: counts of published signals whose moment (signal_at) is in
+-- the window, so a backfill counts on the day each change happened. Counts
+-- only: no number, no headline, so anyone may see how much changed. An
+-- operator in shadow mode counts the unpublished (shadow) signals too, the
+-- same ones their feed shows, and the answer says so.
 create or replace function public.sc_pulse(p_hours integer default 24)
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
 declare h integer := greatest(1, least(coalesce(p_hours, 24), 24 * 14)); j jsonb;
+  v_shadow boolean := public.sc_is_admin() and coalesce((public.sc_cfg('mode'))#>>'{}', 'shadow') = 'shadow';
 begin
   select jsonb_build_object(
     'hours', h,
@@ -885,13 +1000,16 @@ begin
     'simulator', count(*) filter (where category = 'SIMULATION_SHIFT'),
     'reliability_warnings', count(*) filter (where category = 'MODEL_RELIABILITY_WARNING'),
     'freshness_warnings', count(*) filter (where category = 'DATA_QUALITY_WARNING' and lifecycle = 'ACTIVE'),
+    'backfilled', count(*) filter (where backfilled),
     'by_sport', coalesce((select jsonb_object_agg(sport, n) from (select sport, count(*) n from public.sc_signals
-                  where publication = 'PUBLISHED' and verification_state = 'VERIFIED' and not fixture and first_detected_at >= now() - make_interval(hours => h) group by sport) q), '{}'::jsonb),
+                  where (publication = 'PUBLISHED' or (v_shadow and publication = 'SHADOW')) and verification_state = 'VERIFIED' and not fixture
+                    and signal_at >= now() - make_interval(hours => h) group by sport) q), '{}'::jsonb),
+    'includes_unpublished', v_shadow,
     'since', now() - make_interval(hours => h),
     'last_completed_at', (select max(finished_at) from public.sc_runs where status = 'completed'))
   into j
   from public.sc_signals
-  where publication = 'PUBLISHED' and verification_state = 'VERIFIED' and not fixture and first_detected_at >= now() - make_interval(hours => h);
+  where (publication = 'PUBLISHED' or (v_shadow and publication = 'SHADOW')) and verification_state = 'VERIFIED' and not fixture and signal_at >= now() - make_interval(hours => h);
   return j;
 end $$;
 
@@ -907,7 +1025,7 @@ begin
   select coalesce(jsonb_agg(public.sc_item(t.x, false) order by t.pin desc, t.score desc, t.sid desc), '[]'::jsonb) into items
     from (select x, x.public_preview as pin, x.score as score, x.signal_id as sid from public.sc_signals x
            where x.publication = 'PUBLISHED' and x.verification_state = 'VERIFIED' and not x.fixture and x.lifecycle in ('ACTIVE', 'EXPIRED')
-             and x.first_detected_at >= now() - make_interval(hours => coalesce((f->>'max_age_hours')::integer, 72))
+             and x.signal_at >= now() - make_interval(hours => coalesce((f->>'max_age_hours')::integer, 72))
              and (x.public_preview or (f->'categories' ? x.category and public.sc_label_rank(x.label) >= public.sc_label_rank(coalesce(f->>'min_label', 'Notable'))))
            order by x.public_preview desc, x.score desc, x.signal_id desc limit lim) t;
   select coalesce(jsonb_agg(jsonb_build_object('signal_id', g.signal_id, 'template', g.template, 'format', g.format, 'content', g.content, 'content_sha256', g.content_sha256,
@@ -933,7 +1051,7 @@ begin
     return public.sc_public_feed(lim) || jsonb_build_object('reason', case when auth.uid() is null then 'signed_out' else 'not_entitled' end);
   end if;
   sortexpr := case sort
-    when 'recent' then 'extract(epoch from s.first_detected_at)'
+    when 'recent' then 'extract(epoch from s.signal_at)'
     when 'shift' then 'coalesce(s.abs_change_pp, -1)'
     when 'disagreement' then 'coalesce(s.abs_change_pp, -1)'
     when 'evidence' then '(s.evidence_rank * 1000 + s.score)'
@@ -944,7 +1062,12 @@ begin
   where_sql := ' where not s.fixture ';
   if adm and coalesce((f->>'include_shadow')::boolean, false) then where_sql := ' where true ';
   else where_sql := where_sql || ' and s.publication = ''PUBLISHED'' and s.verification_state = ''VERIFIED'' '; end if;
-  where_sql := where_sql || case scope when 'active' then ' and s.lifecycle = ''ACTIVE'' ' when 'history' then ' and s.lifecycle <> ''ACTIVE'' ' else '' end;
+  -- active: the event is still ahead; timeline: the latest signal per subject,
+  -- current and past (active or expired, not superseded or withdrawn);
+  -- history: everything no longer active; all: everything
+  if scope not in ('active', 'timeline', 'history', 'all') then raise exception 'sc_feed: unknown scope %', scope; end if;
+  where_sql := where_sql || case scope when 'active' then ' and s.lifecycle = ''ACTIVE'' ' when 'timeline' then ' and s.lifecycle in (''ACTIVE'', ''EXPIRED'') '
+                                       when 'history' then ' and s.lifecycle <> ''ACTIVE'' ' else '' end;
   if sort = 'shift' then where_sql := where_sql || ' and s.category in (''FORECAST_SHIFT'', ''SIMULATION_SHIFT'', ''LINE_MOVEMENT'') and s.evidence_class <> ''MODEL_VERSION_CHANGE'' '; end if;
   if sort = 'disagreement' then where_sql := where_sql || ' and s.category = ''MARKET_DIVERGENCE'' '; end if;
   if p_cursor is not null then
@@ -958,7 +1081,7 @@ begin
     || ' and ($2 is null or s.category = any ($2))'
     || ' and ($3 is null or s.subject_label ilike ''%'' || $3 || ''%'' or exists (select 1 from unnest(s.teams) t where t ilike ''%'' || $3 || ''%''))'
     || ' and ($4 is null or public.sc_label_rank(s.label) >= public.sc_label_rank($4))'
-    || ' and ($5 is null or s.first_detected_at >= $5) and ($6 is null or s.first_detected_at < $6)'
+    || ' and ($5 is null or s.signal_at >= $5) and ($6 is null or s.signal_at < $6)'
     || ' and ($8 is null or s.event_kind = any ($8))'
     || ' and ($9 is null or s.reliability_grade = any ($9))'
     || ' and ($10 is null or s.market_type = any ($10))'
@@ -1019,7 +1142,7 @@ begin
                    'external_approval', g.external_approval, 'current', g.version_id = s.current_version_id, 'error', case when adm then g.error end) order by g.generated_at desc), '[]'::jsonb)
                  from public.sc_graphics g where g.signal_id = s.signal_id and g.status <> 'WITHDRAWN'),
     'dna', (select d.record from public.sc_model_dna d where d.sport = s.sport order by d.created_at desc, d.id desc limit 1),
-    'timeline', (select coalesce(jsonb_agg(jsonb_build_object('signal_id', o.signal_id, 'headline', o.headline, 'first_detected_at', o.first_detected_at, 'lifecycle', o.lifecycle, 'change_pp', o.change_pp) order by o.first_detected_at), '[]'::jsonb)
+    'timeline', (select coalesce(jsonb_agg(jsonb_build_object('signal_id', o.signal_id, 'headline', o.headline, 'first_detected_at', o.first_detected_at, 'signal_at', o.signal_at, 'backfilled', o.backfilled, 'lifecycle', o.lifecycle, 'change_pp', o.change_pp) order by o.signal_at, o.signal_id), '[]'::jsonb)
                  from public.sc_signals o where o.category = s.category and o.subject_key = s.subject_key and o.outcome_id = s.outcome_id and o.event_key is not distinct from s.event_key
                    and (adm or (o.publication = 'PUBLISHED' and o.verification_state = 'VERIFIED' and not o.fixture))));
 end $$;
@@ -1161,25 +1284,12 @@ begin
 end $$;
 
 -- Going live publishes what the publication rule would have published had the
--- runs begun in live: SHADOW signals that are VERIFIED, ACTIVE, not fixtures,
--- of a live sport and at or above publish.min_label. Only the system's own
--- placements move; HELD and WITHDRAWN (an operator's decisions) never do.
+-- runs begun in live (sc_place_shadow, above), at the moment of the switch.
 create or replace function public.sc_promote_shadow(p_actor text)
 returns integer language plpgsql security definer set search_path = public, pg_temp as $$
-declare n integer := 0; v_live jsonb := coalesce(public.sc_cfg('live_sports'), '[]'::jsonb);
-  v_min text := coalesce(public.sc_cfg('publish')->>'min_label', 'Routine');
 begin
   if coalesce((public.sc_cfg('mode'))#>>'{}', 'shadow') <> 'live' then return 0; end if;
-  with p as (
-    update public.sc_signals s set publication = 'PUBLISHED', publication_by = 'system', published_at = coalesce(s.published_at, now())
-     where s.publication = 'SHADOW' and coalesce(s.publication_by, 'system') = 'system'
-       and s.verification_state = 'VERIFIED' and s.lifecycle = 'ACTIVE' and not s.fixture
-       and v_live ? s.sport and public.sc_label_rank(s.label) >= public.sc_label_rank(v_min)
-    returning s.signal_id)
-  insert into public.sc_signal_events (signal_id, kind, actor, detail)
-  select signal_id, 'published', p_actor, jsonb_build_object('reason', 'the mode was switched to live') from p;
-  get diagnostics n = row_count;
-  return n;
+  return public.sc_place_shadow(p_actor, null, 'the mode was switched to live');
 end $$;
 
 -- one switch, two doors: the operator's (signed in) and the owner's (below)
@@ -1273,7 +1383,7 @@ begin
   foreach f in array array['public.sc_begin_run(jsonb)', 'public.sc_require_run(uuid)', 'public.sc_current(text[])', 'public.sc_prior_divergences()', 'public.sc_check_simulation(jsonb)',
     'public.sc_active(text[],integer)', 'public.sc_graphics_due(text,integer)',
     'public.sc_ingest_one(uuid,jsonb,text,text,jsonb,text,boolean)', 'public.sc_ingest(uuid,jsonb)', 'public.sc_put_graphics(uuid,jsonb)', 'public.sc_put_dna(uuid,jsonb)',
-    'public.sc_fail(uuid,jsonb)', 'public.sc_expire()', 'public.sc_finish_run(uuid,text,jsonb,jsonb)', 'public.sc_notify(uuid)', 'public.sc_event(bigint,text,text,uuid,jsonb)',
+    'public.sc_fail(uuid,jsonb)', 'public.sc_publish_pending(uuid)', 'public.sc_expire()', 'public.sc_finish_run(uuid,text,jsonb,jsonb)', 'public.sc_notify(uuid)', 'public.sc_event(bigint,text,text,uuid,jsonb)',
     'public.sc_user_entitled(uuid)', 'public.sc_cfg(text)', 'public.sc_item(public.sc_signals,boolean)',
     'public.sc_keep()', 'public.sc_signals_guard()', 'public.sc_graphics_guard()', 'public.sc_failures_guard()'] loop
     execute 'revoke all on function ' || f || ' from public, anon, authenticated';
@@ -1303,7 +1413,7 @@ grant execute on function public.sc_feed(jsonb,text,integer) to authenticated;
 do $o$
 declare f text;
 begin
-  foreach f in array array['public.sc_promote_shadow(text)', 'public.sc_set_mode(text,text[],uuid,text,text)', 'public.sc_owner_set_mode(text,text[],text)'] loop
+  foreach f in array array['public.sc_place_shadow(text,uuid,text)', 'public.sc_promote_shadow(text)', 'public.sc_set_mode(text,text[],uuid,text,text)', 'public.sc_owner_set_mode(text,text[],text)'] loop
     execute 'revoke all on function ' || f || ' from public, anon, authenticated';
     if exists (select 1 from pg_roles where rolname = 'service_role') then execute 'revoke all on function ' || f || ' from service_role'; end if;
   end loop;

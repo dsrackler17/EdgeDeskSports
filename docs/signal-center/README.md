@@ -6,7 +6,9 @@ the evidence supports it.
 Signal Center watches EdgeDesk's own records and reports when something material
 changed. The records are every game-research snapshot, every ledgered forecast,
 every captured market price, every dated availability report and every published
-Simulator run. Each signal carries the evidence for the change, the
+Simulator run. It reads them back to the start of each ledger, so the season so
+far is there from the first run. Each past change is placed when it happened and
+marked *found in the ledger later* (METHODOLOGY.md §3). Each signal carries the evidence for the change, the
 model's record (Model DNA) and its limits. It is a research-discovery surface. It
 never recommends a bet.
 
@@ -17,11 +19,15 @@ never recommends a bet.
 | [GRAPHICS.md](GRAPHICS.md) | The six templates, the three formats, revision and invalidation, operator approval |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Migration order, switches, shadow → live, rollback, costs, verification queries |
 
-**Status (2026-10-23).** Built and tested on branch `claude/epic-ptolemy-a38fmq`.
-**Nothing is deployed.** `supabase/signal_center.sql` has not been applied to
-production, the evaluation job is off (`SIGNAL_CENTER_WORKER` is unset), and
-Signal Center starts in **shadow mode** once the migration is applied. Until then
-the terminal seat says "not deployed yet" and hands new readers to Research.
+**Status (2026-10-24).** The schema is applied. It was re-applied with #737's
+`sha256()` write fix, and Signal Center is **live for every sport**. The 00:25 UTC run
+stored 371 signals and published 166. The backfill (the season's history, point in
+time) takes effect when this file is applied again: **Actions → Deploy Signal Center
+schema** (idempotent: it replaces the doors, adds two columns, and dates and places
+the rows already stored). Then **Actions → Signal Center run**. That run stores the
+history (about 750 signals over the committed records), re-scores the stored rows
+under `sc_importance_v2`, and publishes the verified history of the live sports.
+None of it becomes a notice (DEPLOYMENT.md §2–3).
 
 ## Where it lives
 
@@ -36,9 +42,9 @@ the terminal seat says "not deployed yet" and hands new readers to Research.
 ## Test
 
 ```powershell
-npm run sc:test        # engine 113 · registry 177 · UI renderers 89 · graphics 268 (offline)
-npm run sc:sql         # the migration on PostgreSQL 139 · the worker end to end 28
-npm run sc:e2e         # graphics in Chromium 200 · the terminal seat 119 · /signals/ + /admin/signals/ 58
+npm run sc:test        # engine 125 · registry 186 · UI renderers 96 · graphics 268 (offline)
+npm run sc:sql         # the migration on PostgreSQL 184 · the worker end to end 36
+npm run sc:e2e         # graphics in Chromium 200 · the terminal seat 123 · /signals/ + /admin/signals/ 58
 npm run sc:dry-run     # evaluate the committed sources now; writes .cache/signal_center/run.json only
 ```
 

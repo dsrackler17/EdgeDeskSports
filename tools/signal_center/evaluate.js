@@ -11,7 +11,7 @@ const DNA = require(path.join(ROOT, 'lib', 'edgedesk_model_dna.js'));
 const REG = require(path.join(ROOT, 'lib', 'edgedesk_signal_registry.js'));
 const { perfKeyFor } = require('./sources.js');
 
-const ms = (t) => { const x = Date.parse(t); return isFinite(x) ? x : null; };
+const ms = (t) => { const x = typeof t === 'number' ? t : Date.parse(t); return isFinite(x) ? x : null; };
 function latest(series) {
   let best = null;
   (series || []).forEach((r) => { if (r && typeof r.p_home === 'number' && r.data_status !== 'UNAVAILABLE' && (!best || ms(r.at) > ms(best.at))) best = r; });
@@ -25,10 +25,11 @@ function latestQuote(list) {
 
 /* inputs:
      football        sources.footballGames()      [{game, series}]
+     footballLedger  sources.footballLedgerGames() [{game, series}] (before research)
      footballCurrent sources.footballCurrent()
      perfGames       sources.perfForecastGames()  [{game, series}]
      perfLastCapture performance summary ledger.last_capture_at
-     quotes          sources.perfQuotes()         Map(perf event key -> quotes)
+     quotes          sources.allQuotes()          Map(perf event key -> quotes)
      slateTeams      sources.slateTeams()         Map(slate id -> {home, away})
      audits          { registry, perf }
      cfbAvailability sources.cfbAvailability()
@@ -50,7 +51,9 @@ function evaluate(inputs) {
 
   const football = inputs.football || [];
   const perfGames = inputs.perfGames || [];
-  const allGames = football.concat(perfGames);
+  /* the ledger's football rows from before research covered a game: their
+     own series, listed first so the research entry is the game's identity */
+  const allGames = (inputs.footballLedger || []).concat(football, perfGames);
   const gameBy = new Map(allGames.map((g) => [g.game.event_key, g]));
 
   /* ---- Model DNA, and the reliability grade every signal carries */
@@ -112,6 +115,11 @@ function evaluate(inputs) {
     divRows.push({ game: g.game, model, quote: q });
   });
   const divEligible = divRows.filter((r) => eligible(r.game.sport, 'MARKET_DIVERGENCE'));
+  /* the past boards first: the live evaluation below replaces any comparison
+     that is still current (one payload per key, the latest wins) */
+  const rp = replayMarket(allGames, gameBy, quotes, ctx, (sp, cat) => eligible(sp, cat));
+  rp.signals.forEach((s) => out.signals.push(s));
+  out.stats.replay = rp.stats;
   const dv = E.marketDivergence(divEligible, ctx);
   dv.signals.forEach((s) => out.signals.push(s));
   dv.refused.forEach((r) => refuse('MARKET_DIVERGENCE', null, r.reason, r.event_key));
@@ -166,6 +174,85 @@ function evaluate(inputs) {
   return out;
 }
 
+/* ---- model vs market, replayed point in time. At each quote capture pass
+   the board is rebuilt from the records stamped at or before that moment
+   (lib/edgedesk_replay.js's rule: a later record is never read): each game's
+   latest model snapshot and latest price, judged by the same engine with
+   now = the pass. A comparison is kept the first time it crossed the floor,
+   which is when the hourly evaluation would have found it; a convergence the
+   first time a disagreement found earlier closed. Only prices that carry the
+   teams' names are replayed: an unnamed price can be oriented only by
+   today's slate, which says nothing about a past board. */
+const PASS_GAP_MS = 10 * 60000;
+const MOVE_PP = 2;
+function lastAtOrBefore(list, t, at) {
+  let lo = 0, hi = list.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (ms(at(list[mid])) <= t) lo = mid + 1; else hi = mid; }
+  return lo ? list[lo - 1] : null;
+}
+function replayMarket(allGames, gameBy, quotes, ctx, eligible) {
+  const T = E.SPEC.thresholds.market_divergence;
+  const stats = { passes: 0, comparisons: 0, refused: 0, divergences: 0, convergences: 0 };
+  const now = ms(ctx.now);
+  const models = new Map();
+  /* each snapshot keeps the source it came from (a game can have a ledger
+     series before its research series), so a signal cites the right file */
+  allGames.forEach((g) => g.series.forEach((r) => {
+    if (r.data_status === 'UNAVAILABLE' || !(typeof r.p_home === 'number' && r.p_home > 0 && r.p_home < 1) || ms(r.at) === null) return;
+    if (!models.has(g.game.event_key)) models.set(g.game.event_key, []);
+    models.get(g.game.event_key).push(Object.assign({}, r, { source: g.game.source }));
+  }));
+  models.forEach((l) => l.sort((a, b) => ms(a.at) - ms(b.at)));
+  const events = [];
+  quotes.forEach((list, perfKey) => {
+    const key = perfKey.replace(/^(NFL|CFB)\|/, (m, a) => a.toLowerCase() + '|');
+    const g = gameBy.get(key);
+    if (!g || !models.has(key) || !eligible(g.game.sport, 'MARKET_DIVERGENCE')) return;
+    const qs = list.filter((q) => q.home && q.away && ms(q.captured_at) !== null && ms(q.captured_at) <= now).sort((a, b) => ms(a.captured_at) - ms(b.captured_at));
+    if (qs.length) events.push({ game: g.game, quotes: qs, models: models.get(key) });
+  });
+  const times = [];
+  events.forEach((e) => e.quotes.forEach((q) => times.push(ms(q.captured_at))));
+  times.sort((a, b) => a - b);
+  const passes = [];
+  times.forEach((t) => { const p = passes[passes.length - 1]; if (p && t - p.end <= PASS_GAP_MS) p.end = t; else passes.push({ end: t }); });
+  /* one disagreement per episode (event, book, side, model version): a
+     refreshed snapshot with the same gap is the same story, so a new signal
+     only when the gap moved MOVE_PP since the last one (E.materialUpdate's
+     rule for a new version) or the earlier one closed */
+  const found = new Map(), last = new Map(), closed = new Set();
+  const episode = (s) => [s.event.key, String(s.market && s.market.book).toLowerCase(), s.subject.side, s.model.version].join('|');
+  passes.forEach((pass) => {
+    const at = pass.end;
+    const rows = [];
+    events.forEach((e) => {
+      if (e.game.event_at && ms(e.game.event_at) <= at) return;
+      const q = lastAtOrBefore(e.quotes, at, (x) => x.captured_at);
+      if (!q || at - ms(q.captured_at) > T.quote_live_minutes * 60000) return;
+      const m = lastAtOrBefore(e.models, at, (x) => x.at);
+      if (!m) return;
+      rows.push({ game: Object.assign({}, e.game, { source: m.source }), quote: q,
+        model: { p_home: m.p_home, at: m.at, snapshot_id: m.snapshot_id, model_id: m.model_id, model_version: m.model_version, built_at: m.built_at, data_status: m.data_status, validation: m.validation || null } });
+    });
+    if (!rows.length) return;
+    stats.passes++; stats.comparisons += rows.length;
+    const pctx = Object.assign({}, ctx, { now: new Date(at).toISOString(), detected_at: ctx.now });
+    const dv = E.marketDivergence(rows, pctx);
+    stats.refused += dv.refused.length;
+    dv.signals.forEach((s) => {
+      const prev = last.get(episode(s));
+      if (found.has(s.signal_key) || (prev && !closed.has(prev.signal_key) && Math.abs(s.values.change_pp - prev.values.change_pp) < MOVE_PP)) return;
+      found.set(s.signal_key, s); last.set(episode(s), s); stats.divergences++;
+    });
+    const prior = Array.from(last.values()).filter((d) => !closed.has(d.signal_key));
+    E.marketConvergence(prior, rows.filter((r) => eligible(r.game.sport, 'MARKET_CONVERGENCE')), pctx).forEach((c) => {
+      if (closed.has(c.identity.from)) return;
+      closed.add(c.identity.from); found.set(c.signal_key, c); stats.convergences++;
+    });
+  });
+  return { signals: Array.from(found.values()), stats };
+}
+
 /* the moneyline market test from the backtest registry, for the caveat */
 function marketValidation(registry, sport) {
   const id = sport;
@@ -174,4 +261,4 @@ function marketValidation(registry, sport) {
   return m ? { state: m.state, market_test: m.market, value_claims: m.value_claims === true } : null;
 }
 
-module.exports = { evaluate, latest, latestQuote };
+module.exports = { evaluate, latest, latestQuote, replayMarket };

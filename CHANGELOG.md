@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-24 — Signal Center: the season's history, found point in time
+
+The first production runs stored nothing: every write failed on pgcrypto's `digest()`, which Supabase keeps off the doors' search path. #737 fixed that with core `sha256()`, and the 00:25 UTC run (live, every sport) stored 371 signals and published 166. Two problems remained. That run dated every signal by itself, including changes from days earlier. And it read only part of what EdgeDesk records. This backfills the season from the records EdgeDesk already keeps, each signal dated when it happened and marked as found later, and corrects the rows already stored.
+
+- **No pgcrypto call can come back** (`tools/signal_center/sql.test.js`): a static check refuses `digest()` and its relatives, comments aside.
+- **More history from the existing records** (`tools/signal_center/sources.js`):
+  - Imported performance-ledger rows were dropped because their `capture.captured_at` is null. They are now read at their `recorded_at`, taken from the record's git history. This affects 70 NBA, 162 NHL and 929 CFB rows.
+  - NFL and CFB forecasts from the ledger now count back to 2026-09-11, before game research began (2026-10-16). Each is its own series, never paired with a research snapshot.
+  - NFL and CFB prices come from `record/football/quotes/`: every DraftKings reading since 2026-10-03, with the teams named. One capture path per sport.
+- **Point in time** (`lib/edgedesk_signal_engine.js`, `E.SPEC.backfill`): a change found more than 180 minutes after its record is scored as of that record and marked `backfilled`. Its detection time stays the true one. Neither field changes a version.
+- **Past model–market boards are replayed** (`tools/signal_center/evaluate.js` `replayMarket`). At each capture pass, each game's latest snapshot and price are judged by the same engine with now = the pass. No later record is read. There is one card per disagreement episode (a new one only when the gap moved ≥ 2 pp) and one convergence when it closes.
+- **The database places history** (same file, additive and idempotent):
+  - `sc_signals.backfilled` and `signal_at` (the moment a signal describes) are fixed at the first version.
+  - Older signals are superseded by newer records in time order, whichever was found first.
+  - A live run publishes verified history (expired or superseded) and, through the new job door `sc_publish_pending`, what was stored while in shadow. Holds stick, and backfilled signals never become notices.
+  - The feed sorts and filters by `signal_at`, and gains the `timeline` scope (latest per subject, current and past). The pulse counts by `signal_at` and tells an operator in shadow mode that it includes unpublished signals.
+  - A disagreement whose convergence is on record is no longer offered for another (`sc_prior_divergences`). Previously every later quote made a new convergence card.
+  - **Rows already stored** (the 371 from 00:25 UTC) are dated by the same 180-minute rule when this file is applied. They are placed in record time: in each subject, outcome and event, older active or expired signals are superseded by the newest, with an audit event.
+  - One placement rule for what is still unpublished, `sc_place_shadow` (verified, a live sport, label ≥ Routine, not withdrawn, history included). It runs on #737's switch to live (`sc_promote_shadow`) and on every live run (`sc_publish_pending`).
+- **The scoring specification is `sc_importance_v2`**: v1 plus the backfill rule. The new id re-versions each stored signal once (reason *methodology*), so the 00:25 UTC rows are re-scored by the rule their backfilled siblings follow.
+- **The terminal seat** lands on the timeline. A backfilled card reads "recorded <time> · found in the ledger later". An operator in shadow mode sees the unpublished signals by default, as the status bar already said.
+- **Audit:** every number in the 745 signals of a dry run (2026-10-24) was re-derived from the raw files by an independent checker (its own de-vig and exact-decimal rounding). It found 0 issues: values, orientation, source citation, time order, pregame, and that no comparison read a record stamped after its board. This audit caught one bug before release: replayed disagreements had cited the research file for ledger snapshots.
+
+Tests: `engine.test.js` 125, `registry.test.js` 186, `ui.test.js` 96, `graphics.test.js` 268, `sql.test.js` 184 (including the upgrade of rows stored before these columns), `worker.test.js` 36, `graphics.e2e.js` 200, `ui.e2e.js` 123, `pages.e2e.js` 58; navigation 263 + 172.
+
 ## 2026-10-24 — FBS vs FCS: the level-map repair, tested as registered and rejected
 
 The CFB engine prices FBS-vs-FCS favourites 7.8 points short of the close (H-003). The first repair, a map from the engine's margin to the real (uncapped) final, was pre-registered as H-014 (`docs/market-intelligence/hypotheses.json`, committed before any fit) and run once (`npm run cfb:fcs:uncapped`, `football/cfb_p4/research/fcs_uncapped.js`).
