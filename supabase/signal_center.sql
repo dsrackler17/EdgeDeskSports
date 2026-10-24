@@ -87,6 +87,14 @@
 
 begin;
 
+-- Every constraint is checked at its statement in this file, never at commit.
+-- The upgrade updates rows of sc_signals twice (dating, then placement); the
+-- second update of a row this transaction already wrote queues the deferred
+-- current_version_id check, and ALTER TABLE refuses to run while a check is
+-- pending ("cannot ALTER TABLE ... pending trigger events": the deploy of
+-- 2026-10-24 01:14 UTC, rolled back). Only this transaction is affected.
+set constraints all immediate;
+
 -- ---------------------------------------------------------------- guards
 create or replace function public.sc_keep()
 returns trigger language plpgsql as $$

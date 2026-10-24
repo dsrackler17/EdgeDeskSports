@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-24 — Signal Center: the upgrade applies to a table that already holds signals
+
+The deploy of the backfill (2026-10-24 01:14 UTC) rolled back, so nothing changed: `cannot ALTER TABLE "sc_signals" because it has pending trigger events`. The upgrade updates the stored rows twice (dating, then placement). The second update of a row the same transaction already wrote queues the deferred `current_version_id` check, and the later `ALTER TABLE … enable row level security` will not run while a check is pending. The file now checks every constraint at its statement (`set constraints all immediate`, this transaction only). The SQL suite's upgrade test now builds the table as production holds it, with versions and the guard #737 installed, and applies the file in one transaction as the deploy does. Before the fix it failed with production's exact error.
+
 ## 2026-10-24 — Signal Center: the season's history, found point in time
 
 The first production runs stored nothing: every write failed on pgcrypto's `digest()`, which Supabase keeps off the doors' search path. #737 fixed that with core `sha256()`, and the 00:25 UTC run (live, every sport) stored 371 signals and published 166. Two problems remained. That run dated every signal by itself, including changes from days earlier. And it read only part of what EdgeDesk records. This backfills the season from the records EdgeDesk already keeps, each signal dated when it happened and marked as found later, and corrects the rows already stored.
