@@ -125,23 +125,27 @@ the terminal's Coverage view shows that column from the database.
 
 | Sport | Rollout | forecast shift | market divergence | line movement | simulation shift | injury impact | reliability warning | data quality | convergence |
 |---|---|---|---|---|---|---|---|---|---|
-| NFL | live candidate | operational | operational | operational | experimental | **blocked** | operational | operational | operational |
+| NFL | live candidate | operational | operational | operational | experimental | experimental (QB, dated by EdgeDesk) | operational | operational | operational |
 | College football | live candidate | operational | experimental | operational | experimental | operational (QB) | operational | operational | experimental |
 | NBA | shadow | operational | experimental | experimental | experimental | experimental | operational | operational | experimental |
 | NHL | shadow | operational | experimental | experimental | experimental | **blocked** | operational | operational | experimental |
 | MLB | shadow | — | — | — | experimental | — | — | operational | — |
 | WNBA | shadow | operational | — | — | experimental | — | operational | — | — |
-| Men's college basketball | shadow | operational | — | — | **blocked** | — | — | — | — |
-| UFC | shadow | coming soon | — | — | experimental | — | — | — | — |
-| College baseball | shadow | coming soon | — | — | coming soon | — | — | — | — |
+| Men's college basketball | shadow | operational | — | — | **blocked** | — | — | operational | — |
+| UFC | shadow | coming soon | — | — | experimental | — | — | operational | — |
+| College baseball | shadow | coming soon | — | — | coming soon | — | — | operational | — |
 | Women's college basketball | shadow | — | — | — | — | — | — | — | — |
 | Tennis | shadow | — | — | — | experimental | — | — | — | — |
 | Golf | shadow | — | — | — | experimental | — | — | — | — |
 
 Blockers worth knowing:
 
-- **NFL injuries are blocked.** No NFL injury source carries a per-row publication time, and a designation
-  without one cannot be ordered against a forecast snapshot.
+- **NFL injuries are dated by EdgeDesk, not the league.** nflverse's copy of the official report carries no per-row
+  publication time. The injury sync (every six hours) appends each game designation new or changed since its last
+  row for that player-week to `football/injuries/history/nfl_<season>.jsonl`, stamped with its own retrieval time.
+  Signal Center reads quarterbacks from it, prints the time as "first seen by EdgeDesk" (never "published"), flags
+  `PUBLICATION_TIME_UNKNOWN`, and keeps the category experimental. The first run's rows are a baseline (already
+  listed when the ledger began) and are never news. A designation that disappears is not recorded.
 - **Simulator changes follow the Simulator's own registry** (`lib/edgedesk_simulator_sports.js`) and never override
   it. They also need outcome definitions in the engine (`E.SIM_OUTCOMES`: NFL, college football, NHL, NBA, MLB,
   WNBA, golf, tennis, UFC). For golf a run is one tournament (win, top 5/10/20, the cut until it is made); for tennis

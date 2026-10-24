@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-24 — Signal Center: NFL injuries, dated by EdgeDesk's first sight
+
+nflverse's copy of the NFL's official injury report has no per-row publication time, which kept NFL injury signals blocked. The injury sync (every six hours, unchanged) now also appends each game designation new or changed since its last run to an append-only ledger, `football/injuries/history/nfl_<season>.jsonl`, stamped with its own retrieval time. Signal Center reads quarterbacks from it.
+
+- **The time is EdgeDesk's, and says so.** Every signal and graphic reads "first seen by EdgeDesk", never "published". The detail's timeline says the source has no publication time, and the payload is flagged `PUBLICATION_TIME_UNKNOWN`. The category is **experimental**, not operational.
+- **The baseline is never news.** The ledger's first rows are what was already listed when it began (committed from a real fetch on 2026-10-24); only a change after that is a signal. A designation that disappears is not recorded: an empty game status is not a clearance.
+- **Payloads already stored are unchanged:** a source-dated (CFB) injury payload hashes exactly as before.
+- **Freshness warnings:** today's slate feeds for men's college basketball, UFC and college baseball are credited (the slate's `ncaabase` is Signal Center's `college_baseball`). A shared source's warning (`football`: NFL and college football; `all`) now publishes when a sport it serves is live (`sc_sport_live`, SQL); before, it could never publish.
+
 ## 2026-10-24 — Signal Center: live in production; golf, tennis, UFC and men's college basketball wired
 
 **In production** (at the owner's request; docs/signal-center/DEPLOYMENT.md): the migration is applied (all 12 report rows ok), the mode is **live for every sport**, and the first run stored 371 signals, published 166 and drew 144 graphics. The first deploy's ingest failure (`digest()` outside the doors' `search_path`) is fixed with the built-in `sha256()`.

@@ -123,6 +123,14 @@ Object.keys(ALL).forEach((k) => {
   chk('simulator: ESTIMATED is flagged for a committee-proxy outcome', s.flag && s.flag.text === 'ESTIMATED' && /not the committee/.test(s.why.text));
   chk('simulator: Monte Carlo error is labelled sampling-only', s.meta.some((m) => /SAMPLING ONLY/.test(m)));
   chk('simulator: run snapshot dates are printed', /inputs /.test(s.numbers.left.sub) && /inputs /.test(s.numbers.right.sub));
+  /* an NFL designation with no publication time: the graphic says EdgeDesk dated it */
+  const obsRow = (id, at, st, base) => ({ sport: 'nfl', team: { name: 'Kansas City Chiefs', abbr: 'KC' }, player: { id: 'g1', name: 'Q Back', position: 'QB' }, status: st,
+    report: { id, type: 'NFL official injury', published_at: null, observed_at: at, retrieved_at: at, baseline: !!base, source_url: 'https://github.com/nflverse/nflverse-data/releases/tag/injuries', source: 'NFL official injury report (nflverse copy)' },
+    game: { event_key: 'nfl|2026_08_KC_DEN', event_at: iso(NOW + 86400e3), label: 'Kansas City Chiefs at Denver Broncos' } });
+  const nflInj = E.injuryChanges([obsRow('a', iso(NOW - 2 * 86400e3), 'QUESTIONABLE', true), obsRow('b', iso(NOW - 3600e3), 'OUT')], { now: NOW, positions: ['QB'] })[0];
+  const ni = SG.content(nflInj, { version: 1, payload_sha256: 'f'.repeat(64) });
+  chk('NFL injury: "first seen", never "published", and the chip says EdgeDesk dated it', ni.ok && /^first seen /.test(ni.content.numbers.right.sub) && ni.content.why.chip === 'DATED BY EDGEDESK' && /no publication time/.test(ni.content.meta[0]) && !/published/.test(ni.content.numbers.right.sub), ni.ok ? [ni.content.numbers.right.sub, ni.content.meta[0]] : ni);
+  chk('…and lays out inside its boxes in every format', ni.ok && FORMATS.every((f) => SG.check(SG.layout(ni.content, f)).length === 0));
   /* a golfer: initials in neutral colours (no photo, no logo), no playing surface */
   const gc = SG.content(smGolf, { version: 1, payload_sha256: 'f'.repeat(64) });
   chk('golf: a player graphic, initials in neutral colours, never the entity id', gc.ok && gc.content.subject.kind === 'player' && gc.content.subject.team.abbr === 'CM' && /neutral/.test(gc.content.subject.team.colors_source), gc.ok ? gc.content.subject : gc);

@@ -32,6 +32,7 @@ function latestQuote(list) {
      slateTeams      sources.slateTeams()         Map(slate id -> {home, away})
      audits          { registry, perf }
      cfbAvailability sources.cfbAvailability()
+     nflInjuries     sources.nflInjuries()        designations dated by EdgeDesk's first sight
      sourceStates    sources.sourceStates()
      db (optional)   { simPairs:[{pair, results}], simReference:[...],
                        nbaInjuries:[rows], nbaEffects:{}, kalshi: Map(event key -> {p_home, captured_at}),
@@ -147,6 +148,10 @@ function evaluate(inputs) {
   /* ---- availability */
   if (eligible('cfb', 'INJURY_IMPACT')) {
     E.injuryChanges(inputs.cfbAvailability || [], Object.assign({}, ctx, { positions: REG.sport('cfb') ? ['QB'] : [] })).forEach((s) => out.signals.push(s));
+  }
+  /* NFL: quarterbacks, as CFB; the row is dated by EdgeDesk's first sight (no publication time exists) */
+  if (eligible('nfl', 'INJURY_IMPACT')) {
+    E.injuryChanges(inputs.nflInjuries || [], Object.assign({}, ctx, { positions: ['QB'] })).forEach((s) => out.signals.push(s));
   }
   if (inputs.db && inputs.db.nbaInjuries && eligible('nba', 'INJURY_IMPACT')) {
     E.injuryChanges(inputs.db.nbaInjuries, Object.assign({}, ctx, { effects: inputs.db.nbaEffects || {} })).forEach((s) => out.signals.push(s));

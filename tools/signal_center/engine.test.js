@@ -244,7 +244,18 @@ function snap(id, at, p, ver, extra) {
   chk('no model effect is claimed when none was computed', r[1].model.effect_calculated === false && /No model effect is calculated/.test(r[1].evidence.summary) && r[1].values.change_pp === null);
   chk('facts and estimates are kept apart', r[1].facts_vs_estimates.estimate === null && r[1].facts_vs_estimates.facts.length >= 1);
   const undated = E.injuryChanges([rep('1', null, 'OUT')], { now: NOW, positions: ['QB'] });
-  chk('a report with no publication time is never a signal', undated.length === 0);
+  chk('a report with no publication time and no observation time is never a signal', undated.length === 0);
+  /* NFL: no publication time exists; a designation is dated by EdgeDesk's first sight of it */
+  const obs = (id, at, st, base) => ({ sport: 'nfl', team: { name: 'Kansas City Chiefs', abbr: 'KC' }, player: { id: 'g1', name: 'Q Back', position: 'QB' }, status: st,
+    report: { id, type: 'NFL official injury', published_at: null, observed_at: at, retrieved_at: at, baseline: !!base, source_url: 'https://github.com/nflverse/nflverse-data/releases/tag/injuries', source: 'NFL official injury report (nflverse copy)', observed_note: 'The time shown is when EdgeDesk first saw it.' },
+    game: { event_key: 'nfl|2026_08_KC_DEN', event_at: '2026-10-25T20:25:00Z', label: 'Kansas City Chiefs at Denver Broncos' } });
+  const ob = E.injuryChanges([obs('a', '2026-10-23T12:00:00Z', 'QUESTIONABLE', true), obs('b', '2026-10-24T18:00:00Z', 'OUT')], { now: NOW, positions: ['QB'] });
+  chk('NFL: a baseline row is history, never news; the change after it is one signal', ob.length === 1 && ob[0].values.current.value === 'OUT' && /was questionable/.test(ob[0].headline), ob.map((x) => x.headline));
+  chk('NFL: verified on its observation time, flagged as having no publication time', ob[0].verification.state === 'VERIFIED' && ob[0].verification.checks.some((c) => c.id === 'observation_dated' && c.ok) && ob[0].quality.flags.indexOf('PUBLICATION_TIME_UNKNOWN') >= 0, ob[0].verification);
+  chk('NFL: the time is EdgeDesk’s and says so; nothing says "published"', ob[0].timestamps.source_published_at === null && ob[0].timestamps.observed_at === '2026-10-24T18:00:00.000Z'
+    && ob[0].facts_vs_estimates.facts.every((f) => !/published/.test(f)) && ob[0].facts_vs_estimates.facts.some((f) => /first seen by EdgeDesk/.test(f)), ob[0].facts_vs_estimates.facts);
+  chk('NFL: only a baseline on file is no signal at all', E.injuryChanges([obs('a', '2026-10-23T12:00:00Z', 'OUT', true)], { now: NOW, positions: ['QB'] }).length === 0);
+  chk('NFL: first seen after kickoff is not a pregame signal', E.injuryChanges([obs('a', '2026-10-25T21:00:00Z', 'OUT')], { now: NOW, positions: ['QB'] }).length === 0);
   const wr = E.injuryChanges([rep('1', '2026-10-24T12:00:00Z', 'OUT', { player: { id: 'p2', name: 'W R', position: 'WR' } })], { now: NOW, positions: ['QB'] });
   chk('positions out of scope are not read', wr.length === 0);
   const after = E.injuryChanges([rep('1', '2026-10-25T21:00:00Z', 'OUT')], { now: NOW, positions: ['QB'] });
@@ -317,7 +328,7 @@ function snap(id, at, p, ver, extra) {
   const { evaluate } = require('./evaluate.js');
   const football = S.footballGames();
   const au = S.audits();
-  const inputs = { football, footballCurrent: S.footballCurrent(), perfGames: S.perfForecastGames(), perfLastCapture: au.perf && au.perf.ledger ? au.perf.ledger.last_capture_at : null, quotes: S.perfQuotes(), slateTeams: S.slateTeams(), audits: au, cfbAvailability: S.cfbAvailability(null, football), sourceStates: S.sourceStates(null), now: NOW };
+  const inputs = { football, footballCurrent: S.footballCurrent(), perfGames: S.perfForecastGames(), perfLastCapture: au.perf && au.perf.ledger ? au.perf.ledger.last_capture_at : null, quotes: S.perfQuotes(), slateTeams: S.slateTeams(), audits: au, cfbAvailability: S.cfbAvailability(null, football), nflInjuries: S.nflInjuries(null, football), sourceStates: S.sourceStates(null), now: NOW };
   const a = evaluate(inputs), b = evaluate(inputs);
   chk('the real sources evaluate to some signals', a.signals.length > 20, a.stats);
   chk('…deterministically (same keys and hashes twice)', JSON.stringify(a.signals.map((s) => s.signal_key + s.version_hash)) === JSON.stringify(b.signals.map((s) => s.signal_key + s.version_hash)));
@@ -325,7 +336,9 @@ function snap(id, at, p, ver, extra) {
   chk('…every payload re-hashes to its version hash', a.signals.every((s) => E.versionHash(JSON.parse(JSON.stringify(s))) === s.version_hash));
   chk('…every payload passes the copy rule', a.signals.every((s) => [s.headline, s.summary, s.evidence.summary].every(E.copyOk)));
   chk('…every unverified payload names its failed checks', a.signals.every((s) => s.verification.state === 'VERIFIED' || s.verification.failed.length > 0));
-  chk('…no NFL injury signal (no dated NFL source)', a.signals.every((s) => !(s.category === 'INJURY_IMPACT' && s.sport === 'nfl')));
+  const nflObs = inputs.nflInjuries;
+  chk('the NFL observation ledger is read, every row matched to its team’s game that week', nflObs.length > 0 && nflObs.every((r) => r.report.published_at === null && r.report.observed_at) && nflObs.filter((r) => r.game.event_key).every((r) => /^nfl\|2026_\d{2}_/.test(r.game.event_key) && [r.game.home.abbr, r.game.away.abbr].indexOf(r.team.abbr) >= 0), nflObs.slice(0, 2));
+  chk('…every NFL injury signal is dated by EdgeDesk’s first sight, never as published, and none comes from the baseline', a.signals.filter((s) => s.category === 'INJURY_IMPACT' && s.sport === 'nfl').every((s) => s.timestamps.source_published_at === null && s.timestamps.observed_at && nflObs.some((r) => !r.report.baseline && r.report.observed_at === s.timestamps.observed_at)));
   chk('…no MLB forecast signal (no forecast history)', a.signals.every((s) => !(s.sport === 'mlb' && s.category === 'FORECAST_SHIFT')));
   chk('…ineligible pairs are recorded with their reasons', Object.keys(a.ineligible).length > 0 && Object.values(a.ineligible).every((v) => / — /.test(v)));
   chk('…every football divergence was oriented by team names', a.signals.filter((s) => s.category === 'MARKET_DIVERGENCE').every((s) => s.verification.checks.some((c) => c.id === 'orientation' && c.ok)));

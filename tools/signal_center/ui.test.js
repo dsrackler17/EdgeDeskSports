@@ -160,6 +160,12 @@ chk('coverage: every registry sport, and the unsupported categories with their r
   const det = strip(UI.renderDetail({ found: true, access: 'full', admin: false, item: item(gp, 77, true), payload: gp, payload_sha256: 'f'.repeat(64), versions: [], events: [], graphics: [], dna: null, timeline: [] }, NOW));
   chk('its timing shows the competition end exactly as ESPN lists it', /Competition end, as ESPN lists it/.test(det) && /Oct 25, 3:00 AM ET/.test(det), det.slice(det.indexOf('Timing'), det.indexOf('Timing') + 300));
   chk('a game keeps its event time on the card', /· /.test(strip(UI.renderCard(item(shift, 5, true), 'full', NOW))));
+  const obsRow = (id, at, st, base) => ({ sport: 'nfl', team: { name: 'Kansas City Chiefs', abbr: 'KC' }, player: { id: 'g1', name: 'Q Back', position: 'QB' }, status: st,
+    report: { id, type: 'NFL official injury', published_at: null, observed_at: at, retrieved_at: at, baseline: !!base, source_url: 'https://github.com/nflverse/nflverse-data/releases/tag/injuries', source: 'NFL official injury report (nflverse copy)' },
+    game: { event_key: 'nfl|2026_08_KC_DEN', event_at: '2026-10-26T20:25:00Z', label: 'Kansas City Chiefs at Denver Broncos' } });
+  const ni = E.injuryChanges([obsRow('a', '2026-10-22T12:00:00Z', 'QUESTIONABLE', true), obsRow('b', '2026-10-23T18:00:00Z', 'OUT')], { now: NOW, positions: ['QB'] })[0];
+  const nd = strip(UI.renderDetail({ found: true, access: 'full', admin: false, item: item(ni, 78, true), payload: ni, payload_sha256: 'f'.repeat(64), versions: [], events: [], graphics: [], dna: null, timeline: [] }, NOW));
+  chk('an NFL designation’s timing: no publication time, and when EdgeDesk first saw it', /Source published\s*not recorded/.test(nd) && /First seen by EdgeDesk \(the source has no publication time\)\s*Oct 23/.test(nd), nd.slice(nd.indexOf('Timing'), nd.indexOf('Timing') + 400));
 }
 const covLive = UI.renderCoverage(REG, { deployed: true, mode: 'live', live_sports: ['nfl', 'golf'] });
 const rowOf = (html, label) => { const i = html.indexOf('<b>' + label + '</b>'); return i < 0 ? '' : strip(html.slice(i, html.indexOf('</tr>', i))); };

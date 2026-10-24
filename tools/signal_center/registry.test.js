@@ -16,7 +16,8 @@
                   three are refused everywhere with their reason
      rollout      live candidates are NFL and college football; nothing else
                   rolls out live first
-     honesty      NFL injuries stay BLOCKED (no per-row publication time); MLB
+     honesty      NFL injuries are dated by EdgeDesk's first sight, never as
+                  published, and stay experimental; MLB
                   has no forecast history; NBA/NHL divergences are experimental;
                   an outcome whose meaning changes between runs is never compared
    =========================================================================== */
@@ -97,7 +98,8 @@ chk('their rollout says so', R.sport('nfl').rollout === 'LIVE_CANDIDATE' && R.sp
 chk('no other sport is a live candidate', sports.filter((s) => s.rollout === 'LIVE_CANDIDATE').map((s) => s.key).sort().join() === 'cfb,nfl');
 
 /* ---- honest states ---- */
-chk('NFL injuries stay BLOCKED: no per-row publication time', R.sport('nfl').signals.INJURY_IMPACT.state === 'BLOCKED');
+chk('NFL injuries are never operational: the source has no publication time, only EdgeDesk’s first sight', R.sport('nfl').signals.INJURY_IMPACT.state !== 'OPERATIONAL' && /first seen by EdgeDesk/.test(R.sport('nfl').signals.INJURY_IMPACT.detail));
+chk('…and they read the observation ledger the injury sync appends', /football\/injuries\/history/.test(R.sport('nfl').signals.INJURY_IMPACT.source));
 chk('NFL and college football forecast shifts are operational', R.eligible('nfl', 'FORECAST_SHIFT').ok && R.eligible('cfb', 'FORECAST_SHIFT').ok);
 chk('MLB has no forecast history to compare', R.eligible('mlb', 'FORECAST_SHIFT').ok === false);
 chk('NBA and NHL divergences are experimental, not operational', R.sport('nba').signals.MARKET_DIVERGENCE.state === 'EXPERIMENTAL' && R.sport('nhl').signals.MARKET_DIVERGENCE.state === 'EXPERIMENTAL');

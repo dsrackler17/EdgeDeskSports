@@ -36,5 +36,25 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'inj-')); const f = path.join(
 chk('the file is written once and left alone when the rows did not change', I.writeIfChanged(f, ds) === true && I.writeIfChanged(f, Object.assign({}, ds, { retrieved_at: 'later' })) === false && I.writeIfChanged(f, I.build(rows.slice(0, 2), 2026, 'x')) === true);
 chk('season defaults to the app’s Jan/Feb rule', typeof I.defaultSeason() === 'number');
 chk('status rank orders Out over Doubtful over Questionable over DNP over Limited', I.statusRank('Out') > I.statusRank('Doubtful') && I.statusRank('Doubtful') > I.statusRank('Questionable') && I.statusRank('', 'Did Not Participate In Practice') > I.statusRank('', 'Limited Participation in Practice') && I.statusRank('', 'Full Participation in Practice') === 0);
+/* the observation ledger: append-only, dated by EdgeDesk's retrieval, a baseline that is never news */
+{
+  const first = I.observations([], ds, '2026-09-10T12:00:00Z');
+  chk('ledger: the first run records what is listed as a baseline', first.length === 2 && first.every((r) => r.baseline === true && r.observed_at === '2026-09-10T12:00:00Z' && r.schema === I.OBS_SCHEMA), first);
+  chk('ledger: only game designations, keyed by season, week, team and player', first.map((r) => r.key).sort().join(',') === '2026|2|KC|00-2,2026|2|LA|00-9' && first.every((r) => /^(Out|Doubtful|Questionable)$/.test(r.status)));
+  chk('ledger: the same designations again add nothing', I.observations(first, ds, '2026-09-10T18:00:00Z').length === 0);
+  const moved = CSV.replace('2026,REG,REG,LAR,2,00-9,QB,"Stafford, Matthew",Matthew,Stafford,Back,,Questionable', '2026,REG,REG,LAR,2,00-9,QB,"Stafford, Matthew",Matthew,Stafford,Back,,Out');
+  const ds2 = I.build(I.parseCsv(moved), 2026, '2026-09-11T00:00:00Z');
+  const next = I.observations(first, ds2, '2026-09-11T00:00:00Z');
+  chk('ledger: a change is one row, with the previous designation and this run’s time, not a baseline', next.length === 1 && next[0].status === 'Out' && next[0].previous_status === 'Questionable' && next[0].observed_at === '2026-09-11T00:00:00Z' && next[0].baseline === false, next);
+  const cleared = I.build(I.parseCsv(CSV.replace(',Back,,Questionable,', ',Back,,,')), 2026, 'x');
+  chk('ledger: a designation that disappears is not recorded (an empty status is not a clearance)', I.observations(first, cleared, 'x').length === 0);
+  chk('ledger: an unpublished season adds nothing', I.observations([], un, 'x').length === 0);
+  const lf = path.join(tmp, 'history', 'nfl_2026.jsonl');
+  I.appendObservations(lf, first); I.appendObservations(lf, next); I.appendObservations(lf, []);
+  const back = I.readLedger(lf);
+  chk('ledger: appended, never rewritten, and read back in order', back.length === 3 && back[2].status === 'Out' && JSON.stringify(back.slice(0, 2)) === JSON.stringify(first));
+  fs.appendFileSync(lf, '{not json\n');
+  chk('ledger: a corrupt line stops the run instead of being repaired', (function () { try { I.readLedger(lf); return false; } catch (e) { return /append-only/.test(e.message); } })());
+}
 fails.forEach(x => console.log('FAIL | ' + x.n + (x.d ? ' ' + JSON.stringify(x.d).slice(0, 300) : '')));
 console.log((fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed'); process.exit(fail ? 1 : 0);

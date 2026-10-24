@@ -106,6 +106,16 @@ returns integer language sql immutable as $$
   select case p when 'Major' then 4 when 'Notable' then 3 when 'Routine' then 2 when 'Monitor' then 1 else 0 end;
 $$;
 
+-- may a signal of this sport publish under these live sports? A shared
+-- source's warning names the family it serves: 'football' (NFL and college
+-- football) is live when either is, 'all' when any sport is.
+create or replace function public.sc_sport_live(p_live jsonb, p_sport text)
+returns boolean language sql immutable as $$
+  select case p_sport when 'football' then coalesce(p_live ?| array['nfl', 'cfb'], false)
+                      when 'all' then coalesce(jsonb_typeof(p_live) = 'array' and jsonb_array_length(p_live) > 0, false)
+                      else coalesce(p_live ? p_sport, false) end;
+$$;
+
 -- ---------------------------------------------------------------- entitlement
 -- The caller's Full Access, through the project's one rule (simulator.sql's
 -- precedent). Fails CLOSED: with no entitlement authority installed, nobody
@@ -586,7 +596,7 @@ begin
 
   if not found then
     v_pub := case when v_fixture then 'SHADOW'
-                  when p_mode = 'live' and v_state = 'VERIFIED' and v_life = 'ACTIVE' and p_live ? (p->>'sport') and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
+                  when p_mode = 'live' and v_state = 'VERIFIED' and v_life = 'ACTIVE' and public.sc_sport_live(p_live, p->>'sport') and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
                   else 'SHADOW' end;
     insert into public.sc_signals (signal_key, category, subtype, sport, league, season, event_kind, subject_key, subject_label, outcome_id, event_key, event_at, teams, market_type,
         headline, public_headline, change_pp, evidence_class, evidence_rank, verification_state, score, label, rarity, reliability_grade, research_grade, model_version, source_at, fixture,
@@ -635,7 +645,7 @@ begin
   v_pub := case when v_state = 'INVALIDATED' then 'WITHDRAWN'
                 when s.publication in ('HELD', 'WITHDRAWN') then s.publication
                 when s.publication = 'PUBLISHED' and v_state <> 'VERIFIED' then 'SHADOW'
-                when s.publication = 'SHADOW' and p_mode = 'live' and v_state = 'VERIFIED' and s.lifecycle = 'ACTIVE' and not s.fixture and p_live ? s.sport
+                when s.publication = 'SHADOW' and p_mode = 'live' and v_state = 'VERIFIED' and s.lifecycle = 'ACTIVE' and not s.fixture and public.sc_sport_live(p_live, s.sport)
                      and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
                 else s.publication end;
   update public.sc_signals set current_version = v_ver, current_version_id = v_id, headline = p->>'headline', public_headline = p->>'public_headline',
@@ -1177,7 +1187,7 @@ begin
     update public.sc_signals s set publication = 'PUBLISHED', publication_by = 'system', published_at = coalesce(s.published_at, now())
      where s.publication = 'SHADOW' and coalesce(s.publication_by, 'system') = 'system'
        and s.verification_state = 'VERIFIED' and s.lifecycle = 'ACTIVE' and not s.fixture
-       and v_live ? s.sport and public.sc_label_rank(s.label) >= public.sc_label_rank(v_min)
+       and public.sc_sport_live(v_live, s.sport) and public.sc_label_rank(s.label) >= public.sc_label_rank(v_min)
     returning s.signal_id)
   insert into public.sc_signal_events (signal_id, kind, actor, detail)
   select signal_id, 'published', p_actor, jsonb_build_object('reason', 'the mode was switched to live') from p;

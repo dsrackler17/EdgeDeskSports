@@ -21,6 +21,10 @@ Two numbers are compared only when they answer the same question. Otherwise ther
   signal detected after its event started is stored as EXPIRED, never as current. A tournament (golf, tennis) is
   about a competition in progress, so its signals expire when it ends instead: 24 hours after ESPN's `endDate`, which
   marks the start of the final day. A tournament with no end date on file is never given one.
+- **Dated by its source, or said otherwise**: a record is ordered by its source's publication time. Where a
+  source has none (NFL designations: nflverse's copy of the league's report), it is ordered by the time EdgeDesk
+  first saw it, printed as "first seen by EdgeDesk" and flagged `PUBLICATION_TIME_UNKNOWN`. That time is never
+  shown as a publication time, and a sighting EdgeDesk did not watch happen (the ledger's baseline) is never news.
 - **The same outcome definition, run to run**: a Simulator outcome is compared only while it means the same thing.
   Golf's cut is compared until it is made (it then turns Observed, a provenance change); tennis's "win the next
   match" and UFC's next-bout outcomes are never compared, because the next match changes once one is played.

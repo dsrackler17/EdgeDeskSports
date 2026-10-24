@@ -75,7 +75,7 @@ function teamStyleResolver(root) {
 function committedInputs(root, now) {
   const football = S.footballGames(root), au = S.audits(root);
   return { football, footballCurrent: S.footballCurrent(root), perfGames: S.perfForecastGames(root), perfLastCapture: au.perf && au.perf.ledger ? au.perf.ledger.last_capture_at : null,
-    quotes: S.perfQuotes(root), slateTeams: S.slateTeams(root), audits: au, cfbAvailability: S.cfbAvailability(root, football), sourceStates: S.sourceStates(root, now), now };
+    quotes: S.perfQuotes(root), slateTeams: S.slateTeams(root), audits: au, cfbAvailability: S.cfbAvailability(root, football), nflInjuries: S.nflInjuries(root, football), sourceStates: S.sourceStates(root, now), now };
 }
 
 /* step 4: an active signal whose compared records are no longer in its source

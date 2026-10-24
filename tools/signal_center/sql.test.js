@@ -198,6 +198,13 @@ chk('no anon grant on a reader door that returns numbers', !/grant execute on fu
     let r3 = begin('k4');
     chk('a run older than the lease is failed and a new one begins', r3.busy === false && +db.sql("select count(*) from public.sc_runs where status = 'failed' and error->>'reason' like 'lease expired%';").trim() === 1);
 
+    /* ---- a shared source's warning publishes with the sports it serves ---- */
+    const sl = (live, sport) => db.sql("select public.sc_sport_live('" + JSON.stringify(live) + "'::jsonb, " + lit(sport) + ');').trim();
+    chk('sport_live: a sport is live when listed', sl(['nfl'], 'nfl') === 't' && sl(['nfl'], 'cfb') === 'f');
+    chk('sport_live: "football" is live when NFL or college football is', sl(['cfb'], 'football') === 't' && sl(['nba'], 'football') === 'f');
+    chk('sport_live: "all" is live when any sport is, never with none', sl(['golf'], 'all') === 't' && sl([], 'all') === 'f');
+    chk('sport_live: a malformed list is never live', db.sql("select public.sc_sport_live('{}'::jsonb, 'all') is not true and public.sc_sport_live(null, 'nfl') is not true;").trim() === 't');
+
     /* ---- live ---- */
     const eligibleSql = "select count(*) from public.sc_signals where publication = 'SHADOW' and verification_state = 'VERIFIED' and lifecycle = 'ACTIVE' and not fixture and sport in ('nfl','cfb') and public.sc_label_rank(label) >= public.sc_label_rank('Routine');";
     /* an operator holds one eligible shadow signal first: going live must not override that */
