@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-24 — Content engine: the draft and its integrity check read one availability index
+
+Since the morning's editorial data refresh, `System integrity tests` failed on every branch (10 checks: the deterministic draft was BLOCKED, so it was never approved, exported or sent). The content-engine live check (`evidence.test.js` L) failed on six articles.
+
+- **The quarterback-input sentence.** A `QB_INPUT_CONFLICT` flag was written as "the model's quarterback input may be out of date (the model expects Parker Puckett, but Kamario Taylor is listed as questionable)". `AVAIL.guardProse` checks every player named in an uncertainty sentence. Puckett, the model's own starter, has only an inferred classification, so the engine blocked a sentence it wrote itself.
+  - `availabilityIndex()` is now the one place the index is built, and `validate()`'s `qb_claims_sourced` and the draft both read it.
+  - The draft names only the reported player, and gives his status only when that index says his report may be stated. Otherwise it says the input "should be checked against the latest availability report" and asserts nobody's availability.
+  - When the report lists the model's own starter, he is named as the starter it expects.
+  - `draft()` passes its clock to the classification, so the draft and the check judge the same report at the same moment.
+- **Other models' margins.** "EdgeDesk's two other, independently built models have Mississippi State by 0.3 and Oklahoma by 1.9" failed `numbers_reconcile`. `altMarginsOf()` read those margins only from a games-to-watch packet, which a matchup analysis does not carry. It now also reads the evidence packet's own `other_models` claim, the sentence the copy prints. A margin no model has still fails.
+- The edge function copy is re-inlined (`tools/content/inline.js`). The admin content page's engine stamp moved.
+
+Tests: `tools/integrity/regression.test.js` 129/129 (was 10 failing). `tools/content/evidence.test.js` 198, 5 new, all failing on the old engine: the conflict sentence never names the model's starter; a sourced questionable report is named with its status; the model's own starter is named as such; an unsourced report asserts nothing; the packet's other-model margins reconcile while an invented one fails. Content core 333, edge function 70, games to watch 136 and the weekly job 30 all pass.
+
 ## 2026-10-24 — Leave one term out: each college term held to games it never saw
 
 `football/cfb_p4/research/loto.js` removes each priced term from the shipped engine, game by game, on 2022–2025. Nothing is refitted, and the repository's own promotion rules (`football/validation/promote.js`) judge the difference. It also fits each term's best multiplier k (k ≈ 1: the weight is right; k ≈ 0: the term carries nothing). The record is `football/validation/loto_cfb.json`, rendered to `docs/cfb-validation/LOTO.md`.
