@@ -30,6 +30,11 @@
 //         that breaks a rule is FLAGGED with its issues, never dropped;
 //      5. settles the claim with counts and tokens, and answers
 //         { ok, bets, warnings, flagged, model, quota }.
+//      Steps 1–2 answer with their own status (401, 413, 429, 503). From step
+//      3 the answer is a 200 that starts at once and sends a space every few
+//      seconds until the JSON (keepAlive): a minute-long read never looks
+//      like a dead connection to a phone's browser. A failure from step 3 on
+//      is { ok: false, status, reason, message } in that body.
 //
 //  WHAT IT NEVER DOES
 //    - store or log an image or the pasted text. They exist only in this
@@ -55,7 +60,7 @@
 //                             CORS (default *; the API is bearer-token only)
 // ============================================================
 
-export const BUILD = 'parse_bet_import@2026-10-24.2';
+export const BUILD = 'parse_bet_import@2026-10-24.3';
 
 // ── BEGIN BET IMPORT CORE ──────────────────────────────────────────────────
 // Canonical source: lib/edgedesk_bet_import_core.js, copied VERBATIM by
@@ -658,6 +663,32 @@ function json(req, cfg, status, body) {
     status, headers: Object.assign({ 'content-type': 'application/json', 'cache-control': 'no-store' }, cors(req, cfg)) });
 }
 function refuse(req, cfg, status, reason, message, extra) { return json(req, cfg, status, Object.assign({ ok: false, reason, message }, extra || {})); }
+/* Reading can take a minute. A browser (iPhone Safari) or a proxy may drop a
+   connection that has sent nothing for that long, and the page can then only
+   say "could not be reached". So once a request is accepted, the answer
+   starts at once — 200, then a space every few seconds, then the JSON
+   (JSON.parse skips leading whitespace). A failure from here on is in the
+   body ({ ok: false, status, reason, message }), not the status line. */
+export const KEEPALIVE_MS = 4000;
+function keepAlive(req, cfg, work) {
+  const enc = new TextEncoder();
+  let timer = null;
+  const stream = new ReadableStream({
+    async start(ctrl) {
+      const beat = () => { try { ctrl.enqueue(enc.encode(' ')); } catch (_) { /* the reader left */ } };
+      beat();
+      timer = setInterval(beat, KEEPALIVE_MS);
+      let out;
+      try { out = await work(); }
+      catch (_) { out = { ok: false, status: 500, reason: 'FAILED', message: 'Reading failed. Nothing was saved; try again.' }; }
+      clearInterval(timer); timer = null;
+      try { ctrl.enqueue(enc.encode(JSON.stringify(Object.assign({ build: BUILD }, out)))); ctrl.close(); } catch (_) { /* the reader left */ }
+    },
+    cancel() { if (timer) clearInterval(timer); timer = null; }
+  });
+  return new Response(stream, { status: 200,
+    headers: Object.assign({ 'content-type': 'application/json', 'cache-control': 'no-store', 'x-accel-buffering': 'no' }, cors(req, cfg)) });
+}
 /* one line per request, counts only: never an image, the text, a token or a bet */
 function logLine(event, fields) { try { console.log(JSON.stringify(Object.assign({ fn: 'parse_bet_import', event }, fields || {}))); } catch (_) { /* no console */ } }
 
@@ -855,23 +886,24 @@ export async function handle(req) {
     return refuse(req, cfg, why === 'DISABLED' ? 503 : 429, why || 'REFUSED', msg, { retry_after_s: claim && claim.retry_after_s });
   }
 
-  const m = await callModel(r, cfg);
-  r.images = []; r.text = '';   /* nothing of the input outlives the call */
-  const settle = (outcome, bets, flagged) => rpcAsReader(cfg, authz, 'bet_import_settle', {
-    p_id: claim.id, p_outcome: outcome, p_model: m.model || cfg.model, p_tokens_in: m.usage ? m.usage.input_tokens : null,
-    p_tokens_out: m.usage ? m.usage.output_tokens : null, p_bets: bets, p_flagged: flagged, p_ms: Date.now() - started }, 4000).catch(() => false);
-  const quota = { used_hour: claim.used_hour, per_hour: claim.per_hour, used_day: claim.used_day, per_day: claim.per_day };
-  if (!m.ok) {
-    await settle(m.outcome || 'error', 0, 0);
-    logLine('failed', { reason: m.reason, ms: Date.now() - started });
-    return refuse(req, cfg, m.status, m.reason, m.message, { quota });
-  }
-  const res = CORE.normalizeResult(m.answer, { book: CORE.BOOK_BY_KEY[r.book] ? r.book : 'other', bookLabel: r.bookLabel, bookType: r.bookType,
-    images: nImages, today: r.today });
-  await settle(res.bets.length ? 'parsed' : 'no_bets', res.bets.length, res.flagged);
-  logLine('parsed', { kind: r.kind, bets: res.bets.length, flagged: res.flagged, salvaged: m.salvaged, ms: Date.now() - started });
-  return json(req, cfg, 200, { ok: true, bets: res.bets, warnings: res.warnings, flagged: res.flagged, salvaged: m.salvaged,
-    model: m.model, quota, core: CORE.VERSION });
+  return keepAlive(req, cfg, async () => {
+    const m = await callModel(r, cfg);
+    r.images = []; r.text = '';   /* nothing of the input outlives the call */
+    const settle = (outcome, bets, flagged) => rpcAsReader(cfg, authz, 'bet_import_settle', {
+      p_id: claim.id, p_outcome: outcome, p_model: m.model || cfg.model, p_tokens_in: m.usage ? m.usage.input_tokens : null,
+      p_tokens_out: m.usage ? m.usage.output_tokens : null, p_bets: bets, p_flagged: flagged, p_ms: Date.now() - started }, 4000).catch(() => false);
+    const quota = { used_hour: claim.used_hour, per_hour: claim.per_hour, used_day: claim.used_day, per_day: claim.per_day };
+    if (!m.ok) {
+      await settle(m.outcome || 'error', 0, 0);
+      logLine('failed', { reason: m.reason, ms: Date.now() - started });
+      return { ok: false, status: m.status, reason: m.reason, message: m.message, quota };
+    }
+    const res = CORE.normalizeResult(m.answer, { book: CORE.BOOK_BY_KEY[r.book] ? r.book : 'other', bookLabel: r.bookLabel, bookType: r.bookType,
+      images: nImages, today: r.today });
+    await settle(res.bets.length ? 'parsed' : 'no_bets', res.bets.length, res.flagged);
+    logLine('parsed', { kind: r.kind, bets: res.bets.length, flagged: res.flagged, salvaged: m.salvaged, ms: Date.now() - started });
+    return { ok: true, bets: res.bets, warnings: res.warnings, flagged: res.flagged, salvaged: m.salvaged, model: m.model, quota, core: CORE.VERSION };
+  });
 }
 
 if (typeof Deno !== 'undefined' && typeof Deno.serve === 'function') Deno.serve(handle);

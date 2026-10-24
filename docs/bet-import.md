@@ -20,11 +20,11 @@ There is **no second picks table**. Picks go through the Portfolio's own staging
           (name + sportsbook / prediction market); each row's platform can be changed in review
 2 ADD     screenshots (camera roll, up to 12) — read     or   pasted text (up to 120,000 characters)
           as soon as they are chosen
-          ├─ scaled to ≤ 2576 px, re-encoded as JPEG          └─ read in parts of < 40,000
+          ├─ scaled to ≤ 2576 px, re-encoded as JPEG          └─ read in parts of 12,000 characters
           │  on the device (drops photo metadata);
           │  tall scrolling captures cut into
           │  overlapping tiles
-          └─ sent 3 images per request ──▶ parse_bet_import (edge function, JWT) ──▶ Anthropic Messages API
+          └─ sent 2 images per request ──▶ parse_bet_import (edge function, JWT) ──▶ Anthropic Messages API
                                            │  strict JSON schema; every row checked on the server;
                                            │  a failing row is FLAGGED with its issues, never dropped
 3 REVIEW  editable table: low-confidence fields highlighted; rows with errors cannot be confirmed;
@@ -117,7 +117,9 @@ The candidates come from `public.signals` (EdgeDesk's capture), through `bet_imp
 - **The images are never stored.** They go browser → function → model and are dropped. The page re-encodes them first, which strips EXIF and location. The usage row records counts and sizes only. No log line carries an image, the text, a token or a bet, and the suite checks this.
 - **The API key** is the Supabase secret `ANTHROPIC_API_KEY` (shared with `edgedesk_ai`), read in the function and sent only to `api.anthropic.com`.
 - **Auth.** The gateway verifies the JWT (deployed without `--no-verify-jwt`), and the function asks Supabase Auth again. The public anon key is refused.
-- **Limits per request:** ≤ 6 images, each a real PNG / JPEG / WebP / GIF (checked by magic bytes) of ≤ 4.5 MB, ≤ 18 MB together, or ≤ 40,000 characters of text.
+- **Limits per request:** ≤ 6 images, each a real PNG / JPEG / WebP / GIF (checked by magic bytes) of ≤ 4.5 MB, ≤ 18 MB together, or ≤ 40,000 characters of text. The page sends 2 images, or 12,000 characters, at a time, so each read stays well inside the function's time limit.
+- **A long read stays connected.** Sign-in, the request checks and the allowance answer with their own status (401, 413, 429, 503). Once a request is accepted, the function answers `200` at once and sends a space every 4 seconds until the JSON (`keepAlive` in the function; `JSON.parse` skips the spaces). Without it, a phone browser (iPhone Safari) or a proxy could drop a minute-long read that had sent nothing, and the page could only say "EdgeDesk could not be reached". A failure from then on is `{ ok: false, status, reason, message }` in that body.
+- **"EdgeDesk could not be reached"** means the browser got no readable answer. If it appears for every reader, check the function is deployed (Actions → Deploy bet import): a function that does not exist answers without CORS headers, which the browser reports as a network failure.
 - **The allowance** (`bet_import_policy`, one row the service role edits): 20 requests an hour and 60 a day per reader, 200 images a day, 3,000 requests a day across all readers. `enabled = false` stops all requests.
   - A claim is atomic per reader (an advisory lock), and refused claims are recorded.
   - **It fails closed:** if the allowance cannot be checked, nothing is sent to the model.
