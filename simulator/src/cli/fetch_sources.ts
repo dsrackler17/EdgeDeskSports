@@ -3,7 +3,7 @@
    activation gates name, from somewhere that can reach them (GitHub's
    runners: .github/workflows/simulator-sources.yml), and print them whole.
 
-     node simulator/src/cli/fetch_sources.ts --sport nfl|nhl|nba|mlb [--out simulator/out/sources]
+     node simulator/src/cli/fetch_sources.ts --sport nfl|nhl|nba|mlb|cfb [--out simulator/out/sources]
 
    Read-only. No credential, no database, nothing written outside --out.
    Prints, for each source: the URL asked and the URL answered, the HTTP
@@ -29,6 +29,8 @@
    per game); the postseason, tiebreaker and extra-inning pages on mlb.com
    (live and as the Internet Archive keeps them), the archive's list of
    mlb.com pages that name them, and the 2026 Official Baseball Rules.
+   College football (cfb): Kalshi only; the conference and CFP rules are read
+   by .github/workflows/simulator-cfb-sources.yml (fetch_cfb_sources.ts).
    Kalshi (each sport): every Sports series whose title names the league or
    its championship (with the series' own fee_type / fee_multiplier), every
    open market in them with its FULL settlement rules and their sha256 (the
@@ -45,7 +47,7 @@ import { sha256Hex } from '../core/canonical.ts';
 const a = process.argv.slice(2), get = (k: string) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
 const OUT = get('--out') || path.join('simulator', 'out', 'sources');
 const SPORT = get('--sport') || 'nfl';
-if (!['nfl', 'nhl', 'nba', 'mlb'].includes(SPORT)) { console.error('usage: --sport nfl|nhl|nba|mlb [--out DIR]'); process.exit(2); }
+if (!['nfl', 'nhl', 'nba', 'mlb', 'cfb'].includes(SPORT)) { console.error('usage: --sport nfl|nhl|nba|mlb|cfb [--out DIR]'); process.exit(2); }
 const UA = 'Mozilla/5.0 (compatible; EdgeDesk-Simulator-SourceCheck/0.1; +https://github.com/dsrackler17/EdgeDeskSports)';
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -379,13 +381,19 @@ async function mlbDiscover(): Promise<Array<[string, string]>> {
 
 /* season futures: a series whose title names a champion, conference, division, playoff berth or seed.
    Per-game, per-player and in-season prop series (thousands of markets) are listed by name and count only. */
-const FUTURES = /Super Bowl|Stanley Cup|President.?s|champion|conference|AFC|NFC|Eastern|Western|division|Atlantic|Metropolitan|Central|Pacific|playoff|play-in|seed|Finals|NBA Cup|World Series|pennant|American League|National League/i;
+const FUTURES = /Super Bowl|Stanley Cup|President.?s|champion|conference|AFC|NFC|Eastern|Western|division|Atlantic|Metropolitan|Central|Pacific|playoff|play-in|seed|Finals|NBA Cup|World Series|pennant|American League|National League|CFP|Big Ten|Big 12|\bSEC\b|\bACC\b|Sun Belt|Mountain West|Pac-12|Conference USA|\bMAC\b|American Athletic|bowl|undefeated|unbeaten/i;
 const NOT_FUTURES = /game|spread|total|points|yards|touchdown|TD|MVP|player|quarter|half|draft|coach|week|rookie|award|passing|rushing|receiving|sack|score|margin|first|anytime|goal|assist|save|rebound|three|triple|double/i;
+/* college football: a title market may be called the "Championship Game", so "game" alone does not mark a per-game series
+   (those end in GAME and are dropped by ticker) */
+const NOT_FUTURES_CFB = /spread|total|points|yards|touchdown|TD|MVP|player|quarter|half|draft|coach|week|rookie|award|Heisman|passing|rushing|receiving|sack|score|margin|first|anytime/i;
 const KALSHI_MATCH: Record<string, { match: RegExp; not: RegExp }> = {
   nfl: { match: /\bNFL\b|Super Bowl|Pro Football|American Football Conference|National Football Conference|^KXNFL|^KXSB|^KXAFC$|^KXNFC$/i, not: /NCAA|College|AFCON|Fantasy|NBA|\bFCS\b/i },
   nhl: { match: /\bNHL\b|Stanley Cup|Pro Hockey|National Hockey League|President.?s Trophy|^KXNHL|^KXSTANLEY/i, not: /NCAA|College|AHL|KHL|PWHL|Fantasy|Olympic|World Championship|4 Nations|Four Nations/i },
   nba: { match: /\bNBA\b|Pro Basketball|National Basketball Association|NBA Cup|^KXNBA/i, not: /WNBA|NCAA|College|G League|Fantasy|Olympic|EuroLeague/i },
-  mlb: { match: /\bMLB\b|World Series|Pro Baseball|Major League Baseball|American League|National League|^KXMLB/i, not: /NCAA|College|Little League|KBO|NPB|Fantasy|World Baseball Classic|WBC|Caribbean|Softball/i }
+  mlb: { match: /\bMLB\b|World Series|Pro Baseball|Major League Baseball|American League|National League|^KXMLB/i, not: /NCAA|College|Little League|KBO|NPB|Fantasy|World Baseball Classic|WBC|Caribbean|Softball/i },
+  /* every college football series, broadly: the mapping builder decides what settles on a simulated outcome */
+  cfb: { match: /College Football|NCAA ?F|NCAAF|\bCFP\b|College Football Playoff|FBS|Heisman|^KXNCAAF|^KXCFB|^KXCFP/i,
+    not: /Basketball|NCAAB|March Madness|Final Four|Baseball|Softball|Hockey|Women|WNBA|Volleyball|Soccer|Lacrosse|Wrestling|Fantasy|\bNFL\b|Pro Football|FCS Championship/i }
 };
 
 async function kalshi() {
@@ -395,7 +403,8 @@ async function kalshi() {
   let s: any;
   try { s = await c.get('/series', { category: 'Sports' }); } catch (e) { console.log('KALSHI FAILED: ' + String((e as Error).message || e)); SUMMARY.push('kalshi: FAILED ' + String((e as Error).message || e)); return; }
   const series = ((s && s.series) || []).filter((x: any) => x && x.ticker && (match.test(String(x.title || '')) || match.test(String(x.ticker))) && !notThis.test(String(x.title || '')) && !/GAME$/.test(x.ticker));
-  const futures = series.filter((x: any) => FUTURES.test(String(x.title || '')) && !NOT_FUTURES.test(String(x.title || '')));
+  const notFutures = SPORT === 'cfb' ? NOT_FUTURES_CFB : NOT_FUTURES;
+  const futures = series.filter((x: any) => FUTURES.test(String(x.title || '')) && !notFutures.test(String(x.title || '')));
   console.log('host ' + c.host + ' · ' + ((s && s.series) || []).length + ' Sports series · ' + series.length + ' name the ' + SPORT.toUpperCase() + ' · ' + futures.length + ' look like season futures');
   console.log('-- every ' + SPORT.toUpperCase() + '-named series (ticker | title | fee_type | fee_multiplier):');
   for (const x of series) console.log('  ' + x.ticker + ' | ' + x.title + ' | ' + x.fee_type + ' | ' + x.fee_multiplier + (futures.includes(x) ? '   <- futures' : ''));
@@ -461,7 +470,7 @@ if (SPORT === 'nhl') await nhlApi();
 if (SPORT === 'nba') await nbaApi();
 if (SPORT === 'mlb') await mlbApi();
 /* MLB: the rulebook and the known pages first, the archive's slow index last */
-for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : SPORT === 'mlb' ? [MLB_RULES_PDF].concat(mlbPages(MLB_ARTICLES)) : NBA_PAGES) await fetchPage(p);
+for (const p of SPORT === 'nfl' ? NFL_PAGES.concat(KALSHI_FEE_PAGES) : SPORT === 'nhl' ? NHL_PAGES : SPORT === 'mlb' ? [MLB_RULES_PDF].concat(mlbPages(MLB_ARTICLES)) : SPORT === 'cfb' ? [] : NBA_PAGES) await fetchPage(p);
 if (SPORT === 'mlb') for (const p of mlbPages(await mlbDiscover())) await fetchPage(p);
 if (EXCERPTS.length) { section('EXCERPTS (the paragraphs of each page read above that name the rules; the whole text is above and in the artifact)'); console.log(EXCERPTS.join('\n\n')); }
 /* Kalshi's section last, then the short summary: GitHub's log API returns a job's last 5,000 lines, and

@@ -4,16 +4,18 @@
    (kalshi_candidates[_mlb].json, the artifact of
    .github/workflows/simulator-sources.yml, or the job's log itself).
 
-     node simulator/src/cli/build_kalshi_mappings.ts [--sport nfl|mlb] --candidates <kalshi_candidates.json> --run <actions run id> [--check]
-     node simulator/src/cli/build_kalshi_mappings.ts --sport mlb --log <the fetch (mlb) job's log> --run <actions run id>
+     node simulator/src/cli/build_kalshi_mappings.ts [--sport nfl|mlb|nhl|cfb] --candidates <kalshi_candidates.json> --run <actions run id> [--check]
+     node simulator/src/cli/build_kalshi_mappings.ts --sport cfb --log <the fetch (cfb) job's log> --run <actions run id>
 
    A market is mapped ONLY when every check passes:
-     - its series is one of SERIES (NFL) or MLB_SERIES below, whose
+     - its series is one of SERIES (NFL), MLB_SERIES, NHL_SERIES or CFB_SERIES below, whose
        settlement wording names exactly one simulated outcome;
      - its rules text matches that series' template word for word, and the
        club it names is the market's own label (MLB: the label Kalshi gives
        the club its ticker names; the season the rules name is the event
-       ticker's, and the mapping is that season's);
+       ticker's, and the mapping is that season's; college football: the
+       label is a 2026 FBS team's name, read through KALSHI_CFB_NAME, and
+       its ticker suffix carries that one label in every market);
      - its secondary rules are nothing but Kalshi's standard disclaimer;
      - its ticker names a club of the configured alignment, in the conference,
        league or division the series (or the rules) names;
@@ -35,6 +37,7 @@ import { NBA_TEAMS } from '../sports/nba/config.ts';
 import { NBA_OUTCOME_SEMANTICS } from '../sports/nba/module.ts';
 import type { FuturesConfig, Mapping, OutcomeSet } from '../markets/compare.ts';
 import { FUTURES_CONFIG } from './markets.ts';
+import { readSnapshot } from '../sports/cfb/inputs.ts';
 
 export const DISCLAIMER = 'Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.';
 /** Kalshi ticker suffix -> nflverse code (the simulator's entity id); every other suffix is the same */
@@ -367,14 +370,122 @@ const NBA_SPEC: LeagueSpec = {
 };
 export function buildNbaMappings(markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }) { return buildLeagueMappings(NBA_SPEC, markets, series, verified); }
 
+/* ---------------------------------------------------------------- college football */
+/* Kalshi's wording, from the 2026 markets (run 40043881690, job fetch (cfb), 2026-10-24, every one open). Each series
+   names one season by its event ticker (KXNCAAF-27 and the playoff-round series by the year the season ends, the
+   playoff field and the conferences by the year it starts); the templates that name no season (the title, the field)
+   rest on that check. Not mapped:
+     - KXNCAAFSEED (seed k, 600 markets: every one Estimated, so never flagged, and any rules change would fail the night's comparison);
+     - the one KXNCAAF market worded "the 2026 College Football Playoff National Championship Game" (KXNCAAF-27-UCLA:
+       read literally, the game of January 2026, already played);
+     - undefeated regular seasons (no simulated outcome), regular-season top finishers, win totals, polls, awards,
+       stat leaders, coaches, realignment, the champion's conference, and the older series KXNCAAFBSEC, KXNCAAFBB10,
+       KXNCAAFBB12, KXNCAAFBACC, KXNCAAPLAYOFF and KXCFPSEED, which listed no open market. */
+const NCAA_DISCLAIMER = 'Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the NCAA. All trademarks, logos, and brand names are the property of their respective owners.';
+/** the only secondary rules a CFB series carries: the NCAA disclaimer, alone or followed by the standard one */
+export const CFB_SECONDARY = [NCAA_DISCLAIMER, NCAA_DISCLAIMER + ' ' + DISCLAIMER];
+/** Kalshi labels that are not the 2026 feed's team name once "St." is read "State" (one label per ticker suffix
+    across every mapped market of run 40043881690) */
+export const KALSHI_CFB_NAME: Record<string, string> = { 'Appalachian St.': 'App State', 'Louisiana-Monroe': 'UL Monroe', 'Miami (FL)': 'Miami',
+  'North Carolina St.': 'NC State', 'San Jose St.': 'San José State', 'UMass': 'Massachusetts' };
+export const cfbNameOf = (label: string) => KALSHI_CFB_NAME[label] || label.replace(/ St\.$/, ' State');
+interface CfbSeriesRule { outcome: string; conf?: string; event: RegExp; re: RegExp; basis: string }
+const ifThen = (body: string) => new RegExp('^If (.+) ' + body + ', then the market resolves to Yes\\.$');
+export const CFB_SERIES: Record<string, CfbSeriesRule> = {
+  KXNCAAF: { outcome: 'national_champion', event: /^KXNCAAF-27$/, re: ifThen('wins the College Football Playoff National Championship Game'),
+    basis: 'wins the College Football Playoff National Championship Game of the 2026 season (event KXNCAAF-27) = national_champion' },
+  KXNCAAFPLAYOFF: { outcome: 'cfp_field', event: /^KXNCAAFPLAYOFF-26$/, re: ifThen('is one of the teams to qualify for the College Football Playoffs'),
+    basis: 'qualifies for the 2026 season\'s College Football Playoff (event KXNCAAFPLAYOFF-26) = cfp_field' },
+  KXNCAAFSF: { outcome: 'reach_sf', event: /^KXNCAAFSF-27$/, re: ifThen('qualifies for the College Football Playoff Semifinals in the 2026-27 season'),
+    basis: 'qualifies for the 2026-27 College Football Playoff semifinals = reach_sf' },
+  KXNCAAFTOPSEED: { outcome: 'cfp_bye', event: /^KXNCAAFTOPSEED-27T4$/, re: ifThen('is selected as a top 4 seed in the 2026-27 College Football Playoff'),
+    basis: 'is selected as a top 4 seed in the 2026-27 College Football Playoff (seeds 1-4, the first-round byes) = cfp_bye' }
+};
+/* the conferences: Kalshi's ticker, the feed's conference, and the name each wording uses */
+const CFB_CONFS: Array<[string, string, string, string, string]> = [
+  ['KXNCAAFSEC', 'KXNCAAFSECQ', 'SEC', 'SEC', 'SEC'], ['KXNCAAFB10', 'KXNCAAFB10QUAL', 'Big Ten', 'Big Ten', 'Big Ten'], ['KXNCAAFB12', 'KXNCAAFB12QUAL', 'Big 12', 'Big 12', 'Big 12'],
+  ['KXNCAAFACC', 'KXNCAAFACCQUAL', 'ACC', 'ACC', 'Atlantic Coast Conference'], ['KXNCAAFAAC', 'KXNCAAFAACQUAL', 'American Athletic', 'American Athletic Conference', 'American Athletic Conference'],
+  ['KXNCAAFMWC', 'KXNCAAFMWCQUAL', 'Mountain West', 'Mountain West', 'Mountain West Conference'], ['KXNCAAFCUSA', 'KXNCAAFCUSAQUAL', 'Conference USA', 'Conference USA', 'Conference USA'],
+  ['KXNCAAFMAC', 'KXNCAAFMACQUAL', 'Mid-American', 'Mid-American Conference', 'Mid-American Conference'], ['KXNCAAFSBELT', 'KXNCAAFSBELTQUAL', 'Sun Belt', 'Sun Belt', 'Sun Belt'],
+  ['KXNCAAFPAC12', 'KXNCAAFPAC12QUAL', 'Pac-12', 'Pac-12', 'Pac-12']];
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+for (const [champ, qual, conf, wins, quals] of CFB_CONFS) {
+  CFB_SERIES[champ] = { outcome: 'conf_champion', conf, event: new RegExp('^' + champ + '-26$'), re: ifThen('wins the 2026 College Football ' + esc(wins) + ' Championship Game'),
+    basis: 'wins the 2026 ' + wins + ' Championship Game = conf_champion' };
+  CFB_SERIES[qual] = { outcome: 'ccg_appearance', conf, event: new RegExp('^' + qual + '-26$'), re: ifThen('qualifies for the 2026 College Football ' + esc(quals) + ' Championship Game'),
+    basis: 'qualifies for the 2026 ' + quals + ' Championship Game (either side of it) = ccg_appearance' };
+}
+export interface CfbTeamRef { id: string; name: string; conference: string }
+/** the 2026 FBS teams and conferences, as the committed week-7 snapshot holds them (from the 2026 schedule feed; ids are the run's entity ids) */
+export function cfbTeams2026(): CfbTeamRef[] {
+  const s = readSnapshot(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'fixtures', 'cfb_2026_wk7_snapshot.json.gz'));
+  return s.data.teams.map((t) => ({ id: t.id, name: t.name, conference: t.conference }));
+}
+export function buildCfbMappings(markets: Candidate[], series: SeriesInfo[], verified: { by: string; at: string }, teams: CfbTeamRef[] = cfbTeams2026()) {
+  const mappings: Mapping[] = [], left: Array<{ market_ticker: string; why: string[] }> = [];
+  const fee = new Map(series.map((s) => [s.ticker, s]));
+  const squash = (x: string | null) => String(x || '').replace(/\s+/g, ' ').trim();
+  const byName = new Map(teams.map((t) => [t.name, t]));
+  /* a ticker suffix must carry one label across every candidate market, and a label one suffix */
+  const labs = new Map<string, Set<string>>(), sufs = new Map<string, Set<string>>();
+  for (const k of markets) if (CFB_SERIES[k.series_ticker]) {
+    const sfx = k.market_ticker.split('-').pop() as string, lab = squash(k.yes_sub_title);
+    labs.set(sfx, (labs.get(sfx) || new Set()).add(lab)); sufs.set(lab, (sufs.get(lab) || new Set()).add(sfx));
+  }
+  for (const k of markets) {
+    const rule = CFB_SERIES[k.series_ticker];
+    if (!rule) continue;                                    // a series with no simulated outcome is not a candidate at all
+    const why: string[] = [];
+    const sf = fee.get(k.series_ticker);
+    if (!sf || !/^quadratic/.test(sf.fee_type) || Number(sf.fee_multiplier) !== 1) why.push('series fee is ' + (sf ? sf.fee_type + ' x' + sf.fee_multiplier : 'unknown') + ', not quadratic x1');
+    if (!rule.event.test(k.event_ticker)) why.push('event ' + k.event_ticker + ' is not the 2026 season\'s (' + rule.event.source + ')');
+    const lab = squash(k.yes_sub_title), sfx = k.market_ticker.split('-').pop() as string;
+    const m = squash(k.rules_primary).match(rule.re);
+    if (!m) why.push('rules text does not match the ' + k.series_ticker + ' template');
+    else if (m[1] !== lab) why.push('rules name "' + m[1] + '" but the market is labelled "' + lab + '"');
+    if ((labs.get(sfx) || new Set()).size !== 1 || (sufs.get(lab) || new Set()).size !== 1) why.push('ticker suffix ' + sfx + ' and label "' + lab + '" do not name each other one to one across Kalshi\'s markets');
+    const team = byName.get(cfbNameOf(lab));
+    if (!team) why.push('label "' + lab + '" is no 2026 FBS team (read as "' + cfbNameOf(lab) + '")');
+    if (team && rule.conf && team.conference !== rule.conf) why.push(team.name + ' is not in the ' + rule.conf);
+    if (!CFB_SECONDARY.includes(squash(k.rules_secondary))) why.push('secondary rules are not the NCAA disclaimer (alone or with the standard one)');
+    if (!/^[0-9a-f]{64}$/.test(k.rules_sha256 || '')) why.push('no rules sha256');
+    if (why.length || !team) { left.push({ market_ticker: k.market_ticker, why }); continue; }
+    const set = rule.outcome === 'conf_champion' ? 'cfb2026:conf_champion:' + rule.conf : null;
+    mappings.push({ mapping_id: 'cfb2026:' + k.market_ticker, status: 'verified', sport: 'cfb', competition: 'NCAA FBS', season: '2026',
+      series_ticker: k.series_ticker, event_ticker: k.event_ticker, market_ticker: k.market_ticker, entity_id: team.id, outcome: rule.outcome, outcome_set: set,
+      settlement: { basis: 'Kalshi ' + k.series_ticker + ': ' + rule.basis, rules_sha256: k.rules_sha256, rules_excerpt: squash(k.rules_primary) },
+      verified_by: verified.by, verified_at: verified.at });
+  }
+  /* two markets that read as the same team and outcome: neither is trusted */
+  const dup = new Map<string, number>(); for (const x of mappings) dup.set(x.entity_id + '|' + x.outcome, (dup.get(x.entity_id + '|' + x.outcome) || 0) + 1);
+  for (let i = mappings.length - 1; i >= 0; i--) if ((dup.get(mappings[i].entity_id + '|' + mappings[i].outcome) || 0) > 1) {
+    left.push({ market_ticker: mappings[i].market_ticker, why: ['another market of the series reads as the same team (' + mappings[i].entity_id + ')'] }); mappings.splice(i, 1);
+  }
+  mappings.sort((a, b) => a.market_ticker.localeCompare(b.market_ticker));
+  /* a conference title is a complete set when every member has its market */
+  const members = new Map<string, Mapping[]>();
+  for (const x of mappings) if (x.outcome_set) members.set(x.outcome_set, [...(members.get(x.outcome_set) || []), x]);
+  const sets: OutcomeSet[] = [];
+  for (const [id, ms] of [...members].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const conf = id.split(':')[2], eligible = teams.filter((t) => t.conference === conf).map((t) => t.id);
+    const have = new Set(ms.map((x) => x.entity_id));
+    if (have.size !== ms.length || ms.length !== eligible.length || eligible.some((e) => !have.has(e))) { for (const x of ms) x.outcome_set = null; continue; }
+    sets.push({ id, outcome: 'conf_champion', entities: eligible.slice().sort(), mutually_exclusive: true, exhaustive: true, note: 'exactly one of these teams wins the ' + conf + ' championship game' });
+  }
+  return { mappings, sets, left };
+}
+
 /** the candidates file read back from the source check's job log, for when its artifact cannot be downloaded:
     every series row (with its fee fields) and every open market line, each with the rules sha256 the runner
     computed on the raw text. The log prints the rules with whitespace squashed, which is how the templates read
-    them anyway. SETTLED lines (a series' wording between seasons) are read apart and are never candidates. */
+    them anyway. SETTLED lines (a series' wording between seasons) are read apart and are never candidates. A
+   byte-order mark is stripped from every line, not only the first. */
 export function candidatesFromLog(text: string): { fetched_at: string; series: SeriesInfo[]; markets: Candidate[]; settled: Candidate[] } {
   const series: SeriesInfo[] = [], markets: Candidate[] = [], settled: Candidate[] = [];
   let at = '', current = '';
-  for (const raw of text.replace(/^\uFEFF/, '').split(/\r?\n/)) {
+  /* the log API starts each chunk it joins with a byte-order mark, mid-file too: a line that kept one was skipped (2026-10-24: KXNCAAF-27-CLEM) */
+  for (const raw0 of text.split(/\r?\n/)) {
+    const raw = raw0.replace(/^\uFEFF/, '');
     const ts = raw.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+Z) /);
     if (ts && !at) at = ts[1];
     const line = ts ? raw.slice(ts[0].length) : raw;
@@ -398,14 +509,14 @@ export function versionWith(cur: string, sport: string, v: string): string {
   return [...parts].sort((x, y) => x[0].localeCompare(y[0])).map(([s, x]) => s + ' ' + x).join('; ');
 }
 
-const BUILDERS: Record<string, typeof buildMappings> = { nfl: buildMappings, mlb: buildMlbMappings, nhl: buildNhlMappings, nba: buildNbaMappings };
+const BUILDERS: Record<string, typeof buildMappings> = { nfl: buildMappings, mlb: buildMlbMappings, nhl: buildNhlMappings, nba: buildNbaMappings, cfb: (m, s, v) => buildCfbMappings(m, s, v) };
 
 const isMain = !!process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
   const a = process.argv.slice(2), get = (k: string) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : null; };
   const sport = get('--sport') || 'nfl', file = get('--candidates') || get('--log'), runId = get('--run');
   if (!BUILDERS[sport] || !file || !fs.existsSync(file) || !/^\d+$/.test(runId || '')) {
-    console.error('usage: [--sport nfl|mlb|nhl|nba] --candidates <kalshi_candidates[_<sport>].json> | --log <the source check job\'s log> --run <actions run id> [--check]'); process.exit(2);
+    console.error('usage: [--sport nfl|mlb|nhl|nba|cfb] --candidates <kalshi_candidates[_<sport>].json> | --log <the source check job\'s log> --run <actions run id> [--check]'); process.exit(2);
   }
   const cand = get('--log') ? candidatesFromLog(fs.readFileSync(file, 'utf8')) : JSON.parse(fs.readFileSync(file, 'utf8'));
   const at = String(cand.fetched_at || '').slice(0, 10);

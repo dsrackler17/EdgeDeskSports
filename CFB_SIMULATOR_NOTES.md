@@ -331,7 +331,7 @@ Both `observed` and `scenario` brackets are validated: 12 distinct feed teams, p
   - each conference's rules status, the share of runs decided by the Estimated ranking surrogate, by the draw, and by an unverified procedure, and whether it is publishable
   - the calibration summary
   - the snapshot's notes
-- **Never a stake, never an edge.** No market comparison is wired for CFB, and no Kalshi CFB futures mapping exists.
+- **Never a stake.** Kalshi's CFB futures are compared through 480 verified mappings (§16), and an Estimated outcome is never flagged. Every CFP outcome under the committee proxy is Estimated: the field, top-4 seed, rounds and title. Their Monte Carlo SE omits the proxy's own uncertainty, so such a row is compared but never flagged. Conference title-game and title markets are Research and can be flagged.
 
 ---
 
@@ -443,7 +443,29 @@ These are benchmark outputs from the committed test snapshot; the nightly run bu
   - a **CFP & Title** tab (the default): Make CFP and Win title lead every row, then the record, projected record, conference title, bye, first-round host, rounds and fair odds, sorted by playoff probability, labelled with the rows' own provenance and stating that the proxy is not the committee; the 2026 selection rules in a collapsible note; a **Group of Six bid** card (the six conferences' one guaranteed place: their Make CFP sums to at least 100%); and a **CFP seeds** card (seeds 1–12, byes and first-round hosts marked, every team with at least a 1% chance);
   - a **Conference** tab: per conference the projected record, six or more wins (the usual bowl-eligibility mark; the NCAA's full eligibility rules are not applied), an unbeaten regular season, title game, No. 1 seed, conference title and Make CFP, with the per-conference Estimated-ranking share; then the **independents** (Notre Dame's top-12 rule), who play no title game.
   - The regular-season columns are read from the published win distribution (`wins_hist_x2`) and each team's schedule length (`record.games`, published from 2026-10-23); a settled cell says `reached`, `out` or `unbeaten` instead of "all N" / "0 in N". A run without `record.games` shows projected wins and no unbeaten column. Results are read in pages of 1,000 rows.
-- **Kalshi.** No CFB futures market is mapped; a CFB run's comparison reports "unavailable" (the shared config is now scoped by sport, so the NFL's 352 mappings no longer fail it).
+- **Kalshi.** 480 CFB futures markets are mapped in `simulator/config/kalshi_futures.json`. They come from the Simulator source check, job `fetch (cfb)` (run 40043881690, 2026-10-24), and `build_kalshi_mappings.ts --sport cfb`.
+  - **What is mapped:**
+    - national champion (51 markets);
+    - CFP field (57);
+    - CFP semifinal (50);
+    - top-4 seed, i.e. a bye (50);
+    - every conference's title (136);
+    - every conference's title game (136).
+  - **When a market maps.** Only when all of these hold:
+    - its rules text matches its series' template word for word;
+    - its event is the 2026 season's;
+    - its secondary rules are the NCAA disclaimer, alone or with the standard one;
+    - its label is a 2026 FBS team, read through `KALSHI_CFB_NAME` for six labels;
+    - for a conference market, that team is in the conference;
+    - its ticker suffix carries that one label everywhere.
+  - **Normalisation.** Each conference title is a complete set and can be normalised.
+  - **Left out:**
+    - `KXNCAAF-27-UCLA`, worded for "the 2026 … National Championship Game", which read literally is January 2026's;
+    - the 600 per-seed markets: all Estimated, and any rules change would fail the night's comparison;
+    - every series with no simulated outcome.
+  - **Estimated rows.** These are compared and never flagged (`compare.ts`).
+  - **Reader.** The Futures Edges tab names teams, says each CFB outcome in words, and marks the Estimated rows.
+  - **Log reading.** The source-check log reader now strips a byte-order mark from every line, not only the first. GitHub's log API starts each chunk it joins with one, which had dropped `KXNCAAF-27-CLEM`.
 - **After Selection Day (Dec. 6):** set `simulator/config/cfb_cfp_bracket.json` to `observed`.
 - **Next season:** re-read every source with the *Simulator CFB source check* and re-verify in a reviewed commit.
 
@@ -473,6 +495,8 @@ These are benchmark outputs from the committed test snapshot; the nightly run bu
 | A conditional scenario could have been published as unconditional | `cfp.scenario_not_published` holds it |
 | The schedule feed lagged: run 3641b9ed (2026-10-23) simulated four games already played Wednesday-Thursday, among them James Madison at App State (App State won 34-31 in OT), and kept JMU unbeaten (make CFP 76.6%) | late finals from ESPN by event and team ids (`finals.ts`, §6.2); `results.current` holds publication when a played game is unsettled; with the four finals, JMU 7-1, make CFP 34.8% (20,000-run check) |
 | After the SQL fix was deployed (19:43 UTC) no CFB run had been attempted, so the reader still said the latest attempt failed and published nothing | Simulator dispatched for `cfb` (run 40014764361): published run `3641b9ed…` |
+| Futures Edges had no CFB market ("unavailable") | 480 Kalshi markets mapped from the runner's read of their rules (§16); Estimated CFP outcomes compared, never flagged |
+| The source-check log reader skipped a line that began with a byte-order mark: GitHub's log API starts every chunk it joins with one, mid-file too (lost `KXNCAAF-27-CLEM`) | stripped per line; regression test |
 | The CFP tab put Make CFP and the title behind the record and seven other columns, so a phone showed neither; the regular season (projected record, six wins, unbeaten) and the independents were not shown at all | Make CFP and Win title lead the row; the Group of Six bid and seeds cards; regular-season columns from the published win distribution, the schedule length published in `record.games` |
 | The database refused the first CFB publication ("sum rule ccg_appearance per ccg fails in 1 group(s)"): `sim_publish_run` ignored the rules' `skip` of the no-title-game group | the SQL honours `skip`; a real CFB run publishes on PostgreSQL and the same rules without `skip` are still refused |
 

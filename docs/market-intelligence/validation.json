@@ -2,7 +2,7 @@
  "schema": "edgedesk_model_vs_market_v1",
  "lab": "edgedesk_validation_lab_v1",
  "season": 2026,
- "data_through": "2026-10-23T02:00:00.000Z",
+ "data_through": "2026-10-23T20:00:00.000Z",
  "bootstrap": {
   "draws": 2000,
   "seed": 20261023,
@@ -67,7 +67,7 @@
    "benchmark": "no-vig DraftKings moneyline (via ESPN), last quote observed before the start",
    "rows": 76,
    "excluded": {
-    "no verified final": 33
+    "no verified final": 34
    },
    "versions": {
     "edgedesk_nhl_v1:xg_no_goalie": 16,
@@ -88,18 +88,18 @@
     "performance/ledger/results/nba-2026.jsonl"
    ],
    "benchmark": "no-vig DraftKings moneyline (via ESPN), last quote observed before the start",
-   "rows": 16,
+   "rows": 17,
    "excluded": {
-    "no verified final": 27
+    "no verified final": 26
    },
    "versions": {
-    "edgedesk_nba_dist_v1": 16
+    "edgedesk_nba_dist_v1": 17
    },
    "close_sources": null,
-   "quoted": 16,
+   "quoted": 17,
    "first": "2026-10-20T19:00:00.000Z",
-   "last": "2026-10-23T01:30:00.000Z",
-   "clusters": 3
+   "last": "2026-10-23T20:00:00.000Z",
+   "clusters": 4
   },
   "wnba": {
    "kind": "performance_ledger",
@@ -2753,90 +2753,108 @@
   },
   "nba": {
    "all": {
-    "n": 16,
+    "n": 17,
     "state": "DESCRIPTIVE_ONLY",
     "tests": {
      "winprob_brier_vs_close": {
-      "n": 16,
-      "clusters": 3,
-      "a_mean": 0.2321,
-      "b_mean": 0.192,
+      "n": 17,
+      "clusters": 4,
+      "a_mean": 0.2296,
+      "b_mean": 0.197,
       "diff": {
-       "est": 0.04,
+       "est": 0.0325,
        "ci": [
-        null,
-        null
+        -0.0114,
+        0.0696
        ],
-       "n": 16,
-       "clusters": 3,
-       "draws": 0,
+       "n": 17,
+       "clusters": 4,
+       "draws": 2000,
        "seed": 20261023,
        "alpha": 0.05,
        "method": "cluster_bootstrap_percentile",
-       "why": "fewer than 4 clusters (3): no interval"
+       "se": 0.0172,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0256,
+        "max": 0.0434,
+        "sign_stable": true
+       }
       },
-      "a_lower": 4,
+      "a_lower": 5,
       "b_lower": 12,
       "ties": 0,
       "verdict": "INSUFFICIENT_EVIDENCE"
      },
      "winprob_logloss_vs_close": {
-      "n": 16,
-      "clusters": 3,
-      "a_mean": 0.6547,
-      "b_mean": 0.5692,
+      "n": 17,
+      "clusters": 4,
+      "a_mean": 0.6498,
+      "b_mean": 0.5797,
       "diff": {
-       "est": 0.0854,
+       "est": 0.0701,
        "ci": [
-        null,
-        null
+        -0.0083,
+        0.159
        ],
-       "n": 16,
-       "clusters": 3,
-       "draws": 0,
+       "n": 17,
+       "clusters": 4,
+       "draws": 2000,
        "seed": 20261023,
        "alpha": 0.05,
        "method": "cluster_bootstrap_percentile",
-       "why": "fewer than 4 clusters (3): no interval"
+       "se": 0.039,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": 0.0509,
+        "max": 0.1031,
+        "sign_stable": true
+       }
       },
-      "a_lower": 4,
+      "a_lower": 5,
       "b_lower": 12,
       "ties": 0,
       "verdict": "INSUFFICIENT_EVIDENCE"
      },
      "winprob_info_vs_close": {
-      "n": 16,
-      "clusters": 3,
-      "slope": -0.7651,
-      "intercept": 0.0038,
-      "se_cluster": 0.6885,
-      "t": -1.1112,
-      "p_normal": 0.2665,
+      "n": 17,
+      "clusters": 4,
+      "slope": -0.6427,
+      "intercept": -0.0259,
+      "se_cluster": 0.525,
+      "t": -1.2243,
+      "p_normal": 0.2208,
       "slope_boot": {
-       "est": -0.7651,
+       "est": -0.6427,
        "ci": [
-        null,
-        null
+        -2.9458,
+        0.7739
        ],
-       "n": 16,
-       "clusters": 3,
-       "draws": 0,
+       "n": 17,
+       "clusters": 4,
+       "draws": 1996,
        "seed": 20261023,
        "alpha": 0.05,
        "method": "cluster_bootstrap_percentile",
-       "why": "fewer than 4 clusters (3): no interval"
+       "se": 0.8294,
+       "few_clusters": true,
+       "leave_one_out": {
+        "min": -1.5243,
+        "max": -0.1418,
+        "sign_stable": true
+       }
       },
-      "mean_abs_disagreement": 0.101,
+      "mean_abs_disagreement": 0.1,
       "verdict": "INSUFFICIENT_EVIDENCE",
       "reads": "slope 0 = the disagreement carried no information beyond the market; 1 = the model was right in full; < 0 = it pointed the wrong way",
       "why": "below the minimum sample (30 games in 4 clusters)"
      },
      "winprob_calibration": {
-      "n": 16,
-      "mean_p": 0.5461,
-      "observed": 0.625,
-      "brier": 0.2321,
-      "log_loss": 0.6547,
+      "n": 17,
+      "mean_p": 0.5395,
+      "observed": 0.5882,
+      "brier": 0.2296,
+      "log_loss": 0.6498,
       "slope": null,
       "intercept": null,
       "citl": null,
@@ -3221,6 +3239,71 @@
    "id": "H-013",
    "kind": "CONFIRMATORY",
    "statement": "After the 2026-10-19 home-field change (edgedesk_cfb_p4_v1.0.1, one 2.8-point home field), the CFB model's home lean against the close in FBS-vs-FBS games is under one point",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "est": null,
+    "ci": [
+     null,
+     null
+    ],
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "clusters": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  },
+  {
+   "id": "H-014",
+   "kind": "EXPLORATORY",
+   "statement": "A walk-forward map from the CFB engine's FBS-vs-FCS margin to the real (uncapped) final margin lowers the engine's absolute error on FBS-vs-FCS games",
+   "status": "REJECTED",
+   "why": "acceptance rule ci_upper_below not met (judged by football/cfb_p4/research/fcs_uncapped.js)",
+   "result": {
+    "est": -0.101,
+    "ci": [
+     -0.227,
+     0.019
+    ],
+    "verdict": "NO_DIFFERENCE_DEMONSTRATED",
+    "n": 1072,
+    "clusters": 102,
+    "leave_one_out": {
+     "min": -0.128,
+     "max": -0.07
+    },
+    "candidate": "C2_affine",
+    "also": {
+     "majority_of_seasons": true,
+     "brier_not_worse": true
+    }
+   }
+  },
+  {
+   "id": "H-015",
+   "kind": "CONFIRMATORY",
+   "statement": "On live FBS-vs-FCS games played after registration, the frozen map from H-014 (if it survives) lowers the published margin's absolute error against the final",
+   "status": "INSUFFICIENT_EVIDENCE",
+   "why": "no games in the window yet",
+   "result": {
+    "est": null,
+    "ci": [
+     null,
+     null
+    ],
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "n": 0,
+    "few_clusters": false,
+    "leave_one_out": null,
+    "why": "no games in the window yet"
+   }
+  },
+  {
+   "id": "H-016",
+   "kind": "CONFIRMATORY",
+   "statement": "On live FBS-vs-FCS games played after registration, adding a fixed 4.27 points to the FBS side's published margin lowers absolute error against the final",
    "status": "INSUFFICIENT_EVIDENCE",
    "why": "no games in the window yet",
    "result": {

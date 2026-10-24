@@ -55,6 +55,8 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
       ${slice(PR, 'create table if not exists public.user_alerts (', 'grant select on public.user_alerts to authenticated;')}
       insert into auth.users (id, email) values (${lit(SUB)}, 'sub@x'), (${lit(NOSUB)}, 'free@x');
       insert into public.subscriptions values (${lit(SUB)}, 'active', 'price_x', now() + interval '20 days');`);
+    /* pgcrypto where Supabase keeps it, outside the doors' search_path */
+    db.sql('drop extension if exists pgcrypto; create schema if not exists extensions; create extension pgcrypto with schema extensions;');
     db.applyFile(F('simulator.sql'));
     const out = db.applyFile(F('signal_center.sql'));
     chk('both migrations apply', !/CHECK THIS/.test(out), out.slice(-400));

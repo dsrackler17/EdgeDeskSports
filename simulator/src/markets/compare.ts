@@ -20,7 +20,11 @@
    settlement-rules hash still matches the market's. Everything else is
    excluded with its reason. An actionable flag needs every condition:
    eligible mapping, fresh quote, executable price at the quantity, verified
-   fees, an executable edge over the threshold and over k Monte Carlo SEs.
+   fees, an executable edge over the threshold and over k Monte Carlo SEs —
+   and a Research probability: an Estimated one (college football's CFP
+   field, rounds and title, which rest on the committee proxy) is compared but
+   never flagged, because its Monte Carlo SE says nothing about the proxy's
+   own uncertainty.
    =========================================================================== */
 export interface Quote {
   market_ticker: string; event_ticker?: string | null; series_ticker?: string | null;
@@ -47,7 +51,7 @@ export interface FuturesConfig {
   outcome_sets: OutcomeSet[];
   mappings: Mapping[];
 }
-export interface RunView { sport: string; competition: string; season: string; entities: Array<{ entity_id: string; outcomes: Record<string, { probability: number; mcse: number }> }>;
+export interface RunView { sport: string; competition: string; season: string; entities: Array<{ entity_id: string; outcomes: Record<string, { probability: number; mcse: number; provenance?: string }> }>;
   /** outcome key -> what it settles on (e.g. regular-season conference first place vs the conference playoff title) */
   outcome_semantics?: Record<string, string> }
 
@@ -199,6 +203,8 @@ export function compareFutures(cfg: FuturesConfig, run: RunView, quotes: Map<str
       if ((o.probability - cost) < T.min_edge_mcse_multiple * o.mcse) block.push('executable edge is within ' + T.min_edge_mcse_multiple + ' Monte Carlo SEs');
     }
     if (q.status == null) block.push('market status unknown');
+    const prov = o.provenance || 'Research';
+    if (prov !== 'Research') block.push('the simulated probability is ' + prov + ' (a supporting model\'s output, e.g. the CFP committee proxy): compared, never flagged — its Monte Carlo SE omits that model\'s uncertainty');
     const actionable = eligible && !stale && cfg.fees.verified && execPrice != null && block.length === 0;
     rows.push({
       market_ticker: m.market_ticker, event_ticker: m.event_ticker, series_ticker: m.series_ticker, mapping_id: m.mapping_id, entity_id: m.entity_id, outcome: m.outcome,
@@ -211,7 +217,7 @@ export function compareFutures(cfg: FuturesConfig, run: RunView, quotes: Map<str
       fee_basis: cfg.fees.verified ? cfg.fees.kind + ': ' + cfg.fees.formula + ' (rate ' + cfg.fees.rate + ')' : 'unverified — not included',
       fee_verified: cfg.fees.verified, exec_cost_prob: cost, exec_edge_pp: execEdge, expected_net_return: ret,
       stale, eligible, actionable, block_reasons: actionable ? [] : block,
-      provenance: { quote: 'Observed (Kalshi, ' + (q.host || 'public API') + ', ' + q.captured_at + ')', research: 'Research (simulated)', normalization: normalization === 'none' ? 'n/a' : 'Estimated (assumption)' }
+      provenance: { quote: 'Observed (Kalshi, ' + (q.host || 'public API') + ', ' + q.captured_at + ')', research: prov + ' (simulated)', normalization: normalization === 'none' ? 'n/a' : 'Estimated (assumption)' }
     });
   }
   return { status: 'compared', rows, excluded, methodology, note: rows.length + ' compared, ' + excluded.length + ' excluded' };

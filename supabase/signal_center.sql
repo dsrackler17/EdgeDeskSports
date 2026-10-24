@@ -186,6 +186,8 @@ create table if not exists public.sc_config_log (
   changed_by  uuid,
   changed_at  timestamptz not null default now()
 );
+-- why (the owner's door requires one; an operator's switch may leave it empty)
+alter table public.sc_config_log add column if not exists reason text;
 insert into public.sc_config (key, value) values
   ('mode', '"shadow"'),
   ('live_sports', '["nfl","cfb"]'),
@@ -305,10 +307,16 @@ create table if not exists public.sc_signal_events (
   kind       text not null check (kind in ('detected', 'versioned', 'published', 'held', 'withdrawn', 'republished', 'superseded', 'expired', 'invalidated',
                 'preview_on', 'preview_off', 'graphic_ready', 'graphic_failed', 'graphic_outdated', 'graphic_withdrawn', 'graphic_approved', 'graphic_revoked',
                 'regenerate_requested', 'notified', 'server_check')),
-  actor      text not null check (actor = 'system' or actor ~ '^admin:[0-9a-f-]{36}$'),
+  actor      text not null check (actor in ('system', 'owner') or actor ~ '^admin:[0-9a-f-]{36}$'),
   run_id     uuid,
   detail     jsonb not null default '{}'::jsonb
 );
+-- 'owner': the database owner's mode switch (sc_owner_set_mode). Replaced in
+-- place so an existing table takes it too (it reads rows, changes none)
+do $actor$ begin
+  alter table public.sc_signal_events drop constraint if exists sc_signal_events_actor_check;
+  alter table public.sc_signal_events add constraint sc_signal_events_actor_check check (actor in ('system', 'owner') or actor ~ '^admin:[0-9a-f-]{36}$');
+end $actor$;
 create index if not exists sc_signal_events_signal_idx on public.sc_signal_events (signal_id, at);
 
 -- ---------------------------------------------------------------- graphics
@@ -571,7 +579,7 @@ begin
   v_event_at := nullif(p#>>'{event,at}', '')::timestamptz;
   if v_event_at is not null and v_event_at <= now() then v_life := 'EXPIRED'; end if;
   if v_state = 'INVALIDATED' then v_life := 'WITHDRAWN'; end if;
-  v_sha := encode(digest(convert_to(p::text, 'UTF8'), 'sha256'), 'hex');
+  v_sha := encode(sha256(convert_to(p::text, 'UTF8')), 'hex');
 
   perform pg_advisory_xact_lock(hashtext('public.sc_signals ' || k));
   select * into s from public.sc_signals where signal_key = k;
@@ -699,7 +707,7 @@ begin
     if coalesce(it->>'payload_sha256', '') <> v.payload_sha256 then n_bad := n_bad + 1; insert into public.sc_failures (run_id, stage, item_key, error) values (p_run, 'graphics', it->>'version_id', 'the graphic was built from a different payload than the stored version'); continue; end if;
     v_status := case when it ? 'error' and coalesce(it->>'error', '') <> '' then 'FAILED' else 'READY' end;
     if v_status = 'READY' and (it->'content' is null or jsonb_typeof(it->'content') <> 'object') then v_status := 'FAILED'; end if;
-    v_sha := case when v_status = 'READY' then encode(digest(convert_to((it->'content')::text, 'UTF8'), 'sha256'), 'hex') end;
+    v_sha := case when v_status = 'READY' then encode(sha256(convert_to((it->'content')::text, 'UTF8')), 'hex') end;
     insert into public.sc_graphics (signal_id, version_id, template, template_version, format, content, content_sha256, payload_sha256, status, error)
     values (v.signal_id, v.version_id, it->>'template', it->>'template_version', it->>'format', case when v_status = 'READY' then it->'content' end, v_sha, v.payload_sha256, v_status,
             case when v_status = 'FAILED' then coalesce(nullif(it->>'error', ''), 'no content') end)
@@ -725,7 +733,7 @@ begin
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) > 100 then raise exception 'sc_put_dna: an array of at most 100 records'; end if;
   for it in select * from jsonb_array_elements(p_items) loop
     if coalesce(it->>'schema', '') <> 'edgedesk_model_dna_v1' then insert into public.sc_failures (run_id, stage, item_key, error) values (p_run, 'dna', it->>'model_key', 'not a Model DNA record'); continue; end if;
-    v_sha := encode(digest(convert_to(it::text, 'UTF8'), 'sha256'), 'hex');
+    v_sha := encode(sha256(convert_to(it::text, 'UTF8')), 'hex');
     insert into public.sc_model_dna (model_key, sport, grade, record, record_sha256, evaluated_at, run_id)
     values (it->>'model_key', it->>'sport', it->>'grade', it, v_sha, nullif(it->>'evaluated_at', '')::timestamptz, p_run)
     on conflict (model_key, record_sha256) do nothing;
@@ -1152,21 +1160,66 @@ begin
   return jsonb_build_object('graphic_id', p_graphic, 'action', p_action, 'ok', true);
 end $$;
 
-create or replace function public.sc_admin_set_mode(p_mode text, p_live_sports text[] default null)
+-- Going live publishes what the publication rule would have published had the
+-- runs begun in live: SHADOW signals that are VERIFIED, ACTIVE, not fixtures,
+-- of a live sport and at or above publish.min_label. Only the system's own
+-- placements move; HELD and WITHDRAWN (an operator's decisions) never do.
+create or replace function public.sc_promote_shadow(p_actor text)
+returns integer language plpgsql security definer set search_path = public, pg_temp as $$
+declare n integer := 0; v_live jsonb := coalesce(public.sc_cfg('live_sports'), '[]'::jsonb);
+  v_min text := coalesce(public.sc_cfg('publish')->>'min_label', 'Routine');
+begin
+  if coalesce((public.sc_cfg('mode'))#>>'{}', 'shadow') <> 'live' then return 0; end if;
+  with p as (
+    update public.sc_signals s set publication = 'PUBLISHED', publication_by = 'system', published_at = coalesce(s.published_at, now())
+     where s.publication = 'SHADOW' and coalesce(s.publication_by, 'system') = 'system'
+       and s.verification_state = 'VERIFIED' and s.lifecycle = 'ACTIVE' and not s.fixture
+       and v_live ? s.sport and public.sc_label_rank(s.label) >= public.sc_label_rank(v_min)
+    returning s.signal_id)
+  insert into public.sc_signal_events (signal_id, kind, actor, detail)
+  select signal_id, 'published', p_actor, jsonb_build_object('reason', 'the mode was switched to live') from p;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+-- one switch, two doors: the operator's (signed in) and the owner's (below)
+create or replace function public.sc_set_mode(p_mode text, p_live_sports text[], p_by uuid, p_actor text, p_reason text)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
-declare uid uuid := public.sc_require_admin(); old jsonb;
+declare old jsonb; n integer := 0;
 begin
   if p_mode not in ('shadow', 'live') then raise exception 'mode is shadow or live'; end if;
+  if p_live_sports is not null and exists (select 1 from unnest(p_live_sports) x where x !~ '^[a-z_]{2,24}$') then raise exception 'bad sport key'; end if;
   select value into old from public.sc_config where key = 'mode';
-  update public.sc_config set value = to_jsonb(p_mode), updated_at = now(), updated_by = uid where key = 'mode';
-  insert into public.sc_config_log (key, old_value, new_value, changed_by) values ('mode', old, to_jsonb(p_mode), uid);
+  update public.sc_config set value = to_jsonb(p_mode), updated_at = now(), updated_by = p_by where key = 'mode';
+  insert into public.sc_config_log (key, old_value, new_value, changed_by, reason) values ('mode', old, to_jsonb(p_mode), p_by, p_reason);
   if p_live_sports is not null then
-    if exists (select 1 from unnest(p_live_sports) x where x !~ '^[a-z_]{2,24}$') then raise exception 'bad sport key'; end if;
     select value into old from public.sc_config where key = 'live_sports';
-    update public.sc_config set value = to_jsonb(p_live_sports), updated_at = now(), updated_by = uid where key = 'live_sports';
-    insert into public.sc_config_log (key, old_value, new_value, changed_by) values ('live_sports', old, to_jsonb(p_live_sports), uid);
+    update public.sc_config set value = to_jsonb(p_live_sports), updated_at = now(), updated_by = p_by where key = 'live_sports';
+    insert into public.sc_config_log (key, old_value, new_value, changed_by, reason) values ('live_sports', old, to_jsonb(p_live_sports), p_by, p_reason);
   end if;
-  return jsonb_build_object('mode', p_mode, 'live_sports', public.sc_cfg('live_sports'), 'note', 'Existing signals keep their placement; new and re-versioned signals follow the new mode.');
+  if p_mode = 'live' then n := public.sc_promote_shadow(p_actor); end if;
+  return jsonb_build_object('mode', p_mode, 'live_sports', public.sc_cfg('live_sports'), 'promoted', n,
+    'note', case when p_mode = 'live' then n || ' shadow signal' || case when n = 1 then '' else 's' end || ' of the live sports that clear the publication rule were published; held and withdrawn signals were left as they are.'
+                 else 'Nothing new is published; signals already published stay published until an operator holds or withdraws them.' end);
+end $$;
+
+create or replace function public.sc_admin_set_mode(p_mode text, p_live_sports text[] default null)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare uid uuid := public.sc_require_admin();
+begin
+  return public.sc_set_mode(p_mode, p_live_sports, uid, 'admin:' || uid::text, null);
+end $$;
+
+-- THE OWNER'S DOOR: the same switch for the database owner, who holds the
+-- connection string rather than an operator account (the SQL editor, or
+-- .github/workflows/signal-center-mode.yml with SB_DB_URL). It is granted to
+-- no API role, so no token reaches it; it requires a reason, kept in
+-- sc_config_log.
+create or replace function public.sc_owner_set_mode(p_mode text, p_live_sports text[], p_reason text)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if coalesce(btrim(p_reason), '') = '' then raise exception 'say why: the reason is kept in sc_config_log'; end if;
+  return public.sc_set_mode(p_mode, p_live_sports, null, 'owner', left(btrim(p_reason), 500));
 end $$;
 
 create or replace function public.sc_admin_runs(p_limit integer default 20)
@@ -1246,6 +1299,15 @@ grant execute on function public.sc_public_feed(integer) to anon, authenticated;
 grant execute on function public.sc_pulse(integer) to anon, authenticated;
 grant execute on function public.sc_status() to anon, authenticated;
 grant execute on function public.sc_feed(jsonb,text,integer) to authenticated;
+-- the switch's internals and the owner's door: no API role, the job's included
+do $o$
+declare f text;
+begin
+  foreach f in array array['public.sc_promote_shadow(text)', 'public.sc_set_mode(text,text[],uuid,text,text)', 'public.sc_owner_set_mode(text,text[],text)'] loop
+    execute 'revoke all on function ' || f || ' from public, anon, authenticated';
+    if exists (select 1 from pg_roles where rolname = 'service_role') then execute 'revoke all on function ' || f || ' from service_role'; end if;
+  end loop;
+end $o$;
 
 -- ---------------------------------------------------------------- navigation evidence
 -- The Signal Center seat's taps (app.html edNavTrack → lib/edgedesk_track.js),
@@ -1293,4 +1355,10 @@ union all select 11, 'the Signal Center seat is counted',
        case when to_regclass('public.user_event_kinds') is null then 'pending: supabase/funnel.sql is not installed — seat taps are not kept'
             -- read dynamically: a plain reference would fail to parse where the funnel is not installed
             when (xpath('/row/n/text()', query_to_xml('select count(*) as n from public.user_event_kinds where event_name = ''primary_nav_signals''', false, true, '')))[1]::text = '1'
+            then 'ok' else 'CHECK THIS' end
+union all select 12, 'the owner''s mode door is reachable by no API role',
+       case when not has_function_privilege('anon', 'public.sc_owner_set_mode(text,text[],text)', 'execute')
+             and not has_function_privilege('authenticated', 'public.sc_owner_set_mode(text,text[],text)', 'execute')
+             and not has_function_privilege('authenticated', 'public.sc_set_mode(text,text[],uuid,text,text)', 'execute')
+             and (not exists (select 1 from pg_roles where rolname = 'service_role') or not has_function_privilege('service_role', 'public.sc_owner_set_mode(text,text[],text)', 'execute'))
             then 'ok' else 'CHECK THIS' end;

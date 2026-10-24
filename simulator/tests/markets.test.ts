@@ -11,7 +11,8 @@ import { marketStep } from '../src/cli/markets.ts';
 import type { SimDb } from '../src/publish/db.ts';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMappings, buildMlbMappings, buildNhlMappings, buildNbaMappings, KALSHI_TO_NBA, KALSHI_NBA_LABEL, candidatesFromLog, versionWith, DISCLAIMER, KALSHI_TO_RETRO, KALSHI_LABEL, KALSHI_TO_NHL, NHL_PRES_TIEBREAK, type Candidate, type SeriesInfo } from '../src/cli/build_kalshi_mappings.ts';
+import { buildMappings, buildMlbMappings, buildNhlMappings, buildNbaMappings, buildCfbMappings, KALSHI_TO_NBA, KALSHI_NBA_LABEL, cfbTeams2026, cfbNameOf, KALSHI_CFB_NAME, CFB_SECONDARY, CFB_SERIES, candidatesFromLog, versionWith, DISCLAIMER, KALSHI_TO_RETRO, KALSHI_LABEL, KALSHI_TO_NHL, NHL_PRES_TIEBREAK, type Candidate, type SeriesInfo } from '../src/cli/build_kalshi_mappings.ts';
+import { cfbOutcomes } from '../src/sports/cfb/module.ts';
 import { MLB_TEAMS, formatFor } from '../src/sports/mlb/config.ts';
 import { mlbOutcomes } from '../src/sports/mlb/module.ts';
 import { NFL_TEAMS_2026 } from '../src/sports/nfl/config.ts';
@@ -98,6 +99,12 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   T.near('  ... executable edge after fees (points)', ver.exec_edge_pp as number, 5.1, 1e-9);
   T.near('  ... expected net return per $1 contract', ver.expected_net_return as number, 0.051, 1e-12);
   T.chk('  ... a fresh, deep, fee-verified, mapped quote over every threshold is actionable', ver.actionable && ver.block_reasons.length === 0, ver.block_reasons);
+  /* the same quote against an Estimated probability (college football's CFP outcomes rest on the committee proxy) */
+  const estRun: RunView = { ...run, entities: run.entities.map((e) => e.entity_id === 'BUF' ? { ...e, outcomes: { ...e.outcomes, win_super_bowl: { ...e.outcomes.win_super_bowl, provenance: 'Estimated' } } } : e) };
+  const est = compareFutures(cfg({ fees }), estRun, Q(q('BUF')), now).rows[0];
+  T.chk('the same edge on an Estimated probability is compared (same numbers) but never flagged, and says why', !est.actionable && est.exec_edge_pp === ver.exec_edge_pp
+    && est.block_reasons.some((b) => /Estimated .*never flagged/.test(b)) && /^Estimated/.test(est.provenance.research));
+  T.eq('  ... a Research probability is labelled Research', ver.provenance.research, 'Research (simulated)');
   /* stale quotes are never flagged */
   const st = compareFutures(cfg({ fees }), run, Q(q('BUF', { captured_at: '2026-10-23T10:00:00Z' })), now).rows[0];
   T.chk('a stale quote is shown with its age and never flagged', st.stale && !st.actionable && st.quote_age_minutes === 120 && st.block_reasons.some((b) => /minutes old/.test(b)));
@@ -159,10 +166,10 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
 }
 /* ---- the market step on a sport the committed config maps nothing for: unavailable, nothing fetched, no error ---- */
 {
-  const cfb = { run: { sport: 'cfb', competition: 'NCAA FBS', season: '2026' }, entities: [{ entity_id: 'alabama', outcomes: { national_champion: { probability: 0.05, mcse: 0.0007 } } }] };
+  const ncaam = { run: { sport: 'ncaam', competition: 'NCAA Tournament', season: '2027' }, entities: [{ entity_id: 'duke', outcomes: { win_title: { probability: 0.05, mcse: 0.0007 } } }] };
   const lines: string[] = [];
-  const r = await marketStep({ results: cfb, runId: null, publish: false, log: (s) => lines.push(s), fetchImpl: (async () => { throw new Error('nothing should be fetched'); }) as unknown as typeof fetch });
-  T.chk('a college football run against the committed futures config (no college football mapping) is unavailable, not a failure', r.status === 'unavailable' && /no verified Kalshi mapping for cfb/.test(lines.join(' ')), { r, lines });
+  const r = await marketStep({ results: ncaam, runId: null, publish: false, log: (s) => lines.push(s), fetchImpl: (async () => { throw new Error('nothing should be fetched'); }) as unknown as typeof fetch });
+  T.chk('a college basketball run against the committed futures config (no college basketball mapping) is unavailable, not a failure', r.status === 'unavailable' && /no verified Kalshi mapping for ncaam/.test(lines.join(' ')), { r, lines });
 }
 /* ---- the market step: an outage fails the COMPARISON only ---- */
 {
@@ -327,6 +334,45 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   T.eq('a Cup year that is not the season\'s is left out', one({ ...cup, rules_primary: cup.rules_primary.replace('Emirates 2026', 'Emirates 2027') }).left.length, 1);
   T.chk('every Kalshi suffix names a club and every club has one label', Object.values(KALSHI_TO_NBA).every((c) => NBA_TEAMS.some((t) => t.code === c)) && NBA_TEAMS.every((t) => !!KALSHI_NBA_LABEL[t.code]) && new Set(Object.values(KALSHI_NBA_LABEL)).size === 30);
 }
+/* ---- college football: Kalshi's own 2026 wording (REAL markets: simulator/fixtures/kalshi_cfb_2026_markets.json) ---- */
+{
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const fx = JSON.parse(fs.readFileSync(path.join(here, '..', 'fixtures', 'kalshi_cfb_2026_markets.json'), 'utf8')) as { series: SeriesInfo[]; markets: Candidate[] };
+  const by = { by: 'test', at: '2026-10-24' }, teams = cfbTeams2026(), byId = new Map(teams.map((t) => [t.id, t]));
+  /* the raw rules of these series carry line breaks or doubled spaces the log squashed: the two-disclaimer conference series and the title */
+  const twoDisc = new Set(fx.markets.filter((k) => k.rules_secondary === CFB_SECONDARY[1]).map((k) => k.series_ticker));
+  const unhashed = fx.markets.filter((k) => sha256Hex(k.rules_primary + '\n' + (k.rules_secondary || '')) !== k.rules_sha256);
+  T.chk('the fixture is the text the runner hashed, but for the series whose raw rules the log squashed (the two-disclaimer conference series and the title)',
+    unhashed.length === 294 && unhashed.every((k) => twoDisc.has(k.series_ticker) || k.series_ticker === 'KXNCAAF'), unhashed.length);
+  const r = buildCfbMappings(fx.markets, fx.series, by);
+  const n = (o: string) => r.mappings.filter((m) => m.outcome === o).length;
+  T.eq('every 2026 market maps but the one title market worded for the January 2026 game (the title, the field, the semifinals, the top-4 seeds, every conference title and title game)',
+    [r.left.map((l) => l.market_ticker), n('national_champion'), n('cfp_field'), n('reach_sf'), n('cfp_bye'), n('conf_champion'), n('ccg_appearance')], [['KXNCAAF-27-UCLA'], 51, 57, 50, 50, 136, 136]);
+  T.chk('each maps to the 2026 FBS team its label names, in its own conference for a conference market', r.mappings.every((m) => {
+    const k = fx.markets.find((x) => x.market_ticker === m.market_ticker)!, t = byId.get(m.entity_id)!;
+    return m.season === '2026' && m.sport === 'cfb' && m.competition === 'NCAA FBS' && t.name === cfbNameOf(k.yes_sub_title) && (!CFB_SERIES[k.series_ticker].conf || t.conference === CFB_SERIES[k.series_ticker].conf);
+  }));
+  T.eq('the six labels that are not the feed\'s names read as the right teams', Object.keys(KALSHI_CFB_NAME).map((lab) => r.mappings.find((m) => fx.markets.find((x) => x.market_ticker === m.market_ticker)!.yes_sub_title === lab)?.entity_id),
+    Object.values(KALSHI_CFB_NAME).map((nm) => teams.find((t) => t.name === nm)!.id));
+  T.eq('every conference title is a complete set; the title, the field and the playoff rounds are never normalised', r.sets.map((s) => s.id.split(':')[2] + ' ' + s.entities.length),
+    ['ACC 17', 'American Athletic 14', 'Big 12 16', 'Big Ten 18', 'Conference USA 10', 'Mid-American 13', 'Mountain West 10', 'Pac-12 8', 'SEC 16', 'Sun Belt 14']);
+  /* exact or nothing (one real market, altered) */
+  const title = fx.markets.find((k) => k.market_ticker === 'KXNCAAF-27-OSU')!, sec = fx.markets.find((k) => k.market_ticker === 'KXNCAAFSEC-26-UGA')!, field = fx.markets.find((k) => k.market_ticker === 'KXNCAAFPLAYOFF-26-UGA')!;
+  const one = (k: Candidate) => buildCfbMappings([k], fx.series, by);
+  T.eq('next season\'s event in the same wording is left out (the title and the field name no season in their text)', [one({ ...title, event_ticker: 'KXNCAAF-28', market_ticker: 'KXNCAAF-28-OSU' }).left.length, one({ ...field, event_ticker: 'KXNCAAFPLAYOFF-27', market_ticker: 'KXNCAAFPLAYOFF-27-UGA' }).left.length], [1, 1]);
+  T.eq('a ticker suffix that carries two labels is left out wherever it appears, even with rules to match', buildCfbMappings([title, { ...field, market_ticker: 'KXNCAAFPLAYOFF-26-OSU', yes_sub_title: 'Ohio State', rules_primary: field.rules_primary.replace('Georgia', 'Ohio State') }], fx.series, by).left.map((l) => l.market_ticker).sort(), ['KXNCAAF-27-OSU', 'KXNCAAFPLAYOFF-26-OSU']);
+  T.eq('two markets that read as one team are both left out', buildCfbMappings([title, { ...title, market_ticker: 'KXNCAAF-27-OHST', yes_sub_title: 'Ohio State', rules_primary: title.rules_primary.replace('Ohio St.', 'Ohio State') }], fx.series, by).left.map((l) => l.market_ticker).sort(), ['KXNCAAF-27-OHST', 'KXNCAAF-27-OSU']);
+  T.eq('a team of another conference is left out of a conference market', one({ ...sec, market_ticker: 'KXNCAAFSEC-26-OSU', yes_sub_title: 'Ohio St.', rules_primary: sec.rules_primary.replace('Georgia', 'Ohio St.') }).left.length, 1);
+  T.eq('a label that is no FBS team is left out', one({ ...title, market_ticker: 'KXNCAAF-27-NDSU2', yes_sub_title: 'North Dakota', rules_primary: title.rules_primary.replace('Ohio St.', 'North Dakota') }).left.length, 1);
+  T.eq('extra secondary rules are left out', one({ ...title, rules_secondary: title.rules_secondary + ' If the game is not played, the market resolves to No.' }).left.length, 1);
+  T.eq('other wording is left out (a conference title is the title game, not the regular-season finish)', one({ ...sec, rules_primary: sec.rules_primary.replace('wins the 2026 College Football SEC Championship Game', 'finishes first in the 2026 SEC regular season') }).left.length, 1);
+  T.eq('a series with no simulated outcome is not a candidate at all (seeds, undefeated seasons)', ['KXNCAAFSEED', 'KXNCAAFUNDEFEATED'].map((st) => one({ ...title, series_ticker: st }).mappings.length + one({ ...title, series_ticker: st }).left.length), [0, 0]);
+  T.chk('every name KALSHI_CFB_NAME gives is a 2026 FBS team', Object.values(KALSHI_CFB_NAME).every((nm) => teams.some((t) => t.name === nm)));
+  /* the log reader: GitHub's log API starts each chunk it joins with a byte-order mark, mid-file too */
+  const line = (k: Candidate) => '2026-10-24T00:14:17.9457529Z   - ' + k.market_ticker + ' | event ' + k.event_ticker + ' | ' + k.yes_sub_title + ' | close 2027-02-23T04:00:00Z | bid 0.0100 ask 0.0200 size 10.00 | rules_sha256 ' + k.rules_sha256 + ' | RULES: ' + k.rules_primary + ' | RULES2: ' + k.rules_secondary;
+  const log = ['\uFEFF2026-10-24T00:14:02.0000000Z ## SERIES KXNCAAF | NCAAF Championship | fee_type quadratic_with_maker_fees | fee_multiplier 1 | frequency custom | settlement_sources null', line(title), '\uFEFF' + line(fx.markets.find((k) => k.market_ticker === 'KXNCAAF-27-CLEM')!)].join('\n');
+  T.eq('a market line that starts with a byte-order mark mid-log is read (it dropped KXNCAAF-27-CLEM)', candidatesFromLog(log).markets.map((k) => k.market_ticker), ['KXNCAAF-27-OSU', 'KXNCAAF-27-CLEM']);
+}
 /* ---- the committed config (real Kalshi markets, generated by build_kalshi_mappings.ts) ---- */
 {
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -344,6 +390,24 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   const nhlRun: RunView = { sport: 'nhl', competition: 'NHL', season: '2026-27',
     entities: NHL_TEAMS_2027.map((t) => ({ entity_id: t.code, outcomes: Object.fromEntries(NHL_OUTCOMES.map((o) => [o.key, { probability: 1 / 32, mcse: 0.0005 }])) })) };
   T.eq('the committed NHL mappings validate against a full NHL 2026-27 run', validateFuturesConfig(configForSport(real, nhlRun), nhlRun), []);
+  const cfbRun: RunView = { sport: 'cfb', competition: 'NCAA FBS', season: '2026',
+    entities: cfbTeams2026().map((t) => ({ entity_id: t.id, outcomes: Object.fromEntries(cfbOutcomes('proxy').map((o) => [o.key, { probability: 0.05, mcse: 0.0007, provenance: o.provenance }])) })) };
+  T.eq('the committed CFB mappings validate against a full 2026 college football run', validateFuturesConfig(configForSport(real, cfbRun), cfbRun), []);
+  {
+    /* the market step on that run, Kalshi answering with the fixture's REAL printed rules: the markets whose text hashes compare; the rest are
+       excluded by the rules hash, as a changed wording would be. The CFP outcomes are Estimated: compared, never flagged. */
+    const fx = JSON.parse(fs.readFileSync(path.join(here, '..', 'fixtures', 'kalshi_cfb_2026_markets.json'), 'utf8')) as { markets: Candidate[] };
+    const kalshi = (async (u: string) => {
+      const markets = (new URL(u).searchParams.get('tickers') || '').split(',').map((tk) => fx.markets.find((k) => k.market_ticker === tk)).filter(Boolean).map((k) => ({ ticker: k!.market_ticker, event_ticker: k!.event_ticker,
+        series_ticker: k!.series_ticker, status: 'active', yes_bid_dollars: '0.0100', yes_ask_dollars: '0.0200', yes_ask_size_fp: '500.00', close_time: '2027-01-10T15:00:00Z', rules_primary: k!.rules_primary, rules_secondary: k!.rules_secondary }));
+      return new Response(JSON.stringify({ markets }), { status: 200, headers: { 'content-type': 'application/json' } }); }) as unknown as typeof fetch;
+    const step = await marketStep({ results: { run: cfbRun, entities: cfbRun.entities }, runId: null, publish: false, cfg: real, fetchImpl: kalshi, log: () => {}, now: new Date() });
+    const ex = step.comparison ? step.comparison.excluded : [];
+    const est = step.rows.filter((r) => /^Estimated/.test(r.provenance.research));
+    T.chk('a 2026 CFB run compares its 187 hash-checkable mapped markets (the 293 squashed texts are excluded by the rules hash); every Estimated row stays unflagged',
+      step.status === 'compared' && step.rows.length === 187 && ex.length === 293 && ex.every((x) => /settlement rules changed/.test(x.reason)) && est.length > 0 && est.every((r) => !r.actionable && r.block_reasons.some((b) => /never flagged/.test(b))),
+      { status: step.status, rows: step.rows.length, excluded: ex.length });
+  }
   {
     /* the market step on that NHL run: Kalshi answers with every mapped market's printed rules (REAL text from the fixture).
        Each compares, but for the 32 Presidents' Trophy markets, whose printed text lost its line breaks and so no longer
@@ -394,7 +458,8 @@ T.throws('a fee at a price of 1 is refused (no such contract)', () => feePerCont
   T.chk('the fee schedule is verified only with a verifier, a date and an https source', !real.fees.verified || (!!real.fees.verified_by && /^\d{4}-\d{2}-\d{2}$/.test(real.fees.verified_at || '') && /^https:\/\//.test(real.fees.source)));
   T.chk('every mapping is verified, dated and carries its rules sha256', real.mappings.every((m) => m.status === 'verified' && /^[0-9a-f]{64}$/.test(m.settlement.rules_sha256) && !!m.verified_by && /^\d{4}-\d{2}-\d{2}$/.test(m.verified_at || '')));
   const clubs = (id: string) => { const [sport, , scope] = id.split(':');
-    const teams: Array<{ code: string; groups: string[] }> = sport.startsWith('mlb') ? MLB_TEAMS.map((t) => ({ code: t.code, groups: [t.league, t.division] }))
+    const teams: Array<{ code: string; groups: string[] }> = sport.startsWith('cfb') ? cfbTeams2026().map((t) => ({ code: t.id, groups: [t.conference] }))
+      : sport.startsWith('mlb') ? MLB_TEAMS.map((t) => ({ code: t.code, groups: [t.league, t.division] }))
       : sport.startsWith('nhl') ? NHL_TEAMS_2027.map((t) => ({ code: t.code, groups: [t.conference, t.division] }))
       : sport.startsWith('nba') ? NBA_TEAMS.map((t) => ({ code: t.code, groups: [t.conference, t.division] })) : NFL_TEAMS_2026.map((t) => ({ code: t.code, groups: [t.conference, t.division] }));
     return teams.filter((t) => !scope || t.groups.includes(scope)).map((t) => t.code).sort(); };
