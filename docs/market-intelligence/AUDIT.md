@@ -24,7 +24,7 @@ The live numbers are one partial season (2026, from week 2 for CFB, through 2026
 
 A sport appearing in the interface does not make it production-ready: MLB's live card has never logged a forecast, NCAAM's new system is not deployed, and golf has no model.
 
-**Signal Center does not exist** in this repository (no code, document or commit by that name). What plays its part (§6): the reader alert bell (`public.user_alerts` / `alert_preferences`, `lib/edgedesk_personal.js`, `tools/personal/research_state.js`, NFL and CFB only), the CFB market-event ledger (`football/cfb_market/market_intel.js` → `public.cfb_market_events`, internal only), and the per-game research flags (`lib/game_research.js` `FLAG_RULES`).
+**Signal Center did not exist** when this audit was written (2026-10-23: no code, document or commit by that name). **Update 2026-10-24:** a Signal Center has since been merged to `main` (#737 and the commits before it; [`docs/signal-center/`](../signal-center/README.md)): a detection engine (`lib/edgedesk_signal_engine.js`), `sc_`-prefixed tables (`supabase/signal_center.sql`), a worker (`tools/signal_center/run.js`), signal graphics and a reader seat. It reads the same performance-ledger forecasts and quotes this program validates and delivers notices through `user_alerts`. It has not yet been reviewed against this program's validation evidence (NEXT_STEPS #7). What plays its part (§6): the reader alert bell (`public.user_alerts` / `alert_preferences`, `lib/edgedesk_personal.js`, `tools/personal/research_state.js`, NFL and CFB only), the CFB market-event ledger (`football/cfb_market/market_intel.js` → `public.cfb_market_events`, internal only), and the per-game research flags (`lib/game_research.js` `FLAG_RULES`).
 
 ---
 
@@ -116,6 +116,8 @@ Concepts drawn from public descriptions of *The Logic of Sports Betting* and *In
 ---
 
 ## 6. Signal pipeline (Phase 6 groundwork)
+
+*Written before the Signal Center (#737) was merged; see the update in §1. Integration now targets that system, not the design below.*
 
 **Where a market-intelligence finding should go**, from the read-through of the existing infrastructure:
 1. **Event store:** generalise the `cfb_market_events` pattern (closed vocabulary, hashed ids, pregame-only and append-only enforced in SQL, the no-myth wording check) to a multi-sport table, RLS on the fail-closed `sim_viewer_entitled()` pattern.
