@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_hypotheses_v1",
  "what": "Pre-registered research hypotheses for the model-versus-market program. Each names its test (tools/market_intel/validation_report.js TESTS), its data and its acceptance rule before it is judged. The report never edits this file. A REJECTED hypothesis stays here with its result; RETIRED is set by a person, with a reason.",
- "registration_note": "Every hypothesis was in this file by 2026-10-23T21:08:19Z (the time recorded on each). H-001 to H-010 were written before tools/market_intel/validation_report.js first ran; H-011 to H-013 were written after its exploratory results were read, which is why their windows start on 2026-10-24. Amendments are listed on the hypothesis they changed. H-014 and H-015 were registered at 2026-10-24T00:13:37Z, before tools/market_intel/validation_report.js or any fit had read a 2012-2025 FBS-vs-FCS residual.",
+ "registration_note": "Every hypothesis was in this file by 2026-10-23T21:08:19Z (the time recorded on each). H-001 to H-010 were written before tools/market_intel/validation_report.js first ran; H-011 to H-013 were written after its exploratory results were read, which is why their windows start on 2026-10-24. Amendments are listed on the hypothesis they changed. H-014 and H-015 were registered at 2026-10-24T00:13:37Z, before tools/market_intel/validation_report.js or any fit had read a 2012-2025 FBS-vs-FCS residual. H-016 was registered at 2026-10-24T00:17:29Z, after H-014's result had been read (its shift is frozen from that run), so its window starts at its registration.",
  "kinds": {
   "EXPLORATORY": "Formed after the data in its window had been looked at (seen_before_registration: true). Its result describes that data and confirms nothing.",
   "CONFIRMATORY": "Registered before any game in its window was played. The only kind whose ACCEPTED status is evidence."
@@ -419,6 +419,32 @@
    "failure_mode": "Few FBS-vs-FCS games remain after October, so this may not reach the minimum before the 2027 season; the live engine's matchup term may already move FCS games",
    "seen_before_registration": false,
    "registered_at": "2026-10-24T00:13:37Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-016",
+   "kind": "CONFIRMATORY",
+   "statement": "On live FBS-vs-FCS games played after registration, adding a fixed 4.27 points to the FBS side's published margin lowers absolute error against the final",
+   "mechanism": "H-014's walk-forward showed the FBS-vs-FCS shortfall growing (season mean final - model: 2022 2.5, 2023 1.5, 2024 3.4, 2025 5.1; about 8 live in 2026), so an expanding-window map lags it; 4.27 is the replay's mean shortfall over the two most recent complete seasons (2024-2025, n 246), frozen here. Designed after seeing those season means, so it is tested only forward",
+   "metric": "paired MAE against finals, (published margin + 4.27) minus published margin, FBS-team-signed; cluster bootstrap by week",
+   "data": {
+    "sport": "cfb",
+    "slice": "fbs_vs_fcs",
+    "test": "fcs_fixed_shift_mae_vs_raw",
+    "shift": 4.2744,
+    "shift_basis": "mean(final - replay margin) over 2024-2025 FBS-vs-FCS games in docs/model-loop/cfb/predictions.csv.gz joined to model_loop/adapters/cfb/baselines/cfb_p4_replay_predictions.csv.gz (football/cfb_p4/research/fcs_uncapped.js load())"
+   },
+   "window": {
+    "from": "2026-10-24T00:17:29Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": 0
+   },
+   "failure_mode": "The rise is noise around a 2-point level, or the live engine (shipped seeds, matchup term) already differs from the replay; and a level shift cannot fix the ordering of FCS teams, which is where most of the gap to the close is (H-014: MAE 15.1 vs the close's 12.1)",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-24T00:17:29Z",
    "status": "PREREGISTERED"
   }
  ]

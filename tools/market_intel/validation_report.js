@@ -182,6 +182,14 @@ TESTS.fcs_map_mae_vs_raw = (rows) => {
   const mapped = (x) => { const s = x.fbs_home ? 1 : -1; return s * (M.map.a + M.map.b * s * x.model_margin); };
   return L.pairedDifference(sub, (x) => absErr(mapped(x), x.margin), (x) => absErr(x.model_margin, x.margin), { cluster: 'cluster' });
 };
+/* H-016: a fixed shift, frozen in the hypothesis itself, on the published FBS-vs-FCS margin */
+TESTS.fcs_fixed_shift_mae_vs_raw = (rows, h) => {
+  const d = h && h.data && isNum(h.data.shift) ? h.data.shift : null;
+  if (d == null) return { verdict: 'INSUFFICIENT_EVIDENCE', n: 0, why: 'no frozen shift in the hypothesis', diff: { est: null, ci: [null, null] } };
+  const sub = rows.filter((x) => x.group === 'fbs_fcs' && x.fbs_home != null);
+  const shifted = (x) => x.model_margin + (x.fbs_home ? d : -d);
+  return L.pairedDifference(sub, (x) => absErr(shifted(x), x.margin), (x) => absErr(x.model_margin, x.margin), { cluster: 'cluster' });
+};
 function mkt(x) { return x.market_p != null ? x.market_p : x.close_p; }
 function brier(p, y) { return isNum(p) && (y === 0 || y === 1) ? (p - y) * (p - y) : null; }
 function ll(p, y) { if (!isNum(p) || (y !== 0 && y !== 1)) return null; const q = Math.min(1 - 1e-6, Math.max(1e-6, p)); return -(y * Math.log(q) + (1 - y) * Math.log(1 - q)); }
@@ -298,7 +306,7 @@ function run() {
       const t = ms(x.kickoff || x.start);
       return (!h.window || !h.window.from || t >= ms(h.window.from)) && (!h.window || !h.window.to || t < ms(h.window.to));
     });
-    const res = TESTS[h.data.test] ? TESTS[h.data.test](rows) : null;
+    const res = TESTS[h.data.test] ? TESTS[h.data.test](rows, h) : null;
     const hl = headline(res);
     const j = res ? L.judge(h, hl) : { status: null, why: 'unknown test ' + h.data.test };
     return { id: h.id, kind: h.kind, statement: h.statement, status: j.status, why: j.why, result: hl ? compact(hl) : null };
