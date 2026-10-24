@@ -160,6 +160,17 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
   const evil = UI.buildModel(run, evilRows, [{ ...ents.find((e) => e.entity_id === 'alabama'), entity_name: '<img src=x onerror=alert(1)>', entity_groups: { conference: '<b>SEC</b>', ccg: 'SEC', division: '-' } }], []);
   T.chk('team and conference names are escaped in both views', !/<img|<b>SEC/.test(UI.renderCfbConference(evil) + UI.renderCfbPlayoff(evil)));
   T.eq('the reader opens a sport on its title view (CFP & Title for college football)', [UI.defaultTab({ tabs: ['conference', 'title', 'futures'] }), UI.defaultTab({ tabs: ['division', 'conference', 'title', 'futures'] }), UI.defaultTab({ tabs: ['tournament'] })], ['title', 'title', 'tournament']);
+  {
+    /* Futures Edges: SYNTHETIC quotes against this run's outcomes, shaped as sim_current_edges returns them */
+    const edge = (id: string, outcome: string, actionable: boolean) => ({ entity_id: id, outcome, research_prob: 0.2, research_mcse: 0.001, research_fair_decimal: 5, reference_prob: 0.15, normalized_ref_prob: null,
+      reference_edge_pp: 5, exec_price: 0.16, exec_cost_prob: 0.161, exec_edge_pp: 3.9, quote_age_minutes: 4, fee_verified: true, stale: false, actionable,
+      block_reasons: actionable ? [] : ['the simulated probability is Estimated (a supporting model\'s output, e.g. the CFP committee proxy): compared, never flagged'] });
+    const fm = UI.buildModel({ ...run, sport: 'cfb', comparison_id: 'c1' }, rows, ents, [edge('ohiostate', 'national_champion', false), edge('alabama', 'conf_champion', true)]);
+    const fut: string = UI.renderFutures(fm, { kind: 'ok' }, { key: 'exec_edge_pp', dir: 'desc' });
+    T.chk('college football Futures Edges: teams by name, CFB outcomes in words, the Estimated title marked and never flagged, the Research conference title flaggable',
+      />Team</.test(fut) && /Ohio State/.test(fut) && !/>ohiostate</.test(fut) && /Win national title \(Estimated\)/.test(fut) && /Win conference</.test(fut)
+      && /rests on the CFP committee proxy/.test(fut) && (fut.match(/class="sm-flag"/g) || []).length === 1);
+  }
   fs.rmSync(out, { recursive: true, force: true });
 }
 /* PostgREST answers at most max-rows per request: the reader pages until a short page */
