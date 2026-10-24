@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T04:00:00.000Z",
   "game_when_label": "2026-10-31 04:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-23T16:59:10.561Z",
-  "generated_at": "2026-10-23T16:59:10.561Z",
+  "updated_at": "2026-10-24T04:26:53.497Z",
+  "generated_at": "2026-10-24T04:26:53.497Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": null,
   "research": {
     "kind": "CFB_GAME",
@@ -258,7 +258,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T16:00:00.000Z",
-        "retrieved_at": "2026-10-23T16:41:15.766Z"
+        "retrieved_at": "2026-10-24T01:28:04.374Z"
       },
       "home": {
         "team": "Texas Tech",
@@ -336,9 +336,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-17T19:30:00.000Z",
-        "retrieved_at": "2026-10-23T16:41:15.766Z"
+        "retrieved_at": "2026-10-24T01:28:04.374Z"
       },
-      "generated_at": "2026-10-23T16:41:55.754Z",
+      "generated_at": "2026-10-24T01:28:49.725Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -455,8 +455,8 @@
               "a": {
                 "v": "51.3",
                 "n": 51.3,
-                "rank": "#45 of 138",
-                "rank_n": 45,
+                "rank": "#46 of 138",
+                "rank_n": 46,
                 "note": null
               },
               "h": {
@@ -469,7 +469,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.9,
-                "rank_gap": 30
+                "rank_gap": 31
               }
             }
           ]
@@ -753,8 +753,8 @@
               "a": {
                 "v": "56.6",
                 "n": 56.6,
-                "rank": "#48 of 138",
-                "rank_n": 48,
+                "rank": "#47 of 138",
+                "rank_n": 47,
                 "note": null
               },
               "h": {
@@ -767,7 +767,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.9,
-                "rank_gap": 37
+                "rank_gap": 36
               }
             },
             {
@@ -1164,7 +1164,7 @@
           "team": "Arizona",
           "label": "running backs",
           "v": "56.6",
-          "rank": "#48 of 138",
+          "rank": "#47 of 138",
           "note": null
         },
         "def": {
@@ -1175,7 +1175,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Arizona’s running backs rates 56.6 (#48 of 138) against Texas Tech’s linebackers at 60.7 (#4 of 138). Texas Tech’s unit stands higher among its own position group, by 44 places."
+        "read": "Arizona’s running backs rates 56.6 (#47 of 138) against Texas Tech’s linebackers at 60.7 (#4 of 138). Texas Tech’s unit stands higher among its own position group, by 43 places."
       },
       {
         "title": "Texas Tech running backs vs Arizona linebackers",
@@ -1530,11 +1530,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Texas Tech or Arizona’s starting QB can play",
-        "score": 89,
+        "text": "88 · STRONG",
+        "sub": "main deduction: Arizona’s availability report is not due yet",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1572,29 +1572,27 @@
           {
             "key": "environment",
             "label": "Environment",
-            "score": 10,
+            "score": 8.5,
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Texas Tech or Arizona’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "Arizona’s availability report is not due yet; the impact of Arizona’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
+            "action": "Re-read availability inside the filing window (Arizona)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Texas Tech)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
             "action": "Capture a market quote",
-            "potential_gain": 3,
-            "text": "up to +3 once re-read availability inside the filing window (Texas Tech) and Re-read availability inside the filing window (Arizona) is done"
-          },
-          {
-            "action": "Confirm Arizona’s starting QB (Noah Fifita)",
             "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Texas Tech) and Re-read availability inside the filing window (Arizona) is done"
-          },
-          {
-            "action": "Confirm Texas Tech’s starting QB (Will Hammond)",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Texas Tech) and Re-read availability inside the filing window (Arizona) is done"
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1781,7 +1779,7 @@
         },
         {
           "k": "Running backs",
-          "a": "56.6  #48",
+          "a": "56.6  #47",
           "h": "58.5  #11",
           "note": null
         },
@@ -1843,11 +1841,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-23T16:59:10.561Z"
+    "at": "2026-10-24T04:26:53.497Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T00:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1897,88 +1897,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-23. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "kul0oycr9jj4",
-    "status": "UNEXPLAINED",
-    "input_suspect": false,
-    "question": "Can Tulsa’s pass rush get to Army’s quarterback?",
-    "assessment": "EdgeDesk’s number is 7.8 points closer to Army than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 7.8 points. The measured football evidence leans toward Tulsa, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
-    "gap": {
-      "points": 7.8,
-      "toward": "Army",
-      "other": "Tulsa"
-    },
-    "supporting": [
-      "When Army has the ball (the line of scrimmage on running plays): Army’s offense is stopped at or behind the line on 10.6% of its runs, and Tulsa’s defense stops 15.6% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Army has the ball (third down): Army’s offense converts 51.9% of its third downs, and Tulsa’s defense allows opponents to convert 40.6% of their third downs (FBS average 39.7%).",
-      "Dexter Williams II has completed 34 of 60 passes (56.7%) for 340 yards, 5.7 yards per attempt, 3 touchdowns and no interceptions in three games for Tulsa, and has been sacked on 3 of 63 dropbacks.",
-      "EdgeDesk’s position-group ratings put Army’s receivers No. 60 nationally and Tulsa’s No. 136."
-    ],
-    "contradicting": [
-      "When Tulsa has the ball (pass protection against the pass rush): Tulsa’s offense has allowed a sack on 3.9% of its dropbacks, and Army’s defense sacks the quarterback on 4.2% of opponent dropbacks (FBS average 5.6%).",
-      "When Tulsa has the ball (the line of scrimmage on running plays): Tulsa’s offense is stopped at or behind the line on 10.5% of its runs, and Army’s defense stops 9.0% of opponent runs at or behind the line (FBS average 17.4%).",
-      "In his last two games (Navy and Rice), Hayes averaged 8.2 yards per attempt, against 5.9 in his three games before that.",
-      "In his last two games (Tulane and Florida Atlantic), Hellums averaged 2.6 yards per attempt, against 6.9 in his four games before that."
-    ],
-    "quarterbacks": [
-      "Baylor Hayes has completed 100 of 159 passes (62.9%) for 1,081 yards, 6.8 yards per attempt, 8 touchdowns and 1 interception in five games for Tulsa, and has been sacked on 6 of 165 dropbacks.",
-      "Dexter Williams II has completed 34 of 60 passes (56.7%) for 340 yards, 5.7 yards per attempt, 3 touchdowns and no interceptions in three games for Tulsa, and has been sacked on 3 of 63 dropbacks.",
-      "Cale Hellums has completed 32 of 57 passes (56.1%) for 358 yards, 6.3 yards per attempt, 3 touchdowns and 1 interception in six games for Army, and has been sacked on 2 of 59 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Army’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.1% of its dropbacks, and Tulsa’s defense sacks the quarterback on 7.1% of opponent dropbacks.",
-        "Army’s defense has to slow Tulsa at the line of scrimmage — Tulsa’s offense is stopped at or behind the line on 10.5% of its runs.",
-        "Army’s defense has to slow Tulsa in the pass-rush matchup — Tulsa’s offense has allowed a sack on 3.9% of its dropbacks.",
-        "Army’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 10.6% of its runs, and Tulsa’s defense stops 15.6% of opponent runs at or behind the line."
-      ],
-      "market": [
-        "Tulsa’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 10.5% of its runs, and Army’s defense stops 9.0% of opponent runs at or behind the line.",
-        "Tulsa’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.9% of its dropbacks, and Army’s defense sacks the quarterback on 4.2% of opponent dropbacks.",
-        "Tulsa’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.1% of opponent dropbacks, against an offense that has allowed a sack on 3.1% of its dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Tulsa and Army.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Tulsa), sack rate (Tulsa), sack rate allowed (Army) and sack rate (Army); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-23T16:42:02.097Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-23T16:41:35.293Z",
-        "verification": "RATING"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-23T16:59:10.561Z"
+    "at": "2026-10-24T04:26:53.497Z"
   }
 }
