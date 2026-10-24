@@ -252,7 +252,8 @@ const TODAY = (() => {
         await page.waitForSelector('#nhlHost .xe-game');
       }
       await page.click('[data-act="record"]');
-      await page.waitForSelector('#nhlHost .xe-t caption', { timeout: 20000 });
+      /* the list already carries captioned tables, so wait for the record's own caption, not any caption */
+      await page.waitForFunction(() => Array.from(document.querySelectorAll('#nhlHost .xe-t caption')).some((c) => /Moneyline log loss/.test(c.textContent)), null, { timeout: 20000 }).catch(() => {});
       chk(label + ': the full record shows held-out log loss by model', await page.evaluate(() => Array.from(document.querySelectorAll('#nhlHost .xe-t caption')).some((c) => /Moneyline log loss/.test(c.textContent))));
       await page.click('[data-act="sources"]');
       await page.waitForSelector('#nhlHost .xe-sport summary', { timeout: 15000 });
