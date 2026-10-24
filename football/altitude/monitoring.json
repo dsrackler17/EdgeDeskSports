@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_altitude_monitoring_v1",
- "generated_at": "2026-10-24T20:58:31.335Z",
+ "generated_at": "2026-10-24T23:22:44.313Z",
  "policy": "warnings inform a person; nothing here retrains, re-tunes, enables or disables anything",
  "ok": true,
  "params": {
@@ -11,24 +11,19 @@
   "flag": "cfb_altitude_adjustment_enabled"
  },
  "slate": {
-  "generated_at": "2026-10-24T20:58:30.786Z",
-  "games": 100,
-  "with_section": 100,
-  "usable": 97,
+  "generated_at": "2026-10-24T23:22:43.887Z",
+  "games": 80,
+  "with_section": 80,
+  "usable": 78,
   "exposure": {
-   "MINIMAL": 73,
-   "DESCENT": 12,
-   "UNKNOWN": 3,
+   "MINIMAL": 55,
+   "DESCENT": 11,
    "HIGH": 8,
-   "MODERATE": 4
+   "MODERATE": 4,
+   "UNKNOWN": 2
   },
   "applied_games": 0,
   "unavailable": [
-   {
-    "game_id": "401858498",
-    "game": "Rutgers @ Northwestern",
-    "why": "venue 11823 has no sourced elevation; Northwestern’s normal home venue (id 11823) has no sourced elevation"
-   },
    {
     "game_id": "401858505",
     "game": "Northwestern @ Oregon",
@@ -55,8 +50,8 @@
   "season": 2026,
   "fit_window": "2006-2025, 13511 non-neutral FBS home games",
   "what": "the frozen shadow candidate applied to V1’s own published pregame margin (record/football/cfb_2026.json), graded on finals; 2026 was never seen by the fit",
-  "graded_games": 349,
-  "usable": 340,
+  "graded_games": 363,
+  "usable": 353,
   "affected": {
    "n": 16,
    "mae_v1": 11.826,
@@ -76,13 +71,8 @@
   {
    "kind": "ELEVATION_UNAVAILABLE",
    "level": "WARN",
-   "message": "3 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
+   "message": "2 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
    "evidence": [
-    {
-     "game_id": "401858498",
-     "game": "Rutgers @ Northwestern",
-     "why": "venue 11823 has no sourced elevation; Northwestern’s normal home venue (id 11823) has no sourced elevation"
-    },
     {
      "game_id": "401858505",
      "game": "Northwestern @ Oregon",
