@@ -199,7 +199,8 @@ const ANSWERS = [
     const imgs = shots.flatMap((b) => b.images || []);
     chk('the screenshots went to the function scaled and re-encoded as JPEG; the tall capture as overlapping tiles', imgs.length >= 4 && imgs.every((i) => i.media_type === 'image/jpeg' && /^\/9j\//.test(i.data))
       && shots.every((b) => b.images.length <= C.LIMITS.maxImages && b.book === 'novig' && b.tz === 'America/Chicago' && /^\d{4}-\d{2}-\d{2}$/.test(b.today)), imgs.map((i) => i.media_type));
-    chk('in batches the function accepts, one after another', shots.length === Math.ceil(imgs.length / 3));
+    const batch = await page.evaluate(() => window.EDBetImport.BATCH);
+    chk('in batches the function accepts, one after another', batch >= 1 && batch <= C.LIMITS.maxImages && shots.length === Math.ceil(imgs.length / batch), { batch, shots: shots.length, imgs: imgs.length });
     await waitText(page, /CLV will be graded/);
     let t = await text(page);
     chk('every bet read is a row — nothing dropped, the junk row included', (await page.$$('#pfoHost tr.bim-row')).length === 4, t.slice(0, 400));
