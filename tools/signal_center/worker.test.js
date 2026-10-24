@@ -117,6 +117,23 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
       update public.sc_config set value = '"live"' where key = 'mode';
       insert into public.sc_preferences (user_id, sports, min_label, notify) values (${lit(SUB)}, '{nfl,cfb}', 'Routine', true), (${lit(NOSUB)}, '{}', 'Monitor', true);`);
 
+    /* women's college basketball: its own tables (supabase/ncaaw_forecast.sql), two published daily runs
+       and one superseded, shaped as basketball/ncaaw_forecast writes them; game ids distinct from the men's */
+    db.applyFile(F('ncaaw_forecast.sql'));
+    const W1 = 'eeeeeeee-1111-4111-8111-000000000001', W2 = 'eeeeeeee-1111-4111-8111-000000000002', W3 = 'eeeeeeee-1111-4111-8111-000000000003', WK = 'ncaaw_adjeff@1.0.0';
+    db.sql(`insert into public.ncaaw_fc_models (model_key, model_id, version, engine, config, config_sha256) values (${lit(WK)}, 'ncaaw_adjeff', '1.0.0', 'research_team_model', '{}'::jsonb, ${lit(h('e'))});
+      insert into public.ncaaw_fc_champion (scope, model_key, decision) values ('ncaaw', ${lit(WK)}, 'INIT');
+      insert into public.ncaaw_fc_runs (run_id, idempotency_key, model_key, artifact_sha256, snapshot_sha256, as_of, expected_games) values
+        (${lit(W1)}, ${lit(h('7'))}, ${lit(WK)}, ${lit(h('8'))}, ${lit(h('9'))}, '2026-10-22T13:10:00Z', 2),
+        (${lit(W2)}, ${lit(h('6'))}, ${lit(WK)}, ${lit(h('8'))}, ${lit(h('9'))}, '2026-10-23T13:10:00Z', 2),
+        (${lit(W3)}, ${lit(h('5'))}, ${lit(WK)}, ${lit(h('8'))}, ${lit(h('9'))}, '2026-10-23T12:10:00Z', 2);
+      insert into public.ncaaw_fc_forecasts (run_id, game_id, start_utc, home_id, away_id, home_name, away_name, neutral, event, regime, available, unavailable_reason, p_home, p_ot, margin, total, pts_home, pts_away, games_played, data_quality, availability_assumption) values
+        ${fc(W1, '501', 'Lady', 'Visitor', 0.70, 0, ['EARLY_SEASON_FEW_GAMES'])}, ${fc(W2, '501', 'Lady', 'Visitor', 0.61, 1, ['EARLY_SEASON_FEW_GAMES'])},
+        ${fc(W1, '502', 'Major', 'Minor', 0.85, 0, [], 'D1_OTHER')}, ${fc(W2, '502', 'Major', 'Minor', 0.70, 1, [], 'D1_OTHER')},
+        ${fc(W3, '501', 'Lady', 'Visitor', 0.20, 1)}, ${fc(W3, '502', 'Major', 'Minor', 0.95, 1, [], 'D1_OTHER')};
+      update public.ncaaw_fc_runs set status = 'completed', completed_at = as_of + interval '1 hour' where run_id in (${lit(W1)}, ${lit(W2)});
+      update public.ncaaw_fc_runs set status = 'superseded', completed_at = as_of + interval '2 hours' where run_id = ${lit(W3)};`);
+
     const stand = REST.make(db, { serviceKey: 'service-key-xyz' });
     const client = () => DB.client({ SB_URL: 'http://standin', SB_SERVICE_ROLE: 'service-key-xyz' }, { fetchImpl: stand.fetch, sleep: async () => {} });
     const inputs = RUN.committedInputs(ROOT, NOW);
@@ -151,6 +168,19 @@ const NOW = Date.parse('2026-10-23T20:30:00Z');
       && g401.series.map((r) => r.snapshot_id).join() === [M1, M2].join() && g401.series.every((r) => r.model_version === MK && r.data_status === 'LIMITED'), hg.map((g) => [g.game.event_key, g.series.map((r) => r.snapshot_id)]));
     const hs = g401 ? E.forecastShifts(g401.series, g401.game, { now: NOW }).signals : [];
     chk('…and the engine finds the 60% to 52% shift in it, supported by a game rated in between', hs.length === 1 && hs[0].values.change_pp === 8 && hs[0].verification.state === 'VERIFIED' && hs[0].evidence.class === 'SUPPORTED_ASSOCIATION' && hs[0].quality.flags.indexOf('DATA_LIMITED') >= 0, hs.map((x) => [x.headline, x.verification.failed]));
+    /* the women's: held at coming soon the same way, read from their own tables only */
+    const whoops = JSON.parse(q("select coalesce(json_agg(s.event_key), '[]') from public.sc_signals s where s.sport = 'ncaaw';"));
+    chk('women’s college basketball: nothing is stored while the registry says coming soon', whoops.length === 0, whoops);
+    console.log = () => {};
+    let wg;
+    try { wg = await DB.ncaawGames(client(), NOW, () => {}); } finally { console.log = quiet; }
+    const g501 = wg.filter((g) => g.game.event_key === 'NCAAW|501')[0];
+    chk('…the women’s reader builds each D-I game’s series from its two published runs only (superseded and non-D1 left out)', wg.length === 1 && g501 && g501.series.length === 2
+      && g501.series.map((r) => r.snapshot_id).join() === [W1, W2].join() && g501.series.every((r) => r.model_version === WK), wg.map((g) => [g.game.event_key, g.series.map((r) => r.snapshot_id)]));
+    chk('…it is the women’s sport, linked to the women’s Simulator seat and its own source', g501 && g501.game.sport === 'ncaaw' && g501.game.simulator_href === '#simulator/ncaaw' && g501.game.source.id === 'ncaaw_fc' && g501.game.source.ref === 'public.ncaaw_fc_forecasts');
+    chk('…and neither reader sees the other league’s games', !hg.some((g) => /^NCAAW\|/.test(g.game.event_key) || g.game.event_key === 'NCAAM|501') && !wg.some((g) => /^NCAAM\|/.test(g.game.event_key) || g.game.event_key === 'NCAAW|401'));
+    const ws = g501 ? E.forecastShifts(g501.series, g501.game, { now: NOW }).signals : [];
+    chk('…and the engine finds the 70% to 61% shift in it', ws.length === 1 && ws[0].values.change_pp === 9 && ws[0].verification.state === 'VERIFIED', ws.map((x) => [x.headline, x.verification.failed]));
     const gStats = JSON.parse(q("select json_build_object('ready', count(*) filter (where status = 'READY'), 'failed', count(*) filter (where status = 'FAILED'), 'mismatch', count(*) filter (where g.payload_sha256 <> v.payload_sha256)) from public.sc_graphics g join public.sc_signal_versions v using (version_id);"));
     chk('graphics: drawn for the due versions, three formats each, from the exact stored payload', gStats.ready > 0 && gStats.ready % 3 === 0 && gStats.mismatch === 0, gStats);
     chk('graphics: none failed its checks', gStats.failed === 0, gStats);

@@ -1,0 +1,105 @@
+{
+ "schema": "edgedesk_research_registration_v1",
+ "model_key": "NCAAW-FORECAST",
+ "name": "EdgeDesk women's college basketball pregame forecast (adjusted efficiency, coherent score distribution)",
+ "version": "1.0.0",
+ "status": "EXPERIMENTAL",
+ "provenance": "T3",
+ "provenance_label": "EdgeDesk research model (T3)",
+ "sport": "NCAAW",
+ "registered_at": "2026-10-24",
+ "hypothesis": "Opponent-adjusted efficiency and tempo ratings from women's box scores (the research engine, basketball/ncaam_research/team_model.js, league-neutral, run over 2017+ wehoop box scores with parameters chosen on the women's 2018-2022 games only), turned into ONE discrete regulation-margin distribution with a fitted endgame tie factor and an overtime model, give calibrated win probabilities, margins and totals that beat the served women's scores-only points model as served.",
+ "objective": "Calibrated pregame probabilities and score distributions for every NCAA Division I women's game, as research; never a recommendation.",
+ "primary_metric": "Log loss of the home-win probability on D1-v-D1 games of the PROSPECTIVE 2026-27 season (each forecast published before tip and logged immutably), probabilities clipped to [1e-6, 1 - 1e-6]; margin CRPS on the integer grid second.",
+ "unit": "One game. Games on one day share conditions: every interval is a game-day cluster bootstrap.",
+ "baseline": "The served women's scores-only points model (edgedesk_bb_points_v1, docs/model-loop/ncaaw/versions.json) as served, on the same games; and, if ever captured, same-time pregame market prices.",
+ "training_window": "Ratings walk forward from 2017 (the first season whose box scores cover more than 90% of finals; a burn-in season); hyperparameters and the variance law chosen on 2018-2022 only (config/selection_v1.json); calibration refitted weekly on earlier games inside every walk.",
+ "validation_window": "Confirmation 2023-2026 (validation/ncaaw_fc_validation.json), retrospective: results were retrieved after the fact and assumed known 4 hours after tip. Descriptive for this registration: those seasons are also used by the operational promotion gates.",
+ "holdout_window": "The 2026-27 season (2027), scored once after the national championship from the forecasts EdgeDesk published before each tip; the NCAA tournament games of 2024-2026 remain a separate historical tournament holdout.",
+ "machine": {
+  "window_dates": {
+   "training": [
+    "2016-11-01",
+    "2022-04-15"
+   ],
+   "validation": [
+    "2022-11-01",
+    "2026-04-15"
+   ],
+   "holdout": [
+    "2026-11-01",
+    "2027-04-15"
+   ]
+  },
+  "window_note": "[from, to): dates of the seasons inside each window",
+  "minimum_sample": 4000,
+  "version": "1.0.0",
+  "status": "EXPERIMENTAL",
+  "provenance": "T3"
+ },
+ "minimum_sample": {
+  "prospective_d1_games": 4000,
+  "matched_market_quotes_for_market_criterion": 1000,
+  "note": "Below 4,000 prospectively logged D1-v-D1 forecasts the record is descriptive and no result row is written. The market criterion needs same-time quotes EdgeDesk captured itself; no women's college basketball price is captured (the odds gateway does not carry it, and the source's game files carry no pickcenter), so it is NOT EVALUABLE and the model cannot pass until quotes exist."
+ },
+ "promotion_criteria": {
+  "decision_rule": "passed = true only if every criterion holds on the prospective holdout. A criterion that cannot be evaluated is not met. Passing makes the model eligible; a person promotes it through a validation report. The weekly operational champion pointer is NOT a research result.",
+  "criteria": [
+   {
+    "id": "C1_LOG_LOSS_VS_INCUMBENT",
+    "rule": "Prospective D1-v-D1 log loss below the incumbent as served on the same games, game-day cluster bootstrap 95% upper bound of the difference below 0."
+   },
+   {
+    "id": "C2_CALIBRATION",
+    "rule": "Logistic recalibration slope within [0.9, 1.1], calibration-in-the-large within 0.015, 80% margin and total interval coverage within [0.77, 0.83], every probability decile with n >= 100 within 0.04 of its observed rate."
+   },
+   {
+    "id": "C3_MARKET_REFERENCE",
+    "rule": "Log loss below the same-time market reference (fair two-way price from a quote captured within 60 minutes before the forecast) on >= 1,000 matched games, interval below 0. Closing prices are reported separately and cannot satisfy this criterion."
+   },
+   {
+    "id": "C4_TOURNAMENT_GAMES",
+    "rule": "On the prospective NCAA tournament games, log loss no worse than the incumbent's by more than 0.01 (reported with its interval; 67 games are little evidence). The first two rounds are played on the top 16 seeds' campuses: those games are home games, not neutral."
+   }
+  ],
+  "family_correction": "All four are required (an intersection test); no criterion is reported as a pass on its own."
+ },
+ "forking_paths": {
+  "candidates_tried": [
+   {
+    "version": "1.0.0",
+    "ratings": "research engine, coordinate descent from the engine's defaults over 6 parameters + 2 tempo parameters on the women's 2018-2022 games (about 40 configurations); nothing chosen on men's data is carried over",
+    "evaluated_against_outcomes": "development 2018-2022 for every choice; confirmation 2023-2026 scored after the choice"
+   },
+   {
+    "version": "variance law",
+    "ratings": "margin variance s0 + k v (stabilised parameter variance) vs a pace/spread law vs the engine's raw parameter variance; total variance with or without the pace term; the men's champion's law kept unless a variant improves development CRPS by >= 0.002",
+    "evaluated_against_outcomes": "development window only"
+   }
+  ],
+  "alternatives_considered_not_tried": [
+   "the men's selected parameters (a different game; chosen on men's outcomes)",
+   "seasons 2010-2016 in the possession model (box scores for 13-33% of finals)",
+   "a fitted free-throw-trip constant (no women's parsed possession counts are owned; 0.44 is the two-shot-bonus constant)",
+   "player availability (no owned feed)",
+   "a host-site term for the NCAA tournament's first two rounds (the source's neutral flag already marks a host's games from 2022)"
+  ],
+  "data_already_seen": "2010-2026 results and box scores; the 2026-27 season has not started (first game 2026-11-02).",
+  "comparisons_made": 0,
+  "stopping_rule": "Fixed horizon: the 2026-27 season is scored once after the championship game."
+ },
+ "spec": {
+  "ratings": "basketball/ncaam_research/team_model.js runSeason via basketball/ncaaw_forecast/model.js",
+  "distribution": "basketball/ncaaw_forecast/dist.js (regulation PMF, endgame factor kappa, overtime periods, total mixture)",
+  "selection": "basketball/ncaaw_forecast/config/selection_v1.json",
+  "operational_gates": "basketball/ncaaw_forecast/config/promotion_v1.json",
+  "known_limitations": [
+   "no player availability or lineup input",
+   "retrospective validation: no historical first-publication times",
+   "no market comparison: no women's college basketball price is captured",
+   "the possession model starts in 2017: earlier seasons' box scores are too sparse",
+   "the source's neutral flag for NCAA first- and second-round host games is reliable from 2022 only; earlier host games may be read as neutral"
+  ]
+ },
+ "result": null
+}

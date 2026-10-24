@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-10-24 — Women's college basketball forecasts: the men's system, rebuilt for the women's game
+
+`basketball/ncaaw_forecast/` gives NCAA Division I women's basketball the same pregame forecasts as the men's: win probability (overtime included), expected score, 80% margin and total intervals, and Upset Watch. It has its own data, selection, champion, tables (`ncaaw_fc_*`) and publication switch (`NCAAW_FC_PUBLISH`), and shares only the league-neutral research engine. Readers see it in the Simulator's new **Women's College Basketball** seat. The men's seat is now labelled **Men's College Basketball**.
+
+- **The women's game, measured, not assumed.**
+  - Four quarters from 2015-16, counted per game from the source's regulation format.
+  - No one-and-one, so possessions use the two-shot-bonus constant 0.44.
+  - Box scores cover 13-33% of finals before 2017, so the possession model starts there.
+  - The NCAA tournament's first two rounds are home games for the top 16 seeds, and the source flags them reliably from 2022.
+  - Every final agrees with the served women's dataset.
+- **Chosen on women's games only.** Development 2018-2022, confirmation 2023-2026, tournament holdout 2024-2026, all fixed before any women's number. The women's model keeps more of last season's rating (`carry` 1.0 vs the men's 0.9) and weights recent games more (half-life 365 days).
+- **Confirmation results** (21,695 D-I games, against the served scores-only model):
+  - log loss −0.00455 [−0.00661, −0.00276]
+  - margin CRPS −0.19 points
+  - 80% coverage 0.80
+  - the 2024-26 tournament holdout is better too (−0.009 [−0.019, −0.001] on 201 games), but too timid with top seeds at home.
+- **Promoted by the frozen gates.** `ncaaw_adjeff@1.0.0` passed all eight of the men's gates, adopted unchanged. The research registration, NCAAW-FORECAST 1.0.0 (EXPERIMENTAL, T3), was written before validation.
+- **Production artifact matches the walk-forward exactly.** With a recency half-life, the engine's fit depends on when it refits. The artifact now refits at the walk-forward's moments, and a replay stops at its as-of time, so the production artifact reproduces the walk-forward forecast to 1e-9. The men's champion has no half-life and is unaffected.
+- **Not built, each with its reason:**
+  - the tournament simulation (needs a host-site-aware bracket)
+  - in-game forecasts (no women's live feed)
+  - the market comparison (no women's price is captured).
+- **Not live yet.**
+  - The tables go to production with *Deploy NCAAW forecast SQL* after the merge.
+  - Publication starts with `NCAAW_FC_PUBLISH = on`.
+  - Signal Center's women's forecast shifts are wired and tested, and held at coming soon until then.
+- **The website** names women's college basketball's research and daily forecast in the home page's sports answer (landing test), the README, the Simulator notes and the men's notes.
+
+Tests:
+- model 98
+- SQL 67, on a real PostgreSQL, with the men's layer applied beside it
+- failure injection 37
+- reader 49
+- Chromium 41
+- Signal Center registry 227, worker 46
+- every men's suite still green.
+
 ## 2026-10-24 — The landing fixes reach browsers that already had the page: new ?v= stamps, and a guard
 
 #749 removed the DATA INCOMPLETE chips from the landing page's Today's games card, but phones kept showing them. `lib/edgedesk_home_free.js` changed while `index.html` still loaded it as `?v=20261008a`, so a returning browser kept running its cached copy. #747 did the same to `lib/edgedesk_pricing.js` (`?v=20261004a`), whose FEATURES list the terminal's paywall prints.
