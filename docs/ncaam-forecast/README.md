@@ -8,13 +8,15 @@ repository root; this page is how to set up, run, verify, deploy, disable and
 roll back the system. (In this repository `cbb` means college baseball; this
 system is named `ncaam` everywhere.)
 
-**Status today.** The pregame system is implemented and tested, and its
+**Status today (2026-10-24).** The pregame system is implemented and tested, and its
 champion is `ncaam_adjeff@1.0.0`, promoted by the weekly gates on 2026-10-23.
-Nothing is deployed:
 
-- no SQL has been applied to production;
-- nothing has been published;
-- `NCAAM_FC_PUBLISH` is not set.
+- The code is on `main`, and the daily refresh runs there (13:37 UTC).
+- The database layer and the research registration are in production:
+  *Deploy NCAAM forecast SQL*, run 40052574063, every report row `ok`.
+- **Nothing has been published.** `NCAAM_FC_PUBLISH` is not set, so each
+  daily run keeps its forecasts as a run artifact. Setting it is the one step
+  left (Deploy, step 4); the season opens 2026-11-02.
 
 The tournament simulator is **BLOCKED for publication** until a person
 verifies the 2027 format and types in the official bracket after Selection
@@ -138,8 +140,9 @@ that moment, and `--snapshot <dir>/snapshot.json` re-runs the exact inputs.
 ## Deploy (each step is a person's decision)
 
 1. **Merge** the branch to `main` after review.
-2. **Database.** The simulator layer must be in production first: Actions →
-   *Deploy simulator SQL*. Then Actions → *Deploy NCAAM forecast SQL*.
+2. **Database** (done 2026-10-24, run 40052574063). The simulator layer must
+   be in production first: Actions → *Deploy simulator SQL*. Then Actions →
+   *Deploy NCAAM forecast SQL*. Re-running it is safe (idempotent, additive).
    - Both need the `SB_DB_URL` secret.
    - The deploy runs the SQL suite on a throwaway PostgreSQL, refuses without
      `public.sim_viewer_entitled()`, applies `supabase/ncaam_forecast.sql` in

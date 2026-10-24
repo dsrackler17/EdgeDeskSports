@@ -448,6 +448,41 @@ source is configured. See [`docs/ncaam/README.md`](docs/ncaam/README.md) and
 Tests: `npm run ncaam:test`, `npm run ncaam:test:pack`, `npm run ncaam:e2e`,
 `npm run ncaam:check`. Refresh: `npm run ncaam:refresh`.
 
+## Men's college basketball forecast — daily pregame win probabilities, Upset Watch, weekly challengers
+
+`basketball/ncaam_forecast/` publishes calibrated pregame forecasts for NCAA
+Division I men's games starting in the next 48 hours: win probability
+(overtime included), expected score, 80% margin and total intervals, and the
+overtime chance. Each forecast carries its data-quality flags and an
+availability assumption. Upset Watch keeps three separate signals, never one
+score. Readers see them in the Simulator's College Basketball tabs (Games,
+Upset Watch, Model Health); the database checks the Full Access entitlement
+and fails closed.
+
+- **Status (2026-10-24): tables in production, publication off.** The daily
+  refresh (13:37 UTC) runs on `main`, and the database layer and the research
+  registration are applied (*Deploy NCAAM forecast SQL*, run 40052574063). Each
+  run keeps its forecasts as an artifact until the repository variable
+  `NCAAM_FC_PUBLISH` is `on`; the season opens 2026-11-02.
+- **Champion `ncaam_adjeff@1.0.0`**, promoted by the weekly gates on
+  2026-10-23. On the 2020–26 confirmation window (D-I v D-I, 37,450 games) it
+  improves log loss on the incumbent points model by 0.0084 [0.0070, 0.0100]. On the 2024–26 tournament
+  holdout the difference is inconclusive. Walk-forward validated, never
+  market-tested: research, EXPERIMENTAL (T3), not an edge claim.
+- **Weekly challengers** (Mondays): a fixed catalogue, gates written before
+  any candidate is seen, a report for every candidate, at most one promotion;
+  rollback is a person's decision.
+- **Disabled, each with its reason:** in-game forecasts, pre-selection title
+  forecasts, conference tournaments. The NCAA tournament simulation waits on
+  the verified 2027 format and bracket (Selection Sunday).
+- **Where:** `basketball/ncaam_forecast/`, `supabase/ncaam_forecast.sql`
+  (+ `ncaam_forecast_registry.sql`), `lib/edgedesk_simulator_ncaam.js`,
+  `.github/workflows/ncaam-*.yml` and `deploy-ncaam-forecast.yml`. Evidence:
+  [`CBB_MODEL_NOTES.md`](CBB_MODEL_NOTES.md). Runbook (deploy, disable,
+  rollback): [`docs/ncaam-forecast/README.md`](docs/ncaam-forecast/README.md).
+- **Run it:** `npm run ncaam:fc:test`, `npm run ncaam:fc:check`, then
+  `npm run ncaam:fc:refresh` (no credentials, nothing published).
+
 ## The quant desk — every sport researched model first, then priced, then audited
 
 "What's the best researched opportunity tonight?" is answered across **every

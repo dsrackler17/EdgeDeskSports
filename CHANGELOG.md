@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-24 — Men's college basketball forecasts: tables in production, named where the sports are
+
+The forecast tables are in production. *Deploy NCAAM forecast SQL* (run 40052574063) passed the SQL suite on a throwaway PostgreSQL, found the simulator layer, applied `supabase/ncaam_forecast.sql` in one transaction (every report row `ok`: tables, row-level security, no client writes, job functions closed to clients, live forecasts off, an anonymous caller not entitled) and registered NCAAM-FORECAST 1.0.0 and SIM-NCAAM-TOURNAMENT 0.1.0 (EXPERIMENTAL, T3). Nothing is published until `NCAAM_FC_PUBLISH` is `on`; the season opens 2026-11-02.
+
+Where the forecasts were missing or out of date:
+- **Home page FAQ** ("What sports are currently supported?") now names men's college basketball's research and its daily pregame forecast, with the same no-value-claim framing as the other sports. The landing test checks it.
+- **README** has a section for the forecast system (status, champion and evidence, safeguards, where, run it), next to the research engine's.
+- **Signal Center:** forecast shifts stay **coming soon**, now for the one remaining reason, publication (`NCAAM_FC_PUBLISH`). Registry cache buster sc5.
+- **Simulator:** the College Basketball activation path no longer asks for the SQL or a champion (both done). `SIMULATOR_NOTES.md`'s matrix said COMING SOON with pre-build blockers. It now says BLOCKED for the tournament, with the Games and Upset Watch tabs reading the daily forecasts.
+- **`CBB_MODEL_NOTES.md` and the runbook** record what is deployed and what is left: setting the variable.
+
 ## 2026-10-24 — Signal Center's sample: tap each level of evidence to see its signal
 
 The landing page's Signal Center picture (`index.html` #signals) showed one sample signal with the evidence ladder beneath it as a static row. The four steps are now buttons. Each shows a sample signal at that level, in the detail view's order: kind, sport, label, headline, numbers, and why.
