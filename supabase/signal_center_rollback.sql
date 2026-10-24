@@ -87,6 +87,7 @@ drop function if exists public.sc_viewer_entitled();
 drop function if exists public.sc_is_admin();
 drop function if exists public.sc_cfg(text);
 drop function if exists public.sc_copy_ok(text);
+drop function if exists public.sc_sport_live(jsonb, text);
 drop function if exists public.sc_label_rank(text);
 drop function if exists public.sc_signals_guard();
 drop function if exists public.sc_graphics_guard();

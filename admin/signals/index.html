@@ -159,14 +159,18 @@ td.h{min-width:240px}
 </div>
 <script src="/lib/edgedesk_calc.js?v=20261008i"></script>
 <script src="/lib/edgedesk_game_graphic.js?v=20261022edge1"></script>
-<script src="/lib/edgedesk_signal_engine.js?v=20261024sc2"></script>
-<script src="/lib/edgedesk_signal_graphic.js?v=20261024sc1"></script>
+<script src="/lib/edgedesk_signal_engine.js?v=20261024sc3"></script>
+<script src="/lib/edgedesk_signal_graphic.js?v=20261024sc3"></script>
+<script src="/lib/edgedesk_signal_registry.js?v=20261024sc3"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 var KEY = 'edgedesk_signals_admin_session';
 var SESSION = null;
-var SPORTS = [['nfl', 'NFL'], ['cfb', 'College football'], ['nba', 'NBA'], ['nhl', 'NHL'], ['mlb', 'MLB'], ['wnba', 'WNBA'], ['ncaam', 'Men’s college basketball']];
+/* every sport the registry lists, so saving the mode never drops a sport that
+   is switched on but missing here (the fallback is the registry's list today) */
+var SPORTS = window.EDSignalRegistry ? window.EDSignalRegistry.sports().map(function (s) { return [s.key, s.label]; })
+  : [['nfl', 'NFL'], ['cfb', 'College football'], ['nba', 'NBA'], ['nhl', 'NHL'], ['mlb', 'MLB'], ['wnba', 'WNBA'], ['ncaam', 'Men’s college basketball'], ['mma', 'UFC'], ['college_baseball', 'College baseball'], ['ncaaw', 'Women’s college basketball'], ['tennis', 'Tennis'], ['golf', 'Golf']];
 var CATS = { FORECAST_SHIFT: 'Forecast shift', MARKET_DIVERGENCE: 'Model–market disagreement', MARKET_CONVERGENCE: 'Market convergence', LINE_MOVEMENT: 'Market movement', SIMULATION_SHIFT: 'Simulator change',
   INJURY_IMPACT: 'Availability change', MODEL_RELIABILITY_WARNING: 'Model reliability warning', DATA_QUALITY_WARNING: 'Data freshness warning' };
 var Q = { page: null, items: [], sel: null, detail: null, gfx: null, recap: null };
@@ -190,7 +194,10 @@ function paintMode(q) {
   $('modeBox').innerHTML = '<b>' + (live ? 'Live' : 'Shadow') + '</b> · publishing sports: ' + esc((q.live_sports || []).join(', ') || 'none')
     + '<div class="note" style="margin-top:4px">' + (live ? 'Verified signals of these sports that clear the publication rule are published to readers.' : 'Signals are evaluated and stored for review; readers see nothing.') + '</div>';
   $(live ? 'mLive' : 'mShadow').checked = true;
-  $('sportsBox').innerHTML = SPORTS.map(function (s) { return '<span class="chk"><input type="checkbox" name="lsport" value="' + s[0] + '" id="ls_' + s[0] + '"' + ((q.live_sports || []).indexOf(s[0]) >= 0 ? ' checked' : '') + '><label for="ls_' + s[0] + '" style="font-size:13px;color:var(--text)">' + esc(s[1]) + '</label></span>'; }).join('');
+  /* a live sport this page does not list still shows, ticked, so a save keeps it */
+  var listed = SPORTS.map(function (s) { return s[0]; });
+  var boxes = SPORTS.concat((q.live_sports || []).filter(function (k) { return listed.indexOf(k) < 0; }).map(function (k) { return [k, k]; }));
+  $('sportsBox').innerHTML = boxes.map(function (s) { return '<span class="chk"><input type="checkbox" name="lsport" value="' + esc(s[0]) + '" id="ls_' + esc(s[0]) + '"' + ((q.live_sports || []).indexOf(s[0]) >= 0 ? ' checked' : '') + '><label for="ls_' + esc(s[0]) + '" style="font-size:13px;color:var(--text)">' + esc(s[1]) + '</label></span>'; }).join('');
   var pub = q.publication || {}, gx = q.graphics || {};
   $('kpis').innerHTML = [['Published', pub.PUBLISHED], ['Shadow', pub.SHADOW], ['Held', pub.HELD], ['Withdrawn', pub.WITHDRAWN], ['Graphics ready', gx.READY], ['Graphics outdated', gx.OUTDATED], ['Open failures', q.open_failures]]
     .map(function (k) { return '<div class="kpi"><i>' + esc(k[0]) + '</i><b>' + esc(k[1] || 0) + '</b></div>'; }).join('');

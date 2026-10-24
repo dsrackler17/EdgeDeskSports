@@ -16,8 +16,10 @@
                   three are refused everywhere with their reason
      rollout      live candidates are NFL and college football; nothing else
                   rolls out live first
-     honesty      NFL injuries stay BLOCKED (no per-row publication time); MLB
-                  has no forecast history; NBA/NHL divergences are experimental
+     honesty      NFL injuries are dated by EdgeDesk's first sight, never as
+                  published, and stay experimental; MLB
+                  has no forecast history; NBA/NHL divergences are experimental;
+                  an outcome whose meaning changes between runs is never compared
    =========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -96,11 +98,21 @@ chk('their rollout says so', R.sport('nfl').rollout === 'LIVE_CANDIDATE' && R.sp
 chk('no other sport is a live candidate', sports.filter((s) => s.rollout === 'LIVE_CANDIDATE').map((s) => s.key).sort().join() === 'cfb,nfl');
 
 /* ---- honest states ---- */
-chk('NFL injuries stay BLOCKED: no per-row publication time', R.sport('nfl').signals.INJURY_IMPACT.state === 'BLOCKED');
+chk('NFL injuries are never operational: the source has no publication time, only EdgeDesk’s first sight', R.sport('nfl').signals.INJURY_IMPACT.state !== 'OPERATIONAL' && /first seen by EdgeDesk/.test(R.sport('nfl').signals.INJURY_IMPACT.detail));
+chk('…and they read the observation ledger the injury sync appends', /football\/injuries\/history/.test(R.sport('nfl').signals.INJURY_IMPACT.source));
 chk('NFL and college football forecast shifts are operational', R.eligible('nfl', 'FORECAST_SHIFT').ok && R.eligible('cfb', 'FORECAST_SHIFT').ok);
 chk('MLB has no forecast history to compare', R.eligible('mlb', 'FORECAST_SHIFT').ok === false);
 chk('NBA and NHL divergences are experimental, not operational', R.sport('nba').signals.MARKET_DIVERGENCE.state === 'EXPERIMENTAL' && R.sport('nhl').signals.MARKET_DIVERGENCE.state === 'EXPERIMENTAL');
-chk('tennis and golf publish nothing (no model; their Simulator results have no outcome definition here)', ['tennis', 'golf'].every((k) => !R.sport(k) || Object.values(R.sport(k).signals).every((c) => !OK(c.state))));
+chk('tennis and golf publish Simulator shifts only (no game model of their own)', ['tennis', 'golf'].every((k) => !R.sport(k) || Object.keys(R.sport(k).signals).every((cat) => cat === 'SIMULATION_SHIFT' || !OK(R.sport(k).signals[cat].state))));
+chk('golf, tennis and UFC Simulator shifts are experimental while the Simulator runs them', ['golf', 'tennis', 'mma'].every((k) => {
+  const sim = SIM.sports.filter((x) => x.key === (k === 'mma' ? 'ufc' : k))[0];
+  return !sim || sim.status !== 'ACTIVE' || R.sport(k).signals.SIMULATION_SHIFT.state === 'EXPERIMENTAL';
+}));
+chk('an outcome whose meaning changes between runs is never compared ("next match", "next bout")', !E.SIM_OUTCOMES.tennis.win_next_match && !E.SIM_OUTCOMES.mma.win_next_bout && !E.SIM_OUTCOMES.mma.win_next_finish && !E.SIM_OUTCOMES.mma.win_next_decision);
+chk('a simulator shift about a person is a player, not a team', ['golf', 'tennis', 'mma'].every((k) => !!E.SIM_INDIVIDUAL[k]) && !E.SIM_INDIVIDUAL.nfl);
+chk('men’s college basketball forecast shifts read the published daily runs', R.eligible('ncaam', 'FORECAST_SHIFT').ok && /ncaam_fc_runs/.test(R.sport('ncaam').signals.FORECAST_SHIFT.source) && DBJS.indexOf("status=eq.completed") >= 0);
+chk('…and say that availability is not modelled', /availability is not modelled/.test(R.sport('ncaam').signals.FORECAST_SHIFT.detail));
+chk('men’s college basketball has no market to compare (no captured price)', !R.eligible('ncaam', 'MARKET_DIVERGENCE').ok);
 
 console.log((fail ? 'FAILED' : 'ALL GREEN') + ' signal center registry — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

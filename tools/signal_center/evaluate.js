@@ -33,10 +33,11 @@ function latestQuote(list) {
      slateTeams      sources.slateTeams()         Map(slate id -> {home, away})
      audits          { registry, perf }
      cfbAvailability sources.cfbAvailability()
+     nflInjuries     sources.nflInjuries()        designations dated by EdgeDesk's first sight
      sourceStates    sources.sourceStates()
      db (optional)   { simPairs:[{pair, results}], simReference:[...],
                        nbaInjuries:[rows], nbaEffects:{}, kalshi: Map(event key -> {p_home, captured_at}),
-                       priorDivergences:[payloads] }
+                       ncaamGames:[{game, series}] (db.ncaamGames), priorDivergences:[payloads] }
      now, fixture */
 function evaluate(inputs) {
   const now = inputs.now;
@@ -52,8 +53,10 @@ function evaluate(inputs) {
   const football = inputs.football || [];
   const perfGames = inputs.perfGames || [];
   /* the ledger's football rows from before research covered a game: their
-     own series, listed first so the research entry is the game's identity */
-  const allGames = (inputs.footballLedger || []).concat(football, perfGames);
+     own series, listed first so the research entry is the game's identity;
+     then forecast history kept in the database (men's college basketball's daily runs) */
+  const dbGames = (inputs.db && inputs.db.ncaamGames) || [];
+  const allGames = (inputs.footballLedger || []).concat(football, perfGames, dbGames);
   const gameBy = new Map(allGames.map((g) => [g.game.event_key, g]));
 
   /* ---- Model DNA, and the reliability grade every signal carries */
@@ -153,6 +156,10 @@ function evaluate(inputs) {
   /* ---- availability */
   if (eligible('cfb', 'INJURY_IMPACT')) {
     E.injuryChanges(inputs.cfbAvailability || [], Object.assign({}, ctx, { positions: REG.sport('cfb') ? ['QB'] : [] })).forEach((s) => out.signals.push(s));
+  }
+  /* NFL: quarterbacks, as CFB; the row is dated by EdgeDesk's first sight (no publication time exists) */
+  if (eligible('nfl', 'INJURY_IMPACT')) {
+    E.injuryChanges(inputs.nflInjuries || [], Object.assign({}, ctx, { positions: ['QB'] })).forEach((s) => out.signals.push(s));
   }
   if (inputs.db && inputs.db.nbaInjuries && eligible('nba', 'INJURY_IMPACT')) {
     E.injuryChanges(inputs.db.nbaInjuries, Object.assign({}, ctx, { effects: inputs.db.nbaEffects || {} })).forEach((s) => out.signals.push(s));

@@ -9,6 +9,12 @@
 # Nothing is inferred: a season nflverse has not published is committed as
 # published:false and the card keeps saying the report is not on file. The
 # file is rewritten only when the rows changed, so quiet days commit nothing.
+#
+# The source has no per-row publication time, so each run also appends every
+# game designation new or changed since the last run to the append-only
+# ledger football/injuries/history/nfl_<season>.jsonl, stamped with this
+# run's retrieval time (EdgeDesk's first sight, never the league's time).
+# Signal Center reads it. It is committed with the report below.
 name: Injury sync
 
 on:

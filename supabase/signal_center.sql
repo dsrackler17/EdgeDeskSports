@@ -110,6 +110,16 @@ returns integer language sql immutable as $$
   select case p when 'Major' then 4 when 'Notable' then 3 when 'Routine' then 2 when 'Monitor' then 1 else 0 end;
 $$;
 
+-- may a signal of this sport publish under these live sports? A shared
+-- source's warning names the family it serves: 'football' (NFL and college
+-- football) is live when either is, 'all' when any sport is.
+create or replace function public.sc_sport_live(p_live jsonb, p_sport text)
+returns boolean language sql immutable as $$
+  select case p_sport when 'football' then coalesce(p_live ?| array['nfl', 'cfb'], false)
+                      when 'all' then coalesce(jsonb_typeof(p_live) = 'array' and jsonb_array_length(p_live) > 0, false)
+                      else coalesce(p_live ? p_sport, false) end;
+$$;
+
 -- ---------------------------------------------------------------- entitlement
 -- The caller's Full Access, through the project's one rule (simulator.sql's
 -- precedent). Fails CLOSED: with no entitlement authority installed, nobody
@@ -656,7 +666,7 @@ begin
     -- newer record) is published as history; notices go only to fresh,
     -- active, non-backfilled signals (sc_notify)
     v_pub := case when v_fixture then 'SHADOW'
-                  when p_mode = 'live' and v_state = 'VERIFIED' and v_life <> 'WITHDRAWN' and p_live ? (p->>'sport') and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
+                  when p_mode = 'live' and v_state = 'VERIFIED' and v_life <> 'WITHDRAWN' and public.sc_sport_live(p_live, p->>'sport') and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
                   else 'SHADOW' end;
     insert into public.sc_signals (signal_key, category, subtype, sport, league, season, event_kind, subject_key, subject_label, outcome_id, event_key, event_at, teams, market_type,
         headline, public_headline, change_pp, evidence_class, evidence_rank, verification_state, score, label, rarity, reliability_grade, research_grade, model_version, source_at, fixture,
@@ -669,7 +679,8 @@ begin
         v_state, (p#>>'{score,total}')::numeric, p#>>'{score,label}', nullif(p#>>'{values,distribution,rarity}', '')::numeric, p#>>'{reliability,grade}', p#>>'{research_grade,letter}',
         p#>>'{model,version}', v_source_at, v_fixture,
         v_backfilled, v_signal_at, v_newer,
-        v_life, case when v_life = 'EXPIRED' then 'the event had started when the signal was detected' when v_life = 'WITHDRAWN' then 'invalidated at detection'
+        v_life, case when v_life = 'EXPIRED' and p->>'event_kind' = 'season' then 'the competition had ended when the signal was detected'
+                     when v_life = 'EXPIRED' then 'the event had started when the signal was detected' when v_life = 'WITHDRAWN' then 'invalidated at detection'
                      when v_life = 'SUPERSEDED' then 'a newer signal about the same subject and outcome was already on record' end,
         v_pub, 'system', case when v_pub = 'PUBLISHED' then now() end, p_run, 1)
     returning signal_id into v_sig;
@@ -709,7 +720,7 @@ begin
   v_pub := case when v_state = 'INVALIDATED' then 'WITHDRAWN'
                 when s.publication in ('HELD', 'WITHDRAWN') then s.publication
                 when s.publication = 'PUBLISHED' and v_state <> 'VERIFIED' then 'SHADOW'
-                when s.publication = 'SHADOW' and p_mode = 'live' and v_state = 'VERIFIED' and s.lifecycle <> 'WITHDRAWN' and not s.fixture and p_live ? s.sport
+                when s.publication = 'SHADOW' and p_mode = 'live' and v_state = 'VERIFIED' and s.lifecycle <> 'WITHDRAWN' and not s.fixture and public.sc_sport_live(p_live, s.sport)
                      and public.sc_label_rank(p#>>'{score,label}') >= public.sc_label_rank(p_min_label) then 'PUBLISHED'
                 else s.publication end;
   update public.sc_signals set current_version = v_ver, current_version_id = v_id, headline = p->>'headline', public_headline = p->>'public_headline',
@@ -832,7 +843,7 @@ end $$;
 -- THE ONE PLACEMENT RULE for what is still SHADOW, the same as sc_ingest_one
 -- publishes by: VERIFIED, not a fixture, not withdrawn (history included:
 -- expired, or superseded by a newer record), a live sport, at or above
--- publish.min_label. Only the system's own placements move; HELD and
+-- publish.min_label (a shared source's warning by sc_sport_live). Only the system's own placements move; HELD and
 -- WITHDRAWN (an operator's decisions) never do. Two callers: the switch to
 -- live (sc_promote_shadow) and every live run (sc_publish_pending). The
 -- callers check the mode; notices are never sent for history (sc_notify).
@@ -845,7 +856,7 @@ begin
     update public.sc_signals s set publication = 'PUBLISHED', publication_by = 'system', published_at = coalesce(s.published_at, now())
      where s.publication = 'SHADOW' and coalesce(s.publication_by, 'system') = 'system'
        and s.verification_state = 'VERIFIED' and s.lifecycle <> 'WITHDRAWN' and not s.fixture
-       and v_live ? s.sport and public.sc_label_rank(s.label) >= public.sc_label_rank(v_min)
+       and public.sc_sport_live(v_live, s.sport) and public.sc_label_rank(s.label) >= public.sc_label_rank(v_min)
     returning s.signal_id)
   insert into public.sc_signal_events (signal_id, kind, actor, run_id, detail)
   select signal_id, 'published', p_actor, p_run, jsonb_build_object('reason', p_reason) from p;
@@ -868,7 +879,9 @@ create or replace function public.sc_expire()
 returns integer language plpgsql security definer set search_path = public, pg_temp as $$
 declare n integer;
 begin
-  with e as (update public.sc_signals set lifecycle = 'EXPIRED', lifecycle_reason = 'the event started'
+  -- a game expires when it starts; a season-kind signal (a tournament) carries
+  -- the time its competition ends instead
+  with e as (update public.sc_signals set lifecycle = 'EXPIRED', lifecycle_reason = case when event_kind = 'season' then 'the competition it is about has ended' else 'the event started' end
               where lifecycle = 'ACTIVE' and event_at is not null and event_at <= now() returning signal_id)
   insert into public.sc_signal_events (signal_id, kind, actor, detail) select signal_id, 'expired', 'system', '{}'::jsonb from e;
   get diagnostics n = row_count;
