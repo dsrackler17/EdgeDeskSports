@@ -2,11 +2,12 @@
 /* ===========================================================================
    THE PUBLIC LANDING PAGE — positioning and honesty.
 
-   The page sells ONE idea in five seconds: EdgeDesk is sports research plus
-   personal betting analytics — research a football game, track what you
-   bet, see whether you are actually profitable and whether your process is
-   working. Research, not picks. $49.99 a month. Its model is a BASELINE a
-   reader can follow, check and argue with (#model), shown on real games. A first-time reader should
+   The page sells ONE idea in five seconds: EdgeDesk is a research terminal
+   for sports markets — its own number beside the market's, Signal Center
+   for what changed, the Simulator for how a season ends, and the reader's
+   own record — with free football research as the way in. Research, not
+   picks. $49.99 a month. Its model is a BASELINE a reader can follow, check
+   and argue with (#model), shown on real games. A first-time reader should
    be able to answer, from the first screen: what EdgeDesk is, what it does,
    what it costs, and that it sells no picks. These tests hold those answers
    on the page, and hold the line on what a marketing page is never allowed
@@ -14,6 +15,12 @@
 
      1  the hero: eyebrow, headline, sentence, the two actions, the offer
         under them, who it is for — and no jargon above the fold;
+     1b the desk (#desk): the terminal's six seats, which are app.html's, and
+        the upgrade from free to Full Access, row by row;
+     1c Signal Center (#signals) and the Simulator (#simulator), shipped
+        2026-10-23: live, pictured on labelled sample data whose arithmetic
+        is right, and every sport named is one the Simulator's registry has
+        ACTIVE;
      2  the hero's product picture is a SAMPLE of a feature in development,
         and says both in its own chrome before any number;
      3  one subscription, said once, with what is not live yet marked;
@@ -84,9 +91,9 @@ const LANDING = (function () {
 const HERO = section('top', 'header');
 chk('the hero is found', HERO.length > 2500);
 has(HERO, '<span class="ey" data-hero="eyebrow">Research, not picks.</span>', 'the eyebrow is the philosophy: research, not picks');
-has(HERO, '<h1 data-hero="headline">Research the game <span class="g">before you bet it.</span></h1>', 'the headline: research the game before you bet it');
-has(HERO, '<p class="sub" data-hero="sub">Free NFL and college football research every week: today&rsquo;s games, EdgeDesk&rsquo;s number beside the market&rsquo;s, and odds tools, with no card needed.</p>',
-  'the sentence: the research is free, every week, with no card');
+has(HERO, '<h1 data-hero="headline">The research terminal <span class="g">for sports markets.</span></h1>', 'the headline: the research terminal for sports markets');
+has(HERO, '<p class="sub" data-hero="sub">EdgeDesk prices the game beside the market, simulates seasons in ten sports and tells you what changed, with free football research every week and no card needed.</p>',
+  'the sentence: what the terminal does, and that the football research is free, every week, with no card');
 chk('the sentence is one sentence, not a paragraph', plain(HERO.match(/<p class="sub"[\s\S]*?<\/p>/)[0]).trim().split(/[.!?](\s|$)/).filter(s => s.trim()).length === 1);
 /* FREE RESEARCH FIRST (docs/product-led-growth/PLAN.md, Phase 1): the free
    research is the primary action; the trial is right beside it, through the
@@ -106,7 +113,7 @@ chk('the hero offer is the first .microcta, the one bootAuthState rewrites for a
   const first = IDX.search(/class="microcta"/), a = IDX.indexOf('<header class="hero"'), b = IDX.indexOf('</header>');
   return first > a && first < b;
 });
-has(HERO, 'Built for NFL + college football bettors, from first-time researchers to serious market analysts.', 'who it is for, beginner to analyst, in one line');
+has(HERO, 'Built for bettors who research first, from first-time researchers to serious market analysts.', 'who it is for, beginner to analyst, in one line');
 /* the five-second test: no jargon above the fold (the sample panel's own
    labels are a product picture, not the pitch) */
 const PITCH = plain(HERO.slice(0, HERO.indexOf('class="panel dash')));
@@ -147,6 +154,86 @@ has(STRIP, '<span class="strip-k">Full Access</span> <span data-ed-price="monthl
 chk('nothing in the strip is a feature still being built', !/Process Coach|Soon/.test(STRIP));
 has(HERO, 'href="#how" data-track="how_it_works_click" data-cta="strip_how">How Full Access works<', 'how the paid half works is one tap away (the GA report reads how_it_works_click)');
 chk('the strip is not fifteen feature cards', (STRIP.match(/<li>/g) || []).length <= 5);
+
+/* ======================================================================== */
+/* 1b. THE DESK: THE TERMINAL'S SIX SEATS, AND THE UPGRADE                  */
+/* ======================================================================== */
+const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
+const DESK = section('desk');
+has(DESK, '<span class="ey">The research terminal <span class="livechip">Live</span></span>', 'the desk is the terminal, and it is live');
+has(DESK, 'Free research is the sample. <span class="g">Full Access is the desk.</span>', 'the desk headline: free is the way in, Full Access the whole terminal');
+{
+  const seats = [...DESK.matchAll(/<li( class="new")?><span class="sk">([A-Za-z]+)(?: <i class="newchip">New<\/i>)?<\/span><b>([^<]+)<\/b>/g)].map(m => ({ name: m[2], isNew: !!m[1], q: m[3] }));
+  const primary = Object.keys(eval('(' + (APP.match(/var NAV_PRIMARY=(\{[^}]+\})/) || [, '{}'])[1] + ')'));
+  chk('six seats, the terminal\'s own (app.html NAV_PRIMARY)', seats.length === 6 && JSON.stringify(seats.map(s => s.name.toLowerCase()).sort()) === JSON.stringify(primary.slice().sort()), [seats.map(s => s.name), primary]);
+  chk('each seat says the question it answers', seats.every(s => /\?$/.test(s.q)), seats.map(s => s.q));
+  chk('only what shipped on 2026-10-23 is marked New: Signals and the Simulator', JSON.stringify(seats.filter(s => s.isNew).map(s => s.name)) === JSON.stringify(['Signals', 'Simulator']));
+}
+const UPG = (DESK.match(/<table class="upg">[\s\S]*?<\/table>/) || [''])[0];
+const upRows = [...UPG.matchAll(/<tr><th scope="row">([^<]+)<\/th><td data-l="Free"( class="no")?>([^<]+)<\/td><td data-l="Full Access">([^<]+)<\/td><\/tr>/g)]
+  .map(m => ({ part: m[1], none: !!m[2], free: plain(m[3]).trim(), full: plain(m[4]).trim() }));
+chk('the upgrade is six rows: the part, what is free, what Full Access adds', upRows.length === 6, upRows.map(r => r.part));
+chk('a row that is not free says so in words, never with a bare dash', upRows.filter(r => r.none).every(r => r.free === 'Not included') && !/&mdash;<\/td>/.test(UPG));
+chk('the Simulator, player props and your own bets are Full Access only', ['Simulator', 'Player props', 'Your bets'].every(p => (upRows.find(r => r.part === p) || {}).none === true), upRows);
+chk('Signal Center\'s free row is the preview, without the numbers', /without the numbers/.test((upRows.find(r => r.part === 'Signal Center') || {}).free || ''));
+chk('Kalshi is claimed only where it lists the game or the future', [...plain(DESK).matchAll(/Kalshi[^.]{0,80}/g)].every(m => /where (?:listed|it lists)/.test(m[0])), [...plain(DESK).matchAll(/Kalshi[^.]{0,80}/g)].map(m => m[0]));
+chk('the desk closes on the one call to action, with the trial terms',
+  /<button type="button" class="btn primary lg" onclick="startSubscribe\(\)" data-track="desk_trial_click" data-cta="desk_trial">Start free trial /.test(DESK) && DESK.indexOf('<span data-ed-price="cta">' + X.CTA_LINE + '</span>') > 0);
+
+/* ======================================================================== */
+/* 1c. SIGNAL CENTER AND THE SIMULATOR: LIVE, LABELLED, ADDED UP            */
+/* ======================================================================== */
+const SIG = section('signals');
+const SC = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_signal_center.js'), 'utf8');
+has(SIG, '<span class="ey">Signal Center <span class="livechip">Live</span> <i class="newchip">New</i></span>', 'Signal Center is live (in production for every sport in its registry since 2026-10-24) and new');
+has(SIG, 'Know what changed. <span class="g">See if the evidence holds.</span>', 'the Signal Center headline');
+['Forecast shift', 'Line movement', 'Availability', 'Simulation shift'].forEach(k =>
+  chk('a signal kind the page names is one Signal Center has: ' + k, SIG.indexOf('<li><b>' + k) >= 0 && SC.indexOf("'" + k + "'") >= 0));
+{
+  const ladder = [...SIG.matchAll(/<ol class="ladder"[\s\S]*?<\/ol>/g)].map(m => [...m[0].matchAll(/<li[^>]*>([^<]+)<\/li>/g)].map(x => x[1]))[0] || [];
+  chk('the ladder is the engine\'s, strongest first: confirmed cause, supported association, observed, unexplained',
+    JSON.stringify(ladder) === JSON.stringify(['Confirmed cause', 'Supported association', 'Observed', 'Unexplained'])
+    && ladder.slice(0, 3).every(l => SC.indexOf("'" + l + "'") >= 0) && SC.indexOf("'Unexplained movement'") >= 0, ladder);
+  chk('the sample\'s step is the one its story earns: a dated event between two snapshots is a supported association',
+    /<li class="on" aria-current="step">Supported association<\/li>/.test(SIG) && /Between the two snapshots/.test(SIG));
+}
+chk('the sample\'s label is one of the engine\'s', /<b class="amb">(Major|Notable|Routine)<\/b>/.test(SIG) && /\{ min: \d+, label: 'Notable' \}/.test(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_signal_engine.js'), 'utf8')));
+chk('the sample shift adds up: 60.5 - 54.0 = +6.5 pts', /54\.0% &rarr; 60\.5%/.test(SIG) && /<span class="v">54\.0%<\/span>/.test(SIG) && /<span class="v mdl">60\.5%<\/span>/.test(SIG)
+  && /<span class="v pos">\+6\.5 pts<\/span>/.test(SIG) && Math.abs((60.5 - 54.0) - 6.5) < 1e-9);
+chk('the sample is about no real game, and says it is not a current signal', /Sample game &middot; not a current signal/.test(SIG) && /Home side/.test(SIG) && !/\b(?:Ravens|Steelers|Bengals|Browns|Chiefs)\b/.test(SIG));
+chk('an injury designation is dated by EdgeDesk\'s first sight, never called published', /first seen by EdgeDesk/.test(SIG) && !/published (?:at|on) /i.test(plain(SIG)));
+has(SIG, 'Where the model trails the market, the signal says so.', 'Model DNA is described as including where the model is behind');
+has(SIG, 'href="/signals/"', 'the free preview is one tap away');
+
+const SIMS = section('simulator');
+const REG = require(path.join(ROOT, 'lib', 'edgedesk_simulator_sports.js'));
+const ACTIVE = REG.sports.filter(s => s.status === 'ACTIVE').map(s => s.label.toLowerCase());
+const WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+has(SIMS, '<span class="ey">The Simulator <span class="livechip">Live</span> <i class="newchip">New</i></span>', 'the Simulator is live and new');
+has(SIMS, 'Every season, <span class="g">played out 100,000 times.</span>', 'the Simulator headline');
+{
+  const listed = [...(SIMS.match(/<ul class="caps rv" aria-label="The [a-z]+ sports the Simulator runs">([\s\S]*?)<\/ul>/) || [, ''])[1].matchAll(/<li><b>([^<]+)<\/b>/g)].map(m => m[1].toLowerCase());
+  chk('the sports the Simulator section lists are exactly the registry\'s ACTIVE ones (simulator/src/sports/registry.ts)', JSON.stringify(listed.slice().sort()) === JSON.stringify(ACTIVE.slice().sort()), [listed, ACTIVE]);
+  chk('and the list says how many', SIMS.indexOf('aria-label="The ' + WORD[ACTIVE.length] + ' sports the Simulator runs"') > 0);
+  REG.sports.filter(s => s.status !== 'ACTIVE').forEach(s => chk('a sport the Simulator does not run is not listed: ' + s.label, listed.indexOf(s.label.toLowerCase()) < 0));
+  const counts = [...IDX.matchAll(/\b([a-z]+|\d+) sports\b/gi)].map(m => m[1].toLowerCase()).filter(w => WORD.indexOf(w) >= 0 || /^\d+$/.test(w));
+  chk('every "N sports" on the page, its metadata included, is the registry\'s ACTIVE count: ' + WORD[ACTIVE.length], counts.length >= 8 && counts.every(w => w === WORD[ACTIVE.length] || +w === ACTIVE.length), counts);
+}
+{
+  const rows = [...SIMS.matchAll(/<tr><th scope="row">([^<]+)<\/th><td>([\d.]+)%<\/td><td>([\d.]+)%<\/td><td>([\d.]+)%<\/td><td>(\d+)&cent;<\/td><\/tr>/g)]
+    .map(m => ({ team: m[1], playoffs: +m[2], division: +m[3], title: +m[4], kalshi: +m[5] }));
+  chk('the sample is one division of four', rows.length === 4, rows);
+  chk('its division chances add up to 100%', Math.abs(rows.reduce((a, r) => a + r.division, 0) - 100) < 0.05, rows.map(r => r.division));
+  chk('each team: the title is no likelier than the playoffs, nor the division than the playoffs', rows.every(r => r.title <= r.playoffs && r.division <= r.playoffs));
+  const n = 100000, mc = Math.max(...rows.flatMap(r => [r.playoffs, r.division, r.title]).map(p => 1.96 * Math.sqrt((p / 100) * (1 - p / 100) / n) * 100));
+  chk('its stated ± is the 95% Monte Carlo error at 100,000 runs: ±' + mc.toFixed(1), /100,000 seasons: &plusmn;([\d.]+) pts at most/.test(SIMS) && (SIMS.match(/&plusmn;([\d.]+) pts at most/) || [])[1] === mc.toFixed(1), mc);
+}
+chk('the sample says it is a sample and experimental, in its own bar', /<span class="nm">Simulator &middot; NFL &middot; AFC North<\/span><span class="chips"><span class="tag">Experimental<\/span><span class="tag">Sample data<\/span><\/span>/.test(SIMS));
+has(SIMS, 'not a current run', 'and its foot says it is not a current run');
+['Observed', 'Research', 'Estimated'].forEach(p => has(SIMS, '>' + p + '</span>', 'the provenance a reader sees in the Simulator: ' + p));
+has(SIMS, 'none of them has shown it beats the market', 'the Simulator makes no value claim for its game models');
+has(SIMS, 'A gap with Kalshi is a question to research, never a recommendation.', 'and a gap with Kalshi is not a recommendation');
+has(SIMS, 'where Kalshi lists them', 'Kalshi is claimed only where it lists the future');
 
 /* ======================================================================== */
 /* 4. RESULTS VS PROCESS — the sample tickets add up                        */
@@ -305,7 +392,7 @@ lacks(IDX, 'id="depth"', 'the depth section made way for the real game');
 /* ======================================================================== */
 const RS = section('research');
 has(RS, 'Before you track the decision, <span class="g">research it.</span>', 'the research headline');
-has(RS, '<span class="ey">The research terminal <span class="livechip">Live</span></span>', 'and it is the live part of the product');
+has(RS, '<span class="ey">Game research <span class="livechip">Live</span></span>', 'and it is a live part of the product (the terminal as a whole is #desk)');
 ['EdgeDesk fair line', 'Market line', 'Model gap', 'Win probability', 'Confidence', 'Matchup edge', 'Roster context', 'Weather', 'Player props', 'Best available price']
   .forEach(t => has(RS, '<li><b>' + t + '</b>', 'the terminal shows ' + t));
 /* the capabilities are worded to what each league really has */
@@ -367,6 +454,8 @@ chk('the plan\'s inclusions are the pricing file\'s FEATURES, in order', () => {
 chk('the plan lists six to eight benefits, not a wall', X.FEATURES.length >= 6 && X.FEATURES.length <= 8, X.FEATURES.length);
 chk('and none of them is a feature still in development (account connections, prediction markets)', !X.FEATURES.some(f => /prediction|connect|sync/i.test(f)), X.FEATURES);
 chk('the plan names what shipped since: the baseline tools and the Process Coach', ['Compare your number with the model', 'Process Coach and the weekly Film Room'].every(f => X.FEATURES.indexOf(f) >= 0), X.FEATURES);
+chk('and the two seats that shipped on 2026-10-23 lead it: Signal Center, then the Simulator', /^Signal Center: /.test(X.FEATURES[0]) && /^The Simulator: /.test(X.FEATURES[1]), X.FEATURES.slice(0, 2));
+has(PRICE, '<p class="pname">The research terminal + bet tracking</p>', 'the plan is named for what it is: the terminal, and your own tracking');
 chk('player props are part of the plan', X.FEATURES.indexOf('Player props') >= 0);
 /* FREE BESIDE FULL ACCESS: the free card is lib/edgedesk_plans.js FREE, in
    order; no card on this section lists anything still being built */
@@ -459,7 +548,7 @@ has(TR, 'EdgeDesk&rsquo;s record &middot; live', 'and it says it is EdgeDesk\'s 
 const FAQ = section('faq');
 const QS = [...FAQ.matchAll(/<summary>([\s\S]*?)<\/summary>/g)].map(m => plain(m[1]).trim());
 ['Is EdgeDesk a picks service?', 'What can I use for free?', 'Does EdgeDesk guarantee I\'ll make money?', 'What if I disagree with EdgeDesk\'s number?', 'Can beginners and advanced bettors both use it?',
- 'What sports are currently supported?', 'Can I connect my sportsbook or prediction-market account?', 'Which features are still in development?', 'How does the 7 -day trial work?', 'Can I cancel anytime?']
+ 'What do Signal Center and the Simulator add?', 'What sports are currently supported?', 'Can I connect my sportsbook or prediction-market account?', 'Which features are still in development?', 'How does the 7 -day trial work?', 'Can I cancel anytime?']
   .forEach(q => chk('the FAQ answers: ' + q, QS.indexOf(q) >= 0, QS.join(' | ')));
 function answer(q) { const i = QS.indexOf(q); const all = [...FAQ.matchAll(/<div class="a">([\s\S]*?)<\/div>/g)]; return i < 0 || !all[i] ? '' : plain(all[i][1]).trim(); }
 chk('a picks service? No. Research, not picks.', /^No\. Research, not picks\./.test(answer('Is EdgeDesk a picks service?')));
@@ -473,18 +562,28 @@ chk('the in-development list names what is still unfinished, and only that', /^S
 chk('disagreeing with the model: welcome, and measured', /^Good: that's what it's for\. EdgeDesk is a baseline, not an oracle\./.test(answer('What if I disagree with EdgeDesk\'s number?')) && /how far yours and EdgeDesk's each landed from the close/.test(answer('What if I disagree with EdgeDesk\'s number?')));
 chk('beginners and advanced: yes, both', /^Yes\./.test(answer('Can beginners and advanced bettors both use it?')) && /For advanced bettors: Fair lines/.test(answer('Can beginners and advanced bettors both use it?')));
 chk('what is free: no account, no card, and what Full Access adds', /^No account, no card/.test(answer('What can I use for free?')) && /Full Access adds/.test(answer('What can I use for free?')));
-chk('the FAQ is short: at most a dozen product questions', QS.length <= 12, QS.length);
+chk('the FAQ is short: at most a dozen product questions (account help is its own list)', () => {
+  const product = (FAQ.match(/<div class="sec-body faq">([\s\S]*?)<p class="faq-sub">/) || [, ''])[1];
+  return (product.match(/<summary>/g) || []).length <= 12 && (product.match(/<summary>/g) || []).length >= 10;
+}, QS.length);
 has(FAQ, 'Re-check my subscription now', 'the self-serve billing re-check survives');
 has(FAQ, 'reopen signup', 'and the confirmation-email help');
-/* COVERAGE: football leads; the terminal's other sports are named ONCE, in
-   the FAQ answer that says none makes a value claim. Retired or uncovered
-   sports never appear. */
-[/\bevery sport\b/i, /\ball sports\b/i, /\bWNBA\b/, /\btennis\b/i, /\bgolf/i, /\bsoccer\b/i]
+/* COVERAGE: football leads the research; the Simulator's sports are named
+   in its own section and in the coverage answer, and nowhere else. A sport is
+   named only if the Simulator's registry has it ACTIVE (WNBA, tennis and golf
+   joined on 2026-10-23); uncovered sports never appear. */
+[/\bevery sport\b/i, /\ball sports\b/i, /\bsoccer\b/i, /\bcricket\b/i, /\bNASCAR\b/, /\bF1\b|\bFormula 1\b/]
   .forEach(re => chk('coverage is never overstated: ' + re, !re.test(TEXT), (re.exec(TEXT) || [])[0]));
 {
-  const sportsA = answer('What sports are currently supported?'), rest = TEXT.split(sportsA).join(' ');
-  [/\bMLB\b/, /\bNBA\b/, /\bNHL\b/, /\bUFC\b/, /\bbaseball\b/i]
-    .forEach(re => chk('another sport is named only in the coverage answer: ' + re, re.test(sportsA) && !re.test(rest), (re.exec(rest) || [])[0]));
+  const sportsA = answer('What sports are currently supported?');
+  const allowed = [sportsA, plain(SIMS)];
+  const rest = allowed.reduce((t, a) => t.split(a).join(' '), TEXT);
+  [[/\bMLB\b/, 'MLB'], [/\bNBA\b/, 'NBA'], [/\bNHL\b/, 'NHL'], [/\bUFC\b/, 'UFC'], [/\bbaseball\b/i, 'College Baseball'], [/\bWNBA\b/, 'WNBA'], [/\btennis\b/i, 'Tennis'], [/\bgolf\b/i, 'Golf']]
+    .forEach(([re, label]) => {
+      chk('another sport is named only in the coverage answer and the Simulator section: ' + re, re.test(sportsA) && re.test(plain(SIMS)) && !re.test(rest), (re.exec(rest) || [])[0]);
+      chk('and only because the Simulator runs it: ' + label, ACTIVE.indexOf(label.toLowerCase()) >= 0);
+    });
+  chk('the coverage answer names the Simulator\'s sports and says it makes no value claim', /The Simulator runs ten sports: the NFL, college football, the NBA, NHL, MLB and WNBA, golf, tennis, UFC and college baseball\. It is experimental, and its comparisons with Kalshi make no value claims either\./.test(sportsA), sportsA);
 }
 has(IDX, 'carried as unknown, never as healthy', 'unknown is not healthy');
 has(IDX, 'A stale price is not compared', 'a stale market is not a price');
@@ -519,12 +618,13 @@ chk('"See how it works" is the only secondary action in the hero', (HERO.match(/
 /* ======================================================================== */
 /* 12. THE HIERARCHY                                                        */
 /* ======================================================================== */
-const ORDER = ['top', 'free', 'model', 'research', 'why', 'how', 'coach', 'film', 'history', 'pricing', 'trust', 'faq', 'start'];
+const ORDER = ['top', 'free', 'desk', 'model', 'research', 'signals', 'simulator', 'why', 'how', 'coach', 'film', 'history', 'pricing', 'trust', 'faq', 'start'];
 ORDER.forEach(id => has(IDX, 'id="' + id + '"', 'the ' + id + ' section exists'));
-chk('hero → free research → the baseline on real games → the live research preview → why results aren\'t enough → the loop → Process Coach → Film Room → history → free + pricing → trust → FAQ → close',
+chk('hero → free research → the desk → the baseline on real games → the live research preview → Signal Center → the Simulator → why results aren\'t enough → the loop → Process Coach → Film Room → history → free + pricing → trust → FAQ → close',
   ORDER.every((id, i) => i === 0 || IDX.indexOf('id="' + id + '"') > IDX.indexOf('id="' + ORDER[i - 1] + '"')));
-chk('every section earns its place: twelve sections and the hero, no more', (IDX.match(/<section\b/g) || []).length === 12, (IDX.match(/<section\b/g) || []).length);
-chk('free research comes before any subscription pitch', IDX.indexOf('id="free"') < IDX.indexOf('id="why"') && IDX.indexOf('id="free"') < IDX.indexOf('id="pricing"'));
+/* fifteen since 2026-10-23: the desk, Signal Center and the Simulator joined */
+chk('every section earns its place: fifteen sections and the hero, no more', (IDX.match(/<section\b/g) || []).length === 15, (IDX.match(/<section\b/g) || []).length);
+chk('free research comes before any subscription pitch', IDX.indexOf('id="free"') < IDX.indexOf('id="desk"') && IDX.indexOf('id="free"') < IDX.indexOf('id="why"') && IDX.indexOf('id="free"') < IDX.indexOf('id="pricing"'));
 ['id="game"', 'id="ev"', 'id="evSlider"', 'id="tabs"', 'id="lpEvData"'].forEach(x =>
   lacks(IDX, x, 'the technical walk-through lives on /methodology/: ' + x));
 const FIN = section('start');

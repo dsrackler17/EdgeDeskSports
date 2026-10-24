@@ -1,0 +1,84 @@
+/* ===========================================================================
+   THE DESK — the landing page's #desk, #signals and #simulator
+   (index.html): the terminal's six seats, the upgrade from free to Full
+   Access, and the two pictures of what shipped on 2026-10-23 (Signal Center
+   and the Simulator). Moved out of the page's <style> for its weight budget,
+   like lib/edgedesk_landing_pictures.css, and loaded the same way: it never
+   blocks the first screen. Every token is the page's own (:root in
+   index.html); the provenance badges are the Simulator reader's colours
+   (lib/edgedesk_simulator.css: Observed green, Research teal, Estimated
+   amber).
+   =========================================================================== */
+
+/* what shipped most recently, said once beside its name */
+.newchip{display:inline-flex;align-items:center;font-family:var(--mono);font-size:9.5px;font-weight:700;font-style:normal;letter-spacing:.12em;text-transform:uppercase;color:var(--obs);border:1px solid rgba(47,167,154,.5);background:rgba(47,167,154,.08);border-radius:6px;padding:3px 7px;line-height:1.3;white-space:nowrap;vertical-align:middle}
+.ey .newchip{margin-left:4px;letter-spacing:.1em}
+
+/* ---------- #desk: the six seats ---------- */
+.seats{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.seats li{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:18px;min-width:0}
+.seats li.new{border-color:rgba(47,167,154,.45)}
+.seats .sk{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--obs)}
+.seats b{font-family:var(--disp);font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.seats li>span:last-child{font-size:14px;line-height:1.5;color:var(--dim)}
+@media(max-width:1020px){.seats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.seats{grid-template-columns:1fr}.seats li{padding:16px}}
+
+/* ---------- #desk: free beside Full Access, row by row ---------- */
+.upg-w{margin-top:28px;border:1px solid var(--line2);border-radius:16px;overflow:hidden;background:var(--panel)}
+.upg{width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.45}
+.upg th,.upg td{text-align:left;vertical-align:top;padding:13px 16px;border-top:1px solid var(--line)}
+.upg thead th{border-top:0;background:#14100b;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.upg thead th:last-child{color:var(--obs)}
+.upg tbody th{font-family:var(--disp);font-size:15.5px;font-weight:600;width:22%}
+.upg td{color:var(--dim);width:33%}
+.upg td:last-child{color:var(--text);width:45%}
+.upg td.no{color:var(--faint)}
+/* a phone reads each row as a card: the part, then Free, then Full Access,
+   each named by its data-l */
+@media(max-width:640px){
+  .upg thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .upg,.upg tbody{display:block}
+  .upg tr{display:block;padding:13px 14px;border-top:1px solid var(--line)}
+  .upg tbody tr:first-child{border-top:0}
+  .upg th,.upg td,.upg tbody th,.upg td:last-child{display:block;width:auto;padding:0;border:0}
+  .upg td{margin-top:7px;font-size:14px}
+  .upg td::before{content:attr(data-l);display:block;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:1px}
+  .upg td:last-child::before{color:var(--obs)}
+}
+
+/* both pictures sit in the page's .rs grid; its stacked phone column must
+   never take the width of what is inside it */
+.rs>div{min-width:0}
+
+/* ---------- #signals: one sample signal, in the detail view's order ---------- */
+.sig{padding:16px}
+.sig-k{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.sig-k b{font-weight:700}
+.sig h3{font-size:19px;letter-spacing:-.015em;line-height:1.3;margin-top:8px}
+.sig-w{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:3px}
+.sig .cells{margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sig .cells>div{background:var(--deep)}
+.sig-s{display:block;margin-top:16px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.ladder{list-style:none;padding:0;margin:8px 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.ladder li{font-family:var(--mono);font-size:10px;line-height:1.3;color:var(--faint);border:1px solid var(--line2);border-radius:6px;padding:6px 7px;text-align:center;min-width:0}
+.ladder li.on{color:var(--est);border-color:rgba(217,164,65,.5);background:rgba(217,164,65,.07);font-weight:700}
+.sig-p{margin-top:8px;font-size:13.5px;line-height:1.55;color:var(--dim)}
+@media(max-width:480px){.ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- #simulator: one sample division ---------- */
+.simt{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.simt th,.simt td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.simt thead th{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);background:var(--deep);white-space:normal;vertical-align:bottom;line-height:1.25}
+.simt thead th:first-child,.simt tbody th{text-align:left}
+.simt tbody th{font-family:var(--disp);font-size:14.5px;font-weight:600}
+.simt td:last-child{color:var(--dim)}
+.pvs{display:flex;flex-wrap:wrap;gap:8px 16px;padding:12px 16px;margin:0;font-size:12.5px;color:var(--dim)}
+.pvs>span{display:inline-flex;align-items:center;gap:7px}
+.pv{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:1px solid;border-radius:5px;padding:2px 6px}
+.pv-obs{color:var(--val);border-color:rgba(124,193,66,.42)}
+.pv-res{color:var(--obs);border-color:rgba(47,167,154,.45)}
+.pv-est{color:var(--est);border-color:rgba(217,164,65,.45)}
+/* five columns in a 288 px phone: the headers wrap, the numbers never do */
+@media(max-width:560px){.simt th,.simt td{padding:9px 6px;font-size:12px}.simt th:first-child{padding-left:12px}.simt tbody th{font-size:13.5px}.simt thead th{font-size:9px;letter-spacing:.04em}}
+@media(max-width:374px){.simt th,.simt td{padding:8px 5px;font-size:11.5px}.simt th:first-child{padding-left:10px}.simt tbody th{font-size:13px}}

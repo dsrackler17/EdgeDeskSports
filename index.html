@@ -19,7 +19,7 @@
      is running, so a page whose JS fails never leaves a section invisible. -->
 <script>document.documentElement.className+=' js';</script>
 <title>EdgeDesk Sports | Free Football Research + Bet Tracking</title>
-<meta name="description" content="Free NFL and college football research every week. Full Access adds player props, EV and a journal to log your bets. Research, not picks.">
+<meta name="description" content="Free NFL and college football research. Full Access adds Signal Center, the Simulator, player props, EV and a journal to log your bets. Research, not picks.">
 <link rel="canonical" href="https://edgedesksports.com/">
 <meta name="theme-color" content="#100e0a">
 <meta name="color-scheme" content="dark">
@@ -27,8 +27,8 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EdgeDesk Sports">
 <meta property="og:url" content="https://edgedesksports.com/">
-<meta property="og:title" content="EdgeDesk Sports | Research the game before you bet it.">
-<meta property="og:description" content="Free NFL and college football research every week: today’s games, EdgeDesk’s model against the market, published game research and odds tools. Full Access adds player props, EV and bet tracking. Research, not picks.">
+<meta property="og:title" content="EdgeDesk Sports | The research terminal for sports markets.">
+<meta property="og:description" content="Free NFL and college football research every week. Full Access opens the whole terminal: Signal Center for what changed and why, the Simulator in ten sports beside Kalshi futures, every NFL and FBS game’s fair line against the market, player props and your own bet journal. Research, not picks.">
 <meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -36,8 +36,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
 <meta name="twitter:site" content="@edgedesksports">
-<meta name="twitter:title" content="EdgeDesk Sports | Research the game before you bet it.">
-<meta name="twitter:description" content="Free NFL and college football research every week, and Full Access when you want the whole board: player props, EV at the exact price and your own bet journal. Research, not picks.">
+<meta name="twitter:title" content="EdgeDesk Sports | The research terminal for sports markets.">
+<meta name="twitter:description" content="Free football research every week, and Full Access when you want the whole desk: Signal Center, the Simulator in ten sports, EV at the exact price, player props and your own bet journal. Research, not picks.">
 <!-- Structured data: who publishes this and what it sells. No rating, no
      review count and no user count — nothing is claimed here that the page
      itself does not state. The offer must match lib/edgedesk_pricing.js
@@ -46,7 +46,7 @@
 {"@context":"https://schema.org","@graph":[
  {"@type":"Organization","@id":"https://edgedesksports.com/#org","name":"EdgeDesk Sports","url":"https://edgedesksports.com/","email":"support@edgedesksports.com","legalName":"Rackler Tech Ventures LLC"},
  {"@type":"WebSite","@id":"https://edgedesksports.com/#site","url":"https://edgedesksports.com/","name":"EdgeDesk Sports","publisher":{"@id":"https://edgedesksports.com/#org"}},
- {"@type":"SoftwareApplication","name":"EdgeDesk Research Terminal","applicationCategory":"SportsApplication","operatingSystem":"Web","url":"https://edgedesksports.com/","description":"Football research and decision analytics for NFL and FBS: model against market for game lines and player props, a bet journal and ledger, and closing-line value on your own bets. Research, not betting advice.","publisher":{"@id":"https://edgedesksports.com/#org"},"offers":{"@type":"Offer","name":"EdgeDesk Full Access","price":"49.99","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"49.99","priceCurrency":"USD","unitCode":"MON","referenceQuantity":{"@type":"QuantitativeValue","value":1,"unitCode":"MON"}},"description":"7-day free trial, then $49.99 per month. Cancel anytime.","category":"subscription"}}
+ {"@type":"SoftwareApplication","name":"EdgeDesk Research Terminal","applicationCategory":"SportsApplication","operatingSystem":"Web","url":"https://edgedesksports.com/","description":"A sports research terminal: EdgeDesk's own fair lines against the market for NFL and FBS games and player props, Signal Center for what changed in the research and why, a Simulator of seasons and tournaments in ten sports beside Kalshi futures, a bet journal and ledger, and closing-line value on your own bets. Research, not betting advice.","publisher":{"@id":"https://edgedesksports.com/#org"},"offers":{"@type":"Offer","name":"EdgeDesk Full Access","price":"49.99","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"49.99","priceCurrency":"USD","unitCode":"MON","referenceQuantity":{"@type":"QuantitativeValue","value":1,"unitCode":"MON"}},"description":"7-day free trial, then $49.99 per month. Cancel anytime.","category":"subscription"}}
 ]}
 </script>
 <link rel="preconnect" href="https://iattxbkbufslbauoumga.supabase.co" crossorigin>
@@ -616,6 +616,9 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- the product pictures' styles (#coach, #film, #history), far below the first screen -->
 <link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="/lib/edgedesk_landing_pictures.css?v=20261016lp1"></noscript>
+<!-- the desk's styles (#desk, #signals, #simulator), below the first screen too -->
+<link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261023dk1" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="/lib/edgedesk_landing_desk.css?v=20261023dk1"></noscript>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -656,14 +659,14 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
     <div class="hero-in">
       <div>
         <span class="ey" data-hero="eyebrow">Research, not picks.</span>
-        <h1 data-hero="headline">Research the game <span class="g">before you bet it.</span></h1>
-        <p class="sub" data-hero="sub">Free NFL and college football research every week: today&rsquo;s games, EdgeDesk&rsquo;s number beside the market&rsquo;s, and odds tools, with no card needed.</p>
+        <h1 data-hero="headline">The research terminal <span class="g">for sports markets.</span></h1>
+        <p class="sub" data-hero="sub">EdgeDesk prices the game beside the market, simulates seasons in ten sports and tells you what changed, with free football research every week and no card needed.</p>
         <div class="cta">
           <a class="btn primary lg" id="heroStart" href="#free" data-track="hero_free_click" data-cta="hero_free">Explore free research <span class="ar" aria-hidden="true">&rarr;</span></a>
           <button type="button" class="btn ghost lg" id="heroCta" onclick="startSubscribe()" data-track="hero_cta_click" data-cta="hero_trial">Start free trial</button>
         </div>
         <p class="microcta"><span><b>Free research, no card</b></span><span>Full Access <span data-ed-price="trial">7 days free</span></span><span>Then <span data-ed-price="price">$49.99</span>/month</span><span>Cancel anytime</span><span>21+</span></p>
-        <p class="aud">Built for NFL + college football bettors, from first-time researchers to serious market analysts.</p>
+        <p class="aud">Built for bettors who research first, from first-time researchers to serious market analysts.</p>
       </div>
 
       <div class="panel dash calc" role="region" aria-label="Free no-vig calculator">
@@ -747,6 +750,48 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
   </div>
 </section>
 
+<!-- ================== THE DESK: WHAT FULL ACCESS OPENS ==================
+     The terminal's six seats (app.html NAV_PRIMARY), each with the question
+     it answers; Signal Center and the Simulator are new (CHANGELOG
+     2026-10-23). Then the upgrade, row by row: what is free beside what Full
+     Access adds. Styles: lib/edgedesk_landing_desk.css. -->
+<section class="sec alt" id="desk">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="ey">The research terminal <span class="livechip">Live</span></span>
+      <h2>Free research is the sample. <span class="g">Full Access is the desk.</span></h2>
+      <p class="lede">Every model EdgeDesk runs, every market price it captures, every change it detects and your own record, on one screen, each number showing where it came from. Six seats, one subscription.</p>
+    </div>
+    <ul class="seats sec-body rv" aria-label="The terminal&rsquo;s six seats">
+      <li class="new"><span class="sk">Signals <i class="newchip">New</i></span><b>What changed?</b><span>Signal Center flags each material move in EdgeDesk&rsquo;s forecasts, the market, injury reports and the Simulator, with the evidence for it.</span></li>
+      <li><span class="sk">Research</span><b>What does EdgeDesk see?</b><span>Its own fair line on every NFL and FBS game, beside the sportsbooks&rsquo; and Kalshi&rsquo;s where listed, with player props and the drivers behind it.</span></li>
+      <li class="new"><span class="sk">Simulator <i class="newchip">New</i></span><b>How does the season end?</b><span>The rest of each season, playoff and tournament in ten sports, played 100,000 times, beside Kalshi&rsquo;s futures where it lists them.</span></li>
+      <li><span class="sk">Card</span><b>What does this price justify?</b><span>Check a bet before you place it: EdgeDesk&rsquo;s number, the market&rsquo;s and the price that still plays.</span></li>
+      <li><span class="sk">Portfolio</span><b>Am I up or down?</b><span>Every bet you log, by hand, CSV or screenshot: profit, ROI and whether you beat the close.</span></li>
+      <li><span class="sk">Process</span><b>What is my record teaching me?</b><span>The Process Coach and the weekly Film Room find what your own history supports.</span></li>
+    </ul>
+    <div class="upg-w rv">
+      <table class="upg">
+        <caption class="sr">What is free and what Full Access adds, part by part of the terminal.</caption>
+        <thead><tr><th scope="col">In the terminal</th><th scope="col">Free</th><th scope="col">Full Access</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Game research</th><td data-l="Free">Published research and this week&rsquo;s featured games</td><td data-l="Full Access">Every NFL and FBS game EdgeDesk projects, with its drivers and what it can&rsquo;t see</td></tr>
+          <tr><th scope="row">The market</th><td data-l="Free">A live model-vs-market sample</td><td data-l="Full Access">Each sportsbook&rsquo;s price, Kalshi&rsquo;s where listed, and EdgeDesk EV at the price you&rsquo;re offered</td></tr>
+          <tr><th scope="row">Signal Center</th><td data-l="Free">What changed, without the numbers</td><td data-l="Full Access">Every signal with its numbers, evidence and the model&rsquo;s record, and notices for the teams you follow</td></tr>
+          <tr><th scope="row">Simulator</th><td data-l="Free" class="no">Not included</td><td data-l="Full Access">Playoff, title and tournament odds in ten sports, beside Kalshi&rsquo;s futures where it lists them</td></tr>
+          <tr><th scope="row">Player props</th><td data-l="Free" class="no">Not included</td><td data-l="Full Access">Projections against the line, in an experimental stage</td></tr>
+          <tr><th scope="row">Your bets</th><td data-l="Free" class="no">Not included</td><td data-l="Full Access">Journal, profit, closing-line value, the Process Coach and the Film Room</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="demo-cta rv">
+      <p><b>Open the whole desk for <span data-ed-price="days">7</span> days, free.</b> Every seat is open during the trial.</p>
+      <button type="button" class="btn primary lg" onclick="startSubscribe()" data-track="desk_trial_click" data-cta="desk_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
+      <p class="microcta"><span data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</span></p>
+    </div>
+  </div>
+</section>
+
 <!-- ================== A MODEL YOU CAN FOLLOW ==================
      Why a baseline, then real games drawn by the research page's own code
      (lib/edgedesk_home_model.js, football/game_research/landing.json). -->
@@ -789,13 +834,13 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
   <div class="wrap rs">
     <div>
       <div class="sec-head rv">
-        <span class="ey">The research terminal <span class="livechip">Live</span></span>
+        <span class="ey">Game research <span class="livechip">Live</span></span>
         <h2>Before you track the decision, <span class="g">research it.</span></h2>
         <p class="lede">EdgeDesk prices every NFL and FBS game itself, sets its number beside the sportsbooks&rsquo;, and tells you how sure it is.</p>
       </div>
       <ul class="caps rv">
         <li><b>EdgeDesk fair line</b><span>Its own spread, total and projected score.</span></li>
-        <li><b>Market line</b><span>What the sportsbooks are offering, and when it was captured.</span></li>
+        <li><b>Market line</b><span>What the sportsbooks and Kalshi are offering, and when each was captured.</span></li>
         <li><b>Model gap</b><span>How far apart EdgeDesk and the market are.</span></li>
         <li><b>Win probability</b><span>For each side, from EdgeDesk&rsquo;s own model.</span></li>
         <li><b>Confidence</b><span>A reliability score on college games, and what&rsquo;s uncertain on every game.</span></li>
@@ -853,6 +898,101 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <span><span class="st pass">PASS</span> model and market agree, or the price leaves no value</span>
       </div>
       <p class="rs-more"><a class="lnk" href="/research/sample/" data-cta="research_sample">See a full sample game, free</a> &middot; <a class="lnk" href="/articles" data-cta="research_articles">Read this week&rsquo;s research articles</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================== SIGNAL CENTER ==================
+     Live for every sport in its registry (docs/signal-center/DEPLOYMENT.md,
+     2026-10-24). The kinds are lib/edgedesk_signal_center.js's categories;
+     the ladder and the label are lib/edgedesk_signal_engine.js's. The
+     picture is SAMPLE data in the detail view's layout, about no real game.
+     /signals/ is the free, number-free preview. -->
+<section class="sec" id="signals">
+  <div class="wrap rs">
+    <div>
+      <div class="sec-head rv">
+        <span class="ey">Signal Center <span class="livechip">Live</span> <i class="newchip">New</i></span>
+        <h2>Know what changed. <span class="g">See if the evidence holds.</span></h2>
+        <p class="lede">Signal Center watches everything EdgeDesk records: every forecast, every captured price, every dated injury report, every Simulator run. When something material moves, it says what moved, the evidence for why, and how far the model behind it can be trusted.</p>
+      </div>
+      <ul class="caps rv">
+        <li><b>Forecast shifts</b><span>EdgeDesk&rsquo;s own number on a game moves, and by how much.</span></li>
+        <li><b>Model vs. market</b><span>EdgeDesk and the market part ways, or come back together.</span></li>
+        <li><b>Line movement</b><span>A named sportsbook&rsquo;s price moves, with the margin taken out.</span></li>
+        <li><b>Availability</b><span>A dated injury designation changes, stamped when EdgeDesk first saw it.</span></li>
+        <li><b>Simulation shifts</b><span>A playoff or title chance moves by more than simulation noise.</span></li>
+        <li><b>Reliability warnings</b><span>A model&rsquo;s live record, or a stale feed, says to trust a number less.</span></li>
+      </ul>
+      <p class="base-why rv"><b>The evidence ladder.</b> A cause is claimed only when one input was isolated. A dated event between two snapshots is a supported association. Otherwise the move is observed or unexplained, and Signal Center says it doesn&rsquo;t know yet. A move across a new model version is labelled a methodology change, never news.</p>
+      <p class="rs-more rv"><a class="lnk" href="/signals/" data-cta="signals_preview">See today&rsquo;s free preview</a> &middot; <a class="lnk" href="/methodology/" data-cta="signals_method">Read the methodology</a></p>
+    </div>
+    <div class="rv">
+      <div class="panel" role="region" aria-label="A sample signal, the way Full Access shows it">
+        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">Signal Center &middot; Why did this change?</span><span class="chips"><span class="tag">Sample data</span></span></div>
+        <div class="sig">
+          <span class="sig-k">Forecast shift &middot; NFL &middot; <b class="amb">Notable</b></span>
+          <h3>Home side&rsquo;s win chance: 54.0% &rarr; 60.5%</h3>
+          <span class="sig-w">Sample game &middot; not a current signal</span>
+          <div class="cells c3"><div><span class="l">Before</span><span class="v">54.0%</span></div><div><span class="l">After</span><span class="v mdl">60.5%</span></div><div><span class="l">Change</span><span class="v pos">+6.5 pts</span></div></div>
+          <span class="sig-s">Evidence</span>
+          <ol class="ladder" aria-label="The evidence ladder, with this signal&rsquo;s step marked">
+            <li>Confirmed cause</li><li class="on" aria-current="step">Supported association</li><li>Observed</li><li>Unexplained</li>
+          </ol>
+          <p class="sig-p">Between the two snapshots, the away side&rsquo;s starting quarterback was listed Out, first seen by EdgeDesk Thursday at 4:12 PM. The change is associated with it; its share has not been isolated.</p>
+          <span class="sig-s">Model DNA</span>
+          <p class="sig-p">The model&rsquo;s live record against results, and against the market&rsquo;s close on the same games, rides with every signal. Where the model trails the market, the signal says so.</p>
+        </div>
+        <div class="panel-foot">Sample data: an illustrative signal in Signal Center&rsquo;s layout. Live signals carry their real numbers, sources and times in Full Access. Research, not picks.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================== THE SIMULATOR ==================
+     The ten sports ACTIVE in simulator/src/sports/registry.ts (the reader's
+     copy is lib/edgedesk_simulator_sports.js; landing_positioning.test.js
+     holds this list and every "ten sports" to it). The picture is SAMPLE
+     data in the reader's layout: its division column sums to 100 and its ±
+     is the Monte Carlo error at 100,000 runs. -->
+<section class="sec alt" id="simulator">
+  <div class="wrap rs">
+    <div>
+      <div class="sec-head rv">
+        <span class="ey">The Simulator <span class="livechip">Live</span> <i class="newchip">New</i></span>
+        <h2>Every season, <span class="g">played out 100,000 times.</span></h2>
+        <p class="lede">The Simulator plays what is left of each season, playoff and tournament 100,000 times, with EdgeDesk&rsquo;s own game models and each competition&rsquo;s own rules. You see each contender&rsquo;s chance to make the playoffs, win a division or take the title, beside Kalshi&rsquo;s futures prices, fees counted, where Kalshi lists them.</p>
+      </div>
+      <ul class="caps rv" aria-label="The ten sports the Simulator runs">
+        <li><b>NFL</b><span>Divisions, seeds 1&ndash;7 and the Super Bowl</span></li>
+        <li><b>College football</b><span>Conference title games and the CFP</span></li>
+        <li><b>NBA</b><span>The play-in, the playoffs and the NBA Cup</span></li>
+        <li><b>NHL</b><span>Divisions, the playoffs and the Stanley Cup</span></li>
+        <li><b>MLB</b><span>The World Series</span></li>
+        <li><b>WNBA</b><span>The Finals, game by game</span></li>
+        <li><b>Golf</b><span>PGA Tour, LPGA and DP World Tour events, round by round</span></li>
+        <li><b>Tennis</b><span>ATP and WTA draws, and the day&rsquo;s matches</span></li>
+        <li><b>UFC</b><span>Every booked fight, and each division&rsquo;s title path</span></li>
+        <li><b>College baseball</b><span>The 2027 Road to Omaha</span></li>
+      </ul>
+      <p class="base-why rv"><b>Labelled, not oversold.</b> Every number is marked Observed, Research or Estimated and carries its simulation error. The Simulator is experimental: it is only as good as the game models under it, and none of them has shown it beats the market. Every view says so. A gap with Kalshi is a question to research, never a recommendation.</p>
+    </div>
+    <div class="rv">
+      <div class="panel" role="region" aria-label="A sample Simulator table, the way Full Access shows it">
+        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">Simulator &middot; NFL &middot; AFC North</span><span class="chips"><span class="tag">Experimental</span><span class="tag">Sample data</span></span></div>
+        <table class="simt">
+          <caption class="sr">Sample Simulator table for one NFL division: each team&rsquo;s chance to make the playoffs, win the division and win the Super Bowl over 100,000 simulated seasons, beside Kalshi&rsquo;s Super Bowl price.</caption>
+          <thead><tr><th scope="col">Team</th><th scope="col">Playoffs</th><th scope="col">Division</th><th scope="col">Super Bowl</th><th scope="col">Kalshi</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Ravens</th><td>78.2%</td><td>51.6%</td><td>9.8%</td><td>11&cent;</td></tr>
+            <tr><th scope="row">Steelers</th><td>52.4%</td><td>24.9%</td><td>3.1%</td><td>4&cent;</td></tr>
+            <tr><th scope="row">Bengals</th><td>41.0%</td><td>17.3%</td><td>2.2%</td><td>3&cent;</td></tr>
+            <tr><th scope="row">Browns</th><td>14.7%</td><td>6.2%</td><td>0.4%</td><td>1&cent;</td></tr>
+          </tbody>
+        </table>
+        <p class="pvs"><span><span class="pv pv-obs">Observed</span> results and schedule</span><span><span class="pv pv-res">Research</span> the game model</span><span><span class="pv pv-est">Estimated</span> tiebreaks it can&rsquo;t see</span></p>
+        <div class="panel-foot">Sample data in the Simulator&rsquo;s layout, not a current run. 100,000 seasons: &plusmn;0.3 pts at most on any share here, which is simulation noise, never the model&rsquo;s accuracy. Kalshi is the YES mid; the Futures tab adds the price you could buy at, fees counted.</div>
+      </div>
     </div>
   </div>
 </section>
@@ -1128,28 +1268,29 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
           <li>No-vig and fair odds calculators</li>
           <li>A full sample game</li>
           <li>This week&rsquo;s featured games, researched in full</li>
+          <li>Signal Center&rsquo;s free preview of what changed</li>
           <li>The graded public record</li>
           <li>The weekly research email</li>
         </ul>
         <a class="btn ghost lg" href="#free" data-cta="pricing_free">Explore free research</a>
-        <p class="psub">Free stays free. Full Access is there when you want EdgeDesk&rsquo;s number on every game.</p>
+        <p class="psub">Free stays free. Full Access is there when you want the whole terminal.</p>
       </div>
       <div class="pcard rv">
         <span id="subscribe"></span>
         <span class="ptag" data-ed-price="plan">EdgeDesk Full Access</span>
-        <p class="pname">Football research + bet tracking</p>
+        <p class="pname">The research terminal + bet tracking</p>
         <div class="pprice"><span class="pamt" data-ed-price="price">$49.99</span><span class="pper">/ month</span></div>
         <span class="ptrial" data-ed-price="trial">7 days free</span>
         <!-- One list, written in lib/edgedesk_pricing.js (FEATURES); the
              terminal's paywall renders the same one. Only what is live. -->
         <ul class="pincl">
-          <li>Model-first NFL and college football research</li>
-          <li>Fair lines, win probabilities and matchup graphics</li>
-          <li>Compare your number with the model</li>
+          <li>Signal Center: what changed, why, and the evidence</li>
+          <li>The Simulator: playoff, title and tournament odds</li>
+          <li>Fair lines and win probabilities on every NFL and FBS game</li>
           <li>Live market comparison and EdgeDesk EV</li>
           <li>Player props</li>
-          <li>Bet journal with CSV and bet slip import</li>
-          <li>Profit, ROI and closing-line value</li>
+          <li>Compare your number with the model</li>
+          <li>Bet journal, profit, ROI and closing-line value</li>
           <li>Process Coach and the weekly Film Room</li>
         </ul>
         <button type="button" class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()" data-track="pricing_cta_click" data-cta="pricing_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
@@ -1187,6 +1328,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         </div>
         <ul class="proc">
           <li><div><b>EdgeDesk&rsquo;s own research is graded in public.</b><span>Captured before kickoff, graded automatically against the close and the result. Losses stay in.</span></div></li>
+          <li><div><b>Its models are tested against the market.</b><span>A hypothesis is registered before it is tested, and a rejected one stays on the record instead of reaching a price.</span></div></li>
           <li><div><b>Uncertainty is shown, not hidden.</b><span>Small samples are labelled as small samples; unvalidated layers move no line.</span></div></li>
           <li><div><b>Unfinished features are labelled.</b><span>Anything marked in development on this page is not in the product yet.</span></div></li>
           <li><div><b>Methodology is published.</b><span>How every number is built and graded, in the open.</span></div></li>
@@ -1247,7 +1389,11 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       </details>
       <details>
         <summary>What can I use for free?</summary>
-        <div class="a"><p>No account, no card: the published research, <a class="lnk" href="/today/">today&rsquo;s games</a> with EdgeDesk&rsquo;s public read, a model-vs-market sample, a sample game, <a class="lnk" href="#model">this week&rsquo;s featured games</a> researched in full, the <a class="lnk" href="/tools/">odds calculators</a>, the public record and the weekly email. Full Access adds the research page and matchup graphic for every game EdgeDesk projects, every book&rsquo;s price, EdgeDesk EV at the exact price, player props, your bet journal and the Process Coach.</p></div>
+        <div class="a"><p>No account, no card: the published research, <a class="lnk" href="/today/">today&rsquo;s games</a> with EdgeDesk&rsquo;s public read, a model-vs-market sample, a sample game, <a class="lnk" href="#model">this week&rsquo;s featured games</a> researched in full, the <a class="lnk" href="/tools/">odds calculators</a>, <a class="lnk" href="/signals/">Signal Center&rsquo;s preview</a> of what changed, the public record and the weekly email. Full Access adds the research page and matchup graphic for every game EdgeDesk projects, every book&rsquo;s price, EdgeDesk EV at the exact price, player props, every signal with its numbers and evidence, the Simulator, your bet journal and the Process Coach.</p></div>
+      </details>
+      <details>
+        <summary>What do Signal Center and the Simulator add?</summary>
+        <div class="a"><p>Signal Center answers &ldquo;what changed?&rdquo; It flags each material move in EdgeDesk&rsquo;s forecasts, the market&rsquo;s prices, dated injury reports and the Simulator, says how strong the evidence for its cause is, and carries the model&rsquo;s live record beside it. The Simulator answers &ldquo;how does it end?&rdquo; It plays out the rest of a season, playoff or tournament 100,000 times with EdgeDesk&rsquo;s own game models and sets the result beside Kalshi&rsquo;s futures where Kalshi lists them. Both are in Full Access; Signal Center&rsquo;s preview, without the numbers, is free.</p></div>
       </details>
       <details>
         <summary>Does EdgeDesk guarantee I&rsquo;ll make money?</summary>
@@ -1263,7 +1409,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       </details>
       <details>
         <summary>What sports are currently supported?</summary>
-        <div class="a"><p>Football: the NFL and NCAA FBS, the top division of college football &mdash; game markets (spreads, moneylines, totals) and player props. Player props are in EdgeDesk&rsquo;s experimental validation stage, and their EV is labelled model-estimated. The terminal also carries research on the NHL, NBA, MLB, college baseball and UFC; where those sports have a model, it is checked against results on seasons it never saw but not yet against the market, so they make no value claims.</p></div>
+        <div class="a"><p>Football: the NFL and NCAA FBS, the top division of college football &mdash; game markets (spreads, moneylines, totals) and player props. Player props are in EdgeDesk&rsquo;s experimental validation stage, and their EV is labelled model-estimated. The terminal also carries research on the NHL, NBA, MLB, college baseball and UFC; where those sports have a model, it is checked against results on seasons it never saw but not yet against the market, so they make no value claims. The Simulator runs ten sports: the NFL, college football, the NBA, NHL, MLB and WNBA, golf, tennis, UFC and college baseball. It is experimental, and its comparisons with Kalshi make no value claims either.</p></div>
       </details>
       <details>
         <summary>Can I connect my sportsbook or prediction-market account?</summary>
@@ -1320,14 +1466,15 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
     <div class="foot">
       <div>
         <span class="logo"><span class="mk" aria-hidden="true"></span>EdgeDesk</span>
-        <p class="blurb">Football research and decision analytics for NFL + college football bettors. Research, not picks. Numbers can be wrong; every one shows where it came from.</p>
+        <p class="blurb">The research terminal for sports markets: free football research, Signal Center, the Simulator and your own bet tracking. Research, not picks. Numbers can be wrong; every one shows where it came from.</p>
         <p class="rg"><b>Responsible gambling.</b> 21+ only. If gambling stops being fun, call <b class="nw">1-800-GAMBLER</b> or visit <a href="https://www.ncpgambling.org/" target="_blank" rel="noopener noreferrer">ncpgambling.org</a>.</p>
       </div>
       <div>
         <h4>Product</h4>
         <ul>
           <li><a href="#how">How it works</a></li>
-          <li><a href="#research">Research terminal</a></li>
+          <li><a href="#desk">Research terminal</a></li>
+          <li><a href="#signals">Signal Center</a> &middot; <a href="#simulator">Simulator</a></li>
           <li><a href="#pricing">Pricing</a></li>
           <li><a href="/record.html" data-track="public_record_click">Public record</a></li>
           <li><a href="/performance/">Model performance</a></li>
@@ -1344,6 +1491,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
           <li><a href="/research/environment/">Environment research</a></li>
           <li><a href="/tools/">Free odds tools</a> &middot; <a href="/tools/no-vig-calculator/">No-vig calculator</a></li>
           <li><a href="/tools/model-vs-market/">Model vs. market explorer</a></li>
+          <li><a href="/signals/">Signal Center preview</a></li>
           <li><a href="/newsletter/">Weekly research email</a></li>
           <li><a href="/games/">EdgeDesk Games</a></li>
           <li><a href="/collective/">Model Collective</a></li>
@@ -2629,7 +2777,9 @@ function n(v){ return typeof v==='number'&&isFinite(v)?v.toLocaleString('en-US')
    it saw (hero_variant).
    ====================================================================== */
 var HERO_COPY = {
-  a: { headline: 'Research the game <span class="g">before you bet it.</span>' },
+  a: { headline: 'The research terminal <span class="g">for sports markets.</span>' },
+  /* the free-research headline that led until the terminal did (2026-10-23) */
+  r: { headline: 'Research the game <span class="g">before you bet it.</span>' },
   /* the process headline that led until free research did (2026-10) */
   p: { headline: 'Bet with a process. <span class="g">Know what&rsquo;s working.</span>' },
   b: { headline: 'Stop guessing <span class="g">why you&rsquo;re losing.</span>' },
