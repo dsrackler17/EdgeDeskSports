@@ -824,11 +824,13 @@ const CSV = [
     /* the Card entry's actions and Record Position, on a phone */
     await page.click('.bottomnav button[data-v="card"]');
     await page.waitForSelector('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]', { timeout: 20000 });
-    /* the Card repaints once its decisions load: measure the button once it is laid out */
-    await page.waitForFunction(() => { const b = document.querySelector('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]');
-      if (!b) return false; const r = b.getBoundingClientRect(); return r.width > 0 && r.height > 0; }, null, { timeout: 20000 });
-    await page.waitForTimeout(300);
-    const rec = await page.$eval('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]', (b) => { const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, right: r.right }; });
+    /* the Card repaints as its decisions, entries and health load, and a CI
+       runner once measured 0×0 mid-repaint 300 ms after the first layout:
+       wait for the size the check asks for; a button that never reaches it
+       still fails, with its last measurement */
+    const rec = await page.waitForFunction(() => { const b = document.querySelector('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]');
+      if (!b) return false; const r = b.getBoundingClientRect(); return r.width >= 300 && r.height >= 40 && r.right <= 391 ? { w: r.width, h: r.height, right: r.right } : false; }, null, { timeout: 20000 })
+      .then((h) => h.jsonValue(), () => page.$eval('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]', (b) => { const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, right: r.right }; }).catch(() => ({ missing: true })));
     chk('390px: Record position is a full-width, thumb-sized button on the Card', rec.w >= 300 && rec.h >= 40 && rec.right <= 391, rec);
     await noSideways(page, '390px Card with an entry');
     await shot(page, 'phone-card-entry');
