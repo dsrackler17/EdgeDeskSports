@@ -555,7 +555,9 @@ chk('a picks service? No. Research, not picks.', /^No\. Research, not picks\./.t
 chk('guaranteed money? No.', /^No\b/.test(answer('Does EdgeDesk guarantee I\'ll make money?')));
 chk('sports: football first, the NFL and NCAA FBS', /^Football: the NFL and NCAA FBS/.test(answer('What sports are currently supported?')));
 chk('and the other sports the terminal carries, with no value claim for any of them',
-  /The terminal also carries research on the NHL, NBA, MLB, college baseball and UFC; where those sports have a model, it is checked against results on seasons it never saw but not yet against the market, so they make no value claims\./.test(answer('What sports are currently supported?')));
+  /The terminal also carries research on the NHL, NBA, men's college basketball, MLB, college baseball and UFC; where those sports have a model, it is checked against results on seasons it never saw but not yet against the market, so they make no value claims\./.test(answer('What sports are currently supported?')));
+chk('men\'s college basketball\'s own daily forecast is named, in season, inside that no-value-claim answer',
+  /Men's college basketball also has its own daily pregame forecast for Division I games in season: win probability, expected score and an Upset Watch/.test(answer('What sports are currently supported?')));
 chk('connections: not yet; by hand, CSV or screenshot today', /^Not yet\. Today you log a bet by hand, import a CSV export, or read a bet slip screenshot on your own device/.test(answer('Can I connect my sportsbook or prediction-market account?')));
 chk('the in-development list names what is still unfinished, and only that', /^Sportsbook and prediction-market account connections, and a dashboard and saved research for free accounts\./.test(answer('Which features are still in development?'))
   && !/Process Coach|Film Room|calendar/.test(answer('Which features are still in development?')));
@@ -571,7 +573,9 @@ has(FAQ, 'reopen signup', 'and the confirmation-email help');
 /* COVERAGE: football leads the research; the Simulator's sports are named
    in its own section and in the coverage answer, and nowhere else. A sport is
    named only if the Simulator's registry has it ACTIVE (WNBA, tennis and golf
-   joined on 2026-10-23); uncovered sports never appear. */
+   joined on 2026-10-23), or, for men's college basketball, because it has its
+   own research engine and daily forecast (CBB_MODEL_NOTES.md; its Simulator
+   tournament stays blocked); uncovered sports never appear. */
 [/\bevery sport\b/i, /\ball sports\b/i, /\bsoccer\b/i, /\bcricket\b/i, /\bNASCAR\b/, /\bF1\b|\bFormula 1\b/]
   .forEach(re => chk('coverage is never overstated: ' + re, !re.test(TEXT), (re.exec(TEXT) || [])[0]));
 {

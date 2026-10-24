@@ -170,10 +170,10 @@ Blockers worth knowing:
   `completed`, the runs that took the published pointer, and their `ncaam_fc_forecasts`), D-I against D-I, for games
   not yet started. A run that lost the race (`superseded`) was never shown and is never read. A game rated in between
   two runs is the shift's source-dated support; availability is not modelled, and every signal carries the
-  forecast's data-quality flags. **Held at coming soon:** the forecast tables (`supabase/ncaam_forecast.sql`) are not
-  deployed in production (2026-10-24: "table not found"), and the daily job publishes only with `NCAAM_FC_PUBLISH`
-  on. Deploying them (Actions → Deploy NCAAM forecast SQL) and switching the publication on are the owner's
-  decisions; the registry entry then becomes operational.
+  forecast's data-quality flags. **Held at coming soon until the first publication:** the forecast tables
+  (`supabase/ncaam_forecast.sql`) are in production since 2026-10-24 (Actions → Deploy NCAAM forecast SQL, run
+  40052574063; before that the first live run answered "table not found"). The daily job publishes only with
+  `NCAAM_FC_PUBLISH` on, the owner's switch; the registry entry then becomes operational.
 - **MLB has no forecast history to compare.**
 - **Not supported anywhere yet:** roster movement (no source-dated transaction feed), model disagreement (no
   independent models published side by side), historical anomaly (the ledgers start in 2026). The Coverage view
