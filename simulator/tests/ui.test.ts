@@ -173,6 +173,16 @@ T.eq('fair odds at p = 1 are 1.00', UI.fairOdds(1), '1.00');
   }
   fs.rmSync(out, { recursive: true, force: true });
 }
+/* Futures Edges says every outcome a committed Kalshi mapping uses in words, never by its key (the NBA's finish_1, play_in, cup_win_group, ...) */
+{
+  const cfgFile = path.join(REPO, 'simulator', 'config', 'kalshi_futures.json');
+  const mapped = [...new Set((JSON.parse(fs.readFileSync(cfgFile, 'utf8')).mappings as Array<{ outcome: string }>).map((m) => m.outcome))].sort();
+  const edges = mapped.map((o) => ({ entity_id: 'BOS', outcome: o, research_prob: 0.2, research_mcse: 0.001, research_fair_decimal: 5, reference_prob: 0.15, normalized_ref_prob: null, reference_edge_pp: 5,
+    exec_price: 0.16, exec_cost_prob: 0.161, exec_edge_pp: 3.9, quote_age_minutes: 4, fee_verified: true, stale: false, actionable: false, block_reasons: [] }));
+  const fut: string = UI.renderFutures(UI.buildModel({ sport: 'nba', comparison_id: 'c' }, [], [{ entity_id: 'BOS', entity_name: 'Boston Celtics', entity_groups: {} }], edges), { kind: 'ok' }, { key: 'exec_edge_pp', dir: 'desc' });
+  const raw = mapped.filter((o) => new RegExp('>' + o + '<').test(fut));
+  T.eq('every mapped outcome is said in words in Futures Edges', raw, []);
+}
 /* PostgREST answers at most max-rows per request: the reader pages until a short page */
 {
   const asked: string[] = [];
