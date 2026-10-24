@@ -46,6 +46,8 @@ After it: the terminal seat reads "Shadow mode". Readers see an empty feed and n
 
 ## 2. Shadow evaluation
 
+Run this only after step 1 is green. A run against a database without the migration stops at its first call, writes nothing, and fails with *"Signal Center's database is not deployed here … Apply supabase/signal_center.sql first"*.
+
 Set the repository variable **`SIGNAL_CENTER_WORKER` = `on`** (Settings → Secrets and variables → Actions →
 Variables). `.github/workflows/signal-center.yml` then runs hourly at :23. A run can also be started by hand, with
 *dry run* to write nothing. Secrets: `SB_URL`, `SB_SERVICE_ROLE`, the ones the other jobs use.

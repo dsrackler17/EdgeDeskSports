@@ -124,8 +124,19 @@ async function liveRun(db, inputs, opts) {
   const log = [];
   const note = (src, msg) => { log.push({ source: src, note: msg }); console.log('  note | ' + src + ': ' + msg); };
   const counts = { requests: 0 };
-  const begun = await db.rpc('sc_begin_run', { p: { engine_version: E.VERSION, spec_version: E.SPEC.id, source_commit: opts.sha, idempotency_key: opts.idem || null,
-    sources: { game_research: inputs.footballCurrent.generated_at, performance_ledger: inputs.perfLastCapture, fixture: !!opts.fixture } } });
+  let begun;
+  try {
+    begun = await db.rpc('sc_begin_run', { p: { engine_version: E.VERSION, spec_version: E.SPEC.id, source_commit: opts.sha, idempotency_key: opts.idem || null,
+      sources: { game_research: inputs.footballCurrent.generated_at, performance_ledger: inputs.perfLastCapture, fixture: !!opts.fixture } } });
+  } catch (e) {
+    /* PostgREST answers 404 / PGRST202 for a function it does not have: the
+       migration has not been applied to this database. Nothing was written. */
+    if (e && e.status === 404 && /PGRST202|Could not find the function/.test(String(e.message))) {
+      throw Object.assign(new Error('Signal Center\'s database is not deployed here: public.sc_begin_run does not exist, so nothing was written. '
+        + 'Apply supabase/signal_center.sql first (Actions → Deploy Signal Center schema; docs/signal-center/DEPLOYMENT.md), then run this again.'), { notDeployed: true });
+    }
+    throw e;
+  }
   if (begun.busy) { console.log('another Signal Center run holds the lease (' + begun.run_id + ', started ' + begun.started_at + '): nothing to do'); return { busy: true }; }
   if (begun.duplicate) { console.log('this run already completed (' + begun.run_id + ')'); return { duplicate: true }; }
   const run = begun.run_id;
@@ -214,5 +225,9 @@ async function main() {
   await liveRun(db, inputs, { sha: gitSha(), idem, fixture, resolver: teamStyleResolver(ROOT) });
 }
 
-if (require.main === module) main().catch((e) => { console.error(e && e.stack || e); process.exit(1); });
+if (require.main === module) main().catch((e) => {
+  /* a known state reads as one line (an Actions annotation in CI), not a stack */
+  if (e && e.notDeployed) { console.error((process.env.GITHUB_ACTIONS ? '::error::' : '') + e.message); process.exit(1); }
+  console.error(e && e.stack || e); process.exit(1);
+});
 module.exports = { liveRun, committedInputs, invalidations, graphicItems, teamStyleResolver };
