@@ -81,6 +81,7 @@ function footballRows(sport) {
     rows.push({
       sport, game_id: g.game_id, week: g.week, cluster: 'w' + g.week, kickoff: g.kickoff, model_version: g.pick.model_version || g.model_version,
       group: g.group || null, matchup: g.matchup_type || null,
+      fbs_home: g.home_division === 'fbs' ? true : g.away_division === 'fbs' ? false : null,
       margin, total,
       model_margin: -g.pick.home_line, close_margin: -g.close.home_line,
       model_total: isNum(g.pick.total) ? g.pick.total : null, close_total: isNum(g.close.total) ? g.close.total : null,
@@ -163,6 +164,23 @@ const TESTS = {
   winprob_info_vs_close: (rows) => L.informationTest(rows.filter((x) => x.outcome != null).map((x) => ({ model: x.model_p, market: mkt(x), actual: x.outcome, cluster: x.cluster }))),
   winprob_calibration: (rows) => L.calibrationFit(rows.map((x) => ({ p: x.model_p, y: x.outcome, cluster: x.cluster }))),
   winprob_market_calibration: (rows) => L.calibrationFit(rows.map((x) => ({ p: mkt(x), y: x.outcome, cluster: x.cluster })))
+};
+/* H-015: the frozen FBS-vs-FCS margin map (football/cfb_p4/fcs_margin_map.js, written by
+   football/cfb_p4/research/fcs_uncapped.js), applied to the published margin in FBS-team points */
+const FCS_MAP_FILE = path.join(ROOT, 'football', 'cfb_p4', 'fcs_margin_map.js');
+function fcsMap() {
+  if (!fs.existsSync(FCS_MAP_FILE)) return null;
+  global.window = global.window || global;
+  delete require.cache[FCS_MAP_FILE];
+  const m = require(FCS_MAP_FILE);
+  return m && m.survived && m.map && isNum(m.map.a) && isNum(m.map.b) ? m : null;
+}
+TESTS.fcs_map_mae_vs_raw = (rows) => {
+  const M = fcsMap();
+  if (!M) return { verdict: 'INSUFFICIENT_EVIDENCE', n: 0, why: 'no surviving frozen map (football/cfb_p4/fcs_margin_map.js)', diff: { est: null, ci: [null, null] } };
+  const sub = rows.filter((x) => x.group === 'fbs_fcs' && x.fbs_home != null);
+  const mapped = (x) => { const s = x.fbs_home ? 1 : -1; return s * (M.map.a + M.map.b * s * x.model_margin); };
+  return L.pairedDifference(sub, (x) => absErr(mapped(x), x.margin), (x) => absErr(x.model_margin, x.margin), { cluster: 'cluster' });
 };
 function mkt(x) { return x.market_p != null ? x.market_p : x.close_p; }
 function brier(p, y) { return isNum(p) && (y === 0 || y === 1) ? (p - y) * (p - y) : null; }
@@ -268,6 +286,14 @@ function run() {
   const judged = H.hypotheses.map((h) => {
     const chk = L.checkHypothesis(h);
     if (!chk.ok) return { id: h.id, status: null, why: chk.problems.join('; ') };
+    /* a hypothesis another tool judges (its own data, its own folds): read that tool's result */
+    if (h.judged_by && h.judged_by !== 'tools/market_intel/validation_report.js') {
+      const f = h.result_file ? path.join(ROOT, h.result_file) : null;
+      const out = f && fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;
+      const own = out && out.hypotheses && out.hypotheses[h.id];
+      return own ? { id: h.id, kind: h.kind, statement: h.statement, status: own.status, why: own.why + ' (judged by ' + h.judged_by + ')', result: own.result ? compact(own.result) : null }
+        : { id: h.id, kind: h.kind, statement: h.statement, status: 'PREREGISTERED', why: 'awaiting ' + h.judged_by, result: null };
+    }
     const rows = (D[h.data.sport] ? D[h.data.sport].rows : []).filter(SLICES[h.data.slice || 'all']).filter((x) => {
       const t = ms(x.kickoff || x.start);
       return (!h.window || !h.window.from || t >= ms(h.window.from)) && (!h.window || !h.window.to || t < ms(h.window.to));

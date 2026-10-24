@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_hypotheses_v1",
  "what": "Pre-registered research hypotheses for the model-versus-market program. Each names its test (tools/market_intel/validation_report.js TESTS), its data and its acceptance rule before it is judged. The report never edits this file. A REJECTED hypothesis stays here with its result; RETIRED is set by a person, with a reason.",
- "registration_note": "Every hypothesis was in this file by 2026-10-23T21:08:19Z (the time recorded on each). H-001 to H-010 were written before tools/market_intel/validation_report.js first ran; H-011 to H-013 were written after its exploratory results were read, which is why their windows start on 2026-10-24. Amendments are listed on the hypothesis they changed.",
+ "registration_note": "Every hypothesis was in this file by 2026-10-23T21:08:19Z (the time recorded on each). H-001 to H-010 were written before tools/market_intel/validation_report.js first ran; H-011 to H-013 were written after its exploratory results were read, which is why their windows start on 2026-10-24. Amendments are listed on the hypothesis they changed. H-014 and H-015 were registered at 2026-10-24T00:13:37Z, before tools/market_intel/validation_report.js or any fit had read a 2012-2025 FBS-vs-FCS residual.",
  "kinds": {
   "EXPLORATORY": "Formed after the data in its window had been looked at (seen_before_registration: true). Its result describes that data and confirms nothing.",
   "CONFIRMATORY": "Registered before any game in its window was played. The only kind whose ACCEPTED status is evidence."
@@ -347,6 +347,79 @@
      "note": "no game in the window (from 2026-10-24) had been played"
     }
    ]
+  },
+  {
+   "id": "H-014",
+   "kind": "EXPLORATORY",
+   "statement": "A walk-forward map from the CFB engine's FBS-vs-FCS margin to the real (uncapped) final margin lowers the engine's absolute error on FBS-vs-FCS games",
+   "mechanism": "Ratings are learned on margins clamped at +/-35 and every FCS team sits on one floor (-28), so the engine predicts a capped margin; FBS-vs-FCS finals often exceed 35, so the published margin is short by a roughly stable amount that earlier seasons can measure",
+   "metric": "pooled out-of-sample MAE against real finals, candidate minus raw, paired, FBS-team-signed margins; cluster bootstrap by season-week; leave-one-season-out",
+   "data": {
+    "sport": "cfb",
+    "slice": "fbs_vs_fcs",
+    "test": "fcs_uncapped_walk_forward",
+    "games": "docs/model-loop/cfb/predictions.csv.gz (divisions, final margin, close) joined to model_loop/adapters/cfb/baselines/cfb_p4_replay_predictions.csv.gz (the shipped engine v1.0.1 replayed cold and walk-forward, status PREDICTED)",
+    "candidates": {
+     "C1_shift": "raw + d, d = mean(final - raw) over every earlier season's FBS-vs-FCS games",
+     "C2_affine": "a + b * raw, ordinary least squares over every earlier season's FBS-vs-FCS games"
+    },
+    "folds": "test season S = 2016 ... 2025, trained on seasons 2012 ... S-1 (expanding); no game of S or later is read by its fit",
+    "selection": "the candidate with the lower pooled 2016-2025 out-of-sample MAE; both are reported",
+    "secondary_not_gating": [
+     "MAE against the close",
+     "mean |model - close|",
+     "mean bias",
+     "MAE against finals capped at +/-35",
+     "the 2026 live record's FBS-vs-FCS picks with the final map (fit on 2012-2025) applied: MAE against finals and |model - close|"
+    ],
+    "guard": "Brier of P(FBS side wins), raw vs mapped, with each game's sigma implied by the engine's own (margin, probability): the candidate is REJECTED if its Brier is worse with an interval above zero"
+   },
+   "window": {
+    "from": "2016-01-01T00:00:00Z",
+    "to": "2026-01-01T00:00:00Z"
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": -0.5,
+    "also": [
+     "better than raw in a majority of the ten test seasons",
+     "every leave-one-season-out estimate below -0.5 (judge() robustness)",
+     "the Brier guard",
+     "reported beside it: the repo bar of football/cfb_p4/v12_correction.js (pooled OOS MAE improves >= 0.05 pts and beats raw in a majority of years)"
+    ]
+   },
+   "failure_mode": "The shortfall comes from specific weak FCS opponents rather than a level, so a single shift helps on average but hurts the strong-FCS games; or the replay (cold start, no matchup term) does not transfer to the live engine, which the 2026 live check would show",
+   "judged_by": "football/cfb_p4/research/fcs_uncapped.js",
+   "result_file": "football/validation/fcs_uncapped_cfb.json",
+   "caveat": "The engine's trained coefficients (including the -28 floor) were fitted on 2001-2025, so the replay's raw margins are partly in-sample before 2026; the map itself is fitted strictly out of sample. The aggregate 2026 shortfall had been seen (H-003); the 2012-2025 residuals had not.",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-24T00:13:37Z",
+   "status": "PREREGISTERED"
+  },
+  {
+   "id": "H-015",
+   "kind": "CONFIRMATORY",
+   "statement": "On live FBS-vs-FCS games played after registration, the frozen map from H-014 (if it survives) lowers the published margin's absolute error against the final",
+   "mechanism": "As H-014",
+   "metric": "paired MAE against finals, mapped live margin minus published live margin, FBS-team-signed; cluster bootstrap by week",
+   "data": {
+    "sport": "cfb",
+    "slice": "fbs_vs_fcs",
+    "test": "fcs_map_mae_vs_raw",
+    "map": "football/cfb_p4/fcs_margin_map.js as committed when H-014 was judged; never refitted inside this window"
+   },
+   "window": {
+    "from": "2026-10-24T00:13:37Z",
+    "to": null
+   },
+   "acceptance": {
+    "rule": "ci_upper_below",
+    "value": 0
+   },
+   "failure_mode": "Few FBS-vs-FCS games remain after October, so this may not reach the minimum before the 2027 season; the live engine's matchup term may already move FCS games",
+   "seen_before_registration": false,
+   "registered_at": "2026-10-24T00:13:37Z",
+   "status": "PREREGISTERED"
   }
  ]
 }
