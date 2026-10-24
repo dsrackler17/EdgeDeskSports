@@ -17,6 +17,12 @@
                rows cannot be confirmed, unmatched games said plainly,
                everything escaped; staged rows in the importer's shape;
                matching and capture keys; app.html wiring
+     DK        three DraftKings Predictions "Trades" screenshots a reader
+               shared (fixtures/dk_predictions_trades.json, transcribed; no
+               image is committed): the platform told from the screenshot,
+               54% / Bought / Paid / boosts read exactly, contracts exact to
+               the millionth, the clean rows pre-confirmed, and a pick saved
+               Open settled in place by a later screenshot
 
    Run: node tools/portfolio/bet_import.test.js
    =========================================================================== */
@@ -25,6 +31,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const C = require(path.join(ROOT, 'lib', 'edgedesk_bet_import_core.js'));
+const E = require(path.join(ROOT, 'lib', 'edgedesk_portfolio.js'));
 const BI = require(path.join(ROOT, 'lib', 'edgedesk_bet_import.js'));
 const U = require(path.join(ROOT, 'lib', 'edgedesk_portfolio_ui.js'));
 const INLINE = require(path.join(__dirname, 'inline_bet_import_core.js'));
@@ -84,7 +91,8 @@ chk('a plain Novig spread: valid, no issues, filed as Novig (a sportsbook), leag
   && good.platform_type === 'SPORTSBOOK' && good.league === 'NFL' && good.stake === '25.00' && good.payout === '47.73' && good.line === '-2.5', good.issues);
 const gaps = C.normalizeBet(Object.assign({}, base, { event: null, selection: null, price_display: null, price_value: null, stake: null, placed_at: null, status: 'unknown', confidence: conf(0.3) }), ctx, 1);
 chk('a bet with nothing readable is KEPT and flagged, field by field', !gaps.valid && ['MISSING_EVENT', 'MISSING_SELECTION', 'MISSING_PRICE', 'MISSING_STAKE', 'MISSING_PLACED_AT', 'UNKNOWN_STATUS']
-  .every((c) => gaps.issues.some((i) => i.code === c)) && gaps.low.length === C.CONF_FIELDS.length, gaps.issues.map((i) => i.code));
+  .every((c) => gaps.issues.some((i) => i.code === c)), gaps.issues.map((i) => i.code));
+chk('"unsure" marks only a field that holds a value (an empty one is an error, or simply not shown)', JSON.stringify(gaps.low) === JSON.stringify(['book', 'sport', 'league', 'market_type', 'line', 'payout']), gaps.low);
 chk('a payout the price does not explain is a warning (the book\'s number is kept)', C.normalizeBet(Object.assign({}, base, { payout: 60 }), ctx).issues.some((i) => i.code === 'PAYOUT_MISMATCH'));
 chk('a future date is an error; a date-only placed time reads at noon', C.normalizeBet(Object.assign({}, base, { placed_at: '2026-11-30T12:00' }), ctx).issues.some((i) => i.code === 'FUTURE_PLACED_AT')
   && C.normalizeBet(Object.assign({}, base, { placed_at: '2026-10-18' }), ctx).placed_at === '2026-10-18T12:00');
@@ -94,7 +102,10 @@ const k = C.normalizeBet(Object.assign({}, base, { book: 'Kalshi', event: 'Chief
   price_display: '54¢', price_format: 'cents', price_value: 54, stake: 54, contracts: null, potential_payout: 100, payout: 100 }), { book: 'kalshi', today: '2026-10-24', images: 1 });
 chk('Kalshi: a prediction market; "Yes" is the YES side; contracts from the payout, said so; the price converts', k.platform_type === 'PREDICTION_MARKET' && k.side === 'YES' && k.valid
   && k.issues.some((i) => i.code === 'CONTRACTS_DERIVED') && k.price.american === -117, k.issues);
-chk('a contract with no side, or a parlay of contracts, cannot be saved', !C.normalizeBet(Object.assign({}, base, { selection: 'Kansas City' }), { book: 'kalshi', today: '2026-10-24' }).valid
+const named = C.normalizeBet(Object.assign({}, base, { selection: 'Kansas City' }), { book: 'kalshi', today: '2026-10-24' });
+chk('a contract whose pick names its outcome is YES on it, said as information (nothing to fix); "No …" is NO', named.side === 'YES' && named.valid
+  && named.issues.some((i) => i.code === 'SIDE_ASSUMED' && i.level === 'info') && C.normalizeBet(Object.assign({}, base, { selection: 'No' }), { book: 'kalshi', today: '2026-10-24' }).side === 'NO', named.issues);
+chk('a contract with no pick and no side, or a parlay of contracts, cannot be saved', !C.normalizeBet(Object.assign({}, base, { selection: null }), { book: 'kalshi', today: '2026-10-24' }).valid
   && !C.normalizeBet(Object.assign({}, base, { side: 'YES', market_type: 'parlay' }), { book: 'kalshi', today: '2026-10-24' }).valid);
 const other = C.normalizeBet(Object.assign({}, base, { book: 'FanDuel' }), { book: 'other', bookLabel: '', today: '2026-10-24' });
 chk('"Other": a book the screenshot names is used', other.book_key === 'fanduel' && other.platform_type === 'SPORTSBOOK' && other.valid);
@@ -210,6 +221,14 @@ function answer(bets, stop) {
     ENV.ANTHROPIC_API_KEY = ''; W.calls = []; r = await F.handle(req(paste));
     chk('no key configured: 503 before any call', r.status === 503 && W.calls.length === 0);
     ENV.ANTHROPIC_API_KEY = 'sk-ant-secret';
+    const DKF = require(path.join(__dirname, 'fixtures', 'dk_predictions_trades.json'));
+    W.model = answer(DKF.answer.bets); W.calls = [];
+    r = await F.handle(req({ kind: 'screenshot', images: [0, 1, 2].map(() => ({ media_type: 'image/png', data: PNG })), tz: DKF.tz, today: DKF.today })); j = await body(r);
+    const sentDk = JSON.parse(W.calls.find((c) => /anthropic/.test(c.url)).init.body);
+    chk('no platform chosen: the request is read as "detect automatically", the model is asked to tell the platform, and every DK card comes back as DraftKings Predictions',
+      r.status === 200 && j.bets.length === 5 && j.bets.every((b) => b.book_key === 'draftkings_predictions' && b.platform_type === 'PREDICTION_MARKET' && b.book_detected)
+      && /did not say which platform these are from: tell it from the logo/.test(sentDk.messages[0].content[3].text), j.bets && j.bets.map((b) => b.book_key));
+    chk('…"flagged" counts only the rows with something to fix or check (the two cut-off cards), not the ones with only information', j.flagged === 2, j.flagged);
     ENV.BET_IMPORT_MODEL = 'claude-sonnet-5-5'; ENV.BET_IMPORT_FALLBACKS = '0'; W.model = answer([]); W.calls = []; await F.handle(req(paste));
     const sent3 = W.calls.find((c) => /anthropic/.test(c.url));
     chk('the model and the fallback are the operator\'s to change', JSON.parse(sent3.init.body).model === 'claude-sonnet-5-5' && !('fallbacks' in JSON.parse(sent3.init.body)) && !sent3.init.headers['anthropic-beta']);
@@ -294,6 +313,81 @@ function answer(bets, stop) {
   chk('a tall scrolling capture is cut into overlapping tiles; a normal screenshot is one', BI.tilePlan(1179, 2556).length === 1 && BI.tilePlan(1179, 9000).length === 4
     && BI.tilePlan(1179, 9000).every((t, i, a) => i === 0 || t.y < a[i - 1].y + a[i - 1].h));
   chk('one request carries at most the server\'s image cap', BI.BATCH <= C.LIMITS.maxImages);
+
+  /* ═══ 4. DRAFTKINGS PREDICTIONS, FROM A READER'S SCREENSHOTS ═══════════ */
+  const DK = require(path.join(__dirname, 'fixtures', 'dk_predictions_trades.json'));
+  chk('the prompt knows DraftKings Predictions from the Sportsbook (percent prices, Bought / Paid, boosts) and asks for full team names',
+    /"DraftKings Predictions"/.test(C.systemPrompt()) && /Bought/.test(C.systemPrompt()) && /boost_pct/.test(C.systemPrompt()) && /Massachusetts Minutemen/.test(C.systemPrompt()));
+  const dres = C.normalizeResult(DK.answer, { book: DK.book, images: DK.images, today: DK.today });
+  const dk = dres.bets.map((b, i) => Object.assign(b, { id: 'd' + i, origin: 'screenshot', file: b.source_image, tile: 0, tiles: 1, edited: {}, confirmed: false, fresh: true,
+    check: C.checkBet(b, { today: DK.today }), match: { state: 'none', auto: true, event: null, candidates: [] } }));
+  const dexp = DK.expect.rows;
+  chk('every card is read as a DraftKings Predictions contract, the platform detected, not chosen', dk.length === dexp.length
+    && dk.every((b) => b.book_key === DK.expect.platform && b.platform_type === 'PREDICTION_MARKET' && b.book_detected && b.side === 'YES'));
+  const pricesOff = dk.filter((b, i) => b.selection !== dexp[i].selection || b.price.american !== dexp[i].price_american || b.status !== dexp[i].status || b.check.valid !== dexp[i].valid);
+  chk('54% = -117, 42% = +138, 57% = -133, 51% = -104, 29% = +245; Won / Lost from the badge; the three complete cards valid', pricesOff.length === 0, pricesOff.map((b) => [b.selection, b.price.american, b.status, b.check.valid]));
+  const errOff = dk.filter((b, i) => !dexp[i].valid && JSON.stringify(b.check.issues.filter((x) => x.level === 'error').map((x) => x.code).sort()) !== JSON.stringify(dexp[i].errors));
+  chk('a card cut off by the screen edge is KEPT and says what is missing (when placed; the cost)', errOff.length === 0, errOff.map((b) => b.check.issues));
+  chk('the boost is read, and a boosted win\'s "Paid" is the amount recorded, said as information', dk[0].boost_pct === '25' && dk[0].payout === '48.84'
+    && dk[0].check.issues.some((x) => x.code === 'BOOSTED_PAYOUT' && x.level === 'info') && !dk[0].check.issues.some((x) => x.level === 'warning'));
+  chk('the header balance is never a bet', dk.every((b) => b.stake !== '58.81' && b.payout !== '58.81' && b.stake !== '0.09'));
+  chk('the footer-only card is said, not invented', dres.warnings.length === 1 && /footer/.test(dres.warnings[0]) && dk.length === 5);
+  const staged = dk.map((b) => BI.stagedRows(b, { tz: DK.tz, today: DK.today }, 1)[0].normalized);
+  const fillOff = staged.filter((n, i) => dexp[i].valid && (n.quantity !== dexp[i].quantity || n.fee !== dexp[i].fee || n.market_name !== dexp[i].market_name
+    || (n.reported_payout || null) !== dexp[i].reported_payout || n.resolution !== dexp[i].resolution || n.action !== 'BUY' || n.side !== 'YES'));
+  chk('each stages as a BUY fill whose contracts × price is a whole millionth (45.6296 × 0.54 = 24.639984), the rest of the cost its fee, so the cost is exactly what was paid',
+    fillOff.length === 0 && staged.filter((n, i) => dexp[i].valid).every((n) => {
+      const amt = BigInt(C.micro(n.quantity)) * BigInt(C.micro(n.price)), cost = amt / 1000000n + BigInt(C.micro(n.fee));
+      return amt % 1000000n === 0n && [24640000n, 24640000n, 24780000n].includes(cost);
+    }), fillOff);
+  chk('a won contract carries what it paid (48.84, boosted); a lost one resolves to the other side', staged[0].reported_payout === '48.84' && staged[0].resolution === 'YES' && staged[1].resolution === 'NO');
+  const twin = Object.assign({}, dk[0], { selection: 'Over 202.5' });
+  chk('the Over and the Under of one game are different contracts (the selection is in the contract\'s market name)', E.contractKey(staged[0]) !== E.contractKey(BI.stagedRows(twin, { tz: DK.tz, today: DK.today }, 1)[0].normalized)
+    && BI.contractMarket({ market: 'Total Points', selection: 'Under 202.5' }) === 'Total Points · Under 202.5' && BI.contractMarket({ market: 'To Win James Madison', selection: 'James Madison' }) === 'To Win James Madison');
+  const exact = C.contractsFor({ stake: '55.20', potential_payout: '100.00', contracts: '', status: 'open' }, C.parsePrice('54¢'));
+  chk('contracts from the payout when it does not cost more than was paid (100 at 54¢ for $55.20: the extra $1.20 is the fee); a sale\'s price rounds down to what the count allows',
+    exact.from === 'payout' && exact.q === 100000000 && exact.fee === 1200000 && C.sellPriceFor('45.6296', '30.12') === '0.66');
+  chk('a count the price cannot carry exactly is an error to fix, not a commit that fails later', !C.checkBet({ book_key: 'kalshi', platform_type: 'PREDICTION_MARKET', event: 'x', side: 'YES',
+    market_type: 'moneyline', price_display: '54¢', price_format: 'cents', contracts: '10.123456', stake: '', potential_payout: '', payout: '', fees: '', status: 'open', placed_at: '2026-10-20T12:00', line: '', legs: [], confidence: {} }, {}).valid);
+
+  /* the review: nothing to check → arrives confirmed; one Save */
+  dk.forEach((b) => { if (BI.clean(b)) { b.confirmed = true; b.auto_confirmed = true; } });
+  const DR = Object.assign(BI.newState(), { step: 'review', tz: DK.tz, bets: dk, events: [], markets: [] });
+  const dh = BI.render(DR);
+  chk('the three complete cards arrive confirmed; the two cut-off ones wait, with their errors', dk.filter((b) => b.confirmed).map((b) => b.selection).join() === 'Under 202.5,Under 235.5,Over 18.5'
+    && /Confirm and save 3 picks</.test(dh) && /data-bim-confirm data-id="d4" disabled/.test(dh), dk.map((b) => [b.selection, b.confirmed]));
+  chk('each row names its platform in a select the reader can change, marked as detected', /<select data-bim-book data-id="d0"[^>]*>.*<option value="draftkings_predictions" selected>DraftKings Predictions</.test(dh)
+    && /DraftKings Predictions \(detected\) · 25% boost/.test(strip(dh)));
+  chk('what was worked out reads as information, not as a problem', /class="pfo-issue info">Contracts worked out as 45.6296/.test(dh) && /nothing to check, confirmed for you/.test(strip(dh)));
+  chk('a pick no EdgeDesk game fits is said so (not as "not matched"), and can still be searched for', /No game found/.test(dh) && /No EdgeDesk game fits this pick; search for it/.test(strip(dh))
+    && /data-bim-search data-id="d0"/.test(dh) && /5 with no EdgeDesk game \(no CLV\)/.test(strip(dh)) && !/not matched to a game/.test(strip(dh)));
+  chk('more screenshots can be added to the same review', /data-bim-file data-bim-more/.test(dh) && /Add more screenshots/.test(dh));
+  const blankIn = BI.render(Object.assign(BI.newState(), { files: [{ name: 'a.png', size: 9 }] }));
+  chk('the first step needs no platform: "Detect automatically" is chosen, and screenshots alone make it ready', /data-v="auto" aria-pressed="true">Detect automatically/.test(blankIn)
+    && !/disabled>Read my picks/.test(blankIn) && /reading starts right away/.test(blankIn));
+
+  /* a pick saved Open, then a screenshot of its result */
+  const ctxDk = { tz: DK.tz, today: DK.today };
+  const wonPlan = BI.updatePlan(dk[0], { id: 'P1', status: 'OPEN', resolution: null, reported_payout: null, source: 'IMPORT_SCREENSHOT' }, ctxDk);
+  chk('a contract saved Open that this screenshot shows Won: one PATCH of its resolution, what it paid, and when', wonPlan && wonPlan.id === 'P1' && wonPlan.from === 'OPEN' && wonPlan.to === 'WON'
+    && JSON.stringify(wonPlan.patch) === JSON.stringify({ resolution: 'YES', reported_payout: '48.84', settled_at: staged[0].settled_at }), wonPlan);
+  chk('…already settled the same way: nothing to do; settled the other way: left alone and said so; a synced one: never patched',
+    BI.updatePlan(dk[0], { id: 'P1', status: 'SETTLED', resolution: 'YES', reported_payout: '48.840000', source: 'IMPORT_SCREENSHOT' }, ctxDk) === null
+    && BI.updatePlan(dk[0], { id: 'P1', status: 'SETTLED', resolution: 'NO', reported_payout: null, source: 'IMPORT_SCREENSHOT' }, ctxDk).conflict === true
+    && BI.updatePlan(dk[0], { id: 'P1', status: 'OPEN', resolution: null, source: 'SYNC' }, ctxDk) === null);
+  chk('…an open pick that is still open: nothing to do', BI.updatePlan(Object.assign({}, dk[0], { status: 'open', payout: '' }), { id: 'P1', status: 'OPEN', resolution: null, source: 'MANUAL' }, ctxDk) === null);
+  const wb = mk(Object.assign({}, base, { status: 'won', payout: 47.73 }), 'novig', 9);
+  const wPlan = BI.updatePlan(wb, { id: 'W1', status: 'OPEN', reported_payout: null, source: 'IMPORT_SCREENSHOT' }, { tz, today: '2026-10-24' });
+  chk('a sportsbook bet saved Open, now Won: PATCH status, payout, settled time; Lost when saved Won is a conflict', wPlan && JSON.stringify(Object.keys(wPlan.patch)) === '["status","reported_payout","settled_at"]'
+    && wPlan.patch.status === 'WON' && wPlan.patch.reported_payout === '47.73'
+    && BI.updatePlan(Object.assign({}, wb, { status: 'lost', payout: '' }), { id: 'W1', status: 'WON', reported_payout: '47.73', source: 'CSV' }, { tz, today: '2026-10-24' }).conflict === true);
+  const up = Object.assign({}, dk[0], { id: 'u0', existing: 'P1', update: wonPlan, confirmed: true });
+  const upS = Object.assign(BI.newState(), { step: 'review', tz: DK.tz, bets: [up, dk[1]], events: [], markets: [] });
+  const uh = BI.render(upS);
+  chk('the review says a saved pick will be updated, counts it apart, and the button says so', BI.savable(up) && /Already in your portfolio as Open — saving updates it to Won \(paid 48.84\)/.test(strip(uh))
+    && /Confirm: save 1 pick, update 1</.test(uh) && BI.counts(upS).updates === 1 && BI.counts(upS).existing === 0);
+  const stale = Object.assign({}, dk[1], { id: 'u1', existing: 'P2', update: null, confirmed: false });
+  chk('an existing pick with nothing new is not savable (and never inserted twice)', !BI.savable(Object.assign({}, stale, { confirmed: true })) && !BI.clean(stale));
 
   /* the Portfolio page and app.html */
   const st = { tab: 'import', impMode: 'picks', imp: {}, tz };

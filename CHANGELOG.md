@@ -24,11 +24,19 @@ Readers on books with no history export (Novig, ProphetX, Kalshi, DK Predictions
   - The sportsbook and Kalshi sync adoption lists (`portfolio_aggregator.sql`, `portfolio_connect.sql`) adopt an imported pick instead of double-counting it once a sync is switched on.
   - The parts are regenerated.
 - **Deploy:** `.github/workflows/deploy-bet-import.yml` runs the tests, then the SQL, then the function with JWT verification on.
+- **Read on choosing, and kept up to date** (from a reader's DraftKings Predictions "Trades" screenshots):
+  - **Detect automatically** is the default: the model names the platform from the screenshot, and each row's platform can be changed in review. A position priced as a percentage or in cents is DraftKings Predictions / FanDuel Predicts, not the sportsbook.
+  - Reading starts as soon as screenshots are chosen; **Add more screenshots** appends to the same review.
+  - Percent prices, "Bought" (cost), "Paid" (payout) and profit boosts are read; a pick that names its outcome is YES on it; team names are written in full; header balances are ignored.
+  - Rows with nothing to check (valid, no warning, nothing unsure, game settled) arrive confirmed. What was worked out is shown as information, not as a problem.
+  - **Contracts, exactly:** a 2-decimal price takes contracts to 4 decimals (the database's whole-millionth rule), the remainder of the cost is the fee, and a settled contract's payout is what it paid. Under 202.5 at 54%, $24.64, won $48.84 boosted → +$24.20. Over and Under of one game are separate contracts.
+  - **Automatic update:** a pick saved Open is settled in place (one PATCH under the reader's RLS) when a later screenshot shows its result; a pick settled another way is left alone and said so; nothing is ever inserted twice.
+  - `tools/portfolio/bet_import_live.js`: an opt-in check of real screenshots against the real API with the operator's own key (never in CI).
 
 Tests:
-- `node tools/portfolio/bet_import.test.js` (72): the core, the shipped function against a mocked network, and the review table.
-- `node tools/portfolio/bet_import_sql.test.js` (65): `bet_import.sql` with the browser's own staged rows through the real commit; dedupe, RLS, the allowance, games and closes.
-- `node tools/portfolio/bet_import.e2e.js` (29): Chromium, the real migrations, 1280 px and 390 px.
+- `node tools/portfolio/bet_import.test.js` (100): the core, the shipped function against a mocked network, the review table, and the DK Predictions fixture (`tools/portfolio/fixtures/dk_predictions_trades.json`, transcribed; no image committed).
+- `node tools/portfolio/bet_import_sql.test.js` (76): `bet_import.sql` with the browser's own staged rows through the real commit; dedupe, RLS, the allowance, games and closes; the DK cards' P&L and the Open → Won update under RLS.
+- `node tools/portfolio/bet_import.e2e.js` (41): Chromium, the real migrations, 1280 px and 390 px; the DK journey with no platform chosen, pre-confirmed rows, an appended screenshot and an in-place update.
 
 All three are in `portfolio-tests.yml`. The existing Portfolio suites stay green: `portfolio:test`, all eleven `portfolio:sql` suites (814 checks), navigation, integrity and guide. One UI assertion changed on purpose: the empty book lists "Import picks" between the CSV import and recording by hand.
 

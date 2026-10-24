@@ -11,7 +11,8 @@
 
      a reader opens Import → Screenshots or pasted text, chooses Novig, adds a
      phone screenshot and a tall scrolling capture (cut into tiles, scaled and
-     re-encoded as JPEG on the device); the reader's rows appear with the
+     re-encoded as JPEG on the device) — reading starts as soon as they are
+     chosen; the clean pick arrives confirmed; the reader's rows appear with the
      unsure fields highlighted, the broken one blocked, each pick matched to
      its EdgeDesk game or plainly not; the reader fixes the stake, picks the
      unmatched game, deletes a row that is not a bet, confirms, and saves;
@@ -19,6 +20,13 @@
      as shown, the game and its capture key; the same picks pasted again are
      "already in your portfolio" and cannot be saved twice; Kalshi cents read
      as contracts;
+     DraftKings Predictions, as a reader's own screenshots read
+     (fixtures/dk_predictions_trades.json): NO platform chosen, the
+     screenshot chosen, and the platform, 54% prices, Bought / Paid and the
+     boost are read; the three complete cards arrive confirmed, the two cut
+     off wait; one more screenshot is added to the same review; one Save; a
+     pick saved Open is then shown Won on a later screenshot and is updated
+     in place with one more Save, never inserted twice;
    at 1280 px and at a 390 px phone, with no sideways scroll, no page error,
    and nothing financial in localStorage.
 
@@ -81,6 +89,9 @@ function modelBet(o) {
     contracts: null, potential_payout: 47.73, payout: 47.73, fees: null, placed_at: localCT(NOW - 3 * DAY), status: 'won', bet_id: null, is_bonus: false, legs: [], notes: null, confidence: conf(0.95) }, o || {});
 }
 /* what each request answers: the deployed function's own server-side checks over a canned model answer */
+const DKF = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'dk_predictions_trades.json'), 'utf8'));
+const DK_OPEN = Object.assign({}, DKF.answer.bets[0], { source_image: 0, selection: 'Over 210.5', line: 210.5, status: 'open', payout: null, boost_pct: null, placed_at: '2026-10-23T20:05', notes: null });
+const SCRIPT = [];   /* answers queued for the next requests, ahead of ANSWERS */
 const ANSWERS = [
   [modelBet(),
    modelBet({ selection: 'Buffalo Bills', market_type: 'moneyline', market: 'Moneyline', line: null, price_display: '+145', price_value: 145, stake: null, potential_payout: null, payout: 0, status: 'lost', confidence: conf(0.95, { stake: 0.2 }) }),
@@ -133,8 +144,9 @@ const ANSWERS = [
         fnBodies.push(body);
         const auth = String(req.headers().authorization || '');
         if (auth !== 'Bearer e2e') return route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ ok: false, reason: 'SIGN_IN', message: 'Sign in to import picks.' }) });
-        const raw = body.kind === 'paste' ? ANSWERS[0].concat([modelBet({ source_image: -1, book: 'Kalshi' })]).slice(0, 3) : (ANSWERS[fnBodies.filter((b) => b.kind === 'screenshot').length - 1] || []);
-        const res = C.normalizeResult({ bets: raw, warnings: [] }, { book: body.book, images: (body.images || []).length, today: body.today });
+        const next = SCRIPT.length ? SCRIPT.shift() : null;
+        const raw = next ? next.bets : body.kind === 'paste' ? ANSWERS[0].concat([modelBet({ source_image: -1, book: 'Kalshi' })]).slice(0, 3) : (ANSWERS[fnBodies.filter((b) => b.kind === 'screenshot').length - 1] || []);
+        const res = C.normalizeResult({ bets: raw, warnings: next ? next.warnings || [] : [] }, { book: body.book, images: (body.images || []).length, today: body.today });
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, bets: res.bets, warnings: res.warnings, flagged: res.flagged, model: 'claude-opus-5-5',
           quota: { used_hour: fnBodies.length, per_hour: 20, used_day: fnBodies.length, per_day: 60 } }) });
       }
@@ -176,14 +188,13 @@ const ANSWERS = [
     await page.click('#pfoHost [data-act="imp-picks"]');
     await waitText(page, /Which platform are these from\?/);
     chk('it opens on the Import tab, on screenshots or pasted text', await page.$eval('#pfoHost .pfo-tab[aria-selected="true"]', (e) => e.dataset.v) === 'import' && /Screenshots or pasted text/.test(await text(page)));
-    chk('Read is off until a platform and a screenshot are chosen', await page.$eval('#pfoHost [data-bim="read"]', (e) => e.disabled));
+    chk('"Detect automatically" is the default, and Read waits only for a screenshot', await page.$eval('#pfoHost [data-bim="read"]', (e) => e.disabled)
+      && await page.$eval('#pfoHost [data-bim="book"][data-v="auto"]', (e) => e.getAttribute('aria-pressed')) === 'true');
     await page.click('#pfoHost [data-bim="book"][data-v="novig"]');
-    await page.setInputFiles('#pfoHost input[data-bim-file]', [SHOT_PHONE, SHOT_TALL]);
-    await waitText(page, /novig-scroll\.png/);
-    chk('both screenshots are listed, and Read is on', /novig-history\.png/.test(await text(page)) && !(await page.$eval('#pfoHost [data-bim="read"]', (e) => e.disabled)));
     await shot(page, 'desktop-input');
-    await page.click('#pfoHost [data-bim="read"]');
+    await page.setInputFiles('#pfoHost input[data-bim-file]', [SHOT_PHONE, SHOT_TALL]);
     await waitText(page, /picks? read/, 30000);
+    chk('choosing the screenshots starts reading them (no second button to press)', fnBodies.filter((b) => b.kind === 'screenshot').length >= 1);
     const shots = fnBodies.filter((b) => b.kind === 'screenshot');
     const imgs = shots.flatMap((b) => b.images || []);
     chk('the screenshots went to the function scaled and re-encoded as JPEG; the tall capture as overlapping tiles', imgs.length >= 4 && imgs.every((i) => i.media_type === 'image/jpeg' && /^\/9j\//.test(i.data))
@@ -202,6 +213,10 @@ const ANSWERS = [
     chk('"New York Giants" alone, with two Giants games ahead: offered, not chosen, and said plainly', giantsRow && /not matched/i.test(giantsRow.text)
       && /Without a game, CLV is not graded/.test(giantsRow.text) && giantsRow.opts.indexOf('E2') > 0 && giantsRow.opts.indexOf('E3') > 0 && giantsRow.opts.indexOf('__none') > 0, giantsRow);
     chk('a field the reader was unsure of is highlighted', (await page.$$('#pfoHost .bim-low')).length >= 1);
+    await waitText(page, /Confirm and save 1 pick\b/);
+    chk('the one pick with nothing to check (the Chiefs spread: valid, sure, matched) arrives confirmed; the others wait',
+      await page.$eval(`#pfoHost [data-bim-confirm][data-id="${row2[0].id}"]`, (e) => e.checked)
+      && !(await page.$eval(`#pfoHost [data-bim-confirm][data-id="${row2[2].id}"]`, (e) => e.checked)));
 
     /* the reader fixes the stake: the row becomes confirmable, in place */
     const billsId = row2[1].id;
@@ -237,6 +252,61 @@ const ANSWERS = [
     const ls = await page.evaluate(() => Object.keys(localStorage).filter((k) => k !== 'edgedesk_slate_cache_v1' && /Chiefs|47\.73|-110|IMPORT_|data:image|\/9j\//.test(localStorage.getItem(k) || ''))
       .map((k) => k + '=' + String(localStorage.getItem(k)).slice(0, 160)));
     chk('nothing financial in localStorage', ls.length === 0, ls);
+    await ctx.close();
+
+    /* ═══ DRAFTKINGS PREDICTIONS: no platform chosen, read on choosing ══════ */
+    ({ ctx, page, errors } = await open({ width: 1280, height: 900 }));
+    await waitText(page, /Overview|Open|History/);
+    await page.click('#pfoHost .pfo-tab[data-v="import"]');
+    await page.click('#pfoHost [data-act="imp-mode"][data-v="picks"]');
+    await waitText(page, /Which platform are these from\?/);
+    SCRIPT.push({ bets: DKF.answer.bets, warnings: DKF.answer.warnings });
+    let before = fnBodies.length;
+    await page.setInputFiles('#pfoHost input[data-bim-file]', [SHOT_PHONE]);
+    await waitText(page, /5 picks read/, 30000);
+    await waitText(page, /Confirm and save 3 picks/, 20000);
+    t = await text(page);
+    chk('DK: sent as "detect automatically" the moment the screenshot was chosen', fnBodies.length === before + 1 && fnBodies[before].book === 'auto' && fnBodies[before].kind === 'screenshot');
+    const dkRows = await page.$$eval('#pfoHost tr.bim-row', (rs) => rs.map((r) => ({ id: r.dataset.row, plat: (r.querySelector('select[data-bim-book]') || {}).value, ok: r.querySelector('[data-bim-confirm]').checked,
+      err: r.classList.contains('has-error'), sel: (r.querySelector('[data-bim-f="selection"]') || {}).value })));
+    chk('DK: every card filed under DraftKings Predictions, told from the screenshot', dkRows.length === 5 && dkRows.every((r) => r.plat === 'draftkings_predictions') && /DraftKings Predictions \(detected\)/.test(t), dkRows);
+    chk('DK: the three complete cards arrive confirmed; the two the screen cut off wait, with what is missing', dkRows.filter((r) => r.ok).map((r) => r.sel).join() === 'Under 202.5,Under 235.5,Over 18.5'
+      && dkRows.filter((r) => r.err).length === 2 && /When was it placed\?/.test(t), dkRows);
+    chk('DK: 54% reads as -117 (contracts worked out from Bought), the boost and the footer-only card said', /≈ -117/.test(t) && /25% boost/.test(t) && /Contracts worked out as 45\.6296/.test(t) && /only its footer/.test(t));
+    chk('DK: no EdgeDesk game for these: said, and saved without CLV', /No game found/i.test(t));
+    await shot(page, 'dk-review');
+    /* one more screenshot, into the same review */
+    SCRIPT.push({ bets: [DK_OPEN] });
+    await page.setInputFiles('#pfoHost input[data-bim-more]', [SHOT_PHONE]);
+    await waitText(page, /6 picks read/, 30000);
+    await waitText(page, /Confirm and save 4 picks/, 20000);
+    chk('DK: an added screenshot\'s pick joins the same review, confirmed; the earlier ticks are kept', (await page.$$('#pfoHost tr.bim-row')).length === 6
+      && (await page.$$eval('#pfoHost tr.bim-row [data-bim-confirm]', (xs) => xs.filter((x) => x.checked).length)) === 4);
+    await page.click('#pfoHost [data-bim="save"]');
+    await waitText(page, /4 picks saved to your portfolio/, 30000);
+    const dkSaved = JSON.parse(q(`select coalesce(json_agg(row_to_json(p) order by market_name)::text, '[]') from (select market_name, status, profit_loss::text, price_display, source from public.portfolio_positions where platform = 'draftkings_predictions') p;`) || '[]');
+    const pl = Object.fromEntries(dkSaved.map((p) => [p.market_name, p.profit_loss]));
+    chk('DK: saved as IMPORT_SCREENSHOT with the book\'s P&L: +24.20 (boosted), -24.64, -24.78; the open one open', dkSaved.length === 4 && dkSaved.every((p) => p.source === 'IMPORT_SCREENSHOT')
+      && pl['Total Points · Under 202.5'] === '24.2' && pl['Alternate Total Points · Under 235.5'] === '-24.64' && pl['UMass Total Points O/U · Over 18.5'] === '-24.78'
+      && pl['Total Points · Over 210.5'] === null, dkSaved);
+    /* a later screenshot shows the open one Won */
+    await page.click('#pfoHost [data-bim="restart"]');
+    await waitText(page, /Which platform are these from\?/);
+    SCRIPT.push({ bets: [Object.assign({}, DK_OPEN, { status: 'won', payout: 45.63 })] });
+    await page.setInputFiles('#pfoHost input[data-bim-file]', [SHOT_PHONE]);
+    await waitText(page, /saving updates it to Won/, 30000);
+    t = await text(page);
+    chk('DK: the later screenshot finds the pick saved Open and offers to update it, confirmed', /Already in your portfolio as Open — saving updates it to Won \(paid 45\.63\)/.test(t)
+      && /Confirm and update 1 pick/.test(t) && /1 saved before, now settled/.test(t), t.slice(0, 600));
+    chk('DK: nothing changed before Confirm', q(`select status from public.portfolio_positions where market_name = 'Total Points · Over 210.5';`) === 'OPEN');
+    await page.click('#pfoHost [data-bim="save"]');
+    await waitText(page, /1 saved before was updated with its result/, 30000);
+    chk('DK: updated in place — settled, +20.99 — one position, one fill, no new import', q(`select status || ' ' || profit_loss::text from public.portfolio_positions where market_name = 'Total Points · Over 210.5';`) === 'SETTLED 20.99'
+      && q(`select count(*) from public.portfolio_positions where market_name = 'Total Points · Over 210.5';`) === '1'
+      && q(`select count(*) from public.portfolio_transactions t join public.portfolio_positions p on p.id = t.position_id where p.market_name = 'Total Points · Over 210.5';`) === '1'
+      && q(`select count(*) from public.portfolio_imports;`) === '2');
+    await shot(page, 'dk-updated');
+    chk('DK: no page error', errors.length === 0, errors);
     await ctx.close();
 
     /* ═══ PHONE: the same picks pasted again are already saved ════════════ */

@@ -22,7 +22,13 @@
      - the allowance: per hour, per day, per image, refused claims recorded,
        a settle only once and only one's own;
      - the games lookup and the close job (book_quote_ticks first, then
-       EdgeDesk's own close), once, for the scheduler only.
+       EdgeDesk's own close), once, for the scheduler only;
+     - DraftKings Predictions, from a reader's own screenshots
+       (fixtures/dk_predictions_trades.json): no platform chosen, 54% /
+       Bought / Paid / a boost → contracts the database accepts exactly,
+       the cost exactly what was paid, the database's P&L the book's; and a
+       pick saved Open is settled IN PLACE by a later screenshot (the
+       browser's own update plan, PATCHed under RLS), never inserted twice.
 
    Run: node tools/portfolio/bet_import_sql.test.js
    (PORTFOLIO_SQL_REQUIRED=1 makes a missing PostgreSQL a failure, for CI.)
@@ -251,6 +257,70 @@ const position = (uid, id) => json(one(db.as(uid, `select row_to_json(p) from (s
     chk('a buy that joins a hand-recorded open contract adds its fill (labelled IMPORT_PASTE) and leaves the position the reader\'s, untouched by finalize',
       cj.imported === 1 && manual.source === 'MANUAL' && manual.price_display === null && manual.contracts === '30' && manual.imported_fills === 1, manual);
 
+    /* ── 5b. DraftKings Predictions, from a reader's screenshots ── */
+    const DKF = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'dk_predictions_trades.json'), 'utf8'));
+    const dkAll = C.normalizeResult(DKF.answer, { book: DKF.book, images: DKF.images, today: TODAY }).bets.map((b, i) => {
+      const r = Object.assign({}, b, { id: 'd' + i, origin: 'screenshot', edited: {}, confirmed: true });
+      r.check = C.checkBet(r, { today: TODAY });
+      return r;
+    });
+    const dkOk = dkAll.filter((b) => b.check.valid), dkExp = DKF.expect.rows.filter((x) => x.valid);
+    chk('DK Predictions: no platform chosen, three complete cards valid, the two cut off kept as invalid (never saved)', dkOk.length === 3 && dkAll.length === 5
+      && dkAll.every((b) => b.book_key === 'draftkings_predictions' && b.platform_type === 'PREDICTION_MARKET'), dkAll.map((b) => b.check.issues));
+    const sd = stageAs(A, 'screenshot_v1', dkOk, () => ({ state: 'none', auto: true, event: null, sig_key: null }));
+    const cd = commit(A, sd.imp);
+    db.as(A, `select public.portfolio_bet_import_finalize(${L(sd.imp)});`);
+    const rd = rowsOf(A, sd.imp);
+    chk('the commit takes every contract count as staged (none refused for its precision)', cd.status === 'COMMITTED' && cd.imported === 3 && cd.failed === 0 && cd.invalid === 0, [cd, rd.map((r) => r.issues)]);
+    const dpos = rd.map((r) => json(one(db.as(A, `select row_to_json(p) from (select source, platform, status, resolution, contracts_bought::text, cost_basis::text, fees::text, reported_payout::text,
+        profit_loss::text, price_display, price_american, market_name from public.portfolio_positions where id = ${L(r.pos)}) p;`))));
+    const dOff = dpos.filter((p, i) => p.profit_loss !== dkExp[i].profit_loss || p.price_american !== dkExp[i].price_american || p.contracts_bought !== dkExp[i].quantity
+      || p.market_name !== dkExp[i].market_name || p.source !== 'IMPORT_SCREENSHOT' || p.status !== 'SETTLED');
+    chk('the database\'s P&L is the book\'s: Under 202.5 (54%, Bought $24.64, Paid $48.84 boosted) +24.20; Under 235.5 −24.64; Over 18.5 −24.78; shown as 54% and −117',
+      dOff.length === 0 && dpos[0].price_display === '54%' && dpos[0].reported_payout === '48.84', dpos);
+    chk('…the cost stored is exactly what was paid (contracts × price + the fraction of a cent as fee)', dpos.every((p, i) => C.micro(p.cost_basis) + C.micro(p.fees) === C.micro(['24.64', '24.64', '24.78'][i])), dpos.map((p) => [p.cost_basis, p.fees]));
+
+    /* a pick saved while Open, then a later screenshot of its result */
+    const openDk = Object.assign({}, dkOk[0], { id: 'o1', selection: 'Over 210.5', line: '210.5', status: 'open', payout: '', boost_pct: '', placed_at: '2026-10-23T20:05' });
+    openDk.check = C.checkBet(openDk, { today: TODAY });
+    const so = stageAs(A, 'screenshot_v1', [openDk], () => ({ state: 'none', auto: true, event: null, sig_key: null }));
+    chk('the Open pick is saved, open', commit(A, so.imp).imported === 1 && position(A, rowsOf(A, so.imp)[0].pos).status === 'OPEN');
+    const wonDk = Object.assign({}, openDk, { id: 'o2', status: 'won', payout: '45.63' });
+    wonDk.check = C.checkBet(wonDk, { today: TODAY });
+    const ctxSql = { tz: TZ, today: TODAY };
+    /* what the browser does before Confirm: the fingerprint read, then the saved position */
+    async function existingFor(uid, b) {
+      const n = BI.stagedRows(b, ctxSql, 1)[0].normalized, fpx = await BI.sha256Hex(BI.materialOf(n));
+      const pid = n.kind === 'wager' ? one(db.as(uid, `select id from public.portfolio_positions where fingerprint = ${L(fpx)};`))
+        : one(db.as(uid, `select position_id from public.portfolio_transactions where fingerprint = ${L(fpx)};`));
+      return pid ? json(one(db.as(uid, `select row_to_json(p) from (select id, status, resolution, reported_payout::text, source from public.portfolio_positions where id = ${L(pid)}) p;`))) : null;
+    }
+    const patchAs = (uid, plan) => db.as(uid, `update public.portfolio_positions set ${Object.keys(plan.patch).map((k) => k + ' = ' + (plan.patch[k] == null ? 'null' : L(plan.patch[k]))).join(', ')} where id = ${L(plan.id)} returning id;`);
+    const exOpen = await existingFor(A, wonDk);
+    const plan = BI.updatePlan(wonDk, exOpen, ctxSql);
+    chk('the later screenshot finds the saved pick (the fingerprint leaves the result out) and plans one update: Open → Won, paid 45.63',
+      exOpen && exOpen.status === 'OPEN' && plan && plan.to === 'WON' && plan.patch.resolution === 'YES' && plan.patch.reported_payout === '45.63', [exOpen, plan]);
+    chk('reader B cannot apply it to A\'s pick (RLS: no row)', db.as(B, `update public.portfolio_positions set resolution = 'YES' where id = ${L(plan.id)} returning id;`) === '');
+    patchAs(A, plan);
+    const settled = json(one(db.as(A, `select row_to_json(p) from (select status, resolution, profit_loss::text, source, contracts_bought::text from public.portfolio_positions where id = ${L(plan.id)}) p;`)));
+    chk('applied as the reader: settled in place, +20.99 (45.63 paid − 24.64 cost), still labelled IMPORT_SCREENSHOT, the same 45.6296 contracts',
+      settled.status === 'SETTLED' && settled.resolution === 'YES' && settled.profit_loss === '20.99' && settled.source === 'IMPORT_SCREENSHOT' && settled.contracts_bought === '45.6296', settled);
+    const sAgain = stageAs(A, 'screenshot_v1', [wonDk], () => ({ state: 'none', auto: true, event: null, sig_key: null }));
+    chk('…and the Won screenshot through the commit is a duplicate: no second position, no second fill', commit(A, sAgain.imp).imported === 0
+      && db.sql(`select count(*) from public.portfolio_positions where user_id = ${L(A)} and market_name = 'Total Points · Over 210.5';`) === '1'
+      && db.sql(`select count(*) from public.portfolio_transactions t join public.portfolio_positions p on p.id = t.position_id where p.market_name = 'Total Points · Over 210.5';`) === '1');
+    chk('…once settled, the same screenshot plans nothing more; one that says Lost is a conflict, left alone', BI.updatePlan(wonDk, await existingFor(A, wonDk), ctxSql) === null
+      && BI.updatePlan(Object.assign({}, wonDk, { status: 'lost', payout: '' }), await existingFor(A, wonDk), ctxSql).conflict === true);
+    /* a sportsbook bet saved Open (the Giants, above), now Won */
+    const nygWon = reviewed([modelBet({ event: 'New York Jets @ New York Giants', teams: ['New York Jets', 'New York Giants'], market_type: 'moneyline', market: 'Moneyline', selection: 'New York Giants', line: null,
+      price_display: '-125', price_value: -125, stake: 50, potential_payout: 90, payout: 90, status: 'won', placed_at: local(NOW - 1 * DAY) })], 'novig')[0];
+    nygWon.match = { state: 'auto', event: matched[2].event, sig_key: keys[2] };
+    const wplan = BI.updatePlan(nygWon, await existingFor(A, nygWon), ctxSql);
+    patchAs(A, wplan);
+    const p3b = position(A, p3.id);
+    chk('a sportsbook pick saved Open, then Won on a later screenshot: updated in place, +40 at -125, its game and price kept', wplan.id === p3.id && p3b.status === 'WON' && p3b.profit_loss === '40'
+      && p3b.event_id === EV2 && p3b.price_display === '-125', [wplan, p3b]);
+
     /* ── 6. row level security ── */
     chk('reader B sees none of A\'s picks', db.as(B, `select count(*) from public.portfolio_positions;`) === '0');
     chk('reader B cannot finalize A\'s import', db.mustFail(() => db.as(B, `select public.portfolio_bet_import_finalize(${L(s1.imp)});`)) !== null);
@@ -304,7 +374,7 @@ const position = (uid, id) => json(one(db.as(uid, `select row_to_json(p) from (s
 
     /* ── 9. still idempotent, with data in it ── */
     const out2 = db.applyFileAtomic(FILE);
-    chk('re-applied with data in it: all ok, nothing lost', !/CHECK THIS/.test(out2) && db.sql(`select count(*) from public.portfolio_positions where source like 'IMPORT_%';`) === '8');
+    chk('re-applied with data in it: all ok, nothing lost', !/CHECK THIS/.test(out2) && db.sql(`select count(*) from public.portfolio_positions where source like 'IMPORT_%';`) === '12');
   } catch (e) {
     chk('the suite ran to the end', false, String(e && (e.sqlMessage || e.message)).replace(/psql:[^\n]*NOTICE:[^\n]*\n/g, '').slice(0, 1500));
   } finally {
