@@ -404,7 +404,8 @@ begin
       perform set_config('portfolio.bulk_fills', 'on', true);
       did_adopt := false;
       -- RECONCILIATION. A position the reader recorded by hand (or from
-      -- EdgeDesk) before connecting, of exactly this contract — the same
+      -- EdgeDesk, or imported from a screenshot or pasted text —
+      -- supabase/bet_import.sql) before connecting, of exactly this contract — the same
       -- platform and the same normalized event, market and side — with no
       -- platform id yet: the platform's record ADOPTS it instead of arriving
       -- as a second copy. Its decision record (journal, snapshot, path)
@@ -414,7 +415,7 @@ begin
                        and external_position_id = p->>'external_position_id') then
         select array_agg(x.id order by x.placed_at) into adopt from public.portfolio_positions x
          where x.user_id = a.user_id and x.platform = a.platform and x.platform_type = 'PREDICTION_MARKET' and x.external_position_id is null
-           and x.source in ('MANUAL', 'EDGEDESK')
+           and x.source in ('MANUAL', 'EDGEDESK', 'IMPORT_SCREENSHOT', 'IMPORT_PASTE')
            and x.contract_key = public.portfolio_contract_key(a.platform,
                  left(coalesce(nullif(btrim(p->>'event_name'), ''), p->>'external_position_id'), 200),
                  left(coalesce(nullif(btrim(p->>'market_name'), ''), nullif(btrim(p->>'event_name'), ''), p->>'external_position_id'), 200),

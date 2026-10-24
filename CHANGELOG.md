@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-10-24 — Import picks: screenshots or pasted bet history, read by Claude, checked by the reader
+
+Readers on books with no history export (Novig, ProphetX, Kalshi, DK Predictions) entered picks one at a time. Portfolio → Import → **Screenshots or pasted text** (also on + Add position and the empty book) now reads a batch at once. The reader then checks every row before anything is saved. `docs/bet-import.md` is the design.
+
+- **No new picks table.** Confirmed rows go through the Portfolio's own staging and commit (`portfolio_import_commit`) into `portfolio_positions`, under the reader's token and the same row level security.
+- **Labels and dedupe.** Imported rows are labelled `IMPORT_SCREENSHOT` / `IMPORT_PASTE`, upper case like the column's other values. A pick already saved (same platform, event, market, selection, price, stake and placed minute) is skipped. The page also says so before Confirm.
+- **The reader:** `supabase/functions/parse_bet_import` sends the screenshots or text to the Anthropic Messages API and asks for strict JSON.
+  - JWT verified; the key is a Supabase secret.
+  - Limits: ≤ 6 images and 4.5 MB each, ≤ 40,000 characters.
+  - A per-reader allowance, claimed atomically in the database, that fails closed.
+  - The shared core (`lib/edgedesk_bet_import_core.js`) checks every bet on the server, and again in the browser on every edit. A failing bet is flagged, never dropped. Images are never stored or logged.
+- **The review table:**
+  - every field is editable, and fields the model was unsure of are highlighted;
+  - a row with an error cannot be confirmed;
+  - each pick is matched to an EdgeDesk game from `public.signals`, and an unmatched one says so and offers the games;
+  - a shared city ("New York") is evidence for neither team.
+- **Screenshots** are scaled and re-encoded as JPEG on the device, and tall scrolling captures are cut into overlapping tiles.
+- **Prices both ways.** `price_display` holds the price as shown. `price_american` is derived for both instruments: 54¢ = −117, 40¢ = +150. Kalshi and DK Predictions picks become contract fills: a sale is a BUY and a SELL, and a loss resolves to the other side.
+- **CLV:** a matched single carries its game and capture key. A new 15-minute job (`portfolio_svc_attach_import_close`) puts the close on the journal: the reader's book's last tick before the start, else EdgeDesk's own close.
+- **Existing files:**
+  - `portfolio.sql` carries the widened insert policies (the same owner rule plus the two values).
+  - The sportsbook and Kalshi sync adoption lists (`portfolio_aggregator.sql`, `portfolio_connect.sql`) adopt an imported pick instead of double-counting it once a sync is switched on.
+  - The parts are regenerated.
+- **Deploy:** `.github/workflows/deploy-bet-import.yml` runs the tests, then the SQL, then the function with JWT verification on.
+
+Tests:
+- `node tools/portfolio/bet_import.test.js` (72): the core, the shipped function against a mocked network, and the review table.
+- `node tools/portfolio/bet_import_sql.test.js` (65): `bet_import.sql` with the browser's own staged rows through the real commit; dedupe, RLS, the allowance, games and closes.
+- `node tools/portfolio/bet_import.e2e.js` (29): Chromium, the real migrations, 1280 px and 390 px.
+
+All three are in `portfolio-tests.yml`. The existing Portfolio suites stay green: `portfolio:test`, all eleven `portfolio:sql` suites (814 checks), navigation, integrity and guide. One UI assertion changed on purpose: the empty book lists "Import picks" between the CSV import and recording by hand.
+
 ## 2026-10-24 — The landing page sells the terminal: the desk, Signal Center and the Simulator
 
 The landing page (`index.html`) described football research and bet tracking. Since 2026-10-23 the terminal also has Signal Center (live in production) and the Simulator (ten sports ACTIVE). The page now says what EdgeDesk is, a research terminal for sports markets, and what Full Access adds to the free research, seat by seat. The free football research still comes first, and nothing is claimed that the product does not do.

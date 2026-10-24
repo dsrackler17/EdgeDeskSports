@@ -5,6 +5,7 @@
 - The Kalshi (read-only API key) and Polymarket (public wallet) connectors are **built and switched off**. A database guard keeps them off until a live ten-stage smoke test passes and the platform's terms review is cleared.
 - **Sportsbook sync:** the SharpSports BetSync adapter (class C, an aggregator) was built and is **retired** (2026-10-14, cost). **Juice Reel** (class B, the reader's own Juice Reel account by OAuth 2.0) is built into the same seam and **awaiting Juice Reel's approval** of EdgeDesk's application: switched on with `SPORTSBOOK_SYNC_PROVIDER=juicereel`, readers see "Awaiting provider approval" until Juice Reel approves, a PRODUCTION smoke test passes and the terms review is cleared. Until then sportsbooks come in by CSV import, an on-device **bet slip screenshot**, or manual entry. See [`juicereel.md`](juicereel.md) and [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md).
 - How each one works, what was verified and how, and the switch-on procedure: [`platform-connections.md`](platform-connections.md).
+- **Import picks** (any platform, built for the ones with no export): screenshots or pasted history are read by Claude into an editable review table, and only the rows the reader confirms are saved, through the same import pipeline and dedupe. See [`bet-import.md`](bet-import.md).
 
 Nothing here is marked supported until it works end to end. The *Candidate method* column is research, not a capability.
 
@@ -37,11 +38,11 @@ Nothing here is marked supported until it works end to end. The *Candidate metho
 | Fanatics | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
 | Hard Rock Bet | Sportsbook | ✅ | ✅ generic | Built (Juice Reel), **awaiting approval** | Manual / CSV · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
 | Circa Sports, SuperBook, Pinnacle | Sportsbook | ✅ | ✅ generic | Built (Juice Reel), **awaiting approval** | Manual / CSV · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
-| Novig, ProphetX | Sportsbook (exchange) | ✅ | ✅ generic | Built (Juice Reel), **awaiting approval** | Manual / CSV · Juice Reel once approved | **B** — Juice Reel OAuth (books Juice Reel tracks) | Exchange commission is entered as fees. |
+| Novig, ProphetX | Sportsbook (exchange) | ✅ | ✅ generic | Built (Juice Reel), **awaiting approval** | Manual / CSV / **screenshot or pasted history** · Juice Reel once approved | **B** — Juice Reel OAuth (books Juice Reel tracks) | Exchange commission is entered as fees. No history export: Import picks reads screenshots or pasted text ([`bet-import.md`](bet-import.md)). |
 | Any other book ("Other…") | Either | ✅ | ✅ generic | Juice Reel, if Juice Reel tracks it (awaiting approval) | Manual / CSV | — | Stored under the reader's own name as `custom_<name>`. |
-| **Kalshi** | Prediction market | ✅ | ✅ `kalshi_csv` profile (cents detected) | Built, **off** | Manual / import · connector awaiting smoke test + terms review | **D** — the reader's own read-only API key | See below. |
+| **Kalshi** | Prediction market | ✅ | ✅ `kalshi_csv` profile (cents detected) | Built, **off** | Manual / import / **screenshot or pasted history** · connector awaiting smoke test + terms review | **D** — the reader's own read-only API key | See below. |
 | **Polymarket** | Prediction market | ✅ | ✅ `polymarket_csv` profile | Built, **off** | Manual / import · connector awaiting smoke test + terms review | **A** — public data API by wallet address | See below. |
-| DraftKings Predictions | Prediction market | ✅ | ✅ generic | ❌ | Manual / CSV | To research | No public account API known to us. |
+| DraftKings Predictions | Prediction market | ✅ | ✅ generic | ❌ | Manual / CSV / **screenshot or pasted history** | To research | No public account API known to us. |
 | FanDuel Predicts | Prediction market | ✅ | ✅ generic | ❌ | Manual / CSV | To research | No public account API known to us. |
 
 **What "CSV ✅ generic" means.** The generic importers read any CSV with recognisable columns: date, platform, event, selection, odds, stake and result for bets; date, market, side, buy/sell, contracts and price for trades. The reader can re-map any column. A platform-specific importer — fixed aliases, the operator's own ids, its status words — is added only once a real export from that platform has been seen.

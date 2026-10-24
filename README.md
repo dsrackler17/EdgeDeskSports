@@ -696,6 +696,13 @@ the cumulative line.
 - **Getting positions in:** sportsbook bets and prediction-market positions are
   entered by hand, or imported from a CSV that is classified on the server —
   new, duplicate, needs review, invalid — before the reader confirms.
+- **Import picks** (Import → Screenshots or pasted text): for books with no
+  export (Novig, ProphetX, Kalshi, DK Predictions), screenshots or pasted
+  history are read by Claude (`supabase/functions/parse_bet_import`) into an
+  editable review table — unsure fields highlighted, each pick matched to an
+  EdgeDesk game for CLV — and only confirmed rows go through the same import
+  commit, labelled `IMPORT_SCREENSHOT` / `IMPORT_PASTE`. Images are never
+  stored. See [`docs/bet-import.md`](docs/bet-import.md).
 - **Money:** every figure is NUMERIC, derived by a database trigger and held in
   parity with `lib/edgedesk_portfolio.js`. Wagers and contracts follow
   different rules: odds × stake, against fills at an average cost.

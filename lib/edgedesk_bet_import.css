@@ -1,0 +1,77 @@
+/* ===========================================================================
+   EDGEDESK PORTFOLIO — Import picks (lib/edgedesk_bet_import.js).
+   Inside .pfo-root, on the Portfolio's own tokens (lib/edgedesk_portfolio.css).
+   Prefix .bim-. Mobile first: under 760 px every review row is a card.
+   =========================================================================== */
+.pfo-impmode{margin:0 0 12px}
+.bim .bim-step{margin:0 0 14px}
+.bim-lbl{font-size:12.5px;font-weight:700;color:var(--f-tx);margin:0 0 8px}
+.bim-other{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:10px 0 0;max-width:560px}
+@media(min-width:620px){.bim-other{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.bim .pfo-seg{margin:0 0 10px}
+.bim-drop input[type=file]{font-size:13px}
+.bim-files{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.bim-files li{display:flex;align-items:center;gap:10px;border:1px solid var(--f-bd);border-radius:10px;padding:6px 10px;background:var(--f-s2);font-size:13px;min-width:0}
+.bim-fname{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bim-paste textarea{min-height:180px;font:13px/1.5 'JetBrains Mono',ui-monospace,monospace}
+.bim-reading{display:flex;align-items:center;gap:12px;border:1px solid var(--f-bd);border-radius:12px;padding:14px;background:var(--f-s2)}
+.bim-spin{width:22px;height:22px;border-radius:50%;border:3px solid var(--f-bd);border-top-color:var(--f-acc);animation:bim-spin .9s linear infinite;flex:0 0 auto}
+@keyframes bim-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.bim-spin{animation:none}}
+.bim-bar{height:6px;border-radius:999px;background:var(--f-s2);margin:10px 0 0;overflow:hidden}
+.bim-bar i{display:block;height:100%;background:var(--f-acc)}
+.bim-warnings{margin:0 0 10px;padding:8px 12px 8px 28px;border:1px solid rgba(217,154,43,.45);background:rgba(217,154,43,.08);border-radius:10px;font-size:12.5px;line-height:1.5}
+.bim-filters{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
+.bim-filters .pfo-btns{margin:0}
+.bim-sum{font-size:13.5px;margin:12px 0 0;line-height:1.5}
+.bim-warn{color:var(--f-warn)}
+.bim-save{align-items:center;position:sticky;bottom:0;background:var(--f-s1);padding:8px 0;margin:4px 0 0;z-index:2}
+.bim-savenote{font-size:12px}
+.bim-wrap{margin:8px 0 0}
+.bim-table{min-width:860px;table-layout:fixed}
+.bim-table col.w-c{width:96px}.bim-table col.w-game{width:25%}.bim-table col.w-pick{width:23%}.bim-table col.w-price{width:12%}
+.bim-table col.w-stake{width:14%}.bim-table col.w-res{width:20%}.bim-table col.w-x{width:44px}
+.bim-table tbody tr{cursor:default}
+.bim-table tbody tr:hover td{background:transparent}
+.bim-table td{vertical-align:top}
+.bim-table input,.bim-table select{width:100%;min-width:0;padding:7px 8px;font-size:13.5px;border:1px solid var(--f-bd);border-radius:8px;background:var(--f-s2);color:var(--f-tx);margin:0 0 5px}
+.bim-table input[type=checkbox]{-webkit-appearance:checkbox;appearance:auto;width:20px;height:20px;min-width:20px;margin:0;padding:0;border:none;background:none;accent-color:var(--f-acc);flex:0 0 auto}
+.bim-table input:focus,.bim-table select:focus{outline:2px solid var(--f-acc);outline-offset:0}
+.bim-table .bim-low{border-color:var(--f-warn);background:rgba(217,154,43,.10)}
+.bim-table .bim-bad{border-color:var(--f-neg);background:rgba(226,96,68,.10)}
+.bim-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px}
+.bim-sub{display:block;font-size:11.5px;color:var(--f-dim);line-height:1.4;margin:0 0 4px;overflow-wrap:anywhere}
+.bim-game{display:grid;gap:4px}
+.bim-game select,.bim-game input{margin:0}
+.bim-tag{justify-self:start;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--f-bd);border-radius:999px;padding:2px 8px;color:var(--f-dim)}
+.bim-tag.ok{color:var(--f-pos);border-color:rgba(118,189,62,.5)}
+.bim-tag.warn{color:var(--f-warn);border-color:rgba(217,154,43,.6)}
+.bim-check{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.bim-row.is-confirmed td{background:rgba(47,167,154,.07)}
+.bim-row.has-error td:first-child{box-shadow:inset 3px 0 0 var(--f-neg)}
+.bim-row.is-dup td{opacity:.7}
+.bim-row td{border-bottom:none}
+.bim-meta td{padding-top:0;font-size:12px}
+.bim-issues{list-style:none;margin:4px 0 0;padding:0}
+.bim-issues .pfo-issue.ok{color:var(--f-pos)}
+.bim-done{border:1px solid rgba(118,189,62,.45);background:rgba(118,189,62,.08);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}
+.bim-ro{min-width:0}
+
+/* phones: each pick is a card, its fields stacked with their labels */
+@media(max-width:760px){
+  .bim-wrap{border:none;overflow:visible}
+  .bim-table{min-width:0;table-layout:auto}
+  .bim-table colgroup{display:none}
+  .bim-table thead{display:none}
+  .bim-table,.bim-table tbody{display:block}
+  .bim-table tr.bim-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 10px;border:1px solid var(--f-bd);border-bottom:none;border-radius:12px 12px 0 0;padding:10px 10px 4px;margin:10px 0 0;background:var(--f-s1)}
+  .bim-table tr.bim-meta{display:block;border:1px solid var(--f-bd);border-top:none;border-radius:0 0 12px 12px;padding:0 10px 10px;background:var(--f-s1)}
+  .bim-table td{display:block;padding:0;border:none;min-width:0}
+  .bim-table tr.bim-row td[data-label="Game"],.bim-table tr.bim-row td[data-label="Pick"]{grid-column:1/-1}
+  .bim-table td[data-label]:not([data-label=""]):not(.bim-c)::before{content:attr(data-label);display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--f-faint);font-weight:600;margin:4px 0 3px}
+  .bim-table td.bim-c{grid-column:1/2;align-self:center}
+  .bim-table td.bim-x{grid-column:2/3;grid-row:1;justify-self:end;width:auto}
+  .bim-table input,.bim-table select{font-size:16px}  /* no zoom on focus in iOS Safari */
+  .bim-row.has-error td:first-child{box-shadow:none}
+  .bim-table tr.bim-row.has-error{border-color:rgba(226,96,68,.6)}
+}

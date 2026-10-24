@@ -61,7 +61,8 @@ chk('the cumulative chart is drawn', /<svg class="pfo-chart"/.test(h) && /<polyl
 chk('open positions are summarized with their unrealized mark, labelled as the reader\'s', /Marked to the prices you entered: \+\$7\.00/.test(t));
 const empty = strip(U.render.overview(Object.assign({}, S, { positions: [] })));
 chk('an empty book shows no figure at all — no sample data', /Build your portfolio/.test(empty) && !/\$\d/.test(empty), empty);
-chk('and says how to build one: connect accounts first, then import or record by hand', /Connect accounts\s+Import a CSV\s+Record a sportsbook bet/.test(empty), empty);
+chk('and says how to build one: connect accounts first, then import (a file, or screenshots / text) or record by hand',
+  /Connect accounts\s+Import a CSV\s+Import picks from screenshots or text\s+Record a sportsbook bet/.test(empty), empty);
 
 /* ═══ OPEN ══════════════════════════════════════════════════════════════ */
 t = strip(U.render.open(S));

@@ -10,6 +10,10 @@
 #               browser's engine; the import pipeline end to end.
 #   browser     app.html in Chromium (1280 px and a 390 px phone) against that
 #               real migration through a PostgREST stand-in.
+#   import      Screenshot / Paste Import (docs/bet-import.md): the shared core
+#               and the shipped parse_bet_import function against a mocked
+#               network, supabase/bet_import.sql with the browser's own staged
+#               rows, and the review table in Chromium.
 #
 # Nothing here deploys or writes anywhere. Deploying is
 # .github/workflows/deploy-portfolio.yml, run by hand.
@@ -21,6 +25,11 @@ on:
       - 'lib/edgedesk_portfolio*.js'
       - 'lib/edgedesk_bet_history.js'
       - 'lib/edgedesk_slip_reader.js'
+      - 'lib/edgedesk_bet_import*.js'
+      - 'lib/edgedesk_bet_import.css'
+      - 'supabase/bet_import.sql'
+      - 'supabase/migrations/*_bet_import.sql'
+      - 'supabase/functions/parse_bet_import/**'
       - 'lib/edgedesk_portfolio.css'
       - 'lib/edgedesk_decision_record.js'
       - 'lib/edgedesk_decision_ui.js'
@@ -58,6 +67,11 @@ on:
       - 'lib/edgedesk_portfolio*.js'
       - 'lib/edgedesk_bet_history.js'
       - 'lib/edgedesk_slip_reader.js'
+      - 'lib/edgedesk_bet_import*.js'
+      - 'lib/edgedesk_bet_import.css'
+      - 'supabase/bet_import.sql'
+      - 'supabase/migrations/*_bet_import.sql'
+      - 'supabase/functions/parse_bet_import/**'
       - 'lib/edgedesk_decision_record.js'
       - 'tools/portfolio/**'
       - 'supabase/portfolio.sql'
@@ -106,6 +120,10 @@ jobs:
         run: node tools/portfolio/decision_record.test.js
       - name: The app's navigation still holds (seven seats, More, deep links)
         run: node tools/app/navigation.test.js
+      - name: Import picks — the shared core (prices, the strict schema, flag-don't-drop), the shipped parse_bet_import function against a mocked network, the review table and its wiring
+        run: |
+          node tools/portfolio/inline_bet_import_core.js --check
+          node tools/portfolio/bet_import.test.js
 
   migration:
     runs-on: ubuntu-latest
@@ -160,6 +178,10 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/bet_history_sql.test.js
+      - name: supabase/bet_import.sql — the browser's staged rows through the real commit, IMPORT_SCREENSHOT / IMPORT_PASTE, dedupe, RLS, the allowance, the games lookup and the close for CLV
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/bet_import_sql.test.js
 
   browser:
     runs-on: ubuntu-latest
@@ -189,3 +211,7 @@ jobs:
         env:
           PORTFOLIO_UI_REQUIRED: '1'
         run: node tools/portfolio/juicereel_ui.e2e.js
+      - name: Import picks in Chromium — screenshots scaled and tiled on the device, the review table (unsure fields, blocked rows, game matching), Confirm, and the same picks refused a second time, at 1280 px and 390 px
+        env:
+          PORTFOLIO_UI_REQUIRED: '1'
+        run: node tools/portfolio/bet_import.e2e.js
