@@ -1,8 +1,8 @@
 # UFC weekly model report
 
-Generated 2026-10-24T15:02:10Z. EXPERIMENTAL. No timestamped UFC closing prices are archived; the 2026-10 study (docs/model-loop/ufc/study/README.md) measures the model against an untimestamped public archive of pre-fight lines, where it trails the closing line by a wide margin.
+Generated 2026-10-25T05:16:46Z. EXPERIMENTAL. No timestamped UFC closing prices are archived; the 2026-10 study (docs/model-loop/ufc/study/README.md) measures the model against an untimestamped public archive of pre-fight lines, where it trails the closing line by a wide margin.
 
-Served: **1.2.0**.
+Served: **1.3.0**.
 
 ## Preregistered backtest
 
@@ -17,18 +17,19 @@ Decision: served — clears every condition.
 
 ## The disagreement guard
 
-Threshold 8 points; 9 of 20 published bouts have a market price, 5 disagree; certified as a signal: no (the closing line on file is untimestamped (a public archive's pre-fight line), so it can refuse a signal but never certify one; on those bouts the model's log loss 0.6524 is worse than the closing line's 0.5728: 942 resolved in the market's favour, 478 in the model's).
+Threshold 8 points; 10 of 13 published bouts have a market price, 5 disagree; certified as a signal: no (the closing line on file is untimestamped (a public archive's pre-fight line), so it can refuse a signal but never certify one; on those bouts the model's log loss 0.6540 is worse than the closing line's 0.5797: 903 resolved in the market's favour, 505 in the model's).
 
 | Bout | Model | Market (no vig) | Gap | Likely why |
 |---|---|---|---|---|
-| Azamat Murzakanov v Dominick Reyes | 0.550 | 0.645 | -9.4 | Azamat Murzakanov is 37.5, past 35: how much age has taken is where the model and the market most often differ; Dominick Reyes is 36.8, past 35: how much age has taken is where the model and the market most often differ |
-| Abus Magomedov v Cam Rowston | 0.425 | 0.532 | -10.7 | Abus Magomedov is 36.1, past 35: how much age has taken is where the model and the market most often differ |
-| Alexander Volkanovski v Movsar Evloev | 0.348 | 0.496 | -14.7 | Alexander Volkanovski is 38.1, past 35: how much age has taken is where the model and the market most often differ |
-| Alexander Volkov v Rizvan Kuniev | 0.653 | 0.522 | +13.1 | Alexander Volkov is 38.0, past 35: how much age has taken is where the model and the market most often differ |
-| Aaron Pico v Losene Keita | 0.344 | 0.572 | -22.8 | Aaron Pico has 2 UFC bouts in the data (pro record before the UFC 13-4): a short sample; Losene Keita has 2 UFC bouts in the data (pro record before the UFC 16-1): a short sample |
+| Joe Kropschot v Nick Klein | 0.579 | 0.726 | -14.7 | Joe Kropschot has 1 UFC bout in the data (pro record before the UFC 8-3): a short sample; Nick Klein has 3 UFC bouts in the data (pro record before the UFC 5-1): a short sample; Nick Klein returns after 454 days out |
+| Piera Rodriguez v Talita Alencar | 0.591 | 0.691 | -10.0 | Talita Alencar is 36.0, past 35: how much age has taken is where the model and the market most often differ |
+| Julian Erosa v JeongYeong Lee | 0.458 | 0.378 | +8.1 | JeongYeong Lee returns after 538 days out; Julian Erosa is 37.3, past 35: how much age has taken is where the model and the market most often differ |
+| Renato Moicano v Tom Nolan | 0.374 | 0.457 | -8.4 | Renato Moicano is 37.4, past 35: how much age has taken is where the model and the market most often differ |
+| Jean-Paul Lebosnoyani v Farman Hasanov | 0.574 | 0.691 | -11.6 | Jean-Paul Lebosnoyani has 3 UFC bouts in the data (pro record before the UFC 8-2): a short sample; Farman Hasanov has 1 UFC bout in the data (pro record before the UFC 5-0): a short sample |
 
 ## This week's research
 
 | Candidate | Change | Δ log loss | 95% interval | Δ Brier | Decision |
 |---|---|---|---|---|---|
-| champion_term | `champ_bonus` ['set', 100.0] | 9e-05 | [-0.00106, 0.00124] | 0.0 | FAIL: log loss change +0.00009 does not clear -0.0005; 95% interval [-0.00106, 0.00124] is not below zero; worse on 2025 |
+| age_by_division | `age_div` ['set', {'Bantamweight': [28, -15], 'Featherweight': [28, -15], 'Lightweight': [30, -15], 'Welterweight': [33, -25], 'Middleweight': [28, -20], 'Light Heavyweight': [40, -25], 'Heavyweight': [31, -15], 'W Strawweight': [28, -30]}] | -0.00249 | [-0.00462, -0.00041] | -0.00117 | PASS: clears every condition |
+| age_shared | `age_div` ['set', {}] | — | — | — | SKIPPED: no change from the served configuration |

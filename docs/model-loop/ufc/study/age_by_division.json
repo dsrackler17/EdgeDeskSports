@@ -1,0 +1,1460 @@
+{
+ "schema": "edgedesk_model_loop_ufc_age_study_v1",
+ "generated_at": "2026-10-24T15:56:25Z",
+ "protocol_sha256": "9bb8cad3842e79e12d5230fc2163ead33be3fb6c229882d09f21952c96afe73b",
+ "base_version": "1.2.0",
+ "facts": {
+  "file": "model_loop/data/ufc/fighter_facts.csv",
+  "sha256": "a21fc71c56cdb53fe98e62290849c8349f55b8a34234ee63026c9348dca7113d",
+  "fighters": 2425,
+  "with_date_of_birth": 2407,
+  "pre_record_source": {
+   "reconstructed": 2423,
+   "none": 2
+  }
+ },
+ "reference": {
+  "name": "Ultimate UFC Dataset (ufc-master.csv)",
+  "url": "https://raw.githubusercontent.com/shortlikeafox/ultimate_ufc_dataset/master/ufc-master.csv",
+  "home": "https://github.com/shortlikeafox/ultimate_ufc_dataset",
+  "timestamped": false,
+  "kind": "approximate close: one pre-fight moneyline per side, quote time not stated",
+  "available": true,
+  "sha256": "b8aa6604539d5981bba561cb65da26133567732145ca48efbec2d9423b081937",
+  "rows_with_odds": 6899,
+  "matched": 5662,
+  "span": [
+   "2010-03-21",
+   "2026-03-28"
+  ],
+  "median_overround": 0.0399
+ },
+ "fits": {
+  "division_curves": {
+   "Flyweight": {
+    "fit_bouts": 127,
+    "curve": null,
+    "note": "fewer than 150 FIT bouts: the shared curve"
+   },
+   "Bantamweight": {
+    "fit_bouts": 260,
+    "curve": [
+     28,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.65921
+   },
+   "Featherweight": {
+    "fit_bouts": 296,
+    "curve": [
+     28,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.66129
+   },
+   "Lightweight": {
+    "fit_bouts": 372,
+    "curve": [
+     30,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.63744
+   },
+   "Welterweight": {
+    "fit_bouts": 384,
+    "curve": [
+     33,
+     -25
+    ],
+    "fit_log_loss_division": 0.64088
+   },
+   "Middleweight": {
+    "fit_bouts": 272,
+    "curve": [
+     28,
+     -20
+    ],
+    "fit_log_loss_division": 0.64665
+   },
+   "Light Heavyweight": {
+    "fit_bouts": 211,
+    "curve": [
+     40,
+     -25
+    ],
+    "fit_log_loss_division": 0.67377
+   },
+   "Heavyweight": {
+    "fit_bouts": 206,
+    "curve": [
+     31,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.67188
+   },
+   "W Strawweight": {
+    "fit_bouts": 156,
+    "curve": [
+     28,
+     -30
+    ],
+    "fit_log_loss_division": 0.63585
+   },
+   "W Flyweight": {
+    "fit_bouts": 109,
+    "curve": null,
+    "note": "fewer than 150 FIT bouts: the shared curve"
+   },
+   "W Bantamweight": {
+    "fit_bouts": 94,
+    "curve": null,
+    "note": "fewer than 150 FIT bouts: the shared curve"
+   },
+   "W Featherweight": {
+    "fit_bouts": 16,
+    "curve": null,
+    "note": "fewer than 150 FIT bouts: the shared curve"
+   }
+  },
+  "division_knees": {
+   "Flyweight": {
+    "fit_bouts": 127,
+    "curve": null,
+    "note": "fewer than 150 FIT bouts: the shared curve"
+   },
+   "Bantamweight": {
+    "fit_bouts": 260,
+    "curve": [
+     28,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.65921
+   },
+   "Featherweight": {
+    "fit_bouts": 296,
+    "curve": [
+     28,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.66129
+   },
+   "Lightweight": {
+    "fit_bouts": 372,
+    "curve": [
+     30,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.63744
+   },
+   "Welterweight": {
+    "fit_bouts": 384,
+    "curve": [
+     33,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.64166
+   },
+   "Middleweight": {
+    "fit_bouts": 272,
+    "curve": [
+     28,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.64656
+   },
+   "Light Heavyweight": {
+    "fit_bouts": 211,
+    "curve": [
+     40,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.67365
+   },
+   "Heavyweight": {
+    "fit_bouts": 206,
+    "curve": [
+     31,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.67194
+   },
+   "W Strawweight": {
+    "fit_bouts": 156,
+    "curve": [
+     28,
+     -15.0
+    ],
+    "fit_log_loss_division": 0.64098
+   },
+   "W Flyweight": {
+    "fit_bouts": 109,
+    "curve": null,
+    "note": "fewer than 150 FIT bouts: the shared curve"
+   },
+   "W Bantamweight": {
+    "fit_bouts": 94,
+    "curve": null,
+    "note": "fewer than 150 FIT bouts: the shared curve"
+   },
+   "W Featherweight": {
+    "fit_bouts": 16,
+    "curve": null,
+    "note": "fewer than 150 FIT bouts: the shared curve"
+   }
+  }
+ },
+ "candidates": {
+  "division_curves": {
+   "config_change": {
+    "age_div": {
+     "Bantamweight": [
+      28,
+      -15.0
+     ],
+     "Featherweight": [
+      28,
+      -15.0
+     ],
+     "Lightweight": [
+      30,
+      -15.0
+     ],
+     "Welterweight": [
+      33,
+      -25
+     ],
+     "Middleweight": [
+      28,
+      -20
+     ],
+     "Light Heavyweight": [
+      40,
+      -25
+     ],
+     "Heavyweight": [
+      31,
+      -15.0
+     ],
+     "W Strawweight": [
+      28,
+      -30
+     ]
+    }
+   },
+   "fit_delta": -0.00313,
+   "select_delta": 0.00193,
+   "select_ci95": [
+    -0.00204,
+    0.00563
+   ],
+   "decision": "DROPPED",
+   "reason": "SELECT log loss change +0.00193 does not clear -0.0005",
+   "divisions": {
+    "Flyweight": {
+     "fit": {
+      "n": 128,
+      "delta_log_loss": 0.00089
+     },
+     "select": {
+      "n": 111,
+      "delta_log_loss": -0.00089
+     },
+     "test": {
+      "n": 126,
+      "delta_log_loss": 0.00026
+     },
+     "older_33_plus": {
+      "n": 83,
+      "base_said": 0.3872,
+      "new_said": 0.3884,
+      "won": 0.3012
+     }
+    },
+    "Bantamweight": {
+     "fit": {
+      "n": 260,
+      "delta_log_loss": -0.00363
+     },
+     "select": {
+      "n": 193,
+      "delta_log_loss": 0.00199
+     },
+     "test": {
+      "n": 186,
+      "delta_log_loss": -0.01443
+     },
+     "older_33_plus": {
+      "n": 198,
+      "base_said": 0.3929,
+      "new_said": 0.3655,
+      "won": 0.3687
+     }
+    },
+    "Featherweight": {
+     "fit": {
+      "n": 297,
+      "delta_log_loss": -0.00242
+     },
+     "select": {
+      "n": 186,
+      "delta_log_loss": 0.00171
+     },
+     "test": {
+      "n": 201,
+      "delta_log_loss": -0.01037
+     },
+     "older_33_plus": {
+      "n": 183,
+      "base_said": 0.4011,
+      "new_said": 0.3711,
+      "won": 0.3716
+     }
+    },
+    "Lightweight": {
+     "fit": {
+      "n": 373,
+      "delta_log_loss": -0.00056
+     },
+     "select": {
+      "n": 224,
+      "delta_log_loss": 0.00141
+     },
+     "test": {
+      "n": 214,
+      "delta_log_loss": -0.00029
+     },
+     "older_33_plus": {
+      "n": 262,
+      "base_said": 0.3909,
+      "new_said": 0.373,
+      "won": 0.3702
+     }
+    },
+    "Welterweight": {
+     "fit": {
+      "n": 384,
+      "delta_log_loss": -0.00061
+     },
+     "select": {
+      "n": 195,
+      "delta_log_loss": 0.00058
+     },
+     "test": {
+      "n": 188,
+      "delta_log_loss": -0.00614
+     },
+     "older_33_plus": {
+      "n": 311,
+      "base_said": 0.4048,
+      "new_said": 0.3836,
+      "won": 0.3794
+     }
+    },
+    "Middleweight": {
+     "fit": {
+      "n": 273,
+      "delta_log_loss": -0.00631
+     },
+     "select": {
+      "n": 199,
+      "delta_log_loss": -0.0003
+     },
+     "test": {
+      "n": 218,
+      "delta_log_loss": -0.00257
+     },
+     "older_33_plus": {
+      "n": 270,
+      "base_said": 0.3787,
+      "new_said": 0.3239,
+      "won": 0.3111
+     }
+    },
+    "Light Heavyweight": {
+     "fit": {
+      "n": 214,
+      "delta_log_loss": -0.00927
+     },
+     "select": {
+      "n": 114,
+      "delta_log_loss": 0.00028
+     },
+     "test": {
+      "n": 118,
+      "delta_log_loss": -0.00598
+     },
+     "older_33_plus": {
+      "n": 169,
+      "base_said": 0.3876,
+      "new_said": 0.4515,
+      "won": 0.4438
+     }
+    },
+    "Heavyweight": {
+     "fit": {
+      "n": 207,
+      "delta_log_loss": -0.00107
+     },
+     "select": {
+      "n": 119,
+      "delta_log_loss": -0.00306
+     },
+     "test": {
+      "n": 118,
+      "delta_log_loss": -0.00371
+     },
+     "older_33_plus": {
+      "n": 209,
+      "base_said": 0.3895,
+      "new_said": 0.3809,
+      "won": 0.3636
+     }
+    },
+    "W Strawweight": {
+     "fit": {
+      "n": 157,
+      "delta_log_loss": -0.01195
+     },
+     "select": {
+      "n": 109,
+      "delta_log_loss": 0.02639
+     },
+     "test": {
+      "n": 100,
+      "delta_log_loss": -0.0188
+     },
+     "older_33_plus": {
+      "n": 110,
+      "base_said": 0.39,
+      "new_said": 0.2777,
+      "won": 0.3455
+     }
+    },
+    "W Flyweight": {
+     "fit": {
+      "n": 109,
+      "delta_log_loss": -0.00086
+     },
+     "select": {
+      "n": 112,
+      "delta_log_loss": -0.00086
+     },
+     "test": {
+      "n": 74,
+      "delta_log_loss": -0.00055
+     },
+     "older_33_plus": {
+      "n": 89,
+      "base_said": 0.4094,
+      "new_said": 0.4139,
+      "won": 0.3933
+     }
+    },
+    "W Bantamweight": {
+     "fit": {
+      "n": 95,
+      "delta_log_loss": -5e-05
+     },
+     "select": {
+      "n": 52,
+      "delta_log_loss": -0.00063
+     },
+     "test": {
+      "n": 61,
+      "delta_log_loss": -0.00012
+     },
+     "older_33_plus": {
+      "n": 99,
+      "base_said": 0.4033,
+      "new_said": 0.4033,
+      "won": 0.404
+     }
+    },
+    "W Featherweight": {
+     "fit": {
+      "n": 16,
+      "delta_log_loss": 0.0
+     },
+     "select": {
+      "n": 14,
+      "delta_log_loss": 0.00031
+     },
+     "test": {
+      "n": 1,
+      "delta_log_loss": -0.00042
+     },
+     "older_33_plus": {
+      "n": 14,
+      "base_said": 0.3632,
+      "new_said": 0.3632,
+      "won": 0.2857
+     }
+    }
+   },
+   "out_of_sample": {
+    "window": [
+     2021,
+     2099
+    ],
+    "n": 3286,
+    "delta_log_loss": -0.00199,
+    "ci95": [
+     -0.00482,
+     0.00083
+    ],
+    "delta_brier": -0.00096,
+    "by_season": {
+     "2021": 0.00595,
+     "2022": -0.00091,
+     "2023": 0.00082,
+     "2024": -0.00696,
+     "2025": -0.00498,
+     "2026": -0.00614
+    }
+   }
+  },
+  "division_knees": {
+   "config_change": {
+    "age_div": {
+     "Bantamweight": [
+      28,
+      -15.0
+     ],
+     "Featherweight": [
+      28,
+      -15.0
+     ],
+     "Lightweight": [
+      30,
+      -15.0
+     ],
+     "Welterweight": [
+      33,
+      -15.0
+     ],
+     "Middleweight": [
+      28,
+      -15.0
+     ],
+     "Light Heavyweight": [
+      40,
+      -15.0
+     ],
+     "Heavyweight": [
+      31,
+      -15.0
+     ],
+     "W Strawweight": [
+      28,
+      -15.0
+     ]
+    }
+   },
+   "fit_delta": -0.00266,
+   "select_delta": 0.00094,
+   "select_ci95": [
+    -0.00168,
+    0.00335
+   ],
+   "decision": "DROPPED",
+   "reason": "SELECT log loss change +0.00094 does not clear -0.0005",
+   "divisions": {
+    "Flyweight": {
+     "fit": {
+      "n": 128,
+      "delta_log_loss": 0.00089
+     },
+     "select": {
+      "n": 111,
+      "delta_log_loss": -0.00089
+     },
+     "test": {
+      "n": 126,
+      "delta_log_loss": 0.00026
+     },
+     "older_33_plus": {
+      "n": 83,
+      "base_said": 0.3872,
+      "new_said": 0.3884,
+      "won": 0.3012
+     }
+    },
+    "Bantamweight": {
+     "fit": {
+      "n": 260,
+      "delta_log_loss": -0.00363
+     },
+     "select": {
+      "n": 193,
+      "delta_log_loss": 0.00199
+     },
+     "test": {
+      "n": 186,
+      "delta_log_loss": -0.01443
+     },
+     "older_33_plus": {
+      "n": 198,
+      "base_said": 0.3929,
+      "new_said": 0.3655,
+      "won": 0.3687
+     }
+    },
+    "Featherweight": {
+     "fit": {
+      "n": 297,
+      "delta_log_loss": -0.00243
+     },
+     "select": {
+      "n": 186,
+      "delta_log_loss": 0.00169
+     },
+     "test": {
+      "n": 201,
+      "delta_log_loss": -0.01037
+     },
+     "older_33_plus": {
+      "n": 183,
+      "base_said": 0.4011,
+      "new_said": 0.3711,
+      "won": 0.3716
+     }
+    },
+    "Lightweight": {
+     "fit": {
+      "n": 373,
+      "delta_log_loss": -0.00041
+     },
+     "select": {
+      "n": 224,
+      "delta_log_loss": 0.00132
+     },
+     "test": {
+      "n": 214,
+      "delta_log_loss": -0.00033
+     },
+     "older_33_plus": {
+      "n": 262,
+      "base_said": 0.3909,
+      "new_said": 0.3728,
+      "won": 0.3702
+     }
+    },
+    "Welterweight": {
+     "fit": {
+      "n": 384,
+      "delta_log_loss": 0.00017
+     },
+     "select": {
+      "n": 195,
+      "delta_log_loss": 0.00155
+     },
+     "test": {
+      "n": 188,
+      "delta_log_loss": 0.00201
+     },
+     "older_33_plus": {
+      "n": 311,
+      "base_said": 0.4048,
+      "new_said": 0.419,
+      "won": 0.3794
+     }
+    },
+    "Middleweight": {
+     "fit": {
+      "n": 273,
+      "delta_log_loss": -0.00637
+     },
+     "select": {
+      "n": 199,
+      "delta_log_loss": 0.00044
+     },
+     "test": {
+      "n": 218,
+      "delta_log_loss": -0.00043
+     },
+     "older_33_plus": {
+      "n": 270,
+      "base_said": 0.3787,
+      "new_said": 0.3512,
+      "won": 0.3111
+     }
+    },
+    "Light Heavyweight": {
+     "fit": {
+      "n": 214,
+      "delta_log_loss": -0.0094
+     },
+     "select": {
+      "n": 114,
+      "delta_log_loss": 0.0025
+     },
+     "test": {
+      "n": 118,
+      "delta_log_loss": -0.00557
+     },
+     "older_33_plus": {
+      "n": 169,
+      "base_said": 0.3876,
+      "new_said": 0.4532,
+      "won": 0.4438
+     }
+    },
+    "Heavyweight": {
+     "fit": {
+      "n": 207,
+      "delta_log_loss": -0.00102
+     },
+     "select": {
+      "n": 119,
+      "delta_log_loss": -0.00288
+     },
+     "test": {
+      "n": 118,
+      "delta_log_loss": -0.00378
+     },
+     "older_33_plus": {
+      "n": 209,
+      "base_said": 0.3895,
+      "new_said": 0.3809,
+      "won": 0.3636
+     }
+    },
+    "W Strawweight": {
+     "fit": {
+      "n": 157,
+      "delta_log_loss": -0.00682
+     },
+     "select": {
+      "n": 109,
+      "delta_log_loss": 0.00256
+     },
+     "test": {
+      "n": 100,
+      "delta_log_loss": -0.00866
+     },
+     "older_33_plus": {
+      "n": 110,
+      "base_said": 0.39,
+      "new_said": 0.3602,
+      "won": 0.3455
+     }
+    },
+    "W Flyweight": {
+     "fit": {
+      "n": 109,
+      "delta_log_loss": -0.00017
+     },
+     "select": {
+      "n": 112,
+      "delta_log_loss": -0.00027
+     },
+     "test": {
+      "n": 74,
+      "delta_log_loss": 0.00026
+     },
+     "older_33_plus": {
+      "n": 89,
+      "base_said": 0.4094,
+      "new_said": 0.4116,
+      "won": 0.3933
+     }
+    },
+    "W Bantamweight": {
+     "fit": {
+      "n": 95,
+      "delta_log_loss": -2e-05
+     },
+     "select": {
+      "n": 52,
+      "delta_log_loss": -0.00027
+     },
+     "test": {
+      "n": 61,
+      "delta_log_loss": -5e-05
+     },
+     "older_33_plus": {
+      "n": 99,
+      "base_said": 0.4033,
+      "new_said": 0.4033,
+      "won": 0.404
+     }
+    },
+    "W Featherweight": {
+     "fit": {
+      "n": 16,
+      "delta_log_loss": 0.0
+     },
+     "select": {
+      "n": 14,
+      "delta_log_loss": 0.00014
+     },
+     "test": {
+      "n": 1,
+      "delta_log_loss": -0.00019
+     },
+     "older_33_plus": {
+      "n": 14,
+      "base_said": 0.3632,
+      "new_said": 0.3632,
+      "won": 0.2857
+     }
+    }
+   },
+   "out_of_sample": {
+    "window": [
+     2021,
+     2099
+    ],
+    "n": 3286,
+    "delta_log_loss": -0.00155,
+    "ci95": [
+     -0.00342,
+     0.00032
+    ],
+    "delta_brier": -0.00076,
+    "by_season": {
+     "2021": 0.00199,
+     "2022": 2e-05,
+     "2023": 0.00082,
+     "2024": -0.00471,
+     "2025": -0.00377,
+     "2026": -0.00377
+    }
+   }
+  },
+  "elite": {
+   "config_change": {
+    "age_elite_slope": -15
+   },
+   "fit_delta": -0.00073,
+   "select_delta": -0.00082,
+   "select_ci95": [
+    -0.00282,
+    0.00098
+   ],
+   "decision": "KEPT",
+   "reason": "clears the keep rule",
+   "divisions": {
+    "Flyweight": {
+     "fit": {
+      "n": 128,
+      "delta_log_loss": 0.00068
+     },
+     "select": {
+      "n": 111,
+      "delta_log_loss": -0.00129
+     },
+     "test": {
+      "n": 126,
+      "delta_log_loss": -8e-05
+     },
+     "older_33_plus": {
+      "n": 83,
+      "base_said": 0.3872,
+      "new_said": 0.3775,
+      "won": 0.3012
+     }
+    },
+    "Bantamweight": {
+     "fit": {
+      "n": 260,
+      "delta_log_loss": -0.00201
+     },
+     "select": {
+      "n": 193,
+      "delta_log_loss": 0.00279
+     },
+     "test": {
+      "n": 186,
+      "delta_log_loss": -0.00105
+     },
+     "older_33_plus": {
+      "n": 198,
+      "base_said": 0.3929,
+      "new_said": 0.3829,
+      "won": 0.3687
+     }
+    },
+    "Featherweight": {
+     "fit": {
+      "n": 297,
+      "delta_log_loss": -0.00077
+     },
+     "select": {
+      "n": 186,
+      "delta_log_loss": 0.00182
+     },
+     "test": {
+      "n": 201,
+      "delta_log_loss": 0.00453
+     },
+     "older_33_plus": {
+      "n": 183,
+      "base_said": 0.4011,
+      "new_said": 0.3924,
+      "won": 0.3716
+     }
+    },
+    "Lightweight": {
+     "fit": {
+      "n": 373,
+      "delta_log_loss": 0.00298
+     },
+     "select": {
+      "n": 224,
+      "delta_log_loss": -0.00389
+     },
+     "test": {
+      "n": 214,
+      "delta_log_loss": -0.00186
+     },
+     "older_33_plus": {
+      "n": 262,
+      "base_said": 0.3909,
+      "new_said": 0.3781,
+      "won": 0.3702
+     }
+    },
+    "Welterweight": {
+     "fit": {
+      "n": 384,
+      "delta_log_loss": -0.00274
+     },
+     "select": {
+      "n": 195,
+      "delta_log_loss": -0.00553
+     },
+     "test": {
+      "n": 188,
+      "delta_log_loss": -0.00159
+     },
+     "older_33_plus": {
+      "n": 311,
+      "base_said": 0.4048,
+      "new_said": 0.3917,
+      "won": 0.3794
+     }
+    },
+    "Middleweight": {
+     "fit": {
+      "n": 273,
+      "delta_log_loss": -0.00642
+     },
+     "select": {
+      "n": 199,
+      "delta_log_loss": -0.00353
+     },
+     "test": {
+      "n": 218,
+      "delta_log_loss": -0.00323
+     },
+     "older_33_plus": {
+      "n": 270,
+      "base_said": 0.3787,
+      "new_said": 0.3702,
+      "won": 0.3111
+     }
+    },
+    "Light Heavyweight": {
+     "fit": {
+      "n": 214,
+      "delta_log_loss": 0.00137
+     },
+     "select": {
+      "n": 114,
+      "delta_log_loss": 0.00146
+     },
+     "test": {
+      "n": 118,
+      "delta_log_loss": -0.00044
+     },
+     "older_33_plus": {
+      "n": 169,
+      "base_said": 0.3876,
+      "new_said": 0.3833,
+      "won": 0.4438
+     }
+    },
+    "Heavyweight": {
+     "fit": {
+      "n": 207,
+      "delta_log_loss": 0.00126
+     },
+     "select": {
+      "n": 119,
+      "delta_log_loss": 0.00303
+     },
+     "test": {
+      "n": 118,
+      "delta_log_loss": 0.00353
+     },
+     "older_33_plus": {
+      "n": 209,
+      "base_said": 0.3895,
+      "new_said": 0.3838,
+      "won": 0.3636
+     }
+    },
+    "W Strawweight": {
+     "fit": {
+      "n": 157,
+      "delta_log_loss": -0.00011
+     },
+     "select": {
+      "n": 109,
+      "delta_log_loss": -0.0004
+     },
+     "test": {
+      "n": 100,
+      "delta_log_loss": 0.00477
+     },
+     "older_33_plus": {
+      "n": 110,
+      "base_said": 0.39,
+      "new_said": 0.3879,
+      "won": 0.3455
+     }
+    },
+    "W Flyweight": {
+     "fit": {
+      "n": 109,
+      "delta_log_loss": -0.00044
+     },
+     "select": {
+      "n": 112,
+      "delta_log_loss": -0.00056
+     },
+     "test": {
+      "n": 74,
+      "delta_log_loss": 0.01225
+     },
+     "older_33_plus": {
+      "n": 89,
+      "base_said": 0.4094,
+      "new_said": 0.4026,
+      "won": 0.3933
+     }
+    },
+    "W Bantamweight": {
+     "fit": {
+      "n": 95,
+      "delta_log_loss": 0.0
+     },
+     "select": {
+      "n": 52,
+      "delta_log_loss": -0.00222
+     },
+     "test": {
+      "n": 61,
+      "delta_log_loss": -0.00857
+     },
+     "older_33_plus": {
+      "n": 99,
+      "base_said": 0.4033,
+      "new_said": 0.4,
+      "won": 0.404
+     }
+    },
+    "W Featherweight": {
+     "fit": {
+      "n": 16,
+      "delta_log_loss": 3e-05
+     },
+     "select": {
+      "n": 14,
+      "delta_log_loss": 0.00094
+     },
+     "test": {
+      "n": 1,
+      "delta_log_loss": -0.07984
+     },
+     "older_33_plus": {
+      "n": 14,
+      "base_said": 0.3632,
+      "new_said": 0.3632,
+      "won": 0.2857
+     }
+    }
+   },
+   "out_of_sample": {
+    "window": [
+     2021,
+     2099
+    ],
+    "n": 3286,
+    "delta_log_loss": -0.00024,
+    "ci95": [
+     -0.0015,
+     0.00112
+    ],
+    "delta_brier": -3e-05,
+    "by_season": {
+     "2021": -9e-05,
+     "2022": -0.00068,
+     "2023": -0.00167,
+     "2024": -0.00185,
+     "2025": 0.0022,
+     "2026": 0.0007
+    }
+   }
+  },
+  "division_curves_and_elite": {
+   "config_change": {
+    "age_div": {
+     "Bantamweight": [
+      28,
+      -15.0
+     ],
+     "Featherweight": [
+      28,
+      -15.0
+     ],
+     "Lightweight": [
+      30,
+      -15.0
+     ],
+     "Welterweight": [
+      33,
+      -25
+     ],
+     "Middleweight": [
+      28,
+      -20
+     ],
+     "Light Heavyweight": [
+      40,
+      -25
+     ],
+     "Heavyweight": [
+      31,
+      -15.0
+     ],
+     "W Strawweight": [
+      28,
+      -30
+     ]
+    },
+    "age_elite_slope": -10
+   },
+   "fit_delta": -0.00375,
+   "select_delta": 0.00188,
+   "select_ci95": [
+    -0.00238,
+    0.00601
+   ],
+   "decision": "DROPPED",
+   "reason": "SELECT log loss change +0.00188 does not clear -0.0005",
+   "divisions": {
+    "Flyweight": {
+     "fit": {
+      "n": 128,
+      "delta_log_loss": 0.00143
+     },
+     "select": {
+      "n": 111,
+      "delta_log_loss": -0.00198
+     },
+     "test": {
+      "n": 126,
+      "delta_log_loss": 0.00012
+     },
+     "older_33_plus": {
+      "n": 83,
+      "base_said": 0.3872,
+      "new_said": 0.3819,
+      "won": 0.3012
+     }
+    },
+    "Bantamweight": {
+     "fit": {
+      "n": 260,
+      "delta_log_loss": -0.00373
+     },
+     "select": {
+      "n": 193,
+      "delta_log_loss": 0.00731
+     },
+     "test": {
+      "n": 186,
+      "delta_log_loss": -0.0119
+     },
+     "older_33_plus": {
+      "n": 198,
+      "base_said": 0.3929,
+      "new_said": 0.3575,
+      "won": 0.3687
+     }
+    },
+    "Featherweight": {
+     "fit": {
+      "n": 297,
+      "delta_log_loss": -0.00346
+     },
+     "select": {
+      "n": 186,
+      "delta_log_loss": 0.0024
+     },
+     "test": {
+      "n": 201,
+      "delta_log_loss": -0.00178
+     },
+     "older_33_plus": {
+      "n": 183,
+      "base_said": 0.4011,
+      "new_said": 0.364,
+      "won": 0.3716
+     }
+    },
+    "Lightweight": {
+     "fit": {
+      "n": 373,
+      "delta_log_loss": 0.00206
+     },
+     "select": {
+      "n": 224,
+      "delta_log_loss": -0.00068
+     },
+     "test": {
+      "n": 214,
+      "delta_log_loss": -0.0016
+     },
+     "older_33_plus": {
+      "n": 262,
+      "base_said": 0.3909,
+      "new_said": 0.3624,
+      "won": 0.3702
+     }
+    },
+    "Welterweight": {
+     "fit": {
+      "n": 384,
+      "delta_log_loss": -0.00221
+     },
+     "select": {
+      "n": 195,
+      "delta_log_loss": -0.00228
+     },
+     "test": {
+      "n": 188,
+      "delta_log_loss": -0.00711
+     },
+     "older_33_plus": {
+      "n": 311,
+      "base_said": 0.4048,
+      "new_said": 0.3767,
+      "won": 0.3794
+     }
+    },
+    "Middleweight": {
+     "fit": {
+      "n": 273,
+      "delta_log_loss": -0.01324
+     },
+     "select": {
+      "n": 199,
+      "delta_log_loss": -0.0033
+     },
+     "test": {
+      "n": 218,
+      "delta_log_loss": -0.00351
+     },
+     "older_33_plus": {
+      "n": 270,
+      "base_said": 0.3787,
+      "new_said": 0.3177,
+      "won": 0.3111
+     }
+    },
+    "Light Heavyweight": {
+     "fit": {
+      "n": 214,
+      "delta_log_loss": -0.00914
+     },
+     "select": {
+      "n": 114,
+      "delta_log_loss": 0.00061
+     },
+     "test": {
+      "n": 118,
+      "delta_log_loss": -0.00511
+     },
+     "older_33_plus": {
+      "n": 169,
+      "base_said": 0.3876,
+      "new_said": 0.4516,
+      "won": 0.4438
+     }
+    },
+    "Heavyweight": {
+     "fit": {
+      "n": 207,
+      "delta_log_loss": 0.00043
+     },
+     "select": {
+      "n": 119,
+      "delta_log_loss": -0.00024
+     },
+     "test": {
+      "n": 118,
+      "delta_log_loss": -0.00102
+     },
+     "older_33_plus": {
+      "n": 209,
+      "base_said": 0.3895,
+      "new_said": 0.3764,
+      "won": 0.3636
+     }
+    },
+    "W Strawweight": {
+     "fit": {
+      "n": 157,
+      "delta_log_loss": -0.01258
+     },
+     "select": {
+      "n": 109,
+      "delta_log_loss": 0.02708
+     },
+     "test": {
+      "n": 100,
+      "delta_log_loss": -0.01543
+     },
+     "older_33_plus": {
+      "n": 110,
+      "base_said": 0.39,
+      "new_said": 0.2762,
+      "won": 0.3455
+     }
+    },
+    "W Flyweight": {
+     "fit": {
+      "n": 109,
+      "delta_log_loss": -0.00093
+     },
+     "select": {
+      "n": 112,
+      "delta_log_loss": -0.00142
+     },
+     "test": {
+      "n": 74,
+      "delta_log_loss": 0.00637
+     },
+     "older_33_plus": {
+      "n": 89,
+      "base_said": 0.4094,
+      "new_said": 0.4095,
+      "won": 0.3933
+     }
+    },
+    "W Bantamweight": {
+     "fit": {
+      "n": 95,
+      "delta_log_loss": -5e-05
+     },
+     "select": {
+      "n": 52,
+      "delta_log_loss": -0.00218
+     },
+     "test": {
+      "n": 61,
+      "delta_log_loss": -0.00618
+     },
+     "older_33_plus": {
+      "n": 99,
+      "base_said": 0.4033,
+      "new_said": 0.401,
+      "won": 0.404
+     }
+    },
+    "W Featherweight": {
+     "fit": {
+      "n": 16,
+      "delta_log_loss": 2e-05
+     },
+     "select": {
+      "n": 14,
+      "delta_log_loss": 0.00093
+     },
+     "test": {
+      "n": 1,
+      "delta_log_loss": -0.0542
+     },
+     "older_33_plus": {
+      "n": 14,
+      "base_said": 0.3632,
+      "new_said": 0.3632,
+      "won": 0.2857
+     }
+    }
+   },
+   "out_of_sample": {
+    "window": [
+     2021,
+     2099
+    ],
+    "n": 3286,
+    "delta_log_loss": -0.00129,
+    "ci95": [
+     -0.00427,
+     0.00183
+    ],
+    "delta_brier": -0.00056,
+    "by_season": {
+     "2021": 0.00671,
+     "2022": -0.00079,
+     "2023": -0.0002,
+     "2024": -0.00793,
+     "2025": -0.00116,
+     "2026": -0.0045
+    }
+   }
+  }
+ },
+ "kept": [
+  "elite"
+ ],
+ "adopted": {
+  "candidate": "division_curves",
+  "version": "1.3.0",
+  "status": "SERVED (EXPERIMENTAL)",
+  "promoted_by": "weekly-loop",
+  "promoted_at": "2026-10-24T15:51:56Z",
+  "reason": "weekly loop: candidate age_by_division cleared the full-window rule"
+ },
+ "chosen": "elite",
+ "selected_config": {
+  "k": 64,
+  "k_new_mult": 1.5,
+  "new_bouts": 3,
+  "layoff_days": 365,
+  "layoff_regress": 0.25,
+  "scale": 400.0,
+  "calibration": "none",
+  "debut_offset": 25.0,
+  "prior_rec": 150,
+  "prior_exp": -25,
+  "age_slope": -15,
+  "age_knee": 32,
+  "age_elite_slope": -15
+ },
+ "promote": false,
+ "reasons": [
+  "TEST log loss change +0.00034 does not clear -0.0005",
+  "card-blocked 95% interval [-0.00159, 0.00228] is not below zero",
+  "Brier worse (+0.00027)"
+ ],
+ "test": {
+  "window": [
+   2024,
+   2099
+  ],
+  "n": 1623,
+  "old_log_loss": 0.64587,
+  "new_log_loss": 0.64622,
+  "delta_log_loss": 0.00034,
+  "ci95": [
+   -0.00159,
+   0.00228
+  ],
+  "delta_brier": 0.00027
+ }
+}

@@ -30,6 +30,46 @@ Two fixes that follow from the leave-one-term-out record (`docs/cfb-validation/L
   - A fresh build matched the fixture in all 888 games and every postseason pairing, so the fixture keeps its data with only the code identity moved.
   - Simulator suites: CFB 308, CLI 46, publish 18, reader 101, SQL 88, typecheck clean.
 
+## 2026-10-24 — UFC: the age curve by division (1.3.0)
+
+The question: does age cost the same at every weight? Heavyweights, and perhaps the lighter divisions, were thought to age later. The age study (`python3 -m model_loop.adapters.ufc.study age`; protocol `docs/model-loop/ufc/study/age_protocol.json` hashed before any fit; results in `age_by_division.json` and the study README §5) gave every division with 150+ bouts in 2016-2020 its own age curve, fitted on those years alone.
+
+- **Where the decline starts.**
+  - Bantamweight, featherweight, middleweight and women's strawweight start at 28, the edge of the grid. Lightweight starts at 30, heavyweight at 31 and welterweight at 33. Light heavyweight is latest, at 40.
+  - The lighter men's divisions age *earliest*: 1.2.0 still overrated the older fighter at bantam- and featherweight (said 39.3% and 40.1%, won 36.9% and 37.2%).
+  - A heavyweight-only later knee made every window worse.
+  - An elite UFC record (6+ wins at 70%+) does not slow the decline. Those fighters were overrated, and a steeper curve for them lost in 2024-2026, so it was not adopted.
+- **Adopted by the weekly rule, as 1.3.0.**
+  - Out of sample (2021-2026, 3,286 bouts), the curve by division lowers log loss by 0.0020 (card-blocked 95% interval −0.0048 to +0.0008). It is better in 2022 and 2024-2026 and worse in 2021 and 2023.
+  - The study's own rule (2021-2023 alone) dropped it. The weekly rule every UFC change must clear (2016 to date, interval below zero, Brier no worse, not worse in 2025) passed it, at −0.0025, and −0.0050 in 2025.
+  - **Better, not proven.** The weekly loop retests it, and its reverse `age_shared`, every week.
+- **Against 1.1.0 and the close.**
+  - From 2024 on: log loss 0.666 → 0.640 (1.2.0: 0.646).
+  - Since 2018, on bouts with a close: 0.648 against the closing line's 0.604.
+  - Out of sample, gaps over 10 points went the market's way 760 times to 426 (1.2.0: 814 to 395).
+- **UFC 333 moves (1.2.0 → 1.3.0).** Volkanovski 34.8 → 36.5 (market 49.6), Dvalishvili 51.3 → 52.8 (43.6; now over the guard's threshold), Volkov 65.3 (52.2), Krylov 26.0 → 31.7 (18.8), Magomedov 42.5 → 39.8 (53.3). The mean gap to the market goes from 11.6 to 12.0 points across the 14 bouts. The full card is in `UFC_SIMULATOR_NOTES.md` §7.
+- **Plumbing.**
+  - `age_div` (a knee and slope per division) and `age_elite_slope` in `model.py` and `elo.ts`, off unless set. The port matches `model.py` at full precision with both on.
+  - Unbooked title fights in the simulation use the title's division.
+  - `comparison.json` and Model Health now follow the served version and say when a choice behind it has read the 2024-on window. Model Health adds an *Age by division* table.
+  - `Versions.promote` now retires any `SERVED…` status, so promoting 1.3.0 no longer leaves 1.2.0 marked served.
+- **Restored.** The 1.2.0 entry below was dropped from this file by a merge of main and is restored as written.
+
+## 2026-10-24 — UFC: why the model disagreed with the market, a better model (1.2.0), and a guard on every disagreement
+
+On UFC 333 the served UFC Elo (1.1.0) had Dvalishvili 54.6% against Kalshi's ~41% and Volkov 70.4% against ~53%. The study behind this change (`model_loop/adapters/ufc/study.py`, every table in `docs/model-loop/ufc/study/README.md`) found those gaps were the model's blind spots, fixed what out-of-sample evidence supported, and stopped the product from presenting a large disagreement as an edge.
+
+- **The diagnosis (1.1.0, every decided bout since 2018).** Graded against a public archive's pre-fight closing lines (untimestamped, matched to 5,662 ESPN bouts):
+  - log loss 0.671 against the closing line's 0.604 on the same 3,764 bouts (Brier 0.239 v 0.209);
+  - gaps over 10 points: 2,102 bouts, **586 resolved in the model's favour, 1,516 in the market's**;
+  - blind spots: age (the older fighter at 37+: said 47.8%, close 38.4%, won 33.6%), debutants (45.3 / 41.9 / 37.9), short UFC samples, long layoffs.
+- **One change at a time** (fit 2016-2020; kept only if 2021-2023 log loss fell by 0.0005; protocol hashed first): kept the pre-UFC record as the prior (−0.0114) and an age curve (−0.0070); dropped step size, short-sample shrinkage and a debut prior, layoff decay, division change, recency and head to head.
+- **1.2.0 promoted, 1.1.0 kept runnable.** On 1,623 bouts from 2024 on (read once): log loss 0.666 → 0.646 (−0.0199, card-blocked 95% interval −0.028 to −0.011), Brier −0.0094. On bouts where both fighters are still in the UFC (where the reconstructed record's hindsight can barely act) the gain holds: −0.0186 (−0.029 to −0.008). It still trails the close (0.650 v 0.604 since 2018). Every published bout carries 1.1.0's price beside 1.2.0's.
+- **The disagreement guard** (`guard.py`, `guard.ts`, `docs/model-loop/ufc/guard.json`). Every bout is shown beside DraftKings' latest no-vig price. A gap over 8 points is labelled **"Model disagrees with market"** on the Simulator and Games pages, with both numbers, the factors that likely explain it (short sample, layoff, age, weight change, rematch) and their measured record, and no fair odds. A gap is a signal only when the study certifies it beat a timestamped close; it does not (942 of 1,420 out-of-sample gaps over 8 points went the market's way), so no disagreement is a signal.
+- **Model Health** shows 1.1.0, 1.2.0 and the closing line side by side (log loss, Brier), a calibration chart, how gaps resolved, the certification and every change tried.
+- **New data.** Dates of birth from ESPN's athlete documents (`fighters.csv`, 2,407 of 2,425), records as of a stated time (`records.csv`), and one per-fighter facts file both the loop and the simulator read (`fighter_facts.csv`).
+- **Still open.** 1.2.0 overrates debutants (48.6% said v 37.9% won), and its age curve is one line for every division. The record prior sat at its grid's edge. No timestamped closing archive exists. The weekly loop now retests five follow-ups under its preregistered rule.
+
 ## 2026-10-24 — College basketball: preseason mode, then the season on its own
 
 The Simulator's **Men's College Basketball** and **Women's College Basketball** seats no longer say *Blocked*. What was blocked is the NCAA tournament simulation (no 2027 field before Selection Sunday; no women's host-site bracket), not the game forecasts, so the seats now name the phase of the season.

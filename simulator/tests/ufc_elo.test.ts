@@ -14,7 +14,7 @@
      node simulator/tests/ufc_elo.test.ts */
 import { execFileSync } from 'node:child_process';
 import { kit } from './_kit.ts';
-import { walk, rating, expectA, parseBoutsCsv, emptyState, attachChampions, loadServedBouts, servedVersion, checkReproduction, loadCurrent, round4, REPO, ELO_DEFAULTS, priorOf, agePoints, extendedConfig,
+import { walk, rating, expectA, parseBoutsCsv, emptyState, attachChampions, loadServedBouts, servedVersion, checkReproduction, loadCurrent, round4, REPO, ELO_DEFAULTS, priorOf, agePoints, eliteRecord, extendedConfig,
   factorsFor, computeFactors, loadFighterFacts, versionConfig, COMPARE_VERSION, type EloConfig } from '../src/sports/ufc/elo.ts';
 
 const K = kit('UFC Elo port');
@@ -74,6 +74,11 @@ K.near('SYNTHETIC: ...and B, regressed from 1452 to 1464, wins with k 96', state
   K.near('the prior: 15-0 by hand (150 x (log(17/2) - log 3) - 25 x (log 16 - log 13))', priorOf(P, 15, 0), 1525 + 150 * (Math.log(17 / 2) - Math.log(3)) - 25 * (Math.log(16) - Math.log(13)), 1e-9);
   const A: EloConfig = { ...ELO_DEFAULTS, age_slope: -15, age_knee: 32 };
   K.eq('the age curve: nothing to 32, -15 a year after, nothing without a date of birth', [agePoints(A, 30), agePoints(A, 38), agePoints(A, null)], [0, -90, 0]);
+  const AD: EloConfig = { ...A, age_div: { Heavyweight: [31, -20] }, age_elite_slope: -10 };
+  K.eq('the age curve by division: its own knee and slope (-20 x 7), the shared curve elsewhere, -10 a year more for an elite record',
+    [agePoints(AD, 38, 'Heavyweight'), agePoints(AD, 38, 'Lightweight'), agePoints(AD, 38), agePoints(AD, 38, 'Heavyweight', true), agePoints(AD, 38, 'Lightweight', true)], [-140, -90, -90, -210, -150]);
+  K.eq('an elite record: 6+ UFC wins at 70%+', [eliteRecord(AD, 6, 2), eliteRecord(AD, 5, 0), eliteRecord(AD, 6, 3), eliteRecord(AD, null, null)], [true, false, false, false]);
+  K.chk('a configuration with only a curve by division is extended', extendedConfig({ ...ELO_DEFAULTS, ...cfg, age_div: { Heavyweight: [31, -15] } }));
   K.chk('1.1.0\'s configuration is not extended; one with an age slope is', !extendedConfig({ ...ELO_DEFAULTS, ...cfg }) && extendedConfig({ ...ELO_DEFAULTS, ...cfg, age_slope: -15 }));
   const facts = new Map([['A', { dob: Date.parse('1988-01-01T00:00:00Z'), pre_w: 15, pre_l: 0, pre_source: 'history' }], ['B', { dob: Date.parse('1996-01-01T00:00:00Z'), pre_w: 4, pre_l: 3, pre_source: 'history' }]]);
   const one = parseBoutsCsv(head + row('1', '2026-01-01T00:00Z', 'A', 'B', 'True', 'False') + '\n');
@@ -123,8 +128,9 @@ if (py) {
   if (pyOn) compare('model.py walk() with champ_bonus 100', pyOn, Won);
   /* every 2026-10 parameter on at once (the smooth layoff, shrinkage, recency, the division terms, head to head):
      the port's arithmetic in the Python's order, on the committed bouts and fighter facts */
-  const EXT = { debut_offset: 25, prior_rec: 150, prior_exp: -25, age_slope: -15, age_knee: 32, age_slope2: -10, young_slope: 5, shrink_bouts: 2, layoff_mode: 'smooth', layoff_days: 270,
-    layoff_span: 180, layoff_regress: 0.4, layoff_k_mult: 1.5, half_life_days: 1460, div_regress: 0.25, div_up: -40, div_down: 20, h2h: 100, h2h_decay: 0.5, champ_bonus: 50 };
+  const EXT: Partial<EloConfig> = { debut_offset: 25, prior_rec: 150, prior_exp: -25, age_slope: -15, age_knee: 32, age_slope2: -10, young_slope: 5, shrink_bouts: 2, layoff_mode: 'smooth', layoff_days: 270,
+    layoff_span: 180, layoff_regress: 0.4, layoff_k_mult: 1.5, half_life_days: 1460, div_regress: 0.25, div_up: -40, div_down: 20, h2h: 100, h2h_decay: 0.5, champ_bonus: 50,
+    age_div: { Heavyweight: [30, -20], Bantamweight: [28, -10], 'Light Heavyweight': [38, -25] }, age_elite_slope: -15 };
   const pyExt = pyWalk([JSON.stringify(EXT)]);
   const cx = { ...sv.config, ...EXT } as EloConfig;
   if (pyExt) compare('model.py walk() with every 2026-10 parameter on', pyExt, walk(all, cx, emptyState(), factorsFor(all, cx, FF.map)));

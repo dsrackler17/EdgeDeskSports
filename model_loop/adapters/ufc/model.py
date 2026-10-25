@@ -56,6 +56,12 @@ off at its default, and with all of them off the walk prices exactly as it did)
   age_slope, age_knee     per year above age_knee
   age_slope2, age_knee2   more per year above age_knee2
   young_slope, young_knee per year below young_knee
+  age_div                 {division: [knee, slope]}: a division's own knee and slope in place of
+                          age_knee and age_slope for a bout at that weight (the bout's weight
+                          class; a catchweight or unknown one keeps the shared curve)
+  age_elite_slope         more per year above the knee for a fighter whose UFC record before the
+                          bout is elite: at least age_elite_wins wins and a win rate of at least
+                          age_elite_rate (factors.py uw / ul)
   DIVISION CHANGE (first bout at a new standard weight; factors.py div_step)
   div_regress       share of the distance from the prior removed (stored)
   div_up, div_down  Elo points per division moved up / down (price only)
@@ -77,14 +83,15 @@ DEFAULTS = {"k": 32.0, "k_new_mult": 1.0, "new_bouts": 3, "layoff_days": 365, "l
             "debut_offset": 0.0, "prior_rec": 0.0, "prior_exp": 0.0, "shrink_bouts": 0.0,
             "layoff_mode": "step", "layoff_span": 365, "layoff_k_mult": 1.0, "half_life_days": 0.0,
             "age_slope": 0.0, "age_knee": 33.0, "age_slope2": 0.0, "age_knee2": 36.0, "young_slope": 0.0, "young_knee": 26.0,
+            "age_div": {}, "age_elite_slope": 0.0, "age_elite_wins": 6, "age_elite_rate": 0.7,
             "div_regress": 0.0, "div_up": 0.0, "div_down": 0.0, "h2h": 0.0, "h2h_decay": 0.5}
 FINAL = "STATUS_FINAL"
 REC_CENTRE = math.log(12.0 / 4.0)       # logit((10 + 2) / (12 + 4)): a 10-2 record
 EXP_CENTRE = math.log(13.0)             # log(1 + 12)
 # the parameters that need factors.py's columns, and the ones that change the walk at all
-NEEDS_FACTORS = ("prior_rec", "prior_exp", "age_slope", "age_slope2", "young_slope", "div_regress", "div_up", "div_down")
+NEEDS_FACTORS = ("prior_rec", "prior_exp", "age_slope", "age_slope2", "young_slope", "age_elite_slope", "div_regress", "div_up", "div_down")
 EXTENSIONS = ("debut_offset", "prior_rec", "prior_exp", "shrink_bouts", "half_life_days", "age_slope", "age_slope2",
-              "young_slope", "div_regress", "div_up", "div_down", "h2h")
+              "young_slope", "age_elite_slope", "div_regress", "div_up", "div_down", "h2h")
 
 
 def title_champions(path):
@@ -114,7 +121,7 @@ def load(path):
 def extended(P):
     """True when the configuration uses any parameter added after 1.1.0's"""
     return any(float(P.get(k) or 0.0) != 0.0 for k in EXTENSIONS) or P.get("layoff_mode", "step") != "step" \
-        or float(P.get("layoff_k_mult", 1.0)) != 1.0
+        or float(P.get("layoff_k_mult", 1.0)) != 1.0 or bool(P.get("age_div"))
 
 
 def prior_of(P, w, l):
@@ -126,11 +133,24 @@ def prior_of(P, w, l):
     return mu
 
 
-def age_points(P, age):
+def age_points(P, age, div=None, elite=False):
+    """Elo points for a fighter's age at the bout: the division's own knee and slope when age_div has one, the shared
+    curve otherwise, and the elite term for a fighter with an elite UFC record"""
     if age is None or (isinstance(age, float) and math.isnan(age)):
         return 0.0
-    return (float(P["age_slope"]) * max(0.0, age - float(P["age_knee"])) + float(P["age_slope2"]) * max(0.0, age - float(P["age_knee2"]))
-            + float(P["young_slope"]) * max(0.0, float(P["young_knee"]) - age))
+    ks = (P.get("age_div") or {}).get(div) if div else None
+    knee, slope = (float(ks[0]), float(ks[1])) if ks else (float(P["age_knee"]), float(P["age_slope"]))
+    pts = (slope * max(0.0, age - knee) + float(P["age_slope2"]) * max(0.0, age - float(P["age_knee2"]))
+           + float(P["young_slope"]) * max(0.0, float(P["young_knee"]) - age))
+    es = float(P.get("age_elite_slope") or 0.0)
+    if es and elite:
+        pts += es * max(0.0, age - knee)
+    return pts
+
+
+def elite_record(P, w, l):
+    """an elite UFC record before the bout (age_elite_wins wins or more at age_elite_rate or better)"""
+    return w is not None and l is not None and w >= float(P["age_elite_wins"]) and w / max(w + l, 1.0) >= float(P["age_elite_rate"])
 
 
 def walk(d, params, fx=None):
@@ -187,7 +207,7 @@ def _walk_extended(d, P, fx=None):
     appearance), absorbed bouts N and the last absorbed bout's time. At a bout, the rating it is priced and updated
     from is the stored one moved toward the prior by time (layoff, recency) and by a division change; the price adds
     the price-only terms (short-sample shrinkage, age, the division step, head to head, the champion)."""
-    if fx is None and any(float(P.get(k) or 0.0) != 0.0 for k in NEEDS_FACTORS):
+    if fx is None and (any(float(P.get(k) or 0.0) != 0.0 for k in NEEDS_FACTORS) or P.get("age_div")):
         from . import factors
         fx = factors.compute(d)
     R, N, last, MU, PAIR = {}, {}, {}, {}, {}
@@ -198,7 +218,9 @@ def _walk_extended(d, P, fx=None):
     lr, ld, ls, lk = float(P["layoff_regress"]), float(P["layoff_days"]), float(P["layoff_span"]), float(P["layoff_k_mult"])
     hl, sb, dvr = float(P["half_life_days"]), float(P["shrink_bouts"]), float(P["div_regress"])
     dup, ddn, h2h, h2d, cb = float(P["div_up"]), float(P["div_down"]), float(P["h2h"]), float(P["h2h_decay"]), float(P["champ_bonus"] or 0.0)
-    use_age = any(float(P[x]) != 0.0 for x in ("age_slope", "age_slope2", "young_slope"))
+    use_age = any(float(P[x]) != 0.0 for x in ("age_slope", "age_slope2", "young_slope", "age_elite_slope")) or bool(P.get("age_div"))
+    use_elite = float(P.get("age_elite_slope") or 0.0) != 0.0
+    wcls = [str(w) if isinstance(w, str) else "" for w in d.weight_class.values]
     cols = {} if fx is None else {c: fx[c].values for c in fx.columns}
     has_champ = "champ" in d.columns
 
@@ -243,7 +265,9 @@ def _walk_extended(d, P, fx=None):
         pb = mub + (rb - mub) * nB / (nB + sb) if sb else rb
         adj = 0.0
         if use_age:
-            adj += age_points(P, col("age_a", i)) - age_points(P, col("age_b", i))
+            ea = use_elite and elite_record(P, col("uw_a", i), col("ul_a", i))
+            eb = use_elite and elite_record(P, col("uw_b", i), col("ul_b", i))
+            adj += age_points(P, col("age_a", i), wcls[i], ea) - age_points(P, col("age_b", i), wcls[i], eb)
         if dup or ddn:
             for sgn, s in ((1.0, "a"), (-1.0, "b")):
                 ds = col("div_step_" + s, i)

@@ -176,6 +176,36 @@ class ExtendedTest(unittest.TestCase):
         r, st = U.walk(self.bouts.iloc[:1].reset_index(drop=True), EXT, fx=self.fx.iloc[:1].reset_index(drop=True))
         self.assertIn(first.fighter_a_id, st["priors"])
 
+    def test_the_age_curve_by_division_and_the_elite_term(self):
+        A = dict(U.DEFAULTS, age_slope=-15, age_knee=32, age_div={"Heavyweight": [31, -20]}, age_elite_slope=-10)
+        self.assertAlmostEqual(U.age_points(A, 38.0, "Heavyweight"), -140.0)    # its own knee and slope: -20 * 7
+        self.assertAlmostEqual(U.age_points(A, 38.0, "Lightweight"), -90.0)     # a division without one: the shared curve
+        self.assertAlmostEqual(U.age_points(A, 38.0), -90.0)
+        self.assertAlmostEqual(U.age_points(A, 38.0, "Heavyweight", True), -210.0)  # elite: -10 more a year past the knee
+        self.assertTrue(U.elite_record(A, 6, 2) and not U.elite_record(A, 5, 0) and not U.elite_record(A, 6, 3))
+        self.assertFalse(U.elite_record(A, None, None))
+        self.assertTrue(U.extended(dict(U.DEFAULTS, age_div={"Heavyweight": [31, -15]})))
+        # the shared curve written out per division prices exactly as the shared curve
+        same = {k: [32, -15] for k in ("Lightweight", "Welterweight")}
+        r0, _ = U.walk(self.bouts, EXT, fx=self.fx)
+        r1, _ = U.walk(self.bouts, dict(EXT, age_div=same), fx=self.fx)
+        self.assertTrue(np.array_equal(r0.p_raw.values, r1.p_raw.values))
+        # on: causal and symmetric, and it moves the welterweight bouts only
+        on = dict(EXT, age_div={"Welterweight": [28, -30]}, age_elite_slope=-15)
+        r2, _ = U.walk(self.bouts, on, fx=self.fx)
+        self.assertFalse(np.allclose(r0.p_raw.values, r2.p_raw.values))
+        first_wel = int(np.argmax((self.bouts.weight_class == "Welterweight").values))
+        self.assertTrue(np.allclose(r0.p_raw.values[:first_wel], r2.p_raw.values[:first_wel]))
+        sw = self.bouts.copy()
+        sw[["fighter_a_id", "fighter_b_id"]] = self.bouts[["fighter_b_id", "fighter_a_id"]].values
+        sw["y"] = 1 - self.bouts.y
+        r3, _ = U.walk(sw, on, fx=FX.compute(sw, facts=self.facts))
+        self.assertTrue(np.allclose(r2.p_raw.values, 1 - r3.p_raw.values))
+        flipped = self.bouts.copy()
+        flipped.loc[flipped.index[-50:], "y"] = 1 - flipped.loc[flipped.index[-50:], "y"]
+        r4, _ = U.walk(flipped, on, fx=FX.compute(flipped, facts=self.facts))
+        self.assertTrue(np.allclose(r2.p_raw.values[:-50], r4.p_raw.values[:-50]))
+
     def test_factors(self):
         fx = self.fx
         self.assertTrue((fx.n_a.iloc[:1] == 0).all())

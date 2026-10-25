@@ -82,6 +82,16 @@ CATALOGUE = [
     # 1.2.0 overrates debutants (since 2018 it said 48.6% for the debutant, the close 41.9%, they won 37.9%): a lower
     # starting point, retested every week ("set": the "add" rule's bounds are the layoff share's and the step's)
     ("debut_lower", "debut_offset", ("set", -25.0)),
+    # the age curve by division (docs/model-loop/ufc/study/age_by_division.json, study.py age): each division with 150+
+    # bouts in 2016-2020 got its own knee and slope, fitted on those years alone (the others keep the shared curve).
+    # Lighter divisions start to decline earlier (bantam and featherweight at 28), light heavyweight latest (40),
+    # heavyweight at 31. Out of sample, fitted on 2016-2020: 2021-2023 log loss +0.0019, 2024-2026 -0.0060, 2021-2026
+    # -0.0020 (card-blocked 95% interval -0.0048 to +0.0008). The reverse (one shared curve again) is retested every
+    # week too, so the same rule can take it back
+    ("age_by_division", "age_div", ("set", {
+        "Bantamweight": [28, -15], "Featherweight": [28, -15], "Lightweight": [30, -15], "Welterweight": [33, -25],
+        "Middleweight": [28, -20], "Light Heavyweight": [40, -25], "Heavyweight": [31, -15], "W Strawweight": [28, -30]})),
+    ("age_shared", "age_div", ("set", {})),
 ]
 
 
@@ -222,7 +232,7 @@ def _certification(version):
     if os.path.exists(p):
         c = _jload(p)
         cfg = version_config(version)["config"]
-        side = "new" if content_hash(cfg) == content_hash(c.get("selected_config") or {}) else "old" \
+        side = "new" if content_hash(cfg) == content_hash(c.get("new_config") or c.get("selected_config") or {}) else "old" \
             if content_hash(cfg) == content_hash(c.get("base_config") or {}) else None
         if side:
             oos = c["windows"]["out_of_sample"][side]

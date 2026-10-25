@@ -27,6 +27,7 @@ each bout and each side (suffix _a / _b):
               ingest.py). study.py measures it: the gain on fighters still in the
               UFC, where it can barely act, is about half the full backtest's.
               NaN when no record is on file.
+  uw, ul      UFC wins and losses in the data before the bout (decisions with a winner)
   meet        earlier absorbed meetings of these two fighters
   meet_last   fighter_a's result in the most recent one (1, 0, 0.5; NaN: none)
 """
@@ -144,15 +145,16 @@ def compute(d, facts=None):
         facts = {f: (dob0.get(f), *(pre0.get(f) or (None, None))) for f in set(dob0) | set(pre0)}
     dob = {f: v[0] for f, v in facts.items() if v[0] is not None}
     pre = {f: (v[1], v[2]) for f, v in facts.items() if v[1] is not None}
-    n, last, last_div, meets = {}, {}, {}, {}
+    n, last, last_div, meets, uw, ul = {}, {}, {}, {}, {}, {}
     cols = {k: np.full(len(d), np.nan) for k in
             ("n_a", "n_b", "days_off_a", "days_off_b", "age_a", "age_b", "div_step_a", "div_step_b",
-             "pre_w_a", "pre_l_a", "pre_w_b", "pre_l_b", "meet", "meet_last")}
+             "pre_w_a", "pre_l_a", "pre_w_b", "pre_l_b", "uw_a", "ul_a", "uw_b", "ul_b", "meet", "meet_last")}
     div_now = [DIVISIONS.get(str(w)) for w in d.weight_class.values]
     for i, row in enumerate(d.itertuples()):
         a, b, t = row.fighter_a_id, row.fighter_b_id, row.ts
         for s, f in (("a", a), ("b", b)):
             cols["n_" + s][i] = n.get(f, 0)
+            cols["uw_" + s][i], cols["ul_" + s][i] = uw.get(f, 0), ul.get(f, 0)
             lt = last.get(f)
             if lt is not None:
                 cols["days_off_" + s][i] = (t - lt).days
@@ -176,6 +178,10 @@ def compute(d, facts=None):
                 if div_now[i] is not None:
                     last_div[f] = div_now[i]
             meets.setdefault(key, []).append(None if row.draw else (a if row.y == 1.0 else b))
+            if not row.draw:
+                win, lose = (a, b) if row.y == 1.0 else (b, a)
+                uw[win] = uw.get(win, 0) + 1
+                ul[lose] = ul.get(lose, 0) + 1
     out = pd.DataFrame(cols, index=d.index)
     return out
 

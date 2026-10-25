@@ -28,7 +28,9 @@
       (1.0/1.1 and the 2026-10 versions: a fighter idle 365 days or more loses
       25% of their distance from 1500, and keeps the loss; or the smooth one,
       toward the prior), the recency half-life, short-sample shrinkage toward
-      the prior, the age curve at the fight's date, and the champion term
+      the prior, the age curve at the fight's date (by the title's division
+      when the configuration has per-division knees; the elite-veteran term
+      read from the UFC record at the as-of time), and the champion term
       (champ_bonus Elo points to the champion going in; 0, so off, in the
       served config). Head to head is not carried into a simulated rematch. A
       simulated fight never moves a rating.
@@ -40,7 +42,7 @@
 import type { SimModule, EntityDef, OutcomeDef, SumRule, RunMarks } from '../../core/engine.ts';
 import { streamFor, STREAM } from '../../core/prng.ts';
 import type { UfcInputData } from './inputs.ts';
-import { ELO_DEFAULTS, agePoints, type EloConfig } from './elo.ts';
+import { ELO_DEFAULTS, agePoints, eliteRecord, type EloConfig } from './elo.ts';
 
 const DAY = 86400000;
 
@@ -114,10 +116,12 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
   const HL = Number(P.half_life_days || 0), SB = Number(P.shrink_bouts || 0);
   /* the fighters' state at the as-of time */
   const baseRating = new Float64Array(nE), baseLast = new Float64Array(nE), baseRes = new Uint8Array(nE), finW = new Float64Array(nE), finL = new Float64Array(nE);
-  const prior = new Float64Array(nE), dob = new Float64Array(nE), nBouts = new Float64Array(nE);
+  const prior = new Float64Array(nE), dob = new Float64Array(nE), nBouts = new Float64Array(nE), elite = new Uint8Array(nE);
+  const ELITE = Number(P.age_elite_slope || 0) !== 0;
   d.fighters.forEach((f, i) => {
     baseRating[i] = f.rating; baseLast[i] = f.last_fight ? Date.parse(f.last_fight) : NaN;
     prior[i] = Number.isFinite(f.prior) ? f.prior : 1500; dob[i] = f.dob ? Date.parse(f.dob + 'T00:00:00Z') : NaN; nBouts[i] = f.bouts;
+    elite[i] = ELITE && eliteRecord(P, f.record.w, f.record.l) ? 1 : 0;
     baseRes[i] = f.last_result === 'W' ? 1 : f.last_result === 'L' ? 2 : f.last_result === 'D' ? 3 : 0;
     finW[i] = f.fin_win; finL[i] = f.fin_loss;
   });
@@ -155,7 +159,7 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
     const lt = last[i];
     if (STEP && LR && lt === lt && Math.floor((t - lt) / DAY) >= LD) rating[i] = 1500 + (rating[i] - 1500) * (1 - LR);
   };
-  const priceRating = (i: number, t: number): number => {
+  const priceRating = (i: number, t: number, div: string): number => {
     const mu = prior[i], lt = last[i];
     let r = rating[i];
     if (lt === lt) {
@@ -166,7 +170,7 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
       if (!STEP || HL) r = mu + dev;
     }
     if (SB) r = mu + (r - mu) * nBouts[i] / (nBouts[i] + SB);
-    return r + (dob[i] === dob[i] ? agePoints(P, Math.floor((t - dob[i]) / DAY) / 365.25) : 0);
+    return r + (dob[i] === dob[i] ? agePoints(P, Math.floor((t - dob[i]) / DAY) / 365.25, div, elite[i] === 1) : 0);
   };
   const pick = (cum: number[], u: number) => { for (let k = 0; k < cum.length; k++) if (u < cum[k]) return k; return cum.length - 1; };
   const moveAhead = (ord: number[], w: number, l: number) => {
@@ -225,7 +229,7 @@ export function ufcModule(d: UfcInputData, opt: { seed: bigint }): SimModule {
         else {
           unbooked++;
           regress(c, t); regress(ch, t);
-          const pCh = 1 / (1 + 10 ** (-(priceRating(ch, t) - priceRating(c, t) - champBonus) / eloScale));
+          const pCh = 1 / (1 + 10 ** (-(priceRating(ch, t, x.key) - priceRating(c, t, x.key) - champBonus) / eloScale));
           const chWins = rt.nextDouble() < pCh;
           const w = chWins ? ch : c, l = chWins ? c : ch;
           const fin = rm.nextDouble() < 1 / (1 + Math.exp(-(x.lf5 + finW[w] + finL[l])));
