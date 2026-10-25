@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-25T01:19:00.956Z",
+ "generated_at": "2026-10-25T04:58:37.714Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,27 +119,27 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 82,
+  "total": 70,
   "by_group": {
-   "p4": 42,
-   "other": 41,
+   "p4": 37,
+   "other": 34,
    "independent": 2
   },
   "by_matchup": {
-   "conference": 79,
+   "conference": 67,
    "non_conference": 3
   },
   "by_conference": {
-   "sec": 9,
-   "big12": 12,
-   "bigten": 11,
-   "mac": 5,
-   "sunbelt": 10,
-   "mwc": 7,
-   "pac12": 7,
+   "big12": 10,
    "acc": 10,
+   "sunbelt": 7,
+   "sec": 7,
+   "bigten": 10,
+   "pac12": 5,
    "american": 7,
+   "mwc": 6,
    "cusa": 5,
+   "mac": 4,
    "independents": 2
   },
   "fbs_fcs_in_source": 0
@@ -221,11 +221,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 82
+  "PREDICTED": 70
  },
  "weather": {
-  "requested": 77,
-  "answered": 77,
+  "requested": 65,
+  "answered": 65,
   "dome": 3,
   "no_venue": 0,
   "failed": 0,
@@ -233,10 +233,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "77 of 77 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "65 of 65 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 82
+  "NO_MARKET": 70
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -305,12 +305,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 40,
-    "total": 82,
+    "non_power_games": 33,
+    "total": 70,
     "example": [
-     "Eastern Michigan @ Ohio",
-     "UL Monroe @ Troy",
-     "San José State @ Nevada"
+     "Georgia State @ Arkansas State",
+     "Utah State @ Texas State",
+     "UTSA @ Tulane"
     ]
    }
   },
@@ -325,7 +325,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 79,
+    "conference_games": 67,
     "wrong": 0
    }
   },
@@ -359,8 +359,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 82,
-    "audit_total": 82
+    "slate": 70,
+    "audit_total": 70
    }
   },
   {
