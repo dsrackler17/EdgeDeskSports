@@ -23,8 +23,8 @@
   "game_time": "2026-10-26T00:20:00.000Z",
   "game_when_label": "2026-10-26 00:20 UTC",
   "published_at": null,
-  "updated_at": "2026-10-25T23:10:42.815Z",
-  "generated_at": "2026-10-25T23:10:42.815Z",
+  "updated_at": "2026-10-25T23:10:53.181Z",
+  "generated_at": "2026-10-25T23:10:53.181Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
@@ -1336,10 +1336,10 @@
     "publication_window": "late_window",
     "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-26T00:20:00.000Z",
-    "minutes_before_kickoff": 78,
+    "minutes_before_kickoff": 69,
     "published_at": null,
     "refreshed": true,
-    "at": "2026-10-25T23:01:53.363Z"
+    "at": "2026-10-25T23:10:53.181Z"
   },
   "featured": {
     "editorial_priority": 65.8,
@@ -1761,11 +1761,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-25T23:01:53.363Z"
+    "at": "2026-10-25T23:10:53.181Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-25T23:01:53.363Z",
+    "at": "2026-10-25T23:10:53.181Z",
     "blocking": [
       {
         "id": "my_take",
@@ -1836,7 +1836,7 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-25T23:10:32.590Z",
+        "observed_at": "2026-10-25T23:10:42.114Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1852,6 +1852,93 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-25T23:10:42.815Z"
+    "at": "2026-10-25T23:10:53.181Z"
+  },
+  "freshness": {
+    "at": "2026-10-25T23:10:53.181Z",
+    "fields": {
+      "market.line": {
+        "value": "Seattle Seahawks −3.0",
+        "provider": "DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.total": {
+        "value": 44.5,
+        "provider": "DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.book": {
+        "value": "DraftKings",
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": [
+          "Chazz Surratt (LB, Out)",
+          "Drake Thomas (LB, Out)",
+          "Zach Charbonnet (RB, Out)"
+        ],
+        "provider": "nflverse injury report",
+        "retrieved_at": "2026-10-25T11:36:24.722Z",
+        "status": "ok",
+        "note": null
+      },
+      "availability.qb": {
+        "value": [],
+        "provider": "nflverse injury report",
+        "retrieved_at": "2026-10-25T11:36:24.722Z",
+        "status": "ok",
+        "note": null
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
