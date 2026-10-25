@@ -47,6 +47,7 @@ const SCHEMA = 'edgedesk_nfl_slate_v1';
 let NV = null; try { NV = require(path.join(__dirname, 'nfl_venues.js')); } catch (_) { NV = null; }
 let WX = null, RECOVERY = null; try { WX = require(path.join(ROOT, 'football', 'matchup', 'weather.js')); RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js')); } catch (_) { WX = null; }
 let COACHING = null; try { COACHING = require(path.join(ROOT, 'football', 'nfl', 'coaching_staff.js')); } catch (_) { COACHING = null; }
+const SYNC = require(path.join(ROOT, 'football', 'nfl', 'starter_sync.js'));
 const COACHING_SEED_FILE = path.join(ROOT, 'football', 'nfl', 'coaching_staff_seed.json');
 const COACHING_VALIDATION_FILE = path.join(ROOT, 'football', 'validation', 'nfl_coaching_staff.json');
 const FORECAST_STORE = path.join(ROOT, 'football', 'venues', 'forecasts.json');
@@ -268,6 +269,15 @@ async function build(opts) {
   /* the depth chart and first-dropback history, built earlier in the same workflow */
   let startersFile = opts.starters || null;
   if (!startersFile) { try { startersFile = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'starters', 'nfl_' + season + '.json'), 'utf8')); } catch (_) { startersFile = null; } }
+  /* THE STARTER SYNC'S INPUTS (football/nfl/starter_sync.js): the injury report
+     the board resolved its starters from, and the quarterback-report ledger
+     that dates each line EdgeDesk saw */
+  const injuries = S.inj || null;
+  let qbLedger = opts.qbLedger || null;
+  if (!qbLedger) {
+    try { qbLedger = fs.readFileSync(path.join(ROOT, 'football', 'injuries', 'history', 'nfl_' + season + '_qb.jsonl'), 'utf8').split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l)); }
+    catch (_) { qbLedger = []; }
+  }
   /* the module already trimmed S.up to its window; widen from S.games when a
      longer lookahead was asked for */
   const pool = (S.games || []).filter((u) => !u.done && u.t >= now - 6 * 3600000 && u.t <= now + lookaheadDays * 86400000);
@@ -330,6 +340,8 @@ async function build(opts) {
     const r6 = (v) => { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? Math.round(n * 1e6) / 1e6 : null; };
     const card = priced && p.card ? {
       rows: p.card.rows.map((x) => ({ key: x.key, label: x.label, points: r6(x.points), prior: r6(x.prior), current: r6(x.current),
+        /* the row's data window (football/nfl_model.js cardWindows): display only */
+        window: x.window ? { prior_season: x.window.prior_season, season: x.window.season, prior_share: r4(x.window.prior_share), current_share: r4(x.window.current_share) } : null,
         terms: x.terms.map((t) => ({ term: t.term, points: r6(t.points), prior: r6(t.prior), current: r6(t.current) })) })),
       total: r6(p.card.total), model_margin: r6(p.card.model_margin), reconciles: p.card.reconciles,
       season_games: p.season_games || null,
@@ -370,6 +382,17 @@ async function build(opts) {
       away_starter: starterOf(g, 'away'),
       /* both sides' reconciliation, AGREES / RECONCILED / CONFLICT / NOT_CHECKED, with both sources */
       starter_check: { home: g._qb_check_home || null, away: g._qb_check_away || null },
+      /* what the league's injury report says about each priced starter this week:
+         an OBSERVATION (T0) with its source and times, never a number */
+      home_qb_report: (() => { const x = starterOf(g, 'home'); return x ? SYNC.qbReport(g.home_team, x.player_id, x.player_name, injuries, qbLedger) : null; })(),
+      away_qb_report: (() => { const x = starterOf(g, 'away'); return x ? SYNC.qbReport(g.away_team, x.player_id, x.player_name, injuries, qbLedger) : null; })(),
+      /* the inputs that decided each starter, fingerprinted: tools/football/nfl_starter_sync.js
+         rebuilds this slate when any upcoming game's fingerprint moves */
+      starter_inputs: {
+        home: SYNC.sideInputs(g.home_team, g.home_qb_reconciled ? g.home_qb_reconciled.scheduled_id : g.home_qb_id, startersFile, injuries),
+        away: SYNC.sideInputs(g.away_team, g.away_qb_reconciled ? g.away_qb_reconciled.scheduled_id : g.away_qb_id, startersFile, injuries),
+        basis: 'schedule feed id, depth-chart QB1 (football/starters/nfl_<season>.json) and the club\u2019s QB lines on its latest injury report',
+      },
       /* the NFL regime signal per side (football/nfl/regime_nfl.js): shown,
          priced only when promoted */
       regime: g._regime || null,
