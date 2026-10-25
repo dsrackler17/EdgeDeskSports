@@ -23,8 +23,8 @@
   "game_time": "2026-10-26T00:20:00.000Z",
   "game_when_label": "2026-10-26 00:20 UTC",
   "published_at": null,
-  "updated_at": "2026-10-25T17:22:00.765Z",
-  "generated_at": "2026-10-25T17:22:00.765Z",
+  "updated_at": "2026-10-25T20:44:58.889Z",
+  "generated_at": "2026-10-25T20:44:58.889Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
@@ -1181,7 +1181,7 @@
       "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
       "total_difference": "2.2 points",
       "book": "DraftKings",
-      "capture_age": "1097 hours old",
+      "capture_age": "1101 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.4-point gap is context only and the game is excluded from research ranking.",
@@ -1330,85 +1330,16 @@
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
     "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 94 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "16eaz31qwkgz1",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can the Seahawks stop the Chiefs’ run game?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.4 points.",
-    "gap": {
-      "points": 1.4,
-      "toward": "Seattle Seahawks",
-      "other": "Kansas City Chiefs"
-    },
-    "supporting": [
-      "When Kansas City Chiefs have the ball: their passing game ranks No. 16, and Seattle Seahawks’ pass defense ranks No. 2.",
-      "Seattle Seahawks’ defense ranks No. 2 of 32 in efficiency allowed per play this season.",
-      "Seattle Seahawks’ pass defense ranks No. 2 of 32 in pass defense this season.",
-      "Seattle Seahawks’ run defense ranks No. 1 of 32 in run defense this season."
-    ],
-    "contradicting": [
-      "When Seattle Seahawks have the ball: their run game ranks No. 30, and Kansas City Chiefs’ run defense ranks No. 12.",
-      "Seattle Seahawks’ running game ranks No. 30 of 32 in rushing efficiency this season.",
-      "Kansas City Chiefs’ running game ranks No. 3 of 32 in rushing efficiency this season.",
-      "Kansas City Chiefs’ scoring defense ranks No. 4 of 32 in points allowed this season."
-    ],
-    "quarterbacks": [
-      "Seattle Seahawks’ passers have completed 126 of 198 (63.6%) for 1,469 yards, 7.4 yards per attempt, with 11 touchdowns, 7 interceptions and 16 sacks taken in six games.",
-      "Kansas City Chiefs’ passers have completed 105 of 158 (66.5%) for 1,309 yards, 8.3 yards per attempt, with 9 touchdowns, 3 interceptions and 6 sacks taken in five games."
-    ],
-    "availability": [
-      "The official injury report lists three Seattle Seahawks players as out or doubtful, including LB Chazz Surratt (out), LB Drake Thomas (out) and RB Zach Charbonnet (out).",
-      "The official injury report lists three Kansas City Chiefs players as out or doubtful, including RB Brashard Smith (out), T Jaylon Moore (out) and WR Rashee Rice (out)."
-    ],
-    "script": {
-      "model": [
-        "The Seattle Seahawks have to win on the ground (Kansas City Chiefs’ No. 3 run game against Seattle Seahawks’ No. 1 run defense).",
-        "The Seattle Seahawks have to hold their own on the ground (Seattle Seahawks’ No. 30 run game against Kansas City Chiefs’ No. 12 run defense).",
-        "The Seattle Seahawks have to win through the air (Kansas City Chiefs’ No. 16 passing game against Seattle Seahawks’ No. 2 pass defense)."
-      ],
-      "market": [
-        "The Kansas City Chiefs have to win on the ground (Seattle Seahawks’ No. 30 run game against Kansas City Chiefs’ No. 12 run defense).",
-        "The Kansas City Chiefs have to win on the ground (Kansas City Chiefs’ No. 3 run game against Seattle Seahawks’ No. 1 run defense)."
-      ]
-    },
-    "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
-      "The line on file was captured Sept. 9 and may have moved."
-    ],
-    "flags": [],
-    "sources": [
-      {
-        "label": "EdgeDesk NFL team ratings (2026)",
-        "url": null,
-        "path": "football/nfl/slate.json",
-        "observed_at": "2026-10-25T12:38:22.591Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "nflverse team-week stats (2026)",
-        "url": null,
-        "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-25T17:21:49.726Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "NFL injury report via nflverse (third-party mirror of the league report)",
-        "url": null,
-        "path": "football/injuries/nfl_2026.json",
-        "observed_at": "2026-10-25T11:36:24.722Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
-  "checks": {
-    "ok": true,
-    "failed": [],
+  "snapshot_id": "snap_288e6f8fc38e08b2",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-26T00:20:00.000Z",
+    "minutes_before_kickoff": 418,
+    "published_at": null,
+    "refreshed": false,
     "at": "2026-10-25T17:22:00.765Z"
   },
-  "snapshot_id": "snap_288e6f8fc38e08b2",
   "featured": {
     "editorial_priority": 65.8,
     "status": "featured",
@@ -1831,15 +1762,6 @@
     "craft_failed": [],
     "at": "2026-10-25T17:22:00.765Z"
   },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-26T00:20:00.000Z",
-    "minutes_before_kickoff": 418,
-    "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-25T17:22:00.765Z"
-  },
   "publish_state": {
     "ok": false,
     "at": "2026-10-25T17:22:00.765Z",
@@ -1852,5 +1774,83 @@
     ],
     "warnings": [],
     "hold_reason": "my_take"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "16eaz31qwkgz1",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Seahawks stop the Chiefs’ run game?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.4 points.",
+    "gap": {
+      "points": 1.4,
+      "toward": "Seattle Seahawks",
+      "other": "Kansas City Chiefs"
+    },
+    "supporting": [
+      "When Kansas City Chiefs have the ball: their passing game ranks No. 16, and Seattle Seahawks’ pass defense ranks No. 2.",
+      "Seattle Seahawks’ defense ranks No. 2 of 32 in efficiency allowed per play this season.",
+      "Seattle Seahawks’ pass defense ranks No. 2 of 32 in pass defense this season.",
+      "Seattle Seahawks’ run defense ranks No. 1 of 32 in run defense this season."
+    ],
+    "contradicting": [
+      "When Seattle Seahawks have the ball: their run game ranks No. 30, and Kansas City Chiefs’ run defense ranks No. 12.",
+      "Seattle Seahawks’ running game ranks No. 30 of 32 in rushing efficiency this season.",
+      "Kansas City Chiefs’ running game ranks No. 3 of 32 in rushing efficiency this season.",
+      "Kansas City Chiefs’ scoring defense ranks No. 4 of 32 in points allowed this season."
+    ],
+    "quarterbacks": [
+      "Seattle Seahawks’ passers have completed 126 of 198 (63.6%) for 1,469 yards, 7.4 yards per attempt, with 11 touchdowns, 7 interceptions and 16 sacks taken in six games.",
+      "Kansas City Chiefs’ passers have completed 105 of 158 (66.5%) for 1,309 yards, 8.3 yards per attempt, with 9 touchdowns, 3 interceptions and 6 sacks taken in five games."
+    ],
+    "availability": [
+      "The official injury report lists three Seattle Seahawks players as out or doubtful, including LB Chazz Surratt (out), LB Drake Thomas (out) and RB Zach Charbonnet (out).",
+      "The official injury report lists three Kansas City Chiefs players as out or doubtful, including RB Brashard Smith (out), T Jaylon Moore (out) and WR Rashee Rice (out)."
+    ],
+    "script": {
+      "model": [
+        "The Seattle Seahawks have to win on the ground (Kansas City Chiefs’ No. 3 run game against Seattle Seahawks’ No. 1 run defense).",
+        "The Seattle Seahawks have to hold their own on the ground (Seattle Seahawks’ No. 30 run game against Kansas City Chiefs’ No. 12 run defense).",
+        "The Seattle Seahawks have to win through the air (Kansas City Chiefs’ No. 16 passing game against Seattle Seahawks’ No. 2 pass defense)."
+      ],
+      "market": [
+        "The Kansas City Chiefs have to win on the ground (Seattle Seahawks’ No. 30 run game against Kansas City Chiefs’ No. 12 run defense).",
+        "The Kansas City Chiefs have to win on the ground (Kansas City Chiefs’ No. 3 run game against Seattle Seahawks’ No. 1 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
+      "The line on file was captured Sept. 9 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-25T12:38:22.591Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-25T20:44:45.204Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "NFL injury report via nflverse (third-party mirror of the league report)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-25T11:36:24.722Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-25T20:44:58.889Z"
   }
 }
