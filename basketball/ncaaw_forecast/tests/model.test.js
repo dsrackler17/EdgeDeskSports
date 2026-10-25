@@ -259,6 +259,28 @@ T.near('invPhi inverts Phi', D.Phi(D.invPhi(0.0123)), 0.0123, 1e-14);
   delete process.env.NCAAW_REGISTRY_DIR;
 }
 
+/* ------------------------------------------------------------------ the champion replay (the committed registry)
+   The database's champion history is replayed from registry/history.jsonl. Only the lines that moved the pointer
+   count: a winning candidate's weekly decision record is also a PROMOTE, naming the champion it was scored against. */
+let REPLAY = Promise.resolve();
+{
+  const RG = require('../registry'); const PUB = require('../publish');
+  const moves = PUB.history().filter(RG.movesPointer);
+  T.chk('the replay starts with INIT and every later move names the champion it replaced', moves.length > 0 && moves[0].decision === 'INIT'
+    && moves.slice(1).every((m, i) => m.replaced === moves[i].champion));
+  T.eq('...and ends at the pointer', moves[moves.length - 1].champion, RG.readPointer().current.key);
+  T.chk('a weekly decision record is never replayed', !moves.some((m) => m.challenger || m.gates_failed));
+  /* a sync that stopped after INIT (the first production publish, 2026-10-24) resumes with exactly the moves after it */
+  REPLAY = (async () => {
+    const calls = [];
+    const db = { rpc: async (fn, a) => { calls.push([fn, a]); return fn === 'ncaaw_fc_public_status' ? [{ champion_key: moves[0].champion }] : {}; } };
+    const r = await PUB.syncChampion(db);
+    const set = calls.filter((c) => c[0] === 'ncaaw_fc_set_champion').map((c) => c[1].p.decision + ' ' + c[1].p.model_key);
+    T.eq('resuming after INIT replays the later moves only', set, moves.slice(1).map((m) => m.decision + ' ' + m.champion));
+    T.eq('...and ends at the pointer', r.champion, RG.readPointer().current.key);
+  })().catch((e) => T.chk('the resumed replay ran: ' + e.message, false));
+}
+
 /* ------------------------------------------------------------------ the refresh window (SYNTHETIC schedule)
    PRESEASON before the first regular-season game: through the end of the opening week; the routine hours from the
    opener on, by the clock alone */
@@ -288,4 +310,4 @@ T.near('invPhi inverts Phi', D.Phi(D.invPhi(0.0123)), 0.0123, 1e-14);
   T.chk('Math.random is never used', !/Math\.random/.test(src));
 }
 
-process.exit(T.done());
+REPLAY.then(() => process.exit(T.done()));
