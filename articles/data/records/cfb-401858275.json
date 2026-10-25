@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T23:30:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1838,10 +1838,115 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1r4ys53y31es5",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": true,
+    "question": "Can North Carolina take away Syracuse’s big plays?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.5 points.",
+    "gap": {
+      "points": 0.5,
+      "toward": "North Carolina",
+      "other": "Syracuse"
+    },
+    "supporting": [
+      "When Syracuse has the ball (the red zone): Syracuse’s offense succeeds on 33.6% of its red-zone plays, and North Carolina’s defense allows success on 32.6% of opponent red-zone plays (FBS average 43.6%).",
+      "When Syracuse has the ball (big plays on the ground): Syracuse’s offense turns 4.3% of its runs into explosive gains, and North Carolina’s defense gives up explosive gains on 3.9% of opponent runs (FBS average 6.6%).",
+      "When North Carolina has the ball (the red zone): North Carolina’s offense succeeds on 38.6% of its red-zone plays, and Syracuse’s defense allows success on 58.8% of opponent red-zone plays (FBS average 43.6%).",
+      "When Syracuse has the ball (pass protection against the pass rush): Syracuse’s offense has allowed a sack on 6.4% of its dropbacks, and North Carolina’s defense sacks the quarterback on 6.8% of opponent dropbacks (FBS average 5.6%)."
+    ],
+    "contradicting": [
+      "When North Carolina has the ball (pass protection against the pass rush): North Carolina’s offense has allowed a sack on 7.3% of its dropbacks, and Syracuse’s defense sacks the quarterback on 7.5% of opponent dropbacks (FBS average 5.6%).",
+      "When North Carolina has the ball (the line of scrimmage on running plays): North Carolina’s offense is stopped at or behind the line on 14.8% of its runs, and Syracuse’s defense stops 24.9% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Syracuse has the ball (the line of scrimmage on running plays): Syracuse’s offense is stopped at or behind the line on 19.1% of its runs, and North Carolina’s defense stops 9.3% of opponent runs at or behind the line (FBS average 17.4%).",
+      "EdgeDesk’s position-group ratings put Syracuse’s receivers No. 6 nationally and North Carolina’s No. 63."
+    ],
+    "quarterbacks": [
+      "Billy Edwards Jr. has completed 94 of 158 passes (59.5%) for 1,259 yards, 8.0 yards per attempt, 9 touchdowns and 5 interceptions in six games for North Carolina, and has been sacked on 13 of 171 dropbacks.",
+      "Steve Angeli has completed 58 of 104 passes (55.8%) for 720 yards, 6.9 yards per attempt, 4 touchdowns and 4 interceptions in three games for Syracuse, and has been sacked on 8 of 112 dropbacks.",
+      "Malachi Nelson has completed 42 of 70 passes (60.0%) for 532 yards, 7.6 yards per attempt, 3 touchdowns and 2 interceptions in three games for Syracuse, and has been sacked on 5 of 75 dropbacks.",
+      "Billy Edwards Jr. does not appear on North Carolina’s update 2 availability report.",
+      "Syracuse’s update 2 ACC availability report (published Oct. 23) lists quarterback Steve Angeli as probable.",
+      "Syracuse’s update 2 ACC availability report (published Oct. 23) lists quarterback Amari Odom as out.",
+      "Syracuse’s update 2 ACC availability report (published Oct. 23) lists quarterback Malachi Nelson as out.",
+      "EdgeDesk’s model is built on Malachi Nelson starting for Syracuse, but the availability report lists him as out."
+    ],
+    "availability": [
+      "Syracuse’s availability report lists four players as out, including offensive linemen Jackson Iak, D'Joni Scatliffe and Matthew Hawn."
+    ],
+    "script": {
+      "model": [
+        "North Carolina’s defense has to come out ahead on big pass plays: it gives up explosive gains on 8.0% of opponent pass plays, against an offense that turns 12.9% of its pass plays into explosive gains.",
+        "North Carolina’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 7.5% of opponent dropbacks.",
+        "North Carolina’s offense has to hold its own at the line of scrimmage against a defense that stops 24.9% of opponent runs at or behind the line.",
+        "North Carolina’s defense has to come out ahead on long runs: it gives up explosive gains on 3.9% of opponent runs, against an offense that turns 4.3% of its runs into explosive gains."
+      ],
+      "market": [
+        "Syracuse’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.5% of opponent dropbacks, against an offense that has allowed a sack on 7.3% of its dropbacks.",
+        "Syracuse’s defense has to come out ahead at the line of scrimmage: it stops 24.9% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 14.8% of its runs.",
+        "Syracuse’s offense has to keep winning on big pass plays: it turns 12.9% of its pass plays into explosive gains, and North Carolina’s defense gives up explosive gains on 8.0% of opponent pass plays."
+      ]
+    },
+    "unknown": [
+      "The model expects Malachi Nelson, but Malachi Nelson is listed as out.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for North Carolina and Syracuse.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "QB_INPUT_CONFLICT",
+        "severity": "high",
+        "text": "EdgeDesk’s model is built on Malachi Nelson starting for Syracuse, but the availability report lists him as out."
+      },
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (North Carolina), sack rate allowed (Syracuse) and sack rate (Syracuse); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-24T04:32:40.639Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Atlantic Coast Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-24T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      },
+      {
+        "label": "EdgeDesk input audit (model starter vs official availability report)",
+        "url": null,
+        "path": null,
+        "observed_at": "2026-10-24T10:07:57.735Z",
+        "verification": "CONFLICTING"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-25T04:30:46.026Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

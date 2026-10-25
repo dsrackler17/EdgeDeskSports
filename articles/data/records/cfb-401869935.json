@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-24T23:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1924,10 +1924,80 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1xefoghthg4oj",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can Arkansas State’s pass rush get to Cameran Brown?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.5 points.",
+    "gap": {
+      "points": 0.5,
+      "toward": "Arkansas State",
+      "other": "Georgia State"
+    },
+    "supporting": [
+      "When Arkansas State has the ball (big plays through the air): Arkansas State’s offense turns 12.8% of its pass plays into explosive gains, and Georgia State’s defense gives up explosive gains on 10.1% of opponent pass plays (FBS average 10.3%).",
+      "When Arkansas State has the ball (the red zone): Arkansas State’s offense succeeds on 48.4% of its red-zone plays, and Georgia State’s defense allows success on 45.6% of opponent red-zone plays (FBS average 43.6%).",
+      "Ayden Pereira has completed 11 of 19 passes (57.9%) for 114 yards, 6.0 yards per attempt, no touchdowns and 1 interception in five games for Georgia State, and has been sacked on 1 of 20 dropbacks."
+    ],
+    "contradicting": [
+      "When Arkansas State has the ball (pass protection against the pass rush): Arkansas State’s offense has allowed a sack on 7.6% of its dropbacks, and Georgia State’s defense sacks the quarterback on 11.0% of opponent dropbacks (FBS average 5.6%).",
+      "When Georgia State has the ball (pass protection against the pass rush): Georgia State’s offense has allowed a sack on 2.7% of its dropbacks, and Arkansas State’s defense sacks the quarterback on 0.0% of opponent dropbacks (FBS average 5.6%).",
+      "When Georgia State has the ball (third down): Georgia State’s offense converts 46.8% of its third downs, and Arkansas State’s defense allows opponents to convert 48.5% of their third downs (FBS average 39.7%).",
+      "When Georgia State has the ball (big plays through the air): Georgia State’s offense turns 14.8% of its pass plays into explosive gains, and Arkansas State’s defense gives up explosive gains on 13.5% of opponent pass plays (FBS average 10.3%)."
+    ],
+    "quarterbacks": [
+      "Trey Owens has completed 135 of 198 passes (68.2%) for 1,565 yards, 7.9 yards per attempt, 9 touchdowns and 6 interceptions in seven games for Arkansas State, and has been sacked on 14 of 212 dropbacks.",
+      "Cameran Brown has completed 100 of 154 passes (64.9%) for 1,277 yards, 8.3 yards per attempt, 13 touchdowns and 5 interceptions in six games for Georgia State, and has been sacked on 4 of 158 dropbacks.",
+      "Ayden Pereira has completed 11 of 19 passes (57.9%) for 114 yards, 6.0 yards per attempt, no touchdowns and 1 interception in five games for Georgia State, and has been sacked on 1 of 20 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Arkansas State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 0.0% of opponent dropbacks, against an offense that has allowed a sack on 2.7% of its dropbacks.",
+        "Arkansas State’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 11.0% of opponent dropbacks.",
+        "Arkansas State’s offense has to keep winning on big pass plays: it turns 12.8% of its pass plays into explosive gains, and Georgia State’s defense gives up explosive gains on 10.1% of opponent pass plays.",
+        "Arkansas State’s offense has to keep winning in the red zone: it succeeds on 48.4% of its red-zone plays, and Georgia State’s defense allows success on 45.6% of opponent red-zone plays."
+      ],
+      "market": [
+        "Georgia State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.7% of its dropbacks, and Arkansas State’s defense sacks the quarterback on 0.0% of opponent dropbacks.",
+        "Georgia State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 11.0% of opponent dropbacks, against an offense that has allowed a sack on 7.6% of its dropbacks.",
+        "Brown keeps producing at his season rate (64.9% completions, 8.3 yards per attempt, 13 TD, 5 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Georgia State.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Georgia State) and sack rate (Georgia State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-25T04:30:46.026Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }

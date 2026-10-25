@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": true,
-  "frozen_at": "2026-10-25T02:00:00.000Z",
+  "frozen": false,
+  "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1903,10 +1903,75 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": null,
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1js3rjh1dzd9qn",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can North Dakota State contain New Mexico’s explosive runs?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward New Mexico, and its own breakdown accounts for about 0.4 of the 2.8 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 2.8,
+      "toward": "New Mexico",
+      "other": "North Dakota State"
+    },
+    "supporting": [
+      "When New Mexico has the ball (the line of scrimmage on running plays): New Mexico’s offense is stopped at or behind the line on 10.1% of its runs, and North Dakota State’s defense stops 18.3% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When North Dakota State has the ball (pass protection against the pass rush): North Dakota State’s offense has allowed a sack on 4.6% of its dropbacks, and New Mexico’s defense sacks the quarterback on 8.7% of opponent dropbacks (FBS average 5.6%).",
+      "When North Dakota State has the ball (big plays on the ground): North Dakota State’s offense turns 6.0% of its runs into explosive gains, and New Mexico’s defense gives up explosive gains on 2.3% of opponent runs (FBS average 6.6%).",
+      "When North Dakota State has the ball (the line of scrimmage on running plays): North Dakota State’s offense is stopped at or behind the line on 15.5% of its runs, and New Mexico’s defense stops 24.6% of opponent runs at or behind the line (FBS average 17.4%)."
+    ],
+    "contradicting": [
+      "When New Mexico has the ball (pass protection against the pass rush): New Mexico’s offense has allowed a sack on 11.7% of its dropbacks, and North Dakota State’s defense sacks the quarterback on 5.9% of opponent dropbacks (FBS average 5.6%).",
+      "When New Mexico has the ball (early downs): New Mexico’s offense succeeds on 39.0% of its first- and second-down plays, and North Dakota State’s defense allows success on 35.8% of first- and second-down plays (FBS average 42.7%).",
+      "In his last two games (Oklahoma and UTEP), Moga averaged 4.2 yards per attempt, against 7.3 in his two games before that.",
+      "When New Mexico has the ball (down-to-down efficiency): New Mexico’s offense succeeds on 41.2% of its offensive plays, and North Dakota State’s defense allows opponents to succeed on 36.1% of their plays (FBS average 42.4%)."
+    ],
+    "quarterbacks": [
+      "Toa Fa'avae has completed 41 of 74 passes (55.4%) for 698 yards, 9.4 yards per attempt, 5 touchdowns and 3 interceptions in six games for New Mexico, and has been sacked on 13 of 87 dropbacks.",
+      "Luke Moga has completed 23 of 39 passes (59.0%) for 248 yards, 6.4 yards per attempt, 3 touchdowns and no interceptions in four games for New Mexico, and has been sacked on 2 of 41 dropbacks.",
+      "Nathan Hayes has completed 106 of 163 passes (65.0%) for 1,272 yards, 7.8 yards per attempt, 10 touchdowns and 5 interceptions in seven games for North Dakota State, and has been sacked on 9 of 172 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "New Mexico’s offense has to keep winning on long runs: it turns 8.5% of its runs into explosive gains, and North Dakota State’s defense gives up explosive gains on 5.2% of opponent runs.",
+        "New Mexico’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 5.9% of opponent dropbacks.",
+        "New Mexico’s offense has to hold its own on early downs against a defense that allows success on 35.8% of first- and second-down plays.",
+        "New Mexico’s defense has to come out ahead on long runs: it gives up explosive gains on 2.3% of opponent runs, against an offense that turns 6.0% of its runs into explosive gains."
+      ],
+      "market": [
+        "North Dakota State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 5.9% of opponent dropbacks, against an offense that has allowed a sack on 11.7% of its dropbacks.",
+        "North Dakota State’s defense has to come out ahead on early downs: it allows success on 35.8% of first- and second-down plays, against an offense that succeeds on 39.0% of its first- and second-down plays.",
+        "North Dakota State’s defense has to come out ahead on long runs: it gives up explosive gains on 5.2% of opponent runs, against an offense that turns 8.5% of its runs into explosive gains."
+      ]
+    },
+    "unknown": [
+      "Weather: 58 degrees, overcast, gusts near 32 mph.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings, injuries and personnel and penalty rate."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-24T04:41:17.441Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-18T03:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
+  },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-25T04:30:46.026Z"
+    "at": "2026-10-24T10:49:55.290Z"
   }
 }
