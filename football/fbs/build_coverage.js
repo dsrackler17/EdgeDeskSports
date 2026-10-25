@@ -224,6 +224,13 @@ function buildState(rowsBySeason, season, efficiency) {
 
   for (let y = P.trained_through_season + 1; y <= season; y++) {
     E.ingest.seasonBreak(st);
+    /* the features this season's play feed never supplies start the season at
+       league average, as the held-out test replayed them, not at the trained
+       season's closing values */
+    if (y === season && efficiency && efficiency.schema === 'edgedesk_cfb_engine_efficiency_v1'
+        && +efficiency.season === +season && Array.isArray(efficiency.unavailable_features)) {
+      E.ingest.resetUnmeasuredEfficiency(st, efficiency.unavailable_features);
+    }
     const rows = rowsBySeason[y];
     if (!rows) continue;
     const ordered = rows.slice().sort((a, b) =>

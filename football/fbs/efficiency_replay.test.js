@@ -46,11 +46,26 @@ chk('the team profile now says efficiency was updated this season',
   p.efficiency_is_seed===false&&p.efficiency.success_rate.available===true,
   {seed:p.efficiency_is_seed,success:p.efficiency.success_rate});
 
+const effU=Object.assign({},eff,{unavailable_features:['epa_per_play','front_disruption_rate']});
+const withU=B.buildState(rows,2026,effU);
+const pu=E.strength.profile(withU.st,'texastech',true);
+chk('features the artifact says its feed never supplies start the season at league average',
+  pu.efficiency.epa_per_play.value===0&&pu.efficiency.epa_per_play.unmeasured===true
+    &&pu.efficiency.def_front_disruption_rate.value===0&&pu.efficiency.def_front_disruption_rate.unmeasured===true
+    &&Object.keys(withU.st.eff).every(t=>withU.st.eff[t].epa_per_play===0),
+  {epa:pu.efficiency.epa_per_play});
+chk('…and the features it does supply are absorbed as before',
+  pu.efficiency.success_rate.unmeasured===undefined
+    &&pu.efficiency.success_rate.value===E.strength.profile(withEff.st,'texastech',true).efficiency.success_rate.value);
+chk('an artifact for another season resets nothing',
+  !B.buildState(rows,2026,Object.assign({},effU,{season:2025})).st.effUnmeasured);
+
 const noEff=B.buildState(rows,2026,null);
 chk('missing play-level data never becomes fake efficiency',
   noEff.efficiency_games_absorbed===0
     && noEff.efficiency_missing_final_games.length===1
-    && E.strength.profile(noEff.st,'texastech',true).efficiency_is_seed===true,
+    && E.strength.profile(noEff.st,'texastech',true).efficiency_is_seed===true
+    && !noEff.st.effUnmeasured,
   noEff);
 
 const late=E.newState();

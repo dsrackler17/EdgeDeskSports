@@ -1,7 +1,34 @@
 # Changelog
 
+## 2026-10-24 — College number: unfed matchup inputs start at league average; the schedule term computed as trained, and rejected
 
+Two fixes that follow from the leave-one-term-out record (`docs/cfb-validation/LOTO.md`). Pricing patch `edgedesk_cfb_r1+p12` (`football/cfb_validation/versions.jsonl`).
 
+- **The matchup inputs the season feed never supplies.**
+  - The season feed (`football/rankings/engine_efficiency.json` `unavailable_features`) has no EPA, explosiveness, passing-down, front-disruption, drive or field-position rates.
+  - The live board used to hold those inputs at the 2025 closing seed all season. The held-out test replays them at 0, so 0.42 pts of the live matchup term on average had never been tested.
+  - `engine.js` `ingest.resetUnmeasuredEfficiency` now sets them to league average for every team, offence and defence, at the break into the artifact's season. `build_coverage.js` `buildState` calls it, and so does the board's replay in `app.html` (also on a late join).
+  - The profile labels these inputs `unmeasured` ("league average: not measured by the season's play-level feed"). The efficiency gap skips them. An input the feed later supplies is absorbed and labelled as usual.
+  - **Effect on the line.** On the 2026-10-24 slate, the matchup term moves the line by 0.42 pts on average (median 0.33, max 1.56; 33 of 100 games by 0.5 or more, 5 by 1.0 or more). Every slate coverage check passes. `loto.js --live` now finds 0.00 pts of the live term from last season's values, so the live term is the tested one.
+- **The schedule term.**
+  - Rest, byes, road stretches and look-aheads used to be priced as `points_per_stress × (away stress − home stress) / 100`, built from a 0–100 index. That form ignored the weights' signs (a bye and a look-ahead carry the other sign), floored the index at 0 and divided by 100 a second time. It moved the line by 0.001 pts on average.
+  - `situation.schedulePoints` now computes the term exactly as `train_layers.py` fitted it: Σ w_k (home_k − away_k), over the components known for both sides. It averages 1.18 pts.
+  - The term is published as `shadow_points` and adds 0 to the number unless `params.schedule.points_applied` is set, the way travel and altitude work.
+  - **Held-out test.** `loto.js` has a new shadow-term mode that tests the term added to the shipped number on 2022–2025 (3,004 games). Result: **REJECTED**. MAE is 0.040 worse (95% CI −0.090 to +0.010, p = 0.14), worse in 3 of 4 seasons, and the weight k is 0.05 [−0.32, 0.43], which carries no signal. Even in the 2014–2019 seasons it was fitted on, k is only 0.47. It also moves the number away from the close. So it stays out of the line.
+  - The 0–100 index stays as a display of the schedule geometry and prices nothing.
+  - **Priced confidence.** The confidence ledger's priced confidence (how much of EdgeDesk's information the number uses) drops a little where both sides have schedule context: 41.3 → 38.6 on a test game, because the schedule no longer counts as priced. Information confidence, the data-quality score and the input contract do not change: the schedule context is still on file and still feeds the outcome range.
+  - **Cards and docs.** In `FACTORS.md`, Rest and schedule now reads "no · tested on unseen games and rejected: adds 0". A college schedule spot or rest edge carries `0 PTS` and says so.
+- **Tests.**
+  - `football/cfb_p4/tests.js` has 110 checks, 6 new: the reset, its labels, the efficiency-gap fallback, re-absorption after a reset, the schedule term's trained form checked by hand, and the not-applied gate with its shadow points.
+  - `football/fbs/efficiency_replay.test.js` has 11 checks: the build resets only for the artifact's own season.
+  - `tools/football/loto.test.js` has 44 checks: the shadow arithmetic by hand; a real shadow term is VALIDATED and a noise one never is; the record's live split has no last-season part; a shadow term is in the number exactly when its record validates it.
+  - `tools/football/game_research.test.js` has 248 checks.
+  - The research-card libs' stamps moved (`20261024sr1`), and so did the home page's model stamp.
+- **The simulator's CFB fixture.** `simulator/fixtures/cfb_2026_wk7_snapshot.json.gz` records the hash of `engine.js`, so the simulator refused to replay it.
+  - The simulator prices with no schedule context and no play-level stats, and on that path both engines are identical: 12,240 priced pairings, zero differences in fair margin, sigma, win probability or total.
+  - `simulator/src/cli/build_cfb_fixture.ts --restamp` builds fresh and compares every priced field with the committed fixture of the same as-of week. Only when all of them match does it move the code identity, and it refuses otherwise (a tampered game price was refused).
+  - A fresh build matched the fixture in all 888 games and every postseason pairing, so the fixture keeps its data with only the code identity moved.
+  - Simulator suites: CFB 308, CLI 46, publish 18, reader 101, SQL 88, typecheck clean.
 
 ## 2026-10-24 — College basketball: preseason mode, then the season on its own
 
@@ -11,6 +38,56 @@ The Simulator's **Men's College Basketball** and **Women's College Basketball** 
 - **Then the season, with no switch.** The refresh finds the opener in its own schedule file. From opening day it returns to the routine 48-hour window. The reader's chip turns over at the opening day in the generated registry (`games.regular_season_start`).
 - **Exhibition games are not priced.** No schedule we read lists them: the hoopR and wehoop files have no preseason row in any season, and ESPN's Division I scoreboard listed none this week.
 - **Unchanged.** The tournament simulation stays BLOCKED, with the same blockers, in the Tournament tab (now titled *NCAA tournament simulation — Blocked*). The planner's publication gate is unchanged too. Publication still waits on `NCAAM_FC_PUBLISH` and `NCAAW_FC_PUBLISH`.
+
+## 2026-10-24 — Content engine: the draft and its integrity check read one availability index
+
+Since the morning's editorial data refresh, `System integrity tests` failed on every branch (10 checks: the deterministic draft was BLOCKED, so it was never approved, exported or sent). The content-engine live check (`evidence.test.js` L) failed on six articles.
+
+- **The quarterback-input sentence.** A `QB_INPUT_CONFLICT` flag was written as "the model's quarterback input may be out of date (the model expects Parker Puckett, but Kamario Taylor is listed as questionable)". `AVAIL.guardProse` checks every player named in an uncertainty sentence. Puckett, the model's own starter, has only an inferred classification, so the engine blocked a sentence it wrote itself.
+  - `availabilityIndex()` is now the one place the index is built, and `validate()`'s `qb_claims_sourced` and the draft both read it.
+  - The draft names only the reported player, and gives his status only when that index says his report may be stated. Otherwise it says the input "should be checked against the latest availability report" and asserts nobody's availability.
+  - When the report lists the model's own starter, he is named as the starter it expects.
+  - `draft()` passes its clock to the classification, so the draft and the check judge the same report at the same moment.
+- **Other models' margins.** "EdgeDesk's two other, independently built models have Mississippi State by 0.3 and Oklahoma by 1.9" failed `numbers_reconcile`. `altMarginsOf()` read those margins only from a games-to-watch packet, which a matchup analysis does not carry. It now also reads the evidence packet's own `other_models` claim, the sentence the copy prints. A margin no model has still fails.
+- The edge function copy is re-inlined (`tools/content/inline.js`). The admin content page's engine stamp moved.
+
+Tests: `tools/integrity/regression.test.js` 129/129 (was 10 failing). `tools/content/evidence.test.js` 198, 5 new, all failing on the old engine: the conflict sentence never names the model's starter; a sourced questionable report is named with its status; the model's own starter is named as such; an unsourced report asserts nothing; the packet's other-model margins reconcile while an invented one fails. Content core 333, edge function 70, games to watch 136 and the weekly job 30 all pass.
+
+## 2026-10-24 — Leave one term out: each college term held to games it never saw
+
+`football/cfb_p4/research/loto.js` removes each priced term from the shipped engine, game by game, on 2022–2025. Nothing is refitted, and the repository's own promotion rules (`football/validation/promote.js`) judge the difference. It also fits each term's best multiplier k (k ≈ 1: the weight is right; k ≈ 0: the term carries nothing). The record is `football/validation/loto_cfb.json`, rendered to `docs/cfb-validation/LOTO.md`.
+
+- **The rows.** `disagreement_replay.js` prices 8,724 FBS games, 2014–2025. It runs the shipped engine cold and frozen weekly, with the matchup layer fed by the board's own efficiency adapter (`disagreement_eff.js`, rebuilt for 2014–2025). The replay now also records the matchup term pairing by pairing (`mpairs`). Every row was priced before kickoff.
+- **Verdicts (held out 2022–2025, 3,127 games):**
+
+  | term | effect on MAE | weight k | promotion rules | weight |
+  |---|---|---|---|---|
+  | Stylistic matchup | +0.037 (95% CI −0.021 to +0.094), p = 0.20, better in 4 of 4 seasons | 0.84 [0.48, 1.20] | CANDIDATE | carries real information at about the right weight; the accuracy gain is not yet significant |
+  | Conference strength | +0.186 | 1.11 | VALIDATED | |
+  | Home field | +0.186 | 1.00 | VALIDATED | a check only: its value was chosen on this window |
+  | Team strength | | 0.91 [0.86, 0.96] | | over-weighted by about 9% |
+  | Rest and schedule | moves the line 0.001 pts on average (NEGLIGIBLE) | | | |
+
+  The schedule result comes from units: `engine.js` schedGap divides the trained points-per-stress by 100 a second time. At the trained scale its held-out weight has no signal (k −0.96, interval −3.38 to +1.37). Not changed here.
+- **The matchup term, pairing by pairing.**
+  - Four of its eight learned pairings never move in the replay: run game, passing efficiency, explosives and field position. They need EPA and field-position inputs that the season feed (`football/rankings/engine_efficiency.js`) does not supply.
+  - On the live board those inputs hold the 2025 closing seed all season. `--live` splits the live slate's matchup points: 1.23 pts on average from this season's data and 0.42 from last season's values, which no test covers.
+  - The run and pass pairings move the live line by 0.01 and 0.03 pts.
+- **The cards follow the evidence.**
+  - A college pass or run mismatch now carries `0 PTS` and says its pairing gets no current-season data. It names the matchup term's points ("Utah +1.4 here") as moving through other pairings, with the term's held-out record in one sentence.
+  - Line-of-scrimmage items keep the matchup chip.
+  - `lib/edgedesk_factor_evidence.js` reads the record. `FACTORS.md` now gives matchup, schedule, conference, home field and team strength their leave-one-term-out results, and lists the inert pairings and the unpriced lanes.
+- **Not testable here:** quarterback and injury (no historical inputs), travel, rivalry and altitude (not priced).
+
+Tests: `node tools/football/loto.test.js` (37, in the CFB validation workflow) covers:
+- a real term at its right weight is validated;
+- a noise term never is;
+- a term shipped 10% too large is caught as over-weighted;
+- inert and negligible terms are reported, not graded;
+- a row priced after kickoff fails the leakage check;
+- the committed record re-derives its own statuses, and `LOTO.md` is its render.
+
+`game_research.test.js` (246): unpriced lanes say 0 PTS, line-of-scrimmage items keep the matchup term, and the registry carries the verdict. The browser test (57) and the CFB validation, engine, altitude and landing suites all pass. Cache stamps moved for the snapshot and home model.
 
 ## 2026-10-24 — Women's college basketball forecasts: the men's system, rebuilt for the women's game
 

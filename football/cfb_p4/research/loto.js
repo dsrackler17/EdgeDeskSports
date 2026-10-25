@@ -16,6 +16,11 @@
         carries no information, k < 0 means it points the wrong way. Its 95%
         interval is a game bootstrap.
 
+   A SHADOW TERM is measured by the engine but kept out of the number
+   (published as contribution shadow_points). It is tested the other way
+   round: the arm is the shipped engine PLUS the term, the baseline the
+   shipped engine, and the same rules decide whether it should go in.
+
    NO REFIT. Nothing here re-estimates a weight. Dropping a term without
    refitting the others is the question a reader of the line is asking ("is
    the +1.4 real?"); a refit is a different, later question.
@@ -67,12 +72,9 @@ const NEGLIGIBLE_PTS = 0.05;
 const TERMS = [
   { key: 'matchup', label: 'Stylistic matchup', droppable: true, fit_window: [2014, 2019],
     fit: 'football/cfb_p4/research/train_p4.py fit_matchup on 2014-2019 residuals (B_TUNE_LO, B_TUNE_HI)' },
-  { key: 'schedule', label: 'Rest and schedule', droppable: true, fit_window: null,
-    fit: 'football/cfb_p4/research/train_layers.py, tune window before 2022 (TEST_LO)',
-    /* train_layers.py ships points_per_stress = (mean |effect|) / 50, i.e. points per
-       stress point; engine.js schedGap multiplies by the stress gap AND divides by 100 */
-    trained_scale: 100,
-    caveat: 'the engine divides the trained points-per-stress by 100 a second time (football/cfb_p4/engine.js schedGap; train_layers.py already scales it), so the shipped term is 100× smaller than trained. The trained-scale row reads the same data at the size training intended' },
+  { key: 'schedule', label: 'Rest and schedule', droppable: true, fit_window: [2014, 2019], shadow: true,
+    fit: 'football/cfb_p4/research/train_layers.py schedule_layer on 2014-2019 residuals (B_LO, B_HI): sum of w_k (home_k − away_k) over the rest, road-trip and opponent-strength components',
+    caveat: 'not in the shipped number. The engine computes it in its trained form and publishes it as shadow points (params schedule.points_applied is absent), so it is tested as the shipped engine PLUS the term against the shipped engine: VALIDATED here is the case for putting it in. Its earlier priced form (a 0-100 stress index, floored at 0, with the weights’ signs ignored and a second ÷100) moved the number by 0.001 pts on average and is retired' },
   { key: 'conference', label: 'Conference strength', droppable: true, fit_window: null,
     fit: 'football/cfb_p4/research/train_layers.py, tune window before 2022 (TEST_LO)' },
   { key: 'hfa', label: 'Home field', droppable: true, fit_window: null,
@@ -124,7 +126,9 @@ function leakage(rows) {
 }
 
 /* ------------------------------------------------------- one term, one window
-   g: rows; t(x): the term's points on row x (home-margin convention). */
+   g: rows; t(x): the term's points on row x (home-margin convention).
+   opts.shadow: the term is not in x.fair, so the arm is fair + t and the
+   baseline is fair; otherwise the arm is fair and the baseline fair − t. */
 function measure(g, t, opts) {
   const B = opts.boot, R = rng(opts.seed);
   const rows = g.filter((x) => t(x) != null);
@@ -133,7 +137,8 @@ function measure(g, t, opts) {
   const meanAbs = mean(rows.map((x) => Math.abs(t(x))));
   /* a term that never moves the number has nothing to test */
   if (!(meanAbs > 0)) return { n, inert: true, mean_abs_term: 0 };
-  const y = rows.map((x) => x.final_margin), f = rows.map((x) => x.fair), tv = rows.map(t), b = f.map((v, i) => v - tv[i]);
+  const y = rows.map((x) => x.final_margin), tv = rows.map(t);
+  const f = rows.map((x, i) => opts.shadow ? x.fair + tv[i] : x.fair), b = f.map((v, i) => v - tv[i]);
   const ew = y.map((v, i) => Math.abs(v - f[i])), eo = y.map((v, i) => Math.abs(v - b[i]));
   const d = eo.map((v, i) => v - ew[i]);                      /* + = the term helps */
   const sq = (a) => Math.sqrt(mean(a.map((v) => v * v)));
@@ -201,19 +206,18 @@ function run(rows, opts) {
     brier_note: 'Brier with one normal per game at the row’s own sigma for both arms, because the replay stores the engine’s win probability for the full projection only.',
     terms: [], pairs: null, not_testable: NOT_TESTABLE };
   TERMS.forEach((T, ti) => {
-    const t = (x) => (x.c && typeof x.c[T.key] === 'number' && (T.key !== 'matchup' || (x.c_avail && x.c_avail.matchup))) ? x.c[T.key] : null;
-    const m = measure(hold, t, { boot: opts.boot, seed: 1000 + ti });
-    const aff = measure(hold.filter((x) => t(x) != null && Math.abs(t(x)) >= AFFECTED_PTS), t, { boot: opts.boot, seed: 2000 + ti });
-    const fitw = T.fit_window ? measure(inWindow(S, range(T.fit_window[0], T.fit_window[1])), t, { boot: opts.boot, seed: 3000 + ti }) : null;
-    const gap = T.fit_window ? measure(inWindow(S, range(T.fit_window[1] + 1, HOLDOUT[0] - 1)), t, { boot: opts.boot, seed: 4000 + ti }) : null;
+    const t = T.shadow
+      ? (x) => (x.shadow && typeof x.shadow[T.key] === 'number') ? x.shadow[T.key] : null
+      : (x) => (x.c && typeof x.c[T.key] === 'number' && (T.key !== 'matchup' || (x.c_avail && x.c_avail.matchup))) ? x.c[T.key] : null;
+    const mo = (seed) => ({ boot: opts.boot, seed, shadow: !!T.shadow });
+    const m = measure(hold, t, mo(1000 + ti));
+    const aff = measure(hold.filter((x) => t(x) != null && Math.abs(t(x)) >= AFFECTED_PTS), t, mo(2000 + ti));
+    const fitw = T.fit_window ? measure(inWindow(S, range(T.fit_window[0], T.fit_window[1])), t, mo(3000 + ti)) : null;
+    const gap = T.fit_window ? measure(inWindow(S, range(T.fit_window[1] + 1, HOLDOUT[0] - 1)), t, mo(4000 + ti)) : null;
     const promote = T.droppable && m.n && !m.inert && !m.negligible ? PROMOTE.evaluate(
       { feature: 'cfb_term_' + T.key, per_season: m.per_season, spread_mae: m.mae_with, paired: { p: m.paired_p }, brier: m.brier_with, leakage_clean: leak.clean, coefficient: m.k },
       { spread_mae: m.mae_without, brier: m.brier_without }) : null;
-    /* the term at the size training intended: the same fit, k in those units */
-    const trained = T.trained_scale && m.k != null ? { scale: T.trained_scale, k: r(m.k / T.trained_scale, 2), k_ci95: m.k_ci95.map((v) => r(v / T.trained_scale, 2)),
-      mean_abs_term: r(m.mean_abs_term * T.trained_scale, 2) } : null;
-    if (trained) trained.weight = weightVerdict({ n: m.n, k: trained.k, k_ci95: trained.k_ci95 });
-    out.terms.push({ key: T.key, label: T.label, droppable: T.droppable, fit: T.fit, caveat: T.caveat || null, trained_scale: trained,
+    out.terms.push({ key: T.key, label: T.label, droppable: T.droppable, shadow: !!T.shadow, fit: T.fit, caveat: T.caveat || null,
       holdout: m, holdout_affected: aff, fit_window: T.fit_window ? { seasons: T.fit_window, result: fitw } : null,
       between: gap && gap.n ? { seasons: [T.fit_window[1] + 1, HOLDOUT[0] - 1], result: gap } : null,
       status: promote ? promote.status : (m.inert ? 'INERT' : (m.negligible ? 'NEGLIGIBLE' : null)), conditions_failed: promote ? promote.conditions_failed : null, reasons: promote ? promote.reasons : null,
@@ -241,10 +245,12 @@ function run(rows, opts) {
    The replay starts cold, so a feature the current-season feed never supplies
    (football/rankings/engine_efficiency.js UNAVAILABLE) is 0 there: the term the
    replay tests is the current-season part. The LIVE board starts from
-   params.efficiency.seed (the closing snapshot of the training season), so
-   those features hold last season's values all season. This splits the live
-   slate's matchup points into the two parts, from the same state the slate
-   build uses (football/fbs/build_coverage.js buildState). */
+   params.efficiency.seed (the closing snapshot of the training season); the
+   build resets those features to league average at the season break
+   (engine.js strength.resetUnmeasured), so they should add nothing. This
+   splits the live slate's matchup points into the two parts, from the same
+   state the slate build uses (football/fbs/build_coverage.js buildState), and
+   is the check that they do. */
 async function liveSplit() {
   global.window = global.window || global;
   const P = require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
@@ -273,7 +279,10 @@ async function liveSplit() {
   return { slate_generated_at: slate.generated_at, season, seed_season: P.trained_through_season, games: n,
     mean_abs_matchup: r(tot / n, 2), mean_abs_current: r(cur / n, 2), mean_abs_last_season: r(old / n, 2), games_last_season_ge_half_pt: big,
     by_pairing: Object.keys(per).map((k) => ({ name: k, mean_abs: r(per[k] / n, 2) })), unfed_features: EF.UNAVAILABLE.slice(),
-    note: 'current = features the season feed updates; last season = features it never supplies, held at the ' + P.trained_through_season + ' closing seed (decayed once at the season break)' };
+    reset: !!st.effUnmeasured,
+    note: 'current = features the season feed updates; last season = features it never supplies, ' + (st.effUnmeasured
+      ? 'reset to league average at the season break (engine.js strength.resetUnmeasured)'
+      : 'held at the ' + P.trained_through_season + ' closing seed (decayed once at the season break)') };
 }
 
 /* ------------------------------------------------------------ the report */
@@ -295,7 +304,7 @@ function render(J) {
   L.push('|---|---|---|---|---|---|---|---|---|---|---|');
   J.terms.forEach((T) => {
     const m = T.holdout, z = m.inert || m.negligible;
-    L.push('| ' + T.label + ' | ' + (m.n || 0).toLocaleString('en-US') + ' | ' + (m.mean_abs_term == null ? '—' : m.mean_abs_term.toFixed(z ? 3 : 2)) + ' | ' + (m.n && !z ? m.mae_with.toFixed(3) + ' → ' + m.mae_without.toFixed(3) : '—') + ' | ' + (z ? '—' : sg(m.delta)) + ' | ' + (z ? '—' : ci(m.delta_ci95)) + ' | ' + (z || m.paired_p == null ? '—' : m.paired_p.toFixed(3)) + ' | ' + (z || m.k == null ? '—' : m.k.toFixed(2)) + ' | ' + (z ? '—' : ci(m.k_ci95, 2)) + ' | ' + (T.status || (T.droppable ? '—' : 'core')) + ' | ' + T.weight.text + ' |');
+    L.push('| ' + T.label + (T.shadow ? ' (not priced; tested added)' : '') + ' | ' + (m.n || 0).toLocaleString('en-US') + ' | ' + (m.mean_abs_term == null ? '—' : m.mean_abs_term.toFixed(z ? 3 : 2)) + ' | ' + (m.n && !z ? m.mae_with.toFixed(3) + ' → ' + m.mae_without.toFixed(3) : '—') + ' | ' + (z ? '—' : sg(m.delta)) + ' | ' + (z ? '—' : ci(m.delta_ci95)) + ' | ' + (z || m.paired_p == null ? '—' : m.paired_p.toFixed(3)) + ' | ' + (z || m.k == null ? '—' : m.k.toFixed(2)) + ' | ' + (z ? '—' : ci(m.k_ci95, 2)) + ' | ' + (T.status || (T.droppable ? '—' : 'core')) + ' | ' + T.weight.text + ' |');
   });
   L.push('');
   J.terms.forEach((T) => { if (T.caveat) L.push('- **' + T.label + ':** ' + T.caveat + '.'); });
@@ -319,7 +328,6 @@ function render(J) {
       if (m.inert || m.negligible) { L.push('| ' + w + ' | ' + m.n.toLocaleString('en-US') + ' | moves ' + m.mean_abs_term.toFixed(3) + ' pts on average: nothing to grade | | | | | | | |'); return; }
       L.push('| ' + w + ' | ' + m.n.toLocaleString('en-US') + ' | ' + m.mae_with.toFixed(3) + ' → ' + m.mae_without.toFixed(3) + ' | ' + sg(m.delta) + ' | ' + ci(m.delta_ci95) + ' | ' + (m.k == null ? '—' : m.k.toFixed(2)) + ' | ' + ci(m.k_ci95, 2) + ' | ' + (m.close ? sg(m.close.delta) : '—') + ' | ' + (m.close && m.close.k != null ? m.close.k.toFixed(2) + ' ' + ci(m.close.k_ci95, 2) : '—') + ' | ' + (m.brier_with == null ? '—' : m.brier_with.toFixed(4) + ' → ' + m.brier_without.toFixed(4)) + ' |');
     });
-    if (T.trained_scale) L.push('', 'At the trained scale (×' + T.trained_scale.scale + ', mean size ' + T.trained_scale.mean_abs_term.toFixed(2) + ' pts) the same held-out fit gives k = ' + T.trained_scale.k.toFixed(2) + ' ' + ci(T.trained_scale.k_ci95, 2) + ': ' + T.trained_scale.weight.text + '.');
     if (T.holdout.per_season && T.holdout.per_season.length && !T.holdout.negligible && !T.holdout.inert) {
       L.push('');
       L.push('Held out, by season (MAE without → with): ' + T.holdout.per_season.map((s) => s.season + ' ' + s.mae_before.toFixed(3) + ' → ' + s.mae_after.toFixed(3) + ' (n ' + s.n + ')').join('; ') + '.');
@@ -342,9 +350,15 @@ function render(J) {
   if (J.live) {
     const V = J.live;
     L.push('');
-    L.push('## The live board is not the replay');
-    L.push('');
-    L.push('The replay starts cold, so features the current-season feed never supplies (' + V.unfed_features.join(', ') + ') are 0 in it: the matchup term tested above is its current-season part. The live board starts from the ' + V.seed_season + ' closing seed, so those features hold last season’s values all ' + V.season + ' season. On the ' + V.season + ' slate of ' + String(V.slate_generated_at).slice(0, 10) + ' (' + V.games + ' games), the matchup term moves the line ' + V.mean_abs_matchup.toFixed(2) + ' pts on average. Its this-season part averages ' + V.mean_abs_current.toFixed(2) + ' pts and its last-season part ' + V.mean_abs_last_season.toFixed(2) + ' pts (sizes, so they do not add). No test here covers the last-season part. ' + V.games_last_season_ge_half_pt + ' games carry half a point or more from last season’s values.');
+    if (V.reset) {
+      L.push('## The live board matches the replay');
+      L.push('');
+      L.push('The replay starts cold, so features the current-season feed never supplies (' + V.unfed_features.join(', ') + ') are 0 in it: the matchup term tested above is its current-season part. The live board starts from the ' + V.seed_season + ' closing seed and resets those features to league average at the break into ' + V.season + ', so it prices the same term. On the ' + V.season + ' slate of ' + String(V.slate_generated_at).slice(0, 10) + ' (' + V.games + ' games), the matchup term moves the line ' + V.mean_abs_matchup.toFixed(2) + ' pts on average: ' + V.mean_abs_current.toFixed(2) + ' pts from this season’s features and ' + V.mean_abs_last_season.toFixed(2) + ' pts from last season’s values (' + V.games_last_season_ge_half_pt + ' games carry half a point or more from them).');
+    } else {
+      L.push('## The live board is not the replay');
+      L.push('');
+      L.push('The replay starts cold, so features the current-season feed never supplies (' + V.unfed_features.join(', ') + ') are 0 in it: the matchup term tested above is its current-season part. The live board starts from the ' + V.seed_season + ' closing seed, so those features hold last season’s values all ' + V.season + ' season. On the ' + V.season + ' slate of ' + String(V.slate_generated_at).slice(0, 10) + ' (' + V.games + ' games), the matchup term moves the line ' + V.mean_abs_matchup.toFixed(2) + ' pts on average. Its this-season part averages ' + V.mean_abs_current.toFixed(2) + ' pts and its last-season part ' + V.mean_abs_last_season.toFixed(2) + ' pts (sizes, so they do not add). No test here covers the last-season part. ' + V.games_last_season_ge_half_pt + ' games carry half a point or more from last season’s values.');
+    }
     L.push('');
     L.push('Live, by pairing (mean |points|): ' + V.by_pairing.map((x) => x.name + ' ' + x.mean_abs.toFixed(2)).join('; ') + '.');
   }
