@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-25T21:12:57.486Z",
- "board_generated_at": "2026-10-25T21:12:52.132Z",
+ "generated_at": "2026-10-25T22:08:14.855Z",
+ "board_generated_at": "2026-10-25T22:08:07.086Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -173,9 +173,9 @@
    "kickoff": "2026-10-31T19:30:00.000Z",
    "named": false,
    "edgedesk": "BYU −23.0",
-   "market": "BYU −15.5",
+   "market": "BYU −14.5",
    "books": 1,
-   "gap": 7.3,
+   "gap": 8.3,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -217,21 +217,21 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (2.6 pts) lifts the gap over 7: without it the gap is 4.7 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (2.6 pts) lifts the gap over 7: without it the gap is 5.7 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 6.1 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 7.1 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.4 — the extreme is not supported by how margins of this size have actually finished"
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.4"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail."
   },
   {
    "game_id": "401856737",
