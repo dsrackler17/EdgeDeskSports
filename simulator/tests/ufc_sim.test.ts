@@ -217,7 +217,11 @@ K.eq('committed data: the ufc.com champions', champs, { Flyweight: 'Joshua Van',
 const titles = d.bouts.filter((b) => b.title).map((b) => b.title!.division + ': ' + name(b.a) + ' v ' + name(b.b)).sort();
 K.eq('committed data: the booked title fights (champion v another fighter at that weight)', titles, ['Bantamweight: Merab Dvalishvili v Petr Yan', 'Featherweight: Alexander Volkanovski v Movsar Evloev', 'Heavyweight: Ciryl Gane v Josh Hokit', 'W Bantamweight: Kayla Harrison v Amanda Nunes']);
 const main = d.bouts.find((b) => b.event.startsWith('UFC 333') && b.order === 1)!;
-K.eq('committed data: UFC 333\'s main event is Volkanovski v Evloev, five rounds, at the price the loop published (' + main.p_a_published + ')', [name(main.a), name(main.b), main.rounds, main.p_a_published != null && round4(main.p_a) === main.p_a_published], ['Alexander Volkanovski', 'Movsar Evloev', 5, true]);
+K.eq('committed data: UFC 333\'s main event is Volkanovski v Evloev, five rounds', [name(main.a), name(main.b), main.rounds], ['Alexander Volkanovski', 'Movsar Evloev', 5]);
+/* the loop publishes only bouts that have not started (its 14-day window), so the check runs on whichever booked bouts it lists */
+const listed = d.bouts.filter((b) => b.p_a_published != null);
+K.chk('committed data: every booked bout the loop lists is at the price it published (' + listed.length + ' bouts)', listed.length > 0 && listed.every((b) => round4(b.p_a) === b.p_a_published),
+  listed.filter((b) => round4(b.p_a) !== b.p_a_published).map((b) => b.bout_id));
 K.chk('committed data: the booked bouts carry the comparison version\'s price (1.1.0) beside the served one when it is not 1.1.0', d.elo.version === '1.1.0' || d.bouts.every((b) => b.compare && b.compare.version === '1.1.0' && b.compare.p_a > 0 && b.compare.p_a < 1));
 K.chk('committed data: every booked bout has a guard verdict; a disagreement is never a signal without certification', d.bouts.every((b) => ['AGREES', 'DISAGREES', 'NO_MARKET'].includes(b.guard.status) && (!b.guard.signal_allowed || d.guard.certified))
   && d.bouts.filter((b) => b.market).every((b) => (b.guard.status === 'DISAGREES') === (Math.abs(100 * (b.p_a - b.market!.p_a)) > d.guard.threshold_pp)));

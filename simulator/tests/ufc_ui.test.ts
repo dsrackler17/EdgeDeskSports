@@ -69,9 +69,10 @@ T.chk('Fights: the guard never shows a signal without certification', allBouts.e
 T.chk('Fights: finish v decision and the round of a finish for every bout', (fights.match(/Ends in a finish \d/g) || []).length === nBouts && (fights.match(/Finish by round: R1 /g) || []).length === nBouts && /R5 \d/.test(fights));
 T.chk('Fights: the four title fights carry the title badge and the chance of a new champion', (fights.match(/ title<\/span>/g) || []).length === 4 && (fights.match(/New champion:<\/b> \d+\.\d% ±/g) || []).length === 4);
 T.chk('Fights: the ufc.com champion and ranks beside the names, and debutants marked', /Champion<\/span>/.test(fights) && /#1 Featherweight/.test(fights) && /UFC debut/.test(fights));
-const mainB = S.cards.find((c: any) => /^UFC 333/.test(c.event)).bouts[0];
-T.chk('Fights: the served price and the loop\'s published value (main event ' + mainB.a.name + ' ' + (100 * mainB.served_p_a).toFixed(1) + '%)', mainB.a.name === 'Alexander Volkanovski'
-  && fights.indexOf('Served Elo price: Alexander Volkanovski ' + (100 * mainB.served_p_a).toFixed(1) + '% (the model loop published ' + (100 * mainB.published_p_a).toFixed(2) + '%)') >= 0);
+/* the loop lists only bouts that have not started: the first booked bout it published */
+const pubB = allBouts.find((b) => b.published_p_a != null);
+T.chk('Fights: the served price and the loop\'s published value (' + (pubB ? pubB.a.name + ' ' + (100 * pubB.served_p_a).toFixed(1) + '%' : 'no bout listed') + ')', !!pubB
+  && fights.indexOf('Served Elo price: ' + UI.esc(pubB.a.name) + ' ' + (100 * pubB.served_p_a).toFixed(1) + '% (the model loop published ' + (100 * pubB.published_p_a).toFixed(2) + '%)') >= 0);
 T.chk('Fights: the method is never split into KO and submission', !/KO\/TKO \d|Submission \d/.test(fights));
 /* Title Path */
 const tp = paint(cache(), 'title_path');

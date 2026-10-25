@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_postmortems_v1",
- "generated_at": "2026-10-24T15:08:06.396Z",
+ "generated_at": "2026-10-25T05:08:06.989Z",
  "classes": {
   "GOOD_PROCESS_BAD_OUTCOME": "GOOD PROCESS / BAD OUTCOME",
   "GOOD_PROCESS_GOOD_OUTCOME": "GOOD PROCESS / GOOD OUTCOME",
@@ -13,6 +13,1574 @@
  },
  "threshold_points": 21,
  "rows": [
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401856729",
+   "week": 8,
+   "game": "Vanderbilt @ Kentucky",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T23:07:48.000Z",
+   "edgedesk_fair": "Kentucky -15.5",
+   "final_margin": 17,
+   "error": 1.5,
+   "close_error": 6.5,
+   "ats": "WIN",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401858500",
+   "week": 8,
+   "game": "USC @ Wisconsin",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T23:07:48.000Z",
+   "edgedesk_fair": "Wisconsin -1.0",
+   "final_margin": 17,
+   "error": 16.18,
+   "close_error": 19.5,
+   "ats": "WIN",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401856732",
+   "week": 8,
+   "game": "Ole Miss @ Texas",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T23:07:48.000Z",
+   "edgedesk_fair": "Ole Miss -7.0",
+   "final_margin": 7,
+   "error": 14.14,
+   "close_error": 4,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_MODEL",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401862811",
+   "week": 8,
+   "game": "UTSA @ Tulane",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T23:07:48.000Z",
+   "edgedesk_fair": "Tulane -0.5",
+   "final_margin": -23,
+   "error": 23.31,
+   "close_error": 20,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401860905",
+   "week": 8,
+   "game": "San Diego State @ Colorado State",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T22:07:50.000Z",
+   "edgedesk_fair": "San Diego State -3.0",
+   "final_margin": 7,
+   "error": 10.17,
+   "close_error": 5.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PRICE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401858276",
+   "week": 8,
+   "game": "Virginia Tech @ Clemson",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T22:07:50.000Z",
+   "edgedesk_fair": "Virginia Tech -0.5",
+   "final_margin": -4,
+   "error": 3.67,
+   "close_error": 7,
+   "ats": "WIN",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401869967",
+   "week": 8,
+   "game": "Louisiana @ Southern Miss",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T20:07:45.000Z",
+   "edgedesk_fair": "Louisiana -13.0",
+   "final_margin": 4,
+   "error": 17.07,
+   "close_error": 14,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PRICE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401871093",
+   "week": 8,
+   "game": "Old Dominion @ Louisiana Tech",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T20:07:45.000Z",
+   "edgedesk_fair": "Louisiana Tech -9.5",
+   "final_margin": 26,
+   "error": 16.38,
+   "close_error": 12.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "UNRESOLVED",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401856730",
+   "week": 8,
+   "game": "Oklahoma @ Mississippi State",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "Oklahoma -4.0",
+   "final_margin": -8,
+   "error": 3.87,
+   "close_error": 6.5,
+   "ats": "WIN",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401858497",
+   "week": 8,
+   "game": "Iowa @ Minnesota",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "Iowa -10.5",
+   "final_margin": 3,
+   "error": 13.55,
+   "close_error": 10.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "UNRESOLVED",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401858499",
+   "week": 8,
+   "game": "Michigan State @ UCLA",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "UCLA -14.5",
+   "final_margin": 18,
+   "error": 3.63,
+   "close_error": 1.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "UNRESOLVED",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401866448",
+   "week": 8,
+   "game": "Bowling Green @ Buffalo",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "Buffalo -7.0",
+   "final_margin": 7,
+   "error": 0.13,
+   "close_error": 4,
+   "ats": "WIN",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401856731",
+   "week": 8,
+   "game": "Tennessee @ South Carolina",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "Tennessee -5.0",
+   "final_margin": 3,
+   "error": 8.13,
+   "close_error": 0.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_MODEL",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401856839",
+   "week": 8,
+   "game": "Kansas State @ Arizona State",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "Kansas State -5.0",
+   "final_margin": 11,
+   "error": 15.81,
+   "close_error": 12.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PRICE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401866449",
+   "week": 8,
+   "game": "Eastern Michigan @ Ohio",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "Ohio -17.0",
+   "final_margin": 4,
+   "error": 13.15,
+   "close_error": 6.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "UNRESOLVED",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401871094",
+   "week": 8,
+   "game": "UL Monroe @ Troy",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "Troy -18.0",
+   "final_margin": -7,
+   "error": 24.76,
+   "close_error": 20.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PRICE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401856835",
+   "week": 8,
+   "game": "BYU @ UCF",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "BYU -11.5",
+   "final_margin": 8,
+   "error": 19.71,
+   "close_error": 15.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PRICE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401864526",
+   "week": 8,
+   "game": "Hawai'i @ Northern Illinois",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T19:07:53.000Z",
+   "edgedesk_fair": "Hawai'i -6.0",
+   "final_margin": -35,
+   "error": 29.18,
+   "close_error": 32,
+   "ats": "WIN",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401858495",
+   "week": 8,
+   "game": "Oregon @ Illinois",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T18:07:49.000Z",
+   "edgedesk_fair": "Oregon -12.0",
+   "final_margin": 11,
+   "error": 23.06,
+   "close_error": 21,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401856840",
+   "week": 8,
+   "game": "Texas Tech @ Cincinnati",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T15:07:46.000Z",
+   "edgedesk_fair": "Texas Tech -13.5",
+   "final_margin": 13,
+   "error": 26.66,
+   "close_error": 24.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PRICE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401856841",
+   "week": 8,
+   "game": "West Virginia @ TCU",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T15:07:46.000Z",
+   "edgedesk_fair": "TCU -13.0",
+   "final_margin": -4,
+   "error": 16.84,
+   "close_error": 14.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401858496",
+   "week": 8,
+   "game": "Indiana @ Michigan",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T15:07:46.000Z",
+   "edgedesk_fair": "Indiana -11.5",
+   "final_margin": -7,
+   "error": 4.51,
+   "close_error": 0.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "UNRESOLVED",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401858274",
+   "week": 8,
+   "game": "Pittsburgh @ Miami",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T15:07:46.000Z",
+   "edgedesk_fair": "Miami -25.0",
+   "final_margin": 29,
+   "error": 4.19,
+   "close_error": 8.5,
+   "ats": "WIN",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401866450",
+   "week": 8,
+   "game": "Western Michigan @ Toledo",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "FINAL",
+   "prediction_ts": "2026-10-24T15:07:46.000Z",
+   "edgedesk_fair": "Toledo -5.0",
+   "final_margin": 7,
+   "error": 2.03,
+   "close_error": 4.5,
+   "ats": "WIN",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401862809",
+   "week": 8,
+   "game": "Rice @ Florida Atlantic",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T2",
+   "prediction_ts": "2026-10-24T14:07:47.000Z",
+   "edgedesk_fair": "Florida Atlantic -11.0",
+   "final_margin": 2,
+   "error": 8.76,
+   "close_error": 7.5,
+   "ats": "LOSS",
+   "clv_points": 1,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "YES",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "GOOD_PROCESS_BAD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401856838",
+   "week": 8,
+   "game": "Iowa State @ Arizona",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T12",
+   "prediction_ts": "2026-10-24T11:35:12.000Z",
+   "edgedesk_fair": "Arizona -14.0",
+   "final_margin": 36,
+   "error": 21.88,
+   "close_error": 23.5,
+   "ats": "WIN",
+   "clv_points": 2,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "YES",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
+   "game_id": "401856838",
+   "week": 8,
+   "game": "Iowa State @ Arizona",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-24T00:07:47.000Z",
+   "edgedesk_fair": "Arizona -14.0",
+   "final_margin": 36,
+   "error": 21.88,
+   "close_error": 23.5,
+   "ats": "WIN",
+   "clv_points": 2,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "YES",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "GOOD_PROCESS_BAD_OUTCOME",
+   "lab_review": "UNKNOWN"
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
+   "game_id": "401862811",
+   "week": 8,
+   "game": "UTSA @ Tulane",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-24T00:07:47.000Z",
+   "edgedesk_fair": "Tulane -0.5",
+   "final_margin": -23,
+   "error": 23.31,
+   "close_error": 20,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": "UNKNOWN"
+  },
   {
    "kind": "RESEARCH_LEAN_WIN",
    "epoch": "CURRENT",
@@ -184,6 +1752,398 @@
   {
    "kind": "LARGE_MISS",
    "epoch": "CURRENT",
+   "game_id": "401858273",
+   "week": 8,
+   "game": "Boston College @ Georgia Tech",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-23T20:09:13.000Z",
+   "edgedesk_fair": "Georgia Tech -6.0",
+   "final_margin": -22,
+   "error": 27.95,
+   "close_error": 28.5,
+   "ats": "WIN",
+   "clv_points": -0.5,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": "UNKNOWN"
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
+   "game_id": "401864526",
+   "week": 8,
+   "game": "Hawai'i @ Northern Illinois",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-23T20:09:13.000Z",
+   "edgedesk_fair": "Hawai'i -6.0",
+   "final_margin": -35,
+   "error": 29.18,
+   "close_error": 32,
+   "ats": "WIN",
+   "clv_points": -1,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": "UNKNOWN"
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
+   "game_id": "401871094",
+   "week": 8,
+   "game": "UL Monroe @ Troy",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-23T20:09:13.000Z",
+   "edgedesk_fair": "Troy -18.0",
+   "final_margin": -7,
+   "error": 24.76,
+   "close_error": 20.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PRICE",
+   "lab_review": "UNKNOWN"
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
+   "game_id": "401858495",
+   "week": 8,
+   "game": "Oregon @ Illinois",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-23T19:07:52.000Z",
+   "edgedesk_fair": "Oregon -12.0",
+   "final_margin": 11,
+   "error": 23.06,
+   "close_error": 21,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": "UNKNOWN"
+  },
+  {
+   "kind": "RESEARCH_LEAN_WIN",
+   "epoch": "CURRENT",
+   "game_id": "401856834",
+   "week": 8,
+   "game": "Baylor @ Kansas",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-23T17:08:38.000Z",
+   "edgedesk_fair": "PICK",
+   "final_margin": 1,
+   "error": 1,
+   "close_error": 0.5,
+   "ats": "WIN",
+   "clv_points": 4,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "YES",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "GOOD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
+   "game_id": "401856840",
+   "week": 8,
+   "game": "Texas Tech @ Cincinnati",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-23T16:07:48.000Z",
+   "edgedesk_fair": "Texas Tech -13.5",
+   "final_margin": 13,
+   "error": 26.66,
+   "close_error": 24.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "YES",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "BAD_PRICE",
+   "lab_review": "UNKNOWN"
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
+   "game_id": "401858270",
+   "week": 8,
+   "game": "California @ SMU",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T24",
+   "prediction_ts": "2026-10-23T16:07:48.000Z",
+   "edgedesk_fair": "SMU -17.5",
+   "final_margin": 39,
+   "error": 21.42,
+   "close_error": 20.5,
+   "ats": "LOSS",
+   "clv_points": 0,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "NO",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "YES",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "NORMAL_VARIANCE",
+   "lab_review": "UNKNOWN"
+  },
+  {
+   "kind": "LARGE_MISS",
+   "epoch": "CURRENT",
    "game_id": "401864525",
    "week": 8,
    "game": "Air Force @ Wyoming",
@@ -347,6 +2307,118 @@
     }
    },
    "classification": "BAD_PROCESS_GOOD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401856728",
+   "week": 8,
+   "game": "LSU @ Auburn",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T48",
+   "prediction_ts": "2026-10-22T16:07:49.000Z",
+   "edgedesk_fair": "LSU -5.5",
+   "final_margin": -21,
+   "error": 15.58,
+   "close_error": 14,
+   "ats": "LOSS",
+   "clv_points": 0.5,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "YES",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "GOOD_PROCESS_BAD_OUTCOME",
+   "lab_review": null
+  },
+  {
+   "kind": "RESEARCH_LEAN_LOSS",
+   "epoch": "CURRENT",
+   "game_id": "401858275",
+   "week": 8,
+   "game": "Syracuse @ North Carolina",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "checkpoint": "T72",
+   "prediction_ts": "2026-10-22T00:07:44.000Z",
+   "edgedesk_fair": "North Carolina -10.0",
+   "final_margin": -1,
+   "error": 11.02,
+   "close_error": 10.5,
+   "ats": "LOSS",
+   "clv_points": 2,
+   "checklist": {
+    "original_price_good": {
+     "answer": "NO",
+     "source": "the snapshot’s model–market gap at the price then available (edge_vs_open)"
+    },
+    "beat_closing_line": {
+     "answer": "YES",
+     "source": "CLV from the snapshot price to the close"
+    },
+    "market_moved_toward_edgedesk": {
+     "answer": "NO",
+     "source": "open → close movement relative to EdgeDesk’s side"
+    },
+    "qb_correct": {
+     "answer": "UNKNOWN",
+     "source": "the expected starters are on the snapshot; no post-game starter record is joined to it"
+    },
+    "roster_correct": {
+     "answer": "YES",
+     "source": "snapshot data-quality checks (availability / roster RED)"
+    },
+    "team_state_correct": {
+     "answer": "UNKNOWN",
+     "source": "games played behind each rating are not stored on the Lab snapshot; unknown, never assumed"
+    },
+    "matchup_adjustment_excessive": {
+     "answer": "UNKNOWN",
+     "source": "matchup term vs its validated p95 (3.42 pts)"
+    },
+    "turnover_outlier": {
+     "answer": "UNKNOWN",
+     "source": "no per-game turnover series is joined to this game; unknown, never assumed"
+    },
+    "data_failure": {
+     "answer": "NO",
+     "source": "snapshot data-quality status"
+    }
+   },
+   "classification": "GOOD_PROCESS_BAD_OUTCOME",
    "lab_review": null
   },
   {
@@ -12618,22 +14690,22 @@
   "qualified_losses": {},
   "qualified_wins": {},
   "large_misses": {
-   "GOOD_PROCESS_BAD_OUTCOME": 9,
-   "BAD_PRICE": 11,
-   "NORMAL_VARIANCE": 24,
+   "GOOD_PROCESS_BAD_OUTCOME": 10,
+   "NORMAL_VARIANCE": 29,
+   "BAD_PRICE": 13,
    "BAD_MODEL": 27,
    "UNRESOLVED": 2
   },
   "research_lean_losses": {
-   "BAD_PRICE": 35,
-   "UNRESOLVED": 13,
-   "BAD_MODEL": 11,
-   "GOOD_PROCESS_BAD_OUTCOME": 11,
-   "NORMAL_VARIANCE": 7
+   "BAD_MODEL": 13,
+   "NORMAL_VARIANCE": 10,
+   "BAD_PRICE": 41,
+   "UNRESOLVED": 18,
+   "GOOD_PROCESS_BAD_OUTCOME": 14
   },
   "research_lean_wins": {
-   "BAD_PROCESS_GOOD_OUTCOME": 68,
-   "GOOD_PROCESS_GOOD_OUTCOME": 6,
+   "BAD_PROCESS_GOOD_OUTCOME": 77,
+   "GOOD_PROCESS_GOOD_OUTCOME": 7,
    "UNRESOLVED": 1
   }
  },

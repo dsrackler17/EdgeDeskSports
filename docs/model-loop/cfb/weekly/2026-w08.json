@@ -1,0 +1,723 @@
+{
+ "at": "2026-10-25T00:38:12Z",
+ "season": 2026,
+ "week": 8,
+ "served_before": "2.0.0",
+ "served_after": "2.0.0",
+ "promoted": null,
+ "baseline": {
+  "full": {
+   "n": 10145,
+   "margin_mae": 12.7439,
+   "close_margin_mae": 12.2631,
+   "logloss": 0.47845,
+   "close_logloss": 0.47145,
+   "mean_abs_vs_close": 3.5797
+  },
+  "recent_season": {
+   "n": 934,
+   "margin_mae": 12.1218,
+   "close_margin_mae": 11.8969,
+   "logloss": 0.47304,
+   "close_logloss": 0.47257
+  },
+  "this_season": {
+   "n": 447,
+   "margin_mae": 11.7926,
+   "close_margin_mae": 11.0984,
+   "logloss": 0.4672,
+   "close_logloss": 0.44013,
+   "mean_abs_vs_close": 3.4783
+  },
+  "this_season_fbs": {
+   "n": 374,
+   "margin_mae": 11.4689,
+   "close_margin_mae": 10.9773,
+   "logloss": 0.53895,
+   "close_logloss": 0.51233
+  },
+  "this_season_fcs": {
+   "n": 73,
+   "margin_mae": 13.4508,
+   "close_margin_mae": 11.7192,
+   "logloss": 0.09956,
+   "close_logloss": 0.07023
+  }
+ },
+ "patterns": [
+  {
+   "pattern": "home",
+   "n": 1381,
+   "note": "every game; line bias is the model's home lean against the close",
+   "line_bias": 0.404,
+   "line_t": 3.42,
+   "outcome_bias": 0.56,
+   "outcome_t": 1.38,
+   "abs_gap": 3.386,
+   "close_beats_model_by": 0.377
+  },
+  {
+   "pattern": "early_season",
+   "n": 542,
+   "note": "tag_early",
+   "line_bias": 0.617,
+   "line_t": 2.78,
+   "outcome_bias": 0.51,
+   "outcome_t": 0.78,
+   "abs_gap": 4.072,
+   "close_beats_model_by": 0.321
+  },
+  {
+   "pattern": "big_favourites",
+   "n": 508,
+   "note": "tag_big_fav",
+   "line_bias": 0.341,
+   "line_t": 1.45,
+   "outcome_bias": 1.291,
+   "outcome_t": 1.88,
+   "abs_gap": 4.053,
+   "close_beats_model_by": 0.458
+  },
+  {
+   "pattern": "fcs",
+   "n": 199,
+   "note": "tag_fcs",
+   "line_bias": 1.888,
+   "line_t": 3.84,
+   "outcome_bias": 0.653,
+   "outcome_t": 0.6,
+   "abs_gap": 5.744,
+   "close_beats_model_by": 0.481
+  },
+  {
+   "pattern": "neutral",
+   "n": 67,
+   "note": "tag_neutral",
+   "line_bias": -0.61,
+   "line_t": -1.09,
+   "outcome_bias": 2.103,
+   "outcome_t": 1.18,
+   "abs_gap": 3.442,
+   "close_beats_model_by": 1.138
+  },
+  {
+   "pattern": "qb_change",
+   "n": 267,
+   "note": "tag_new_qb",
+   "line_bias": 0.303,
+   "line_t": 1.04,
+   "outcome_bias": 0.048,
+   "outcome_t": 0.05,
+   "abs_gap": 3.688,
+   "close_beats_model_by": 0.465
+  },
+  {
+   "pattern": "home_dogs",
+   "n": 444,
+   "note": "tag_home_dog",
+   "line_bias": 1.031,
+   "line_t": 5.93,
+   "outcome_bias": -0.962,
+   "outcome_t": -1.3,
+   "abs_gap": 2.974,
+   "close_beats_model_by": 0.242
+  },
+  {
+   "pattern": "postseason",
+   "n": 46,
+   "note": "tag_postseason",
+   "line_bias": -0.468,
+   "line_t": -0.65,
+   "outcome_bias": 2.751,
+   "outcome_t": 1.22,
+   "abs_gap": 3.639,
+   "close_beats_model_by": 1.678
+  }
+ ],
+ "largest_misses": [
+  {
+   "game_id": "401864503",
+   "game": "Illinois State @ Northern Illinois",
+   "model": 16.04,
+   "close": -2.5,
+   "result": -4.0,
+   "gap": 18.54,
+   "top_components": [
+    {
+     "key": "rush_def",
+     "points": 3.94
+    },
+    {
+     "key": "pass_off",
+     "points": 2.82
+    },
+    {
+     "key": "home_field",
+     "points": 2.66
+    },
+    {
+     "key": "market",
+     "points": 2.45
+    },
+    {
+     "key": "pass_def",
+     "points": 2.07
+    }
+   ]
+  },
+  {
+   "game_id": "401856784",
+   "game": "Prairie View A&M @ Baylor",
+   "model": 52.8,
+   "close": 37.5,
+   "result": 41.0,
+   "gap": 15.3,
+   "top_components": [
+    {
+     "key": "market",
+     "points": 26.16
+    },
+    {
+     "key": "rush_def",
+     "points": 11.54
+    },
+    {
+     "key": "pass_def",
+     "points": 4.83
+    },
+    {
+     "key": "pass_off",
+     "points": 4.67
+    },
+    {
+     "key": "rush_off",
+     "points": 3.74
+    }
+   ]
+  },
+  {
+   "game_id": "401858439",
+   "game": "Howard @ Indiana",
+   "model": 72.42,
+   "close": 57.5,
+   "result": 55.0,
+   "gap": 14.92,
+   "top_components": [
+    {
+     "key": "market",
+     "points": 35.77
+    },
+    {
+     "key": "rush_def",
+     "points": 11.16
+    },
+    {
+     "key": "pass_off",
+     "points": 9.3
+    },
+    {
+     "key": "pass_def",
+     "points": 5.64
+    },
+    {
+     "key": "rush_off",
+     "points": 4.61
+    }
+   ]
+  },
+  {
+   "game_id": "401864500",
+   "game": "Montana State @ Nevada",
+   "model": 9.87,
+   "close": -4.5,
+   "result": -13.0,
+   "gap": 14.37,
+   "top_components": [
+    {
+     "key": "market",
+     "points": -6.16
+    },
+    {
+     "key": "rush_off",
+     "points": 5.79
+    },
+    {
+     "key": "rush_def",
+     "points": 4.93
+    },
+    {
+     "key": "home_field",
+     "points": 2.66
+    },
+    {
+     "key": "pass_def",
+     "points": 2.52
+    }
+   ]
+  },
+  {
+   "game_id": "401862777",
+   "game": "Delaware State @ South Florida",
+   "model": 50.77,
+   "close": 37.5,
+   "result": 42.0,
+   "gap": 13.27,
+   "top_components": [
+    {
+     "key": "market",
+     "points": 24.29
+    },
+    {
+     "key": "rush_def",
+     "points": 10.99
+    },
+    {
+     "key": "pass_off",
+     "points": 5.84
+    },
+    {
+     "key": "pass_def",
+     "points": 3.85
+    },
+    {
+     "key": "rush_off",
+     "points": 3.64
+    }
+   ]
+  },
+  {
+   "game_id": "401858452",
+   "game": "North Dakota @ Nebraska",
+   "model": 40.37,
+   "close": 27.5,
+   "result": 27.0,
+   "gap": 12.87,
+   "top_components": [
+    {
+     "key": "market",
+     "points": 15.92
+    },
+    {
+     "key": "rush_def",
+     "points": 7.54
+    },
+    {
+     "key": "rush_off",
+     "points": 5.48
+    },
+    {
+     "key": "pass_off",
+     "points": 4.72
+    },
+    {
+     "key": "pass_def",
+     "points": 4.43
+    }
+   ]
+  },
+  {
+   "game_id": "401862775",
+   "game": "East Texas A&M @ Tulsa",
+   "model": 29.12,
+   "close": 41.5,
+   "result": 42.0,
+   "gap": -12.38,
+   "top_components": [
+    {
+     "key": "market",
+     "points": 10.35
+    },
+    {
+     "key": "rush_def",
+     "points": 9.01
+    },
+    {
+     "key": "rush_off",
+     "points": 4.74
+    },
+    {
+     "key": "home_field",
+     "points": 2.66
+    },
+    {
+     "key": "pass_def",
+     "points": 1.44
+    }
+   ]
+  },
+  {
+   "game_id": "401870745",
+   "game": "Mercyhurst @ Western Kentucky",
+   "model": 27.18,
+   "close": 39.5,
+   "result": 45.0,
+   "gap": -12.32,
+   "top_components": [
+    {
+     "key": "market",
+     "points": 14.98
+    },
+    {
+     "key": "rush_def",
+     "points": 5.01
+    },
+    {
+     "key": "home_field",
+     "points": 2.66
+    },
+    {
+     "key": "pass_def",
+     "points": 2.03
+    },
+    {
+     "key": "rush_off",
+     "points": 1.96
+    }
+   ]
+  }
+ ],
+ "candidates": [
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "era_shorter",
+   "change": {
+    "path": "model.hl_season",
+    "how": [
+     "set",
+     3.0
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "home_dogs",
+    "recent_era"
+   ],
+   "full": {
+    "margin_mae": 12.7486,
+    "logloss": 0.4792,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1311,
+    "logloss": 0.47446,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": 0.0047,
+    "full_logloss": 0.00075,
+    "recent_mae": 0.0093,
+    "recent_logloss": 0.00142
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0047 does not clear -0.003; full-backtest log loss change +0.00075 does not clear -0.0002; worse on 2025 MAE (+0.0093); worse on 2025 log loss (+0.00142)"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "hfa_shrink_on",
+   "change": {
+    "path": "model.hfa_prior_games",
+    "how": [
+     "set",
+     300.0
+    ]
+   },
+   "answers_patterns": [
+    "home",
+    "home_dogs"
+   ],
+   "full": {
+    "margin_mae": 12.7439,
+    "logloss": 0.47845,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1218,
+    "logloss": 0.47304,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": 0.0,
+    "full_logloss": 0.0,
+    "recent_mae": 0.0,
+    "recent_logloss": 0.0
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0000 does not clear -0.003; full-backtest log loss change +0.00000 does not clear -0.0002"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "fcs_prior_weaker",
+   "change": {
+    "path": "rating.lam.lower",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "fcs"
+   ],
+   "full": {
+    "margin_mae": 12.7298,
+    "logloss": 0.47831,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1181,
+    "logloss": 0.47335,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": -0.0141,
+    "full_logloss": -0.00014,
+    "recent_mae": -0.0037,
+    "recent_logloss": 0.00031
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest log loss change -0.00014 does not clear -0.0002; worse on 2025 log loss (+0.00031)"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "fcs_prior_stronger",
+   "change": {
+    "path": "rating.lam.lower",
+    "how": [
+     "mul",
+     2.0
+    ]
+   },
+   "answers_patterns": [
+    "fcs"
+   ],
+   "full": {
+    "margin_mae": 12.7593,
+    "logloss": 0.47869,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1283,
+    "logloss": 0.47307,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": 0.0154,
+    "full_logloss": 0.00024,
+    "recent_mae": 0.0065,
+    "recent_logloss": 3e-05
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0154 does not clear -0.003; full-backtest log loss change +0.00024 does not clear -0.0002; worse on 2025 MAE (+0.0065); worse on 2025 log loss (+0.00003)"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "era_longer",
+   "change": {
+    "path": "model.hl_season",
+    "how": [
+     "set",
+     10.0
+    ]
+   },
+   "answers_patterns": [
+    "home"
+   ],
+   "full": {
+    "margin_mae": 12.7443,
+    "logloss": 0.47866,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1219,
+    "logloss": 0.47342,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": 0.0004,
+    "full_logloss": 0.00021,
+    "recent_mae": 0.0001,
+    "recent_logloss": 0.00038
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0004 does not clear -0.003; full-backtest log loss change +0.00021 does not clear -0.0002; worse on 2025 MAE (+0.0001); worse on 2025 log loss (+0.00038)"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "recency_faster",
+   "change": {
+    "path": "rating.hl_week",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "recency"
+   ],
+   "decision": "SKIPPED",
+   "reason": "no change from the served configuration"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "pass_off_prior_weaker",
+   "change": {
+    "path": "rating.lam.pass_off",
+    "how": [
+     "mul",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "prior"
+   ],
+   "full": {
+    "margin_mae": 12.7493,
+    "logloss": 0.47863,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1281,
+    "logloss": 0.47317,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": 0.0054,
+    "full_logloss": 0.00018,
+    "recent_mae": 0.0063,
+    "recent_logloss": 0.00013
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0054 does not clear -0.003; full-backtest log loss change +0.00018 does not clear -0.0002; worse on 2025 MAE (+0.0063); worse on 2025 log loss (+0.00013)"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "talent_more",
+   "change": {
+    "path": "rating.talent.off",
+    "how": [
+     "add",
+     0.015
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "prior"
+   ],
+   "full": {
+    "margin_mae": 12.7427,
+    "logloss": 0.47856,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1285,
+    "logloss": 0.4735,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": -0.0012,
+    "full_logloss": 0.00011,
+    "recent_mae": 0.0067,
+    "recent_logloss": 0.00046
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0012 does not clear -0.003; full-backtest log loss change +0.00011 does not clear -0.0002; worse on 2025 MAE (+0.0067); worse on 2025 log loss (+0.00046)"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "talent_def_more",
+   "change": {
+    "path": "rating.talent.def",
+    "how": [
+     "add",
+     0.015
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "prior"
+   ],
+   "full": {
+    "margin_mae": 12.7463,
+    "logloss": 0.47869,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1432,
+    "logloss": 0.47414,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": 0.0024,
+    "full_logloss": 0.00024,
+    "recent_mae": 0.0214,
+    "recent_logloss": 0.0011
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change +0.0024 does not clear -0.003; full-backtest log loss change +0.00024 does not clear -0.0002; worse on 2025 MAE (+0.0214); worse on 2025 log loss (+0.00110)"
+  },
+  {
+   "at": "2026-10-25T00:34:04Z",
+   "season": 2026,
+   "week": 8,
+   "served_version": "2.0.0",
+   "candidate": "retprod_more",
+   "change": {
+    "path": "rating.retprod",
+    "how": [
+     "add",
+     0.5
+    ]
+   },
+   "answers_patterns": [
+    "early_season",
+    "prior"
+   ],
+   "full": {
+    "margin_mae": 12.7424,
+    "logloss": 0.47851,
+    "n": 10145
+   },
+   "recent_season": {
+    "margin_mae": 12.1258,
+    "logloss": 0.47317,
+    "n": 934
+   },
+   "delta": {
+    "full_mae": -0.0015,
+    "full_logloss": 6e-05,
+    "recent_mae": 0.004,
+    "recent_logloss": 0.00013
+   },
+   "decision": "FAIL",
+   "reason": "full-backtest MAE change -0.0015 does not clear -0.003; full-backtest log loss change +0.00006 does not clear -0.0002; worse on 2025 MAE (+0.0040); worse on 2025 log loss (+0.00013)"
+  }
+ ]
+}
