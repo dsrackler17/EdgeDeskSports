@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_football_model_record_summary_v1",
- "generated_at": "2026-10-25T13:58:12.420Z",
+ "generated_at": "2026-10-25T17:52:39.519Z",
  "season": 2026,
  "what": "The football model’s own record: the number it published before kickoff, graded against the closing line and the final. Separate from the edges record, which grades flagged prices.",
  "rules": [
@@ -35,20 +35,20 @@
    ],
    "counts": {
     "recorded": 106,
-    "pregame": 27,
-    "awaiting_final": 1,
+    "pregame": 20,
+    "awaiting_final": 7,
     "final_no_close": 0,
-    "graded": 78,
+    "graded": 79,
     "revised": 90,
     "beyond_guard": 0
    },
    "ats": {
     "all": {
-     "n": 78,
-     "w": 38,
+     "n": 79,
+     "w": 39,
      "l": 35,
      "p": 5,
-     "pct": 52.1
+     "pct": 52.7
     },
     "lean": {
      "n": 47,
@@ -67,11 +67,11 @@
    },
    "ou": {
     "all": {
-     "n": 77,
+     "n": 78,
      "w": 33,
-     "l": 44,
+     "l": 45,
      "p": 0,
-     "pct": 42.9
+     "pct": 42.3
     },
     "lean": {
      "n": 39,
@@ -89,71 +89,71 @@
     }
    },
    "su": {
-    "n": 78,
-    "w": 48,
+    "n": 79,
+    "w": 49,
     "l": 29,
     "p": 1,
-    "pct": 62.3
+    "pct": 62.8
    },
    "clv": {
     "spread_entry": {
-     "n": 76,
-     "sum": 37,
-     "avg": 0.49,
+     "n": 77,
+     "sum": 36.5,
+     "avg": 0.47,
      "beat": 35,
      "flat": 26,
-     "lost": 15,
-     "beat_pct": 46.1
+     "lost": 16,
+     "beat_pct": 45.5
     },
     "spread_entry_lean": {
-     "n": 47,
-     "sum": 36,
-     "avg": 0.77,
+     "n": 48,
+     "sum": 35.5,
+     "avg": 0.74,
      "beat": 24,
      "flat": 14,
-     "lost": 9,
-     "beat_pct": 51.1
+     "lost": 10,
+     "beat_pct": 50
     },
     "spread_pick": {
-     "n": 78,
-     "sum": 11.5,
-     "avg": 0.15,
+     "n": 79,
+     "sum": 11,
+     "avg": 0.14,
      "beat": 29,
      "flat": 36,
-     "lost": 13,
-     "beat_pct": 37.2
+     "lost": 14,
+     "beat_pct": 36.7
     },
     "total_entry": {
-     "n": 76,
-     "sum": 7,
-     "avg": 0.09,
+     "n": 77,
+     "sum": 6,
+     "avg": 0.08,
      "beat": 25,
      "flat": 20,
-     "lost": 31,
-     "beat_pct": 32.9
+     "lost": 32,
+     "beat_pct": 32.5
     },
     "total_pick": {
-     "n": 77,
-     "sum": -6,
-     "avg": -0.08,
+     "n": 78,
+     "sum": -7,
+     "avg": -0.09,
      "beat": 20,
      "flat": 32,
-     "lost": 25,
-     "beat_pct": 26
+     "lost": 26,
+     "beat_pct": 25.6
     }
    },
    "error": {
-    "n": 78,
-    "model_mae": 9.09,
-    "close_mae": 8.82,
-    "model_closer_pct": 47.4,
-    "total_n": 78,
-    "model_total_mae": 10.8,
-    "close_total_mae": 10.28
+    "n": 79,
+    "model_mae": 9.01,
+    "close_mae": 8.75,
+    "model_closer_pct": 48.1,
+    "total_n": 79,
+    "model_total_mae": 10.9,
+    "close_total_mae": 10.37
    },
    "brier": {
-    "n": 78,
-    "model": 0.2356
+    "n": 79,
+    "model": 0.2342
    },
    "weeks": [
     {
@@ -299,28 +299,28 @@
     {
      "week": 7,
      "recorded": 14,
-     "graded": 1,
+     "graded": 2,
      "ats": {
-      "n": 1,
-      "w": 0,
+      "n": 2,
+      "w": 1,
       "l": 1,
       "p": 0,
-      "pct": 0
+      "pct": 50
      },
      "ou": {
-      "n": 1,
+      "n": 2,
       "w": 0,
-      "l": 1,
+      "l": 2,
       "p": 0,
       "pct": 0
      },
      "clv": {
-      "n": 1,
-      "sum": -0.5,
+      "n": 2,
+      "sum": -1,
       "avg": -0.5,
       "beat": 0,
       "flat": 0,
-      "lost": 1,
+      "lost": 2,
       "beat_pct": 0
      }
     },
@@ -1144,6 +1144,31 @@
  "recent": {
   "nfl": [
    {
+    "game_id": "2026_07_PIT_NO",
+    "week": 7,
+    "kickoff": "2026-10-25T13:30:00.000Z",
+    "home": "New Orleans Saints",
+    "away": "Pittsburgh Steelers",
+    "home_code": "NO",
+    "away_code": "PIT",
+    "model_line": 3.64,
+    "model_total": 44.73,
+    "entry_line": 2.5,
+    "close_line": 3,
+    "close_total": 43.5,
+    "final": [
+     16,
+     10
+    ],
+    "status": "GRADED",
+    "ats": "win",
+    "ats_side": "away",
+    "ou": "loss",
+    "ou_side": "over",
+    "clv": -0.5,
+    "reliability": null
+   },
+   {
     "game_id": "2026_07_NE_CHI",
     "week": 7,
     "kickoff": "2026-10-23T00:15:00.000Z",
@@ -1416,31 +1441,6 @@
     "ou": "loss",
     "ou_side": "under",
     "clv": 0,
-    "reliability": null
-   },
-   {
-    "game_id": "2026_06_CAR_PHI",
-    "week": 6,
-    "kickoff": "2026-10-18T17:00:00.000Z",
-    "home": "Philadelphia Eagles",
-    "away": "Carolina Panthers",
-    "home_code": "PHI",
-    "away_code": "CAR",
-    "model_line": -0.72,
-    "model_total": 42.79,
-    "entry_line": -2.5,
-    "close_line": 3,
-    "close_total": 39.5,
-    "final": [
-     25,
-     14
-    ],
-    "status": "GRADED",
-    "ats": "loss",
-    "ats_side": "home",
-    "ou": "loss",
-    "ou_side": "over",
-    "clv": 5.5,
     "reliability": null
    }
   ],
