@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-25T09:09:57.205Z",
+  "generated_at": "2026-10-25T09:12:03.144Z",
   "open": 16,
   "count": 16,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -642,7 +642,7 @@
       "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-13T20:41:25.405Z",
-      "updated_at": "2026-10-16T04:09:55.179Z",
+      "updated_at": "2026-10-25T09:12:03.144Z",
       "evidence": [
         {
           "lesson_id": "2026_01_BUF_HOU:contradicted:market",
@@ -665,14 +665,27 @@
           "result": "Seattle Seahawks lost by 3. Seattle Seahawks lost by 3 where EdgeDesk projected a 0.1-point edge.",
           "severity": "high",
           "at": "2026-10-16T04:09:55.179Z"
+        },
+        {
+          "lesson_id": "2026_05_CHI_GB:contradicted:market",
+          "game_id": "2026_05_CHI_GB",
+          "season": 2026,
+          "week": 5,
+          "team": "Chicago Bears",
+          "expectation": "2 published claims said the same thing: EdgeDesk makes it Green Bay Packers +0.4 where the market has Green Bay Packers +3.0 at Hard Rock Bet — a 2.6 points disagreement. EdgeDesk prices this game at Green Bay Packers +0.4 with a fair total of 45.4, which makes Chicago Bears the better team here by that margin on this field.",
+          "result": "Chicago Bears lost by 24. Chicago Bears lost by 24 where EdgeDesk projected a 0.4-point edge.",
+          "severity": "high",
+          "at": "2026-10-25T09:12:03.144Z"
         }
       ],
-      "occurrences": 2,
+      "occurrences": 3,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -716,6 +729,46 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:passing:matchup",
+      "sport": "NFL",
+      "category": "passing",
+      "question": "Does EdgeDesk’s passing handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-19T03:50:38.678Z",
+      "updated_at": "2026-10-25T09:12:03.144Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_06_DAL_GB:contradicted:passing",
+          "game_id": "2026_06_DAL_GB",
+          "season": 2026,
+          "week": 6,
+          "team": "Dallas Cowboys",
+          "expectation": "Dallas Cowboys’ pass offence rates +0.115 (#8 of 32) and Green Bay Packers’ pass defence rates +0.081 (#24 of 32). Added the way the model adds them, this pairing sits +0.195 from the league mean, which favours Dallas Cowboys.",
+          "result": "Dallas Cowboys 4.64 yards per pass attempt against Green Bay Packers 5.93; Dallas Cowboys 255 net passing yards against Green Bay Packers 261.",
+          "severity": "high",
+          "at": "2026-10-19T03:50:38.678Z"
+        },
+        {
+          "lesson_id": "2026_05_CHI_GB:contradicted:passing",
+          "game_id": "2026_05_CHI_GB",
+          "season": 2026,
+          "week": 5,
+          "team": "Chicago Bears",
+          "expectation": "2 published claims said the same thing: Chicago Bears’ pass offence rates +0.098 (#8 of 32) and Green Bay Packers’ pass defence rates +0.081 (#24 of 32). Added the way the model adds them, this pairing sits +0.178 from the league mean, which favours Chicago Bears. Net passing EPA — Chicago Bears by 1.3 points — worth -1.3 of the EdgeDesk number, in Chicago Bears’s favour.",
+          "result": "Chicago Bears 3.75 yards per pass attempt against Green Bay Packers 10.85; Chicago Bears 165 net passing yards against Green Bay Packers 358. Chicago Bears 3.75 yards per pass attempt against Green Bay Packers 10.85; Chicago Bears 165 net passing yards against Green Bay Packers 358.",
+          "severity": "high",
+          "at": "2026-10-25T09:12:03.144Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "CFB:passing:advantage",
       "sport": "CFB",
       "category": "passing",
@@ -734,35 +787,6 @@
           "result": "USC Trojans 7.76 yards per pass attempt against Oregon Ducks 10.46; USC Trojans 326 net passing yards against Oregon Ducks 366.",
           "severity": "high",
           "at": "2026-09-27T03:30:36.660Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:passing:matchup",
-      "sport": "NFL",
-      "category": "passing",
-      "question": "Does EdgeDesk’s passing handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-19T03:50:38.678Z",
-      "updated_at": "2026-10-19T03:50:38.678Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_06_DAL_GB:contradicted:passing",
-          "game_id": "2026_06_DAL_GB",
-          "season": 2026,
-          "week": 6,
-          "team": "Dallas Cowboys",
-          "expectation": "Dallas Cowboys’ pass offence rates +0.115 (#8 of 32) and Green Bay Packers’ pass defence rates +0.081 (#24 of 32). Added the way the model adds them, this pairing sits +0.195 from the league mean, which favours Dallas Cowboys.",
-          "result": "Dallas Cowboys 4.64 yards per pass attempt against Green Bay Packers 5.93; Dallas Cowboys 255 net passing yards against Green Bay Packers 261.",
-          "severity": "high",
-          "at": "2026-10-19T03:50:38.678Z"
         }
       ],
       "occurrences": 1,
