@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-25T01:07:50.000Z",
+ "generated_at": "2026-10-25T02:07:52.000Z",
  "rule": "cfb_lab_promotion_v1",
  "champion": "edgedesk_cfb_p4_v1.0.0",
  "evaluations": [
@@ -8,55 +8,14 @@
    "role": "challenger",
    "champion": "edgedesk_cfb_p4_v1.0.0",
    "rule": "cfb_lab_promotion_v1",
-   "n": 215,
+   "n": 216,
    "min_n": 150,
    "ready": true,
    "decision": "NOT_ELIGIBLE",
-   "mae_diff": 0.132,
+   "mae_diff": 0.108,
    "mae_diff_ci": [
-    -0.365,
-    0.63
-   ],
-   "weekly_win_share": 0.25,
-   "weeks": 4,
-   "gates": {
-    "G1_mae_ci_below_zero": false,
-    "G2_brier_not_worse": true,
-    "G3_ece_within_001": true,
-    "G4_coverage80_in_band": true,
-    "G5_tail_not_worse": true,
-    "G6_weekly_stability": false
-   },
-   "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
-   "champion_stats": {
-    "mae": 12.086,
-    "rmse": 15.247,
-    "brier": 0.21795,
-    "ece": 0.0881,
-    "p95_ae": 30.242
-   },
-   "challenger_stats": {
-    "mae": 12.218,
-    "rmse": 15.42,
-    "brier": 0.21397,
-    "ece": 0.0759,
-    "p95_ae": 31.215,
-    "coverage_80": 0.814
-   }
-  },
-  {
-   "challenger": "edgedesk_cfb_v2.0.0",
-   "role": "candidate",
-   "champion": "edgedesk_cfb_p4_v1.0.0",
-   "rule": "cfb_lab_promotion_v1",
-   "n": 215,
-   "min_n": 150,
-   "ready": true,
-   "decision": "NOT_ELIGIBLE",
-   "mae_diff": 0.168,
-   "mae_diff_ci": [
-    -0.322,
-    0.654
+    -0.4,
+    0.617
    ],
    "weekly_win_share": 0.25,
    "weeks": 4,
@@ -70,19 +29,60 @@
    },
    "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
    "champion_stats": {
-    "mae": 12.086,
-    "rmse": 15.247,
-    "brier": 0.21795,
-    "ece": 0.0881,
-    "p95_ae": 30.242
+    "mae": 12.069,
+    "rmse": 15.223,
+    "brier": 0.21711,
+    "ece": 0.0868,
+    "p95_ae": 30.065
    },
    "challenger_stats": {
-    "mae": 12.255,
-    "rmse": 15.447,
-    "brier": 0.2143,
-    "ece": 0.0761,
-    "p95_ae": 31.305,
-    "coverage_80": 0.8093
+    "mae": 12.177,
+    "rmse": 15.386,
+    "brier": 0.21306,
+    "ece": 0.0749,
+    "p95_ae": 31.208,
+    "coverage_80": 0.8148
+   }
+  },
+  {
+   "challenger": "edgedesk_cfb_v2.0.0",
+   "role": "candidate",
+   "champion": "edgedesk_cfb_p4_v1.0.0",
+   "rule": "cfb_lab_promotion_v1",
+   "n": 216,
+   "min_n": 150,
+   "ready": true,
+   "decision": "NOT_ELIGIBLE",
+   "mae_diff": 0.145,
+   "mae_diff_ci": [
+    -0.353,
+    0.641
+   ],
+   "weekly_win_share": 0.25,
+   "weeks": 4,
+   "gates": {
+    "G1_mae_ci_below_zero": false,
+    "G2_brier_not_worse": true,
+    "G3_ece_within_001": true,
+    "G4_coverage80_in_band": true,
+    "G5_tail_not_worse": false,
+    "G6_weekly_stability": false
+   },
+   "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
+   "champion_stats": {
+    "mae": 12.069,
+    "rmse": 15.223,
+    "brier": 0.21711,
+    "ece": 0.0868,
+    "p95_ae": 30.065
+   },
+   "challenger_stats": {
+    "mae": 12.214,
+    "rmse": 15.413,
+    "brier": 0.21339,
+    "ece": 0.0751,
+    "p95_ae": 31.288,
+    "coverage_80": 0.8102
    }
   }
  ]
