@@ -220,6 +220,14 @@ jobs:
         run: node tools/articles/build_articles.js
 
       - name: Publish
+        env:
+          # THE MANIFEST, THE HUBS AND THE SITEMAPS ARE AGGREGATES of every
+          # record, so on a rejected push they are rebuilt on the new tip, not
+          # copied from this run. Copying them is how, on 2026-10-25 20:47,
+          # this job dropped six records Publish research articles had just
+          # written from articles/data/index.json, and then failed its own
+          # store test on every run after.
+          PUSH_REBUILD: node tools/articles/store.js --reindex && node tools/articles/build_articles.js --quiet
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

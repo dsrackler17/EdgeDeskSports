@@ -198,6 +198,21 @@ function loadMarketSnapshots() {
   return out;
 }
 
+/* THE MANIFEST, REBUILT FROM THE RECORDS ON DISK. tools/ci/push_generated.sh
+   runs this (PUSH_REBUILD) after a rejected push has put this run's records
+   on another job's tip: the manifest is a function of every record there,
+   and a copy of this run's own would drop whatever the other job added.
+
+     node tools/articles/store.js --reindex */
+if (require.main === module) {
+  if (process.argv.indexOf('--reindex') < 0) {
+    console.error('usage: node tools/articles/store.js --reindex');
+    process.exit(64);
+  }
+  const idx = saveIndex();
+  console.log('articles/data/index.json: ' + idx.counts.total + ' record(s), ' + idx.counts.published + ' published');
+}
+
 module.exports = {
   ROOT, DATA, RECORDS, MARKET, INDEX, FEATURES, DEFAULT_SETTINGS,
   readJson, writeJson, recordFile, featureFile, loadFeatures, saveFeature,
