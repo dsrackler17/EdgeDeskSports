@@ -47,6 +47,7 @@ const HERE = __dirname;
 const ROOT = path.join(HERE, '..', '..');
 const S = require(path.join(HERE, 'starters.js'));
 const R = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
+const PLAY_OFFENCE = require(path.join(ROOT, 'football', 'data', 'play_offence.js'));
 
 const CFB = 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main';
 const NFLV = 'https://github.com/nflverse/nflverse-data/releases/download';
@@ -135,6 +136,10 @@ const log = (...a) => { if (!QUIET) console.error(...a); };
 /* The play feed's four dropback columns, collapsed to one attribution per
    play. A play carries at most one of them for the passer. */
 function cfbDropbackRows(rows) {
+  /* an incompletion the feed filed under the defence is the passer's team's
+     dropback (football/data/play_offence.js) */
+  const OFF = PLAY_OFFENCE.create();
+  for (const r of rows) OFF.observe(r.game_id, R.NA(r.drive_id), r.team, R.NA(r.completion_player_id), R.NA(r.rush_player_id));
   const out = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
@@ -143,9 +148,12 @@ function cfbDropbackRows(rows) {
     if (!pid) continue;
     const name = R.NA(r.completion_player) || R.NA(r.incompletion_player)
       || R.NA(r.sack_taken_player) || R.NA(r.interception_thrown_player);
+    const inc = !R.NA(r.completion_player_id) && R.NA(r.incompletion_player_id);
+    const turned = !!(inc && r.team && r.opponent && OFF.offence(r.game_id, R.NA(r.drive_id), r.team, r.opponent, inc) === r.opponent);
+    const team = turned ? r.opponent : r.team;
     out.push({
-      team: r.team, team_key: S.normKey(r.team), game_id: r.game_id,
-      season: R.NUM(r.season), week: R.NUM(r.week), opponent: r.opponent || null,
+      team, team_key: S.normKey(team), game_id: r.game_id,
+      season: R.NUM(r.season), week: R.NUM(r.week), opponent: (turned ? r.team : r.opponent) || null,
       player_id: String(pid), player_name: name,
       /* play_id sorts the game. The feed's ids are monotonic inside a game;
          where one is missing the row order is used, which is the same thing. */
@@ -206,7 +214,7 @@ async function buildCfb(sess, season, opts) {
     `cfb_schedules_${season}.csv`, { season, min_bytes: 5000, timeout_ms: 120000, retries: offline ? 0 : 2 });
   sources.push({ field: 'schedule', url: sched.url, ok: sched.ok, from: sched.from, status: sched.status, error: sched.error, retrieved_at: sched.retrieved_at });
 
-  const PS_COLS = ['game_id', 'season', 'week', 'team', 'opponent', 'play_id',
+  const PS_COLS = ['game_id', 'season', 'week', 'team', 'opponent', 'play_id', 'drive_id', 'rush_player_id',
     'completion_player_id', 'completion_player', 'incompletion_player_id', 'incompletion_player',
     'sack_taken_player_id', 'sack_taken_player', 'interception_thrown_player_id', 'interception_thrown_player'];
   const plays = R.parseCsv(ps.text, { columns: PS_COLS });

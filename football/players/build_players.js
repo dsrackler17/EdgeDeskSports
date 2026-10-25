@@ -48,6 +48,7 @@ const EPIR = require('./epir.js');
 const UNITS = require('./units.js');
 const SCHEME = require('./scheme.js');
 const FEEDCACHE = require('../data/feed_cache.js');
+const PLAY_OFFENCE = require('../data/play_offence.js');
 
 const DIR = __dirname;
 const REPO = path.join(DIR, '..', '..');
@@ -453,9 +454,26 @@ async function loadPlays(season, sched, opts) {
     'field_goal_made_player_id', 'field_goal_made_stat'];
   const missingCols = need.filter(k => ix[k] == null);
 
+  /* THE OFFENCE OF AN INCOMPLETE PASS. The feed files some incompletions under
+     the defence (football/data/play_offence.js); a first pass learns each
+     passer's team from his completions and runs, and the main pass files the
+     incompletion with it. `conference` is the filed team's, so it is learned
+     here too for a row that is turned round. */
+  const OFF = PLAY_OFFENCE.create(), confOf = new Map();
+  for (let p0 = nl + 1; p0 < text.length;) {
+    let e0 = text.indexOf('\n', p0);
+    if (e0 < 0) e0 = text.length;
+    const l0 = text.charCodeAt(e0 - 1) === 13 ? text.slice(p0, e0 - 1) : text.slice(p0, e0);
+    p0 = e0 + 1;
+    if (!l0) continue;
+    const r0 = splitLine(l0), t0 = cell(r0, ix.team);
+    OFF.observe(cell(r0, ix.game_id), cell(r0, ix.drive_id), t0, cell(r0, ix.completion_player_id), cell(r0, ix.rush_player_id));
+    if (t0 && !confOf.has(t0)) confOf.set(t0, cell(r0, ix.conference));
+  }
+
   const players = new Map();     /* athlete_id -> accumulator */
   const teamGames = new Map();   /* gameKey -> {team, opp, off} */
-  const counts = { plays: 0, targets: 0, interceptions: 0, pass_breakups: 0, forced_fumbles: 0, sacks: 0 };
+  const counts = { plays: 0, targets: 0, interceptions: 0, pass_breakups: 0, forced_fumbles: 0, sacks: 0, incompletions_refiled: 0 };
   const teamGameSet = new Set();
 
   function P(id, nm, team, week) {
@@ -499,11 +517,16 @@ async function loadPlays(season, sched, opts) {
     pos = end + 1;
     if (!line) continue;
     const r = splitLine(line);
-    const offName = cell(r, ix.team), defName = cell(r, ix.opponent);
+    const gid = cell(r, ix.game_id);
+    let offName = cell(r, ix.team), defName = cell(r, ix.opponent);
+    /* an incompletion filed under the defence is turned round (garbage time reads
+       the score margin unsigned, so the score columns need no turning) */
+    const turned = !!(offName && defName && cell(r, ix.incompletion_player_id)
+      && OFF.offence(gid, cell(r, ix.drive_id), offName, defName, cell(r, ix.incompletion_player_id)) === defName);
+    if (turned) { offName = defName; defName = cell(r, ix.team); counts.incompletions_refiled++; }
     const off = tk(offName), def = tk(defName);
     if (!off || !def) continue;
     const week = cellNum(r, ix.week);
-    const gid = cell(r, ix.game_id);
     const down = cellNum(r, ix.down), dist = cellNum(r, ix.distance);
     counts.plays++;
 
@@ -511,7 +534,7 @@ async function loadPlays(season, sched, opts) {
     let tg = teamGames.get(gkey);
     if (!tg) {
       tg = { game_id: gid, week, team: off, team_name: offName, opp: def, opp_name: defName,
-        conference: cell(r, ix.conference), off: blankTG(), comp: blankTG(), garbage_plays: 0,
+        conference: turned ? (confOf.get(offName) || null) : cell(r, ix.conference), off: blankTG(), comp: blankTG(), garbage_plays: 0,
         /* SPECIAL TEAMS. The play table's half of it: every field-goal attempt
            with the DISTANCE it was attempted from, whether it was made and
            whether it was blocked. The punting, return and coverage half is

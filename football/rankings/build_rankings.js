@@ -382,7 +382,8 @@ async function main() {
   for (const y of seasons) {
     const t0 = Date.now();
     play[y] = await B.loadPlays(y, sched[y]);
-    log(`  ${y}: ${play[y].counts.plays} plays, ${play[y].teamGameCount} team-games (${Date.now() - t0}ms)`);
+    log(`  ${y}: ${play[y].counts.plays} plays, ${play[y].teamGameCount} team-games (${Date.now() - t0}ms)`
+      + (play[y].counts.incompletions_refiled ? `; ${play[y].counts.incompletions_refiled} incompletions the feed filed under the defence refiled to the passer's team` : ''));
   }
 
   /* ---- SPECIAL TEAMS: join the box feed onto the play table's team-games ----
