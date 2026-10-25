@@ -21099,6 +21099,8 @@ function loadMore(){
     moreItem(IC.model,'Public forecast record ↗','Every game forecast in every sport, locked before the start and graded on the final, misses included. No account needed.','moreGoPerformance()','performance_public'),
     /* how the A–F research grades held up (/performance/grades/): research quality, never a pick */
     moreItem(IC.model,'Grade performance ↗','How EdgeDesk’s A–F research grades held up on completed games, locked before kickoff. Research quality, not picks.','moreGoGrades()','grade_performance'),
+    /* Market Foresight (/foresight/): which recorded forecasts preceded later DraftKings and Kalshi movement, timing uncertainty kept; observational research, never a grade */
+    moreItem(IC.model,'Market Foresight ↗','Which forecasts preceded later market movement, with every timestamp’s uncertainty and every miss shown. Observational research, not picks.','moreGoForesight()','market_foresight'),
     typeof window.hiwOpen==='function'?moreItem(IC.method,'Methodology','How EdgeDesk prices, grades and proves itself, screen by screen.','hiwOpen()','methodology'):'',
     (window.RESEARCH_MODULES&&RESEARCH_MODULES.lab)?moreItem(IC.sources,'Data sources','Where every model input came from, what transformed it, and how fresh it is.','moreGoProvenance()','data_sources'):'']);
   group('System',[
@@ -21137,6 +21139,10 @@ function moreGoPerformance(){
 function moreGoGrades(){
   try{window.open('/performance/grades/','_blank','noopener');}
   catch(_){location.href='/performance/grades/';}
+}
+function moreGoForesight(){
+  try{window.open('/foresight/','_blank','noopener');}
+  catch(_){location.href='/foresight/';}
 }
 window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;window.moreGoGames=moreGoGames;window.moreGoPerformance=moreGoPerformance;window.moreGoGrades=moreGoGrades;
 

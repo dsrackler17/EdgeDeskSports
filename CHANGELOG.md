@@ -3,6 +3,30 @@
 
 
 
+## 2026-10-25 — Market Foresight: which forecasts and venues preceded market movement
+
+`/foresight/` is a new, separate research record. It matches each timestamped forecast (EdgeDesk's models and the Model Collective's) to the DraftKings and Kalshi prices EdgeDesk recorded before and after its publication. A reader can open a game and see what each source showed, and when.
+
+- **What it says, only when the timestamps support it.** "Forecast preceded observed movement", "first observed among tracked venues", "market moved toward this forecast" and "timing unresolved at available sampling resolution".
+  - It never claims a model moved a market.
+  - It never says a venue led the whole market.
+  - It never treats convergence as being right about the result, or timing as a trade.
+- **Frozen first.** The methodology `mf-v1` (eligibility, freshness, close, thresholds, persistence, horizons, tie and revision policy, the statistical unit and intervals) was committed before any measurement, with its sha256. The worker and the database both refuse a changed file under the same version.
+- **Measured separately, never combined.** Closing convergence |M0 − F| − |C − F| and directional movement sign(F − M0) × (C − M0) are reported apart.
+  - Fixed horizons are 1, 6 and 24 h. The first sustained move toward the forecast is given as a timing interval.
+  - Misses, no-move, reversal and moved-away cases are all counted, and every exclusion names its reason.
+  - Intervals are Wilson for proportions and an event-resampled seeded bootstrap for means and medians. There is no composite score.
+- **Timing kept honest.** A change happened in (last observation of the old value, first of the new). Coverage gaps are shown, and nothing is carried across one. Overlapping venue intervals are unresolved. DraftKings' real cadence is reported beside its intended schedule: a median of about 6.5 h between stored rows, with frequent late runs.
+- **Contracts matched exactly.** Line points and probabilities never mix. A threshold change is never spliced into one series.
+  - Kalshi is shown but compared with nothing until an operator verifies each series' rules text by sha256.
+  - No fee is applied, because the repository's Kalshi fee schedule is unverified.
+- **The Collective consensus is strictly as of each evaluation time**: one vote per model, nothing published later, withdrawn forecasts counted until withdrawn, membership hashed.
+- **A T3 research check** asks whether disagreement predicts later movement beyond the market and its recent movement, on a chronological holdout. On the committed CFB data it finds no evidence; NFL is insufficient.
+- **Isolation.** Nothing in rankings, grades, evaluation, eligibility or any model reads this layer, and it writes nothing else; a test scans every tracked file.
+- **Not live yet.** Deploy with *Deploy Market Foresight schema*, review in shadow mode, then switch to live. The hourly job stays off until `MARKET_FORESIGHT_WORKER = on`. Rollback is `mf_owner_set_mode('off')`, which keeps every row. See `docs/market-foresight/README.md`.
+
+Tests: engine 121, isolation 36, SQL 92, worker 34, renderers 46 and Chromium 33 (desktop and phone). The site's free-access and navigation suites are updated and green.
+
 ## 2026-10-24 — College basketball: preseason mode, then the season on its own
 
 The Simulator's **Men's College Basketball** and **Women's College Basketball** seats no longer say *Blocked*. What was blocked is the NCAA tournament simulation (no 2027 field before Selection Sunday; no women's host-site bracket), not the game forecasts, so the seats now name the phase of the season.

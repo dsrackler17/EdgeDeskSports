@@ -1653,6 +1653,38 @@ importance score that is not a probability. Research, not picks.
 - **Run it:** `npm run sc:test`, `npm run sc:sql`, `npm run sc:e2e`, then
   `npm run sc:dry-run` (no credentials).
 
+## Market Foresight — which forecasts and venues preceded market movement
+
+`/foresight/` matches each timestamped, identifiable forecast to the DraftKings and Kalshi
+prices EdgeDesk recorded before and after it was published. The sources are EdgeDesk's models
+from the hash-chained forecast ledger and the Model Collective's projections. The page says
+"forecast preceded observed movement" only when an observation after publication still showed
+the unmoved market. It keeps every change's timing as an interval, shows coverage gaps rather
+than carrying values across them, and reports overlapping venue moves as unresolved. It never
+claims a model moved a market, a venue led the whole market, or a timing advantage was a trade.
+
+- **A separate, observational layer.** It changes no forecast, ranking, grade, evaluation
+  window or model input, and nothing reads it (`tools/foresight/isolation.test.js`). It
+  publishes separate measurements, never a composite score.
+- **Frozen first.** The rules (`research/foresight/methodology/mf-v1.json`, sha256 in
+  `FROZEN.json`) were committed before any measurement. The worker and the database both refuse
+  a changed file under the same version.
+- **Server-derived** by `tools/foresight/run.js` through `mf_job_*` doors
+  (`supabase/market_foresight.sql`). Readers use `mf_*` doors:
+  - derived measurements of publishable models only;
+  - the full timeline with Full Access;
+  - starting in **shadow** mode, with `off` as the non-destructive switch.
+- **Kalshi is shown and never compared** until an operator verifies each series' rules text
+  (`mf_admin_verify_settlement`). No fee is applied anywhere.
+- **Status (2026-10-25):** built and tested, not deployed. See
+  [`docs/market-foresight/README.md`](docs/market-foresight/README.md) (deploy, rollback,
+  limitations) and [`METHODOLOGY.md`](docs/market-foresight/METHODOLOGY.md).
+- **Run it:**
+  - `npm run foresight:test`
+  - `npm run foresight:sql`
+  - `npm run foresight:e2e`
+  - `npm run foresight:dry-run` (no credentials).
+
 ## Honest notes
 - The API key lives in your browser. That's fine for personal use; it is **not**
   safe if you ever share/sell the page (anyone could read it). Selling later means
