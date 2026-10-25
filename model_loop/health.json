@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_model_loop_health_v1",
- "generated_at": "2026-10-25T20:43:58Z",
- "status": "DEGRADED",
+ "generated_at": "2026-10-25T22:57:01Z",
+ "status": "OK",
  "summary": {
-  "OK": 7,
+  "OK": 8,
   "STALE": 0,
-  "DEGRADED": 1,
+  "DEGRADED": 0,
   "OFF_SEASON": 2,
   "NOT_SERVED": 1
  },
@@ -29,7 +29,7 @@
     "versions": 3
    },
    "refreshed_at": "2026-10-25T17:15:32Z",
-   "refreshed_age_h": 3.5,
+   "refreshed_age_h": 5.7,
    "research": {
     "file": "docs/model-loop/nfl/weekly/2026-w06.json",
     "at": "2026-10-21T01:44:52Z",
@@ -52,19 +52,17 @@
   {
    "id": "cfb",
    "label": "College football",
-   "status": "DEGRADED",
+   "status": "OK",
    "in_season": true,
-   "reasons": [
-    "6 game(s) already played have no result in the data yet, so the ratings are behind by those games: 401856835, 401856836, 401856837, 401856838, 401856839, 401858276"
-   ],
+   "reasons": [],
    "served": {
     "version": "2.0.0",
     "since": "2026-10-21T03:02:31Z",
     "promoted_by": "preregistered-rule",
     "versions": 3
    },
-   "refreshed_at": "2026-10-25T00:32:59Z",
-   "refreshed_age_h": 20.2,
+   "refreshed_at": "2026-10-25T22:55:19Z",
+   "refreshed_age_h": 0.0,
    "research": {
     "file": "docs/model-loop/cfb/weekly/2026-w08.json",
     "at": "2026-10-25T00:38:12Z",
@@ -72,22 +70,13 @@
     "candidates": 9
    },
    "data": {
-    "games_published": 59,
+    "games_published": 61,
     "data_status": {
-     "status": "DEGRADED",
-     "reasons": [
-      "6 game(s) already played have no result in the data yet, so the ratings are behind by those games: 401856835, 401856836, 401856837, 401856838, 401856839, 401858276"
-     ],
-     "games_flagged": 55,
-     "missing_results": [
-      "401856835",
-      "401856836",
-      "401856837",
-      "401856838",
-      "401856839",
-      "401858276"
-     ],
-     "checked_at": "2026-10-25T00:33:01Z"
+     "status": "OK",
+     "reasons": [],
+     "games_flagged": 5,
+     "missing_results": [],
+     "checked_at": "2026-10-25T22:55:20Z"
     },
     "graded_games": 34
    },
@@ -106,7 +95,7 @@
     "versions": 2
    },
    "refreshed_at": "2026-10-25T13:42:58Z",
-   "refreshed_age_h": 7.0,
+   "refreshed_age_h": 9.2,
    "research": {
     "file": "docs/model-loop/nba/weekly/2026-10-21.json",
     "at": "2026-10-21T23:31:15Z",
@@ -132,7 +121,7 @@
     "versions": 1
    },
    "refreshed_at": "2026-10-25T13:42:59Z",
-   "refreshed_age_h": 7.0,
+   "refreshed_age_h": 9.2,
    "research": {
     "file": "docs/model-loop/wnba/weekly/2026-10-21.json",
     "at": "2026-10-21T23:31:16Z",
@@ -158,7 +147,7 @@
     "versions": 2
    },
    "refreshed_at": "2026-10-25T13:43:23Z",
-   "refreshed_age_h": 7.0,
+   "refreshed_age_h": 9.2,
    "research": {
     "file": "docs/model-loop/ncaam/weekly/2026-10-21.json",
     "at": "2026-10-21T23:33:11Z",
@@ -184,7 +173,7 @@
     "versions": 2
    },
    "refreshed_at": "2026-10-25T13:43:45Z",
-   "refreshed_age_h": 7.0,
+   "refreshed_age_h": 9.2,
    "research": {
     "file": "docs/model-loop/ncaaw/weekly/2026-10-21.json",
     "at": "2026-10-21T23:34:52Z",
@@ -210,7 +199,7 @@
     "versions": 4
    },
    "refreshed_at": "2026-10-25T17:58:23Z",
-   "refreshed_age_h": 2.8,
+   "refreshed_age_h": 5.0,
    "research": {
     "file": "docs/model-loop/ufc/weekly/2026-10-25.json",
     "at": "2026-10-25T17:58:48Z",
@@ -291,8 +280,8 @@
     "since": "2026-10-20T15:19:46.910Z",
     "promoted_by": "its own protocol (hockey/model/walkforward.js)"
    },
-   "refreshed_at": "2026-10-25T16:48:10Z",
-   "refreshed_age_h": 3.9,
+   "refreshed_at": "2026-10-25T21:13:04Z",
+   "refreshed_age_h": 1.7,
    "research": {
     "file": "docs/model-loop/nhl/weekly/2026-10-21.json",
     "at": "2026-10-21T23:31:51Z",
@@ -319,8 +308,8 @@
     "since": "2026-10-21T18:14:51.980Z",
     "promoted_by": "its own protocol (nba/model/walkforward.js)"
    },
-   "refreshed_at": "2026-10-25T16:37:46Z",
-   "refreshed_age_h": 4.1,
+   "refreshed_at": "2026-10-25T21:01:57Z",
+   "refreshed_age_h": 1.9,
    "research": {
     "file": "docs/model-loop/nba_engine/weekly/2026-10-21.json",
     "at": "2026-10-21T23:31:51Z",
