@@ -979,6 +979,11 @@
       terms = V2.engineTerms(p2);
       feats = p2.features;
       card = nfl.card({ terms: terms, model_spread: fairSpread });
+      /* each row's data window (football/nfl_model.js cardWindows): display only */
+      if (card && V2.cardWindows) {
+        var win = V2.cardWindows(req.state.v2, req.game, p2);
+        card.rows.forEach(function (r) { r.window = win[r.key] || null; });
+      }
       seasonGames = p2.season_games;
       modelVersion = PV.model_version;
       featureVersion = 'nfl_v2:' + (PV.config_sha || '');

@@ -86,7 +86,8 @@
   function blankTeam() { var o = {}, i; for (i = 0; i < RATE_FEATS.length; i++) o[RATE_FEATS[i]] = { p: 0, S: 0, W: 0, n: 0 }; return o; }
   function newState(cfg) {
     return { cfg: cfg, team: {}, ngames: {}, games: {}, lmean: {}, qb: {}, teamQb: {}, season: null,
-      mr: {}, mkt: { hsum: 0, hn: 0 }, hfa: { seasons: {}, cur: { sum: 0, n: 0 } }, personnel: {}, starts: {} };
+      mr: {}, mkt: { hsum: 0, hn: 0 }, hfa: { seasons: {}, cur: { sum: 0, n: 0 } }, personnel: {}, starts: {},
+      qbSeason: {}, teamQbSeason: {} };
   }
   /* a state seeded from a trained end-of-season snapshot (params.seeds):
      ratings as season-start priors, QB values, league means, market ratings,
@@ -140,6 +141,8 @@
       st.teamQb[t] = (st.teamQb[t] || 0) * cfg.carry;
       st.games[t] = 0;
     }
+    /* this season's credited-start counts (the card's data windows read them; nothing prices them) */
+    st.qbSeason = {}; st.teamQbSeason = {};
     if (cfg.market.on) for (t in st.mr) if (st.mr.hasOwnProperty(t)) st.mr[t] *= cfg.market.carry_m;
     /* home field: close the season that ended into the history */
     if (st.season != null && st.hfa.cur.n > 0) st.hfa.seasons[st.season] = { sum: st.hfa.cur.sum, n: st.hfa.cur.n };
@@ -207,6 +210,8 @@
         q.v = (1 - aq) * q.v + aq * dev; q.n += 1;
         var at = cfg.prior.kind === 'geometric' ? cfg.prior.alpha : cfg.qb.alpha_team;
         st.teamQb[t] = (1 - at) * (st.teamQb[t] || 0) + at * qbEff(st, id);
+        var qs = st.qbSeason || (st.qbSeason = {}), ts = st.teamQbSeason || (st.teamQbSeason = {});
+        qs[id] = (qs[id] || 0) + 1; ts[t] = (ts[t] || 0) + 1;
       }
     }
   }
@@ -452,6 +457,71 @@
     return { spread: pr.terms.spread, ctx: ctx, hfa: [{ key: 'hfa', value: null, weight: 1, points: pr.hfa }], total: pr.terms.total };
   }
 
+  /* ------------------------------------------------------------ the card's data windows
+     DISPLAY ONLY: nothing here moves a number. For each card row, the share of
+     its inputs' weight that still sits on the carried prior (last season's final
+     rating x carry, or a quarterback's value before this season's starts) and the
+     share on this season's games, read off the weights the ratings themselves use:
+       team-rating rows  the prior weight w(n) of every rating the row's terms read,
+                         both clubs, averaged with each term's |points| as its weight
+       quarterback       per side, the starter's value ((1 - alpha_qb)^s of it predates
+                         this season, s = his credited starts this season; none when
+                         he has no earlier start) and the club's QB level ((1 - alpha)^m,
+                         m = the club's credited starts), averaged; then the two sides
+       home field, context, rest / travel  fitted constants and schedule facts: no
+                         season window (null)
+     prior_season / season label the two windows (2025 / 2026 during 2026). */
+  var WINDOW_FEATS = { net_pts: ['pts_for', 'pts_against'], net_pts_fix: ['pts_for', 'pts_against'],
+    net_epa: ['off_epa_play', 'def_epa_play'], off_epa: ['off_epa_play'], def_epa: ['def_epa_play'],
+    net_pass: ['pass_epa_db', 'def_pass_epa_db'], pass_off: ['pass_epa_db'], pass_def: ['def_pass_epa_db'],
+    net_rush: ['rush_epa_att', 'def_rush_epa_att'], rush_off: ['rush_epa_att'], rush_def: ['def_rush_epa_att'] };
+  function termPriorWeight(st, h, a, key) {
+    var fs = WINDOW_FEATS[key], s = 0, i;
+    if (!fs) return null;
+    for (i = 0; i < fs.length; i++) {
+      s += priorWeight(st.cfg, fs[i], st.team[h] && st.team[h][fs[i]] ? st.team[h][fs[i]].n : 0);
+      s += priorWeight(st.cfg, fs[i], st.team[a] && st.team[a][fs[i]] ? st.team[a][fs[i]].n : 0);
+    }
+    return s / (2 * fs.length);
+  }
+  /* one side's quarterback inputs: the prior weight, and what it rests on */
+  function qbPriorWeight(st, t, id) {
+    var h = st.cfg.qb, at = st.cfg.prior.kind === 'geometric' ? st.cfg.prior.alpha : h.alpha_team;
+    var m = (st.teamQbSeason && st.teamQbSeason[t]) || 0, wTeam = Math.pow(1 - at, m);
+    var q = typeof id === 'string' && id ? st.qb[id] : null, s = q && st.qbSeason ? (st.qbSeason[id] || 0) : 0;
+    /* no value at all: the league prior for an unknown starter, not last season's play */
+    if (!q) return { w: wTeam, starter_starts: 0, team_starts: m, basis: 'club level only' };
+    var wQb = q.n > s ? Math.pow(1 - h.alpha_qb, s) : 0;
+    return { w: (wQb + wTeam) / 2, starter_starts: s, team_starts: m, basis: q.n > s ? 'starter and club level' : 'starter has no start before this season' };
+  }
+  function cardWindows(st, game, pr) {
+    var h = game.home, a = game.away, out = {}, prior = st.season != null ? st.season - 1 : null, i, j;
+    team(st, h); team(st, a);
+    var byKey = {};
+    (pr && pr.terms && pr.terms.spread || []).forEach(function (t) { byKey['spread:' + t.key] = t; });
+    for (i = 0; i < CARD.length; i++) {
+      var row = CARD[i], ws = 0, wsum = 0, flat = 0, nflat = 0;
+      if (row.key === 'quarterback') {
+        var qh = qbPriorWeight(st, h, game.home_qb_id), qa = qbPriorWeight(st, a, game.away_qb_id), w = (qh.w + qa.w) / 2;
+        out.quarterback = { prior_season: prior, season: st.season, prior_share: w, current_share: 1 - w,
+          home: qh, away: qa, basis: 'quarterback value and club QB level: the weight still on starts before this season' };
+        continue;
+      }
+      for (j = 0; j < row.terms.length; j++) {
+        var k = row.terms[j].split(':'), pw = k[0] === 'spread' ? termPriorWeight(st, h, a, k[1]) : null, t = byKey[row.terms[j]];
+        if (pw == null) continue;
+        var mag = t && isNum(t.points) ? Math.abs(t.points) : 0;
+        ws += mag * pw; wsum += mag; flat += pw; nflat++;
+      }
+      if (!nflat) { out[row.key] = null; continue; }
+      var share = wsum > 0 ? ws / wsum : flat / nflat;
+      out[row.key] = { prior_season: prior, season: st.season, prior_share: share, current_share: 1 - share,
+        games: { home: st.games[h] || 0, away: st.games[a] || 0 },
+        basis: 'team ratings: prior weight after each club’s games this season, weighted by each term’s points' };
+    }
+    return out;
+  }
+
   /* ------------------------------------------------------------ calibration */
   /* isotonic map: sorted knots {x, y}; linear between knots, clipped */
   function calibrate(cal, p) {
@@ -538,7 +608,7 @@
     absorbGame: absorbGame, absorbCompleted: absorbCompleted, afterGame: afterGame,
     qbEff: qbEff, qbAdjust: qbAdjust, regularStarter: regularStarter, qbOut: qbOut, qbOutGap: qbOutGap, hfaEstimate: hfaEstimate,
     indexStadiums: indexStadiums, travelFor: travelFor, homeOf: homeOf, km: km, utcOffset: utcOffset,
-    featureNames: featureNames, features: features, predict: predict, engineTerms: engineTerms,
+    featureNames: featureNames, features: features, predict: predict, engineTerms: engineTerms, cardWindows: cardWindows,
     calibrate: calibrate, fitIsotonic: fitIsotonic, ridge: ridge
   };
   root.EDNflModel = API;
