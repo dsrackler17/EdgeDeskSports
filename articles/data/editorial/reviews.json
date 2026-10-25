@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-25T05:50:50.907Z",
+  "generated_at": "2026-10-25T06:00:59.533Z",
   "open": 16,
   "count": 16,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -99,7 +99,7 @@
       "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-10-02T05:20:25.196Z",
-      "updated_at": "2026-10-18T03:40:43.211Z",
+      "updated_at": "2026-10-25T06:00:59.533Z",
       "evidence": [
         {
           "lesson_id": "401862786:total_miss",
@@ -155,16 +155,27 @@
           "result": "The game finished with 78 points, an error of 25.3.",
           "severity": "high",
           "at": "2026-10-18T03:40:43.211Z"
+        },
+        {
+          "lesson_id": "401856837:total_miss",
+          "game_id": "401856837",
+          "season": 2026,
+          "week": 8,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 55.1.",
+          "result": "The game finished with 34 points, an error of 21.1.",
+          "severity": "high",
+          "at": "2026-10-25T06:00:59.533Z"
         }
       ],
-      "occurrences": 5,
+      "occurrences": 6,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
-      "note": "Seen 5 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+      "note": "Seen 6 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
