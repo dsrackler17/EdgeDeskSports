@@ -56,6 +56,9 @@
     ctx: { travel: false, venue: true },
     market: { on: false, beta: null, carry_m: null },
     personnel: { on: false },
+    /* EXPERIMENTAL, never served by this file's defaults: the QB-anchored prior
+       decay (football/research/nfl_v2/prior_decay/preregistration.json) */
+    pd: { on: false, k_db: null },
     source: 'stw',                 /* 'stw' | 'pbp_G0' | 'pbp_G1' | 'pbp_G2' */
     calibration: { kind: 'none' },
     ridge: { strength: 60, context: 200, total: 60 }
@@ -87,7 +90,7 @@
   function newState(cfg) {
     return { cfg: cfg, team: {}, ngames: {}, games: {}, lmean: {}, qb: {}, teamQb: {}, season: null,
       mr: {}, mkt: { hsum: 0, hn: 0 }, hfa: { seasons: {}, cur: { sum: 0, n: 0 } }, personnel: {}, starts: {},
-      qbSeason: {}, teamQbSeason: {} };
+      qbSeason: {}, teamQbSeason: {}, qbSeasonDev: {}, qbStartVal: {}, teamQbStart: {} };
   }
   /* a state seeded from a trained end-of-season snapshot (params.seeds):
      ratings as season-start priors, QB values, league means, market ratings,
@@ -141,8 +144,11 @@
       st.teamQb[t] = (st.teamQb[t] || 0) * cfg.carry;
       st.games[t] = 0;
     }
-    /* this season's credited-start counts (the card's data windows read them; nothing prices them) */
-    st.qbSeason = {}; st.teamQbSeason = {};
+    /* this season's credited-start counts (the card's data windows read them; nothing prices them),
+       and the prior-decay option's season ledger: each passer's dropback-weighted deviation this
+       season, his value before his first start of it, and each club's carried QB level */
+    st.qbSeason = {}; st.teamQbSeason = {}; st.qbSeasonDev = {}; st.qbStartVal = {}; st.teamQbStart = {};
+    for (t in st.teamQb) if (st.teamQb.hasOwnProperty(t)) st.teamQbStart[t] = st.teamQb[t];
     if (cfg.market.on) for (t in st.mr) if (st.mr.hasOwnProperty(t)) st.mr[t] *= cfg.market.carry_m;
     /* home field: close the season that ended into the history */
     if (st.season != null && st.hfa.cur.n > 0) st.hfa.seasons[st.season] = { sum: st.hfa.cur.sum, n: st.hfa.cur.n };
@@ -180,6 +186,30 @@
   function qbOutGap(st, t, id) {
     return qbOut(st, t, id) ? qbEff(st, regularStarter(st, t)) - qbEff(st, id) : 0;
   }
+  /* THE QB-ANCHORED PRIOR DECAY (experimental; cfg.pd, preregistered in
+     football/research/nfl_v2/prior_decay/preregistration.json before any backtest).
+     A club's carried prior is last season's team, quarterback included: its QB
+     level at the break (teamQbStart) is what the prior assumes. This season's
+     evidence on the starter is his dropback-weighted deviation, shrunk toward his
+     value before this season with k_db pseudo-dropbacks, so it earns weight as
+     his sample grows:
+       q_season = (sum dev*db + k_db * q_before) / (sum db + k_db)
+     and the part of the prior that is stale is (q_season - teamQbStart), still
+     carried at the prior weight w(n) of the passing rating:
+       qb_prior_gap(side) = w_pass(n) * (q_season - teamQbStart)
+     The feature is home minus away; its weight is fitted by the same walk-forward
+     ridge as every other term. An unnamed starter adds nothing (the club's level). */
+  function qbSeasonValue(st, id) {
+    var k = st.cfg.pd && st.cfg.pd.k_db, sv = st.qbStartVal || {}, sd = (st.qbSeasonDev || {})[id];
+    var q0 = sv.hasOwnProperty(id) ? sv[id] : qbEff(st, id);
+    if (!(k > 0)) return q0;
+    return ((sd ? sd.s : 0) + k * q0) / ((sd ? sd.db : 0) + k);
+  }
+  function qbPriorGap(st, t, id) {
+    if (typeof id !== 'string' || !id) return 0;
+    var x = st.team[t] && st.team[t].pass_epa_db, w = priorWeight(st.cfg, 'pass_epa_db', x ? x.n : 0);
+    return w * (qbSeasonValue(st, id) - ((st.teamQbStart && st.teamQbStart[t]) || 0));
+  }
   /* pairs: engine.js nfl.gamePairs output (each club's row with its mirrored
      defence, in the feed's order); qbStarts: engine.js nfl.qbStarts output */
   function absorbGame(st, pairs, qbStarts) {
@@ -203,9 +233,12 @@
     }
     for (i = 0; i < (qbStarts || []).length; i++) {
       t = qbStarts[i][0];
-      var id = qbStarts[i][1], dev = qbStarts[i][2];
+      var id = qbStarts[i][1], dev = qbStarts[i][2], db = qbStarts[i][3];
       if (typeof id === 'string' && id) recordStart(st, t, id);
       if (typeof id === 'string' && id && isNum(dev)) {
+        var sv = st.qbStartVal || (st.qbStartVal = {});
+        if (!sv.hasOwnProperty(id)) sv[id] = qbEff(st, id);
+        if (isNum(db) && db > 0) { var sd = (st.qbSeasonDev || (st.qbSeasonDev = {}))[id] || (st.qbSeasonDev[id] = { s: 0, db: 0 }); sd.s += dev * db; sd.db += db; }
         var q = st.qb[id] || (st.qb[id] = { v: 0, n: 0 }), aq = cfg.qb.alpha_qb;
         q.v = (1 - aq) * q.v + aq * dev; q.n += 1;
         var at = cfg.prior.kind === 'geometric' ? cfg.prior.alpha : cfg.qb.alpha_team;
@@ -326,6 +359,7 @@
     s.push('qb_adj_diff', 'rest_diff', 'div_game');
     if (cfg.features.qb_out) s.push('qb_out_diff');
     if (cfg.features.qb_out_gap) s.push('qb_out_gap_diff');
+    if (cfg.pd && cfg.pd.on) s.push('qb_prior_gap');
     if (cfg.personnel.on) s.push('pers_rb', 'pers_wr', 'pers_ol');
     if (cfg.market.on) s.push('mkt_diff');
     var c = ['rest_diff', 'home_short', 'away_short', 'home_off_bye', 'away_off_bye', 'div_game', 'week_frac'];
@@ -336,7 +370,7 @@
     return { spread: s, ctx: c, total: t };
   }
   /* the strength features from two rating snapshots (rh, ra) */
-  function strengthFrom(rh, ra, qbd, restd, div, pers, mkt, qbo, qbg) {
+  function strengthFrom(rh, ra, qbd, restd, div, pers, mkt, qbo, qbg, qpg) {
     return {
       net_pts: (rh.pts_for + rh.pts_against) - (ra.pts_for + ra.pts_against),
       net_pts_fix: (rh.pts_for - rh.pts_against) - (ra.pts_for - ra.pts_against),
@@ -346,7 +380,7 @@
       pass_off: rh.pass_epa_db - ra.pass_epa_db, pass_def: ra.def_pass_epa_db - rh.def_pass_epa_db,
       net_rush: (rh.rush_epa_att - rh.def_rush_epa_att) - (ra.rush_epa_att - ra.def_rush_epa_att),
       rush_off: rh.rush_epa_att - ra.rush_epa_att, rush_def: ra.def_rush_epa_att - rh.def_rush_epa_att,
-      qb_adj_diff: qbd, rest_diff: restd, div_game: div, qb_out_diff: qbo || 0, qb_out_gap_diff: qbg || 0,
+      qb_adj_diff: qbd, rest_diff: restd, div_game: div, qb_out_diff: qbo || 0, qb_out_gap_diff: qbg || 0, qb_prior_gap: qpg || 0,
       pers_rb: pers ? pers.rb : 0, pers_wr: pers ? pers.wr : 0, pers_ol: pers ? pers.ol : 0,
       mkt_diff: mkt
     };
@@ -373,7 +407,8 @@
     var mkt = cfg.market.on ? (st.mr[h] || 0) - (st.mr[a] || 0) : 0;
     var qbo = cfg.features.qb_out ? qbOut(st, h, game.home_qb_id) - qbOut(st, a, game.away_qb_id) : 0;
     var qbg = cfg.features.qb_out_gap ? qbOutGap(st, h, game.home_qb_id) - qbOutGap(st, a, game.away_qb_id) : 0;
-    var sp = strengthFrom(rh, ra, qbd, (restH - restA) / 7, div, pers, mkt, qbo, qbg);
+    var qpg = cfg.pd && cfg.pd.on ? qbPriorGap(st, h, game.home_qb_id) - qbPriorGap(st, a, game.away_qb_id) : 0;
+    var sp = strengthFrom(rh, ra, qbd, (restH - restA) / 7, div, pers, mkt, qbo, qbg, qpg);
     var tv = game.travel || null;
     var ctx = {
       rest_diff: (restH - restA) / 7, home_short: restH <= 5 ? 1 : 0, away_short: restA <= 5 ? 1 : 0,
@@ -445,7 +480,7 @@
     { key: 'base_strength', label: 'Base team strength', terms: ['spread:net_pts', 'spread:net_pts_fix', 'spread:net_epa', 'spread:off_epa', 'spread:def_epa', 'spread:pers_rb', 'spread:pers_wr', 'spread:pers_ol', 'spread:mkt_diff'] },
     { key: 'passing', label: 'Passing', terms: ['spread:net_pass', 'spread:pass_off', 'spread:pass_def'] },
     { key: 'rushing', label: 'Rushing', terms: ['spread:net_rush', 'spread:rush_off', 'spread:rush_def'] },
-    { key: 'quarterback', label: 'Quarterback', terms: ['spread:qb_adj_diff', 'spread:qb_out_diff', 'spread:qb_out_gap_diff'] },
+    { key: 'quarterback', label: 'Quarterback', terms: ['spread:qb_adj_diff', 'spread:qb_out_diff', 'spread:qb_out_gap_diff', 'spread:qb_prior_gap'] },
     { key: 'home_field', label: 'Home field', terms: ['spread:baseline', 'ctx:baseline', 'ctx:week_frac', 'hfa:hfa'] },
     { key: 'context', label: 'Context (venue, division)', terms: ['spread:div_game', 'ctx:div_game', 'ctx:is_dome', 'ctx:grass'] },
     { key: 'rest_travel', label: 'Rest / travel', terms: ['spread:rest_diff', 'ctx:rest_diff', 'ctx:home_short', 'ctx:away_short', 'ctx:home_off_bye', 'ctx:away_off_bye', 'ctx:travel_diff', 'ctx:tz_diff', 'ctx:west_early'] }
@@ -607,6 +642,7 @@
     rating: rating, priorPart: priorPart, snapshot: snapshot, seasonBreak: seasonBreak,
     absorbGame: absorbGame, absorbCompleted: absorbCompleted, afterGame: afterGame,
     qbEff: qbEff, qbAdjust: qbAdjust, regularStarter: regularStarter, qbOut: qbOut, qbOutGap: qbOutGap, hfaEstimate: hfaEstimate,
+    qbSeasonValue: qbSeasonValue, qbPriorGap: qbPriorGap,
     indexStadiums: indexStadiums, travelFor: travelFor, homeOf: homeOf, km: km, utcOffset: utcOffset,
     featureNames: featureNames, features: features, predict: predict, engineTerms: engineTerms, cardWindows: cardWindows,
     calibrate: calibrate, fitIsotonic: fitIsotonic, ridge: ridge

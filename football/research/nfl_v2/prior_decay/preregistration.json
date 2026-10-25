@@ -1,0 +1,205 @@
+{
+ "schema": "edgedesk_nfl_prior_decay_preregistration_v1",
+ "registered_at": "2026-10-25T23:44:40.664Z",
+ "registered_before": "any variant of this family was evaluated on any season (git: this file is committed before results.json exists)",
+ "frozen_protocol": "Registered under the frozen research protocol. Nothing here changes a served NFL weight, projection, probability, EV, ranking or grade. The variant may not feed the prediction engine or a live card until a research_model_results row for it shows passed = true on its holdout, and then only through a validation report that promotes ONE module against the frozen baseline.",
+ "family_correction": "three variants; the single selected variant is compared once; the holdout is not looked at by this registration",
+ "content_sha256": "94f473901db800788b9a053cceff80df4956227e0fa79370a686ed8beb8613cd",
+ "studies": [
+  {
+   "id": "H-NFL-PD-01",
+   "title": "NFL v2 prior decay: the carried prior re-anchored to the starter’s current-season play",
+   "model_key": "edgedesk-nfl-prior-decay",
+   "objective": "Test whether the NFL model should let a quarterback’s current-season EPA per dropback replace the quarterback level baked into the carried 2025 prior, faster as his dropback sample grows, without changing any served weight.",
+   "hypothesis": "At 5-6 games the served model still carries 53-73% of last season’s team ratings, and those ratings include last season’s quarterback play; its QB term only measures the starter against his own club’s running level, so a starter whose play has moved (Darnold 2025 -> 2026) is under-reflected. A term that measures the stale part of the prior (the starter’s shrunk current-season value minus the club QB level the prior assumes, carried at the passing rating’s prior weight) lowers win-probability Brier and earns closing-line value against the incumbent.",
+   "incumbent": {
+    "id": "edgedesk_nfl_v2.1.0",
+    "called": "v1 in this study (the served model; the user brief calls it v1)",
+    "definition": "football/nfl_params_v2.js cfg exactly (carry 0.8, geometric prior alpha 0.10 / 0.06, QB prior -0.16 shrink 6, qb_out_diff, standardised strength ridge lambda 240), refitted walk-forward under the identical protocol by football/research/nfl_v2/backtest.js",
+    "weights": "the served weights are not changed by this study; the comparison refits both models on the same seasons"
+   },
+   "mechanism": {
+    "config": "football/nfl_model.js cfg.pd = { on: true, k_db }",
+    "q_season": "q_season(starter) = (sum over his credited starts this season of dev x dropbacks + k_db x q_before) / (sum of dropbacks + k_db); dev = EPA per dropback minus the league mean before the game (training’s rule); q_before = his qbEff before his first start this season (his value now, if he has none)",
+    "stale_part": "qb_prior_gap(side) = w_pass(n) x (q_season(starter) - teamQbStart(club)); w_pass(n) = 0.9^n, the prior weight of the passing rating after n games; teamQbStart = the club QB level at the season break (0.8 x its end-of-season level), the level the carried prior assumes",
+    "feature": "qb_prior_gap = home - away, added to the strength model; its weight fitted by the same walk-forward standardised ridge (lambda 240) as every other term; an unnamed starter adds 0",
+    "unchanged": "every v1 feature, the team-rating decay (P0 45 geometric and P1 288 hyperbolic settings were already tested and rejected in round 1, football/research/nfl_v2/RESULTS.md), the context and total models, the margin PMF"
+   },
+   "decay_schedule": {
+    "what": "weight left on pre-season quarterback information inside the prior part of the passing rating, if the fitted weight carries the prior’s QB loading one for one: v1 = w_pass(n); PD-K = w_pass(n) x k_db / (k_db + dropbacks)",
+    "assumption": "35 dropbacks per start (2026 Weeks 1-7: Darnold 33, Mahomes 33)",
+    "rows": [
+     {
+      "games_played": 0,
+      "starter_dropbacks": 0,
+      "v1": 1,
+      "k100": 1,
+      "k200": 1,
+      "k400": 1
+     },
+     {
+      "games_played": 1,
+      "starter_dropbacks": 35,
+      "v1": 0.9,
+      "k100": 0.667,
+      "k200": 0.766,
+      "k400": 0.828
+     },
+     {
+      "games_played": 2,
+      "starter_dropbacks": 70,
+      "v1": 0.81,
+      "k100": 0.476,
+      "k200": 0.6,
+      "k400": 0.689
+     },
+     {
+      "games_played": 3,
+      "starter_dropbacks": 105,
+      "v1": 0.729,
+      "k100": 0.356,
+      "k200": 0.478,
+      "k400": 0.577
+     },
+     {
+      "games_played": 4,
+      "starter_dropbacks": 140,
+      "v1": 0.656,
+      "k100": 0.273,
+      "k200": 0.386,
+      "k400": 0.486
+     },
+     {
+      "games_played": 5,
+      "starter_dropbacks": 175,
+      "v1": 0.59,
+      "k100": 0.215,
+      "k200": 0.315,
+      "k400": 0.411
+     },
+     {
+      "games_played": 6,
+      "starter_dropbacks": 210,
+      "v1": 0.531,
+      "k100": 0.171,
+      "k200": 0.259,
+      "k400": 0.348
+     },
+     {
+      "games_played": 8,
+      "starter_dropbacks": 280,
+      "v1": 0.43,
+      "k100": 0.113,
+      "k200": 0.179,
+      "k400": 0.253
+     },
+     {
+      "games_played": 10,
+      "starter_dropbacks": 350,
+      "v1": 0.349,
+      "k100": 0.077,
+      "k200": 0.127,
+      "k400": 0.186
+     },
+     {
+      "games_played": 12,
+      "starter_dropbacks": 420,
+      "v1": 0.282,
+      "k100": 0.054,
+      "k200": 0.091,
+      "k400": 0.138
+     },
+     {
+      "games_played": 17,
+      "starter_dropbacks": 595,
+      "v1": 0.167,
+      "k100": 0.024,
+      "k200": 0.042,
+      "k400": 0.067
+     }
+    ]
+   },
+   "variants": [
+    {
+     "id": "PD-K200",
+     "k_db": 200,
+     "role": "central: about 5.7 starts of dropbacks to reach half weight"
+    },
+    {
+     "id": "PD-K100",
+     "k_db": 100,
+     "role": "faster"
+    },
+    {
+     "id": "PD-K400",
+     "k_db": 400,
+     "role": "slower"
+    }
+   ],
+   "variants_planned": 3,
+   "training_window": "walk-forward: each predicted season S is fitted on 2002..S-1 (rating warm-up from 1999)",
+   "validation_window": "2010-2024 regular and postseason games with a closing spread and a final",
+   "holdout_window": "2025 season: NOT evaluated by this registration; one look only, in a later preregistered run, and only if a variant is a finalist",
+   "minimum_sample": "4,000 validation games for Brier; 400 early-line bets for CLV",
+   "primary_metric": "win-probability Brier score on 2010-2024 walk-forward predictions",
+   "secondary_metrics": [
+    "CLV in spread points at the early-week line, 2020-2024 (the seasons nflverse’s git history timestamps): bets where |model margin - early line| >= 2, points the line moved from the early checkpoint to the close toward the model’s side (model_loop/clv_early/lines.py definitions: tau = latest kickoff of week W-1 + 5 h; a commit within 6 h before tau; Week 1 excluded; moves over 10 points dropped)",
+    "log loss",
+    "margin MAE",
+    "Brier per validation season"
+   ],
+   "decision_rule": "Selection: of the three variants, the lowest 2010-2024 Brier (ties: log loss). FINALIST only if, against the incumbent on the same rows, it has (1) lower 2010-2024 Brier, (2) log loss no worse, (3) margin MAE no worse than +0.01, (4) lower Brier in at least 9 of the 15 validation seasons, and (5) 2020-2024 early-line CLV at least the incumbent’s (mean points per bet; both models’ bets at the same threshold). passed = true only if a finalist then beats the incumbent on the 2025 holdout on Brier AND log loss AND margin MAE with CLV no worse, in ONE look by a separate preregistered run. Until passed = true and a human promotes it, status stays experimental and it never prices a live card.",
+   "promotion_criteria": {
+    "stage_a_validation": [
+     "Brier lower than v1 on 2010-2024",
+     "log loss not worse",
+     "margin MAE not worse than v1 + 0.01",
+     "Brier lower in >= 9 of 15 seasons",
+     "early-line CLV (2020-2024, |gap| >= 2) >= v1"
+    ],
+    "stage_b_holdout": [
+     "one look at 2025 only after stage A",
+     "Brier AND log loss AND margin MAE better than v1",
+     "early-line CLV on 2025 >= v1"
+    ],
+    "stage_c_live": [
+     "shadow on 2026+ cards for at least 64 graded games",
+     "graded CLV against EdgeDesk’s own captured quotes >= v1 over the same games"
+    ],
+    "on_any_failure": "REJECTED: the version stays experimental (retired from consideration), the record keeps it"
+   },
+   "forking_paths": {
+    "alternatives_considered": [
+     "a pure by-week team decay (P0 geometric, P1 hyperbolic): already tested on 2010-2024 in round 1 and rejected; not re-run",
+     "separate faster decay for the pass-dependent ratings only: rejected in favour of a fitted term, which lets the ridge decide the size instead of a hand-set rate",
+     "replacing the QB term with raw 2026 EPA: the 2026-only replay is worse on 2026 Brier (docs/nfl-prior-decay/DIAGNOSIS.md §3.1)"
+    ],
+    "choice_and_reason": "one fitted term, three shrinkage constants spanning 2x either side of the central value; the central value (200 dropbacks) is the sample at which a 2026 starter’s EPA has roughly the reliability of half a season, chosen before any evaluation",
+    "data_already_seen": "2026 Weeks 1-7 (the diagnosis that motivated the hypothesis; the live season, never used to select); the 2010-2025 results of round 1-3 variants of OTHER families (results/variants.jsonl); no variant of this family has been evaluated on any season",
+    "comparisons_made": 3,
+    "stopping_rule": "the three variants are each run once; no further variant of this family is evaluated without a new registration that counts them"
+   },
+   "machine": {
+    "version": "2.0.0-exp.1",
+    "status": "EXPERIMENTAL",
+    "provenance": "T3",
+    "alpha_one_sided": 0.05,
+    "minimum_sample": 4000,
+    "window_dates": {
+     "training": [
+      "2002-09-01",
+      "2010-03-01"
+     ],
+     "validation": [
+      "2010-09-01",
+      "2025-03-01"
+     ],
+     "holdout": [
+      "2025-09-01",
+      "2026-03-01"
+     ]
+    }
+   }
+  }
+ ]
+}
