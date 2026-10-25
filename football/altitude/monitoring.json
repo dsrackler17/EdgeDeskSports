@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_altitude_monitoring_v1",
- "generated_at": "2026-10-25T04:58:38.004Z",
+ "generated_at": "2026-10-25T05:02:24.119Z",
  "policy": "warnings inform a person; nothing here retrains, re-tunes, enables or disables anything",
  "ok": true,
  "params": {
@@ -11,16 +11,16 @@
   "flag": "cfb_altitude_adjustment_enabled"
  },
  "slate": {
-  "generated_at": "2026-10-25T04:58:37.714Z",
+  "generated_at": "2026-10-25T05:02:23.817Z",
   "games": 70,
   "with_section": 70,
-  "usable": 68,
+  "usable": 67,
   "exposure": {
-   "DESCENT": 10,
-   "MINIMAL": 48,
+   "MINIMAL": 49,
    "MODERATE": 4,
+   "DESCENT": 8,
    "HIGH": 6,
-   "UNKNOWN": 2
+   "UNKNOWN": 3
   },
   "applied_games": 0,
   "unavailable": [
@@ -33,6 +33,11 @@
     "game_id": "401856734",
     "game": "Florida @ Georgia",
     "why": "venue 5348 has no sourced elevation"
+   },
+   {
+    "game_id": "401866456",
+    "game": "Central Michigan @ Eastern Michigan",
+    "why": "venue 3727 has no sourced elevation"
    }
   ]
  },
@@ -50,20 +55,20 @@
   "season": 2026,
   "fit_window": "2006-2025, 13511 non-neutral FBS home games",
   "what": "the frozen shadow candidate applied to V1’s own published pregame margin (record/football/cfb_2026.json), graded on finals; 2026 was never seen by the fit",
-  "graded_games": 379,
-  "usable": 369,
+  "graded_games": 391,
+  "usable": 381,
   "affected": {
-   "n": 17,
-   "mae_v1": 11.648,
-   "mae_shadow": 11.586,
-   "improvement": 0.062,
-   "v1_bias": 0.251
+   "n": 18,
+   "mae_v1": 11.566,
+   "mae_shadow": 11.465,
+   "improvement": 0.101,
+   "v1_bias": 0.802
   },
   "high_exposure": {
-   "n": 17,
-   "v1_residual": 0.251,
-   "close_residual": 2.735,
-   "visitor_covers": "6 of 17"
+   "n": 18,
+   "v1_residual": 0.802,
+   "close_residual": 3.056,
+   "visitor_covers": "6 of 18"
   },
   "reading": "fewer than 30 affected games: too few to read anything into, by design"
  },
@@ -71,7 +76,7 @@
   {
    "kind": "ELEVATION_UNAVAILABLE",
    "level": "WARN",
-   "message": "2 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
+   "message": "3 slate game(s) have no usable altitude context (a venue without a sourced elevation)",
    "evidence": [
     {
      "game_id": "401858505",
@@ -82,6 +87,11 @@
      "game_id": "401856734",
      "game": "Florida @ Georgia",
      "why": "venue 5348 has no sourced elevation"
+    },
+    {
+     "game_id": "401866456",
+     "game": "Central Michigan @ Eastern Michigan",
+     "why": "venue 3727 has no sourced elevation"
     }
    ]
   }
