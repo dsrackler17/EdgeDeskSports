@@ -209,7 +209,51 @@ function runMerge(cwd, args, merge) {
   })());
 }
 
-/* 9. bad usage is refused, not silently a no-op */
+/* 9. an AGGREGATE (the article manifest) is rebuilt on the new tip, not copied:
+      on 2026-10-25 20:47 the editorial job laid its index.json (717 records)
+      over a tip where Publish research articles had just added 6, and every
+      job that tests the manifest failed from then on */
+function runRebuild(cwd, args, rebuild) {
+  const r = spawnSync('bash', [SCRIPT].concat(args), { cwd, env: Object.assign({}, ENV, { PUSH_REBUILD: rebuild }), stdio: ['ignore', 'pipe', 'pipe'] });
+  return { code: r.status, out: String(r.stdout || '') + String(r.stderr || '') };
+}
+{
+  const REINDEX = 'ls articles/data/records > articles/data/index.json';
+  git(A, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  write(A, 'articles/data/records/r1.json', '{}\n');
+  write(A, 'articles/data/index.json', 'r1.json\n');
+  git(A, ['add', '-A']); git(A, ['commit', '-q', '-m', 'articles: r1']); git(A, ['push', '-q', 'origin', 'main']);
+  git(B, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  /* the publisher adds a record and its manifest */
+  write(B, 'articles/data/records/r2.json', '{}\n');
+  write(B, 'articles/data/index.json', 'r1.json\nr2.json\n');
+  git(B, ['add', '-A']); git(B, ['commit', '-q', '-m', 'articles: refresh']); git(B, ['push', '-q', 'origin', 'main']);
+  /* the editorial job, checked out before that, adds a different one */
+  write(A, 'articles/data/records/r3.json', '{}\n');
+  write(A, 'articles/data/index.json', 'r1.json\nr3.json\n');
+  const r = runRebuild(A, ['main', 'editorial: r3', '--', 'articles'], REINDEX);
+  git(seed, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  chk('the manifest is rebuilt from every record on the new tip, not copied from the stale run',
+    r.code === 0 && fs.readFileSync(path.join(seed, 'articles/data/index.json'), 'utf8') === 'r1.json\nr2.json\nr3.json\n',
+    r.out + '\n' + fs.readFileSync(path.join(seed, 'articles/data/index.json'), 'utf8'));
+  chk('both jobs\' records land', fs.existsSync(path.join(seed, 'articles/data/records/r2.json')) && fs.existsSync(path.join(seed, 'articles/data/records/r3.json')));
+  chk('the working tree is left clean after a rebuild', git(A, ['status', '--porcelain']) === '');
+
+  /* a rebuild that fails pushes nothing: a missed publish, never a broken store */
+  git(B, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  write(B, 'articles/data/records/r4.json', '{}\n');
+  write(B, 'articles/data/index.json', 'r1.json\nr2.json\nr3.json\nr4.json\n');
+  git(B, ['add', '-A']); git(B, ['commit', '-q', '-m', 'articles: r4']); git(B, ['push', '-q', 'origin', 'main']);
+  write(A, 'articles/data/records/r5.json', '{}\n');
+  write(A, 'articles/data/index.json', 'r1.json\nr2.json\nr3.json\nr5.json\n');
+  const before = git(seed, ['ls-remote', bare, 'refs/heads/main']);
+  const r2 = runRebuild(A, ['main', 'editorial: r5', '--', 'articles'], 'touch articles/half-built.html; exit 3');
+  const after = git(seed, ['ls-remote', bare, 'refs/heads/main']);
+  chk('a failed rebuild pushes nothing', r2.code !== 0 && /nothing pushed/.test(r2.out) && before === after, r2.out);
+  chk('and leaves the working tree clean', git(A, ['status', '--porcelain']) === '' && !fs.existsSync(path.join(A, 'articles/half-built.html')), git(A, ['status', '--porcelain']));
+}
+
+/* 10. bad usage is refused, not silently a no-op */
 {
   const r = run(A, ['main', 'msg']);
   chk('missing paths are a usage error', r.code === 64, String(r.code));

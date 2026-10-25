@@ -45,6 +45,15 @@
 #                   own change to them is applied as a 3-way merge onto the new
 #                   tip; if it does not apply cleanly, nothing is pushed and the
 #                   script fails (a missed publish, never a reverted change).
+#   PUSH_REBUILD    a command (run with bash -c) that regenerates the AGGREGATE
+#                   artifacts — files computed from every record under a named
+#                   path, not from this run alone — after our files are put on
+#                   a new tip. Copying our aggregate instead drops whatever the
+#                   other job added: on 2026-10-25 20:47 the editorial job laid
+#                   its articles/data/index.json (717 records) over a tip where
+#                   Publish research articles had just written 6 more, and every
+#                   job that tests the manifest failed from then on. If the
+#                   command fails, nothing is pushed and the script fails.
 # ============================================================================
 set -euo pipefail
 
@@ -137,6 +146,15 @@ while [ "$i" -lt "$ATTEMPTS" ]; do
       exit 1
     fi
   done
+  # aggregates: recomputed from the merged files, never carried from our run
+  if [ -n "${PUSH_REBUILD:-}" ]; then
+    if ! bash -c "$PUSH_REBUILD"; then
+      echo "rebuilding the aggregate artifacts on the new tip of $BRANCH failed — nothing pushed" >&2
+      git reset -q --hard FETCH_HEAD
+      git clean -q -fd -- "${PATHS[@]}" 2>/dev/null || true
+      exit 1
+    fi
+  fi
   stage
   if git diff --cached --quiet; then
     echo "the branch already carries these exact artifacts — nothing left to push"
