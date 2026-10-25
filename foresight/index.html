@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Market Foresight — Which Forecasts Preceded Market Movement | EdgeDesk</title>
+<meta name="description" content="An auditable research record matching timestamped model forecasts to later DraftKings and Kalshi prices, with every timing uncertainty, coverage gap and exclusion shown. Observational research, not picks.">
+<link rel="canonical" href="https://edgedesksports.com/foresight/">
+<!-- noindex while Market Foresight is in review (shadow mode); the sitemap entry is added when it goes live (docs/market-foresight/README.md) -->
+<meta name="robots" content="noindex,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/foresight/">
+<meta property="og:title" content="EdgeDesk Market Foresight — which forecasts preceded market movement">
+<meta property="og:description" content="Forecasts matched to later DraftKings and Kalshi prices, with timing uncertainty and coverage shown. Observational research, not picks.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<link rel="stylesheet" href="/foresight/foresight.css?v=20261025mf1">
+</head>
+<body data-ed-page="market_foresight">
+<a class="mf-skip" href="#main">Skip to content</a>
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Main">
+    <a href="/articles/" data-ed-nav="research">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="foresight_header_trial">Start free trial</a>
+</header>
+<main class="wrap mf-wrap" id="main">
+  <nav class="crumbs" aria-label="Breadcrumb" id="mf-crumbs"><a href="/articles/">Research</a> › <a href="/methodology/">Methodology</a> › <span aria-current="page">Market Foresight</span></nav>
+  <span class="ey">Observational research · not picks · every timestamp’s uncertainty kept</span>
+  <h1 id="mf-title">Market Foresight</h1>
+  <p class="lede" id="mf-lede">Which forecasts, and which observed venues, preceded subsequent market movement? Each identifiable forecast is matched to the DraftKings and Kalshi prices EdgeDesk recorded before and after it was published. You can open any game and see what each source showed, and when.</p>
+
+  <div id="mf-status" class="mf-status" role="status" aria-live="polite">Loading…</div>
+  <div id="mf-chips"></div>
+
+  <details class="mf-claims" id="mf-claims" open>
+    <summary id="mf-claims-h">What this record says, and what it never says</summary>
+    <p>It says “forecast preceded observed movement”, “first observed among tracked venues”, “market moved toward this forecast” or “timing unresolved at available sampling resolution”, and only when the timestamps support it.</p>
+    <p>It never says that a model caused a move. It never says who led the whole market, because only the tracked venues are observed. Movement toward a forecast does not mean the forecast was right about the result, and a timing advantage is not a profitable or executable trade.</p>
+  </details>
+
+  <div id="mf-view" aria-live="polite"></div>
+
+  <section id="method" class="mf-sec" aria-labelledby="mf-method-h">
+    <h2 id="mf-method-h">Methodology</h2>
+    <div id="mf-method"><p class="note">The frozen methodology is <a href="/research/foresight/methodology/mf-v1.json">mf-v1.json</a> (its sha256 is in <a href="/research/foresight/methodology/FROZEN.json">FROZEN.json</a>). It was committed before any measurement was computed.</p></div>
+  </section>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> Market Foresight reports when recorded forecasts and recorded prices moved relative to each other. It is not betting advice, it is not a prediction of future results, it does not grade or rank models, and it changes no model, ranking or grade.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/articles/">Free research</a><a href="/today/">Today’s games</a><a href="/performance/">Model performance</a><a href="/foresight/">Market Foresight</a><a href="/methodology/">Methodology</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<div id="mf-tip" class="mf-tip" role="tooltip" hidden></div>
+<script src="/lib/edgedesk_foresight_ui.js?v=20261025mf1"></script>
+<script src="/foresight/foresight.js?v=20261025mf1" defer></script>
+<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

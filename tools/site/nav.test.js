@@ -83,6 +83,7 @@ const PAGES = [
   ['performance/grades/index.html', null, false],
   ['research/sample/index.html', null, false],
   ['signals/index.html', null, false],
+  ['foresight/index.html', null, false],
   ['articles/index.html', 'research', true],
   ['articles/nfl/index.html', 'research', false],
   ['articles/college-football/index.html', 'research', false],

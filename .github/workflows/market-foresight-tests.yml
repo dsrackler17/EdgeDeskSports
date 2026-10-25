@@ -1,0 +1,100 @@
+# EdgeDesk — Market Foresight's checks (docs/market-foresight/README.md).
+#
+#   engine     the frozen methodology's digest; every metric on a synthetic
+#              world worked by hand (tools/foresight/fixtures/synthetic.js)
+#   isolation  no ranking, grade, model or evaluation code reads this layer,
+#              and this layer writes nothing else
+#   database   supabase/market_foresight.sql applied twice and as the SQL
+#              editor sends it, attacked as anon, a non-subscriber, a
+#              subscriber and an operator; the rollback
+#   worker     the job end to end over the COMMITTED ledgers through a
+#              PostgREST stand-in: idempotent re-runs, the Kalshi cache,
+#              settlement verification, a partial run, the request budget
+#   pages      the renderers in Node; the pages in Chromium at desktop and
+#              phone widths against the shipped doors on PostgreSQL
+#
+# Nothing here deploys, writes to production or posts anywhere.
+name: Market Foresight tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_foresight*.js'
+      - 'lib/edgedesk_calc.js'
+      - 'lib/football_identity.js'
+      - 'foresight/**'
+      - 'research/foresight/**'
+      - 'supabase/market_foresight*.sql'
+      - 'supabase/migrations/20261025120000_market_foresight.sql'
+      - 'tools/foresight/**'
+      - 'tools/personal/_pg.js'
+      - 'tools/billing/_pgrest.js'
+      - 'tools/performance/ledger.js'
+      - 'performance/ledger/forecasts/**'
+      - 'performance/ledger/results/**'
+      - 'record/football/quotes/**'
+      - 'methodology/index.html'
+      - 'lib/edgedesk_plans.js'
+      - '.github/workflows/market-foresight*.yml'
+      - '.github/workflows/deploy-market-foresight.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_foresight*.js'
+      - 'supabase/market_foresight*.sql'
+      - 'tools/foresight/**'
+      - 'research/foresight/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-foresight-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The engine on hand-worked answers, and the frozen methodology
+        run: node tools/foresight/engine.test.js
+      - name: Isolation from rankings, grades and models
+        run: node tools/foresight/isolation.test.js
+      - name: The page renderers
+        run: node tools/foresight/ui.test.js
+      - name: A dry run over the committed sources (no credentials)
+        run: node tools/foresight/run.js --dry --no-cache
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PostgreSQL
+        run: sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+      - name: The layer on a real PostgreSQL (roles, doors, history, modes, rollback)
+        env:
+          MF_SQL_REQUIRED: '1'
+        run: node tools/foresight/sql.test.js
+      - name: The worker end to end through the PostgREST stand-in
+        env:
+          MF_SQL_REQUIRED: '1'
+        run: node tools/foresight/worker.test.js
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The pages in Chromium (desktop and phone)
+        env:
+          MF_SQL_REQUIRED: '1'
+          MF_E2E_REQUIRED: '1'
+        run: node tools/foresight/pages.e2e.js

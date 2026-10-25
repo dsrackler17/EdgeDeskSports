@@ -44,6 +44,38 @@ deploy that worked and changed nothing.
 
 ## The files
 
+### `market_foresight.sql` — Market Foresight (which forecasts and venues preceded market movement)
+
+Mirrored byte for byte in `migrations/20261025120000_market_foresight.sql`. `.github/workflows/deploy-market-foresight.yml` applies it, running the tests first.
+
+**What it is.**
+- A separate, observational layer of versioned derived measurements, behind security-definer doors.
+- It creates `mf_*` objects only. It reads `collective.models` / `creators` (is a model still listed?) and `kalshi_markets` / `kalshi_game_links` (the rules texts an operator verifies). Each is read only if installed, and a missing one fails closed.
+- It writes nothing outside `mf_*`.
+
+**Tables.**
+- `mf_config` (`mode` off / shadow / live, starting in shadow; `public_timeline`) and `mf_config_log`.
+- `mf_methodologies`: append-only; a second digest under the same version is refused.
+- `mf_runs`: a lease, finished once.
+- `mf_games` and `mf_units`: current rows, with every distinct input hash appended to `mf_game_versions` / `mf_unit_versions`.
+- `mf_summaries`: the latest complete set.
+- `mf_settlement_verifications`: append-only Kalshi rules readings, by sha256.
+
+**Access.** RLS is on with no client policy, and table DML is revoked from `service_role`. Every write goes through `mf_job_*`.
+
+**Reader doors.** `mf_status()` serves anyone. The rest serve anyone only when live: `mf_overview`, `mf_games_list`, `mf_game`, `mf_model`, `mf_embed`.
+- **Collective models:** shown only while listed, checked at read time.
+- **Full timeline:** only with Full Access (`community_is_entitled`), or with `public_timeline`.
+- **Consensus members:** never named outside operators.
+
+**Operator doors** go through `billing_is_admin`. The owner's `mf_owner_set_mode` is reachable by no API role.
+
+**Report.** Ends in a report: every row `ok`, plus two `pending` rows until a Kalshi series is verified and the Collective schema is reachable.
+
+**Rollback.** `market_foresight_rollback.sql` removes `mf_*` only; no source data is touched. Prefer `mf_owner_set_mode('off', reason)`, which hides everything and keeps every row.
+
+Tested against a real PostgreSQL by `tools/foresight/sql.test.js` and `tools/foresight/worker.test.js`. See `docs/market-foresight/README.md`.
+
 ### `audits/cfb_board_market_audit.sql` — the live FBS board's market path, read-only
 Not a migration: ONE `select`, safe to paste into the SQL editor on production at
 any time (it is proved to run inside a `READ ONLY` transaction). For one week

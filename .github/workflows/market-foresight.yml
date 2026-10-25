@@ -1,0 +1,92 @@
+# EdgeDesk — the Market Foresight derivation run (tools/foresight/run.js;
+# docs/market-foresight/README.md).
+#
+# OFF UNTIL SWITCHED ON. The schedule does nothing unless the repository
+# variable MARKET_FORESIGHT_WORKER is "on" (Settings > Secrets and variables >
+# Actions > Variables), so merging this file starts no job. A manual run
+# (workflow_dispatch) is always allowed.
+#
+# WHAT A RUN DOES
+#   checks the frozen methodology's digest, then reads the COMMITTED forecast
+#   ledgers, DraftKings quote ledger and results and, through the service role,
+#   the Kalshi layer and the Collective (read only); computes every
+#   measurement with lib/edgedesk_foresight.js; writes ONLY through the
+#   mf_job_* doors, and only the rows whose input hash changed. It calls no
+#   odds provider, adds no capture request, changes no capture cadence and
+#   touches no ranking, grade or model.
+#
+#   What readers see follows mf_config.mode: "shadow" after the migration
+#   (operators only), "live" once an operator switches it, "off" to hide it.
+#
+# KALSHI CACHE. A finished game's pregame Kalshi snapshots never change, so
+# they are kept between runs in .cache/foresight/kalshi (actions/cache, never
+# committed) and read from the database once.
+#
+# SECRETS: SB_URL, SB_SERVICE_ROLE (the ones the other jobs already use).
+# DISABLE: set MARKET_FORESIGHT_WORKER to anything but "on". Readers keep the
+# last run, and the page says how old it is.
+name: Market Foresight run
+run-name: Market Foresight run · ${{ github.event_name }}
+
+on:
+  schedule:
+    # hourly, after the football record job (:47) has committed its quotes
+    - cron: '58 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Compute only (write nothing; the result is an artifact)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-foresight-run
+  cancel-in-progress: false
+
+jobs:
+  run:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.MARKET_FORESIGHT_WORKER == 'on' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The engine's checks pass before anything is written
+        run: |
+          node tools/foresight/engine.test.js
+          node tools/foresight/isolation.test.js
+      - name: Restore the Kalshi cache (finished games only)
+        uses: actions/cache@v4
+        with:
+          path: .cache/foresight/kalshi
+          key: foresight-kalshi-${{ github.run_id }}
+          restore-keys: foresight-kalshi-
+      - name: Dry run
+        if: ${{ inputs.dry_run }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/foresight/run.js --dry --out foresight-dry-run.json
+      - name: Compute and write through the job doors
+        if: ${{ !inputs.dry_run }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          # Presence only. No value is ever printed (db.js scrubs the key from every error).
+          if [ -z "$SB_URL" ] || [ -z "$SB_SERVICE_ROLE" ]; then echo "::error::SB_URL and SB_SERVICE_ROLE are needed for a live run"; exit 1; fi
+          node tools/foresight/run.js --write --trigger ${{ github.event_name == 'schedule' && 'cron' || 'manual' }}
+      - name: Keep the dry-run result
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: foresight-dry-run
+          path: foresight-dry-run.json
+          retention-days: 7

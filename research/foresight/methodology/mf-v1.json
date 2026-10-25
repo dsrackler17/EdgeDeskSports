@@ -1,0 +1,437 @@
+{
+  "schema": "edgedesk_market_foresight_methodology_v1",
+  "version": "mf-v1",
+  "frozen_at": "2026-10-25",
+  "status": "RESEARCH",
+  "question": "Which forecasts and observed venues preceded subsequent market movement?",
+  "tiers": {
+    "observations": "T0 Observed: venue prices and forecasts exactly as their sources recorded them",
+    "metrics": "T2 Computed: deterministic transforms of T0 records defined in this file",
+    "incremental_information": "T3 Experimental: a research check, never a claim"
+  },
+  "claims": {
+    "allowed": [
+      "Forecast preceded observed movement.",
+      "First observed among tracked venues.",
+      "Market moved toward this forecast.",
+      "Timing unresolved at available sampling resolution."
+    ],
+    "never": [
+      "that a model caused a market movement",
+      "who led the entire market (only tracked venues are observed)",
+      "that convergence toward a forecast means the forecast was right about the outcome",
+      "that a timing advantage is a profitable or executable trade",
+      "that this is the first or only product of its kind"
+    ]
+  },
+  "scope": {
+    "sports": [
+      "nfl",
+      "cfb"
+    ],
+    "phase": "pregame only: every observation and forecast strictly before kickoff",
+    "period": "full game, overtime included"
+  },
+  "sources": {
+    "forecasts": {
+      "edgedesk": {
+        "label": "EdgeDesk models",
+        "path": "performance/ledger/forecasts/<sport>-2026.jsonl",
+        "model_identity": [
+          "model.id",
+          "model.version"
+        ],
+        "publication_time": "capture.captured_at: when the hash-chained ledger recorded the published number (the conservative, later bound; model.predicted_at is shown beside it)",
+        "publication_evidence": {
+          "ledger_capture": "ledger_captured",
+          "import:*": "reconstructed_from_git"
+        },
+        "eligible_evidence": [
+          "ledger_captured"
+        ],
+        "fields": {
+          "spread": "forecast.fair_home_line",
+          "total": "forecast.fair_total",
+          "moneyline": "forecast.p_home"
+        }
+      },
+      "collective": {
+        "label": "Model Collective",
+        "table": "collective.projections",
+        "model_identity": [
+          "model_id"
+        ],
+        "model_version": "none recorded (one model per creator per sport): every forecast is version 'unversioned'",
+        "publication_time": "received_at, stamped by the server on receipt",
+        "publication_evidence": "server_received",
+        "eligible_evidence": [
+          "server_received"
+        ],
+        "eligible_rows": "data_origin = live, resolution_status = resolved, received_at before lock_at = kickoff - submission.lock_minutes (30)",
+        "fields": {
+          "spread": "projected_spread",
+          "total": "projected_total",
+          "moneyline": "home_win_prob"
+        },
+        "known_gap": "the Collective's retract route deletes pre-kickoff rows; a forecast retracted before this job first read it cannot be seen or counted",
+        "lock_minutes": 30
+      }
+    },
+    "venues": {
+      "draftkings": {
+        "label": "DraftKings (via ESPN)",
+        "path": "record/football/quotes/<sport>_2026.jsonl",
+        "filter": {
+          "source": "espn",
+          "book": "draftkings"
+        },
+        "timestamp": "observed_at: when EdgeDesk's collector read the price. No provider update time is recorded; none is invented",
+        "write_rule": {
+          "on_change": true,
+          "heartbeat_hours": 6,
+          "close_zone_hours": 3,
+          "close_zone_heartbeat_minutes": 50
+        },
+        "intended_poll": "hourly at :47 (.github/workflows/football-model-record.yml); GitHub may start a scheduled run late"
+      },
+      "kalshi": {
+        "label": "Kalshi",
+        "table": "public.kalshi_price_snapshots joined to public.kalshi_game_links",
+        "series": [
+          "KXNFLGAME",
+          "KXNCAAFGAME"
+        ],
+        "timestamp": "captured_at: the collector run's time. Kalshi's quote carries no update time and last_price carries no trade time",
+        "intended_poll": "every 5 minutes (supabase/kalshi_market_data_cron.sql)"
+      }
+    }
+  },
+  "contracts": {
+    "key_fields": [
+      "sport",
+      "event_id",
+      "phase",
+      "measure",
+      "market",
+      "selection",
+      "orientation",
+      "period",
+      "threshold",
+      "overtime",
+      "tie_treatment"
+    ],
+    "measures": {
+      "line_points": {
+        "markets": {
+          "spread": "the home team's line, book convention (negative = home favoured), points",
+          "total": "the total points line, points"
+        },
+        "venues": [
+          "draftkings"
+        ],
+        "note": "a forecast's fair line is compared with the venue's line in points. A line change is movement in this measure, never a new contract"
+      },
+      "probability": {
+        "markets": {
+          "moneyline": "P(home team wins), full game including overtime"
+        },
+        "venues": [
+          "draftkings",
+          "kalshi"
+        ],
+        "note": "only exactly matched outcome contracts. A spread or total cover probability at one threshold is a different contract from any other threshold and is never spliced into one series"
+      }
+    },
+    "never": [
+      "average probability with line points",
+      "equate contracts by display label",
+      "read a point forecast (a fair spread or total) as a probability of covering a threshold: no forecast source supplies a documented predictive distribution in mf-v1",
+      "splice two thresholds into one probability series"
+    ],
+    "settlement": {
+      "rule": "two probability contracts are compared only when overtime treatment and tie treatment are compatible and every venue profile is verified",
+      "profiles": {
+        "draftkings_moneyline": {
+          "nfl": {
+            "overtime": "included",
+            "tie": "push",
+            "verified": true,
+            "basis": "two-way sportsbook moneyline: a tie is a push (stake returned)"
+          },
+          "cfb": {
+            "overtime": "included",
+            "tie": "impossible",
+            "verified": true,
+            "basis": "college football cannot end tied"
+          }
+        },
+        "kalshi_game_winner": {
+          "nfl": {
+            "overtime": "unverified",
+            "tie": "unverified",
+            "verified": false
+          },
+          "cfb": {
+            "overtime": "unverified",
+            "tie": "unverified",
+            "verified": false
+          },
+          "verification": "an operator reads the market's rules_primary text and records a profile in public.mf_settlement_verifications for that exact rules text (sha256). A changed rules text needs a new record"
+        },
+        "edgedesk_p_home": {
+          "nfl": {
+            "overtime": "included",
+            "tie": "two_way_conditional",
+            "basis": "forecast.settles: includes overtime (a tie grades by house rule); p_home + p_away = 1"
+          },
+          "cfb": {
+            "overtime": "included",
+            "tie": "impossible",
+            "basis": "forecast.settles: includes overtime (college football cannot end tied)"
+          },
+          "settles_missing": "a forecast without forecast.settles is excluded from probability comparisons (settlement_undocumented)"
+        },
+        "collective_home_win_prob": {
+          "nfl": {
+            "overtime": "included",
+            "tie": "two_way_conditional",
+            "basis": "the Collective's field definition: moneyline chance the home team wins, 0 to 1 (two-way)"
+          },
+          "cfb": {
+            "overtime": "included",
+            "tie": "impossible"
+          }
+        }
+      },
+      "tie_compatible": {
+        "push": [
+          "push",
+          "two_way_conditional"
+        ],
+        "two_way_conditional": [
+          "push",
+          "two_way_conditional"
+        ],
+        "impossible": [
+          "impossible"
+        ]
+      },
+      "cancellation": "postponed, cancelled or forfeited games are excluded from every measurement, so cancellation rules never decide a comparison"
+    }
+  },
+  "prices": {
+    "sportsbook_devig": {
+      "method": "multiplicative two-way (lib/edgedesk_calc.js noVigTwoWay): p_i = (1/d_i) / (1/d_home + 1/d_away)",
+      "requires": "both sides of the same market at the same observation",
+      "overround_bounds": [
+        0,
+        0.2
+      ],
+      "otherwise": "the observation is kept with its raw prices and flagged; no fair probability is computed (one_sided_price or implausible_overround)"
+    },
+    "kalshi": {
+      "fields_kept_separately": [
+        "yes_bid",
+        "yes_ask",
+        "no_bid",
+        "no_ask",
+        "last_price",
+        "yes_bid_size",
+        "yes_ask_size",
+        "volume",
+        "open_interest"
+      ],
+      "metric_quote": "yes_mid = (yes_bid + yes_ask) / 2, a research reference and never an executable price",
+      "mid_requires": "two-sided (yes_bid > 0, yes_ask < 1, ask >= bid) and spread <= 0.06 (public.kalshi_rule('max_spread'))",
+      "last_trade": "displayed only; marked stale unless volume rose since the previous snapshot. Never used as a fresh quote",
+      "depth": "top-of-book sizes only (yes_bid_size, yes_ask_size); missing sizes are flagged, never assumed",
+      "fees": "not applied anywhere in mf-v1: the repository's Kalshi fee schedule is UNVERIFIED, so no execution-cost figure is computed",
+      "max_spread": 0.06
+    }
+  },
+  "timing": {
+    "change_interval": "a change happened after the last observation of the old value and at or before the first observation of the new value: (t_prev, t_new]",
+    "ordering": "an ordering is asserted only when intervals do not overlap; overlapping intervals are UNRESOLVED, never a forced winner",
+    "missing": "a missing observation is unknown. Values are never carried across a coverage gap",
+    "expected_max_gap_minutes": {
+      "draftkings": {
+        "far": 450,
+        "close_zone": 140,
+        "basis": "heartbeat (6 h, or 50 min inside 3 h of kickoff) + 90 min allowance for a late hourly run"
+      },
+      "kalshi": {
+        "all": 20,
+        "basis": "public.kalshi_rule('silent_scheduler_minutes')"
+      }
+    },
+    "gap": "two consecutive observations of the same venue contract further apart than the expected maximum mark a coverage gap; any interval spanning it is flagged spans_gap"
+  },
+  "freshness": {
+    "baseline": "M0 is the latest observation at or before forecast publication whose age at publication is within the venue's expected maximum gap (draftkings: by zone at publication; kalshi: 20 min). Never a later quote",
+    "horizon": "M_h is the latest observation at or before publication + h, fresh by the same rule; a horizon past kickoff is censored",
+    "close": {
+      "definition": "the venue's last pregame observation",
+      "draftkings_max_minutes_before_kickoff": 120,
+      "kalshi_max_minutes_before_kickoff": 10,
+      "otherwise": "no valid close; never replaced by an earlier observation"
+    }
+  },
+  "movement": {
+    "threshold": {
+      "spread": 0.5,
+      "total": 0.5,
+      "moneyline": 0.02
+    },
+    "min_disagreement": {
+      "spread": 0.5,
+      "total": 0.5,
+      "moneyline": 0.02
+    },
+    "persistence": "a qualifying move is the first observation after publication whose displacement toward the forecast from M0 reaches the threshold AND whose next observation still does (or which is the venue's closing observation). A crossing undone at the next observation is a flicker and is not counted",
+    "horizons_minutes": [
+      60,
+      360,
+      1440
+    ],
+    "forecast_horizon_buckets_hours": [
+      6,
+      24,
+      72
+    ],
+    "definitions": {
+      "disagreement": "F - M0",
+      "closing_convergence": "|M0 - F| - |C - F| (positive: the close was closer to the forecast than the initial market)",
+      "directional_movement": "sign(F - M0) * (C - M0) (positive: the market moved toward the forecast; it can exceed |F - M0| when the market overshoots)",
+      "horizon_movement": "sign(F - M0) * (M_h - M0)",
+      "time_to_move": "the change interval of the first qualifying move, measured from publication: [t_prev - T_pub, t_move - T_pub]",
+      "precedence": "PRECEDED when the qualifying move's interval starts at or after publication (an observation after publication still showed the unmoved market); UNRESOLVED when the interval straddles publication",
+      "overshoot": "sign(F - M0) * (C - F) > 0",
+      "reversal": "a qualifying move toward the forecast whose close no longer reaches the threshold",
+      "moved_away": "no qualifying move and the close at least the threshold away from the forecast's side"
+    },
+    "outcome_classes": [
+      "TOWARD_HELD",
+      "TOWARD_REVERSED",
+      "NO_QUALIFYING_MOVE",
+      "MOVED_AWAY",
+      "NO_MATERIAL_DISAGREEMENT"
+    ]
+  },
+  "selection": {
+    "unit": "one forecast-contract: the FIRST eligible published forecast per (source, model, model version, event, measure-market, venue)",
+    "revisions": "later forecasts by the same model version are shown on the timeline with their own times and are never substituted for the first",
+    "eligibility_is_forecast_side_only": "a unit whose market evidence is missing is excluded with a reason; the job never moves on to a later revision that happens to have better market data",
+    "exclusion_reasons": {
+      "publication_time_reconstructed": "the forecast's time comes from git history, not a live capture",
+      "published_at_or_after_cutoff": "published at or after kickoff (Collective: at or after the lock)",
+      "not_live_origin": "Collective backfill or test row",
+      "quarantined": "Collective row not resolved to a game",
+      "value_missing": "the forecast has no number for this market",
+      "value_out_of_range": "probability outside (0,1) or a line beyond 100 points",
+      "settlement_undocumented": "the forecast does not state how overtime and ties settle",
+      "settlement_mismatch": "the forecast and venue contracts settle differently",
+      "settlement_unverified": "the venue's settlement profile is not verified (Kalshi until an operator records it)",
+      "event_void": "postponed, cancelled or forfeited",
+      "no_market_contract": "the venue has no observation of this market for this event",
+      "no_fresh_baseline": "no venue observation within the freshness limit at or before publication",
+      "baseline_unpriced": "the baseline observation has no comparable value (one-sided, wide or implausible)",
+      "no_valid_close": "no venue observation within the close window before kickoff"
+    },
+    "value_ranges": {
+      "spread": [
+        -100,
+        100
+      ],
+      "total": [
+        0,
+        200
+      ],
+      "moneyline": [
+        0,
+        1
+      ],
+      "note": "moneyline bounds are exclusive"
+    }
+  },
+  "lead_lag": {
+    "venues": [
+      "draftkings",
+      "kalshi"
+    ],
+    "measure": "probability: P(home team wins), only where the settlement profiles are compatible and verified",
+    "move": "from an anchor (the first comparable observation), the first observation at least 0.02 from the anchor, confirmed by the next observation (or by being the last pregame observation). The anchor then moves to it. Unconfirmed crossings are flicker and leave the anchor where it was",
+    "threshold": 0.02,
+    "follow_window_minutes": 180,
+    "pairing": "moves are taken in order of (interval start, interval end, venue name); each is paired with the earliest unpaired same-direction move of the other venue whose interval lies within the follow window of it. A move is paired at most once",
+    "ordering": "LEADER when its interval ends before the other's begins; UNRESOLVED when they overlap; TIE when both intervals are identical",
+    "unmatched": "UNMATCHED when the other venue has full coverage of the window and no same-direction move; INSUFFICIENT_COVERAGE when the other venue has a coverage gap in it",
+    "buckets_hours_before_start": [
+      1,
+      6,
+      24
+    ],
+    "label": {
+      "min_resolved_pairs": 20,
+      "rule": "a venue is labelled 'first observed among tracked venues more often' only when the Wilson 95% lower bound of its share of resolved pairs exceeds 0.5"
+    },
+    "context": "temporal precedence between two tracked venues only; both may react to a third source or to public news"
+  },
+  "consensus": {
+    "members": "Model Collective models only. One vote per model: its latest eligible forecast published at or before the evaluation time. A forecast withdrawn later still counts at times before its withdrawal; nothing published after the evaluation time is read",
+    "evaluation_offsets_minutes_before_kickoff": [
+      2880,
+      1440,
+      360,
+      120
+    ],
+    "min_contributors": 3,
+    "center": "equal-weight mean; the median is reported beside it",
+    "dispersion": [
+      "sd",
+      "iqr",
+      "min",
+      "max"
+    ],
+    "independence": "contributing models are not assumed independent; shared families are shown only where recorded",
+    "membership_hash": "fingerprint of the sorted (model, forecast id) list, stored with every consensus unit"
+  },
+  "statistics": {
+    "proportions": "Wilson score interval, 95%",
+    "means_and_medians": "percentile bootstrap, 95%, 2000 resamples, resampling events; the seed is the fingerprint of (methodology version, summary group)",
+    "min_n_for_interval": 10,
+    "min_n_for_summary": 5,
+    "segments": [
+      "sport",
+      "measure-market",
+      "venue",
+      "source",
+      "model",
+      "model version",
+      "forecast horizon bucket"
+    ],
+    "rounding": {
+      "points": 2,
+      "probability": 4,
+      "percent": 1
+    },
+    "no_composite_score": "mf-v1 publishes separate measurements only",
+    "interval_level": 0.95,
+    "bootstrap_resamples": 2000
+  },
+  "incremental_information": {
+    "tier": "T3",
+    "question": "Does forecast disagreement (F - M0) predict later movement (C - M0) beyond the current market state and its recent movement?",
+    "recent_movement": "R = M0 - M(T_pub - 6 h), fresh by the baseline rule; a unit without it is left out of this check and counted",
+    "baseline_model": "ordinary least squares of (C - M0) on [1, R]",
+    "full_model": "ordinary least squares of (C - M0) on [1, R, F - M0]",
+    "split": "chronological by kickoff: the earliest 70% of events train, the rest is the holdout. Nothing is fitted on the holdout",
+    "metric": "holdout mean squared error of the baseline minus that of the full model (positive: disagreement added information)",
+    "uncertainty": "event-level percentile bootstrap 95% of the holdout difference, 2000 resamples",
+    "min_train_units": 60,
+    "min_holdout_units": 30,
+    "insufficient": "insufficient evidence",
+    "train_share": 0.7,
+    "recent_movement_lookback_minutes": 360
+  },
+  "isolation": "No ranking, grade, evaluation window, eligibility rule, model input or historical forecast reads or is changed by anything in this methodology. Results are stored under the mf_ prefix only."
+}

@@ -1,0 +1,77 @@
+# Deploy the Market Foresight database: supabase/market_foresight.sql
+# (docs/market-foresight/README.md §Deploy).
+#
+# MANUAL ON PURPOSE (workflow_dispatch). Applying SQL to production is a
+# decision a person makes.
+#
+# WHAT IT DOES, IN ORDER, STOPPING AT THE FIRST PROBLEM
+#   1. the SQL suite and the worker suite against a throwaway PostgreSQL;
+#   2. checks the migration mirror is byte-identical to the file;
+#   3. applies supabase/market_foresight.sql in ONE transaction with
+#      ON_ERROR_STOP. The file is additive (new mf_ tables and functions only)
+#      and idempotent; it ends in a report, and a row that reads CHECK THIS
+#      fails the run.
+#   Market Foresight starts in SHADOW mode: nothing is shown to readers until
+#   an operator runs select public.mf_admin_set_mode('live', 'reason');
+#   The derivation job (market-foresight.yml) stays off until the repository
+#   variable MARKET_FORESIGHT_WORKER is "on".
+#
+# ROLLBACK: the soft one is select public.mf_owner_set_mode('off', 'reason');
+# supabase/market_foresight_rollback.sql removes the layer's own objects (no
+# source data); it is never run by a workflow.
+#
+# SECRETS (the one the other deploy workflows already use):
+#   SB_DB_URL   the pooled Postgres connection string
+name: Deploy Market Foresight schema
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-market-foresight
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The SQL must pass against a throwaway PostgreSQL before it touches production
+        env:
+          MF_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
+          node tools/foresight/sql.test.js
+          node tools/foresight/worker.test.js
+
+      - name: The migration mirror is the file, byte for byte
+        run: cmp supabase/market_foresight.sql supabase/migrations/20261025120000_market_foresight.sql
+
+      - name: Check the credential exists before claiming anything
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set. Add it in Settings > Secrets and variables > Actions, or paste supabase/market_foresight.sql into the SQL editor."; exit 1; fi
+
+      - name: Apply supabase/market_foresight.sql (one transaction)
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/market_foresight.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/market_foresight.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -14
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/market_foresight.sql: a report row says CHECK THIS"; exit 1; fi
