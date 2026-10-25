@@ -1,6 +1,6 @@
 {
  "schema": "cfb_ops_v1",
- "generated_at": "2026-10-25T21:08:16.346Z",
+ "generated_at": "2026-10-25T21:13:00.763Z",
  "season": 2026,
  "in_season": true,
  "reads": [
@@ -183,7 +183,7 @@
    "started_at": "2026-10-25T10:06:12.443Z",
    "completed_at": "2026-10-25T10:09:02.215Z",
    "last_published_at": "2026-10-25T10:09:02.215Z",
-   "age_minutes": 659,
+   "age_minutes": 664,
    "stage_groups": {
     "score_ingestion_status": "WARN",
     "pbp_status": "OK",
@@ -279,8 +279,8 @@
      "source": "espn_scoreboard",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-10-25T21:07:46.000Z",
-     "age_minutes": 1,
+     "last_success": "2026-10-25T21:12:41.000Z",
+     "age_minutes": 0,
      "error_rate": 0,
      "incident": null
     },
@@ -288,8 +288,8 @@
      "source": "cfbfastr_schedule",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-10-25T21:07:46.000Z",
-     "age_minutes": 1,
+     "last_success": "2026-10-25T21:12:41.000Z",
+     "age_minutes": 0,
      "error_rate": 0,
      "incident": null
     }
@@ -298,8 +298,8 @@
   },
   "odds_age": {
    "status": "OK",
-   "newest_quote_at": "2026-10-25T21:07:46.000Z",
-   "age_minutes": 1,
+   "newest_quote_at": "2026-10-25T21:12:41.000Z",
+   "age_minutes": 0,
    "stale_after_minutes": 180,
    "games_within_48h": 0,
    "games_marked_stale": 54,
@@ -310,7 +310,7 @@
    "status": "OK",
    "pbp_status": "HEALTHY",
    "last_success": "2026-10-25T10:06:12.442Z",
-   "age_minutes": 662,
+   "age_minutes": 667,
    "coverage": 1,
    "error_rate": 0,
    "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0294",
@@ -319,8 +319,8 @@
   "failed_jobs": {
    "status": "OK",
    "failed": [],
-   "lab_last_run_at": "2026-10-25T21:07:46.000Z",
-   "lab_last_run_age_minutes": 1,
+   "lab_last_run_at": "2026-10-25T21:12:41.000Z",
+   "lab_last_run_age_minutes": 0,
    "note": "Mirror / workflow failures and heartbeats live in Postgres (cfb_job_heartbeat_status, cfb_incidents_current) and GitHub Actions; this file sees what the jobs committed."
   },
   "degraded_games": {
@@ -1111,7 +1111,7 @@
     "YELLOW": 61,
     "RED": 0
    },
-   "canonical_projections_as_of": "2026-10-25T21:08:00.268Z",
+   "canonical_projections_as_of": "2026-10-25T21:12:51.499Z",
    "canonical_by_level": {
     "2": 61
    }
@@ -1119,7 +1119,7 @@
   "predictions": {
    "status": "OK",
    "v21_current_generated_at": "2026-10-25T10:06:12Z",
-   "v21_current_age_minutes": 662,
+   "v21_current_age_minutes": 667,
    "v21_rows": 61,
    "v21_mode": "shadow",
    "frozen_snapshot_files": 4,
@@ -1534,7 +1534,7 @@
     "status": "OK",
     "detail": "connected: 17.6, postgres",
     "observed": {
-     "now": "2026-10-25T21:08:16.346+00:00",
+     "now": "2026-10-25T21:13:00.763+00:00",
      "in_season": true
     }
    },
@@ -1557,19 +1557,19 @@
    {
     "check_name": "latest_team_state",
     "status": "OK",
-    "detail": "newest team state as of 2026-10-20 12:00:00+00 (7748 min old), 5982 rows",
+    "detail": "newest team state as of 2026-10-20 12:00:00+00 (7753 min old), 5982 rows",
     "observed": {
      "rows": 5982,
      "as_of": "2026-10-20T12:00:00+00:00",
-     "age_minutes": 7748
+     "age_minutes": 7753
     }
    },
    {
     "check_name": "odds_freshness",
     "status": "OK",
-    "detail": "newest odds_api quote 22028 min old; games within 48 h: f",
+    "detail": "newest odds_api quote 22033 min old; games within 48 h: f",
     "observed": {
-     "age_minutes": 22028,
+     "age_minutes": 22033,
      "newest_quote": "2026-10-10T14:00:01.583+00:00",
      "games_within_48h": false
     }
@@ -1577,11 +1577,11 @@
    {
     "check_name": "pbp_freshness",
     "status": "OK",
-    "detail": "PBP HEALTHY at 2026-10-25 10:06:12.442+00; last successful ingestion 662 min ago",
+    "detail": "PBP HEALTHY at 2026-10-25 10:06:12.442+00; last successful ingestion 667 min ago",
     "observed": {
      "as_of": "2026-10-25T10:06:12.442+00:00",
      "status": "HEALTHY",
-     "age_minutes": 662,
+     "age_minutes": 667,
      "last_success": "2026-10-25T10:06:12.442+00:00"
     }
    },
