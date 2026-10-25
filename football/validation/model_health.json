@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-25T15:07:59.256Z",
+ "as_of": "2026-10-25T16:08:03.387Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "b98c57aa9b817204",
+ "inputs_key": "2fbe3d7fcfa77235",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 4985,
+   "rows": 5003,
    "mode": "LIVE",
-   "sha1": "24609c222ecc"
+   "sha1": "a4dd3d30e4e3"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -99,7 +99,7 @@
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "4985 decision snapshots issued before kickoff; 307 settled"
+   "note": "5003 decision snapshots issued before kickoff; 307 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,11 +133,11 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 4985,
+  "issued_snapshots": 5003,
   "issued_by_decision": {
-   "NO_DECISION": 1859,
-   "PASS": 2894,
-   "WATCH": 232
+   "NO_DECISION": 1862,
+   "PASS": 2908,
+   "WATCH": 233
   },
   "graded_rows": 313,
   "unit_of_analysis": "the first snapshot of each decision class per game",
