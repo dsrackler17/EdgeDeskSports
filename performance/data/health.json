@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_perf_health_v1",
- "generated_at": "2026-10-25T05:23:33.639Z",
+ "generated_at": "2026-10-25T06:11:51.596Z",
  "status": "WARN",
  "items": [
   {
@@ -13,10 +13,24 @@
      "event_key": "WNBA|401918308",
      "sport": "wnba",
      "pending": "NO_SOURCE",
-     "hours_past_start": 12,
+     "hours_past_start": 13,
      "start_utc": "2026-10-24T17:00:00.000Z",
      "home": "Atlanta Dream",
      "away": "Golden State Valkyries"
+    }
+   ]
+  },
+  {
+   "level": "WARN",
+   "check": "source_read_failed",
+   "detail": "an ESPN scoreboard read failed (it is retried next run)",
+   "count": 1,
+   "sample": [
+    {
+     "day": "20261024",
+     "sport": "wnba",
+     "ok": false,
+     "error": "no feed"
     }
    ]
   },
@@ -32,7 +46,7 @@
   "results": 671,
   "grades": 671,
   "quotes": 1814,
-  "research_grades": 6104,
+  "research_grades": 6199,
   "grade_outcomes": 222
  }
 }
