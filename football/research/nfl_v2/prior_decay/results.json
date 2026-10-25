@@ -1,0 +1,693 @@
+{
+ "schema": "edgedesk_nfl_prior_decay_results_v1",
+ "study": "H-NFL-PD-01",
+ "generated_at": "2026-10-25T23:52:51.426Z",
+ "preregistration": {
+  "registered_at": "2026-10-25T23:44:40.664Z",
+  "content_sha256": "94f473901db800788b9a053cceff80df4956227e0fa79370a686ed8beb8613cd"
+ },
+ "protocol": "football/research/nfl_v2/backtest.js walk-forward; validation 2010-2024; the 2025 holdout was not predicted",
+ "holdout_looked": false,
+ "variants_tried": 3,
+ "early_lines": {
+  "file": "football/research/nfl_v2/.cache/early_lines_nfl.csv",
+  "games": 1625
+ },
+ "incumbent": {
+  "label": "v1 (edgedesk_nfl_v2.1.0 configuration, refitted)",
+  "valid": {
+   "n": 4078,
+   "brier": 0.21761,
+   "logloss": 0.62423,
+   "mae": 10.3032,
+   "ece": 0.0288,
+   "cal_slope": 0.9348
+  },
+  "close": {
+   "brier": 0.21111,
+   "logloss": 0.60982,
+   "mae": 10.081
+  },
+  "by_season": [
+   {
+    "season": 2010,
+    "n": 267,
+    "brier": 0.22761,
+    "logloss": 0.64811,
+    "mae": 10.7978
+   },
+   {
+    "season": 2011,
+    "n": 267,
+    "brier": 0.20206,
+    "logloss": 0.58755,
+    "mae": 10.4221
+   },
+   {
+    "season": 2012,
+    "n": 267,
+    "brier": 0.21279,
+    "logloss": 0.61443,
+    "mae": 10.9649
+   },
+   {
+    "season": 2013,
+    "n": 267,
+    "brier": 0.20828,
+    "logloss": 0.60189,
+    "mae": 9.8799
+   },
+   {
+    "season": 2014,
+    "n": 267,
+    "brier": 0.20769,
+    "logloss": 0.6008,
+    "mae": 11.2518
+   },
+   {
+    "season": 2015,
+    "n": 267,
+    "brier": 0.21896,
+    "logloss": 0.62932,
+    "mae": 9.9776
+   },
+   {
+    "season": 2016,
+    "n": 267,
+    "brier": 0.22058,
+    "logloss": 0.6292,
+    "mae": 9.3073
+   },
+   {
+    "season": 2017,
+    "n": 267,
+    "brier": 0.2134,
+    "logloss": 0.61581,
+    "mae": 10.4114
+   },
+   {
+    "season": 2018,
+    "n": 267,
+    "brier": 0.21235,
+    "logloss": 0.61227,
+    "mae": 10.0641
+   },
+   {
+    "season": 2019,
+    "n": 267,
+    "brier": 0.22412,
+    "logloss": 0.6372,
+    "mae": 10.4904
+   },
+   {
+    "season": 2020,
+    "n": 269,
+    "brier": 0.21558,
+    "logloss": 0.6219,
+    "mae": 10.1899
+   },
+   {
+    "season": 2021,
+    "n": 285,
+    "brier": 0.22992,
+    "logloss": 0.65171,
+    "mae": 11.0731
+   },
+   {
+    "season": 2022,
+    "n": 284,
+    "brier": 0.22217,
+    "logloss": 0.63429,
+    "mae": 9.18
+   },
+   {
+    "season": 2023,
+    "n": 285,
+    "brier": 0.23134,
+    "logloss": 0.65483,
+    "mae": 10.4399
+   },
+   {
+    "season": 2024,
+    "n": 285,
+    "brier": 0.21536,
+    "logloss": 0.61987,
+    "mae": 10.1211
+   }
+  ],
+  "clv": {
+   "n": 569,
+   "mean_pts": 0.6494,
+   "ci95": [
+    0.5053,
+    0.7935
+   ],
+   "toward": 302,
+   "unmoved": 123,
+   "away": 144,
+   "threshold_pts": 2,
+   "seasons": [
+    2020,
+    2024
+   ]
+  },
+  "weights": {
+   "names": [
+    "net_pts_fix",
+    "net_epa",
+    "net_pass",
+    "net_rush",
+    "qb_adj_diff",
+    "rest_diff",
+    "div_game",
+    "qb_out_diff"
+   ],
+   "w": [
+    0.6554,
+    4.1261,
+    1.4693,
+    3.6422,
+    11.1425,
+    1.2528,
+    -0.8566,
+    -1.7665
+   ],
+   "fitted_through": 2023
+  }
+ },
+ "variants": [
+  {
+   "id": "PD-K200",
+   "k_db": 200,
+   "label": "PD-K200",
+   "valid": {
+    "n": 4078,
+    "brier": 0.21758,
+    "logloss": 0.62419,
+    "mae": 10.3013,
+    "ece": 0.0288,
+    "cal_slope": 0.9349
+   },
+   "close": {
+    "brier": 0.21111,
+    "logloss": 0.60982,
+    "mae": 10.081
+   },
+   "by_season": [
+    {
+     "season": 2010,
+     "n": 267,
+     "brier": 0.22805,
+     "logloss": 0.649,
+     "mae": 10.8015
+    },
+    {
+     "season": 2011,
+     "n": 267,
+     "brier": 0.20191,
+     "logloss": 0.58732,
+     "mae": 10.4177
+    },
+    {
+     "season": 2012,
+     "n": 267,
+     "brier": 0.2127,
+     "logloss": 0.6142,
+     "mae": 10.9651
+    },
+    {
+     "season": 2013,
+     "n": 267,
+     "brier": 0.20809,
+     "logloss": 0.60146,
+     "mae": 9.8792
+    },
+    {
+     "season": 2014,
+     "n": 267,
+     "brier": 0.20806,
+     "logloss": 0.60153,
+     "mae": 11.2614
+    },
+    {
+     "season": 2015,
+     "n": 267,
+     "brier": 0.21882,
+     "logloss": 0.62896,
+     "mae": 9.9738
+    },
+    {
+     "season": 2016,
+     "n": 267,
+     "brier": 0.22081,
+     "logloss": 0.62972,
+     "mae": 9.3195
+    },
+    {
+     "season": 2017,
+     "n": 267,
+     "brier": 0.2131,
+     "logloss": 0.61513,
+     "mae": 10.4096
+    },
+    {
+     "season": 2018,
+     "n": 267,
+     "brier": 0.21264,
+     "logloss": 0.61307,
+     "mae": 10.0711
+    },
+    {
+     "season": 2019,
+     "n": 267,
+     "brier": 0.22414,
+     "logloss": 0.63731,
+     "mae": 10.4935
+    },
+    {
+     "season": 2020,
+     "n": 269,
+     "brier": 0.21553,
+     "logloss": 0.62181,
+     "mae": 10.1838
+    },
+    {
+     "season": 2021,
+     "n": 285,
+     "brier": 0.22954,
+     "logloss": 0.65061,
+     "mae": 11.0578
+    },
+    {
+     "season": 2022,
+     "n": 284,
+     "brier": 0.22209,
+     "logloss": 0.6342,
+     "mae": 9.1814
+    },
+    {
+     "season": 2023,
+     "n": 285,
+     "brier": 0.23098,
+     "logloss": 0.6541,
+     "mae": 10.4172
+    },
+    {
+     "season": 2024,
+     "n": 285,
+     "brier": 0.21546,
+     "logloss": 0.62028,
+     "mae": 10.1135
+    }
+   ],
+   "clv": {
+    "n": 566,
+    "mean_pts": 0.6705,
+    "ci95": [
+     0.524,
+     0.817
+    ],
+    "toward": 304,
+    "unmoved": 121,
+    "away": 141,
+    "threshold_pts": 2,
+    "seasons": [
+     2020,
+     2024
+    ]
+   },
+   "weights": {
+    "names": [
+     "net_pts_fix",
+     "net_epa",
+     "net_pass",
+     "net_rush",
+     "qb_adj_diff",
+     "rest_diff",
+     "div_game",
+     "qb_out_diff",
+     "qb_prior_gap"
+    ],
+    "w": [
+     0.6538,
+     3.8214,
+     1.4581,
+     3.8541,
+     8.5411,
+     1.2496,
+     -0.8573,
+     -1.7472,
+     5.3848
+    ],
+    "fitted_through": 2023
+   }
+  },
+  {
+   "id": "PD-K100",
+   "k_db": 100,
+   "label": "PD-K100",
+   "valid": {
+    "n": 4078,
+    "brier": 0.21763,
+    "logloss": 0.62428,
+    "mae": 10.3021,
+    "ece": 0.029,
+    "cal_slope": 0.9343
+   },
+   "close": {
+    "brier": 0.21111,
+    "logloss": 0.60982,
+    "mae": 10.081
+   },
+   "by_season": [
+    {
+     "season": 2010,
+     "n": 267,
+     "brier": 0.22845,
+     "logloss": 0.64978,
+     "mae": 10.8098
+    },
+    {
+     "season": 2011,
+     "n": 267,
+     "brier": 0.20199,
+     "logloss": 0.58758,
+     "mae": 10.4092
+    },
+    {
+     "season": 2012,
+     "n": 267,
+     "brier": 0.21261,
+     "logloss": 0.6139,
+     "mae": 10.9654
+    },
+    {
+     "season": 2013,
+     "n": 267,
+     "brier": 0.20821,
+     "logloss": 0.60179,
+     "mae": 9.8805
+    },
+    {
+     "season": 2014,
+     "n": 267,
+     "brier": 0.20836,
+     "logloss": 0.60226,
+     "mae": 11.272
+    },
+    {
+     "season": 2015,
+     "n": 267,
+     "brier": 0.21881,
+     "logloss": 0.62887,
+     "mae": 9.9709
+    },
+    {
+     "season": 2016,
+     "n": 267,
+     "brier": 0.22077,
+     "logloss": 0.62969,
+     "mae": 9.3175
+    },
+    {
+     "season": 2017,
+     "n": 267,
+     "brier": 0.21289,
+     "logloss": 0.61457,
+     "mae": 10.4077
+    },
+    {
+     "season": 2018,
+     "n": 267,
+     "brier": 0.21246,
+     "logloss": 0.61261,
+     "mae": 10.0703
+    },
+    {
+     "season": 2019,
+     "n": 267,
+     "brier": 0.22417,
+     "logloss": 0.63739,
+     "mae": 10.4971
+    },
+    {
+     "season": 2020,
+     "n": 269,
+     "brier": 0.21553,
+     "logloss": 0.62182,
+     "mae": 10.1841
+    },
+    {
+     "season": 2021,
+     "n": 285,
+     "brier": 0.22982,
+     "logloss": 0.65124,
+     "mae": 11.0645
+    },
+    {
+     "season": 2022,
+     "n": 284,
+     "brier": 0.22198,
+     "logloss": 0.63391,
+     "mae": 9.1782
+    },
+    {
+     "season": 2023,
+     "n": 285,
+     "brier": 0.23113,
+     "logloss": 0.65437,
+     "mae": 10.4221
+    },
+    {
+     "season": 2024,
+     "n": 285,
+     "brier": 0.21541,
+     "logloss": 0.62022,
+     "mae": 10.1089
+    }
+   ],
+   "clv": {
+    "n": 569,
+    "mean_pts": 0.6626,
+    "ci95": [
+     0.5172,
+     0.8079
+    ],
+    "toward": 305,
+    "unmoved": 121,
+    "away": 143,
+    "threshold_pts": 2,
+    "seasons": [
+     2020,
+     2024
+    ]
+   },
+   "weights": {
+    "names": [
+     "net_pts_fix",
+     "net_epa",
+     "net_pass",
+     "net_rush",
+     "qb_adj_diff",
+     "rest_diff",
+     "div_game",
+     "qb_out_diff",
+     "qb_prior_gap"
+    ],
+    "w": [
+     0.6566,
+     3.8019,
+     1.3839,
+     3.8439,
+     8.5282,
+     1.2547,
+     -0.8562,
+     -1.7668,
+     4.8617
+    ],
+    "fitted_through": 2023
+   }
+  },
+  {
+   "id": "PD-K400",
+   "k_db": 400,
+   "label": "PD-K400",
+   "valid": {
+    "n": 4078,
+    "brier": 0.21757,
+    "logloss": 0.62416,
+    "mae": 10.3016,
+    "ece": 0.0289,
+    "cal_slope": 0.9354
+   },
+   "close": {
+    "brier": 0.21111,
+    "logloss": 0.60982,
+    "mae": 10.081
+   },
+   "by_season": [
+    {
+     "season": 2010,
+     "n": 267,
+     "brier": 0.22754,
+     "logloss": 0.64795,
+     "mae": 10.7974
+    },
+    {
+     "season": 2011,
+     "n": 267,
+     "brier": 0.20214,
+     "logloss": 0.5877,
+     "mae": 10.4237
+    },
+    {
+     "season": 2012,
+     "n": 267,
+     "brier": 0.21276,
+     "logloss": 0.61437,
+     "mae": 10.965
+    },
+    {
+     "season": 2013,
+     "n": 267,
+     "brier": 0.20814,
+     "logloss": 0.60156,
+     "mae": 9.8789
+    },
+    {
+     "season": 2014,
+     "n": 267,
+     "brier": 0.20785,
+     "logloss": 0.60106,
+     "mae": 11.2541
+    },
+    {
+     "season": 2015,
+     "n": 267,
+     "brier": 0.21886,
+     "logloss": 0.62908,
+     "mae": 9.9762
+    },
+    {
+     "season": 2016,
+     "n": 267,
+     "brier": 0.2208,
+     "logloss": 0.62964,
+     "mae": 9.319
+    },
+    {
+     "season": 2017,
+     "n": 267,
+     "brier": 0.21325,
+     "logloss": 0.6155,
+     "mae": 10.4117
+    },
+    {
+     "season": 2018,
+     "n": 267,
+     "brier": 0.2126,
+     "logloss": 0.61291,
+     "mae": 10.0684
+    },
+    {
+     "season": 2019,
+     "n": 267,
+     "brier": 0.22412,
+     "logloss": 0.63724,
+     "mae": 10.4912
+    },
+    {
+     "season": 2020,
+     "n": 269,
+     "brier": 0.21553,
+     "logloss": 0.6218,
+     "mae": 10.1859
+    },
+    {
+     "season": 2021,
+     "n": 285,
+     "brier": 0.22947,
+     "logloss": 0.65051,
+     "mae": 11.0575
+    },
+    {
+     "season": 2022,
+     "n": 284,
+     "brier": 0.22221,
+     "logloss": 0.63448,
+     "mae": 9.1838
+    },
+    {
+     "season": 2023,
+     "n": 285,
+     "brier": 0.23097,
+     "logloss": 0.6541,
+     "mae": 10.4189
+    },
+    {
+     "season": 2024,
+     "n": 285,
+     "brier": 0.21547,
+     "logloss": 0.62025,
+     "mae": 10.1183
+    }
+   ],
+   "clv": {
+    "n": 563,
+    "mean_pts": 0.6563,
+    "ci95": [
+     0.511,
+     0.8016
+    ],
+    "toward": 300,
+    "unmoved": 122,
+    "away": 141,
+    "threshold_pts": 2,
+    "seasons": [
+     2020,
+     2024
+    ]
+   },
+   "weights": {
+    "names": [
+     "net_pts_fix",
+     "net_epa",
+     "net_pass",
+     "net_rush",
+     "qb_adj_diff",
+     "rest_diff",
+     "div_game",
+     "qb_out_diff",
+     "qb_prior_gap"
+    ],
+    "w": [
+     0.6519,
+     3.9206,
+     1.5197,
+     3.8088,
+     9.2295,
+     1.2466,
+     -0.8578,
+     -1.7381,
+     4.4176
+    ],
+    "fitted_through": 2023
+   }
+  }
+ ],
+ "selected": "PD-K400",
+ "verdict": {
+  "finalist": false,
+  "checks": {
+   "brier_lower": true,
+   "logloss_not_worse": true,
+   "mae_within_0_01": true,
+   "brier_lower_in_9_of_15_seasons": false,
+   "clv_at_least_v1": true
+  },
+  "seasons_brier_better": 8,
+  "status": "EXPERIMENTAL",
+  "passed": false,
+  "reason": "not a finalist: brier_lower_in_9_of_15_seasons"
+ }
+}
