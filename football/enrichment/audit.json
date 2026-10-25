@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-25T18:41:38.762Z",
+ "generated_at": "2026-10-25T21:02:09.725Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-25T18:41:38.762Z",
-  "reliability_generated_at": "2026-10-25T18:41:38.762Z",
-  "enrichment_generated_at": "2026-10-25T18:41:32.445Z",
+  "at": "2026-10-25T21:02:09.725Z",
+  "reliability_generated_at": "2026-10-25T21:02:09.725Z",
+  "enrichment_generated_at": "2026-10-25T21:02:02.901Z",
   "counts": {
    "games": 61,
    "mean": 86.2,
@@ -1326,18 +1326,17 @@
   }
  },
  "previous": {
-  "at": "2026-10-25T16:39:09.871Z",
+  "at": "2026-10-25T18:41:38.762Z",
   "counts": {
    "games": 61,
    "mean": 86.2,
    "median": 89,
    "by_band": {
-    "STRONG": 47,
-    "ADEQUATE": 13,
-    "CAUTION": 1
+    "STRONG": 46,
+    "ADEQUATE": 15
    },
    "missing_qb_status": 122,
-   "qb_conflicts_open": 8,
+   "qb_conflicts_open": 6,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 13,
    "unrated_meaningful_absences": 0,
@@ -1349,46 +1348,10 @@
   },
   "baseline_of": null
  },
- "what_improved": [
-  "-2 open QB conflicts (8 → 6)",
-  "2 games moved ADEQUATE → STRONG",
-  "1 game moved CAUTION → ADEQUATE"
- ],
- "what_degraded": [
-  "3 games moved STRONG → ADEQUATE"
- ],
- "why": [
-  "Mississippi State @ Texas: ADEQUATE → STRONG (79 → 89); largest change: qb_conflict +1.7 pts; away QB CONFLICTED → EXPECTED",
-  "Arizona State @ BYU: CAUTION → ADEQUATE (69 → 79); largest change: qb_conflict +1.7 pts; away QB CONFLICTED → UNCERTAIN",
-  "Wisconsin @ Iowa: STRONG → ADEQUATE (89 → 79); largest change: qb_identity -0.8 pts",
-  "Ball State @ Massachusetts: STRONG → ADEQUATE (89 → 79); largest change: qb_conflict -1 pts",
-  "Delaware @ Western Kentucky: STRONG → ADEQUATE (86 → 79); largest change: qb_conflict -1 pts",
-  "Marshall @ Old Dominion: ADEQUATE → STRONG (79 → 86); largest change: qb_conflict +1 pts; home QB UNCERTAIN → EXPECTED"
- ],
+ "what_improved": [],
+ "what_degraded": [],
+ "why": [],
  "history": [
-  {
-   "at": "2026-10-19T16:39:39.062Z",
-   "counts": {
-    "games": 60,
-    "mean": 86.6,
-    "median": 89,
-    "by_band": {
-     "STRONG": 49,
-     "ADEQUATE": 10,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 120,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 15,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 0,
-    "games_under_two_market_sources": 60,
-    "stale_evidence_records": 86,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-19T17:16:35.101Z",
    "counts": {
@@ -2763,6 +2726,28 @@
   },
   {
    "at": "2026-10-25T18:41:38.762Z",
+   "counts": {
+    "games": 61,
+    "mean": 86.2,
+    "median": 89,
+    "by_band": {
+     "STRONG": 46,
+     "ADEQUATE": 15
+    },
+    "missing_qb_status": 122,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 13,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 0,
+    "games_under_two_market_sources": 61,
+    "stale_evidence_records": 87,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-25T21:02:09.725Z",
    "counts": {
     "games": 61,
     "mean": 86.2,
