@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:30:00.000Z",
   "game_when_label": "2026-10-31 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-25T20:44:58.889Z",
-  "generated_at": "2026-10-25T20:44:58.889Z",
+  "updated_at": "2026-10-25T23:10:42.815Z",
+  "generated_at": "2026-10-25T23:10:42.815Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -324,9 +324,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-24T16:00:00.000Z",
-        "retrieved_at": "2026-10-25T18:40:11.447Z"
+        "retrieved_at": "2026-10-25T21:53:35.023Z"
       },
-      "generated_at": "2026-10-25T18:41:04.373Z",
+      "generated_at": "2026-10-25T21:53:33.894Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1908,14 +1908,9 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 8, built 2026-10-25. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-25T20:44:58.889Z"
-  },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "192dgja1yy8uok",
+    "packet_hash": "1ot5ctu1m9rqfk",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Indiana’s pass rush get to Minnesota’s quarterback?",
@@ -1926,32 +1921,32 @@
       "other": "Minnesota"
     },
     "supporting": [
+      "When Minnesota has the ball (pass protection against the pass rush): Minnesota’s offense has allowed a sack on 2.5% of its dropbacks, and Indiana’s defense sacks the quarterback on 13.5% of opponent dropbacks (FBS average 5.7%).",
       "When Minnesota has the ball (the run game against the run defense): Minnesota’s offense averages 3.6 yards per carry, and Indiana’s defense allows 3.5 yards per carry (FBS average 5.1).",
       "When Minnesota has the ball (big plays on the ground): Minnesota’s offense turns 3.7% of its runs into explosive gains, and Indiana’s defense gives up explosive gains on 3.8% of opponent runs (FBS average 6.5%).",
-      "When Minnesota has the ball (pass protection against the pass rush): Minnesota’s offense has allowed a sack on 1.4% of its dropbacks, and Indiana’s defense sacks the quarterback on 13.5% of opponent dropbacks (FBS average 5.7%).",
       "When Minnesota has the ball (the red zone): Minnesota’s offense succeeds on 33.2% of its red-zone plays, and Indiana’s defense allows success on 32.6% of opponent red-zone plays (FBS average 43.6%)."
     ],
     "contradicting": [
       "When Indiana has the ball (pass protection against the pass rush): Indiana’s offense has allowed a sack on 5.4% of its dropbacks, and Minnesota’s defense sacks the quarterback on 9.6% of opponent dropbacks (FBS average 5.7%).",
-      "In his last two games (Nebraska and Ohio State), Hoover averaged 9.0 yards per attempt, against 10.4 in his five games before that.",
+      "In his last two games (Ohio State and Michigan), Hoover averaged 6.5 yards per attempt, against 10.7 in his six games before that.",
       "Minnesota comes in on 21 days of rest after an open week; Indiana has had 7 days."
     ],
     "quarterbacks": [
-      "Josh Hoover has completed 108 of 168 passes (64.3%) for 1,661 yards, 9.9 yards per attempt, 18 touchdowns and no interceptions in seven games for Indiana, and has been sacked on 9 of 177 dropbacks.",
-      "Drake Lindsey has completed 128 of 196 passes (65.3%) for 1,350 yards, 6.9 yards per attempt, 10 touchdowns and 5 interceptions in six games for Minnesota, and has been sacked on 2 of 198 dropbacks."
+      "Josh Hoover has completed 116 of 186 passes (62.4%) for 1,742 yards, 9.4 yards per attempt, 18 touchdowns and 1 interception in eight games for Indiana, and has been sacked on 10 of 196 dropbacks.",
+      "Drake Lindsey has completed 141 of 221 passes (63.8%) for 1,490 yards, 6.7 yards per attempt, 10 touchdowns and 6 interceptions in seven games for Minnesota, and has been sacked on 5 of 226 dropbacks."
     ],
     "availability": [],
     "script": {
       "model": [
-        "Indiana’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 13.5% of opponent dropbacks, against an offense that has allowed a sack on 1.4% of its dropbacks.",
+        "Indiana’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 13.5% of opponent dropbacks, against an offense that has allowed a sack on 2.5% of its dropbacks.",
         "Indiana’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 9.6% of opponent dropbacks.",
         "Indiana’s defense has to come out ahead on long runs: it gives up explosive gains on 3.8% of opponent runs, against an offense that turns 3.7% of its runs into explosive gains.",
         "Indiana’s defense has to come out ahead on the ground: it allows 3.5 yards per carry, against an offense that averages 3.6 yards per carry."
       ],
       "market": [
         "Minnesota’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.6% of opponent dropbacks, against an offense that has allowed a sack on 5.4% of its dropbacks.",
-        "Minnesota’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 1.4% of its dropbacks, and Indiana’s defense sacks the quarterback on 13.5% of opponent dropbacks.",
-        "Lindsey keeps producing at his season rate (65.3% completions, 6.9 yards per attempt, 10 TD, 5 INT)."
+        "Minnesota’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.5% of its dropbacks, and Indiana’s defense sacks the quarterback on 13.5% of opponent dropbacks.",
+        "Lindsey keeps producing at his season rate (63.8% completions, 6.7 yards per attempt, 10 TD, 6 INT)."
       ]
     },
     "unknown": [
@@ -1967,27 +1962,32 @@
     ],
     "sources": [
       {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-25T18:41:12.476Z",
+        "observed_at": "2026-10-25T21:53:56.661Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
+        "observed_at": "2026-10-25T02:15:00.000Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "Kickoff times of each team’s previous game",
         "url": null,
         "path": "record/football/cfb_2026.json",
-        "observed_at": "2026-10-25T18:43:00.850Z",
+        "observed_at": "2026-10-25T21:55:30.681Z",
         "verification": "VERIFIED_DATA"
       }
     ],
     "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-25T23:10:42.815Z"
   }
 }

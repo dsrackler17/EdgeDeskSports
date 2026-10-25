@@ -21,8 +21,8 @@
   "game_time": "2026-10-28T00:00:00.000Z",
   "game_when_label": "2026-10-28 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-25T20:44:58.889Z",
-  "generated_at": "2026-10-25T20:44:58.889Z",
+  "updated_at": "2026-10-25T23:10:42.815Z",
+  "generated_at": "2026-10-25T23:10:42.815Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -276,7 +276,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-22T00:00:00.000Z",
-        "retrieved_at": "2026-10-25T18:40:11.447Z"
+        "retrieved_at": "2026-10-25T21:53:35.023Z"
       },
       "home": {
         "team": "Missouri State",
@@ -360,9 +360,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-20T23:00:00.000Z",
-        "retrieved_at": "2026-10-25T18:40:11.447Z"
+        "retrieved_at": "2026-10-25T21:53:35.023Z"
       },
-      "generated_at": "2026-10-25T18:41:04.373Z",
+      "generated_at": "2026-10-25T21:53:33.894Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1933,20 +1933,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 8, built 2026-10-25. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-25T20:44:58.889Z"
-  },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1f6ba1515149nv",
+    "packet_hash": "rqfwvsoubdlm",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Sam Houston take away Missouri State’s big plays?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.7 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.2 points.",
     "gap": {
-      "points": 0.7,
+      "points": 0.2,
       "toward": "Missouri State",
       "other": "Sam Houston"
     },
@@ -1954,7 +1949,7 @@
       "When Missouri State has the ball (big plays on the ground): Missouri State’s offense turns 6.2% of its runs into explosive gains, and Sam Houston’s defense gives up explosive gains on 9.7% of opponent runs (FBS average 6.5%).",
       "When Sam Houston has the ball (big plays on the ground): Sam Houston’s offense turns 3.8% of its runs into explosive gains, and Missouri State’s defense gives up explosive gains on 5.8% of opponent runs (FBS average 6.5%).",
       "When Sam Houston has the ball (the run game against the run defense): Sam Houston’s offense averages 3.7 yards per carry, and Missouri State’s defense allows 5.0 yards per carry (FBS average 5.1).",
-      "In his last two games (Liberty and Western Kentucky), Locke averaged 4.2 yards per attempt, against 7.9 in his four games before that."
+      "In his last two games (Western Kentucky and New Mexico State), Locke averaged 5.7 yards per attempt, against 7.3 in his five games before that."
     ],
     "contradicting": [
       "When Missouri State has the ball (third down): Missouri State’s offense converts 38.4% of its third downs, and Sam Houston’s defense allows opponents to convert 29.7% of their third downs (FBS average 39.5%).",
@@ -1964,8 +1959,8 @@
     ],
     "quarterbacks": [
       "Skyler Locklear has completed 71 of 108 passes (65.7%) for 788 yards, 7.3 yards per attempt, 4 touchdowns and 2 interceptions in five games for Missouri State, and has been sacked on 9 of 117 dropbacks.",
-      "Henry Belin IV has completed 47 of 73 passes (64.4%) for 550 yards, 7.5 yards per attempt, 4 touchdowns and 2 interceptions in five games for Missouri State, and has been sacked on 3 of 76 dropbacks.",
-      "Landyn Locke has completed 129 of 208 passes (62.0%) for 1,418 yards, 6.8 yards per attempt, 11 touchdowns and 4 interceptions in six games for Sam Houston, and has been sacked on 15 of 223 dropbacks."
+      "Henry Belin IV has completed 72 of 107 passes (67.3%) for 878 yards, 8.2 yards per attempt, 6 touchdowns and 4 interceptions in six games for Missouri State, and has been sacked on 4 of 111 dropbacks.",
+      "Landyn Locke has completed 146 of 238 passes (61.3%) for 1,650 yards, 6.9 yards per attempt, 12 touchdowns and 5 interceptions in seven games for Sam Houston, and has been sacked on 16 of 254 dropbacks."
     ],
     "availability": [],
     "script": {
@@ -1982,15 +1977,9 @@
       ]
     },
     "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed for Missouri State.",
       "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate."
     ],
     "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Missouri State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
       {
         "key": "CROSS_MODEL_OUTLIER",
         "severity": "medium",
@@ -2007,14 +1996,14 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-25T18:41:12.476Z",
+        "observed_at": "2026-10-25T21:53:56.661Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
+        "observed_at": "2026-10-25T02:15:00.000Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2026,5 +2015,10 @@
       }
     ],
     "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-25T23:10:42.815Z"
   }
 }

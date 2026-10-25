@@ -21,8 +21,8 @@
   "game_time": "2026-10-31T19:00:00.000Z",
   "game_when_label": "2026-10-31 19:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-25T20:44:58.889Z",
-  "generated_at": "2026-10-25T20:44:58.889Z",
+  "updated_at": "2026-10-25T23:10:42.815Z",
+  "generated_at": "2026-10-25T23:10:42.815Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.1",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -334,9 +334,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-22T23:30:00.000Z",
-        "retrieved_at": "2026-10-25T18:40:11.447Z"
+        "retrieved_at": "2026-10-25T21:53:35.023Z"
       },
-      "generated_at": "2026-10-25T18:41:04.373Z",
+      "generated_at": "2026-10-25T21:53:33.894Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1912,20 +1912,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 8, built 2026-10-25. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-25T20:44:58.889Z"
-  },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "m7a6z0hcc6y6",
-    "status": "UNEXPLAINED",
+    "packet_hash": "1k9dpgklcbsp2",
+    "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can East Carolina stop Temple’s run game?",
-    "assessment": "EdgeDesk’s number is 3.7 points closer to East Carolina than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 1.0 of the 3.7 points. The measured football evidence leans toward Temple, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward East Carolina, and its own breakdown accounts for about 1.0 of the 2.7 points, but not the full gap. It is a research question, not a bet.",
     "gap": {
-      "points": 3.7,
+      "points": 2.7,
       "toward": "East Carolina",
       "other": "Temple"
     },
@@ -1942,8 +1937,8 @@
       "When East Carolina has the ball (big plays on the ground): East Carolina’s offense turns 5.4% of its runs into explosive gains, and Temple’s defense gives up explosive gains on 5.2% of opponent runs (FBS average 6.5%)."
     ],
     "quarterbacks": [
-      "Emory Williams has completed 67 of 103 passes (65.0%) for 662 yards, 6.4 yards per attempt, 7 touchdowns and 2 interceptions in five games for East Carolina, and has been sacked on 8 of 111 dropbacks.",
-      "Mitch Griffis has completed 39 of 71 passes (54.9%) for 422 yards, 5.9 yards per attempt, 3 touchdowns and 1 interception in five games for East Carolina, and has been sacked on 5 of 76 dropbacks.",
+      "Emory Williams has completed 72 of 116 passes (62.1%) for 723 yards, 6.2 yards per attempt, 7 touchdowns and 2 interceptions in six games for East Carolina, and has been sacked on 9 of 125 dropbacks.",
+      "Mitch Griffis has completed 53 of 97 passes (54.6%) for 605 yards, 6.2 yards per attempt, 4 touchdowns and 3 interceptions in six games for East Carolina, and has been sacked on 7 of 104 dropbacks.",
       "Ajani Sheppard has completed 75 of 120 passes (62.5%) for 1,128 yards, 9.4 yards per attempt, 9 touchdowns and no interceptions in seven games for Temple, and has been sacked on 11 of 131 dropbacks.",
       "Jaxon Smolik has completed 16 of 27 passes (59.3%) for 129 yards, 4.8 yards per attempt, 1 touchdown and 1 interception in four games for Temple, and has been sacked on 4 of 31 dropbacks."
     ],
@@ -1977,17 +1972,22 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-25T18:41:12.476Z",
+        "observed_at": "2026-10-25T21:53:56.661Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
+        "observed_at": "2026-10-25T02:15:00.000Z",
         "verification": "VERIFIED_DATA"
       }
     ],
     "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-25T23:10:42.815Z"
   }
 }
