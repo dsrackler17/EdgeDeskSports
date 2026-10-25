@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-25T17:51:24.649Z",
- "board_generated_at": "2026-10-25T17:51:14.831Z",
+ "generated_at": "2026-10-25T18:08:14.978Z",
+ "board_generated_at": "2026-10-25T18:08:05.847Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -285,13 +285,13 @@
    "kickoff": "2026-10-31T19:30:00.000Z",
    "named": false,
    "edgedesk": "Utah State −12.0",
-   "market": "Utah State −3.5",
+   "market": "Utah State −4.5",
    "books": 1,
-   "gap": 8.6,
+   "gap": 7.6,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
@@ -334,16 +334,16 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.3 pts on EdgeDesk’s side"
+     "detail": "PASS: 2 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.3 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail."
   },
   {
    "game_id": "401862813",
@@ -351,13 +351,13 @@
    "kickoff": "2026-10-30T23:00:00.000Z",
    "named": false,
    "edgedesk": "Tulane −18.0",
-   "market": "Tulane −10.5",
+   "market": "Tulane −10.0",
    "books": 1,
-   "gap": 7.7,
+   "gap": 8.2,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
@@ -395,21 +395,21 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (-2.2 pts) lifts the gap over 7: without it the gap is 5.5 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (-2.2 pts) lifts the gap over 7: without it the gap is 6 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 2 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.4 pts on EdgeDesk’s side"
+     "detail": "PASS: 2 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.9 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.2"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.7"
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail."
   },
   {
    "game_id": "401858503",
