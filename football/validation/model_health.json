@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-25T04:08:03.626Z",
+ "as_of": "2026-10-25T05:07:59.932Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "5f1db35474ef078f",
+ "inputs_key": "91c155c7919519e8",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 4940,
+   "rows": 4965,
    "mode": "LIVE",
-   "sha1": "2e045ec329dd"
+   "sha1": "9f847a43144a"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "a2e90f5fb120"
+   "sha1": "399091821794"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "4940 decision snapshots issued before kickoff; 305 settled"
+   "note": "4965 decision snapshots issued before kickoff; 305 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,10 +133,10 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 4940,
+  "issued_snapshots": 4965,
   "issued_by_decision": {
-   "NO_DECISION": 1850,
-   "PASS": 2858,
+   "NO_DECISION": 1856,
+   "PASS": 2877,
    "WATCH": 232
   },
   "graded_rows": 311,
@@ -16331,7 +16331,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-25T00:32:19.242Z",
+  "generated_at": "2026-10-25T04:58:31.052Z",
   "sports": {
    "nfl": {
     "versions": [
@@ -16389,50 +16389,50 @@
      "edgedesk_cfb_p4_v1.0.0",
      "edgedesk_cfb_p4_v1.0.1"
     ],
-    "graded": 452,
+    "graded": 464,
     "ats": {
-     "n": 452,
-     "w": 213,
-     "l": 234,
+     "n": 464,
+     "w": 219,
+     "l": 240,
      "p": 5,
      "pct": 47.7,
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 452,
-      "text": "n=452 · Developing evidence",
+      "n": 464,
+      "text": "n=464 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 292,
-     "avg": 0.39,
-     "beat": 131,
-     "flat": 47,
-     "lost": 114,
-     "beat_pct": 44.9,
+     "n": 304,
+     "avg": 0.4,
+     "beat": 136,
+     "flat": 49,
+     "lost": 119,
+     "beat_pct": 44.7,
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 292,
-      "text": "n=292 · Developing evidence",
+      "n": 304,
+      "text": "n=304 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 452,
+     "n": 464,
      "model_mae": 12.52,
-     "close_mae": 11.12,
-     "model_closer_pct": 39.6,
-     "total_n": 379,
-     "model_total_mae": 12.95,
-     "close_total_mae": 12.48
+     "close_mae": 11.15,
+     "model_closer_pct": 39.9,
+     "total_n": 391,
+     "model_total_mae": 13.04,
+     "close_total_mae": 12.58
     },
     "brier": {
-     "n": 367,
-     "model": 0.1772
+     "n": 379,
+     "model": 0.1783
     }
    }
   }
@@ -17500,7 +17500,7 @@
    "code": "MODEL_RECORD_BELOW_BREAK_EVEN",
    "severity": "RESEARCH_ALERT",
    "source": "record/football/summary.json",
-   "text": "WARNING: the CFB model record against the spread is 213-234-5 (47.7%, 95% interval 43.1–52.3%, n=447): the whole interval sits below the 52.4% break-even at −110.",
+   "text": "WARNING: the CFB model record against the spread is 219-240-5 (47.7%, 95% interval 43.2–52.3%, n=459): the whole interval sits below the 52.4% break-even at −110.",
    "note": "This is a research alert, not an automatic change. It grades the published fair line, not bettor decisions."
   }
  ]
