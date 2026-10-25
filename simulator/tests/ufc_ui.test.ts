@@ -86,13 +86,18 @@ T.chk('Title Path: Estimated, the horizon and the matchmaking rule in plain word
 T.chk('Title Path: eleven divisions, each with its champion and pace', (tp.match(/<div class="sm-h">[^<]+ <span class="sm-dim sm-small">champion /g) || []).length === 11 && (tp.match(/undisputed title fights in the five years to/g) || []).length === 11);
 const titleDivs = new Set(allBouts.filter((b) => b.title).map((b) => b.title.division)).size;
 T.chk('Title Path: the booked title fights named (' + titleDivs + ' divisions), the others say none is booked', (tp.match(/Booked title fight:/g) || []).length === titleDivs && (tp.match(/No title fight booked/g) || []).length === 11 - titleDivs);
-T.chk('Title Path: every contender row with hold, win, shot and beat-the-champion columns', /Champion at horizon/.test(tp) && /Beats the champion if given the shot/.test(tp) && /Movsar Evloev/.test(tp));
-T.chk('Title Path: contenders with no shot in any simulated year are listed apart with the reason', /No title shot in any simulated year:<\/b> [^<]*Alexandre Pantoja \(#1, coming off a loss\)/.test(tp));
+/* rankings and bookings change every week, so the people named here are read from the run */
+const nameRow = (x: any) => tp.indexOf('<td><b>' + UI.esc(x.name) + '</b>') >= 0;
+T.chk('Title Path: every contender row with hold, win, shot and beat-the-champion columns', /Champion at horizon/.test(tp) && /Beats the champion if given the shot/.test(tp)
+  && S.divisions.every((v: any) => v.people.filter((x: any) => x.champion).every(nameRow)) && S.divisions.some((v: any) => v.people.some((x: any) => !x.champion && nameRow(x))));
+T.chk('Title Path: contenders with no shot in any simulated year are listed apart with the reason', /No title shot in any simulated year:<\/b> [^<]*\(#\d+, [^)]+\)/.test(tp));
 const TP = S.model_health.title_record.periods;
 T.chk('Title Path: how champions are priced, by period (' + TP.map((x: any) => x.champion_won + ' of ' + x.decided + ' v ' + x.elo_expected.toFixed(1)).join('; ') + '), and what is not modelled',
   tp.indexOf('From 2014 to 2020 champions won 71 of 100 where it expected ' + TP[0].elo_expected.toFixed(1) + ' — it underrated them then; since 2021 champions have won about as many title fights as it expected (' + TP[1].champion_won + ' of ' + TP[1].decided + ', expected ' + TP[1].elo_expected.toFixed(1) + ')') >= 0
   && /A champion term is tested every week/.test(tp) && !/understate/.test(tp) && /Interim belts/.test(tp));
-T.chk('Title Path: a contender who moved divisions is named under the division they left', /booked in another division \(counted there\): [^<]*Diego Lopes \(Lightweight\)/.test(tp));
+const movedOut = S.divisions.flatMap((v: any) => (v.moved_out || []).map((m: any) => (S.divisions.flatMap((d: any) => d.people).find((x: any) => x.id === m.id) || { name: m.id }).name));
+T.chk('Title Path: a contender who moved divisions is named under the division they left (' + (movedOut.join(', ') || 'none this run') + ')',
+  movedOut.length ? movedOut.every((n: string) => new RegExp('booked in another division \\(counted there\\): [^<]*' + UI.esc(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\(').test(tp)) : !/booked in another division/.test(tp));
 /* Model Health */
 const h = paint(cache(), 'model_health');
 const EH = S.model_health.elo;
@@ -115,9 +120,13 @@ T.chk('Model Health: an adopted age curve is named with its version, said to be 
 T.chk('Model Health: with nothing adopted, the age block says so', (() => { const r2 = JSON.parse(JSON.stringify(run)); const s2 = r2.validation_summary.sport_summary.model_health.study;
   if (!s2 || !s2.age) return true; s2.age.adopted = null; return /No age curve by division is served/.test(paint(cache({ run: r2 }), 'model_health')); })());
 T.chk('Model Health: champions against the Elo, and the finish model out of sample', /champions won <b>\d+<\/b>; the Elo expected about <b>\d+<\/b>/.test(h) && /tested on [\d,]+ later bouts/.test(h));
-T.chk('Model Health: the title record in two periods', h.indexOf('<tr><td>2014–2020</td><td class="sm-num">100</td><td class="sm-num">71</td><td class="sm-num">' + TP[0].elo_expected.toFixed(1) + '</td><td class="sm-num">+' + (71 - TP[0].elo_expected).toFixed(1) + '</td></tr>') >= 0 && h.indexOf('<tr><td>2021–2026</td><td class="sm-num">' + TP[1].decided + '</td><td class="sm-num">' + TP[1].champion_won + '</td>') >= 0);
-T.chk('Model Health: the champion term, not served, with its latest weekly test in plain words', /The champion term\.<\/b> The model loop tests, every week, giving the champion going in 100 extra rating points/.test(h)
-  && /Latest test, [^:]+: <b>not adopted<\/b>\. Over every bout since 2016 it moved the log loss by \+0\.00009 \(lower is better; adopting it takes a fall of at least 0\.0005\), and on 2025 alone by \+0\.00241\./.test(h) && /title fights are priced without one/.test(h));
+T.chk('Model Health: the title record in two periods', h.indexOf('<tr><td>2014–2020</td><td class="sm-num">100</td><td class="sm-num">71</td><td class="sm-num">' + TP[0].elo_expected.toFixed(1) + '</td><td class="sm-num">+' + (71 - TP[0].elo_expected).toFixed(1) + '</td></tr>') >= 0 && h.indexOf('<tr><td>2021–' + String(TP[1].to).slice(0, 4) + '</td><td class="sm-num">' + TP[1].decided + '</td><td class="sm-num">' + TP[1].champion_won + '</td>') >= 0);
+/* the loop re-tests the champion term every week, so the sentence is checked against the run's own latest test */
+const CTS = S.model_health.champion_term, LT = CTS.last_test, sg = (x: number) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(5);
+if (CTS.served_bonus > 0) T.chk('Model Health: the champion term the loop adopted is stated as served (' + CTS.served_bonus + ' points)', h.indexOf('gives the champion going in ' + CTS.served_bonus + ' extra rating points') >= 0 && !/Latest test/.test(h));
+else T.chk('Model Health: the champion term, not served, with its latest weekly test in plain words (' + LT.decision + ', ' + sg(LT.delta.logloss) + ')', /The champion term\.<\/b> The model loop tests, every week, giving the champion going in 100 extra rating points/.test(h)
+  && h.indexOf(': <b>' + (LT.decision === 'PASS' ? 'passed' : 'not adopted') + '</b>. Over every bout since 2016 it moved the log loss by ' + sg(LT.delta.logloss)
+    + ' (lower is better; adopting it takes a fall of at least 0.0005), and on 2025 alone by ' + sg(LT.delta['2025_logloss']) + '.') >= 0 && /title fights are priced without one/.test(h));
 T.chk('Model Health: a served champion term is stated as served', (() => { const r2 = JSON.parse(JSON.stringify(run)); r2.validation_summary.sport_summary.model_health.champion_term.served_bonus = 100;
   const x = paint(cache({ run: r2 }), 'model_health'); return /gives the champion going in 100 extra rating points/.test(x) && !/Latest test/.test(x); })());
 
