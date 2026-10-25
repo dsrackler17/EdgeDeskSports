@@ -158,7 +158,43 @@ def _load_sched(raw, seasons):
     s = pd.concat(frames, ignore_index=True)
     s = s[s.season_type.isin(["regular", "postseason"])].copy()
     s["kick_utc"] = pd.to_datetime(s.start_date, errors="coerce", utc=True).dt.tz_convert(None)
+    # a start the feed marks TBD carries a placeholder, midnight Eastern on the day
+    # (2026 week 8: six games filed at 04:00 UTC kicked off from 19:30 to 02:15). Read
+    # as the kickoff, it took those games off that day's cards, graded a card published
+    # at noon as after kickoff, and called them played with no result that morning
+    # (model loop health). The record's kickoff, else the CSV spine's, replaces it; a
+    # start neither knows stays as the feed has it.
+    if "start_time_tbd" in s.columns:
+        tbd = s.start_time_tbd.fillna(False).astype(bool)
+        if tbd.any():
+            known = pd.to_datetime(s.game_id.astype("int64").map(_known_kickoffs(raw, seasons)))
+            m = tbd & known.notna()
+            s.loc[m, "kick_utc"] = known[m]
     return s.drop_duplicates("game_id")
+
+
+def _known_kickoffs(raw, seasons):
+    """game_id -> kickoff (naive UTC): the record's (ESPN, frozen at kickoff), else the
+    cfbfastR CSV spine's where that feed does not mark the time TBD."""
+    out = {}
+    for y in seasons:
+        p = os.path.join(raw, "sched", f"sched_{y}.csv")
+        try:
+            c = pd.read_csv(p, usecols=["game_id", "start_date", "start_time_tbd"], low_memory=False)
+        except (OSError, ValueError):
+            continue
+        c = c[~c.start_time_tbd.astype(str).str.upper().isin(["TRUE", "T", "1"])]
+        k = pd.to_datetime(c.start_date, errors="coerce", utc=True).dt.tz_convert(None)
+        out.update({int(g): t for g, t in zip(c.game_id, k) if pd.notna(t)})
+    try:
+        rec = json.load(open(RECORD_2026))["games"]
+    except Exception:
+        rec = {}
+    for gid, g in rec.items():
+        t = pd.to_datetime((g or {}).get("kickoff"), errors="coerce", utc=True)
+        if pd.notna(t):
+            out[int(gid)] = t.tz_convert(None)
+    return out
 
 
 def _rest_days(s):

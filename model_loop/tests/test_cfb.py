@@ -192,6 +192,41 @@ class IngestRecordFinalTest(unittest.TestCase):
         self.assertTrue(np.isnan(g.at[13, "result"]))
         self.assertEqual(g.at[14, "result"], 3.0)
 
+    def test_a_tbd_start_takes_the_known_kickoff(self):
+        """A start the feed marks TBD is a placeholder (midnight Eastern): the record's
+        kickoff replaces it, else the CSV spine's; a known start is never touched."""
+        import json
+        from unittest import mock
+        from model_loop.adapters.cfb import ingest
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        raw = os.path.join(d, "raw")
+        os.makedirs(os.path.join(raw, "sched"))
+        n = 4
+        pd.DataFrame({
+            "game_id": [21, 22, 23, 24], "season": 2026, "week": 8, "season_type": "regular",
+            "start_date": ["2026-10-24T04:00:00.000Z", "2026-10-24T04:00:00.000Z", "2026-10-24T04:00:00.000Z",
+                           "2026-10-24T16:00:00.000Z"],
+            "start_time_tbd": [True, True, True, False],
+            "completed": [False] * n, "home_points": [np.nan] * n, "away_points": [np.nan] * n,
+            "home_id": [1, 3, 5, 7], "away_id": [2, 4, 6, 8], "home_team": ["A", "C", "E", "G"], "away_team": ["B", "D", "F", "H"],
+            "home_division": ["fbs"] * n, "away_division": ["fbs"] * n, "home_conference": ["X"] * n,
+            "away_conference": ["X"] * n, "neutral_site": [False] * n, "conference_game": [True] * n,
+            "venue": ["v"] * n, "notes": [None] * n,
+        }).to_parquet(os.path.join(raw, "sched_2026.parquet"), index=False)
+        pd.DataFrame({"game_id": [21, 22, 23, 24], "start_date": ["2026-10-24T19:00:00.000Z", "2026-10-25T02:15:00.000Z",
+                                                                  "2026-10-24T04:00:00.000Z", "2026-10-24T20:00:00.000Z"],
+                      "start_time_tbd": [False, False, True, False]}).to_csv(os.path.join(raw, "sched", "sched_2026.csv"), index=False)
+        rec = os.path.join(d, "cfb_2026.json")
+        with open(rec, "w") as f:
+            json.dump({"games": {"21": {"kickoff": "2026-10-24T19:30:00.000Z"}, "24": {"kickoff": "2026-10-24T21:00:00.000Z"}}}, f)
+        with mock.patch.object(ingest, "RECORD_2026", rec):
+            k = ingest._load_sched(raw, [2026]).set_index("game_id").kick_utc
+        self.assertEqual(k[21], pd.Timestamp("2026-10-24 19:30"))   # the record's
+        self.assertEqual(k[22], pd.Timestamp("2026-10-25 02:15"))   # the CSV spine's
+        self.assertEqual(k[23], pd.Timestamp("2026-10-24 04:00"))   # nobody knows it: as filed
+        self.assertEqual(k[24], pd.Timestamp("2026-10-24 16:00"))   # not TBD: untouched
+
 
 class WeeklyRankingTest(unittest.TestCase):
     """The weekly loop tests what the misses point at first (the NFL loop's rule)."""
