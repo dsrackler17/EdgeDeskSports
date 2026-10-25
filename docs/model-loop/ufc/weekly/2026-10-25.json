@@ -1,0 +1,508 @@
+{
+ "at": "2026-10-25T17:58:48Z",
+ "served_before": "1.3.0",
+ "promoted": null,
+ "window": [
+  2016,
+  2026
+ ],
+ "recent_full_season": 2025,
+ "baseline": {
+  "full": {
+   "n": 5837,
+   "logloss": 0.65277,
+   "brier": 0.23051,
+   "coin_flip_logloss": 0.69315,
+   "vs_coin_flip": {
+    "n": 5837,
+    "mean_diff": -0.04038,
+    "t": -10.592,
+    "ci95": [
+     -0.04781,
+     -0.03295
+    ]
+   },
+   "accuracy": 0.6084,
+   "calibration": {
+    "bins": [
+     {
+      "bin": "0.0-0.2",
+      "n": 171,
+      "mean_pred": 0.1642,
+      "observed": 0.2164
+     },
+     {
+      "bin": "0.2-0.4",
+      "n": 2129,
+      "mean_pred": 0.3206,
+      "observed": 0.3302
+     },
+     {
+      "bin": "0.4-0.6",
+      "n": 2783,
+      "mean_pred": 0.489,
+      "observed": 0.5214
+     },
+     {
+      "bin": "0.6-0.8",
+      "n": 738,
+      "mean_pred": 0.6654,
+      "observed": 0.6924
+     },
+     {
+      "bin": "0.8-1.0",
+      "n": 16,
+      "mean_pred": 0.8265,
+      "observed": 1.0
+     }
+    ],
+    "ece": 0.0244
+   }
+  },
+  "recent": {
+   "n": 563,
+   "logloss": 0.63861,
+   "brier": 0.22378,
+   "coin_flip_logloss": 0.69315,
+   "vs_coin_flip": {
+    "n": 563,
+    "mean_diff": -0.05453,
+    "t": -4.643,
+    "ci95": [
+     -0.07683,
+     -0.0317
+    ]
+   },
+   "accuracy": 0.6341,
+   "calibration": {
+    "bins": [
+     {
+      "bin": "0.0-0.2",
+      "n": 13,
+      "mean_pred": 0.1639,
+      "observed": 0.1538
+     },
+     {
+      "bin": "0.2-0.4",
+      "n": 220,
+      "mean_pred": 0.3212,
+      "observed": 0.3045
+     },
+     {
+      "bin": "0.4-0.6",
+      "n": 264,
+      "mean_pred": 0.4833,
+      "observed": 0.5076
+     },
+     {
+      "bin": "0.6-0.8",
+      "n": 65,
+      "mean_pred": 0.6568,
+      "observed": 0.7385
+     },
+     {
+      "bin": "0.8-1.0",
+      "n": 1,
+      "mean_pred": 0.8492,
+      "observed": 1.0
+     }
+    ],
+    "ece": 0.0279
+   }
+  }
+ },
+ "candidates": [
+  {
+   "at": "2026-10-25T17:58:27Z",
+   "served_version": "1.3.0",
+   "candidate": "k_lower",
+   "change": {
+    "key": "k",
+    "how": [
+     "mul",
+     0.75
+    ]
+   },
+   "delta": {
+    "logloss": 0.00038,
+    "brier": 0.00017,
+    "2025_logloss": 0.00162
+   },
+   "ci95": [
+    -0.0007,
+    0.00147
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00038 does not clear -0.0005; 95% interval [-0.0007, 0.00147] is not below zero; Brier worse (+0.00017); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:28Z",
+   "served_version": "1.3.0",
+   "candidate": "k_higher",
+   "change": {
+    "key": "k",
+    "how": [
+     "mul",
+     1.33
+    ]
+   },
+   "delta": {
+    "logloss": 0.00176,
+    "brier": 0.00077,
+    "2025_logloss": -3e-05
+   },
+   "ci95": [
+    0.00041,
+    0.00306
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00176 does not clear -0.0005; 95% interval [0.00041, 0.00306] is not below zero; Brier worse (+0.00077)"
+  },
+  {
+   "at": "2026-10-25T17:58:29Z",
+   "served_version": "1.3.0",
+   "candidate": "new_faster",
+   "change": {
+    "key": "k_new_mult",
+    "how": [
+     "add",
+     0.5
+    ]
+   },
+   "delta": {
+    "logloss": 0.00241,
+    "brier": 0.00107,
+    "2025_logloss": 9e-05
+   },
+   "ci95": [
+    0.00114,
+    0.00368
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00241 does not clear -0.0005; 95% interval [0.00114, 0.00368] is not below zero; Brier worse (+0.00107); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:31Z",
+   "served_version": "1.3.0",
+   "candidate": "new_slower",
+   "change": {
+    "key": "k_new_mult",
+    "how": [
+     "add",
+     -0.5
+    ]
+   },
+   "delta": {
+    "logloss": 0.0001,
+    "brier": 4e-05,
+    "2025_logloss": 0.00186
+   },
+   "ci95": [
+    -0.00123,
+    0.0014
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00010 does not clear -0.0005; 95% interval [-0.00123, 0.0014] is not below zero; Brier worse (+0.00004); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:32Z",
+   "served_version": "1.3.0",
+   "candidate": "new_window_longer",
+   "change": {
+    "key": "new_bouts",
+    "how": [
+     "set",
+     6
+    ]
+   },
+   "delta": {
+    "logloss": -0.00056,
+    "brier": -0.00032,
+    "2025_logloss": -0.00088
+   },
+   "ci95": [
+    -0.00168,
+    0.00065
+   ],
+   "decision": "FAIL",
+   "reason": "95% interval [-0.00168, 0.00065] is not below zero"
+  },
+  {
+   "at": "2026-10-25T17:58:34Z",
+   "served_version": "1.3.0",
+   "candidate": "layoff_more",
+   "change": {
+    "key": "layoff_regress",
+    "how": [
+     "add",
+     0.15
+    ]
+   },
+   "delta": {
+    "logloss": 0.00069,
+    "brier": 0.00036,
+    "2025_logloss": 0.00015
+   },
+   "ci95": [
+    -8e-05,
+    0.00142
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00069 does not clear -0.0005; 95% interval [-8e-05, 0.00142] is not below zero; Brier worse (+0.00036); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:35Z",
+   "served_version": "1.3.0",
+   "candidate": "layoff_less",
+   "change": {
+    "key": "layoff_regress",
+    "how": [
+     "add",
+     -0.15
+    ]
+   },
+   "delta": {
+    "logloss": 0.00027,
+    "brier": 8e-05,
+    "2025_logloss": 0.00152
+   },
+   "ci95": [
+    -0.00057,
+    0.00113
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00027 does not clear -0.0005; 95% interval [-0.00057, 0.00113] is not below zero; Brier worse (+0.00008); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:36Z",
+   "served_version": "1.3.0",
+   "candidate": "calibration_toggle",
+   "change": {
+    "key": "calibration",
+    "how": [
+     "toggle",
+     null
+    ]
+   },
+   "delta": {
+    "logloss": 0.00101,
+    "brier": 0.00047,
+    "2025_logloss": 0.00264
+   },
+   "ci95": [
+    -0.00092,
+    0.00294
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00101 does not clear -0.0005; 95% interval [-0.00092, 0.00294] is not below zero; Brier worse (+0.00047); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:38Z",
+   "served_version": "1.3.0",
+   "candidate": "champion_term",
+   "change": {
+    "key": "champ_bonus",
+    "how": [
+     "set",
+     100.0
+    ]
+   },
+   "delta": {
+    "logloss": -2e-05,
+    "brier": -4e-05,
+    "2025_logloss": 0.00189
+   },
+   "ci95": [
+    -0.00117,
+    0.00111
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change -0.00002 does not clear -0.0005; 95% interval [-0.00117, 0.00111] is not below zero; worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:39Z",
+   "served_version": "1.3.0",
+   "candidate": "record_prior_stronger",
+   "change": {
+    "key": "prior_rec",
+    "how": [
+     "mul",
+     1.33
+    ]
+   },
+   "delta": {
+    "logloss": 0.00196,
+    "brier": 0.00078,
+    "2025_logloss": 0.00187
+   },
+   "ci95": [
+    0.00077,
+    0.00323
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00196 does not clear -0.0005; 95% interval [0.00077, 0.00323] is not below zero; Brier worse (+0.00078); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:41Z",
+   "served_version": "1.3.0",
+   "candidate": "age_steeper",
+   "change": {
+    "key": "age_slope",
+    "how": [
+     "mul",
+     1.33
+    ]
+   },
+   "delta": {
+    "logloss": 0.0,
+    "brier": -1e-05,
+    "2025_logloss": 0.00032
+   },
+   "ci95": [
+    -0.00028,
+    0.00028
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00000 does not clear -0.0005; 95% interval [-0.00028, 0.00028] is not below zero; worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:42Z",
+   "served_version": "1.3.0",
+   "candidate": "age_gentler",
+   "change": {
+    "key": "age_slope",
+    "how": [
+     "mul",
+     0.75
+    ]
+   },
+   "delta": {
+    "logloss": 8e-05,
+    "brier": 4e-05,
+    "2025_logloss": -0.00013
+   },
+   "ci95": [
+    -0.00013,
+    0.00029
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00008 does not clear -0.0005; 95% interval [-0.00013, 0.00029] is not below zero; Brier worse (+0.00004)"
+  },
+  {
+   "at": "2026-10-25T17:58:43Z",
+   "served_version": "1.3.0",
+   "candidate": "head_to_head",
+   "change": {
+    "key": "h2h",
+    "how": [
+     "set",
+     150.0
+    ]
+   },
+   "delta": {
+    "logloss": 0.00022,
+    "brier": 9e-05,
+    "2025_logloss": 0.00059
+   },
+   "ci95": [
+    -0.00055,
+    0.00097
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00022 does not clear -0.0005; 95% interval [-0.00055, 0.00097] is not below zero; Brier worse (+0.00009); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:45Z",
+   "served_version": "1.3.0",
+   "candidate": "debut_lower",
+   "change": {
+    "key": "debut_offset",
+    "how": [
+     "set",
+     -25.0
+    ]
+   },
+   "delta": {
+    "logloss": 0.00035,
+    "brier": 0.00015,
+    "2025_logloss": 0.00117
+   },
+   "ci95": [
+    -0.00025,
+    0.00096
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00035 does not clear -0.0005; 95% interval [-0.00025, 0.00096] is not below zero; Brier worse (+0.00015); worse on 2025"
+  },
+  {
+   "at": "2026-10-25T17:58:46Z",
+   "served_version": "1.3.0",
+   "candidate": "age_by_division",
+   "change": {
+    "key": "age_div",
+    "how": [
+     "set",
+     {
+      "Bantamweight": [
+       28,
+       -15
+      ],
+      "Featherweight": [
+       28,
+       -15
+      ],
+      "Lightweight": [
+       30,
+       -15
+      ],
+      "Welterweight": [
+       33,
+       -25
+      ],
+      "Middleweight": [
+       28,
+       -20
+      ],
+      "Light Heavyweight": [
+       40,
+       -25
+      ],
+      "Heavyweight": [
+       31,
+       -15
+      ],
+      "W Strawweight": [
+       28,
+       -30
+      ]
+     }
+    ]
+   },
+   "decision": "SKIPPED",
+   "reason": "no change from the served configuration"
+  },
+  {
+   "at": "2026-10-25T17:58:46Z",
+   "served_version": "1.3.0",
+   "candidate": "age_shared",
+   "change": {
+    "key": "age_div",
+    "how": [
+     "set",
+     {}
+    ]
+   },
+   "delta": {
+    "logloss": 0.00242,
+    "brier": 0.00113,
+    "2025_logloss": 0.00498
+   },
+   "ci95": [
+    0.00046,
+    0.00448
+   ],
+   "decision": "FAIL",
+   "reason": "log loss change +0.00242 does not clear -0.0005; 95% interval [0.00046, 0.00448] is not below zero; Brier worse (+0.00113); worse on 2025"
+  }
+ ]
+}

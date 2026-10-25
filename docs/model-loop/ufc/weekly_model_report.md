@@ -1,6 +1,6 @@
 # UFC weekly model report
 
-Generated 2026-10-25T05:16:46Z. EXPERIMENTAL. No timestamped UFC closing prices are archived; the 2026-10 study (docs/model-loop/ufc/study/README.md) measures the model against an untimestamped public archive of pre-fight lines, where it trails the closing line by a wide margin.
+Generated 2026-10-25T17:58:48Z. EXPERIMENTAL. No timestamped UFC closing prices are archived; the 2026-10 study (docs/model-loop/ufc/study/README.md) measures the model against an untimestamped public archive of pre-fight lines, where it trails the closing line by a wide margin.
 
 Served: **1.3.0**.
 
@@ -14,6 +14,10 @@ Served: **1.3.0**.
 | live 2026–2026 | 498 | 0.67398 | 0.69315 | [-0.03318, -0.00401] | 0.24047 | 0.6064 |
 
 Decision: served — clears every condition.
+
+## The published record
+
+14 bouts graded pregame: log loss 0.68734 (coin flip 0.69315), Brier 0.24769, accuracy 0.4286. The feed kept its fighter order after the result in 100% of them.
 
 ## The disagreement guard
 
@@ -31,5 +35,19 @@ Threshold 8 points; 10 of 13 published bouts have a market price, 5 disagree; ce
 
 | Candidate | Change | Δ log loss | 95% interval | Δ Brier | Decision |
 |---|---|---|---|---|---|
-| age_by_division | `age_div` ['set', {'Bantamweight': [28, -15], 'Featherweight': [28, -15], 'Lightweight': [30, -15], 'Welterweight': [33, -25], 'Middleweight': [28, -20], 'Light Heavyweight': [40, -25], 'Heavyweight': [31, -15], 'W Strawweight': [28, -30]}] | -0.00249 | [-0.00462, -0.00041] | -0.00117 | PASS: clears every condition |
-| age_shared | `age_div` ['set', {}] | — | — | — | SKIPPED: no change from the served configuration |
+| k_lower | `k` ['mul', 0.75] | 0.00038 | [-0.0007, 0.00147] | 0.00017 | FAIL: log loss change +0.00038 does not clear -0.0005; 95% interval [-0.0007, 0.00147] is not below zero; Brier worse (+0.00017); worse on 2025 |
+| k_higher | `k` ['mul', 1.33] | 0.00176 | [0.00041, 0.00306] | 0.00077 | FAIL: log loss change +0.00176 does not clear -0.0005; 95% interval [0.00041, 0.00306] is not below zero; Brier worse (+0.00077) |
+| new_faster | `k_new_mult` ['add', 0.5] | 0.00241 | [0.00114, 0.00368] | 0.00107 | FAIL: log loss change +0.00241 does not clear -0.0005; 95% interval [0.00114, 0.00368] is not below zero; Brier worse (+0.00107); worse on 2025 |
+| new_slower | `k_new_mult` ['add', -0.5] | 0.0001 | [-0.00123, 0.0014] | 4e-05 | FAIL: log loss change +0.00010 does not clear -0.0005; 95% interval [-0.00123, 0.0014] is not below zero; Brier worse (+0.00004); worse on 2025 |
+| new_window_longer | `new_bouts` ['set', 6] | -0.00056 | [-0.00168, 0.00065] | -0.00032 | FAIL: 95% interval [-0.00168, 0.00065] is not below zero |
+| layoff_more | `layoff_regress` ['add', 0.15] | 0.00069 | [-8e-05, 0.00142] | 0.00036 | FAIL: log loss change +0.00069 does not clear -0.0005; 95% interval [-8e-05, 0.00142] is not below zero; Brier worse (+0.00036); worse on 2025 |
+| layoff_less | `layoff_regress` ['add', -0.15] | 0.00027 | [-0.00057, 0.00113] | 8e-05 | FAIL: log loss change +0.00027 does not clear -0.0005; 95% interval [-0.00057, 0.00113] is not below zero; Brier worse (+0.00008); worse on 2025 |
+| calibration_toggle | `calibration` ['toggle', None] | 0.00101 | [-0.00092, 0.00294] | 0.00047 | FAIL: log loss change +0.00101 does not clear -0.0005; 95% interval [-0.00092, 0.00294] is not below zero; Brier worse (+0.00047); worse on 2025 |
+| champion_term | `champ_bonus` ['set', 100.0] | -2e-05 | [-0.00117, 0.00111] | -4e-05 | FAIL: log loss change -0.00002 does not clear -0.0005; 95% interval [-0.00117, 0.00111] is not below zero; worse on 2025 |
+| record_prior_stronger | `prior_rec` ['mul', 1.33] | 0.00196 | [0.00077, 0.00323] | 0.00078 | FAIL: log loss change +0.00196 does not clear -0.0005; 95% interval [0.00077, 0.00323] is not below zero; Brier worse (+0.00078); worse on 2025 |
+| age_steeper | `age_slope` ['mul', 1.33] | 0.0 | [-0.00028, 0.00028] | -1e-05 | FAIL: log loss change +0.00000 does not clear -0.0005; 95% interval [-0.00028, 0.00028] is not below zero; worse on 2025 |
+| age_gentler | `age_slope` ['mul', 0.75] | 8e-05 | [-0.00013, 0.00029] | 4e-05 | FAIL: log loss change +0.00008 does not clear -0.0005; 95% interval [-0.00013, 0.00029] is not below zero; Brier worse (+0.00004) |
+| head_to_head | `h2h` ['set', 150.0] | 0.00022 | [-0.00055, 0.00097] | 9e-05 | FAIL: log loss change +0.00022 does not clear -0.0005; 95% interval [-0.00055, 0.00097] is not below zero; Brier worse (+0.00009); worse on 2025 |
+| debut_lower | `debut_offset` ['set', -25.0] | 0.00035 | [-0.00025, 0.00096] | 0.00015 | FAIL: log loss change +0.00035 does not clear -0.0005; 95% interval [-0.00025, 0.00096] is not below zero; Brier worse (+0.00015); worse on 2025 |
+| age_by_division | `age_div` ['set', {'Bantamweight': [28, -15], 'Featherweight': [28, -15], 'Lightweight': [30, -15], 'Welterweight': [33, -25], 'Middleweight': [28, -20], 'Light Heavyweight': [40, -25], 'Heavyweight': [31, -15], 'W Strawweight': [28, -30]}] | — | — | — | SKIPPED: no change from the served configuration |
+| age_shared | `age_div` ['set', {}] | 0.00242 | [0.00046, 0.00448] | 0.00113 | FAIL: log loss change +0.00242 does not clear -0.0005; 95% interval [0.00046, 0.00448] is not below zero; Brier worse (+0.00113); worse on 2025 |
