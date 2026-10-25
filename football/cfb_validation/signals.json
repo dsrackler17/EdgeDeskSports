@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-10-25T02:08:09.778Z",
+ "generated_at": "2026-10-25T03:08:04.654Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -915,18 +915,18 @@
  "favorite_flips": {
   "summary": {
    "n": 20,
-   "settled": 17,
+   "settled": 19,
    "label": "small sample",
    "average_gap": 6.52,
-   "market_moved_toward_pct": 62.5,
-   "positive_clv_pct": 29.4,
-   "average_clv": 0.56,
-   "edgedesk_closer_than_opener_pct": 47.1,
-   "edgedesk_closer_than_close_pct": 41.2,
-   "edgedesk_mae": 10.21,
+   "market_moved_toward_pct": 66.7,
+   "positive_clv_pct": 31.6,
+   "average_clv": 0.53,
+   "edgedesk_closer_than_opener_pct": 47.4,
+   "edgedesk_closer_than_close_pct": 42.1,
+   "edgedesk_mae": 10.53,
    "ats_hypothetical": {
-    "wins": 11,
-    "losses": 6,
+    "wins": 12,
+    "losses": 7,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
   },
@@ -1370,8 +1370,16 @@
     "verdict": "WORTH_RESEARCHING",
     "root_cause": null,
     "favorite_flip": true,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 1.5,
+    "final_margin": 7,
+    "market_move_toward": 0,
+    "moved_toward": null,
+    "edgedesk_error": 10.17,
+    "snapshot_market_error": 5.5,
+    "edgedesk_closer_than_snapshot_market": false,
+    "close_error": 5.5,
+    "edgedesk_closer_than_close": false,
+    "ats_hypothetical": "LOSS"
    },
    {
     "game_id": "401856732",
@@ -1404,8 +1412,16 @@
     "verdict": "WORTH_RESEARCHING",
     "root_cause": null,
     "favorite_flip": true,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": -2.5,
+    "final_margin": 17,
+    "market_move_toward": 0.5,
+    "moved_toward": true,
+    "edgedesk_error": 16.18,
+    "snapshot_market_error": 20,
+    "edgedesk_closer_than_snapshot_market": true,
+    "close_error": 19.5,
+    "edgedesk_closer_than_close": true,
+    "ats_hypothetical": "WIN"
    }
   ],
   "note": "EdgeDesk and the market favoured different teams at the snapshot",
