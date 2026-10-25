@@ -184,7 +184,32 @@ function runMerge(cwd, args, merge) {
   chk('the default for a generated artifact is unchanged: ours wins', r.code === 0 && fs.readFileSync(path.join(seed, 'games/data/challenges.json'), 'utf8') === '{"challenges":["ours"]}\n', r.out);
 }
 
-/* 8. bad usage is refused, not silently a no-op */
+/* 8. a named DIRECTORY: a pull request that changed a file in it while the job
+      ran is kept, because the job did not change that file (cfb-lab,
+      2026-10-25 05:23 reverted football/game_research/factors.json from #766) */
+{
+  git(A, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  write(A, 'football/game_research/factors.json', '{"v":"old"}\n');
+  write(A, 'football/game_research/current.json', '{"run":0}\n');
+  git(A, ['add', '-A']); git(A, ['commit', '-q', '-m', 'research: seed']); git(A, ['push', '-q', 'origin', 'main']);
+  git(B, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  /* the merged pull request regenerates a file in the job's directory */
+  write(B, 'football/game_research/factors.json', '{"v":"merged PR"}\n');
+  git(B, ['add', '-A']); git(B, ['commit', '-q', '-m', 'Merge pull request']); git(B, ['push', '-q', 'origin', 'main']);
+  /* the job, checked out before that merge, rewrites only its own artifact */
+  write(A, 'football/game_research/current.json', '{"run":1}\n');
+  const r = run(A, ['main', 'cfb lab: hourly', '--', 'football/game_research']);
+  git(seed, ['pull', '-q', '--ff-only', 'origin', 'main']);
+  chk('a file a merged pull request changed inside a named directory is not reverted by a stale job',
+    r.code === 0 && fs.readFileSync(path.join(seed, 'football/game_research/factors.json'), 'utf8') === '{"v":"merged PR"}\n', r.out);
+  chk('while the file the job built still lands', fs.readFileSync(path.join(seed, 'football/game_research/current.json'), 'utf8') === '{"run":1}\n');
+  chk('and a later run from a fresh checkout leaves the merged file alone too', (() => {
+    git(A, ['pull', '-q', '--ff-only', 'origin', 'main']);
+    return fs.readFileSync(path.join(A, 'football/game_research/factors.json'), 'utf8') === '{"v":"merged PR"}\n';
+  })());
+}
+
+/* 9. bad usage is refused, not silently a no-op */
 {
   const r = run(A, ['main', 'msg']);
   chk('missing paths are a usage error', r.code === 64, String(r.code));

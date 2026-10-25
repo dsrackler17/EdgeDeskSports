@@ -14,11 +14,18 @@
 #
 # THE PROCEDURE. Our artifacts are a function of the run, not of history, so
 # they never need merging: when the push is rejected, take the remote tip as
-# it is now, put OUR versions of OUR paths on top of it, commit that, push
-# again. Nothing outside the named paths is ever touched, and a rebase is
-# never attempted. If the remote already carries byte-identical artifacts
-# (another run published the same thing first) there is nothing to push and
-# that is success.
+# it is now, put OUR versions of the files THIS RUN CHANGED under OUR paths on
+# top of it, commit that, push again. Nothing outside the named paths is ever
+# touched, and a rebase is never attempted. If the remote already carries
+# byte-identical artifacts (another run published the same thing first) there
+# is nothing to push and that is success.
+#
+# Only the files this run's commit changed are carried, never the whole named
+# directory: a job names a directory (football/game_research) and rewrites a
+# few files in it, and the rest of its checkout is simply as old as the job.
+# Copying the whole directory reverted a pull request that merged while the
+# job ran (cfb-lab, 2026-10-25 05:23: football/game_research/factors.json and
+# a row of football/cfb_validation/versions.jsonl from #766).
 #
 # Usage
 #   tools/ci/push_generated.sh <branch> <commit message> -- <path> [<path>...]
@@ -101,14 +108,24 @@ while [ "$i" -lt "$ATTEMPTS" ]; do
   git merge --abort 2>/dev/null || true
   git fetch -q "$REMOTE" "$BRANCH"
   git reset -q --hard FETCH_HEAD
-  # OUR artifacts on top: every named path becomes exactly what our commit
-  # holds, deletions included
+  # OUR artifacts on top: every file this run changed under a named path
+  # becomes exactly what our commit holds, deletions included; a file it did
+  # not change keeps the tip's version
+  OWN=()
   for p in "${PATHS[@]}"; do
     if is_merge "$p"; then continue; fi
-    git rm -r -q --cached --ignore-unmatch -- "$p" 2>/dev/null || true
-    rm -rf -- "$p"
-    git checkout -q "$MINE" -- "$p" 2>/dev/null || true
+    OWN+=("$p")
   done
+  if [ "${#OWN[@]}" -gt 0 ]; then
+    while IFS= read -r -d '' f; do
+      if git cat-file -e "$ORIG_MINE:./$f" 2>/dev/null; then
+        git checkout -q "$ORIG_MINE" -- "$f"
+      else
+        git rm -q --cached --ignore-unmatch -- "$f"
+        rm -f -- "$f"
+      fi
+    done < <(git diff --name-only -z --no-renames --relative "$BASE" "$ORIG_MINE" -- "${OWN[@]}")
+  fi
   # source paths: OUR change (the first commit's diff), merged onto the tip
   for p in "${MERGE[@]:-}"; do
     [ -n "$p" ] || continue
