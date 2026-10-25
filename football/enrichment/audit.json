@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-25T11:53:41.355Z",
+ "generated_at": "2026-10-25T16:39:09.871Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-25T11:53:41.355Z",
-  "reliability_generated_at": "2026-10-25T11:53:41.355Z",
-  "enrichment_generated_at": "2026-10-25T11:53:34.188Z",
+  "at": "2026-10-25T16:39:09.871Z",
+  "reliability_generated_at": "2026-10-25T16:39:09.871Z",
+  "enrichment_generated_at": "2026-10-25T16:39:03.505Z",
   "counts": {
    "games": 61,
    "mean": 86.2,
@@ -22,7 +22,7 @@
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 0,
    "games_under_two_market_sources": 61,
-   "stale_evidence_records": 84,
+   "stale_evidence_records": 87,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -178,6 +178,7 @@
      "availability": 4.6,
      "qb_conflict": 1,
      "qb_status": 2,
+     "starters": 0.6,
      "qb_identity": 0.8
     },
     "qb": {
@@ -214,14 +215,15 @@
    },
    "401856842": {
     "game": "Arizona @ Texas Tech",
-    "score": 88,
+    "score": 87,
     "grade": "STRONG",
     "fam": {
      "favorite_flips": 3.4,
      "availability": 4.6,
      "qb_conflict": 1,
      "qb_status": 2,
-     "qb_identity": 1.3
+     "qb_identity": 1.3,
+     "starters": 0.6
     },
     "qb": {
      "home": "EXPECTED",
@@ -262,7 +264,7 @@
      "availability": 4.6,
      "qb_conflict": 2,
      "qb_status": 2,
-     "starters": 0.6,
+     "starters": 1.2,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
@@ -303,6 +305,7 @@
      "qb_identity": 1.8,
      "qb_conflict": 1,
      "qb_status": 2,
+     "starters": 0.6,
      "stability": 0.3,
      "transfer_turnover": 0.3
     },
@@ -520,6 +523,7 @@
      "qb_conflict": 1,
      "qb_status": 2,
      "qb_identity": 1.3,
+     "starters": 0.6,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -720,7 +724,7 @@
      "qb_conflict": 1,
      "qb_status": 2,
      "qb_identity": 1.3,
-     "starters": 0.6
+     "starters": 1.2
     },
     "qb": {
      "home": "UNCERTAIN",
@@ -754,14 +758,14 @@
    },
    "401860910": {
     "game": "Colorado State @ Utah State",
-    "score": 88,
+    "score": 87,
     "grade": "STRONG",
     "fam": {
      "availability": 4.6,
      "qb_identity": 3.4,
      "qb_conflict": 1,
      "qb_status": 2,
-     "starters": 0.6,
+     "starters": 1.2,
      "stability": 0.5
     },
     "qb": {
@@ -1336,7 +1340,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-25T09:56:05.426Z",
+  "at": "2026-10-25T11:53:41.355Z",
   "counts": {
    "games": 61,
    "mean": 86.2,
@@ -1353,7 +1357,7 @@
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 0,
    "games_under_two_market_sources": 61,
-   "stale_evidence_records": 74,
+   "stale_evidence_records": 84,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -1361,33 +1365,10 @@
  },
  "what_improved": [],
  "what_degraded": [
-  "+10 stale evidence records (74 → 84)"
+  "+3 stale evidence records (84 → 87)"
  ],
  "why": [],
  "history": [
-  {
-   "at": "2026-10-19T05:01:29.851Z",
-   "counts": {
-    "games": 60,
-    "mean": 86.6,
-    "median": 89,
-    "by_band": {
-     "STRONG": 49,
-     "ADEQUATE": 10,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 120,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 15,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 0,
-    "games_under_two_market_sources": 60,
-    "stale_evidence_records": 87,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-19T13:45:46.966Z",
    "counts": {
@@ -2779,6 +2760,29 @@
     "fcs_games_thin_data": 0,
     "games_under_two_market_sources": 61,
     "stale_evidence_records": 84,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-25T16:39:09.871Z",
+   "counts": {
+    "games": 61,
+    "mean": 86.2,
+    "median": 89,
+    "by_band": {
+     "STRONG": 47,
+     "ADEQUATE": 13,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 122,
+    "qb_conflicts_open": 8,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 13,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 0,
+    "games_under_two_market_sources": 61,
+    "stale_evidence_records": 87,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
