@@ -211,13 +211,18 @@ const gates = validateUfcInputs(snap, now);
 K.chk('committed data: every input gate passes (fetched rankings + 1 day)', gates.every((g) => g.status === 'PASS'), gates.filter((g) => g.status !== 'PASS'));
 K.eq('committed data: the Elo port reproduces every published p_a (' + d.elo.reproduction.reproduced + ' of ' + d.elo.reproduction.published + ')', [d.elo.reproduction.reproduced === d.elo.reproduction.published, d.elo.reproduction.mismatches.length], [true, 0]);
 const name = (id: string) => d.fighters.find((f) => f.id === id)!.name;
+/* the data is refreshed every week and a card leaves it once it starts (UFC 333 did on 2026-10-24), so these check
+   what the booked cards must satisfy, not which cards they are */
 const champs = Object.fromEntries(d.divisions.map((v) => [v.key, name(v.champion)]));
-K.eq('committed data: the ufc.com champions', champs, { Flyweight: 'Joshua Van', Bantamweight: 'Petr Yan', Featherweight: 'Alexander Volkanovski', Lightweight: 'Justin Gaethje', Welterweight: 'Islam Makhachev', Middleweight: 'Sean Strickland',
-  'Light Heavyweight': 'Carlos Ulberg', Heavyweight: 'Ciryl Gane', 'W Strawweight': 'Mackenzie Dern', 'W Flyweight': 'Natalia Silva', 'W Bantamweight': 'Kayla Harrison' });
-const titles = d.bouts.filter((b) => b.title).map((b) => b.title!.division + ': ' + name(b.a) + ' v ' + name(b.b)).sort();
-K.eq('committed data: the booked title fights (champion v another fighter at that weight)', titles, ['Bantamweight: Merab Dvalishvili v Petr Yan', 'Featherweight: Alexander Volkanovski v Movsar Evloev', 'Heavyweight: Ciryl Gane v Josh Hokit', 'W Bantamweight: Kayla Harrison v Amanda Nunes']);
-const main = d.bouts.find((b) => b.event.startsWith('UFC 333') && b.order === 1)!;
-K.eq('committed data: UFC 333\'s main event is Volkanovski v Evloev, five rounds', [name(main.a), name(main.b), main.rounds], ['Alexander Volkanovski', 'Movsar Evloev', 5]);
+K.eq('committed data: a ufc.com champion in each of the 11 divisions, the one Wikipedia names', [Object.keys(champs), d.divisions.every((v) => { const w = d.cross_checks.wikipedia.find((x) => x.division === v.key); return !!w && w.agree && w.ufc === champs[v.key]; })],
+  [['Flyweight', 'Bantamweight', 'Featherweight', 'Lightweight', 'Welterweight', 'Middleweight', 'Light Heavyweight', 'Heavyweight', 'W Strawweight', 'W Flyweight', 'W Bantamweight'], true]);
+const titles = d.bouts.filter((b) => b.title);
+K.chk('committed data: every booked title fight is that division\'s champion v another fighter, five rounds (' + titles.map((b) => b.title!.division + ': ' + name(b.a) + ' v ' + name(b.b)).sort().join('; ') + ')',
+  titles.every((b) => { const v = d.divisions.find((x) => x.key === b.title!.division); return !!v && v.champion === b.title!.champion && (b.a === v.champion || b.b === v.champion) && b.a !== b.b && b.rounds === 5; }),
+  titles.map((b) => b.bout_id));
+const events = [...new Set(d.bouts.map((b) => b.event))];
+K.chk('committed data: every listed card has one main event, five rounds (' + events.length + ' cards)', events.length > 0 && events.every((e) => { const m = d.bouts.filter((b) => b.event === e && b.order === 1); return m.length === 1 && m[0].rounds === 5; }),
+  events.filter((e) => { const m = d.bouts.filter((b) => b.event === e && b.order === 1); return !(m.length === 1 && m[0].rounds === 5); }));
 /* the loop publishes only bouts that have not started (its 14-day window), so the check runs on whichever booked bouts it lists */
 const listed = d.bouts.filter((b) => b.p_a_published != null);
 K.chk('committed data: every booked bout the loop lists is at the price it published (' + listed.length + ' bouts)', listed.length > 0 && listed.every((b) => round4(b.p_a) === b.p_a_published),
@@ -225,7 +230,7 @@ K.chk('committed data: every booked bout the loop lists is at the price it publi
 K.chk('committed data: the booked bouts carry the comparison version\'s price (1.1.0) beside the served one when it is not 1.1.0', d.elo.version === '1.1.0' || d.bouts.every((b) => b.compare && b.compare.version === '1.1.0' && b.compare.p_a > 0 && b.compare.p_a < 1));
 K.chk('committed data: every booked bout has a guard verdict; a disagreement is never a signal without certification', d.bouts.every((b) => ['AGREES', 'DISAGREES', 'NO_MARKET'].includes(b.guard.status) && (!b.guard.signal_allowed || d.guard.certified))
   && d.bouts.filter((b) => b.market).every((b) => (b.guard.status === 'DISAGREES') === (Math.abs(100 * (b.p_a - b.market!.p_a)) > d.guard.threshold_pp)));
-K.chk('committed data: ESPN\'s title accolades and Wikipedia\'s incumbents agree with ufc.com', d.cross_checks.espn.length === 4 && d.cross_checks.espn.every((x) => x.agree) && d.cross_checks.wikipedia.every((x) => x.agree));
+K.chk('committed data: ESPN\'s title accolades name the champion on every booked title fight, and Wikipedia\'s incumbents agree with ufc.com', titles.every((b) => d.cross_checks.espn.some((x) => x.bout_id === b.bout_id && x.agree)) && d.cross_checks.espn.every((x) => x.agree) && d.cross_checks.wikipedia.every((x) => x.agree), d.cross_checks.espn);
 K.chk('committed data: a title-fight rate in every division from Wikipedia, the gaps\' shape measured', d.divisions.every((v) => v.rate.per_year > 0 && v.mean_gap_days! > 0) && d.gaps.shape > 1 && d.gaps.n > 100, d.gaps);
 K.chk('committed data: no booked bout before the as-of time, every fighter rated or a debutant at the served model\'s starting rating (its prior)', d.bouts.every((b) => Date.parse(b.start) > Date.parse(d.as_of)) && d.fighters.every((f) => f.bouts > 0 || (f.debut && Number.isFinite(f.rating) && f.rating === f.prior)));
 
@@ -257,8 +262,11 @@ K.eq('gate: a result the feed has not delivered blocks publication', gate(mutate
   const fail = o.gates.filter((g) => g.status !== 'PASS').map((g) => g.id);
   K.eq('committed data: 4,000 runs pass every gate but the production run count', fail, ['run.count']);
   const S = (o.results as any).sport_summary;
-  const mb = S.cards.find((c: any) => c.event.startsWith('UFC 333')).bouts[0];
-  K.chk('committed data: UFC 333 leads with its main event, a featherweight title fight, Evloev\'s win share near 1 - p_a', mb.title && mb.title.division === 'Featherweight' && Math.abs(mb.b_win.probability - (1 - main.p_a)) < 4 * Math.sqrt(0.25 / 4000), mb);
+  const leads = S.cards.map((c: any) => ({ event: c.event, mb: c.bouts[0], main: d.bouts.find((b) => b.event === c.event && b.order === 1) }));
+  const leadOk = (x: any) => !!x.main && x.mb.bout_id === x.main.bout_id && (x.main.title ? !!x.mb.title && x.mb.title.division === x.main.title.division : !x.mb.title)
+    && Math.abs(x.mb.b_win.probability - (1 - x.main.p_a)) < 4 * Math.sqrt(0.25 / 4000);
+  K.chk('committed data: every card leads with its main event, its title when it is one, the B side\'s win share near 1 - p_a (' + leads.length + ' cards)', leads.length === events.length && leads.every(leadOk),
+    leads.filter((x: any) => !leadOk(x)).map((x: any) => x.event));
   K.eq('committed data: eleven divisions in the title path, each with exactly one champion per run', [S.divisions.length, (o.results as any).checks.sum_rule_errors.length], [11, 0]);
   K.chk('committed data: the run writes snapshot, results, gates and manifest', ['snapshot.json', 'results.json', 'gates.json', 'manifest.json'].every((x) => fs.existsSync(path.join(o.outDir, x))));
 }
