@@ -1,0 +1,13 @@
+{
+  "schema": "edgedesk_market_foresight_frozen_v1",
+  "note": "Every Market Foresight methodology, by version, with the sha256 of its file as frozen. The worker refuses to compute a version whose file no longer has this digest. A change is a NEW version file and a new entry here; an entry is never edited, and earlier versions' results are kept.",
+  "versions": {
+    "mf-v1": {
+      "file": "research/foresight/methodology/mf-v1.json",
+      "sha256": "9cd1de3c9076640fcff167988fd1a9290106dbff9776245101b5e141f9caa4d0",
+      "frozen_at": "2026-10-25",
+      "frozen_before": "any Market Foresight metric was computed: this file was committed before lib/edgedesk_foresight.js existed"
+    }
+  },
+  "current": "mf-v1"
+}
