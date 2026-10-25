@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-25T19:08:23.355Z",
- "board_generated_at": "2026-10-25T19:08:13.613Z",
+ "generated_at": "2026-10-25T20:08:10.244Z",
+ "board_generated_at": "2026-10-25T20:08:00.696Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -16,18 +16,38 @@
  ],
  "games": [
   {
+   "game_id": "401862814",
+   "game": "Army @ Memphis",
+   "kickoff": "2026-11-01T00:00:00.000Z",
+   "named": false,
+   "edgedesk": "Memphis −0.5",
+   "market": "Memphis −6.5",
+   "books": 1,
+   "gap": 6.1,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
    "game_id": "401859185",
    "game": "Notre Dame @ Navy",
    "kickoff": "2026-10-31T16:00:00.000Z",
    "named": false,
    "edgedesk": "Notre Dame −22.0",
-   "market": "Notre Dame −30.5",
+   "market": "Notre Dame −29.5",
    "books": 1,
-   "gap": 8.5,
+   "gap": 7.5,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
@@ -75,11 +95,11 @@
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 9.3"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.3"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail."
   },
   {
    "game_id": "401856847",
@@ -153,9 +173,9 @@
    "kickoff": "2026-10-31T19:30:00.000Z",
    "named": false,
    "edgedesk": "BYU −23.0",
-   "market": "BYU −14.5",
+   "market": "BYU −15.5",
    "books": 1,
-   "gap": 8.3,
+   "gap": 7.3,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -197,21 +217,21 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (2.6 pts) lifts the gap over 7: without it the gap is 5.7 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (2.6 pts) lifts the gap over 7: without it the gap is 4.7 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 7.1 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 6.1 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.4"
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.4 — the extreme is not supported by how margins of this size have actually finished"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401856737",
@@ -219,9 +239,9 @@
    "kickoff": "2026-10-31T23:30:00.000Z",
    "named": false,
    "edgedesk": "Texas −13.0",
-   "market": "Texas −20.5",
+   "market": "Texas −21.0",
    "books": 1,
-   "gap": 7.3,
+   "gap": 7.8,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -268,12 +288,12 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.2 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.7 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.9"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.4"
     }
    ],
    "consistent": true,
