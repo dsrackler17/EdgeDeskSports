@@ -341,7 +341,11 @@ function r2(v) { return Math.round(v * 100) / 100; }
   ['NFL', 'CFB'].forEach((lg) => {
     const want = Object.values(MR[lg] || {}).reduce((a, g) => a + (g.grade && g.grade.pnl ? g.grade.pnl.units : 0), 0);
     const got = PNL.gradedPnl(mrRows.filter((x) => x.league === lg).map((x) => PNL.settle(x)), 'flat').summary;
-    chk('real: ' + lg + ' graded-price units = the record\'s own closing-price units (' + Math.round(want * 100) / 100 + 'u)', got.n ? Math.abs(got.net_units - want) < 0.011 : want === 0, [got.n, got.net_units, want]);
+    /* the record keeps each bet's units to 4 places and the ledger to 6, so the two sums
+       drift apart by up to 0.0000505u a bet (systematically: every win at -115 rounds up
+       by 0.000035), and net_units is rounded to 2 places. A fixed 0.011u failed at 1,270
+       CFB picks (2026-10-25: -87.13 v -87.1183); the odds and sides are checked exactly above. */
+    chk('real: ' + lg + ' graded-price units = the record\'s own closing-price units (' + Math.round(want * 100) / 100 + 'u)', got.n ? Math.abs(got.net_units - want) <= got.n * 0.0000505 + 0.005 : want === 0, [got.n, got.net_units, want]);
   });
   const page = core.expandRows(B.page);
   const prec = PNL.gradedRecord(page.filter((x) => PNL.inRecord(x, false)));

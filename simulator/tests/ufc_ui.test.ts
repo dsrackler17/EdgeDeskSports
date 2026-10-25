@@ -53,7 +53,8 @@ const S = (o.results as any).sport_summary;
 const nBouts = S.cards.reduce((a: number, c: any) => a + c.bouts.length, 0);
 const fights = paint(cache(), 'fights');
 T.chk('Fights: the EXPERIMENTAL label and the count of simulated runs', /EXPERIMENTAL/.test(fights) && /4,000 simulated runs/.test(fights));
-T.chk('Fights: every card by date, UFC 333 first', (fights.match(/class="sm-sub"/g) || []).length === S.cards.length && fights.indexOf('UFC 333') < fights.indexOf('UFC 335'));
+T.chk('Fights: every card by date (' + S.cards.length + ' cards)', (fights.match(/class="sm-sub"/g) || []).length === S.cards.length && S.cards.every((c: any, i: number) => i === 0 || S.cards[i - 1].date <= c.date)
+  && S.cards.every((c: any, i: number) => i === 0 || fights.indexOf(UI.esc(S.cards[i - 1].event)) < fights.indexOf(UI.esc(c.event))));
 T.chk('Fights: every bout with both fighters\' win shares and ±', (fights.match(/<b>\d+\.\d% ±\d/g) || []).length === 2 * nBouts);
 const allBouts = [].concat(...S.cards.map((c: any) => c.bouts)) as any[];
 const nDis = allBouts.filter((b) => b.guard && b.guard.status === 'DISAGREES').length;
@@ -67,8 +68,13 @@ T.chk('Fights: a disagreement is labelled, says it is not an edge, and lists wha
 T.chk('Fights: a disagreeing title fight withholds the new champion\'s fair odds too', (fights.match(/<b>New champion:<\/b> [^<]*<span class="sm-dim">· fair odds withheld<\/span>/g) || []).length === allBouts.filter((b) => b.title && b.guard && b.guard.status === 'DISAGREES').length);
 T.chk('Fights: the guard never shows a signal without certification', allBouts.every((b) => !b.guard || !b.guard.signal_allowed || b.guard.certified));
 T.chk('Fights: finish v decision and the round of a finish for every bout', (fights.match(/Ends in a finish \d/g) || []).length === nBouts && (fights.match(/Finish by round: R1 /g) || []).length === nBouts && /R5 \d/.test(fights));
-T.chk('Fights: the four title fights carry the title badge and the chance of a new champion', (fights.match(/ title<\/span>/g) || []).length === 4 && (fights.match(/New champion:<\/b> \d+\.\d% ±/g) || []).length === 4);
-T.chk('Fights: the ufc.com champion and ranks beside the names, and debutants marked', /Champion<\/span>/.test(fights) && /#1 Featherweight/.test(fights) && /UFC debut/.test(fights));
+/* the cards change every week (a card leaves the data once it starts), so the counts come from the run itself */
+const nTitles = allBouts.filter((b) => b.title).length;
+T.chk('Fights: the ' + nTitles + ' booked title fights carry the title badge and the chance of a new champion', (fights.match(/ title<\/span>/g) || []).length === nTitles && (fights.match(/New champion:<\/b> \d+\.\d% ±/g) || []).length === nTitles);
+const sides = allBouts.flatMap((b) => [b.a, b.b]);
+const nRanked = sides.filter((x) => !x.champion && typeof x.rank === 'number').length;
+T.chk('Fights: the ufc.com champion and ranks beside the names (' + nRanked + ' ranked), and debutants marked', (fights.match(/title="ufc\.com champion">Champion<\/span>/g) || []).length === sides.filter((x) => x.champion).length
+  && nRanked > 0 && (fights.match(/title="ufc\.com ranking">#\d+ [^<]+<\/span>/g) || []).length === nRanked && /UFC debut/.test(fights));
 /* the loop lists only bouts that have not started: the first booked bout it published */
 const pubB = allBouts.find((b) => b.published_p_a != null);
 T.chk('Fights: the served price and the loop\'s published value (' + (pubB ? pubB.a.name + ' ' + (100 * pubB.served_p_a).toFixed(1) + '%' : 'no bout listed') + ')', !!pubB
@@ -78,12 +84,13 @@ T.chk('Fights: the method is never split into KO and submission', !/KO\/TKO \d|S
 const tp = paint(cache(), 'title_path');
 T.chk('Title Path: Estimated, the horizon and the matchmaking rule in plain words', /sm-estimated/.test(tp) && /Who becomes champion by/.test(tp) && /highest-ranked contender who is coming off a win/.test(tp) && /EdgeDesk’s rule, not the UFC’s/.test(tp));
 T.chk('Title Path: eleven divisions, each with its champion and pace', (tp.match(/<div class="sm-h">[^<]+ <span class="sm-dim sm-small">champion /g) || []).length === 11 && (tp.match(/undisputed title fights in the five years to/g) || []).length === 11);
-T.chk('Title Path: the booked title fights named, the others say none is booked', (tp.match(/Booked title fight:/g) || []).length === 4 && (tp.match(/No title fight booked/g) || []).length === 7);
+const titleDivs = new Set(allBouts.filter((b) => b.title).map((b) => b.title.division)).size;
+T.chk('Title Path: the booked title fights named (' + titleDivs + ' divisions), the others say none is booked', (tp.match(/Booked title fight:/g) || []).length === titleDivs && (tp.match(/No title fight booked/g) || []).length === 11 - titleDivs);
 T.chk('Title Path: every contender row with hold, win, shot and beat-the-champion columns', /Champion at horizon/.test(tp) && /Beats the champion if given the shot/.test(tp) && /Movsar Evloev/.test(tp));
 T.chk('Title Path: contenders with no shot in any simulated year are listed apart with the reason', /No title shot in any simulated year:<\/b> [^<]*Alexandre Pantoja \(#1, coming off a loss\)/.test(tp));
 const TP = S.model_health.title_record.periods;
 T.chk('Title Path: how champions are priced, by period (' + TP.map((x: any) => x.champion_won + ' of ' + x.decided + ' v ' + x.elo_expected.toFixed(1)).join('; ') + '), and what is not modelled',
-  tp.indexOf('From 2014 to 2020 champions won 71 of 100 where it expected ' + TP[0].elo_expected.toFixed(1) + ' — it underrated them then; since 2021 champions have won about as many title fights as it expected (52 of 87, expected ' + TP[1].elo_expected.toFixed(1) + ')') >= 0
+  tp.indexOf('From 2014 to 2020 champions won 71 of 100 where it expected ' + TP[0].elo_expected.toFixed(1) + ' — it underrated them then; since 2021 champions have won about as many title fights as it expected (' + TP[1].champion_won + ' of ' + TP[1].decided + ', expected ' + TP[1].elo_expected.toFixed(1) + ')') >= 0
   && /A champion term is tested every week/.test(tp) && !/understate/.test(tp) && /Interim belts/.test(tp));
 T.chk('Title Path: a contender who moved divisions is named under the division they left', /booked in another division \(counted there\): [^<]*Diego Lopes \(Lightweight\)/.test(tp));
 /* Model Health */
@@ -108,7 +115,7 @@ T.chk('Model Health: an adopted age curve is named with its version, said to be 
 T.chk('Model Health: with nothing adopted, the age block says so', (() => { const r2 = JSON.parse(JSON.stringify(run)); const s2 = r2.validation_summary.sport_summary.model_health.study;
   if (!s2 || !s2.age) return true; s2.age.adopted = null; return /No age curve by division is served/.test(paint(cache({ run: r2 }), 'model_health')); })());
 T.chk('Model Health: champions against the Elo, and the finish model out of sample', /champions won <b>\d+<\/b>; the Elo expected about <b>\d+<\/b>/.test(h) && /tested on [\d,]+ later bouts/.test(h));
-T.chk('Model Health: the title record in two periods', h.indexOf('<tr><td>2014–2020</td><td class="sm-num">100</td><td class="sm-num">71</td><td class="sm-num">' + TP[0].elo_expected.toFixed(1) + '</td><td class="sm-num">+' + (71 - TP[0].elo_expected).toFixed(1) + '</td></tr>') >= 0 && /<tr><td>2021–2026<\/td><td class="sm-num">87<\/td>/.test(h));
+T.chk('Model Health: the title record in two periods', h.indexOf('<tr><td>2014–2020</td><td class="sm-num">100</td><td class="sm-num">71</td><td class="sm-num">' + TP[0].elo_expected.toFixed(1) + '</td><td class="sm-num">+' + (71 - TP[0].elo_expected).toFixed(1) + '</td></tr>') >= 0 && h.indexOf('<tr><td>2021–2026</td><td class="sm-num">' + TP[1].decided + '</td><td class="sm-num">' + TP[1].champion_won + '</td>') >= 0);
 T.chk('Model Health: the champion term, not served, with its latest weekly test in plain words', /The champion term\.<\/b> The model loop tests, every week, giving the champion going in 100 extra rating points/.test(h)
   && /Latest test, [^:]+: <b>not adopted<\/b>\. Over every bout since 2016 it moved the log loss by \+0\.00009 \(lower is better; adopting it takes a fall of at least 0\.0005\), and on 2025 alone by \+0\.00241\./.test(h) && /title fights are priced without one/.test(h));
 T.chk('Model Health: a served champion term is stated as served', (() => { const r2 = JSON.parse(JSON.stringify(run)); r2.validation_summary.sport_summary.model_health.champion_term.served_bonus = 100;

@@ -203,7 +203,8 @@ async function main() {
     try {
       const t0 = Date.now();
       play[y] = await B.loadPlays(y, sched[y]);
-      log(`  plays ${y}: ${play[y].counts.plays} rows, ${play[y].players.size} players, ${play[y].teamGameCount} team-games (${Date.now() - t0}ms)`);
+      log(`  plays ${y}: ${play[y].counts.plays} rows, ${play[y].players.size} players, ${play[y].teamGameCount} team-games (${Date.now() - t0}ms)`
+        + (play[y].counts.incompletions_refiled ? `; ${play[y].counts.incompletions_refiled} incompletions the feed filed under the defence refiled to the passer's team` : ''));
     } catch (e) { failed.push({ what: 'player_stats ' + y, why: e.message }); }
   }
   const usable = seasons.filter(y => play[y] && sched[y]);

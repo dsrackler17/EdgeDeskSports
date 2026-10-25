@@ -116,6 +116,8 @@ const UFC_RUN_ID = 'dddddddd-eeee-ffff-0000-111111111111';
 const urun = { ...run, run_id: UFC_RUN_ID, sport: 'ufc', season: '2026', n_sims: 3000, seed: '9', model_version: uout.results.run.model_version, rules_version: uout.results.run.rules_version, comparison_id: null,
   validation_summary: { flags: uout.results.flags, sport_summary: (uout.results as any).sport_summary } };
 const urows = resultRows(uout as any), uents = entityRows(uout as any);
+/* the booked cards change every week (a card leaves the data once it starts), so the Fights check reads them from the run */
+const ucards = (uout.results as any).sport_summary.cards, utitles = ucards.flatMap((c: any) => c.bouts).filter((b: any) => b.title).length;
 /* golf: the committed current tour events, simulated offline (3,000 runs each), one competition per event, through
    the publisher's row builders */
 const gout = await executeGolf({ season: 2026, runs: 3000, seed: '5', workers: 1, snapshot: null, out: fs.mkdtempSync(path.join(os.tmpdir(), 'golf-e2e-')), traceRuns: [], offline: true }, () => {});
@@ -360,7 +362,8 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       let t = await text(page);
       const tabs = await page.locator('#simHost .sm-tabs').innerText();
       T.chk(W + ': UFC: the tabs are Fights, Title Path and Model Health, Fights open', /Fights/.test(tabs) && /Title Path/.test(tabs) && /Model Health/.test(tabs) && (await page.locator('#simHost .sm-tabs button.on').innerText()) === 'Fights');
-      T.chk(W + ': UFC Fights: the cards by date, title fights badged, fair decimal and American odds, finish and rounds', /UFC 333: Volkanovski vs\. Evloev/.test(t) && /Featherweight title/.test(t) && /New champion:/.test(t) && /Finish by round: R1/.test(t) && /[+-]\d{2,4}/.test(t) && /3,000 simulated runs/.test(t));
+      T.chk(W + ': UFC Fights: the cards by date (' + ucards[0].event + ' first), title fights badged, fair decimal and American odds, finish and rounds', ucards.length > 0 && t.includes(ucards[0].event)
+        && (utitles === 0 || (/weight title/.test(t) && /New champion:/.test(t))) && /Finish by round: R1/.test(t) && /[+-]\d{2,4}/.test(t) && /3,000 simulated runs/.test(t));
       T.chk(W + ': UFC Fights: no horizontal page scroll (tables scroll in their cards)', await page.evaluate(() => document.scrollingElement!.scrollWidth <= window.innerWidth + 1));
       await shot(page, 'sim-ufc-fights-' + W);
       await page.click('#simHost [data-sim-tab="title_path"]'); await page.waitForTimeout(150);
