@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T23:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1862,110 +1862,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "fkx6hf79zrsh",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": true,
-    "question": "Can Colorado win at the line of scrimmage?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.8 points.",
-    "gap": {
-      "points": 0.8,
-      "toward": "Oklahoma State",
-      "other": "Colorado"
-    },
-    "supporting": [
-      "When Oklahoma State has the ball (pass protection against the pass rush): Oklahoma State’s offense has allowed a sack on 2.3% of its dropbacks, and Colorado’s defense sacks the quarterback on 6.3% of opponent dropbacks (FBS average 5.6%).",
-      "When Oklahoma State has the ball (big plays through the air): Oklahoma State’s offense turns 16.5% of its pass plays into explosive gains, and Colorado’s defense gives up explosive gains on 11.4% of opponent pass plays (FBS average 10.3%).",
-      "When Colorado has the ball (big plays on the ground): Colorado’s offense turns 5.8% of its runs into explosive gains, and Oklahoma State’s defense gives up explosive gains on 3.2% of opponent runs (FBS average 6.6%).",
-      "When Oklahoma State has the ball (the passing game against the pass defense): Oklahoma State’s offense averages 9.7 yards per pass attempt, and Colorado’s defense allows 6.9 yards per pass attempt (FBS average 7.4)."
-    ],
-    "contradicting": [
-      "In his last two games (Texas Tech and Utah), Wilson averaged 7.3 yards per attempt, against 5.7 in his two games before that.",
-      "EdgeDesk’s position-group ratings put Colorado’s secondary No. 82 nationally and Oklahoma State’s No. 117.",
-      "EdgeDesk’s position-group ratings put Colorado’s pass defense No. 42 nationally and Oklahoma State’s No. 81.",
-      "EdgeDesk’s position-group ratings put Colorado’s defense No. 17 nationally and Oklahoma State’s No. 61."
-    ],
-    "quarterbacks": [
-      "Drew Mestemaker has completed 136 of 205 passes (66.3%) for 1,940 yards, 9.5 yards per attempt, 16 touchdowns and 6 interceptions in six games for Oklahoma State, and has been sacked on 5 of 210 dropbacks.",
-      "Isaac Wilson has completed 57 of 100 passes (57.0%) for 684 yards, 6.8 yards per attempt, 4 touchdowns and 4 interceptions in four games for Colorado, and has been sacked on 3 of 103 dropbacks.",
-      "Julian Lewis has completed 58 of 93 passes (62.4%) for 709 yards, 7.6 yards per attempt, 6 touchdowns and 2 interceptions in four games for Colorado, and has been sacked on 8 of 101 dropbacks.",
-      "Drew Mestemaker does not appear on Oklahoma State’s update 2 availability report.",
-      "Isaac Wilson does not appear on Colorado’s update 2 availability report."
-    ],
-    "availability": [
-      "Oklahoma State’s availability report lists receiver Dayvon Standard as questionable."
-    ],
-    "script": {
-      "model": [
-        "Oklahoma State’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 11.1% of its runs, and Colorado’s defense stops 26.8% of opponent runs at or behind the line.",
-        "Oklahoma State’s offense has to hold its own in the red zone against a defense that allows success on 36.9% of opponent red-zone plays.",
-        "Oklahoma State’s offense has to keep winning on big pass plays: it turns 16.5% of its pass plays into explosive gains, and Colorado’s defense gives up explosive gains on 11.4% of opponent pass plays.",
-        "Oklahoma State’s defense has to come out ahead on long runs: it gives up explosive gains on 3.2% of opponent runs, against an offense that turns 5.8% of its runs into explosive gains."
-      ],
-      "market": [
-        "Colorado’s defense has to come out ahead in the red zone: it allows success on 36.9% of opponent red-zone plays, against an offense that succeeds on 35.3% of its red-zone plays.",
-        "Colorado’s defense has to come out ahead at the line of scrimmage: it stops 26.8% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 11.1% of its runs.",
-        "Wilson keeps producing at his season rate (57.0% completions, 6.8 yards per attempt, 4 TD, 4 INT)."
-      ]
-    },
-    "unknown": [
-      "Oklahoma State’s availability report lists receiver Dayvon Standard as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Oklahoma State and Colorado.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Oklahoma State), sack rate (Oklahoma State), sack rate allowed (Colorado) and sack rate (Colorado); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 8.4 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Oklahoma State: new head coach; returning roster share at the 2nd percentile; returning production at the 1st percentile; transfers out at the 100th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-24T04:32:40.639Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "Big 12 Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-24T02:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-25T04:30:46.026Z"
   }
 }

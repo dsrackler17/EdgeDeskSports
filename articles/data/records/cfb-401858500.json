@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T23:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1819,104 +1819,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1785uo7oh7n51",
-    "status": "EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Wisconsin take away USC’s big plays?",
-    "assessment": "Most of the 3.8-point difference traces to last season’s share of the rating (about 1.4 points), which the closing market has historically priced differently. That explains the gap; it does not make either number a bet.",
-    "gap": {
-      "points": 3.8,
-      "toward": "Wisconsin",
-      "other": "USC"
-    },
-    "supporting": [
-      "When Wisconsin has the ball (the line of scrimmage on running plays): Wisconsin’s offense is stopped at or behind the line on 11.6% of its runs, and USC’s defense stops 14.8% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When USC has the ball (big plays on the ground): USC’s offense turns 4.4% of its runs into explosive gains, and Wisconsin’s defense gives up explosive gains on 2.6% of opponent runs (FBS average 6.6%).",
-      "When Wisconsin has the ball (pass protection against the pass rush): Wisconsin’s offense has allowed a sack on 3.7% of its dropbacks, and USC’s defense sacks the quarterback on 5.5% of opponent dropbacks (FBS average 5.6%).",
-      "When USC has the ball (the run game against the run defense): USC’s offense averages 4.9 yards per carry, and Wisconsin’s defense allows 3.6 yards per carry (FBS average 5.1)."
-    ],
-    "contradicting": [
-      "When Wisconsin has the ball (big plays on the ground): Wisconsin’s offense turns 4.8% of its runs into explosive gains, and USC’s defense gives up explosive gains on 3.4% of opponent runs (FBS average 6.6%).",
-      "When USC has the ball (pass protection against the pass rush): USC’s offense has allowed a sack on 2.8% of its dropbacks, and Wisconsin’s defense sacks the quarterback on 5.9% of opponent dropbacks (FBS average 5.6%).",
-      "When USC has the ball (the line of scrimmage on running plays): USC’s offense is stopped at or behind the line on 15.3% of its runs, and Wisconsin’s defense stops 12.7% of opponent runs at or behind the line (FBS average 17.4%).",
-      "In his last two games (Michigan State and UCLA), Joseph averaged 5.9 yards per attempt, against 8.1 in his four games before that."
-    ],
-    "quarterbacks": [
-      "Colton Joseph has completed 85 of 157 passes (54.1%) for 1,192 yards, 7.6 yards per attempt, 9 touchdowns and 4 interceptions in six games for Wisconsin, and has been sacked on 6 of 163 dropbacks.",
-      "Jayden Maiava has completed 152 of 225 passes (67.6%) for 2,045 yards, 9.1 yards per attempt, 18 touchdowns and 3 interceptions in seven games for USC, and has been sacked on 6 of 231 dropbacks.",
-      "Jonas Williams has completed 12 of 14 passes (85.7%) for 126 yards, 9.0 yards per attempt, no touchdowns and 1 interception in three games for USC, and has been sacked on 1 of 15 dropbacks.",
-      "Colton Joseph does not appear on Wisconsin’s update 2 availability report.",
-      "Jayden Maiava does not appear on USC’s update 2 availability report."
-    ],
-    "availability": [
-      "Wisconsin’s availability report lists receiver Malachi Coleman as questionable.",
-      "Wisconsin’s availability report lists running back Nate Palmer as questionable.",
-      "USC’s availability report lists tight end Mark Bowman as questionable.",
-      "USC’s availability report lists receiver Luc Weaver as questionable."
-    ],
-    "script": {
-      "model": [
-        "Wisconsin’s defense has to come out ahead on big pass plays: it gives up explosive gains on 8.1% of opponent pass plays, against an offense that turns 13.5% of its pass plays into explosive gains.",
-        "Wisconsin’s defense has to slow USC in the pass-rush matchup — USC’s offense has allowed a sack on 2.8% of its dropbacks.",
-        "Wisconsin’s offense has to hold its own on long runs against a defense that gives up explosive gains on 3.4% of opponent runs.",
-        "Wisconsin’s defense has to come out ahead on long runs: it gives up explosive gains on 2.6% of opponent runs, against an offense that turns 4.4% of its runs into explosive gains."
-      ],
-      "market": [
-        "USC’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.8% of its dropbacks, and Wisconsin’s defense sacks the quarterback on 5.9% of opponent dropbacks.",
-        "USC’s defense has to come out ahead on long runs: it gives up explosive gains on 3.4% of opponent runs, against an offense that turns 4.8% of its runs into explosive gains.",
-        "USC’s offense has to keep winning on big pass plays: it turns 13.5% of its pass plays into explosive gains, and Wisconsin’s defense gives up explosive gains on 8.1% of opponent pass plays."
-      ]
-    },
-    "unknown": [
-      "Wisconsin’s availability report lists receiver Malachi Coleman as questionable.",
-      "Wisconsin’s availability report lists running back Nate Palmer as questionable.",
-      "USC’s availability report lists tight end Mark Bowman as questionable.",
-      "USC’s availability report lists receiver Luc Weaver as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed for Wisconsin.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Wisconsin); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 7.7 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-24T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-25T04:30:46.026Z"
   }
 }

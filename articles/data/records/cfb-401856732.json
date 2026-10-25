@@ -37,8 +37,8 @@
   "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T23:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -2208,111 +2208,10 @@
     "warnings": [],
     "hold_reason": "inside final pregame publication floor"
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1x8hq841cx9nhi",
-    "status": "UNEXPLAINED",
-    "input_suspect": true,
-    "question": "Can Texas’ pass rush get to Trinidad Chambliss?",
-    "assessment": "EdgeDesk’s number is 10.1 points closer to Ole Miss than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 10.1 points. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s published number sits 12.0 points from the middle of its own other models. Treat the gap as an open research question, not as an edge.",
-    "gap": {
-      "points": 10.1,
-      "toward": "Ole Miss",
-      "other": "Texas"
-    },
-    "supporting": [
-      "When Texas has the ball (pass protection against the pass rush): Texas’ offense has allowed a sack on 8.7% of its dropbacks, and Ole Miss’ defense sacks the quarterback on 4.8% of opponent dropbacks (FBS average 5.6%).",
-      "When Texas has the ball (the line of scrimmage on running plays): Texas’ offense is stopped at or behind the line on 18.5% of its runs, and Ole Miss’ defense stops 23.9% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Texas has the ball (big plays on the ground): Texas’ offense turns 3.4% of its runs into explosive gains, and Ole Miss’ defense gives up explosive gains on 4.8% of opponent runs (FBS average 6.6%).",
-      "EdgeDesk’s position-group ratings put Ole Miss’ offensive line No. 33 nationally and Texas’ No. 77."
-    ],
-    "contradicting": [
-      "When Ole Miss has the ball (big plays through the air): Ole Miss’ offense turns 8.7% of its pass plays into explosive gains, and Texas’ defense gives up explosive gains on 4.2% of opponent pass plays (FBS average 10.3%).",
-      "When Ole Miss has the ball (the passing game against the pass defense): Ole Miss’ offense averages 7.8 yards per pass attempt, and Texas’ defense allows 5.5 yards per pass attempt (FBS average 7.4).",
-      "EdgeDesk’s position-group ratings put Texas’ secondary No. 2 nationally and Ole Miss’ No. 89.",
-      "EdgeDesk’s position-group ratings put Texas’ pass defense No. 1 nationally and Ole Miss’ No. 57."
-    ],
-    "quarterbacks": [
-      "Arch Manning has completed 107 of 170 passes (62.9%) for 1,298 yards, 7.6 yards per attempt, 11 touchdowns and 5 interceptions in six games for Texas, and has been sacked on 17 of 187 dropbacks.",
-      "Trinidad Chambliss has completed 143 of 212 passes (67.5%) for 1,676 yards, 7.9 yards per attempt, 14 touchdowns and 4 interceptions in six games for Ole Miss, and has been sacked on 5 of 217 dropbacks.",
-      "Arch Manning does not appear on Texas’ game day availability report.",
-      "Trinidad Chambliss does not appear on Ole Miss’ game day availability report."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Ole Miss’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 1.9% of its dropbacks, and Texas’ defense sacks the quarterback on 9.1% of opponent dropbacks.",
-        "Ole Miss’ offense has to hold its own on big pass plays against a defense that gives up explosive gains on 4.2% of opponent pass plays.",
-        "Ole Miss’ offense has to hold its own through the air against a defense that allows 5.5 yards per pass attempt.",
-        "Ole Miss’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 4.8% of opponent dropbacks, against an offense that has allowed a sack on 8.7% of its dropbacks."
-      ],
-      "market": [
-        "Texas’ defense has to come out ahead on big pass plays: it gives up explosive gains on 4.2% of opponent pass plays, against an offense that turns 8.7% of its pass plays into explosive gains.",
-        "Texas’ defense has to come out ahead through the air: it allows 5.5 yards per pass attempt, against an offense that averages 7.8 yards per pass attempt.",
-        "Texas’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.1% of opponent dropbacks, against an offense that has allowed a sack on 1.9% of its dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Texas.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Texas) and sack rate (Texas); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 12.0 points from the middle of its own other models."
-      },
-      {
-        "key": "DATA_FAULT",
-        "severity": "high",
-        "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Ole Miss: new head coach; returning roster share at the 28th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T20:53:12.812Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-24T15:16:12.675Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Southeastern Conference availability report (Game Day)",
-        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-24T22:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T23:24:57.162Z"
+    "at": "2026-10-25T04:30:46.026Z"
   }
 }

@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-25T00:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1856,96 +1856,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "2l2xy4176pqf2",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Tulane’s pass rush get to Owen McCown?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Tulane, and its own breakdown accounts for about 2.2 of the 3.3 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 3.3,
-      "toward": "Tulane",
-      "other": "UTSA"
-    },
-    "supporting": [
-      "When UTSA has the ball (the red zone): UTSA’s offense succeeds on 42.9% of its red-zone plays, and Tulane’s defense allows success on 30.4% of opponent red-zone plays (FBS average 43.6%).",
-      "EdgeDesk’s position-group ratings put Tulane’s receivers No. 71 nationally and UTSA’s No. 121."
-    ],
-    "contradicting": [
-      "When Tulane has the ball (pass protection against the pass rush): Tulane’s offense has allowed a sack on 8.3% of its dropbacks, and UTSA’s defense sacks the quarterback on 9.6% of opponent dropbacks (FBS average 5.6%).",
-      "When Tulane has the ball (early downs): Tulane’s offense succeeds on 33.9% of its first- and second-down plays, and UTSA’s defense allows success on 41.7% of first- and second-down plays (FBS average 42.7%).",
-      "When UTSA has the ball (big plays on the ground): UTSA’s offense turns 8.7% of its runs into explosive gains, and Tulane’s defense gives up explosive gains on 7.5% of opponent runs (FBS average 6.6%).",
-      "In his last two games (Southern Miss and Army), Semonza averaged 5.8 yards per attempt, against 7.5 in his three games before that."
-    ],
-    "quarterbacks": [
-      "Kadin Semonza has completed 64 of 119 passes (53.8%) for 808 yards, 6.8 yards per attempt, 4 touchdowns and 2 interceptions in five games for Tulane, and has been sacked on 13 of 132 dropbacks.",
-      "Trace Johnson has completed 13 of 26 passes (50.0%) for 200 yards, 7.7 yards per attempt, 1 touchdown and 1 interception in two games for Tulane, and has been sacked on 1 of 27 dropbacks.",
-      "Owen McCown has completed 151 of 218 passes (69.3%) for 1,565 yards, 7.2 yards per attempt, 11 touchdowns and 2 interceptions in seven games for UTSA, and has been sacked on 9 of 227 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Tulane’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.5% of opponent dropbacks, against an offense that has allowed a sack on 3.9% of its dropbacks.",
-        "Tulane’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 9.6% of opponent dropbacks.",
-        "Tulane’s defense has to slow UTSA on long runs — UTSA’s offense turns 8.7% of its runs into explosive gains.",
-        "Tulane’s defense has to come out ahead in the red zone: it allows success on 30.4% of opponent red-zone plays, against an offense that succeeds on 42.9% of its red-zone plays."
-      ],
-      "market": [
-        "UTSA’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.6% of opponent dropbacks, against an offense that has allowed a sack on 8.3% of its dropbacks.",
-        "UTSA’s offense has to keep winning on long runs: it turns 8.7% of its runs into explosive gains, and Tulane’s defense gives up explosive gains on 7.5% of opponent runs.",
-        "UTSA’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.9% of its dropbacks, and Tulane’s defense sacks the quarterback on 6.5% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Tulane and UTSA.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Tulane), sack rate (Tulane) and sack rate allowed (UTSA); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 5.6 points from the middle of its own other models."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Tulane: new head coach; returning production at the 25th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-24T04:32:40.639Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-25T04:30:46.026Z"
   }
 }

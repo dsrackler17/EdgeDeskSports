@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-24T23:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1850,96 +1850,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-24. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1qp05ne1gtqnw8",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Clemson take away Virginia Tech’s big plays?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Virginia Tech, and its own breakdown accounts for about 0.0 of the 2.8 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 2.8,
-      "toward": "Virginia Tech",
-      "other": "Clemson"
-    },
-    "supporting": [
-      "When Clemson has the ball (pass protection against the pass rush): Clemson’s offense has allowed a sack on 8.1% of its dropbacks, and Virginia Tech’s defense sacks the quarterback on 9.6% of opponent dropbacks (FBS average 5.6%).",
-      "When Clemson has the ball (the line of scrimmage on running plays): Clemson’s offense is stopped at or behind the line on 17.5% of its runs, and Virginia Tech’s defense stops 27.8% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Clemson has the ball (third down): Clemson’s offense converts 31.9% of its third downs, and Virginia Tech’s defense allows opponents to convert 32.5% of their third downs (FBS average 39.7%).",
-      "When Clemson has the ball (big plays through the air): Clemson’s offense turns 7.6% of its pass plays into explosive gains, and Virginia Tech’s defense gives up explosive gains on 9.9% of opponent pass plays (FBS average 10.3%)."
-    ],
-    "contradicting": [
-      "When Virginia Tech has the ball (pass protection against the pass rush): Virginia Tech’s offense has allowed a sack on 6.9% of its dropbacks, and Clemson’s defense sacks the quarterback on 7.3% of opponent dropbacks (FBS average 5.6%).",
-      "When Virginia Tech has the ball (the line of scrimmage on running plays): Virginia Tech’s offense is stopped at or behind the line on 21.3% of its runs, and Clemson’s defense stops 16.4% of opponent runs at or behind the line (FBS average 17.4%)."
-    ],
-    "quarterbacks": [
-      "Tait Reynolds has completed 99 of 156 passes (63.5%) for 945 yards, 6.1 yards per attempt, 1 touchdown and 3 interceptions in six games for Clemson, and has been sacked on 16 of 172 dropbacks.",
-      "Christopher Vizzina has completed 14 of 23 passes (60.9%) for 102 yards, 4.4 yards per attempt, 1 touchdown and 2 interceptions in two games for Clemson, and has been sacked on 1 of 24 dropbacks.",
-      "Ethan Grunkemeyer has completed 163 of 226 passes (72.1%) for 1,942 yards, 8.6 yards per attempt, 15 touchdowns and 2 interceptions in seven games for Virginia Tech, and has been sacked on 17 of 243 dropbacks.",
-      "Bryce Baker has completed 11 of 14 passes (78.6%) for 127 yards, 9.1 yards per attempt, 1 touchdown and no interceptions in two games for Virginia Tech, and has been sacked on 1 of 15 dropbacks.",
-      "Tait Reynolds does not appear on Clemson’s update 2 availability report.",
-      "Ethan Grunkemeyer does not appear on Virginia Tech’s update 2 availability report."
-    ],
-    "availability": [
-      "Virginia Tech’s availability report lists ten players as out, including offensive linemen Nathaniel Wright, Lucas Austin, Montavious Cunningham and Justin Terry."
-    ],
-    "script": {
-      "model": [
-        "Virginia Tech’s offense has to keep winning on big pass plays: it turns 14.5% of its pass plays into explosive gains, and Clemson’s defense gives up explosive gains on 6.8% of opponent pass plays.",
-        "Virginia Tech’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 7.3% of opponent dropbacks.",
-        "Virginia Tech’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.6% of opponent dropbacks, against an offense that has allowed a sack on 8.1% of its dropbacks.",
-        "Virginia Tech’s defense has to come out ahead at the line of scrimmage: it stops 27.8% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 17.5% of its runs."
-      ],
-      "market": [
-        "Clemson’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.3% of opponent dropbacks, against an offense that has allowed a sack on 6.9% of its dropbacks.",
-        "Clemson’s defense has to come out ahead on big pass plays: it gives up explosive gains on 6.8% of opponent pass plays, against an offense that turns 14.5% of its pass plays into explosive gains.",
-        "Reynolds keeps producing at his season rate (63.5% completions, 6.1 yards per attempt, 1 TD, 3 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Clemson and Virginia Tech.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Clemson), sack rate (Clemson), sack rate allowed (Virginia Tech) and sack rate (Virginia Tech); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Virginia Tech: new head coach; returning production at the 36th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 7 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-24T04:41:17.441Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-18T03:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Atlantic Coast Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-24T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-24T10:49:55.290Z"
+    "at": "2026-10-25T04:30:46.026Z"
   }
 }
