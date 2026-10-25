@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-25 — CI back to green: five failures, each fixed at its cause
+
+- **Football weekly build refused to publish week 8** (mean rank shift 11.46 against a bound of 6; every run since 2026-10-25 11:45 UTC).
+  - The cause is upstream. cfbfastR's rebuild of `player_stats_2026.csv` (2026-10-24 19:19 UTC) files about one incomplete pass in five under the **defence**: 4,397 of 20,158 through week 8, against 7 of 18,333 in the 2026-10-19 file. Mostly these are the passes a defender broke up. Read as filed, the offence lost those attempts and the defence gained attempts it never threw. ETSR moved 1.8 pts on average, even for the 76 teams that had not played.
+  - `football/data/play_offence.js` puts each incompletion with its passer's team: the team the passer completed or ran for in that game, else the drive's offence, else as filed. The answer is never a third team.
+  - `build_players.js` `loadPlays` and `build_starters.js` `cfbDropbackRows` both use it. It refiles 4,519 rows in 2026, 1,911 in 2025, 209 in 2024 and 235 in 2023, and the build log says so. On the 2026-10-19 file it changes nothing. The defender's pass breakup now stays with the defence.
+  - Week 8 against week 7: mean rank shift 3.51 and 0.7% of teams moving 15+ places, with no anomalies (players and rankings rebuilt locally).
+  - `football/data/play_offence.test.js` (16 checks, in `cfb:test`).
+- **A stale scheduled job reverted a merged pull request.** When its push was rejected, `tools/ci/push_generated.sh` overwrote every *named path* with the job's checkout. The cfb-lab job names whole directories, so at 05:23 it put back `football/game_research/factors.json` and a row of `football/cfb_validation/versions.jsonl` from before #766. That turned Game research tests and NFL model suites red.
+  - A rejected push now carries only the files this run changed. Everything else under the named paths keeps the tip's version.
+  - `push_generated.test.js` has 23 checks, 3 new, which reproduce the incident. `factors.json` is regenerated.
+- **Model loop health: college football DEGRADED.** The sportsdataverse schedule parquet files a TBD start at a midnight-Eastern placeholder (04:00 UTC). Six week-8 games that kicked off between 19:30 and 02:15 therefore left that day's cards from the morning on, a card published at noon would have graded as after kickoff, and the games read as "played, no result" before they began.
+  - `model_loop/adapters/cfb/ingest.py` replaces a TBD start with the record's kickoff, else the cfbfastR CSV spine's. One new test.
+  - The stamp already published clears at the loop's next run.
+- **Simulator (UFC) after UFC 333 started.** `ufc_sim.test.ts`, `ufc_ui.test.ts` and `ui.e2e.ts` named UFC 333's main event, its title fights and fixed counts. They now check what every booked card must satisfy: one five-round main event, title fights between a division's champion and a challenger, badges and counts read from the run, and the 2021-on title record from its own numbers.
+- **Record P&L.** `pnl_ledger.test.js` compared two sums of 1,270 per-bet values, one rounded to 4 places and one to 6, within a fixed 0.011u. It failed at −87.13 v −87.1183. The bound is now the rounding itself: 0.0000505u a bet plus the 2-place summary. The odds and sides are still checked exactly.
+
 ## 2026-10-24 — College number: unfed matchup inputs start at league average; the schedule term computed as trained, and rejected
 
 Two fixes that follow from the leave-one-term-out record (`docs/cfb-validation/LOTO.md`). Pricing patch `edgedesk_cfb_r1+p12` (`football/cfb_validation/versions.jsonl`).
