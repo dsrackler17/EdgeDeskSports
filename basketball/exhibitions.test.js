@@ -91,7 +91,7 @@ T.chk('two Division I schools listing one exhibition: priced once, at the home s
   && by('2026-10-27')[0].home_d1 === 1 && by('2026-10-27')[0].away_d1 === 1 && by('2026-10-27')[0].neutral === 0);
 T.chk('...starting at the listed local time', by('2026-10-27')[0].start_utc === '2026-10-27T23:00:00Z' && !by('2026-10-27')[0].start_approx);
 const d2 = by('2026-10-29')[0];
-T.chk('an NCAA Division II opponent: priced in the non-Division I regime, named as the registry writes it', d2 && d2.home_id === '1' && d2.away_d1 === 0 && /^x-/.test(d2.away_id) && d2.away_name === 'Division Two');
+T.chk('an NCAA Division II opponent: priced in the non-Division I regime, named as the school lists it', d2 && d2.home_id === '1' && d2.away_d1 === 0 && /^x-/.test(d2.away_id) && d2.away_name === 'Division Two College');
 const naia = by('2026-10-30')[0];
 T.chk('a website the registry does not know (an NAIA school): non-Division I, named as the school lists it', naia && naia.away_d1 === 0 && naia.away_name === 'Prairie NAIA');
 T.chk('an intrasquad game (the school\'s own website) is not priced', !by('2026-10-31').length && why('2026-10-31').includes('an intrasquad game'));
@@ -107,6 +107,31 @@ T.chk('every priced game is flagged, has a numeric id and the dataset\'s shape',
 T.chk('game ids are stable across runs', JSON.stringify(EX.exhibitions('ncaam', rows, o).games.map((g) => g.game_id)) === JSON.stringify(R.games.map((g) => g.game_id)));
 T.chk('a game whose school\'s ESPN team is not Division I this season is not priced', !EX.exhibitions('ncaam', rows, Object.assign({}, o, { d1: new Set(['2', '3', '4']) })).games.some((g) => g.home_id === '1' || g.away_id === '1'));
 T.eq('no schedules held: nothing, and no error', EX.exhibitions('ncaaw', rows, o).games, []);
+
+/* ------------------------------------------------------------------ real pages (probe rounds 11 and 12)
+   Eleven schools' own 2025-26 and 2026-27 basketball schedules, as the collector reads them, against the committed
+   datasets: each school is its own ESPN team, men's and women's */
+{
+  const zlib = require('zlib');
+  const SC = require('../collegiate/schedules');
+  const FIX = path.join(__dirname, '..', 'collegiate', 'probe', 'fixtures');
+  const WANT = { 'goduke.com': '150', 'kuathletics.com': '2305', 'uconnhuskies.com': '41', 'msuspartans.com': '127', 'gozags.com': '2250', 'fightingillini.com': '356', 'villanova.com': '222', 'gomason.com': '2244',
+    'bradleybraves.com': '71', 'purduesports.com': '2509', 'gostanford.com': '24' };
+  for (const [L, sport] of [['ncaam', 'mens-basketball'], ['ncaaw', 'womens-basketball']]) {
+    const DS = require('./' + L + '_forecast/dataset');
+    const games = DS.load([2026]);
+    const schedules = Object.keys(WANT).map((host) => {
+      const fs2 = fs.existsSync(path.join(FIX, host)) ? fs.readdirSync(path.join(FIX, host)) : [];
+      const f = fs2.find((x) => x.includes(sport.replace(/-/g, '_') + '_schedule') && /2025_26/.test(x) && (sport === 'womens-basketball' || !/womens/.test(x)));
+      const x = f ? SC.parseSchedule(zlib.gunzipSync(fs.readFileSync(path.join(FIX, host, f))).toString('utf8'), sport, host) : null;
+      return { school: host, games: x ? x.games : [] };
+    });
+    const R = EX.learnTeams(schedules, games);
+    const got = Object.fromEntries([...R.teams].map(([k, v]) => [k, v.id]));
+    T.eq(L + ': every probed school is its own ESPN team, from last season\'s results', got, WANT);
+    T.chk(L + ': ...on nearly all of its finals', [...R.teams.values()].every((v) => v.matched >= 0.9 * v.finals && v.matched >= 25));
+  }
+}
 
 fs.rmSync(TMP, { recursive: true, force: true });
 process.exit(T.done());

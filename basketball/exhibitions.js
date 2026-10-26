@@ -150,7 +150,7 @@ const bareName = (x) => String(x || '').replace(/\s*\((?:exh\.?|exhibition|e)\)?
 function registryIndex(registry) {
   const byHost = new Map(); const byName = new Map();
   for (const s of registry) {
-    if (s.host) byHost.set(s.host, s);
+    for (const h of [s.host, s.registry_host]) if (h) byHost.set(h, s);      /* its site, and the one a correction replaced */
     for (const n of new Set([s.name, s.full_name, s.ncaa_name].filter(Boolean).map(normName))) byName.set(n, byName.has(n) && byName.get(n) !== s ? null : s);
   }
   return { byHost, byName };
@@ -172,7 +172,8 @@ function exhibitions(league, games, o) {
   for (const x of prev.concat(now)) { if (!merged.has(x.school)) merged.set(x.school, { school: x.school, games: [] }); merged.get(x.school).games.push(...x.games); }
   const { teams, unmatched } = learnTeams([...merged.values()], games);
   out.schools_matched = teams.size; out.unmatched = unmatched;
-  const registry = o.schools || (readJson(path.join(o.dataDir || DATA, 'schools.json')) || {}).schools || [];
+  /* the collector's registry with its host corrections applied (collegiate/rosters.loadSchools) */
+  const registry = o.schools || require('../collegiate/rosters').loadSchools(o.dataDir || DATA, { learnt: false });
   const R = registryIndex(registry);
   /* a counted game the dataset holds, by ESPN team and local day */
   const counted = new Set();
@@ -207,7 +208,7 @@ function exhibitions(league, games, o) {
       if (seen.has(key)) continue;                                    /* two Division I schools list the same game */
       seen.add(key);
       const home = x.site === 'A' ? other : me.id, away = x.site === 'A' ? me.id : other;
-      const oppName = oppId ? null : (reg && reg.name) || listedName || null;
+      const oppName = oppId ? null : listedName || (reg && reg.name) || null;   /* the name the school lists ("UIS"), not the registry's abbreviation */
       out.games.push({ game_id: gameId(league, x.date, home, away), season, season_type: 1, status: 'SCHEDULED', start_utc: new Date(t.ms).toISOString().replace(/\.000Z$/, 'Z'), start_ms: t.ms,
         day: x.date, neutral: x.site === 'N' ? 1 : 0, conf_game: 0, event: 'exhibition', home_id: home, away_id: away,
         home_d1: home === me.id || home === oppId ? 1 : 0, away_d1: away === me.id || away === oppId ? 1 : 0,

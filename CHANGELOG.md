@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
+
+No feed this repository reads lists a college basketball exhibition, so the forecasts priced none. Every school lists its own, and the collegiate collector now reads every Division I school's men's and women's basketball schedule each week, beside baseball.
+
+- **Each school's exhibitions are flagged on every page generation.**
+  - SIDEARM: the preseason (`S`) and special-event (`X`) game types.
+  - SIDEARM's oldest markup: the school's own "(Exh.)" label.
+  - WMT: its exhibition marker, now read inside the last game's own element. The last game used to reach into the page's second rendering, which flagged a regular-season game as an exhibition at Purdue, Stanford, UCLA and Penn State; that also fixes three baseball pages.
+  - Checked on 22 real 2026-27 pages (probe round 11).
+- **Who is who, without guessing a name.** A school is the ESPN team with its results: last season's finals on the same local date with the same score. On the 11 schools probed (round 12), men's and women's, every school matched its own team on 28 to 40 finals.
+- **Priced like any game between the same two teams,** flagged `EXHIBITION`, never in Upset Watch, and never learnt from. A non-D-I or NAIA opponent is priced in the model's pooled non-D-I regime; an intrasquad game or a listing that names no school is not priced.
+- **Live after merge and the next collector run.** Merging the plan change runs the weekly collector. The daily refreshes price whatever exhibitions it holds.
+
 ## 2026-10-25 — NFL card: the 2025 prior diagnosed, the stale-starter bug fixed, a starter sync, and the large-gap gate
 
 KC @ SEA, Week 7 SNF: the card had SEA −4.4 / 65.8% against Kalshi's SEA −3 / 58.5%. `docs/nfl-prior-decay/README.md` has the whole account. The served weights (`edgedesk_nfl_v2.1.0`) are unchanged, and the frozen CLV ranking protocol is untouched.
