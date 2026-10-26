@@ -1,0 +1,202 @@
+{
+ "schema": "edgedesk_engine_week_v1",
+ "engine": "nba_engine",
+ "label": "NBA engine",
+ "at": "2026-10-26T17:39:55Z",
+ "season": 2027,
+ "served_model": "E_ridge_P",
+ "protocol": "nba/model/walkforward.js",
+ "validation_generated_at": "2026-10-21T18:14:51.980Z",
+ "slate_generated_at": "2026-10-26T13:22:24.521Z",
+ "expectation": {
+  "window": "test 2018-2026",
+  "model": "E_ridge_P",
+  "n": 11543,
+  "moneyline_log_loss": 0.61681,
+  "moneyline_brier": 0.21415,
+  "home_rate": 0.5612,
+  "home_rate_log_loss": 0.6866,
+  "margin_mae": 10.6297,
+  "total_mae": 14.878,
+  "margin_bias": 0.0719,
+  "total_bias": 0.0353
+ },
+ "week": {
+  "from": "2026-10-19",
+  "to": "2026-10-26",
+  "n": 43,
+  "log_loss": 0.62646,
+  "brier": 0.21908,
+  "accuracy": 0.6512,
+  "mean_p": 0.5392,
+  "mean_y": 0.4651,
+  "total_mae": 14.267,
+  "total_bias": 2.066,
+  "margin_mae": 12.266,
+  "margin_bias": -1.448
+ },
+ "season_to_date": {
+  "n": 43,
+  "log_loss": 0.62646,
+  "brier": 0.21908,
+  "accuracy": 0.6512,
+  "mean_p": 0.5392,
+  "mean_y": 0.4651,
+  "total_mae": 14.267,
+  "total_bias": 2.066,
+  "margin_mae": 12.266,
+  "margin_bias": -1.448
+ },
+ "vs_its_record": {
+  "verdict": "AS_EXPECTED",
+  "n": 43,
+  "season_log_loss": 0.62646,
+  "expected": 0.61681,
+  "expected_window": "test 2018-2026",
+  "t": 0.2
+ },
+ "vs_home_rate": {
+  "n": 43,
+  "mean_diff": -0.08281,
+  "t": -1.804,
+  "ci95": [
+   -0.17642,
+   0.00411
+  ],
+  "home_rate": 0.5612,
+  "beats_it": false
+ },
+ "patterns": [
+  {
+   "pattern": "all games",
+   "market": "moneyline",
+   "n": 43,
+   "mean_p": 0.5392,
+   "mean_y": 0.4651,
+   "residual": -0.0741,
+   "stat": -1.03,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "all games",
+   "market": "total",
+   "n": 43,
+   "residual": 2.066,
+   "stat": 0.76,
+   "stat_kind": "t",
+   "flag": false
+  },
+  {
+   "pattern": "home favourite (p >= 0.60)",
+   "market": "moneyline",
+   "n": 14,
+   "mean_p": 0.725,
+   "mean_y": 0.6429,
+   "residual": -0.0822,
+   "stat": -0.69,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "home underdog (p <= 0.40)",
+   "market": "moneyline",
+   "n": 8,
+   "mean_p": 0.2951,
+   "mean_y": 0.125,
+   "residual": -0.1701,
+   "stat": -1.07,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "near a coin flip (0.40 < p < 0.60)",
+   "market": "moneyline",
+   "n": 21,
+   "mean_p": 0.5083,
+   "mean_y": 0.4762,
+   "residual": -0.0321,
+   "stat": -0.3,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "home side on a back-to-back",
+   "market": "moneyline",
+   "n": 6,
+   "mean_p": 0.4563,
+   "mean_y": 0.1667,
+   "residual": -0.2896,
+   "stat": -1.52,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "home side on a back-to-back",
+   "market": "total",
+   "n": 6,
+   "residual": 1.042,
+   "stat": 0.16,
+   "stat_kind": "t",
+   "flag": false
+  },
+  {
+   "pattern": "away side on a back-to-back",
+   "market": "moneyline",
+   "n": 7,
+   "mean_p": 0.5949,
+   "mean_y": 0.5714,
+   "residual": -0.0235,
+   "stat": -0.14,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "away side on a back-to-back",
+   "market": "total",
+   "n": 7,
+   "residual": 14.991,
+   "stat": 2.25,
+   "stat_kind": "t",
+   "flag": false
+  },
+  {
+   "pattern": "rotation stale: False",
+   "market": "moneyline",
+   "n": 27,
+   "mean_p": 0.5352,
+   "mean_y": 0.3704,
+   "residual": -0.1648,
+   "stat": -1.82,
+   "stat_kind": "z",
+   "flag": false
+  },
+  {
+   "pattern": "rotation stale: True",
+   "market": "moneyline",
+   "n": 16,
+   "mean_p": 0.5461,
+   "mean_y": 0.625,
+   "residual": 0.0789,
+   "stat": 0.67,
+   "stat_kind": "z",
+   "flag": false
+  }
+ ],
+ "research_questions": [],
+ "data": {
+  "season": 2027,
+  "ledger_records": 350,
+  "games_priced": 68,
+  "graded": 43,
+  "missing_results": [],
+  "unpriced": []
+ },
+ "models_in_ledger": [
+  "edgedesk_nba_v1:E_ridge_P",
+  "edgedesk_nba_v1:G_stack_P"
+ ],
+ "promoted": null,
+ "candidates": [],
+ "changes": "none: this report changes no number. NBA engine's models and hyperparameters are chosen by its own protocol (nba/model/walkforward.js); a flagged pattern is a question for its next amendment."
+}
