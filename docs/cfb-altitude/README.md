@@ -112,6 +112,7 @@ football/altitude/
   monitor.js         monitoring.json: anything moving that should not, coverage, the prospective record
   sync_supabase.js   mirrors the slate's sections, the registry and the verdict into Supabase
   fixtures/byu_notredame.json   schedule rows (no results) for the tests
+  fixtures/byu_notredame_research.json   the game's last pregame research snapshot, frozen for ui.e2e.js
   altitude.test.js · desk.test.js · sql.test.js · ui.e2e.js
 supabase/cfb_altitude.sql             shadow ledger, registry, validation runs, monitor view, the switch
 supabase/altitude_shadow_rollback.sql removal (read ROLLBACK.md first)
