@@ -149,7 +149,9 @@ chk('grades: the close is DraftKings\' last pair at 6.5, 20 minutes before the s
   && near(gr.clv_pp, Math.round((close - reb.target_cost_prob) * 1e4) / 100, 0.011) && gr.hit === (gr.clv_pp > 0) && gr.closing_target_price === 1.7, gr);
 chk('grades: the actual stat beside CLV: 9 rebounds, over 6.5', gr.actual_stat === 9 && gr.actual_outcome === 'over');
 chk('grades: converged when the close is within 1.0 pp of the regime\'s probability, else censored', gr.converged === (Math.abs(close - reb.reference_prob) * 100 <= 1) && gr.lag_censored === !gr.converged);
-gr = L.gradeRoleShift(flag, { observations: [obs(-200, 1.8, 2.0)], box });
+gr = L.gradeRoleShift(Object.assign({}, flag, { target_observed_at: obs(-20, 0, 0).observed_at }), { observations: [obs(-200, 1.8, 2.0), obs(-20, 1.7, 2.2)], box });
+chk('grades: the price the flag was taken from is never its close: no later price before the start is no close', gr.close_status === 'no_close' && /after the flag/.test(gr.no_close_reason) && gr.clv_pp === null, gr);
+gr = L.gradeRoleShift(Object.assign({}, flag, { target_observed_at: obs(-300, 0, 0).observed_at }), { observations: [obs(-200, 1.8, 2.0)], box });
 chk('grades: a last price 200 minutes before the start is no close: counted, with its reason, no CLV', gr.close_status === 'no_close' && /200 minutes/.test(gr.no_close_reason) && gr.clv_pp === null && gr.actual_stat === 9);
 gr = L.gradeRoleShift(Object.assign({}, flag, { flag_detail: { participant_id: '1' }, participant: 'Absent Star' }), { observations: [obs(-20, 1.7, 2.2)], box });
 chk('grades: a player who did not play: void, no stat', gr.actual_outcome === 'void' && gr.actual_stat === null);

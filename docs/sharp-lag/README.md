@@ -154,10 +154,17 @@ validation report; no code does.
 
 After the start (10 minutes after, so the last board is in), each flag gets
 one grade (`sharp_flag_grades`, append-only, once):
-- **Close:** the last Pinnacle observation of the same side and point at or
-  before the start.
+- **Close:** the last Pinnacle observation of the same side and point taken
+  after the flag's own observation and at or before the start.
+  - Never the observation the flag was taken from: graded against itself, a
+    flag's CLV would be its own gap.
   - If it is more than 90 minutes before the start, or absent, the flag is
     **no close**: counted, with its reason, excluded from CLV.
+  - What CLV says. If Pinnacle's fair at the flag is an unbiased forecast of
+    its close, mean CLV equals the mean gap at the flag, whether or not the
+    slow market ever moves. Positive CLV says the slow market was priced
+    worse than Pinnacle at the flag. Whether it then caught up is the
+    lag-to-converge measurement, reported beside it.
   - The no-close count and rate are a data-quality line on the record.
 - **Target close:** the target's last price before the start, attached.
 - **CLV (pp)** = closing Pinnacle fair − the flag's all-in cost. **Hit** =
@@ -267,8 +274,8 @@ pull.
 
 **Grades.** Once the game has a final ESPN box score (or a day after the
 start without one): the same book, player, market and line, the last
-two-way price at or before the start and at most 90 minutes before it (else
-no close, counted). CLV = its Shin P(side) − the flag's cost. The player's
+two-way price after the flag's own price, at or before the start and at most
+90 minutes before it (else no close, counted). CLV = its Shin P(side) − the flag's cost. The player's
 actual stat and over / under / push / void are stored beside CLV; CLV is the
 registered criterion.
 

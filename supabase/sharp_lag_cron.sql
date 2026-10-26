@@ -16,7 +16,10 @@
 --                 the gateway's breaker is on: shadow mode and a paused
 --                 provider cost nothing, not even a wasted function run. Its
 --                 command matches '%sharp_check_poke%', so the emergency stop
---                 pauses it and odds_api_hourly_limits.sql holds it to hourly
+--                 pauses it and odds_api_hourly_limits.sql holds it to hourly.
+--                 This file refuses to run before that pattern is installed
+--                 (the gateway's methodology change), and re-running it never
+--                 resumes a paused job
 -- The service-role key is never written into a cron command (the Vault
 -- secret poke, as kalshi_market_data_cron.sql).
 --
@@ -24,10 +27,19 @@
 -- psql meta-commands, ends in a report. Safe to run again.
 -- =============================================================================
 
-do $req$ begin
+do $req$
+declare covered boolean := false;
+begin
   if to_regclass('public.sharp_lag_runs') is null then raise exception 'apply supabase/sharp_lag.sql first'; end if;
   if to_regclass('cron.job') is null then raise exception 'pg_cron is not enabled (Database -> Extensions -> pg_cron)'; end if;
   if to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is null then raise exception 'pg_net is not enabled (Database -> Extensions -> pg_net)'; end if;
+  -- the paid job is scheduled only where the emergency stop can pause it
+  if to_regprocedure('public.odds_api_spend_patterns()') is not null then
+    execute 'select $1 = any (public.odds_api_spend_patterns())' into covered using '%sharp_check_poke%';
+  end if;
+  if not coalesce(covered, false) then
+    raise exception 'apply the odds gateway methodology change first (per-category caps, supabase/odds_api_gateway.sql): its spend patterns must cover sharp_check_poke so the emergency stop can pause the paid dispatcher';
+  end if;
 end $req$;
 
 create or replace function public.sharp_lag_poke()
@@ -90,9 +102,17 @@ begin
 end $fn$;
 revoke all on function public.sharp_check_poke() from public, anon, authenticated;
 
-select cron.unschedule(jobid) from cron.job where jobname in ('sharp_lag', 'sharp_check');
-select cron.schedule('sharp_lag', '*/10 * * * *', $job$ select public.sharp_lag_poke(); $job$);
-select cron.schedule('sharp_check', '47 * * * *', $job$ select public.sharp_check_poke(); $job$);
+-- Re-applying this file never resumes a job that is paused (the emergency stop pauses with
+-- cron.alter_job active := false, and resumes the same way): a paused job is re-created paused.
+do $sched$
+declare paused text[];
+begin
+  select coalesce(array_agg(jobname), '{}') into paused from cron.job where jobname in ('sharp_lag', 'sharp_check') and not active;
+  perform cron.unschedule(jobid) from cron.job where jobname in ('sharp_lag', 'sharp_check');
+  perform cron.schedule('sharp_lag', '*/10 * * * *', $job$ select public.sharp_lag_poke(); $job$);
+  perform cron.schedule('sharp_check', '47 * * * *', $job$ select public.sharp_check_poke(); $job$);
+  perform cron.alter_job(jobid, active := false) from cron.job where jobname = any (paused);
+end $sched$;
 
 -- THE REPORT. Every row should say ok.
 select piece, state from (
@@ -102,7 +122,9 @@ select piece, state from (
          case when exists (select 1 from vault.decrypted_secrets where name = 'sharp_lag_cron_secret' and nullif(decrypted_secret, '') is not null) then 'ok'
               else 'CHECK THIS: select vault.create_secret(''<SHARP_LAG_CRON_SECRET>'', ''sharp_lag_cron_secret'');' end
   union all select '3 the paid sharp_check runs at most hourly',
-         case when exists (select 1 from cron.job where jobname = 'sharp_check' and schedule = '47 * * * *' and active) then 'ok' else 'CHECK THIS' end
+         case when exists (select 1 from cron.job where jobname = 'sharp_check' and schedule = '47 * * * *' and active) then 'ok'
+              when exists (select 1 from cron.job where jobname = 'sharp_check' and schedule = '47 * * * *') then 'PAUSED (the emergency stop holds it; its resume step re-activates it)'
+              else 'CHECK THIS' end
   union all select '4 Vault sharp_check_cron_secret is set',
          case when exists (select 1 from vault.decrypted_secrets where name = 'sharp_check_cron_secret' and nullif(decrypted_secret, '') is not null) then 'ok'
               else 'CHECK THIS: select vault.create_secret(''<SHARP_CHECK_CRON_SECRET>'', ''sharp_check_cron_secret'');' end

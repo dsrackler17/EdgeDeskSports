@@ -83,6 +83,8 @@ try {
   }
   T.chk('append: a price must be a real decimal price', refused(() => db.service(price(2, 'X', 1.0))));
 
+  T.chk('append: no client may run the sealing function (Supabase grants new functions to anon by default)', refused(() => db.anon("select public.sharp_lag_seal(array['sharp_lag_runs']);"), /permission denied for function sharp_lag_seal/)
+    && refused(() => db.as(SUB, "select public.sharp_lag_seal(array['sharp_lag_runs']);"), /permission denied for function sharp_lag_seal/));
   T.chk('append: every sealed table carries both guards', SEALED.every((t) => db.sql("select count(*) from pg_trigger where tgname in ('" + t + "_frozen', '" + t + "_no_truncate')") === '2'));
   /* ── flags ───────────────────────────────────────────────────────────── */
   const flag = (o) => {
@@ -206,11 +208,17 @@ try {
     create table if not exists cron.job (jobid bigserial primary key, jobname text, schedule text, command text, active boolean default true);
     create or replace function cron.schedule(n text, s text, c text) returns bigint language sql as $$ insert into cron.job (jobname, schedule, command) values (n, s, c) returning jobid $$;
     create or replace function cron.unschedule(job_id bigint) returns boolean language sql as $$ delete from cron.job where jobid = job_id returning true $$;
+    create or replace function cron.alter_job(job_id bigint, schedule text default null, command text default null, database text default null, username text default null, active boolean default null)
+      returns void language sql as $$ update cron.job j set active = coalesce(alter_job.active, j.active) where j.jobid = alter_job.job_id $$;
     create schema if not exists vault; create table if not exists vault.decrypted_secrets (name text, decrypted_secret text);
     create schema if not exists net; create table if not exists net.posted (url text);
     create or replace function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds integer default 5000)
       returns bigint language sql as $$ insert into net.posted values (url); select 1::bigint $$;`);
   const CRON = path.join(ROOT, 'supabase', 'sharp_lag_cron.sql');
+  /* the paid dispatcher's job is scheduled only once the gateway's spend patterns cover it (the methodology change), so the
+     emergency stop can pause it (review, 2026-10-26) */
+  T.chk('cron: refused before the gateway\'s spend patterns cover sharp_check (apply the methodology change first)', refused(() => db.applyFile(CRON), /methodology change/) && db.sql('select count(*) from cron.job') === '0');
+  db.sql("create or replace function public.odds_api_spend_patterns() returns text[] language sql immutable as $$ select array['%/functions/v1/odds_gateway%', '%/functions/v1/sharp_check%', '%sharp_check_poke%']::text[] $$;");
   out = db.applyFile(CRON); db.applyFile(CRON);
   T.chk('cron: the free job is scheduled every 10 minutes, once however often the file runs', db.sql("select count(*) || ':' || max(schedule) from cron.job where jobname = 'sharp_lag'") === '1:*/10 * * * *');
   T.chk('cron: no secret, no call: the run is recorded as an error and nothing is sent', JSON.parse(db.sql('select public.sharp_lag_poke()')).queued === false
@@ -232,6 +240,12 @@ try {
   db.sql('update public.breaker set on_ = true');
   T.chk('cron: live and the breaker on: the dispatcher is woken', JSON.parse(db.sql('select public.sharp_check_poke()')).queued === true && db.sql("select count(*) from net.posted where url like '%/functions/v1/sharp_check'") === '1');
   db.sql("update public.sharp_lag_config set value = 'shadow' where key = 'dispatch'");
+  /* an emergency stop's pause (cron.alter_job active := false) survives re-applying this file */
+  db.sql("select cron.alter_job(jobid, active := false) from cron.job where jobname = 'sharp_check'");
+  out = db.applyFile(CRON);
+  T.chk('cron: re-applying the file never resumes a paused paid job, and its report says paused', db.sql("select count(*) || ':' || bool_or(active)::text from cron.job where jobname = 'sharp_check'") === '1:false'
+    && /PAUSED/.test(out) && db.sql("select bool_and(active)::text from cron.job where jobname = 'sharp_lag'") === 'true', out.slice(-500));
+  db.sql("select cron.alter_job(jobid, active := true) from cron.job where jobname = 'sharp_check'");
   T.chk('cron: no client may poke', refused(() => db.anon('select public.sharp_lag_poke();'), /permission denied/));
 
   /* ── config ──────────────────────────────────────────────────────────── */

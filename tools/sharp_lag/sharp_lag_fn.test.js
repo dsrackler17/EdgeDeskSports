@@ -122,6 +122,18 @@ const cfg = (dispatch, extra) => [{ key: 'dispatch', value: dispatch || 'shadow'
   out = await run({ steps: ['ingest', 'flags'] });
   const tf = R.DB.sharp_flags.find((f) => f.event_id === NBA_EV.id);
   chk('flags: a flag from a triggered check names its trigger (nba_injury, id 77)', tf && tf.trigger_type === 'nba_injury' && tf.trigger_id === 77 && tf.reference_category === 'sharp_check', tf);
+  /* a player-props pull is never a sharp-lag observation (review, 2026-10-26): the main markets' latest
+     Pinnacle and DraftKings boards stay the reference and the target, and props are never flagged here */
+  const ps = (rid, cat, at_, book, market, side, dec, o) => Object.assign({ captured_at: at_, source_request_id: rid, source_category: cat, sport_key: 'basketball_nba', event_id: NBA_EV.id,
+    home_team: NBA_EV.home_team, away_team: NBA_EV.away_team, commence_time: NBA_EV.commence_time, book, market, side, participant: null, point: null, price_dec: dec }, o || {});
+  const pp = { participant: 'Miles Bridges', point: 6.5 };
+  world({ sharp_lag_config: cfg(), sharp_price_snapshots: [ps(503, 'sharp_check', at(-2), 'pinnacle', 'h2h', NBA_EV.home_team, 1.4), ps(503, 'sharp_check', at(-2), 'pinnacle', 'h2h', NBA_EV.away_team, 3.2),
+    ps(503, 'sharp_check', at(-2), 'draftkings', 'h2h', NBA_EV.home_team, 1.62), ps(503, 'sharp_check', at(-2), 'draftkings', 'h2h', NBA_EV.away_team, 2.4),
+    ps(811, 'nba_role_props', at(-1), 'pinnacle', 'player_rebounds', 'Over', 1.6, pp), ps(811, 'nba_role_props', at(-1), 'pinnacle', 'player_rebounds', 'Under', 2.5, pp),
+    ps(811, 'nba_role_props', at(-1), 'draftkings', 'player_rebounds', 'Over', 1.9, pp), ps(811, 'nba_role_props', at(-1), 'draftkings', 'player_rebounds', 'Under', 1.9, pp)] });
+  out = await run({ steps: ['flags'] });
+  chk('flags: a later props pull does not displace the main-market boards: the DraftKings h2h gap is still flagged', R.DB.sharp_flags.some((f) => f.market === 'h2h' && f.reference_request_id === 503), R.DB.sharp_flags.map((f) => f.market + ':' + f.reference_request_id));
+  chk('flags: no sharp-lag flag is ever written on a player prop', !R.DB.sharp_flags.some((f) => /^player_/.test(f.market)));
   world({ sharp_lag_config: [{ key: 'flags', value: 'off' }], sharp_price_snapshots: P.slice() });
   out = await run({ steps: ['flags'] });
   chk('flags: with the switch off nothing is flagged, and the run says why', R.DB.sharp_flags.length === 0 && /switched off/.test(out.flags.skipped));
@@ -239,6 +251,17 @@ const cfg = (dispatch, extra) => [{ key: 'dispatch', value: dispatch || 'shadow'
     chk('role: assists 2 under 2.5; every role-shift flag graded once', ga && ga.actual_stat === 2 && ga.actual_outcome === 'under' && R.DB.sharp_flag_grades.length === nRole);
     await F.runOnce({ now: at(500), steps: ['grades'] });
     chk('role: a flag is graded once, ever', R.DB.sharp_flag_grades.length === nRole);
+
+    /* a role-shift ask the gateway answered from its cache: the pull it served is still evaluated (review, 2026-10-26) */
+    world(Object.assign({ sharp_lag_config: cfg('live') }, reports, evs));
+    await run({ steps: ['triggers'] });
+    const t2 = R.DB.sharp_triggers.find((t) => t.trigger_type === 'role_shift');
+    R.DB.sharp_check_requests.push({ id: 51, purpose: 'role_shift', trigger_id: t2.id, category: 'nba_role_props', sport_key: 'basketball_nba', event_id: NBA_EV.id, decision: 'cache_hit', source: 'cache', cost: 0,
+      gateway_request_id: 9999, fetched_at: at(-3), requested_at: at(-2) });
+    R.DB.odds_api_snapshots.push(snap({ category: 'nba_role_props', sport_key: 'basketball_nba', event_id: NBA_EV.id, last_request_id: 801, last_success_at: at(-3), body: propsBody(2.05, 1.8) }));
+    out = await run({ steps: ['ingest', 'flags'] });
+    const cf = R.DB.sharp_flags.filter((f) => f.model_key === 'NBA-ROLE-SHIFT');
+    chk('role: an ask answered from the gateway\'s cache is evaluated on the pull it served (its own request id names no stored pull)', cf.length > 0 && cf.every((f) => f.target_request_id === 801 && f.trigger_id === t2.id), out.flags && out.flags.role_shift);
   }
 
   /* ── spend ───────────────────────────────────────────────────────────── */

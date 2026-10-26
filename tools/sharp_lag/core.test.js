@@ -109,6 +109,8 @@ const PIN = (min, h, a, extra) => Object.assign({ observed_at: at(min), request_
   const verified = { taker_coefficient: 0.07, verified_at: '2026-11-01T00:00:00Z', verified_by: 'op' };
   const rv = L.evaluate({ now: NOW, event: EV, pinnacle: PIN(-5), kalshi: kal(askAt(3) - 0.01, askAt(3)), fee: verified });
   chk('flags: with a verified schedule the same price is flagged without the unverified mark', rv.flags.length === 1 && rv.flags[0].fee_unverified === false && rv.flags[0].fee_basis === 'verified');
+  chk('flags: the threshold is applied before rounding: a 2.497 pp gap (2.50 rounded) is not flagged, 2.503 is', evalDK(decAtGap(2.497)).flags.filter((f) => f.side === 'Philadelphia Eagles').length === 0
+    && evalDK(decAtGap(2.503)).flags.filter((f) => f.side === 'Philadelphia Eagles').length === 1, evalDK(decAtGap(2.497)).flags.map((f) => f.gap_pp));
   chk('flags: a Kalshi quote 16 minutes old is not used', L.evaluate({ now: NOW, event: EV, pinnacle: PIN(-5), kalshi: kal(0.3, 0.31, -16) }).flags.length === 0);
   chk('flags: a wide Kalshi quote is not used', L.evaluate({ now: NOW, event: EV, pinnacle: PIN(-5), kalshi: kal(0.3, 0.37) }).skipped.kalshi_not_two_sided_or_wide === 1);
   r = L.evaluate({ now: NOW, event: EV, pinnacle: PIN(-5, null, null, { category: 'sharp_check' }), kalshi: kal(askAt(4) - 0.01, askAt(4)), trigger: { type: 'nba_injury', id: 77 } });
@@ -131,6 +133,12 @@ const PIN = (min, h, a, extra) => Object.assign({ observed_at: at(min), request_
   chk('grade: the lag and its resolution are carried', g.converged && g.lag_to_converge_s === 6600 && g.lag_resolution_s === 3600 && g.lag_censored === false);
   g = L.grade(flag, { reference: [PIN(-10), PIN(140)], target: [] });
   chk('grade: a last Pinnacle observation 100 minutes before the start is NO CLOSE, with the reason, and no CLV', g.close_status === 'no_close' && g.clv_pp === null && g.hit === null && /100 minutes before the start/.test(g.no_close_reason), g);
+  /* the observation a flag was taken from is never its close (review, 2026-10-26: CLV would equal the gap by construction) */
+  const late = L.evaluate({ now: at(205), event: EV, pinnacle: PIN(200), draftkings: dkAt(200, [row('draftkings', 'h2h', 'Philadelphia Eagles', decAtGap(3))]) }).flags[0];
+  g = L.grade(late, { reference: [PIN(-10), PIN(200)], target: [] });
+  chk('grade: a flag\'s own Pinnacle observation is never its close: with no later one before the start it is NO CLOSE, with the reason', late && g.close_status === 'no_close' && g.clv_pp === null && /after the flag/.test(g.no_close_reason), g);
+  g = L.grade(late, { reference: [PIN(200), PIN(230, 1.55, 2.6)], target: [] });
+  chk('grade: a later Pinnacle observation before the start is the close', g.close_status === 'graded' && g.closing_reference_at === at(230), g);
   const kflag = Object.assign({}, r.flags[0], { flag_id: 2 });
   g = L.grade(kflag, { reference: refs, target: [{ id: 10, captured_at: at(200), yes_bid: 0.6, yes_ask: 0.62 }, { id: 11, captured_at: at(239), yes_bid: 0.6, yes_ask: 0.61 }] });
   chk('grade: a Kalshi flag closes on the last two-sided snapshot before the start, on the flag\'s own fee basis', g.closing_target_price === 0.61 && g.closing_target_cost === 0.63 && g.closing_target_at === at(239), g);

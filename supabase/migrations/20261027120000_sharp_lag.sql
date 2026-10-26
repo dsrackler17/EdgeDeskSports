@@ -136,7 +136,8 @@ begin
     end if;
   end loop;
 end $s$;
-revoke all on function public.sharp_lag_seal(text[]) from public;
+-- from anon and authenticated too: Supabase grants new functions in public to both by default
+revoke all on function public.sharp_lag_seal(text[]) from public, anon, authenticated;
 
 alter table public.sharp_lag_config enable row level security;
 revoke all on public.sharp_lag_config from anon, authenticated;

@@ -244,7 +244,7 @@ export const BUILD = "sharp_lag@2026-10-27.1";
       var d = L.devigShin([num(g[0].price_dec), num(g[1].price_dec)]);
       if (d.method === 'invalid') return;
       for (var i = 0; i < 2; i++) {
-        out[L.sideKey(g[i])] = { row: g[i], fair: r4(d.probs[i]), dec: num(g[i].price_dec), opp_dec: num(g[1 - i].price_dec), method: d.method };
+        out[L.sideKey(g[i])] = { row: g[i], fair: r4(d.probs[i]), fair_raw: d.probs[i], dec: num(g[i].price_dec), opp_dec: num(g[1 - i].price_dec), method: d.method };
       }
     });
     return out;
@@ -407,8 +407,10 @@ export const BUILD = "sharp_lag@2026-10-27.1";
         if (!f) { skip('no_reference_for_side'); return; }
         out.considered++;
         var cost = L.bookCost(t.price_dec); if (cost == null) { skip('no_cost'); return; }
-        var gap = r2((f.fair - cost) * 100);
-        if (gap < R.gap_pp) { skip('under_threshold'); return; }
+        /* the threshold on the unrounded numbers: 2.497 pp is under 2.5, though it rounds to 2.50 */
+        var raw = (f.fair_raw - 1 / num(t.price_dec)) * 100;
+        if (raw < R.gap_pp) { skip('under_threshold'); return; }
+        var gap = r2(raw);
         if (ctx.open && ctx.open(L.baseKey(ev.event_id, 'draftkings', sk))) { skip('episode_open'); return; }
         var fl = base(sk, f);
         fl.target_venue = 'draftkings'; fl.target_ref = 'draftkings'; fl.target_price = num(t.price_dec); fl.target_price_american = L.decToAm(t.price_dec);
@@ -428,8 +430,9 @@ export const BUILD = "sharp_lag@2026-10-27.1";
       if (kAge == null || kAge > R.kalshi_max_age_min) { skip('target_past_price'); return; }
       var c = L.kalshiCost(s, ctx.fee);
       if (!c) { skip('kalshi_not_two_sided_or_wide'); return; }
-      var gap = r2((f.fair - c.cost) * 100);
-      if (gap < R.gap_pp) { skip('under_threshold'); return; }
+      var raw = (f.fair_raw - c.cost) * 100;
+      if (raw < R.gap_pp) { skip('under_threshold'); return; }
+      var gap = r2(raw);
       if (ctx.open && ctx.open(L.baseKey(ev.event_id, 'kalshi', sk))) { skip('episode_open'); return; }
       var fl = base(sk, f);
       fl.target_venue = 'kalshi'; fl.target_ref = k.ticker; fl.target_price = c.price; fl.target_price_american = null;
@@ -481,13 +484,15 @@ export const BUILD = "sharp_lag@2026-10-27.1";
       closing_target_price: null, closing_target_cost: null, closing_target_at: null, clv_pp: null, hit: null,
       converged: false, converged_at: null, lag_to_converge_s: null, lag_censored: true,
       lag_resolution_s: flag.snapshot_resolution_s == null ? null : flag.snapshot_resolution_s, actual_stat: null, actual_outcome: null };
-    var close = null;
+    /* the close is a LATER observation than the one the flag was taken from: graded against itself, a flag's CLV
+       would be its own gap by construction (review, 2026-10-26) */
+    var close = null, after = ms(flag.reference_observed_at);
     (h.reference || []).forEach(function (o) {
-      var t = ms(o.observed_at); if (t == null || t > start) return;
+      var t = ms(o.observed_at); if (t == null || t > start || (after != null && t <= after)) return;
       var f = L.fairs(o.rows)[L.sideKey(flag)];
       if (f && (!close || t > ms(close.observed_at))) close = { observed_at: o.observed_at, f: f };
     });
-    if (!close) g.no_close_reason = 'no Pinnacle observation of this side at this point before the start';
+    if (!close) g.no_close_reason = 'no Pinnacle observation of this side at this point after the flag and before the start';
     else {
       var lead = (start - ms(close.observed_at)) / 60000;
       g.close_lead_min = r2(lead);
@@ -900,13 +905,13 @@ export const BUILD = "sharp_lag@2026-10-27.1";
       closing_target_price: null, closing_target_cost: null, closing_target_at: null, clv_pp: null, hit: null,
       converged: false, converged_at: null, lag_to_converge_s: null, lag_censored: true, lag_resolution_s: flag.snapshot_resolution_s == null ? null : flag.snapshot_resolution_s,
       actual_stat: null, actual_outcome: null, detail: {} };
-    var key = L.sideKey(flag), close = null;
+    var key = L.sideKey(flag), close = null, after = ms(flag.target_observed_at);
     (h.observations || []).forEach(function (o) {
-      var t = ms(o.observed_at); if (t == null || t > start) return;
+      var t = ms(o.observed_at); if (t == null || t > start || (after != null && t <= after)) return;
       var f = L.fairs((o.rows || []).filter(function (r) { return r.book === flag.target_venue; }))[key];
       if (f && (!close || t > ms(close.observed_at))) close = { observed_at: o.observed_at, f: f };
     });
-    if (!close) g.no_close_reason = 'no two-way ' + flag.target_venue + ' price at this player, market and line before the start';
+    if (!close) g.no_close_reason = 'no two-way ' + flag.target_venue + ' price at this player, market and line after the flag and before the start';
     else {
       var lead = (start - ms(close.observed_at)) / 60000;
       g.close_lead_min = r2(lead);
@@ -1248,9 +1253,12 @@ async function feeRow(ctx: Any) {
   } catch { ctx.fee = null; }   // the table is absent: every Kalshi flag is fee_unverified
   return ctx.fee;
 }
+/* the main-market boards only: a player-props pull is never a sharp-lag observation (it would displace the
+   boards as "the latest", and flag props the registration does not cover) */
+const BOARDS = "&book=in.(pinnacle,draftkings)&source_category=in.(featured,close,sharp_check)&market=in.(h2h,spreads,totals)";
 async function eventHistory(eventId: string, sinceMs: number, ctx: Any) {
   return await dbAll("sharp_price_snapshots?select=captured_at,source_request_id,source_category,sport_key,event_id,home_team,away_team,commence_time,book,market,side,participant,point,price_dec"
-    + "&event_id=eq." + enc(eventId) + "&book=in.(pinnacle,draftkings)&captured_at=gte." + enc(iso(sinceMs)) + "&order=captured_at.asc", 10);
+    + "&event_id=eq." + enc(eventId) + BOARDS + "&captured_at=gte." + enc(iso(sinceMs)) + "&order=captured_at.asc", 10);
 }
 async function kalshiFor(eventId: string, sinceMs: number) {
   const links = await dbAll("kalshi_game_links?select=market_ticker,yes_team&odds_event_id=eq." + enc(eventId));
@@ -1325,12 +1333,20 @@ async function flags(ctx: Any) {
 async function roleShiftFlags(ctx: Any) {
   const tally: Any = { pulls: 0, considered: 0, written: 0, skipped: {} };
   const skip = (k: string) => { tally.skipped[k] = (tally.skipped[k] || 0) + 1; };
-  const reqs = await dbAll("sharp_check_requests?select=id,trigger_id,gateway_request_id,event_id,requested_at&purpose=eq.role_shift&trigger_id=not.is.null"
+  const reqs = await dbAll("sharp_check_requests?select=id,trigger_id,gateway_request_id,event_id,requested_at,fetched_at,decision&purpose=eq.role_shift&trigger_id=not.is.null"
     + "&gateway_request_id=not.is.null&requested_at=gte." + enc(iso(ctx.nowMs - 6 * 3600e3)) + "&order=requested_at.asc");
+  const COLS = "sharp_price_snapshots?select=captured_at,source_request_id,sport_key,event_id,home_team,away_team,commence_time,book,market,side,participant,point,price_dec";
   for (const q of reqs) {
     try {
-      const rows = await dbAll("sharp_price_snapshots?select=captured_at,source_request_id,sport_key,event_id,home_team,away_team,commence_time,book,market,side,participant,point,price_dec"
-        + "&source_request_id=eq." + q.gateway_request_id + "&event_id=eq." + enc(q.event_id), 10);
+      let rows = await dbAll(COLS + "&source_request_id=eq." + q.gateway_request_id + "&event_id=eq." + enc(q.event_id), 10);
+      if (!rows.length && q.decision !== "granted") {
+        /* answered from the gateway's cache: its request id names no stored pull. The pull it served is the event's
+           latest props observation at or before the answer (the 90-minute past-price rule still applies) */
+        const upto = q.fetched_at || q.requested_at;
+        const near = await dbAll(COLS + "&event_id=eq." + enc(q.event_id) + "&source_category=eq.nba_role_props&captured_at=lte." + enc(upto)
+          + "&captured_at=gte." + enc(iso(Date.parse(upto) - 90 * 60000)) + "&order=captured_at.desc", 10);
+        rows = near.length ? near.filter((r: Any) => r.source_request_id === near[0].source_request_id) : [];
+      }
       if (!rows.length) { skip("pull_not_ingested"); continue; }
       const tr = await db("sharp_triggers?select=id,detected_at,detail&trigger_type=eq.role_shift&id=eq." + q.trigger_id);
       if (!tr || !tr[0]) { skip("no_trigger"); continue; }
@@ -1340,7 +1356,7 @@ async function roleShiftFlags(ctx: Any) {
       const seen = new Set((await dbAll("sharp_flags?select=episode_key&model_key=eq.NBA-ROLE-SHIFT&event_id=eq." + enc(q.event_id))).map((f: Any) => f.episode_key));
       /* the lag can be measured only to this: the report, then the one pull that priced it */
       const reportAt = Date.parse(detail.report_captured_at || tr[0].detected_at);
-      const r = SL.evaluateRoleShift({ now: iso(ctx.nowMs), event, trigger: { id: tr[0].id, detail }, rows, observed_at: any.captured_at, request_id: q.gateway_request_id,
+      const r = SL.evaluateRoleShift({ now: iso(ctx.nowMs), event, trigger: { id: tr[0].id, detail }, rows, observed_at: any.captured_at, request_id: any.source_request_id,
         resolution_s: isFinite(reportAt) ? Math.max(0, Math.round((Date.parse(any.captured_at) - reportAt) / 1000)) : null, open: (k: string) => seen.has(k) });
       tally.considered += r.considered;
       Object.keys(r.skipped).forEach((k) => { tally.skipped[k] = (tally.skipped[k] || 0) + r.skipped[k]; });
@@ -1362,7 +1378,7 @@ async function grades(ctx: Any) {
     try {
       const start = Date.parse(f.commence_time);
       const hist = await dbAll("sharp_price_snapshots?select=captured_at,source_request_id,source_category,book,market,side,participant,point,price_dec"
-        + "&event_id=eq." + enc(f.event_id) + "&book=in.(pinnacle,draftkings)&captured_at=gte." + enc(iso(start - 30 * 3600e3)) + "&captured_at=lte." + enc(f.commence_time) + "&order=captured_at.asc", 10);
+        + "&event_id=eq." + enc(f.event_id) + BOARDS + "&captured_at=gte." + enc(iso(start - 30 * 3600e3)) + "&captured_at=lte." + enc(f.commence_time) + "&order=captured_at.asc", 10);
       const pin = observations(hist, "pinnacle");
       let target: Any[] = observations(hist, "draftkings");
       if (f.target_venue === "kalshi") {

@@ -12,7 +12,7 @@
  "objective": "Measure, in the open and from the first flag, whether such gaps carry positive CLV against Pinnacle's close; report hit rate, average CLV and lag to converge by sport, market and trigger. Research only: no flag is a recommendation.",
  "primary_metric": "Mean CLV in percentage points over graded flags, CLV = Pinnacle's closing Shin fair for the flag's side and point minus the flag's all-in cost (DraftKings: 1 / decimal price; Kalshi: YES ask + taker fee), with its game-clustered 95% bootstrap interval.",
  "unit": "One flag: one target venue, one side at one point, one episode (a new flag on the same event, venue and side waits until the last one's gap has converged under 1.0 pp). Clusters: the game (event_id).",
- "baseline": "No lag: a target that does not lag Pinnacle closes, on average, where it was priced at the flag, so mean CLV is at most 0.",
+ "baseline": "Pinnacle's own price, and nothing more: if its fair at the flag is an unbiased forecast of its close, mean CLV equals the mean gap at the flag (2.5 pp or more) whether or not the slow market ever moves. A positive mean CLV therefore says the slow market was priced worse than Pinnacle at the flag; it does not by itself say the slow market lagged and caught up. That is the lag-to-converge measurement, reported beside CLV. A Pinnacle that moves toward the slow market before the close drives CLV to 0 or below. (Corrected 2026-10-26, before any flag existed: the first text said mean CLV is at most 0 without a lag, which does not hold for this metric.)",
  "training_window": "None. Nothing is fitted: every number is fixed in advance (spec below).",
  "validation_window": "None. There is no tuning step to validate.",
  "holdout_window": "Every flag written from the first one onward (Pinnacle observations resume with the provider's cycle on 2026-11-01). Evaluated when 200 graded flags exist, and at every further 100 graded flags; each look is reported, and the repeated looks are disclosed here because they raise the chance of a false pass.",
@@ -102,7 +102,7 @@
    "kalshi_move": "a linked YES mid moves 3c+ between consecutive snapshots <= 10 minutes apart"
   },
   "grade": {
-   "close": "the last Pinnacle observation of the side and point at or before the start, at most 90 minutes before it; otherwise no close (counted, reason kept, excluded from CLV)",
+   "close": "the last Pinnacle observation of the side and point taken after the flag's own observation and at or before the start, at most 90 minutes before it; otherwise no close (counted, reason kept, excluded from CLV). Never the observation the flag was taken from: graded against itself a flag's CLV would be its own gap.",
    "clv_pp": "closing fair - flag cost",
    "hit": "clv_pp > 0",
    "lag": "first target observation after the flag within 1.0 pp of the then-current fair, censored at the start; reported with the flag's snapshot resolution"

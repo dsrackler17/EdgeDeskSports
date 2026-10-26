@@ -78,7 +78,7 @@
   "regime": "the existing props model's prediction with minutes and per-minute rates from the shrunk splits (the default model and its output unchanged); 3-pointers made = modelled 3PA x the player's 3P% shrunk toward the league rate with 100 attempts",
   "prices": "one nba_role_props request per game (player_rebounds, player_assists, player_threes, player_points_rebounds_assists; ten books, one region-equivalent, <= 4 credits), stored for the 3-4 teammates with the largest minutes or usage change",
   "flag": "regime P(side at the posted line) - 1 / posted decimal >= 2.5 pp, at the first book posting the line in the order draftkings, fanduel, betmgm, williamhill_us, espnbet, betrivers, fanatics, hardrockbet, betonlineag, pinnacle; never the absent player's own unders",
-  "grade": "close = the same book's last two-way price at the same line at or before the tip, at most 90 minutes before it (else no close); CLV = closing Shin no-vig P(side) - flag cost; actual = the player's stat (void if he did not play)",
+  "grade": "close = the same book's last two-way price at the same line after the flag's own price and at or before the tip, at most 90 minutes before it (else no close); CLV = closing Shin no-vig P(side) - flag cost; actual = the player's stat (void if he did not play)",
   "code": "nba/props/role_shift.js; lib/edgedesk_sharp_lag.js; supabase/functions/sharp_lag",
   "known_limitations": [
    "the scenarios are built ahead, one per top-8 rotation player, in the 3-hourly NBA build and switched on when the report lands, so their inputs can be up to 3 hours old; a build more than 24 hours old switches nothing on",
