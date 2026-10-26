@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-26T15:03:38.857Z",
+ "generated_at": "2026-10-26T16:21:06.990Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-26T15:03:38.857Z",
-  "reliability_generated_at": "2026-10-26T15:03:38.857Z",
-  "enrichment_generated_at": "2026-10-26T15:03:32.722Z",
+  "at": "2026-10-26T16:21:06.990Z",
+  "reliability_generated_at": "2026-10-26T16:21:06.990Z",
+  "enrichment_generated_at": "2026-10-26T16:21:00.837Z",
   "counts": {
    "games": 61,
    "mean": 85.8,
@@ -137,7 +137,7 @@
      "qb_conflict": 3.6,
      "weather": 1.8,
      "contract_conflicts": 1.4,
-     "starters": 1.3,
+     "starters": 1.9,
      "qb_status": 2,
      "transfer_turnover": 0.3
     },
@@ -662,6 +662,7 @@
     "fam": {
      "availability": 4.6,
      "qb_status": 2,
+     "starters": 0.6,
      "qb_identity": 0.8
     },
     "qb": {
@@ -1317,17 +1318,17 @@
   }
  },
  "previous": {
-  "at": "2026-10-26T14:12:43.313Z",
+  "at": "2026-10-26T15:03:38.857Z",
   "counts": {
    "games": 61,
-   "mean": 86.2,
+   "mean": 85.8,
    "median": 89,
    "by_band": {
-    "STRONG": 46,
-    "ADEQUATE": 15
+    "STRONG": 43,
+    "ADEQUATE": 18
    },
    "missing_qb_status": 122,
-   "qb_conflicts_open": 6,
+   "qb_conflicts_open": 8,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 13,
    "unrated_meaningful_absences": 0,
@@ -1339,47 +1340,10 @@
   },
   "baseline_of": null
  },
- "what_improved": [
-  "2 games moved ADEQUATE → STRONG"
- ],
- "what_degraded": [
-  "-0.4 mean reliability (86.2 → 85.8)",
-  "+2 open QB conflicts (6 → 8)",
-  "5 games moved STRONG → ADEQUATE"
- ],
- "why": [
-  "Kansas State @ Colorado: STRONG → ADEQUATE (89 → 79); largest change: qb_conflict -1.9 pts",
-  "SMU @ Syracuse: STRONG → ADEQUATE (89 → 79); largest change: qb_identity -1.2 pts",
-  "Nevada @ UCLA: STRONG → ADEQUATE (88 → 79); largest change: qb_conflict -1 pts",
-  "Washington State @ San Diego State: ADEQUATE → STRONG (79 → 89); largest change: qb_identity +2.3 pts",
-  "Colorado State @ Utah State: STRONG → ADEQUATE (88 → 79); largest change: qb_conflict -0.9 pts; home QB UNCERTAIN → EXPECTED",
-  "Tulane @ Charlotte: ADEQUATE → STRONG (79 → 89); largest change: qb_identity +1.2 pts",
-  "Coastal Carolina @ Georgia State: STRONG → ADEQUATE (88 → 79); largest change: qb_identity -3.2 pts; home QB EXPECTED → UNCERTAIN"
- ],
+ "what_improved": [],
+ "what_degraded": [],
+ "why": [],
  "history": [
-  {
-   "at": "2026-10-20T14:31:09.309Z",
-   "counts": {
-    "games": 62,
-    "mean": 86.6,
-    "median": 89,
-    "by_band": {
-     "STRONG": 51,
-     "ADEQUATE": 10,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 124,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 16,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 0,
-    "games_under_two_market_sources": 62,
-    "stale_evidence_records": 83,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-20T17:24:58.718Z",
    "counts": {
@@ -2746,6 +2710,28 @@
   },
   {
    "at": "2026-10-26T15:03:38.857Z",
+   "counts": {
+    "games": 61,
+    "mean": 85.8,
+    "median": 89,
+    "by_band": {
+     "STRONG": 43,
+     "ADEQUATE": 18
+    },
+    "missing_qb_status": 122,
+    "qb_conflicts_open": 8,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 13,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 0,
+    "games_under_two_market_sources": 61,
+    "stale_evidence_records": 87,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-26T16:21:06.990Z",
    "counts": {
     "games": 61,
     "mean": 85.8,
