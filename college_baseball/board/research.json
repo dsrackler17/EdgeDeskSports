@@ -1160,9 +1160,393 @@
     }
    },
    "HOLDOUT": {
-    "withheld": true,
-    "reason": "reported only by --holdout (research/PROTOCOL.md §5)",
-    "n": 16696
+    "n": 16696,
+    "seasons": [
+     2025,
+     2026
+    ],
+    "models": {
+     "home_rate": {
+      "log_loss": 0.67634,
+      "brier": 0.24165,
+      "citl": -0.0028,
+      "slope": 0.361
+     },
+     "home_rate_cal": {
+      "log_loss": 0.67635,
+      "brier": 0.24165,
+      "citl": 0.0093,
+      "slope": 0.392
+     },
+     "pythag": {
+      "log_loss": 0.62398,
+      "brier": 0.21753,
+      "citl": -0.0026,
+      "slope": 1.009
+     },
+     "pythag_cal": {
+      "log_loss": 0.62423,
+      "brier": 0.21763,
+      "citl": 0.0053,
+      "slope": 1.005
+     },
+     "elo": {
+      "log_loss": 0.60837,
+      "brier": 0.21087,
+      "citl": 0.0027,
+      "slope": 0.908
+     },
+     "elo_cal": {
+      "log_loss": 0.60804,
+      "brier": 0.21076,
+      "citl": 0.0047,
+      "slope": 0.982
+     },
+     "bt": {
+      "log_loss": 0.60823,
+      "brier": 0.2108,
+      "citl": 0.0106,
+      "slope": 0.929
+     },
+     "bt_cal": {
+      "log_loss": 0.60782,
+      "brier": 0.21066,
+      "citl": 0.0052,
+      "slope": 0.979
+     },
+     "massey": {
+      "log_loss": 0.60511,
+      "brier": 0.20954,
+      "citl": -0.0188,
+      "slope": 1.037
+     },
+     "massey_cal": {
+      "log_loss": 0.60445,
+      "brier": 0.20923,
+      "citl": 0.0005,
+      "slope": 0.978
+     },
+     "poisson_flat": {
+      "log_loss": 0.60655,
+      "brier": 0.21007,
+      "citl": -0.0302,
+      "slope": 1.125
+     },
+     "poisson_flat_cal": {
+      "log_loss": 0.60401,
+      "brier": 0.20906,
+      "citl": 0.0027,
+      "slope": 1.014
+     },
+     "hier": {
+      "log_loss": 0.60496,
+      "brier": 0.20943,
+      "citl": -0.0301,
+      "slope": 1.107
+     },
+     "hier_cal": {
+      "log_loss": 0.60257,
+      "brier": 0.20846,
+      "citl": 0.0018,
+      "slope": 1.015
+     },
+     "hier_rest_cal": {
+      "log_loss": 0.60259,
+      "brier": 0.20847,
+      "citl": 0.0018,
+      "slope": 1.016
+     },
+     "ens": {
+      "log_loss": 0.60208,
+      "brier": 0.20827,
+      "citl": 0.005,
+      "slope": 0.994
+     }
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 14,
+      "mean_p": 0.0741,
+      "observed": 0,
+      "wilson_low": 0,
+      "wilson_high": 0.2153,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 220,
+      "mean_p": 0.1635,
+      "observed": 0.1591,
+      "wilson_low": 0.1167,
+      "wilson_high": 0.2132,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 747,
+      "mean_p": 0.2561,
+      "observed": 0.2276,
+      "wilson_low": 0.1989,
+      "wilson_high": 0.259,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 1476,
+      "mean_p": 0.3545,
+      "observed": 0.3618,
+      "wilson_low": 0.3377,
+      "wilson_high": 0.3866,
+      "inside": true
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 2556,
+      "mean_p": 0.4526,
+      "observed": 0.4484,
+      "wilson_low": 0.4292,
+      "wilson_high": 0.4677,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 3438,
+      "mean_p": 0.5506,
+      "observed": 0.5518,
+      "wilson_low": 0.5351,
+      "wilson_high": 0.5683,
+      "inside": true
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 3299,
+      "mean_p": 0.6486,
+      "observed": 0.6457,
+      "wilson_low": 0.6292,
+      "wilson_high": 0.6618,
+      "inside": true
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 2595,
+      "mean_p": 0.7465,
+      "observed": 0.743,
+      "wilson_low": 0.7258,
+      "wilson_high": 0.7594,
+      "inside": true
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 1722,
+      "mean_p": 0.8456,
+      "observed": 0.8531,
+      "wilson_low": 0.8356,
+      "wilson_high": 0.869,
+      "inside": true
+     },
+     {
+      "lo": 0.9,
+      "hi": 1,
+      "n": 629,
+      "mean_p": 0.9338,
+      "observed": 0.9269,
+      "wilson_low": 0.9038,
+      "wilson_high": 0.9447,
+      "inside": true
+     }
+    ],
+    "slices": {
+     "season": {
+      "2025": {
+       "n": 8363,
+       "log_loss": 0.59603,
+       "brier": 0.20572,
+       "mean_p": 0.5951,
+       "mean_y": 0.5934,
+       "citl": 0.0016,
+       "sample_state": "MEANINGFUL"
+      },
+      "2026": {
+       "n": 8333,
+       "log_loss": 0.60914,
+       "brier": 0.21121,
+       "mean_p": 0.5935,
+       "mean_y": 0.5915,
+       "citl": 0.002,
+       "sample_state": "MEANINGFUL"
+      }
+     },
+     "venue": {
+      "neutral": {
+       "n": 1290,
+       "log_loss": 0.62895,
+       "brier": 0.21991,
+       "mean_p": 0.5398,
+       "mean_y": 0.5605,
+       "citl": -0.0207,
+       "sample_state": "MEANINGFUL"
+      },
+      "home": {
+       "n": 15406,
+       "log_loss": 0.60036,
+       "brier": 0.2075,
+       "mean_p": 0.5988,
+       "mean_y": 0.5952,
+       "citl": 0.0037,
+       "sample_state": "MEANINGFUL"
+      }
+     },
+     "conference_game": {
+      "non_conference": {
+       "n": 16696,
+       "log_loss": 0.60257,
+       "brier": 0.20846,
+       "mean_p": 0.5943,
+       "mean_y": 0.5925,
+       "citl": 0.0018,
+       "sample_state": "MEANINGFUL"
+      }
+     },
+     "day": {
+      "weekend": {
+       "n": 12406,
+       "log_loss": 0.61146,
+       "brier": 0.21236,
+       "mean_p": 0.5893,
+       "mean_y": 0.5844,
+       "citl": 0.0049,
+       "sample_state": "MEANINGFUL"
+      },
+      "midweek": {
+       "n": 4290,
+       "log_loss": 0.57686,
+       "brier": 0.1972,
+       "mean_p": 0.6088,
+       "mean_y": 0.6159,
+       "citl": -0.0071,
+       "sample_state": "MEANINGFUL"
+      }
+     },
+     "opponent_division": {
+      "d1_vs_d1": {
+       "n": 16611,
+       "log_loss": 0.60366,
+       "brier": 0.20893,
+       "mean_p": 0.5931,
+       "mean_y": 0.5909,
+       "citl": 0.0022,
+       "sample_state": "MEANINGFUL"
+      },
+      "vs_non_d1": {
+       "n": 85,
+       "log_loss": 0.3901,
+       "brier": 0.11611,
+       "mean_p": 0.8183,
+       "mean_y": 0.8941,
+       "citl": -0.0758,
+       "sample_state": "EARLY_SIGNAL"
+      }
+     },
+     "ncaa_tourney": {
+      "regular": {
+       "n": 16427,
+       "log_loss": 0.60195,
+       "brier": 0.20821,
+       "mean_p": 0.594,
+       "mean_y": 0.5926,
+       "citl": 0.0014,
+       "sample_state": "MEANINGFUL"
+      },
+      "tourney_inferred": {
+       "n": 269,
+       "log_loss": 0.64076,
+       "brier": 0.22361,
+       "mean_p": 0.6137,
+       "mean_y": 0.5874,
+       "citl": 0.0264,
+       "sample_state": "DEVELOPING"
+      }
+     },
+     "season_phase": {
+      "first_3_weeks": {
+       "n": 3204,
+       "log_loss": 0.54887,
+       "brier": 0.18601,
+       "mean_p": 0.652,
+       "mean_y": 0.6573,
+       "citl": -0.0053,
+       "sample_state": "MEANINGFUL"
+      },
+      "weeks_4_8": {
+       "n": 6403,
+       "log_loss": 0.6064,
+       "brier": 0.20998,
+       "mean_p": 0.5993,
+       "mean_y": 0.593,
+       "citl": 0.0063,
+       "sample_state": "MEANINGFUL"
+      },
+      "later": {
+       "n": 7089,
+       "log_loss": 0.62338,
+       "brier": 0.21724,
+       "mean_p": 0.5636,
+       "mean_y": 0.5627,
+       "citl": 0.0009,
+       "sample_state": "MEANINGFUL"
+      }
+     },
+     "favourite": {
+      "moderate_fav": {
+       "n": 6638,
+       "log_loss": 0.62856,
+       "brier": 0.21866,
+       "mean_p": 0.5743,
+       "mean_y": 0.5728,
+       "citl": 0.0015,
+       "sample_state": "MEANINGFUL"
+      },
+      "tossup": {
+       "n": 5994,
+       "log_loss": 0.68629,
+       "brier": 0.24659,
+       "mean_p": 0.5088,
+       "mean_y": 0.5077,
+       "citl": 0.0012,
+       "sample_state": "MEANINGFUL"
+      },
+      "heavy_fav": {
+       "n": 4064,
+       "log_loss": 0.43665,
+       "brier": 0.13558,
+       "mean_p": 0.753,
+       "mean_y": 0.7498,
+       "citl": 0.0032,
+       "sample_state": "MEANINGFUL"
+      }
+     },
+     "home_conference": {
+      "none": {
+       "n": 16696,
+       "log_loss": 0.60257,
+       "brier": 0.20846,
+       "mean_p": 0.5943,
+       "mean_y": 0.5925,
+       "citl": 0.0018,
+       "sample_state": "MEANINGFUL"
+      }
+     }
+    }
    }
   },
   "comparisons": {
@@ -1301,9 +1685,94 @@
      "a_better": false,
      "b_better": true
     }
+   },
+   "HOLDOUT": {
+    "chosen_vs_best_baseline": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": -0.005471,
+     "ci95": [
+      -0.007445,
+      -0.003488
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "hier_vs_poisson_flat": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": -0.001593,
+     "ci95": [
+      -0.002392,
+      -0.000867
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "hier_vs_elo": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": -0.00341,
+     "ci95": [
+      -0.006137,
+      -0.000938
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "chosen_vs_raw": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": -0.002384,
+     "ci95": [
+      -0.003575,
+      -0.001096
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "ens_vs_chosen": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": -0.00049,
+     "ci95": [
+      -0.000983,
+      0.000007
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "rest_vs_cal": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": 0.000013,
+     "ci95": [
+      -0.000023,
+      0.000051
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "pricing_vs_best_baseline": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": -0.005471,
+     "ci95": [
+      -0.007445,
+      -0.003488
+     ],
+     "a_better": true,
+     "b_better": false
+    }
    }
   },
-  "status": null,
+  "status": {
+   "moneyline": {
+    "status": "OUTCOME_VALIDATED",
+    "failed": []
+   },
+   "model": "hier_cal"
+  },
   "leakage": {
    "checked": 95356,
    "violations": 0,
@@ -1928,7 +2397,7 @@
   "point_in_time": "RETROSPECTIVE",
   "window": "VALIDATION 2023-2024 (every second game with a reconciled inning line)",
   "sims_per_game": 2000,
-  "seconds": 56,
+  "seconds": 81,
   "n": 4240,
   "inputs": {
    "closed_form": "the pricing model's run-space calibrated expectations, mixed over rating uncertainty and scheduled length (distribution.closedForm)",
@@ -2535,8 +3004,7 @@
    "dist": {
     "family": "nb",
     "r": 3.256
-   },
-   "loop_version": "1.0.0"
+   }
   },
   "results": [
    {
@@ -2548,7 +3016,7 @@
      0.002223
     ],
     "verdict": "KEEPS ITS PLACE",
-    "seconds": 10
+    "seconds": 20
    },
    {
     "removed": "parks",
@@ -2559,7 +3027,7 @@
      0.000627
     ],
     "verdict": "KEEPS ITS PLACE",
-    "seconds": 18
+    "seconds": 37
    },
    {
     "removed": "carryover",
@@ -2570,7 +3038,7 @@
      0.025997
     ],
     "verdict": "KEEPS ITS PLACE",
-    "seconds": 21
+    "seconds": 42
    },
    {
     "removed": "uncertainty integration",
@@ -2581,7 +3049,7 @@
      -0.000147
     ],
     "verdict": "REMOVAL IMPROVES",
-    "seconds": 21
+    "seconds": 42
    },
    {
     "removed": "seven inning mixture",
@@ -2592,7 +3060,7 @@
      0.000005
     ],
     "verdict": "NO MEASURABLE VALUE",
-    "seconds": 21
+    "seconds": 42
    },
    {
     "removed": "prior-season calibration map",
@@ -2903,7 +3371,7 @@
   ]
  },
  "gates": {
-  "summary": "RELEASE BLOCKED: 6 of 16 gates fail (G8, G9, G10, G11, G12, G15). Provisional research only.",
+  "summary": "RELEASE BLOCKED: 3 of 16 gates fail (G11, G12, G15). Provisional research only.",
   "gates": [
    {
     "id": "G1",
@@ -2950,20 +3418,20 @@
    {
     "id": "G8",
     "name": "Chronological evaluation complete",
-    "status": "FAIL",
-    "why": "the HOLDOUT has not been evaluated for this model version"
+    "status": "PASS",
+    "why": "SELECTION, VALIDATION and HOLDOUT scored"
    },
    {
     "id": "G9",
     "name": "Models compared against baselines",
-    "status": "FAIL",
-    "why": "chosen vs best baseline: VALIDATION [-0.008444,-0.002949], HOLDOUT n/a (95% interval of the log-loss difference must be below 0 in both)"
+    "status": "PASS",
+    "why": "chosen vs best baseline: VALIDATION [-0.008444,-0.002949], HOLDOUT [-0.007445,-0.003488] (95% interval of the log-loss difference must be below 0 in both)"
    },
    {
     "id": "G10",
     "name": "Probability calibration verified",
-    "status": "FAIL",
-    "why": "no holdout status"
+    "status": "PASS",
+    "why": "moneyline OUTCOME_VALIDATED"
    },
    {
     "id": "G11",
@@ -2981,7 +3449,7 @@
     "id": "G13",
     "name": "Stress tests",
     "status": "PASS",
-    "why": "400 synthetic games priced coherently, 6 ms each; degenerate games blocked"
+    "why": "400 synthetic games priced coherently, 7 ms each; degenerate games blocked"
    },
    {
     "id": "G14",
@@ -3465,8 +3933,8 @@
    "id": "CBX-ML-GBM",
    "title": "gbm on base-model OOS predictions + context",
    "decision": "REJECT",
-   "revision": 4,
-   "created_at": "2026-10-26T19:00:59.305Z",
+   "revision": 3,
+   "created_at": "2026-10-19T19:02:20.983Z",
    "holdout": false,
    "metrics": {
     "validation": {
@@ -3600,8 +4068,8 @@
    "id": "CBX-ABLATE-HIERARCHY",
    "title": "Ablation: team model without hierarchy",
    "decision": "ACCEPT",
-   "revision": 2,
-   "created_at": "2026-10-26T19:02:55.123Z",
+   "revision": 1,
+   "created_at": "2026-10-14T02:44:12.467Z",
    "holdout": false,
    "metrics": {
     "full": 0.59705,
@@ -3612,8 +4080,8 @@
    "id": "CBX-ABLATE-PARKS",
    "title": "Ablation: team model without parks",
    "decision": "ACCEPT",
-   "revision": 2,
-   "created_at": "2026-10-26T19:02:55.138Z",
+   "revision": 1,
+   "created_at": "2026-10-14T02:44:12.499Z",
    "holdout": false,
    "metrics": {
     "full": 0.59705,
@@ -3624,8 +4092,8 @@
    "id": "CBX-ABLATE-CARRYOVER",
    "title": "Ablation: team model without carryover",
    "decision": "ACCEPT",
-   "revision": 2,
-   "created_at": "2026-10-26T19:02:55.150Z",
+   "revision": 1,
+   "created_at": "2026-10-14T02:44:12.525Z",
    "holdout": false,
    "metrics": {
     "full": 0.59705,
@@ -3636,8 +4104,8 @@
    "id": "CBX-ABLATE-UNCERTAINTY-INTEGRATION",
    "title": "Ablation: team model without uncertainty integration",
    "decision": "REJECT",
-   "revision": 2,
-   "created_at": "2026-10-26T19:02:55.163Z",
+   "revision": 1,
+   "created_at": "2026-10-14T02:44:12.549Z",
    "holdout": false,
    "metrics": {
     "full": 0.59705,
@@ -3648,8 +4116,8 @@
    "id": "CBX-ABLATE-SEVEN-INNING-MIXTURE",
    "title": "Ablation: team model without seven inning mixture",
    "decision": "INCONCLUSIVE",
-   "revision": 2,
-   "created_at": "2026-10-26T19:02:55.174Z",
+   "revision": 1,
+   "created_at": "2026-10-14T02:44:12.572Z",
    "holdout": false,
    "metrics": {
     "full": 0.59705,
@@ -3660,8 +4128,8 @@
    "id": "CBX-ABLATE-PRIOR-SEASON-CALIBRATION-MAP",
    "title": "Ablation: team model without prior-season calibration map",
    "decision": "ACCEPT",
-   "revision": 2,
-   "created_at": "2026-10-26T19:02:55.186Z",
+   "revision": 1,
+   "created_at": "2026-10-14T02:44:12.597Z",
    "holdout": false,
    "metrics": {
     "full": 0.59705,

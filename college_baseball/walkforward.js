@@ -407,6 +407,14 @@ function lookFor(rep, prev, looks) {
   return rep.legacy_config ? prev : null;
 }
 
+/** is this the configuration team_tuning.json names, which every report made before config_sha256
+    existed was made with? Only the configuration counts: the loop's first SERVED version (1.0.0,
+    "selection-window tuning") is that same configuration, so a loop version does not make it another
+    one (research/PROTOCOL.md, amendment 2026-10-21: one look per configuration) */
+function legacyConfig(rep, t) {
+  return !!rep.config_sha256 && configHash({ tq: t.models.hier && t.models.hier.cfg, dist: t.dist }) === rep.config_sha256;
+}
+
 function carryHoldout(rep, prev) {
   const h = prev && prev.windows_report && prev.windows_report.HOLDOUT;
   if (!h || h.withheld || !prev.status || prev.model_version !== rep.model_version || !prev.pricing || prev.pricing.model !== rep.pricing.model) return false;
@@ -428,8 +436,7 @@ function main() {
   const rep = report(run, names, { holdout: flag('holdout'), now: new Date().toISOString() });
   rep.config_sha256 = configHash(cfgs.hier);
   rep.loop_version = (cfgs.hier && cfgs.hier.loop_version) || null;
-  /* the configuration team_tuning.json names (reports made before config_sha256 existed were made with it) */
-  const t0 = tuning(); rep.legacy_config = !rep.loop_version && configHash({ tq: t0.models.hier && t0.models.hier.cfg, dist: t0.dist }) === rep.config_sha256;
+  rep.legacy_config = legacyConfig(rep, tuning());
   if (flag('holdout')) { rep.holdout_evaluated_at = rep.generated_at; saveLook(rep); }
   else {
     let prev = null; try { prev = JSON.parse(fs.readFileSync(C.PATHS.walkforward, 'utf8')); } catch (_) { /* first run */ }
@@ -468,4 +475,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { CAL, runAll, report, carryHoldout, lookFor, loadLooks, configHash, servedLoopVersion, LOOP_VERSIONS, selectionOrder, metrics, slices, compare, constants, p7Context, cfgsFromTuning, tuning, GRIDS, windowOf, fitCalibration, applyCalibration, ROWS_FILE, WIN };
+module.exports = { CAL, runAll, report, carryHoldout, lookFor, legacyConfig, loadLooks, configHash, servedLoopVersion, LOOP_VERSIONS, selectionOrder, metrics, slices, compare, constants, p7Context, cfgsFromTuning, tuning, GRIDS, windowOf, fitCalibration, applyCalibration, ROWS_FILE, WIN };
