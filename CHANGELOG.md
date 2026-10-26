@@ -1,36 +1,41 @@
 # Changelog
 
-## 2026-10-26 — Research OS compatibility: one navigation driver for every browser suite, first-week onboarding restored, the graphic's version contract
+## 2026-10-26 — Research OS regression repair: eight red workflows, seven root causes, one pull request
 
-**What was red.** #807 (Research OS) left eight workflows red on its last commit:
-- Collective suites and Today's Games tests (`intel_ui.e2e.js`);
-- Player props, Matchup graphics, Funnel, Simulator suites, Market Foresight;
-- Signal Center, whose run on the merge was cancelled rather than passed.
+**What was red.** #807 (Research OS) merged at `7192d098` before any check reported. On its last commit:
+- seven workflows failed: Collective suites, Today's Games, Player props, Matchup graphics, Funnel, Simulator suites and Market Foresight;
+- Signal Center's browser job failed and its database job was cancelled.
 
-The full audit, file by file, is [docs/research-os/TEST_AUDIT.md](docs/research-os/TEST_AUDIT.md).
+The inventory, root causes and audit are in [docs/research-os/TEST_AUDIT.md](docs/research-os/TEST_AUDIT.md).
 
-**One navigation driver for the browser suites** (`tools/app/nav_helper.js`).
-- It taps the seat a reader can see: the sidebar at ≥ 1024 px, the bottom bar below that, and Menu's sheet for a seat that is not on the bar. It then waits until the destination is drawn.
-- `NAV.research()` opens a Research panel through its row, or through Other. `NAV.seatShown()` checks the seat is lit where the reader sees it.
-- Nine suites use it, three hand-written copies are gone, and six workflows now list it in their `paths:`.
-- On the Collective / Today's Games suite, Process is now reached through Menu on a phone and in the sidebar on a desktop, with the method drawn in Process. 62 passed, 1 failed → 164 passed, 0 failed.
+**Genuine regressions, fixed in production.**
+- **New accounts got no onboarding.** They landed on the Overview while "Here's what EdgeDesk found today." sat in the hidden Research view, with the welcome and onboarding modals standing aside for it. Yet `first_run_viewed` was recorded.
+  - **Owner decision:** an account in its first two weeks that has not put the panel away lands on Research; everyone else on the Overview.
+  - **The rule:** `EDShell.landing()`, asked by `edLandDefault()` at the boot and by Setup's hand-off.
+  - **The test:** `first_run.e2e.js` requires the panel drawn where the reader lands. Old code 9/7, now 61/0.
+- **The Matchup graphic's version contract.** The merge left `edgedesk_sport_graphic.js` at `sg1` beside a `ros2` renderer. It now shares the renderer's stamp, and `sport_graphic_ui.e2e.js` checks both scripts' real load, version and definition order.
+- **Market Foresight's isolation.** `REPORT.md` named a door the boundary reserves. It is reworded; the allowlist is unchanged.
 
-**First-week onboarding.** This was a product regression.
-- **What a new trialing account saw.** It landed on the Overview. "Here's what EdgeDesk found today." sat in the hidden Research view, the welcome and onboarding modals stood aside for it, and `first_run_viewed` was still recorded.
-- **Owner decision.** An account in its first two weeks that has not hidden the panel lands on Research; everyone else on the Overview. The rule is `EDShell.landing()` (`lib/edgedesk_shell.js`), asked by `edLandDefault()` in `app.html` at the boot's nothing-saved branch and by Setup's hand-off. It came from the parallel fix branch's commits, merged here; this change adds the `edgedesk_shell.js` cache bump and routes Setup through the same rule.
-- **The test.** `first_run.e2e.js` now requires the panel drawn in the view the reader lands on. Against the old code: 9 passed, 7 failed. Now: 57 passed, 0 failed.
+**Outdated tests, updated to the real navigation** (`tools/app/nav_helper.js`). It taps the seat drawn at the page's width: the sidebar at ≥ 1024 px, the bar below, Menu's sheet for a seat not on the bar, and Research's row and Other. Nine suites use it, and three hand-written copies are gone.
 
-**The Matchup graphic's version contract.**
-- **The bug.** The merge left `edgedesk_sport_graphic.js` at `sg1` while its renderer moved to `ros2`. It now loads under the renderer's version.
-- **The test.** `sport_graphic_ui.e2e.js` checks, from a real load, the two script responses, their equal `?v=`, and that the renderer is defined first. It is red on the old stamps.
+| Suite | Before | Now |
+|---|---|---|
+| Collective / Today's Games: Process through Menu on a phone, the sidebar on a desktop | 62/1 | 164/0 |
+| Player props: Research, then Props, at 1440 and 390 px | 0/1 | 140/0 |
+| Simulator: refresh failure armed after its own first draw | 144/1 | 145/0 |
+| Signal Center: the tile's exact server count, label case-insensitive | 125/1 | 126/0 |
 
-**The rest.**
-- **Player props.** The suite reaches Props through Research, at 1440 px and now at 390 px.
-- **Simulator.** Its refresh failure is armed after its own first draw; the Overview reads the same door first. The "seat is in the bottom bar" check is now true at each width.
-- **Signal Center.** The Overview tile is read as words, not as its CSS-uppercased drawing.
-- **Market Foresight.** `REPORT.md` no longer names an `mf_*` door. The isolation allowlist is unchanged.
+**Recurrence guards.**
+- **Every place is reachable.** `navigation.e2e.js` reaches every seat (the Process Coach drawn) and every Research panel through what is drawn at 390 and 1440 px: 240/0.
+- **No blind taps.** `navigation.test.js` refuses any browser suite that taps a seat, Menu or a Research tab by selector. It flags `main`'s `intel_ui.e2e.js:478` and `props_ui.e2e.js:171`. `research-os-tests.yml` now also starts on any `*.e2e.js` / `*.e2e.ts` change.
 
-**Unchanged.** No production navigation was changed for a selector, and no assertion, threshold or allowlist was loosened. `signals/` and `admin/signals/` still load the renderer at `pd1` (since b9846a46); that is noted in the audit for its own change.
+**Two sessions, one repair.** The original Research OS session pushed fixes for the same failures to its branch (tip `7371dc9d`). That tip is merged here with one implementation of each. Its `edgedesk_shell.js` change lacked a `?v=` bump; that is added (`20261026nav1`).
+
+**Pre-existing on `main` (not #807): an NBA injury reply with no state.** It was thrown past `.then(ok, fail)` as an unhandled rejection, which failed Guide CI. It is now `.then(ok).catch(fail)`, shown as "Injury report not yet available", with its own browser check: NBA 74/2 → 76/0, guide 73/1 → 74/0.
+
+**The NHL goalie loader had the same defect** (`lib/edgedesk_nhl_goalies.js`, done here at the owner's request). An answer with no state left `load()` rejected and unhandled, with the block stuck "loading" until a reload. It is now `.then(ok).catch(fail)`; `nhl_goalie_ui.test.js` 34/4 → 38/0.
+
+**Unchanged.** No production navigation was changed for a selector. No assertion, threshold or allowlist was loosened. No model, projection, price, Foresight methodology, ledger or research data was touched.
 
 ## 2026-10-26 — Content Engine: a player's name is not a team; and the two #805 commits that did not merge
 
