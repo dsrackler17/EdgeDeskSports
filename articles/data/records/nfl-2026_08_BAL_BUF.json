@@ -23,11 +23,11 @@
   "game_time": "2026-11-01T18:00:00.000Z",
   "game_when_label": "2026-11-01 18:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-26T04:34:54.929Z",
-  "generated_at": "2026-10-26T12:52:05.780Z",
+  "updated_at": "2026-10-26T19:17:02.637Z",
+  "generated_at": "2026-10-26T19:17:02.637Z",
   "model_version": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
   "model_status": "STALE MARKET",
-  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 7.0-point gap is context only and the game is excluded from research ranking.",
+  "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 8.0-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Buffalo Bills −10.5",
@@ -43,8 +43,8 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 105 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
-  "market_source": null,
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 106 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-09-13, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
     "game": {
@@ -127,11 +127,11 @@
         "note": "Quoted from the perspective of Buffalo Bills, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 105 absorbed 2026 games.",
-      "sample_games": 105,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 106 absorbed 2026 games.",
+      "sample_games": 106,
       "seeded": true,
       "status": "STALE MARKET",
-      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 7.0-point gap is context only and the game is excluded from research ranking.",
+      "status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 8.0-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_nfl_v2.1.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -1005,7 +1005,7 @@
           },
           {
             "k": "Active room",
-            "a": "Lamar Jackson, Tyler Huntley, Joe Fagnano",
+            "a": "Tyler Huntley, Joe Fagnano",
             "h": "Kyle Allen, Josh Allen",
             "note": "who is rostered at the position — identity only"
           }
@@ -1085,7 +1085,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 105 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 106 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1167,31 +1167,31 @@
       "available": true,
       "model": "Buffalo Bills −10.5",
       "model_raw": "Buffalo Bills -10.5",
-      "market": "Buffalo Bills −3.5",
-      "difference": "7.0 points",
+      "market": "Buffalo Bills −2.5",
+      "difference": "8.0 points",
       "rounding_note": null,
       "key_number": {
-        "text": "Market is below 7; model is above 7.",
-        "detail": "Buffalo Bills: market −3.5, model fair −10.5.",
+        "text": "Market is below 3; model is above 7.",
+        "detail": "Buffalo Bills: market −2.5, model fair −10.5.",
         "note": "Key margins are where football games often finish. How often differs between the NFL and college football; this note marks where the two lines sit and does not change any probability."
       },
       "total_model": "52.0",
       "total_model_raw": "52.2",
-      "total_market": "53.5",
+      "total_market": "51.5",
       "total_rounding_note": "Fair lines rounded to nearest half-point; differences use unrounded projections.",
-      "total_difference": "1.3 points",
-      "book": "nflverse reference",
-      "capture_age": null,
+      "total_difference": "0.7 points",
+      "book": "DraftKings",
+      "capture_age": "1035 hours old",
       "stale": false,
       "classification": "STALE MARKET",
-      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 7.0-point gap is context only and the game is excluded from research ranking.",
-      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 8.0-point gap is context only and the game is excluded from research ranking.",
+      "reference": null,
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Buffalo Bills 31, Baltimore Ravens 21.",
     "state": {
       "label": "STALE MARKET",
-      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 7.0-point gap is context only and the game is excluded from research ranking.",
+      "note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 8.0-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1328,11 +1328,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 105 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 106 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-26T12:52:05.780Z"
+    "at": "2026-10-26T19:17:02.637Z"
   }
 }
