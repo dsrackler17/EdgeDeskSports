@@ -189,7 +189,7 @@ function makeDb(createdAt) {
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
   const STAT = shiftedStat(BOARD);
 
-  async function open(viewport, createdDaysAgo, stat) {
+  async function open(viewport, createdDaysAgo, stat, o) {
     const created = new Date(Date.now() - createdDaysAgo * 864e5).toISOString();
     const db = makeDb(created);
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1 });
@@ -205,8 +205,10 @@ function makeDb(createdAt) {
         /* …and after the first-visit introduction was answered, which
            tools/guide/guide_ui.e2e.js holds */
         localStorage.setItem('edgedesk_guide_v1', JSON.stringify({ v: 1, intro: 'dismissed' }));
+        /* the panel already put away on this device (lib/edgedesk_first_run.js local done_at), when a case asks */
+        if (a.frDone && !sessionStorage.getItem('__frSeeded')) { sessionStorage.setItem('__frSeeded', '1'); localStorage.setItem('edgedesk_first_run_v1', JSON.stringify({ steps: {}, done_at: a.frDone })); }
       } catch (e) { /* private mode */ }
-    }, { uid: UID, created });
+    }, { uid: UID, created, frDone: (o && o.firstRunDoneAt) || null });
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) {
@@ -242,6 +244,7 @@ function makeDb(createdAt) {
       const items = (t) => { const c = card(t); return c ? [...c.querySelectorAll('.edfr-item')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()) : null; };
       const research = document.getElementById('v-research');
       return {
+        onScreen: !!(research && !research.classList.contains('hide') && h.offsetParent !== null && h.getBoundingClientRect().height > 0),
         inResearch: !!(research && research.contains(h)), beforeSearch: !!(document.getElementById('rsSearchWrap') && (h.compareDocumentPosition(document.getElementById('rsSearchWrap')) & Node.DOCUMENT_POSITION_FOLLOWING)),
         sub: (h.querySelector('.edfr-sub') || {}).textContent || '',
         dis: items('Largest model'), games: items('Research-grade game'), props: items('Research-grade player'), inc: items('Games with incomplete'), chg: items('Recently changed'),
@@ -251,6 +254,7 @@ function makeDb(createdAt) {
       };
     });
     chk(w + ': the panel sits in Research, above the board search', r.inResearch && r.beforeSearch, [r.inResearch, r.beforeSearch]);
+    chk(w + ': a new account lands on Research with the panel on screen, not inside a hidden view (docs/research-os/DESIGN.md §1)', r.onScreen);
     chk(w + ': it counts the slate from the rows', /4 games analyzed/.test(r.sub) && /2 game-market/.test(r.sub), r.sub);
     chk(w + ': the NFL game the state did not grade is WATCH', r.dis.some((t) => /Kansas City Chiefs @ Buffalo Bills WATCH/.test(t)), r.dis);
     chk(w + ': largest disagreements, widest first, with market and capture time', r.dis && r.dis.length === 3 && /West Virginia @ Iowa State/.test(r.dis[0]) && /40 min ago/.test(r.dis[0]), r.dis);
@@ -331,7 +335,19 @@ function makeDb(createdAt) {
     await S.page.waitForTimeout(1500);
     const has = await S.page.evaluate(() => { const h = document.getElementById('edFirstRun'); return !!(h && h.textContent.trim()); });
     chk('an account older than two weeks goes straight to the terminal', !has && S.db.events.some((e) => e.event === 'terminal_opened') && !S.db.events.some((e) => e.event === 'first_run_viewed'));
+    chk('…and, with nothing saved, lands on the Overview (the default past the first-run window)', await S.page.evaluate(() => !document.getElementById('v-overview').classList.contains('hide')));
     chk('older account: no script errors', S.errors.length === 0, S.errors);
+    await S.ctx.close();
+  }
+
+  /* 6b a new account that put the panel away on this device: the panel stays away, and the landing is the Overview */
+  {
+    const S = await open({ width: 1280, height: 900 }, 1, null, { firstRunDoneAt: new Date(Date.now() - 3600e3).toISOString() });
+    await eventually(() => S.db.events.some((e) => e.event === 'terminal_opened'), 20000);
+    await S.page.waitForTimeout(1500);
+    const v = await S.page.evaluate(() => ({ overview: !document.getElementById('v-overview').classList.contains('hide'), panel: !!((document.getElementById('edFirstRun') || {}).textContent || '').trim() }));
+    chk('a new account that put the panel away lands on the Overview, and the panel stays away', v.overview && !v.panel, v);
+    chk('put away: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
 
