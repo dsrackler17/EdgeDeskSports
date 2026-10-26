@@ -1,0 +1,56 @@
+# TEMPORARY — the GitHub Actions bypass probe (2026-10-26). Lives only on the
+# orphan branch claude/bypass-probe-runner; never on main. Question: does the
+# ruleset bypass for the GitHub Actions app (id 15368, docs/ci/main-ruleset.json)
+# let a push made with the default GITHUB_TOKEN through the rules #805/#806
+# propose for main? It pushes one commit to each of two scratch branches:
+#   claude/bypass-probe/target          ruleset = main-ruleset.json + Actions bypass
+#   claude/bypass-probe-control/target  the same rules, empty bypass list
+# The control must be REFUSED (the rules bind GITHUB_TOKEN pushes); the probe is
+# ACCEPTED only if the bypass works. Until both scratch rulesets are active it
+# pushes nothing and exits green. main is never touched.
+name: TEMP bypass probe
+
+on:
+  push:
+    branches: ['claude/bypass-probe-runner']
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: The two scratch rulesets are active, and main has no rules from them
+        id: ready
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n() { gh api "repos/$GITHUB_REPOSITORY/rules/branches/$1" --jq 'length' 2>/dev/null || echo error; }
+          probe=$(n claude%2Fbypass-probe%2Ftarget); ctrl=$(n claude%2Fbypass-probe-control%2Ftarget); main=$(n main)
+          echo "rules in force: probe=$probe control=$ctrl main=$main"
+          if [ "$probe" = 0 ] || [ "$ctrl" = 0 ] || [ "$probe" = error ] || [ "$ctrl" = error ]; then
+            echo "::notice::NOT READY: import probe-ruleset.json and control-ruleset.json (PROBE.md), then re-run this job. Nothing was pushed."
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Push one commit to each scratch branch with the default GITHUB_TOKEN
+        if: steps.ready.outputs.ready == 'yes'
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          git init -q p && cd p
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for b in claude/bypass-probe/target claude/bypass-probe-control/target; do
+            git fetch -q --depth=1 origin "$b"
+            git checkout -q -B work FETCH_HEAD
+            echo "run $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT" > probe.txt
+            git add probe.txt
+            git commit -q -m "bypass probe: update $b (run $GITHUB_RUN_ID)"
+            if git push origin "HEAD:refs/heads/$b" > out.txt 2>&1; then echo "PROBE_RESULT $b ACCEPTED"; else echo "PROBE_RESULT $b REFUSED"; fi
+            sed 's/^/    | /' out.txt
+          done
