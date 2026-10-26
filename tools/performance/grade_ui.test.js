@@ -5,9 +5,10 @@
 
      W  one sentence everywhere: the badge's tooltip is the kernel's; the guide
         explains the grade and says what it is not
-     A  app.html loads the grade module before the boards, with one version
-        token; every board that shows a grade guards on the module, so a page
-        without it renders exactly as before
+     A  app.html loads the grade module before the boards; the module and its
+        stylesheet share one version token, and no board loads under a token
+        older than theirs; every board that shows a grade guards on the module,
+        so a page without it renders exactly as before
      B  the boards: Today's Games (terminal host only, never /today/), the FBS
         board (badge, a URL-kept filter, the game card's section), the NFL card,
         the NBA and NHL boards and their game views
@@ -46,7 +47,15 @@ const iGrade = APP.indexOf('/lib/edgedesk_grade_ui.js?v='), iGames = APP.indexOf
 chk('A app.html loads the grade module before the games board', iGrade > 0 && iGames > iGrade);
 const tok = (re) => (re.exec(APP) || [])[1];
 const T = tok(/edgedesk_grade_ui\.js\?v=([a-z0-9]+)/);
-chk('A the module, its stylesheet and the boards that use it share one cache token', T && tok(/edgedesk_grade\.css\?v=([a-z0-9]+)/) === T && tok(/edgedesk_games_ui\.js\?v=([a-z0-9]+)/) === T && tok(/edgedesk_engine_ui\.js\?v=([a-z0-9]+)/) === T && tok(/edgedesk_nba_ui\.js\?v=([a-z0-9]+)/) === T);
+chk('A the module and its stylesheet share one cache token', T && tok(/edgedesk_grade\.css\?v=([a-z0-9]+)/) === T, [T, tok(/edgedesk_grade\.css\?v=([a-z0-9]+)/)]);
+/* every board guards on window.EDGradeUI and calls its stable methods, so a board may take a new
+   token on its own (the NHL and Today's Games boards each did on 2026-10-26); what must not happen
+   is a new module running against a board the browser still has cached from before it. Tokens
+   start with their YYYYMMDD date, so "no older" is a comparison of those eight digits. */
+const boards = { games: tok(/edgedesk_games_ui\.js\?v=([a-z0-9]+)/), nhl: tok(/edgedesk_engine_ui\.js\?v=([a-z0-9]+)/), nba: tok(/edgedesk_nba_ui\.js\?v=([a-z0-9]+)/) };
+const day = (t) => (/^(\d{8})/.exec(t || '') || [])[1];
+chk('A every cache token involved starts with its YYYYMMDD date', [T].concat(Object.values(boards)).every((t) => !!day(t)), [T, boards]);
+chk('A no board that uses the module loads under a token older than the module\'s', !!day(T) && Object.values(boards).every((t) => day(t) >= day(T)), [T, boards]);
 chk('A the terminal loads the grades once and redraws the FBS board when they arrive', /window\.EDGradeUI\.load\(\);/.test(APP) && /EDGradeUI\.onChange\(function\(\)\{try\{if\(document\.querySelector\('\.fbs-filters'\)/.test(APP));
 chk('A /today/ loads the same games module (the public host decides), and no grade module', /edgedesk_games_ui\.js\?v=/.test(read('today/index.html')) && !/edgedesk_grade_ui\.js/.test(read('today/index.html')));
 
