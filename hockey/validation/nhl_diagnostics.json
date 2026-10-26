@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_diagnostics_v1",
- "generated_at": "2026-10-26T05:15:45.903Z",
+ "generated_at": "2026-10-26T12:02:51.536Z",
  "model": "edgedesk_nhl_v1:xg_core (production)",
  "source": "out-of-sample predictions rebuilt by hockey/lab/base.js (reproduces hockey/validation/nhl_walkforward.json)",
  "windows": {
@@ -878,5 +878,657 @@
    }
   ],
   "rule": "one-sided CUSUM on per-game log loss minus the confirmation mean, allowance half a per-game sd, alarm at 5 sd; WATCH when the season mean sits 2 standard errors above the reference. A monitor: it never retrains or reprices anything."
+ },
+ "team_strength": {
+  "rule": "Each club's regulation goals against the regulation λ it was priced at, regular season, out of sample. Slope: Poisson recalibration of goals on log λ (1 = right). TOO_WIDE when the 95% interval sits below 1: the model rates clubs too far apart, overrating the strong and underrating the weak. TOO_NARROW when it sits above 1: too close together. Total and split repeat the slope on the game total and on the home share of goals. Scored ÷ forecast above 1 means the model expected too few goals from that group. A monitor: it never retrains or reprices anything.",
+  "windows": {
+   "selection": {
+    "team_games": 17088,
+    "games": 8544,
+    "sample_state": "MEANINGFUL",
+    "slope": {
+     "n": 17088,
+     "slope": 1.01,
+     "ci95": [
+      0.931,
+      1.09
+     ],
+     "mean_lambda": 2.671,
+     "mean_goals": 2.733
+    },
+    "reading": "OK",
+    "total": {
+     "n": 8544,
+     "slope": 1.013,
+     "ci95": [
+      0.868,
+      1.157
+     ],
+     "mean_lambda": 5.342,
+     "mean_goals": 5.466,
+     "reading": "OK"
+    },
+    "split": {
+     "n": 8491,
+     "slope": 1.042,
+     "ci95": [
+      0.928,
+      1.157
+     ],
+     "reading": "OK"
+    },
+    "by_lambda": [
+     {
+      "group": 1,
+      "of": 10,
+      "n": 1708,
+      "forecast": 2.162,
+      "scored": 2.185,
+      "ratio": 1.011,
+      "se": 0.017
+     },
+     {
+      "group": 2,
+      "of": 10,
+      "n": 1709,
+      "forecast": 2.351,
+      "scored": 2.385,
+      "ratio": 1.015,
+      "se": 0.016
+     },
+     {
+      "group": 3,
+      "of": 10,
+      "n": 1709,
+      "forecast": 2.455,
+      "scored": 2.531,
+      "ratio": 1.031,
+      "se": 0.016
+     },
+     {
+      "group": 4,
+      "of": 10,
+      "n": 1709,
+      "forecast": 2.542,
+      "scored": 2.615,
+      "ratio": 1.029,
+      "se": 0.015
+     },
+     {
+      "group": 5,
+      "of": 10,
+      "n": 1709,
+      "forecast": 2.622,
+      "scored": 2.662,
+      "ratio": 1.015,
+      "se": 0.015
+     },
+     {
+      "group": 6,
+      "of": 10,
+      "n": 1708,
+      "forecast": 2.699,
+      "scored": 2.816,
+      "ratio": 1.043,
+      "se": 0.015
+     },
+     {
+      "group": 7,
+      "of": 10,
+      "n": 1709,
+      "forecast": 2.781,
+      "scored": 2.845,
+      "ratio": 1.023,
+      "se": 0.015
+     },
+     {
+      "group": 8,
+      "of": 10,
+      "n": 1709,
+      "forecast": 2.875,
+      "scored": 2.981,
+      "ratio": 1.037,
+      "se": 0.015
+     },
+     {
+      "group": 9,
+      "of": 10,
+      "n": 1709,
+      "forecast": 2.995,
+      "scored": 3.057,
+      "ratio": 1.021,
+      "se": 0.014
+     },
+     {
+      "group": 10,
+      "of": 10,
+      "n": 1709,
+      "forecast": 3.228,
+      "scored": 3.253,
+      "ratio": 1.008,
+      "se": 0.014
+     }
+    ]
+   },
+   "confirmation": {
+    "team_games": 14856,
+    "games": 7428,
+    "sample_state": "MEANINGFUL",
+    "slope": {
+     "n": 14856,
+     "slope": 0.889,
+     "ci95": [
+      0.823,
+      0.956
+     ],
+     "mean_lambda": 3.018,
+     "mean_goals": 2.988
+    },
+    "reading": "TOO_WIDE",
+    "total": {
+     "n": 7428,
+     "slope": 0.761,
+     "ci95": [
+      0.589,
+      0.934
+     ],
+     "mean_lambda": 6.036,
+     "mean_goals": 5.976,
+     "reading": "TOO_WIDE"
+    },
+    "split": {
+     "n": 7401,
+     "slope": 0.938,
+     "ci95": [
+      0.86,
+      1.016
+     ],
+     "reading": "OK"
+    },
+    "by_lambda": [
+     {
+      "group": 1,
+      "of": 10,
+      "n": 1485,
+      "forecast": 2.336,
+      "scored": 2.378,
+      "ratio": 1.018,
+      "se": 0.017
+     },
+     {
+      "group": 2,
+      "of": 10,
+      "n": 1486,
+      "forecast": 2.586,
+      "scored": 2.522,
+      "ratio": 0.975,
+      "se": 0.016
+     },
+     {
+      "group": 3,
+      "of": 10,
+      "n": 1485,
+      "forecast": 2.72,
+      "scored": 2.846,
+      "ratio": 1.046,
+      "se": 0.016
+     },
+     {
+      "group": 4,
+      "of": 10,
+      "n": 1486,
+      "forecast": 2.833,
+      "scored": 2.775,
+      "ratio": 0.98,
+      "se": 0.015
+     },
+     {
+      "group": 5,
+      "of": 10,
+      "n": 1486,
+      "forecast": 2.937,
+      "scored": 2.935,
+      "ratio": 0.999,
+      "se": 0.015
+     },
+     {
+      "group": 6,
+      "of": 10,
+      "n": 1485,
+      "forecast": 3.042,
+      "scored": 3.031,
+      "ratio": 0.996,
+      "se": 0.015
+     },
+     {
+      "group": 7,
+      "of": 10,
+      "n": 1486,
+      "forecast": 3.15,
+      "scored": 3.043,
+      "ratio": 0.966,
+      "se": 0.014
+     },
+     {
+      "group": 8,
+      "of": 10,
+      "n": 1485,
+      "forecast": 3.277,
+      "scored": 3.344,
+      "ratio": 1.02,
+      "se": 0.014
+     },
+     {
+      "group": 9,
+      "of": 10,
+      "n": 1486,
+      "forecast": 3.457,
+      "scored": 3.338,
+      "ratio": 0.966,
+      "se": 0.014
+     },
+     {
+      "group": 10,
+      "of": 10,
+      "n": 1486,
+      "forecast": 3.84,
+      "scored": 3.666,
+      "ratio": 0.955,
+      "se": 0.013
+     }
+    ]
+   },
+   "live": {
+    "team_games": 358,
+    "games": 179,
+    "sample_state": "EARLY_SIGNAL",
+    "slope": {
+     "n": 358,
+     "slope": 1.61,
+     "ci95": [
+      0.947,
+      2.273
+     ],
+     "mean_lambda": 3.019,
+     "mean_goals": 3.036
+    },
+    "reading": "OK",
+    "total": {
+     "n": 179,
+     "slope": 3.555,
+     "ci95": [
+      1.034,
+      6.076
+     ],
+     "mean_lambda": 6.038,
+     "mean_goals": 6.073,
+     "reading": "TOO_NARROW"
+    },
+    "split": {
+     "n": 176,
+     "slope": 1.503,
+     "ci95": [
+      0.776,
+      2.23
+     ],
+     "reading": "OK"
+    },
+    "by_lambda": [
+     {
+      "group": 1,
+      "of": 5,
+      "n": 71,
+      "forecast": 2.655,
+      "scored": 2.479,
+      "ratio": 0.934,
+      "se": 0.07
+     },
+     {
+      "group": 2,
+      "of": 5,
+      "n": 72,
+      "forecast": 2.858,
+      "scored": 2.792,
+      "ratio": 0.977,
+      "se": 0.069
+     },
+     {
+      "group": 3,
+      "of": 5,
+      "n": 71,
+      "forecast": 3.007,
+      "scored": 3.141,
+      "ratio": 1.045,
+      "se": 0.07
+     },
+     {
+      "group": 4,
+      "of": 5,
+      "n": 72,
+      "forecast": 3.154,
+      "scored": 3.083,
+      "ratio": 0.978,
+      "se": 0.066
+     },
+     {
+      "group": 5,
+      "of": 5,
+      "n": 72,
+      "forecast": 3.416,
+      "scored": 3.681,
+      "ratio": 1.077,
+      "se": 0.066
+     }
+    ]
+   }
+  },
+  "phase": {
+   "selection": {
+    "first_20_games": {
+     "n": 4260,
+     "slope": 1.055,
+     "ci95": [
+      0.89,
+      1.22
+     ],
+     "mean_lambda": 2.667,
+     "mean_goals": 2.743
+    },
+    "rest": {
+     "n": 12828,
+     "slope": 0.997,
+     "ci95": [
+      0.906,
+      1.088
+     ],
+     "mean_lambda": 2.672,
+     "mean_goals": 2.73
+    }
+   },
+   "confirmation": {
+    "first_20_games": {
+     "n": 3820,
+     "slope": 0.806,
+     "ci95": [
+      0.661,
+      0.952
+     ],
+     "mean_lambda": 3.001,
+     "mean_goals": 2.957
+    },
+    "rest": {
+     "n": 11036,
+     "slope": 0.91,
+     "ci95": [
+      0.836,
+      0.985
+     ],
+     "mean_lambda": 3.024,
+     "mean_goals": 2.999
+    }
+   },
+   "live": {
+    "first_20_games": {
+     "n": 358,
+     "slope": 1.61,
+     "ci95": [
+      0.947,
+      2.273
+     ],
+     "mean_lambda": 3.019,
+     "mean_goals": 3.036
+    },
+    "rest": {
+     "n": 0,
+     "slope": null,
+     "ci95": null
+    }
+   }
+  },
+  "standouts": {
+   "games_into_season": [
+    8,
+    24
+   ],
+   "basis": "season-to-date numbers from games on earlier dates; ratios to the league's season to date",
+   "rows": [
+    {
+     "key": "hot_scoring",
+     "label": "scoring ≥ 1.20× the league (regulation goals a game)",
+     "selection": {
+      "n": 455,
+      "forecast": 2.791,
+      "scored": 2.776,
+      "ratio": 0.994,
+      "se": 0.028
+     },
+     "confirmation": {
+      "n": 392,
+      "forecast": 3.221,
+      "scored": 3.212,
+      "ratio": 0.997,
+      "se": 0.028
+     },
+     "live": {
+      "n": 24
+     }
+    },
+    {
+     "key": "cold_scoring",
+     "label": "scoring ≤ 0.83× the league",
+     "selection": {
+      "n": 570,
+      "forecast": 2.506,
+      "scored": 2.525,
+      "ratio": 1.007,
+      "se": 0.027
+     },
+     "confirmation": {
+      "n": 499,
+      "forecast": 2.741,
+      "scored": 2.731,
+      "ratio": 0.996,
+      "se": 0.027
+     },
+     "live": {
+      "n": 20
+     }
+    },
+    {
+     "key": "hot_last_3",
+     "label": "last three games ≥ 1.33× the league's scoring rate",
+     "selection": {
+      "n": 564,
+      "forecast": 2.756,
+      "scored": 2.798,
+      "ratio": 1.015,
+      "se": 0.026
+     },
+     "confirmation": {
+      "n": 479,
+      "forecast": 3.115,
+      "scored": 3.1,
+      "ratio": 0.995,
+      "se": 0.026
+     },
+     "live": {
+      "n": 18
+     }
+    },
+    {
+     "key": "cold_last_3",
+     "label": "last three games ≤ 0.67× the league's scoring rate",
+     "selection": {
+      "n": 689,
+      "forecast": 2.59,
+      "scored": 2.598,
+      "ratio": 1.003,
+      "se": 0.024
+     },
+     "confirmation": {
+      "n": 567,
+      "forecast": 2.901,
+      "scored": 2.97,
+      "ratio": 1.024,
+      "se": 0.025
+     },
+     "live": {
+      "n": 17
+     }
+    },
+    {
+     "key": "high_pp_goals",
+     "label": "power-play goals a game ≥ 1.35× the league",
+     "selection": {
+      "n": 524,
+      "forecast": 2.751,
+      "scored": 2.855,
+      "ratio": 1.038,
+      "se": 0.027
+     },
+     "confirmation": {
+      "n": 543,
+      "forecast": 3.095,
+      "scored": 2.989,
+      "ratio": 0.966,
+      "se": 0.024
+     },
+     "live": {
+      "n": 23
+     }
+    },
+    {
+     "key": "low_pp_goals",
+     "label": "power-play goals a game ≤ 0.65× the league",
+     "selection": {
+      "n": 539,
+      "forecast": 2.58,
+      "scored": 2.571,
+      "ratio": 0.997,
+      "se": 0.027
+     },
+     "confirmation": {
+      "n": 568,
+      "forecast": 2.888,
+      "scored": 2.84,
+      "ratio": 0.983,
+      "se": 0.024
+     },
+     "live": {
+      "n": 16
+     }
+    },
+    {
+     "key": "hot_finishing",
+     "label": "finishing (goals ÷ xG) ≥ 1.15",
+     "selection": {
+      "n": 829,
+      "forecast": 2.763,
+      "scored": 2.765,
+      "ratio": 1.001,
+      "se": 0.021
+     },
+     "confirmation": {
+      "n": 452,
+      "forecast": 3.073,
+      "scored": 2.945,
+      "ratio": 0.958,
+      "se": 0.026
+     },
+     "live": {
+      "n": 19
+     }
+    },
+    {
+     "key": "cold_finishing",
+     "label": "finishing (goals ÷ xG) ≤ 0.87",
+     "selection": {
+      "n": 648,
+      "forecast": 2.567,
+      "scored": 2.627,
+      "ratio": 1.023,
+      "se": 0.025
+     },
+     "confirmation": {
+      "n": 812,
+      "forecast": 2.945,
+      "scored": 2.943,
+      "ratio": 0.999,
+      "se": 0.02
+     },
+     "live": {
+      "n": 25
+     }
+    },
+    {
+     "key": "hot_scoring_and_finishing",
+     "label": "scoring ≥ 1.20× the league with finishing ≥ 1.10",
+     "selection": {
+      "n": 388,
+      "forecast": 2.822,
+      "scored": 2.809,
+      "ratio": 0.995,
+      "se": 0.03
+     },
+     "confirmation": {
+      "n": 260,
+      "forecast": 3.158,
+      "scored": 3.138,
+      "ratio": 0.994,
+      "se": 0.035
+     },
+     "live": {
+      "n": 13
+     }
+    },
+    {
+     "key": "vs_leaky_defence",
+     "label": "opponent allows ≥ 1.20× the league",
+     "selection": {
+      "n": 454,
+      "forecast": 2.849,
+      "scored": 2.784,
+      "ratio": 0.977,
+      "se": 0.027
+     },
+     "confirmation": {
+      "n": 359,
+      "forecast": 3.218,
+      "scored": 3.279,
+      "ratio": 1.019,
+      "se": 0.03
+     },
+     "live": {
+      "n": 14
+     }
+    },
+    {
+     "key": "vs_stingy_defence",
+     "label": "opponent allows ≤ 0.83× the league",
+     "selection": {
+      "n": 594,
+      "forecast": 2.506,
+      "scored": 2.589,
+      "ratio": 1.033,
+      "se": 0.026
+     },
+     "confirmation": {
+      "n": 500,
+      "forecast": 2.779,
+      "scored": 2.734,
+      "ratio": 0.984,
+      "se": 0.027
+     },
+     "live": {
+      "n": 20
+     }
+    }
+   ]
+  },
+  "summary": [
+   "selection (17088 team-games): slope 1.01 (95% 0.931–1.09), OK; the highest-λ tenth scored 1.008× its forecast, the lowest 1.011×.",
+   "confirmation (14856 team-games): slope 0.889 (95% 0.823–0.956), TOO_WIDE; the highest-λ tenth scored 0.955× its forecast, the lowest 1.018×.",
+   "live (358 team-games): slope 1.61 (95% 0.947–2.273), OK; the highest-λ fifth scored 1.077× its forecast, the lowest 0.934×."
+  ]
  }
 }

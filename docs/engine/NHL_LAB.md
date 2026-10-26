@@ -187,6 +187,90 @@ between the subsets flips sign between windows. A licensed confirmed-starter
 feed is the most valuable missing input, and its value would be measurable.
 The first 20 games of a season are measurably harder, which is expected.
 
+### 6.1 Team strength: does the model over- or under-rate clubs? (2026-10-26)
+
+**The question.** For TOR at CGY on 2026-10-26, a reader read the market as
+implying 3.57 Toronto goals against the model's 3.10 in regulation (about 3.2
+with overtime). Toronto had scored 3.85 a game, with 13 power-play goals and
+18 goals in its last three. Does the model regress hot clubs too far, or rate
+clubs too close together in general? Or too far apart?
+
+**The monitor** (`team_strength` in the diagnostics file, also on the
+Record tab). It uses each club's regulation goals against the regulation λ
+it was priced at, regular season, out of sample:
+
+- **Slope:** the Poisson recalibration slope of goals on log λ. 1 is right.
+  `TOO_WIDE` when the 95% interval sits below 1: clubs are rated too far
+  apart, so the strong are overrated and the weak underrated. `TOO_NARROW`
+  when the interval sits above 1: clubs are rated too close together.
+- **Game total and split:** the same slope on the game total, and on the
+  home share of goals.
+- **Scored ÷ forecast**, by tenth of λ.
+- **Standouts:** clubs 8 to 24 games into a season whose season-to-date
+  numbers stand out, computed from earlier dates only.
+
+It is a monitor: it never retrains or reprices.
+
+| Slope (95%) | Selection 2014-20 | Confirmation 2021-26 | Live 2026-27 (179 games) |
+|---|---|---|---|
+| Club goals | 1.010 (0.931–1.090) OK | **0.889 (0.823–0.956) TOO_WIDE** | 1.61 (0.95–2.27) OK |
+| Game total | 1.013 OK | **0.761 (0.589–0.934) TOO_WIDE** | **3.56 (1.03–6.08) TOO_NARROW** |
+| Home share of goals | 1.042 OK | 0.938 (0.860–1.016) OK | 1.50 (0.78–2.23) OK |
+| Highest-λ group, scored ÷ forecast | 1.008 ± 0.014 | **0.955 ± 0.013** | 1.077 ± 0.066 (fifth) |
+| Lowest-λ group | 1.011 ± 0.017 | 1.018 ± 0.017 | 0.934 ± 0.070 (fifth) |
+
+| Standout, 8-24 games in: scored ÷ forecast | Selection | Confirmation |
+|---|---|---|
+| Scoring ≥ 1.20× the league | 0.994 ± 0.028 (455) | 0.997 ± 0.028 (392) |
+| … with finishing ≥ 1.10 (Toronto's profile) | 0.995 ± 0.030 (388) | 0.994 ± 0.035 (260) |
+| Last three games ≥ 1.33× the league's rate | 1.015 ± 0.026 (564) | 0.995 ± 0.026 (479) |
+| Power-play goals ≥ 1.35× the league | 1.038 ± 0.027 (524) | 0.966 ± 0.024 (543) |
+| Finishing (goals ÷ xG) ≥ 1.15 | 1.001 ± 0.021 (829) | 0.958 ± 0.026 (452) |
+| Opponent allows ≥ 1.20× the league | 0.977 ± 0.027 (454) | 1.019 ± 0.030 (359) |
+
+**What it says.**
+
+- **Hot clubs score what the model forecasts.** That holds for a hot scoring
+  start, a run of goals, and hot scoring with hot finishing, in both windows
+  and within about 1%. Moving their forecasts toward their season-to-date
+  scoring would overrate them.
+- **Power-play goals carry no stable correction.** Clubs with high early
+  power-play goal rates scored 4% over their forecast on selection and 3%
+  under on confirmation.
+  - Two one-off runs on `hockey/lab/base.js` check this further. Adding
+    power-play quality and volume (`pp_off`, `pp_draw`) to `xg_core`
+    changed club-goal likelihood by +0.00005 on selection and −0.00005 on
+    confirmation, and team-total-2.5 log loss by −0.00001 and −0.00015. Every
+    interval straddles zero.
+  - `goals_only`, which trusts scoring alone, is worse on team totals 2.5 by
+    0.0013 (selection) and 0.0026 (confirmation), both intervals above zero.
+- **Where the model does overrate.** On 2021-26 the highest-λ tenth scored
+  4.5% under its forecast. The cause is the game total (slope 0.76), not who
+  scores more (0.94, interval covers 1). It is the same over-spread total
+  that keeps every totals market `PROVISIONAL` (§5). 2014-20 shows none of it.
+- **The calibration window was tested again.** Three alternatives:
+  - every earlier season;
+  - five seasons;
+  - totals from every earlier season, split from three.
+
+  None beats the three-season rule. On selection each is worse on over 5.5
+  by 0.00013 to 0.00014 (intervals above zero). On confirmation every
+  interval straddles zero. The production rule stays.
+- **The live season leans the other way.** In 2026-27 so far, the totals
+  are bunched too tightly (3.56, interval above 1). The 2026-27 total
+  calibration `a = 0.5` is the strongest compression since 2014; 2021-26 ran
+  0.6 to 1.05. This is a watch item: 179 games, and the live window never
+  chooses (protocol rule 4).
+- **Toronto at Calgary, specifically.** The calibration moves Toronto only
+  from 3.13 to 3.10. The 3.10 comes from the ratings:
+  - Toronto: goals 1.039, 5v5 chance creation 0.96, finishing 1.06. Its 50
+    goals came on 38.9 xG, and the ratings carry 50.7 games of decayed
+    history plus a 32-game prior.
+  - Calgary: goals against 1.053, 5v5 chances against 1.031.
+
+  Clubs with that profile have scored their forecast (0.995 and 0.994
+  above).
+
 ## 7. Reproducibility
 
 Every fit is deterministic. IRLS has no randomness; the tree learner and the
