@@ -24,6 +24,7 @@ const sport = SPORTS.sports.find((s: any) => s.key === 'tennis');
 T.eq('the registry lists tennis, ACTIVE, with its three tabs', [sport && sport.status, sport && sport.tabs.join()], ['ACTIVE', 'draws,matches,model_health']);
 T.eq('the adapter names the tabs Draws, Matches, Model Health', [W.adapter.tabLabels.draws, W.adapter.tabLabels.matches, W.adapter.tabLabels.model_health], ['Draws', 'Matches', 'Model Health']);
 T.eq('fair odds: 60% is 1.67 decimal and -150 American', [W.decimal(0.6), W.american(0.6), W.american(0.4)], ['1.67', '-150', '+150']);
+T.eq('fair odds past 1,000 decimal: a 0.075% long shot is 1,333 decimal and +133233 American', [W.decimal(0.00075), W.american(0.00075)], ['1,333', '+133233']);
 T.chk('the public registry text never says "probability"', !/probability/i.test(JSON.stringify(sport)));
 
 /* the committed feeds' draws and matches, or the frozen fixture on a day the feeds give no draw (_tennis_fixture.ts) */
@@ -51,7 +52,8 @@ T.chk('no match prices published: says so on Matches', /No match prices have bee
 const d = paint(cache(), 'draws');
 T.chk('Draws: EXPERIMENTAL, the simulated-draw count and the tournament', /EXPERIMENTAL/.test(d) && /4,000 simulated draws/.test(d) && d.includes(UI.esc(S0.tournament.name)));
 T.chk('Draws: results Observed, simulation Research, the order\'s source stated', /sm-observed/.test(d) && /sm-research/.test(d) && /Draw order: /.test(d));
-T.chk('Draws: who wins the title, with fair odds in both formats for every player still in', /Who wins the title/.test(d) && (d.match(/<td class="sm-num">\d+\.\d\d · [+-]\d+<\/td>/g) || []).length >= S0.players.filter((p: any) => !p.out).length - 1);
+/* decimal odds print as 2.73 below 1,000 and as 1,333 from 1,000 up (EDSim fairOdds), so a long shot in the draw still shows both formats */
+T.chk('Draws: who wins the title, with fair odds in both formats for every player still in', /Who wins the title/.test(d) && (d.match(/<td class="sm-num">(?:\d+\.\d\d|\d{1,3}(?:,\d{3})+) · [+-]\d+<\/td>/g) || []).length >= S0.players.filter((p: any) => !p.out).length - 1);
 T.chk('Draws: the next matches priced for both players', (S0.scheduled.length === 0 || /The next matches/.test(d)) && S0.scheduled.every((m: any) => d.includes(UI.esc(m.a_name)) && d.includes(UI.esc(m.b_name))));
 T.chk('Draws: the results so far, winner and loser', !S0.results.length || (/Results so far/.test(d) && / d\. /.test(d)));
 if (P.length > 1) {
