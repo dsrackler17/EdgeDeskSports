@@ -1,5 +1,5 @@
 {
- "today": "2026-10-25",
+ "today": "2026-10-26",
  "steps": [
   {
    "step": "hosts",
@@ -115,21 +115,32 @@
    }
   },
   {
+   "step": "schedules",
+   "sport": "mens-basketball",
+   "ok": 598,
+   "misses_by_reason": {
+    "PLATFORM_NOT_READ": 44,
+    "SPORT_MISMATCH": 16,
+    "HTTP": 10,
+    "NO_SCHEDULE": 4
+   }
+  },
+  {
+   "step": "schedules",
+   "sport": "womens-basketball",
+   "ok": 597,
+   "misses_by_reason": {
+    "PLATFORM_NOT_READ": 44,
+    "SPORT_MISMATCH": 10,
+    "NO_SCHEDULE": 8,
+    "HTTP": 12,
+    "SEASON_MISMATCH": 1
+   }
+  },
+  {
    "step": "team_ids",
    "schools": 42,
    "hosts": 93
-  },
-  {
-   "step": "boxscores",
-   "id": "baseball-boxscores-2013-2026",
-   "planned": 93616,
-   "unjoinable": 2978,
-   "ok": 8345,
-   "left": 27860,
-   "misses_by_reason": {
-    "NO_BOXSCORE": 91,
-    "HTTP": 3
-   }
   },
   {
    "step": "portal",
@@ -293,7 +304,9 @@
   "rosters:womens-volleyball": "2026-10-21",
   "rosters:mens-soccer": "2026-10-21",
   "rosters:womens-soccer": "2026-10-21",
-  "schedules:baseball": "2026-10-21"
+  "schedules:baseball": "2026-10-21",
+  "schedules:mens-basketball": "2026-10-26",
+  "schedules:womens-basketball": "2026-10-26"
  },
  "backfill_read_at": "2026-10-25"
 }
