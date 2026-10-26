@@ -68,6 +68,27 @@ function pinLine(csv, season, week, away, home, spreadLine) {
     return l;
   }).join('\n');
 }
+/* THE CLOCK IS STAGED TOO. The board shows the games ahead of the reader's
+   clock and nflverse fills in each score as the game ends, so on the real
+   clock the staged cards turn into graded finals with no Market Structure
+   section: IND @ MIN went final 2026-10-25 and failed this suite from then
+   on, DAL @ PHI goes on the Monday night, and then Week 7 leaves the board.
+   The browser runs at the moment the scenario describes (after the Thursday
+   freeze and Saturday's Circa fetch, before Sunday's kickoffs), on the
+   schedule as it stood then: no score for a game that had not kicked off. */
+const NOW = '2026-10-24T16:00:00Z';
+function asOf(csv, nowIso) {
+  const rows = csv.split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
+  const blank = ['away_score', 'home_score', 'result', 'total', 'overtime'].map(ix).filter((i) => i >= 0);
+  const now = Date.parse(nowIso);
+  return rows.map((l, i) => {
+    if (!i || !l) return l;
+    const c = l.split(',');
+    if (Date.parse(kickIso(c[ix('gameday')], c[ix('gametime')])) <= now) return l;
+    blank.forEach((k) => { c[k] = ''; });
+    return c.join(',');
+  }).join('\n');
+}
 function staged(csv) {
   const rows = csv.trim().split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
   const want = {};
@@ -77,7 +98,7 @@ function staged(csv) {
   const board = [
     { event_id: 'evDALPHI', canonical_game_id: 'g1', home_team: NAME.PHI, away_team: NAME.DAL, commence_time: kickIso(g1.day, g1.time), snapshot_at: '2026-10-22T17:00:00Z',
       snapshot_status: 'ok', snapshot_backfilled: false, snap_home_spread: 3, snap_fair_home: 0.482, snap_n_books: 14, snap_books: ['draftkings', 'pinnacle'], snap_pass_at: '2026-10-22T16:20:00Z',
-      current_status: 'ok', current_at: new Date().toISOString(), current_home_spread: 4.5, current_delta: 1.5, current_crossed: [3], current_flagged: true,
+      current_status: 'ok', current_at: '2026-10-24T15:45:00Z', current_home_spread: 4.5, current_delta: 1.5, current_crossed: [3], current_flagged: true,
       close_status: null, close_at: null, close_home_spread: null, close_delta: null, close_crossed: null, close_flagged: null, moved_toward: null, clv: null, clv_source: null, clv_reason: 'not_closed' },
     { event_id: 'evINDMIN', canonical_game_id: null, home_team: NAME.MIN, away_team: NAME.IND, commence_time: kickIso(g2.day, g2.time), snapshot_at: '2026-10-22T17:00:00Z',
       snapshot_status: 'no_capture', snapshot_backfilled: false, snap_home_spread: null, current_status: null, close_status: null, clv: null, clv_reason: 'no_snapshot_line' }
@@ -96,7 +117,7 @@ function staged(csv) {
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
   const raw = await gamesCsv();
   if (!raw) { console.log('SKIPPED: the nflverse schedule is neither cached nor reachable'); process.exit(0); }
-  const csv = pinLine(raw, '2026', '7', 'IND', 'MIN', '5.5');
+  const csv = asOf(pinLine(raw, '2026', '7', 'IND', 'MIN', '5.5'), NOW);
   const ST = staged(csv);
   if (!ST) { console.log('SKIPPED: the schedule carries no 2026 Week 7 DAL @ PHI / IND @ MIN to stage'); process.exit(0); }
   let HEAD_APP = null;
@@ -126,6 +147,8 @@ function staged(csv) {
 
   async function open(viewport, mode, appPath) {
     const ctx = await browser.newContext({ viewport });
+    /* time still flows from NOW (timers fire as usual); it just starts there */
+    await ctx.clock.install({ time: new Date(NOW) });
     await ctx.addInitScript(() => { try {
       localStorage.setItem('edgedesk_welcome_seen', String(Date.now()));
       localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400, user: { id: 'e2e-reader', email: 'e2e@edgedesk.test' } }));

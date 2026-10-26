@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-26 — Market structure suites: the browser test runs on the scenario's clock
+
+- **Market structure suites failed at 00:06 UTC** (`market_structure_ui.e2e.js:196`: "Cannot set properties of null (setting 'open')"). The run was triggered by #774, but the cause was the date.
+  - The test stages a Week 7 board (DAL @ PHI froze at PHI +3; IND @ MIN froze with no capture) but ran it on the real clock and the live nflverse schedule. IND @ MIN went final on 2026-10-25 (10–16), and a finished game gets the graded card, which has no Market Structure section. DAL @ PHI would follow after Monday night, and then Week 7 leaves the board.
+  - The browser now starts at 2026-10-24 16:00 UTC (`clock.install`, after the Thursday freeze and Saturday's Circa fetch), and the schedule it is served blanks every score for a game that had not kicked off by then. `ref_flags_ui.e2e.js` already works this way.
+  - 25 of 25 pass on Playwright 1.63 and on 1.49.1 (the version CI pins), and also against a schedule with every Week 7 and 8 game scored.
+
 ## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
 
 - **The problem.** The MIN @ VAN card of 2026-10-25 named Lankinen all day, from the usage projection; Merilainen started. The projection reads completed games only, and confirming a starter needed a hand entry.
