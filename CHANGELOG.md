@@ -1,16 +1,6 @@
 # Changelog
 
-## 2026-10-26 — Research grade test: a board may take its own cache token
 
-`tools/performance/grade_ui.test.js` had failed on main since the NHL board (#797) and then Today's Games (#801) each bumped its own `?v=` token in `app.html`. The check wanted the grade module, its stylesheet and all three boards that call it (Today's Games, NHL, NBA) on one identical token, so any board-only change broke it unless all five files were bumped together.
-
-- **The rule now.** Two checks replace that one:
-  - The grade module and its stylesheet still share one token.
-  - No board loads under a token older than the module's. Every token starts with its `YYYYMMDD` date, and those eight digits are compared.
-
-  A grade-module change therefore still forces every board onto a fresh token, so a new module never runs against a board the browser has cached. A board can change on its own.
-- **Why that is enough.** Every board guards on `window.EDGradeUI` and calls its stable methods (`slot`, `breakdown`, `load`, `onChange`, `ready`, `entry`).
-- **Tests only; `app.html` is unchanged.** 30 of 30 pass (28 before, with the one failure). A grade module dated after the boards, or a stylesheet on a different token from the module, each fails its check.
 
 ## 2026-10-26 — CFB: the EV plausibility check reads each game's width again
 
@@ -75,20 +65,6 @@ The first collector run held 299 men's and 300 women's schedules. Before the dai
 - **A game both schools list is priced from the listing whose start time reads.** Houston Christian lists no time for Southern Miss; Southern Miss lists 6 PM, which is now used instead of noon, flagged approximate.
 - **More of the schools' labels come off a name:** "(Ex.)", "(ex)", "(exhib.)", "(EXH)", and "Exhibition" in front ("Exhibition Cal State Monterey Bay").
 - Preview from the collected schedules, through 2026-11-09: men's 42 priced (was 40), women's 57 (was 56).
-
-## 2026-10-26 — CFB research terminal: the implausible-EV guard measures in σ, as the app does
-
-- **The finding.** All 7 games the terminal flagged "implausible EV, check data" on the 12:08 UTC board used the flat 25% fallback ("no distribution width to scale by"). Not one of the 61 games got the σ-scaled bound, which `lib/edgedesk_quote_ev.js` documents as the rule (0.7% of real games flagged on the 2024-25 holdout, against 19.7% for the flat line).
-- **The cause.** `distributionSpread` looked for the 16th and 84th percentiles between home margins −80 and +80. The terminal prices from its stored curve (`readBase` → `RD.buildCurve`, market ± 30–60 pts), which returns nothing outside its grid, so σ was never read. The app passes an unbounded cover (`cfbGameCover`), so the app already measured in σ: on the same games the two surfaces used different bounds.
-- **The fix.** The search now runs over the margins the cover can read. On all 61 games the stored curve's σ matches the unbounded cover's to 0.0001 pts (15.6 to 18.1 pts). Unbounded covers (the app, NFL) read ±80 as before.
-- **What moves on the next terminal build.** The 7 flagged games sat 0.36 to 0.53 σ from the market, against a 0.96 bound, so none stays flagged. Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas read VERIFIED MAJOR (every integrity check passed). Arizona State @ BYU, Notre Dame @ Navy and Tulane @ Charlotte stay INVESTIGATE, now for the gate check each fails. Army @ Memphis (6.1 pts) reads WORTH RESEARCHING. Every decision stays PASS; the flat 25% line still brakes stakes as LARGE EV.
-- **Tests.** Four checks in `tools/football/quote_ev.test.js` on the terminal's stored curve; three fail without the fix. 248 of 248 pass.
-
-## 2026-10-26 — CFB validation: the slate audit knows the implausible-EV guard
-
-- **The failure (11:08 UTC).** `football/cfb_validation/tests.js`: "the audit finds no status that contradicts its checks — got 3, want 0". Main went red, and so did every PR touching `app.html`, which is on the CFB validation workflow's path filter (#797, an NHL change, was one).
-- **The cause.** A second book arrived for Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas, so each passed all nine integrity requirements. Each still reads INVESTIGATE because a main-line quote prices past the implausible-EV bound, a rule `researchStatus` applies after the gate on purpose. The audit only knew the gate and called that a contradiction.
-- **The fix.** The audit now treats an all-PASS game held by the implausible-EV guard or a regime-change block as consistent, and its verdict names the rule and its reason. Any other INVESTIGATE on an all-PASS gate is still a contradiction. `slate_audit.json` is rebuilt at its own timestamp; nothing else moved. Five synthetic checks; 86 of 86 pass.
 
 ## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
 
