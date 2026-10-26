@@ -76,6 +76,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
     concurrency:
       group: clv-openers
       cancel-in-progress: false
@@ -104,6 +105,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+      statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
     concurrency:
       group: clv-openers-backfill
       cancel-in-progress: false

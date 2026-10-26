@@ -41,6 +41,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
   actions: write          # to dispatch the Model Lab after a freeze
 
 concurrency:

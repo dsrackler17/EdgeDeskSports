@@ -1,0 +1,149 @@
+# EdgeDesk — the integrity gate: the one check main requires.
+#
+# WHY. On 2026-10-26 #800 was merged ten seconds after a conflict was resolved
+# in GitHub's web editor, and that resolution left lib/edgedesk_quote_ev.js
+# unparseable and football/cfb_validation/slate_audit.json invalid JSON; #801
+# was merged while one of its suites was still running and failed a minute
+# later. Nothing stopped either merge: main required no check, and almost every
+# suite here is path-filtered, so none could be required. This workflow has NO
+# path filter. It runs on every pull request event that can change the answer,
+# and its last job, `integrity-gate`, is the check the main ruleset requires
+# (docs/engineering/MERGE_SAFETY.md has the settings).
+#
+#   verify          the PR head merged into the LATEST main (read when the job
+#                   runs) — every changed file parses, no conflict, no hand-
+#                   edited bot artifact, no hand-edited CHANGELOG.md, valid
+#                   changelog fragments (tools/integrity/gate.js pr). On main:
+#                   every tracked file (gate.js sweep). And the gate's own tests.
+#   subsystem-lock  no older open pull request is changing the same subsystem
+#                   (tools/integrity/lock.js)
+#   ci-complete     every other workflow this commit triggered finished green
+#                   (tools/integrity/wait_ci.js): path-filtered suites become
+#                   required exactly when they run
+#   integrity-gate  passes only when every part above passed. `if: always()`:
+#                   a skipped job satisfies a required check, so this one must
+#                   never be skipped.
+#
+# A new commit (a conflict resolution included) is a new head SHA: the check
+# starts over on it, and the previous pass no longer applies. When another pull
+# request merges or closes, integrity-revalidate.yml re-runs this for every
+# open pull request, so a pass always refers to the current main. A job that
+# commits INTO a pull request branch pushes with GITHUB_TOKEN, which starts no
+# workflow; it dispatches this one with `pr`, so its commit is checked too
+# (simulator-sports-data.yml, nfl-coaching-staff-validation.yml).
+name: Integrity gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Pull request number: run the pull-request checks on the dispatched ref (its head)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+  checks: read
+
+concurrency:
+  group: integrity-gate-${{ (github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number)) || (github.event_name == 'workflow_dispatch' && inputs.pr != '' && format('pr-{0}', inputs.pr)) || github.sha }}
+  # a pull request's newer event supersedes its older run; on main every
+  # commit is checked to the end
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.pr != '') }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: PyYAML for the YAML check
+        run: python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --quiet pyyaml
+      - name: The gate's own tests
+        run: |
+          node tools/integrity/integrity.test.js
+          node tools/integrity/attest.test.js
+          node tools/changelog/assemble.test.js
+          node tools/ci/push_generated.test.js
+      - name: Pull request — merged into the latest main
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.pr != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
+        run: node tools/integrity/gate.js pr
+      - name: Main — every tracked file
+        if: ${{ !(github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.pr != '')) }}
+        run: node tools/integrity/gate.js sweep
+
+  subsystem-lock:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.pr != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: No older open pull request changes the same subsystem
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+        run: node tools/integrity/gate.js lock --pr "$PR_NUMBER"
+
+  ci-complete:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.pr != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          sparse-checkout: tools/integrity
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Every workflow this commit triggered passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node tools/integrity/wait_ci.js --sha "$HEAD_SHA" --timeout-min 150
+
+  integrity-gate:
+    name: integrity-gate
+    if: always()
+    needs: [verify, subsystem-lock, ci-complete]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every part passed
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_MODE: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.pr != '') }}
+          VERIFY: ${{ needs.verify.result }}
+          LOCK: ${{ needs.subsystem-lock.result }}
+          CI: ${{ needs.ci-complete.result }}
+        run: |
+          echo "verify=$VERIFY subsystem-lock=$LOCK ci-complete=$CI (event: $EVENT, pull-request checks: $PR_MODE)"
+          fail=0
+          [ "$VERIFY" = success ] || { echo "::error title=integrity-gate::verify did not pass ($VERIFY) — see its summary"; fail=1; }
+          if [ "$PR_MODE" = true ]; then
+            [ "$LOCK" = success ] || { echo "::error title=integrity-gate::subsystem-lock did not pass ($LOCK)"; fail=1; }
+            [ "$CI" = success ] || { echo "::error title=integrity-gate::ci-complete did not pass ($CI) — a workflow on this commit failed or did not finish"; fail=1; }
+          fi
+          exit $fail

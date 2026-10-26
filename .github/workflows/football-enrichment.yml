@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
 
 # the same group as the weekly build: the two never write the slate at once
 concurrency:

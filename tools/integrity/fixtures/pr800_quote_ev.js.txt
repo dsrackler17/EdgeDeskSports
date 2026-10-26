@@ -1,0 +1,39 @@
+/* FIXTURE (never loaded): lib/edgedesk_quote_ev.js lines 808-833 exactly as the
+   GitHub web-editor merge 2ad15afadd left them on #800, inside the UMD wrapper
+   the file uses. The resolution deleted BOTH sides of the conflict, taking the
+   `function q(p) {` header with them; main failed to parse at line 833.
+   tools/integrity/integrity.test.js checks the gate rejects this. */
+(function (root, factory) {
+  root.EDQuoteEV = factory();
+}(this, function () {
+  'use strict';
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  function r(x, d) { var k = Math.pow(10, d); return Math.round(x * k) / k; }
+  /* THE SPREAD OF A MARGIN DISTRIBUTION, read from its cover function the way
+     distributionCentre reads its median: half the width of its central 68%
+     (the 16th to the 84th percentile), which is σ for a normal. The EV
+     plausibility check measures a gap in these units, on the SAME distribution
+     the EV is priced from, so a wide game is allowed a wider gap.
+     The search runs over the margins the cover function can read: ±80 for an
+     unbounded one (the app's cfbGameCover, the NFL curve), the stored grid for
+     a curve (lib/edgedesk_read.js buildCurve: market ± 30–60 pts, which the
+     research terminal prices from). A fixed ±80 read nothing on that grid and
+     every terminal game fell to the flat 25% bound. */
+  function distributionSpread(homeCover) {
+    if (typeof homeCover !== 'function') return null;
+    function gt(x) {
+      var k = Math.floor(x + 0.5), c = null;
+      try { c = homeCover(k); } catch (e) { c = null; }
+      if (!c || !isNum(c.win)) return null;
+      return c.win + (isNum(c.push) ? c.push : 0) * (k + 0.5 - x);
+    }
+
+      if (a == null || b == null || !(a > 1 - p) || !(b < 1 - p)) return null;
+      for (i = 0; i < 50; i++) { var m = (lo + hi) / 2, v = gt(m); if (v == null) return null; if (v > 1 - p) lo = m; else hi = m; }
+      return (lo + hi) / 2;
+    }
+    var q16 = q(0.158655), q84 = q(0.841345);
+    return q16 == null || q84 == null ? null : r((q84 - q16) / 2, 4);
+  }
+  return { distributionSpread: distributionSpread };
+}));

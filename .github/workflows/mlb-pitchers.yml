@@ -93,6 +93,7 @@ concurrency:
 
 permissions:
   contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
 
 jobs:
   refresh:
@@ -266,7 +267,7 @@ jobs:
           fi
           git commit -m "mlb: historical archive refresh $(date -u +%Y-%m-%d)"
           for i in 1 2 3 4; do
-            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && bash tools/ci/attest_head.sh && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
             sleep $((2 ** i))
           done
           echo "::warning::the snapshot could not be pushed; the import itself succeeded and is live"

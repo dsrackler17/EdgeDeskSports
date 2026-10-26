@@ -1,0 +1,63 @@
+# EdgeDesk — CHANGELOG.md, assembled on main from changelog.d/.
+#
+# A pull request never edits CHANGELOG.md: it adds changelog.d/<date>-<slug>.md
+# (tools/changelog/assemble.js says why: on 2026-10-26 hand-resolved conflicts at
+# the top of CHANGELOG.md dropped four entries). This job renders every fragment
+# into the marked block of CHANGELOG.md and commits it through
+# tools/ci/push_generated.sh, which makes CHANGELOG.md this job's file: the
+# integrity gate refuses a pull request that edits it by hand.
+#
+# A merged pull request triggers it (bot pushes made with GITHUB_TOKEN do not,
+# and bots write no fragments). The hourly run is the safety net for an assembly
+# that lost every push race.
+name: Changelog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'changelog.d/**'
+      - 'tools/changelog/**'
+      - '.github/workflows/changelog.yml'
+  schedule:
+    - cron: '41 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
+
+concurrency:
+  group: changelog-assemble
+  cancel-in-progress: false
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          sparse-checkout: |
+            changelog.d
+            tools/changelog
+            tools/ci
+            tools/integrity
+            .github/workflows
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Every fragment is well formed
+        run: node tools/changelog/assemble.js --validate
+      - name: Render the block
+        run: node tools/changelog/assemble.js --write
+      - name: Publish (tools/ci/push_generated.sh)
+        env:
+          # CHANGELOG.md is an aggregate of every fragment on main: on a rejected
+          # push it is rendered again on the new tip, never carried from this run
+          PUSH_REBUILD: node tools/changelog/assemble.js --write
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "changelog: assemble changelog.d entries" -- CHANGELOG.md

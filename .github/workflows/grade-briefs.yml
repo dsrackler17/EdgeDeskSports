@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
 
 concurrency:
   group: grade-briefs
@@ -57,7 +58,7 @@ jobs:
           git commit -m 'record: grade published briefs against the close'
           # a concurrent push to main loses the race politely, not the record
           for i in 1 2 3 4; do
-            git push origin main && exit 0
+            bash tools/ci/attest_head.sh && git push origin main && exit 0
             git pull --rebase origin main || true
             sleep $((2 ** i))
           done

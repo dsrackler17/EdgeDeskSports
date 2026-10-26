@@ -1,0 +1,65 @@
+{
+ "_doc": "Known, documented exceptions to tools/integrity/checks.js. Each entry is a file that fails one rule today for a reason recorded here. tools/integrity/integrity.test.js fails as soon as an entry passes its rule, so this list can only shrink: remove the entry in the PR that fixes the file. Never add an entry to make a pull request pass.",
+ "entries": [
+  {
+   "file": "docs/model-loop/clv_early/results/E_101__NFL_residual_base_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/E_102__NFL_residual_base_qb_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/E_103__NFL_residual_base_rest_travel_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/E_104__NFL_residual_base_drift_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/E_105__NFL_residual_base_market_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/E_111__CFB_residual_base_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/E_112__CFB_residual_base_rest_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/E_113__CFB_residual_base_market_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/E_120__CFB_residual_base_rest_x_d_spread.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/cross/X-4_X-5_nfl_totals_on_timestamped_lines.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/cross/X-6_cfb_residual_timing.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  },
+  {
+   "file": "docs/model-loop/clv_early/results/step4_first_look.json",
+   "rule": "json",
+   "reason": "Python json.dump writes NaN (model_loop/clv_early/*.py, research run by hand). Python reads these with json.load, which accepts NaN; JavaScript never reads them."
+  }
+ ]
+}

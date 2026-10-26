@@ -26,6 +26,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
     concurrency:
       group: linemaker-artifacts
       cancel-in-progress: false
@@ -51,7 +52,7 @@ jobs:
           fi
           git commit -m 'linemaker: fair-line sheets, ledger and grades'
           for i in 1 2 3 4; do
-            git push origin main && exit 0
+            bash tools/ci/attest_head.sh && git push origin main && exit 0
             git pull --rebase origin main || true
             sleep $((2 ** i))
           done

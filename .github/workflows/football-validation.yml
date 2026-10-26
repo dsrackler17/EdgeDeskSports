@@ -40,6 +40,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
 
 concurrency:
   group: football-validation
@@ -113,4 +114,4 @@ jobs:
           git add football/validation/feature-status.json football/cfb_p4/research/qb_epa.json football/rankings/coaching_program_validation.json
           if git diff --cached --quiet; then echo 'registry unchanged'; exit 0; fi
           git commit -m "football: feature promotion registry"
-          git push
+          bash tools/ci/attest_head.sh && git push

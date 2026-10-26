@@ -19,8 +19,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: cfb-security-${{ github.ref }}
-  cancel-in-progress: true
+  group: cfb-security-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  # a pull request's newer push supersedes its older run; on main every
+  # commit is validated to the end (docs/engineering/MERGE_SAFETY.md)
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   audit:

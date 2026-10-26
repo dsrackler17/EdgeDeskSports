@@ -1,0 +1,45 @@
+# EdgeDesk — re-run the integrity gate of every open pull request when main
+# changes under it or a subsystem claim is released.
+#
+# A gate pass means "this pull request merged into main @ X is sound". After
+# another pull request merges, X is stale; after one closes, the subsystems it
+# held are free. tools/integrity/revalidate.js re-runs (and, if one is mid-run
+# on the old main, cancels and re-runs) the `Integrity gate` workflow for every
+# other open pull request into main. Its check is pending while it re-runs, so
+# a stale pass can never be merged.
+#
+# Bot publishes (GITHUB_TOKEN pushes) start no workflow and need none: a bot
+# changes only files it owns, which the gate keeps pull requests away from.
+name: Integrity revalidate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [closed]
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: integrity-revalidate
+  cancel-in-progress: true
+
+jobs:
+  rerun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: tools/integrity
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Re-run the gate of every other open pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOSED_PR: ${{ github.event.pull_request.number }}
+        run: node tools/integrity/revalidate.js

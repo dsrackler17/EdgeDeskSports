@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
 
 concurrency:
   group: nfl-market-structure
@@ -56,7 +57,7 @@ jobs:
           fi
           git commit -m 'market structure: NFL margin frequency, two-point drift, situational records'
           for i in 1 2 3 4; do
-            git push origin "${{ github.ref_name }}" && exit 0
+            bash tools/ci/attest_head.sh && git push origin "${{ github.ref_name }}" && exit 0
             git pull --rebase origin "${{ github.ref_name }}" || true
             sleep $((2 ** i))
           done

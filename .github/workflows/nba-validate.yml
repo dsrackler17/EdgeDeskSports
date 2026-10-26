@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 240
     permissions:
       contents: write
+      statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
     concurrency:
       group: nba-artifacts
       cancel-in-progress: false

@@ -62,8 +62,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: ncaaw-forecast-tests-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  group: ncaaw-forecast-tests-${{ github.event_name == 'pull_request' && (github.head_ref || github.ref) || github.sha }}
+  # a pull request's newer push supersedes its older run; on main every
+  # commit is validated to the end (docs/engineering/MERGE_SAFETY.md)
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   unit:

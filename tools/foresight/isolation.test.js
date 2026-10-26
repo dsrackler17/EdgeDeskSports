@@ -32,7 +32,7 @@ const ALLOW = [
   /^lib\/edgedesk_foresight(_ui)?\.js$/, /^foresight\//, /^tools\/foresight\//, /^research\/foresight\//,
   /^supabase\/market_foresight(_rollback)?\.sql$/, /^supabase\/migrations\/20261025120000_market_foresight\.sql$/,
   /^\.github\/workflows\/(market-foresight(-tests)?|deploy-market-foresight)\.yml$/, /^docs\/market-foresight\//,
-  /^README\.md$/, /^CHANGELOG\.md$/, /^supabase\/README\.md$/, /^package\.json$/,
+  /^README\.md$/, /^CHANGELOG\.md$/, /^changelog\.d\/[^/]+\.md$/, /^supabase\/README\.md$/, /^package\.json$/,
   /^lib\/edgedesk_plans\.js$/, /^lib\/edgedesk_flags\.js$/, /^tools\/site\/(free_access|nav)\.test\.js$/,
   /^methodology\/index\.html$/, /^app\.html$/
 ];

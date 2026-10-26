@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  actions: write    # dispatch the integrity gate on the commit this job makes into the pull request branch
 
 concurrency:
   group: nfl-coaching-staff-validation-${{ github.ref }}
@@ -94,6 +95,8 @@ jobs:
 
       - name: Freeze validation and 2026 seed on the PR branch
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           cp .cache/nfl-coaching/out/nfl_coaching_staff_validation.json football/validation/nfl_coaching_staff.json
           cp .cache/nfl-coaching/out/coaching_staff_seed.json football/nfl/coaching_staff_seed.json
@@ -105,6 +108,9 @@ jobs:
           else
             git commit -m 'nfl: freeze coaching staff validation and seed'
             git push origin HEAD:${{ github.event.pull_request.head.ref }}
+            # a GITHUB_TOKEN push starts no workflow: without this, the pull request's
+            # new head never gets the integrity-gate check main requires
+            gh workflow run integrity-gate.yml --repo "$GITHUB_REPOSITORY" --ref "${{ github.event.pull_request.head.ref }}" -f pr=${{ github.event.pull_request.number }}
           fi
 
       - uses: actions/upload-artifact@v4

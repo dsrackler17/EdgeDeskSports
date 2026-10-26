@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
 
 # one collector run at a time across the repository: two would each wait a
 # host's crawl delay and together read it twice as often as it asks

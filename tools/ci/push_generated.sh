@@ -85,6 +85,19 @@ stage() {
   printf '%s\n' "$have" | tr '\n' '\0' | xargs -0 git add -A --
 }
 
+# main requires the integrity-gate status on every commit that lands on it,
+# pushes included, and a GITHUB_TOKEN push cannot bypass a ruleset. So before
+# each push to main the commit's own files are checked and the commit is
+# marked (tools/integrity/attest.js). A commit whose files fail the check —
+# invalid JSON, a conflict marker, a script that does not parse — is never
+# pushed: it would break every reader of main, and retrying cannot fix it.
+PROTECTED="${INTEGRITY_PROTECTED_BRANCH:-main}"
+ATTEST="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../integrity/attest.js"
+attest() {
+  [ "$BRANCH" = "$PROTECTED" ] || return 0
+  node "$ATTEST" --head HEAD --base 'HEAD^' --remote "$REMOTE"
+}
+
 stage
 if git diff --cached --quiet; then
   echo "nothing changed under: ${PATHS[*]} — no commit"
@@ -114,6 +127,10 @@ is_merge() {
 i=0
 while [ "$i" -lt "$ATTEMPTS" ]; do
   i=$((i + 1))
+  if ! attest; then
+    echo "refusing to publish to $BRANCH: the commit's files fail the integrity check (above) — nothing pushed" >&2
+    exit 1
+  fi
   if git push "$REMOTE" "HEAD:refs/heads/$BRANCH"; then
     echo "pushed to $BRANCH on attempt $i"
     exit 0

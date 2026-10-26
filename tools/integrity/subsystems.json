@@ -1,0 +1,30 @@
+{
+ "_doc": "Subsystems for the session lock (tools/integrity/lock.js). Two open pull requests may not change the same subsystem; the older one holds it until it merges or closes. A path that matches no subsystem is locked file by file; a hotspot (a shared file too large to lock whole) is locked by the lines it changes. Generated files (tools/integrity/ownership.js) and changelog.d/ fragments are never locked. Add a subsystem when two areas turn out to break each other; keep its tests in it. Every glob must match a tracked file (integrity.test.js checks).",
+ "hotspots": ["app.html", "index.html", "package.json", "README.md", "methodology/index.html", "CHANGELOG.md"],
+ "hotspot_margin_lines": 20,
+ "stale_after_hours": 72,
+ "subsystems": [
+  { "name": "pipeline", "paths": ["tools/integrity/**", "tools/changelog/**", "tools/ci/**", "CLAUDE.md", "AGENTS.md", "docs/engineering/**", ".github/workflows/integrity-*.yml", ".github/workflows/changelog.yml"] },
+  { "name": "cfb-quote-ev", "paths": ["lib/edgedesk_quote_ev.js", "lib/edgedesk_ev.js", "football/cfb_ev/**", "tools/football/quote_ev*.js", "tools/football/ev_plausibility*.js"] },
+  { "name": "cfb-terminal", "paths": ["football/cfb_terminal/**", "lib/cfb_terminal.js", "lib/edgedesk_read.js", "lib/cfb_research_view.js", "tools/football/cfb_research_view*.js"] },
+  { "name": "cfb-validation", "paths": ["football/cfb_validation/**", "tools/validation/**", "lib/edgedesk_canon.js"] },
+  { "name": "cfb-p4", "paths": ["football/cfb_p4/**"] },
+  { "name": "cfb-v2", "paths": ["football/cfb_v2/**"] },
+  { "name": "cfb-lab", "paths": ["football/cfb_lab/**", "football/cfb_production/**", "football/cfb_decision/**", "football/cfb_market/**", "lib/cfb_champion.js", "lib/cfb_disagreement.js", "lib/cfb_reliability.js"] },
+  { "name": "nfl-model", "paths": ["football/nfl/**", "football/engine.js", "football/params.js"] },
+  { "name": "nhl", "paths": ["hockey/**", "tools/hockey/**", "lib/edgedesk_nhl_*.js"] },
+  { "name": "nba", "paths": ["nba/**", "tools/nba/**", "lib/edgedesk_nba*.js", "lib/edgedesk_nba.css"] },
+  { "name": "college-basketball", "paths": ["basketball/**", "tools/cbb/**"] },
+  { "name": "mlb", "paths": ["mlb/**", "tools/mlb/**"] },
+  { "name": "college-baseball", "paths": ["college_baseball/**", "tools/college_baseball/**"] },
+  { "name": "ufc", "paths": ["tools/ufc/**"] },
+  { "name": "games", "paths": ["games/**", "tools/games/**", "tools/slate/**", "lib/edgedesk_games.js", "lib/edgedesk_games_ui.js", "lib/edgedesk_games.css"] },
+  { "name": "matchup-graphics", "paths": ["lib/edgedesk_game_graphic.js", "lib/edgedesk_sport_graphic.js", "tools/sport_graphic/**"] },
+  { "name": "signal-center", "paths": ["tools/signal_center/**", "lib/edgedesk_signal_*.js", "lib/edgedesk_signal_center.css"] },
+  { "name": "collective", "paths": ["collective/**", "tools/collective/**", "supabase/functions/collective_*/**"] },
+  { "name": "editorial", "paths": ["tools/editorial/**", "tools/articles/**", "tools/content/**"] },
+  { "name": "simulator", "paths": ["simulator/**"] },
+  { "name": "model-loop", "paths": ["model_loop/**"] },
+  { "name": "performance", "paths": ["performance/**", "tools/performance/**", "lib/edgedesk_performance.js", "lib/edgedesk_research_grade.js"] }
+ ]
+}

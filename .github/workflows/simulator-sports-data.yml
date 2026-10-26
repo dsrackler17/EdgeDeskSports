@@ -48,6 +48,8 @@ on:
 
 permissions:
   contents: write
+  statuses: write   # the integrity-gate status a commit to main needs (tools/integrity/attest.js)
+  actions: write    # dispatch the integrity gate on a commit made into a pull request branch
 
 concurrency:
   group: simulator-sports-data-${{ github.head_ref || github.ref }}
@@ -76,11 +78,19 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if [ "$EVENT" = "pull_request" ]; then
+            before=$(git rev-parse HEAD)
             bash tools/ci/push_generated.sh "$HEAD_REF" "simulator feeds: golf, UFC and tennis (ESPN, ufc.com)" -- simulator/data/feeds
+            # a GITHUB_TOKEN push starts no workflow: without this, the pull request's
+            # new head never gets the integrity-gate check main requires
+            if [ "$(git rev-parse HEAD)" != "$before" ]; then
+              gh workflow run integrity-gate.yml --repo "$GITHUB_REPOSITORY" --ref "$HEAD_REF" -f pr="$PR_NUMBER"
+            fi
           else
             bash tools/ci/push_generated.sh main "simulator feeds: golf, UFC and tennis (ESPN, ufc.com)" -- simulator/data/feeds
           fi
