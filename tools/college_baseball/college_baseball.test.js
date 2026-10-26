@@ -328,6 +328,29 @@ ok('registry chain intact', REG.verify().ok, REG.verify().errors.slice(0, 3));
   ok('report: research, not picks', /Research, not picks/.test(md) && /Market:\*\* NOT_TESTED/.test(md));
   ok('report: never claims a market edge', !/\b(edge|value bet|lock|best bet)\b/i.test(md.replace(/grid edges?|no betting opportunity|value claims/gi, '')));
 }
+{
+  /* engine/registry.json reads this sport's state from validation/walkforward.json. A job that refits
+     that record publishes the registry and board rebuilt from it in the same push: on 2026-10-26 the
+     weekly job pushed the record alone, and Multi-sport lab failed every pull request until another
+     job happened to rebuild the registry. */
+  const WF = path.join(ROOT, '.github', 'workflows');
+  const refits = fs.readdirSync(WF).filter((f) => /\.ya?ml$/.test(f))
+    .map((f) => ({ f, y: fs.readFileSync(path.join(WF, f), 'utf8') }))
+    .filter((w) => /node college_baseball\/walkforward\.js(?![^\n]*--check)/.test(w.y));
+  ok('workflows: the weekly validation is found refitting the record', refits.some((w) => w.f === 'college-baseball-research-validate.yml'), refits.map((w) => w.f));
+  for (const w of refits) {
+    const lastRefit = Math.max(...[...w.y.matchAll(/node college_baseball\/walkforward\.js(?![^\n]*--check)/g)].map((m) => m.index));
+    const push = w.y.slice(w.y.indexOf('push_generated.sh'));
+    ok(w.f + ': the registry and board are rebuilt after the record is refit',
+      w.y.indexOf('run: node engine/build_registry.js && node engine/build_board.js', lastRefit) > lastRefit);
+    ok(w.f + ': the rebuilt registry and board are checked before anything is written',
+      /node engine\/build_registry\.js --check/.test(w.y) && /node engine\/build_board\.js --check/.test(w.y));
+    ok(w.f + ': the registry and board are pushed with the record',
+      w.y.indexOf('push_generated.sh') >= 0 && /\sengine\/registry\.json(\s|$)/.test(push) && /\sengine\/board\.json(\s|$)/.test(push));
+    ok(w.f + ': on a rejected push the registry and board are rebuilt on the new tip, not carried',
+      /PUSH_REBUILD:\s*node engine\/build_registry\.js && node engine\/build_board\.js/.test(w.y));
+  }
+}
 
 console.log((fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
