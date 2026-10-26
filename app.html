@@ -2930,7 +2930,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261020ia9">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261024sr1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261025pd1">
 <link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261021inj1">
 </head>
 <body>
@@ -4053,9 +4053,9 @@ window.mcRefresh=function(){
 <!-- the canonical team resolver (the one supabase/functions/kalshi_sync links games with):
      the graphic places each Kalshi price on this game's own home or away team with it -->
 <script src="/lib/football_identity.js?v=20261021ks1"></script>
-<script src="/lib/edgedesk_game_snapshot.js?v=20261024sr1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261024sr1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261024sr1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261025pd1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261025pd1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261025pd1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -50612,7 +50612,23 @@ function fbNflGameReq(g){
    rule for the same fact). A club with no other starter prices the
    unknown-starter path (its carried quarterback level). */
 var FB_QB_UNAVAILABLE=/^(out|doubtful)$/i;
-function fbNflQbStarts(rows){
+/* WHO STARTED A PLAYED GAME (2026-10-25, docs/nfl-prior-decay/DIAGNOSIS.md §4): nflverse
+   games.csv pre-fills each game's quarterback and does not correct it after kickoff. It still
+   names Drew Lock for Seattle's weeks 3-6, which Sam Darnold played, so the start history said
+   Lock was Seattle's regular starter and the regime line on KC @ SEA read "regular starter (Drew
+   Lock) out". A played game's start is now the quarterback the game log credits (the club's QB
+   with the most dropbacks: engine.js nfl.qbStarts, the same rule that moves his value and sets
+   the model's own regular starter); the feed's id is kept only for a game the log lacks. */
+function fbNflLogStarter(qbRows,team){
+  var best=null,bd=-1;
+  (qbRows||[]).forEach(function(q){
+    if(!q||String(q.position)!=='QB'||q.team!==team)return;
+    var d=fbNum(q.attempts)+fbNum(q.sacks_suffered);
+    if(d>bd){bd=d;best=q;}
+  });
+  return best&&best.player_id&&bd>0?{id:String(best.player_id),name:best.player_display_name||best.player_name||null}:null;
+}
+function fbNflQbStarts(rows,qbByGame){
   /* team -> season -> {qb_id: {n, name}}, and each team's first and last coach per season */
   var starts={},coach={};
   rows.slice().sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));})
@@ -50622,7 +50638,10 @@ function fbNflQbStarts(rows){
         var t=r[s+'_team'],id=r[s+'_qb_id'],nm=r[s+'_qb_name'],c=r[s+'_coach'];
         if(!t)return;
         if(c){var cc=(coach[t]=coach[t]||{})[sn]||(coach[t][sn]={first:c,last:c});cc.last=c;}
-        if(!id||r.home_score==null)return;          /* a start is a PLAYED game's */
+        if(r.home_score==null)return;               /* a start is a PLAYED game's */
+        var lg=qbByGame&&qbByGame[r.game_id]?fbNflLogStarter(qbByGame[r.game_id],t):null;
+        if(lg){id=lg.id;nm=lg.name||nm;}
+        if(!id)return;
         var ts=(starts[t]=starts[t]||{})[sn]||(starts[t][sn]={});
         var q=ts[id]||(ts[id]={n:0,name:nm||id});q.n++;
       });
@@ -51131,6 +51150,8 @@ function fbLoadNfl(signal){
        home field on one load and without it on the next */
     return Promise.all([stwP,venueP,qbP2,persP]).then(function(pp){
       var byGame=pp[0],qbByGame=pp[2]||{},absorbed=0;
+      /* the start history, re-read now the game log is in: who actually took the snaps */
+      S.qbHist=fbNflQbStarts(rows,qbByGame);
       fbNflSiteRoof(rows);
       var stateOf=function(){return useV2?{v2:st,seededThrough:st.seededThrough}:st;};
       toAbsorb.sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));});

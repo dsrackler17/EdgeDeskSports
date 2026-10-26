@@ -1,10 +1,5 @@
 # Changelog
 
-## 2026-10-26 — Market structure suites green again: the browser suite reads a pinned clock
-
-- **The page in Chromium failed every run since 2026-10-26 00:04 UTC** ("the run completed": `Cannot set properties of null (setting 'open')` on the IND @ MIN card). The suite stages Week 7 on the live nflverse schedule and read the real clock. IND @ MIN went final on Sunday, left the next-12-days board, and the suite found no card to open. DAL @ PHI would have followed on Monday night.
-- `tools/football/market_structure_ui.e2e.js` now pins every page to 2026-10-25 13:00 UTC. That is after the Thursday freeze and the Saturday Circa fetch, and before the first Sunday kickoff. It also blanks the scores of 2026 games that kick off after that time, which is how `tools/refs/ref_flags_ui.e2e.js` already stages Week 7. The staged "now" capture is stamped at the same instant.
-- 25 passed, 0 failed, both on today's schedule and on a copy with KC @ SEA and DAL @ PHI also final. No app code changed.
 
 ## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
 
