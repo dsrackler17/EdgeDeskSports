@@ -1,17 +1,6 @@
 # Changelog
 
-## 2026-10-26 — Quote-EV module: the merge of #800 left it unparseable
 
-- **The failure (12:47 UTC).** The "Update branch" merge on #800 resolved two conflicts by hand and broke both files.
-  - `lib/edgedesk_quote_ev.js` lost both copies of the σ domain search and `function q(p)`'s header with them: `SyntaxError: missing ) after argument list` at line 833. The app loads the module behind a `.catch()`, so its quote-level EV silently disappeared; the terminal build and every suite that loads the module failed.
-  - `football/cfb_validation/slate_audit.json` lost two `verdict` lines and kept their commas: not JSON, so `football/cfb_validation/tests.js` and `tools/validation/ui.test.js` threw.
-- **The fix.** All three files are main's at 6510c88b4d again, byte for byte (#799's library and tests; the audit as the repository's build writes it, which the slate-audit change leaves unchanged on today's board). #800 had carried its own copy of #799's σ fix; that copy, its four checks and its changelog entry are gone, since #799's do the same.
-
-## 2026-10-26 — CFB validation: the slate audit knows the implausible-EV guard
-
-- **The failure (11:08 UTC).** `football/cfb_validation/tests.js`: "the audit finds no status that contradicts its checks — got 3, want 0". Main went red, and so did every PR touching `app.html`, which is on the CFB validation workflow's path filter (#797, an NHL change, was one).
-- **Two faults.** Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas passed all nine integrity requirements yet read INVESTIGATE as "implausible EV". The guard measured them on the flat 25% fallback, which #799 fixed: they now read VERIFIED MAJOR. But the audit was also wrong. The implausible-EV guard and the regime-change block hold a gap below VERIFIED MAJOR *after* the gate by design, and the audit, knowing only the gate, called that a contradiction. With the σ bound, a real implausible gap on a game that passes the gate (0.7% of games on the 2024-25 holdout) would have turned main red again.
-- **The fix.** The audit now treats an all-PASS game held by either rule as consistent, and its verdict names the rule and its reason. Any other non-VERIFIED status on an all-PASS gate is still a contradiction. Five synthetic checks; 86 of 86 pass.
 
 ## 2026-10-26 — CFB: the EV plausibility check reads each game's width again
 
