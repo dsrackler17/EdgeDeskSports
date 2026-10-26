@@ -26,8 +26,8 @@
    "gap": 8.8,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "research_status": "VERIFIED_MAJOR",
+   "research_label": "VERIFIED MAJOR DISAGREEMENT",
    "decision_status": "PASS",
    "gate_status": "VERIFIED_MAJOR_DISAGREEMENT",
    "root_cause": "VALID_MODEL_DISAGREEMENT",
@@ -78,8 +78,8 @@
      "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.7"
     }
    ],
-   "consistent": false,
-   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
+   "consistent": true,
+   "verdict": "VERIFIED holds: every required check passed."
   },
   {
    "game_id": "401858503",
@@ -92,8 +92,8 @@
    "gap": 7.4,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "research_status": "VERIFIED_MAJOR",
+   "research_label": "VERIFIED MAJOR DISAGREEMENT",
    "decision_status": "PASS",
    "gate_status": "VERIFIED_MAJOR_DISAGREEMENT",
    "root_cause": "VALID_MODEL_DISAGREEMENT",
@@ -144,8 +144,8 @@
      "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.1"
     }
    ],
-   "consistent": false,
-   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
+   "consistent": true,
+   "verdict": "VERIFIED holds: every required check passed."
   },
   {
    "game_id": "401856737",
@@ -158,8 +158,8 @@
    "gap": 7.6,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "research_status": "VERIFIED_MAJOR",
+   "research_label": "VERIFIED MAJOR DISAGREEMENT",
    "decision_status": "PASS",
    "gate_status": "VERIFIED_MAJOR_DISAGREEMENT",
    "root_cause": "VALID_MODEL_DISAGREEMENT",
@@ -210,28 +210,8 @@
      "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.2"
     }
    ],
-   "consistent": false,
-   "verdict": "Every required check passed but the status is INVESTIGATE — investigate the status logic."
-  },
-  {
-   "game_id": "401862814",
-   "game": "Army @ Memphis",
-   "kickoff": "2026-11-01T00:00:00.000Z",
-   "named": false,
-   "edgedesk": "Memphis −0.5",
-   "market": "Memphis −6.5",
-   "books": 2,
-   "gap": 6.1,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
    "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+   "verdict": "VERIFIED holds: every required check passed."
   },
   {
    "game_id": "401859185",
@@ -498,10 +478,6 @@
    "verdict": "INVESTIGATE is correct: submodel support fail."
   }
  ],
- "inconsistent": [
-  "Oklahoma State @ Iowa State",
-  "Illinois @ Maryland",
-  "Mississippi State @ Texas"
- ],
+ "inconsistent": [],
  "app_path_finding": "The app board used to count the books behind its gate consensus from the cfb.lines provider rows, which carry no capture time, while judging freshness on a different (dated) quote: \"fresh multi-book consensus\" was not actually verified on that path. The app now counts only dated, fresh quotes for the gate and shows the canonical research status from football/cfb_terminal/board.json (docs/cfb-validation/DELIVERABLE.md §32)."
 }
