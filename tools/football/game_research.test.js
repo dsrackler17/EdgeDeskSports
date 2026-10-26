@@ -689,9 +689,10 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
   const KC = r.c.compare.kalshi, AB = r.c.away.abbr, HB = r.c.home.abbr;
   chk('compared: EDGEDESK vs KALSHI with both teams at the model’s time, the market row labelled KALSHI MID', r.k.state === 'OK' && r.c.compare.title === (r.c.gate ? 'LARGE GAP VS MARKET' : 'EDGEDESK vs KALSHI') && KC.available && r.c.compare.rows[1] === 'KALSHI MID'
     && r.c.compare.cols.map((x) => x.mk.split(/\s+/)[0]).join('|') === '40.5%|59.5%', r.c.compare);
-  chk('…both times on the card, model first: "Model h:mm PM ET · Kalshi h:mm PM ET"', r.c.compare.times === 'Model ' + GG.clock(NE.model.built_at) + ' · Kalshi ' + GG.clock(iso(MIN))
+  chk('…both times on the card, model first: "Model h:mm PM ET · Kalshi h:mm PM ET"', r.c.compare.times === GG.timesLine(NE.model.built_at, iso(MIN))
     && drawn(r.c).indexOf(r.c.compare.times) >= 0 && drawn(r.c, 'portrait').indexOf(r.c.compare.times) >= 0, r.c.compare.times);
-  /* the exact wording on fixed times: the committed snapshot's built_at is regenerated hourly, so it cannot pin a clock */
+  /* the exact wording on fixed times: the committed snapshot's built_at is regenerated hourly, so it cannot pin a clock
+     (the checks on the snapshot compare with timesLine: a quote after midnight ET carries both dates) */
   chk('…a same-day pair reads exactly "Model 2:04 PM ET · Kalshi 2:05 PM ET"', GG.timesLine('2026-10-22T18:04:00Z', '2026-10-22T18:05:00Z') === 'Model 2:04 PM ET · Kalshi 2:05 PM ET', GG.timesLine('2026-10-22T18:04:00Z', '2026-10-22T18:05:00Z'));
   chk('…on different days the times carry their dates', GG.timesLine('2026-10-21T18:04:00Z', '2026-10-22T20:10:00Z') === 'Model Oct 21, 2:04 PM ET · Kalshi Oct 22, 4:10 PM ET', GG.timesLine('2026-10-21T18:04:00Z', '2026-10-22T20:10:00Z'));
 
@@ -742,12 +743,12 @@ section('14. the card’s Kalshi labels: matched times, the unavailable state, t
     && !c.compare.cols.some((x) => x.win) && c.compare.kalshi.diff === null && c.compare.kalshi.note === null && why.test(c.compare.kalshi.reason || '');
   r = card([q(0, 126 * MIN, 0.40, 0.41), q(1, 126 * MIN, 0.59, 0.60)]);
   chk('nearest: a quote 2 h 6 min after the model is compared, saying how far from the model it was taken', nearest(r.c, /^Nearest Kalshi quote: 2 h 6 min after the model$/), r.c.compare);
-  chk('…and still shows both times', r.c.compare.times === 'Model ' + GG.clock(NE.model.built_at) + ' · Kalshi ' + GG.clock(iso(126 * MIN)) && drawn(r.c).indexOf(r.c.compare.times) >= 0, r.c.compare.times);
+  chk('…and still shows both times', r.c.compare.times === GG.timesLine(NE.model.built_at, iso(126 * MIN)) && drawn(r.c).indexOf(r.c.compare.times) >= 0, r.c.compare.times);
   chk('…the caveat is drawn on the card in both formats, beside the win columns', drawn(r.c).some((t) => t.indexOf('Nearest Kalshi quote: 2 h 6 min after the model') === 0) && drawn(r.c).some((t) => /WIN % · ML/.test(t))
     && drawn(r.c, 'portrait').some((t) => t.indexOf('Nearest Kalshi quote: 2 h 6 min after the model') === 0), drawn(r.c).filter((t) => /Kalshi|KALSHI/.test(t)));
   chk('…the alt text reads the comparison and its caveat', /Nearest Kalshi quote: 2 h 6 min after the model/.test(GG.altText(r.c)) && /pts (higher|lower)/.test(GG.altText(r.c)), GG.altText(r.c));
   r = card([q(0, MIN, 0.36, 0.45), q(1, MIN, 0.55, 0.64)]);
-  chk('nearest: a spread over 6¢ at the model’s time is compared and called wide', r.k.state === 'OK' && nearest(r.c, /^wide 9¢ Kalshi spread$/) && r.c.compare.times === 'Model ' + GG.clock(NE.model.built_at) + ' · Kalshi ' + GG.clock(iso(MIN)), r.c.compare);
+  chk('nearest: a spread over 6¢ at the model’s time is compared and called wide', r.k.state === 'OK' && nearest(r.c, /^wide 9¢ Kalshi spread$/) && r.c.compare.times === GG.timesLine(NE.model.built_at, iso(MIN)), r.c.compare);
   r = card([]);
   chk('unavailable: a listed game with no two-sided quote at all says so, with "Kalshi no quote"', unavailable(r.c, /No Kalshi quote on record/) && /· Kalshi no quote$/.test(r.c.compare.times), r.c.compare);
   /* the generator holds the rules whoever called it: a placed price from another time, or a wide one, is shown with its caveat */
