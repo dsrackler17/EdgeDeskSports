@@ -269,3 +269,68 @@ this evidence and a before/after on the committed data. None was folded into thi
 7. **Too little history to validate:**
    - NBA, NFL and NHL thresholds: 2026 only, n = 26–88 matched;
    - NHL and NBA have no licensed closing-price archive, so no market test is possible yet.
+8. **The simulator's NFL depth-chart and NHL starter rules** (§8), aligned with the slates
+   and with tests that compare a snapshot's QBs and goalies with the published slate's.
+9. **Collective independence measurement** (§9).
+
+## 8. The season simulator's inputs
+
+The simulator (`simulator/src/sports/*/inputs.ts`) reads none of the published slates. Each
+sport rebuilds its inputs from the feeds and the served model code, then freezes them into one
+snapshot hashed as `input_hash`. Every results document records:
+
+- `model_version`, `input_hash` and `input_snapshot_at`;
+- `engine_version` (a hash of every simulator source file);
+- `source_commit` and `config_hash`;
+- the code hashes of the model files it ran.
+
+A replay is refused when those code hashes change, and a seeded PRNG makes every run
+reproducible. Futures are full-game outcomes throughout:
+
+- NHL: REG/OT/SO, with no playoff shootout;
+- NBA: overtime counts;
+- NFL: the tie mass applies in the regular season only;
+- college football: a continuous margin, so no ties.
+
+Every Kalshi mapping is a season future, and Kalshi game links are restricted to NFL and college
+football, so no regulation-only market is compared with a full-game number.
+
+What reaches it from this pull request, and what does not:
+
+| Input | Simulator | Published slate | Status |
+|---|---|---|---|
+| NFL QB, injury report OUT/DOUBTFUL | `fbLoadNfl` substitution | same | same path |
+| NFL QB, roster reserve list (§4) | `fbLoadNfl` → `fbNflReconcileRoster` | same | **same path**: the repair reaches the simulator |
+| NFL QB, depth-chart reconciliation (`reconcileQb`) | not called | priced when RECONCILED | **latent divergence**: 0 games RECONCILED on today's slate |
+| NHL confirmed starters | `confirmed_starters.json` `.starters`, one side is enough | CONFIRMED only when both are (§4) | **latent divergence**: the file does not exist today |
+| NHL unavailable goalies (§4) | not read | removed from the projection; a confirmation naming one is a CONFLICT | **latent divergence**, same file |
+| NBA injuries | none; absences inferred from box scores, by design (`availability.ts`) | same | documented |
+| CFB QB availability | `simulator/config/cfb_availability.json` (empty) | the starters artifact | documented |
+
+Two weaknesses predate this pull request:
+
+- An unreadable `confirmed_starters.json` is swallowed and treated as "no confirmations".
+- No check compares a published run with the current artifacts. A run is superseded by its
+  snapshot's build time, not by its data's as-of time.
+
+Aligning the simulator's NFL depth-chart path and NHL starter rules with the slates changes
+simulator results, so it is left for its own pull request (§7).
+
+## 9. Collective independence
+
+- **The projections EdgeDesk publishes are market-independent by construction.**
+  - `lib/edgedesk_projections.js` reads only each model's own fields.
+  - `tools/intelligence/multisport.test.js` scrubs and randomises every market field in the
+    artifacts and proves every projection is byte-identical.
+  - The integrity audit reads the market only *after* a projection is frozen.
+- **The Model Collective is different: its models are external creators' submissions**
+  (`supabase/functions/collective_ingest`). The Collective grades every model against one
+  captured close, and it gives creators the market by design: `GET /v1/market`, and a market
+  snapshot on every submission receipt.
+- **Nothing measures whether a creator's numbers are independent of that market or of each
+  other.** A model that restates the line is indistinguishable, on the page, from one that
+  disagrees for a reason.
+- **Measuring it needs the Collective's database rows**, which this environment cannot read. The
+  measure would be, per model, the correlation of its fair spread with the captured market at
+  submission time, and with the other models. This is listed as remaining work rather than
+  claimed.
