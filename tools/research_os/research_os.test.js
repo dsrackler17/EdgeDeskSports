@@ -237,15 +237,20 @@ const ZONE = 'America/Chicago';
     chk(n.hash + ' routes', n.v === 'research' || new RegExp('NAV_HASH_MAP=\\{[^}]*\\b' + n.v + ":'" + n.v + "'").test(APP));
   });
   has(APP, "var NAV_PRIMARY={overview:1,signals:1,research:1,foresight:1,card:1,portfolio:1,performance:1,process:1,simulator:1};", 'every destination may be the remembered tab');
-  has(APP, "else if(_fresh){show('overview');}", 'a reader with nothing saved starts on the Overview');
+  /* …except an account in its first weeks, which starts on Research where the first-run panel is its
+     welcome (owner decision 2026-10-26; lib/edgedesk_workspace_ui.js edFirstWeek) */
+  const BOOT = "else if(_fresh){if(typeof window.edFirstWeek==='function'&&window.edFirstWeek())researchGo(_p.lastResearchSub||'football');else show('overview');}";
+  has(APP, BOOT, 'a reader with nothing saved starts on the Overview, or on Research in an account\'s first weeks');
   has(APP, "defaultTab:'overview'", 'and the default landing page is the Overview');
   has(APP, "if(h==='#research'){researchGo(", 'a bare #research (a bookmark from when Research was the landing page) still opens Research');
   has(APP, "var navs=document.querySelectorAll('.bottomnav button[data-v]');", 'only seats are bound as seats (Menu and Close belong to the shell)');
   has(APP, "if(v==='overview'){try{if(window.EDOverview)window.EDOverview.open($('overviewHost'));}", 'show(\'overview\') opens the Overview');
   has(APP, 'record:\'performance\'', 'Record (EdgeDesk\'s model performance) lights Performance, never the reader\'s Portfolio');
-  /* script order: the shell's modules load before the boot block that shows the Overview */
-  const iBoot = APP.indexOf("else if(_fresh){show('overview');}");
-  ['edgedesk_games.js?', 'edgedesk_games_ui.js?', 'edgedesk_context.js?', 'edgedesk_shell.js?', 'edgedesk_overview.js?', 'edgedesk_search.js?', 'edgedesk_perf_hub.js?', '/foresight/service.js?'].forEach((f) => {
+  /* script order: the shell's modules, and the workspace module whose edFirstWeek the boot reads,
+     load before the boot block that shows the Overview */
+  const iBoot = APP.indexOf(BOOT);
+  chk('the boot landing is found', iBoot > 0);
+  ['edgedesk_workspace_ui.js?', 'edgedesk_games.js?', 'edgedesk_games_ui.js?', 'edgedesk_context.js?', 'edgedesk_shell.js?', 'edgedesk_overview.js?', 'edgedesk_search.js?', 'edgedesk_perf_hub.js?', '/foresight/service.js?'].forEach((f) => {
     const i = APP.indexOf(f); chk(f.replace('?', '') + ' loads before the boot landing runs', i > 0 && i < iBoot);
   });
   chk('the context and the shell load before the modules that use them', APP.indexOf('edgedesk_context.js?') < APP.indexOf('edgedesk_overview.js?') && APP.indexOf('edgedesk_shell.js?') < APP.indexOf('edgedesk_search.js?') && APP.indexOf('edgedesk_shell.js?') < APP.indexOf('/foresight/service.js?'));

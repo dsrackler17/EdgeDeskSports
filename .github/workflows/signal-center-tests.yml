@@ -50,12 +50,16 @@ on:
       - '.github/workflows/signal-center.yml'
       - '.github/workflows/deploy-signal-center.yml'
       - '.github/workflows/signal-center-mode.yml'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   push:
     branches: [main]
     paths:
       - 'lib/edgedesk_signal_*.js'
       - 'supabase/signal_center*.sql'
       - 'tools/signal_center/**'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   workflow_dispatch:
 
 permissions:

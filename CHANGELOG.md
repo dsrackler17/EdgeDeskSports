@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-10-26 — Research OS compatibility: one navigation driver for every browser suite, first-week onboarding restored, the graphic's version contract
+
+**What was red.** #807 (Research OS) left eight workflows red on its last commit:
+- Collective suites and Today's Games tests (`intel_ui.e2e.js`);
+- Player props, Matchup graphics, Funnel, Simulator suites, Market Foresight;
+- Signal Center, whose run on the merge was cancelled rather than passed.
+
+The full audit, file by file, is [docs/research-os/TEST_AUDIT.md](docs/research-os/TEST_AUDIT.md).
+
+**One navigation driver for the browser suites** (`tools/app/nav_helper.js`).
+- It taps the seat a reader can see: the sidebar at ≥ 1024 px, the bottom bar below that, and Menu's sheet for a seat that is not on the bar. It then waits until the destination is drawn.
+- `NAV.research()` opens a Research panel through its row, or through Other. `NAV.seatShown()` checks the seat is lit where the reader sees it.
+- Nine suites use it, three hand-written copies are gone, and six workflows now list it in their `paths:`.
+- On the Collective / Today's Games suite, Process is now reached through Menu on a phone and in the sidebar on a desktop, with the method drawn in Process. 62 passed, 1 failed → 164 passed, 0 failed.
+
+**First-week onboarding.** This was a product regression.
+- **What a new trialing account saw.** It landed on the Overview. "Here's what EdgeDesk found today." sat in the hidden Research view, the welcome and onboarding modals stood aside for it, and `first_run_viewed` was still recorded.
+- **Owner decision.** An account in its first two weeks that has not hidden the panel lands on Research; everyone else on the Overview. The rule is `edFirstWeek()` (`lib/edgedesk_workspace_ui.js`), used by Setup's hand-off and the boot's nothing-saved branch.
+- **The test.** `first_run.e2e.js` now requires the panel drawn in the view the reader lands on. Against the old code: 9 passed, 7 failed. Now: 57 passed, 0 failed.
+
+**The Matchup graphic's version contract.**
+- **The bug.** The merge left `edgedesk_sport_graphic.js` at `sg1` while its renderer moved to `ros2`. It now loads under the renderer's version.
+- **The test.** `sport_graphic_ui.e2e.js` checks, from a real load, the two script responses, their equal `?v=`, and that the renderer is defined first. It is red on the old stamps.
+
+**The rest.**
+- **Player props.** The suite reaches Props through Research, at 1440 px and now at 390 px.
+- **Simulator.** Its refresh failure is armed after its own first draw; the Overview reads the same door first. The "seat is in the bottom bar" check is now true at each width.
+- **Signal Center.** The Overview tile is read as words, not as its CSS-uppercased drawing.
+- **Market Foresight.** `REPORT.md` no longer names an `mf_*` door. The isolation allowlist is unchanged.
+
+**Unchanged.** No production navigation was changed for a selector, and no assertion, threshold or allowlist was loosened. `signals/` and `admin/signals/` still load the renderer at `pd1` (since b9846a46); that is noted in the audit for its own change.
+
 ## 2026-10-26 — Content Engine: a player's name is not a team; and the two #805 commits that did not merge
 
 **The failure on `main`.** `tools/content/evidence.test.js` failed on clean `main` (`1c3b5c07a`): "every article generated from today's research passes the gate", 197 of 198.

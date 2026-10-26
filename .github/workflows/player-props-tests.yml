@@ -34,6 +34,8 @@ on:
       - 'app.html'
       - 'research/cfb/**'
       - '.github/workflows/player-props*.yml'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   push:
     branches: [main]
     paths:
@@ -43,6 +45,8 @@ on:
       - 'tools/props/**'
       - 'supabase/player_props*.sql'
       - 'supabase/functions/props_cron/**'
+      # the shared navigation driver its browser suites tap seats with
+      - 'tools/app/nav_helper.js'
   workflow_dispatch:
 
 permissions:

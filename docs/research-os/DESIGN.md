@@ -72,6 +72,14 @@ Compatibility:
   Back and Forward walk the reader's own path.
 * Landing: a deep link wins; a new account still sees Setup; otherwise the
   remembered tab, and Overview when there is none.
+* A new account's first two weeks are the exception: until the reader hides
+  the first-run panel ("Here's what EdgeDesk found today",
+  `lib/edgedesk_first_run.js`), Setup hands over to Research, and a load with
+  nothing saved opens Research, because that panel sits at the top of Research
+  and is the new reader's welcome. The welcome modal and the onboarding modal
+  stand aside for it, so an Overview landing left a new account with no
+  onboarding at all. `edFirstWeek()` in `lib/edgedesk_workspace_ui.js` is the
+  rule; `tools/funnel/first_run.e2e.js` holds it in a browser.
 
 Keyboard: Ctrl/⌘ K or `/` opens search. `/` is ignored while typing or while a
 visible dialog is open.

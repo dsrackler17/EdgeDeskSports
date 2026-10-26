@@ -19,7 +19,9 @@
         the reader's own numbers — never EdgeDesk's record;
      4  More is sections, not a drawer; Model performance is in it and lights
         Performance;
-     5  a new account starts at setup, once; a deep link beats it;
+     5  a new account starts at setup, once; a deep link beats it; Enter
+        lands on the Overview, or, in an account's first weeks while the
+        first-run panel is not hidden, on Research, where that panel is;
      6  tracking a price keeps the reader where they were;
      7  every seat tap is recorded as primary_nav_<seat>;
      8  the disclaimer keeps every element and takes one line on a phone;
@@ -31,6 +33,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const NAV = require('./nav_helper.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 const SHOTS = (() => { const i = process.argv.indexOf('--shots'); return i > 0 ? process.argv[i + 1] : null; })();
@@ -82,7 +85,8 @@ function seededLedger(now) {
     else { console.log('SKIPPED: no Chromium'); srv.close(); process.exit(0); }
   }
 
-  /* o.created: account creation time (ms); o.bets: the device ledger; o.setupDone */
+  /* o.created: account creation time (ms); o.bets: the device ledger; o.setupDone; o.firstRun: leave
+     the first-run panel un-hidden (every other case has hidden it, so it never draws over a case) */
   async function open(viewport, hash, o) {
     o = o || {};
     const ctx = await browser.newContext({ viewport });
@@ -93,13 +97,13 @@ function seededLedger(now) {
         sessionStorage.setItem('__e2e_seeded', '1');
         localStorage.setItem('edgedesk_welcome_seen', String(Date.now()));
         localStorage.setItem('edgedesk_decision_onboarded_v1', JSON.stringify('2026-01-01T00:00:00Z'));
-        localStorage.setItem('edgedesk_first_run_v1', JSON.stringify({ steps: {}, done_at: '2026-01-01T00:00:00Z' }));
+        if (!x.firstRun) localStorage.setItem('edgedesk_first_run_v1', JSON.stringify({ steps: {}, done_at: '2026-01-01T00:00:00Z' }));
         localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400 * 400,
           user: { id: 'e2e-reader', email: 'e2e@edgedesk.test', created_at: new Date(x.created).toISOString() } }));
         if (x.setupDone) localStorage.setItem('edgedesk_setup_v1', String(Date.now()));
         if (x.bets) localStorage.setItem('edgedesk_bets', JSON.stringify(x.bets));
       } catch (e) { /* storage */ }
-    }, { created: o.created || Date.now() - 400 * DAY, setupDone: o.setupDone !== false, bets: o.bets || null });
+    }, { created: o.created || Date.now() - 400 * DAY, setupDone: o.setupDone !== false, bets: o.bets || null, firstRun: !!o.firstRun });
     await ctx.route('**/*', (route) => {
       const req = route.request(), u = req.url();
       if (u.startsWith('http://127.0.0.1')) return route.continue();
@@ -134,16 +138,13 @@ function seededLedger(now) {
     return { views, panel, seat, hash: location.hash, research: vis('v-research'), ai: !!(document.getElementById('edaiPanel') && document.getElementById('edaiPanel').classList.contains('open')) };
   });
 
-  /* tap a seat the way a reader does: on a phone, a seat that is not on the bar is in Menu's sheet */
-  async function seat(page, v) {
-    const visible = await page.evaluate((x) => { const b = document.querySelector('.bottomnav button[data-v="' + x + '"]'); return !!b && b.offsetParent !== null && b.getBoundingClientRect().width > 0; }, v);
-    if (!visible) { await page.click('#navMenuBtn'); await page.waitForSelector('#edNav.open button[data-v="' + v + '"]', { state: 'visible', timeout: 5000 }); }
-    await page.click('.bottomnav button[data-v="' + v + '"]');
-  }
+  /* tap a seat the way a reader does: on a phone, a seat that is not on the bar is in Menu's sheet
+     (tools/app/nav_helper.js, which every browser suite shares) */
+  const seat = (page, v) => NAV.go(page, v);
   try {
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
-      /* ------------------------------------------------ 1 the seven seats */
+      /* ------------------------------------------------ 1 the ten seats */
       let S = await open(vp, '');
       let { page } = S;
       await page.waitForTimeout(1500);   // the AI block, first-run and every late script have run
@@ -424,7 +425,7 @@ function seededLedger(now) {
       await shot(page, 'setup-3-' + W);
       await page.click('#setupHost [data-su="enter"]');
       st = await state(page);
-      chk(W + ': Enter EdgeDesk lands on the Overview', st.views.join() === 'v-overview', st);
+      chk(W + ': Enter EdgeDesk lands on the Overview (the first-run panel was hidden)', st.views.join() === 'v-overview', st);
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
       st = await state(page);
@@ -446,6 +447,22 @@ function seededLedger(now) {
       await page.waitForTimeout(400);
       st = await state(page);
       chk(W + ': "Import a CSV" in setup opens the book\'s Import', st.views.join() === 'v-portfolio' && await page.evaluate(() => { const t = document.querySelector('#pfoHost .pfo-tab[data-v="import"]'); return !!t && t.getAttribute('aria-selected') === 'true'; }), st);
+      await S.ctx.close();
+      /* in an account's first weeks, with the first-run panel still to see, Enter lands where that
+         panel is: Research (lib/edgedesk_workspace_ui.js edFirstWeek; tools/funnel/first_run.e2e.js
+         holds the panel itself) */
+      S = await open(vp, '', { created: Date.now() - 2 * DAY, setupDone: false, firstRun: true });
+      page = S.page;
+      await page.click('#setupHost [data-su="next"]');
+      await page.click('#setupHost [data-su="next"]');
+      await page.click('#setupHost [data-su="enter"]');
+      st = await state(page);
+      chk(W + ': in its first weeks, Enter EdgeDesk lands on Research, its seat lit', st.views.join() === 'v-research' && await NAV.seatShown(page, 'research'), st);
+      await S.ctx.close();
+      /* …and not once the account is older than the panel's two weeks */
+      S = await open(vp, '', { created: Date.now() - 20 * DAY, setupDone: true, firstRun: true });
+      st = await state(S.page);
+      chk(W + ': an account past its first weeks, with nothing saved, lands on the Overview', st.views.join() === 'v-overview', st);
       await S.ctx.close();
       S = await open(vp, '#research/edges', { created: Date.now() - 2 * DAY, setupDone: false });
       st = await state(S.page);
