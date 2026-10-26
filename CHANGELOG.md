@@ -13,43 +13,28 @@ No feed this repository reads lists a college basketball exhibition, so the fore
 - **Priced like any game between the same two teams,** flagged `EXHIBITION`, never in Upset Watch, and never learnt from. A non-D-I or NAIA opponent is priced in the model's pooled non-D-I regime; an intrasquad game or a listing that names no school is not priced.
 - **Live after merge and the next collector run.** Merging the plan change runs the weekly collector. The daily refreshes price whatever exhibitions it holds.
 
-## 2026-10-25 — NFL card: the 2025 prior diagnosed, the stale-starter bug fixed, a starter sync, and the large-gap gate
+## 2026-10-26 — Market structure suites: one pinned clock for the browser test
 
-KC @ SEA, Week 7 SNF: the card had SEA −4.4 / 65.8% against Kalshi's SEA −3 / 58.5%. `docs/nfl-prior-decay/README.md` has the whole account. The served weights (`edgedesk_nfl_v2.1.0`) are unchanged, and the frozen CLV ranking protocol is untouched.
+- **The failure (00:06 UTC).** `market_structure_ui.e2e.js:196` threw "Cannot set properties of null (setting 'open')".
+  - The suite stages a Week 7 board but ran it on the real clock and the live nflverse schedule.
+  - IND @ MIN went final on 2026-10-25 (10–16), and a finished game gets the graded card, which has no Market Structure section. DAL @ PHI would follow after Monday night.
+- **Four fixes for one cause.** #776, #777, #779 and #780 each pinned the clock and blanked later scores, each in its own way.
+  - Each was merged through a "Merge branch 'main'" conflict resolution that kept pieces of the others. One resolution left `csv is not defined`.
+  - After #782's restore was merged the same way, main's copy no longer parsed: a stray fragment of one scheme's `asOf()` sat after `pinLine()`, and `ST` and `pinned` were read before they existed.
+- **Restored, once.** The file is now #777's exactly, as it was green on main (ed901e89): every page reads 2026-10-25 13:00 UTC, and the schedule it is served blanks every 2026 score from then on.
+  - 25 of 25 pass on Playwright 1.63 and on 1.49.1 (CI's pin), and also against a schedule with every Week 7 and 8 game scored.
 
-- **Diagnosis, before any model change** (`docs/nfl-prior-decay/DIAGNOSIS.md`, `tools/football/nfl_prior_diagnosis.js`).
-  - The replay reproduces the card to the cent.
-  - Base team strength is SEA +2.71: +3.73 from the carried 2025 prior and −1.02 from 2026. Its inputs are 70% 2025 after 5–6 games.
-  - The "Seahawks #2 vs #7" efficiency ranks reverse on 2026 data alone (KC #3, SEA #8).
-  - The QB chip is per player, but it measures the starter against his club's own running level. The quarterback's quality sits in team ratings that decay slowly.
-  - 62 of 91 published Week 2–7 cards sit more than 5 pp from the close, and they earned no CLV (+0.05 pts spread, −0.03 pp moneyline).
-  - The 2026-only replay is worse on Brier (0.2519 vs 0.2344), so the prior stays.
-- **Bug: the board's start history read the schedule feed's stale QB pre-fill.** nflverse `games.csv` still names Drew Lock for Seattle's Weeks 3–6, which Sam Darnold played.
-  - The regime line on KC @ SEA therefore said "regular starter (Drew Lock) out". The injury-replacement "most starts" came from the same wrong history.
-  - `app.html` `fbNflQbStarts` now counts a played game's start for the passer the QB game log credits, the rule that already sets the model's own regular starter. KC @ SEA's number does not move (4.375884).
-- **Starter sync** (`football/nfl/starter_sync.js`, `tools/football/nfl_starter_sync.js`).
-  - Every upcoming slate game carries a fingerprint of the inputs that decide its starters: the feed id, depth-chart QB1, and the club's QB lines on the report.
-  - When one moves, the slate is rebuilt at once. Each priced-starter change is logged, with the number before and after, to `football/nfl/starter_sync/`.
-  - It runs after every injury fetch. `injury-sync.yml` now pushes through `push_generated.sh`.
-  - `starter-context.yml` logs the changes its own builds make.
-- **QB designation and practice status as Observed (T0).** Each priced starter carries `*_qb_report`, with its source and two times: the report's retrieval time, and EdgeDesk's first sight from the new `football/injuries/history/nfl_<season>_qb.jsonl`. nflverse's 2026 file has no per-row time. The research page shows it under Quarterbacks.
-- **The v2 prior-decay experiment** (`football/research/nfl_v2/prior_decay/`).
-  - Preregistered before any run: the schedule, three variants and the promotion criteria.
-  - Backtested once on 2010–2024, with the 2025 holdout never predicted. The selected variant moved Brier by −0.00004 and CLV by +0.007 pts, but was better in 8 of 15 seasons, below the 9 required.
-  - **Rejected.** It stays experimental, `passed = false`, and is never on a card.
-  - Registered in `supabase/nfl_prior_decay_registry.sql`, generated through the now-parametrized `build_prereg_sql.js`. The market-structure SQL is byte-identical.
-  - The shadow run shows the QB-anchored term moves KC @ SEA by 0.15 pts: the gap is in the team priors.
-- **Large-gap gate (display, NFL cards).** When EdgeDesk sits more than 5 points of win probability from any market on the card (Kalshi, the book, the consensus), no EDGE label is drawn.
-  - The graphic and the research page say "Large gap vs market". They name the top contributing chip with its 2025 / 2026 split and data window.
-  - The page withholds the decision layer's label.
-  - College cards keep the 7-point Kalshi note.
-- **Data windows and Known Limitations.**
-  - Every NFL chip in the number shows its data window ("2025: 70% / 2026: 30%"). `football/nfl_model.js` `cardWindows` reads the weights the ratings use; it is display only.
-  - A Known Limitations line appears when a chip leans more than half on the prior.
-- **Tests.**
-  - `tools/football/nfl_prior_decay.test.js` (85 checks, offline): prior weight by week; starter changes; the KC @ SEA replay through the snapshot, the graphic (an "EDGE: SEA −2.5" quote now reads LARGE GAP VS MARKET) and the rendered page; the gate's rules; the registration on PostgreSQL.
-  - `game_research.test.js` was updated for the NFL gate. Its Kalshi fixture now picks a pregame game, which fixes the 2 failures that predated this change: 252/252.
-  - e2e 57/57.
+## 2026-10-26 — Game research tests: two checks that broke after the NFL card's gate and data windows
+
+`tools/football/game_research.test.js` had failed on main since the NFL card commits added a large-gap gate and data windows to chips. The tests were wrong in both cases; the code is unchanged.
+
+- **The 5-point gate boundary.**
+  - The helper rounded the Kalshi mid to 0.1 pt, so its "5.0-point" case was really anywhere from 4.95 to 5.05.
+  - The gate fires above 5, so the check failed whenever the slate's first pregame NFL game landed above 5 (PIT @ NO: 5.03).
+  - The mid is now built at the model's own 4-decimal precision (the snapshot rounds win probability with `r4`), so the cases are exactly 5.0, 5.1 and −5.1.
+- **The chip spec.** The graphic spec now carries a chip's `window_label` when the chip has one; the alt text reads it ("Data 2025: 70% / 2026: 30%."). The check allows exactly that third key, and only when the snapshot's chip has a window.
+
+Tests: `game_research.test.js` passes 252 of 252 (it had 2 failures). `football_lines`, `game_context`, `build_game_research --check` and `nfl_prior_decay` (85) all pass.
 
 ## 2026-10-25 — NHL starting goalies: Observed, refreshed to puck drop, and a versioned card
 

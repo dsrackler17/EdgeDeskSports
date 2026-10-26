@@ -47,9 +47,9 @@
     "run"
    ],
    "live": {
-    "games": 100,
-    "mean_abs": 1.23,
-    "current": 1.23,
+    "games": 61,
+    "mean_abs": 1.33,
+    "current": 1.33,
     "last_season": 0,
     "seed_season": 2025,
     "reset": true
@@ -148,8 +148,37 @@
    "in_number": true,
    "status": "VALIDATED",
    "points_text": "cross-conference games only, fading to 0 by six games played",
-   "test": "left out of the shipped engine game by game on 2022-2025 (3127 games, no refit)",
-   "result": "MAE +0.186 better with it (95% CI +0.11 to +0.27, p = 0.00; better in 3 of 4 seasons); weight k 1.11 (95% CI +0.89 to +1.32): the shipped weight is consistent with the data (multiplier 1.11)",
+   "by_matchup": [
+    {
+     "kind": "Power 4 v Group of 5",
+     "n": 333,
+     "k": 1.228,
+     "k_ci95": [
+      0.996,
+      1.482
+     ]
+    },
+    {
+     "kind": "Power 4 v Power 4",
+     "n": 112,
+     "k": 0.357,
+     "k_ci95": [
+      -0.374,
+      1.055
+     ]
+    },
+    {
+     "kind": "Group of 5 v Group of 5",
+     "n": 160,
+     "k": 0.547,
+     "k_ci95": [
+      -0.517,
+      1.603
+     ]
+    }
+   ],
+   "test": "left out of the shipped engine game by game on 2022-2025 (3127 games, no refit); fitted on 2014-2019 cross-conference games",
+   "result": "MAE +0.186 better with it (95% CI +0.11 to +0.27, p = 0.00; better in 3 of 4 seasons); weight k 1.11 (95% CI +0.89 to +1.32): the shipped weight is consistent with the data (multiplier 1.11); it earns its points in Power 4 v Group of 5 (333 games: MAE +1.73 better with it, k 1.23, 95% CI +1.00 to +1.48); in Power 4 v Power 4 and Group of 5 v Group of 5 games it carries no measurable information (the k interval includes 0)",
    "source": "football/cfb_p4/params.js, football/validation/loto_cfb.json",
    "status_text": "Validated on unseen games"
   },
