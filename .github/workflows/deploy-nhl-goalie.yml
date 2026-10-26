@@ -198,20 +198,9 @@ jobs:
           code=$(curl -sS -m 120 -o "$RUNNER_TEMP/run.json" -w '%{http_code}' -X POST "$FN" -H 'content-type: application/json' -H "x-cron-secret: $vault" -d '{"force":true,"source":"manual"}' || true)
           vault=""
           echo "the sync answered HTTP $code"
-          node -e "
-            const fs = require('fs'), r = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')), R = r.run || {}, C = (r.cards && r.cards.versions) || [];
-            const lines = ['### NHL goalie sync — first run', '', '| | |', '|---|---|',
-              '| Status | ' + r.status + ' |', '| Due | ' + (R.due_kinds || []).join(', ') + ' |',
-              '| Observations / consensus written | ' + R.observations_written + ' / ' + R.consensus_written + ' |',
-              '| Cards written / unchanged | ' + R.cards_written + ' / ' + R.cards_unchanged + ' |',
-              '| Open conflicts | ' + R.conflicts_open + ' |', '| Next slot | ' + (R.next_due_at || '—') + ' |',
-              '| Alerts | ' + ((r.alerts || []).map((a) => a.severity + ' ' + a.code + ': ' + a.message).join('<br>') || 'none') + ' |', '',
-              '| Game | v | Trigger | Starters | Status | Gate | Pairing win % | Change |', '|---|---|---|---|---|---|---|---|']
-              .concat(C.map((c) => '| ' + c.matchup + ' | ' + c.version + ' | ' + c.trigger + ' | ' + (c.pairing || []).join(' / ') + ' | ' + (c.status || []).join(' / ') + ' | ' + c.gate + ' | ' + (c.p_home_pairing == null ? '—' : (c.p_home_pairing * 100).toFixed(1) + '%') + ' | ' + (c.change || '') + ' |'));
-            const NL = String.fromCharCode(10);
-            console.log(lines.join(NL)); fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join(NL) + NL);
-          " "$RUNNER_TEMP/run.json" || head -c 600 "$RUNNER_TEMP/run.json"
-          rm -f "$RUNNER_TEMP/run.json" "$RUNNER_TEMP/inputs.json"
-          echo "== readiness"
-          psql "$PGURL" -At -F ' | ' -c "select state, coalesce(state_reason, '—'), last_check_status, daily_faceoff_ok, nhl_api_ok, cards_upcoming, cards_gated, conflicts_open, sync_failures_24h, next_due_at from public.nhl_goalie_readiness"
-          if [ "$code" != 200 ]; then echo "::warning::the first run did not answer 200 (HTTP $code): see its alerts above and System health"; fi
+          rm -f "$RUNNER_TEMP/inputs.json"
+          psql "$PGURL" -At -v ON_ERROR_STOP=1 -f tools/hockey/sql/nhl_goalie_readiness_check.sql > "$RUNNER_TEMP/readiness.json" || : > "$RUNNER_TEMP/readiness.json"
+          # the same summary and verdict as NHL goalie sync (tools/hockey/nhl_goalie_run_summary.js); pg_cron is not judged here, it was scheduled a moment ago
+          rc=0; node tools/hockey/nhl_goalie_run_summary.js --title "NHL goalie sync — first run" --run "$RUNNER_TEMP/run.json" --http "${code:-000}" --readiness "$RUNNER_TEMP/readiness.json" || rc=$?
+          rm -f "$RUNNER_TEMP/run.json" "$RUNNER_TEMP/readiness.json"
+          exit $rc
