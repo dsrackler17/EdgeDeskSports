@@ -2,6 +2,14 @@
 
 
 
+## 2026-10-26 — CFB research terminal: the implausible-EV guard measures in σ, as the app does
+
+- **The finding.** All 7 games the terminal flagged "implausible EV, check data" on the 12:08 UTC board used the flat 25% fallback ("no distribution width to scale by"). Not one of the 61 games got the σ-scaled bound, which `lib/edgedesk_quote_ev.js` documents as the rule (0.7% of real games flagged on the 2024-25 holdout, against 19.7% for the flat line).
+- **The cause.** `distributionSpread` looked for the 16th and 84th percentiles between home margins −80 and +80. The terminal prices from its stored curve (`readBase` → `RD.buildCurve`, market ± 30–60 pts), which returns nothing outside its grid, so σ was never read. The app passes an unbounded cover (`cfbGameCover`), so the app already measured in σ: on the same games the two surfaces used different bounds.
+- **The fix.** The search now runs over the margins the cover can read. On all 61 games the stored curve's σ matches the unbounded cover's to 0.0001 pts (15.6 to 18.1 pts). Unbounded covers (the app, NFL) read ±80 as before.
+- **What moves on the next terminal build.** The 7 flagged games sat 0.36 to 0.53 σ from the market, against a 0.96 bound, so none stays flagged. Oklahoma State @ Iowa State, Illinois @ Maryland and Mississippi State @ Texas read VERIFIED MAJOR (every integrity check passed). Arizona State @ BYU, Notre Dame @ Navy and Tulane @ Charlotte stay INVESTIGATE, now for the gate check each fails. Army @ Memphis (6.1 pts) reads WORTH RESEARCHING. Every decision stays PASS; the flat 25% line still brakes stakes as LARGE EV.
+- **Tests.** Four checks in `tools/football/quote_ev.test.js` on the terminal's stored curve; three fail without the fix. 248 of 248 pass.
+
 ## 2026-10-26 — CFB validation: the slate audit knows the implausible-EV guard
 
 - **The failure (11:08 UTC).** `football/cfb_validation/tests.js`: "the audit finds no status that contradicts its checks — got 3, want 0". Main went red, and so did every PR touching `app.html`, which is on the CFB validation workflow's path filter (#797, an NHL change, was one).

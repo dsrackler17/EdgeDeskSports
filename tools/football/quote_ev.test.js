@@ -680,6 +680,22 @@ section('15. one CFB distribution: the app’s ladder is the terminal’s curve,
   /* the EV plausibility bound measures z in the width of the SAME distribution */
   const ms = EVP_T.measure('CFB', { fair: 41.42, sigma: 14.9, sigma_base: base }, 52.5);
   chk('tools/football/ev_plausibility.js measures an out-of-table market in the width of the terminal’s curve', ms && ms.sd === Q.distributionSpread(T.cover), [ms && ms.sd, Q.distributionSpread(T.cover)]);
+  /* the terminal prices from the STORED curve (readBase: RD.buildCurve over v1Dist, market ± 30–60 pts,
+     read back through curveCover): the bound reads σ on that grid, not only on an unbounded cover.
+     On 2026-10-26 a fixed ±80 search read nothing there and all 7 flagged games fell to the flat 25% */
+  const stored = (fair, mkt) => { const d = B.v1Dist(fair, 14.84, mkt), hw = Math.min(60, Math.max(30, Math.ceil(Math.abs(fair - mkt)) + 24));
+    return { d: d, hc: B.curveCover(RD.buildCurve(d.cover, mkt, hw, {})) }; };
+  const S9 = stored(-1.23, -10), S18 = stored(8, -10);
+  chk('the stored curve reads the same σ as the cover it was sampled from (to 0.01 pts)', near(Q.distributionSpread(S9.hc), Q.distributionSpread(S9.d.cover), 0.01),
+    [Q.distributionSpread(S9.hc), Q.distributionSpread(S9.d.cover)]);
+  const Gs9 = Q.evaluateGame({ sport: 'CFB', available: true, model_version: 't', projection_timestamp: FRESH, fair_home_margin: -1.23, home_cover: S9.hc, tail: { validated_within_pts: 0 } },
+    [q('home', 10, -112, { n_books: 2 }), q('away', -10, -108, { n_books: 2 })], ctx());
+  chk('Oklahoma State @ Iowa State on the stored curve (8.8 pts, past +25% raw EV) is a LARGE EV, not "implausible EV, check data"',
+    Gs9.implausible_ev === null && Gs9.best_ev_quote.expected_value > Q.IMPLAUSIBLE_RAW_EV && Gs9.large_ev !== null, [Gs9.implausible_ev, Gs9.best_ev_quote && Gs9.best_ev_quote.expected_value]);
+  const Gs18 = Q.evaluateGame({ sport: 'CFB', available: true, model_version: 't', projection_timestamp: FRESH, fair_home_margin: 8, home_cover: S18.hc, tail: { validated_within_pts: 0 } },
+    [q('home', 10, -110, { n_books: 2 }), q('away', -10, -110, { n_books: 2 })], ctx());
+  chk('…and an 18-pt gap on the stored curve is still implausible, σ-scaled', Gs18.implausible_ev && Gs18.implausible_ev.basis === 'sigma_scaled' && Gs18.implausible_ev.z > Q.PLAUSIBLE_Z.CFB, Gs18.implausible_ev);
+  chk('a cover that reads no margin still has no σ (the flat fallback applies)', Q.distributionSpread(() => null) === null);
   chk('app.html fetches the quote-EV module under one cache-busting version everywhere it loads it',
     (() => { const v = APP.match(/fbScript\('lib\/edgedesk_quote_ev\.js[^']*'\)/g) || []; return v.length >= 2 && v.every((s) => s === v[0]) && /\?v=\d{8}[a-z]*'/.test(v[0]); })());
 }
