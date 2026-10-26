@@ -75,8 +75,9 @@ const TERMS = [
   { key: 'schedule', label: 'Rest and schedule', droppable: true, fit_window: [2014, 2019], shadow: true,
     fit: 'football/cfb_p4/research/train_layers.py schedule_layer on 2014-2019 residuals (B_LO, B_HI): sum of w_k (home_k − away_k) over the rest, road-trip and opponent-strength components',
     caveat: 'not in the shipped number. The engine computes it in its trained form and publishes it as shadow points (params schedule.points_applied is absent), so it is tested as the shipped engine PLUS the term against the shipped engine: VALIDATED here is the case for putting it in. Its earlier priced form (a 0-100 stress index, floored at 0, with the weights’ signs ignored and a second ÷100) moved the number by 0.001 pts on average and is retired' },
-  { key: 'conference', label: 'Conference strength', droppable: true, fit_window: null,
-    fit: 'football/cfb_p4/research/train_layers.py, tune window before 2022 (TEST_LO)' },
+  { key: 'conference', label: 'Conference strength', droppable: true, fit_window: [2014, 2019],
+    fit: 'football/cfb_p4/research/train_layers.py conference_layer on 2014-2019 cross-conference games (B_LO, B_HI): points per point of the gap in the two conferences’ prior-season cross-conference margin, faded to 0 by six games played',
+    caveat: 'the prior season’s strength only. engine.js situation.conference also reads an in-season table (state.conf), but nothing writes it, so that path never runs; the term is the prior season’s table faded to 0 by six games played' },
   { key: 'hfa', label: 'Home field', droppable: true, fit_window: null,
     fit: 'football/cfb_p4/research/hfa_unify.js chose the value with the lowest 2022-2025 MAE, so 2022-2025 is not held out for its SIZE',
     caveat: 'the 2.8-pt value was selected on this window; read its multiplier as a check, not a validation' },
@@ -238,7 +239,76 @@ function run(rows, opts) {
     return { name, shipped_weight: W[name] == null ? null : W[name], features: [pd.off || null, pd.def || null], unfed_features: unfed,
       holdout: m, fit_window: fw, weight: weightVerdict(m) };
   });
+  out.conference = conferenceBreakdown(S, hold, opts);
   return out;
+}
+
+/* ---------------------------------------------- conference strength, by part
+   The term (engine.js confGap) is points_per_strength x (home conference's
+   prior-season cross-conference margin - away's) x (1 - fewer games played /
+   6), on cross-conference FBS games with neither side independent. It is
+   taken apart on the games it moved: by how far it has faded (the fewer games
+   either team has played), by the kind of pairing, and with the team-strength
+   multiplier fitted beside it, because both terms say how good a team is.
+   These splits describe the record; only the whole term is put to the
+   promotion rules. */
+const P4_CONFERENCES = ['SEC', 'Big Ten', 'Big 12', 'ACC'];
+/* the Pac-12 was a Power 4 conference through 2023; from 2024 it is two programmes */
+function isP4(conf, season) { return P4_CONFERENCES.indexOf(conf) >= 0 || (conf === 'Pac-12' && season <= 2023); }
+const CONF_KINDS = ['Power 4 v Group of 5', 'Power 4 v Power 4', 'Group of 5 v Group of 5'];
+function confKind(x) {
+  const a = isP4(x.home_conference, x.season), b = isP4(x.away_conference, x.season);
+  return a && b ? CONF_KINDS[1] : (a || b ? CONF_KINDS[0] : CONF_KINDS[2]);
+}
+/* two multipliers at once: (result - (engine - t1 - t2)) on t1 and t2 */
+function jointFit(g, ts, opts) {
+  const rows = g.filter((x) => ts.every((t) => t(x) != null));
+  const n = rows.length;
+  if (n < 10) return { n };
+  const T = rows.map((x) => ts.map((t) => t(x)));
+  const Y = rows.map((x, i) => x.final_margin - (x.fair - T[i][0] - T[i][1]));
+  function fit(idx) {
+    let a = 0, b = 0, c = 0, u = 0, v = 0;
+    for (const i of idx) { const p = T[i][0], q = T[i][1]; a += p * p; b += p * q; c += q * q; u += p * Y[i]; v += q * Y[i]; }
+    const det = a * c - b * b;
+    return det ? [(c * u - b * v) / det, (a * v - b * u) / det] : [null, null];
+  }
+  const k = fit(rows.map((_, i) => i)), R = rng(opts.seed), B0 = [], B1 = [];
+  for (let s = 0; s < opts.boot; s++) {
+    const idx = []; for (let j = 0; j < n; j++) idx.push(Math.floor(R() * n));
+    const kk = fit(idx); B0.push(kk[0]); B1.push(kk[1]);
+  }
+  B0.sort((a, c) => a - c); B1.sort((a, c) => a - c);
+  return { n, k: [r(k[0]), r(k[1])], k_ci95: [[r(q(B0, 0.025)), r(q(B0, 0.975))], [r(q(B1, 0.025)), r(q(B1, 0.975))]] };
+}
+function conferenceBreakdown(S, hold, opts) {
+  const t = (x) => (x.c && typeof x.c.conference === 'number') ? x.c.conference : null;
+  const moved = (g) => g.filter((x) => t(x) != null && Math.abs(t(x)) > 1e-9);
+  const mo = (seed) => ({ boot: opts.boot, seed });
+  const mh = moved(hold), gp = (x) => Math.min(x.h_gp, x.a_gp);
+  const rating = (x) => (x.c && typeof x.c.rating === 'number') ? x.c.rating : null;
+  const jf = jointFit(hold, [rating, t], mo(7300));
+  /* the prior-season table each season is priced from, and how many games the
+     term moved that season: a thin table (the 2020 pandemic season) is noise */
+  const PC = (() => { try { global.window = global.window || global; return require(path.join(ROOT, 'football', 'cfb_p4', 'params.js')).conference || {}; } catch (e) { return {}; } })();
+  const seasons = Array.from(new Set(S.map((x) => x.season))).sort();
+  const tables = seasons.map((y) => {
+    const tab = (PC.by_season || {})[String(y - 1)] || {}, ks = Object.keys(tab);
+    return { season: y, table_season: y - 1, conferences: ks.length, team_games: ks.reduce((a, k) => a + (tab[k].n || 0), 0),
+      moved: moved(S.filter((x) => x.season === y)).length };
+  });
+  const med = tables.map((x) => x.team_games).sort((a, b) => a - b)[Math.floor(tables.length / 2)] || 0;
+  return {
+    rule: 'cross-conference FBS games, neither side independent, while the team with fewer games played has played under six',
+    holdout_games: hold.length,
+    holdout_moved: measure(mh, t, mo(7000)),
+    by_games_played: [0, 1, 2, 3, 4, 5].map((n, i) => ({ min_games_played: n, fade: r(1 - n / 6, 3), result: measure(mh.filter((x) => gp(x) === n), t, mo(7100 + i)) })),
+    by_matchup: CONF_KINDS.map((kind, i) => ({ kind, result: measure(mh.filter((x) => confKind(x) === kind), t, mo(7200 + i)) })),
+    joint: jf.k ? { n: jf.n, terms: ['rating', 'conference'], k: { rating: jf.k[0], conference: jf.k[1] }, k_ci95: { rating: jf.k_ci95[0], conference: jf.k_ci95[1] } } : { n: jf.n },
+    p4: P4_CONFERENCES.concat(['Pac-12 (through 2023)']),
+    tables, table_median_team_games: med,
+    note: 'the splits describe the record; only the whole term is judged by the promotion rules, and a rule chosen from these numbers would be a new term to declare and test on later games'
+  };
 }
 
 /* ------------------------------------------------------------ the live board
@@ -283,6 +353,30 @@ async function liveSplit() {
     note: 'current = features the season feed updates; last season = features it never supplies, ' + (st.effUnmeasured
       ? 'reset to league average at the season break (engine.js strength.resetUnmeasured)'
       : 'held at the ' + P.trained_through_season + ' closing seed (decayed once at the season break)') };
+}
+
+/* the live slate's conference term, from the same state the slate build uses:
+   it fades to 0 by six games played, so late in a season it moves few games */
+async function liveConference() {
+  global.window = global.window || global;
+  const E = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
+  const BC = require(path.join(ROOT, 'football', 'fbs', 'build_coverage.js'));
+  const slate = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'fbs', 'slate.json'), 'utf8'));
+  const eff = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'rankings', 'engine_efficiency.json'), 'utf8'));
+  const season = slate.season, text = await BC.loadSeason(season, true);
+  const { st } = BC.buildState({ [season]: BC.normRows(BC.parseCsv(text)) }, season, eff);
+  const pts = [];
+  (slate.games || []).forEach((g) => {
+    const o = E.projectGame({ season, week: g.week, state: st,
+      game: { home: g.home_team, away: g.away_team, home_fbs: g.home_division === 'fbs', away_fbs: g.away_division === 'fbs', neutral_site: !!g.neutral_site },
+      teams: { home: { conference: g.home_conference }, away: { conference: g.away_conference } } });
+    if (o.status !== 'PREDICTED') return;
+    const c = (o.contributions || []).filter((x) => x.key === 'conference')[0];
+    pts.push(c && typeof c.points === 'number' ? c.points : 0);
+  });
+  const mv = pts.filter((x) => Math.abs(x) > 1e-9).map(Math.abs);
+  return { slate_generated_at: slate.generated_at, season, games: pts.length, moved: mv.length,
+    mean_abs_moved: mv.length ? r(mv.reduce((a, b) => a + b, 0) / mv.length, 2) : 0, max_abs: mv.length ? r(Math.max.apply(null, mv), 2) : 0 };
 }
 
 /* ------------------------------------------------------------ the report */
@@ -333,6 +427,51 @@ function render(J) {
       L.push('Held out, by season (MAE without → with): ' + T.holdout.per_season.map((s) => s.season + ' ' + s.mae_before.toFixed(3) + ' → ' + s.mae_after.toFixed(3) + ' (n ' + s.n + ')').join('; ') + '.');
     }
   });
+  if (J.conference && J.conference.holdout_moved && J.conference.holdout_moved.n) {
+    const C = J.conference, m = C.holdout_moved, w = (x) => x.toLocaleString('en-US');
+    const row = (lab, x) => x && x.n && !x.inert ? '| ' + lab + ' | ' + w(x.n) + ' | ' + x.mean_abs_term.toFixed(2) + ' | ' + x.mae_with.toFixed(3) + ' → ' + x.mae_without.toFixed(3) + ' | ' + sg(x.delta) + ' | ' + ci(x.delta_ci95) + ' | ' + (x.k == null ? '—' : x.k.toFixed(2)) + ' | ' + ci(x.k_ci95, 2) + ' |'
+      : '| ' + lab + ' | ' + w((x && x.n) || 0) + ' | — | — | — | — | — | — |';
+    L.push('');
+    L.push('## Conference strength, piece by piece');
+    L.push('');
+    L.push('The term is points per strength × (the home conference’s prior-season cross-conference margin − the away conference’s) × (1 − fewer games played ÷ 6). It applies to ' + C.rule + '. Held out, it moved ' + w(m.n) + ' of ' + w(C.holdout_games) + ' games (' + Math.round(100 * m.n / C.holdout_games) + '%), by ' + m.mean_abs_term.toFixed(2) + ' pts on average; on those games MAE is ' + sg(m.delta) + ' ' + ci(m.delta_ci95) + ' better with it and k = ' + m.k.toFixed(2) + ' ' + ci(m.k_ci95, 2) + '.');
+    L.push('');
+    L.push('**By how far it has faded** (held out, games it moved):');
+    L.push('');
+    L.push('| fewer games played | weight left | games | mean size | MAE with → without | Δ (+ helps) | 95% CI | k | k 95% CI |');
+    L.push('|---|---|---|---|---|---|---|---|---|');
+    C.by_games_played.forEach((b) => { L.push(row(b.min_games_played + ' | ' + Math.round(100 * b.fade) + '%', b.result)); });
+    L.push('');
+    L.push('**By the kind of pairing** (held out, games it moved; Power 4: ' + C.p4.join(', ') + '):');
+    L.push('');
+    L.push('| pairing | games | mean size | MAE with → without | Δ (+ helps) | 95% CI | k | k 95% CI |');
+    L.push('|---|---|---|---|---|---|---|---|');
+    C.by_matchup.forEach((b) => { L.push(row(b.kind, b.result)); });
+    if (m.per_season && m.per_season.length) {
+      L.push('');
+      L.push('By held-out season, on the games it moved (MAE without → with): ' + m.per_season.map((x) => x.season + ' ' + x.mae_before.toFixed(3) + ' → ' + x.mae_after.toFixed(3) + ' (n ' + x.n + ')').join('; ') + '.');
+    }
+    const thin = (C.tables || []).filter((x) => x.team_games < C.table_median_team_games / 2);
+    if (thin.length) {
+      L.push('');
+      L.push('**Thin tables.** ' + thin.map((x) => x.season + ' was priced from the ' + x.table_season + ' table: ' + w(x.team_games) + ' cross-conference team-games in ' + x.conferences + ' conferences, against a median of ' + w(C.table_median_team_games) + ' (the term moved ' + x.moved + ' games in ' + x.season + ', and '
+        + (((C.tables || []).filter((y) => y.season === x.table_season)[0] || {}).moved || 0) + ' in ' + x.table_season + ')').join('; ') + '.'
+        + (function () {
+          const T = J.terms.filter((x) => x.key === 'conference')[0], bw = T && T.between && T.between.seasons;
+          return bw && thin.every((x) => x.season >= bw[0] && x.season <= bw[1]) ? ' It falls in ' + bw.join('–') + ', the window after the fit where the term carried nothing.' : '';
+        })());
+    }
+    if (C.joint && C.joint.k) {
+      L.push('');
+      L.push('**Beside team strength.** Both terms say how good a team is, so their multipliers are also fitted together on all ' + w(C.joint.n) + ' held-out games: team strength k = ' + C.joint.k.rating.toFixed(2) + ' ' + ci(C.joint.k_ci95.rating, 2) + ', conference k = ' + C.joint.k.conference.toFixed(2) + ' ' + ci(C.joint.k_ci95.conference, 2) + '.');
+    }
+    if (C.live) {
+      L.push('');
+      L.push('**Live.** On the ' + C.live.season + ' slate of ' + String(C.live.slate_generated_at).slice(0, 10) + ', the term moves ' + C.live.moved + ' of ' + C.live.games + ' games' + (C.live.moved ? ' (by ' + C.live.mean_abs_moved.toFixed(2) + ' pts on average, at most ' + C.live.max_abs.toFixed(2) + ')' : '') + ': it fades to 0 by six games played.');
+    }
+    L.push('');
+    L.push(C.note.charAt(0).toUpperCase() + C.note.slice(1) + '.');
+  }
   if (J.pairs && J.pairs.length) {
     L.push('');
     L.push('## The stylistic matchup term, pairing by pairing');
@@ -378,7 +517,7 @@ function render(J) {
   return L.join('\n');
 }
 
-module.exports = { measure, weightVerdict, run, render, scored, leakage, liveSplit, TERMS, HOLDOUT, NEGLIGIBLE_PTS };
+module.exports = { measure, weightVerdict, jointFit, conferenceBreakdown, confKind, run, render, scored, leakage, liveSplit, liveConference, TERMS, HOLDOUT, NEGLIGIBLE_PTS };
 
 if (require.main === module) {
   if (arg('render-only', false)) {
@@ -390,7 +529,7 @@ if (require.main === module) {
   (async () => {
   const rowsFile = path.resolve(String(arg('rows', path.join(ROOT, '.cache', 'cfbdata', 'out', 'disagreement_replay.jsonl'))));
   const J = run(readRows(rowsFile), { boot: +arg('boot', 2000), rowsFile });
-  if (arg('live', false)) J.live = await liveSplit();
+  if (arg('live', false)) { J.live = await liveSplit(); J.conference.live = await liveConference(); }
   J.rows.file = 'DIR/out/disagreement_replay.jsonl (disagreement_replay.js, ' + J.rows.total + ' rows)';
   const summary = J.terms.map((T) => T.label + ': ' + (T.status || 'core') + ', Δ ' + sg(T.holdout.delta) + ' ' + ci(T.holdout.delta_ci95) + ', k ' + (T.holdout.k == null ? '—' : T.holdout.k.toFixed(2)) + ' ' + ci(T.holdout.k_ci95, 2));
   console.log(summary.join('\n'));

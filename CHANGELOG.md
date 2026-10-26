@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-10-26 — Leave one term out: conference strength, piece by piece
+
+The conference term was already VALIDATED in the leave-one-term-out record. `football/cfb_p4/research/loto.js` now takes it apart on the held-out games it moves. No pricing changes.
+
+- **What the term is.**
+  - points per strength (0.50) × (home conference's prior-season cross-conference margin − away's) × (1 − fewer games played ÷ 6).
+  - It applies only to cross-conference FBS games, and never to an independent.
+  - Held out (2022–2025), it moves 605 of 3,127 games (19%) by 4.63 pts on average. On those games, MAE is 0.96 pts better with it [0.56, 1.39] and k = 1.11 [0.89, 1.33].
+- **It earns its points in Power 4 v Group of 5 games:**
+
+  | pairing | games | effect on MAE | k |
+  |---|---|---|---|
+  | Power 4 v Group of 5 | 333 | +1.73 [1.04, 2.38] | 1.23 [1.00, 1.48] |
+  | Power 4 v Power 4 | 112 | +0.28 [−0.48, 1.00] | 0.36 [−0.37, 1.05] |
+  | Group of 5 v Group of 5 | 160 | −0.17 [−0.54, 0.19] | 0.55 [−0.52, 1.60] |
+
+  In the last two rows the k interval includes 0, so the term carries no measurable information there.
+- **The six-game fade holds.**
+  - k is about 1.13 at 0, 1 and 2 games played, then 0.71 at three games.
+  - At four and five games there are 21 and 5 games, too few to read.
+- **The fitted window and after.**
+  - 2014–2019 (in sample): k 0.99, MAE 0.19 better.
+  - 2020–2021: k 0.49, no effect. The record now names the reason: 2021 was priced from the 2020 table, which holds 136 cross-conference team-games in 8 conferences (the median season has 406), and the term moved only 26 games in 2020.
+- **Beside team strength.** Fitted together on all held-out games, team strength k = 0.90 [0.84, 0.95] and conference k = 1.23 [1.00, 1.46]. The term is not double-counting the rating.
+- **Live.** On the 2026-10-26 slate it moves 0 of 61 games, because every game is past the six-game fade or within one conference.
+- **The record notes** that `engine.js` `situation.conference` has an "in-season" branch reading `state.conf`, but nothing writes that table, so the term is always the prior season's.
+- **These splits are descriptive.** Only the whole term goes to the promotion rules. Limiting the term to Power 4 v Group of 5 games would be a new term, declared and tested on games after 2025.
+- **`FACTORS.md`** now gives the conference row its fitted window and says where the term earns its points.
+
+Tests: `tools/football/loto.test.js` has 58 checks, 14 new:
+- on synthetic leagues, a pairing where the term is real is found and a noise one is not;
+- the games-played buckets and the pairing kinds each partition the moved games;
+- the Pac-12 is Power 4 through 2023 only;
+- the joint fit recovers two known multipliers exactly;
+- the committed record carries every part, with the fitted window.
+
 ## 2026-10-25 — NFL card: the 2025 prior diagnosed, the stale-starter bug fixed, a starter sync, and the large-gap gate
 
 KC @ SEA, Week 7 SNF: the card had SEA −4.4 / 65.8% against Kalshi's SEA −3 / 58.5%. `docs/nfl-prior-decay/README.md` has the whole account. The served weights (`edgedesk_nfl_v2.1.0`) are unchanged, and the frozen CLV ranking protocol is untouched.

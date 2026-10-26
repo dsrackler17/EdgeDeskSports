@@ -110,6 +110,48 @@ section('3. synthetic games: the harness finds the truth it was given');
   chk('the same rows give the same record (deterministic bootstrap)', JSON.stringify(L.run(synth({ perSeason: 200 }), { boot: 100 }).terms.map((t) => t.holdout)) === JSON.stringify(L.run(synth({ perSeason: 200 }), { boot: 100 }).terms.map((t) => t.holdout)));
 }
 
+section('5. conference strength, piece by piece');
+{
+  /* the truth: the conference term is real at weight 1 in Power 4 v Group of 5
+     games and pure noise between two Group of 5 conferences; it fades by games
+     played; same-conference games carry 0 */
+  function synthConf(seed) {
+    const R = rng(seed), rows = [];
+    for (let season = 2014; season <= 2025; season++) {
+      for (let i = 0; i < 700; i++) {
+        const kind = i % 3, gp = Math.floor(i / 3) % 6, fade = 1 - gp / 6;
+        const home_conference = kind === 0 ? 'SEC' : (kind === 1 ? 'Mid-American' : 'Big Ten');
+        const away_conference = kind === 0 ? 'Sun Belt' : (kind === 1 ? 'Conference USA' : 'Big Ten');
+        const rating = gauss(R) * 9, conf = kind === 2 ? 0 : gauss(R) * 6 * fade, hfa = 2.8;
+        const truth = rating / 1.1 + hfa + (kind === 0 ? conf : 0);
+        const c = { rating, hfa, qb: 0, matchup: 0, travel: 0, schedule: 0, injury: 0, rivalry: 0, conference: conf };
+        const kick = Date.UTC(season, 8, 1) + i * 36e5;
+        rows.push({ game_id: season + 'c' + i, season, completed: true, home_fbs: true, away_fbs: true, final_margin: Math.round(truth + gauss(R) * 13),
+          fair: rating + hfa + conf, sigma: 14.5, c, c_avail: {}, home_conference, away_conference, h_gp: gp + (i % 2), a_gp: gp,
+          prediction_ts: new Date(kick - 4 * 864e5).toISOString(), kickoff: new Date(kick).toISOString(), mkt: null });
+      }
+    }
+    return rows;
+  }
+  const S = L.scored(synthConf(21)), hold = S.filter((x) => x.season >= 2022);
+  const C = L.conferenceBreakdown(S, hold, { boot: 300 });
+  const K = {}; C.by_matchup.forEach((b) => { K[b.kind] = b.result; });
+  chk('the term is measured only on the games it moved (same-conference games carry 0)', C.holdout_moved.n === hold.filter((x) => x.c.conference !== 0).length && C.holdout_games === hold.length, [C.holdout_moved.n, C.holdout_games]);
+  chk('a pairing where the term is real: k interval holds 1 and excludes 0', K['Power 4 v Group of 5'].k_ci95[0] > 0 && K['Power 4 v Group of 5'].k_ci95[0] < 1 && K['Power 4 v Group of 5'].k_ci95[1] > 1, K['Power 4 v Group of 5'].k_ci95);
+  chk('a pairing where it is noise: k interval holds 0', K['Group of 5 v Group of 5'].k_ci95[0] < 0 && K['Group of 5 v Group of 5'].k_ci95[1] > 0, K['Group of 5 v Group of 5'].k_ci95);
+  chk('the games-played buckets partition the moved games, by the team with fewer games', C.by_games_played.reduce((a, b) => a + (b.result.n || 0), 0) === C.holdout_moved.n
+    && C.by_games_played.every((b) => b.result.n > 0 && Math.abs(b.fade - (1 - b.min_games_played / 6)) < 1e-3), C.by_games_played.map((b) => b.result.n));
+  chk('the pairing kinds partition the moved games', C.by_matchup.reduce((a, b) => a + (b.result.n || 0), 0) === C.holdout_moved.n);
+  chk('the Pac-12 is Power 4 through 2023 and not after', L.confKind({ season: 2023, home_conference: 'Pac-12', away_conference: 'Mountain West' }) === 'Power 4 v Group of 5'
+    && L.confKind({ season: 2024, home_conference: 'Pac-12', away_conference: 'Mountain West' }) === 'Group of 5 v Group of 5');
+  /* the joint fit, noiseless: result = (engine − t1 − t2) + 0.9 t1 + 1.2 t2 */
+  const R2 = rng(5), jr = [];
+  for (let i = 0; i < 400; i++) { const a = gauss(R2) * 9, b = gauss(R2) * 3, base = gauss(R2) * 2; jr.push({ fair: base + a + b, final_margin: base + 0.9 * a + 1.2 * b, a, b }); }
+  const J2 = L.jointFit(jr, [(x) => x.a, (x) => x.b], { boot: 50, seed: 9 });
+  chk('the joint fit recovers two known multipliers at once', Math.abs(J2.k[0] - 0.9) < 1e-6 && Math.abs(J2.k[1] - 1.2) < 1e-6, J2.k);
+  chk('…and reports where the rating and conference multipliers sit together', C.joint && C.joint.k && Math.abs(C.joint.k.rating - 1 / 1.1) < 0.05, C.joint);
+}
+
 section('4. the committed record');
 {
   const f = path.join(ROOT, 'football', 'validation', 'loto_cfb.json');
@@ -128,6 +170,13 @@ section('4. the committed record');
   chk('the matchup term was measured on the held-out window', mt && mt.holdout.n > 2000 && mt.fit_window && mt.fit_window.seasons.join() === '2014,2019');
   chk('inert pairings name the features the season feed does not supply', (J.pairs || []).filter((p) => p.holdout.inert).every((p) => p.unfed_features.length > 0));
   chk('the live split is recorded', J.live && J.live.games > 0 && J.live.mean_abs_matchup > 0);
+  const CB = J.conference;
+  chk('the conference term is broken down on the held-out games it moved', CB && CB.holdout_moved.n > 300 && CB.holdout_moved.n < CB.holdout_games, CB && [CB.holdout_moved.n, CB.holdout_games]);
+  chk('…every moved game sits in a games-played bucket under six (the fade reaches 0 at six)', CB.by_games_played.reduce((a, b) => a + (b.result.n || 0), 0) === CB.holdout_moved.n);
+  chk('…and in exactly one pairing kind', CB.by_matchup.reduce((a, b) => a + (b.result.n || 0), 0) === CB.holdout_moved.n && CB.by_matchup.map((b) => b.kind).join() === 'Power 4 v Group of 5,Power 4 v Power 4,Group of 5 v Group of 5');
+  chk('…with team strength fitted beside it, and the live slate counted', CB.joint && CB.joint.n === CB.holdout_games && CB.joint.k.conference != null && CB.live && CB.live.games > 0);
+  chk('…and the prior-season table each season was priced from', CB.tables.length === J.rows.seasons.length && CB.tables.every((x) => x.table_season === x.season - 1 && x.team_games > 0));
+  chk('the conference term reports its fitted window and the gap before the hold-out', (J.terms.find((t) => t.key === 'conference').fit_window || {}).seasons.join() === '2014,2019' && J.terms.find((t) => t.key === 'conference').between.result.n > 0);
   chk('the live board resets the unfed features: none of its matchup term comes from last season', J.live.reset === true && J.live.mean_abs_last_season === 0 && J.live.games_last_season_ge_half_pt === 0, J.live);
   global.window = global.window || global;
   const PP = require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
