@@ -52,9 +52,12 @@ private budget that nothing could see.
 4. Cadence rows: both are bought only inside 24 h of the start, at most hourly
    per event (the hourly floor constraint still refuses anything faster).
    `nba_role_props` is never polled for any other sport.
-5. `odds_api_spend_patterns()` gains `%/functions/v1/sharp_check%`, so the
-   emergency stop pauses the hourly dispatcher and
-   `odds_api_hourly_limits.sql` holds it to hourly.
+5. `odds_api_spend_patterns()` gains `%/functions/v1/sharp_check%` and
+   `%sharp_check_poke%`, so the emergency stop pauses the hourly dispatcher
+   and `odds_api_hourly_limits.sql` holds it to hourly.
+   - The second pattern is needed because the pg_cron command is
+     `select public.sharp_check_poke();`. It carries no URL, as with
+     `capture_poke`.
    - The list is changed in `odds_api_emergency_stop.sql`, the source of truth.
    - The gateway file re-creates the identical list, so applying the gateway
      reaches a live database without re-running the stop, which would re-pause
@@ -83,8 +86,8 @@ is the same test file run against `main`'s gateway SQL.
 | 12 concurrent checks, 12-credit cap | n/a | exactly 4 granted, 8 `denied_category_cap`, reservations = 12 |
 | `sharp_check` 30 h out | n/a | `skipped_window` |
 | `nba_role_props` for an NFL event | n/a | `skipped_window` |
-| The emergency stop covers `/functions/v1/sharp_check` | no | yes; `/functions/v1/sharp_lag` is not a spend path |
-| Suite totals | 70 passed, 5 failed | 103 passed, 0 failed |
+| The emergency stop covers `/functions/v1/sharp_check` and `sharp_check_poke()` | no | yes; `sharp_lag` (URL or poke) is not a spend path |
+| Suite totals | 70 passed, 5 failed | 104 passed, 0 failed |
 
 Every assertion that existed before passes unchanged. The only edit to an
 existing check is the report's row count, from 10 to 12.

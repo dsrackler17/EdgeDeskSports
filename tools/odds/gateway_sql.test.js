@@ -331,7 +331,9 @@ try {
   T.chk('14 · nba_role_props is never polled for another sport', acq({ caller: 'role', category: 'nba_role_props', sport_key: 'americanfootball_nfl', event_id: 'cap_ev8' }).decision === 'skipped_window');
   T.chk('14 · the dashboard shows each category\'s cap', (J('select public.odds_api_dashboard(7)').categories || []).some((k) => k.category === 'sharp_check' && k.daily_cap_credits === 12));
   T.chk('14 · the emergency stop covers the sharp_check dispatcher', db.sql("select '%/functions/v1/sharp_check%' = any (public.odds_api_spend_patterns())") === 't'
-    && db.sql("select 'select net.http_post(url := ''https://x.supabase.co/functions/v1/sharp_check'')' ilike any (public.odds_api_spend_patterns())") === 't');
+    && db.sql("select 'select net.http_post(url := ''https://x.supabase.co/functions/v1/sharp_check'')' ilike any (public.odds_api_spend_patterns())") === 't'
+    && db.sql("select 'select public.sharp_check_poke();' ilike any (public.odds_api_spend_patterns())") === 't');
+  T.chk('14 · the free job\'s cron command is not a spend path either', db.sql("select 'select public.sharp_lag_poke();' ilike any (public.odds_api_spend_patterns())") === 'f');
   T.chk('14 · and the free sharp_lag function is NOT a spend path (it may run every 10 minutes)', db.sql("select 'select net.http_post(url := ''https://x.supabase.co/functions/v1/sharp_lag'')' ilike any (public.odds_api_spend_patterns())") === 'f');
   db.sql("select public.odds_api_set_category('sharp_check', false); select public.odds_api_set_category('nba_role_props', false); update public.odds_api_categories set daily_cap_credits = case category when 'sharp_check' then 90 else 48 end where category in ('sharp_check', 'nba_role_props'); truncate public.odds_api_requests restart identity;");
 

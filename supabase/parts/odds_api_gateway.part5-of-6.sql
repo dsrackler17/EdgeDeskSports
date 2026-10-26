@@ -218,7 +218,7 @@ create or replace function public.odds_api_spend_patterns()
 returns text[] language sql immutable as $$
   select array[
     '%/functions/v1/capture%', '%capture_poke%', '%/functions/v1/close%',
-    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%',
+    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
     '%/functions/v1/odds?%', '%/functions/v1/odds''%', '%/functions/v1/odds"%',
     '%/functions/v1/wta_odds%', '%/functions/v1/wta_close%', '%/functions/v1/cfb_close%',
     '%/functions/v1/close_backfill%', '%/functions/v1/capture_boards%', '%/functions/v1/model_conf_odds%',

@@ -12,13 +12,13 @@
 - `odds_api_categories.daily_cap_credits` (NULL = no cap, every existing category);
 - `odds_api_acquire` refuses `denied_category_cap` under the same config-row lock as the shared budget;
 - two categories, created **disabled** at priority 4: `sharp_check` (≤ 3 credits a request, 90/day) and `nba_role_props` (≤ 4 credits a request, 48/day), each inside 24 h of the start only, at most hourly;
-- `odds_api_spend_patterns()` covers `/functions/v1/sharp_check`. The emergency stop's list and the gateway's copy are kept identical by a test.
+- `odds_api_spend_patterns()` covers `/functions/v1/sharp_check` and its cron poke `sharp_check_poke()`. The emergency stop's list and the gateway's copy are kept identical by a test.
 
 Full write-up and operator steps: `docs/odds-api-incident-2026-10/METHODOLOGY-2026-10-26-category-caps.md`.
 
 **Evidence.** `tools/odds/gateway_sql.test.js` section 14 on a real PostgreSQL:
 - before (`main`'s SQL): 70 passed, 5 failed;
-- after: 103 passed, 0 failed, including 12 concurrent sessions against a 12-credit cap (exactly 4 granted).
+- after: 104 passed, 0 failed, including 12 concurrent sessions against a 12-credit cap (exactly 4 granted).
 
 `tools/odds/no_bypass.test.js` checks that the emergency stop names the new dispatcher.
 

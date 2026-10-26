@@ -1288,7 +1288,7 @@ create or replace function public.odds_api_spend_patterns()
 returns text[] language sql immutable as $$
   select array[
     '%/functions/v1/capture%', '%capture_poke%', '%/functions/v1/close%',
-    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%',
+    '%/functions/v1/collective_odds_ingest%', '%/functions/v1/props_cron%', '%/functions/v1/sharp_check%', '%sharp_check_poke%',
     '%/functions/v1/odds?%', '%/functions/v1/odds''%', '%/functions/v1/odds"%',
     '%/functions/v1/wta_odds%', '%/functions/v1/wta_close%', '%/functions/v1/cfb_close%',
     '%/functions/v1/close_backfill%', '%/functions/v1/capture_boards%', '%/functions/v1/model_conf_odds%',
@@ -1376,8 +1376,9 @@ with checks as (
          (select count(*) from public.odds_api_categories
            where (category = 'sharp_check' and daily_cap_credits is not null)
               or (category = 'nba_role_props' and daily_cap_credits is not null))::int, 2
-  union all select 12, 'the emergency stop covers the sharp_check dispatcher',
-         (case when '%/functions/v1/sharp_check%' = any (public.odds_api_spend_patterns()) then 1 else 0 end), 1
+  union all select 12, 'the emergency stop covers the sharp_check dispatcher (its URL and its cron poke)',
+         (case when 'select public.sharp_check_poke();' ilike any (public.odds_api_spend_patterns())
+                and 'https://x.supabase.co/functions/v1/sharp_check' ilike any (public.odds_api_spend_patterns()) then 1 else 0 end), 1
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by n;
