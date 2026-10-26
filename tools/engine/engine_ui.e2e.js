@@ -259,6 +259,8 @@ const TODAY = (() => {
       await page.waitForFunction(() => /Drift monitor/.test(document.querySelector('#nhlHost .xe-tabp').textContent), null, { timeout: 15000 }).catch(() => {});
       const record = await page.textContent('#nhlHost .xe-tabp');
       chk(label + ': Record lists every market\'s held-out status and the drift monitor', /held-out status/.test(record) && /Drift monitor/.test(record) && /AUC/.test(record), record.slice(0, 200));
+      chk(label + ': Record shows the projected totals\' spread against the totals played, by fifth and by season, with sample sizes', /Projected game totals: their spread against the totals played/.test(record) && /Calibration by projected total/.test(record) && /Spread of projected totals by season/.test(record) && /n \d+/.test(record), record.slice(-400));
+      chk(label + ': Record lists the clubs the model may over- or under-project, with the rule and its sample floor', /Clubs/.test(record) && /flagged/.test(record) && /persistent/i.test(record) && /Bonferroni/.test(record), record.slice(-400));
       chk(label + ': Record says whether the model rates clubs too far apart or too close together', /over- or under-rate clubs/.test(record) && /Spread of club forecasts/.test(record) && /scoring ≥ 1\.20× the league \(regulation goals a game\): scored ÷ forecast/.test(record), record.slice(-300));
       chk(label + ': no horizontal scroll on Record', await noHScroll(page), await overflowers(page));
       await shot(page, label + '_nhl_game');

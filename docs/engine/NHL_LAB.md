@@ -228,6 +228,8 @@ It is a monitor: it never retrains or reprices.
 | Finishing (goals ÷ xG) ≥ 1.15 | 1.001 ± 0.021 (829) | 0.958 ± 0.026 (452) |
 | Opponent allows ≥ 1.20× the league | 0.977 ± 0.027 (454) | 1.019 ± 0.030 (359) |
 
+In both tables, ± is one standard error and (n) the number of team-games. The slope intervals are 95%.
+
 **What it says.**
 
 - **Hot clubs score what the model forecasts.** That holds for a hot scoring
@@ -270,6 +272,141 @@ It is a monitor: it never retrains or reprices.
 
   Clubs with that profile have scored their forecast (0.995 and 0.994
   above).
+
+### 6.2 Projected game totals: bunched too tightly? (2026-10-26)
+
+**The question.** The 2026-27 board's projected totals sit close together
+(5th–95th percentile 6.03 to 6.46). Are they too compressed? If so, would
+spreading them out score better? The rule was to widen only on evidence and
+to keep production if it is statistically appropriate.
+
+**The audit** (`totals` in the diagnostics file and the Record tab). It
+covers the regular season, out of sample. The projected total is the served
+full-game mean: overtime goals and the shootout winner's credited goal are
+included, as a market total settles.
+
+| | Selection 2014-20 | Confirmation 2021-26 | Live 2026-27 (184) |
+|---|---|---|---|
+| Projected total, median (5th–95th) | 5.52 (5.09–6.17) | 6.23 (5.73–6.76) | 6.24 (6.03–6.46) |
+| Spread of projections within a season (sd) | 0.23 | 0.26 | 0.14 |
+| Totals played, mean (sd) | 5.70 (2.25) | 6.20 (2.31) | 6.30 (2.25) |
+| Slope of played on projected (95%) | 1.035 (0.89–1.18) OK | **0.76 (0.60–0.92) TOO_WIDE** | **3.6 (1.3–5.9) TOO_NARROW** |
+| MAE / RMSE | 1.777 / 2.225 | 1.850 / 2.297 | 1.785 / 2.223 |
+| … last season's mean for every game | 1.810 / 2.253 | 1.863 / 2.314 | 1.813 / 2.250 |
+| Dispersion: var played ÷ (var projected + mean game var) | 0.99 | 0.94 | 0.91 |
+| Home / away goals ÷ forecast | 1.020 / 1.027 | **0.979** / 1.003 | 1.007 / 1.006 |
+| Goals ÷ forecast, projected goalie / another started | 1.021 / 1.029 | 0.985 / 0.999 | 1.014 / 0.994 |
+
+**What it says.**
+
+- **Most of a total is noise.** A game's total has an sd of about 2.3. The
+  predictable part is about 0.2 to 0.3. A well-calibrated board should
+  therefore look bunched.
+- **Production is not too compressed overall.** The slope is right on
+  2014-20. On 2021-26 it reads too wide (0.76), the opposite of bunched; that
+  is the §6.1 finding. Against last season's mean, the model is 0.01 to 0.03
+  goals better on MAE in every window.
+- **This season is about as bunched as the previous two at the same point.**
+  The 2026-27 within-season sd is 0.139. Over their first 184 games, 2025-26
+  ran 0.149 and 2024-25 0.171. The sd pooled over a window's seasons (0.33
+  and 0.32) is no yardstick for one season: it adds the shifts in scoring
+  level between seasons.
+- **The live slope is 3.6, on 184 games.** The top fifth of projections
+  (6.45) produced 7.47 goals (+1.02 ± 0.82, n 36), and the other four fifths
+  came in under their projections. One bucket of 36 games drives it. The
+  live window never chooses (§1, rule 4).
+- **Per season** (Record tab, "Spread of projected totals by season"):
+  - 12 of 13 completed seasons read OK.
+  - 2018-19 read TOO_NARROW (1.63).
+  - The calibration's total exponent `a` has run 0.6 to 1.05. It is 0.5 for
+    2026-27, the strongest compression yet.
+- **Each game's own distribution is slightly wide.** Since 2021 the variance
+  of totals played is about 5% below what the served distributions imply
+  (0.94, 0.95 on 2025-26 alone, 0.91 live). The lab's one shape term,
+  `pace_shape`, widens rather than narrows and was not chosen (§4). This is
+  monitored, not changed.
+- **Bias.**
+  - Fifths, offence, defence, power play, finishing, opponent goalie quality
+    and matchup interaction: no gradient holds across windows.
+  - 2014-20 is low in every fifth, by 0.10 to 0.17 goals. The calibration
+    centres on the three prior seasons while scoring rose.
+  - The home over-forecast on 2021-26 (0.979, SE 0.006) is gone live.
+  - A goalie other than the projected starter is worth about +1% to the
+    opponents' goals. That is not significant, and the production price
+    carries no goalie term.
+
+**The decision rule** was written before any candidate's totals were
+scored. The windows are:
+
+- SELECT 2014-20;
+- CONFIRM 2021-25;
+- HOLDOUT 2025-26 (the most recent complete season, read once);
+- LIVE (reported, never chooses).
+
+The score is the RPS of the full-game total-goals distribution, with a paired
+bootstrap over dates. A candidate replaces production only if all four hold:
+
+- SELECT: RPS lower, with the 95% interval below zero;
+- CONFIRM: RPS lower;
+- HOLDOUT: not significantly worse;
+- moneyline log loss not worse by more than 0.0002.
+
+Before the rule was written, the bucket and bias tables and two exploratory
+calibration runs had been read.
+
+| Candidate (ΔRPS × 10⁶, 95% interval) | SELECT | CONFIRM | HOLDOUT | LIVE |
+|---|---|---|---|---|
+| `xg_core` + confirmed starter quality | −4 (−27, 19) | −15 (−36, 8) | **−44 (−84, −1)** | −73 (−207, 48) |
+| `goalie_conf` | −12 (−38, 15) | +13 | −21 | −12 |
+| `goalie_proj` | −10 (−30, 11) | +26 | +6 | +20 |
+| `special_teams` | −3 (−16, 11) | +18 | +14 | +38 |
+| `goals_only` | +9 | −11 | +74 | +151 |
+| `pace` | +1 | +14 | +10 | −4 |
+| matchup interaction | +1 | 0 | 0 | +3 |
+| total calibration centred on last season | **−48 (−77, −16)** | **+40 (+2, +75)** | +29 | **−81** |
+| … with a quadratic term | −49 (−104, 8) | **+63** | +95 | −81 |
+| … with `a` pooled over every earlier season | **−47 (−76, −15)** | +32 (−6, 70) | +39 | **−299** |
+| rating prior 16 / 64 games | +2 / 0 | +3 / **−18** | −1 / +5 | **−21 / +29** |
+| rating half-life 120 / 270 days | −13 / **+52** | −32 / +40 | 0 / +5 | +73 / −27 |
+
+**Every candidate fails**, so production is kept.
+
+- The near miss is `xg_core` plus the confirmed starter's quality. It is
+  better on every window and on the moneyline, but on SELECT its interval
+  covers zero. It also needs the confirmed starter at pricing time, which the
+  data does not have.
+- Re-centring the total calibration on last season fixes the 2014-20 level
+  lag. It is significantly worse on 2021-25.
+- The pooled `a` would spread this season's board (a 0.8 instead of 0.5) and
+  scores best live. It fails CONFIRM and HOLDOUT, and the live window never
+  chooses.
+
+**Clubs** (`clubs` in the diagnostics file and the Record tab). Each club's
+regulation goals scored and conceded are checked against λ over four windows:
+this season, last season, the season before, and its last 82 games.
+
+- A club needs 41 games before it can be flagged.
+- WATCH when |z| ≥ 2.
+- FLAG when |z| passes the two-sided Bonferroni bound over every club and
+  both sides: 3.36 for 64 tests at 5%.
+- PERSISTENT when two windows that share no game both sit past the watch
+  bound on the same side.
+
+Today there are no flags, 9 watches and nothing persistent. Toronto
+conceded 1.128× its forecast last season (WATCH, z 2.03). Its scoring is
+inside every bound. It is a monitor: it never adjusts a rating.
+
+**Market check, 2026-10-26** (DraftKings via the ESPN scoreboard, full game
+incl. overtime and shootout, de-vigged; there is no NHL closing archive):
+
+| Game | Line | Model P(over) | Market P(over) | Model total |
+|---|---|---|---|---|
+| LAK at NYR | 5.5 | 0.527 | 0.543 | 5.99 |
+| TOR at CGY | 6.5 | 0.471 | 0.522 | 6.31 |
+| DET at EDM | 6.5 | 0.485 | 0.517 | 6.39 |
+
+The market sits above the model on all three. Without a closing-line record,
+that cannot be scored, and the model's totals stay `PROVISIONAL` (§5).
 
 ## 7. Reproducibility
 

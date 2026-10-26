@@ -172,6 +172,92 @@ const live = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'model', 'para
   chk('team strength: a club\'s first game has no season-to-date context', first.gp === 0 && first.ctx === null);
   chk('team strength: one row per team-game and one per game', trows.teams.length === 48 && trows.games.length === 24);
 
+  /* ---------------- expected goals and totals: regression protection ---------------- */
+  /* expected goals: λ = exp(β · features + log league goals per team-game), ratings entering as logs */
+  const toy = { names: ['home', 'g_off', 'g_def_opp'], beta: [0.1, 0.05, 0.8, 0.9] };
+  const lamToy = GLM.predict(toy, { home: 1, g_off: 1.2, g_def_opp: 0.9, league_g_pg: 3.1 });
+  chk('xG: λ is exp(β·x) times the league\'s goals per team-game', near(lamToy, Math.exp(0.1 + 0.05 + 0.8 * Math.log(1.2) + 0.9 * Math.log(0.9)) * 3.1, 1e-12), lamToy);
+  const avgToy = GLM.predict(toy, { home: 0, g_off: 1, g_def_opp: 1, league_g_pg: 3.1 });
+  chk('xG: a missing, null or non-numeric rating reads as league average (ln 1 = 0)', [undefined, null, NaN, 'x'].every((v) => near(GLM.predict(toy, { home: 0, g_off: v, g_def_opp: 1, league_g_pg: 3.1 }), avgToy, 1e-12)));
+  chk('xG: a missing league level falls back to 3 goals per team-game', near(GLM.predict(toy, { home: 0, g_off: 1, g_def_opp: 1 }), Math.exp(0.1) * 3, 1e-12));
+  chk('xG: an extreme rating is clamped to [0.2, 5] (no runaway λ)', near(GLM.predict(toy, { home: 0, g_off: 50, g_def_opp: 1, league_g_pg: 3 }), GLM.predict(toy, { home: 0, g_off: 5, g_def_opp: 1, league_g_pg: 3 }), 1e-12)
+    && near(GLM.predict(toy, { home: 0, g_off: 0.001, g_def_opp: 1, league_g_pg: 3 }), GLM.predict(toy, { home: 0, g_off: 0.2, g_def_opp: 1, league_g_pg: 3 }), 1e-12));
+  const core = live.glm[live.model];
+  const club = (q, d) => ({ home: 0, ev_off: q, ev_def_opp: d, g_off: q, g_def_opp: d, fin: 1, b2b: 0, b2b_opp: 0, league_g_pg: 3.1 });
+  const lStrong = GLM.predict(core, club(1.3, 1.3)), lAvg = GLM.predict(core, club(1, 1)), lWeak = GLM.predict(core, club(0.75, 0.75));
+  chk('xG (production model): a strong attack against a leaky defence > two average clubs > a weak attack against a strong defence', lStrong > lAvg && lAvg > lWeak && isFinite(lStrong) && lWeak > 0, [lStrong, lAvg, lWeak]);
+  const lExt = GLM.predict(core, club(5, 5)), lExtLo = GLM.predict(core, club(0.2, 0.2));
+  chk('xG (production model): the most extreme clamped matchups stay finite and positive', isFinite(lExt) && lExt > lStrong && lExtLo > 0 && lExtLo < lWeak, [lExt, lExtLo]);
+  /* totals: the regulation mean is λH + λA; every tied game adds exactly one goal (the overtime winner or the shootout credit).
+     The score grid stops at maxg goals a side, so the mass beyond it (≈5e-6 at λ 3) bounds both identities */
+  const tot = (lh, la, o) => DIST.game({ lamH: lh, lamA: la, effects: live.effects, ot: o || live.ot });
+  const regMean = (D) => { const n = D.maxg + 1; let m = 0; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) m += D.reg_matrix[i * n + j] * (i + j); return m; };
+  const D3 = tot(3, 2.8), pmf3 = DIST.totalPmf(D3);
+  chk('totals: the regulation mean is λH + λA', near(regMean(D3), 5.8, 1e-4), regMean(D3));
+  chk('totals: the full-game expected total = λH + λA + P(tied after 60), regular season and playoffs', near(DIST.expectedTotal(D3), 5.8 + D3.reg.draw, 1e-4) && near(DIST.expectedTotal(tot(3, 2.8, { format: 'PO' })), 5.8 + tot(3, 2.8, { format: 'PO' }).reg.draw, 1e-4), [DIST.expectedTotal(D3), D3.reg.draw]);
+  chk('totals: the total-goals distribution sums to one and its mean is the expected total', near(pmf3.reduce((a, p) => a + p, 0), 1, 1e-9) && near(pmf3.reduce((a, p, k) => a + p * k, 0), DIST.expectedTotal(D3), 1e-9));
+  const grid = [[2, 2], [2.5, 2.4], [3, 2.8], [3.6, 3.3], [4.2, 4]].map(([h, a]) => tot(h, a));
+  chk('totals: low to high λ moves the expected total and P(over 5.5), P(over 6.5) strictly upward', grid.every((D, i) => i === 0 || (DIST.expectedTotal(D) > DIST.expectedTotal(grid[i - 1]) && DIST.total(D, 5.5).over > DIST.total(grid[i - 1], 5.5).over && DIST.total(D, 6.5).over > DIST.total(grid[i - 1], 6.5).over)));
+  chk('totals: a low matchup (2 + 2) is under 5.5 more often than not, a high one (4.2 + 4) over 6.5 more often than not', DIST.total(grid[0], 5.5).over < 0.5 && DIST.total(grid[4], 6.5).over > 0.5, [DIST.total(grid[0], 5.5).over, DIST.total(grid[4], 6.5).over]);
+  const Dmis = tot(9, 0.3);
+  chk('totals: an extreme mismatch still yields a proper distribution', near(DIST.totalPmf(Dmis).reduce((a, p) => a + p, 0), 1, 1e-6) && isFinite(DIST.expectedTotal(Dmis)) && Dmis.p_home > 0.99, [DIST.expectedTotal(Dmis), Dmis.p_home]);
+  /* calibration: the total is compressed toward c in logs by a; the split by b; neither touches the other */
+  const cal1 = GLM.applyPairCalibration(3.4, 2.6, { a: 1, b: 1, c: 6 });
+  chk('calibration: a = b = 1 is the identity', near(cal1.lh, 3.4, 1e-12) && near(cal1.la, 2.6, 1e-12));
+  const calA = GLM.applyPairCalibration(4.4, 3.6, { a: 0.5, b: 1, c: 6 });
+  chk('calibration: a = 0.5 halves the total\'s log distance from c and keeps the split', near(Math.log((calA.lh + calA.la) / 6), 0.5 * Math.log(8 / 6), 1e-12) && near(calA.lh / calA.la, 4.4 / 3.6, 1e-12), calA);
+  const calB = GLM.applyPairCalibration(4.4, 3.6, { a: 1, b: 0.8, c: 6 });
+  chk('calibration: b moves the split only, never the total', near(calB.lh + calB.la, 8, 1e-12) && calB.lh / calB.la < 4.4 / 3.6 && calB.lh > calB.la);
+  chk('calibration: a total at c is unchanged by any a', near(GLM.applyPairCalibration(3.1, 2.9, { a: 0.3, b: 1, c: 6 }).lh + GLM.applyPairCalibration(3.1, 2.9, { a: 0.3, b: 1, c: 6 }).la, 6, 1e-12));
+  /* the fit finds a: predictions spread twice as far as the truth read a ≈ 0.5, predictions at the truth a ≈ 1 */
+  const crand = ST.rng(29);
+  const cpois = (l) => { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *= crand(); } while (p > L); return k - 1; };
+  const truthRows = []; for (let i = 0; i < 4000; i++) { const T0 = 6 * Math.exp(0.08 * (crand() * 2 - 1)), sh = 0.5 + 0.1 * (crand() * 2 - 1); truthRows.push({ T0, sh, gh: cpois(T0 * sh), ga: cpois(T0 * (1 - sh)) }); }
+  const fitA = (e) => GLM.fitPairCalibration(truthRows.map((x) => { const T = 6 * Math.pow(x.T0 / 6, e); return { lh: T * x.sh, la: T * (1 - x.sh), gh: x.gh, ga: x.ga }; }));
+  const fRight = fitA(1), fWide = fitA(2);
+  chk('calibration: totals spread twice as far as the truth fit a ≈ 0.5, totals at the truth a ≈ 1 (maximum likelihood, earlier games only in production)', Math.abs(fWide.a - 0.5) <= 0.15 && Math.abs(fRight.a - 1) <= 0.3, [fWide.a, fRight.a]);
+  chk('calibration: fewer than 500 earlier games is the identity, and says so', GLM.fitPairCalibration(truthRows.slice(0, 100).map((x) => ({ lh: 3, la: 3, gh: x.gh, ga: x.ga }))).a === 1 && /identity/.test(GLM.fitPairCalibration([]).basis));
+  /* rating shrinkage: a club with no games is league average; a scoring club moves toward its rate by k/(n + k) */
+  const RT = R('hockey/model/ratings.js');
+  const tgr = (team, opp, home, gf, ga, date) => ({ team, opp, home, date, gf, ga, toi_ev5: 2700, ev5_xgf_lead: 0, ev5_xgf_tie: 2.5, ev5_xgf_trail: 0, ev5_xgf: 2.5, evo_xgf: 0, pp_xgf: 0.5, sh_xgf: 0, ev5_gf: gf, evo_gf: 0, pp_gf: 0, sh_gf: 0, toi_pp: 240, toi_sh: 240, g_start: null });
+  const shrinkRun = (k) => { const rs = new RT.RatingState(Object.assign({}, RT.DEFAULTS, { prior_games: k, half_life_days: 180 })); for (let d = 1; d <= 10; d++) { const date = '2026-10-' + String(d).padStart(2, '0'); rs.absorb([tgr('HOT', 'AVG', 1, 6, 2, date), tgr('AVG', 'HOT', 0, 2, 6, date)]); } return rs.teamRatings('HOT', RT.dayNum('2026-10-11')); };
+  const fresh = new RT.RatingState(RT.DEFAULTS).teamRatings('NEW', RT.dayNum('2026-10-11'));
+  chk('shrinkage: a club with no games rates exactly league average on every rating', ['ev_off', 'ev_def', 'g_off', 'g_def', 'pp_off', 'pk_def', 'pp_draw', 'pk_take', 'fin'].every((k) => fresh[k] === 1), fresh);
+  const s8 = shrinkRun(8), s32 = shrinkRun(32);
+  chk('shrinkage: ten games of 6 goals (league 4) lift the goals rating, but the prior keeps it short of the raw 1.5', s32.g_off > 1 && s8.g_off > s32.g_off && s8.g_off < 1.5 * 1.05, [s8.g_off, s32.g_off]);
+  /* goalies: the confirmed-starter variant lowers λ against a better goalie and falls back to the projection */
+  const gv = live.glm[live.confirmed_variant || 'xg_goalie_confirmed'];
+  const gBase = Object.assign(club(1, 1), { pp_off: 1, pk_def_opp: 1, pp_draw: 1, pk_take_opp: 1, opp_goalie_proj: 0 });
+  const lG = (act) => GLM.predict(gv, Object.assign({}, gBase, { opp_goalie_act: act }));
+  chk('goalies: a better confirmed goalie (more goals saved above expected per xG) lowers the attacking club\'s λ', lG(0.05) < lG(0) && lG(0) < lG(-0.05), [lG(0.05), lG(0), lG(-0.05)]);
+  chk('goalies: with no confirmed starter the variant uses the projection, never an invented goalie', near(GLM.predict(gv, Object.assign({}, gBase, { opp_goalie_act: null, opp_goalie_proj: 0.02 })), lG(0.02), 1e-12));
+
+  /* ---------------- diagnostics: totals audit and the club monitor ---------------- */
+  chk('clubs: the Bonferroni bound is 1.96 for one test and about 3.36 for 64', near(DG.bonferroniZ(1, 0.05), 1.96, 0.01) && near(DG.bonferroniZ(64, 0.05), 3.36, 0.02), [DG.bonferroniZ(1), DG.bonferroniZ(64)]);
+  const steady = (n, lam, y) => Array.from({ length: n }, () => ({ lam, y }));
+  const zf = DG.bonferroniZ(64, 0.05);
+  const hotClub = DG.clubBias(steady(82, 3, 4.5), zf), shortHot = DG.clubBias(steady(20, 3, 6), zf), onForecast = DG.clubBias(steady(82, 3, 3), zf);
+  chk('clubs: 82 games at 1.5× the forecast is a FLAG; 20 games at 2× is TOO_EARLY (half a season first); a club at its forecast is OK with z 0', hotClub.status === 'FLAG' && shortHot.status === 'TOO_EARLY' && onForecast.status === 'OK' && onForecast.z === 0, [hotClub, shortHot.status, onForecast]);
+  chk('clubs: the ratio carries its 95% interval', hotClub.ci95[0] < hotClub.ratio && hotClub.ratio < hotClub.ci95[1] && near(hotClub.ratio, 1.5, 1e-9));
+  const mon = [];
+  const add = (team, opp, season, n, lam, y) => { for (let i = 0; i < n; i++) mon.push({ team, opp, season, date: season + '-' + String(1000 + i), lam, y }); };
+  for (const s of [2025, 2026]) { add('PER', 'OPP', s, 82, 3, 3.6); add('ONE', 'OPP', s, 82, 3, s === 2026 ? 3.6 : 3); add('OPP', 'PER', s, 82, 3, 3); }
+  add('PER', 'OPP', 2027, 10, 3, 3); add('ONE', 'OPP', 2027, 10, 3, 3); add('OPP', 'PER', 2027, 10, 3, 3);
+  const M = DG.clubMonitor(mon, 2027);
+  const per = M.clubs.find((c) => c.team === 'PER'), one = M.clubs.find((c) => c.team === 'ONE');
+  chk('clubs: persistent needs two seasons that share no game, the same side, past the watch bound', per.persistent.scoring && per.persistent.scoring.direction === 'MORE_THAN_PROJECTED' && per.persistent.scoring.windows.join() === 'last_season,two_seasons_ago' && one.persistent.scoring === null, [per.persistent, one.persistent]);
+  chk('clubs: ten games this season are TOO_EARLY, whatever their rate', per.scoring.season.status === 'TOO_EARLY' && M.flagged.every((f) => f.window !== 'season'));
+  chk('clubs: conceding is read from the opponents\' attacking rows', M.clubs.find((c) => c.team === 'OPP').conceding.last_season.ratio === 1.2);
+  /* totals audit on synthetic seasons: predictions at the truth read OK; bunched to a third of the spread read TOO_NARROW.
+     The reading is a 95% interval test, so about one seed in twenty reads otherwise at the truth (41 gives 0.80); 7 gives 0.98 */
+  const trand = ST.rng(7);
+  const tpois = (l) => { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *= trand(); } while (p > L); return k - 1; };
+  const synth = (shrink) => { const rows = []; for (let i = 0; i < 6000; i++) { const mu = 6 + 1.0 * (trand() * 2 - 1); const T = tpois(mu); const e = 6 + shrink * (mu - 6); rows.push({ season: 2020 + (i % 3), exp_total: e, var_total: mu, total: T, rps: 0, p55: 0.5, p65: 0.4, lh: e / 2, la: e / 2, gh: Math.floor(T / 2), ga: T - Math.floor(T / 2), base: 6, goalie_home_as_projected: true, goalie_away_as_projected: true }); } const q = DG.seasonQuintiles(rows); rows.forEach((x, i) => { x.q = q[i]; }); return DG.totalsAudit(rows); };
+  const aRight = synth(1), aTight = synth(1 / 3);
+  chk('totals audit: projections at the truth read OK (slope ≈ 1, dispersion ≈ 1); bunched to a third of the spread read TOO_NARROW (slope ≈ 3)', aRight.slope.reading === 'OK' && near(aRight.variance.dispersion, 1, 0.08) && aTight.slope.reading === 'TOO_NARROW' && near(aTight.slope.slope, 3, 0.6), [aRight.slope, aRight.variance.dispersion, aTight.slope]);
+  chk('totals audit: five within-season fifths of about a fifth each, each with its interval and observed over rates', aRight.buckets.length === 5 && aRight.buckets.every((b) => near(b.n, 1200, 40) && b.ci95 > 0 && b.over_5_5 && b.over_6_5));
+  chk('totals audit: fewer than 30 games returns its count only', JSON.stringify(DG.totalsAudit([])) === '{"n":0}');
+
   /* ---------------- props ---------------- */
   const nb = PM.nbPmf(2.6, 6, 30);
   chk('props: the shot distribution normalises and has the right mean', near(nb.reduce((a, v) => a + v, 0), 1, 1e-9) && near(nb.reduce((a, v, k) => a + k * v, 0), 2.6, 1e-4));
