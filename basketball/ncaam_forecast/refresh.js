@@ -12,9 +12,15 @@
    (opener + 7 days): no game moves a rating before then, so the opening slate
    is priced from preseason ratings (last season's, carried) and every such
    forecast is flagged PRESEASON_RATINGS. From the opener on, the routine
-   window applies with no change by anyone. The schedule files carry no
-   exhibition game (the source has no season_type 1 row in any season), so
-   none is priced.
+   window applies with no change by anyone.
+
+   Exhibitions: the schedule files carry none (the source has no season_type 1
+   row in any season). The schools list theirs, and basketball/exhibitions.js
+   reads them from the collegiate collector's copies of their schedules. Each
+   one in the window is priced as a game between the same two teams would be,
+   flagged EXHIBITION (a school may rest its regulars: the model was never
+   tested on these games), never in Upset Watch, and never a game the ratings
+   learn from (it is not in the dataset).
 
    Routine only: the champion's CONFIGURATION is fixed (registry/champion.json);
    only its ratings and calibration move with new results. No parameter is
@@ -44,6 +50,7 @@ const MD = require('./model');
 const UP = require('./upset');
 const FA = require('./factors');
 const RG = require('./registry');
+const EX = require('../exhibitions');
 
 const AVAILABILITY = 'Not modelled: no owned college-basketball availability feed. Ratings reflect the players who have actually played; an absence announced before tip is NOT in this number.';
 const DEFINITIONS = {
@@ -66,6 +73,18 @@ function forecastWindow(games, season, nowMs, hours) {
   return { phase: 'season', from: nowMs, to: routine, regular_season_start: iso };
 }
 
+/** the season's Division I teams (the dataset's own membership flags); a team the season does not list yet keeps last season's */
+function d1Teams(games, season) {
+  const now = new Map(), before = new Set();
+  for (const g of games) {
+    if (g.season === season) { now.set(g.home_id, now.get(g.home_id) || g.home_d1 === 1); now.set(g.away_id, now.get(g.away_id) || g.away_d1 === 1); }
+    else if (g.season === season - 1) { if (g.home_d1 === 1) before.add(g.home_id); if (g.away_d1 === 1) before.add(g.away_id); }
+  }
+  const out = new Set([...now].filter(([, d1]) => d1).map(([id]) => id));
+  for (const id of before) if (!now.has(id)) out.add(id);
+  return out;
+}
+
 function buildForecasts(games, art, policy, o) {
   o = o || {};
   const nowMs = o.nowMs; const horizon = o.toMs || nowMs + (o.hours || 48) * 3600e3; const season = art.season;
@@ -80,12 +99,14 @@ function buildForecasts(games, art, policy, o) {
     const pr = MD.predict(art, g);
     const flags = [];
     const gh = art.teams[g.home_id] ? art.teams[g.home_id].games : 0, ga = art.teams[g.away_id] ? art.teams[g.away_id].games : 0;
+    if (g.exhibition) flags.push('EXHIBITION');
+    if (g.start_approx) flags.push('START_TIME_APPROX');
     if (o.preseason) flags.push('PRESEASON_RATINGS');
     if (Math.min(gh, ga) < 5) flags.push('EARLY_SEASON_FEW_GAMES');
     if (!art.teams[g.home_id] || !art.teams[g.away_id]) flags.push('TEAM_WITHOUT_RATING_HISTORY');
     if (pr.raw.regime === 'D1_OTHER') flags.push('NON_D1_OPPONENT_POOLED');
     if ((quar.get(g.home_id) || 0) + (quar.get(g.away_id) || 0) > 0) flags.push('TEAM_HAS_QUARANTINED_GAMES');
-    const base = { game_id: g.game_id, start_utc: g.start_utc, home_id: g.home_id, away_id: g.away_id, home_name: (teams[g.home_id] || {}).name || g.home_id, away_name: (teams[g.away_id] || {}).name || g.away_id,
+    const base = { game_id: g.game_id, start_utc: g.start_utc, home_id: g.home_id, away_id: g.away_id, home_name: g.home_name || (teams[g.home_id] || {}).name || g.home_id, away_name: g.away_name || (teams[g.away_id] || {}).name || g.away_id,
       neutral: !!g.neutral, event: g.event, regime: pr.raw.regime, games_played: { home: gh, away: ga }, data_quality: flags, availability_assumption: AVAILABILITY, provenance: 'Research' };
     if (!pr.available) { out.push(Object.assign(base, { available: false, reason: pr.reason })); continue; }
     const f = pr.fc;
@@ -97,7 +118,7 @@ function buildForecasts(games, art, policy, o) {
       /* what live_writer.js conditions on: this game's regulation distribution and its regime's endgame/overtime calibration */
       live_inputs: { mu: f.regulation.mu, sd: f.regulation.sd, kappa: (art.calibration[pr.raw.regime] || {}).kappa, ot_sd: f.overtime.sd },
     });
-    if (policy) {
+    if (policy && !g.exhibition) {
       const fa = fac.get(g.game_id) || {};
       const up = UP.classify(g, f, policy, { seeds_verified: false, games_home: gh, games_away: ga });
       const dog = up.underdog === 'home' ? fa.home : fa.away, fav = up.underdog === 'home' ? fa.away : fa.home;
@@ -136,17 +157,21 @@ async function refresh(o) {
   const art = MD.buildArtifact(games, champ.config, nowMs, { season: C.currentSeason(nowMs) });
   const policyFile = C.PATHS.upsetPolicy; const policy = fs.existsSync(policyFile) ? JSON.parse(fs.readFileSync(policyFile, 'utf8')) : null;
   const win = forecastWindow(games, art.season, nowMs, o.hours);
-  const fcs = buildForecasts(games, art, policy, { nowMs, toMs: win.to, preseason: win.phase === 'preseason' });
+  const ex = EX.exhibitions('ncaam', games, { season: art.season, fromMs: nowMs, toMs: win.to, d1: d1Teams(games, art.season) });
+  const fcs = buildForecasts(games.concat(ex.games), art, policy, { nowMs, toMs: win.to, preseason: win.phase === 'preseason' });
   const G = gates(games, art, fcs, nowMs);
   const publishable = G.every((g) => g.pass);
   const doc = { schema: 'edgedesk_ncaam_fc_forecasts_v1', as_of: new Date(nowMs).toISOString(), model: { key: ptr.current.key, model_id: champ.model_id, version: champ.version, config_sha256: champ.config_sha256 },
     artifact: { sha256: art.artifact_sha256, code_sha256: art.code_sha256, training_snapshot: art.training_snapshot, calibration_n: art.calibration.D1_D1 && art.calibration.D1_D1.n, kappa: art.calibration.D1_D1 && art.calibration.D1_D1.kappa },
     upset_policy: policy ? { version: policy.version, theta: policy.signals.upset_probability.theta } : null, definitions: DEFINITIONS,
-    window: { phase: win.phase, from: new Date(win.from).toISOString(), to: new Date(win.to).toISOString(), regular_season_start: win.regular_season_start }, gates: G, publishable, forecasts: fcs };
+    window: { phase: win.phase, from: new Date(win.from).toISOString(), to: new Date(win.to).toISOString(), regular_season_start: win.regular_season_start },
+    exhibitions: { source: 'the schools\' own schedules (collegiate/data/schedules)', schools_read: ex.schools_read, schools_matched: ex.schools_matched, priced: ex.games.length,
+      skipped: ex.skipped.reduce((a, x) => (a[x.why] = (a[x.why] || 0) + 1, a), {}), unmatched: ex.unmatched.length },
+    gates: G, publishable, forecasts: fcs };
   const outDir = path.join(C.PATHS.out, 'forecasts'); fs.mkdirSync(outDir, { recursive: true });
   const file = path.join(outDir, doc.as_of.replace(/[:.]/g, '').slice(0, 15) + '.json');
   fs.writeFileSync(file, JSON.stringify(doc, null, 1));
-  console.log('[ncaam refresh] ' + win.phase + ' window to ' + new Date(win.to).toISOString() + ': ' + fcs.length + ' forecasts, ' + (publishable ? 'PUBLISHABLE' : 'BLOCKED: ' + G.filter((g) => !g.pass).map((g) => g.id + ' ' + g.detail).join('; ')) + ' -> ' + path.relative(C.ROOT, file));
+  console.log('[ncaam refresh] ' + win.phase + ' window to ' + new Date(win.to).toISOString() + ': ' + fcs.length + ' forecasts (' + ex.games.length + ' exhibitions), ' + (publishable ? 'PUBLISHABLE' : 'BLOCKED: ' + G.filter((g) => !g.pass).map((g) => g.id + ' ' + g.detail).join('; ')) + ' -> ' + path.relative(C.ROOT, file));
   if (o.publish) {
     if (!publishable) { const e = new Error('nothing published: a gate failed'); e.exitCode = 1; throw e; }
     const P = require('./publish');
@@ -156,7 +181,7 @@ async function refresh(o) {
   return doc;
 }
 
-module.exports = { refresh, buildForecasts, forecastWindow, regularSeasonStart, gates, AVAILABILITY, DEFINITIONS };
+module.exports = { refresh, buildForecasts, forecastWindow, regularSeasonStart, d1Teams, gates, AVAILABILITY, DEFINITIONS };
 
 if (require.main === module) {
   const a = process.argv; const val = (k) => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : null; };
