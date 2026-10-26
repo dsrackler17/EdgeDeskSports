@@ -239,7 +239,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
       const W = vp.width;
       const { ctx, page, errors } = await open(vp, '', { entitled: true, published: true });
-      T.chk(W + ': the Simulator seat is in the bottom bar and active', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="simulator"]'); return !!b && b.classList.contains('on'); }));
+      T.chk(W + ': the Simulator seat is in the navigation and active', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="simulator"]'); return !!b && b.classList.contains('on'); }));
       const t = await text(page);
       T.chk(W + ': title view: EXPERIMENTAL, simulated seasons, inputs time and the ± legend', /EXPERIMENTAL/.test(t) && /3,000 simulated seasons/.test(t) && /95% Monte Carlo interval/.test(t));
       T.chk(W + ': 32 club cards with probability and fair odds', (await page.locator('#simHost .sm-club').count()) === 32 && /fair odds/.test(t));
