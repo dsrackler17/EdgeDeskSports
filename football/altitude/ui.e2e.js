@@ -10,10 +10,9 @@
    unchanged. The hourly build drops a game once it is played, and this suite
    used to read the live file, so from 2026-10-19 (1d57b3cd, the first
    build without the game) it printed SKIPPED and exited 0 on every run while
-   testing nothing. The frozen entry is served
-   inside the committed file's envelope; a snapshot version the committed
-   file no longer carries fails here, so the fixture is refreshed rather than
-   silently stale.
+   testing nothing. The frozen entry is served inside the committed file's
+   envelope; a snapshot version the committed file no longer carries fails
+   here, so the fixture is refreshed rather than silently stale.
 
    Checks the section is there, says Research only, prints the sourced
    elevations, the climb, the trip and 0.0 pts, keeps the shadow estimate
