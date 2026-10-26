@@ -90,9 +90,30 @@ such forecast is flagged `PRESEASON_RATINGS`, and the refresh document records
 `window.phase`. From the opener on, the routine `--hours` window applies.
 Nobody has to switch anything.
 
-Exhibition games are not priced. The hoopR schedule files have no
-`season_type` 1 row in any season, and ESPN's Division I scoreboard listed no
-game on a preseason date (2024-11-01) or from 2026-10-22 to 10-27 (the slate).
+**Exhibitions** come from the schools' own schedules, because no feed lists
+them: the hoopR files have no `season_type` 1 row in any season, and ESPN's
+Division I scoreboard listed none. The collegiate collector
+(`collegiate/plan.json` `schedules`) reads every D-I school's basketball
+schedule each week, this season's and last. `basketball/exhibitions.js` then
+works as follows:
+
+- **Which ESPN team a school is.** The team with its results: last season's
+  finals on the same local date, with the same score. At least 5 must match,
+  and 60% of the school's finals.
+- **Who the opponent is.** By the website the listing names, else by its exact
+  registry name. A non-D-I or NAIA opponent is priced in the model's pooled
+  non-D-I regime.
+- **What is priced.** Every exhibition still to play in the window, flagged
+  `EXHIBITION`. A school may rest its regulars, and the model was never
+  tested on these games. Exhibitions are never in Upset Watch and never in
+  the training data.
+- **What is skipped, with the reason in the refresh document's `exhibitions`
+  block:** an intrasquad game, a listing that names no school, a school or a
+  D-I opponent not matched to its ESPN team, and a day the dataset already
+  holds a counted game.
+- **Start times.** The listed local time, in the zone the listing writes or
+  its state's. Otherwise the start is flagged `START_TIME_APPROX`.
+
 The Simulator seat shows **Preseason** on its chip and a preseason card until
 the opening day in the generated registry (`games.regular_season_start`,
 `simulator/src/sports/registry.ts`). Each new season, set that date in a

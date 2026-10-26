@@ -148,8 +148,11 @@ const PUB = require('../publish');
     const older = await PUB.publishForecasts(doc('2026-11-01T12:00:00Z', [fc('401000005', 0.6)]), { db: pgDb() });
     T.eq('older inputs are kept as superseded, not shown', older.status, 'superseded');
     T.eq('...and the pointer stays', svc("select run_id from public.ncaaw_fc_published;").trim(), pub0);
-    const newer = await PUB.publishForecasts(doc('2026-11-03T12:00:00Z', [fc('401000006', 0.6)]), { db: pgDb() });
+    /* an exhibition, as basketball/exhibitions.js shapes it: an 18-digit id, a non-Division I opponent with no ESPN id, no Upset Watch row */
+    const exh = Object.assign(fc('912345678901234567', 0.97), { away_id: 'x-pittsburg-st', away_name: 'Pittsburg State', event: 'exhibition', regime: 'D1_OTHER', data_quality: ['EXHIBITION', 'PRESEASON_RATINGS'], upset: undefined });
+    const newer = await PUB.publishForecasts(doc('2026-11-03T12:00:00Z', [fc('401000006', 0.6), exh]), { db: pgDb() });
     T.chk('newer inputs replace the published run', newer.published && svc("select previous_run_id from public.ncaaw_fc_published;").trim() === pub0);
+    T.eq('an exhibition publishes and reads back as one, with no Upset Watch row', asU(SUB, "select event || '|' || away_id || '|' || regime || '|' || coalesce(underdog, '-') || '|' || (data_quality ->> 0) from public.ncaaw_fc_current_forecasts where game_id = '912345678901234567'").trim(), 'exhibition|x-pittsburg-st|D1_OTHER|-|EXHIBITION');
     T.chk('a published forecast is frozen (update refused)', !!fails(() => svc("update public.ncaaw_fc_forecasts set p_home = 0.9;")));
     T.chk('a published forecast is frozen (delete refused)', !!fails(() => svc("delete from public.ncaaw_fc_forecasts;")));
     T.chk('truncate is refused', !!fails(() => svc('truncate public.ncaaw_fc_forecasts cascade;')));
@@ -210,7 +213,7 @@ const PUB = require('../publish');
 
     /* ---- fail closed when the entitlement authority is missing ---- */
     db.sql('alter function public.community_is_entitled(uuid) rename to community_is_entitled_off;');
-    T.eq('without community_is_entitled the billing rule still decides (the subscriber reads)', asU(SUB, 'select count(*) from public.ncaaw_fc_current_forecasts').trim(), '1');
+    T.eq('without community_is_entitled the billing rule still decides (the subscriber reads the published run: a game and an exhibition)', asU(SUB, 'select count(*) from public.ncaaw_fc_current_forecasts').trim(), '2');
     T.eq('...and the free account still reads nothing', asU(NOSUB, 'select count(*) from public.ncaaw_fc_current_forecasts').trim(), '0');
     db.sql('alter function public.billing_row_grants_access(text,text,timestamptz,timestamptz) rename to billing_row_grants_access_off;');
     T.eq('with no entitlement authority at all nobody reads (fail closed)', asU(SUB, 'select count(*) from public.ncaaw_fc_current_forecasts').trim(), '0');

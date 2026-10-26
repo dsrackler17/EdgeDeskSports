@@ -88,7 +88,7 @@ T.chk('a read error is shown, escaped', /could not be read: &lt;b&gt;/.test(pain
   T.eq('the opening day, in US Eastern', UI.openingDay(reg), 'Mon, Nov 2');
   const paintAt = (c: any, tab: string, t: number) => N.adapter.paint({ sport: reg, cache: c, tab, nowMs: t });
   const empty = paintAt({ fc_status: { champion_key: 'ncaam_adjeff@1.0.0' }, entitled: true }, 'games', pre);
-  T.chk('preseason, nothing published: the preseason card, the opening day and why exhibitions are not priced', /class="sm-card sm-preseason"/.test(empty) && /regular season opens Mon, Nov 2/.test(empty) && /Exhibition games are not priced/.test(empty) && /takes over on its own/.test(empty) && /No college basketball forecast has been published yet/.test(empty));
+  T.chk('preseason, nothing published: the preseason card, the opening day and why exhibitions are not priced', /class="sm-card sm-preseason"/.test(empty) && /regular season opens Mon, Nov 2/.test(empty) && /Exhibition games are priced where a school lists one/.test(empty) && /takes over on its own/.test(empty) && /No college basketball forecast has been published yet/.test(empty));
   const preFc = (o: any) => fc(Object.assign({ start_utc: '2026-11-02T23:00:00Z', as_of: '2026-10-24T13:40:00Z', data_quality: ['PRESEASON_RATINGS', 'EARLY_SEASON_FEW_GAMES'], games_played: { home: 0, away: 0 } }, o));
   const preCache = cache({ fc_status: Object.assign({}, status, { published_as_of: '2026-10-24T13:40:00Z', published_at: '2026-10-24T13:45:00Z' }), forecasts: [preFc({})] });
   const g = paintAt(preCache, 'games', pre), u = paintAt(preCache, 'upset_watch', pre);

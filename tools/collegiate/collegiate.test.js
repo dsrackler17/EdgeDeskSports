@@ -305,7 +305,7 @@ function polite(pages, hosts, extra) {
       const run = await SC.collect({ polite: t.c, schoolsList: [{ id: 'texas', host: 'texassports.com', division: 1 }, { id: 'stanford', host: 'gostanford.com', division: 1 }, { id: 'plain', host: 'plain.edu', division: 1 }], sports: ['baseball'], seasons: [2026, 2025], today: '2026-10-21', dataDir, log: false });
       const f = JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/texas.json'), 'utf8'));
       const w = JSON.parse(fs.readFileSync(path.join(dataDir, 'schedules/baseball/2026/stanford.json'), 'utf8'));
-      ok('schedule: collected per school and season on both platforms; a season the site does not answer and a platform not read are misses', run.ok === 2 && f.finals === 61 && f.games.length === 63 && w.platform === 'wmt' && w.finals === 53 && w.games.filter((g) => g.exhibition).length === 2 && run.misses_by_reason.HTTP === 2 && run.misses_by_reason.PLATFORM_NOT_READ === 1, run.misses_by_reason);
+      ok('schedule: collected per school and season on both platforms; a season the site does not answer and a platform not read are misses', run.ok === 2 && f.finals === 61 && f.games.length === 63 && w.platform === 'wmt' && w.finals === 54 && w.games.filter((g) => g.exhibition).length === 1 && run.misses_by_reason.HTTP === 2 && run.misses_by_reason.PLATFORM_NOT_READ === 1, run.misses_by_reason);
     }
     const wm = SC.parseSchedule(FX('gostanford.com/sports_baseball_schedule_season_2026'));
     const fsu = wm.games.find((g) => g.boxscore === '/boxscore/26576');
@@ -379,7 +379,9 @@ function polite(pages, hosts, extra) {
     const va = S('virginiasports.com/sports_baseball_schedule_season_2025_26');
     ok('schedule (WMT, a theme with no datetime): the date from month, day and weekday in the season; venue from its line', va.season_label === '2025-26' && PL.seasonKey(va.season_label, 'baseball') === 2026 && fin(va).length === 60 && va.undated === 0 && va.games[0].date === '2026-02-13' && va.games[0].site === 'H' && va.games[0].opponent === 'Wagner');
     const uc = S('uclabruins.com/sports_baseball_schedule_season_2026');
-    ok('schedule (WMT, UCLA\'s theme): each game once (not again from the table view), exhibitions flagged', uc.games.length === 61 && fin(uc).length === 59 && uc.games.filter((g) => g.exhibition).length === 2 && uc.games.find((g) => g.opponent === 'Alumni Game').exhibition === true);
+    ok('schedule (WMT, UCLA\'s theme): each game once (not again from the table view), exhibitions flagged', uc.games.length === 61 && fin(uc).length === 60 && uc.games.filter((g) => g.exhibition).length === 1 && uc.games.find((g) => g.opponent === 'Alumni Game').exhibition === true);
+    const ucLast = uc.games[uc.games.length - 1];
+    ok('schedule (WMT): the last game is read in its own element, not from the table view after it (UCLA\'s May 31 loss to Saint Mary\'s, a final, was the Alumni Game and an exhibition)', ucLast.date === '2026-05-31' && ucLast.opponent === 'Saint Mary\'s' && ucLast.status === 'final' && !ucLast.exhibition && ucLast.us === 5 && ucLast.them === 6);
     const ls = S('lsusports.net/sports_baseball_schedule');
     ok('schedule (WMT): the page names every season the site keeps, by the label its pages use', ls.seasons.length > 20 && ls.seasons[0].label === '2027' && va.seasons.some((x) => x.label === '2015-16'));
     ok('schedule (WMT, LSU\'s theme): "at" is a road game; "vs." is home or neutral, so left unknown; an autumn game is the year before', ls.games.filter((g) => g.site === 'A').length === 17 && ls.games.filter((g) => g.site === null).length === 46 && ls.games[0].date === '2026-10-31');
@@ -438,7 +440,23 @@ function polite(pages, hosts, extra) {
     });
     ok('schedule (WMT): San José State, UCF, Purdue, UTSA, San Diego State and Virginia Tech read whole (every final their seasons have in our record; Purdue\'s two others are the site\'s scores against ours)', r10.every((r) => r.ok), r10.filter((r) => !r.ok));
     const ps = S('gopsusports.com/sports_baseball_schedule');
-    ok('schedule (WMT): Penn State\'s theme reads, its exhibitions flagged, and it names its own labels (2026 is "2026", not "2025-26")', ps && ps.games.length === 41 && ps.undated === 0 && ps.games.filter((g) => g.exhibition).length === 6 && ps.games[0].site === 'H' && ps.games[0].opponent === 'St. Bonaventure' && ps.seasons.some((x) => x.label === '2026' && x.name === '2026'));
+    ok('schedule (WMT): Penn State\'s theme reads, its exhibitions flagged, and it names its own labels (2026 is "2026", not "2025-26")', ps && ps.games.length === 41 && ps.undated === 0 && ps.games.filter((g) => g.exhibition).length === 5 && !ps.games[ps.games.length - 1].exhibition && ps.games[0].site === 'H' && ps.games[0].opponent === 'St. Bonaventure' && ps.seasons.some((x) => x.label === '2026' && x.name === '2026'));
+    /* basketball (probe round 11, 2026-27): every reader flags the games a school does not count, the exhibitions the
+       college basketball forecasts price (basketball/exhibitions.js) */
+    {
+      const B = (f, sport, host) => SC.parseSchedule(FX(f), sport, host);
+      const exh = (x) => x.games.filter((g) => g.exhibition);
+      const duke = B('goduke.com/sports_mens_basketball_schedule_2026_27', 'mens-basketball', 'goduke.com');
+      ok('basketball (SIDEARM): a preseason (S) or special-event (X) game is an exhibition; regular and postseason games are not', exh(duke).map((g) => g.opponent).join() === 'Countdown to Craziness,Belmont,Tennessee,Kansas' && duke.games.length === 37 && !duke.games.some((g) => g.postseason && g.exhibition));
+      const uc = exh(B('uconnhuskies.com/sports_mens_basketball_schedule_2026_27', 'mens-basketball', 'uconnhuskies.com')).find((g) => g.status === 'scheduled');
+      ok('basketball (SIDEARM): an exhibition still to play keeps its date, local time, site, location and the opponent\'s website', uc && uc.date === '2026-10-27' && uc.time === '7 p.m.' && uc.site === 'H' && uc.opponent === 'Purdue' && uc.opponent_host === 'purduesports.com' && uc.location === 'Hartford, Conn.');
+      ok('basketball (SIDEARM): an exhibition listed without the opponent\'s website is still flagged (Kansas)', exh(B('kuathletics.com/sports_mens_basketball_schedule_2026_27', 'mens-basketball', 'kuathletics.com')).map((g) => g.opponent).join() === 'Pittsburg State (Exhibition),Louisville (Exhibition),Duke (Exhibition)');
+      ok('basketball (SIDEARM, Vue generation): flagged by its game type', exh(B('gomason.com/sports_mens_basketball_schedule_2026_27', 'mens-basketball', 'gomason.com')).length === 2);
+      ok('basketball (SIDEARM, the oldest markup): flagged by the school\'s own label, "(Exh.)" (Villanova)', exh(B('villanova.com/sports_mens_basketball_schedule_2026_27', 'mens-basketball', 'villanova.com')).map((g) => g.opponent_host).join() === 'scarletknights.com,gomason.com,virginiasports.com');
+      const pu = B('purduesports.com/sports_mens_basketball_schedule_season_2026_27', 'mens-basketball', 'purduesports.com');
+      ok('basketball (WMT): exactly the marked games, never the last game from the page\'s second rendering (Purdue)', exh(pu).map((g) => g.opponent).join() === 'Ball State,Purdue Fort Wayne,Connecticut' && !pu.games[pu.games.length - 1].exhibition);
+      ok('baseball keeps its reading: SIDEARM\'s game type flags no baseball game (its meaning there is unread)', exh(B('texassports.com/sports_baseball_schedule_2026', 'baseball', 'texassports.com')).length === 0);
+    }
     ok('sport: a name ending in the sport is it ("Demon Baseball"); another sport\'s name never is', PL.sportMatches('baseball', null, 'Demon Baseball') && PL.sportMatches('baseball', null, 'Merrimack College Baseball') && !PL.sportMatches('baseball', null, 'Softball') && !PL.sportMatches('baseball', null, 'Baseball Softball'));
     ok('schedule (SIDEARM): a page that renders its schedule in the browser carries none, and says so', S('kcroos.com/sports_baseball_schedule_2025') === null);
     /* collecting: LSU's own sport code learnt from its roster and used for its schedule; Clemson's slug learnt by the season's name;

@@ -27,6 +27,9 @@ on:
       - '!basketball/ncaaw_forecast/data/**'
       - '!basketball/ncaaw_forecast/registry/**'
       - '!basketball/ncaaw_forecast/reports/**'
+      - 'basketball/exhibitions*.js'
+      - 'collegiate/schedules.js'
+      - 'collegiate/plan.json'
       - 'basketball/ncaam_research/team_model.js'
       - 'basketball/ncaam_research/lib/**'
       - 'simulator/src/sports/registry.ts'
@@ -40,6 +43,9 @@ on:
   pull_request:
     paths:
       - 'basketball/ncaaw_forecast/**'
+      - 'basketball/exhibitions*.js'
+      - 'collegiate/schedules.js'
+      - 'collegiate/plan.json'
       - 'basketball/ncaam_research/team_model.js'
       - 'basketball/ncaam_research/lib/**'
       - 'simulator/src/sports/registry.ts'
@@ -74,6 +80,10 @@ jobs:
         run: npm run --prefix simulator typecheck
       - name: The forecast model, data quality, gates and registry
         run: node --max-old-space-size=6144 basketball/ncaaw_forecast/tests/model.test.js
+      - name: Exhibitions from the schools' own schedules, and the schedule reader they come from
+        run: |
+          node basketball/exhibitions.test.js
+          node tools/collegiate/collegiate.test.js
       - name: The Women's College Basketball reader
         run: |
           node simulator/tests/ncaaw_ui.test.ts

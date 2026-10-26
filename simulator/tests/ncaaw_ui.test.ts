@@ -121,7 +121,7 @@ T.chk('a read error is shown, escaped', /could not be read: &lt;b&gt;/.test(pain
   T.eq('seasonPhase across the opener', [UI.seasonPhase(reg, pre), UI.seasonPhase(reg, opener), UI.seasonPhase(reg, now)], ['preseason', 'season', 'season']);
   const paintAt = (c: any, tab: string, t: number) => N.adapter.paint({ sport: reg, cache: c, tab, nowMs: t });
   const empty = paintAt({ fc_status: { champion_key: 'ncaaw_adjeff@1.0.0' }, entitled: true }, 'games', pre);
-  T.chk('preseason, nothing published: the preseason card and the women\'s empty state', /sm-preseason/.test(empty) && /regular season opens Mon, Nov 2/.test(empty) && /Exhibition games are not priced/.test(empty) && /No women’s college basketball forecast has been published yet/.test(empty));
+  T.chk('preseason, nothing published: the preseason card and the women\'s empty state', /sm-preseason/.test(empty) && /regular season opens Mon, Nov 2/.test(empty) && /Exhibition games are priced where a school lists one/.test(empty) && /No women’s college basketball forecast has been published yet/.test(empty));
   const preCache = cache({ forecasts: [fc({ start_utc: '2026-11-03T00:00:00Z', as_of: '2026-10-24T13:50:00Z', data_quality: ['PRESEASON_RATINGS', 'EARLY_SEASON_FEW_GAMES'] })] });
   const g = paintAt(preCache, 'games', pre);
   T.chk('preseason, published: the card and the flagged forecasts', /sm-preseason/.test(g) && /preseason ratings/.test(g) && /74\.0%/.test(g));
