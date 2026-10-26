@@ -72,13 +72,14 @@ T.chk('Fights: finish v decision and the round of a finish for every bout', (fig
 const nTitles = allBouts.filter((b) => b.title).length;
 T.chk('Fights: the ' + nTitles + ' booked title fights carry the title badge and the chance of a new champion', (fights.match(/ title<\/span>/g) || []).length === nTitles && (fights.match(/New champion:<\/b> \d+\.\d% ±/g) || []).length === nTitles);
 const sides = allBouts.flatMap((b) => [b.a, b.b]);
-const nRanked = sides.filter((x) => !x.champion && typeof x.rank === 'number').length;
-T.chk('Fights: the ufc.com champion and ranks beside the names (' + nRanked + ' ranked), and debutants marked', (fights.match(/title="ufc\.com champion">Champion<\/span>/g) || []).length === sides.filter((x) => x.champion).length
-  && nRanked > 0 && (fights.match(/title="ufc\.com ranking">#\d+ [^<]+<\/span>/g) || []).length === nRanked && /UFC debut/.test(fights));
-/* the loop lists only bouts that have not started: the first booked bout it published */
-const pubB = allBouts.find((b) => b.published_p_a != null);
-T.chk('Fights: the served price and the loop\'s published value (' + (pubB ? pubB.a.name + ' ' + (100 * pubB.served_p_a).toFixed(1) + '%' : 'no bout listed') + ')', !!pubB
-  && fights.indexOf('Served Elo price: ' + UI.esc(pubB.a.name) + ' ' + (100 * pubB.served_p_a).toFixed(1) + '% (the model loop published ' + (100 * pubB.published_p_a).toFixed(2) + '%)') >= 0);
+const nRanked = sides.filter((x) => !x.champion && typeof x.rank === 'number').length, nDebut = sides.filter((x) => x.debut).length;
+T.chk('Fights: the ufc.com champion and ranks beside the names (' + nRanked + ' ranked), and debutants marked (' + nDebut + ')', (fights.match(/title="ufc\.com champion">Champion<\/span>/g) || []).length === sides.filter((x) => x.champion).length
+  && (fights.match(/title="ufc\.com ranking">#\d+ [^<]+<\/span>/g) || []).length === nRanked && (fights.match(/>UFC debut<\/span>/g) || []).length === nDebut);
+/* the loop lists only bouts that have not started, 14 days ahead (between cards, as in the December break, none):
+   the published value beside the served price on every bout it lists, and on no other */
+const pubBouts = allBouts.filter((b) => b.published_p_a != null);
+T.chk('Fights: the served price, with the loop\'s published value on the ' + pubBouts.length + ' bouts it lists', (fights.match(/\(the model loop published \d+\.\d\d%\)/g) || []).length === pubBouts.length
+  && pubBouts.every((b) => fights.indexOf('Served Elo price: ' + UI.esc(b.a.name) + ' ' + (100 * b.served_p_a).toFixed(1) + '% (the model loop published ' + (100 * b.published_p_a).toFixed(2) + '%)') >= 0));
 T.chk('Fights: the method is never split into KO and submission', !/KO\/TKO \d|Submission \d/.test(fights));
 /* Title Path */
 const tp = paint(cache(), 'title_path');

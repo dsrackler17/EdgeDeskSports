@@ -223,9 +223,10 @@ K.chk('committed data: every booked title fight is that division\'s champion v a
 const events = [...new Set(d.bouts.map((b) => b.event))];
 K.chk('committed data: every listed card has one main event, five rounds (' + events.length + ' cards)', events.length > 0 && events.every((e) => { const m = d.bouts.filter((b) => b.event === e && b.order === 1); return m.length === 1 && m[0].rounds === 5; }),
   events.filter((e) => { const m = d.bouts.filter((b) => b.event === e && b.order === 1); return !(m.length === 1 && m[0].rounds === 5); }));
-/* the loop publishes only bouts that have not started (its 14-day window), so the check runs on whichever booked bouts it lists */
+/* the loop publishes only bouts that have not started (its 14-day window; between cards, as in the December break,
+   none), so the check runs on whichever booked bouts it lists, and finds some whenever the loop published any */
 const listed = d.bouts.filter((b) => b.p_a_published != null);
-K.chk('committed data: every booked bout the loop lists is at the price it published (' + listed.length + ' bouts)', listed.length > 0 && listed.every((b) => round4(b.p_a) === b.p_a_published),
+K.chk('committed data: every booked bout the loop lists is at the price it published (' + listed.length + ' bouts)', (listed.length > 0 || d.elo.reproduction.published === 0) && listed.every((b) => round4(b.p_a) === b.p_a_published),
   listed.filter((b) => round4(b.p_a) !== b.p_a_published).map((b) => b.bout_id));
 K.chk('committed data: the booked bouts carry the comparison version\'s price (1.1.0) beside the served one when it is not 1.1.0', d.elo.version === '1.1.0' || d.bouts.every((b) => b.compare && b.compare.version === '1.1.0' && b.compare.p_a > 0 && b.compare.p_a < 1));
 K.chk('committed data: every booked bout has a guard verdict; a disagreement is never a signal without certification', d.bouts.every((b) => ['AGREES', 'DISAGREES', 'NO_MARKET'].includes(b.guard.status) && (!b.guard.signal_allowed || d.guard.certified))
