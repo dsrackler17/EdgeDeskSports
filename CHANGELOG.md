@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-26 — Content Engine: a player's name is not a team; and the two #805 commits that did not merge
+
+**The failure on `main`.** `tools/content/evidence.test.js` failed on clean `main` (`1c3b5c07a`): "every article generated from today's research passes the gate", 197 of 198.
+- **The symptom.** The Week 9 upset watch was BLOCKED (`numbers_per_game`, EDIT.NUMBERS) for "53.6 (in a sentence about Marshall)".
+- **The sentence.** "Isaiah Marshall: 53.6% completions, 7.9 yards per attempt" is the line for Kansas' quarterback, Isaiah Marshall, in the Kansas at TCU section. Marshall at Old Dominion is another game in the same article.
+
+**The cause.** `numbers_per_game` and `conference_claims` (EDIT.CONFERENCE) matched teams with `teamsMentioned(sent, teamNames, [])`, so "Marshall" inside the player's name read as the team. The team check (`teams_in_evidence`) has masked people's names since the same lesson ("Isaiah Marshall is not Marshall").
+
+**The fix** (`lib/content_engine.js`, `playersOf`).
+- A player the research names (a quarterback, an availability report, the subject of a player claim, a matchup's quarterback line) now ties a sentence to the player's own game and team, and is masked before teams are matched.
+- A sentence that names only a player used to go unchecked. It is now checked against that player's game, so the gate checks more than before, not less.
+- A number the player's game does not hold, a Kansas number on the team Marshall, or "Isaiah Marshall … SEC" (Kansas is Big 12) still fail.
+- No assertion and no gate rule is loosened.
+
+**The Edge Function.** `supabase/functions/content_engine/index.ts` is regenerated with `node tools/content/inline.js`, which keeps its byte-for-byte copy of the core. It takes effect in production only when the function is deployed (`deploy-content-engine.yml`, by hand).
+
+**Tests.** `evidence.test.js` gains five checks in section N (203 of 203). Against the old gate, four of them and the live check fail.
+
+**From #805, which merged at `b2f67e9b3` before its last two commits.**
+- **`docs/ci/main-ruleset.json`** is the branch-protection ruleset, importable as is. The runbook says to apply it after #805 merges (two of its required checks exist only from #805). It also corrects an earlier mistake: Evaluate mode is GitHub Enterprise only.
+- **`tools/ci/verify.js`**:
+  - gives each job the runner's `GITHUB_PATH`, `GITHUB_ENV`, `GITHUB_OUTPUT` and `GITHUB_STEP_SUMMARY`, and carries PATH and env forward;
+  - names and removes files a step creates;
+  - never counts its own logs.
+- **New:** a failure in a job that checks out full history (`fetch-depth: 0`) is NOT VERIFIED on a shallow clone, never a pass. `desk-tests`' pinned-commit check failed here for that reason alone: 159 of 159 once the commit is present.
+- `verify.test.js`: 32 of 32.
+
+
 ## 2026-10-26 — CI: a gate on every pull request, `npm run verify`, and the rules that would have stopped today's eighteen failed runs
 
 Eighteen failed runs between 12:03 and 12:54 UTC came from three root causes, all already fixed on `main` by #799, #800, #803 and #804 ([docs/ci/INCIDENT-2026-10-26.md](docs/ci/INCIDENT-2026-10-26.md)):

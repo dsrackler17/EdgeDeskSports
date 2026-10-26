@@ -44,8 +44,9 @@
      --tz <zone>     run with TZ=<zone> (another determinism audit)
      --net-audit     name every step whose node processes opened a connection
                      to a host that is not loopback (tools/ci/net_audit.js)
-     --keep-writes   keep the committed files a step rewrote (by default they
-                     are restored at the end, and every one is named: a test
+     --keep-writes   keep the committed files a step rewrote and the files it
+                     created (by default rewritten files are restored and new
+                     ones removed at the end, and every one is named: a test
                      should write only to a temporary directory)
 
    Exit 0: every step that ran passed. 1: a step failed. 2: verify itself
@@ -88,9 +89,14 @@ function changed(base) {
   }
   return { mergeBase: mb.out, files: Array.from(files).sort() };
 }
-/* the tracked files that differ from HEAD (a step that adds to this list wrote a committed file) */
+/* the tracked files that differ from HEAD, and the untracked files git does not
+   ignore: a step that adds to either list wrote into the checkout */
 function dirtyTracked() {
   const r = git(['diff', '--name-only', 'HEAD']);
+  return new Set(r.ok && r.out ? r.out.split('\n') : []);
+}
+function untracked() {
+  const r = git(['ls-files', '--others', '--exclude-standard']);
   return new Set(r.ok && r.out ? r.out.split('\n') : []);
 }
 /* is something listening where a service container would be? */
@@ -156,6 +162,21 @@ function missingPython(steps, cwdOf) {
   return { missing: mods.filter((m) => !pyCache[m]), how };
 }
 
+/* apply what a step appended to GITHUB_PATH (newest first) and GITHUB_ENV
+   (NAME=value, or NAME<<DELIMITER … DELIMITER), then empty both, as a runner does */
+function readRunnerFiles(gh, jobPath, jobEnv) {
+  const add = fs.readFileSync(gh.path, 'utf8').split('\n').map((x) => x.trim()).filter(Boolean);
+  for (const d of add) jobPath.unshift(d);
+  const lines = fs.readFileSync(gh.env, 'utf8').split('\n');
+  for (let k = 0; k < lines.length; k++) {
+    const m = /^([A-Za-z_][A-Za-z0-9_]*)<<(.+)$/.exec(lines[k]);
+    if (m) { const body = []; k++; while (k < lines.length && lines[k] !== m[2]) body.push(lines[k++]); jobEnv[m[1]] = body.join('\n'); continue; }
+    const e = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(lines[k]);
+    if (e) jobEnv[e[1]] = e[2];
+  }
+  fs.writeFileSync(gh.path, ''); fs.writeFileSync(gh.env, '');
+}
+
 function main() {
   const base = opt('--base') || 'origin/main';
   const mode = flag('--all') ? 'all' : opt('--group') ? 'group' : opt('--workflow') ? 'workflow' : 'affected';
@@ -190,9 +211,11 @@ function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'edgedesk-verify-'));
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const logDir = path.join(ROOT, '.cache', 'verify', stamp);
+  const logRel = path.relative(ROOT, logDir).split(path.sep).join('/');
   if (!flag('--list')) fs.mkdirSync(logDir, { recursive: true });
   const ctx = { root: ROOT, temp: tmp, base: 'main', head: git(['rev-parse', '--abbrev-ref', 'HEAD']).out || 'local' };
   const servicesUp = { postgres: null };
+  let shallow = null;
   const results = [];
   const seen = new Map();
   const tally = { pass: 0, fail: 0, unavailable: 0, skipped: 0, reused: 0 };
@@ -223,6 +246,8 @@ function main() {
   const dirtyAtStart = flag('--list') ? new Set() : dirtyTracked();
   const known = new Set(dirtyAtStart);
   const wrote = [];
+  const knownNew = flag('--list') ? new Set() : untracked();
+  const created = [];
   for (const wf of selected) {
     const cat = categoryOf(wf.base);
     const title = wf.name + ' (' + wf.base + ')' + (cat ? ' · ' + CHECKS.categories[cat].title : ' · UNCATEGORIZED') + ' — ' + wf.why;
@@ -246,6 +271,15 @@ function main() {
       }
       const limitMin = Number(opt('--timeout')) || Number(job['timeout-minutes']) || 30;
       const py = missingPython(J.steps, (S) => S.cwd);
+      /* the files a runner gives every step: what one step appends to GITHUB_PATH or
+         GITHUB_ENV, the job's later steps see (GITHUB_OUTPUT and the summary are only kept) */
+      const gh = {};
+      for (const k of ['env', 'path', 'output', 'summary']) { gh[k] = path.join(tmp, 'gh_' + wf.base.replace(/\W/g, '_') + '_' + J.id + '_' + k); fs.writeFileSync(gh[k], ''); }
+      const jobPath = [], jobEnv = {};
+      /* a job that checks out full history (fetch-depth: 0) can fail on a shallow clone
+         for want of a commit, not of code: such a failure is NOT VERIFIED here, never passed */
+      const wantsHistory = (job.steps || []).some((st) => st && /^actions\/checkout@/.test(String(st.uses || '')) && st.with && String(st.with['fetch-depth']) === '0');
+      if (wantsHistory && shallow == null) shallow = git(['rev-parse', '--is-shallow-repository']).out === 'true';
       for (const S of J.steps) {
         if (S.status === 'run' && py.missing.length && /(^|[\s;&|(])python3?\b/.test(S.run)) {
           S.status = 'unavailable';
@@ -278,7 +312,9 @@ function main() {
         fs.writeFileSync(file, script);
         const shellArgs = S.shell === 'bash' ? ['--noprofile', '--norc', '-eo', 'pipefail', file] : ['-e', file];
         const netLog = netAudit ? path.join(tmp, 'net_' + wf.base.replace(/\W/g, '_') + '_' + J.id + '_' + S.n + '.jsonl') : null;
-        const env = Object.assign({}, process.env, S.env, ci ? { CI: 'true', GITHUB_ACTIONS: 'true' } : {}, { GITHUB_WORKSPACE: ROOT, RUNNER_TEMP: tmp, GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main' }, audit, netLog ? { EDGEDESK_NET_LOG: netLog } : {});
+        const env = Object.assign({}, process.env, jobEnv, S.env, ci ? { CI: 'true', GITHUB_ACTIONS: 'true' } : {}, { GITHUB_WORKSPACE: ROOT, RUNNER_TEMP: tmp, GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main',
+          GITHUB_ENV: gh.env, GITHUB_PATH: gh.path, GITHUB_OUTPUT: gh.output, GITHUB_STEP_SUMMARY: gh.summary }, audit, netLog ? { EDGEDESK_NET_LOG: netLog } : {});
+        if (jobPath.length) env.PATH = jobPath.join(path.delimiter) + path.delimiter + (env.PATH || '');
         const cwd = S.cwd ? path.join(ROOT, S.cwd) : ROOT;
         const log = path.join(logDir, wf.base.replace(/\.ya?ml$/, '') + '.' + J.id + '.' + S.n + '.log');
         const t0 = Date.now();
@@ -294,9 +330,18 @@ function main() {
         rec.status = ok ? 'pass' : 'fail'; rec.seconds = Number(secs.slice(0, -1)); rec.log = flag('--verbose') ? null : path.relative(ROOT, log);
         if (dropped.length) rec.not_repeated = dropped;
         seen.set(key, { status: rec.status, where: wf.base + ' step ' + S.n });
+        readRunnerFiles(gh, jobPath, jobEnv);
         const now = dirtyTracked(), fresh = Array.from(now).filter((f) => !known.has(f));
         if (fresh.length) { fresh.forEach((f) => { known.add(f); wrote.push({ file: f, by: wf.base + ' · ' + label }); }); rec.wrote = fresh; }
+        const born = Array.from(untracked()).filter((f) => !knownNew.has(f) && !f.startsWith(logRel + '/'));
+        if (born.length) { born.forEach((f) => { knownNew.add(f); created.push({ file: f, by: wf.base + ' · ' + label }); }); rec.created = born; }
         if (ok) { tally.pass++; console.log('    PASS ' + secs.padStart(7) + '  ' + label); }
+        else if (wantsHistory && shallow) {
+          rec.status = 'unavailable'; rec.why = 'failed on a shallow clone, and its job checks out full history (fetch-depth: 0): git fetch --unshallow, then run it again';
+          seen.set(key, { status: 'fail', where: wf.base + ' step ' + S.n });
+          tally.unavailable++; notVerified.push(wf.base + ' · ' + label + ': ' + rec.why + (rec.log ? ' (' + rec.log + ')' : ''));
+          console.log('    N/A  ' + secs.padStart(7) + '  ' + label + ' — ' + rec.why + (rec.log ? ' · log ' + rec.log : ''));
+        }
         else {
           tally.fail++;
           const why = r.error && r.error.code === 'ETIMEDOUT' ? 'timed out after ' + limitMin + ' min' : r.signal ? 'killed by ' + r.signal : 'exit ' + r.status;
@@ -309,6 +354,7 @@ function main() {
           if (flag('--bail')) bailed = true;
         }
         if (rec.wrote) console.log('         WROTE committed file' + (rec.wrote.length === 1 ? ' ' : 's ') + rec.wrote.join(', '));
+        if (rec.created) console.log('         CREATED untracked file' + (rec.created.length === 1 ? ' ' : 's ') + rec.created.slice(0, 6).join(', ') + (rec.created.length > 6 ? ' …' : ''));
         if (netLog && fs.existsSync(netLog)) {
           const hosts = Array.from(new Set(fs.readFileSync(netLog, 'utf8').trim().split('\n').filter(Boolean).map((l) => { try { const x = JSON.parse(l); return x.host + (x.port ? ':' + x.port : ''); } catch (e) { return '?'; } })));
           rec.network = hosts;
@@ -339,8 +385,17 @@ function main() {
       console.log(r.status === 0 ? '  restored ' + files.length + ' to HEAD, so none is committed by accident (--keep-writes keeps them)' : '  could not restore them: ' + String(r.stderr));
     }
   }
+  if (created.length) {
+    console.log('STEPS THAT CREATED FILES IN THE CHECKOUT (git does not ignore them, so they could be committed by accident):');
+    created.forEach((w) => console.log('  - ' + w.file + ' ← ' + w.by));
+    if (!flag('--keep-writes')) {
+      let n = 0;
+      for (const w of created) { try { fs.rmSync(path.join(ROOT, w.file), { force: true }); n++; } catch (e) { console.log('  could not remove ' + w.file + ': ' + e.message); } }
+      console.log('  removed ' + n + ' (--keep-writes keeps them)');
+    }
+  }
   console.log(flag('--list') ? 'PLAN ONLY — nothing was run' : tally.fail ? 'VERIFY FAILED' : 'VERIFY PASSED' + (tally.unavailable ? ' (with ' + tally.unavailable + ' not verified here)' : ''));
-  if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify({ mode, base, files, tally, results, notVerified, failures, wrote, reached }, null, 2));
+  if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify({ mode, base, files, tally, results, notVerified, failures, wrote, created, reached }, null, 2));
   try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (e) { /* the temp dir is the OS's */ }
   return tally.fail ? 1 : 0;
 }
