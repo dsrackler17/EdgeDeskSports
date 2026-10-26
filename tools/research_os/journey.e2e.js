@@ -53,7 +53,7 @@ const TOK = { sub: 'tok-sub', free: 'tok-free', admin: 'tok-admin' };
 
 let pw = null;
 try { pw = require('playwright'); } catch (_) { try { pw = require('/opt/node22/lib/node_modules/playwright'); } catch (e2) { pw = null; } }
-if (!pw) { if (process.env.ROS_E2E_REQUIRED === '1') { T.chk('playwright is installed (required in CI)', false); process.exit(T.done()); } console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
+if (!pw) { if (process.env.ROS_E2E_REQUIRED === '1') { T.chk('playwright is installed (required in CI)', false); process.exit(T.done()); } console.log('SKIPPED (not verified): playwright is not installed here'); process.exit(0); }
 
 /* ---------------------------------------------------------------- the game */
 const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'today', 'slate.json'), 'utf8'));
@@ -64,7 +64,11 @@ const GAME = (SLATE.events || []).concat(SLATE.upcoming || [])
   .filter((e) => (e.sport === 'nfl' || e.sport === 'cfb') && e.research && e.research.game_key && snapBy[e.research.game_key] && !snapBy[e.research.game_key].started
     && !e.time_tbd && Date.parse(e.start_utc) > CLOCK + 3600e3 && e.status === 'SCHEDULED')
   .sort((a, b) => Date.parse(a.start_utc) - Date.parse(b.start_utc) || (a.id < b.id ? -1 : 1))[0];
-if (!GAME) { console.log('SKIPPED: the committed slate holds no upcoming NFL or FBS game with a research snapshot at ' + new Date(CLOCK).toISOString()); process.exit(0); }
+if (!GAME) {
+  const why = 'the committed slate holds no upcoming NFL or FBS game with a research snapshot at ' + new Date(CLOCK).toISOString();
+  if (process.env.ROS_E2E_REQUIRED === '1') { T.chk('a journey game exists in the committed slate (required in CI)', false, why); process.exit(T.done()); }
+  console.log('SKIPPED (not verified): ' + why); process.exit(0);
+}
 const KEY = GAME.research.game_key, LG = KEY.split('|')[0], GID = KEY.split('|')[1];
 const DESK_SPORT = LG === 'nfl' ? 'americanfootball_nfl' : 'americanfootball_ncaaf';
 const HOME = GAME.home.name, AWAY = GAME.away.name;
@@ -74,7 +78,7 @@ console.log('the journey game: ' + AWAY + ' at ' + HOME + ' (' + KEY + ', ' + GA
 
 /* ---------------------------------------------------------------- the database */
 const db = PG.start('rosjourney');
-if (db.skip) { if (process.env.ROS_SQL_REQUIRED === '1') T.chk('a PostgreSQL cluster starts (required in CI)', false, db.skip); console.log('NOTE | ' + db.skip); process.exit(T.done()); }
+if (db.skip) { if (process.env.ROS_SQL_REQUIRED === '1') { T.chk('a PostgreSQL cluster starts (required in CI)', false, db.skip); process.exit(T.done()); } console.log('SKIPPED (not verified): ' + db.skip); process.exit(0); }
 const F = (n) => path.join(ROOT, 'supabase', n);
 const slice = (src, start, end) => { const i0 = src.indexOf(start); if (i0 < 0) throw new Error('not found: ' + start); return src.slice(i0, src.indexOf(end, i0) + end.length); };
 const okApply = (name, twice) => { let out = db.applyFile(F(name)); T.chk(name + ' applies, every report row ok', !/CHECK THIS/.test(out), out.slice(-400)); if (twice) { out = db.applyFile(F(name)); T.chk(name + ' applies a second time', !/CHECK THIS/.test(out), out.slice(-400)); } return out; };
