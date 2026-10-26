@@ -166,7 +166,8 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
   catch (_) { const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'; if (fs.existsSync(exe)) browser = await pw.chromium.launch({ headless: true, executablePath: exe }); else { srv.close(); skip('no Chromium'); } }
 
   /* soon: a sport the served registry shows as COMING_SOON with one test blocker (every sport is ACTIVE or has views of its own) */
-  interface Scenario { entitled: boolean; published: boolean; failSecond?: boolean; evil?: boolean; soon?: string }
+  /* statusDown: from the moment a test sets it, the status door answers 503 */
+  interface Scenario { entitled: boolean; published: boolean; statusDown?: boolean; evil?: boolean; soon?: string }
   async function open(viewport: { width: number; height: number }, hash: string, sc: Scenario) {
     const ctx = await browser.newContext({ viewport });
     await ctx.addInitScript(() => {
@@ -178,7 +179,6 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400 * 400, user: { id: 'e2e-reader', email: 'e2e@edgedesk.test', created_at: '2025-01-01T00:00:00Z' } }));
       } catch (_) { /* storage */ }
     });
-    let statusCalls = 0;
     const status = { sport: 'nfl', competition: 'NFL', season: '2026', published_run_id: sc.published ? RUN_ID : null, published_at: sc.published ? run.published_at : null, input_snapshot_at: run.input_snapshot_at,
       n_sims: 3000, model_version: run.model_version, last_attempt_status: 'completed', last_attempt_at: run.completed_at, comparison_status: 'completed', comparison_at: run.completed_at };
     const nstatus = { ...status, sport: 'nhl', competition: 'NHL', season: '2026-27', published_run_id: sc.published ? NHL_RUN_ID : null, n_sims: 1000, model_version: nrun.model_version, comparison_status: null, comparison_at: null };
@@ -206,7 +206,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
         const paged = <X>(rows: X[]): X[] => { const q = new URL(u).searchParams, off = Number(q.get('offset') || 0), lim = q.get('limit'); return rows.slice(off, lim == null ? undefined : off + Number(lim)); };
         const gstatus = golf.map((g) => ({ ...status, sport: 'golf', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
         const tstatus = tennis.map((g) => ({ ...status, sport: 'tennis', competition: g.comp, season: '2026', published_run_id: sc.published ? g.id : null, n_sims: 3000, model_version: g.run.model_version, comparison_status: null, comparison_at: null }));
-        if (/rpc\/sim_public_status/.test(u)) { statusCalls++; if (sc.failSecond && statusCalls > 1) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, cstatus, ...gstatus, ...tstatus]); }
+        if (/rpc\/sim_public_status/.test(u)) { if (sc.statusDown) return J({ message: 'unavailable' }, 503); return J([status, nstatus, bstatus, wstatus, ustatus, cstatus, ...gstatus, ...tstatus]); }
         if (/rpc\/sim_viewer_entitled/.test(u)) return J(sc.entitled);
         const g = /sport=eq\.golf|eeeeeeee-/.test(u) ? golfOf(u) : /sport=eq\.tennis|ffffffff-/.test(u) ? tennisOf(u) : null;
         /* the tennis reader first asks for every tennis run (its draw picker's names), then each competition's */
@@ -480,7 +480,13 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
       await ctx.close();
     }
     {
-      const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', { entitled: true, published: true, failSecond: true });
+      /* the door goes down after the Simulator's first good load, not on its second call: a reader
+         with nothing saved lands on the Overview, whose Simulator tile reads the same door first
+         (docs/research-os/DESIGN.md §3) */
+      const sc: Scenario = { entitled: true, published: true };
+      const { ctx, page, errors } = await open({ width: 390, height: 844 }, '', sc);
+      await page.waitForSelector('#simHost .sm-club', { timeout: 15000 });
+      sc.statusDown = true;
       await page.click('#simHost [data-sim-refresh]'); await page.waitForTimeout(500);
       const t = await text(page);
       T.chk('a failed refresh keeps the last good results on screen, marked stale', (await page.locator('#simHost .sm-club').count()) === 32 && /Refresh failed/.test(t) && (await page.locator('#simHost .sm-stalebar').count()) === 1);

@@ -380,7 +380,8 @@ const DIGIT_CLAIM = /\d+(\.\d+)?\s*(pp|%|percentage point)/i;
       let st = await state(o.page);
       chk('landing: a new reader lands on the Overview', st.views.join() === 'v-overview' && st.seat.join() === 'overview' && st.hash === '#overview', st);
       let t = await tile(o.page);
-      chk('landing: …whose Signals tile reads the server\'s own 24-hour count when live (' + pulse24 + ')', new RegExp('Signals ' + pulse24 + ' published in 24 h').test(t), t);
+      /* innerText is the text as drawn, and the tile's label is set in capitals (.ov-tk) */
+      chk('landing: …whose Signals tile reads the server\'s own 24-hour count when live (' + pulse24 + ')', new RegExp('Signals ' + pulse24 + ' published in 24 h', 'i').test(t), t);
       await o.page.click('#ovSum a.ov-tile[href="#signals"]');
       await waitCards(o.page);
       st = await state(o.page);

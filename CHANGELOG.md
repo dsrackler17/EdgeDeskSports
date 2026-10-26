@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-26 — Research OS follow-up: the eight checks #807 left red, and a new reader's welcome back on their first screen
+
+#807 merged 17 seconds after it was opened, with eight workflows red on its own head (`7192d0989`). `main` has been red on all eight since.
+
+- **A new trial's welcome was out of sight.** #807 lands a new account on the Overview, but the first-run panel ("Here's what EdgeDesk found today.") still mounted at the top of Research. For a new account that panel is also the welcome, so the welcome modal stays away. A new trial saw neither. The panel now mounts at the top of the Overview (`lib/edgedesk_first_run.js`, stamp `20261026ros3`). The funnel test now checks it is drawn in the reader's first screen, which fails on the old code. (Funnel tests.)
+- **A stale cache stamp.** #807 moved the game-view scripts from `?v=20261026sg1` to `ros2` and left `lib/edgedesk_sport_graphic.js` at `sg1`, so a browser could pair the new renderer with an old module. It is now `ros2`. (Matchup graphic tests.)
+- **Market Foresight isolation.** `docs/research-os/REPORT.md` named one of Foresight's SQL objects. It now names the door through `foresight/service.js`. The allowlist is unchanged. (Market Foresight tests.)
+- **Tests that still walked the old navigation.** The rule each one checks is unchanged.
+  - Player props opens Research before Props (`tools/props/props_ui.e2e.js`).
+  - Process sits behind Menu on a phone (`tools/intelligence/intel_ui.e2e.js`, #807's own `seat()` helper). (Today's Games tests, Collective suites.)
+  - The Overview tile's label is drawn in capitals (`tools/signal_center/ui.e2e.js`).
+  - The Overview reads the Simulator's status door first, so the failed refresh now fails the refresh's own call (`simulator/tests/ui.e2e.ts`).
+
 ## 2026-10-26 — Content Engine: a player's name is not a team; and the two #805 commits that did not merge
 
 **The failure on `main`.** `tools/content/evidence.test.js` failed on clean `main` (`1c3b5c07a`): "every article generated from today's research passes the gate", 197 of 198.

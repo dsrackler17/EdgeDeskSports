@@ -191,9 +191,10 @@ the landing page's list to be exactly `app.html`'s `NAV_PRIMARY`, not six.
 
 * **What the 404 lines are.** Every 404 console line is a browser network
   log for a stubbed door, plus the two pre-existing files above.
-* **One extra read on the game page:** `rpc/mf_status`, the Foresight preview
-  on the "Keep researching" rail, memoized for a minute. Until Foresight is
-  deployed it answers 404 and the rail says "not deployed".
+* **One extra read on the game page:** Foresight's status door (`status()` in
+  `foresight/service.js`), for the Foresight preview on the "Keep researching"
+  rail, memoized for a minute. Until Foresight is deployed it answers 404 and
+  the rail says "not deployed".
 * **The Overview landing makes fewer reads than main's Research landing.**
 
 **Pre-existing failures** (red on `main` too, not caused by this change) are

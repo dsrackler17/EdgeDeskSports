@@ -167,7 +167,10 @@ async function buildFixture() {
     console.log('desktop');
     let { ctx, page, errors } = await open({ width: 1440, height: 900 }, '');
     /* Props is a Research panel since the five-destination navigation
-       (docs/ia/NAVIGATION_AUDIT.md): Research › Props, with Research lit */
+       (docs/ia/NAVIGATION_AUDIT.md): Research › Props, with Research lit.
+       A reader with nothing saved lands on the Overview
+       (docs/research-os/DESIGN.md §1), so the way in is the Research seat. */
+    await page.click('.bottomnav button[data-v="research"]');
     await page.waitForSelector('.research-sub button[data-sub="pprops"]');
     await page.click('.research-sub button[data-sub="pprops"]');
     await page.waitForSelector('.pp-row', { timeout: 15000 });

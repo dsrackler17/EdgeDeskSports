@@ -200,7 +200,7 @@ function makeDb(createdAt) {
         localStorage.setItem('edgedesk_visitor', 'visitorabcdefghijklmnop');
         /* a new account's very first screen is setup (welcome → activity →
            portfolio → first read), held by tools/app/navigation.e2e.js; this
-           suite starts where setup hands over: Research, with the panel */
+           suite starts where setup hands over: the Overview, with the panel */
         localStorage.setItem('edgedesk_setup_v1', String(Date.now()));
         /* …and after the first-visit introduction was answered, which
            tools/guide/guide_ui.e2e.js holds */
@@ -240,9 +240,10 @@ function makeDb(createdAt) {
       const h = document.getElementById('edFirstRun');
       const card = (t) => [...h.querySelectorAll('.edfr-card')].find((c) => c.querySelector('h4').textContent.indexOf(t) === 0);
       const items = (t) => { const c = card(t); return c ? [...c.querySelectorAll('.edfr-item')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()) : null; };
-      const research = document.getElementById('v-research');
+      const ov = document.getElementById('v-overview');
       return {
-        inResearch: !!(research && research.contains(h)), beforeSearch: !!(document.getElementById('rsSearchWrap') && (h.compareDocumentPosition(document.getElementById('rsSearchWrap')) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        onOverview: !!(ov && ov.contains(h) && !ov.classList.contains('hide')), drawn: h.getClientRects().length > 0 && h.getBoundingClientRect().top < window.innerHeight,
+        beforeSections: !!(document.getElementById('overviewHost') && (h.compareDocumentPosition(document.getElementById('overviewHost')) & Node.DOCUMENT_POSITION_FOLLOWING)),
         sub: (h.querySelector('.edfr-sub') || {}).textContent || '',
         dis: items('Largest model'), games: items('Research-grade game'), props: items('Research-grade player'), inc: items('Games with incomplete'), chg: items('Recently changed'),
         steps: [...h.querySelectorAll('.edfr-steps li')].map((li) => li.className), prefsOpen: h.querySelector('.edfr-prefs').open,
@@ -250,7 +251,9 @@ function makeDb(createdAt) {
         text: h.innerText
       };
     });
-    chk(w + ': the panel sits in Research, above the board search', r.inResearch && r.beforeSearch, [r.inResearch, r.beforeSearch]);
+    /* a new reader lands on the Overview (docs/research-os/DESIGN.md §1), so the welcome is there */
+    chk(w + ': the panel sits on the Overview, the screen a new reader lands on, above its sections', r.onOverview && r.beforeSections, [r.onOverview, r.beforeSections]);
+    chk(w + ': …and is drawn in the first screen, not only in the page', r.drawn);
     chk(w + ': it counts the slate from the rows', /4 games analyzed/.test(r.sub) && /2 game-market/.test(r.sub), r.sub);
     chk(w + ': the NFL game the state did not grade is WATCH', r.dis.some((t) => /Kansas City Chiefs @ Buffalo Bills WATCH/.test(t)), r.dis);
     chk(w + ': largest disagreements, widest first, with market and capture time', r.dis && r.dis.length === 3 && /West Virginia @ Iowa State/.test(r.dis[0]) && /40 min ago/.test(r.dis[0]), r.dis);
@@ -309,7 +312,7 @@ function makeDb(createdAt) {
       chk('…and records game_opened for that game', db.events.some((e) => e.event === 'game_opened' && e.props && /9102|9101/.test(e.props.entity || '')), db.events.filter((e) => e.event === 'game_opened'));
 
       /* 5 hide */
-      await page.evaluate(() => { if (typeof window.researchGo === 'function') window.researchGo('football'); });
+      await page.evaluate(() => { if (typeof window.show === 'function') window.show('overview'); });
       await page.evaluate(() => { const b = document.querySelector('#edFirstRun [data-fr="hide"]'); if (b) b.click(); });
       await eventually(() => !!(db.T.user_preferences[0] && db.T.user_preferences[0].first_run_done_at), 5000);
       chk('Hide removes the panel and is remembered on the account', await page.evaluate(() => { const h = document.getElementById('edFirstRun'); return !h || h.hidden || !h.textContent.trim(); }) && !!db.T.user_preferences[0].first_run_done_at);

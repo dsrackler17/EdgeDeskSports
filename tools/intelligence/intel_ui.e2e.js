@@ -241,6 +241,13 @@ function siteHandler(req, res) {
     });
   }
   async function noSideScroll(page) { return page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth })); }
+  /* tap a seat the way a reader does: on a phone a seat that is not on the bar is in Menu's sheet
+     (docs/research-os/DESIGN.md §1) */
+  async function seat(page, v) {
+    const visible = await page.evaluate((x) => { const b = document.querySelector('.bottomnav button[data-v="' + x + '"]'); return !!b && b.offsetParent !== null && b.getBoundingClientRect().width > 0; }, v);
+    if (!visible) { await page.click('#navMenuBtn'); await page.waitForSelector('#edNav.open button[data-v="' + v + '"]', { state: 'visible', timeout: 5000 }); }
+    await page.click('.bottomnav button[data-v="' + v + '"]');
+  }
 
   const VPS = [{ tag: 'phone', width: 390, height: 844, mobile: true, dpr: 2 }, { tag: 'desktop', width: 1280, height: 900 }];
   try {
@@ -465,7 +472,7 @@ function siteHandler(req, res) {
       /* ── 9. NAVIGATE AWAY AND BACK ── */
       await page.evaluate(() => window.EDAI.close());
       const logBefore = await page.evaluate(() => document.querySelectorAll('#edaiLog .ia-act').length);
-      await page.click('nav [data-v="card"]');
+      await seat(page, 'card');
       await page.waitForTimeout(500);
       const onCard = await page.evaluate(() => { const v = document.getElementById('v-card'); return v && getComputedStyle(v).display !== 'none'; });
       const cardRes = await page.evaluate(() => { const h = document.querySelector('#iaCardHost .ia-cardres'); if (!h) return null; const rows = [...h.querySelectorAll('.ia-g')].map((g) => ({ t: g.querySelector('.ia-g-t b').textContent, chip: (g.querySelector('.ia-chipcls') || {}).textContent, kv: [...g.querySelectorAll('.ia-kv-r')].map((r) => r.querySelector('dt').textContent + ': ' + r.querySelector('dd').innerText.replace(/\s+/g, ' ')) }));
@@ -475,14 +482,14 @@ function siteHandler(req, res) {
       chk(T + '9 · …below the Card\'s own decisions, which still render', cardRes && cardRes.card, cardRes && cardRes.card);
       await page.evaluate(() => { const h = document.getElementById('iaCardHost'); if (h) h.scrollIntoView({ block: 'start' }); });
       await shot(page, '09a-card-researched-' + vp.tag);
-      await page.click('nav [data-v="process"]');
+      await seat(page, 'process');
       await page.waitForTimeout(400);
       const proc = await page.evaluate(() => { const m = document.querySelector('#iaMethodHost .ia-method'); return m ? { h: m.querySelector('h3').textContent, secs: [...m.querySelectorAll('details > summary')].map((x) => x.textContent), text: m.textContent } : null; });
       chk(T + '9 · Process explains the method, model validation and research verification', proc && proc.h === 'How EdgeDesk researches' && ['The quantitative method', 'Model validation', 'Research verification', 'The adversarial audit and “verified candidate”', 'Readiness: five separate states', 'Limits and cost'].every((k) => proc.secs.includes(k)), proc && proc.secs);
       chk(T + '9 · …and calls nothing calibrated except a VALIDATED model, LEAN a break-even history', proc && /only then is it called calibrated/.test(proc.text) && /a break-even history, not a profit record/.test(proc.text), null);
       await page.evaluate(() => { const m = document.querySelector('#iaMethodHost .ia-method'); if (m) { m.querySelectorAll('details').forEach((d, i) => { d.open = i < 2; }); m.scrollIntoView({ block: 'start' }); } });
       await shot(page, '09b-process-method-' + vp.tag);
-      await page.click('nav [data-v="research"]');
+      await seat(page, 'research');
       await page.waitForTimeout(500);
       const back = await page.evaluate(() => ({ ask: !!document.querySelector('#iaAskHost .ia-ask'), recent: [...document.querySelectorAll('#iaRecent .ia-chip')].map((c) => c.textContent), ctx: (document.getElementById('iaCtx') || {}).hidden === false, acts: document.querySelectorAll('#edaiLog .ia-act').length,
         rd: !!document.querySelector('#fbOverview .ia-readiness') }));
