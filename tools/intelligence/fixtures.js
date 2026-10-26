@@ -166,10 +166,20 @@ function build(now) {
      artifact's own, and its next slate lands on the clock's week. The clock's
      own day stays the scenarios' ("nothing tonight"), so a leftover Monday
      night game from the artifact's previous week, which the move would put on
-     that evening, is left off. */
+     that evening, is left off. The move is measured from the artifact's own
+     card, the week that holds most of its games: on 25 October 2026 it also
+     carried Week 7's Sunday and Monday night games and one Week 9 game, and
+     measured from the Sunday night game Week 8 landed a week past the clock's
+     weekend, leaving "this weekend" three games. */
   const DAY = 86400000, WEEK = 7 * DAY;
+  const cardWeek = (games) => {
+    const n = {};
+    games.forEach((g) => { if (g.week != null) n[g.week] = (n[g.week] || 0) + 1; });
+    return Object.keys(n).sort((a, b) => n[b] - n[a])[0];
+  };
   const onClock = (games) => {
-    const next = games.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b)[0];
+    const wk = cardWeek(games), card = wk == null ? games : games.filter((g) => String(g.week) === wk);
+    const next = card.map((g) => Date.parse(g.kickoff)).filter((t) => t > now).sort((a, b) => a - b)[0];
     const weeks = next == null ? 0 : Math.floor((next - now) / WEEK);
     if (weeks < 1) return games;
     const back = (ms) => new Date(ms - weeks * WEEK).toISOString();
