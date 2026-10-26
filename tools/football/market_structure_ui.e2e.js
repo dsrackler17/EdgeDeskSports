@@ -5,7 +5,11 @@
 
    The NFL board runs on the nflverse schedule (served from the local feed
    cache, else fetched once) with the odds feed down, so every card's line is
-   the nflverse reference. The Market Structure tables are staged:
+   the nflverse reference. Every page reads 2026-10-25 13:00 UTC (a pinned
+   clock: after the Thursday freeze and the Saturday Circa fetch, before the
+   first Sunday kickoff) from a schedule whose 2026 results from then on are
+   blanked, so Week 7's Sunday and Monday games are upcoming whenever this
+   runs. The Market Structure tables are staged:
 
      DEPLOYED      the snapshot board, Circa ownership and the registry answer
                    with staged rows for Week 7: DAL @ PHI froze at PHI +3 and
@@ -53,6 +57,20 @@ async function gamesCsv() {
 const NAME = {}; MS.DIVISIONS.forEach((d) => { NAME[d[1]] = d[2]; NAME[d[0]] = d[2]; });
 /* the schedule's ET kickoff, as the odds feed would carry it */
 function kickIso(day, time) { const d = new Date(day + 'T' + (time || '13:00') + ':00-04:00'); return d.toISOString(); }
+const PIN = Date.parse('2026-10-25T13:00:00Z');
+/* 2026 as it stood at the pinned clock: games kicking off after it carry no
+   score and no result, so IND @ MIN and DAL @ PHI stay on the board */
+function asOfPin(csv) {
+  const rows = csv.split('\n'), h = rows[0].split(','), ix = (k) => h.indexOf(k);
+  const blank = ['away_score', 'home_score', 'result', 'total', 'overtime'].map(ix).filter((i) => i >= 0);
+  return rows.map((l, i) => {
+    if (!i || !l) return l;
+    const c = l.split(',');
+    if (c[ix('season')] !== '2026' || Date.parse(c[ix('gameday')] + 'T' + (c[ix('gametime')] || '13:00') + ':00-04:00') <= PIN) return l;
+    blank.forEach((k) => { c[k] = ''; });
+    return c.join(',');
+  }).join('\n');
+}
 
 /* THE STAGED INSTANT. Every staged row is a Week 7 pregame state, so the page
    runs on a clock set to Sunday of Week 7, noon ET (before its 1 PM kickoffs),
@@ -97,7 +115,7 @@ function staged(csv) {
   const board = [
     { event_id: 'evDALPHI', canonical_game_id: 'g1', home_team: NAME.PHI, away_team: NAME.DAL, commence_time: kickIso(g1.day, g1.time), snapshot_at: '2026-10-22T17:00:00Z',
       snapshot_status: 'ok', snapshot_backfilled: false, snap_home_spread: 3, snap_fair_home: 0.482, snap_n_books: 14, snap_books: ['draftkings', 'pinnacle'], snap_pass_at: '2026-10-22T16:20:00Z',
-      current_status: 'ok', current_at: AT, current_home_spread: 4.5, current_delta: 1.5, current_crossed: [3], current_flagged: true,
+
       close_status: null, close_at: null, close_home_spread: null, close_delta: null, close_crossed: null, close_flagged: null, moved_toward: null, clv: null, clv_source: null, clv_reason: 'not_closed' },
     { event_id: 'evINDMIN', canonical_game_id: null, home_team: NAME.MIN, away_team: NAME.IND, commence_time: kickIso(g2.day, g2.time), snapshot_at: '2026-10-22T17:00:00Z',
       snapshot_status: 'no_capture', snapshot_backfilled: false, snap_home_spread: null, current_status: null, close_status: null, clv: null, clv_reason: 'no_snapshot_line' }
@@ -116,7 +134,7 @@ function staged(csv) {
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
   const raw = await gamesCsv();
   if (!raw) { console.log('SKIPPED: the nflverse schedule is neither cached nor reachable'); process.exit(0); }
-  const csv = pinLine(asOf(raw, AT), '2026', '7', 'IND', 'MIN', '5.5');
+
   const ST = staged(csv);
   if (!ST) { console.log('SKIPPED: the schedule carries no 2026 Week 7 DAL @ PHI / IND @ MIN to stage'); process.exit(0); }
   let HEAD_APP = null;
@@ -146,7 +164,7 @@ function staged(csv) {
 
   async function open(viewport, mode, appPath) {
     const ctx = await browser.newContext({ viewport });
-    await ctx.clock.install({ time: new Date(AT) });   /* runs on from the staged instant */
+
     await ctx.addInitScript(() => { try {
       localStorage.setItem('edgedesk_welcome_seen', String(Date.now()));
       localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400, user: { id: 'e2e-reader', email: 'e2e@edgedesk.test' } }));
