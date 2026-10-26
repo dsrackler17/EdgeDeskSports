@@ -1,0 +1,294 @@
+{
+ "schema": "edgedesk_ncaam_fc_weekly_report_v1",
+ "date": "2026-10-26",
+ "generated_at": "2026-10-26T17:21:31.263Z",
+ "candidate": "calibration_window_4",
+ "champion": "ncaam_adjeff@1.0.0",
+ "challenger": {
+  "model_id": "ncaam_adjeff",
+  "version": "1.1.0",
+  "engine": "research_team_model",
+  "config": {
+   "model_id": "ncaam_adjeff",
+   "version": "1.1.0",
+   "engine": "research_team_model",
+   "params": {
+    "lambda": 300,
+    "lambda_tempo": 2,
+    "kMu": 3000,
+    "kEta": 6000,
+    "sweeps": 6,
+    "half_life": null,
+    "carry": 0.9,
+    "carry_tempo": 0.9,
+    "continuity_slope": 0,
+    "continuity_ref": 0.45,
+    "transfer_beta": 0,
+    "blowout_margin": 30,
+    "blowout_weight": 1,
+    "scale": "additive",
+    "new_program_quantile": 0.25,
+    "nond1_lambda": 400,
+    "poss_coef": null
+   },
+   "calibration": {
+    "refit_days": 7,
+    "window_seasons": 4,
+    "min_rows": {
+     "D1_D1": 300,
+     "D1_OTHER": 100
+    },
+    "kappa": "fit",
+    "variance": {
+     "margin": "v1",
+     "total": "v2"
+    },
+    "parameter_variance": "stable"
+   },
+   "selection_hash": "7807a94ff33649c647752ba1ecfe05e64339ccf3b66e7c388f04a83f5be68757"
+  },
+  "config_sha256": "55ad293fa6d23a8bb5f6f3ea1eabb9b5001c8dd4e7b3e023be7301d324998e2a"
+ },
+ "policy_version": "1.0.0",
+ "snapshot": {
+  "through": "2026-10-26T17:19:34.622Z",
+  "rows": 99846,
+  "sha256": "49a7f94b0574208c8997afcf00c4549c331ed4ce203b843939192f26a8793b4c",
+  "seasons": [
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ]
+ },
+ "leakage": {
+  "checked": 40858,
+  "violations": 0,
+  "examples": []
+ },
+ "data": {
+  "season_in_progress": 2027,
+  "coverage": {
+   "rows": 1629,
+   "final": 0,
+   "score_ok": 0,
+   "box_ok": 0,
+   "d1_d1_box_ok": 0,
+   "not_played": 0,
+   "scheduled": 1629,
+   "quarantined": {},
+   "excluded_from_possession_model": 0,
+   "box_coverage": null
+  }
+ },
+ "result": {
+  "decision": "RETAIN",
+  "gates": [
+   {
+    "id": "G1_min_sample",
+    "pass": true,
+    "detail": "37450 shared games over 7 seasons (need 15000 and 3)",
+    "evidence": null
+   },
+   {
+    "id": "G2_log_loss",
+    "pass": false,
+    "detail": "difference -0.00001 (95% CI [-0.00005,0.00002]), need <= -0.0002 with the interval below 0",
+    "evidence": {
+     "n": 37450,
+     "clusters": 973,
+     "mean_diff": -0.00001,
+     "ci95": [
+      -0.00005,
+      0.00002
+     ],
+     "metric": "log_loss",
+     "a_better": false,
+     "b_better": false
+    }
+   },
+   {
+    "id": "G3_brier",
+    "pass": true,
+    "detail": "difference 0 (95% CI [-0.00001,0.00001])",
+    "evidence": {
+     "n": 37450,
+     "clusters": 973,
+     "mean_diff": 0,
+     "ci95": [
+      -0.00001,
+      0.00001
+     ],
+     "metric": "brier",
+     "a_better": false,
+     "b_better": false
+    }
+   },
+   {
+    "id": "G4_margin_crps",
+    "pass": true,
+    "detail": "difference -0.00004 (95% CI [-0.00052,0.00038]), limit +0.002",
+    "evidence": {
+     "n": 37450,
+     "clusters": 973,
+     "mean_diff": -0.00004,
+     "ci95": [
+      -0.00052,
+      0.00038
+     ],
+     "metric": "margin_crps",
+     "a_better": false,
+     "b_better": false
+    }
+   },
+   {
+    "id": "G5_calibration",
+    "pass": true,
+    "detail": "citl 0.0046, slope 1.0448, coverage80 margin 0.8002 total 0.7989, overtime 0.0602 vs 0.0582",
+    "evidence": null
+   },
+   {
+    "id": "G6_cohorts",
+    "pass": true,
+    "detail": "no gated cohort regressed",
+    "evidence": {
+     "neutral_site": {
+      "n": 4364,
+      "gated": true,
+      "mean_diff": 0.00001,
+      "ci95": [
+       -0.00008,
+       0.00011
+      ],
+      "regression": false
+     },
+     "home_site": {
+      "n": 33086,
+      "gated": true,
+      "mean_diff": -0.00002,
+      "ci95": [
+       -0.00006,
+       0.00002
+      ],
+      "regression": false
+     },
+     "early_season_min_games_lt_5": {
+      "n": 6986,
+      "gated": true,
+      "mean_diff": -0.00009,
+      "ci95": [
+       -0.00023,
+       0.00003
+      ],
+      "regression": false
+     },
+     "postseason_non_holdout": {
+      "n": 2421,
+      "gated": true,
+      "mean_diff": 0.00003,
+      "ci95": [
+       -0.00006,
+       0.00013
+      ],
+      "regression": false
+     },
+     "most_recent_complete_season": {
+      "n": 5676,
+      "gated": true,
+      "mean_diff": 0.00005,
+      "ci95": [
+       -0.00003,
+       0.00014
+      ],
+      "regression": false
+     },
+     "d1_vs_non_d1_regime": {
+      "n": 3346,
+      "gated": true,
+      "mean_diff": -0.0005,
+      "ci95": [
+       -0.00099,
+       -0.00007
+      ],
+      "regression": false
+     }
+    }
+   },
+   {
+    "id": "G7_integrity",
+    "pass": true,
+    "detail": "hashes, leakage audit, snapshot 49a7f94b0574, reproducible artifact",
+    "evidence": null
+   },
+   {
+    "id": "G8_operations",
+    "pass": true,
+    "detail": "runtime 1.97 min, outputs finite",
+    "evidence": null
+   }
+  ],
+  "window": {
+   "from": 2020,
+   "to": 2027
+  },
+  "shared_games": 37450,
+  "seasons": [
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ],
+  "challenger": {
+   "n": 37450,
+   "log_loss": 0.53563,
+   "brier": 0.18132,
+   "citl": 0.0046,
+   "slope": 1.0448,
+   "margin_crps": 6.4276,
+   "margin_mae": 9.047,
+   "margin_c80": 0.8002,
+   "total_crps": 9.4027,
+   "total_mae": 13.257,
+   "total_c80": 0.7989,
+   "overtime": {
+    "mean_forecast": 0.0602,
+    "observed": 0.0582,
+    "n": 37450
+   }
+  },
+  "champion": {
+   "n": 37450,
+   "log_loss": 0.53565,
+   "brier": 0.18133,
+   "citl": 0.0048,
+   "slope": 1.0458,
+   "margin_crps": 6.4277,
+   "margin_mae": 9.048,
+   "margin_c80": 0.8009,
+   "total_crps": 9.4014,
+   "total_mae": 13.256,
+   "total_c80": 0.7981,
+   "overtime": {
+    "mean_forecast": 0.0599,
+    "observed": 0.0582,
+    "n": 37450
+   }
+  }
+ }
+}
