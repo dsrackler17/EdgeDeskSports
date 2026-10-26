@@ -1,6 +1,37 @@
 # Changelog
 
+## 2026-10-26 — NHL: a nightly check on whether the model over- or under-rates clubs
 
+A reader asked whether the model under-rates Toronto. For TOR at CGY, the market implied 3.57 Toronto goals and the model 3.10 in regulation (about 3.2 with overtime). Toronto had scored 3.85 a game, with a strong power play and 18 goals in three games. The model's job is to be right for every club, so this checks that question for all of them, out of sample, every night.
+
+- **What the history says.**
+  - Clubs that start hot score what the model forecasts. Clubs 8 to 24 games in, scoring at least 1.20× the league, scored 0.994× (2014-20) and 0.997× (2021-26) their forecast. With hot finishing too, Toronto's profile: 0.995× and 0.994×. A run of goals over the last three games: 1.015× and 0.995×.
+  - High early power-play goal rates carry no stable correction (1.038× and 0.966×). Adding power-play features changes nothing measurable. A goals-only model, which trusts scoring alone, is measurably worse on team totals.
+- **Where the model does overrate.** In 2021-26 the highest-forecast tenth scored 4.5% under its forecast (club-goal slope 0.889, interval below 1). The cause is game totals forecast too far apart, the same issue that keeps the totals markets provisional. Three other calibration windows were tested again; none beats the production rule, so nothing in the price changes.
+- **The season so far leans the other way.** Totals are bunched too tightly (slope 3.56 over 179 games, interval above 1). This season's total calibration is the strongest since 2014. It is a watch item; the live season never chooses the model.
+- **The monitor.** `hockey/model/diagnostics.js` adds `team_strength`:
+  - the club-goal slope, with a reading of OK, TOO_WIDE, TOO_NARROW or TOO_EARLY;
+  - the game total and who scores more, separately;
+  - scored ÷ forecast by tenth of the forecast;
+  - eleven standout groups (hot or cold scoring, last three games, power-play goals, finishing, a leaky or stingy opponent).
+
+  The Record tab shows it as a table. It never retrains or reprices. `--check` requires a reading for every window.
+- **Tests.**
+  - `nhl_v2.test.js` gains 8 checks on synthetic data where the answer is known. A forecast at the truth reads OK. One spread 1.5× too far reads TOO_WIDE with slope ≈ 1/1.5. One bunched to half the spread reads TOO_NARROW with slope ≈ 2. A game's own score never reaches its season-to-date context.
+  - `engine_ui.e2e.js` checks the table on desktop and phone.
+
+Write-up: `docs/engine/NHL_LAB.md` §6.1.
+
+## 2026-10-26 — College basketball exhibitions: opponents found by name and nickname
+
+The first collector run held 299 men's and 300 women's schedules. Before the daily refreshes published them, a preview found three opponent mistakes, fixed here.
+
+- **A school that moved its website is found by name.** Southern Miss lists Houston Christian at `hcuhuskies.com`, a site the registry does not know (it has `hbuhuskies.com`). The game was priced as a non-D-I opponent and a second time from Houston Christian's own listing. A website the registry does not know now falls back to the registry name, so the game is priced once, D-I against D-I.
+- **A school's ESPN team, when the collector does not read it,** is the D-I team ESPN names exactly as the registry names the school and its nickname. For the 442 teams (229 men's, 213 women's) whose results also identify them, the two never disagree. Arkansas, Kentucky, Northwestern State and Utah State opponents, skipped before, are now priced.
+- **The same rule fixes a stale division.** Mercyhurst and New Haven are D-I on ESPN but D-II in the registry. Louisville vs Mercyhurst was priced as a non-D-I game (99.8%); it is now D-I against D-I.
+- **A game both schools list is priced from the listing whose start time reads.** Houston Christian lists no time for Southern Miss; Southern Miss lists 6 PM, which is now used instead of noon, flagged approximate.
+- **More of the schools' labels come off a name:** "(Ex.)", "(ex)", "(exhib.)", "(EXH)", and "Exhibition" in front ("Exhibition Cal State Monterey Bay").
+- Preview from the collected schedules, through 2026-11-09: men's 42 priced (was 40), women's 57 (was 56).
 
 ## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
 
