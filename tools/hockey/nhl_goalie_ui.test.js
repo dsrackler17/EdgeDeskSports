@@ -29,7 +29,9 @@ const G = require(path.join(ROOT, 'hockey', 'goalies', 'core.js'));
 const DIST = require(path.join(ROOT, 'hockey', 'model', 'distribution.js'));
 const INPUTS = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'nhl_goalie_inputs_min_van_2026-10-25.json'), 'utf8'));
 const GI = INPUTS.games[0];
-const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'slate.json'), 'utf8'));
+/* the slate's MIN @ VAN game as frozen before puck drop, pinned: the live slate drops a game once it is played */
+const FX = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'nhl_slate_min_van_2026-10-25.json'), 'utf8'));
+const SLATE = Object.assign({}, FX.slate, { games: [FX.game] });
 
 let pass = 0, fail = 0;
 const failures = [];
