@@ -14,6 +14,9 @@ This change makes that true on the NFL and college football research flow:
 
 Plan and audit: [`PLAN.md`](PLAN.md). Date: 2026-10-16.
 
+The same graphic for every other sport EdgeDesk prices (college basketball,
+the WNBA, MLB, college baseball, UFC bouts): [`SPORTS.md`](SPORTS.md).
+
 ---
 
 ## 1. Two layers, three answers

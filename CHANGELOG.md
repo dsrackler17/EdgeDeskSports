@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-26 — The matchup graphic on every sport: college basketball, the WNBA, MLB, college baseball and UFC
+
+NFL, college football, the NHL and the NBA open a game with the matchup graphic. Every other sport EdgeDesk prices now does too, where a reader clicks the game (`lib/edgedesk_sport_graphic.js`, [`docs/game-research/SPORTS.md`](docs/game-research/SPORTS.md)).
+
+- **Where it is.**
+  - Men's and women's college basketball and the WNBA: Today's Games → the game's matchup view, from the lab slate (`basketball/slate.json`).
+  - MLB: the top of the game brief, from the run model (`mlb/engine.js`).
+  - College baseball: the top of the brief, drawn while the rest of the brief is still being read.
+  - UFC: Research → UFC shows the next card, a chip per bout with the main event first; the card's matchup view on Today's Games carries the same chips.
+- **The football picture, each sport's numbers.** The same template, square or portrait, with Download PNG, Share and Copy link. Each sport fills it with its own:
+  - three model panels;
+  - the captured market before the start, or EdgeDesk's own detail;
+  - What to watch for, which names what moves the number and what the model cannot see: availability in basketball, probable starters, park and weather in baseball, a fighter's camp in UFC.
+- **College baseball is projected, never priced.** Its brief has always said none of its numbers becomes a price. The graphic shows the board's projected runs, total and win probability, with the left panel as the projected margin ("not a run line"). The brief's Projection paragraph now says what is projected and that none of it is a price; it used to say there was no total or win probability, which the board already showed.
+- **No EDGE label on any of them.** Value claims are off for the lab basketball model and the run models (never graded against the close) and for the experimental UFC Elo, so a model–market gap is a sentence and nothing more.
+- **Today's Games lists women's college basketball and the WNBA** (ESPN `basketball/womens-college-basketball` with `groups=50`, and `basketball/wnba`), joined to the lab slate like men's games.
+  - Men's games had shown no fair line: the join read a spread field the lab slate does not carry. It now reads `fair_home_line`.
+  - The pill reads NCAAM, beside NCAAW.
+- **The renderer** gains a baseball diamond and an octagon surface, baseball and glove icons, outlined polygons, and an optional "VS" for a neutral site or a bout. Football's picture is unchanged.
+
+Tests: `npm run sport:graphic:test` (1,502: every committed lab-slate game as each league, every served UFC bout, MLB and college baseball through the real engine, layout in both formats; mutation-checked) and `npm run sport:graphic:e2e` (53, Chromium: the matchup views, a 390 px phone, the public page, the UFC panel, both briefs, keyboard focus). CI: `.github/workflows/sport-graphic-tests.yml`. Also run: `slate/games.test.js` (106), `slate/build.test.js` (67, now ten feeds), `slate/games_ui.e2e.js` (105), `cbb/cbb_ui.e2e.js` (59) and `mlb/baseball_ui.e2e.js` (245) against PostgreSQL 16, `mlb/game_brief.test.js` (152), the NBA (367), NHL (344), signal center (291) and football graphic suites, and navigation. The ESPN women's and WNBA scoreboards could not be read from the build environment (its network refuses `site.api.espn.com`).
+
 ## 2026-10-26 — College basketball exhibitions, from the schools' own schedules
 
 No feed this repository reads lists a college basketball exhibition, so the forecasts priced none. Every school lists its own, and the collegiate collector now reads every Division I school's men's and women's basketball schedule each week, beside baseball.
