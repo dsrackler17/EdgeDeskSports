@@ -1555,6 +1555,18 @@ function ev(bookmakers, over) {
        floor, so these runs set a lower floor; the floor has its own case below. */
     ENV.CAPTURE_PROP_MIN_QUOTA_REMAINING = '1000';
 
+    /* Both runs below read ONE pinned clock. A quote's age is whole seconds
+       from the fixture's NOW, so two runs a few milliseconds apart on the wall
+       clock can straddle a half second: the second read a 60 s quote as 61 s,
+       its freshness and quality moved with it, and the rows differed with
+       props doing nothing (Capture the board, 2026-10-26 20:39). */
+    const RealDate = Date;
+    const PIN = RealDate.now();
+    globalThis.Date = class extends RealDate {
+      constructor(...a) { if (a.length) super(...a); else super(PIN); }
+      static now() { return PIN; }
+    };
+
     /* A game-line run with props OFF, as the baseline game rows. */
     reset();
     ENV.CAPTURE_PLAYER_PROPS = 'false';
@@ -1571,6 +1583,7 @@ function ev(bookmakers, over) {
     reset();
     net.db = propDb();
     j = await (await M.handle(rq('?tier=day'))).json();
+    globalThis.Date = RealDate;
     const P = j.player_props;
     chk('handler · the game-line rows are identical with props on and off', strip((writes.signals || [])[0].body) === baseline);
     chk('handler · no signals row carries a player market or a player column (prop signals are off by default)',
