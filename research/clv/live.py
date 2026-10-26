@@ -94,9 +94,13 @@ def capture_models(now=None):
         if ("nhl", gid) in have:
             continue
         ch = {m["model"]: m.get("p_home") for m in ((g.get("challengers") or {}).get("models") or [])}
+        gl = g.get("goalies") or {}
+        lead = lambda side: str(((gl.get(side) or [{}])[0] or {}).get("goalie")) if (gl.get(side) or [None])[0] else None
+        # the goalie pairing and certainty of the sheet captured, so a CLV row is graded against the card that existed
         new.append({"sport": "nhl", "game_id": gid, "captured_at": now, "start_utc": g.get("start_utc"),
                     "home": g.get("home"), "away": g.get("away"), "p_core": ch.get("B_incumbent"),
-                    "p_gproj": ch.get("C_goalie_projected"), "model": (h.get("model") or {}).get("id")})
+                    "p_gproj": ch.get("C_goalie_projected"), "model": (h.get("model") or {}).get("id"),
+                    "goalie_certainty": gl.get("certainty"), "goalie_pairing": {"home": lead("home"), "away": lead("away")}})
     n = _read("nba/slate.json") or {}
     for g in n.get("games") or []:
         gid = str(g.get("game_id"))

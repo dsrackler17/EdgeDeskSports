@@ -49,6 +49,12 @@ on:
       - 'tools/slate/research.js'
       - 'supabase/nhl_odds_sport.sql'
       - 'supabase/nhl_warehouse.sql'
+      - 'supabase/nhl_goalie_layer.sql'
+      - 'supabase/nhl_goalie_cron.sql'
+      - 'supabase/nhl_goalie_v2_registry.sql'
+      - 'supabase/nhl_goalie_layer_rollback.sql'
+      - 'supabase/functions/nhl_goalie_sync/**'
+      - 'lib/edgedesk_nhl_goalies.js'
       - 'supabase/functions/edgedesk_ai/index.ts'
       - 'app.html'
       - 'datapack/nhl_v1/**'
@@ -67,6 +73,9 @@ on:
       - 'lib/edgedesk_nhl_market.js'
       - 'lib/edgedesk_nhl_compare.js'
       - 'lib/edgedesk_nhl_graphic.js'
+      - 'lib/edgedesk_nhl_goalies.js'
+      - 'supabase/nhl_goalie_*.sql'
+      - 'supabase/functions/nhl_goalie_sync/**'
       - 'tools/hockey/**'
       - 'tools/engine/**'
 
@@ -94,13 +103,17 @@ jobs:
         run: node tools/hockey/nhl_compare.test.js
       - name: The NHL matchup graphic and started games keeping their research
         run: node tools/hockey/nhl_graphic.test.js
+      - name: Starting goalies — the core (sources, merge, conflicts, change detection, edge gate, cadence), the card block and the gate
+        run: node tools/hockey/inline_goalie_core.js --check && node tools/hockey/build_goalie_v2_registry_sql.js --check && node tools/hockey/nhl_goalie_core.test.js && node tools/hockey/nhl_goalie_ui.test.js
+      - name: Starting goalies — the deployed nhl_goalie_sync function (the 2026-10-25 MIN @ VAN replay)
+        run: node tools/hockey/nhl_goalie_sync.test.js
       - name: The cross-sport board's rules and the readiness registry
         run: node tools/engine/engine.test.js
       - name: The committed record, slate, registry and board pass their checks
         run: node hockey/model/walkforward.js --check && node hockey/build_slate.js --check && node hockey/crosscheck/espn.js --check && node hockey/crosscheck/blocked.js --check && node hockey/research/officials.js --check && node hockey/research/pack_features.js --check && node hockey/contracts/canonical.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
-      - name: The NHL odds row and the NHL warehouse on a real PostgreSQL
+      - name: The NHL odds row, the NHL warehouse and the starting-goalie layer on a real PostgreSQL
         env: { NHL_SQL_REQUIRED: '1' }
-        run: node tools/hockey/nhl_sql.test.js && node tools/hockey/nhl_warehouse_sql.test.js
+        run: node tools/hockey/nhl_sql.test.js && node tools/hockey/nhl_warehouse_sql.test.js && node tools/hockey/nhl_goalie_sql.test.js
       - name: No path around the odds gateway; the navigation names NHL and Engine
         run: node tools/odds/no_bypass.test.js && node tools/app/navigation.test.js && node tools/app/sports_config.test.js && node tools/presentation/presentation_sync.test.js
       - name: Install Chromium for the panels

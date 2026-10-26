@@ -160,6 +160,13 @@ function marketChecks(g, ev, st, ctx) {
   const checks = [];
   const uncert = g.uncertainty ? g.uncertainty.moneyline_sd_pp : 0;
   const scen = (g.goalies && g.goalies.scenarios || []).map((s) => s.p_home);
+  /* each goalie pairing's probability at one puck line or total, for the goalie gate (docs/engine/NHL_GOALIES.md):
+     [{ p, push }] for the home side / the over (or the away side / the under), empty when a pairing has no price there */
+  const scenAt = (kind, line, first) => {
+    const rows = (g.goalies && g.goalies.scenarios || []).map((x) => x[kind] && x[kind][String(line)]);
+    if (!rows.length || rows.some((r) => !r)) return [];
+    return rows.map((r) => (first ? { p: r[0], push: r[1] } : { p: Math.max(0, 1 - r[0] - r[1]), push: r[1] }));
+  };
   for (const b of ev.books) {
     const q = (american, other) => ({ american, other_american: other, book: b.book, captured_at: b.last_update || ctx.captured_at, source: 'captured' });
     if (b.h2h) {
@@ -170,14 +177,14 @@ function marketChecks(g, ev, st, ctx) {
     for (const sp of b.spreads || []) {
       const row = (g.markets.puck_line || []).find((x) => x.home_line === sp.home_line); if (!row) continue;
       const s = statusFor(st, 'puck_line', sp.home_line);
-      checks.push(Object.assign({ book: b.book, market: g.home + ' ' + (sp.home_line > 0 ? '+' : '') + sp.home_line }, MK.evaluate({ market: { kind: 'puck_line', label: 'puck line ' + sp.home_line }, model: { p_win: row.p, p_push: row.push, sd_pp: uncert, status: s.status, market_status: s.market_status, market_n: s.market_n }, quote: q(sp.home, sp.away), context: { now: ctx.now, data_state: ctx.data_state, goalie_certainty: g.goalies.certainty } })));
-      checks.push(Object.assign({ book: b.book, market: g.away + ' ' + (-sp.home_line > 0 ? '+' : '') + (-sp.home_line) }, MK.evaluate({ market: { kind: 'puck_line', label: 'puck line ' + (-sp.home_line) }, model: { p_win: row.p_other, p_push: row.push, sd_pp: uncert, status: s.status, market_status: s.market_status, market_n: s.market_n }, quote: q(sp.away, sp.home), context: { now: ctx.now, data_state: ctx.data_state, goalie_certainty: g.goalies.certainty } })));
+      checks.push(Object.assign({ book: b.book, market: g.home + ' ' + (sp.home_line > 0 ? '+' : '') + sp.home_line }, MK.evaluate({ market: { kind: 'puck_line', label: 'puck line ' + sp.home_line }, model: { p_win: row.p, p_push: row.push, sd_pp: uncert, status: s.status, market_status: s.market_status, market_n: s.market_n, scenario_p_win: scenAt('puck_line', sp.home_line, true) }, quote: q(sp.home, sp.away), context: { now: ctx.now, data_state: ctx.data_state, goalie_certainty: g.goalies.certainty } })));
+      checks.push(Object.assign({ book: b.book, market: g.away + ' ' + (-sp.home_line > 0 ? '+' : '') + (-sp.home_line) }, MK.evaluate({ market: { kind: 'puck_line', label: 'puck line ' + (-sp.home_line) }, model: { p_win: row.p_other, p_push: row.push, sd_pp: uncert, status: s.status, market_status: s.market_status, market_n: s.market_n, scenario_p_win: scenAt('puck_line', sp.home_line, false) }, quote: q(sp.away, sp.home), context: { now: ctx.now, data_state: ctx.data_state, goalie_certainty: g.goalies.certainty } })));
     }
     for (const t of b.totals || []) {
       const row = (g.markets.total || []).find((x) => x.line === t.line); if (!row) continue;
       const s = statusFor(st, 'total', t.line);
-      checks.push(Object.assign({ book: b.book, market: 'Over ' + t.line }, MK.evaluate({ market: { kind: 'total', label: 'total ' + t.line }, model: { p_win: row.p, p_push: row.push, sd_pp: 0, status: s.status, market_status: s.market_status }, quote: q(t.over, t.under), context: { now: ctx.now, data_state: ctx.data_state } })));
-      checks.push(Object.assign({ book: b.book, market: 'Under ' + t.line }, MK.evaluate({ market: { kind: 'total', label: 'total ' + t.line }, model: { p_win: row.p_other, p_push: row.push, sd_pp: 0, status: s.status, market_status: s.market_status }, quote: q(t.under, t.over), context: { now: ctx.now, data_state: ctx.data_state } })));
+      checks.push(Object.assign({ book: b.book, market: 'Over ' + t.line }, MK.evaluate({ market: { kind: 'total', label: 'total ' + t.line }, model: { p_win: row.p, p_push: row.push, sd_pp: 0, status: s.status, market_status: s.market_status, scenario_p_win: scenAt('total', t.line, true) }, quote: q(t.over, t.under), context: { now: ctx.now, data_state: ctx.data_state, goalie_certainty: g.goalies.certainty } })));
+      checks.push(Object.assign({ book: b.book, market: 'Under ' + t.line }, MK.evaluate({ market: { kind: 'total', label: 'total ' + t.line }, model: { p_win: row.p_other, p_push: row.push, sd_pp: 0, status: s.status, market_status: s.market_status, scenario_p_win: scenAt('total', t.line, false) }, quote: q(t.under, t.over), context: { now: ctx.now, data_state: ctx.data_state, goalie_certainty: g.goalies.certainty } })));
     }
   }
   const order = { VERIFIED_VALUE: 0, PROVISIONAL: 1, RESEARCH_ONLY: 2, PASS: 3 };

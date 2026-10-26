@@ -1,0 +1,301 @@
+{
+ "note": "hockey/goalie_inputs.json as hockey/build_slate.js wrote it for the slate of 2026-10-25T21:13:04.383Z (the committed slate, rebuilt at its own timestamp), cut to game 2026020184 (MIN @ VAN) and the goalies who could start in it. Every number is the build’s own.",
+ "schema": "edgedesk_nhl_goalie_inputs_v1",
+ "generated_at": "2026-10-25T21:13:04.383Z",
+ "slate_generated_at": "2026-10-25T21:13:04.383Z",
+ "model": {
+  "id": "edgedesk_nhl_v1:xg_core",
+  "chosen": "xg_core",
+  "params_generated_at": "2026-10-20T15:19:46.910Z",
+  "goalie_variant": "xg_goalie_confirmed",
+  "goalie_feature": "goalie_conf",
+  "goalie_beta": -0.709267,
+  "pair_calibration": {
+   "a": 0.525,
+   "b": 0.9,
+   "c": 6.0154,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "basis": "eta = log expected regulation goals of the goalie-aware variant with its goalie term at zero; a pairing prices as exp(eta + goalie_beta × the opposing goalie's rating), pair-calibrated, through hockey/model/distribution.js"
+ },
+ "distribution": {
+  "effects": {
+   "t_buckets": [
+    0,
+    1200,
+    2400,
+    3000,
+    3300,
+    3420,
+    3480,
+    3540,
+    3600
+   ],
+   "d_min": -3,
+   "d_max": 3,
+   "m": [
+    [
+     0.8412,
+     0.911,
+     0.92,
+     0.8683,
+     0.8951,
+     0.8857,
+     1
+    ],
+    [
+     0.9794,
+     1.065,
+     1.0723,
+     1.0336,
+     1.0647,
+     1.0115,
+     1.0072
+    ],
+    [
+     0.9353,
+     0.9982,
+     0.9351,
+     0.8741,
+     0.9036,
+     0.8976,
+     0.8899
+    ],
+    [
+     0.9019,
+     1.0181,
+     0.951,
+     0.8386,
+     0.7992,
+     0.8085,
+     1.0555
+    ],
+    [
+     1.038,
+     1.0659,
+     0.929,
+     0.7867,
+     0.8284,
+     1.674,
+     1.4214
+    ],
+    [
+     0.8807,
+     1.4918,
+     1.0087,
+     0.7536,
+     1.1638,
+     3.2192,
+     1.2274
+    ],
+    [
+     0.872,
+     1.4996,
+     1.3697,
+     0.6946,
+     3.4982,
+     4.0722,
+     1.1541
+    ],
+    [
+     0.8379,
+     1.4745,
+     2.1689,
+     0.708,
+     5.8259,
+     4.7339,
+     0.8994
+    ]
+   ],
+   "goals": 33518,
+   "team_seconds": 40262400,
+   "base_rate_per_hour": 2.997,
+   "for_season": 2027,
+   "games": 5592
+  },
+  "ot": {
+   "format": "R3v3",
+   "k": 2.2925,
+   "so_home": 0.5159,
+   "p_ot_decided": 0.6801,
+   "n_tied": 869,
+   "lam_reg": 2.983,
+   "basis": "seasons before"
+  },
+  "ot_playoff": {
+   "format": "PO"
+  }
+ },
+ "ratings": {
+  "goalie_prior_rate": -0.03,
+  "goalie_prior_xg": 250,
+  "goalie_half_life_days": 200,
+  "basis": "hockey/model/ratings.js goalieRating: goals saved above expected per xG faced, decayed with the half-life and shrunk toward the replacement-level prior (the v1 rating; unchanged)"
+ },
+ "goalie_prior_rate": -0.03,
+ "goalies": {
+  "8475717": {
+   "name": "C. Pickard",
+   "rate": -0.0404789,
+   "xg_weight": 32.4,
+   "teams": [
+    "MIN"
+   ]
+  },
+  "8479406": {
+   "name": "F. Gustavsson",
+   "rate": -0.017721,
+   "xg_weight": 76.37,
+   "teams": [
+    "MIN"
+   ]
+  },
+  "8480947": {
+   "name": "K. Lankinen",
+   "rate": -0.0760252,
+   "xg_weight": 93.4,
+   "teams": [
+    "VAN"
+   ]
+  },
+  "8482447": {
+   "name": "L. Meriläinen",
+   "rate": -0.0362868,
+   "xg_weight": 36.84,
+   "teams": [
+    "VAN"
+   ]
+  },
+  "8482661": {
+   "name": "J. Wallstedt",
+   "rate": 0.0210172,
+   "xg_weight": 85.7,
+   "teams": [
+    "MIN"
+   ]
+  },
+  "8484268": {
+   "name": "N. Tolopilo",
+   "rate": -0.0337347,
+   "xg_weight": 28.22,
+   "teams": [
+    "VAN"
+   ]
+  }
+ },
+ "games": [
+  {
+   "game_id": "2026020184",
+   "date": "2026-10-25",
+   "start_utc": "2026-10-26T02:00:00Z",
+   "type": "R",
+   "home": "VAN",
+   "away": "MIN",
+   "state": "FUT",
+   "eta": {
+    "home": 1.022460132670365,
+    "away": 1.201396843280198
+   },
+   "rates": {
+    "8475717": -0.0406081,
+    "8479406": -0.017721,
+    "8480947": -0.0764912,
+    "8482447": -0.0363631,
+    "8482661": 0.0215457,
+    "8484268": -0.0337347
+   },
+   "projection": {
+    "home": [
+     {
+      "goalie_id": "8480947",
+      "goalie_name": "K. Lankinen",
+      "p": 0.5154
+     },
+     {
+      "goalie_id": "8482447",
+      "goalie_name": "L. Meriläinen",
+      "p": 0.4846
+     }
+    ],
+    "away": [
+     {
+      "goalie_id": "8475717",
+      "goalie_name": "C. Pickard",
+      "p": 0.7683
+     },
+     {
+      "goalie_id": "8482661",
+      "goalie_name": "J. Wallstedt",
+      "p": 0.2317
+     }
+    ]
+   },
+   "confirmed": null,
+   "headline": {
+    "model_id": "edgedesk_nhl_v1:xg_core",
+    "p_home": 0.4174,
+    "p_away": 0.5826,
+    "fair_home": 140,
+    "fair_away": -140,
+    "exp_total": 6.31,
+    "fair_total_line": 6,
+    "puck_line": {
+     "home_minus_1_5": 0.2266,
+     "away_minus_1_5": 0.3698,
+     "fair_home_minus_1_5": 341,
+     "fair_away_minus_1_5": 170
+    },
+    "settles": "includes overtime and shootout",
+    "goalie_free": true
+   },
+   "slate_goalies": {
+    "certainty": "PROJECTED_UNCERTAIN",
+    "scenarios": [
+     {
+      "home_goalie": "8480947",
+      "away_goalie": "8475717",
+      "p_home": 0.4117,
+      "exp_total": 6.41,
+      "lambda": {
+       "home": 2.8156,
+       "away": 3.3842
+      }
+     },
+     {
+      "home_goalie": "8480947",
+      "away_goalie": "8482661",
+      "p_home": 0.3935,
+      "exp_total": 6.34,
+      "lambda": {
+       "home": 2.7266,
+       "away": 3.4098
+      }
+     },
+     {
+      "home_goalie": "8482447",
+      "away_goalie": "8475717",
+      "p_home": 0.4243,
+      "exp_total": 6.36,
+      "lambda": {
+       "home": 2.8317,
+       "away": 3.3175
+      }
+     },
+     {
+      "home_goalie": "8482447",
+      "away_goalie": "8482661",
+      "p_home": 0.406,
+      "exp_total": 6.29,
+      "lambda": {
+       "home": 2.7425,
+       "away": 3.343
+      }
+     }
+    ]
+   },
+   "quote": null
+  }
+ ],
+ "attribution": "NHL game data: sportsdataverse fastRhockey (compiled from the NHL's public game feeds). sportsdataverse/fastRhockey-nhl-data and -raw are MIT-licensed repositories; the game data inside them is compiled from the NHL's public game feeds and remains the NHL's. NHL.com terms restrict commercial use of its content: the owner must review this before NHL output is sold in a paid tier. Attribution is printed on every NHL artifact."
+}
