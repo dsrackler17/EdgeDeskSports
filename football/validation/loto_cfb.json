@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_loto_v1",
- "generated_at": "2026-10-24T15:41:27.706Z",
+ "generated_at": "2026-10-26T00:35:49.420Z",
  "declared": "2026-10-24",
  "question": "For each priced term: does the shipped engine predict held-out games better with it than without it, and is its weight right?",
  "rows": {
@@ -580,8 +580,8 @@
    "label": "Conference strength",
    "droppable": true,
    "shadow": false,
-   "fit": "football/cfb_p4/research/train_layers.py, tune window before 2022 (TEST_LO)",
-   "caveat": null,
+   "fit": "football/cfb_p4/research/train_layers.py conference_layer on 2014-2019 cross-conference games (B_LO, B_HI): points per point of the gap in the two conferences’ prior-season cross-conference margin, faded to 0 by six games played",
+   "caveat": "the prior season’s strength only. engine.js situation.conference also reads an in-season table (state.conf), but nothing writes it, so that path never runs; the term is the prior season’s table faded to 0 by six games played",
    "holdout": {
     "n": 3127,
     "mean_abs_term": 0.896,
@@ -700,8 +700,136 @@
      }
     ]
    },
-   "fit_window": null,
-   "between": null,
+   "fit_window": {
+    "seasons": [
+     2014,
+     2019
+    ],
+    "result": {
+     "n": 4357,
+     "mean_abs_term": 1.073,
+     "negligible": false,
+     "mae_with": 12.941,
+     "mae_without": 13.13,
+     "rmse_with": 16.45,
+     "rmse_without": 16.708,
+     "delta": 0.189,
+     "delta_ci95": [
+      0.108,
+      0.268
+     ],
+     "paired_p": 0,
+     "k": 0.99,
+     "k_ci95": [
+      0.823,
+      1.157
+     ],
+     "close": {
+      "n": 4210,
+      "mae_with": 3.606,
+      "mae_without": 3.981,
+      "delta": 0.376,
+      "k": 0.811,
+      "k_ci95": [
+       0.757,
+       0.869
+      ]
+     },
+     "brier_with": 0.1717,
+     "brier_without": 0.17343,
+     "per_season": [
+      {
+       "season": 2014,
+       "n": 714,
+       "mae_before": 13.201,
+       "mae_after": 12.923
+      },
+      {
+       "season": 2015,
+       "n": 723,
+       "mae_before": 13.17,
+       "mae_after": 13.043
+      },
+      {
+       "season": 2016,
+       "n": 719,
+       "mae_before": 13.356,
+       "mae_after": 13.13
+      },
+      {
+       "season": 2017,
+       "n": 735,
+       "mae_before": 13.089,
+       "mae_after": 12.866
+      },
+      {
+       "season": 2018,
+       "n": 732,
+       "mae_before": 12.979,
+       "mae_after": 12.823
+      },
+      {
+       "season": 2019,
+       "n": 734,
+       "mae_before": 12.994,
+       "mae_after": 12.866
+      }
+     ]
+    }
+   },
+   "between": {
+    "seasons": [
+     2020,
+     2021
+    ],
+    "result": {
+     "n": 1240,
+     "mean_abs_term": 0.247,
+     "negligible": false,
+     "mae_with": 13.299,
+     "mae_without": 13.29,
+     "rmse_with": 16.522,
+     "rmse_without": 16.521,
+     "delta": -0.009,
+     "delta_ci95": [
+      -0.071,
+      0.052
+     ],
+     "paired_p": 0.7665,
+     "k": 0.487,
+     "k_ci95": [
+      -0.488,
+      1.507
+     ],
+     "close": {
+      "n": 1240,
+      "mae_with": 3.872,
+      "mae_without": 3.963,
+      "delta": 0.091,
+      "k": 1.008,
+      "k_ci95": [
+       0.739,
+       1.338
+      ]
+     },
+     "brier_with": 0.18573,
+     "brier_without": 0.18558,
+     "per_season": [
+      {
+       "season": 2020,
+       "n": 508,
+       "mae_before": 13.465,
+       "mae_after": 13.52
+      },
+      {
+       "season": 2021,
+       "n": 732,
+       "mae_before": 13.169,
+       "mae_after": 13.147
+      }
+     ]
+    }
+   },
    "status": "VALIDATED",
    "conditions_failed": [],
    "reasons": [],
@@ -1664,13 +1792,762 @@
   "rivalry": "not priced (0 to the mean): 0 on every row",
   "altitude": "not priced: tested separately in football/altitude (REJECTED)"
  },
+ "conference": {
+  "rule": "cross-conference FBS games, neither side independent, while the team with fewer games played has played under six",
+  "holdout_games": 3127,
+  "holdout_moved": {
+   "n": 605,
+   "mean_abs_term": 4.634,
+   "negligible": false,
+   "mae_with": 13.131,
+   "mae_without": 14.091,
+   "rmse_with": 16.608,
+   "rmse_without": 17.747,
+   "delta": 0.96,
+   "delta_ci95": [
+    0.561,
+    1.389
+   ],
+   "paired_p": 0,
+   "k": 1.106,
+   "k_ci95": [
+    0.888,
+    1.335
+   ],
+   "close": {
+    "n": 605,
+    "mae_with": 5.044,
+    "mae_without": 6.858,
+    "delta": 1.814,
+    "k": 1.012,
+    "k_ci95": [
+     0.917,
+     1.108
+    ]
+   },
+   "brier_with": 0.15883,
+   "brier_without": 0.16786,
+   "per_season": [
+    {
+     "season": 2022,
+     "n": 135,
+     "mae_before": 14.817,
+     "mae_after": 13.264
+    },
+    {
+     "season": 2023,
+     "n": 150,
+     "mae_before": 13.219,
+     "mae_after": 13.315
+    },
+    {
+     "season": 2024,
+     "n": 157,
+     "mae_before": 14.846,
+     "mae_after": 14.024
+    },
+    {
+     "season": 2025,
+     "n": 163,
+     "mae_before": 13.565,
+     "mae_after": 11.994
+    }
+   ]
+  },
+  "by_games_played": [
+   {
+    "min_games_played": 0,
+    "fade": 1,
+    "result": {
+     "n": 151,
+     "mean_abs_term": 6.648,
+     "negligible": false,
+     "mae_with": 13.958,
+     "mae_without": 15.652,
+     "rmse_with": 17.942,
+     "rmse_without": 19.903,
+     "delta": 1.694,
+     "delta_ci95": [
+      0.604,
+      2.815
+     ],
+     "paired_p": 0.0025,
+     "k": 1.132,
+     "k_ci95": [
+      0.8,
+      1.479
+     ],
+     "close": {
+      "n": 151,
+      "mae_with": 5.797,
+      "mae_without": 8.19,
+      "delta": 2.393,
+      "k": 0.929,
+      "k_ci95": [
+       0.776,
+       1.085
+      ]
+     },
+     "brier_with": 0.15548,
+     "brier_without": 0.17933,
+     "per_season": [
+      {
+       "season": 2022,
+       "n": 36,
+       "mae_before": 17.552,
+       "mae_after": 13.508
+      },
+      {
+       "season": 2023,
+       "n": 39,
+       "mae_before": 14.838,
+       "mae_after": 14.408
+      },
+      {
+       "season": 2024,
+       "n": 33,
+       "mae_before": 16.238,
+       "mae_after": 15.549
+      },
+      {
+       "season": 2025,
+       "n": 43,
+       "mae_before": 14.349,
+       "mae_after": 12.707
+      }
+     ]
+    }
+   },
+   {
+    "min_games_played": 1,
+    "fade": 0.833,
+    "result": {
+     "n": 161,
+     "mean_abs_term": 4.926,
+     "negligible": false,
+     "mae_with": 12.408,
+     "mae_without": 13.196,
+     "rmse_with": 15.811,
+     "rmse_without": 17.083,
+     "delta": 0.788,
+     "delta_ci95": [
+      0.006,
+      1.543
+     ],
+     "paired_p": 0.0539,
+     "k": 1.12,
+     "k_ci95": [
+      0.717,
+      1.522
+     ],
+     "close": {
+      "n": 161,
+      "mae_with": 5.128,
+      "mae_without": 7.228,
+      "delta": 2.099,
+      "k": 1.063,
+      "k_ci95": [
+       0.903,
+       1.221
+      ]
+     },
+     "brier_with": 0.16109,
+     "brier_without": 0.16559,
+     "per_season": [
+      {
+       "season": 2022,
+       "n": 33,
+       "mae_before": 11.632,
+       "mae_after": 11.197
+      },
+      {
+       "season": 2023,
+       "n": 42,
+       "mae_before": 11.964,
+       "mae_after": 12.583
+      },
+      {
+       "season": 2024,
+       "n": 41,
+       "mae_before": 15.747,
+       "mae_after": 14.875
+      },
+      {
+       "season": 2025,
+       "n": 45,
+       "mae_before": 13.168,
+       "mae_after": 10.885
+      }
+     ]
+    }
+   },
+   {
+    "min_games_played": 2,
+    "fade": 0.667,
+    "result": {
+     "n": 177,
+     "mean_abs_term": 4.034,
+     "negligible": false,
+     "mae_with": 14.147,
+     "mae_without": 15.138,
+     "rmse_with": 17.303,
+     "rmse_without": 18.122,
+     "delta": 0.992,
+     "delta_ci95": [
+      0.292,
+      1.65
+     ],
+     "paired_p": 0.0035,
+     "k": 1.13,
+     "k_ci95": [
+      0.553,
+      1.669
+     ],
+     "close": {
+      "n": 177,
+      "mae_with": 4.611,
+      "mae_without": 6.426,
+      "delta": 1.815,
+      "k": 1.088,
+      "k_ci95": [
+       0.9,
+       1.284
+      ]
+     },
+     "brier_with": 0.16347,
+     "brier_without": 0.16647,
+     "per_season": [
+      {
+       "season": 2022,
+       "n": 42,
+       "mae_before": 16.405,
+       "mae_after": 14.879
+      },
+      {
+       "season": 2023,
+       "n": 43,
+       "mae_before": 14.127,
+       "mae_after": 14.026
+      },
+      {
+       "season": 2024,
+       "n": 49,
+       "mae_before": 14.113,
+       "mae_after": 13.208
+      },
+      {
+       "season": 2025,
+       "n": 43,
+       "mae_before": 16.08,
+       "mae_after": 14.622
+      }
+     ]
+    }
+   },
+   {
+    "min_games_played": 3,
+    "fade": 0.5,
+    "result": {
+     "n": 90,
+     "mean_abs_term": 2.804,
+     "negligible": false,
+     "mae_with": 11.487,
+     "mae_without": 11.624,
+     "rmse_with": 14.677,
+     "rmse_without": 14.85,
+     "delta": 0.137,
+     "delta_ci95": [
+      -0.536,
+      0.774
+     ],
+     "paired_p": 0.6826,
+     "k": 0.714,
+     "k_ci95": [
+      -0.143,
+      1.536
+     ],
+     "close": {
+      "n": 90,
+      "mae_with": 4.441,
+      "mae_without": 5.075,
+      "delta": 0.634,
+      "k": 1.073,
+      "k_ci95": [
+       0.754,
+       1.405
+      ]
+     },
+     "brier_with": 0.1391,
+     "brier_without": 0.14317,
+     "per_season": [
+      {
+       "season": 2022,
+       "n": 23,
+       "mae_before": 12.017,
+       "mae_after": 12.666
+      },
+      {
+       "season": 2023,
+       "n": 20,
+       "mae_before": 12.042,
+       "mae_after": 12.538
+      },
+      {
+       "season": 2024,
+       "n": 24,
+       "mae_before": 14.065,
+       "mae_after": 13.009
+      },
+      {
+       "season": 2025,
+       "n": 23,
+       "mae_before": 8.321,
+       "mae_after": 7.808
+      }
+     ]
+    }
+   },
+   {
+    "min_games_played": 4,
+    "fade": 0.333,
+    "result": {
+     "n": 21,
+     "mean_abs_term": 1.572,
+     "negligible": false,
+     "mae_with": 11.54,
+     "mae_without": 12.059,
+     "rmse_with": 14.636,
+     "rmse_without": 14.994,
+     "delta": 0.519,
+     "delta_ci95": [
+      -0.264,
+      1.312
+     ],
+     "paired_p": 0.2044,
+     "k": 1.771,
+     "k_ci95": [
+      -1.336,
+      5.502
+     ],
+     "close": {
+      "n": 21,
+      "mae_with": 5.341,
+      "mae_without": 6.224,
+      "delta": 0.883,
+      "k": 1.705,
+      "k_ci95": [
+       0.47,
+       3.029
+      ]
+     },
+     "brier_with": 0.21534,
+     "brier_without": 0.22646,
+     "per_season": [
+      {
+       "season": 2022,
+       "n": 1,
+       "mae_before": 19.182,
+       "mae_after": 18.583
+      },
+      {
+       "season": 2023,
+       "n": 5,
+       "mae_before": 10.368,
+       "mae_after": 10.406
+      },
+      {
+       "season": 2024,
+       "n": 8,
+       "mae_before": 13.255,
+       "mae_after": 13.136
+      },
+      {
+       "season": 2025,
+       "n": 7,
+       "mae_before": 10.882,
+       "mae_after": 9.519
+      }
+     ]
+    }
+   },
+   {
+    "min_games_played": 5,
+    "fade": 0.167,
+    "result": {
+     "n": 5,
+     "mean_abs_term": 1.411,
+     "negligible": false,
+     "mae_with": 11.788,
+     "mae_without": 11.677,
+     "rmse_with": 15.146,
+     "rmse_without": 14.556,
+     "delta": -0.111,
+     "delta_ci95": [
+      -1.098,
+      0.876
+     ],
+     "paired_p": 0.8458,
+     "k": -3.024,
+     "k_ci95": [
+      -11.709,
+      2.346
+     ],
+     "close": {
+      "n": 5,
+      "mae_with": 4.568,
+      "mae_without": 4.745,
+      "delta": 0.177,
+      "k": 2.031,
+      "k_ci95": [
+       -1.856,
+       3.626
+      ]
+     },
+     "brier_with": 0.14137,
+     "brier_without": 0.14187,
+     "per_season": [
+      {
+       "season": 2023,
+       "n": 1,
+       "mae_before": 1.569,
+       "mae_after": 0.922
+      },
+      {
+       "season": 2024,
+       "n": 2,
+       "mae_before": 7.111,
+       "mae_after": 7.111
+      },
+      {
+       "season": 2025,
+       "n": 2,
+       "mae_before": 21.297,
+       "mae_after": 21.899
+      }
+     ]
+    }
+   }
+  ],
+  "by_matchup": [
+   {
+    "kind": "Power 4 v Group of 5",
+    "result": {
+     "n": 333,
+     "mean_abs_term": 6.222,
+     "negligible": false,
+     "mae_with": 13.203,
+     "mae_without": 14.932,
+     "rmse_with": 16.705,
+     "rmse_without": 18.751,
+     "delta": 1.729,
+     "delta_ci95": [
+      1.037,
+      2.376
+     ],
+     "paired_p": 0,
+     "k": 1.228,
+     "k_ci95": [
+      0.996,
+      1.482
+     ],
+     "close": {
+      "n": 333,
+      "mae_with": 5.319,
+      "mae_without": 8.907,
+      "delta": 3.589,
+      "k": 1.159,
+      "k_ci95": [
+       1.063,
+       1.263
+      ]
+     },
+     "brier_with": 0.10348,
+     "brier_without": 0.11956,
+     "per_season": [
+      {
+       "season": 2022,
+       "n": 77,
+       "mae_before": 15.122,
+       "mae_after": 12.792
+      },
+      {
+       "season": 2023,
+       "n": 83,
+       "mae_before": 14.529,
+       "mae_after": 13.996
+      },
+      {
+       "season": 2024,
+       "n": 83,
+       "mae_before": 15.942,
+       "mae_after": 14.25
+      },
+      {
+       "season": 2025,
+       "n": 90,
+       "mae_before": 14.209,
+       "mae_after": 11.858
+      }
+     ]
+    }
+   },
+   {
+    "kind": "Power 4 v Power 4",
+    "result": {
+     "n": 112,
+     "mean_abs_term": 3.678,
+     "negligible": false,
+     "mae_with": 12.916,
+     "mae_without": 13.196,
+     "rmse_with": 16.096,
+     "rmse_without": 15.936,
+     "delta": 0.281,
+     "delta_ci95": [
+      -0.479,
+      0.999
+     ],
+     "paired_p": 0.4708,
+     "k": 0.357,
+     "k_ci95": [
+      -0.374,
+      1.055
+     ],
+     "close": {
+      "n": 112,
+      "mae_with": 4.806,
+      "mae_without": 4.344,
+      "delta": -0.461,
+      "k": 0.246,
+      "k_ci95": [
+       0.01,
+       0.484
+      ]
+     },
+     "brier_with": 0.23098,
+     "brier_without": 0.22704,
+     "per_season": [
+      {
+       "season": 2022,
+       "n": 26,
+       "mae_before": 13.678,
+       "mae_after": 12.821
+      },
+      {
+       "season": 2023,
+       "n": 31,
+       "mae_before": 12.36,
+       "mae_after": 13.668
+      },
+      {
+       "season": 2024,
+       "n": 29,
+       "mae_before": 12.33,
+       "mae_after": 12.294
+      },
+      {
+       "season": 2025,
+       "n": 26,
+       "mae_before": 14.678,
+       "mae_after": 12.808
+      }
+     ]
+    }
+   },
+   {
+    "kind": "Group of 5 v Group of 5",
+    "result": {
+     "n": 160,
+     "mean_abs_term": 1.997,
+     "negligible": false,
+     "mae_with": 13.133,
+     "mae_without": 12.968,
+     "rmse_with": 16.759,
+     "rmse_without": 16.775,
+     "delta": -0.165,
+     "delta_ci95": [
+      -0.537,
+      0.185
+     ],
+     "paired_p": 0.3817,
+     "k": 0.547,
+     "k_ci95": [
+      -0.517,
+      1.603
+     ],
+     "close": {
+      "n": 160,
+      "mae_with": 4.64,
+      "mae_without": 4.352,
+      "delta": -0.289,
+      "k": 0.054,
+      "k_ci95": [
+       -0.375,
+       0.464
+      ]
+     },
+     "brier_with": 0.22353,
+     "brier_without": 0.22694,
+     "per_season": [
+      {
+       "season": 2022,
+       "n": 32,
+       "mae_before": 15.01,
+       "mae_after": 14.757
+      },
+      {
+       "season": 2023,
+       "n": 36,
+       "mae_before": 10.938,
+       "mae_after": 11.442
+      },
+      {
+       "season": 2024,
+       "n": 45,
+       "mae_before": 14.447,
+       "mae_after": 14.721
+      },
+      {
+       "season": 2025,
+       "n": 47,
+       "mae_before": 11.718,
+       "mae_after": 11.803
+      }
+     ]
+    }
+   }
+  ],
+  "joint": {
+   "n": 3127,
+   "terms": [
+    "rating",
+    "conference"
+   ],
+   "k": {
+    "rating": 0.897,
+    "conference": 1.227
+   },
+   "k_ci95": {
+    "rating": [
+     0.845,
+     0.948
+    ],
+    "conference": [
+     1.003,
+     1.463
+    ]
+   }
+  },
+  "p4": [
+   "SEC",
+   "Big Ten",
+   "Big 12",
+   "ACC",
+   "Pac-12 (through 2023)"
+  ],
+  "tables": [
+   {
+    "season": 2014,
+    "table_season": 2013,
+    "conferences": 11,
+    "team_games": 414,
+    "moved": 149
+   },
+   {
+    "season": 2015,
+    "table_season": 2014,
+    "conferences": 11,
+    "team_games": 376,
+    "moved": 158
+   },
+   {
+    "season": 2016,
+    "table_season": 2015,
+    "conferences": 11,
+    "team_games": 408,
+    "moved": 142
+   },
+   {
+    "season": 2017,
+    "table_season": 2016,
+    "conferences": 11,
+    "team_games": 390,
+    "moved": 145
+   },
+   {
+    "season": 2018,
+    "table_season": 2017,
+    "conferences": 11,
+    "team_games": 404,
+    "moved": 136
+   },
+   {
+    "season": 2019,
+    "table_season": 2018,
+    "conferences": 11,
+    "team_games": 402,
+    "moved": 140
+   },
+   {
+    "season": 2020,
+    "table_season": 2019,
+    "conferences": 11,
+    "team_games": 406,
+    "moved": 26
+   },
+   {
+    "season": 2021,
+    "table_season": 2020,
+    "conferences": 8,
+    "team_games": 136,
+    "moved": 58
+   },
+   {
+    "season": 2022,
+    "table_season": 2021,
+    "conferences": 11,
+    "team_games": 410,
+    "moved": 135
+   },
+   {
+    "season": 2023,
+    "table_season": 2022,
+    "conferences": 11,
+    "team_games": 402,
+    "moved": 150
+   },
+   {
+    "season": 2024,
+    "table_season": 2023,
+    "conferences": 11,
+    "team_games": 480,
+    "moved": 157
+   },
+   {
+    "season": 2025,
+    "table_season": 2024,
+    "conferences": 11,
+    "team_games": 504,
+    "moved": 163
+   }
+  ],
+  "table_median_team_games": 406,
+  "note": "the splits describe the record; only the whole term is judged by the promotion rules, and a rule chosen from these numbers would be a new term to declare and test on later games",
+  "live": {
+   "slate_generated_at": "2026-10-26T00:27:29.176Z",
+   "season": 2026,
+   "games": 61,
+   "moved": 0,
+   "mean_abs_moved": 0,
+   "max_abs": 0
+  }
+ },
  "live": {
-  "slate_generated_at": "2026-10-24T15:17:10.654Z",
+  "slate_generated_at": "2026-10-26T00:27:29.176Z",
   "season": 2026,
   "seed_season": 2025,
-  "games": 100,
-  "mean_abs_matchup": 1.23,
-  "mean_abs_current": 1.23,
+  "games": 61,
+  "mean_abs_matchup": 1.33,
+  "mean_abs_current": 1.33,
   "mean_abs_last_season": 0,
   "games_last_season_ge_half_pt": 0,
   "by_pairing": [
@@ -1692,7 +2569,7 @@
    },
    {
     "name": "early-down offence vs early-down defence",
-    "mean_abs": 0.68
+    "mean_abs": 0.61
    },
    {
     "name": "finishing drives vs red-zone defence",
@@ -1700,7 +2577,7 @@
    },
    {
     "name": "ball control vs front disruption",
-    "mean_abs": 1.58
+    "mean_abs": 1.57
    },
    {
     "name": "field position",

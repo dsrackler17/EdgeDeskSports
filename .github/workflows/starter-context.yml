@@ -241,12 +241,20 @@ jobs:
       - name: Prove the QB snapshot is one app.html can read
         run: node football/nfl/qb_roster.test.js
 
+      # The slate this build replaces, so the starter sync can log every
+      # priced-starter change the new build makes (football/nfl/starter_sync/).
+      - name: Keep the slate the last build priced
+        run: cp football/nfl/slate.json "$RUNNER_TEMP/slate.prev.json" || true
+
       # Build after both mirrors refresh so the artifact and browser use the
       # same current-season inputs.
       - name: NFL slate for the research desk
         run: node tools/football/build_nfl_slate.js || echo "::warning::the NFL slate could not be rebuilt this run — the previous artifact stands"
           ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
         continue-on-error: true
+
+      - name: Log every priced-starter change this build made
+        run: node tools/football/nfl_starter_sync.js --record --prev "$RUNNER_TEMP/slate.prev.json" || true
 
       # THE IDENTITY PROFILES: one dated file per FBS team and NFL club from
       # everything above (rankings detail, profiles, starters and the depth

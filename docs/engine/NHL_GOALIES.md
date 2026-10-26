@@ -242,14 +242,25 @@ captured. The goalie inputs fixture is the real build output for the
 
 1. Merge. Let **NHL engine build** run once on main so that
    `hockey/goalie_inputs.json` is published.
-2. Set the shared secret:
-   `supabase secrets set NHL_GOALIE_CRON_SECRET=<value>`, then
-   `select vault.create_secret('<value>', 'nhl_goalie_cron_secret');`.
-3. Run **Deploy NHL goalie layer** (`.github/workflows/deploy-nhl-goalie.yml`)
-   with `deploy_function` and `apply_sql`. Or paste, in order,
-   `nhl_goalie_layer.sql`, `nhl_goalie_v2_registry.sql` and
+2. Run **Deploy NHL goalie layer** (`.github/workflows/deploy-nhl-goalie.yml`)
+   with `deploy_function` and `apply_sql`, leaving `set_cron_secret` and
+   `first_run` on. In order, it:
+   - runs the suites;
+   - deploys the function;
+   - applies the layer and the registry;
+   - makes the function's `NHL_GOALIE_CRON_SECRET` and Vault
+     `nhl_goalie_cron_secret` exist and agree. When Vault has none, a new
+     secret is generated on the runner, masked and never printed. A dry,
+     forced run proves the function accepts it;
+   - schedules the five-minute poke;
+   - once the site serves the inputs, runs the sync once, forced. The cards it
+     wrote and the readiness KPIs go to the job summary.
+
+   By hand instead: `supabase secrets set NHL_GOALIE_CRON_SECRET=<value>` and
+   `select vault.create_secret('<value>', 'nhl_goalie_cron_secret');`, then
+   paste, in order, `nhl_goalie_layer.sql`, `nhl_goalie_v2_registry.sql` and
    `nhl_goalie_cron.sql`.
-4. Verify:
+3. Verify at any time:
    - `GET` the function: it returns the build;
    - `POST {"dry":true,"force":true}` with the secret: it reads both sources
      and returns the cards without writing;
