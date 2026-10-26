@@ -2,20 +2,7 @@
 
 
 
-## 2026-10-26 — CFB altitude: the browser suite runs again, on a frozen snapshot, and cannot skip in CI
 
-**The silent pass.** `football/altitude/ui.e2e.js` read the Notre Dame at BYU game (401856809) from the live `football/game_research/current.json`. The hourly build dropped the game at `1d57b3cd` (2026-10-19 12:08 UTC), two days after kickoff. From then on the step printed `SKIPPED: the committed research snapshots no longer carry Notre Dame at BYU`, exited 0, and showed green in `CFB altitude tests`, testing nothing.
-- #807's own run shows it: the step took 0 s on the pull request that rewrote the game view.
-- AGENTS.md §4: a suite that prints SKIPPED has not passed.
-
-**The fix.**
-- **The snapshot is frozen.** `football/altitude/fixtures/byu_notredame_research.json` holds the game's last pregame entry, copied unchanged from `current.json` at `23282594a` (generated 2026-10-17 22:38 UTC). The suite serves it inside the committed file's envelope.
-- **A stale fixture fails.** A new check fails when the committed file's snapshot version is no longer the fixture's.
-- **A missing browser fails in CI.** Under `CFB_ALTITUDE_E2E_REQUIRED=1`, now set in `cfb-altitude-tests.yml`, a missing Playwright or Chromium fails the step. Locally it prints `SKIPPED (not verified)`.
-
-No assertion changed, and no committed snapshot, parameter or record was touched.
-
-**Tests.** On `main` (`0ad40e40`) the step printed SKIPPED and exited 0, with or without the new variable. Now it runs 41 checks, all passing at 390 px and 1280 px, so #807's game view still draws the section. Each failure path was shown to fail: no Playwright under the variable (exit 1), and a fixture version the committed file does not carry (exit 1).
 
 ## 2026-10-26 — All checks: one required check for every workflow a pull request starts
 
