@@ -15,7 +15,7 @@
 
      1  the hero: eyebrow, headline, sentence, the two actions, the offer
         under them, who it is for — and no jargon above the fold;
-     1b the desk (#desk): the terminal's six seats, which are app.html's, and
+     1b the desk (#desk): the terminal's places, which are app.html's, and
         the upgrade from free to Full Access, row by row;
      1c Signal Center (#signals) and the Simulator (#simulator), shipped
         2026-10-23: live, pictured on labelled sample data whose arithmetic
@@ -159,7 +159,7 @@ has(HERO, 'href="#how" data-track="how_it_works_click" data-cta="strip_how">How 
 chk('the strip is not fifteen feature cards', (STRIP.match(/<li>/g) || []).length <= 5);
 
 /* ======================================================================== */
-/* 1b. THE DESK: THE TERMINAL'S SIX SEATS, AND THE UPGRADE                  */
+/* 1b. THE DESK: THE TERMINAL'S PLACES, AND THE UPGRADE                     */
 /* ======================================================================== */
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 const DESK = section('desk');
@@ -168,7 +168,10 @@ has(DESK, 'Free research is the sample. <span class="g">Full Access is the desk.
 {
   const seats = [...DESK.matchAll(/<li( class="new")?><span class="sk">([A-Za-z]+)(?: <i class="newchip">New<\/i>)?<\/span><b>([^<]+)<\/b>/g)].map(m => ({ name: m[2], isNew: !!m[1], q: m[3] }));
   const primary = Object.keys(eval('(' + (APP.match(/var NAV_PRIMARY=(\{[^}]+\})/) || [, '{}'])[1] + ')'));
-  chk('six seats, the terminal\'s own (app.html NAV_PRIMARY)', seats.length === 6 && JSON.stringify(seats.map(s => s.name.toLowerCase()).sort()) === JSON.stringify(primary.slice().sort()), [seats.map(s => s.name), primary]);
+  chk('the terminal\'s own places, every one and no other (app.html NAV_PRIMARY)', seats.length === primary.length && primary.length > 0 && JSON.stringify(seats.map(s => s.name.toLowerCase()).sort()) === JSON.stringify(primary.slice().sort()), [seats.map(s => s.name), primary]);
+  const n = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][seats.length];
+  chk('and the section says how many', DESK.indexOf('aria-label="The terminal&rsquo;s ' + n + ' places"') > 0 && new RegExp('\\b' + n + ' places, one subscription', 'i').test(DESK), n);
+  chk('a place that is not open to readers yet says so in its own card (Market Foresight is in review)', /<span class="sk">Foresight<\/span>(?:(?!<\/li>)[\s\S])*in review/.test(DESK));
   chk('each seat says the question it answers', seats.every(s => /\?$/.test(s.q)), seats.map(s => s.q));
   chk('only what shipped on 2026-10-23 is marked New: Signals and the Simulator', JSON.stringify(seats.filter(s => s.isNew).map(s => s.name)) === JSON.stringify(['Signals', 'Simulator']));
 }

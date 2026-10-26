@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-26T14:24:18.158Z",
+ "generated_at": "2026-10-26T16:21:06.990Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -169,32 +169,25 @@
   "efficiency_replay": {
    "source_schema": "edgedesk_cfb_engine_efficiency_v1",
    "season": 2026,
-   "artifact_games_with_stats": 999,
-   "artifact_team_game_rows": 1982,
-   "games_absorbed_with_stats": 541,
-   "team_rows_absorbed": 960,
-   "final_games_without_play_stats": 25,
+   "artifact_games_with_stats": 1019,
+   "artifact_team_game_rows": 2022,
+   "games_absorbed_with_stats": 553,
+   "team_rows_absorbed": 988,
+   "final_games_without_play_stats": 13,
    "missing_game_ids": [
-    "401856727",
-    "401856731",
-    "401856835",
-    "401858497",
-    "401858499",
-    "401856839",
-    "401866449",
-    "401871094",
-    "401864528",
-    "401869967",
-    "401871093",
-    "401860907",
-    "401860905",
-    "401856836",
-    "401858276",
-    "401869935",
-    "401856729",
-    "401856732",
-    "401856838",
-    "401858275"
+    "401856634",
+    "401856659",
+    "401856660",
+    "401856661",
+    "401864512",
+    "401866425",
+    "401864576",
+    "401866427",
+    "401864579",
+    "401866426",
+    "401866428",
+    "401864572",
+    "401866429"
    ],
    "measured_features": [
     "success_rate",
@@ -225,17 +218,15 @@
  },
  "weather": {
   "requested": 55,
-  "answered": 54,
+  "answered": 55,
   "dome": 3,
   "no_venue": 0,
-  "failed": 1,
-  "carried": 1,
+  "failed": 0,
+  "carried": 0,
   "carry_dropped": 0,
-  "failures": {
-   "fetch failed": 1
-  },
+  "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "54 of 55 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (fetch failed x1)"
+  "summary": "55 of 55 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
   "NO_MARKET": 61
@@ -243,10 +234,10 @@
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
-  "games_in_artifact": 999,
+  "games_in_artifact": 1019,
   "completed_games_replayed": 566,
-  "completed_games_with_both_team_efficiency": 419,
-  "missing_count": 147,
+  "completed_games_with_both_team_efficiency": 435,
+  "missing_count": 131,
   "problem": null
  },
  "checks": [
@@ -442,7 +433,7 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 147,
+   "count": 131,
    "detail": [
     {
      "game_id": "401864424",

@@ -13,6 +13,14 @@
    Routes (query string, shareable): /foresight/            the overview
                                      ?game=<sport>:<event>  a game
                                      ?model=<source>:<key>  a model's record
+
+   THE SAME CONTROLLER IN THE TERMINAL. app.html mounts this file inside its
+   own Market Foresight view (foresight/app.js) with the same element ids, the
+   same doors and the reader's same session: EDForesightPage.boot({ inApp:
+   true, route }). The route then comes from the terminal's hash
+   (#foresight/game/<sport>:<event>, #foresight/model/<source>:<key>), the
+   page title is left to the terminal, and links back to the overview stay
+   inside it. Alone on /foresight/ it boots itself exactly as before.
    =========================================================================== */
 (function () {
   'use strict';
@@ -22,6 +30,10 @@
   var $ = function (id) { return document.getElementById(id); };
   var esc = U.esc;
   var REASONS = null, STATUS = null, METHOD = null;
+  /* inApp: mounted by the terminal; route: { game } | { model, v } | null */
+  var OPT = { inApp: false, route: null, publicBase: 'https://edgedesksports.com/foresight/' };
+  function home() { return OPT.inApp ? '#foresight' : '/foresight/'; }
+  function title(t) { if (!OPT.inApp) document.title = t; }
 
   /* ---------------------------------------------------------------- data */
   function token() {
@@ -155,12 +167,12 @@
   function game(sport, eventId) {
     return rpc('mf_game', { p_sport: sport, p_event_id: eventId }).then(function (r) {
       if (r.locked) return locked();
-      if (!r.found) { state('This game is not in the record. Only games EdgeDesk recorded prices or forecasts for, and that have kicked off, are measured. <a href="/foresight/">Back to the overview</a>.', 'warn'); return; }
+      if (!r.found) { state('This game is not in the record. Only games EdgeDesk recorded prices or forecasts for, and that have kicked off, are measured. <a href="' + home() + '">Back to the overview</a>.', 'warn'); return; }
       var g = r.game, units = r.units || [];
-      document.title = g.away + ' at ' + g.home + ' — Market Foresight | EdgeDesk';
+      title(g.away + ' at ' + g.home + ' — Market Foresight | EdgeDesk');
       $('mf-title').textContent = g.away + ' at ' + g.home;
       $('mf-lede').textContent = (U.SPORT[g.sport] || g.sport) + ' · kickoff ' + U.time(g.kickoff) + (g.state === 'VOID' ? ' · postponed or cancelled: nothing is measured' : '') + '. Every forecast and price EdgeDesk recorded for this game, and what the frozen rules make of them.';
-      $('mf-crumbs').innerHTML = '<a href="/articles/">Research</a> › <a href="/foresight/">Market Foresight</a> › <span aria-current="page">' + esc(g.away + ' at ' + g.home) + '</span>';
+      $('mf-crumbs').innerHTML = '<a href="/articles/">Research</a> › <a href="' + home() + '">Market Foresight</a> › <span aria-current="page">' + esc(g.away + ' at ' + g.home) + '</span>';
       state('Computed ' + esc(U.time(r.computed_at)) + ' under ' + esc(r.methodology) + '. ' + (r.full_access ? 'Full timeline shown.' : 'Findings and coverage shown; the full timeline (every observation with raw prices) is available with <a href="/#pricing">Full Access</a>.'));
       var byMk = { spread: [], total: [], moneyline: [] };
       units.forEach(function (u) { (byMk[u.market] = byMk[u.market] || []).push(u); });
@@ -299,19 +311,19 @@
     if (version) f.model_version = version;
     return rpc('mf_model', { p_filters: f, p_cursor: MODEL.next, p_limit: 100 }).then(function (r) {
       if (r.locked) return locked();
-      if (!r.found) { state('This model has no published record here. It may not be listed for publication. <a href="/foresight/">Back to the overview</a>.', 'warn'); return; }
+      if (!r.found) { state('This model has no published record here. It may not be listed for publication. <a href="' + home() + '">Back to the overview</a>.', 'warn'); return; }
       if (!MODEL.units.length) {
         $('mf-claims').open = false;
-        document.title = r.model_label + ' — Market Foresight | EdgeDesk';
+        title(r.model_label + ' — Market Foresight | EdgeDesk');
         $('mf-title').textContent = r.model_label;
         $('mf-lede').textContent = (U.SOURCE[r.source] || r.source) + ' · versions ' + (r.versions || []).join(', ') + ' · ' + r.counts.units + ' forecast–venue units, ' + r.counts.measured + ' measured, ' + r.counts.excluded + ' not measured (each with its reason). Every eligible forecast is here, misses and no-move cases included.';
-        $('mf-crumbs').innerHTML = '<a href="/articles/">Research</a> › <a href="/foresight/">Market Foresight</a> › <span aria-current="page">' + esc(r.model_label) + '</span>';
+        $('mf-crumbs').innerHTML = '<a href="/articles/">Research</a> › <a href="' + home() + '">Market Foresight</a> › <span aria-current="page">' + esc(r.model_label) + '</span>';
         state('Methodology ' + esc(r.methodology) + '. Separate measurements, never a combined grade. This page does not rank, promote or grade the model.');
         var all = (r.summaries || []).filter(function (s) { return s.horizon_bucket === 'all'; }), buckets = (r.summaries || []).filter(function (s) { return s.horizon_bucket !== 'all'; });
         $('mf-view').innerHTML = sec('h-m', 'Measurements', U.summaryTableHTML(all, { noModel: true, caption: 'Measurements by sport, market and venue' }))
           + (buckets.length ? '<details class="mf-det"><summary>By how long before kickoff the forecast was published</summary>' + U.summaryTableHTML(buckets, { noModel: true, caption: 'By forecast horizon' }) + '</details>' : '')
           + sec('h-rec', 'Complete record', '<div id="mf-rec"></div><button type="button" class="btn ghost" id="mf-more" hidden>Load more</button>', 'Newest first. Links open each game’s timeline.')
-          + sec('h-share', 'Share and embed', '<p><label class="fl" for="mf-link">Link to this record</label><input type="text" id="mf-link" readonly value="' + esc(location.origin + location.pathname + location.search) + '"></p>'
+          + sec('h-share', 'Share and embed', '<p><label class="fl" for="mf-link">Link to this record</label><input type="text" id="mf-link" readonly value="' + esc(OPT.inApp ? OPT.publicBase + '?model=' + encodeURIComponent(source + ':' + key) + (version ? '&v=' + encodeURIComponent(version) : '') : location.origin + location.pathname + location.search) + '"></p>'
             + '<p><label class="fl" for="mf-embed">Embed (a compact summary that links to this complete record)</label><textarea id="mf-embed" class="mf-code" readonly rows="3">' + esc(U.embedSnippet(r.source, r.model_key)) + '</textarea></p><button type="button" class="btn ghost" id="mf-copy">Copy embed code</button>');
         $('mf-more').addEventListener('click', function () { model(source, key, version); });
         $('mf-copy').addEventListener('click', function () { var t = $('mf-embed'); t.select(); try { navigator.clipboard.writeText(t.value); } catch (_) { document.execCommand('copy'); } $('mf-copy').textContent = 'Copied'; });
@@ -324,7 +336,13 @@
   }
 
   /* ---------------------------------------------------------------- boot */
-  function boot() {
+  function boot(opts) {
+    if (opts && typeof opts === 'object' && !opts.type) {
+      Object.keys(opts).forEach(function (k) { OPT[k] = opts[k]; });
+      /* a new route starts clean: no earlier game's panels or model's pages */
+      MODEL = { next: null, units: [] }; GAMES.next = null; GAMES.items = []; PANELS = [];
+      $('mf-view').innerHTML = ''; $('mf-claims').open = true; $('mf-chips').innerHTML = '';
+    }
     state('Loading…');
     fetch('/research/foresight/methodology/mf-v1.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (M) { METHOD = M; REASONS = M && M.selection && M.selection.exclusion_reasons; renderMethod(M); }).catch(function () { /* the link stays */ });
     rpc('mf_status').then(function (st) {
@@ -334,9 +352,10 @@
       $('mf-chips').innerHTML = U.statusHTML(st, Date.now());
       if (!st.reader || !st.reader.can_read) return locked();
       state(st.last_run ? 'Every number below comes from records EdgeDesk stored at the time, computed under ' + esc(st.methodology ? st.methodology.version : 'the frozen methodology') + '.' : 'Nothing has been computed yet.');
-      var q = new URLSearchParams(location.search), g = q.get('game'), m = q.get('model');
+      var q = new URLSearchParams(location.search), g = q.get('game'), m = q.get('model'), v = q.get('v');
+      if (OPT.inApp) { var rt = OPT.route || {}; g = rt.game || null; m = rt.model || null; v = rt.v || null; }
       if (g && g.indexOf(':') > 0) return game(g.slice(0, g.indexOf(':')), g.slice(g.indexOf(':') + 1));
-      if (m && m.indexOf(':') > 0) return model(m.slice(0, m.indexOf(':')), m.slice(m.indexOf(':') + 1), q.get('v'));
+      if (m && m.indexOf(':') > 0) return model(m.slice(0, m.indexOf(':')), m.slice(m.indexOf(':') + 1), v);
       return overview();
     }).catch(function (e) {
       if (notDeployed(e)) { state('Market Foresight is built but its database layer has not been deployed yet, so there are no measurements to show. The methodology below is already frozen.', 'warn'); return; }
@@ -344,5 +363,8 @@
       var b = $('mf-retry'); if (b) b.onclick = boot;
     });
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  window.EDForesightPage = { boot: boot };
+  /* alone on /foresight/ it boots itself; the terminal boots it on demand */
+  function own() { return !!(document.body && document.body.getAttribute('data-ed-page') === 'market_foresight'); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { if (own()) boot(); }); else if (own()) boot();
 })();
