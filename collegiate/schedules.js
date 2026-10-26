@@ -78,8 +78,15 @@ function clock(s) {
   return String(h).padStart(2, '0') + ':' + m[2];
 }
 
+/* SIDEARM types each game: R regular season, P postseason, S preseason (an exhibition, a scrimmage, an
+   intrasquad showcase), X a special event (Duke's "Countdown to Craziness"). On basketball pages (probe round 11:
+   eighteen 2026-27 schedules) S and X are exactly the games a school does not count, so they are exhibitions;
+   other sports keep their reading until their own pages show what S means there */
+const PRESEASON_TYPES_ARE_EXHIBITIONS = new Set(['mens-basketball', 'womens-basketball']);
+/* a school's own exhibition label in a game's name: "(Exh.)", "(exhibition)", "- Exhibition", "(E" cut short */
+const EXH_LABEL = /\((?:exh\.?|exhibition|e)\)?\s*$|\s-\s*exh(?:ibition|\.)?\s*$/i;
 /* one SIDEARM game, from the data either generation keeps (the Nuxt store, or the schedule a Vue page is handed) */
-function sidearmGame(g) {
+function sidearmGame(g, sport) {
   const r = g.result || {};
   const us = r.team_score !== '' && r.team_score != null ? +r.team_score : null;
   const them = r.opponent_score !== '' && r.opponent_score != null ? +r.opponent_score : null;
@@ -93,6 +100,7 @@ function sidearmGame(g) {
     us: status === 'final' ? us : null, them: status === 'final' ? them : null, outcome: status === 'final' ? (r.status || null) : null,
     innings: innings(r.postscore_info, r.prescore_info), location: g.location || null, event: (g.tournament && g.tournament.title) || null,
     boxscore: (r.boxscore && r.boxscore.url) || null, note: g.noplay_text || null,
+    ...(PRESEASON_TYPES_ARE_EXHIBITIONS.has(sport) && (g.type === 'S' || g.type === 'X') ? { exhibition: true } : {}),
   };
 }
 
@@ -104,7 +112,7 @@ function sidearmSchedule(data) {
   if (!key) return null;
   const s = sch[key];
   const sport = (s.sport && (s.sport.globalSportNameSlug || s.sport.shortName)) || key.replace(/^schedules-/, '').split(',')[0] || null;
-  return { platform: 'sidearm', sport, sport_name: null, season_label: s.season && s.season.title, school_name: s.school_name || null, seasons: [], games: s.games.map(sidearmGame), undated: 0 };
+  return { platform: 'sidearm', sport, sport_name: null, season_label: s.season && s.season.title, school_name: s.school_name || null, seasons: [], games: s.games.map((g) => sidearmGame(g, sport)), undated: 0 };
 }
 
 /* a JSON object literal in a page's script, from its opening brace (strings and escapes respected) */
@@ -120,7 +128,7 @@ function jsonAt(h, open) {
 
 /* SIDEARM's Vue generation (George Mason, Bradley): the page hands its Vue component the season's schedule as a literal
    (`schedule : {...}`), its games in the same shape as the Nuxt store's; the season is its title ("2025 Baseball Schedule") */
-function sidearmVueSchedule(html) {
+function sidearmVueSchedule(html, sportHint) {
   const h = String(html || '');
   const m = /\bschedule\s*:\s*\{"id":/.exec(h);
   if (!m) return null;
@@ -129,7 +137,7 @@ function sidearmVueSchedule(html) {
   const t = String(o.title || '').match(/(\d{4}(?:\s*-\s*\d{2,4})?)\s+(.*?)\s*Schedule/i);
   const sport = o.sport && (o.sport.global_sport_name_slug || o.sport.shortname) || null;
   return { platform: 'sidearm_legacy', sport, sport_name: t ? t[2].trim() || null : null, season_label: t ? t[1].replace(/\s+/g, '') : null, school_name: o.school_name || null,
-    seasons: [], games: o.games.map(sidearmGame), undated: 0 };
+    seasons: [], games: o.games.map((g) => sidearmGame(g, sport || sportHint)), undated: 0 };
 }
 
 /* WMT renders a schedule's games into the page (not its data), in one of several themes: one block per game
@@ -143,8 +151,8 @@ const WMT_BLOCKS = [/class="schedule-event-item(?=[ "])/g, /class="schedule-item
 function wmtSchedule(html, data, sportHint) {
   const h = String(html || '');
   /* the theme with the most games: a page may carry one game in another theme (Vanderbilt's tournament game) */
-  let starts = [];
-  for (const re of WMT_BLOCKS) { const at = []; for (let m; (m = re.exec(h));) at.push(m.index); if (at.length > starts.length) starts = at; }
+  let starts = [], block = null;
+  for (const re of WMT_BLOCKS) { const at = []; for (let m; (m = re.exec(h));) at.push(m.index); if (at.length > starts.length) { starts = at; block = re.source.replace(/^class="/, ''); } }
   if (!starts.length) return null;
   const d = (data && data.data) || {};
   const view = Object.entries(d).find(([k, v]) => /^sport-view-/.test(k) && v && v.slug);
@@ -175,8 +183,13 @@ function wmtSchedule(html, data, sportHint) {
     if (!date) undated++;
     /* the opponent: its own element (never the one a theme marks --current, the school itself: Texas A&M), or
        (Vanderbilt's theme) the heading that reads "vs. #10 TCU" */
-    const opp = element(seg, '__opponent-name(?=[ "])') || element(seg, '__opponent(?=[ "])') || element(seg, 'schedule-default-event__name(?=[ "])') || element(seg, 'schedule-event-default__name(?=[ "])(?![^"]*--current)') || element(seg, 'schedule-event-item-team__name(?=[ "])(?![^"]*--current)')
-      || element(seg, 'schedule-default-event__title(?=[ "])') || element(seg, 'schedule-event-teams__name(?=[ "])(?![^"]*--current)') || element(seg, 'schedule-event-default-team__name(?=[ "])') || element(seg, 'schedule-item-team__heading(?=[ "])');
+    /* every game but the last ends where the next begins; the last game's 40,000 characters can reach into a second
+       rendering of the schedule (Purdue's basketball page repeats every game, UCLA's baseball page every game in a table), whose
+       first game is often an exhibition, so the last game's opponent and exhibition mark are read in its own element (a theme
+       that keeps its marker beside the game, UCLA's and Penn State's, leaves a last-game exhibition unflagged: none in any page read) */
+    const own = i + 1 < starts.length ? seg : element(h.slice(h.lastIndexOf('<', st), st + 40000), block) || seg;
+    const opp = element(own, '__opponent-name(?=[ "])') || element(own, '__opponent(?=[ "])') || element(own, 'schedule-default-event__name(?=[ "])') || element(own, 'schedule-event-default__name(?=[ "])(?![^"]*--current)') || element(own, 'schedule-event-item-team__name(?=[ "])(?![^"]*--current)')
+      || element(own, 'schedule-default-event__title(?=[ "])') || element(own, 'schedule-event-teams__name(?=[ "])(?![^"]*--current)') || element(own, 'schedule-event-default-team__name(?=[ "])') || element(own, 'schedule-item-team__heading(?=[ "])');
     const loc = element(seg, 'schedule-event-location(?=[ "])') || element(seg, '__location(?=[ "])');
     const resHtml = element(seg, 'schedule-event-item-result__label(?=[ "])');
     const rt = resHtml != null ? text(resHtml) : '';
@@ -186,7 +199,7 @@ function wmtSchedule(html, data, sportHint) {
     const after = resAt >= 0 ? text(seg.slice(resAt).split(/schedule-event-links|schedule-event-item-links|Box Score/)[0]) : '';
     const box = (seg.match(/href="([^"]*\/boxscore\/\d+)"/) || [])[1] || null;
     const note = text(element(seg, 'schedule-event-item-result__text(?=[ "])') || '');
-    const exhibition = /class="[^"]*(?:schedule-event-exhibition|__exhibition)(?=[ "])/.test(seg);
+    const exhibition = /class="[^"]*(?:schedule-event-exhibition|__exhibition)(?=[ "])/.test(own);
     const status = sc ? 'final' : /cancel/i.test(rt + ' ' + note) ? 'cancelled' : /postpon/i.test(rt + ' ' + note) ? 'postponed' : 'scheduled';
     return Object.assign({ game_key: box ? box.match(/(\d+)$/)[1] : null, date, time: dt ? dt.slice(11, 16) : clock(text(element(seg, 'schedule-event-date__clock'))),
       site: venue === 'home' ? 'H' : venue === 'away' ? 'A' : venue === 'neutral' ? 'N' : null,
@@ -242,7 +255,10 @@ function sidearmLegacySchedule(html, sportHint, ownHost) {
       opponent, opponent_host: oppHost && oppHost !== ownHost ? oppHost : null, conference: !!conf, postseason: null,
       doubleheader: /\(DH\)/i.test(text(nameHtml)), status, us: status === 'final' ? +sc[2] : null, them: status === 'final' ? +sc[3] : null,
       outcome: status === 'final' ? sc[1] : null, innings: status === 'final' ? innings(resText.slice(sc[0].length)) : null, location: loc || null, event: null,
-      boxscore: box && /\/boxscore\//.test(box) ? box : null, note: sc && !agrees ? 'result reads ' + resText + ': not kept' : status === 'scheduled' && resText ? resText : null };
+      boxscore: box && /\/boxscore\//.test(box) ? box : null, note: sc && !agrees ? 'result reads ' + resText + ': not kept' : status === 'scheduled' && resText ? resText : null,
+      /* this markup carries no game type: a basketball school labels its exhibitions in the opponent's name (Villanova's "George
+         Mason University (Exh.)"), the page's own word */
+      ...(PRESEASON_TYPES_ARE_EXHIBITIONS.has(sportHint) && EXH_LABEL.test(opponent || '') ? { exhibition: true } : {}) };
   }).filter((g) => g.date && g.opponent);
   return { platform: 'sidearm_legacy', sport: null, sport_name: sportName, season_label: label, school_name: null, seasons, games, undated };
 }
@@ -250,7 +266,7 @@ function sidearmLegacySchedule(html, sportHint, ownHost) {
 function parseSchedule(html, sportHint, ownHost) {
   const data = nuxtData(html);
   if (data) return sidearmSchedule(data) || wmtSchedule(html, data, sportHint);
-  return sidearmVueSchedule(html) || sidearmLegacySchedule(html, sportHint, ownHost);
+  return sidearmVueSchedule(html, sportHint) || sidearmLegacySchedule(html, sportHint, ownHost);
 }
 
 /* where a season's schedule lives on each platform */
