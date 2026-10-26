@@ -26,6 +26,9 @@
 --                           book, market, side and point per gateway snapshot
 --   sharp_lag_runs          (A) one row per function run
 --   sharp_lag_config_log    (A) every change of a switch in sharp_lag_config
+--   sharp_triggers          (B) an NBA starter's status change, an NHL goalie
+--                           change, a Kalshi move of 3c+, an NBA role shift
+--   sharp_check_requests    (B) every ask the dispatcher made, and the answer
 -- sharp_lag_config holds the operator's switches (dispatch shadow / live,
 -- flags on / off, public_display off / on) and the registry links: the one
 -- table that changes, and every change of it is logged.
@@ -182,6 +185,44 @@ create index if not exists sharp_lag_runs_finished_idx on public.sharp_lag_runs 
 select public.sharp_lag_seal(array['sharp_price_snapshots', 'sharp_lag_runs', 'sharp_lag_config_log']);
 comment on table public.sharp_price_snapshots is 'Sharp lag (A): Pinnacle and DraftKings prices copied out of odds_gateway snapshots (featured, close, sharp_check, nba_role_props). Append-only.';
 
+-- ---------------------------------------------------------------- B. triggers and checks (append-only)
+create table if not exists public.sharp_triggers (
+  id               bigint generated always as identity primary key,
+  detected_at      timestamptz not null default now(),
+  trigger_type     text not null check (trigger_type in ('nba_injury', 'nhl_goalie', 'kalshi_move', 'role_shift')),
+  sport_key        text not null,
+  league_game_id   text,                              -- ESPN (NBA), NHL API (NHL), the card's id (NFL/CFB)
+  event_id         text,                              -- the provider event, when it could be matched
+  home_team        text,
+  away_team        text,
+  commence_time    timestamptz,
+  mode             text not null check (mode in ('shadow', 'live')),
+  dedupe_key       text not null,
+  detail           jsonb not null default '{}'::jsonb
+);
+create unique index if not exists sharp_triggers_once_idx on public.sharp_triggers (dedupe_key);
+create index if not exists sharp_triggers_detected_idx on public.sharp_triggers (detected_at desc);
+
+create table if not exists public.sharp_check_requests (
+  id                  bigint generated always as identity primary key,
+  requested_at        timestamptz not null default now(),
+  purpose             text not null check (purpose in ('trigger', 'close', 'role_shift', 'role_shift_close')),
+  trigger_id          bigint references public.sharp_triggers (id),
+  category            text not null check (category in ('sharp_check', 'nba_role_props')),
+  sport_key           text not null,
+  event_id            text not null,
+  decision            text not null,                  -- the gateway's answer (granted, cache_hit, denied_category_cap ...)
+  source              text,                           -- provider / cache / stale_cache / none
+  cost                integer not null default 0,
+  gateway_request_id  bigint,
+  fetched_at          timestamptz,
+  detail              jsonb not null default '{}'::jsonb
+);
+create unique index if not exists sharp_check_requests_trigger_once_idx on public.sharp_check_requests (trigger_id) where trigger_id is not null;
+create index if not exists sharp_check_requests_event_idx on public.sharp_check_requests (event_id, requested_at desc);
+
+select public.sharp_lag_seal(array['sharp_triggers', 'sharp_check_requests']);
+comment on table public.sharp_triggers is 'Sharp lag (B): what started a check: an NBA starter''s status change, an NHL goalie change, a Kalshi move of 3c+, an NBA role shift. Recorded in the dispatch mode of the moment. Append-only.';
 
 
 

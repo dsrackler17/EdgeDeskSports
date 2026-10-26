@@ -18,6 +18,7 @@ value (CLV) against Pinnacle's close.
 | The tables, guards and switches | `supabase/sharp_lag.sql` (mirror: `supabase/migrations/20261027120000_sharp_lag.sql`) |
 | The schedules | `supabase/sharp_lag_cron.sql` |
 | The free job (never spends) | `supabase/functions/sharp_lag` |
+| The paid dispatcher (through `odds_gateway` only) | `supabase/functions/sharp_check` |
 | Tests (all offline, the provider mocked) | `tools/sharp_lag/*.test.js`, run by `.github/workflows/sharp-lag.yml` |
 | Deploy (manual, tests first) | `.github/workflows/deploy-sharp-lag.yml` |
 
@@ -57,6 +58,42 @@ value (CLV) against Pinnacle's close.
   Kalshi snapshots are 5 minutes apart. Every flag records the coarser of its
   two, because lag can only be measured to the snapshot cadence.
 
+## B. Triggered checks
+
+The free job detects triggers every 10 minutes and records each once
+(`sharp_triggers`, a unique `dedupe_key`):
+
+| Trigger | Source | Rule |
+|---|---|---|
+| `nba_injury` | `nba_injury_report_snapshots` (from `nba_injury_sync`) | A starter changes status between two consecutive reports covering the game. A starter is one of the top 5 of the club's reference rotation by minutes (`nba/roster_inputs.json`). Coming off the report counts. |
+| `nhl_goalie` | `nhl_goalie_starters` consensus rows (from `nhl_goalie_sync`) | The consensus starter of one club changes goalie or status. |
+| `kalshi_move` | `kalshi_price_snapshots` of linked markets (`kalshi_game_links`, NFL and CFB moneylines) | The YES mid moves **3¢ or more** between consecutive snapshots at most 10 minutes apart, both two-sided and at most 6¢ wide. |
+
+- **Event matching.** NBA and NHL games are matched to the provider's event
+  by both clubs (names and aliases from `nba/data/teams.json` and
+  `hockey/data/teams.json`, inlined) and a start within 6 hours. Two
+  candidates are no match, never a guess.
+- **The hourly dispatcher.** `sharp_check` makes one single-event request per
+  triggered game through `odds_gateway`, in the capped category
+  `sharp_check`: h2h, spreads, totals at Pinnacle and DraftKings, two books
+  billed as one region-equivalent, at most 3 credits. Its rules:
+  - **One ask per event per run.** Every trigger it covers is recorded against
+    that one answer (`sharp_check_requests`, one row per trigger, ever).
+  - **No retry and no stale data.** A refusal (`denied_category_cap`, the
+    breaker, the cadence) is recorded and never retried. It asks with
+    `want_body: false` and `allow_stale: false`.
+  - **Closes.** An NBA or NHL game with an ungraded flag starting inside the
+    hour gets one close check, unless one ran in the last 50 minutes. Football
+    closes come from `capture`'s hourly board.
+  - **At most 12 asks a run.**
+- **The hourly rule.** No gateway band is under 60 minutes and every paid
+  pg_cron job runs at most hourly (`odds_api_hourly_limits.sql`). So a
+  triggered check lands 0 to 60 minutes after its trigger, at most once per
+  event per hour. Going faster is the operator's rule to change, not this
+  pipeline's.
+- **Shadow first.** While `sharp_lag_config.dispatch = shadow` (the default),
+  triggers are recorded and nothing is asked. The cron poke does not even wake
+  the dispatcher unless dispatch is `live` and the gateway's breaker is on.
 
 
 

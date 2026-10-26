@@ -10,6 +10,9 @@
      auth      GET is a probe; POST needs the cron secret
      ingest    Pinnacle and DraftKings only, out of featured / close /
                sharp_check snapshots, American converted, each snapshot once
+     triggers  a Kalshi move of 3c+, an NBA starter's status change, an NHL
+               goalie change, each matched to its provider event, recorded in
+               the dispatch switch's mode, once
      spend     no call to odds_gateway or the provider, no PATCH, no DELETE
    Run: node tools/sharp_lag/sharp_lag_fn.test.js
    =========================================================================== */
@@ -80,6 +83,32 @@ const cfg = (dispatch, extra) => [{ key: 'dispatch', value: dispatch || 'shadow'
   const n1 = P.length;
   out = await run({ steps: ['ingest'] });
   chk('ingest: a second run reads nothing again', R.DB.sharp_price_snapshots.length === n1 && out.ingest.snapshots_read === 0);
+
+  /* ── triggers ────────────────────────────────────────────────────────── */
+  world({ sharp_lag_config: cfg('shadow'),
+    odds_api_events: [{ event_id: NBA_EV.id, sport_key: 'basketball_nba', commence_time: NBA_EV.commence_time, home_team: NBA_EV.home_team, away_team: NBA_EV.away_team },
+      { event_id: NHL_EV.id, sport_key: 'icehockey_nhl', commence_time: NHL_EV.commence_time, home_team: NHL_EV.home_team, away_team: NHL_EV.away_team }],
+    kalshi_game_links: [{ market_ticker: 'KX-PHI', yes_team: NFL.home_team, odds_event_id: NFL.id, odds_sport_key: NFL.sport_key, game_id: 'g1', home_team: NFL.home_team, away_team: NFL.away_team, kickoff_at: NFL.commence_time }],
+    kalshi_price_snapshots: [{ id: 11, ticker: 'KX-PHI', captured_at: at(-10), yes_bid: 0.55, yes_ask: 0.57 }, { id: 12, ticker: 'KX-PHI', captured_at: at(-5), yes_bid: 0.58, yes_ask: 0.6 }],
+    nba_injury_reports: [{ id: 1, captured_at: at(-120), matchups: [{ game_id: '401909868' }] }, { id: 2, captured_at: at(-10), matchups: [{ game_id: '401909868' }] }],
+    nba_injury_report_snapshots: [{ report_id: 1, game_id: '401909868', player_id: 'p1', status: 'QUESTIONABLE' }, { report_id: 2, game_id: '401909868', player_id: 'p1', status: 'OUT' },
+      { report_id: 1, game_id: '401909868', player_id: 'p6', status: 'QUESTIONABLE' }, { report_id: 2, game_id: '401909868', player_id: 'p6', status: 'OUT' }],
+    nhl_goalie_starters: [{ id: 1, game_id: '2026020301', game_start_utc: NHL_EV.commence_time, team: 'TOR', side: 'home', goalie_id: '8', goalie_name: 'Joseph Woll', status: 'projected', fetched_at: at(-60), source: 'consensus' },
+      { id: 2, game_id: '2026020301', game_start_utc: NHL_EV.commence_time, team: 'TOR', side: 'home', goalie_id: '8', goalie_name: 'Joseph Woll', status: 'confirmed', fetched_at: at(-5), source: 'consensus' },
+      { id: 3, game_id: '2026020301', game_start_utc: NHL_EV.commence_time, team: 'MTL', side: 'away', goalie_id: '5', goalie_name: 'Sam Montembeault', status: 'projected', fetched_at: at(-60), source: 'consensus' }] });
+  out = await run({ steps: ['triggers'] });
+  const Tr = R.DB.sharp_triggers;
+  const km = Tr.find((t) => t.trigger_type === 'kalshi_move'), ni = Tr.filter((t) => t.trigger_type === 'nba_injury'), ng = Tr.find((t) => t.trigger_type === 'nhl_goalie');
+  chk('triggers: a Kalshi mid move of 3c between consecutive snapshots, on the linked event', km && km.event_id === NFL.id && Math.abs(km.detail.move - 0.03) < 1e-9, km);
+  chk('triggers: an NBA starter going QUESTIONABLE -> OUT, matched to the provider event; a bench player is not a starter', ni.length === 1 && ni[0].detail.player_name === 'LaMelo Ball' && ni[0].event_id === NBA_EV.id && ni[0].detail.to === 'OUT', ni);
+  chk('triggers: an NHL goalie confirmed, matched to the provider event by club names', ng && ng.event_id === NHL_EV.id && ng.detail.to.status === 'confirmed', ng);
+  chk('triggers: recorded in shadow while dispatch is shadow', Tr.length === 3 && Tr.every((t) => t.mode === 'shadow'));
+  out = await run({ steps: ['triggers'] });
+  chk('triggers: a second run records nothing twice', R.DB.sharp_triggers.length === 3);
+  R.DB.sharp_lag_config = cfg('live');
+  R.DB.kalshi_price_snapshots.push({ id: 13, ticker: 'KX-PHI', captured_at: at(-1), yes_bid: 0.62, yes_ask: 0.64 });
+  out = await run({ steps: ['triggers'] });
+  chk('triggers: with dispatch live, a new move is recorded live', R.DB.sharp_triggers.length === 4 && R.DB.sharp_triggers[3].mode === 'live');
 
   /* ── spend ───────────────────────────────────────────────────────────── */
   chk('spend: no call outside the database and the published roster inputs (no gateway, no provider)', extCalls.length === 0, extCalls);

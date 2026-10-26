@@ -7,6 +7,11 @@
 #
 # SPEND. Deploying spends nothing. The free sharp_lag function never calls the
 # odds gateway or the provider.
+# sharp_check is the one paid caller, and it buys only through odds_gateway,
+# in the capped categories sharp_check and nba_role_props (created DISABLED by
+# supabase/odds_api_gateway.sql), and only while sharp_lag_config.dispatch is
+# live and the breaker is on. Turning any of that on is a SQL act, never this
+# workflow.
 #
 # SECRETS:
 #   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the functions
@@ -15,6 +20,8 @@
 # And once, on the Supabase side (each function and pg_cron share a secret):
 #   supabase secrets set SHARP_LAG_CRON_SECRET=<a long random value>
 #   select vault.create_secret('<the same value>', 'sharp_lag_cron_secret');
+#   supabase secrets set SHARP_CHECK_CRON_SECRET=<another long random value>
+#   select vault.create_secret('<the same value>', 'sharp_check_cron_secret');
 name: Deploy Sharp lag research
 
 on:
@@ -53,6 +60,7 @@ jobs:
           node tools/sharp_lag/inline_core.js --check
           node tools/sharp_lag/core.test.js
           node tools/sharp_lag/sharp_lag_fn.test.js
+          node tools/sharp_lag/sharp_check_fn.test.js
           node tools/sharp_lag/sharp_lag_sql.test.js
 
       - name: Check the credentials exist before claiming anything
@@ -83,7 +91,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          for fn in sharp_lag; do
+          for fn in sharp_lag sharp_check; do
             supabase functions deploy "$fn" --project-ref "$PROJECT_REF" --no-verify-jwt
           done
 

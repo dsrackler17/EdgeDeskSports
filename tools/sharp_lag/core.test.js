@@ -5,6 +5,7 @@
                function under Node's type stripping), underround -> proportional
      quotes    a gateway body (decimal or American, /odds or one event) -> rows
      rules     every number is public.sharp_lag_rule()'s
+     triggers  Kalshi moves of 3c+, starter status changes, goalie changes
    Run: node tools/sharp_lag/core.test.js
    =========================================================================== */
 'use strict';
@@ -53,6 +54,23 @@ const PIN = (min, h, a, extra) => Object.assign({ observed_at: at(min), request_
   const qp = L.quotesFromOdds({ id: 'e3', bookmakers: [{ key: 'draftkings', markets: [{ key: 'player_rebounds', outcomes: [{ name: 'Over', description: 'Miles Bridges', price: 1.87, point: 6.5 }, { name: 'Under', description: 'Miles Bridges', price: 1.95, point: 6.5 }, { name: 'Over', description: 'Someone Else', price: 1.9, point: 3.5 }] }] }] },
     { books: ['draftkings'], participants: (n) => n === 'Miles Bridges' });
   chk('quotes: a player market keeps the player, and only the players asked for', qp.length === 2 && qp.every((r) => r.participant === 'Miles Bridges'));
+
+  /* ── triggers ───────────────────────────────────────────────────────── */
+  const snaps = [{ id: 1, ticker: 'K', captured_at: at(-15), yes_bid: 0.5, yes_ask: 0.52 }, { id: 2, ticker: 'K', captured_at: at(-10), yes_bid: 0.53, yes_ask: 0.55 },
+    { id: 3, ticker: 'K', captured_at: at(-5), yes_bid: 0.53, yes_ask: 0.6 }, { id: 4, ticker: 'K', captured_at: at(-4), yes_bid: 0.49, yes_ask: 0.51 }, { id: 5, ticker: 'K', captured_at: at(20), yes_bid: 0.2, yes_ask: 0.22 }];
+  const mv = L.kalshiMoves(snaps);
+  chk('triggers: a 3c mid move between consecutive two-sided snapshots is a move; a wide quote and a 24-minute gap are not', mv.length === 1 && mv[0].from_snapshot_id === 1 && mv[0].to_snapshot_id === 2 && near(mv[0].move, 0.03, 1e-9), mv);
+  const ch = L.statusChanges({ a: 'QUESTIONABLE', b: 'OUT' }, { a: 'OUT', c: 'DOUBTFUL' }, [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }, { id: 'd', name: 'D' }]);
+  chk('triggers: a starter\'s status change, listed -> off the report and on, each count; an unchanged one does not', ch.length === 3 && ch.find((x) => x.player_id === 'b').to === 'NOT_LISTED' && ch.find((x) => x.player_id === 'c').from === 'NOT_LISTED', ch);
+  const gc = L.goalieChanges([{ id: 1, game_id: 'g', team: 'TOR', side: 'home', goalie_id: '8', goalie_name: 'A', status: 'projected', fetched_at: at(-60) },
+    { id: 2, game_id: 'g', team: 'TOR', side: 'home', goalie_id: '8', goalie_name: 'A', status: 'confirmed', fetched_at: at(-30) },
+    { id: 3, game_id: 'g', team: 'TOR', side: 'home', goalie_id: '9', goalie_name: 'B', status: 'confirmed', fetched_at: at(-10) }]);
+  chk('triggers: a goalie\'s status change and a change of goalie are each a change', gc.length === 2 && gc[1].to.goalie === 'B', gc);
+  chk('triggers: the top 5 of a reference rotation by minutes are the starters', L.topByMinutes([{ id: 1, minutes: 10 }, { id: 2, minutes: 30 }, { id: 3, minutes: 20 }], 2).map((p) => p.id).join() === '2,3');
+  const ix = L.nameIndex({ 12: ['LA Clippers', 'Los Angeles Clippers'], 13: ['Los Angeles Lakers'] });
+  const m1 = L.matchEvent({ home: '12', away: '13', start: at(0) }, [{ id: 'x', home_team: 'Los Angeles Clippers', away_team: 'Los Angeles Lakers', commence_time: at(30) }, { id: 'y', home_team: 'Los Angeles Lakers', away_team: 'Los Angeles Clippers', commence_time: at(30) }], ix);
+  chk('identity: a provider event matches on both clubs (aliases included) and a start within 6 h', m1 && m1.id === 'x');
+  chk('identity: two candidates are no match, never a guess', L.matchEvent({ home: '12', away: '13', start: at(0) }, [{ id: 'x', home_team: 'LA Clippers', away_team: 'Los Angeles Lakers', commence_time: at(30) }, { id: 'z', home_team: 'Los Angeles Clippers', away_team: 'Los Angeles Lakers', commence_time: at(60) }], ix) === null);
 
   /* ── the rules are the database's ───────────────────────────────────── */
   const sql = fs.readFileSync(path.join(ROOT, 'supabase', 'sharp_lag.sql'), 'utf8');

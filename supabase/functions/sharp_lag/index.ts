@@ -18,11 +18,15 @@
 // EACH RUN, in order; a failing step is recorded and never stops the next:
 //   1 ingest   the Pinnacle and DraftKings prices of every gateway snapshot
 //              it has not read, one append-only row each
+//   2 triggers NBA starter status changes, NHL goalie changes, Kalshi moves
+//              of 3c or more, recorded in the mode the dispatch switch is in
+//              (shadow: nothing will be bought for them)
 //
 // AUTH. pg_cron sends the Vault secret sharp_lag_cron_secret as
 // x-cron-secret; it must equal SHARP_LAG_CRON_SECRET. A GET is a health probe.
 // POST body (all optional): { dry, now (dry only), steps: ["ingest", ...] }
 // ENV: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SHARP_LAG_CRON_SECRET
+//      NBA_INPUTS_URL (default https://edgedesksports.com/nba/roster_inputs.json)
 // ============================================================
 
 export const BUILD = "sharp_lag@2026-10-27.1";
@@ -239,9 +243,80 @@ export const BUILD = "sharp_lag@2026-10-27.1";
     return h == null || h <= 24 ? 3600 : h <= 72 ? 7200 : 21600;
   };
 
+  /* ------------------------------------------------------------ Kalshi quotes */
+  L.kalshiTwoSided = function (s) {
+    var b = num(s && s.yes_bid), a = num(s && s.yes_ask);
+    return b != null && a != null && b > 0 && a < 1 && a >= b;
+  };
+  L.kalshiSpread = function (s) { return L.kalshiTwoSided(s) ? r4(num(s.yes_ask) - num(s.yes_bid)) : null; };
+  L.kalshiMid = function (s) {
+    var sp = L.kalshiSpread(s);
+    return sp != null && sp <= L.RULES.kalshi_max_spread + 1e-9 ? r4((num(s.yes_bid) + num(s.yes_ask)) / 2) : null;
+  };
+
+  /* ------------------------------------------------------------ triggers (pure) */
+  /* consecutive two-sided, in-spread snapshots of one ticker whose mids differ by 3¢+ */
+  L.kalshiMoves = function (snaps) {
+    var R = L.RULES, s = (snaps || []).slice().sort(function (a, b) { return ms(a.captured_at) - ms(b.captured_at) || (a.id - b.id); }), out = [];
+    for (var i = 1; i < s.length; i++) {
+      var a = s[i - 1], b = s[i], ma = L.kalshiMid(a), mb = L.kalshiMid(b);
+      if (ma == null || mb == null) continue;
+      if ((ms(b.captured_at) - ms(a.captured_at)) / 60000 > R.kalshi_pair_max_min) continue;
+      var mv = r4(mb - ma);
+      if (Math.abs(mv) >= R.kalshi_move - 1e-9) out.push({ ticker: b.ticker, from_snapshot_id: a.id, to_snapshot_id: b.id, from_mid: ma, to_mid: mb, move: mv, at: b.captured_at });
+    }
+    return out;
+  };
+  /* one game's statuses on two consecutive injury reports: every change for
+     a listed starter. A player missing from a report is NOT_LISTED. */
+  L.statusChanges = function (prev, cur, players) {
+    var out = [];
+    (players || []).forEach(function (p) {
+      var a = (prev && prev[p.id]) || 'NOT_LISTED', b = (cur && cur[p.id]) || 'NOT_LISTED';
+      if (a !== b) out.push({ player_id: p.id, player_name: p.name, team_id: p.team_id || null, from: a, to: b });
+    });
+    return out;
+  };
+  /* one game and club's consensus starter rows: every change of goalie or status */
+  L.goalieChanges = function (rows) {
+    var s = (rows || []).slice().sort(function (a, b) { return ms(a.fetched_at) - ms(b.fetched_at) || (a.id - b.id); }), out = [];
+    for (var i = 1; i < s.length; i++) {
+      var a = s[i - 1], b = s[i];
+      var ga = a.goalie_id || a.goalie_name || null, gb = b.goalie_id || b.goalie_name || null;
+      if (ga !== gb || a.status !== b.status) out.push({ row_id: b.id, game_id: b.game_id, team: b.team, side: b.side,
+        from: { goalie: a.goalie_name || null, status: a.status }, to: { goalie: b.goalie_name || null, status: b.status }, at: b.fetched_at });
+    }
+    return out;
+  };
+  /* the top `n` of a club's reference rotation by minutes (starters: 5; the rotation: 8) */
+  L.topByMinutes = function (ref, n) {
+    return (ref || []).slice().sort(function (a, b) { return (num(b.minutes) || 0) - (num(a.minutes) || 0); }).slice(0, n);
+  };
+
+  /* ------------------------------------------------------------ identity (NBA, NHL) */
+  L.normName = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); };
+  /* names: { club key: [full name, aliases...] }; returns name -> club key */
+  L.nameIndex = function (names) {
+    var m = {};
+    Object.keys(names || {}).forEach(function (k) { (names[k] || []).forEach(function (n) { var x = L.normName(n); if (x && !(x in m)) m[x] = k; }); });
+    return m;
+  };
+  /* the provider event for a scheduled game: both clubs and a start within 6 h; exactly one, or none */
+  L.matchEvent = function (game, events, index) {
+    var hits = (events || []).filter(function (e) {
+      return index[L.normName(e.home_team)] === game.home && index[L.normName(e.away_team)] === game.away
+        && Math.abs(ms(e.commence_time) - ms(game.start)) <= 6 * 3600e3;
+    });
+    return hits.length === 1 ? hits[0] : null;
+  };
+
   return L;
 }));
 // ── END SHARP LAG CORE ──
+
+// ── BEGIN SHARP LAG IDENTITY ── generated from nba/data/teams.json and hockey/data/teams.json by tools/sharp_lag/inline_core.js; do not edit here
+(globalThis as any).SHARP_LAG_IDENTITY = {"nba":{"1":["Atlanta Hawks"],"2":["Boston Celtics"],"3":["New Orleans Pelicans"],"4":["Chicago Bulls"],"5":["Cleveland Cavaliers"],"6":["Dallas Mavericks"],"7":["Denver Nuggets"],"8":["Detroit Pistons"],"9":["Golden State Warriors"],"10":["Houston Rockets"],"11":["Indiana Pacers"],"12":["LA Clippers","Los Angeles Clippers"],"13":["Los Angeles Lakers","LA Lakers"],"14":["Miami Heat"],"15":["Milwaukee Bucks"],"16":["Minnesota Timberwolves"],"17":["Brooklyn Nets"],"18":["New York Knicks"],"19":["Orlando Magic"],"20":["Philadelphia 76ers"],"21":["Phoenix Suns"],"22":["Portland Trail Blazers"],"23":["Sacramento Kings"],"24":["San Antonio Spurs"],"25":["Oklahoma City Thunder"],"26":["Utah Jazz"],"27":["Washington Wizards"],"28":["Toronto Raptors"],"29":["Memphis Grizzlies"],"30":["Charlotte Hornets"]},"nhl":{"ANA":["Anaheim Ducks","Anaheim"],"BOS":["Boston Bruins","Boston"],"BUF":["Buffalo Sabres","Buffalo"],"CAR":["Carolina Hurricanes","Carolina"],"CBJ":["Columbus Blue Jackets","Columbus"],"CGY":["Calgary Flames","Calgary"],"CHI":["Chicago Blackhawks","Chicago"],"COL":["Colorado Avalanche","Colorado"],"DAL":["Dallas Stars","Dallas"],"DET":["Detroit Red Wings","Detroit"],"EDM":["Edmonton Oilers","Edmonton"],"FLA":["Florida Panthers","Florida"],"LAK":["Los Angeles Kings","Los Angeles","LA Kings"],"MIN":["Minnesota Wild","Minnesota"],"MTL":["Montréal Canadiens","Montreal Canadiens","Montréal","Montreal"],"NJD":["New Jersey Devils","New Jersey"],"NSH":["Nashville Predators","Nashville"],"NYI":["New York Islanders","NY Islanders"],"NYR":["New York Rangers","NY Rangers"],"OTT":["Ottawa Senators","Ottawa"],"PHI":["Philadelphia Flyers","Philadelphia"],"PIT":["Pittsburgh Penguins","Pittsburgh"],"SEA":["Seattle Kraken","Seattle"],"SJS":["San Jose Sharks","San Jose"],"STL":["St. Louis Blues","St Louis Blues","St. Louis","St Louis"],"TBL":["Tampa Bay Lightning","Tampa Bay"],"TOR":["Toronto Maple Leafs","Toronto"],"UTA":["Utah Mammoth","Utah Hockey Club","Utah HC","Utah"],"VAN":["Vancouver Canucks","Vancouver"],"VGK":["Vegas Golden Knights","Vegas"],"WPG":["Winnipeg Jets","Winnipeg"],"WSH":["Washington Capitals","Washington"]}};
+// ── END SHARP LAG IDENTITY ──
 
 type Any = any;
 const SL: Any = (globalThis as Any).EDSharpLag;
@@ -250,6 +325,8 @@ const msg = (e: unknown) => String((e as Error)?.message ?? e).slice(0, 300);
 const iso = (t: number) => new Date(t).toISOString();
 const enc = encodeURIComponent;
 function deadline(t: number): AbortSignal | undefined { try { return (AbortSignal as Any).timeout(t); } catch { return undefined; } }
+const INPUTS_URL = "https://edgedesksports.com/nba/roster_inputs.json";
+const SPORT = { nba: "basketball_nba", nhl: "icehockey_nhl" };
 
 /* ---------------------------------------------------------------- the database (PostgREST, service role) */
 async function db(path: string, init?: RequestInit): Promise<Any> {
@@ -284,6 +361,21 @@ async function setting(key: string): Promise<string | null> {
   return r && r[0] ? String(r[0].value) : null;
 }
 
+/* ---------------------------------------------------------------- identity (NBA, NHL) */
+const IDX: Any = { nba: null, nhl: null };
+function idx(lg: string) { if (!IDX[lg]) IDX[lg] = SL.nameIndex(((globalThis as Any).SHARP_LAG_IDENTITY || {})[lg] || {}); return IDX[lg]; }
+/* the provider event for a league game: both clubs by name, a start within 6 h */
+async function eventFor(lg: string, home: string, away: string, startIso: string, ctx: Any) {
+  const key = lg + "|" + home + "|" + away + "|" + startIso;
+  if (key in ctx.eventCache) return ctx.eventCache[key];
+  const t = Date.parse(startIso);
+  const evs = await dbAll("odds_api_events?select=event_id,sport_key,commence_time,home_team,away_team&sport_key=eq." + SPORT[lg]
+    + "&commence_time=gte." + enc(iso(t - 6 * 3600e3)) + "&commence_time=lte." + enc(iso(t + 6 * 3600e3)) + "&order=commence_time.asc");
+  const names: Any = (globalThis as Any).SHARP_LAG_IDENTITY[lg] || {};
+  const hit = SL.matchEvent({ home: String(home), away: String(away), start: startIso }, evs.map((e: Any) => ({ ...e, id: e.event_id })), idx(lg));
+  return (ctx.eventCache[key] = hit ? { event_id: hit.event_id, home_team: hit.home_team, away_team: hit.away_team, commence_time: hit.commence_time, names: [names[home], names[away]] } : null);
+}
+
 /* ================================================================ 1 INGEST */
 const MAIN = ["h2h", "spreads", "totals"];
 async function ingest(ctx: Any) {
@@ -309,8 +401,100 @@ async function ingest(ctx: Any) {
   ctx.out.ingest = { snapshots_seen: snaps.length, snapshots_read: read, price_rows: rowsOut };
 }
 
+/* ================================================================ 2 TRIGGERS */
+async function triggers(ctx: Any) {
+  const mode = (await setting("dispatch")) === "live" ? "live" : "shadow";
+  const fresh = ctx.nowMs - 30 * 60000;     // a change older than this was a previous run's
+  const horizon = iso(ctx.nowMs + SL.RULES.check_window_hours * 3600e3);
+  const rows: Any[] = [];
+  const stats: Any = { mode };
+
+  /* Kalshi: consecutive two-sided snapshots of a linked market, mid moved 3c+ */
+  try {
+    const links = await dbAll("kalshi_game_links?select=market_ticker,yes_team,odds_event_id,odds_sport_key,game_id,home_team,away_team,kickoff_at"
+      + "&kickoff_at=gt." + enc(iso(ctx.nowMs)) + "&kickoff_at=lte." + enc(horizon));
+    const byTicker: Any = {}; links.forEach((l: Any) => { byTicker[l.market_ticker] = l; });
+    const tickers = Object.keys(byTicker);
+    const snaps: Any[] = [];
+    await chunks(tickers, 50, async (c) => { snaps.push(...await dbAll("kalshi_price_snapshots?select=id,ticker,captured_at,yes_bid,yes_ask&ticker=in." + inList(c)
+      + "&captured_at=gte." + enc(iso(ctx.nowMs - 45 * 60000)) + "&order=captured_at.asc")); });
+    const per: Any = {}; snaps.forEach((s) => { (per[s.ticker] = per[s.ticker] || []).push(s); });
+    let n = 0;
+    Object.keys(per).forEach((t) => SL.kalshiMoves(per[t]).forEach((m: Any) => {
+      if (Date.parse(m.at) < fresh) return;
+      const l = byTicker[t];
+      n++;
+      rows.push({ trigger_type: "kalshi_move", sport_key: l.odds_sport_key, league_game_id: l.game_id, event_id: l.odds_event_id,
+        home_team: l.home_team, away_team: l.away_team, commence_time: l.kickoff_at, mode, dedupe_key: "kalshi_move|" + m.to_snapshot_id,
+        detail: { ticker: t, yes_team: l.yes_team, from_mid: m.from_mid, to_mid: m.to_mid, move: m.move, at: m.at, from_snapshot_id: m.from_snapshot_id, to_snapshot_id: m.to_snapshot_id } });
+    }));
+    stats.kalshi_moves = n;
+  } catch (e) { ctx.warn("kalshi_triggers", msg(e)); }
+
+  /* NBA: a starter (top five of the reference rotation) on two consecutive reports */
+  try {
+    const inputs = await fetchJson(env("NBA_INPUTS_URL") || INPUTS_URL);
+    const games = ((inputs && inputs.games) || []).filter((g: Any) => Date.parse(g.start_utc) > ctx.nowMs && Date.parse(g.start_utc) <= Date.parse(horizon));
+    const reports = await dbAll("nba_injury_reports?select=id,captured_at,matchups&captured_at=gte." + enc(iso(ctx.nowMs - 36 * 3600e3)) + "&order=captured_at.asc");
+    let n = 0;
+    if (games.length && reports.length > 1) {
+      const recent = reports.slice(-6);
+      const snap = await dbAll("nba_injury_report_snapshots?select=report_id,game_id,player_id,status&report_id=in." + inList(recent.map((r: Any) => r.id)));
+      const st: Any = {}; snap.forEach((s: Any) => { if (!s.player_id) return; const k = s.report_id + "|" + s.game_id; (st[k] = st[k] || {})[s.player_id] = s.status; });
+      const covers = (r: Any, gid: string) => (r.matchups || []).some((m: Any) => String(m.game_id) === String(gid));
+      for (let i = 1; i < recent.length; i++) {
+        const prev = recent[i - 1], cur = recent[i];
+        if (Date.parse(cur.captured_at) < fresh) continue;
+        for (const g of games) {
+          if (!covers(prev, g.game_id) || !covers(cur, g.game_id)) continue;
+          const starters = ["home", "away"].flatMap((side) => SL.topByMinutes(((g.reference || {})[side]) || [], 5).map((p: Any) => ({ id: p.id, name: p.name, team_id: g[side].id })));
+          const ch = SL.statusChanges(st[prev.id + "|" + g.game_id] || {}, st[cur.id + "|" + g.game_id] || {}, starters);
+          for (const c of ch) {
+            const ev = await eventFor("nba", String(g.home.id), String(g.away.id), g.start_utc, ctx);
+            n++;
+            rows.push({ trigger_type: "nba_injury", sport_key: SPORT.nba, league_game_id: String(g.game_id), event_id: ev ? ev.event_id : null,
+              home_team: ev ? ev.home_team : g.home.name, away_team: ev ? ev.away_team : g.away.name, commence_time: ev ? ev.commence_time : g.start_utc, mode,
+              dedupe_key: "nba_injury|" + cur.id + "|" + g.game_id + "|" + c.player_id,
+              detail: { report_id: cur.id, previous_report_id: prev.id, player_id: c.player_id, player_name: c.player_name, team_id: c.team_id, from: c.from, to: c.to } });
+          }
+        }
+      }
+    }
+    stats.nba_status_changes = n;
+  } catch (e) { ctx.warn("nba_triggers", msg(e)); }
+
+  /* NHL: the consensus starter of one club changed goalie or status */
+  try {
+    const st = await dbAll("nhl_goalie_starters?select=id,game_id,game_start_utc,team,side,goalie_id,goalie_name,status,fetched_at&source=eq.consensus"
+      + "&game_start_utc=gt." + enc(iso(ctx.nowMs)) + "&game_start_utc=lte." + enc(horizon) + "&order=fetched_at.asc");
+    const per: Any = {}, teams: Any = {};
+    st.forEach((r: Any) => { (per[r.game_id + "|" + r.team] = per[r.game_id + "|" + r.team] || []).push(r); (teams[r.game_id] = teams[r.game_id] || {})[r.side] = r.team; });
+    let n = 0;
+    for (const k of Object.keys(per)) {
+      for (const c of SL.goalieChanges(per[k])) {
+        if (Date.parse(c.at) < fresh) continue;
+        const g = teams[c.game_id] || {}, start = per[k][0].game_start_utc;
+        const ev = g.home && g.away ? await eventFor("nhl", g.home, g.away, start, ctx) : null;
+        n++;
+        rows.push({ trigger_type: "nhl_goalie", sport_key: SPORT.nhl, league_game_id: String(c.game_id), event_id: ev ? ev.event_id : null,
+          home_team: ev ? ev.home_team : g.home || null, away_team: ev ? ev.away_team : g.away || null, commence_time: ev ? ev.commence_time : start, mode,
+          dedupe_key: "nhl_goalie|" + c.row_id, detail: { team: c.team, side: c.side, from: c.from, to: c.to, row_id: c.row_id } });
+      }
+    }
+    stats.nhl_goalie_changes = n;
+  } catch (e) { ctx.warn("nhl_triggers", msg(e)); }
+
+  if (!ctx.dry) await chunks(rows, 200, (c) => insertOnce("sharp_triggers", c, "dedupe_key"));
+  ctx.out.triggers = Object.assign(stats, { recorded: rows.length });
+}
+async function fetchJson(url: string): Promise<Any> {
+  const r = await fetch(url, { signal: deadline(15000), headers: { accept: "application/json" } });
+  if (!r.ok) throw new Error(url + " answered " + r.status);
+  return await r.json();
+}
+
 /* ================================================================ the run */
-const STEPS: Any = { ingest };
+const STEPS: Any = { ingest, triggers };
 export async function runOnce(opts: Any = {}) {
   const nowMs = opts.now ? Date.parse(opts.now) : Date.now();
   const dry = !!opts.dry;

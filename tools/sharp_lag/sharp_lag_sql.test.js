@@ -8,6 +8,8 @@
      access     no client reads a table directly
      cron       the free job every 10 minutes and never a spend path; no secret,
                 no call
+                the paid dispatcher hourly, woken only when live AND the
+                gateway's breaker is on
      config     every switch change is logged, append-only; the rules frozen
    Run: node tools/sharp_lag/sharp_lag_sql.test.js
    =========================================================================== */
@@ -59,7 +61,7 @@ try {
     on conflict (source_request_id, event_id, book, market, side, participant_key, point_key) do nothing;`;
   db.service(price(1, 'Philadelphia Eagles', 1.6) + price(1, 'Dallas Cowboys', 2.5) + price(1, 'Dallas Cowboys', 2.5));
   T.chk('append: a snapshot read twice is stored once (the unique key, null point included)', db.sql('select count(*) from public.sharp_price_snapshots') === '2');
-  const SEALED = ['sharp_price_snapshots', 'sharp_lag_runs', 'sharp_lag_config_log'];
+  const SEALED = ['sharp_price_snapshots', 'sharp_lag_runs', 'sharp_lag_config_log', 'sharp_triggers', 'sharp_check_requests'];
   for (const t of ['sharp_price_snapshots', 'sharp_lag_config_log']) {
     const col = t === 'sharp_price_snapshots' ? 'book' : 'key';
     T.chk('append: ' + t + ' refuses UPDATE: the service role has no UPDATE grant, and the trigger refuses even the owner', refused(() => db.service('update public.' + t + ' set ' + col + ' = ' + col + ';'))
@@ -94,11 +96,21 @@ try {
   const patterns = (spend.match(/'((?:[^']|'')*)'/g) || []).map((q) => q.slice(1, -1).replace(/''/g, "'"));
   const like = (cmd, pat) => new RegExp('^' + pat.split('%').map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$', 'i').test(cmd);
   T.chk('cron: the free job\'s command matches no spend pattern (it may run every 10 minutes)', patterns.length > 10 && !patterns.some((pt) => like(db.sql("select command from cron.job where jobname = 'sharp_lag'"), pt)));
+  T.chk('cron: the paid dispatcher is scheduled hourly at :47', db.sql("select count(*) || ':' || max(schedule) from cron.job where jobname = 'sharp_check'") === '1:47 * * * *');
+  db.sql('truncate net.posted');
+  T.chk('cron: in shadow the dispatcher is never woken', JSON.parse(db.sql('select public.sharp_check_poke()')).queued === false && db.sql('select count(*) from net.posted') === '0');
+  db.sql("update public.sharp_lag_config set value = 'live' where key = 'dispatch'");
+  T.chk('cron: live, but no odds gateway: never woken', /not installed/.test(JSON.parse(db.sql('select public.sharp_check_poke()')).reason) && db.sql('select count(*) from net.posted') === '0');
+  db.sql("create table if not exists public.breaker (on_ boolean); insert into public.breaker values (false); create or replace function public.odds_api_enabled() returns boolean language sql stable as $$ select on_ from public.breaker $$;");
+  T.chk('cron: live, breaker off: never woken', /odds_api_enabled is false/.test(JSON.parse(db.sql('select public.sharp_check_poke()')).reason) && db.sql('select count(*) from net.posted') === '0');
+  db.sql('update public.breaker set on_ = true');
+  T.chk('cron: live and the breaker on: the dispatcher is woken', JSON.parse(db.sql('select public.sharp_check_poke()')).queued === true && db.sql("select count(*) from net.posted where url like '%/functions/v1/sharp_check'") === '1');
+  db.sql("update public.sharp_lag_config set value = 'shadow' where key = 'dispatch'");
   T.chk('cron: no client may poke', refused(() => db.anon('select public.sharp_lag_poke();'), /permission denied/));
 
   /* ── config ──────────────────────────────────────────────────────────── */
   db.sql("update public.sharp_lag_config set value = 'live', note = 'test' where key = 'dispatch'; update public.sharp_lag_config set value = 'shadow' where key = 'dispatch';");
-  T.chk('config: every switch change is logged with old and new values', db.sql("select string_agg(coalesce(old_value, '-') || '>' || new_value, ',' order by id) from public.sharp_lag_config_log where key = 'dispatch'") === '->shadow,shadow>live,live>shadow');
+  T.chk('config: every switch change is logged with old and new values', db.sql("select string_agg(coalesce(old_value, '-') || '>' || new_value, ',' order by id) from public.sharp_lag_config_log where key = 'dispatch'") === '->shadow,shadow>live,live>shadow,shadow>live,live>shadow');
   T.chk('config: the log is append-only', refused(() => db.sql('delete from public.sharp_lag_config_log;'), /append-only/));
   T.chk('config: the rules are frozen in a function', db.sql("select public.sharp_lag_rule('gap_pp')::text || ',' || public.sharp_lag_rule('close_max_lead_min')::text || ',' || public.sharp_lag_rule('validation_min_graded')::text") === '2.5,90,200');
 } catch (e) {
